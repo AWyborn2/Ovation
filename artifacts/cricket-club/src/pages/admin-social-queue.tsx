@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import {
   useListSocialDrafts,
   getListSocialDraftsQueryKey,
@@ -27,6 +27,7 @@ import { ShareCardModal, type EngineKey } from "@/components/share-card-modal";
 import { ListSkeleton, EmptyState, QueryError } from "@/components/data-states";
 import { DataTable, StatusPill, type DataTableColumn } from "@/components/admin-ui";
 import { AutomationCard } from "@/components/social-queue/automation-card";
+import { AutoPostCard } from "@/components/social-queue/auto-post-card";
 import { DraftDrawer } from "@/components/social-queue/draft-drawer";
 import {
   FAMILIES,
@@ -60,7 +61,15 @@ export default function AdminSocialQueue() {
   const importsQ = useListImports({ query: { queryKey: getListImportsQueryKey() } });
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
 
-  const [status, setStatus] = useState<DraftStatus>("awaiting_review");
+  // A notification links here with the batch's draft ids (?ids=1,2,3).
+  const search = useSearch();
+  const [, navigate] = useLocation();
+  const batchIds = useMemo(() => {
+    const raw = new URLSearchParams(search).get("ids");
+    return raw ? new Set(raw.split(",").map(Number).filter(Number.isInteger)) : null;
+  }, [search]);
+
+  const [status, setStatus] = useState<DraftStatus>(batchIds ? "ready" : "awaiting_review");
   const [family, setFamily] = useState<Family | "all">("all");
   const [grade, setGrade] = useState<string>("all");
   const [open, setOpen] = useState<SocialDraft | null>(null);
@@ -93,11 +102,12 @@ export default function AdminSocialQueue() {
     () =>
       drafts.filter(
         (d) =>
+          (!batchIds || batchIds.has(d.id)) &&
           draftStatus(d) === status &&
           (family === "all" || d.family === family) &&
           (grade === "all" || draftGrade(d) === grade),
       ),
-    [drafts, status, family, grade],
+    [drafts, status, family, grade, batchIds],
   );
 
   const lastImport = (importsQ.data ?? [])
@@ -187,6 +197,19 @@ export default function AdminSocialQueue() {
         </Link>
       </p>
 
+      {batchIds && (
+        <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/60 px-3 py-2 text-sm">
+          <span>Showing the {batchIds.size} drafts from a notification.</span>
+          <button
+            type="button"
+            className="font-medium text-primary-text underline"
+            onClick={() => navigate("/admin/social/queue")}
+          >
+            Show all
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2" role="tablist" aria-label="Draft state">
         {STATUS_ORDER.map((s) => (
           <button
@@ -264,6 +287,8 @@ export default function AdminSocialQueue() {
       )}
 
       <AutomationCard config={bundle?.settings.familyConfig} />
+
+      <AutoPostCard settings={bundle?.settings} />
 
       <Card>
         <CardHeader>

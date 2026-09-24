@@ -4197,6 +4197,32 @@ paths:
         "404":
           description: A photo is not in this club's library
 
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [socialCards]
+      summary: The club's recent notifications and the unread count (admin)
+      responses:
+        "200":
+          description: Recent notifications, newest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationList"
+
+  /notifications/read:
+    post:
+      operationId: markNotificationsRead
+      tags: [socialCards]
+      summary: Mark every notification read (admin)
+      responses:
+        "200":
+          description: Done
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationList"
+
   /social-drafts/pending-count:
     get:
       operationId: getPendingSocialDraftCount
@@ -10773,8 +10799,49 @@ components:
           type: ["string", "null"]
           format: date-time
           description: "When the scheduled drafting sweep last completed for this club (read-only)."
+        autoPostEnabled:
+          type: boolean
+          description: "When on, auto-drafts still awaiting review at their deadline become ready."
+        autoPostWindowHours:
+          type: integer
+          description: "Hours after a draft's own import before it becomes ready."
+        notificationEmail:
+          type: ["string", "null"]
+          description: "Where draft notifications are emailed. Null = in-app only."
         familyConfig:
           $ref: "#/components/schemas/SocialFamilyConfig"
+
+    Notification:
+      type: object
+      required: [id, kind, title, body, link, createdAt, readAt]
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        link:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        readAt:
+          type: ["string", "null"]
+          format: date-time
+
+    NotificationList:
+      type: object
+      required: [unreadCount, items]
+      properties:
+        unreadCount:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Notification"
 
     ClubPhoto:
       type: object
@@ -10911,6 +10978,9 @@ components:
                 type: integer
               teamLists:
                 type: integer
+              promoted:
+                type: integer
+                description: "Drafts moved to ready because their auto-post deadline passed."
 
     SocialFamilySetting:
       type: object
@@ -11008,6 +11078,14 @@ components:
           description: "Season-start override for countdown cards. Null clears the override (fall back to the earliest upcoming fixture)."
         familyConfig:
           $ref: "#/components/schemas/SocialFamilyConfigUpdate"
+        autoPostEnabled:
+          type: boolean
+        autoPostWindowHours:
+          type: integer
+          minimum: 1
+          maximum: 168
+        notificationEmail:
+          type: ["string", "null"]
 
     MilestoneBoardSettings:
       type: object

@@ -22,6 +22,10 @@ import { invalidateMilestonesCache } from "../lib/milestones-cache";
 import { renderCardStill, harnessOriginFromHeaders } from "../lib/card-video-renderer";
 import { DEFAULT_TEMPLATES, ensureSettings } from "../lib/social-cards-helpers";
 import { resolveFamilyConfig, syncFamilySettings } from "../lib/social-families";
+import { persistDueDrafts } from "../lib/effective-draft-state";
+
+// Deliberately loose: the address is only ever a recipient for our own mail.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 import assetsRouter from "./social-cards-assets";
 import designRouter from "./social-cards-design";
@@ -82,6 +86,17 @@ router.patch(
     }
     const tenantId = getTenantId(req);
     const current = await ensureSettings(tenantId);
+    const email = parsed.data.notificationEmail;
+    if (typeof email === "string" && email.trim() !== "" && !EMAIL_RE.test(email.trim())) {
+      res.status(400).json({ error: "That notification email doesn't look right." });
+      return;
+    }
+    if (typeof email === "string") parsed.data.notificationEmail = email.trim() || null;
+    // Turning auto-post off first stores every draft that already reads as
+    // ready, so none quietly returns to review (KTD4, AE5).
+    if (current.autoPostEnabled && parsed.data.autoPostEnabled === false) {
+      await persistDueDrafts(tenantId);
+    }
     // Family switches and the legacy engine flags are kept in step both ways.
     const { familyConfig: _submitted, ...patch } = parsed.data;
     const [row] = await db

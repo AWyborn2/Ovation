@@ -32,4 +32,12 @@ export interface SocialSettingsUpdate {
      */
   seasonStartDate?: Date | null;
   familyConfig?: SocialFamilyConfigUpdate;
+  autoPostEnabled?: boolean;
+  /**
+     * @minimum 1
+     * @maximum 168
+     */
+  autoPostWindowHours?: number;
+  /** @nullable */
+  notificationEmail?: string | null;
 }

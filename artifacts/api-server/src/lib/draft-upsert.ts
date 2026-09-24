@@ -8,6 +8,7 @@ import {
 import { normalizeDraftStatus } from "./draft-status";
 import { recordDraftRevision } from "./draft-revisions";
 import { enrichDraft, isAutoPhoto } from "./draft-enrich";
+import { autoReadyAtFor } from "./effective-draft-state";
 
 /**
  * One draft per event (Social Studio automation, KTD3).
@@ -111,6 +112,7 @@ export async function upsertDraftByKey(input: DraftUpsert): Promise<DraftUpsertR
 
   if (!existing) {
     const e = await enrichment();
+    const importedAt = input.sourceImportedAt ?? new Date();
     try {
       const [row] = await db
         .insert(socialDraftsTable)
@@ -127,7 +129,10 @@ export async function upsertDraftByKey(input: DraftUpsert): Promise<DraftUpsertR
           sourceKind: input.sourceKind ?? null,
           sourceMatchId: input.sourceMatchId ?? null,
           sourceMatchIsJunior: input.sourceMatchIsJunior ?? false,
-          sourceImportedAt: input.sourceImportedAt ?? new Date(),
+          sourceImportedAt: importedAt,
+          // The auto-post deadline, fixed at creation from the club's window
+          // (KTD4); only read while auto-post is on.
+          autoReadyAt: await autoReadyAtFor(input.tenantId, importedAt),
           // Pack and caption resolve at creation (KTD8); the photo is a
           // snapshot so library edits never change the draft (KTD6).
           packId: e.packId,

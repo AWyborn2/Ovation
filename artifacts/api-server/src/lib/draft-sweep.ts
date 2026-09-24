@@ -13,6 +13,8 @@ import { generateMatchDayDrafts } from "./engines/match-day";
 import { generateTeamListDrafts } from "./engines/team-list";
 import { ensureSettings } from "./social-cards-helpers";
 import { tenantIsCentral, getTenantCentralClubId } from "./tenant";
+import { loadAutoPost, persistDueDrafts } from "./effective-draft-state";
+import { notifyDraftsReady } from "./draft-notifications";
 
 type Logger = PostCommitLogger & {
   info: (obj: unknown, msg?: string) => void;
@@ -44,6 +46,8 @@ export type SweepSummary = {
   matchSummaries: number;
   matchDay: number;
   teamLists: number;
+  /** Drafts moved to ready because their auto-post deadline passed. */
+  promoted: number;
 };
 
 /** Most central matches drafted in one sweep. */
@@ -60,7 +64,13 @@ export async function runDraftSweep(
   scope: SweepScope,
   logger: Logger,
 ): Promise<SweepSummary> {
-  const summary: SweepSummary = { centralMatches: 0, matchSummaries: 0, matchDay: 0, teamLists: 0 };
+  const summary: SweepSummary = {
+    centralMatches: 0,
+    matchSummaries: 0,
+    matchDay: 0,
+    teamLists: 0,
+    promoted: 0,
+  };
 
   if (scope.kind === "import") {
     const { kind: _kind, ...opts } = scope;
@@ -96,6 +106,17 @@ export async function runDraftSweep(
   }
 
   if (scope.kind === "scheduled") {
+    // Auto-post (KTD4): store what already reads as ready, then tell the club
+    // once for the whole batch.
+    try {
+      if ((await loadAutoPost(tenantId)).enabled) {
+        const promoted = await persistDueDrafts(tenantId, now);
+        summary.promoted = promoted.length;
+        await notifyDraftsReady(tenantId, promoted, logger);
+      }
+    } catch (err) {
+      logger.error({ err, tenantId }, "auto-post promotion failed");
+    }
     await db
       .update(socialSettingsTable)
       .set({ lastSweepAt: now })

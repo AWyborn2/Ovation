@@ -13,4 +13,6 @@ export type DraftSweepResponseResultsItem = {
   matchSummaries: number;
   matchDay: number;
   teamLists: number;
+  /** Drafts moved to ready because their auto-post deadline passed. */
+  promoted?: number;
 };

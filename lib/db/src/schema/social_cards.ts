@@ -413,6 +413,13 @@ export const socialSettingsTable = pgTable(
     centralSweepWatermark: integer("central_sweep_watermark"),
     // When the drafting sweep last completed for this tenant (sweep health, KTD16).
     lastSweepAt: timestamp("last_sweep_at", { withTimezone: true }),
+    // Auto-post (R9, KTD4): when on, an auto-draft still awaiting review at its
+    // deadline (its own import time + the window) becomes ready. Off by default.
+    autoPostEnabled: boolean("auto_post_enabled").notNull().default(false),
+    autoPostWindowHours: integer("auto_post_window_hours").notNull().default(12),
+    // Club-level address for draft notifications (admins have no email field).
+    // Null = in-app only.
+    notificationEmail: text("notification_email"),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

@@ -61,6 +61,7 @@ router.post("/draft-sweep", async (req, res): Promise<void> => {
         matchSummaries: 0,
         matchDay: 0,
         teamLists: 0,
+        promoted: 0,
       });
     }
   }

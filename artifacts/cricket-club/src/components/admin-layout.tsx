@@ -9,6 +9,7 @@ import {
 import { useInvalidateAdmin } from "@/lib/admin-auth";
 import { useEntitlements, type Feature } from "@/lib/entitlements";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/admin-ui";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Eyebrow, InitialsAvatar } from "@/components/broadcast";
@@ -95,36 +96,39 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
           <Eyebrow>Admin</Eyebrow>
           <div className="truncate text-sm font-semibold">{current?.label ?? "Admin"}</div>
         </div>
-        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              data-testid="admin-menu-trigger"
-              data-tour="admin-nav"
-            >
-              <Menu className="h-4 w-4" />
-              Menu
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="flex w-[280px] flex-col gap-4 overflow-y-auto">
-            <SheetTitle className="sr-only">Admin menu</SheetTitle>
-            <SignedInAs admin={admin} />
-            <AdminNavList
-              items={navItems}
-              location={location}
-              pendingCount={pendingCount}
-              onNavigate={() => setSheetOpen(false)}
-            />
-            {signOut}
-          </SheetContent>
-        </Sheet>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                data-testid="admin-menu-trigger"
+                data-tour="admin-nav"
+              >
+                <Menu className="h-4 w-4" />
+                Menu
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="flex w-[280px] flex-col gap-4 overflow-y-auto">
+              <SheetTitle className="sr-only">Admin menu</SheetTitle>
+              <SignedInAs admin={admin} />
+              <AdminNavList
+                items={navItems}
+                location={location}
+                pendingCount={pendingCount}
+                onNavigate={() => setSheetOpen(false)}
+              />
+              {signOut}
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
 
       {/* Desktop: sticky sidebar under the site header. */}
       <aside className="hidden h-fit space-y-4 rounded-lg border bg-card p-4 nav:sticky nav:top-[calc(var(--header-h)+16px)] nav:block">
-        <SignedInAs admin={admin} />
+        <SignedInAs admin={admin} action={<NotificationBell />} />
         <AdminNavList items={navItems} location={location} pendingCount={pendingCount} tour />
         {signOut}
       </aside>
@@ -133,15 +137,16 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
   );
 }
 
-function SignedInAs({ admin }: { admin: Admin }) {
+function SignedInAs({ admin, action }: { admin: Admin; action?: ReactNode }) {
   return (
     <div className="flex items-center gap-3 border-b pb-4">
       <InitialsAvatar name={admin.displayName} size={36} />
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <Eyebrow>Signed in as</Eyebrow>
         <div className="truncate text-sm font-semibold">{admin.displayName}</div>
         <div className="truncate text-xs text-muted-foreground">@{admin.username}</div>
       </div>
+      {action}
     </div>
   );
 }
