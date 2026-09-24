@@ -158,7 +158,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
     playerField: { key: "playerName" },
     fields: [
       { key: "grade", label: "Grade", type: "text" },
-      { key: "category", label: "Category", type: "select", options: RUNS_WICKETS },
+      { key: "category", label: "Category", type: "select", options: LEADER_CATEGORIES },
       { key: "playerName", label: "Player name", type: "text" },
       { key: "value", label: "Value", type: "text" },
       { key: "headline", label: "Headline", type: "text", full: true },

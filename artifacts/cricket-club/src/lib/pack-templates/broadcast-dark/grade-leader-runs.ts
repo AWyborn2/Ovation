@@ -18,8 +18,13 @@ import {
 // A13 — Leaderboard (gradeLeader · Runs preset). The grade's leader with the
 // big number; photo right. A18 (Wickets preset) reuses this layout.
 
-/** Shared Grade Leader markup; `title` is the preset's two-line heading. */
-export function gradeLeaderHtml(title: string): string {
+/**
+ * Shared Grade Leader markup. The two-line heading is the titleTop /
+ * titleBottom fields, which binding fills from the category (Runs → LEADING
+ * RUN-SCORER, Wickets → LEADING WICKET-TAKER, Dismissals → SAFE HANDS).
+ */
+export function gradeLeaderHtml(): string {
+  const title = "{{titleTop}}<br>{{titleBottom}}";
   return bdCard({
     chip: bdChip("LEADERBOARD"),
     tag: "{{season}}",
@@ -36,7 +41,7 @@ export function gradeLeaderHtml(title: string): string {
   });
 }
 
-const html = gradeLeaderHtml("LEADING<br>RUN-SCORER");
+const html = gradeLeaderHtml();
 
 export const gradeLeaderRuns: PackCardTemplate = {
   kind: "gradeLeader",
@@ -46,6 +51,8 @@ export const gradeLeaderRuns: PackCardTemplate = {
   fields: [
     ...clubHeaderFields(),
     textField("grade", "Grade", "A GRADE"),
+    textField("titleTop", "Heading line 1", "LEADING"),
+    textField("titleBottom", "Heading line 2", "RUN-SCORER"),
     textField("category", "Category", "RUNS"),
     textField("value", "Leading value", "428"),
     textField("playerName", "Leader", "Jack Manuel"),
