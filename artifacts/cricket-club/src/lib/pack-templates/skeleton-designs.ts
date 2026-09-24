@@ -280,21 +280,24 @@ export function weekendWrapFormats(
 // Ladder
 // ---------------------------------------------------------------------------
 
-const LADDER_CELL = `width:7cqmin;flex:none;text-align:center;font-weight:500;color:${K.panelMuted}`;
+const LADDER_CELL = `width:7cqmin;flex:none;text-align:center;font-weight:500`;
 /** Points cell — also the marker the ladder row-count tests key on. */
 const LADDER_PTS = `width:10cqmin;flex:none;text-align:right;font-family:${K_DISP}`;
 
 function ladderRow(variant: "base" | "club"): string {
   const club = variant === "club";
   const box = club
-    ? `background:color-mix(in srgb, ${K.accSolid} 22%, ${K.panel});border:.2cqmin solid color-mix(in srgb, ${K.accSolid} 60%, transparent);box-shadow:${K.pillGlow}`
+    ? `background:var(--sk-hi-row-bg,color-mix(in srgb, ${K.accSolid} 22%, ${K.panel}));border:.2cqmin solid color-mix(in srgb, ${K.accSolid} 60%, transparent);box-shadow:${K.pillGlow}`
     : `background:${K.panel};border:.2cqmin solid ${K.panelBorder}`;
-  const hi = club ? `;color:${K.panelAcc}` : "";
+  // The club's own row: a tinted panel by default; a pack may set a solid
+  // highlight (`--sk-hi-row-bg` / `--sk-hi-row-text`) where a tint cannot read.
+  const hi = club ? `;color:var(--sk-hi-row-text,${K.panelAcc})` : "";
+  const cell = `${LADDER_CELL};color:${club ? `var(--sk-hi-row-muted,${K.panelMuted})` : K.panelMuted}`;
   return (
     `<div${club ? ' data-repeat-variant="club"' : ""} style="display:flex;align-items:center;padding:1.1cqmin 2.2cqmin;margin-top:.8cqmin;border-radius:${K.rowR};${box};color:${K.panelText};font-weight:700;font-size:2.9cqmin;line-height:1.2">` +
-    `<span style="width:6cqmin;flex:none;font-family:${K_DISP};color:${club ? K.panelAcc : K.panelMuted}">{{row.pos}}</span>` +
+    `<span style="width:6cqmin;flex:none;font-family:${K_DISP};color:${club ? `var(--sk-hi-row-text,${K.panelAcc})` : K.panelMuted}">{{row.pos}}</span>` +
     `<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis${hi}">{{row.team}}</span>` +
-    `<span style="${LADDER_CELL}">{{row.played}}</span><span style="${LADDER_CELL}">{{row.won}}</span><span style="${LADDER_CELL}">{{row.lost}}</span>` +
+    `<span style="${cell}">{{row.played}}</span><span style="${cell}">{{row.won}}</span><span style="${cell}">{{row.lost}}</span>` +
     `<span style="${LADDER_PTS};font-size:3.6cqmin${hi}">{{row.points}}</span>` +
     `</div>`
   );
@@ -459,7 +462,7 @@ export function debutFormats(look: PackLook, footer?: Partial<FooterKeys>): Pack
         kPill("CAP {{capNumber}}", 5.4, ";margin-top:3.4cqmin"),
     ),
     footer: kFooterPresented("presented by", ft),
-    deco: { word: "CAP", script: "Welcome" },
+    deco: { word: "DEBUT", script: "Welcome" },
   });
   return kitFormats(() => html);
 }
