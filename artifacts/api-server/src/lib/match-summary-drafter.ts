@@ -246,8 +246,9 @@ async function upsertDraft(
   junior: boolean,
   cardInput: Record<string, unknown>,
   appPath: string,
-  central?: { seenAt: Date },
+  opts: { central?: { seenAt: Date }; grade?: string | null } = {},
 ): Promise<"drafted" | "skipped"> {
+  const { central, grade } = opts;
   // Re-ingest refreshes the existing draft (keeping a revision), a posted draft
   // is only marked stale, and unchanged input is a no-op (KTD3).
   if (central) {
@@ -263,6 +264,7 @@ async function upsertDraft(
       appPath,
       sourceKind: "matchSummary",
       sourceImportedAt: central.seenAt,
+      grade,
     });
     return "drafted";
   }
@@ -276,6 +278,7 @@ async function upsertDraft(
     sourceKind: "matchSummary",
     sourceMatchId: matchId,
     sourceMatchIsJunior: junior,
+    grade,
     // Drafts from before source keys existed: find them by match and backfill.
     findLegacy: async () => {
       const [legacy] = await db
@@ -352,7 +355,10 @@ export async function generateMatchSummaryDrafts(
           false,
           cardInput as Record<string, unknown>,
           `/matches/${matchId}`,
-          source.kind === "central" ? { seenAt: source.seenAt } : undefined,
+          {
+            central: source.kind === "central" ? { seenAt: source.seenAt } : undefined,
+            grade: detail.grade,
+          },
         );
         if (outcome === "drafted") result.drafted++;
         else result.skipped++;

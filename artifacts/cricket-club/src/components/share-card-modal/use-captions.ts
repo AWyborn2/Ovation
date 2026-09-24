@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createTrackedLink, type SocialSettingsBundle } from "@workspace/api-client-react";
 import type { ShareCardInput } from "@/lib/share-card";
-import { renderCaption, truncateForPlatform, type Platform } from "@/lib/captions";
+import { captionAppLink, renderCaption, truncateForPlatform, type Platform } from "@/lib/captions";
 import { PLATFORMS, type EngineKey } from "./constants";
 
 // Owns the tracked-link slug, the per-platform caption drafts (rebuilt from the
@@ -51,12 +51,10 @@ export function useCaptions({
   }, [open, trackedSlug, autoSlug, appPath, engine]);
 
   const effectiveSlug = trackedSlug ?? autoSlug;
-  const appLink = useMemo(() => {
-    const base = clubUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    if (effectiveSlug) return `${base}/go/${effectiveSlug}`;
-    if (!appPath) return base;
-    return `${base}${appPath}`;
-  }, [clubUrl, appPath, effectiveSlug]);
+  const appLink = useMemo(
+    () => captionAppLink(clubUrl, appPath, effectiveSlug),
+    [clubUrl, appPath, effectiveSlug],
+  );
 
   const templateFor = (p: Platform): string => {
     const tpl = bundle?.captionTemplates.find((t) => t.engine === engine && t.platform === p);
