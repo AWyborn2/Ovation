@@ -9,9 +9,10 @@ import { DownloadMenu } from "@/components/studio-editor/export/download-menu";
 import { downloadFilename, outputSize } from "@/components/studio-editor/export/download";
 import { renderAt } from "@/test/render";
 import type { ShareCardInput } from "@/lib/share-card";
+import type * as ShareCard from "@/lib/share-card";
 
 vi.mock("@/lib/share-card", async (orig) => ({
-  ...(await orig<typeof import("@/lib/share-card")>()),
+  ...(await orig<typeof ShareCard>()),
   downloadBlob: vi.fn(),
 }));
 import { downloadBlob } from "@/lib/share-card";
