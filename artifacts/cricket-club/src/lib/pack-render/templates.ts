@@ -121,7 +121,7 @@ export function resolveTemplate(
   if (designs.length === 1) return designs[0].template;
   // gradeLeader / clubLeaderboard: choose Runs vs Wickets by category.
   const category = (input as { category?: string }).category ?? "Runs";
-  const wantsWickets = category.trim().toLowerCase().startsWith("w");
+  const wantsWickets = /wicket/i.test(category);
   const match = designs.find((d) => (d.categoryPreset === "Wickets") === wantsWickets);
   return (match ?? designs[0]).template;
 }
