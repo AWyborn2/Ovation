@@ -189,12 +189,11 @@ export function MilestoneTimeline({
         rows: events.map((e) => [e.title, e.sub]),
       }}
     >
-      {/* A horizontally scrolling region: focusable so keyboard users can scroll it. */}
+      {/* Scroll container: browsers make it keyboard-focusable on their own. */}
       <div
         role="region"
         aria-label="Milestone moments timeline"
-        tabIndex={0}
-        className="-mx-1 overflow-x-auto rounded-md pb-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="-mx-1 overflow-x-auto pb-2"
       >
         <ol
           className="relative flex min-w-max px-1"
