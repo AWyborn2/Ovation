@@ -81,6 +81,7 @@ import type {
   CheckSlugAvailableParams,
   CheckoutBody,
   CheckoutResult,
+  ClubPhoto,
   ClubRecords,
   ClubRole,
   ClubRoleInput,
@@ -95,6 +96,8 @@ import type {
   CreateTrackedLinkBody,
   Dashboard,
   DebutEntry,
+  DeleteClubPhotos200,
+  DeleteClubPhotosRequest,
   DirectoryClub,
   DraftSweepRequest,
   DraftSweepResponse,
@@ -123,6 +126,8 @@ import type {
   HonourDisplaySettingsUpdate,
   ImportPreview,
   ImportRecord,
+  IngestClubPhotosRequest,
+  IngestClubPhotosResponse,
   IssueAdminResetBody,
   JuniorAdminBattingLine,
   JuniorAdminBowlingLine,
@@ -155,6 +160,7 @@ import type {
   LifeMember,
   LifeMemberInput,
   LifeMemberUpdate,
+  ListClubPhotosParams,
   ListFixturesParams,
   ListFixturesResultsParams,
   ListJuniorLeaderboardParams,
@@ -243,6 +249,7 @@ import type {
   StatUpdate,
   SweepMatchSummaryDrafts200,
   SweepMatchSummaryDraftsBody,
+  TagClubPhotosRequest,
   TeamList,
   TeamOfDecadeBoard,
   TeamOfDecadeBoardInput,
@@ -14675,6 +14682,304 @@ export const useRunDraftSweep = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRunDraftSweepMutationOptions(options));
+    }
+
+export const getListClubPhotosUrl = (params?: ListClubPhotosParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/club-photos?${stringifiedParams}` : `/api/club-photos`
+}
+
+/**
+ * @summary List the club's photo library, newest first (admin)
+ */
+export const listClubPhotos = async (params?: ListClubPhotosParams, options?: RequestInit): Promise<ClubPhoto[]> => {
+
+  return customFetch<ClubPhoto[]>(getListClubPhotosUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClubPhotosQueryKey = (params?: ListClubPhotosParams,) => {
+    return [
+    `/api/club-photos`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListClubPhotosQueryOptions = <TData = Awaited<ReturnType<typeof listClubPhotos>>, TError = ErrorType<void>>(params?: ListClubPhotosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubPhotos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClubPhotosQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClubPhotos>>> = ({ signal }) => listClubPhotos(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClubPhotos>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClubPhotosQueryResult = NonNullable<Awaited<ReturnType<typeof listClubPhotos>>>
+export type ListClubPhotosQueryError = ErrorType<void>
+
+
+/**
+ * @summary List the club's photo library, newest first (admin)
+ */
+
+export function useListClubPhotos<TData = Awaited<ReturnType<typeof listClubPhotos>>, TError = ErrorType<void>>(
+ params?: ListClubPhotosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubPhotos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClubPhotosQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getIngestClubPhotosUrl = () => {
+
+
+
+
+  return `/api/club-photos/ingest`
+}
+
+/**
+ * Each object is converted to an upright JPEG with EXIF (including GPS) stripped, plus a thumbnail; the upload is then deleted. Files fail independently — the response carries a result per object. At most 50 objects per call, 25 MB each.
+ * @summary Convert uploaded objects (JPEG, PNG, WebP, HEIC) into library photos (admin)
+ */
+export const ingestClubPhotos = async (ingestClubPhotosRequest: IngestClubPhotosRequest, options?: RequestInit): Promise<IngestClubPhotosResponse> => {
+
+  return customFetch<IngestClubPhotosResponse>(getIngestClubPhotosUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      ingestClubPhotosRequest,)
+  }
+);}
+
+
+
+
+export const getIngestClubPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestClubPhotos>>, TError,{data: BodyType<IngestClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof ingestClubPhotos>>, TError,{data: BodyType<IngestClubPhotosRequest>}, TContext> => {
+
+const mutationKey = ['ingestClubPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ingestClubPhotos>>, {data: BodyType<IngestClubPhotosRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  ingestClubPhotos(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IngestClubPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof ingestClubPhotos>>>
+    export type IngestClubPhotosMutationBody = BodyType<IngestClubPhotosRequest>
+    export type IngestClubPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary Convert uploaded objects (JPEG, PNG, WebP, HEIC) into library photos (admin)
+ */
+export const useIngestClubPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestClubPhotos>>, TError,{data: BodyType<IngestClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof ingestClubPhotos>>,
+        TError,
+        {data: BodyType<IngestClubPhotosRequest>},
+        TContext
+      > => {
+      return useMutation(getIngestClubPhotosMutationOptions(options));
+    }
+
+export const getTagClubPhotosUrl = () => {
+
+
+
+
+  return `/api/club-photos/tags`
+}
+
+/**
+ * @summary Set season/grade and add or remove player tags on many photos at once (admin)
+ */
+export const tagClubPhotos = async (tagClubPhotosRequest: TagClubPhotosRequest, options?: RequestInit): Promise<ClubPhoto[]> => {
+
+  return customFetch<ClubPhoto[]>(getTagClubPhotosUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tagClubPhotosRequest,)
+  }
+);}
+
+
+
+
+export const getTagClubPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tagClubPhotos>>, TError,{data: BodyType<TagClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof tagClubPhotos>>, TError,{data: BodyType<TagClubPhotosRequest>}, TContext> => {
+
+const mutationKey = ['tagClubPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof tagClubPhotos>>, {data: BodyType<TagClubPhotosRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  tagClubPhotos(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TagClubPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof tagClubPhotos>>>
+    export type TagClubPhotosMutationBody = BodyType<TagClubPhotosRequest>
+    export type TagClubPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary Set season/grade and add or remove player tags on many photos at once (admin)
+ */
+export const useTagClubPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tagClubPhotos>>, TError,{data: BodyType<TagClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof tagClubPhotos>>,
+        TError,
+        {data: BodyType<TagClubPhotosRequest>},
+        TContext
+      > => {
+      return useMutation(getTagClubPhotosMutationOptions(options));
+    }
+
+export const getDeleteClubPhotosUrl = () => {
+
+
+
+
+  return `/api/club-photos/delete`
+}
+
+/**
+ * @summary Remove photos from the library (admin)
+ */
+export const deleteClubPhotos = async (deleteClubPhotosRequest: DeleteClubPhotosRequest, options?: RequestInit): Promise<DeleteClubPhotos200> => {
+
+  return customFetch<DeleteClubPhotos200>(getDeleteClubPhotosUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      deleteClubPhotosRequest,)
+  }
+);}
+
+
+
+
+export const getDeleteClubPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubPhotos>>, TError,{data: BodyType<DeleteClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteClubPhotos>>, TError,{data: BodyType<DeleteClubPhotosRequest>}, TContext> => {
+
+const mutationKey = ['deleteClubPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteClubPhotos>>, {data: BodyType<DeleteClubPhotosRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  deleteClubPhotos(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteClubPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof deleteClubPhotos>>>
+    export type DeleteClubPhotosMutationBody = BodyType<DeleteClubPhotosRequest>
+    export type DeleteClubPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove photos from the library (admin)
+ */
+export const useDeleteClubPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubPhotos>>, TError,{data: BodyType<DeleteClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteClubPhotos>>,
+        TError,
+        {data: BodyType<DeleteClubPhotosRequest>},
+        TContext
+      > => {
+      return useMutation(getDeleteClubPhotosMutationOptions(options));
     }
 
 export const getGetPendingSocialDraftCountUrl = () => {

@@ -6460,6 +6460,109 @@ export const RunDraftSweepResponse = zod.object({
 
 
 /**
+ * @summary List the club's photo library, newest first (admin)
+ */
+export const ListClubPhotosQueryParams = zod.object({
+  "playerId": zod.coerce.number().optional(),
+  "grade": zod.coerce.string().optional(),
+  "season": zod.coerce.number().optional()
+})
+
+export const ListClubPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number())
+})
+export const ListClubPhotosResponse = zod.array(ListClubPhotosResponseItem)
+
+
+/**
+ * Each object is converted to an upright JPEG with EXIF (including GPS) stripped, plus a thumbnail; the upload is then deleted. Files fail independently — the response carries a result per object. At most 50 objects per call, 25 MB each.
+ * @summary Convert uploaded objects (JPEG, PNG, WebP, HEIC) into library photos (admin)
+ */
+
+
+
+export const IngestClubPhotosBody = zod.object({
+  "objectPaths": zod.array(zod.string()).min(1).describe('Object paths returned by POST \/storage\/uploads\/request-url.'),
+  "season": zod.number().optional(),
+  "grade": zod.string().optional(),
+  "playerIds": zod.array(zod.number()).optional().describe('Senior players to tag on every photo in the batch.')
+})
+
+export const IngestClubPhotosResponse = zod.object({
+  "results": zod.array(zod.object({
+  "objectPath": zod.string(),
+  "ok": zod.boolean(),
+  "photo": zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number())
+}).optional(),
+  "error": zod.string().optional()
+}))
+})
+
+
+/**
+ * @summary Set season/grade and add or remove player tags on many photos at once (admin)
+ */
+
+
+
+export const TagClubPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1),
+  "season": zod.number().nullish().describe('Set (or with null, clear) the season on every photo. Omit to leave unchanged.'),
+  "grade": zod.string().nullish().describe('Set (or with null, clear) the grade on every photo. Omit to leave unchanged.'),
+  "addPlayerIds": zod.array(zod.number()).optional(),
+  "removePlayerIds": zod.array(zod.number()).optional()
+})
+
+export const TagClubPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number())
+})
+export const TagClubPhotosResponse = zod.array(TagClubPhotosResponseItem)
+
+
+/**
+ * @summary Remove photos from the library (admin)
+ */
+
+
+
+export const DeleteClubPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1)
+})
+
+export const DeleteClubPhotosResponse = zod.object({
+  "deleted": zod.number()
+})
+
+
+/**
  * @summary Count of social card drafts still awaiting review
  */
 export const GetPendingSocialDraftCountResponse = zod.object({

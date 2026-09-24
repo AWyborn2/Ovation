@@ -3484,6 +3484,67 @@ export interface SocialSettings {
   familyConfig?: SocialFamilyConfig;
 }
 
+export interface ClubPhoto {
+  id: number;
+  url: string;
+  thumbUrl: string;
+  width: number;
+  height: number;
+  /** @nullable */
+  season: number | null;
+  /** @nullable */
+  grade: string | null;
+  /** @nullable */
+  takenAt: string | null;
+  createdAt: string;
+  playerIds: number[];
+}
+
+export interface IngestClubPhotosRequest {
+  /**
+     * Object paths returned by POST /storage/uploads/request-url.
+     * @minItems 1
+     */
+  objectPaths: string[];
+  season?: number;
+  grade?: string;
+  /** Senior players to tag on every photo in the batch. */
+  playerIds?: number[];
+}
+
+export type IngestClubPhotosResponseResultsItem = {
+  objectPath: string;
+  ok: boolean;
+  photo?: ClubPhoto;
+  error?: string;
+};
+
+export interface IngestClubPhotosResponse {
+  results: IngestClubPhotosResponseResultsItem[];
+}
+
+export interface TagClubPhotosRequest {
+  /** @minItems 1 */
+  photoIds: number[];
+  /**
+     * Set (or with null, clear) the season on every photo. Omit to leave unchanged.
+     * @nullable
+     */
+  season?: number | null;
+  /**
+     * Set (or with null, clear) the grade on every photo. Omit to leave unchanged.
+     * @nullable
+     */
+  grade?: string | null;
+  addPlayerIds?: number[];
+  removePlayerIds?: number[];
+}
+
+export interface DeleteClubPhotosRequest {
+  /** @minItems 1 */
+  photoIds: number[];
+}
+
 /**
  * scheduled (default): central matches past the watermark plus fixture cards. fixtures: fixture cards only.
  */
@@ -6023,6 +6084,16 @@ export type ListSocialDraftsParams = {
 status?: SocialDraftStatus;
 family?: string;
 grade?: string;
+};
+
+export type ListClubPhotosParams = {
+playerId?: number;
+grade?: string;
+season?: number;
+};
+
+export type DeleteClubPhotos200 = {
+  deleted: number;
 };
 
 export type SweepMatchSummaryDraftsBody = {

@@ -4084,6 +4084,119 @@ paths:
         "404":
           description: Tenant not found
 
+  /club-photos:
+    get:
+      operationId: listClubPhotos
+      tags: [socialCards]
+      summary: List the club's photo library, newest first (admin)
+      parameters:
+        - name: playerId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: grade
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: season
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Library photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClubPhoto"
+        "401":
+          description: Not signed in
+
+  /club-photos/ingest:
+    post:
+      operationId: ingestClubPhotos
+      tags: [socialCards]
+      summary: Convert uploaded objects (JPEG, PNG, WebP, HEIC) into library photos (admin)
+      description: >-
+        Each object is converted to an upright JPEG with EXIF (including GPS)
+        stripped, plus a thumbnail; the upload is then deleted. Files fail
+        independently — the response carries a result per object. At most 50
+        objects per call, 25 MB each.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestClubPhotosRequest"
+      responses:
+        "200":
+          description: Per-object results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestClubPhotosResponse"
+        "400":
+          description: Invalid body or batch too large
+        "422":
+          description: A tagged player is not a senior player of this club
+
+  /club-photos/tags:
+    post:
+      operationId: tagClubPhotos
+      tags: [socialCards]
+      summary: Set season/grade and add or remove player tags on many photos at once (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TagClubPhotosRequest"
+      responses:
+        "200":
+          description: The updated photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClubPhoto"
+        "400":
+          description: Invalid body
+        "404":
+          description: A photo is not in this club's library
+        "422":
+          description: A tagged player is not a senior player of this club
+
+  /club-photos/delete:
+    post:
+      operationId: deleteClubPhotos
+      tags: [socialCards]
+      summary: Remove photos from the library (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteClubPhotosRequest"
+      responses:
+        "200":
+          description: Number of photos removed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted]
+                properties:
+                  deleted:
+                    type: integer
+        "404":
+          description: A photo is not in this club's library
+
   /social-drafts/pending-count:
     get:
       operationId: getPendingSocialDraftCount
@@ -10623,6 +10736,108 @@ components:
           description: "Season-start override for countdown cards. Null = derive from the earliest upcoming fixture."
         familyConfig:
           $ref: "#/components/schemas/SocialFamilyConfig"
+
+    ClubPhoto:
+      type: object
+      required: [id, url, thumbUrl, width, height, season, grade, takenAt, createdAt, playerIds]
+      properties:
+        id:
+          type: integer
+        url:
+          type: string
+        thumbUrl:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        season:
+          type: ["integer", "null"]
+        grade:
+          type: ["string", "null"]
+        takenAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        playerIds:
+          type: array
+          items:
+            type: integer
+
+    IngestClubPhotosRequest:
+      type: object
+      required: [objectPaths]
+      properties:
+        objectPaths:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          description: "Object paths returned by POST /storage/uploads/request-url."
+        season:
+          type: integer
+        grade:
+          type: string
+        playerIds:
+          type: array
+          items:
+            type: integer
+          description: "Senior players to tag on every photo in the batch."
+
+    IngestClubPhotosResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            required: [objectPath, ok]
+            properties:
+              objectPath:
+                type: string
+              ok:
+                type: boolean
+              photo:
+                $ref: "#/components/schemas/ClubPhoto"
+              error:
+                type: string
+
+    TagClubPhotosRequest:
+      type: object
+      required: [photoIds]
+      properties:
+        photoIds:
+          type: array
+          minItems: 1
+          items:
+            type: integer
+        season:
+          type: ["integer", "null"]
+          description: "Set (or with null, clear) the season on every photo. Omit to leave unchanged."
+        grade:
+          type: ["string", "null"]
+          description: "Set (or with null, clear) the grade on every photo. Omit to leave unchanged."
+        addPlayerIds:
+          type: array
+          items:
+            type: integer
+        removePlayerIds:
+          type: array
+          items:
+            type: integer
+
+    DeleteClubPhotosRequest:
+      type: object
+      required: [photoIds]
+      properties:
+        photoIds:
+          type: array
+          minItems: 1
+          items:
+            type: integer
 
     DraftSweepRequest:
       type: object

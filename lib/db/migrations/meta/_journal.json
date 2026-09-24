@@ -57,6 +57,13 @@
       "when": 1790214449042,
       "tag": "0007_social_sweep_watermark",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790215208200,
+      "tag": "0008_club_photos",
+      "breakpoints": true
     }
   ]
 }

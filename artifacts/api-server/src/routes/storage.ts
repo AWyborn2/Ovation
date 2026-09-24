@@ -18,6 +18,10 @@ const ALLOWED_IMAGE_MIME = new Set([
   "image/svg+xml",
   "image/gif",
 ]);
+// iPhone photos for the club photo library. Only uploaded here; the library
+// ingest converts them to JPEG and deletes the original (KTD7), so HEIC is
+// never served back.
+const ALLOWED_HEIC_MIME = new Set(["image/heic", "image/heif"]);
 // Animated card-template backgrounds. GIFs go through the image set above.
 const ALLOWED_VIDEO_MIME = new Set(["video/mp4", "video/webm", "video/quicktime"]);
 // Background music tracks for animated share-card video clips. Covers the
@@ -35,6 +39,7 @@ const ALLOWED_AUDIO_MIME = new Set([
   "audio/webm",
 ]);
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_HEIC_BYTES = 25 * 1024 * 1024; // 25MB — the library ingest ceiling
 const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50MB — animated backgrounds
 const MAX_AUDIO_BYTES = 20 * 1024 * 1024; // 20MB — short music loops
 
@@ -61,19 +66,26 @@ router.post("/storage/uploads/request-url", requireAdmin, async (req: Request, r
 
   const { name, size, contentType } = parsed.data;
 
-  const isImage = ALLOWED_IMAGE_MIME.has(contentType);
+  const isHeic = ALLOWED_HEIC_MIME.has(contentType);
+  const isImage = ALLOWED_IMAGE_MIME.has(contentType) || isHeic;
   const isVideo = ALLOWED_VIDEO_MIME.has(contentType);
   const isAudio = ALLOWED_AUDIO_MIME.has(contentType);
   if (!isImage && !isVideo && !isAudio) {
     res.status(400).json({
       error:
-        "Unsupported file type. Allowed: PNG, JPEG, WebP, SVG, GIF, MP4/WebM/MOV video, or MP3/WAV/OGG/AAC/M4A audio.",
+        "Unsupported file type. Allowed: PNG, JPEG, WebP, SVG, GIF, HEIC, MP4/WebM/MOV video, or MP3/WAV/OGG/AAC/M4A audio.",
     });
     return;
   }
-  const maxBytes = isVideo ? MAX_VIDEO_BYTES : isAudio ? MAX_AUDIO_BYTES : MAX_IMAGE_BYTES;
+  const maxBytes = isVideo
+    ? MAX_VIDEO_BYTES
+    : isAudio
+      ? MAX_AUDIO_BYTES
+      : isHeic
+        ? MAX_HEIC_BYTES
+        : MAX_IMAGE_BYTES;
   if (size > maxBytes) {
-    const limitLabel = isVideo ? "50MB" : isAudio ? "20MB" : "10MB";
+    const limitLabel = isVideo ? "50MB" : isAudio ? "20MB" : isHeic ? "25MB" : "10MB";
     res.status(400).json({
       error: `File too large. Maximum size is ${limitLabel}.`,
     });
