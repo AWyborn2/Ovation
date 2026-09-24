@@ -286,6 +286,120 @@ export interface PlayerListResponse {
   limit: number;
 }
 
+export interface GradeDistributionBatting {
+  innings: number;
+  notOuts: number;
+  runs: number;
+  /**
+     * Runs per dismissal; null with no dismissals.
+     * @nullable
+     */
+  average: number | null;
+  /** @nullable */
+  highScore: number | null;
+  fifties: number;
+  hundreds: number;
+  /**
+     * Balls faced in scorecard innings with a recorded ball count.
+     * @nullable
+     */
+  ballsFaced: number | null;
+  /**
+     * Runs per 100 balls over those same innings.
+     * @nullable
+     */
+  strikeRate: number | null;
+}
+
+export interface GradeDistributionBowling {
+  /** Scorecard overs bowled, in ball notation ("123.4"). */
+  overs: string;
+  ballsBowled: number;
+  maidens: number;
+  wickets: number;
+  runsConceded: number;
+  /**
+     * Runs conceded per wicket; null with no wickets.
+     * @nullable
+     */
+  average: number | null;
+  /**
+     * Runs per six balls over the scorecard spells.
+     * @nullable
+     */
+  economy: number | null;
+  /**
+     * Balls per wicket over the scorecard spells; null with no wickets.
+     * @nullable
+     */
+  strikeRate: number | null;
+  fiveWickets: number;
+}
+
+export interface GradeDistributionPlayer {
+  playerId: number;
+  givenName: string;
+  surname: string;
+  games: number;
+  catches: number;
+  /** Null when the player is below the batting qualifier. */
+  batting: GradeDistributionBatting | null;
+  /** Null when the player is below the bowling qualifier. */
+  bowling: GradeDistributionBowling | null;
+}
+
+/**
+ * The club best per metric among qualifiers (null when nobody qualifies). Lower is better for bowlingAverage, economy and bowlingStrikeRate, so those are the minimum; every other metric is the maximum.
+ */
+export interface GradeDistributionBest {
+  /** @nullable */
+  games: number | null;
+  /** @nullable */
+  catches: number | null;
+  /** @nullable */
+  runs: number | null;
+  /** @nullable */
+  battingAverage: number | null;
+  /** @nullable */
+  highScore: number | null;
+  /** @nullable */
+  fifties: number | null;
+  /** @nullable */
+  hundreds: number | null;
+  /** @nullable */
+  battingStrikeRate: number | null;
+  /** @nullable */
+  wickets: number | null;
+  /** @nullable */
+  maidens: number | null;
+  /** @nullable */
+  fiveWickets: number | null;
+  /** @nullable */
+  bowlingAverage: number | null;
+  /** @nullable */
+  economy: number | null;
+  /** @nullable */
+  bowlingStrikeRate: number | null;
+}
+
+export interface GradeDistribution {
+  grade: string;
+  /**
+     * Echo of the requested first season; null when unbounded.
+     * @nullable
+     */
+  fromSeason: number | null;
+  /**
+     * Echo of the requested last season; null when unbounded.
+     * @nullable
+     */
+  toSeason: number | null;
+  minInnings: number;
+  minOvers: number;
+  players: GradeDistributionPlayer[];
+  best: GradeDistributionBest;
+}
+
 export interface PlayerSeasonStat {
   grade: string;
   /**
@@ -6077,6 +6191,27 @@ limit?: number;
  * @minimum 0
  */
 offset?: number;
+};
+
+export type GetGradeDistributionParams = {
+/**
+ * First season start year (inclusive), e.g. 2021 for 2021/22.
+ */
+fromSeason?: number;
+/**
+ * Last season start year (inclusive).
+ */
+toSeason?: number;
+/**
+ * Batting qualifier. Defaults to 10.
+ * @minimum 0
+ */
+minInnings?: number;
+/**
+ * Bowling qualifier in whole overs. Defaults to 50.
+ * @minimum 0
+ */
+minOvers?: number;
 };
 
 export type GetSeniorSeasonTopPerformersParams = {
