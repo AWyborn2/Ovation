@@ -24,7 +24,7 @@ import {
 const LIVE_CHIP = `<div style="display:inline-flex;align-items:center;gap:1cqmin;font-family:${SK_COND};font-weight:800;font-size:2.4cqmin;line-height:1;letter-spacing:.12em;padding:1cqmin 2cqmin;background:#E23B3B;color:#fff;border-radius:.6cqmin"><span style="width:1.1cqmin;height:1.1cqmin;border-radius:50%;background:#fff;animation:hhPulse 1.4s ease-in-out infinite"></span>LIVE</div>`;
 
 const moment =
-  bdDisplay("{{momentLabel}}", 22, `;line-height:.86;color:${ACC}`) +
+  bdDisplay("{{momentLabel}}", 22, `;line-height:.86;color:${ACC};max-width:74cqmin;text-wrap:balance`) +
   bdCond("{{playerName}}", 8.4, ";margin-top:1.6cqmin") +
   `<div style="font-size:3.4cqmin;font-weight:600;margin-top:1.4cqmin">{{runs}} <span style="color:${MUTED}">({{balls}})</span> · {{boundaryDetail}}</div>`;
 
