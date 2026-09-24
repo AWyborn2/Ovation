@@ -172,9 +172,9 @@ export const PACKS: DesignPack[] = [
     id: "bold-type-v1",
     name: "Bold Type",
     description:
-      "Oversized condensed type as the hero — massive scores, gold outline display faces, flat colour-block compositions. No photography; the type is the design.",
+      "A solid club-colour poster — your accent as the stage, a slate wedge with a mono photo, a giant outline word behind and inverted chips. Square, portrait, story and 1200×630 landscape.",
     // COVERAGE CONTRACT: must match pack-templates/bold-type/index.ts (enforced
-    // by pack-coverage-parity.test.ts). Grows card by card.
+    // by pack-coverage-parity.test.ts).
     cardKinds: [
       "matchSummary",
       "matchDay",
