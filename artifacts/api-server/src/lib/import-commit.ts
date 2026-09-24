@@ -18,11 +18,8 @@ import {
   type CapSyncTx,
 } from "./cap-sync";
 import { deriveSeasonSnapshotFromMatches } from "./match-aggregate";
-import {
-  snapshotCareerTotals,
-  snapshotGradeGames,
-  runPostCommitSocial,
-} from "./post-commit-social";
+import { snapshotCareerTotals, snapshotGradeGames } from "./post-commit-social";
+import { runDraftSweep } from "./draft-sweep";
 import type { CreatedCap, MatchMilestoneContext } from "./match-milestone-detector";
 import { reverseCapsAfterRollback, cleanupOrphanPlayers } from "./rollback";
 import {
@@ -500,26 +497,29 @@ export async function commitMatchImport(opts: {
   // Suppressed for backfills — previous-season match imports must not trigger
   // milestone detection or social drafts.
   if (!isBackfill) {
-    await runPostCommitSocial({
+    await runDraftSweep(
       tenantId,
-      importId: imp.id,
-      affectedGrades: [grade],
-      season,
-      beforeMap,
-      logger,
-      matchContext: {
-        tenantId,
+      {
+        kind: "import",
         importId: imp.id,
-        grade,
+        affectedGrades: [grade],
         season,
-        round,
-        opponent: parsed.opponent ?? null,
-        abandoned: parsed.abandoned,
-        lines: toMilestoneLines(resolvedLines),
-        createdCaps: collectCreatedCaps(capsSync),
-        gradeGamesBefore,
+        beforeMap,
+        matchContext: {
+          tenantId,
+          importId: imp.id,
+          grade,
+          season,
+          round,
+          opponent: parsed.opponent ?? null,
+          abandoned: parsed.abandoned,
+          lines: toMilestoneLines(resolvedLines),
+          createdCaps: collectCreatedCaps(capsSync),
+          gradeGamesBefore,
+        },
       },
-    });
+      logger,
+    );
   }
 
   const namedWarnings = await nameNegativeWarnings(negativeWarnings);

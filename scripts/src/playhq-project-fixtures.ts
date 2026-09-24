@@ -348,6 +348,49 @@ function argValue(flag: string): string | undefined {
   return idx >= 0 && !process.argv[idx + 1]?.startsWith("--") ? process.argv[idx + 1] : undefined;
 }
 
+/**
+ * Ask the API to draft match-day and team-list cards for every tenant whose
+ * fixtures just changed (Social Studio, KTD10). Needs SOCIAL_SWEEP_URL (the
+ * deployed `/api/internal/draft-sweep` endpoint) and SOCIAL_SWEEP_SECRET;
+ * without them it only logs — the scheduled sweep picks the changes up anyway.
+ * A failed request is logged, never fatal: the fixtures are already committed.
+ */
+export async function requestDraftSweeps(
+  summaries: ProjectionSummary[],
+  opts: {
+    url?: string;
+    secret?: string;
+    fetchImpl?: typeof fetch;
+    log?: (line: string) => void;
+  } = {},
+): Promise<number[]> {
+  const log = opts.log ?? ((line: string) => console.log(line));
+  const url = opts.url ?? process.env.SOCIAL_SWEEP_URL;
+  const secret = opts.secret ?? process.env.SOCIAL_SWEEP_SECRET;
+  const touched = summaries.filter((s) => s.inserted + s.updated > 0).map((s) => s.tenantId);
+  if (touched.length === 0) return [];
+  if (!url || !secret) {
+    log("draft sweep not requested (SOCIAL_SWEEP_URL / SOCIAL_SWEEP_SECRET unset)");
+    return [];
+  }
+  const doFetch = opts.fetchImpl ?? fetch;
+  const swept: number[] = [];
+  for (const tenantId of touched) {
+    try {
+      const res = await doFetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-sweep-secret": secret },
+        body: JSON.stringify({ tenantId, scope: "fixtures" }),
+      });
+      if (res.ok) swept.push(tenantId);
+      else log(`draft sweep for tenant ${tenantId} failed: HTTP ${res.status}`);
+    } catch (err) {
+      log(`draft sweep for tenant ${tenantId} failed: ${err instanceof Error ? err.message : err}`);
+    }
+  }
+  return swept;
+}
+
 async function main(): Promise<void> {
   const tenantRaw = argValue("--tenant");
   const tenantId = tenantRaw ? Number(tenantRaw) : undefined;
@@ -384,7 +427,8 @@ async function main(): Promise<void> {
     }
   }
 
-  await projectFixtures({ tenantId, windowDays, autoLink, dryRun });
+  const summaries = await projectFixtures({ tenantId, windowDays, autoLink, dryRun });
+  if (!dryRun) await requestDraftSweeps(summaries);
   const { closeDb } = await import("@workspace/db");
   await closeDb();
 }

@@ -6,7 +6,8 @@ import { recomputeAggregates } from "../lib/recompute";
 import { getCappedPlayerIds, GRADE_TO_CAP_CATEGORY, type CapSyncResult } from "../lib/cap-sync";
 import { buildNameMatcher, nameKey, type NameCandidate } from "../lib/name-match";
 import { getTenantId } from "../middlewares/tenant-context";
-import { snapshotCareerTotals, runPostCommitSocial } from "../lib/post-commit-social";
+import { snapshotCareerTotals } from "../lib/post-commit-social";
+import { runDraftSweep } from "../lib/draft-sweep";
 import {
   reconcileBaseline,
   loadBackfillBaseFigures,
@@ -397,14 +398,11 @@ router.post(
     // Milestone detection + round-up drafts (shared with the per-match import path).
     // Suppressed for backfills — previous-season imports must not trigger social.
     if (!isBackfill) {
-      await runPostCommitSocial({
-        tenantId: getTenantId(req),
-        importId: imp.id,
-        affectedGrades,
-        season,
-        beforeMap,
-        logger: req.log,
-      });
+      await runDraftSweep(
+        getTenantId(req),
+        { kind: "import", importId: imp.id, affectedGrades, season, beforeMap },
+        req.log,
+      );
     }
 
     const namedWarnings = await nameNegativeWarnings(negativeWarnings);

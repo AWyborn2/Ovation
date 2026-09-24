@@ -96,6 +96,8 @@ import type {
   Dashboard,
   DebutEntry,
   DirectoryClub,
+  DraftSweepRequest,
+  DraftSweepResponse,
   ErrorEnvelope,
   FiveWicketHaul,
   Fixture,
@@ -14602,6 +14604,78 @@ export function useListSocialDrafts<TData = Awaited<ReturnType<typeof listSocial
 
 
 
+
+export const getRunDraftSweepUrl = () => {
+
+
+
+
+  return `/api/internal/draft-sweep`
+}
+
+/**
+ * Machine-to-machine only. Requires the `x-sweep-secret` header to equal the server's SOCIAL_SWEEP_SECRET; answers 401 otherwise (including when no secret is configured). Sweeps one tenant, or every active tenant when `tenantId` is omitted.
+ * @summary Run the social drafting sweep (scheduled job / fixtures projection)
+ */
+export const runDraftSweep = async (draftSweepRequest?: DraftSweepRequest, options?: RequestInit): Promise<DraftSweepResponse> => {
+
+  return customFetch<DraftSweepResponse>(getRunDraftSweepUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      draftSweepRequest,)
+  }
+);}
+
+
+
+
+export const getRunDraftSweepMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runDraftSweep>>, TError,{data?: BodyType<DraftSweepRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runDraftSweep>>, TError,{data?: BodyType<DraftSweepRequest>}, TContext> => {
+
+const mutationKey = ['runDraftSweep'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runDraftSweep>>, {data?: BodyType<DraftSweepRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  runDraftSweep(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunDraftSweepMutationResult = NonNullable<Awaited<ReturnType<typeof runDraftSweep>>>
+    export type RunDraftSweepMutationBody = BodyType<DraftSweepRequest> | undefined
+    export type RunDraftSweepMutationError = ErrorType<void>
+
+    /**
+ * @summary Run the social drafting sweep (scheduled job / fixtures projection)
+ */
+export const useRunDraftSweep = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runDraftSweep>>, TError,{data?: BodyType<DraftSweepRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runDraftSweep>>,
+        TError,
+        {data?: BodyType<DraftSweepRequest>},
+        TContext
+      > => {
+      return useMutation(getRunDraftSweepMutationOptions(options));
+    }
 
 export const getGetPendingSocialDraftCountUrl = () => {
 

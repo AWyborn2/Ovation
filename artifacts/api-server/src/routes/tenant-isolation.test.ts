@@ -13,6 +13,7 @@ import {
   cardThemesTable,
   socialSettingsTable,
   captionTemplatesTable,
+  socialDraftsTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
@@ -37,6 +38,7 @@ const T2_SPONSOR_NAME = `Iso Sponsor T2 ${STAMP}`;
 const T2_PARTICIPANT_ID = `iso-participant-t2-${STAMP}`;
 const T2_PARTICIPANT_NAME = `Iso Junior T2 ${STAMP}`;
 const T2_THEME_NAME = `Iso Theme T2 ${STAMP}`;
+const T2_DRAFT_TITLE = `Iso Draft T2 ${STAMP}`;
 
 describe("tenant isolation: curated tables never leak across tenants", () => {
   let tenant2Id: number;
@@ -86,6 +88,15 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
       .values({ tenantId: tenant2Id, name: T2_THEME_NAME })
       .returning();
     themeId = theme.id;
+    await db.insert(socialDraftsTable).values({
+      tenantId: tenant2Id,
+      engine: "roundup",
+      family: "roundup",
+      sourceKey: `iso:${STAMP}`,
+      status: "awaiting_review",
+      cardInput: { kind: "record", title: T2_DRAFT_TITLE },
+      appPath: "/records",
+    });
     await db.insert(juniorParticipantsTable).values({
       participantId: T2_PARTICIPANT_ID,
       tenantId: tenant2Id,
@@ -130,6 +141,7 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
     await db.delete(sponsorsTable).where(eq(sponsorsTable.tenantId, tenant2Id));
     await db.delete(cardThemesTable).where(eq(cardThemesTable.tenantId, tenant2Id));
     await db.delete(juniorParticipantsTable).where(eq(juniorParticipantsTable.tenantId, tenant2Id));
+    await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenant2Id));
     // Rows this suite never inserts but a READ creates: GET /social-settings
     // calls ensureSettings, which lazily provisions the tenant's settings
     // singleton and seeds its default caption templates. Both FK to tenants, so
@@ -221,6 +233,24 @@ describe("tenant isolation: curated tables never leak across tenants", () => {
     const [row] = await db.select().from(sponsorsTable).where(eq(sponsorsTable.id, sponsorId));
     expect(row).toBeDefined();
     expect(row.name).toBe(T2_SPONSOR_NAME);
+  });
+
+  it("social drafts: tenant 2's draft is hidden from tenant 1 and visible to tenant 2", async () => {
+    const hasDraft = (body: Array<{ cardInput: { title?: string } }>) =>
+      body.some((d) => d.cardInput?.title === T2_DRAFT_TITLE);
+    const asT1 = await request(app)
+      .get("/api/social-drafts")
+      .set("x-tenant-id", "1")
+      .set("Cookie", adminT1Cookie)
+      .expect(200);
+    expect(hasDraft(asT1.body)).toBe(false);
+
+    const asT2 = await request(app)
+      .get("/api/social-drafts")
+      .set("x-tenant-id", String(tenant2Id))
+      .set("Cookie", adminCookie)
+      .expect(200);
+    expect(hasDraft(asT2.body)).toBe(true);
   });
 
   it("card-themes: tenant 2's theme is hidden from tenant 1 and visible to tenant 2", async () => {
