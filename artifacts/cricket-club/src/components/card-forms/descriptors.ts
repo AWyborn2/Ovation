@@ -68,6 +68,9 @@ const RUNS_WICKETS = [
   { value: "Wickets", label: "Wickets" },
 ] as const;
 
+/** Grade Leader categories: runs, wickets and keepers' dismissals. */
+const LEADER_CATEGORIES = [...RUNS_WICKETS, { value: "Dismissals", label: "Dismissals" }] as const;
+
 const HOME_AWAY = [
   { value: "HOME", label: "Home" },
   { value: "AWAY", label: "Away" },
@@ -155,7 +158,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
     playerField: { key: "playerName" },
     fields: [
       { key: "grade", label: "Grade", type: "text" },
-      { key: "category", label: "Category", type: "select", options: RUNS_WICKETS },
+      { key: "category", label: "Category", type: "select", options: LEADER_CATEGORIES },
       { key: "playerName", label: "Player name", type: "text" },
       { key: "value", label: "Value", type: "text" },
       { key: "headline", label: "Headline", type: "text", full: true },
