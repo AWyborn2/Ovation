@@ -189,7 +189,13 @@ export function MilestoneTimeline({
         rows: events.map((e) => [e.title, e.sub]),
       }}
     >
-      <div className="-mx-1 overflow-x-auto pb-2">
+      {/* A horizontally scrolling region: focusable so keyboard users can scroll it. */}
+      <div
+        role="region"
+        aria-label="Milestone moments timeline"
+        tabIndex={0}
+        className="-mx-1 overflow-x-auto rounded-md pb-2 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
         <ol
           className="relative flex min-w-max px-1"
           aria-label="Milestone moments"
@@ -220,10 +226,8 @@ export function MilestoneTimeline({
                 data-testid="milestone-event"
                 data-kind={e.kind}
                 data-in-range={inRange}
-                tabIndex={0}
-                aria-label={`${e.title}: ${e.sub}`}
                 className={cn(
-                  "relative grid w-[136px] shrink-0 grid-rows-[76px_32px_76px] justify-items-center outline-none focus-visible:rounded-md focus-visible:ring-2 focus-visible:ring-ring motion-safe:transition-opacity",
+                  "relative grid w-[136px] shrink-0 grid-rows-[76px_32px_76px] justify-items-center motion-safe:transition-opacity",
                   !inRange && "opacity-40",
                 )}
               >

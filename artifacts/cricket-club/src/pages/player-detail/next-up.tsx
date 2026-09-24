@@ -37,13 +37,7 @@ export function NextUpCard({
           const label = `${m.target.toLocaleString("en-AU")} ${NOUN[m.stat]}`;
           const eta = m.eta ? `${m.eta.label} at the current rate` : "No recent rate to project";
           return (
-            <div
-              key={m.stat}
-              data-testid="next-up"
-              tabIndex={0}
-              aria-label={`${label}: ${m.current.toLocaleString("en-AU")} of ${m.target.toLocaleString("en-AU")}, ${m.remaining.toLocaleString("en-AU")} to go. ${eta}.`}
-              className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
+            <div key={m.stat} data-testid="next-up">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-[13px] font-semibold">{label}</span>
                 <span className="font-serif text-[22px] font-bold tabular-nums">
@@ -54,7 +48,15 @@ export function NextUpCard({
                   </span>
                 </span>
               </div>
-              <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-muted">
+              <div
+                role="progressbar"
+                aria-label={label}
+                aria-valuemin={0}
+                aria-valuemax={m.target}
+                aria-valuenow={m.current}
+                aria-valuetext={`${m.current.toLocaleString("en-AU")} of ${m.target.toLocaleString("en-AU")}`}
+                className="mt-2 h-2.5 overflow-hidden rounded-full bg-muted"
+              >
                 <div
                   className="h-full rounded-full motion-safe:transition-[width] motion-safe:duration-500"
                   style={{
