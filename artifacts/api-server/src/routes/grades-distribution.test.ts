@@ -145,10 +145,10 @@ describe("GET /grades/:grade/distribution — native", () => {
     }
   });
 
-  it("drops a player below 10 innings from batting but keeps them for 50+ overs", async () => {
+  it("drops a player below 10 innings from batting but keeps them for 100+ overs", async () => {
     h.seasonRows = [seasonRow(3, { innings: 6, notOuts: 1, runs: 90, wickets: 20 })];
     h.lineRows = [
-      { playerId: 3, ballsBowled: 330, runsOffBallsBowled: 250, maidens: 6, ballsFaced: 80 },
+      { playerId: 3, ballsBowled: 660, runsOffBallsBowled: 250, maidens: 6, ballsFaced: 80 },
     ];
     h.seasonRows[0]!.runsConceded = 260;
     const res = await request(app).get("/api/grades/A%20Grade/distribution").expect(200);
@@ -156,16 +156,24 @@ describe("GET /grades/:grade/distribution — native", () => {
     const [p] = res.body.players;
     expect(p.batting).toBeNull();
     expect(p.bowling).toMatchObject({
-      overs: "55",
-      ballsBowled: 330,
+      overs: "110",
+      ballsBowled: 660,
       maidens: 6,
       wickets: 20,
       runsConceded: 260,
       average: 13,
-      strikeRate: 16.5,
+      strikeRate: 33,
     });
-    // Economy from the scorecard spells, per six BALLS: 250 / 330 * 6.
-    expect(p.bowling.economy).toBeCloseTo(4.55, 2);
+    // Economy from the scorecard spells, per six BALLS: 250 / 660 * 6.
+    expect(p.bowling.economy).toBeCloseTo(2.27, 2);
+  });
+
+  it("by default a bowler needs 100 overs: 55 overs no longer qualifies", async () => {
+    h.seasonRows = [seasonRow(3, { innings: 6, notOuts: 1, runs: 90, wickets: 20 })];
+    h.lineRows = [{ playerId: 3, ballsBowled: 330, runsOffBallsBowled: 250, maidens: 6 }];
+    const res = await request(app).get("/api/grades/A%20Grade/distribution").expect(200);
+    expect(res.body.minOvers).toBe(100);
+    expect(res.body.players).toEqual([]);
   });
 
   it("binds the span into both queries, and leaves a career span unbounded", async () => {
