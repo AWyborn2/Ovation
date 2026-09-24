@@ -171,7 +171,7 @@ export default function AdminSocialStudio() {
   }, [galleryClubName]);
 
   // Previews show a photo in each pack's photo slot (the club's newest team
-  // shot, else a bundled stand-in) so a design is seen as it will post.
+  // shot, else its newest library photo) so a design is seen as it will post.
   const photosQ = useListClubPhotos(undefined, {
     query: { queryKey: getListClubPhotosQueryKey() },
   });
