@@ -45,4 +45,19 @@ export interface PlayerSeasonStat {
   stumpings?: number | null;
   /** @nullable */
   runOuts?: number | null;
+  /**
+     * Balls faced in the (grade, season), summed from scorecard lines. Null for the baseline row and wherever no scorecard lines exist (unknown, not zero).
+     * @nullable
+     */
+  ballsFaced: number | null;
+  /**
+     * Balls bowled (overs converted at 6 balls per over) from scorecard lines. Null for the baseline row and where not recorded.
+     * @nullable
+     */
+  ballsBowled: number | null;
+  /**
+     * Maidens from scorecard lines. Null for the baseline row and where not recorded.
+     * @nullable
+     */
+  maidens: number | null;
 }

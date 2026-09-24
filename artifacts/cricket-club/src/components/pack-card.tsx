@@ -8,6 +8,7 @@ import {
   resolvePackTokens,
   tokensFromCardTheme,
   brandDefaultTokens,
+  type CardAdjustments,
   type PackCardData,
 } from "@/lib/pack-render";
 
@@ -41,6 +42,10 @@ export interface PackCardProps {
    * resolves to the default pack, so existing callers are unchanged.
    */
   packId?: string | null;
+  /** Editor overlay (U15). Omitted renders the pack as designed. */
+  adjustments?: CardAdjustments | null;
+  /** Play free-layer entrance animations (editor preview, video export). */
+  animate?: boolean;
   /** Explicit display width (px). When omitted the card fills its parent. */
   width?: number;
   className?: string;
@@ -54,6 +59,8 @@ export function PackCard({
   junior,
   data,
   packId,
+  adjustments,
+  animate = false,
   width,
   className,
 }: PackCardProps) {
@@ -81,8 +88,11 @@ export function PackCard({
   );
 
   const html = useMemo(
-    () => renderPackCard(input, size, sponsorsOn, tokens, junior, data, packId),
-    [input, size, sponsorsOn, tokens, junior, data, packId],
+    () =>
+      renderPackCard(input, size, sponsorsOn, tokens, junior, data, packId, adjustments, {
+        animate,
+      }),
+    [input, size, sponsorsOn, tokens, junior, data, packId, adjustments, animate],
   );
 
   // Decorative pack fonts (Anton, Bebas Neue, Teko, Archivo Black, …) load on

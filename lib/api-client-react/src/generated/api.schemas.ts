@@ -286,6 +286,185 @@ export interface PlayerListResponse {
   limit: number;
 }
 
+export interface VsClubBatter {
+  playerId: number;
+  givenName: string;
+  surname: string;
+  matches: number;
+  innings: number;
+  notOuts: number;
+  outs: number;
+  runs: number;
+  /**
+     * Runs per dismissal; null when never out.
+     * @nullable
+     */
+  average: number | null;
+  /** @nullable */
+  highScore: number | null;
+  highScoreNotOut: boolean;
+}
+
+export interface VsClubBowler {
+  playerId: number;
+  givenName: string;
+  surname: string;
+  matches: number;
+  wickets: number;
+  runsConceded: number;
+  /**
+     * Balls bowled over spells with recorded overs; null when none recorded.
+     * @nullable
+     */
+  balls: number | null;
+  /**
+     * Runs per wicket; null with no wickets.
+     * @nullable
+     */
+  average: number | null;
+  /**
+     * Best single-innings figures, wickets part.
+     * @nullable
+     */
+  bestWickets: number | null;
+  /**
+     * Best single-innings figures, runs part.
+     * @nullable
+     */
+  bestRuns: number | null;
+}
+
+export interface PlayersVsClub {
+  /** False when the opponent couldn't be mapped to a club on this read path; both lists are then empty. */
+  resolved: boolean;
+  /**
+     * The resolved opponent id in the read path's own id space; null when unresolved.
+     * @nullable
+     */
+  opponentClubId: number | null;
+  /** @nullable */
+  opponentName: string | null;
+  minInnings: number;
+  /** Players with at least `minInnings` innings against the club, best average first. */
+  batting: VsClubBatter[];
+  /** Players who bowled against the club, most wickets first, then lowest average. */
+  bowling: VsClubBowler[];
+}
+
+export interface GradeDistributionBatting {
+  innings: number;
+  notOuts: number;
+  runs: number;
+  /**
+     * Runs per dismissal; null with no dismissals.
+     * @nullable
+     */
+  average: number | null;
+  /** @nullable */
+  highScore: number | null;
+  fifties: number;
+  hundreds: number;
+  /**
+     * Balls faced in scorecard innings with a recorded ball count.
+     * @nullable
+     */
+  ballsFaced: number | null;
+  /**
+     * Runs per 100 balls over those same innings.
+     * @nullable
+     */
+  strikeRate: number | null;
+}
+
+export interface GradeDistributionBowling {
+  /** Scorecard overs bowled, in ball notation ("123.4"). */
+  overs: string;
+  ballsBowled: number;
+  maidens: number;
+  wickets: number;
+  runsConceded: number;
+  /**
+     * Runs conceded per wicket; null with no wickets.
+     * @nullable
+     */
+  average: number | null;
+  /**
+     * Runs per six balls over the scorecard spells.
+     * @nullable
+     */
+  economy: number | null;
+  /**
+     * Balls per wicket over the scorecard spells; null with no wickets.
+     * @nullable
+     */
+  strikeRate: number | null;
+  fiveWickets: number;
+}
+
+export interface GradeDistributionPlayer {
+  playerId: number;
+  givenName: string;
+  surname: string;
+  games: number;
+  catches: number;
+  /** Null when the player is below the batting qualifier. */
+  batting: GradeDistributionBatting | null;
+  /** Null when the player is below the bowling qualifier. */
+  bowling: GradeDistributionBowling | null;
+}
+
+/**
+ * The club best per metric among qualifiers (null when nobody qualifies). Lower is better for bowlingAverage, economy and bowlingStrikeRate, so those are the minimum; every other metric is the maximum.
+ */
+export interface GradeDistributionBest {
+  /** @nullable */
+  games: number | null;
+  /** @nullable */
+  catches: number | null;
+  /** @nullable */
+  runs: number | null;
+  /** @nullable */
+  battingAverage: number | null;
+  /** @nullable */
+  highScore: number | null;
+  /** @nullable */
+  fifties: number | null;
+  /** @nullable */
+  hundreds: number | null;
+  /** @nullable */
+  battingStrikeRate: number | null;
+  /** @nullable */
+  wickets: number | null;
+  /** @nullable */
+  maidens: number | null;
+  /** @nullable */
+  fiveWickets: number | null;
+  /** @nullable */
+  bowlingAverage: number | null;
+  /** @nullable */
+  economy: number | null;
+  /** @nullable */
+  bowlingStrikeRate: number | null;
+}
+
+export interface GradeDistribution {
+  grade: string;
+  /**
+     * Echo of the requested first season; null when unbounded.
+     * @nullable
+     */
+  fromSeason: number | null;
+  /**
+     * Echo of the requested last season; null when unbounded.
+     * @nullable
+     */
+  toSeason: number | null;
+  minInnings: number;
+  minOvers: number;
+  players: GradeDistributionPlayer[];
+  best: GradeDistributionBest;
+}
+
 export interface PlayerSeasonStat {
   grade: string;
   /**
@@ -325,6 +504,21 @@ export interface PlayerSeasonStat {
   stumpings?: number | null;
   /** @nullable */
   runOuts?: number | null;
+  /**
+     * Balls faced in the (grade, season), summed from scorecard lines. Null for the baseline row and wherever no scorecard lines exist (unknown, not zero).
+     * @nullable
+     */
+  ballsFaced: number | null;
+  /**
+     * Balls bowled (overs converted at 6 balls per over) from scorecard lines. Null for the baseline row and where not recorded.
+     * @nullable
+     */
+  ballsBowled: number | null;
+  /**
+     * Maidens from scorecard lines. Null for the baseline row and where not recorded.
+     * @nullable
+     */
+  maidens: number | null;
 }
 
 export interface StatInput {
@@ -1181,6 +1375,39 @@ export interface CommitImportInput {
   reconcileMode?: CommitImportInputReconcileMode;
 }
 
+/**
+ * How an innings ended. Caught includes caught-and-bowled; "other" covers hit wicket, obstruction, absent and unrecognised text.
+ */
+export type DismissalType = typeof DismissalType[keyof typeof DismissalType];
+
+
+export const DismissalType = {
+  caught: 'caught',
+  bowled: 'bowled',
+  lbw: 'lbw',
+  runOut: 'runOut',
+  stumped: 'stumped',
+  notOut: 'notOut',
+  retired: 'retired',
+  other: 'other',
+} as const;
+
+export interface PlayerInnings {
+  /** @nullable */
+  runs: number | null;
+  /** @nullable */
+  balls: number | null;
+  notOut: boolean;
+  dismissalType: DismissalType;
+  /**
+     * The dismissing bowler's surname, normalised (lower-case, initials dropped), parsed from the scorecard text. Null for run outs, not outs and blank or masked names. Not an id — neither read path stores the bowler's identity.
+     * @nullable
+     */
+  dismissedBy: string | null;
+  /** @nullable */
+  battingPos: number | null;
+}
+
 export interface PlayerMatchLine {
   matchId: number;
   grade: string;
@@ -1228,6 +1455,23 @@ export interface PlayerMatchLine {
   catches: number;
   stumpings: number;
   runOuts: number;
+  /** The player's played innings in this match, in innings order ("did not bat" excluded). Two-innings matches have two entries; the row-level runs/balls/notOut/dismissal fields above stay the collapsed per-match view. Empty when the player did not bat. */
+  innings: PlayerInnings[];
+  /**
+     * True when the club was the home side. Null where home/away isn't recorded (the native read path).
+     * @nullable
+     */
+  isHome: boolean | null;
+  /**
+     * True when the player's club batted first, false when second, null when unknown.
+     * @nullable
+     */
+  battedFirst: boolean | null;
+  /**
+     * The opposition club, in the read path's own id space: the app clubs register on native tenants, central `clubs.club_id` on central-read tenants. Null when the opponent isn't resolved to a club.
+     * @nullable
+     */
+  opponentClubId: number | null;
 }
 
 /**
@@ -2079,6 +2323,74 @@ export interface ClubRecords {
   mostCatches: PlayerRecord;
   mostFifties: PlayerRecord;
   mostHundreds: PlayerRecord;
+}
+
+export type RecordLeaderMetric = typeof RecordLeaderMetric[keyof typeof RecordLeaderMetric];
+
+
+export const RecordLeaderMetric = {
+  runs: 'runs',
+  wickets: 'wickets',
+  catches: 'catches',
+  hundreds: 'hundreds',
+  games: 'games',
+} as const;
+
+export interface RecordLeaderRow {
+  /** Competition rank (ties share a rank, e.g. 1, 2, 2, 4). */
+  rank: number;
+  playerId: number;
+  givenName: string;
+  surname: string;
+  value: number;
+  /**
+     * The player's last senior season at the club (start year, any grade). Null when only pre-scorecard baseline totals exist.
+     * @nullable
+     */
+  lastSeason: number | null;
+}
+
+export interface RecordLeaders {
+  metric: RecordLeaderMetric;
+  entries: RecordLeaderRow[];
+}
+
+export type RecordProgressionKind = typeof RecordProgressionKind[keyof typeof RecordProgressionKind];
+
+
+export const RecordProgressionKind = {
+  highScore: 'highScore',
+  bestBowling: 'bestBowling',
+} as const;
+
+export interface RecordProgressionPoint {
+  playerId: number;
+  givenName: string;
+  surname: string;
+  /** @nullable */
+  grade: string | null;
+  /**
+     * Season start year; null for an undated career record.
+     * @nullable
+     */
+  season: number | null;
+  /**
+     * The match the record was set in, when known.
+     * @nullable
+     */
+  matchId: number | null;
+  /** @nullable */
+  matchDate: string | null;
+  /** Display value, e.g. "145*" or "7/23". */
+  value: string;
+  /** False for the undated curated record appended as the final point. */
+  dated: boolean;
+}
+
+export interface RecordProgression {
+  kind: RecordProgressionKind;
+  /** Each time the record was broken, oldest first. */
+  points: RecordProgressionPoint[];
 }
 
 export interface Admin {
@@ -4716,6 +5028,26 @@ export interface PostPack {
   zipUrl: string;
 }
 
+export type CardAdjustmentsFields = {[key: string]: string};
+
+export type CardAdjustmentsPhoto = { [key: string]: unknown };
+
+export type CardAdjustmentsPhotoEditedAt = {[key: string]: number};
+
+export type CardAdjustmentsLayersItem = { [key: string]: unknown };
+
+/**
+ * Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.
+ */
+export interface CardAdjustments {
+  fields?: CardAdjustmentsFields;
+  hidden?: string[];
+  photo?: CardAdjustmentsPhoto;
+  photoEditedAt?: CardAdjustmentsPhotoEditedAt;
+  layers?: CardAdjustmentsLayersItem[];
+  [key: string]: unknown;
+ }
+
 export interface UpdateSocialDraftRequest {
   caption?: string;
   /**
@@ -4723,6 +5055,8 @@ export interface UpdateSocialDraftRequest {
      * @nullable
      */
   photoUrl?: string | null;
+  /** Editor overlay (see CardAdjustments); null clears every edit. */
+  adjustments?: CardAdjustments | null;
 }
 
 export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraftStatus];
@@ -6011,6 +6345,26 @@ export const ListPlayersSortOrder = {
   desc: 'desc',
 } as const;
 
+export type GetPlayersVsClubParams = {
+/**
+ * Opponent club id in the read path's own id space (central club id on central tenants, app clubs register id otherwise).
+ */
+opponentClubId?: number;
+/**
+ * Opponent's app clubs register id (Fixture.opponentClubId).
+ */
+opponentAppClubId?: number;
+/**
+ * Opponent's PlayHQ organisation GUID.
+ */
+opponentOrgId?: string;
+/**
+ * Batting qualifier (innings against the club). Defaults to 3.
+ * @minimum 0
+ */
+minInnings?: number;
+};
+
 export type ListMatchesParams = {
 /**
  * Filter by grade
@@ -6079,6 +6433,27 @@ limit?: number;
 offset?: number;
 };
 
+export type GetGradeDistributionParams = {
+/**
+ * First season start year (inclusive), e.g. 2021 for 2021/22.
+ */
+fromSeason?: number;
+/**
+ * Last season start year (inclusive).
+ */
+toSeason?: number;
+/**
+ * Batting qualifier. Defaults to 10.
+ * @minimum 0
+ */
+minInnings?: number;
+/**
+ * Bowling qualifier in whole overs. Defaults to 50.
+ * @minimum 0
+ */
+minOvers?: number;
+};
+
 export type GetSeniorSeasonTopPerformersParams = {
 /**
  * Single grade to scope the leaders to; omit for club-wide.
@@ -6110,6 +6485,59 @@ export type UploadMatchBatchBody = {
   /** One or more .xlsx scorecards, and/or a .zip of them */
   files: Blob[];
 };
+
+export type GetRecordsParams = {
+/**
+ * Restrict to one senior grade (app grade label, e.g. "A Grade").
+ */
+grade?: string;
+/**
+ * First season (start year, e.g. 2019 for 2019/20), inclusive.
+ */
+fromSeason?: number;
+/**
+ * Last season (start year), inclusive.
+ */
+toSeason?: number;
+};
+
+export type GetRecordLeadersParams = {
+metric: RecordLeaderMetric;
+/**
+ * Restrict to one senior grade (app grade label, e.g. "A Grade").
+ */
+grade?: string;
+/**
+ * First season (start year, e.g. 2019 for 2019/20), inclusive.
+ */
+fromSeason?: number;
+/**
+ * Last season (start year), inclusive.
+ */
+toSeason?: number;
+/**
+ * Maximum rows to return (default 10).
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
+
+export type GetRecordProgressionParams = {
+kind: GetRecordProgressionKind;
+/**
+ * Restrict to one senior grade (app grade label, e.g. "A Grade").
+ */
+grade?: string;
+};
+
+export type GetRecordProgressionKind = typeof GetRecordProgressionKind[keyof typeof GetRecordProgressionKind];
+
+
+export const GetRecordProgressionKind = {
+  highScore: 'highScore',
+  bestBowling: 'bestBowling',
+} as const;
 
 export type ListFixturesParams = {
 /**

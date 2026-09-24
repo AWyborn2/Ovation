@@ -49,6 +49,7 @@ const AdminHub = lazy(() => import("@/pages/admin"));
 const AdminUsers = lazy(() => import("@/pages/admin-users"));
 const AdminImport = lazy(() => import("@/pages/admin-import"));
 const AdminReset = lazy(() => import("@/pages/admin-reset"));
+const AdminStudioEditor = lazy(() => import("@/pages/admin-studio-editor"));
 // admin-groups exposes NAMED exports, so map each to a default for lazy().
 function lazyNamed<M extends Record<string, unknown>, K extends keyof M>(
   loader: () => Promise<M>,
@@ -300,6 +301,12 @@ export function Router() {
             unauthenticated club admin can set their password from the emailed/handed
             link without hitting the sign-in wall. */}
         <Route path="/admin/reset" component={AdminReset} />
+        {/* The Studio editor is its own full-screen app, outside the admin shell. */}
+        <Route path="/admin/social/editor/:id">
+          <AdminShell bare>
+            <AdminStudioEditor />
+          </AdminShell>
+        </Route>
         <Route path="/admin/*" component={AdminRoutes} />
         <Route path="/admin" component={AdminRoutes} />
         <Route path="/captain" component={CaptainRoutes} />

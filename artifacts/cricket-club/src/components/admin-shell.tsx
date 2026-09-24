@@ -4,7 +4,11 @@ import { useCurrentAdmin, useInvalidateAdmin } from "@/lib/admin-auth";
 import { AdminLayout } from "@/components/admin-layout";
 import { SignInCard } from "@/components/sign-in-card";
 
-export function AdminShell({ children }: { children: ReactNode }) {
+/**
+ * Signs the admin in, then renders the admin layout around `children`, or
+ * `children` alone when `bare` (full-screen tools like the Studio editor).
+ */
+export function AdminShell({ children, bare = false }: { children: ReactNode; bare?: boolean }) {
   const me = useCurrentAdmin();
   if (me.isLoading) {
     return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
@@ -19,6 +23,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       </div>
     );
   }
+  if (bare) return <>{children}</>;
   return <AdminLayout admin={me.data}>{children}</AdminLayout>;
 }
 

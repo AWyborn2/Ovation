@@ -70,6 +70,8 @@ import {
   centralClubTotalsBySeason,
   centralDashboard,
   centralLadder,
+  centralPlayerMatchLog,
+  centralPlayerSeasons,
   clearCentralQueriesCache,
   clubInvolvedWhere,
   inList,
@@ -441,6 +443,135 @@ describe("centralClubTotalsBySeason (Club leaderboard card prefill)", () => {
     process.env.CENTRAL_CACHE_TTL_MS = "0";
     queuedResults.push([{ matchId: 1, grade: "A Grade", season: "Summer 2023/24" }]);
     await expect(centralClubTotalsBySeason(5, 2024)).resolves.toEqual([]);
+  });
+});
+
+describe("centralPlayerMatchLog enriched rows (stats U3)", () => {
+  const CLUB = 5;
+  const OPP = 9;
+  const match = (matchId: number, home: number, away: number) => ({
+    matchId,
+    grade: "A Grade",
+    season: "2024/25",
+    round: "1",
+    matchDate: "2024-10-12",
+    venue: "Oval",
+    homeClubId: home,
+    awayClubId: away,
+    homeTeam: home === CLUB ? "Club" : "Opp",
+    awayTeam: away === CLUB ? "Club" : "Opp",
+    resultText: null,
+    winnerClubId: null,
+  });
+
+  it("keeps each innings of a two-innings match and derives home / batted-first / opponent", async () => {
+    process.env.CENTRAL_CACHE_TTL_MS = "0";
+    queuedResults.push(
+      [{ isPrivate: 0 }], // isPrivateParticipant
+      // batting: match 1 two innings (out in 2, not out in 4); match 2 one innings
+      [
+        {
+          matchId: 1,
+          innings: 4,
+          batOrder: 6,
+          runs: 11,
+          balls: 20,
+          fours: 1,
+          sixes: 0,
+          dismissal: "not out",
+          dismissalType: "not out",
+        },
+        {
+          matchId: 1,
+          innings: 2,
+          batOrder: 4,
+          runs: 30,
+          balls: 50,
+          fours: 3,
+          sixes: 0,
+          dismissal: "c: A Smith b: J Nguyen",
+          dismissalType: "caught",
+        },
+        {
+          matchId: 2,
+          innings: 1,
+          batOrder: 2,
+          runs: 5,
+          balls: 9,
+          fours: 0,
+          sixes: 0,
+          dismissal: "b: K May",
+          dismissalType: "bowled",
+        },
+      ],
+      [], // bowling
+      [], // rosters
+      [], // fielding
+      [match(1, OPP, CLUB), match(2, CLUB, OPP)], // matches
+      // min innings per (match, club): opp batted first in 1, club in 2
+      [
+        { matchId: 1, clubId: CLUB, minInnings: 2 },
+        { matchId: 1, clubId: OPP, minInnings: 1 },
+        { matchId: 2, clubId: CLUB, minInnings: 1 },
+        { matchId: 2, clubId: OPP, minInnings: 2 },
+      ],
+    );
+    const rows = await centralPlayerMatchLog(CLUB, "guid");
+    const byId = new Map(rows.map((r) => [r.matchId, r]));
+
+    const m1 = byId.get(1)!;
+    expect(m1).toMatchObject({
+      isHome: false,
+      battedFirst: false,
+      opponentClubId: OPP,
+      runs: 41,
+      notOut: true,
+    });
+    expect(m1.inningsLines.map((l) => [l.innings, l.runs, l.notOut, l.dismissalType])).toEqual([
+      [2, 30, false, "caught"],
+      [4, 11, true, "not out"],
+    ]);
+
+    const m2 = byId.get(2)!;
+    expect(m2).toMatchObject({ isHome: true, battedFirst: true, opponentClubId: OPP });
+    expect(m2.inningsLines).toHaveLength(1);
+  });
+});
+
+describe("centralPlayerSeasons balls / maidens (stats U3)", () => {
+  it("sums balls faced, balls bowled (ball notation) and maidens per season", async () => {
+    process.env.CENTRAL_CACHE_TTL_MS = "0";
+    queuedResults.push(
+      [{ isPrivate: 0 }],
+      [{ matchId: 1, grade: "A Grade", season: "2024/25" }], // club match rows
+      [
+        { matchId: 1, runs: 30, balls: 50, dismissal: "b: K May", dismissalType: "bowled" },
+        { matchId: 1, runs: 0, balls: null, dismissal: "did not bat", dismissalType: "other" },
+      ],
+      [
+        { matchId: 1, wickets: 2, runs: 20, overs: 4.3, maidens: 1 },
+        { matchId: 1, wickets: 0, runs: 10, overs: 3, maidens: null },
+      ],
+      [],
+      [],
+    );
+    const rows = await centralPlayerSeasons(5, "guid");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ ballsFaced: 50, ballsBowled: 45, maidens: 1 });
+  });
+
+  it("a season with no bowling reports null balls bowled / maidens, not 0", async () => {
+    process.env.CENTRAL_CACHE_TTL_MS = "0";
+    queuedResults.push(
+      [{ isPrivate: 0 }],
+      [{ matchId: 1, grade: "A Grade", season: "2024/25" }],
+      [{ matchId: 1, runs: 8, balls: 12, dismissal: "b: K May", dismissalType: "bowled" }],
+      [],
+      [],
+      [],
+    );
+    const [row] = await centralPlayerSeasons(5, "guid");
+    expect(row).toMatchObject({ ballsFaced: 12, ballsBowled: null, maidens: null });
   });
 });
 

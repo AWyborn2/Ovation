@@ -152,6 +152,58 @@ paths:
               schema:
                 $ref: "#/components/schemas/Player"
 
+  /players/vs-club:
+    get:
+      operationId: getPlayersVsClub
+      tags: [players]
+      summary: The whole squad's career record against one opponent club
+      description: >-
+        Every club player's career batting and bowling against one opponent
+        club, across all senior grades (junior grades and fill-ins are never
+        included). Feeds the Compare selection helper. Identify the opponent
+        with one of `opponentClubId` (the read path's own club id, as on
+        `PlayerMatch.opponentClubId`), `opponentAppClubId` (the app clubs
+        register id, as on `Fixture.opponentClubId`) or `opponentOrgId` (the
+        PlayHQ organisation GUID, as on `PlayhqOpponent.orgId`); the server maps
+        it into the read path's id space, trying them in that order. When the
+        opponent can't be mapped the response carries `resolved: false` and
+        empty lists, rather than a silent empty result.
+      parameters:
+        - name: opponentClubId
+          in: query
+          required: false
+          description: Opponent club id in the read path's own id space (central club id on central tenants, app clubs register id otherwise).
+          schema:
+            type: integer
+        - name: opponentAppClubId
+          in: query
+          required: false
+          description: Opponent's app clubs register id (Fixture.opponentClubId).
+          schema:
+            type: integer
+        - name: opponentOrgId
+          in: query
+          required: false
+          description: Opponent's PlayHQ organisation GUID.
+          schema:
+            type: string
+        - name: minInnings
+          in: query
+          required: false
+          description: Batting qualifier (innings against the club). Defaults to 3.
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Squad record against the opponent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayersVsClub"
+        "400":
+          description: Invalid query (no opponent given)
+
   /players/{id}:
     get:
       operationId: getPlayer
@@ -694,6 +746,65 @@ paths:
                 items:
                   $ref: "#/components/schemas/Stat"
 
+  /grades/{grade}/distribution:
+    get:
+      operationId: getGradeDistribution
+      tags: [grades]
+      summary: Qualifying players' aggregates for one grade and season span
+      description: >-
+        Every qualifying club player's aggregates for the grade over the span,
+        plus the club best per metric. Feeds the profile ranks (percentiles are
+        computed on the client) and the Compare radar's "% of club best". A
+        player qualifies for batting with at least `minInnings` innings and for
+        bowling with at least `minOvers` overs; a player who qualifies for only
+        one gets `null` for the other. Fill-ins and junior grades are never
+        included. Counting stats (games, innings, runs, wickets, catches) come
+        from season rows; ball-based figures (balls faced, overs, maidens,
+        strike rates, economy) come from scorecard lines over the same span.
+        Omitting both seasons means the whole career, which includes
+        pre-scorecard baseline rows for the counting stats only.
+      parameters:
+        - name: grade
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fromSeason
+          in: query
+          required: false
+          description: First season start year (inclusive), e.g. 2021 for 2021/22.
+          schema:
+            type: integer
+        - name: toSeason
+          in: query
+          required: false
+          description: Last season start year (inclusive).
+          schema:
+            type: integer
+        - name: minInnings
+          in: query
+          required: false
+          description: Batting qualifier. Defaults to 10.
+          schema:
+            type: integer
+            minimum: 0
+        - name: minOvers
+          in: query
+          required: false
+          description: Bowling qualifier in whole overs. Defaults to 50.
+          schema:
+            type: number
+            minimum: 0
+      responses:
+        "200":
+          description: Grade distribution
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GradeDistribution"
+        "400":
+          description: Invalid query (e.g. fromSeason after toSeason)
+
   /dashboard:
     get:
       operationId: getDashboard
@@ -1027,6 +1138,30 @@ paths:
       operationId: getRecords
       tags: [grades]
       summary: Club all-time records
+      description: |
+        Without parameters: the club's all-time records across every grade,
+        exactly as before. With `grade` and/or a season span, every record is
+        restricted to that grade and span (junior grades and fill-ins are
+        never counted). A span excludes the pre-scorecard baseline rows.
+      parameters:
+        - name: grade
+          in: query
+          required: false
+          description: Restrict to one senior grade (app grade label, e.g. "A Grade").
+          schema:
+            type: string
+        - name: fromSeason
+          in: query
+          required: false
+          description: First season (start year, e.g. 2019 for 2019/20), inclusive.
+          schema:
+            type: integer
+        - name: toSeason
+          in: query
+          required: false
+          description: Last season (start year), inclusive.
+          schema:
+            type: integer
       responses:
         "200":
           description: All-time records across all grades
@@ -1034,6 +1169,95 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ClubRecords"
+        "400":
+          description: Invalid query parameters
+
+  /records/leaders:
+    get:
+      operationId: getRecordLeaders
+      tags: [records]
+      summary: Career leaders for one record metric
+      description: |
+        Players ranked by a counting metric (runs, wickets, catches, hundreds
+        or games) over an optional grade and season span. Ties share a rank.
+        Each row carries the player's last senior season at the club (any
+        grade), which drives the "still playing" marker. Fill-ins, junior
+        grades and private central players are excluded.
+      parameters:
+        - name: metric
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/RecordLeaderMetric"
+        - name: grade
+          in: query
+          required: false
+          description: Restrict to one senior grade (app grade label, e.g. "A Grade").
+          schema:
+            type: string
+        - name: fromSeason
+          in: query
+          required: false
+          description: First season (start year, e.g. 2019 for 2019/20), inclusive.
+          schema:
+            type: integer
+        - name: toSeason
+          in: query
+          required: false
+          description: Last season (start year), inclusive.
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          description: Maximum rows to return (default 10).
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: Ranked leaders
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordLeaders"
+        "400":
+          description: Invalid query parameters
+
+  /records/progression:
+    get:
+      operationId: getRecordProgression
+      tags: [records]
+      summary: How a single-innings record was broken over time
+      description: |
+        Every time the club's highest score (or best bowling) was broken,
+        oldest first, from dated match rows and season rows. A tie doesn't
+        break the record. When an undated career record beats every dated
+        row, it is appended as a final point with `dated: false`, so the
+        series always ends at the record card's value for the same grade.
+      parameters:
+        - name: kind
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [highScore, bestBowling]
+        - name: grade
+          in: query
+          required: false
+          description: Restrict to one senior grade (app grade label, e.g. "A Grade").
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Record progression, oldest first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordProgression"
+        "400":
+          description: Invalid query parameters
 
   /caps:
     get:
@@ -6577,9 +6801,257 @@ components:
         runOuts:
           type: ["integer", "null"]
 
+    PlayersVsClub:
+      type: object
+      required: [resolved, opponentClubId, opponentName, minInnings, batting, bowling]
+      properties:
+        resolved:
+          type: boolean
+          description: False when the opponent couldn't be mapped to a club on this read path; both lists are then empty.
+        opponentClubId:
+          description: The resolved opponent id in the read path's own id space; null when unresolved.
+          type: ["integer", "null"]
+        opponentName:
+          type: ["string", "null"]
+        minInnings:
+          type: integer
+        batting:
+          description: Players with at least `minInnings` innings against the club, best average first.
+          type: array
+          items:
+            $ref: "#/components/schemas/VsClubBatter"
+        bowling:
+          description: Players who bowled against the club, most wickets first, then lowest average.
+          type: array
+          items:
+            $ref: "#/components/schemas/VsClubBowler"
+
+    VsClubBatter:
+      type: object
+      required: [playerId, givenName, surname, matches, innings, notOuts, outs, runs, average, highScore, highScoreNotOut]
+      properties:
+        playerId:
+          type: integer
+        givenName:
+          type: string
+        surname:
+          type: string
+        matches:
+          type: integer
+        innings:
+          type: integer
+        notOuts:
+          type: integer
+        outs:
+          type: integer
+        runs:
+          type: integer
+        average:
+          description: Runs per dismissal; null when never out.
+          type: ["number", "null"]
+        highScore:
+          type: ["integer", "null"]
+        highScoreNotOut:
+          type: boolean
+
+    VsClubBowler:
+      type: object
+      required: [playerId, givenName, surname, matches, wickets, runsConceded, balls, average, bestWickets, bestRuns]
+      properties:
+        playerId:
+          type: integer
+        givenName:
+          type: string
+        surname:
+          type: string
+        matches:
+          type: integer
+        wickets:
+          type: integer
+        runsConceded:
+          type: integer
+        balls:
+          description: Balls bowled over spells with recorded overs; null when none recorded.
+          type: ["integer", "null"]
+        average:
+          description: Runs per wicket; null with no wickets.
+          type: ["number", "null"]
+        bestWickets:
+          description: Best single-innings figures, wickets part.
+          type: ["integer", "null"]
+        bestRuns:
+          description: Best single-innings figures, runs part.
+          type: ["integer", "null"]
+
+    GradeDistribution:
+      type: object
+      required: [grade, fromSeason, toSeason, minInnings, minOvers, players, best]
+      properties:
+        grade:
+          type: string
+        fromSeason:
+          description: Echo of the requested first season; null when unbounded.
+          type: ["integer", "null"]
+        toSeason:
+          description: Echo of the requested last season; null when unbounded.
+          type: ["integer", "null"]
+        minInnings:
+          type: integer
+        minOvers:
+          type: number
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/GradeDistributionPlayer"
+        best:
+          $ref: "#/components/schemas/GradeDistributionBest"
+
+    GradeDistributionPlayer:
+      type: object
+      required: [playerId, givenName, surname, games, catches, batting, bowling]
+      properties:
+        playerId:
+          type: integer
+        givenName:
+          type: string
+        surname:
+          type: string
+        games:
+          type: integer
+        catches:
+          type: integer
+        batting:
+          description: Null when the player is below the batting qualifier.
+          oneOf:
+            - $ref: "#/components/schemas/GradeDistributionBatting"
+            - type: "null"
+        bowling:
+          description: Null when the player is below the bowling qualifier.
+          oneOf:
+            - $ref: "#/components/schemas/GradeDistributionBowling"
+            - type: "null"
+
+    GradeDistributionBatting:
+      type: object
+      required:
+        [innings, notOuts, runs, average, highScore, fifties, hundreds, ballsFaced, strikeRate]
+      properties:
+        innings:
+          type: integer
+        notOuts:
+          type: integer
+        runs:
+          type: integer
+        average:
+          description: Runs per dismissal; null with no dismissals.
+          type: ["number", "null"]
+        highScore:
+          type: ["integer", "null"]
+        fifties:
+          type: integer
+        hundreds:
+          type: integer
+        ballsFaced:
+          description: Balls faced in scorecard innings with a recorded ball count.
+          type: ["integer", "null"]
+        strikeRate:
+          description: Runs per 100 balls over those same innings.
+          type: ["number", "null"]
+
+    GradeDistributionBowling:
+      type: object
+      required:
+        [
+          overs,
+          ballsBowled,
+          maidens,
+          wickets,
+          runsConceded,
+          average,
+          economy,
+          strikeRate,
+          fiveWickets,
+        ]
+      properties:
+        overs:
+          description: Scorecard overs bowled, in ball notation ("123.4").
+          type: string
+        ballsBowled:
+          type: integer
+        maidens:
+          type: integer
+        wickets:
+          type: integer
+        runsConceded:
+          type: integer
+        average:
+          description: Runs conceded per wicket; null with no wickets.
+          type: ["number", "null"]
+        economy:
+          description: Runs per six balls over the scorecard spells.
+          type: ["number", "null"]
+        strikeRate:
+          description: Balls per wicket over the scorecard spells; null with no wickets.
+          type: ["number", "null"]
+        fiveWickets:
+          type: integer
+
+    GradeDistributionBest:
+      description: >-
+        The club best per metric among qualifiers (null when nobody qualifies).
+        Lower is better for bowlingAverage, economy and bowlingStrikeRate, so
+        those are the minimum; every other metric is the maximum.
+      type: object
+      required:
+        [
+          games,
+          catches,
+          runs,
+          battingAverage,
+          highScore,
+          fifties,
+          hundreds,
+          battingStrikeRate,
+          wickets,
+          maidens,
+          fiveWickets,
+          bowlingAverage,
+          economy,
+          bowlingStrikeRate,
+        ]
+      properties:
+        games:
+          type: ["integer", "null"]
+        catches:
+          type: ["integer", "null"]
+        runs:
+          type: ["integer", "null"]
+        battingAverage:
+          type: ["number", "null"]
+        highScore:
+          type: ["integer", "null"]
+        fifties:
+          type: ["integer", "null"]
+        hundreds:
+          type: ["integer", "null"]
+        battingStrikeRate:
+          type: ["number", "null"]
+        wickets:
+          type: ["integer", "null"]
+        maidens:
+          type: ["integer", "null"]
+        fiveWickets:
+          type: ["integer", "null"]
+        bowlingAverage:
+          type: ["number", "null"]
+        economy:
+          type: ["number", "null"]
+        bowlingStrikeRate:
+          type: ["number", "null"]
+
     PlayerSeasonStat:
       type: object
-      required: [grade, season]
+      required: [grade, season, ballsFaced, ballsBowled, maidens]
       properties:
         grade:
           type: string
@@ -6620,6 +7092,22 @@ components:
           type: ["integer", "null"]
         runOuts:
           type: ["integer", "null"]
+        ballsFaced:
+          type: ["integer", "null"]
+          description: >-
+            Balls faced in the (grade, season), summed from scorecard lines.
+            Null for the baseline row and wherever no scorecard lines exist
+            (unknown, not zero).
+        ballsBowled:
+          type: ["integer", "null"]
+          description: >-
+            Balls bowled (overs converted at 6 balls per over) from scorecard
+            lines. Null for the baseline row and where not recorded.
+        maidens:
+          type: ["integer", "null"]
+          description: >-
+            Maidens from scorecard lines. Null for the baseline row and where
+            not recorded.
 
     StatInput:
       type: object
@@ -7634,7 +8122,19 @@ components:
     PlayerMatchLine:
       type: object
       required:
-        [matchId, grade, batted, bowled, catches, stumpings, runOuts]
+        [
+          matchId,
+          grade,
+          batted,
+          bowled,
+          catches,
+          stumpings,
+          runOuts,
+          innings,
+          isHome,
+          battedFirst,
+          opponentClubId,
+        ]
       properties:
         matchId:
           type: integer
@@ -7693,6 +8193,60 @@ components:
           type: integer
         runOuts:
           type: integer
+        innings:
+          type: array
+          description: >-
+            The player's played innings in this match, in innings order ("did
+            not bat" excluded). Two-innings matches have two entries; the
+            row-level runs/balls/notOut/dismissal fields above stay the
+            collapsed per-match view. Empty when the player did not bat.
+          items:
+            $ref: "#/components/schemas/PlayerInnings"
+        isHome:
+          type: ["boolean", "null"]
+          description: >-
+            True when the club was the home side. Null where home/away isn't
+            recorded (the native read path).
+        battedFirst:
+          type: ["boolean", "null"]
+          description: >-
+            True when the player's club batted first, false when second, null
+            when unknown.
+        opponentClubId:
+          type: ["integer", "null"]
+          description: >-
+            The opposition club, in the read path's own id space: the app clubs
+            register on native tenants, central `clubs.club_id` on central-read
+            tenants. Null when the opponent isn't resolved to a club.
+
+    PlayerInnings:
+      type: object
+      required: [runs, balls, notOut, dismissalType, dismissedBy, battingPos]
+      properties:
+        runs:
+          type: ["integer", "null"]
+        balls:
+          type: ["integer", "null"]
+        notOut:
+          type: boolean
+        dismissalType:
+          $ref: "#/components/schemas/DismissalType"
+        dismissedBy:
+          type: ["string", "null"]
+          description: >-
+            The dismissing bowler's surname, normalised (lower-case, initials
+            dropped), parsed from the scorecard text. Null for run outs, not
+            outs and blank or masked names. Not an id — neither read path
+            stores the bowler's identity.
+        battingPos:
+          type: ["integer", "null"]
+
+    DismissalType:
+      type: string
+      enum: [caught, bowled, lbw, runOut, stumped, notOut, retired, other]
+      description: >-
+        How an innings ended. Caught includes caught-and-bowled; "other" covers
+        hit wicket, obstruction, absent and unrecognised text.
 
     OpponentClub:
       type: object
@@ -8874,6 +9428,82 @@ components:
           $ref: "#/components/schemas/PlayerRecord"
         mostHundreds:
           $ref: "#/components/schemas/PlayerRecord"
+
+    RecordLeaderMetric:
+      type: string
+      enum: [runs, wickets, catches, hundreds, games]
+
+    RecordLeaders:
+      type: object
+      required: [metric, entries]
+      properties:
+        metric:
+          $ref: "#/components/schemas/RecordLeaderMetric"
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecordLeaderRow"
+
+    RecordLeaderRow:
+      type: object
+      required: [rank, playerId, givenName, surname, value, lastSeason]
+      properties:
+        rank:
+          type: integer
+          description: Competition rank (ties share a rank, e.g. 1, 2, 2, 4).
+        playerId:
+          type: integer
+        givenName:
+          type: string
+        surname:
+          type: string
+        value:
+          type: integer
+        lastSeason:
+          description: >-
+            The player's last senior season at the club (start year, any
+            grade). Null when only pre-scorecard baseline totals exist.
+          type: ["integer", "null"]
+
+    RecordProgression:
+      type: object
+      required: [kind, points]
+      properties:
+        kind:
+          type: string
+          enum: [highScore, bestBowling]
+        points:
+          type: array
+          description: Each time the record was broken, oldest first.
+          items:
+            $ref: "#/components/schemas/RecordProgressionPoint"
+
+    RecordProgressionPoint:
+      type: object
+      required: [playerId, givenName, surname, grade, season, matchId, matchDate, value, dated]
+      properties:
+        playerId:
+          type: integer
+        givenName:
+          type: string
+        surname:
+          type: string
+        grade:
+          type: ["string", "null"]
+        season:
+          description: Season start year; null for an undated career record.
+          type: ["integer", "null"]
+        matchId:
+          description: The match the record was set in, when known.
+          type: ["integer", "null"]
+        matchDate:
+          type: ["string", "null"]
+        value:
+          type: string
+          description: Display value, e.g. "145*" or "7/23".
+        dated:
+          type: boolean
+          description: False for the undated curated record appended as the final point.
 
     Admin:
       type: object
@@ -12643,6 +13273,38 @@ components:
         photoUrl:
           type: ["string", "null"]
           description: "A library or uploaded image URL; null removes the photo."
+        adjustments:
+          description: "Editor overlay (see CardAdjustments); null clears every edit."
+          anyOf:
+            - $ref: "#/components/schemas/CardAdjustments"
+            - type: "null"
+
+    CardAdjustments:
+      type: object
+      description: >-
+        Editor overlay applied over a pack template (KTD12). Content (field
+        overrides, hidden elements, free-layer content) is shared across
+        formats; geometry (photo transform, layer boxes) is keyed by format.
+        The web renderer owns the detailed shape; the server stores it as-is.
+      additionalProperties: true
+      properties:
+        fields:
+          type: object
+          additionalProperties: { type: string }
+        hidden:
+          type: array
+          items: { type: string }
+        photo:
+          type: object
+          additionalProperties: true
+        photoEditedAt:
+          type: object
+          additionalProperties: { type: number }
+        layers:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
 
     SocialDraft:
       type: object

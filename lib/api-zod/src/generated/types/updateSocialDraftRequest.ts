@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { CardAdjustments } from './cardAdjustments';
 
 export interface UpdateSocialDraftRequest {
   caption?: string;
@@ -13,4 +14,6 @@ export interface UpdateSocialDraftRequest {
      * @nullable
      */
   photoUrl?: string | null;
+  /** Editor overlay (see CardAdjustments); null clears every edit. */
+  adjustments?: CardAdjustments | null;
 }

@@ -325,7 +325,7 @@ router.patch(
       res.status(409).json({ error: "Reopen the draft before editing it" });
       return;
     }
-    const { caption, photoUrl } = parsed.data;
+    const { caption, photoUrl, adjustments } = parsed.data;
     const patch: Partial<typeof socialDraftsTable.$inferInsert> = {
       // A manual action: stop any pending auto-promotion (KTD4).
       autoReadyAt: null,
@@ -340,6 +340,11 @@ router.patch(
       // The admin's choice is never replaced by an automatic pick (KTD6).
       patch.photoSource = photoUrl === null ? null : "manual";
       if (photoUrl === null) patch.editedAt = patch.editedAt ?? new Date();
+    }
+    if (adjustments !== undefined) {
+      // Editor overlay (U15): stored as-is; the web renderer applies it.
+      patch.adjustments = adjustments;
+      patch.editedAt = patch.editedAt ?? new Date();
     }
     const updated = await db.transaction(async (tx) => {
       await recordDraftRevision(draft, "edit", tx);

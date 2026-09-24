@@ -26,6 +26,7 @@ import { inList } from "./where";
 //                                                       the result line stays)
 //       centralPlayerSeasons / centralPlayerMatchLog   (a private participant
 //                                                       gets [] — same as no data)
+//       centralGradeDistribution                       (ranks / "% of club best")
 //
 //  3. FLAG — the row carries `isPrivate: boolean` and the CALLER masks (the API
 //     route needs the GUID to build the crosswalk or the scorecard link, then

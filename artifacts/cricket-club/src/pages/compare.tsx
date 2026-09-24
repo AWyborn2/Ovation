@@ -1,374 +1,265 @@
-import { useState, useMemo, useEffect } from "react";
-import { useLocation, useSearch } from "wouter";
-import { useListPlayers, useGetPlayer, getGetPlayerQueryKey } from "@workspace/api-client-react";
-import type { Stat } from "@workspace/api-client-react";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useMemo, useState } from "react";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Check, ChevronsUpDown, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { GradeBadge, sortGradesBySeniority } from "@/components/grade-badge";
-import { QueryError } from "@/components/data-states";
+  getGetGradeDistributionQueryKey,
+  getGetPlayerMatchesQueryKey,
+  getGetPlayerQueryKey,
+  getGetPlayerSeasonsQueryKey,
+  useGetGradeDistribution,
+  useGetPlayer,
+  useGetPlayerMatches,
+  useGetPlayerSeasons,
+} from "@workspace/api-client-react";
+import { ArrowLeftRight } from "lucide-react";
+import { Container, FullBleedPage, PageHeader, PageStack } from "@/components/broadcast";
+import { Button } from "@/components/ui/button";
+import { EmptyState, QueryError } from "@/components/data-states";
+import { SeasonBar } from "@/components/stats-charts/season-bar";
+import {
+  careerRace,
+  filterMatches,
+  filterSeasonRows,
+  isCareer,
+  nemesis,
+  NO_BOWLING_REASON,
+  oppositionTable,
+} from "@/lib/stats-analytics";
+import { useStatsView, type Discipline } from "@/lib/use-stats-view";
+import {
+  SLOTS,
+  coverageNotes,
+  effectiveOppMetric,
+  mostPlayedGrade,
+  oppositionMatrix,
+  seasonBars,
+  seasonTotals,
+  swapFirstTwo,
+  taleOfTheTape,
+  verdict as computeVerdict,
+  type OppMetric,
+  type Slot,
+} from "./compare/compare-data";
+import { useComparePlayers } from "./compare/use-compare-players";
+import { PlayerCards } from "./compare/player-cards";
+import { VerdictBar } from "./compare/verdict";
+import { CompareRadar } from "./compare/radar";
+import { TaleOfTheTape } from "./compare/tape";
+import { SelectionHelper } from "./compare/selection-helper";
+import { OppositionMatrix } from "./compare/opposition";
+import { CareerRace } from "./compare/race";
+import { SeasonBySeason } from "./compare/seasons";
+import { SLOT_TOKENS, type ComparedPlayer } from "./compare/shared";
 
-function PlayerPicker({
-  value,
-  onChange,
-  label,
-}: {
-  value: number | null;
-  onChange: (id: number | null) => void;
-  label: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const { data } = useListPlayers({ search, page: 1, limit: 20 });
-  const { data: selected } = useGetPlayer(value ?? 0, {
-    query: { enabled: !!value, queryKey: getGetPlayerQueryKey(value ?? 0) },
+/** Every query one compared slot needs; disabled while the slot is empty. */
+function useSlotData(id: number | null) {
+  const enabled = id != null;
+  const pid = id ?? 0;
+  const player = useGetPlayer(pid, { query: { enabled, queryKey: getGetPlayerQueryKey(pid) } });
+  const seasons = useGetPlayerSeasons(pid, {
+    query: { enabled, queryKey: getGetPlayerSeasonsQueryKey(pid) },
   });
-
-  const buttonLabel = selected ? `${selected.givenName} ${selected.surname}` : `Select ${label}...`;
-
-  return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-muted-foreground">{label}</label>
-      <div className="flex gap-2">
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              className="flex-1 justify-between font-normal"
-            >
-              <span className={cn("truncate", !selected && "text-muted-foreground")}>
-                {buttonLabel}
-              </span>
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[320px] p-0" align="start">
-            <Command shouldFilter={false}>
-              <CommandInput
-                placeholder="Search players..."
-                value={search}
-                onValueChange={setSearch}
-              />
-              <CommandList>
-                <CommandEmpty>No players found.</CommandEmpty>
-                <CommandGroup>
-                  {data?.players.map((p) => (
-                    <CommandItem
-                      key={p.id}
-                      value={String(p.id)}
-                      onSelect={() => {
-                        onChange(p.id);
-                        setOpen(false);
-                      }}
-                    >
-                      <Check
-                        className={cn("mr-2 h-4 w-4", value === p.id ? "opacity-100" : "opacity-0")}
-                      />
-                      <span className="flex-1">
-                        {p.surname}, {p.givenName}
-                      </span>
-                      <span className="ml-2 flex flex-wrap gap-1">
-                        {sortGradesBySeniority(
-                          (p.gradesPlayed || "")
-                            .split(",")
-                            .map((g) => g.trim())
-                            .filter((g) => g && g !== "CLUB TOTAL"),
-                        ).map((g) => (
-                          <GradeBadge key={g} grade={g} size="sm" />
-                        ))}
-                      </span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-        {value && (
-          <Button variant="ghost" size="icon" onClick={() => onChange(null)} aria-label="Clear">
-            <X className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-type Row = {
-  label: string;
-  aValue: number | null;
-  bValue: number | null;
-  format?: (v: number) => string;
-  higherIsBetter?: boolean;
-};
-
-function compareRow({ aValue, bValue, higherIsBetter = true }: Row): "a" | "b" | "tie" | "none" {
-  if (aValue == null && bValue == null) return "none";
-  if (aValue == null) return "b";
-  if (bValue == null) return "a";
-  if (aValue === bValue) return "tie";
-  if (higherIsBetter) return aValue > bValue ? "a" : "b";
-  return aValue < bValue ? "a" : "b";
-}
-
-function formatVal(v: number | null, fmt?: (v: number) => string) {
-  if (v == null) return "-";
-  return fmt ? fmt(v) : String(v);
-}
-
-function StatRow({ row }: { row: Row }) {
-  const winner = compareRow(row);
-  const aClass = winner === "a" ? "bg-primary/15 text-primary-text font-bold" : "";
-  const bClass = winner === "b" ? "bg-primary/15 text-primary-text font-bold" : "";
-  return (
-    <tr className="border-b last:border-0">
-      <td className={cn("p-3 text-right font-mono w-1/3", aClass)}>
-        {formatVal(row.aValue, row.format)}
-      </td>
-      <td className="p-3 text-center text-sm text-muted-foreground w-1/3">{row.label}</td>
-      <td className={cn("p-3 text-left font-mono w-1/3", bClass)}>
-        {formatVal(row.bValue, row.format)}
-      </td>
-    </tr>
-  );
-}
-
-function aggregateCareer(stats: Stat[] | undefined) {
-  if (!stats) return null;
-  let games = 0,
-    innings = 0,
-    runs = 0,
-    wickets = 0,
-    catches = 0,
-    stumpings = 0,
-    runOuts = 0,
-    hundreds = 0,
-    fifties = 0,
-    fiveWickets = 0;
-  for (const s of stats) {
-    games += s.games ?? 0;
-    innings += s.innings ?? 0;
-    runs += s.runs ?? 0;
-    wickets += s.wickets ?? 0;
-    catches += s.catches ?? 0;
-    stumpings += s.stumpings ?? 0;
-    runOuts += s.runOuts ?? 0;
-    hundreds += s.hundreds ?? 0;
-    fifties += s.fifties ?? 0;
-    fiveWickets += s.fiveWickets ?? 0;
-  }
+  const matches = useGetPlayerMatches(pid, {
+    query: { enabled, queryKey: getGetPlayerMatchesQueryKey(pid) },
+  });
   return {
-    games,
-    innings,
-    runs,
-    wickets,
-    catches,
-    stumpings,
-    runOuts,
-    hundreds,
-    fifties,
-    fiveWickets,
+    player,
+    seasons,
+    matches,
+    loading: enabled && (player.isLoading || seasons.isLoading || matches.isLoading),
+    failed: [player, seasons, matches].find((q) => q.isError) ?? null,
   };
 }
 
-const STAT_FIELDS: Array<{
-  key: keyof Stat;
-  label: string;
-  higherIsBetter?: boolean;
-  format?: (v: number) => string;
-}> = [
-  { key: "games", label: "Matches" },
-  { key: "innings", label: "Innings" },
-  { key: "notOuts", label: "Not Outs" },
-  { key: "runs", label: "Runs" },
-  { key: "batAvg", label: "Batting Avg", format: (v) => v.toFixed(2) },
-  { key: "hundreds", label: "100s" },
-  { key: "fifties", label: "50s" },
-  { key: "wickets", label: "Wickets" },
-  { key: "bowlAvg", label: "Bowling Avg", format: (v) => v.toFixed(2), higherIsBetter: false },
-  { key: "fiveWickets", label: "5WI" },
-  { key: "catches", label: "Catches" },
-  { key: "stumpings", label: "Stumpings" },
-  { key: "runOuts", label: "Run Outs" },
-];
+const RANGE_CARD_ROW =
+  "grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr))]";
 
 export default function Compare() {
-  const [location, setLocation] = useLocation();
-  const search = useSearch();
-  const params = useMemo(() => new URLSearchParams(search), [search]);
-  const initialA = params.get("a") ? parseInt(params.get("a")!, 10) : null;
-  const initialB = params.get("b") ? parseInt(params.get("b")!, 10) : null;
-  const [a, setA] = useState<number | null>(initialA);
-  const [b, setB] = useState<number | null>(initialB);
+  const { slots, setSlots } = useComparePlayers();
+  const { view, setView, label: rangeLabel } = useStatsView();
+  const range = useMemo(() => ({ from: view.from, to: view.to }), [view.from, view.to]);
+  const d = view.d;
 
-  useEffect(() => {
-    const next = new URLSearchParams();
-    if (a) next.set("a", String(a));
-    if (b) next.set("b", String(b));
-    const qs = next.toString();
-    const desired = qs ? `/compare?${qs}` : "/compare";
-    if (location + (search ? `?${search}` : "") !== desired) {
-      setLocation(desired, { replace: true });
-    }
-  }, [a, b, location, search, setLocation]);
+  const slotData = { a: useSlotData(slots.a), b: useSlotData(slots.b), c: useSlotData(slots.c) };
 
-  const queryA = useGetPlayer(a ?? 0, {
-    query: { enabled: !!a, queryKey: getGetPlayerQueryKey(a ?? 0) },
-  });
-  const queryB = useGetPlayer(b ?? 0, {
-    query: { enabled: !!b, queryKey: getGetPlayerQueryKey(b ?? 0) },
-  });
-  const playerA = queryA.data;
-  const playerB = queryB.data;
-  const failed = queryA.isError ? queryA : queryB.isError ? queryB : null;
-
-  const careerA = aggregateCareer(playerA?.stats);
-  const careerB = aggregateCareer(playerB?.stats);
-
-  const careerRows: Row[] = useMemo(() => {
-    if (!careerA && !careerB) return [];
-    const safe = (
-      o: ReturnType<typeof aggregateCareer> | null,
-      k: keyof NonNullable<ReturnType<typeof aggregateCareer>>,
-    ) => (o ? o[k] : null);
-    const batAvgA = careerA && (careerA.innings ?? 0) > 0 ? careerA.runs / careerA.innings : null;
-    const batAvgB = careerB && (careerB.innings ?? 0) > 0 ? careerB.runs / careerB.innings : null;
-    const bowlAvgA =
-      careerA && careerA.wickets > 0
-        ? (playerA?.stats.reduce((s, x) => s + (x.runsConceded ?? 0), 0) ?? 0) / careerA.wickets
-        : null;
-    const bowlAvgB =
-      careerB && careerB.wickets > 0
-        ? (playerB?.stats.reduce((s, x) => s + (x.runsConceded ?? 0), 0) ?? 0) / careerB.wickets
-        : null;
+  const players: ComparedPlayer[] = SLOTS.flatMap((slot) => {
+    const id = slots[slot];
+    if (id == null) return [];
+    const q = slotData[slot];
+    const detail = q.player.data;
     return [
-      { label: "Matches", aValue: safe(careerA, "games"), bValue: safe(careerB, "games") },
-      { label: "Innings", aValue: safe(careerA, "innings"), bValue: safe(careerB, "innings") },
-      { label: "Runs", aValue: safe(careerA, "runs"), bValue: safe(careerB, "runs") },
-      { label: "Batting Avg", aValue: batAvgA, bValue: batAvgB, format: (v) => v.toFixed(2) },
-      { label: "100s", aValue: safe(careerA, "hundreds"), bValue: safe(careerB, "hundreds") },
-      { label: "50s", aValue: safe(careerA, "fifties"), bValue: safe(careerB, "fifties") },
-      { label: "Wickets", aValue: safe(careerA, "wickets"), bValue: safe(careerB, "wickets") },
       {
-        label: "Bowling Avg",
-        aValue: bowlAvgA,
-        bValue: bowlAvgB,
-        format: (v) => v.toFixed(2),
-        higherIsBetter: false,
+        slot,
+        id,
+        name: detail ? `${detail.givenName} ${detail.surname}` : `Player ${slot.toUpperCase()}`,
+        short: detail?.surname ?? slot.toUpperCase(),
+        token: SLOT_TOKENS[slot],
+        detail,
+        seasons: q.seasons.data ?? [],
+        matches: q.matches.data ?? [],
       },
-      { label: "5WI", aValue: safe(careerA, "fiveWickets"), bValue: safe(careerB, "fiveWickets") },
-      { label: "Catches", aValue: safe(careerA, "catches"), bValue: safe(careerB, "catches") },
-      {
-        label: "Stumpings",
-        aValue: safe(careerA, "stumpings"),
-        bValue: safe(careerB, "stumpings"),
-      },
-      { label: "Run Outs", aValue: safe(careerA, "runOuts"), bValue: safe(careerB, "runOuts") },
     ];
-  }, [careerA, careerB, playerA, playerB]);
+  });
+  const ready = players.length >= 2;
+  const loading = SLOTS.some((s) => slotData[s].loading);
+  const failed = SLOTS.map((s) => slotData[s].failed).find(Boolean) ?? null;
 
-  const allGrades = useMemo(() => {
-    const set = new Set<string>();
-    playerA?.stats.forEach((s) => set.add(s.grade));
-    playerB?.stats.forEach((s) => set.add(s.grade));
-    set.delete("CLUB TOTAL");
-    return sortGradesBySeniority(set);
-  }, [playerA, playerB]);
+  const seasonLists = players.map((p) => p.seasons);
+  const matchLists = players.map((p) => p.matches);
+  const allSeasons = seasonLists.flat().map((r) => r.season);
 
-  function statFor(stats: Stat[] | undefined, grade: string): Stat | undefined {
-    return stats?.find((s) => s.grade === grade);
-  }
+  // Season-level views.
+  const inRange = seasonLists.map((rows) => filterSeasonRows(rows, range));
+  const totals = inRange.map((rows) => seasonTotals(rows));
+  const tape = taleOfTheTape(totals, d);
+  const verdict = computeVerdict(tape, players.length);
+
+  // Radar: the compared players' most-played grade over the range.
+  const radarGrade = mostPlayedGrade(seasonLists, range);
+  const distParams = {
+    ...(view.from != null ? { fromSeason: view.from } : {}),
+    ...(view.to != null ? { toSeason: view.to } : {}),
+  };
+  const distribution = useGetGradeDistribution(radarGrade ?? "", distParams, {
+    query: {
+      enabled: ready && radarGrade != null,
+      queryKey: getGetGradeDistributionQueryKey(radarGrade ?? "", distParams),
+    },
+  });
+  const radarTotals = inRange.map((rows) =>
+    seasonTotals(rows.filter((r) => r.grade === radarGrade)),
+  );
+
+  // Per-match views.
+  const matchesInRange = matchLists.map((rows) => filterMatches(rows, range));
+  const coverageNote = coverageNotes(
+    players.map((p) => p.name),
+    seasonLists,
+    matchLists,
+  );
+  // The opposition metric resets to outs / wk whenever the discipline flips
+  // (state adjusted during render, so the stale metric never paints).
+  const [oppChoice, setOppChoice] = useState<{ d: Discipline; metric: OppMetric } | null>(null);
+  if (oppChoice && oppChoice.d !== d) setOppChoice(null);
+  const oppMetric = effectiveOppMetric(oppChoice, d);
+  const tables = matchesInRange.map((rows) => oppositionTable(rows));
+  const matrix = oppositionMatrix(
+    tables,
+    players.map((p) => p.name),
+    oppMetric,
+  );
+  const noOppBowling = d === "bowl" && tables.every((t) => t.every((r) => r.bowlingMatches === 0));
+  const oppEmpty =
+    matrix.length === 0
+      ? "No scorecards recorded in this range"
+      : noOppBowling
+        ? NO_BOWLING_REASON
+        : null;
+  const nemeses = matchesInRange.map((rows) => nemesis(rows));
+  const race = careerRace(
+    players.map((p) => ({ key: p.slot, matches: p.matches, seasons: p.seasons })),
+    d,
+    range,
+  );
+  const bars = seasonBars(seasonLists, d, range);
+
+  const onPick = (slot: Slot, id: number | null) => setSlots({ [slot]: id });
+  const setDiscipline = (next: Discipline) => setView({ d: next });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-serif font-bold text-primary-text">Head-to-Head</h1>
-        <p className="text-muted-foreground mt-1">
-          Pick any two players and compare their careers side-by-side.
-        </p>
-      </div>
+    <FullBleedPage>
+      <SeasonBar seasons={allSeasons} />
+      <Container className="py-[var(--gap-section)]">
+        <PageStack>
+          <PageHeader
+            eyebrow="Compare up to three players"
+            title="Head-to-head"
+            subtitle={`Senior · ${rangeLabel}`}
+            actions={
+              <Button
+                variant="outline"
+                onClick={() => setSlots(swapFirstTwo(slots))}
+                disabled={slots.a == null && slots.b == null}
+              >
+                <ArrowLeftRight className="mr-2 h-4 w-4" />
+                Swap first two
+              </Button>
+            }
+          />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-card border rounded-lg p-4 shadow-sm">
-        <PlayerPicker value={a} onChange={setA} label="Player A" />
-        <PlayerPicker value={b} onChange={setB} label="Player B" />
-      </div>
+          <PlayerCards
+            slots={slots}
+            details={{
+              a: slotData.a.player.data,
+              b: slotData.b.player.data,
+              c: slotData.c.player.data,
+            }}
+            onPick={onPick}
+          />
 
-      {!a || !b ? (
-        <div className="bg-card border rounded-lg p-12 text-center text-muted-foreground">
-          Select two players to see a head-to-head comparison.
-        </div>
-      ) : failed ? (
-        <QueryError
-          message="One of the players couldn’t be loaded. Please try again."
-          onRetry={() => void failed.refetch()}
-        />
-      ) : (
-        <>
-          <div className="bg-card border rounded-lg shadow-sm overflow-hidden">
-            <div className="grid grid-cols-3 border-b bg-muted/50">
-              <div className="p-4 text-right font-serif text-lg font-bold text-primary-text">
-                {playerA ? `${playerA.givenName} ${playerA.surname}` : "..."}
+          {failed ? (
+            <QueryError
+              message="One of the players couldn’t be loaded. Please try again."
+              onRetry={() => void failed.refetch()}
+            />
+          ) : !ready ? (
+            <EmptyState
+              title="Pick two players to compare"
+              message="Select two players to see a head-to-head comparison. Add a third to make it a three-way."
+            />
+          ) : (
+            <>
+              <VerdictBar verdict={verdict} players={players} />
+              <div className={RANGE_CARD_ROW}>
+                <CompareRadar
+                  players={players}
+                  totals={radarTotals}
+                  best={distribution.data?.best}
+                  grade={radarGrade}
+                  rangeLabel={rangeLabel}
+                  d={d}
+                  loading={loading || distribution.isLoading}
+                  error={distribution.isError}
+                />
+                <TaleOfTheTape
+                  rows={tape}
+                  players={players}
+                  rangeLabel={rangeLabel}
+                  loading={loading}
+                />
               </div>
-              <div className="p-4 text-center font-serif uppercase tracking-wider text-sm text-muted-foreground self-center">
-                Career Totals
-              </div>
-              <div className="p-4 text-left font-serif text-lg font-bold text-primary-text">
-                {playerB ? `${playerB.givenName} ${playerB.surname}` : "..."}
-              </div>
-            </div>
-            <table className="w-full text-sm">
-              <tbody>
-                {careerRows.map((row) => (
-                  <StatRow key={row.label} row={row} />
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {allGrades.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-serif font-bold">By Grade</h2>
-              {allGrades.map((grade) => {
-                const sa = statFor(playerA?.stats, grade);
-                const sb = statFor(playerB?.stats, grade);
-                const rows: Row[] = STAT_FIELDS.map(({ key, label, higherIsBetter, format }) => ({
-                  label,
-                  aValue: (sa?.[key] as number | null | undefined) ?? null,
-                  bValue: (sb?.[key] as number | null | undefined) ?? null,
-                  higherIsBetter,
-                  format,
-                }));
-                return (
-                  <div key={grade} className="bg-card border rounded-lg shadow-sm overflow-hidden">
-                    <div className="px-4 py-3 border-b bg-muted/50 font-semibold text-primary-text flex items-center gap-3">
-                      <GradeBadge grade={grade} size="md" />
-                      <span>{grade}</span>
-                    </div>
-                    <table className="w-full text-sm">
-                      <tbody>
-                        {rows.map((row) => (
-                          <StatRow key={row.label} row={row} />
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })}
-            </div>
+            </>
           )}
-        </>
-      )}
-    </div>
+
+          <SelectionHelper slots={slots} onAdd={(slot, id) => setSlots({ [slot]: id })} />
+
+          {ready && !failed && (
+            <>
+              <OppositionMatrix
+                players={players}
+                rows={matrix}
+                metric={oppMetric}
+                onMetric={(metric) => setOppChoice({ d, metric })}
+                d={d}
+                onDiscipline={setDiscipline}
+                nemeses={nemeses}
+                rangeLabel={rangeLabel}
+                coverageNote={coverageNote}
+                emptyReason={oppEmpty}
+                loading={loading}
+              />
+              <CareerRace
+                players={players}
+                race={race}
+                d={d}
+                onDiscipline={setDiscipline}
+                isCareer={isCareer(range)}
+                coverageNote={coverageNote}
+                loading={loading}
+              />
+              <SeasonBySeason players={players} rows={bars} d={d} loading={loading} />
+            </>
+          )}
+        </PageStack>
+      </Container>
+    </FullBleedPage>
   );
 }

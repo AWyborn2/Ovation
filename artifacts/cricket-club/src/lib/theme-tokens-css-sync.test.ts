@@ -22,7 +22,8 @@ function extractBlock(css: string, selector: string): Record<string, string> {
   if (!match) throw new Error(`Could not find ${selector} block in index.css`);
   const tokens: Record<string, string> = {};
   for (const line of match[1].split("\n")) {
-    const m = /^\s*(--[a-z-]+):\s*([^;]+);/.exec(line);
+    // Digits allowed: the chart palette is numbered (--donut-1 … --donut-6).
+    const m = /^\s*(--[a-z0-9-]+):\s*([^;]+);/.exec(line);
     if (!m) continue;
     tokens[m[1]] = m[2].trim();
   }

@@ -367,6 +367,7 @@ export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<str
   if (!brand.themeOverrides?.["--primary-text"]) {
     tokens["--primary-text"] = contrastSafeText(tokens["--primary"], tokens["--card"]);
   }
+  Object.assign(tokens, deriveChartTokens(tokens, mode));
   return tokens;
 
   function darkTokens(): Record<string, string> {
@@ -438,6 +439,59 @@ export function deriveThemeTokens(brand: ClubBrand, mode: ThemeMode): Record<str
       mode,
     );
   }
+}
+
+/**
+ * Fixed secondary series hues for the stats charts (Compare players B and C).
+ * They sit alongside the tenant accent (player A / primary series), so they are
+ * deliberately brand-independent: cyan and pink read as distinct from every
+ * accent preset. Dark mode uses the bright variant, light mode a deeper one so
+ * the lines keep contrast on a white card.
+ */
+const CHART_SERIES = {
+  dark: { b: "188 86% 53%", c: "330 81% 60%" },
+  light: { b: "193 82% 31%", c: "335 78% 42%" },
+} as const;
+
+/** Clamp a lightness step so a derived chart colour stays a visible colour. */
+function shiftL(t: Hsl, delta: number): string {
+  return hslString({ ...t, l: Math.max(0, Math.min(100, t.l + delta)) });
+}
+
+/**
+ * Chart tokens for the stats analytics kit (`components/stats-charts`),
+ * derived from the already-resolved theme so a tenant's accent (and any
+ * `--primary` / surface override) flows straight into every chart:
+ *
+ * - `--chart-a` primary series (the accent; one step deeper in light mode so
+ *   thin marks hold contrast on white), `--chart-b` / `--chart-c` the fixed
+ *   secondary series;
+ * - `--bar-mute` non-highlighted bars (a step off the border);
+ * - `--line-b` the secondary line series (the ink colour);
+ * - `--donut-1`…`--donut-6` the dismissal palette, in legend order.
+ */
+function deriveChartTokens(
+  tokens: Record<string, string>,
+  mode: ThemeMode,
+): Record<string, string> {
+  const primary = parseTriplet(tokens["--primary"]) ?? parseTriplet(ACCENT_TOKENS.amber)!;
+  const border = parseTriplet(tokens["--border"]) ?? parseTriplet(NAVY_DARK[700])!;
+  const dark = mode === "dark";
+  const series = dark ? CHART_SERIES.dark : CHART_SERIES.light;
+  const chartA = dark ? hslString(primary) : shiftL(primary, -8);
+  return {
+    "--chart-a": chartA,
+    "--chart-b": series.b,
+    "--chart-c": series.c,
+    "--bar-mute": shiftL(border, dark ? 6 : -6),
+    "--line-b": tokens["--foreground"],
+    "--donut-1": chartA,
+    "--donut-2": tokens["--foreground"],
+    "--donut-3": series.b,
+    "--donut-4": series.c,
+    "--donut-5": tokens["--muted-foreground"],
+    "--donut-6": shiftL(border, dark ? 15 : -15),
+  };
 }
 
 /** Parse an "H S% L%" triplet into {h, s, l}; null when malformed. */

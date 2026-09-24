@@ -105,8 +105,9 @@ describe("ImageCropDialog", () => {
     choose(jpeg);
     const frameEl = await screen.findByTestId("crop-frame");
     fireEvent.change(screen.getByLabelText("Zoom"), { target: { value: "4" } });
-    for (let i = 0; i < 200; i++) fireEvent.keyDown(frameEl, { key: "ArrowLeft", shiftKey: true });
-    for (let i = 0; i < 200; i++) fireEvent.keyDown(frameEl, { key: "ArrowUp", shiftKey: true });
+    // 60 × 20px pans past every edge of a 4× 1600×900 image (max 960 × 560).
+    for (let i = 0; i < 60; i++) fireEvent.keyDown(frameEl, { key: "ArrowLeft", shiftKey: true });
+    for (let i = 0; i < 60; i++) fireEvent.keyDown(frameEl, { key: "ArrowUp", shiftKey: true });
     fireEvent.change(screen.getByLabelText("Zoom"), { target: { value: "1" } });
 
     const img = screen.getByTestId("crop-image");
