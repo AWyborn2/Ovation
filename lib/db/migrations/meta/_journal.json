@@ -40,36 +40,43 @@
     {
       "idx": 5,
       "version": "7",
-      "when": 1790212807139,
-      "tag": "0005_social_drafts_v2",
+      "when": 1790218440821,
+      "tag": "0005_premierships_central_seed",
       "breakpoints": true
     },
     {
       "idx": 6,
       "version": "7",
-      "when": 1790214014965,
-      "tag": "0006_social_family_config",
+      "when": 1790212807139,
+      "tag": "0006_social_drafts_v2",
       "breakpoints": true
     },
     {
       "idx": 7,
       "version": "7",
-      "when": 1790214449042,
-      "tag": "0007_social_sweep_watermark",
+      "when": 1790214014965,
+      "tag": "0007_social_family_config",
       "breakpoints": true
     },
     {
       "idx": 8,
       "version": "7",
-      "when": 1790215208200,
-      "tag": "0008_club_photos",
+      "when": 1790214449042,
+      "tag": "0008_social_sweep_watermark",
       "breakpoints": true
     },
     {
       "idx": 9,
       "version": "7",
+      "when": 1790215208200,
+      "tag": "0009_club_photos",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
       "when": 1790217257368,
-      "tag": "0009_auto_post_notifications",
+      "tag": "0010_auto_post_notifications",
       "breakpoints": true
     }
   ]
