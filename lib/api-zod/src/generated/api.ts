@@ -4925,6 +4925,7 @@ export const GetSocialSettingsResponse = zod.object({
   "clubHashtag": zod.string(),
   "clubUrl": zod.string(),
   "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.'),
+  "lastSweepAt": zod.coerce.date().nullish().describe('When the scheduled drafting sweep last completed for this club (read-only).'),
   "familyConfig": zod.object({
   "results": zod.object({
   "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
@@ -5032,6 +5033,7 @@ export const UpdateSocialSettingsResponse = zod.object({
   "clubHashtag": zod.string(),
   "clubUrl": zod.string(),
   "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.'),
+  "lastSweepAt": zod.coerce.date().nullish().describe('When the scheduled drafting sweep last completed for this club (read-only).'),
   "familyConfig": zod.object({
   "results": zod.object({
   "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
@@ -6578,6 +6580,47 @@ export const ApproveSocialDraftParams = zod.object({
 })
 
 export const ApproveSocialDraftResponse = zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+})
+
+
+/**
+ * Records the current content as an "edit" revision first, so the change can be reverted. A caption edit marks the draft edited (later data refreshes keep it); a photo set here is recorded as the admin's choice and never replaced by an automatic pick. Any edit stops auto-promotion.
+ * @summary Edit a draft's caption or swap its photo (keeps a revision)
+ */
+export const UpdateSocialDraftParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateSocialDraftBody = zod.object({
+  "caption": zod.string().optional(),
+  "photoUrl": zod.string().nullish().describe('A library or uploaded image URL; null removes the photo.')
+})
+
+export const UpdateSocialDraftResponse = zod.object({
   "id": zod.number(),
   "engine": zod.string(),
   "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),

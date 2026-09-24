@@ -1,297 +1,281 @@
 import { useMemo, useState } from "react";
+import { Link } from "wouter";
 import {
   useListSocialDrafts,
   getListSocialDraftsQueryKey,
-  useApproveSocialDraft,
-  useDismissSocialDraft,
   useGenerateRoundUp,
-  markSocialDraftPosted,
   generateRecaps,
+  markSocialDraftPosted,
   useListTrackedLinks,
   getListTrackedLinksQueryKey,
   useGetSocialSettings,
   getGetSocialSettingsQueryKey,
   getGetPendingSocialDraftCountQueryKey,
+  useListImports,
+  getListImportsQueryKey,
   type SocialDraft,
   type SocialSettingsBundle,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { ImageIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ShareCardModal, type EngineKey } from "@/components/share-card-modal";
-import { CardGridSkeleton, ListSkeleton, EmptyState, QueryError } from "@/components/data-states";
-import { Loader2, Check, X, ExternalLink, Copy } from "lucide-react";
+import { ListSkeleton, EmptyState, QueryError } from "@/components/data-states";
+import { DataTable, StatusPill, type DataTableColumn } from "@/components/admin-ui";
+import { AutomationCard } from "@/components/social-queue/automation-card";
+import { DraftDrawer } from "@/components/social-queue/draft-drawer";
+import {
+  FAMILIES,
+  FAMILY_LABEL,
+  STATUS_LABEL,
+  STATUS_ORDER,
+  draftGrade,
+  draftHeading,
+  draftSource,
+  draftStatus,
+  draftSubline,
+  isJuniorDraft,
+  relativeTime,
+  type DraftStatus,
+  type Family,
+} from "@/components/social-queue/draft-meta";
 import type { ShareCardInput } from "@/lib/share-card";
+import { cn } from "@/lib/utils";
 
-type DraftStatus = "awaiting_review" | "ready" | "posted" | "dismissed";
-
-type EngineFilter = "all" | Exclude<EngineKey, "ondemand">;
-
-const ENGINE_FILTER_OPTIONS: { value: EngineFilter; label: string }[] = [
-  { value: "all", label: "All types" },
-  { value: "milestone", label: "Milestone" },
-  { value: "roundup", label: "Round-up" },
-  { value: "recap", label: "Recap" },
-  { value: "matchSummary", label: "Match Summary" },
-];
-
+/**
+ * The Studio queue (Social Studio U8): drafts by state, filtered by family and
+ * grade, each opening a drawer with its caption, photo, history and actions.
+ */
 export default function AdminSocialQueue() {
   const qc = useQueryClient();
   const draftsQ = useListSocialDrafts(undefined, {
     query: { queryKey: getListSocialDraftsQueryKey() },
   });
-  const linksQ = useListTrackedLinks({
-    query: { queryKey: getListTrackedLinksQueryKey() },
-  });
-  const settingsQ = useGetSocialSettings({
-    query: { queryKey: getGetSocialSettingsQueryKey() },
-  });
+  const linksQ = useListTrackedLinks({ query: { queryKey: getListTrackedLinksQueryKey() } });
+  const settingsQ = useGetSocialSettings({ query: { queryKey: getGetSocialSettingsQueryKey() } });
+  const importsQ = useListImports({ query: { queryKey: getListImportsQueryKey() } });
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
 
-  // Refresh both the queue list and the admin-nav pending badge after any
-  // action that changes how many drafts are still waiting for review.
+  const [status, setStatus] = useState<DraftStatus>("awaiting_review");
+  const [family, setFamily] = useState<Family | "all">("all");
+  const [grade, setGrade] = useState<string>("all");
+  const [open, setOpen] = useState<SocialDraft | null>(null);
+  const [preview, setPreview] = useState<SocialDraft | null>(null);
+  const [ruGrade, setRuGrade] = useState("A Grade");
+  const [ruSeason, setRuSeason] = useState<number>(new Date().getFullYear());
+
   const invalidateDrafts = () => {
     qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
     qc.invalidateQueries({ queryKey: getGetPendingSocialDraftCountQueryKey() });
   };
+  const roundupM = useGenerateRoundUp({ mutation: { onSuccess: invalidateDrafts } });
 
-  const approveM = useApproveSocialDraft({
-    mutation: {
-      onSuccess: () => {
-        invalidateDrafts();
-        qc.invalidateQueries({ queryKey: getListTrackedLinksQueryKey() });
-      },
-    },
-  });
-  const dismissM = useDismissSocialDraft({
-    mutation: {
-      onSuccess: invalidateDrafts,
-    },
-  });
-  const roundupM = useGenerateRoundUp({
-    mutation: {
-      onSuccess: invalidateDrafts,
-    },
-  });
-
-  const markPosted = async (id: number) => {
-    await markSocialDraftPosted(id);
-    invalidateDrafts();
-  };
-
-  const triggerRecap = async () => {
-    await generateRecaps({ grade, season });
-    invalidateDrafts();
-  };
-
-  const [previewDraft, setPreviewDraft] = useState<SocialDraft | null>(null);
-  const [approveMode, setApproveMode] = useState(false);
-  const [engineFilter, setEngineFilter] = useState<EngineFilter>("all");
-  const [grade, setGrade] = useState("A Grade");
-  const [season, setSeason] = useState<number>(new Date().getFullYear());
-
-  // Approving a pending draft: mint its tracked-link slug (so the caption
-  // carries the /go/ short link), then open the modal in approve mode where the
-  // admin downloads the card + caption bundle and confirms — which marks the
-  // draft and its linked milestone event as posted.
-  const startApproval = async (d: SocialDraft) => {
-    let draft = d;
-    if (d.status === "awaiting_review" && !d.trackedSlug) {
-      try {
-        draft = (await approveM.mutateAsync({ id: d.id })) as SocialDraft;
-      } catch {
-        draft = d;
-      }
-    }
-    setApproveMode(true);
-    setPreviewDraft(draft);
-  };
-
-  const openPreview = (d: SocialDraft) => {
-    setApproveMode(false);
-    setPreviewDraft(d);
-  };
-
-  const drafts = (draftsQ.data ?? []) as SocialDraft[];
-  const byStatus = useMemo(() => {
-    const groups: Record<DraftStatus, SocialDraft[]> = {
-      awaiting_review: [],
-      ready: [],
-      posted: [],
-      dismissed: [],
+  const drafts = useMemo(() => (draftsQ.data ?? []) as SocialDraft[], [draftsQ.data]);
+  const counts = useMemo(() => {
+    const c: Record<DraftStatus, number> = {
+      awaiting_review: 0,
+      ready: 0,
+      posted: 0,
+      dismissed: 0,
     };
-    for (const d of drafts) {
-      if (engineFilter !== "all" && d.engine !== engineFilter) continue;
-      const key = (d.status as DraftStatus) ?? "awaiting_review";
-      (groups[key] ??= []).push(d);
-    }
-    return groups;
-  }, [drafts, engineFilter]);
+    for (const d of drafts) c[draftStatus(d)]++;
+    return c;
+  }, [drafts]);
+  const grades = useMemo(
+    () => Array.from(new Set(drafts.map(draftGrade).filter((g): g is string => !!g))).sort(),
+    [drafts],
+  );
+  const rows = useMemo(
+    () =>
+      drafts.filter(
+        (d) =>
+          draftStatus(d) === status &&
+          (family === "all" || d.family === family) &&
+          (grade === "all" || draftGrade(d) === grade),
+      ),
+    [drafts, status, family, grade],
+  );
 
+  const lastImport = (importsQ.data ?? [])
+    .map((i) => i.importedAt)
+    .sort()
+    .at(-1);
   const clubUrl = bundle?.settings.clubUrl ?? "";
   const buildShortUrl = (slug: string) =>
     clubUrl ? `${clubUrl.replace(/\/$/, "")}/go/${slug}` : `/go/${slug}`;
 
-  const renderList = (list: SocialDraft[]) => {
-    if (draftsQ.isLoading) return <CardGridSkeleton count={4} className="md:grid-cols-2" />;
-    if (draftsQ.isError)
-      return (
+  const columns: DataTableColumn<SocialDraft>[] = [
+    {
+      key: "card",
+      header: "Card",
+      cell: (d) => (
+        <div className="flex items-center gap-3">
+          {d.photoUrl ? (
+            <img src={d.photoUrl} alt="" className="h-9 w-9 rounded-md object-cover" />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <ImageIcon className="h-4 w-4" aria-hidden />
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="truncate font-medium text-foreground">{draftHeading(d)}</p>
+            <p className="truncate text-xs text-muted-foreground">{draftSubline(d)}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "family",
+      header: "Type",
+      cell: (d) => (
+        <div className="flex items-center gap-1.5">
+          {isJuniorDraft(d) && (
+            <Badge
+              className="text-[10px] uppercase tracking-wide text-white"
+              style={{ backgroundColor: "var(--juniors-accent)" }}
+            >
+              Junior
+            </Badge>
+          )}
+          <span className="text-muted-foreground">
+            {d.family ? FAMILY_LABEL[d.family as Family] : d.engine}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "source",
+      header: "Source",
+      cell: (d) => (
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">{draftSource(d)}</span>
+          {d.staleSince && <StatusPill tone="danger">Data changed</StatusPill>}
+        </div>
+      ),
+    },
+  ];
+
+  const hasAnyDraft = drafts.length > 0;
+  const emptyState = hasAnyDraft ? (
+    `No ${STATUS_LABEL[status].toLowerCase()} drafts match these filters.`
+  ) : (
+    <div className="mx-auto max-w-md space-y-2">
+      <p className="font-medium text-foreground">No drafts yet</p>
+      <p>
+        Cards are drafted automatically after the next results import, and on each scheduled sweep.
+      </p>
+      <p className="text-xs">
+        Last import: {relativeTime(lastImport ?? null)} · Last sweep:{" "}
+        {relativeTime(bundle?.settings.lastSweepAt ?? null)}
+      </p>
+      <a href="#automation" className="text-sm font-medium text-primary-text underline">
+        Check which cards are switched on
+      </a>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        Cards drafted from your imports, ready to review, share and post.{" "}
+        <Link href="/admin/social/library" className="text-primary-text underline">
+          Photo library
+        </Link>
+      </p>
+
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Draft state">
+        {STATUS_ORDER.map((s) => (
+          <button
+            key={s}
+            type="button"
+            role="tab"
+            aria-selected={status === s}
+            onClick={() => setStatus(s)}
+            className={cn(
+              "h-9 rounded-full border px-4 text-sm font-semibold transition-colors",
+              status === s
+                ? "border-primary bg-primary/10 text-primary-text"
+                : "border-border bg-card text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {STATUS_LABEL[s]} ({counts[s]})
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Label htmlFor="family-filter" className="text-sm">
+          Type
+        </Label>
+        <select
+          id="family-filter"
+          value={family}
+          onChange={(e) => setFamily(e.target.value as Family | "all")}
+          className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground"
+        >
+          <option value="all">All types</option>
+          {FAMILIES.map((f) => (
+            <option key={f} value={f}>
+              {FAMILY_LABEL[f]}
+            </option>
+          ))}
+        </select>
+        <Label htmlFor="grade-filter" className="text-sm">
+          Grade
+        </Label>
+        <select
+          id="grade-filter"
+          value={grade}
+          onChange={(e) => setGrade(e.target.value)}
+          className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground"
+        >
+          <option value="all">All grades</option>
+          {grades.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {draftsQ.isLoading ? (
+        <ListSkeleton rows={5} />
+      ) : draftsQ.isError ? (
         <QueryError
           message="We couldn’t load the social queue. Please try again."
           onRetry={() => draftsQ.refetch()}
         />
-      );
-    if (list.length === 0)
-      return (
-        <EmptyState
-          title="Nothing here yet"
-          message="Approved, posted, and auto-detected cards will appear here."
+      ) : (
+        <DataTable
+          label="Drafts"
+          rows={rows}
+          columns={columns}
+          getRowId={(d) => d.id}
+          searchText={(d) => `${draftHeading(d)} ${draftSubline(d)}`}
+          searchPlaceholder="Search drafts"
+          onRowClick={setOpen}
+          emptyState={emptyState}
+          minWidth={640}
         />
-      );
-    return (
-      <div className="grid gap-3 md:grid-cols-2">
-        {list.map((d) => {
-          const input = d.cardInput as ShareCardInput | null;
-          const msInput = input?.kind === "matchSummary" ? input : null;
-          const isJuniorMatch = !!(msInput && msInput.junior);
-          const heading = msInput
-            ? `${msInput.club.name} vs ${msInput.opposition.name}`
-            : ((input && (input as { playerName?: string }).playerName) ??
-              (input && (input as { headline?: string }).headline) ??
-              d.engine);
-          const sub = msInput
-            ? `${msInput.matchTitle} — ${msInput.result}`
-            : ((input && (input as { tierLabel?: string }).tierLabel) ??
-              (input && (input as { category?: string }).category) ??
-              (input && (input as { grade?: string }).grade) ??
-              d.appPath);
-          const engineLabel = msInput ? "Match Summary" : d.engine;
-          return (
-            <Card key={d.id}>
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">{heading}</CardTitle>
-                  <div className="flex items-center gap-1.5">
-                    {isJuniorMatch && (
-                      <Badge
-                        className="text-white text-[10px] uppercase tracking-wide"
-                        style={{ backgroundColor: "var(--juniors-accent)" }}
-                      >
-                        Junior
-                      </Badge>
-                    )}
-                    <Badge variant="outline" className="capitalize">
-                      {engineLabel}
-                    </Badge>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">{sub}</p>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  {new Date(d.createdAt).toLocaleString()}
-                </p>
-                {d.trackedSlug && (
-                  <div className="flex items-center gap-2 text-xs">
-                    <code className="bg-muted px-1.5 py-0.5 rounded">
-                      {buildShortUrl(d.trackedSlug)}
-                    </code>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6"
-                      onClick={() => navigator.clipboard.writeText(buildShortUrl(d.trackedSlug!))}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openPreview(d)}
-                    disabled={!input}
-                  >
-                    Preview & download
-                  </Button>
-                  {d.status === "awaiting_review" && (
-                    <>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={() => startApproval(d)}
-                        disabled={approveM.isPending || !input}
-                      >
-                        {approveM.isPending ? (
-                          <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                        ) : (
-                          <Check className="h-3.5 w-3.5 mr-1" />
-                        )}{" "}
-                        Approve &amp; download
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => dismissM.mutate({ id: d.id })}
-                        disabled={dismissM.isPending}
-                      >
-                        <X className="h-3.5 w-3.5 mr-1" /> Skip
-                      </Button>
-                    </>
-                  )}
-                  {d.status === "ready" && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="default"
-                      onClick={() => markPosted(d.id)}
-                    >
-                      <Check className="h-3.5 w-3.5 mr-1" /> Mark posted
-                    </Button>
-                  )}
-                  {d.appPath && (
-                    <Button type="button" size="sm" variant="ghost" asChild>
-                      <a href={d.appPath} target="_blank" rel="noreferrer">
-                        <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-    );
-  };
+      )}
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-muted-foreground text-sm">
-          Auto-detected milestones, generated round-ups, and tracked share links.
-        </p>
-      </div>
+      <AutomationCard config={bundle?.settings.familyConfig} />
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Generate round-up</CardTitle>
+          <CardTitle className="text-base">Generate by hand</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
             <Label htmlFor="ru-grade">Grade</Label>
             <Input
               id="ru-grade"
-              value={grade}
-              onChange={(e) => setGrade(e.target.value)}
+              value={ruGrade}
+              onChange={(e) => setRuGrade(e.target.value)}
               className="w-40"
             />
           </div>
@@ -300,68 +284,39 @@ export default function AdminSocialQueue() {
             <Input
               id="ru-season"
               type="number"
-              value={season}
-              onChange={(e) => setSeason(parseInt(e.target.value, 10) || season)}
+              value={ruSeason}
+              onChange={(e) => setRuSeason(parseInt(e.target.value, 10) || ruSeason)}
               className="w-28"
             />
           </div>
           <Button
             type="button"
-            onClick={() => roundupM.mutate({ data: { grade, season } })}
+            onClick={() => roundupM.mutate({ data: { grade: ruGrade, season: ruSeason } })}
             disabled={roundupM.isPending}
           >
-            {roundupM.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {roundupM.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Generate round-up
           </Button>
-          <Button type="button" variant="secondary" onClick={triggerRecap}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={async () => {
+              await generateRecaps({ grade: ruGrade, season: ruSeason });
+              invalidateDrafts();
+            }}
+          >
             Generate season recap
           </Button>
         </CardContent>
       </Card>
 
-      <div className="flex items-center gap-3">
-        <Label htmlFor="engine-filter" className="text-sm whitespace-nowrap">
-          Filter by type
-        </Label>
-        <select
-          id="engine-filter"
-          value={engineFilter}
-          onChange={(e) => setEngineFilter(e.target.value as EngineFilter)}
-          className="px-2 py-1.5 rounded border bg-card text-foreground text-sm"
-        >
-          {ENGINE_FILTER_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <Tabs defaultValue="awaiting_review">
-        <TabsList>
-          <TabsTrigger value="awaiting_review">
-            Awaiting review ({byStatus.awaiting_review.length})
-          </TabsTrigger>
-          <TabsTrigger value="ready">Ready ({byStatus.ready.length})</TabsTrigger>
-          <TabsTrigger value="posted">Posted ({byStatus.posted.length})</TabsTrigger>
-          <TabsTrigger value="dismissed">Dismissed ({byStatus.dismissed.length})</TabsTrigger>
-          <TabsTrigger value="links">Tracked links</TabsTrigger>
-        </TabsList>
-        <TabsContent value="awaiting_review" className="mt-4">
-          {renderList(byStatus.awaiting_review)}
-        </TabsContent>
-        <TabsContent value="ready" className="mt-4">
-          {renderList(byStatus.ready)}
-        </TabsContent>
-        <TabsContent value="posted" className="mt-4">
-          {renderList(byStatus.posted)}
-        </TabsContent>
-        <TabsContent value="dismissed" className="mt-4">
-          {renderList(byStatus.dismissed)}
-        </TabsContent>
-        <TabsContent value="links" className="mt-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Tracked links</CardTitle>
+        </CardHeader>
+        <CardContent>
           {linksQ.isLoading ? (
-            <ListSkeleton rows={5} />
+            <ListSkeleton rows={3} />
           ) : linksQ.isError ? (
             <QueryError
               message="We couldn’t load tracked links. Please try again."
@@ -370,10 +325,10 @@ export default function AdminSocialQueue() {
           ) : (linksQ.data ?? []).length === 0 ? (
             <EmptyState
               title="No tracked links yet"
-              message="Short links are minted when you approve a card."
+              message="Short links are minted when you mark a card ready."
             />
           ) : (
-            <div className="border rounded-md divide-y">
+            <div className="divide-y divide-border rounded-md border border-border">
               {(linksQ.data ?? []).map((l) => (
                 <div key={l.id} className="flex items-center justify-between px-3 py-2 text-sm">
                   <div className="space-y-0.5">
@@ -387,23 +342,27 @@ export default function AdminSocialQueue() {
               ))}
             </div>
           )}
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
+
+      <DraftDrawer draft={open} onClose={() => setOpen(null)} onPreview={setPreview} />
 
       <ShareCardModal
-        open={!!previewDraft}
-        onOpenChange={(o) => {
-          if (!o) {
-            setPreviewDraft(null);
-            setApproveMode(false);
-          }
-        }}
-        input={(previewDraft?.cardInput as ShareCardInput | null) ?? null}
-        engine={(previewDraft?.engine as EngineKey) ?? "ondemand"}
-        appPath={previewDraft?.appPath ?? undefined}
-        trackedSlug={previewDraft?.trackedSlug ?? null}
-        onApprove={approveMode && previewDraft ? () => markPosted(previewDraft.id) : undefined}
-        approveLabel="Approve & mark posted"
+        open={!!preview}
+        onOpenChange={(o) => !o && setPreview(null)}
+        input={(preview?.cardInput as ShareCardInput | null) ?? null}
+        engine={(preview?.engine as EngineKey) ?? "ondemand"}
+        appPath={preview?.appPath ?? undefined}
+        trackedSlug={preview?.trackedSlug ?? null}
+        onApprove={
+          preview && draftStatus(preview) === "ready"
+            ? async () => {
+                await markSocialDraftPosted(preview.id);
+                invalidateDrafts();
+              }
+            : undefined
+        }
+        approveLabel="Mark posted"
       />
     </div>
   );

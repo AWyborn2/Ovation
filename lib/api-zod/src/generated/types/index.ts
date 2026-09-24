@@ -466,6 +466,7 @@ export * from './updateJuniorBowlingLineBody';
 export * from './updateJuniorMatchBody';
 export * from './updateJuniorParticipantBody';
 export * from './updatePlatformBrandBody';
+export * from './updateSocialDraftRequest';
 export * from './updateTenantBody';
 export * from './updateTenantBodyPlan';
 export * from './updateTenantBrandBody';

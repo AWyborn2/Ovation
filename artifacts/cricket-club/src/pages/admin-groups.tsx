@@ -9,6 +9,7 @@ const AdminSocialCreate = lazy(() => import("@/pages/admin-social-create"));
 const AdminSocialSets = lazy(() => import("@/pages/admin-social-sets"));
 const AdminJuniorSocial = lazy(() => import("@/pages/admin-junior-social"));
 const AdminSocialQueue = lazy(() => import("@/pages/admin-social-queue"));
+const AdminPhotoLibrary = lazy(() => import("@/pages/admin-photo-library"));
 const AdminFixtures = lazy(() => import("@/pages/admin-fixtures"));
 const AdminMatchDisplay = lazy(() => import("@/pages/admin-match-display"));
 const AdminRecordsDisplay = lazy(() => import("@/pages/admin-records-display"));
@@ -163,6 +164,13 @@ export function AdminSocialGroup() {
           label: "Queue",
           path: "/admin/social/queue",
           element: <AdminSocialQueue />,
+          feature: "socialStudio",
+        },
+        {
+          value: "library",
+          label: "Photo library",
+          path: "/admin/social/library",
+          element: <AdminPhotoLibrary />,
           feature: "socialStudio",
         },
       ]}

@@ -3481,6 +3481,11 @@ export interface SocialSettings {
      * @nullable
      */
   seasonStartDate?: string | null;
+  /**
+     * When the scheduled drafting sweep last completed for this club (read-only).
+     * @nullable
+     */
+  lastSweepAt?: string | null;
   familyConfig?: SocialFamilyConfig;
 }
 
@@ -4644,6 +4649,15 @@ export interface CheckoutBody {
 export interface CheckoutResult {
   url: string | null;
   disabled: boolean;
+}
+
+export interface UpdateSocialDraftRequest {
+  caption?: string;
+  /**
+     * A library or uploaded image URL; null removes the photo.
+     * @nullable
+     */
+  photoUrl?: string | null;
 }
 
 export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraftStatus];

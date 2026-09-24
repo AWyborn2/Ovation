@@ -31,5 +31,10 @@ export interface SocialSettings {
      * @nullable
      */
   seasonStartDate?: Date | null;
+  /**
+     * When the scheduled drafting sweep last completed for this club (read-only).
+     * @nullable
+     */
+  lastSweepAt?: Date | null;
   familyConfig?: SocialFamilyConfig;
 }
