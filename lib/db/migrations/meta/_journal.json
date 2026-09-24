@@ -92,6 +92,13 @@
       "when": 1790230331158,
       "tag": "0012_card_template_adjustments",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1790232488681,
+      "tag": "0013_social_drafts_status_contract",
+      "breakpoints": true
     }
   ]
 }
