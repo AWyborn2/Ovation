@@ -127,6 +127,31 @@ export function renderPackCard(
   return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest(packId).inkTint)}">${html}${layers}</div>`;
 }
 
+/** The editable text fields a design exposes, in template order (editor Content panel). */
+export function packTextFields(
+  input: ShareCardInput,
+  packId?: string | null,
+): { key: string; label: string }[] {
+  const template = resolveTemplate(input, packId);
+  if (!template) return [];
+  return template.fields
+    .filter((f) => f.type === "text")
+    .map((f) => ({ key: f.key, label: f.label }));
+}
+
+/** What each text field shows before editor overrides: input and tenant data over samples. */
+export function packFieldValues(
+  input: ShareCardInput,
+  data?: PackCardData | null,
+  packId?: string | null,
+): Record<string, string> {
+  const template = resolveTemplate(input, packId);
+  if (!template) return {};
+  const bound = bindInput(input);
+  if (data) applyPackData(bound, data, input.kind);
+  return { ...fieldDefaults(template), ...bound.values };
+}
+
 /** Wrap a rendered square card in a 1200×630 frame, scaled and centred. */
 function letterboxLandscape(
   squareHtml: string,
