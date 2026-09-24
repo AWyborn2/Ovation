@@ -6697,6 +6697,23 @@ export const UpdateSocialDraftResponse = zod.object({
 
 
 /**
+ * @summary Render a draft's post pack — a PNG per enabled format, its caption and a zip
+ */
+export const CreatePostPackParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CreatePostPackResponse = zod.object({
+  "images": zod.array(zod.object({
+  "size": zod.enum(['square', 'portrait', 'story']),
+  "url": zod.string()
+})),
+  "caption": zod.string(),
+  "zipUrl": zod.string()
+})
+
+
+/**
  * @summary Return a ready draft to review and stop its auto-promotion
  */
 export const SendBackSocialDraftParams = zod.object({

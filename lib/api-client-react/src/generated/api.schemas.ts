@@ -4687,6 +4687,26 @@ export interface CheckoutResult {
   disabled: boolean;
 }
 
+export type PostPackImagesItemSize = typeof PostPackImagesItemSize[keyof typeof PostPackImagesItemSize];
+
+
+export const PostPackImagesItemSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+} as const;
+
+export type PostPackImagesItem = {
+  size: PostPackImagesItemSize;
+  url: string;
+};
+
+export interface PostPack {
+  images: PostPackImagesItem[];
+  caption: string;
+  zipUrl: string;
+}
+
 export interface UpdateSocialDraftRequest {
   caption?: string;
   /**
