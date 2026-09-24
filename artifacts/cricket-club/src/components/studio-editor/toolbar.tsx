@@ -56,35 +56,49 @@ export function EditorToolbar({
     >
       {single ? (
         <>
-          {single.kind === "text" && (
-            <input
-              aria-label="Text"
-              value={single.content ?? ""}
-              onChange={(e) => onText(e.target.value)}
-              className="h-8 w-44 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-sm"
-            />
+          {single.bind && (
+            <span className="rounded-full bg-[var(--ed-accent)] px-2 py-0.5 text-[11px] font-bold text-[var(--ed-on-accent)]">
+              Live · {single.name?.replace(/^Live · /, "") ?? single.bind}
+            </span>
           )}
+          {(single.kind === "text" || single.kind === "sticker" || single.kind === "medal") &&
+            !single.bind && (
+              <input
+                aria-label="Text"
+                value={single.content ?? ""}
+                onChange={(e) => onText(e.target.value)}
+                className="h-8 w-44 rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2 text-sm"
+              />
+            )}
           {(single.kind === "text" || single.kind === "shape") && (
-            <div className="flex items-center gap-1 px-1" role="group" aria-label="Colour">
-              {SWATCHES.map((s) => {
-                const current =
-                  single.kind === "text" ? single.style?.color : single.style?.background;
-                return (
-                  <button
-                    key={s.label}
-                    type="button"
-                    aria-label={s.label}
-                    aria-pressed={current === s.value}
-                    onClick={() => onColour(s.value)}
-                    className={cn(
-                      "h-6 w-6 rounded-full border border-[var(--ed-line)]",
-                      current === s.value && "ring-2 ring-[var(--ed-accent)]",
-                    )}
-                    style={{ background: s.value === "inherit" ? "var(--ed-ink)" : s.value }}
-                  />
-                );
-              })}
-            </div>
+            <>
+              <input
+                type="color"
+                aria-label="Custom colour"
+                className="h-7 w-7 cursor-pointer rounded border border-[var(--ed-line)] bg-transparent"
+                onChange={(e) => onColour(e.target.value)}
+              />
+              <div className="flex items-center gap-1 px-1" role="group" aria-label="Colour">
+                {SWATCHES.map((s) => {
+                  const current =
+                    single.kind === "text" ? single.style?.color : single.style?.background;
+                  return (
+                    <button
+                      key={s.label}
+                      type="button"
+                      aria-label={s.label}
+                      aria-pressed={current === s.value}
+                      onClick={() => onColour(s.value)}
+                      className={cn(
+                        "h-6 w-6 rounded-full border border-[var(--ed-line)]",
+                        current === s.value && "ring-2 ring-[var(--ed-accent)]",
+                      )}
+                      style={{ background: s.value === "inherit" ? "var(--ed-ink)" : s.value }}
+                    />
+                  );
+                })}
+              </div>
+            </>
           )}
         </>
       ) : (

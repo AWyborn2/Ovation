@@ -12,6 +12,7 @@
 
 import type { CardSize } from "../share-card";
 import { escapeHtml } from "./html-utils";
+import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
 
 export type PhotoAdjust = { focalX: number; focalY: number; zoom: number };
 
@@ -23,7 +24,7 @@ export type LayerAnimation = {
   delayMs?: number;
 };
 
-export type FreeLayerKind = "text" | "shape" | "image";
+export type FreeLayerKind = "text" | "shape" | "image" | "medal" | "sticker" | "chart";
 
 export type FreeLayer = {
   id: string;
@@ -36,8 +37,19 @@ export type FreeLayer = {
   locked?: boolean;
   /** Layers sharing a group id select and move together. */
   group?: string;
-  /** Text for `text`; image url for `image`; unused for `shape`. */
+  /**
+   * Text for `text` and `sticker`; image url for `image`; the milestone
+   * (e.g. "100") for `medal`; unused for `shape` and `chart`.
+   */
   content?: string;
+  /** Medal sub-line (e.g. "Career runs"). */
+  sub?: string;
+  /** A live text layer shows this card field's current value (U17 live stats). */
+  bind?: string;
+  /** Chart data captured from the card's scorecard when the chart was added. */
+  chart?: ChartSpec;
+  /** The player a player-block layer belongs to. */
+  playerId?: number;
   style?: {
     color?: string;
     background?: string;
@@ -66,7 +78,14 @@ export type CardAdjustments = {
   /** When each format's photo transform was last edited. */
   photoEditedAt?: Partial<Record<CardSize, number>>;
   layers?: FreeLayer[];
+  /** Image overrides by slot key (e.g. `photo` set from the club library). */
+  images?: Record<string, string>;
+  /** Keep the sponsor strip on the card: its slots can't be hidden while on. */
+  sponsorLock?: boolean;
 };
+
+/** Sponsor strip slot keys (`sponsor1`…). */
+export const isSponsorSlot = (key: string) => /^sponsor[0-9]+$/.test(key);
 
 /** A resolved per-format value and whether it was inherited from another format. */
 export type Resolved<T> = { value: T; inherited: boolean; from: CardSize } | null;
@@ -118,6 +137,7 @@ export function isEmptyAdjustments(adj: CardAdjustments | null | undefined): boo
     Object.keys(adj.fields ?? {}).length === 0 &&
     (adj.hidden ?? []).length === 0 &&
     Object.keys(adj.photo ?? {}).length === 0 &&
+    Object.keys(adj.images ?? {}).length === 0 &&
     (adj.layers ?? []).length === 0
   );
 }
@@ -133,7 +153,11 @@ export function applyFieldOverrides(
 
 const hiddenKeys = (adj: CardAdjustments | null | undefined, prefix: "slot:" | "field:") =>
   new Set(
-    (adj?.hidden ?? []).filter((h) => h.startsWith(prefix)).map((h) => h.slice(prefix.length)),
+    (adj?.hidden ?? [])
+      .filter((h) => h.startsWith(prefix))
+      .map((h) => h.slice(prefix.length))
+      // While the sponsor strip is locked, its slots always render.
+      .filter((k) => !(adj?.sponsorLock && prefix === "slot:" && isSponsorSlot(k))),
   );
 
 /**
@@ -184,7 +208,7 @@ export const LAYER_KEYFRAMES =
 const cssValue = (v: string | undefined): string | undefined =>
   v == null ? undefined : v.replace(/[";<>{}]/g, "");
 
-function layerInner(layer: FreeLayer): string {
+function layerInner(layer: FreeLayer, values: Record<string, string>): string {
   const raw = layer.style ?? {};
   const s = {
     ...raw,
@@ -210,14 +234,21 @@ function layerInner(layer: FreeLayer): string {
         s.background ? `background:${s.background}` : "",
         s.radius != null ? `border-radius:${s.radius}px` : "",
       ].filter(Boolean);
-      return `<div style="${css.join(";")}">${escapeHtml(layer.content ?? "")}</div>`;
+      const text = layer.bind ? (values[layer.bind] ?? "") : (layer.content ?? "");
+      return `<div style="${css.join(";")}">${escapeHtml(text)}</div>`;
     }
     case "shape":
       return `<div style="width:100%;height:100%;background:${s.background ?? "var(--gold,#fbac27)"};border-radius:${s.radius ?? 0}px"></div>`;
     case "image":
       return layer.content
-        ? `<img src="${escapeHtml(layer.content)}" alt="" style="width:100%;height:100%;object-fit:contain;display:block" />`
+        ? `<img src="${escapeHtml(layer.content)}" alt="" style="width:100%;height:100%;object-fit:${layer.style?.radius ? "cover" : "contain"};display:block${layer.style?.radius != null ? `;border-radius:${layer.style.radius}px` : ""}" />`
         : "";
+    case "medal":
+      return renderMedal(layer.content ?? "100", layer.sub);
+    case "sticker":
+      return renderSticker(layer.content ?? "Howzat!");
+    case "chart":
+      return layer.chart ? renderChart(layer.chart) : "";
   }
 }
 
@@ -230,6 +261,8 @@ export function renderFreeLayers(
   adj: CardAdjustments | null | undefined,
   size: CardSize,
   opts: { animate?: boolean } = {},
+  /** Card field values, for live-bound text layers. */
+  values: Record<string, string> = {},
 ): string {
   const layers = adj?.layers ?? [];
   if (layers.length === 0) return "";
@@ -250,7 +283,7 @@ export function renderFreeLayers(
       anim ? `animation:${anim}` : "",
       anim && layer.animation?.delayMs ? `animation-delay:${layer.animation.delayMs}ms` : "",
     ].filter(Boolean);
-    return `<div data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${box.from}"` : ""} style="${css.join(";")}">${layerInner(layer)}</div>`;
+    return `<div data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${box.from}"` : ""} style="${css.join(";")}">${layerInner(layer, values)}</div>`;
   });
   const style = opts.animate ? `<style>${LAYER_KEYFRAMES}</style>` : "";
   return `<div class="pack-free-layers" style="position:absolute;inset:0;pointer-events:none;container-type:inline-size">${style}${parts.join("")}</div>`;

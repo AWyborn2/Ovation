@@ -1,7 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { FileText, Monitor, Shapes, Type } from "lucide-react";
+import {
+  FileText,
+  Image as ImageIcon,
+  Monitor,
+  Palette,
+  Radio,
+  Shapes,
+  Trophy,
+  Type,
+  Upload,
+  Users,
+} from "lucide-react";
 import {
   useListSocialDrafts,
   getListSocialDraftsQueryKey,
@@ -28,6 +39,15 @@ import {
   type RailItem,
 } from "@/components/studio-editor/editor-shell";
 import { ContentPanel, ElementsPanel, TextPanel } from "@/components/studio-editor/panels";
+import {
+  BrandPanel,
+  CricketPanel,
+  LiveStatsPanel,
+  PhotosPanel,
+  PlayersPanel,
+  UploadsPanel,
+} from "@/components/studio-editor/content-panels";
+import { recolourToBrand, setSponsorLock } from "@/components/studio-editor/content";
 import { EditorToolbar } from "@/components/studio-editor/toolbar";
 import { LayersDrawer } from "@/components/studio-editor/layers-drawer";
 import {
@@ -41,6 +61,7 @@ import {
 } from "@/components/studio-editor/history";
 import {
   addLayer,
+  addLayers,
   duplicate,
   group as groupLayers,
   layersOf,
@@ -48,6 +69,7 @@ import {
   removeLayers,
   selectionFor,
   setField,
+  setImage,
   setPhoto,
   toggleHidden,
   toggleSelection,
@@ -90,6 +112,12 @@ const RAIL: RailItem[] = [
   { id: "content", label: "Content", icon: FileText },
   { id: "text", label: "Text", icon: Type },
   { id: "elements", label: "Elements", icon: Shapes },
+  { id: "cricket", label: "Cricket", icon: Trophy },
+  { id: "players", label: "Players", icon: Users },
+  { id: "photos", label: "Photos", icon: ImageIcon },
+  { id: "uploads", label: "Uploads", icon: Upload },
+  { id: "live", label: "Live stats", icon: Radio },
+  { id: "brand", label: "Brand", icon: Palette },
 ];
 
 function useViewportWidth(): number {
@@ -265,6 +293,17 @@ function EditorApp({ draftId }: { draftId: number }) {
     edit(addLayer(doc, layer));
     setSelection([layer.id]);
   };
+  const addGroup = (group: FreeLayer[]) => {
+    edit(addLayers(doc, group));
+    setSelection(group.map((l) => l.id));
+  };
+  // The tenant's own colours, for recolour-to-brand.
+  const palette = [
+    bundle?.brand?.primaryColour ?? brand.primaryColour,
+    bundle?.brand?.backgroundColour ?? brand.backgroundColour,
+    bundle?.brand?.juniorsColour ?? brand.juniorsColour,
+  ].filter((c): c is string => !!c);
+  const fieldValues = packFieldValues(input, data, packId);
 
   const native = packNativeSize(format);
   const title = draftHeading(draft);
@@ -331,7 +370,7 @@ function EditorApp({ draftId }: { draftId: number }) {
               <ContentPanel
                 doc={doc}
                 fields={packTextFields(input, packId)}
-                values={packFieldValues(input, data, packId)}
+                values={fieldValues}
                 slots={packImageSlots(input, { packId, includeHidden: true })}
                 size={format}
                 photo={photoFor(doc, format)?.value ?? { focalX: 0.5, focalY: 0.5, zoom: 1 }}
@@ -342,6 +381,37 @@ function EditorApp({ draftId }: { draftId: number }) {
             )}
             {panel === "text" && <TextPanel size={format} onAdd={addFreeLayer} />}
             {panel === "elements" && <ElementsPanel size={format} onAdd={addFreeLayer} />}
+            {panel === "cricket" && (
+              <CricketPanel size={format} input={input} onAdd={addFreeLayer} />
+            )}
+            {panel === "players" && <PlayersPanel size={format} onAddMany={addGroup} />}
+            {panel === "photos" && (
+              <PhotosPanel
+                size={format}
+                onAdd={addFreeLayer}
+                onSetPhoto={(url) => edit(setImage(doc, "photo", url))}
+              />
+            )}
+            {panel === "uploads" && <UploadsPanel />}
+            {panel === "live" && (
+              <LiveStatsPanel
+                size={format}
+                fields={packTextFields(input, packId)}
+                values={fieldValues}
+                onAdd={addFreeLayer}
+              />
+            )}
+            {panel === "brand" && (
+              <BrandPanel
+                size={format}
+                logoUrl={(bundle?.brand ?? brand).logoUrl ?? null}
+                palette={palette}
+                sponsorLock={!!doc.sponsorLock}
+                onAdd={addFreeLayer}
+                onRecolour={() => edit(recolourToBrand(doc, palette))}
+                onSponsorLock={(on) => edit(setSponsorLock(doc, on))}
+              />
+            )}
           </EditorPanel>
         )}
         <main
