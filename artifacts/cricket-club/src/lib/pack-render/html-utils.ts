@@ -161,7 +161,13 @@ export function expandRepeats(
     const rowDefaults: Record<string, string> = {};
     for (const f of repeatDef?.fields ?? []) rowDefaults[f.key] = f.sample;
 
-    const rows = rowsByKey[key] ?? [];
+    // `data-repeat-max="N"` caps the rows a layout shows (landscape summaries
+    // show the top five of a leaderboard). Rows arrive in rank order, so the
+    // cap keeps the head of the list.
+    const openTag = out.slice(idx, b.contentStart);
+    const maxMatch = /\sdata-repeat-max="(\d+)"/.exec(openTag);
+    const allRows = rowsByKey[key] ?? [];
+    const rows = maxMatch ? allRows.slice(0, Number(maxMatch[1])) : allRows;
     const expanded = rows
       .map((row) => {
         const chosen = (row.variant && byVariant[row.variant]) || base;
@@ -171,8 +177,9 @@ export function expandRepeats(
 
     // Neutralise the `data-repeat` attribute so the container is not re-matched,
     // keep the opening/closing tags, and swap in the expanded rows.
-    const openTag = out.slice(idx, b.contentStart);
-    const newOpenTag = openTag.replace(` data-repeat="${key}"`, "");
+    const newOpenTag = openTag
+      .replace(` data-repeat="${key}"`, "")
+      .replace(/\sdata-repeat-max="\d+"/, "");
     out = out.slice(0, idx) + newOpenTag + expanded + out.slice(b.contentEnd);
     searchFrom = idx + newOpenTag.length + expanded.length;
   }
@@ -357,14 +364,16 @@ export function cleanupEmptyRoles(html: string): string {
  * Remove the whole "presented by <sponsor>" line when the presenting sponsor is
  * empty, so no orphan prose ("presented by", "proudly supported by", …) is left
  * behind. Every such line — via the `presentedBy` fragment or inline — ends with
- * the sponsor name wrapped in the unique `<span style="color:#fff;font-weight:700">`
- * marker, so the tightest enclosing `<div>…</div>` is matched and dropped. Called
+ * the sponsor name wrapped in a `<span style="…">{{sponsorPresentedBy}}</span>`
+ * (the Pack A fragments' `color:#fff;font-weight:700` marker, or the shared
+ * skeleton's `data-sponsor-name` span), so the tightest enclosing
+ * `<div>…</div>` is matched and dropped. Called
  * BEFORE field substitution, while the raw `{{sponsorPresentedBy}}` placeholder is
  * still present. The clubHashtag sibling in footer rows is untouched.
  */
 export function dropEmptyPresentedBy(html: string): string {
   return html.replace(
-    /<div[^>]*>[^<]*<span style="color:#fff;font-weight:700">\{\{sponsorPresentedBy\}\}<\/span><\/div>/g,
+    /<div[^>]*>[^<]*<span (?:data-sponsor-name="1" )?style="[^"]*">\{\{sponsorPresentedBy\}\}<\/span><\/div>/g,
     "",
   );
 }
