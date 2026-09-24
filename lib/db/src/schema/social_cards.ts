@@ -529,11 +529,10 @@ export const socialDraftsTable = pgTable(
     id: serial("id").primaryKey(),
     tenantId: tenantIdColumn(),
     engine: text("engine").notNull(), // "ondemand" | "milestone" | "roundup" | "recap" | "matchSummary" | "matchday" | "teamlist"
-    // "awaiting_review" | "ready" | "posted" | "dismissed". The legacy values
-    // "pending" (= awaiting_review) and "approved" (= ready) stay valid until
-    // the contract migration, so a build from before the rename keeps working
-    // while prod is migrated ahead of publishing. Read through normalizeDraftStatus.
-    status: text("status").notNull().default("pending"),
+    // "awaiting_review" | "ready" | "posted" | "dismissed". The legacy
+    // "pending" / "approved" values were rewritten and dropped by the
+    // contract migration (0013).
+    status: text("status").notNull().default("awaiting_review"),
     cardInput: jsonb("card_input").notNull(), // ShareCardInput JSON
     appPath: text("app_path").notNull().default(""),
     trackedSlug: text("tracked_slug"), // populated when approved
@@ -576,7 +575,7 @@ export const socialDraftsTable = pgTable(
       .where(sql`source_key IS NOT NULL AND status != 'dismissed'`),
     chkStatus: check(
       "social_drafts_status_check",
-      sql`"status" IN ('pending', 'approved', 'awaiting_review', 'ready', 'dismissed', 'posted')`,
+      sql`"status" IN ('awaiting_review', 'ready', 'dismissed', 'posted')`,
     ),
   }),
 );

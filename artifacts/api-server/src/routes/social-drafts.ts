@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, sql, type SQL } from "drizzle-orm";
 import {
   db,
   cardTemplatesTable,
@@ -28,12 +28,7 @@ import {
 } from "../lib/match-summary-drafter";
 import { getTenantId } from "../middlewares/tenant-context";
 import { effectiveDraftStatus, loadAutoPost, type AutoPost } from "../lib/effective-draft-state";
-import {
-  isDraftStatus,
-  normalizeDraftStatus,
-  storedValuesFor,
-  type DraftStatus,
-} from "../lib/draft-status";
+import { isDraftStatus, normalizeDraftStatus, type DraftStatus } from "../lib/draft-status";
 import {
   listDraftRevisions,
   recordDraftRevision,
@@ -101,7 +96,7 @@ router.get("/social-drafts/pending-count", requireAdmin, async (req, res): Promi
   const tenantId = getTenantId(req);
   const conditions: SQL[] = [
     eq(socialDraftsTable.tenantId, tenantId),
-    inArray(socialDraftsTable.status, storedValuesFor("awaiting_review")),
+    eq(socialDraftsTable.status, "awaiting_review"),
   ];
   // Drafts past their deadline already read as ready while auto-post is on.
   if ((await loadAutoPost(tenantId)).enabled) {
