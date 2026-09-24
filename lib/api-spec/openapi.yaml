@@ -4505,6 +4505,90 @@ paths:
         "404":
           description: A photo is not in this club's library
 
+  /studio-tools/background-removal:
+    get:
+      operationId: getBackgroundRemovalStatus
+      tags: [socialCards]
+      summary: Whether background removal is available to this club (admin)
+      description: >-
+        404 when no background-removal provider key is configured; the editor
+        hides the tool.
+      responses:
+        "200":
+          description: The tool is available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudioToolStatus"
+        "401":
+          description: Not signed in
+        "404":
+          description: Background removal is not configured
+    post:
+      operationId: removePhotoBackground
+      tags: [socialCards]
+      summary: Cut the background out of a senior library photo (admin)
+      description: >-
+        Accepts only a photo from this club's library whose player tags are all
+        senior players; anything else is refused before the image is sent to
+        the provider. The cut-out is stored as a new library photo (PNG with
+        transparency) linked to its source through `sourcePhotoId`; the source
+        photo is unchanged.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemovePhotoBackgroundRequest"
+      responses:
+        "200":
+          description: The new cut-out library photo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubPhoto"
+        "400":
+          description: Invalid body
+        "401":
+          description: Not signed in
+        "404":
+          description: Not configured, or the photo is not in this club's library
+        "422":
+          description: The photo is tagged with someone who is not a senior player
+        "502":
+          description: The provider failed; nothing was stored
+
+  /studio-tools/forecast:
+    get:
+      operationId: getFixtureForecast
+      tags: [socialCards]
+      summary: The forecast for a fixture's venue at its start hour (admin)
+      description: >-
+        404 when the fixture is not this club's, has no venue coordinates, or
+        its start hour is outside the forecast range; the editor then hides the
+        forecast block.
+      parameters:
+        - name: fixtureId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Temperature and conditions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FixtureForecast"
+        "400":
+          description: Invalid query
+        "401":
+          description: Not signed in
+        "404":
+          description: No forecast for this fixture
+        "502":
+          description: The forecast provider failed
+
   /notifications:
     get:
       operationId: listNotifications
@@ -11636,6 +11720,45 @@ components:
           type: array
           items:
             type: integer
+        sourcePhotoId:
+          type: ["integer", "null"]
+          description: "For a derived image (a background-removed cut-out), the library photo it was made from."
+
+    StudioToolStatus:
+      type: object
+      required: [available]
+      properties:
+        available:
+          type: boolean
+
+    RemovePhotoBackgroundRequest:
+      type: object
+      required: [photoId]
+      properties:
+        photoId:
+          type: integer
+
+    FixtureForecast:
+      type: object
+      required: [fixtureId, venue, hour, temperatureC, weatherCode, conditions, attribution]
+      properties:
+        fixtureId:
+          type: integer
+        venue:
+          type: ["string", "null"]
+        hour:
+          type: string
+          format: date-time
+          description: "The forecast hour (UTC), the fixture's start time floored to the hour."
+        temperatureC:
+          type: integer
+        weatherCode:
+          type: integer
+          description: "WMO weather interpretation code."
+        conditions:
+          type: string
+        attribution:
+          type: string
 
     IngestClubPhotosRequest:
       type: object

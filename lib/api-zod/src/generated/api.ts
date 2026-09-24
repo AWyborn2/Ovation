@@ -6765,7 +6765,8 @@ export const ListClubPhotosResponseItem = zod.object({
   "grade": zod.string().nullable(),
   "takenAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date(),
-  "playerIds": zod.array(zod.number())
+  "playerIds": zod.array(zod.number()),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 })
 export const ListClubPhotosResponse = zod.array(ListClubPhotosResponseItem)
 
@@ -6798,7 +6799,8 @@ export const IngestClubPhotosResponse = zod.object({
   "grade": zod.string().nullable(),
   "takenAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date(),
-  "playerIds": zod.array(zod.number())
+  "playerIds": zod.array(zod.number()),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 }).optional(),
   "error": zod.string().optional()
 }))
@@ -6829,7 +6831,8 @@ export const TagClubPhotosResponseItem = zod.object({
   "grade": zod.string().nullable(),
   "takenAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date(),
-  "playerIds": zod.array(zod.number())
+  "playerIds": zod.array(zod.number()),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 })
 export const TagClubPhotosResponse = zod.array(TagClubPhotosResponseItem)
 
@@ -6846,6 +6849,57 @@ export const DeleteClubPhotosBody = zod.object({
 
 export const DeleteClubPhotosResponse = zod.object({
   "deleted": zod.number()
+})
+
+
+/**
+ * 404 when no background-removal provider key is configured; the editor hides the tool.
+ * @summary Whether background removal is available to this club (admin)
+ */
+export const GetBackgroundRemovalStatusResponse = zod.object({
+  "available": zod.boolean()
+})
+
+
+/**
+ * Accepts only a photo from this club's library whose player tags are all senior players; anything else is refused before the image is sent to the provider. The cut-out is stored as a new library photo (PNG with transparency) linked to its source through `sourcePhotoId`; the source photo is unchanged.
+ * @summary Cut the background out of a senior library photo (admin)
+ */
+export const RemovePhotoBackgroundBody = zod.object({
+  "photoId": zod.number()
+})
+
+export const RemovePhotoBackgroundResponse = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number()),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+})
+
+
+/**
+ * 404 when the fixture is not this club's, has no venue coordinates, or its start hour is outside the forecast range; the editor then hides the forecast block.
+ * @summary The forecast for a fixture's venue at its start hour (admin)
+ */
+export const GetFixtureForecastQueryParams = zod.object({
+  "fixtureId": zod.coerce.number()
+})
+
+export const GetFixtureForecastResponse = zod.object({
+  "fixtureId": zod.number(),
+  "venue": zod.string().nullable(),
+  "hour": zod.coerce.date().describe('The forecast hour (UTC), the fixture\'s start time floored to the hour.'),
+  "temperatureC": zod.number(),
+  "weatherCode": zod.number().describe('WMO weather interpretation code.'),
+  "conditions": zod.string(),
+  "attribution": zod.string()
 })
 
 

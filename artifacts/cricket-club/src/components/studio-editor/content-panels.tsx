@@ -1,11 +1,16 @@
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Lock, Palette, Radio, Search, Upload } from "lucide-react";
+import { CloudSun, Loader2, Lock, Palette, Radio, Scissors, Search, Upload } from "lucide-react";
 import {
   useListClubPhotos,
   getListClubPhotosQueryKey,
   useListPlayers,
   useListCaps,
+  useGetBackgroundRemovalStatus,
+  getGetBackgroundRemovalStatusQueryKey,
+  useRemovePhotoBackground,
+  useGetFixtureForecast,
+  getGetFixtureForecastQueryKey,
   type ClubPhoto,
 } from "@workspace/api-client-react";
 import type { FreeLayer } from "@/lib/pack-render";
@@ -55,6 +60,12 @@ export function PhotosPanel({
     query: { queryKey: getListClubPhotosQueryKey() },
   });
   const photos = photosQ.data ?? [];
+  // Background removal is offered only when the API has a provider key; the
+  // probe 404s otherwise and the action stays hidden.
+  const removalQ = useGetBackgroundRemovalStatus({
+    query: { queryKey: getGetBackgroundRemovalStatusQueryKey(), retry: false, staleTime: 300_000 },
+  });
+  const canRemoveBackground = removalQ.isSuccess && removalQ.data?.available === true;
   const [season, setSeason] = useState<number | null>(null);
   const [grade, setGrade] = useState<string | null>(null);
   const seasons = [
@@ -100,7 +111,14 @@ export function PhotosPanel({
       ) : (
         <div className="mt-3 grid grid-cols-2 gap-2">
           {shown.map((p) => (
-            <LibraryTile key={p.id} photo={p} size={size} onAdd={onAdd} onSetPhoto={onSetPhoto} />
+            <LibraryTile
+              key={p.id}
+              photo={p}
+              size={size}
+              onAdd={onAdd}
+              onSetPhoto={onSetPhoto}
+              canRemoveBackground={canRemoveBackground}
+            />
           ))}
         </div>
       )}
@@ -113,15 +131,54 @@ function LibraryTile({
   size,
   onAdd,
   onSetPhoto,
+  canRemoveBackground,
 }: {
   photo: ClubPhoto;
   size: CardSize;
   onAdd: (layer: FreeLayer) => void;
   onSetPhoto: (url: string) => void;
+  canRemoveBackground: boolean;
 }) {
+  const qc = useQueryClient();
+  const [removalError, setRemovalError] = useState<string | null>(null);
+  const removal = useRemovePhotoBackground({
+    mutation: {
+      onSuccess: () => {
+        setRemovalError(null);
+        qc.invalidateQueries({ queryKey: getListClubPhotosQueryKey() });
+      },
+      onError: () => setRemovalError("Couldn't remove the background. Try again later."),
+    },
+  });
+  const isCutOut = photo.sourcePhotoId != null;
   return (
     <div className="group relative overflow-hidden rounded-lg bg-[var(--ed-card)]">
-      <img src={photo.thumbUrl} alt="" className="aspect-[4/3] w-full object-cover" />
+      <img
+        src={photo.thumbUrl}
+        alt=""
+        className={cn("aspect-[4/3] w-full", isCutOut ? "object-contain" : "object-cover")}
+      />
+      {isCutOut && (
+        <span className="absolute left-1.5 top-1.5 rounded-full bg-[var(--ed-panel)] px-2 py-0.5 text-[10px] font-semibold">
+          Cut-out
+        </span>
+      )}
+      {canRemoveBackground && !isCutOut && (
+        <button
+          type="button"
+          className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-[var(--ed-panel)] text-[var(--ed-ink)] disabled:opacity-60"
+          title="Remove background (saves a cut-out copy to the library)"
+          aria-label={`Remove background from library photo ${photo.id}`}
+          disabled={removal.isPending}
+          onClick={() => removal.mutate({ data: { photoId: photo.id } })}
+        >
+          {removal.isPending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          ) : (
+            <Scissors className="h-3.5 w-3.5" aria-hidden />
+          )}
+        </button>
+      )}
       <div className="flex gap-1 p-1.5">
         <button
           type="button"
@@ -148,6 +205,11 @@ function LibraryTile({
           Add
         </button>
       </div>
+      {removalError && (
+        <p role="alert" className="px-1.5 pb-1.5 text-[11px] text-[var(--ed-ink2)]">
+          {removalError}
+        </p>
+      )}
     </div>
   );
 }
@@ -295,18 +357,90 @@ const CHARTS: ChartType[] = [
   "wagonWheel",
 ];
 
+/**
+ * The fixture a match-day draft was drafted from, read from its source key
+ * (`matchday:<fixtureId>`); null for any other card or an ad-hoc one.
+ */
+export function matchDayFixtureId(
+  kind: ShareCardInput["kind"],
+  sourceKey: string | null | undefined,
+): number | null {
+  if (kind !== "matchDay" || !sourceKey) return null;
+  const m = /^matchday:(\d+)$/.exec(sourceKey);
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * Match-day forecast for the fixture's venue and start hour. Renders nothing
+ * when the API has no forecast (404: no venue coordinates or out of range) or
+ * the provider fails.
+ */
+function ForecastBlock({
+  fixtureId,
+  size,
+  onAdd,
+}: {
+  fixtureId: number;
+  size: CardSize;
+  onAdd: (layer: FreeLayer) => void;
+}) {
+  const params = { fixtureId };
+  const forecastQ = useGetFixtureForecast(params, {
+    query: { queryKey: getGetFixtureForecastQueryKey(params), retry: false, staleTime: 600_000 },
+  });
+  const f = forecastQ.data;
+  if (!forecastQ.isSuccess || !f) return null;
+  const line = `${f.temperatureC}° · ${f.conditions}`;
+  return (
+    <div>
+      <p className={section}>Match-day forecast</p>
+      <div className="flex items-center gap-3 rounded-lg bg-[var(--ed-card)] p-2.5">
+        <CloudSun className="h-6 w-6 shrink-0 text-[var(--ed-accent)]" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">{line}</p>
+          <p className="truncate text-[11px] text-[var(--ed-ink2)]">
+            {f.venue ? `${f.venue} · ` : ""}at the start hour
+          </p>
+        </div>
+        <button
+          type="button"
+          aria-label="Add the forecast to the card"
+          className="rounded-full bg-[var(--ed-accent)] px-3 py-1.5 text-xs font-bold text-[var(--ed-on-accent)]"
+          onClick={() =>
+            onAdd({
+              id: newId(),
+              kind: "text",
+              name: "Forecast",
+              content: line,
+              style: { fontSize: 3.2, fontWeight: 700 },
+              ...box(size, 15, 80, 70, 6.4),
+            })
+          }
+        >
+          Add
+        </button>
+      </div>
+      <p className="mt-1 text-[10px] text-[var(--ed-muted)]">{f.attribution}</p>
+    </div>
+  );
+}
+
 /** Cricket: scorecard charts from this card's data, milestone medals and stickers. */
 export function CricketPanel({
   size,
   input,
+  fixtureId = null,
   onAdd,
 }: {
   size: CardSize;
   input: ShareCardInput;
+  /** The match-day draft's fixture, for its forecast (see matchDayFixtureId). */
+  fixtureId?: number | null;
   onAdd: (layer: FreeLayer) => void;
 }) {
   return (
     <div>
+      {fixtureId != null && <ForecastBlock fixtureId={fixtureId} size={size} onAdd={onAdd} />}
       <p className={section}>Scorecard & charts</p>
       <div className="grid grid-cols-2 gap-2">
         {CHARTS.map((type) => {

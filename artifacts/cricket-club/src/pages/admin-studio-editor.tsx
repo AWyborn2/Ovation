@@ -44,6 +44,7 @@ import {
   CricketPanel,
   LiveStatsPanel,
   PhotosPanel,
+  matchDayFixtureId,
   PlayersPanel,
   UploadsPanel,
 } from "@/components/studio-editor/content-panels";
@@ -400,7 +401,12 @@ function EditorApp({ draftId }: { draftId: number }) {
             {panel === "text" && <TextPanel size={format} onAdd={addFreeLayer} />}
             {panel === "elements" && <ElementsPanel size={format} onAdd={addFreeLayer} />}
             {panel === "cricket" && (
-              <CricketPanel size={format} input={input} onAdd={addFreeLayer} />
+              <CricketPanel
+                size={format}
+                input={input}
+                fixtureId={matchDayFixtureId(input.kind, draft.sourceKey)}
+                onAdd={addFreeLayer}
+              />
             )}
             {panel === "players" && <PlayersPanel size={format} onAddMany={addGroup} />}
             {panel === "photos" && (

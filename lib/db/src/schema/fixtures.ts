@@ -5,6 +5,7 @@ import {
   text,
   integer,
   boolean,
+  doublePrecision,
   timestamp,
   jsonb,
   uniqueIndex,
@@ -32,6 +33,11 @@ export const fixturesTable = pgTable(
     opponentClubId: integer("opponent_club_id"),
     opponentLogoUrl: text("opponent_logo_url"),
     venue: text("venue"),
+    // Ground coordinates (WGS84), projected from PlayHQ's venue surface for
+    // `source = "playhq"` rows; NULL for manual rows. They feed the match-day
+    // forecast (Social Studio U19) — no coordinates, no forecast.
+    venueLatitude: doublePrecision("venue_latitude"),
+    venueLongitude: doublePrecision("venue_longitude"),
     startAt: timestamp("start_at", { withTimezone: true }).notNull(),
     isHome: boolean("is_home").notNull().default(true),
     notes: text("notes"),
