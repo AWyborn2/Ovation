@@ -203,6 +203,7 @@ router.post(
         parsed.data.input,
         parsed.data.options,
         harnessOriginFromHeaders(req.headers),
+        { format: parsed.data.format, scale: parsed.data.scale },
       );
       res.setHeader("Content-Type", contentType);
       res.setHeader("Content-Length", String(buffer.length));
