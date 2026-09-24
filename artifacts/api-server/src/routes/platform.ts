@@ -161,6 +161,13 @@ router.post("/platform/signup", signupRateLimiter, async (req, res): Promise<voi
         passwordHash,
       },
     });
+    if ("error" in result.premierships) {
+      // Best-effort: the club is live without it; re-run the seed script.
+      req.log?.warn(
+        { tenantId: result.tenant.id, err: result.premierships.error },
+        "provisioning: premiership honour-board seed failed",
+      );
+    }
     const admin = result.admin;
     if (!admin) {
       // provisionTenant throws (and rolls back) when the insert returns no row,
