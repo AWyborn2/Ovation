@@ -5,6 +5,7 @@
  */
 import type { CardAdjustments, FreeLayer, LayerBox } from "@/lib/pack-render";
 import { resolveGeometry } from "@/lib/pack-render";
+import { isSponsorSlot } from "@/lib/pack-render/adjustments";
 import type { CardSize } from "@/lib/share-card";
 
 export type EditorDoc = CardAdjustments;
@@ -77,6 +78,15 @@ export function addLayer(doc: EditorDoc, layer: FreeLayer): EditorDoc {
   return { ...doc, layers: [...layersOf(doc), layer] };
 }
 
+export function addLayers(doc: EditorDoc, layers: FreeLayer[]): EditorDoc {
+  return { ...doc, layers: [...layersOf(doc), ...layers] };
+}
+
+/** Point an image slot (e.g. `photo`) at a new image. */
+export function setImage(doc: EditorDoc, slot: string, url: string): EditorDoc {
+  return { ...doc, images: { ...(doc.images ?? {}), [slot]: url } };
+}
+
 /** Delete layers; locked layers survive. */
 export function removeLayers(doc: EditorDoc, ids: string[]): EditorDoc {
   return mapLayers(doc, (l) => (ids.includes(l.id) && !l.locked ? null : l));
@@ -146,6 +156,8 @@ export function setField(doc: EditorDoc, key: string, value: string | null): Edi
 }
 
 export function toggleHidden(doc: EditorDoc, key: string): EditorDoc {
+  // A locked sponsor strip can't be hidden (U17).
+  if (doc.sponsorLock && key.startsWith("slot:") && isSponsorSlot(key.slice(5))) return doc;
   const hidden = doc.hidden ?? [];
   return {
     ...doc,

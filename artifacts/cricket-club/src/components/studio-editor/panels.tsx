@@ -1,6 +1,7 @@
 import { Eye, EyeOff, RotateCcw } from "lucide-react";
 import type { FreeLayer, PackImageSlot, PhotoAdjust } from "@/lib/pack-render";
 import type { CardSize } from "@/lib/share-card";
+import { isSponsorSlot } from "@/lib/pack-render/adjustments";
 import { cn } from "@/lib/utils";
 import { newId, type EditorDoc } from "./document";
 
@@ -93,6 +94,7 @@ export function ContentPanel({
           <ul className="space-y-1">
             {slots.map((s) => {
               const isHidden = hidden.has(`slot:${s.key}`);
+              const locked = !!doc.sponsorLock && isSponsorSlot(s.key);
               return (
                 <li
                   key={s.key}
@@ -101,8 +103,14 @@ export function ContentPanel({
                   <span className={cn(isHidden && "opacity-50")}>{s.label}</span>
                   <button
                     type="button"
-                    className="rounded p-1 text-[var(--ed-ink2)] hover:text-[var(--ed-ink)]"
                     aria-label={isHidden ? `Show ${s.label}` : `Hide ${s.label}`}
+                    disabled={locked}
+                    title={
+                      locked
+                        ? "The sponsor strip is locked. Turn it off in the Brand panel."
+                        : undefined
+                    }
+                    className="rounded p-1 text-[var(--ed-ink2)] hover:text-[var(--ed-ink)] disabled:cursor-not-allowed disabled:opacity-40"
                     onClick={() => onToggleHidden(`slot:${s.key}`)}
                   >
                     {isHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
