@@ -1,6 +1,6 @@
 {
-  "id": "109f4890-2d12-4d27-9e65-91cfd65b8c92",
-  "prevId": "6e70455c-bcee-44c2-a111-85aa32f31598",
+  "id": "6e70455c-bcee-44c2-a111-85aa32f31598",
+  "prevId": "f6b3128c-8547-4f85-a470-dc10ac854ce6",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -533,6 +533,12 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": false
+        },
+        "participant_id": {
+          "name": "participant_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -678,6 +684,18 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "central_premier_id": {
+          "name": "central_premier_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "central_match_id": {
+          "name": "central_match_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -692,6 +710,27 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "premierships_tenant_central_premier_uq": {
+          "name": "premierships_tenant_central_premier_uq",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "central_premier_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -5020,26 +5059,6 @@
         "last_sweep_at": {
           "name": "last_sweep_at",
           "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "auto_post_enabled": {
-          "name": "auto_post_enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "auto_post_window_hours": {
-          "name": "auto_post_window_hours",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 12
-        },
-        "notification_email": {
-          "name": "notification_email",
-          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -9511,113 +9530,6 @@
         "club_photos_tenant_id_tenants_id_fk": {
           "name": "club_photos_tenant_id_tenants_id_fk",
           "tableFrom": "club_photos",
-          "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.notifications": {
-      "name": "notifications",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "tenant_id": {
-          "name": "tenant_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "kind": {
-          "name": "kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "body": {
-          "name": "body",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "link": {
-          "name": "link",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "payload": {
-          "name": "payload",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::jsonb"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "read_at": {
-          "name": "read_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "notifications_tenant_created_idx": {
-          "name": "notifications_tenant_created_idx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "notifications_tenant_id_tenants_id_fk": {
-          "name": "notifications_tenant_id_tenants_id_fk",
-          "tableFrom": "notifications",
           "tableTo": "tenants",
           "columnsFrom": [
             "tenant_id"

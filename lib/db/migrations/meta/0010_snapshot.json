@@ -1,6 +1,6 @@
 {
-  "id": "4f170c9b-0b7e-4289-bfb3-c6f89c8fc392",
-  "prevId": "109f4890-2d12-4d27-9e65-91cfd65b8c92",
+  "id": "109f4890-2d12-4d27-9e65-91cfd65b8c92",
+  "prevId": "6e70455c-bcee-44c2-a111-85aa32f31598",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -533,6 +533,12 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": false
+        },
+        "participant_id": {
+          "name": "participant_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -678,6 +684,18 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "central_premier_id": {
+          "name": "central_premier_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "central_match_id": {
+          "name": "central_match_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -692,6 +710,27 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "premierships_tenant_central_premier_uq": {
+          "name": "premierships_tenant_central_premier_uq",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "central_premier_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -4976,13 +5015,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": true
-        },
-        "size_landscape": {
-          "name": "size_landscape",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "sponsors_enabled": {
           "name": "sponsors_enabled",
