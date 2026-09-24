@@ -228,9 +228,9 @@ export const PACKS: DesignPack[] = [
     id: "sunset-v1",
     name: "Sunset",
     description:
-      "Golden-hour warmth — photo-first stories over a sunset wash, frosted glass panels and script accent type. Club-social warmth where Broadcast Dark is TV graphics.",
+      "Golden-hour warmth — your photo under an orange-to-plum sunset wash, a sun glow in your accent, a frosted glass panel and a script word. Club-social warmth where Broadcast Dark is TV graphics. Square, portrait, story and 1200×630 landscape.",
     // COVERAGE CONTRACT: must match pack-templates/sunset/index.ts (enforced
-    // by pack-coverage-parity.test.ts). Grows card by card.
+    // by pack-coverage-parity.test.ts).
     cardKinds: [
       "matchSummary",
       "teamList",

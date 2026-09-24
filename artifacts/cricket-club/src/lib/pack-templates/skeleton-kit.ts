@@ -71,6 +71,8 @@ export const K = {
   panelAcc: "var(--sk-panel-acc,var(--sk-acc-text,var(--gold,#FBAC27)))",
   /** Row, pill and small-box corner radii. */
   rowR: "var(--sk-row-r,1cqmin)",
+  /** Boxes (stat boxes, the scorebug) — a pack with pill rows keeps these rounded-rect. */
+  boxR: "var(--sk-box-r,var(--sk-row-r,1cqmin))",
   pillR: "var(--sk-pill-r,.9cqmin)",
   /** Glow on accent fills (Neon). */
   pillGlow: "var(--sk-pill-glow,none)",

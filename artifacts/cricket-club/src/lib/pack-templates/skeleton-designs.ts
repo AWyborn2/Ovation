@@ -163,7 +163,7 @@ function statBox(n: 1 | 2 | 3): string {
     ? `background:color-mix(in srgb, ${K.accSolid} 16%, transparent);border:.25cqmin solid color-mix(in srgb, ${K.accSolid} 55%, transparent)`
     : `background:${K.panel};border:.25cqmin solid ${K.panelBorder};color:${K.panelText}`;
   return (
-    `<div style="${box};border-radius:${K.rowR};padding:2cqmin 3cqmin;text-align:center;min-width:14cqmin">` +
+    `<div style="${box};border-radius:${K.boxR};padding:2cqmin 3cqmin;text-align:center;min-width:14cqmin">` +
     `<div style="font-family:${K_DISP};font-size:9cqmin;line-height:.9${lead ? `;color:${K.accText}` : ""}">{{stat${n}Value}}</div>` +
     `<div style="font-family:${SK_MONO};font-weight:500;font-size:1.9cqmin;letter-spacing:.1em;color:${lead ? K.muted : K.panelMuted};margin-top:1cqmin;text-transform:uppercase">{{stat${n}Label}}</div>` +
     `</div>`
@@ -344,7 +344,7 @@ export function bigMomentFormats(
     kCond("{{playerName}}", 8.4, ";margin-top:1.6cqmin") +
     `<div style="font-size:3.4cqmin;font-weight:600;margin-top:1.4cqmin">{{runs}} <span style="color:${K.muted}">({{balls}})</span> · {{boundaryDetail}}</div>`;
   const scorebug =
-    `<div style="background:${K.panel};color:${K.panelText};border:.2cqmin solid ${K.panelBorder};border-left:1cqmin solid ${K.accSolid};border-radius:${K.rowR};padding:2.4cqmin 3cqmin;display:flex;flex-direction:column;align-items:flex-start">` +
+    `<div style="background:${K.panel};color:${K.panelText};border:.2cqmin solid ${K.panelBorder};border-left:1cqmin solid ${K.accSolid};border-radius:${K.boxR};padding:2.4cqmin 3cqmin;display:flex;flex-direction:column;align-items:flex-start">` +
     `<div style="font-family:${SK_MONO};font-weight:600;font-size:2.2cqmin;letter-spacing:.18em;color:${K.panelMuted}">{{inningsLabel}}</div>` +
     `<div style="font-family:${K_DISP};font-size:13cqmin;line-height:.9;margin-top:1cqmin">{{liveScore}}</div>` +
     `<div style="font-size:3cqmin;font-weight:500;color:${K.panelMuted};margin-top:.8cqmin">{{oversChaseLine}}</div>` +
