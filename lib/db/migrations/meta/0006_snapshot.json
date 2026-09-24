@@ -1,6 +1,6 @@
 {
-  "id": "e2bc9cba-577a-4302-a5e0-763e92d56cdd",
-  "prevId": "ad8e6747-860c-48ab-bbca-9ee5fdd501bb",
+  "id": "8bf3251c-e177-4f4d-8233-e22748204d47",
+  "prevId": "e2bc9cba-577a-4302-a5e0-763e92d56cdd",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -4550,6 +4550,135 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.social_draft_revisions": {
+      "name": "social_draft_revisions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "draft_id": {
+          "name": "draft_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "card_input": {
+          "name": "card_input",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "caption": {
+          "name": "caption",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "photo_url": {
+          "name": "photo_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "photo_source": {
+          "name": "photo_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "adjustments": {
+          "name": "adjustments",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "social_draft_revisions_draft_idx": {
+          "name": "social_draft_revisions_draft_idx",
+          "columns": [
+            {
+              "expression": "draft_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "social_draft_revisions_tenant_id_tenants_id_fk": {
+          "name": "social_draft_revisions_tenant_id_tenants_id_fk",
+          "tableFrom": "social_draft_revisions",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "social_draft_revisions_draft_id_social_drafts_id_fk": {
+          "name": "social_draft_revisions_draft_id_social_drafts_id_fk",
+          "tableFrom": "social_draft_revisions",
+          "tableTo": "social_drafts",
+          "columnsFrom": [
+            "draft_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "social_draft_revisions_reason_check": {
+          "name": "social_draft_revisions_reason_check",
+          "value": "\"reason\" IN ('refresh', 'edit', 'revert')"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.social_drafts": {
       "name": "social_drafts",
       "schema": "",
@@ -4642,6 +4771,72 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
+        },
+        "family": {
+          "name": "family",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_key": {
+          "name": "source_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_imported_at": {
+          "name": "source_imported_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "auto_ready_at": {
+          "name": "auto_ready_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pack_id": {
+          "name": "pack_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "caption": {
+          "name": "caption",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "photo_url": {
+          "name": "photo_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "photo_source": {
+          "name": "photo_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "adjustments": {
+          "name": "adjustments",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "edited_at": {
+          "name": "edited_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stale_since": {
+          "name": "stale_since",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -4678,6 +4873,28 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "social_drafts_source_key_dedupe": {
+          "name": "social_drafts_source_key_dedupe",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "source_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "source_key IS NOT NULL AND status != 'dismissed'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -4701,7 +4918,7 @@
       "checkConstraints": {
         "social_drafts_status_check": {
           "name": "social_drafts_status_check",
-          "value": "\"status\" IN ('pending', 'approved', 'dismissed', 'posted')"
+          "value": "\"status\" IN ('pending', 'approved', 'awaiting_review', 'ready', 'dismissed', 'posted')"
         }
       },
       "isRLSEnabled": false
