@@ -28,6 +28,14 @@ export type FreeLayerKind = "text" | "shape" | "image";
 export type FreeLayer = {
   id: string;
   kind: FreeLayerKind;
+  /** Display name in the layers drawer. */
+  name?: string;
+  /** Hidden layers stay in the document but don't render. */
+  hidden?: boolean;
+  /** Locked layers can't be selected on the canvas or deleted. */
+  locked?: boolean;
+  /** Layers sharing a group id select and move together. */
+  group?: string;
   /** Text for `text`; image url for `image`; unused for `shape`. */
   content?: string;
   style?: {
@@ -193,7 +201,7 @@ function layerInner(layer: FreeLayer): string {
         "align-items:center",
         `justify-content:${s.align === "left" ? "flex-start" : s.align === "right" ? "flex-end" : "center"}`,
         `text-align:${s.align ?? "center"}`,
-        `color:${s.color ?? "var(--ink,#fff)"}`,
+        `color:${s.color ?? "inherit"}`,
         `font-family:${s.fontFamily ?? "var(--disp,'Anton'),sans-serif"}`,
         `font-size:${(s.fontSize ?? 5).toFixed(2)}cqw`,
         `font-weight:${s.fontWeight ?? 700}`,
@@ -205,7 +213,7 @@ function layerInner(layer: FreeLayer): string {
       return `<div style="${css.join(";")}">${escapeHtml(layer.content ?? "")}</div>`;
     }
     case "shape":
-      return `<div style="width:100%;height:100%;background:${s.background ?? "var(--accent,#fbac27)"};border-radius:${s.radius ?? 0}px"></div>`;
+      return `<div style="width:100%;height:100%;background:${s.background ?? "var(--gold,#fbac27)"};border-radius:${s.radius ?? 0}px"></div>`;
     case "image":
       return layer.content
         ? `<img src="${escapeHtml(layer.content)}" alt="" style="width:100%;height:100%;object-fit:contain;display:block" />`
@@ -226,6 +234,7 @@ export function renderFreeLayers(
   const layers = adj?.layers ?? [];
   if (layers.length === 0) return "";
   const parts = layers.map((layer) => {
+    if (layer.hidden) return "";
     const box = resolveGeometry(layer.geometry, layer.editedAt, size);
     if (!box) return "";
     const { x, y, w, h, rotate } = box.value;

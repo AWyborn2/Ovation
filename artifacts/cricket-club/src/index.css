@@ -468,3 +468,25 @@
     opacity: 0.4;
   }
 }
+
+/*
+ * Studio editor palette (Social Studio U16): always dark, whatever the site
+ * mode. The accent follows the tenant's primary colour.
+ */
+.studio-editor {
+  --ed-bg: #0b1014;
+  --ed-canvas: #0e1419;
+  --ed-panel: #131a20;
+  --ed-card: #1b242b;
+  --ed-line: #26313a;
+  --ed-ink: #f2f5f8;
+  --ed-ink2: #8e9ba7;
+  --ed-muted: #4b5763;
+  --ed-accent: hsl(var(--primary));
+  --ed-on-accent: hsl(var(--primary-foreground));
+  --ed-danger: #f87171;
+  --ed-guide: #ec4899;
+  background: var(--ed-bg);
+  color: var(--ed-ink);
+  color-scheme: dark;
+}

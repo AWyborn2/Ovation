@@ -16,6 +16,7 @@ import {
   getGetPendingSocialDraftCountQueryKey,
   type SocialDraft,
 } from "@workspace/api-client-react";
+import { Link } from "wouter";
 import { AlertTriangle, ImageIcon, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -131,6 +132,11 @@ export function DraftDrawer({
             </Button>
           )}
           <div className="ml-auto flex flex-wrap gap-2">
+            {status !== "dismissed" && (
+              <Button asChild variant="outline">
+                <Link href={`/admin/social/editor/${current.id}`}>Open in editor</Link>
+              </Button>
+            )}
             <Button type="button" variant="outline" onClick={() => onPreview(current)}>
               Preview & download
             </Button>
