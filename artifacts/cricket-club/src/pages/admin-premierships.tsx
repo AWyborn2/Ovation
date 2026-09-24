@@ -9,7 +9,6 @@ import {
   type Premiership,
   type PremiershipPlayer,
 } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,8 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
+import { DataTable, EditDrawer, type DataTableColumn } from "@/components/admin-ui";
+import { Plus } from "lucide-react";
 
 type FormPlayer = {
   playerId: number | null;
@@ -63,125 +64,160 @@ export default function AdminPremierships() {
   const invalidate = () => qc.invalidateQueries({ queryKey: getListPremiershipsQueryKey() });
   const onErr = (e: unknown) => setError(handleAdminMutationError(e));
 
+  const rows = [...(data ?? [])].sort((a, b) => b.year - a.year || a.grade.localeCompare(b.grade));
+  const editing = rows.find((p) => p.id === editingId) ?? null;
+
+  const remove = async (p: Premiership) => {
+    if (
+      !(await confirm({
+        title: "Delete premiership",
+        description: `Delete the ${p.year} ${p.grade} premiership?`,
+        confirmText: "Delete",
+        destructive: true,
+      }))
+    )
+      return;
+    setError(null);
+    del.mutate(
+      { id: p.id },
+      {
+        onSuccess: () => {
+          setEditingId(null);
+          invalidate();
+        },
+        onError: onErr,
+      },
+    );
+  };
+
+  const columns: DataTableColumn<Premiership>[] = [
+    {
+      key: "year",
+      header: "Year",
+      className: "w-20",
+      cell: (p) => <span className="font-semibold tabular-nums">{p.year}</span>,
+    },
+    { key: "grade", header: "Grade", cell: (p) => p.grade },
+    { key: "competition", header: "Competition", cell: (p) => p.competition },
+    {
+      key: "captain",
+      header: "Captain",
+      cell: (p) => p.players.find((pp) => pp.isCaptain)?.name ?? "—",
+    },
+    {
+      key: "squad",
+      header: "Squad",
+      className: "w-20",
+      cell: (p) => <span className="tabular-nums">{p.players.length}</span>,
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-end gap-4">
-        <Button onClick={() => setShowNew((v) => !v)}>
-          {showNew ? "Close" : "Add premiership"}
-        </Button>
-      </div>
+    <div className="space-y-5">
       {error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
-      {showNew && (
-        <PremForm
-          initial={emptyForm()}
-          pending={create.isPending}
-          onSubmit={(v) => {
-            setError(null);
-            create.mutate(
-              { data: toPayload(v) },
-              {
-                onSuccess: () => {
-                  setShowNew(false);
-                  invalidate();
-                },
-                onError: onErr,
-              },
-            );
-          }}
-          onCancel={() => setShowNew(false)}
-          submitLabel="Create"
-        />
-      )}
-
       {isError ? (
         <QueryError onRetry={() => refetch()} />
       ) : isLoading ? (
         <ListSkeleton />
-      ) : !data?.length ? (
-        <EmptyState
-          title="No premierships yet"
-          message="Add a premiership to record the club's flags."
-        />
       ) : (
-        data.map((p) => (
-          <Card key={p.id}>
-            <CardHeader className="flex flex-row justify-between items-start gap-3">
-              <CardTitle>
-                {p.year} · {p.grade} · {p.competition}
-              </CardTitle>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setEditingId(editingId === p.id ? null : p.id)}
-                >
-                  {editingId === p.id ? "Close" : "Edit"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={async () => {
-                    if (
-                      !(await confirm({
-                        title: "Delete premiership",
-                        description: `Delete the ${p.year} ${p.grade} premiership?`,
-                        confirmText: "Delete",
-                        destructive: true,
-                      }))
-                    )
-                      return;
-                    setError(null);
-                    del.mutate({ id: p.id }, { onSuccess: invalidate, onError: onErr });
-                  }}
-                >
-                  Delete
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {editingId === p.id ? (
-                <PremForm
-                  initial={toForm(p)}
-                  pending={update.isPending}
-                  onSubmit={(v) => {
-                    setError(null);
-                    update.mutate(
-                      { id: p.id, data: toPayload(v) },
-                      {
-                        onSuccess: () => {
-                          setEditingId(null);
-                          invalidate();
-                        },
-                        onError: onErr,
-                      },
-                    );
-                  }}
-                  onCancel={() => setEditingId(null)}
-                  submitLabel="Save"
-                />
-              ) : (
-                <div className="text-sm text-muted-foreground">
-                  {p.matchDate && <div>Date: {p.matchDate}</div>}
-                  {p.venue && <div>{p.venue}</div>}
-                  {p.result && <div>Result: {p.result}</div>}
-                  {p.mom && <div>MOM: {p.mom}</div>}
-                  <div className="mt-2">
-                    Squad: {p.players.length}{" "}
-                    {p.players.some((pp) => pp.isCaptain) && (
-                      <>· Captain: {p.players.find((pp) => pp.isCaptain)?.name}</>
-                    )}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))
+        <DataTable
+          label="Premierships"
+          rows={rows}
+          columns={columns}
+          getRowId={(p) => p.id}
+          searchText={(p) =>
+            `${p.year} ${p.grade} ${p.competition} ${p.players.map((pp) => pp.name).join(" ")}`
+          }
+          searchPlaceholder="Search year, grade or player"
+          onRowClick={(p) => setEditingId(p.id)}
+          toolbarAction={
+            <Button onClick={() => setShowNew(true)}>
+              <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+              Add premiership
+            </Button>
+          }
+          emptyState={
+            <EmptyState
+              title="No premierships yet"
+              message="Add a premiership to record the club's flags."
+            />
+          }
+          minWidth={600}
+        />
       )}
+
+      <EditDrawer wide open={showNew} onOpenChange={setShowNew} title="Add premiership">
+        {showNew && (
+          <PremForm
+            initial={emptyForm()}
+            pending={create.isPending}
+            onSubmit={(v) => {
+              setError(null);
+              create.mutate(
+                { data: toPayload(v) },
+                {
+                  onSuccess: () => {
+                    setShowNew(false);
+                    invalidate();
+                  },
+                  onError: onErr,
+                },
+              );
+            }}
+            onCancel={() => setShowNew(false)}
+            submitLabel="Create"
+          />
+        )}
+      </EditDrawer>
+
+      <EditDrawer
+        wide
+        open={editing != null}
+        onOpenChange={(o) => !o && setEditingId(null)}
+        title={editing ? `${editing.year} · ${editing.grade}` : ""}
+        description={editing?.competition}
+        footer={
+          editing ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              disabled={del.isPending}
+              onClick={() => remove(editing)}
+            >
+              Delete
+            </Button>
+          ) : undefined
+        }
+      >
+        {editing && (
+          <PremForm
+            key={editing.id}
+            initial={toForm(editing)}
+            pending={update.isPending}
+            onSubmit={(v) => {
+              setError(null);
+              update.mutate(
+                { id: editing.id, data: toPayload(v) },
+                {
+                  onSuccess: () => {
+                    setEditingId(null);
+                    invalidate();
+                  },
+                  onError: onErr,
+                },
+              );
+            }}
+            onCancel={() => setEditingId(null)}
+            submitLabel="Save"
+          />
+        )}
+      </EditDrawer>
     </div>
   );
 }
