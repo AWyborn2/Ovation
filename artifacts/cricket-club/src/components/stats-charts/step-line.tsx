@@ -21,6 +21,10 @@ export interface StepPoint {
   final?: boolean;
 }
 
+/** The final (current) record gets a `*` — unless its label already ends in one ("187*"). */
+const finalLabel = (label: string, final: boolean) =>
+  final && !label.endsWith("*") ? `${label}*` : label;
+
 interface StepDotProps {
   cx?: number;
   cy?: number;
@@ -80,7 +84,7 @@ export function StepLine({
           fill="hsl(var(--foreground))"
           aria-hidden
         >
-          {(pt.label ?? String(pt.value)) + (final ? "*" : "")}
+          {finalLabel(pt.label ?? String(pt.value), final)}
         </text>
       </g>
     );
