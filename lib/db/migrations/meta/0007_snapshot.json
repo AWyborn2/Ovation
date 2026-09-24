@@ -1,6 +1,6 @@
 {
-  "id": "8bf3251c-e177-4f4d-8233-e22748204d47",
-  "prevId": "e2bc9cba-577a-4302-a5e0-763e92d56cdd",
+  "id": "eca4b08a-b04a-4105-8830-1ba50c7b9d5c",
+  "prevId": "8bf3251c-e177-4f4d-8233-e22748204d47",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -4981,6 +4981,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'{}'::jsonb"
+        },
+        "family_config": {
+          "name": "family_config",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
         },
         "autoseed_carousels": {
           "name": "autoseed_carousels",

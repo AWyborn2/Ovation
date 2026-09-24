@@ -8,10 +8,11 @@ import {
   matchesTable,
   type SocialDraftRow,
 } from "@workspace/db";
-import { eq, and, lt, sql } from "drizzle-orm";
+import { eq, and, inArray, lt, sql } from "drizzle-orm";
 import { BOARD_STAT_LABEL, type BoardKey } from "./milestone-detector";
 import { tenantIsCentral } from "./tenant";
 import { upsertDraftByKey } from "./draft-upsert";
+import { premiershipSeasons } from "../routes/premierships";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
 // Fill-ins (playerId >= FILL_IN_THRESHOLD) are excluded from every stats derivation.
@@ -361,7 +362,9 @@ async function generateMilestoneRecapCards(
   return created;
 }
 
-// A premiership card, if the club won this grade in this season (year = start year).
+// A premiership card, if the club won this grade in this season. `year` is the
+// calendar year of the win, so map it to its season start year the same way the
+// honour boards do (premiershipSeasons) rather than comparing it to `season`.
 async function generatePremiershipRecapCards(
   tenantId: number,
   grade: string,
@@ -376,11 +379,11 @@ async function generatePremiershipRecapCards(
       and(
         eq(premiershipsTable.tenantId, tenantId),
         eq(premiershipsTable.grade, grade),
-        eq(premiershipsTable.year, season),
+        inArray(premiershipsTable.year, [season, season + 1]),
       ),
     );
   const created: SocialDraft[] = [];
-  for (const p of prems) {
+  for (const p of prems.filter((p) => premiershipSeasons(p.year, p.matchDate)[0] === season)) {
     created.push(
       await insertCard(
         keyBase,
