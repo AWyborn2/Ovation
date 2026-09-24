@@ -275,8 +275,9 @@ describe("card-forms: prefill mappers", () => {
         gradeLabel: "A Grade",
         topRunScorer: { playerName: "Jack Manuel", value: 428 },
         topWicketTaker: { playerName: "Tom Burrage", value: 24 },
+        topDismissals: { playerName: "Sam Keeper", value: 14 },
       },
-      { gradeLabel: "B Grade", topRunScorer: null, topWicketTaker: null },
+      { gradeLabel: "B Grade", topRunScorer: null, topWicketTaker: null, topDismissals: null },
     ];
     const runs = clubSeasonTotalsToState(2024, "Runs", grades);
     expect(runs.category).toBe("Runs");
@@ -286,6 +287,9 @@ describe("card-forms: prefill mappers", () => {
       playerName: "Jack Manuel",
       value: "428",
     });
+    const dismissals = clubSeasonTotalsToState(2024, "Dismissals", grades);
+    expect(dismissals).toMatchObject({ title: "SAFE HANDS", category: "Dismissals" });
+    expect(dismissals.leaders?.[0]).toMatchObject({ playerName: "Sam Keeper", value: "14" });
     const wickets = clubSeasonTotalsToState(2024, "Wickets", grades);
     expect(wickets.leaders?.[0]).toMatchObject({ playerName: "Tom Burrage", value: "24" });
     // Empty grade renders as a blank-but-present row (still editable).

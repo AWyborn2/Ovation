@@ -68,7 +68,7 @@ const RUNS_WICKETS = [
   { value: "Wickets", label: "Wickets" },
 ] as const;
 
-/** Grade Leader categories: runs, wickets and keepers' dismissals. */
+/** Leaderboard categories: runs, wickets and fielders' dismissals. */
 const LEADER_CATEGORIES = [...RUNS_WICKETS, { value: "Dismissals", label: "Dismissals" }] as const;
 
 const HOME_AWAY = [
@@ -363,7 +363,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
       { key: "title", label: "Title", type: "text", placeholder: "CLUB RUN SCORERS" },
       { key: "subtitle", label: "Subtitle", type: "text" },
       { key: "season", label: "Season", type: "text", placeholder: "2024/25" },
-      { key: "category", label: "Category", type: "select", options: RUNS_WICKETS },
+      { key: "category", label: "Category", type: "select", options: LEADER_CATEGORIES },
     ],
     repeat: {
       key: "leaders",
