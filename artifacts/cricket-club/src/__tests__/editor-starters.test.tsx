@@ -6,6 +6,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import { EditorStarters } from "@/components/social-studio/editor-starters";
 import { SaveTemplateButton } from "@/components/studio-editor/save-template";
+import { OpenInEditorButton } from "@/components/studio-editor/open-in-editor";
 import { renderAt } from "@/test/render";
 import type { ShareCardInput } from "@/lib/share-card";
 
@@ -115,5 +116,21 @@ describe("SaveTemplateButton", () => {
     const call = requests.find((r) => /social-drafts\/7\/save-template/.test(r.url));
     expect(call?.body).toEqual({ name: "Game day" });
     expect(order).toEqual(["draft"]);
+  });
+});
+
+describe("OpenInEditorButton", () => {
+  it("makes an ad-hoc draft of the card in its pack, then reports it opened", async () => {
+    const requests = stubApi();
+    const onOpened = vi.fn();
+    renderAt(
+      <OpenInEditorButton input={century} packId="broadcast-dark" onOpened={onOpened}>
+        Open in editor
+      </OpenInEditorButton>,
+      "/players/1",
+    );
+    fireEvent.click(screen.getByRole("button", { name: /open in editor/i }));
+    await waitFor(() => expect(onOpened).toHaveBeenCalledOnce());
+    expect(posted(requests)[0].body).toEqual({ cardInput: century, packId: "broadcast-dark" });
   });
 });
