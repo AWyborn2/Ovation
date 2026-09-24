@@ -3,7 +3,6 @@ import {
   playersTable,
   playerGradeStatsTable,
   milestoneEventsTable,
-  socialDraftsTable,
   socialSettingsTable,
   matchesTable,
 } from "@workspace/db";
@@ -15,6 +14,14 @@ import {
 } from "./match-milestone-detector";
 import { generateRoundUpDrafts } from "./roundup";
 import { generateMatchSummaryDrafts } from "./match-summary-drafter";
+import {
+  draftKeys,
+  draftsWithKeyPrefix,
+  findDraftByKey,
+  upsertDraftByKey,
+  withdrawDraft,
+} from "./draft-upsert";
+import { tenantIsCentral } from "./tenant";
 
 // The import/match-commit pipeline reads the NATIVE stats tables (Halls Head's
 // curated history). The committing tenant is threaded in from the request so
@@ -89,7 +96,12 @@ async function queueCareerCrossings(
   sourceImportId: number,
   beforeMap: Map<number, CareerTotals>,
 ): Promise<void> {
+  // Career totals come from the native stats tables, which belong to the one
+  // native club. A central tenant has none of its own; drafting here would
+  // celebrate another club's players under this tenant.
+  if (await tenantIsCentral(tenantId)) return;
   const afterMap = await snapshotCareerTotals();
+  await withdrawBrokenCareerMilestones(tenantId, afterMap);
   const crossings = detectCrossings(beforeMap, afterMap);
   if (crossings.length === 0) return;
   const playerIds = Array.from(new Set(crossings.map((c) => c.playerId)));
@@ -103,6 +115,10 @@ async function queueCareerCrossings(
     .where(sql`${playersTable.id} = ANY(${playerIds})`);
   const nameById = new Map(playerRows.map((p) => [p.id, `${p.givenName} ${p.surname}`.trim()]));
   for (const c of crossings) {
+    const sourceKey = draftKeys.careerMilestone(c.playerId, c.boardKey, c.tierIndex);
+    // One card per (player, board, tier): a re-import that re-crosses the same
+    // tier after a correction must not queue a second card.
+    if (await findDraftByKey(tenantId, sourceKey)) continue;
     const name = nameById.get(c.playerId) ?? "Unknown";
     const [event] = await db
       .insert(milestoneEventsTable)
@@ -119,10 +135,11 @@ async function queueCareerCrossings(
         payload: { name },
       })
       .returning();
-    await db.insert(socialDraftsTable).values({
+    await upsertDraftByKey({
       tenantId,
       engine: "milestone",
-      status: "awaiting_review",
+      family: "achievements",
+      sourceKey,
       cardInput: {
         kind: "milestone",
         playerName: name,
@@ -134,8 +151,29 @@ async function queueCareerCrossings(
       },
       appPath: `/players/${c.playerId}`,
       milestoneEventId: event.id,
-      sourceImportId: sourceImportId,
+      sourceImportId,
     });
+  }
+}
+
+/**
+ * A corrected import can take a player back under a tier they had crossed
+ * (e.g. a 100th game that turns out to be the 99th). Withdraw those cards: an
+ * unposted draft is dismissed, a posted one is marked stale (KTD3).
+ */
+async function withdrawBrokenCareerMilestones(
+  tenantId: number,
+  afterMap: Map<number, CareerTotals>,
+): Promise<void> {
+  const drafts = await draftsWithKeyPrefix(tenantId, "milestone:");
+  for (const d of drafts) {
+    const [, player, board] = (d.sourceKey ?? "").split(":");
+    const playerId = Number(player);
+    const threshold = Number((d.cardInput as { threshold?: unknown }).threshold);
+    if (!Number.isInteger(playerId) || !Number.isFinite(threshold)) continue;
+    if (!(board in BOARD_STAT_LABEL)) continue;
+    const total = afterMap.get(playerId)?.[board as BoardKey] ?? 0;
+    if (total < threshold) await withdrawDraft(d);
   }
 }
 

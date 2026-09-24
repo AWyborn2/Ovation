@@ -2,15 +2,16 @@ import {
   db,
   playerGradeSeasonStatsTable,
   playersTable,
-  socialDraftsTable,
   milestoneEventsTable,
   importsTable,
   premiershipsTable,
+  matchesTable,
   type SocialDraftRow,
 } from "@workspace/db";
 import { eq, and, lt, sql } from "drizzle-orm";
 import { BOARD_STAT_LABEL, type BoardKey } from "./milestone-detector";
 import { tenantIsCentral } from "./tenant";
+import { upsertDraftByKey } from "./draft-upsert";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
 // Fill-ins (playerId >= FILL_IN_THRESHOLD) are excluded from every stats derivation.
@@ -135,20 +136,44 @@ const gradeLeaderCard = (
   headline,
 });
 
-// Generic draft inserter — cardInput is an opaque ShareCardInput JSON blob.
+/** What makes one card distinct within a round-up or recap (its key suffix). */
+function cardIdentity(cardInput: Record<string, unknown>): string {
+  if (cardInput.kind === "gradeLeader") return String(cardInput.category ?? "");
+  if (cardInput.kind === "milestone")
+    return `milestone:${String(cardInput.playerName ?? "")}:${String(cardInput.tierLabel ?? "")}`;
+  return String(cardInput.kind ?? "card");
+}
+
+// Keyed draft upsert — cardInput is an opaque ShareCardInput JSON blob. A
+// re-import of the same round refreshes the same card instead of adding one.
 const insertCard = async (
+  keyBase: string,
   tenantId: number,
   engine: "roundup" | "recap",
   cardInput: Record<string, unknown>,
   appPath: string,
   sourceImportId: number | null,
 ): Promise<SocialDraft> => {
-  const [row] = await db
-    .insert(socialDraftsTable)
-    .values({ tenantId, engine, status: "awaiting_review", cardInput, appPath, sourceImportId })
-    .returning();
-  return row;
+  const { draft } = await upsertDraftByKey({
+    tenantId,
+    engine,
+    family: "roundup",
+    sourceKey: `${keyBase}:${cardIdentity(cardInput)}`,
+    cardInput,
+    appPath,
+    sourceImportId,
+  });
+  return draft;
 };
+
+/** Latest round played in a (grade, season) — the round a round-up belongs to. */
+async function latestRound(grade: string, season: number): Promise<number | null> {
+  const [row] = await db
+    .select({ round: sql<number | null>`max(${matchesTable.round})` })
+    .from(matchesTable)
+    .where(and(eq(matchesTable.grade, grade), eq(matchesTable.season, season)));
+  return row?.round == null ? null : Number(row.round);
+}
 
 const topBatting = (rows: PerformerRow[]) => [...rows].sort((a, b) => b.runs - a.runs)[0];
 const topBowling = (rows: PerformerRow[]) => [...rows].sort((a, b) => b.wickets - a.wickets)[0];
@@ -184,6 +209,7 @@ export async function generateRoundUpDrafts(
   const innings = await queryInningsRows(grade, season);
   const created: SocialDraft[] = [];
   const headline = `${grade} ${seasonLabel(season)} Round-up`;
+  const keyBase = `roundup:${season}:${grade}:${(await latestRound(grade, season)) ?? "none"}`;
 
   const topRuns = topBatting(stats);
   const topWkts = topBowling(stats);
@@ -194,6 +220,7 @@ export async function generateRoundUpDrafts(
   if (topRuns && topRuns.runs > 0)
     created.push(
       await insertCard(
+        keyBase,
         tenantId,
         "roundup",
         gradeLeaderCard(grade, "Runs", topRuns, topRuns.runs, headline),
@@ -204,6 +231,7 @@ export async function generateRoundUpDrafts(
   if (topWkts && topWkts.wickets > 0)
     created.push(
       await insertCard(
+        keyBase,
         tenantId,
         "roundup",
         gradeLeaderCard(grade, "Wickets", topWkts, topWkts.wickets, headline),
@@ -214,6 +242,7 @@ export async function generateRoundUpDrafts(
   if (bestBowl)
     created.push(
       await insertCard(
+        keyBase,
         tenantId,
         "roundup",
         gradeLeaderCard(
@@ -230,6 +259,7 @@ export async function generateRoundUpDrafts(
   if (bestBat)
     created.push(
       await insertCard(
+        keyBase,
         tenantId,
         "roundup",
         gradeLeaderCard(
@@ -246,6 +276,7 @@ export async function generateRoundUpDrafts(
   if (topKeeper && topKeeper.dismissals > 0)
     created.push(
       await insertCard(
+        keyBase,
         tenantId,
         "roundup",
         gradeLeaderCard(grade, "Dismissals", topKeeper, topKeeper.dismissals, headline),
@@ -264,6 +295,7 @@ async function generateMilestoneRecapCards(
   season: number,
   headline: string,
 ): Promise<SocialDraft[]> {
+  const keyBase = `recap:${season}:${grade}`;
   const rows = await db
     .select({
       playerId: milestoneEventsTable.playerId,
@@ -308,6 +340,7 @@ async function generateMilestoneRecapCards(
       (r.payload as { name?: string } | null)?.name ?? nameById.get(r.playerId) ?? "Unknown";
     created.push(
       await insertCard(
+        keyBase,
         tenantId,
         "recap",
         {
@@ -335,6 +368,7 @@ async function generatePremiershipRecapCards(
   season: number,
   headline: string,
 ): Promise<SocialDraft[]> {
+  const keyBase = `recap:${season}:${grade}`;
   const prems = await db
     .select()
     .from(premiershipsTable)
@@ -349,6 +383,7 @@ async function generatePremiershipRecapCards(
   for (const p of prems) {
     created.push(
       await insertCard(
+        keyBase,
         tenantId,
         "recap",
         {
@@ -380,6 +415,7 @@ export async function generateRecapDrafts(
   const stats = await queryPerformers(grade, { season });
   const created: SocialDraft[] = [];
   const headline = `${grade} ${seasonLabel(season)} Season Recap`;
+  const keyBase = `recap:${season}:${grade}`;
 
   const topRuns = topBatting(stats);
   const topWkts = topBowling(stats);
@@ -388,6 +424,7 @@ export async function generateRecapDrafts(
   if (topRuns && topRuns.runs > 0)
     created.push(
       await insertCard(
+        keyBase,
         tenantId,
         "recap",
         gradeLeaderCard(grade, "Champion Batsman", topRuns, topRuns.runs, headline),
@@ -398,6 +435,7 @@ export async function generateRecapDrafts(
   if (topWkts && topWkts.wickets > 0)
     created.push(
       await insertCard(
+        keyBase,
         tenantId,
         "recap",
         gradeLeaderCard(grade, "Champion Bowler", topWkts, topWkts.wickets, headline),
@@ -408,6 +446,7 @@ export async function generateRecapDrafts(
   if (topKeeper && topKeeper.dismissals > 0)
     created.push(
       await insertCard(
+        keyBase,
         tenantId,
         "recap",
         gradeLeaderCard(grade, "Most Dismissals", topKeeper, topKeeper.dismissals, headline),
