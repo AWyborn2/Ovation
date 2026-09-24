@@ -218,7 +218,7 @@ export function DraftDrawer({
               {current.photoUrl ? (
                 <img
                   src={current.photoUrl}
-                  alt="Card photo"
+                  alt="Chosen for this card"
                   className="aspect-[4/3] w-full rounded-lg border border-border object-cover"
                 />
               ) : (
@@ -249,7 +249,7 @@ export function DraftDrawer({
                     >
                       <img
                         src={p.thumbUrl}
-                        alt={`Library photo ${p.id}`}
+                        alt={`Library item ${p.id}`}
                         className="aspect-square w-full object-cover"
                       />
                     </button>

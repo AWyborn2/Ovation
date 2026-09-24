@@ -191,7 +191,7 @@ describe("draft drawer", () => {
     renderAt(<AdminSocialQueue />, "/admin/social/queue");
     const dialog = await openDraft("Sam Keeper");
     fireEvent.click(within(dialog).getByRole("button", { name: "Swap photo" }));
-    fireEvent.click(await within(dialog).findByRole("button", { name: "Library photo 5" }));
+    fireEvent.click(await within(dialog).findByRole("button", { name: "Library item 5" }));
     await waitFor(() => {
       const patch = requests.find((r) => r.method === "PATCH");
       expect(patch?.body).toEqual({ photoUrl: "/api/storage/objects/library/5" });
