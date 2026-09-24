@@ -19,6 +19,7 @@
  *   - club-matches.ts  `getClubMatchRows`, match list, scorecard, weekend wrap
  *   - leaderboards.ts  grade leaderboard, season/all-time leaders, per-grade season leaders
  *   - players.ts       participants, careers, player detail / seasons / match log
+ *   - match-innings.ts pure per-innings / batting-order / overs helpers for the match log
  *   - records.ts       club records, centuries, five-fors, milestones
  *   - summaries.ts     club totals, grade summaries, dashboard, ladder, grade/season lists
  *   - premiers.ts      premierships + decider scores + team lists (honour-board seed)
@@ -34,6 +35,7 @@ export * from "./central/privacy";
 export * from "./central/club-matches";
 export * from "./central/leaderboards";
 export * from "./central/players";
+export * from "./central/match-innings";
 export * from "./central/records";
 export * from "./central/summaries";
 export * from "./central/premiers";

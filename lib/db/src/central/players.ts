@@ -13,6 +13,13 @@ import { cacheKey, withCentralCache } from "./cache";
 import { getClubMatchRows, type CentralClubMatchRow } from "./club-matches";
 import { appGradeFromCentral, parseRound, parseSeasonStartYear, parseStage } from "./grades";
 import { isPrivateParticipant, isPrivateRow } from "./privacy";
+import {
+  battedFirstFrom,
+  buildInningsLines,
+  centralOversToBalls,
+  sumKnown,
+  type CentralInningsLine,
+} from "./match-innings";
 import { classifyFieldingKind, classifyInnings, emptyFieldingTally, round2 } from "./scoring";
 import { clubInvolvedWhere, inList } from "./where";
 
@@ -487,6 +494,11 @@ export interface CentralPlayerSeasonRow {
   catches: number | null;
   stumpings: number | null;
   runOuts: number | null;
+  /** Balls faced over the season's played innings; null when none recorded. */
+  ballsFaced: number | null;
+  /** Balls bowled (from ball-notation overs); null when none recorded. */
+  ballsBowled: number | null;
+  maidens: number | null;
 }
 
 /**
@@ -526,6 +538,7 @@ async function centralPlayerSeasonsImpl(
       .select({
         matchId: centralMatchBattingTable.matchId,
         runs: centralMatchBattingTable.runs,
+        balls: centralMatchBattingTable.balls,
         dismissal: centralMatchBattingTable.dismissal,
         dismissalType: centralMatchBattingTable.dismissalType,
       })
@@ -542,6 +555,8 @@ async function centralPlayerSeasonsImpl(
         matchId: centralMatchBowlingTable.matchId,
         wickets: centralMatchBowlingTable.wickets,
         runs: centralMatchBowlingTable.runs,
+        overs: centralMatchBowlingTable.overs,
+        maidens: centralMatchBowlingTable.maidens,
       })
       .from(centralMatchBowlingTable)
       .where(
@@ -594,6 +609,9 @@ async function centralPlayerSeasonsImpl(
     catches: number;
     stumpings: number;
     runOuts: number;
+    ballsFaced: (number | null)[];
+    ballsBowled: (number | null)[];
+    maidens: (number | null)[];
   }
   const byKey = new Map<string, { grade: string; season: number; a: Agg }>();
   const grp = (matchId: number | null): Agg | null => {
@@ -624,6 +642,9 @@ async function centralPlayerSeasonsImpl(
           catches: 0,
           stumpings: 0,
           runOuts: 0,
+          ballsFaced: [],
+          ballsBowled: [],
+          maidens: [],
         },
       };
       byKey.set(k, e);
@@ -645,6 +666,7 @@ async function centralPlayerSeasonsImpl(
     a.hasBat = true;
     a.innings += 1;
     a.runs += runs;
+    a.ballsFaced.push(b.balls);
     if (kind === "notout") a.notOuts += 1;
     if (runs >= 100) a.hundreds += 1;
     else if (runs >= 50) a.fifties += 1;
@@ -661,6 +683,8 @@ async function centralPlayerSeasonsImpl(
     const r = b.runs ?? 0;
     a.wickets += w;
     a.runsConceded += r;
+    a.ballsBowled.push(centralOversToBalls(b.overs));
+    a.maidens.push(b.maidens);
     if (w >= 5) a.fiveW += 1;
     if (w > a.bestW || (w === a.bestW && r < a.bestR)) {
       a.bestW = w;
@@ -699,6 +723,9 @@ async function centralPlayerSeasonsImpl(
         catches: nz(a.catches),
         stumpings: nz(a.stumpings),
         runOuts: nz(a.runOuts),
+        ballsFaced: sumKnown(a.ballsFaced),
+        ballsBowled: sumKnown(a.ballsBowled),
+        maidens: sumKnown(a.maidens),
       };
     })
     .sort((x, y) => x.grade.localeCompare(y.grade) || x.season - y.season);
@@ -733,13 +760,26 @@ export interface CentralPlayerMatchRow {
   catches: number | null;
   stumpings: number | null;
   runOuts: number | null;
+  /** True when the club was the home side. */
+  isHome: boolean;
+  /** Club batted first (from the match-level innings order); null when unknown. */
+  battedFirst: boolean | null;
+  /** The opposition's `central.clubs.club_id` (central id space). */
+  opponentClubId: number | null;
+  /**
+   * The player's played innings in this match, in innings order, with the raw
+   * central dismissal text/type. The route classifies these into the API's
+   * `innings[]` and does not return this field.
+   */
+  inningsLines: CentralInningsLine[];
 }
 
 /**
  * A club player's game-by-game match log from central, mirroring the native
  * /players/:id/matches rows. Two-innings matches collapse to one row (sums;
  * first-innings batting position/dismissal), matching the one-line-per-match
- * native table. Sorted newest first (season, then round).
+ * native table, and keep each innings separately in `inningsLines`. Sorted
+ * newest first (season, then round).
  */
 export async function centralPlayerMatchLog(
   clubId: number,
@@ -827,6 +867,39 @@ async function centralPlayerMatchLogImpl(
     .from(centralMatchesTable)
     .where(and(clubInvolvedWhere(clubId), inList(centralMatchesTable.matchId, [...playedIds])));
 
+  // Batting order (KTD2): each side's minimum match-level innings number, in
+  // ONE batched query over the player's matches. Scoped to the club + its
+  // opponents so the (club_id, match_id) index serves it.
+  const oppOf = (m: (typeof matches)[number]): number | null =>
+    m.homeClubId === clubId ? m.awayClubId : m.homeClubId;
+  const sideClubIds = [
+    ...new Set([clubId, ...matches.map(oppOf).filter((c): c is number => c !== null)]),
+  ];
+  const minInningsRows =
+    matches.length === 0
+      ? []
+      : await centralDb
+          .select({
+            matchId: centralMatchBattingTable.matchId,
+            clubId: centralMatchBattingTable.clubId,
+            minInnings: sql<number | null>`min(${centralMatchBattingTable.innings})::int`,
+          })
+          .from(centralMatchBattingTable)
+          .where(
+            and(
+              inList(centralMatchBattingTable.clubId, sideClubIds),
+              inList(
+                centralMatchBattingTable.matchId,
+                matches.map((m) => m.matchId),
+              ),
+            ),
+          )
+          .groupBy(centralMatchBattingTable.matchId, centralMatchBattingTable.clubId);
+  const minInnings = new Map<string, number | null>();
+  for (const r of minInningsRows) {
+    minInnings.set(`${r.matchId}|${r.clubId}`, r.minInnings == null ? null : Number(r.minInnings));
+  }
+
   const out: CentralPlayerMatchRow[] = [];
   for (const m of matches) {
     const grade = appGradeFromCentral(m.grade);
@@ -834,6 +907,11 @@ async function centralPlayerMatchLogImpl(
     if (!grade || season === null) continue;
 
     const isHome = m.homeClubId === clubId;
+    const opponentClubId = oppOf(m);
+    const battedFirst = battedFirstFrom(
+      minInnings.get(`${m.matchId}|${clubId}`),
+      opponentClubId === null ? null : minInnings.get(`${m.matchId}|${opponentClubId}`),
+    );
     const batLines = batting
       .filter((b) => b.matchId === m.matchId)
       .sort((a, b) => (a.innings ?? 0) - (b.innings ?? 0));
@@ -899,6 +977,10 @@ async function centralPlayerMatchLogImpl(
       catches: fld.catches || null,
       stumpings: fld.stumpings || null,
       runOuts: fld.runOuts || null,
+      isHome,
+      battedFirst,
+      opponentClubId,
+      inningsLines: buildInningsLines(batLines),
     });
   }
 
