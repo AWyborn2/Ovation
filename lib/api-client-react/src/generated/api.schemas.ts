@@ -9,10 +9,24 @@ export type CardVideoJobInputInput = { [key: string]: unknown };
 
 export type CardVideoJobInputOptions = { [key: string]: unknown };
 
+export type CardVideoJobInputFormat = typeof CardVideoJobInputFormat[keyof typeof CardVideoJobInputFormat];
+
+
+export const CardVideoJobInputFormat = {
+  mp4: 'mp4',
+  gif: 'gif',
+} as const;
+
 export interface CardVideoJobInput {
   input: CardVideoJobInputInput;
   options: CardVideoJobInputOptions;
   fps?: number | null;
+  format?: CardVideoJobInputFormat;
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  scale?: number;
 }
 
 export type CardVideoJobStatus = typeof CardVideoJobStatus[keyof typeof CardVideoJobStatus];
@@ -39,9 +53,24 @@ export type CardRenderStillInputInput = { [key: string]: unknown };
 
 export type CardRenderStillInputOptions = { [key: string]: unknown };
 
+export type CardRenderStillInputFormat = typeof CardRenderStillInputFormat[keyof typeof CardRenderStillInputFormat];
+
+
+export const CardRenderStillInputFormat = {
+  png: 'png',
+  jpg: 'jpg',
+  pdf: 'pdf',
+} as const;
+
 export interface CardRenderStillInput {
   input: CardRenderStillInputInput;
   options: CardRenderStillInputOptions;
+  format?: CardRenderStillInputFormat;
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  scale?: number;
 }
 
 export interface HealthStatus {

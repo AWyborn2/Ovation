@@ -78,7 +78,6 @@ export function useSetEditor(id: number) {
   const [slides, setSlides] = useState<WorkingSlide[]>([]);
   const [published, setPublished] = useState(false);
   const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
-  const [editingLayout, setEditingLayout] = useState(false);
   const [exporting, setExporting] = useState(false);
   const loadedFor = useRef<number | null>(null);
 
@@ -400,8 +399,6 @@ export function useSetEditor(id: number) {
     selectedSlideId,
     setSelectedSlideId,
     selectedSlide,
-    editingLayout,
-    setEditingLayout,
     exporting,
     enabledSizes,
     sponsorsOn,

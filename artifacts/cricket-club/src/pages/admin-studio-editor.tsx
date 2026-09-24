@@ -52,6 +52,7 @@ import { recolourToBrand, setSponsorLock } from "@/components/studio-editor/cont
 import { EditorToolbar } from "@/components/studio-editor/toolbar";
 import { LayersDrawer } from "@/components/studio-editor/layers-drawer";
 import { SaveTemplateButton } from "@/components/studio-editor/save-template";
+import { DownloadMenu } from "@/components/studio-editor/export/download-menu";
 import {
   commit,
   commitFrom,
@@ -105,7 +106,7 @@ import {
   draftInput,
   draftStatus,
 } from "@/components/social-queue/draft-meta";
-import type { CardSize } from "@/lib/share-card";
+import { cardBaseFilename, type CardSize } from "@/lib/share-card";
 
 /** Below this width the editor shows the card with a larger-screen notice. */
 export const EDITOR_MIN_WIDTH = 1024;
@@ -361,14 +362,20 @@ function EditorApp({ draftId }: { draftId: number }) {
         saving={update.isPending}
         onSave={save}
         actions={
-          <SaveTemplateButton
-            draftId={draftId}
-            beforeSave={() =>
-              dirty
-                ? update.mutateAsync({ id: draftId, data: { adjustments: doc } })
-                : Promise.resolve()
-            }
-          />
+          <>
+            <DownloadMenu
+              card={{ input, size: format, theme, data, packId, adjustments: doc }}
+              baseName={cardBaseFilename(input, bundle?.brand ?? brand)}
+            />
+            <SaveTemplateButton
+              draftId={draftId}
+              beforeSave={() =>
+                dirty
+                  ? update.mutateAsync({ id: draftId, data: { adjustments: doc } })
+                  : Promise.resolve()
+              }
+            />
+          </>
         }
       />
       <div className="flex min-h-0 flex-1">

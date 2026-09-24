@@ -58,6 +58,7 @@ export function SaveTemplateButton({
     <>
       <button
         type="button"
+        aria-label="Save as template"
         onClick={() => {
           setOpen(true);
           setDone(false);
@@ -67,7 +68,6 @@ export function SaveTemplateButton({
       >
         <LayoutTemplate className="h-4 w-4" aria-hidden />
         <span className="hidden lg:inline">Save as template</span>
-        <span className="sr-only lg:hidden">Save as template</span>
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

@@ -120,6 +120,7 @@ export function LineOverlay<T extends Record<string, unknown>>({
                     t === "best" ? "hsl(var(--primary-foreground))" : "hsl(var(--foreground))"
                   }
                   mark={markProps(tooltip(row, bars.key))}
+                  tone={t}
                 />
               </g>
             );

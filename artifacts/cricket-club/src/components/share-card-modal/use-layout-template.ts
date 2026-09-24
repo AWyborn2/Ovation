@@ -141,10 +141,6 @@ export function useLayoutTemplate({
     () => (savedLayout.length ? JSON.stringify(savedLayout) : "none"),
     [savedLayout],
   );
-  const [editingLayout, setEditingLayout] = useState(false);
-  useEffect(() => {
-    if (!open) setEditingLayout(false);
-  }, [open]);
 
   return {
     applicableTemplates,
@@ -161,8 +157,6 @@ export function useLayoutTemplate({
     isAdmin,
     savedLayout,
     layoutSig,
-    editingLayout,
-    setEditingLayout,
     imageOverrides,
     setImageOverrides,
     setSlotOverride,
