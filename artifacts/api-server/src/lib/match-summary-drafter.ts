@@ -25,6 +25,7 @@ import { eq, and, ne } from "drizzle-orm";
 import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
 import { matchToSummaryInput, juniorMatchToSummaryInput } from "@workspace/scorecard";
 import { getTenantBrand } from "./tenant-brand";
+import { familyAllows, resolveFamilyConfig } from "./social-families";
 import { loadMatchDetail } from "./match-detail";
 import { overlayNativeOpponents } from "./club-brand";
 import { getPrivateIds, splitScores, MASK_NAME } from "./junior-helpers";
@@ -51,10 +52,12 @@ async function loadSocialSettings(tenantId: number): Promise<SocialSettings | nu
 }
 
 /**
- * Should a draft be generated for this grade? Returns false when:
- *   - The global engineMatchSummary is OFF
- *   - The grade is explicitly disabled in matchSummaryGradeConfig
- *   - The grade is absent from the config AND the default for the match type
+ * Should a draft be generated for this grade? Follows the "results" family
+ * (lib/social-families.ts), which a tenant that never saved family switches
+ * derives from engineMatchSummary + matchSummaryGradeConfig. False when:
+ *   - The results family is OFF
+ *   - The grade is explicitly disabled
+ *   - The grade has no override AND the default for the match type
  *     (senior/junior) is OFF
  *
  * Default: senior ON, junior OFF (junior content is opt-in per grade).
@@ -65,14 +68,7 @@ export function shouldDraftGrade(
   junior: boolean,
 ): boolean {
   if (!settings) return false;
-  if (!settings.engineMatchSummary) return false;
-
-  const config = settings.matchSummaryGradeConfig ?? {};
-  const key = grade ?? "";
-  if (key in config) return config[key].enabled;
-
-  // Default: senior ON, junior OFF.
-  return !junior;
+  return familyAllows(resolveFamilyConfig(settings), "results", grade, junior);
 }
 
 // ---------------------------------------------------------------------------
@@ -301,7 +297,7 @@ export async function generateMatchSummaryDrafts(
   if (matchIds.length === 0) return result;
 
   const settings = await loadSocialSettings(tenantId);
-  if (!settings?.engineMatchSummary) {
+  if (!resolveFamilyConfig(settings).results.enabled) {
     result.skipped = matchIds.length;
     return result;
   }
@@ -356,7 +352,7 @@ export async function generateJuniorMatchSummaryDrafts(
   if (matchIds.length === 0) return result;
 
   const settings = await loadSocialSettings(tenantId);
-  if (!settings?.engineMatchSummary) {
+  if (!resolveFamilyConfig(settings).results.enabled) {
     result.skipped = matchIds.length;
     return result;
   }

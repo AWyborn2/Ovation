@@ -21,6 +21,7 @@ import {
   upsertDraftByKey,
   withdrawDraft,
 } from "./draft-upsert";
+import { familyAllows, resolveFamilyConfig } from "./social-families";
 import { tenantIsCentral } from "./tenant";
 
 // The import/match-commit pipeline reads the NATIVE stats tables (Halls Head's
@@ -89,7 +90,7 @@ export async function snapshotGradeGames(grade: string): Promise<Map<number, num
  * totals against `beforeMap` and write a `milestone_events` + `social_drafts`
  * row for each crossing. `sourceImportId` stamps the originating import (for a
  * batch, the representative/first committed match). Caller gates on
- * `socialSettings.engineMilestone`.
+ * the achievements family.
  */
 async function queueCareerCrossings(
   tenantId: number,
@@ -184,9 +185,9 @@ async function withdrawBrokenCareerMilestones(
  *
  *  - Milestone detection: compares post-recompute career totals against the
  *    supplied `beforeMap`, queueing milestone events + drafts for tier crossings
- *    (gated on `socialSettings.engineMilestone`).
+ *    (gated on the achievements family).
  *  - Round-up drafts: top performers per affected grade for the season (gated on
- *    `socialSettings.engineRoundUp`).
+ *    the roundup family, per grade).
  */
 export async function runPostCommitSocial(opts: {
   tenantId: number;
@@ -203,8 +204,9 @@ export async function runPostCommitSocial(opts: {
     .select()
     .from(socialSettingsTable)
     .where(eq(socialSettingsTable.tenantId, tenantId));
+  const families = resolveFamilyConfig(socialSettings ?? null);
 
-  if (socialSettings?.engineMilestone) {
+  if (families.achievements.enabled) {
     try {
       await queueCareerCrossings(tenantId, importId, beforeMap);
     } catch (err) {
@@ -212,7 +214,7 @@ export async function runPostCommitSocial(opts: {
     }
   }
 
-  if (matchContext && socialSettings?.engineMilestone) {
+  if (matchContext && familyAllows(families, "achievements", matchContext.grade, false)) {
     try {
       await detectAndQueueMatchMilestones(matchContext);
     } catch (err) {
@@ -221,10 +223,9 @@ export async function runPostCommitSocial(opts: {
   }
 
   try {
-    if (socialSettings?.engineRoundUp) {
-      for (const grade of affectedGrades) {
-        await generateRoundUpDrafts(tenantId, grade, season, importId);
-      }
+    for (const grade of affectedGrades) {
+      if (!familyAllows(families, "roundup", grade, false)) continue;
+      await generateRoundUpDrafts(tenantId, grade, season, importId);
     }
   } catch (err) {
     logger.error({ err }, "auto roundup failed");
@@ -272,14 +273,16 @@ export async function runBatchPostCommitSocial(opts: {
     .select()
     .from(socialSettingsTable)
     .where(eq(socialSettingsTable.tenantId, tenantId));
+  const families = resolveFamilyConfig(socialSettings ?? null);
 
-  if (socialSettings?.engineMilestone) {
+  if (families.achievements.enabled) {
     try {
       await queueCareerCrossings(tenantId, sourceImportId, beforeMap);
     } catch (err) {
       logger.error({ err }, "milestone detection failed");
     }
     for (const ctx of matchContexts) {
+      if (!familyAllows(families, "achievements", ctx.grade, false)) continue;
       try {
         await detectAndQueueMatchMilestones(ctx);
       } catch (err) {
@@ -289,10 +292,9 @@ export async function runBatchPostCommitSocial(opts: {
   }
 
   try {
-    if (socialSettings?.engineRoundUp) {
-      for (const { grade, season } of affected) {
-        await generateRoundUpDrafts(tenantId, grade, season, sourceImportId);
-      }
+    for (const { grade, season } of affected) {
+      if (!familyAllows(families, "roundup", grade, false)) continue;
+      await generateRoundUpDrafts(tenantId, grade, season, sourceImportId);
     }
   } catch (err) {
     logger.error({ err }, "auto roundup failed");

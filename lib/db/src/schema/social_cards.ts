@@ -386,6 +386,13 @@ export const socialSettingsTable = pgTable(
       .$type<Record<string, { enabled: boolean }>>()
       .notNull()
       .default({}),
+    // Social Studio families (results / achievements / roundup / matchday):
+    // per-family switch plus per-grade overrides. Null = never saved; the API
+    // derives it from the engine flags above (see lib/social-families.ts).
+    familyConfig:
+      jsonb("family_config").$type<
+        Record<string, { enabled: boolean; grades: Record<string, boolean> }>
+      >(),
     // Gates POST /card-sets/autoseed — auto-assembling a round's APPROVED
     // match-summary drafts into a carousel card_sets row. Default OFF: dormant
     // like the other social-automation toggles until a tenant opts in.
@@ -503,7 +510,7 @@ export const socialDraftsTable = pgTable(
   {
     id: serial("id").primaryKey(),
     tenantId: tenantIdColumn(),
-    engine: text("engine").notNull(), // "ondemand" | "milestone" | "roundup" | "recap" | "matchSummary"
+    engine: text("engine").notNull(), // "ondemand" | "milestone" | "roundup" | "recap" | "matchSummary" | "matchday" | "teamlist"
     // "awaiting_review" | "ready" | "posted" | "dismissed". The legacy values
     // "pending" (= awaiting_review) and "approved" (= ready) stay valid until
     // the contract migration, so a build from before the rename keeps working

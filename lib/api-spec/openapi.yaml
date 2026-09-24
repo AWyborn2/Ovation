@@ -10591,6 +10591,58 @@ components:
           type: ["string", "null"]
           format: date-time
           description: "Season-start override for countdown cards. Null = derive from the earliest upcoming fixture."
+        familyConfig:
+          $ref: "#/components/schemas/SocialFamilyConfig"
+
+    SocialFamilySetting:
+      type: object
+      required: [enabled, grades]
+      properties:
+        enabled:
+          type: boolean
+          description: "Whether this family auto-drafts at all"
+        grades:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: "Per-grade overrides. A grade absent here uses the default: seniors on, juniors off."
+
+    SocialFamilyConfig:
+      type: object
+      description: "Effective per-family automation switches. Derived from the engine flags until first saved."
+      required: [results, achievements, roundup, matchday]
+      properties:
+        results:
+          $ref: "#/components/schemas/SocialFamilySetting"
+        achievements:
+          $ref: "#/components/schemas/SocialFamilySetting"
+        roundup:
+          $ref: "#/components/schemas/SocialFamilySetting"
+        matchday:
+          $ref: "#/components/schemas/SocialFamilySetting"
+
+    SocialFamilySettingUpdate:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        grades:
+          type: object
+          additionalProperties:
+            type: boolean
+
+    SocialFamilyConfigUpdate:
+      type: object
+      description: "Partial family switches; omitted families and grades keep their current values."
+      properties:
+        results:
+          $ref: "#/components/schemas/SocialFamilySettingUpdate"
+        achievements:
+          $ref: "#/components/schemas/SocialFamilySettingUpdate"
+        roundup:
+          $ref: "#/components/schemas/SocialFamilySettingUpdate"
+        matchday:
+          $ref: "#/components/schemas/SocialFamilySettingUpdate"
 
     SocialSettingsUpdate:
       type: object
@@ -10636,6 +10688,8 @@ components:
           type: ["string", "null"]
           format: date-time
           description: "Season-start override for countdown cards. Null clears the override (fall back to the earliest upcoming fixture)."
+        familyConfig:
+          $ref: "#/components/schemas/SocialFamilyConfigUpdate"
 
     MilestoneBoardSettings:
       type: object

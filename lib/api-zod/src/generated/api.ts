@@ -4924,7 +4924,25 @@ export const GetSocialSettingsResponse = zod.object({
   "captionsEnabled": zod.boolean(),
   "clubHashtag": zod.string(),
   "clubUrl": zod.string(),
-  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.')
+  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.'),
+  "familyConfig": zod.object({
+  "results": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+}),
+  "achievements": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+}),
+  "roundup": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+}),
+  "matchday": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+})
+}).optional().describe('Effective per-family automation switches. Derived from the engine flags until first saved.')
 }),
   "captionTemplates": zod.array(zod.object({
   "engine": zod.string(),
@@ -4975,7 +4993,25 @@ export const UpdateSocialSettingsBody = zod.object({
   "captionsEnabled": zod.boolean().optional(),
   "clubHashtag": zod.string().optional(),
   "clubUrl": zod.string().optional(),
-  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null clears the override (fall back to the earliest upcoming fixture).')
+  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null clears the override (fall back to the earliest upcoming fixture).'),
+  "familyConfig": zod.object({
+  "results": zod.object({
+  "enabled": zod.boolean().optional(),
+  "grades": zod.record(zod.string(), zod.boolean()).optional()
+}).optional(),
+  "achievements": zod.object({
+  "enabled": zod.boolean().optional(),
+  "grades": zod.record(zod.string(), zod.boolean()).optional()
+}).optional(),
+  "roundup": zod.object({
+  "enabled": zod.boolean().optional(),
+  "grades": zod.record(zod.string(), zod.boolean()).optional()
+}).optional(),
+  "matchday": zod.object({
+  "enabled": zod.boolean().optional(),
+  "grades": zod.record(zod.string(), zod.boolean()).optional()
+}).optional()
+}).optional().describe('Partial family switches; omitted families and grades keep their current values.')
 })
 
 export const UpdateSocialSettingsResponse = zod.object({
@@ -4995,7 +5031,25 @@ export const UpdateSocialSettingsResponse = zod.object({
   "captionsEnabled": zod.boolean(),
   "clubHashtag": zod.string(),
   "clubUrl": zod.string(),
-  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.')
+  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.'),
+  "familyConfig": zod.object({
+  "results": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+}),
+  "achievements": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+}),
+  "roundup": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+}),
+  "matchday": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+})
+}).optional().describe('Effective per-family automation switches. Derived from the engine flags until first saved.')
 })
 
 

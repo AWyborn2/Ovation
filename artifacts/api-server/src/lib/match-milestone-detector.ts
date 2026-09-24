@@ -95,7 +95,7 @@ type Detected = {
  * Detects: A Grade / Female A Grade debut (carrying the player's cap number
  * READ BACK FROM the tenant's cap register), century (≥100 in an innings), and
  * five-wicket haul. Century / five-for apply to ANY grade; debut is
- * cap-register scoped. Caller gates on `socialSettings.engineMilestone`.
+ * cap-register scoped. Caller gates on the achievements family (per grade).
  *
  * Fire-once: existing match-milestone events for the involved players are loaded
  * and used to de-duplicate, so re-imports and undo→re-import cycles (which leave
