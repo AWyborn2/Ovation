@@ -20,17 +20,16 @@ import { clubLeaderboardRuns } from "./club-leaderboard-runs";
 import { clubLeaderboardWickets } from "./club-leaderboard-wickets";
 
 /**
- * Pack B — Gold Foil. Grand-final prestige: metallic foil display type on
- * black, concentric gold grooves, gold ribbon callouts.
+ * Pack B — Metallic Foil (id `gold-foil-v1`). Grand-final prestige on the
+ * shared card skeleton (U13): a sepia photo ghost, gold pinstripe, a thin
+ * double foil frame, foil-gradient numerals and a square foil chip — the metal
+ * derived from the tenant's own accent (see `./fragments`).
  *
  * **Complete: all 19 designs, all 17 kinds** (gradeLeader and clubLeaderboard
- * carry two category-preset designs each, as in Pack A; the bundle's 20th
- * design, new-cap, went with the retired `newCap` kind). The api-server `PACKS`
+ * carry two category-preset designs each, as in Pack A). The api-server `PACKS`
  * entry declares the SAME kinds — that pairing is the coverage contract,
- * enforced by `pack-coverage-parity.test.ts`. Stories are transcribed from
- * `Pack B - Gold Foil.dc.html`; the shared (portrait/square) layouts are
- * authored in-repo in the pack's own language, since the bundle ships a single
- * fluid composition per card.
+ * enforced by `pack-coverage-parity.test.ts`. Every design ships story, shared
+ * (portrait/square) and landscape markup from one container-query layout.
  */
 export const GOLD_FOIL_PACK: PackManifest = {
   packId: "gold-foil-v1",
