@@ -218,6 +218,7 @@ import type {
   PointsConfigInput,
   PointsConfigUpdate,
   PointsLeaderboard,
+  PostPack,
   Premiership,
   PremiershipInput,
   PremiershipUpdate,
@@ -15349,6 +15350,76 @@ export const useUpdateSocialDraft = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateSocialDraftMutationOptions(options));
+    }
+
+export const getCreatePostPackUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/post-pack`
+}
+
+/**
+ * @summary Render a draft's post pack — a PNG per enabled format, its caption and a zip
+ */
+export const createPostPack = async (id: number, options?: RequestInit): Promise<PostPack> => {
+
+  return customFetch<PostPack>(getCreatePostPackUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCreatePostPackMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPostPack>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPostPack>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['createPostPack'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPostPack>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  createPostPack(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePostPackMutationResult = NonNullable<Awaited<ReturnType<typeof createPostPack>>>
+
+    export type CreatePostPackMutationError = ErrorType<void>
+
+    /**
+ * @summary Render a draft's post pack — a PNG per enabled format, its caption and a zip
+ */
+export const useCreatePostPack = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPostPack>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPostPack>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getCreatePostPackMutationOptions(options));
     }
 
 export const getSendBackSocialDraftUrl = (id: number,) => {

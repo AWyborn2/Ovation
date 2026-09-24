@@ -4293,6 +4293,28 @@ paths:
         "409":
           description: The draft is dismissed
 
+  /social-drafts/{id}/post-pack:
+    post:
+      operationId: createPostPack
+      tags: [socialCards]
+      summary: Render a draft's post pack — a PNG per enabled format, its caption and a zip
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: The rendered images, caption and zip
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostPack"
+        "404":
+          description: Not found
+        "500":
+          description: The render failed
+
   /social-drafts/{id}/send-back:
     post:
       operationId: sendBackSocialDraft
@@ -12586,6 +12608,26 @@ components:
       properties:
         url: { type: string, nullable: true }
         disabled: { type: boolean }
+
+    PostPack:
+      type: object
+      required: [images, caption, zipUrl]
+      properties:
+        images:
+          type: array
+          items:
+            type: object
+            required: [size, url]
+            properties:
+              size:
+                type: string
+                enum: [square, portrait, story]
+              url:
+                type: string
+        caption:
+          type: string
+        zipUrl:
+          type: string
 
     UpdateSocialDraftRequest:
       type: object

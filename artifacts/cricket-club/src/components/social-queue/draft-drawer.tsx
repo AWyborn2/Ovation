@@ -20,6 +20,7 @@ import { AlertTriangle, ImageIcon, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { EditDrawer, StatusPill } from "@/components/admin-ui";
+import { PostPackButton } from "@/components/post-pack/post-pack-button";
 import {
   STATUS_LABEL,
   STATUS_TONE,
@@ -207,6 +208,17 @@ export function DraftDrawer({
               )}
             </div>
           </div>
+        )}
+
+        {status !== "dismissed" && (
+          <section className="space-y-2">
+            <h3 className="text-sm font-semibold">Share</h3>
+            <PostPackButton
+              key={current.id}
+              draft={current}
+              onPosted={() => settle({ ...current, status: "posted" })}
+            />
+          </section>
         )}
 
         <section className="space-y-2">
