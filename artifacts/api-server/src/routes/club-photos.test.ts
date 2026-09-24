@@ -108,11 +108,13 @@ afterAll(async () => {
   await db.delete(tenantsTable).where(inArray(tenantsTable.id, [tenantId, otherTenantId]));
 });
 
-const api = (method: "get" | "post", path: string, as: "own" | "other" = "own") =>
-  request(app)
-    [method](`/api${path}`)
+const api = (method: "get" | "post", path: string, as: "own" | "other" = "own") => {
+  const agent = request(app);
+  const req = method === "get" ? agent.get(`/api${path}`) : agent.post(`/api${path}`);
+  return req
     .set("Cookie", as === "own" ? cookie : otherCookie)
     .set("x-tenant-id", String(as === "own" ? tenantId : otherTenantId));
+};
 
 describe("ingest", () => {
   it("converts a batch, returns per-file errors, and deletes the originals", async () => {
