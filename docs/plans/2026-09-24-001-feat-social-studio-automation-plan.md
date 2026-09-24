@@ -20,6 +20,17 @@ execution: code
 - **Tail ownership:** PRs follow `CLAUDE.local.md` (auto-merge on `CLEAN`), except: PRs carrying a migration merge only after Ash approves applying it to prod through the Replit agent and the runner reports it recorded; the posting-window scheduled job (U9) needs Ash to create the Replit Scheduled Deployment; external-service API keys are Ash's to provision.
 - **Open blockers:** None for M1–M4. Meta posting stays blocked on Meta app review and the data-licence decision.
 
+## Status (24 Sep 2026)
+
+- **Merged to main:** U1–U17 and U20–U24 (#168–#200). Published to prod: M1 plus U11 and U12 only (migrations 0000–0011 recorded).
+- **Built, awaiting Ash (migrations):** U18a #203 (0012), U25 #209 (0013), U19 #210 (0014), all idempotent. Also, with no migration, U18b #205 (downloads) and U18c #208 (old layout editor removed). They are stacked: #203 → #205 → #208, and #203 → #209 → #210.
+- **To finish:** apply 0012 → 0013 → 0014 to prod via the Replit agent and confirm they are recorded. Then merge #203, #209, #210, #205 and #208, retargeting each child to main first. Publishing needs Ash's yes.
+- **Deviations:**
+  - U18b makes GIFs on the server from the same frames as MP4, not through `use-video-export.ts`.
+  - U18c keeps existing slide layouts and layer templates rendering, but they can only be cleared or deleted, not edited.
+  - U19's forecast works per fixture, using venue coordinates projected from PlayHQ.
+- **Ash to provision:** a Photoroom key, after reviewing their data terms. Open-Meteo needs a commercial key before any paid use.
+
 ---
 
 ## Product Contract
