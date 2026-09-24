@@ -51,3 +51,17 @@ One of five preset accent colours (amber, purple, green, blue, red) with canonic
 ### Career crossing
 
 A milestone marking the match at which a player's running career total — games, runs, or wickets — first passes a configured tier. Derived by accumulating a player's matches in chronological order.
+
+## Social Studio
+
+### Auto-draft
+
+A social card the app creates by itself after an import commits a club's data, filled from that data in the club's default pack and placed in the queue for review. Distinct from an ad-hoc card, which an admin starts by hand.
+
+### Post pack
+
+The ready-to-share bundle for one card: its images in the chosen formats plus a caption and hashtags, handed off as a single download or through the phone share sheet. What the admin shares manually until direct Meta posting exists.
+
+### Posting window
+
+The club-set number of hours after an import within which its auto-drafts must be posted when auto-post is on. At the deadline, drafts still awaiting review become ready to post.
