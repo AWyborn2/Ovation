@@ -4,6 +4,7 @@
  * native size, and square output unchanged.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
+import type * as Templates from "../pack-render/templates";
 
 // Since U13 every registered pack ships a landscape layout, so no real design
 // exercises the letterbox fallback any more. The fallback stays (a future pack
@@ -11,7 +12,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 // treat designs as landscape-less to keep it covered.
 const flags = vi.hoisted(() => ({ noLandscape: false }));
 vi.mock("../pack-render/templates", async (importOriginal) => {
-  const mod = await importOriginal<typeof import("../pack-render/templates")>();
+  const mod = await importOriginal<typeof Templates>();
   return {
     ...mod,
     hasLandscapeFormat: (formats: Parameters<typeof mod.hasLandscapeFormat>[0]) =>
