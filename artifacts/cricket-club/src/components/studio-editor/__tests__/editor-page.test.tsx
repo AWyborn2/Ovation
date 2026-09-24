@@ -133,7 +133,7 @@ describe("editor page", () => {
     fireEvent.change(await screen.findByRole("textbox", { name: /Player name/i }), {
       target: { value: "S. Keeper" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Save/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Save$/ }));
     await waitFor(() => {
       const patches = requests.filter((r) => r.method === "PATCH");
       expect(patches).toHaveLength(1);
@@ -145,7 +145,7 @@ describe("editor page", () => {
 
   it("keeps the primary action visible on a narrower desktop", async () => {
     open(1100);
-    expect(await screen.findByRole("button", { name: /Save/ })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: /^Save$/ })).toBeTruthy();
   });
 
   it("at 768px shows the card with a larger-screen notice instead of the canvas", async () => {

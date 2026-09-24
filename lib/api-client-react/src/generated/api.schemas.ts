@@ -5085,6 +5085,46 @@ export interface UpdateSocialDraftRequest {
   adjustments?: CardAdjustments | null;
 }
 
+/**
+ * The card's ShareCardInput (validated by shape on the web).
+ */
+export type CreateSocialDraftRequestCardInput = { [key: string]: unknown };
+
+export interface CreateSocialDraftRequest {
+  /** The card's ShareCardInput (validated by shape on the web). */
+  cardInput: CreateSocialDraftRequestCardInput;
+  /**
+     * Design pack; 'blank' for a blank canvas.
+     * @nullable
+     */
+  packId?: string | null;
+  adjustments?: CardAdjustments | null;
+  /** Start from a saved editor template (its pack and adjustments). */
+  templateId?: number;
+}
+
+export interface SaveDraftTemplateRequest {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+}
+
+export interface EditorTemplate {
+  id: number;
+  name: string;
+  /**
+     * The card kind the template was saved from.
+     * @nullable
+     */
+  baseKind: string | null;
+  /** @nullable */
+  packId?: string | null;
+  adjustments?: unknown;
+  createdAt: string;
+}
+
 export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraftStatus];
 
 

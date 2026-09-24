@@ -105,7 +105,7 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
   {
     table: "social_drafts",
     name: "social_drafts_status_check",
-    sql: `"status" IN ('pending', 'approved', 'awaiting_review', 'ready', 'dismissed', 'posted')`,
+    sql: `"status" IN ('awaiting_review', 'ready', 'dismissed', 'posted')`,
   },
   {
     table: "social_draft_revisions",

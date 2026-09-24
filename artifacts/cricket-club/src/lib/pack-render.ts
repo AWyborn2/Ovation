@@ -52,7 +52,12 @@ export {
   packNativeSize,
 } from "./pack-render/tokens";
 
-export { renderPackCard, packFieldValues, packTextFields } from "./pack-render/render";
+export {
+  BLANK_PACK_ID,
+  renderPackCard,
+  packFieldValues,
+  packTextFields,
+} from "./pack-render/render";
 export {
   inheritedFormats,
   isEmptyAdjustments,

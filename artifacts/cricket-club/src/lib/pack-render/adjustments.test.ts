@@ -2,7 +2,13 @@
  * Social Studio U15 — card adjustments applied over a pack template (KTD12).
  */
 import { describe, it, expect } from "vitest";
-import { renderPackCard, resolvePackTokens, brandDefaultTokens } from "@/lib/pack-render";
+import {
+  BLANK_PACK_ID,
+  packTextFields,
+  renderPackCard,
+  resolvePackTokens,
+  brandDefaultTokens,
+} from "@/lib/pack-render";
 import type { ShareCardInput } from "@/lib/share-card";
 import {
   inheritedFormats,
@@ -159,5 +165,31 @@ describe("harness parity", () => {
       layers: [layer()],
     };
     expect(render(structuredClone(adj))).toBe(render(adj));
+  });
+});
+
+describe("blank canvas (U18)", () => {
+  const blank = (adj?: CardAdjustments | null) =>
+    renderPackCard(player, "square", true, tokens, false, null, BLANK_PACK_ID, adj);
+
+  it("renders no pack design, only the editor's layers on the stage", () => {
+    const html = blank({ layers: [layer({ content: "GAME DAY" })] });
+    expect(html).toContain("GAME DAY");
+    expect(html).not.toContain("Sam Keeper");
+    expect(html).not.toContain("Player of the round");
+    expect(html).toMatch(/^<div class="pack-card-root" style="[^"]*background:/);
+  });
+
+  it("an empty blank canvas is just the stage", () => {
+    expect(blank()).toMatch(/^<div class="pack-card-root" style="[^"]*"><\/div>$/);
+  });
+
+  it("live-stat layers still bind to the card's data", () => {
+    const html = blank({ layers: [layer({ content: "", bind: "playerName" })] });
+    expect(html).toContain("Sam Keeper");
+  });
+
+  it("exposes no pack text fields", () => {
+    expect(packTextFields(player, BLANK_PACK_ID)).toEqual([]);
   });
 });

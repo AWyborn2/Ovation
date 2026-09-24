@@ -1,6 +1,6 @@
-import { and, eq, inArray, isNotNull, lte } from "drizzle-orm";
+import { and, eq, isNotNull, lte } from "drizzle-orm";
 import { db, socialDraftsTable, socialSettingsTable } from "@workspace/db";
-import { normalizeDraftStatus, storedValuesFor, type DraftStatus } from "./draft-status";
+import { normalizeDraftStatus, type DraftStatus } from "./draft-status";
 
 /**
  * Auto-post deadlines (Social Studio KTD4). An auto-draft stores
@@ -61,7 +61,7 @@ export async function persistDueDrafts(
     .where(
       and(
         eq(socialDraftsTable.tenantId, tenantId),
-        inArray(socialDraftsTable.status, storedValuesFor("awaiting_review")),
+        eq(socialDraftsTable.status, "awaiting_review"),
         isNotNull(socialDraftsTable.autoReadyAt),
         lte(socialDraftsTable.autoReadyAt, now),
       ),
