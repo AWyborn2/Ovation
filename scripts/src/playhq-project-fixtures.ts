@@ -19,7 +19,8 @@
  * What it writes: one `fixtures` row per senior PlayHQ match involving the
  * tenant's organisation with a known start time inside the window (default: from
  * 14 days ago onwards, so this week's results stay visible), keyed on
- * `(tenant_id, playhq_match_id)`. Re-runs refresh grade, round, opponent, venue,
+ * `(tenant_id, playhq_match_id)`. Re-runs refresh grade, round, opponent, venue
+ * (with its coordinates, for the match-day forecast),
  * start time and home/away; `notes` and the team list are the admin's and are
  * never touched. Rows are never deleted here — a fixture PlayHQ drops or
  * abandons stays until an admin removes it.
@@ -40,6 +41,9 @@ export interface PlayhqMatchLite {
   startAt: Date;
   venueName: string | null;
   surfaceName: string | null;
+  /** The playing surface's coordinates (WGS84), when PlayHQ has them. */
+  latitude?: number | null;
+  longitude?: number | null;
   status: string | null;
   homeOrgId: string | null;
   awayOrgId: string | null;
@@ -61,6 +65,8 @@ export interface FixtureUpsert {
   opponentClubId: number | null;
   opponentLogoUrl: string | null;
   venue: string | null;
+  venueLatitude: number | null;
+  venueLongitude: number | null;
   startAt: Date;
   isHome: boolean;
   source: "playhq";
@@ -88,6 +94,9 @@ export function toFixtureRow(
     opponentClubId: (oppOrgId && clubIdByOrg.get(oppOrgId)) || null,
     opponentLogoUrl: org?.logoUrl ?? null,
     venue: m.venueName,
+    // Both or neither: a half-known location can't be forecast.
+    venueLatitude: m.latitude != null && m.longitude != null ? m.latitude : null,
+    venueLongitude: m.latitude != null && m.longitude != null ? m.longitude : null,
     startAt: m.startAt,
     isHome,
     source: "playhq",
@@ -231,6 +240,8 @@ export async function projectFixtures(opts: ProjectionOpts = {}): Promise<Projec
         start_at: Date;
         venue_name: string | null;
         surface_name: string | null;
+        latitude: number | null;
+        longitude: number | null;
         status: string | null;
         home_org_id: string | null;
         away_org_id: string | null;
@@ -238,7 +249,7 @@ export async function projectFixtures(opts: ProjectionOpts = {}): Promise<Projec
         away_team_name: string | null;
       }>(
         `select m.id, g.name as grade_name, m.round_name, m.start_at, m.venue_name, m.surface_name,
-                m.status, m.home_org_id, m.away_org_id, m.home_team_name, m.away_team_name
+                m.latitude, m.longitude, m.status, m.home_org_id, m.away_org_id, m.home_team_name, m.away_team_name
            from playhq.matches m
            join playhq.grades g on g.id = m.grade_id
           where (m.home_org_id = $1 or m.away_org_id = $1)
@@ -255,6 +266,8 @@ export async function projectFixtures(opts: ProjectionOpts = {}): Promise<Projec
         startAt: r.start_at,
         venueName: r.venue_name,
         surfaceName: r.surface_name,
+        latitude: r.latitude,
+        longitude: r.longitude,
         status: r.status,
         homeOrgId: r.home_org_id,
         awayOrgId: r.away_org_id,
@@ -324,6 +337,8 @@ export async function projectFixtures(opts: ProjectionOpts = {}): Promise<Projec
               opponentClubId: sql`excluded.opponent_club_id`,
               opponentLogoUrl: sql`excluded.opponent_logo_url`,
               venue: sql`excluded.venue`,
+              venueLatitude: sql`excluded.venue_latitude`,
+              venueLongitude: sql`excluded.venue_longitude`,
               startAt: sql`excluded.start_at`,
               isHome: sql`excluded.is_home`,
               source: sql`excluded.source`,

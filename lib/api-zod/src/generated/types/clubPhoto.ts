@@ -20,4 +20,9 @@ export interface ClubPhoto {
   takenAt: Date | null;
   createdAt: Date;
   playerIds: number[];
+  /**
+     * For a derived image (a background-removed cut-out), the library photo it was made from.
+     * @nullable
+     */
+  sourcePhotoId?: number | null;
 }

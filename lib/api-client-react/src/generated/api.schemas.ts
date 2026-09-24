@@ -3847,6 +3847,32 @@ export interface ClubPhoto {
   takenAt: string | null;
   createdAt: string;
   playerIds: number[];
+  /**
+     * For a derived image (a background-removed cut-out), the library photo it was made from.
+     * @nullable
+     */
+  sourcePhotoId?: number | null;
+}
+
+export interface StudioToolStatus {
+  available: boolean;
+}
+
+export interface RemovePhotoBackgroundRequest {
+  photoId: number;
+}
+
+export interface FixtureForecast {
+  fixtureId: number;
+  /** @nullable */
+  venue: string | null;
+  /** The forecast hour (UTC), the fixture's start time floored to the hour. */
+  hour: string;
+  temperatureC: number;
+  /** WMO weather interpretation code. */
+  weatherCode: number;
+  conditions: string;
+  attribution: string;
 }
 
 export interface IngestClubPhotosRequest {
@@ -6601,6 +6627,10 @@ season?: number;
 
 export type DeleteClubPhotos200 = {
   deleted: number;
+};
+
+export type GetFixtureForecastParams = {
+fixtureId: number;
 };
 
 export type SweepMatchSummaryDraftsBody = {

@@ -104,8 +104,10 @@ import type {
   ErrorEnvelope,
   FiveWicketHaul,
   Fixture,
+  FixtureForecast,
   FixturesResultsPage,
   GenerateCardSetBody,
+  GetFixtureForecastParams,
   GetFixturesResultsLadderParams,
   GetGradeDistributionParams,
   GetGradeLeaderboardParams,
@@ -239,6 +241,7 @@ import type {
   RecordsDisplaySettings,
   RecordsDisplaySettingsUpdate,
   RecordsLeaderboards,
+  RemovePhotoBackgroundRequest,
   RoundUpInput,
   SeasonTopPerformers,
   SeniorOverview,
@@ -258,6 +261,7 @@ import type {
   StatInput,
   StatListResponse,
   StatUpdate,
+  StudioToolStatus,
   SweepMatchSummaryDrafts200,
   SweepMatchSummaryDraftsBody,
   TagClubPhotosRequest,
@@ -15360,6 +15364,241 @@ export const useDeleteClubPhotos = <TError = ErrorType<void>,
       > => {
       return useMutation(getDeleteClubPhotosMutationOptions(options));
     }
+
+export const getGetBackgroundRemovalStatusUrl = () => {
+
+
+
+
+  return `/api/studio-tools/background-removal`
+}
+
+/**
+ * 404 when no background-removal provider key is configured; the editor hides the tool.
+ * @summary Whether background removal is available to this club (admin)
+ */
+export const getBackgroundRemovalStatus = async ( options?: RequestInit): Promise<StudioToolStatus> => {
+
+  return customFetch<StudioToolStatus>(getGetBackgroundRemovalStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBackgroundRemovalStatusQueryKey = () => {
+    return [
+    `/api/studio-tools/background-removal`
+    ] as const;
+    }
+
+
+export const getGetBackgroundRemovalStatusQueryOptions = <TData = Awaited<ReturnType<typeof getBackgroundRemovalStatus>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBackgroundRemovalStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBackgroundRemovalStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBackgroundRemovalStatus>>> = ({ signal }) => getBackgroundRemovalStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBackgroundRemovalStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBackgroundRemovalStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getBackgroundRemovalStatus>>>
+export type GetBackgroundRemovalStatusQueryError = ErrorType<void>
+
+
+/**
+ * @summary Whether background removal is available to this club (admin)
+ */
+
+export function useGetBackgroundRemovalStatus<TData = Awaited<ReturnType<typeof getBackgroundRemovalStatus>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBackgroundRemovalStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBackgroundRemovalStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRemovePhotoBackgroundUrl = () => {
+
+
+
+
+  return `/api/studio-tools/background-removal`
+}
+
+/**
+ * Accepts only a photo from this club's library whose player tags are all senior players; anything else is refused before the image is sent to the provider. The cut-out is stored as a new library photo (PNG with transparency) linked to its source through `sourcePhotoId`; the source photo is unchanged.
+ * @summary Cut the background out of a senior library photo (admin)
+ */
+export const removePhotoBackground = async (removePhotoBackgroundRequest: RemovePhotoBackgroundRequest, options?: RequestInit): Promise<ClubPhoto> => {
+
+  return customFetch<ClubPhoto>(getRemovePhotoBackgroundUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      removePhotoBackgroundRequest,)
+  }
+);}
+
+
+
+
+export const getRemovePhotoBackgroundMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removePhotoBackground>>, TError,{data: BodyType<RemovePhotoBackgroundRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removePhotoBackground>>, TError,{data: BodyType<RemovePhotoBackgroundRequest>}, TContext> => {
+
+const mutationKey = ['removePhotoBackground'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removePhotoBackground>>, {data: BodyType<RemovePhotoBackgroundRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  removePhotoBackground(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemovePhotoBackgroundMutationResult = NonNullable<Awaited<ReturnType<typeof removePhotoBackground>>>
+    export type RemovePhotoBackgroundMutationBody = BodyType<RemovePhotoBackgroundRequest>
+    export type RemovePhotoBackgroundMutationError = ErrorType<void>
+
+    /**
+ * @summary Cut the background out of a senior library photo (admin)
+ */
+export const useRemovePhotoBackground = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removePhotoBackground>>, TError,{data: BodyType<RemovePhotoBackgroundRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removePhotoBackground>>,
+        TError,
+        {data: BodyType<RemovePhotoBackgroundRequest>},
+        TContext
+      > => {
+      return useMutation(getRemovePhotoBackgroundMutationOptions(options));
+    }
+
+export const getGetFixtureForecastUrl = (params: GetFixtureForecastParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/studio-tools/forecast?${stringifiedParams}` : `/api/studio-tools/forecast`
+}
+
+/**
+ * 404 when the fixture is not this club's, has no venue coordinates, or its start hour is outside the forecast range; the editor then hides the forecast block.
+ * @summary The forecast for a fixture's venue at its start hour (admin)
+ */
+export const getFixtureForecast = async (params: GetFixtureForecastParams, options?: RequestInit): Promise<FixtureForecast> => {
+
+  return customFetch<FixtureForecast>(getGetFixtureForecastUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFixtureForecastQueryKey = (params?: GetFixtureForecastParams,) => {
+    return [
+    `/api/studio-tools/forecast`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFixtureForecastQueryOptions = <TData = Awaited<ReturnType<typeof getFixtureForecast>>, TError = ErrorType<void>>(params: GetFixtureForecastParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFixtureForecast>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFixtureForecastQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFixtureForecast>>> = ({ signal }) => getFixtureForecast(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFixtureForecast>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFixtureForecastQueryResult = NonNullable<Awaited<ReturnType<typeof getFixtureForecast>>>
+export type GetFixtureForecastQueryError = ErrorType<void>
+
+
+/**
+ * @summary The forecast for a fixture's venue at its start hour (admin)
+ */
+
+export function useGetFixtureForecast<TData = Awaited<ReturnType<typeof getFixtureForecast>>, TError = ErrorType<void>>(
+ params: GetFixtureForecastParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFixtureForecast>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFixtureForecastQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListNotificationsUrl = () => {
 
