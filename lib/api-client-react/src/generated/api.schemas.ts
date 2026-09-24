@@ -286,6 +286,71 @@ export interface PlayerListResponse {
   limit: number;
 }
 
+export interface VsClubBatter {
+  playerId: number;
+  givenName: string;
+  surname: string;
+  matches: number;
+  innings: number;
+  notOuts: number;
+  outs: number;
+  runs: number;
+  /**
+     * Runs per dismissal; null when never out.
+     * @nullable
+     */
+  average: number | null;
+  /** @nullable */
+  highScore: number | null;
+  highScoreNotOut: boolean;
+}
+
+export interface VsClubBowler {
+  playerId: number;
+  givenName: string;
+  surname: string;
+  matches: number;
+  wickets: number;
+  runsConceded: number;
+  /**
+     * Balls bowled over spells with recorded overs; null when none recorded.
+     * @nullable
+     */
+  balls: number | null;
+  /**
+     * Runs per wicket; null with no wickets.
+     * @nullable
+     */
+  average: number | null;
+  /**
+     * Best single-innings figures, wickets part.
+     * @nullable
+     */
+  bestWickets: number | null;
+  /**
+     * Best single-innings figures, runs part.
+     * @nullable
+     */
+  bestRuns: number | null;
+}
+
+export interface PlayersVsClub {
+  /** False when the opponent couldn't be mapped to a club on this read path; both lists are then empty. */
+  resolved: boolean;
+  /**
+     * The resolved opponent id in the read path's own id space; null when unresolved.
+     * @nullable
+     */
+  opponentClubId: number | null;
+  /** @nullable */
+  opponentName: string | null;
+  minInnings: number;
+  /** Players with at least `minInnings` innings against the club, best average first. */
+  batting: VsClubBatter[];
+  /** Players who bowled against the club, most wickets first, then lowest average. */
+  bowling: VsClubBowler[];
+}
+
 export interface GradeDistributionBatting {
   innings: number;
   notOuts: number;
@@ -6211,6 +6276,26 @@ export const ListPlayersSortOrder = {
   asc: 'asc',
   desc: 'desc',
 } as const;
+
+export type GetPlayersVsClubParams = {
+/**
+ * Opponent club id in the read path's own id space (central club id on central tenants, app clubs register id otherwise).
+ */
+opponentClubId?: number;
+/**
+ * Opponent's app clubs register id (Fixture.opponentClubId).
+ */
+opponentAppClubId?: number;
+/**
+ * Opponent's PlayHQ organisation GUID.
+ */
+opponentOrgId?: string;
+/**
+ * Batting qualifier (innings against the club). Defaults to 3.
+ * @minimum 0
+ */
+minInnings?: number;
+};
 
 export type ListMatchesParams = {
 /**

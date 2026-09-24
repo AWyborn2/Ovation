@@ -111,6 +111,7 @@ import type {
   GetGradeLeaderboardParams,
   GetJuniorSeasonTopPerformersParams,
   GetKioskDisplayParams,
+  GetPlayersVsClubParams,
   GetSeniorSeasonTopPerformersParams,
   GetSocialClubSeasonTotalsParams,
   GetSocialLadderPrefillParams,
@@ -216,6 +217,7 @@ import type {
   PlayerMergeRequest,
   PlayerSeasonStat,
   PlayerUpdate,
+  PlayersVsClub,
   PlayhqLadder,
   PointsConfigInput,
   PointsConfigUpdate,
@@ -612,6 +614,91 @@ export const useCreatePlayer = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCreatePlayerMutationOptions(options));
     }
+
+export const getGetPlayersVsClubUrl = (params?: GetPlayersVsClubParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/players/vs-club?${stringifiedParams}` : `/api/players/vs-club`
+}
+
+/**
+ * Every club player's career batting and bowling against one opponent club, across all senior grades (junior grades and fill-ins are never included). Feeds the Compare selection helper. Identify the opponent with one of `opponentClubId` (the read path's own club id, as on `PlayerMatch.opponentClubId`), `opponentAppClubId` (the app clubs register id, as on `Fixture.opponentClubId`) or `opponentOrgId` (the PlayHQ organisation GUID, as on `PlayhqOpponent.orgId`); the server maps it into the read path's id space, trying them in that order. When the opponent can't be mapped the response carries `resolved: false` and empty lists, rather than a silent empty result.
+ * @summary The whole squad's career record against one opponent club
+ */
+export const getPlayersVsClub = async (params?: GetPlayersVsClubParams, options?: RequestInit): Promise<PlayersVsClub> => {
+
+  return customFetch<PlayersVsClub>(getGetPlayersVsClubUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlayersVsClubQueryKey = (params?: GetPlayersVsClubParams,) => {
+    return [
+    `/api/players/vs-club`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPlayersVsClubQueryOptions = <TData = Awaited<ReturnType<typeof getPlayersVsClub>>, TError = ErrorType<void>>(params?: GetPlayersVsClubParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlayersVsClub>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlayersVsClubQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlayersVsClub>>> = ({ signal }) => getPlayersVsClub(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlayersVsClub>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlayersVsClubQueryResult = NonNullable<Awaited<ReturnType<typeof getPlayersVsClub>>>
+export type GetPlayersVsClubQueryError = ErrorType<void>
+
+
+/**
+ * @summary The whole squad's career record against one opponent club
+ */
+
+export function useGetPlayersVsClub<TData = Awaited<ReturnType<typeof getPlayersVsClub>>, TError = ErrorType<void>>(
+ params?: GetPlayersVsClubParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlayersVsClub>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlayersVsClubQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetPlayerUrl = (id: number,) => {
 

@@ -30,6 +30,7 @@ import {
   AddPlayerImageBody,
   DeletePlayerImageParams,
   SetDefaultPlayerImageParams,
+  GetPlayersVsClubQueryParams,
 } from "@workspace/api-zod";
 import { playerIdMapTable } from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
@@ -39,6 +40,8 @@ import { getTenantId } from "../middlewares/tenant-context";
 import { splitCentralName, getPlayerOrderCol, centralParticipantFor } from "../lib/player-helpers";
 import { classifyDismissal } from "../lib/dismissal-parse";
 import { oversToBalls } from "@workspace/scorecard";
+import { resolveOpponentClub } from "../lib/opponent-club";
+import { DEFAULT_VS_CLUB_MIN_INNINGS, loadVsClub } from "../lib/vs-club";
 
 const router: IRouter = Router();
 
@@ -212,6 +215,31 @@ router.post("/players", requireAdmin, async (req, res): Promise<void> => {
     })
     .returning();
   res.status(201).json(player);
+});
+
+// Squad vs club (stats analytics KTD6). Registered BEFORE "/players/:id" so
+// "vs-club" is never parsed as a player id. The opponent is mapped into the
+// read path's own id space first; an unmappable one answers `resolved: false`.
+router.get("/players/vs-club", async (req, res): Promise<void> => {
+  const query = GetPlayersVsClubQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const { opponentClubId, opponentAppClubId, opponentOrgId, minInnings } = query.data;
+  if (opponentClubId === undefined && opponentAppClubId === undefined && !opponentOrgId) {
+    res.status(400).json({
+      error: "Give one of opponentClubId, opponentAppClubId or opponentOrgId",
+    });
+    return;
+  }
+  const source = await dataSource(req);
+  const opponent = await resolveOpponentClub(source, {
+    opponentClubId,
+    appClubId: opponentAppClubId,
+    orgId: opponentOrgId,
+  });
+  res.json(await loadVsClub(source, opponent, minInnings ?? DEFAULT_VS_CLUB_MIN_INNINGS));
 });
 
 router.get("/players/:id", async (req, res): Promise<void> => {
