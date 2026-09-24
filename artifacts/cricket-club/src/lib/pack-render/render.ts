@@ -77,6 +77,8 @@ export function renderPackCard(
   // Overlay tenant data (logo, name, hashtags, sponsors, photo) onto the bound
   // input before defaults are merged, so tenant values win over the samples.
   if (data) applyPackData(bound, data, input.kind);
+  // Editor image overrides (e.g. a club-library photo) win over the input and tenant data.
+  if (adj?.images) Object.assign(bound.images, adj.images);
   // Editor field overrides win over the input and the tenant overlay.
   const values = applyFieldOverrides({ ...fieldDefaults(template), ...bound.values }, adj);
   // Anything the editor overrode is real content, not a sample to rewrite.
@@ -123,7 +125,7 @@ export function renderPackCard(
   html = substituteFields(html, values);
   html = cleanupEmptyRoles(html);
 
-  const layers = renderFreeLayers(adj, size, opts);
+  const layers = renderFreeLayers(adj, size, opts, values);
   return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest(packId).inkTint)}">${html}${layers}</div>`;
 }
 

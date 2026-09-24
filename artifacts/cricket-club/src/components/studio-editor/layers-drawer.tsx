@@ -1,8 +1,28 @@
-import { Eye, EyeOff, Lock, Shapes, Type, Unlock, Image as ImageIcon, X } from "lucide-react";
+import {
+  Award,
+  BarChart3,
+  Eye,
+  EyeOff,
+  Image as ImageIcon,
+  Lock,
+  Shapes,
+  Sticker,
+  Type,
+  Unlock,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import type { FreeLayer } from "@/lib/pack-render";
 import { cn } from "@/lib/utils";
 
-const ICON = { text: Type, shape: Shapes, image: ImageIcon } as const;
+const ICON: Record<FreeLayer["kind"], LucideIcon> = {
+  text: Type,
+  shape: Shapes,
+  image: ImageIcon,
+  medal: Award,
+  sticker: Sticker,
+  chart: BarChart3,
+};
 
 /**
  * The layers drawer (Social Studio U16): free layers top-most first, each with
