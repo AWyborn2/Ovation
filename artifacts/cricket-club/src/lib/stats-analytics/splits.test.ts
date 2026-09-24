@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { battingSplits, bowlingSplits } from "./splits";
 import { bowl, inn, match } from "./test-fixtures";
+import { strikeRateOverKnownBalls } from "./shared";
 
 describe("batting splits", () => {
   const rows = [
@@ -48,5 +49,18 @@ describe("bowling splits", () => {
 
   it("is insufficient for a non-bowler", () => {
     expect(bowlingSplits([match()]).ok).toBe(false);
+  });
+});
+
+describe("strike rate over recorded balls", () => {
+  it("ignores innings whose ball count is 0 (not recorded)", () => {
+    expect(
+      strikeRateOverKnownBalls([
+        { runs: 80, balls: 0 },
+        { runs: 30, balls: 40 },
+        { runs: 5, balls: null },
+      ]),
+    ).toBeCloseTo(75);
+    expect(strikeRateOverKnownBalls([{ runs: 80, balls: 0 }])).toBeNull();
   });
 });

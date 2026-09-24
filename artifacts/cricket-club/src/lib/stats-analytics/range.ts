@@ -1,7 +1,7 @@
 import type { PlayerInnings, PlayerMatchLine, PlayerSeasonStat } from "@workspace/api-client-react";
 import { oversToBalls } from "@workspace/scorecard";
 import { inStatsRange, seasonLabel } from "../use-stats-view";
-import { sumKnown } from "./shared";
+import { knownBalls, sumKnown } from "./shared";
 
 /**
  * Range filtering, chronological ordering, per-innings flattening and the
@@ -159,7 +159,7 @@ export function matchTotals(rows: ReadonlyArray<PlayerMatchLine>): MatchTotals {
       t.runs += inn.runs ?? 0;
       if (isOut(inn)) t.outs += 1;
       else t.notOuts += 1;
-      balls.push(inn.balls);
+      balls.push(knownBalls(inn.balls));
     }
     if (m.bowled) {
       t.bowlingMatches += 1;
