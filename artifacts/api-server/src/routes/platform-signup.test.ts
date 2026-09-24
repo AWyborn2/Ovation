@@ -7,6 +7,7 @@ import {
   tenantsTable,
   adminsTable,
   playerIdMapTable,
+  premiershipsTable,
   provisioningExclusionsTable,
 } from "@workspace/db";
 import { findFoldedCentralClub } from "../lib/central-club.test-helpers";
@@ -66,6 +67,8 @@ describe("platform self-serve signup", () => {
   afterAll(async () => {
     if (createdTenantId != null) {
       await db.delete(adminsTable).where(eq(adminsTable.tenantId, createdTenantId));
+      // Provisioning seeds the premiership board (cascades to its players).
+      await db.delete(premiershipsTable).where(eq(premiershipsTable.tenantId, createdTenantId));
       await db.delete(playerIdMapTable).where(eq(playerIdMapTable.tenantId, createdTenantId));
       await db.delete(tenantsTable).where(eq(tenantsTable.id, createdTenantId));
     }
@@ -304,6 +307,8 @@ describe("platform self-serve signup", () => {
     expect(admins).toHaveLength(1);
     // Clean up this second tenant (afterAll only knows createdTenantId).
     await db.delete(adminsTable).where(eq(adminsTable.tenantId, retryTenantId));
+    // Provisioning seeds the premiership board (cascades to its players).
+    await db.delete(premiershipsTable).where(eq(premiershipsTable.tenantId, retryTenantId));
     await db.delete(playerIdMapTable).where(eq(playerIdMapTable.tenantId, retryTenantId));
     await db.delete(tenantsTable).where(eq(tenantsTable.id, retryTenantId));
   });
