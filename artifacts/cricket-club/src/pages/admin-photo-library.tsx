@@ -1,0 +1,324 @@
+import { useRef, useState, type DragEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useListClubPhotos,
+  getListClubPhotosQueryKey,
+  useTagClubPhotos,
+  useDeleteClubPhotos,
+  useListPlayers,
+  getListPlayersQueryKey,
+  type ClubPhoto,
+} from "@workspace/api-client-react";
+import { Check, Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { EmptyState, ListSkeleton, QueryError } from "@/components/data-states";
+import { SettingsCard, SettingsRow, StatusPill } from "@/components/admin-ui";
+import { useConfirm } from "@/components/confirm-dialog";
+import { uploadLibraryPhotos, type UploadState } from "@/components/social-queue/library-upload";
+import { cn } from "@/lib/utils";
+
+type Upload = { name: string; state: UploadState };
+
+/**
+ * The club photo library (R10–R12): bulk upload (HEIC converted on the
+ * server), a grid with multi-select, and batch tagging by grade, season and
+ * senior player. Photos here feed auto-drafts, never junior cards.
+ */
+export default function AdminPhotoLibrary() {
+  const qc = useQueryClient();
+  const confirm = useConfirm();
+  const photosQ = useListClubPhotos(undefined, {
+    query: { queryKey: getListClubPhotosQueryKey() },
+  });
+  const photos = (photosQ.data ?? []) as ClubPhoto[];
+  const [uploads, setUploads] = useState<Upload[]>([]);
+  const [dragging, setDragging] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [grade, setGrade] = useState("");
+  const [season, setSeason] = useState("");
+  const [playerSearch, setPlayerSearch] = useState("");
+  const [playerIds, setPlayerIds] = useState<Set<number>>(new Set());
+  const [tagError, setTagError] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const refresh = () => qc.invalidateQueries({ queryKey: getListClubPhotosQueryKey() });
+  const tagM = useTagClubPhotos({
+    mutation: {
+      onSuccess: () => {
+        refresh();
+        setSelected(new Set());
+        setPlayerIds(new Set());
+        setTagError(null);
+      },
+      onError: () =>
+        setTagError("Those tags couldn't be saved. Only senior players can be tagged."),
+    },
+  });
+  const deleteM = useDeleteClubPhotos({
+    mutation: {
+      onSuccess: () => {
+        refresh();
+        setSelected(new Set());
+      },
+    },
+  });
+  const playersQ = useListPlayers(
+    { search: playerSearch, limit: 8 },
+    {
+      query: {
+        queryKey: getListPlayersQueryKey({ search: playerSearch, limit: 8 }),
+        enabled: playerSearch.trim().length >= 2,
+      },
+    },
+  );
+
+  const startUpload = async (files: File[]) => {
+    if (files.length === 0) return;
+    const start = uploads.length;
+    setUploads((prev) => [
+      ...prev,
+      ...files.map((f) => ({
+        name: f.name,
+        state: { phase: "uploading", progress: 0 } as UploadState,
+      })),
+    ]);
+    await uploadLibraryPhotos(files, {
+      onState: (i, state) =>
+        setUploads((prev) => prev.map((u, j) => (j === start + i ? { ...u, state } : u))),
+    });
+    refresh();
+  };
+
+  const onDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragging(false);
+    void startUpload(Array.from(e.dataTransfer.files));
+  };
+
+  const toggle = (id: number) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const applyTags = () => {
+    const seasonNum = season.trim() ? Number(season) : undefined;
+    tagM.mutate({
+      data: {
+        photoIds: Array.from(selected),
+        ...(grade.trim() ? { grade: grade.trim() } : {}),
+        ...(seasonNum && Number.isInteger(seasonNum) ? { season: seasonNum } : {}),
+        ...(playerIds.size ? { addPlayerIds: Array.from(playerIds) } : {}),
+      },
+    });
+  };
+
+  const players = playersQ.data?.players ?? [];
+
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        Senior photos for your cards. Tag a photo with a grade, season or player and new drafts pick
+        it automatically. iPhone HEIC photos are converted, and location data is removed.
+      </p>
+
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Upload photos"
+        onClick={() => fileInput.current?.click()}
+        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && fileInput.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        className={cn(
+          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors",
+          dragging ? "border-primary bg-primary/10" : "border-border bg-card hover:bg-muted/60",
+        )}
+      >
+        <Upload className="h-6 w-6 text-muted-foreground" aria-hidden />
+        <p className="text-sm font-medium">Drop photos here, or click to choose</p>
+        <p className="text-xs text-muted-foreground">JPEG, PNG, WebP or HEIC · up to 25 MB each</p>
+        <input
+          ref={fileInput}
+          type="file"
+          multiple
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+          className="hidden"
+          data-testid="library-file-input"
+          onChange={(e) => {
+            void startUpload(Array.from(e.target.files ?? []));
+            e.target.value = "";
+          }}
+        />
+      </div>
+
+      {uploads.length > 0 && (
+        <ul
+          className="divide-y divide-border rounded-xl border border-border bg-card"
+          aria-label="Uploads"
+        >
+          {uploads.map((u, i) => (
+            <li
+              key={`${u.name}-${i}`}
+              className="flex items-center justify-between gap-3 px-4 py-2 text-sm"
+            >
+              <span className="truncate">{u.name}</span>
+              {u.state.phase === "uploading" && (
+                <span className="text-muted-foreground">{u.state.progress}%</span>
+              )}
+              {u.state.phase === "converting" && <StatusPill tone="info">Converting</StatusPill>}
+              {u.state.phase === "done" && <StatusPill tone="success">Added</StatusPill>}
+              {u.state.phase === "error" && (
+                <span className="flex items-center gap-2">
+                  <StatusPill tone="danger">Failed</StatusPill>
+                  <span className="text-xs text-muted-foreground">{u.state.message}</span>
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {selected.size > 0 && (
+        <SettingsCard
+          title={`${selected.size} selected`}
+          description="Tags are added to every selected photo."
+        >
+          <SettingsRow label="Grade" htmlFor="tag-grade">
+            <Input
+              id="tag-grade"
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
+              placeholder="e.g. A Grade"
+              className="h-9 w-48"
+            />
+          </SettingsRow>
+          <SettingsRow label="Season" helper="The year the season started" htmlFor="tag-season">
+            <Input
+              id="tag-season"
+              type="number"
+              value={season}
+              onChange={(e) => setSeason(e.target.value)}
+              className="h-9 w-28"
+            />
+          </SettingsRow>
+          <SettingsRow label="Players" helper="Senior players only" htmlFor="tag-players">
+            <div className="w-64 space-y-2">
+              <Input
+                id="tag-players"
+                value={playerSearch}
+                onChange={(e) => setPlayerSearch(e.target.value)}
+                placeholder="Search players"
+                className="h-9"
+              />
+              {players.map((p) => (
+                <label key={p.id} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={playerIds.has(p.id)}
+                    onChange={() =>
+                      setPlayerIds((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(p.id)) next.delete(p.id);
+                        else next.add(p.id);
+                        return next;
+                      })
+                    }
+                  />
+                  {p.givenName} {p.surname}
+                </label>
+              ))}
+            </div>
+          </SettingsRow>
+          <div className="flex flex-wrap items-center gap-2 px-5 py-4">
+            {tagError && <p className="text-sm text-destructive">{tagError}</p>}
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              disabled={deleteM.isPending}
+              onClick={async () => {
+                const ok = await confirm({
+                  title: `Remove ${selected.size} photo${selected.size === 1 ? "" : "s"}?`,
+                  description: "Drafts that already use them keep their copy.",
+                  confirmText: "Remove",
+                  destructive: true,
+                });
+                if (ok) deleteM.mutate({ data: { photoIds: Array.from(selected) } });
+              }}
+            >
+              Remove
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="ml-auto"
+              onClick={() => setSelected(new Set())}
+            >
+              Clear selection
+            </Button>
+            <Button type="button" onClick={applyTags} disabled={tagM.isPending}>
+              Apply tags
+            </Button>
+          </div>
+        </SettingsCard>
+      )}
+
+      {photosQ.isLoading ? (
+        <ListSkeleton rows={3} />
+      ) : photosQ.isError ? (
+        <QueryError
+          message="We couldn’t load the photo library."
+          onRetry={() => photosQ.refetch()}
+        />
+      ) : photos.length === 0 ? (
+        <EmptyState
+          title="No photos yet"
+          message="Upload senior team and match photos to get started."
+        />
+      ) : (
+        <ul
+          className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
+          aria-label="Library photos"
+        >
+          {photos.map((p) => {
+            const on = selected.has(p.id);
+            return (
+              <li key={p.id}>
+                <button
+                  type="button"
+                  aria-pressed={on}
+                  aria-label={`Photo ${p.id}${p.grade ? `, ${p.grade}` : ""}`}
+                  onClick={() => toggle(p.id)}
+                  className={cn(
+                    "relative block w-full overflow-hidden rounded-lg border-2 text-left",
+                    on ? "border-primary" : "border-transparent",
+                  )}
+                >
+                  <img src={p.thumbUrl} alt="" className="aspect-square w-full object-cover" />
+                  {on && (
+                    <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                      <Check className="h-4 w-4" aria-hidden />
+                    </span>
+                  )}
+                  <span className="block truncate px-2 py-1 text-xs text-muted-foreground">
+                    {[p.grade, p.season, p.playerIds.length ? `${p.playerIds.length} tagged` : null]
+                      .filter(Boolean)
+                      .join(" · ") || "Untagged"}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}

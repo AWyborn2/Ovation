@@ -28,11 +28,12 @@ export const PLATFORMS: { value: Platform; label: string }[] = [
 ];
 
 export const SIZE_KEYS: {
-  key: "sizeSquare" | "sizePortrait" | "sizeStory";
+  key: "sizeSquare" | "sizePortrait" | "sizeStory" | "sizeLandscape";
   label: string;
   code: string;
 }[] = [
   { key: "sizeSquare", label: "Feed square", code: "1080×1080" },
   { key: "sizePortrait", label: "Feed portrait", code: "1080×1350" },
   { key: "sizeStory", label: "Story / TikTok", code: "1080×1920" },
+  { key: "sizeLandscape", label: "Landscape (links, X)", code: "1200×630" },
 ];

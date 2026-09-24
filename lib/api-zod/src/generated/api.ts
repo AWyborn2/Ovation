@@ -4479,7 +4479,7 @@ export const DeleteCardLayoutParams = zod.object({
 export const ListCardSetsResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape']),
   "slides": zod.array(zod.object({
   "id": zod.string(),
   "input": zod.record(zod.string(), zod.unknown()),
@@ -4551,7 +4551,7 @@ export const createCardSetBodySlidesMax = 10;
 
 export const CreateCardSetBody = zod.object({
   "name": zod.string().min(1).max(createCardSetBodyNameMax),
-  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape']),
   "slides": zod.array(zod.object({
   "id": zod.string(),
   "input": zod.record(zod.string(), zod.unknown()),
@@ -4616,13 +4616,13 @@ export const GenerateCardSetBody = zod.object({
   "round": zod.number().optional(),
   "season": zod.number().optional(),
   "grades": zod.array(zod.string()).optional(),
-  "platformSize": zod.enum(['square', 'portrait', 'story'])
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape'])
 })
 
 export const GenerateCardSetResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape']),
   "slides": zod.array(zod.object({
   "id": zod.string(),
   "input": zod.record(zod.string(), zod.unknown()),
@@ -4693,14 +4693,14 @@ export const AutoseedCardSetBody = zod.object({
   "round": zod.number(),
   "grade": zod.string().optional(),
   "junior": zod.boolean().default(autoseedCardSetBodyJuniorDefault),
-  "platformSize": zod.enum(['square', 'portrait', 'story'])
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape'])
 })
 
 export const AutoseedCardSetResponse = zod.object({
   "generated": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape']),
   "slides": zod.array(zod.object({
   "id": zod.string(),
   "input": zod.record(zod.string(), zod.unknown()),
@@ -4777,7 +4777,7 @@ export const updateCardSetBodySlidesMax = 10;
 
 export const UpdateCardSetBody = zod.object({
   "name": zod.string().min(1).max(updateCardSetBodyNameMax),
-  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape']),
   "slides": zod.array(zod.object({
   "id": zod.string(),
   "input": zod.record(zod.string(), zod.unknown()),
@@ -4835,7 +4835,7 @@ export const UpdateCardSetBody = zod.object({
 export const UpdateCardSetResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape']),
   "slides": zod.array(zod.object({
   "id": zod.string(),
   "input": zod.record(zod.string(), zod.unknown()),
@@ -4920,11 +4920,34 @@ export const GetSocialSettingsResponse = zod.object({
   "sizeSquare": zod.boolean(),
   "sizePortrait": zod.boolean(),
   "sizeStory": zod.boolean(),
+  "sizeLandscape": zod.boolean().optional().describe('Landscape 1200×630 (link previews, X, Facebook). Default off.'),
   "sponsorsEnabled": zod.boolean(),
   "captionsEnabled": zod.boolean(),
   "clubHashtag": zod.string(),
   "clubUrl": zod.string(),
-  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.')
+  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.'),
+  "lastSweepAt": zod.coerce.date().nullish().describe('When the scheduled drafting sweep last completed for this club (read-only).'),
+  "autoPostEnabled": zod.boolean().optional().describe('When on, auto-drafts still awaiting review at their deadline become ready.'),
+  "autoPostWindowHours": zod.number().optional().describe('Hours after a draft\'s own import before it becomes ready.'),
+  "notificationEmail": zod.string().nullish().describe('Where draft notifications are emailed. Null = in-app only.'),
+  "familyConfig": zod.object({
+  "results": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+}),
+  "achievements": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+}),
+  "roundup": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+}),
+  "matchday": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+})
+}).optional().describe('Effective per-family automation switches. Derived from the engine flags until first saved.')
 }),
   "captionTemplates": zod.array(zod.object({
   "engine": zod.string(),
@@ -4958,6 +4981,10 @@ export const GetSocialSettingsResponse = zod.object({
 /**
  * @summary Update social card settings
  */
+export const updateSocialSettingsBodyAutoPostWindowHoursMax = 168;
+
+
+
 export const UpdateSocialSettingsBody = zod.object({
   "engineOnDemand": zod.boolean().optional(),
   "engineMilestone": zod.boolean().optional(),
@@ -4971,11 +4998,33 @@ export const UpdateSocialSettingsBody = zod.object({
   "sizeSquare": zod.boolean().optional(),
   "sizePortrait": zod.boolean().optional(),
   "sizeStory": zod.boolean().optional(),
+  "sizeLandscape": zod.boolean().optional().describe('Landscape 1200×630 (link previews, X, Facebook). Default off.'),
   "sponsorsEnabled": zod.boolean().optional(),
   "captionsEnabled": zod.boolean().optional(),
   "clubHashtag": zod.string().optional(),
   "clubUrl": zod.string().optional(),
-  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null clears the override (fall back to the earliest upcoming fixture).')
+  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null clears the override (fall back to the earliest upcoming fixture).'),
+  "familyConfig": zod.object({
+  "results": zod.object({
+  "enabled": zod.boolean().optional(),
+  "grades": zod.record(zod.string(), zod.boolean()).optional()
+}).optional(),
+  "achievements": zod.object({
+  "enabled": zod.boolean().optional(),
+  "grades": zod.record(zod.string(), zod.boolean()).optional()
+}).optional(),
+  "roundup": zod.object({
+  "enabled": zod.boolean().optional(),
+  "grades": zod.record(zod.string(), zod.boolean()).optional()
+}).optional(),
+  "matchday": zod.object({
+  "enabled": zod.boolean().optional(),
+  "grades": zod.record(zod.string(), zod.boolean()).optional()
+}).optional()
+}).optional().describe('Partial family switches; omitted families and grades keep their current values.'),
+  "autoPostEnabled": zod.boolean().optional(),
+  "autoPostWindowHours": zod.number().min(1).max(updateSocialSettingsBodyAutoPostWindowHoursMax).optional(),
+  "notificationEmail": zod.string().nullish()
 })
 
 export const UpdateSocialSettingsResponse = zod.object({
@@ -4991,11 +5040,34 @@ export const UpdateSocialSettingsResponse = zod.object({
   "sizeSquare": zod.boolean(),
   "sizePortrait": zod.boolean(),
   "sizeStory": zod.boolean(),
+  "sizeLandscape": zod.boolean().optional().describe('Landscape 1200×630 (link previews, X, Facebook). Default off.'),
   "sponsorsEnabled": zod.boolean(),
   "captionsEnabled": zod.boolean(),
   "clubHashtag": zod.string(),
   "clubUrl": zod.string(),
-  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.')
+  "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.'),
+  "lastSweepAt": zod.coerce.date().nullish().describe('When the scheduled drafting sweep last completed for this club (read-only).'),
+  "autoPostEnabled": zod.boolean().optional().describe('When on, auto-drafts still awaiting review at their deadline become ready.'),
+  "autoPostWindowHours": zod.number().optional().describe('Hours after a draft\'s own import before it becomes ready.'),
+  "notificationEmail": zod.string().nullish().describe('Where draft notifications are emailed. Null = in-app only.'),
+  "familyConfig": zod.object({
+  "results": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+}),
+  "achievements": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+}),
+  "roundup": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+}),
+  "matchday": zod.object({
+  "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
+})
+}).optional().describe('Effective per-family automation switches. Derived from the engine flags until first saved.')
 })
 
 
@@ -6347,12 +6419,18 @@ export const UpsertCaptionTemplateResponse = zod.object({
 
 
 /**
- * @summary List queued social card drafts (pending + reviewed history)
+ * @summary List queued social card drafts, newest first, optionally filtered
  */
+export const ListSocialDraftsQueryParams = zod.object({
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']).optional(),
+  "family": zod.coerce.string().optional(),
+  "grade": zod.coerce.string().optional()
+})
+
 export const ListSocialDraftsResponseItem = zod.object({
   "id": zod.number(),
   "engine": zod.string(),
-  "status": zod.enum(['pending', 'approved', 'dismissed']),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
   "cardInput": zod.unknown(),
   "appPath": zod.string(),
   "trackedSlug": zod.string().nullish(),
@@ -6362,19 +6440,192 @@ export const ListSocialDraftsResponseItem = zod.object({
   "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
   "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
   "createdAt": zod.coerce.date(),
-  "reviewedAt": zod.coerce.date().nullish()
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
 })
 export const ListSocialDraftsResponse = zod.array(ListSocialDraftsResponseItem)
 
 
 /**
- * @summary Count of social card drafts still awaiting review (status = pending)
+ * Machine-to-machine only. Requires the `x-sweep-secret` header to equal the server's SOCIAL_SWEEP_SECRET; answers 401 otherwise (including when no secret is configured). Sweeps one tenant, or every active tenant when `tenantId` is omitted.
+ * @summary Run the social drafting sweep (scheduled job / fixtures projection)
+ */
+export const RunDraftSweepBody = zod.object({
+  "tenantId": zod.number().optional().describe('Sweep only this tenant. Omit to sweep every active tenant.'),
+  "scope": zod.enum(['scheduled', 'fixtures']).optional().describe('scheduled (default): central matches past the watermark plus fixture cards. fixtures: fixture cards only.')
+})
+
+export const RunDraftSweepResponse = zod.object({
+  "results": zod.array(zod.object({
+  "tenantId": zod.number(),
+  "ok": zod.boolean(),
+  "centralMatches": zod.number(),
+  "matchSummaries": zod.number(),
+  "matchDay": zod.number(),
+  "teamLists": zod.number(),
+  "promoted": zod.number().optional().describe('Drafts moved to ready because their auto-post deadline passed.')
+}))
+})
+
+
+/**
+ * @summary List the club's photo library, newest first (admin)
+ */
+export const ListClubPhotosQueryParams = zod.object({
+  "playerId": zod.coerce.number().optional(),
+  "grade": zod.coerce.string().optional(),
+  "season": zod.coerce.number().optional()
+})
+
+export const ListClubPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number())
+})
+export const ListClubPhotosResponse = zod.array(ListClubPhotosResponseItem)
+
+
+/**
+ * Each object is converted to an upright JPEG with EXIF (including GPS) stripped, plus a thumbnail; the upload is then deleted. Files fail independently — the response carries a result per object. At most 50 objects per call, 25 MB each.
+ * @summary Convert uploaded objects (JPEG, PNG, WebP, HEIC) into library photos (admin)
+ */
+
+
+
+export const IngestClubPhotosBody = zod.object({
+  "objectPaths": zod.array(zod.string()).min(1).describe('Object paths returned by POST \/storage\/uploads\/request-url.'),
+  "season": zod.number().optional(),
+  "grade": zod.string().optional(),
+  "playerIds": zod.array(zod.number()).optional().describe('Senior players to tag on every photo in the batch.')
+})
+
+export const IngestClubPhotosResponse = zod.object({
+  "results": zod.array(zod.object({
+  "objectPath": zod.string(),
+  "ok": zod.boolean(),
+  "photo": zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number())
+}).optional(),
+  "error": zod.string().optional()
+}))
+})
+
+
+/**
+ * @summary Set season/grade and add or remove player tags on many photos at once (admin)
+ */
+
+
+
+export const TagClubPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1),
+  "season": zod.number().nullish().describe('Set (or with null, clear) the season on every photo. Omit to leave unchanged.'),
+  "grade": zod.string().nullish().describe('Set (or with null, clear) the grade on every photo. Omit to leave unchanged.'),
+  "addPlayerIds": zod.array(zod.number()).optional(),
+  "removePlayerIds": zod.array(zod.number()).optional()
+})
+
+export const TagClubPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number())
+})
+export const TagClubPhotosResponse = zod.array(TagClubPhotosResponseItem)
+
+
+/**
+ * @summary Remove photos from the library (admin)
+ */
+
+
+
+export const DeleteClubPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1)
+})
+
+export const DeleteClubPhotosResponse = zod.object({
+  "deleted": zod.number()
+})
+
+
+/**
+ * @summary The club's recent notifications and the unread count (admin)
+ */
+export const ListNotificationsResponse = zod.object({
+  "unreadCount": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "link": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "readAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * @summary Mark every notification read (admin)
+ */
+export const MarkNotificationsReadResponse = zod.object({
+  "unreadCount": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "link": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "readAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * @summary Count of social card drafts still awaiting review
  */
 export const GetPendingSocialDraftCountResponse = zod.object({
   "count": zod.number()
 })
 
 
+/**
+ * @summary Mark a draft ready to post (mints its tracked link)
+ */
 export const ApproveSocialDraftParams = zod.object({
   "id": zod.coerce.number()
 })
@@ -6382,7 +6633,7 @@ export const ApproveSocialDraftParams = zod.object({
 export const ApproveSocialDraftResponse = zod.object({
   "id": zod.number(),
   "engine": zod.string(),
-  "status": zod.enum(['pending', 'approved', 'dismissed']),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
   "cardInput": zod.unknown(),
   "appPath": zod.string(),
   "trackedSlug": zod.string().nullish(),
@@ -6392,12 +6643,208 @@ export const ApproveSocialDraftResponse = zod.object({
   "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
   "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
   "createdAt": zod.coerce.date(),
-  "reviewedAt": zod.coerce.date().nullish()
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
 })
 
 
 /**
- * @summary Mark an approved draft as posted
+ * Records the current content as an "edit" revision first, so the change can be reverted. A caption edit marks the draft edited (later data refreshes keep it); a photo set here is recorded as the admin's choice and never replaced by an automatic pick. Any edit stops auto-promotion.
+ * @summary Edit a draft's caption or swap its photo (keeps a revision)
+ */
+export const UpdateSocialDraftParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateSocialDraftBody = zod.object({
+  "caption": zod.string().optional(),
+  "photoUrl": zod.string().nullish().describe('A library or uploaded image URL; null removes the photo.')
+})
+
+export const UpdateSocialDraftResponse = zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+})
+
+
+/**
+ * @summary Render a draft's post pack — a PNG per enabled format, its caption and a zip
+ */
+export const CreatePostPackParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CreatePostPackResponse = zod.object({
+  "images": zod.array(zod.object({
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "url": zod.string()
+})),
+  "caption": zod.string(),
+  "zipUrl": zod.string()
+})
+
+
+/**
+ * @summary Return a ready draft to review and stop its auto-promotion
+ */
+export const SendBackSocialDraftParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SendBackSocialDraftResponse = zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+})
+
+
+/**
+ * @summary Bring a dismissed draft back to review
+ */
+export const ReopenSocialDraftParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ReopenSocialDraftResponse = zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+})
+
+
+/**
+ * @summary Previous versions of a draft, newest first
+ */
+export const ListSocialDraftRevisionsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListSocialDraftRevisionsResponseItem = zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "cardInput": zod.unknown(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "reason": zod.enum(['refresh', 'edit', 'revert']),
+  "createdAt": zod.coerce.date()
+})
+export const ListSocialDraftRevisionsResponse = zod.array(ListSocialDraftRevisionsResponseItem)
+
+
+/**
+ * @summary Restore a previous version of a draft (the current version is kept as a revision)
+ */
+export const RevertSocialDraftParams = zod.object({
+  "id": zod.coerce.number(),
+  "revisionId": zod.coerce.number()
+})
+
+export const RevertSocialDraftResponse = zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+})
+
+
+/**
+ * @summary Mark a draft as posted
  */
 export const MarkSocialDraftPostedParams = zod.object({
   "id": zod.coerce.number()
@@ -6406,7 +6853,7 @@ export const MarkSocialDraftPostedParams = zod.object({
 export const MarkSocialDraftPostedResponse = zod.object({
   "id": zod.number(),
   "engine": zod.string(),
-  "status": zod.enum(['pending', 'approved', 'dismissed']),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
   "cardInput": zod.unknown(),
   "appPath": zod.string(),
   "trackedSlug": zod.string().nullish(),
@@ -6416,7 +6863,18 @@ export const MarkSocialDraftPostedResponse = zod.object({
   "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
   "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
   "createdAt": zod.coerce.date(),
-  "reviewedAt": zod.coerce.date().nullish()
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
 })
 
 
@@ -6436,7 +6894,7 @@ export const GenerateRoundUpBody = zod.object({
 export const GenerateRoundUpResponseItem = zod.object({
   "id": zod.number(),
   "engine": zod.string(),
-  "status": zod.enum(['pending', 'approved', 'dismissed']),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
   "cardInput": zod.unknown(),
   "appPath": zod.string(),
   "trackedSlug": zod.string().nullish(),
@@ -6446,7 +6904,18 @@ export const GenerateRoundUpResponseItem = zod.object({
   "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
   "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
   "createdAt": zod.coerce.date(),
-  "reviewedAt": zod.coerce.date().nullish()
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
 })
 export const GenerateRoundUpResponse = zod.array(GenerateRoundUpResponseItem)
 
@@ -6465,7 +6934,7 @@ export const GenerateRecapsBody = zod.object({
 export const GenerateRecapsResponseItem = zod.object({
   "id": zod.number(),
   "engine": zod.string(),
-  "status": zod.enum(['pending', 'approved', 'dismissed']),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
   "cardInput": zod.unknown(),
   "appPath": zod.string(),
   "trackedSlug": zod.string().nullish(),
@@ -6475,7 +6944,18 @@ export const GenerateRecapsResponseItem = zod.object({
   "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
   "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
   "createdAt": zod.coerce.date(),
-  "reviewedAt": zod.coerce.date().nullish()
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
 })
 export const GenerateRecapsResponse = zod.array(GenerateRecapsResponseItem)
 

@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { SocialFamilyConfigUpdate } from './socialFamilyConfigUpdate';
 import type { SocialSettingsUpdateMatchSummaryGradeConfig } from './socialSettingsUpdateMatchSummaryGradeConfig';
 
 export interface SocialSettingsUpdate {
@@ -21,6 +22,8 @@ export interface SocialSettingsUpdate {
   sizeSquare?: boolean;
   sizePortrait?: boolean;
   sizeStory?: boolean;
+  /** Landscape 1200×630 (link previews, X, Facebook). Default off. */
+  sizeLandscape?: boolean;
   sponsorsEnabled?: boolean;
   captionsEnabled?: boolean;
   clubHashtag?: string;
@@ -30,4 +33,13 @@ export interface SocialSettingsUpdate {
      * @nullable
      */
   seasonStartDate?: Date | null;
+  familyConfig?: SocialFamilyConfigUpdate;
+  autoPostEnabled?: boolean;
+  /**
+     * @minimum 1
+     * @maximum 168
+     */
+  autoPostWindowHours?: number;
+  /** @nullable */
+  notificationEmail?: string | null;
 }

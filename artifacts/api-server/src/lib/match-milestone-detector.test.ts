@@ -97,6 +97,16 @@ vi.mock("@workspace/db", () => ({
   playerGradeStatsTable: h.playerGradeStatsTable,
 }));
 
+// Pack / caption / photo enrichment reads tables this suite doesn't model;
+// it has its own coverage in draft-enrich.test.ts.
+vi.mock("./draft-enrich", () => ({
+  enrichDraft: async () => ({ packId: null, caption: "", photoUrl: null, photoSource: null }),
+  isAutoPhoto: () => true,
+}));
+vi.mock("./effective-draft-state", () => ({
+  autoReadyAtFor: async (_tenantId: number, importedAt: Date) => importedAt,
+}));
+
 import {
   detectAndQueueMatchMilestones,
   type MatchMilestoneContext,

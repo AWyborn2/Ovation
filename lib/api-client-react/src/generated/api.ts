@@ -81,6 +81,7 @@ import type {
   CheckSlugAvailableParams,
   CheckoutBody,
   CheckoutResult,
+  ClubPhoto,
   ClubRecords,
   ClubRole,
   ClubRoleInput,
@@ -95,7 +96,11 @@ import type {
   CreateTrackedLinkBody,
   Dashboard,
   DebutEntry,
+  DeleteClubPhotos200,
+  DeleteClubPhotosRequest,
   DirectoryClub,
+  DraftSweepRequest,
+  DraftSweepResponse,
   ErrorEnvelope,
   FiveWicketHaul,
   Fixture,
@@ -121,6 +126,8 @@ import type {
   HonourDisplaySettingsUpdate,
   ImportPreview,
   ImportRecord,
+  IngestClubPhotosRequest,
+  IngestClubPhotosResponse,
   IssueAdminResetBody,
   JuniorAdminBattingLine,
   JuniorAdminBowlingLine,
@@ -153,6 +160,7 @@ import type {
   LifeMember,
   LifeMemberInput,
   LifeMemberUpdate,
+  ListClubPhotosParams,
   ListFixturesParams,
   ListFixturesResultsParams,
   ListJuniorLeaderboardParams,
@@ -162,6 +170,7 @@ import type {
   ListMatchesParams,
   ListNavItemsParams,
   ListPlayersParams,
+  ListSocialDraftsParams,
   ListStatsParams,
   LoginRequest,
   MatchDetail,
@@ -185,6 +194,7 @@ import type {
   NonPlayerPerson,
   NonPlayerPersonInput,
   NonPlayerPersonUpdate,
+  NotificationList,
   Partnerships,
   PasswordResetInfo,
   PasswordResetSubmitBody,
@@ -208,6 +218,7 @@ import type {
   PointsConfigInput,
   PointsConfigUpdate,
   PointsLeaderboard,
+  PostPack,
   Premiership,
   PremiershipInput,
   PremiershipUpdate,
@@ -227,6 +238,7 @@ import type {
   SignupResult,
   SlugAvailability,
   SocialDraft,
+  SocialDraftRevision,
   SocialSettings,
   SocialSettingsBundle,
   SocialSettingsUpdate,
@@ -239,6 +251,7 @@ import type {
   StatUpdate,
   SweepMatchSummaryDrafts200,
   SweepMatchSummaryDraftsBody,
+  TagClubPhotosRequest,
   TeamList,
   TeamOfDecadeBoard,
   TeamOfDecadeBoardInput,
@@ -262,6 +275,7 @@ import type {
   UpdateJuniorMatchBody,
   UpdateJuniorParticipantBody,
   UpdatePlatformBrandBody,
+  UpdateSocialDraftRequest,
   UpdateTenantBody,
   UpdateTenantBrandBody,
   UploadMatchBatchBody,
@@ -14517,20 +14531,27 @@ export const useUpsertCaptionTemplate = <TError = ErrorType<unknown>,
       return useMutation(getUpsertCaptionTemplateMutationOptions(options));
     }
 
-export const getListSocialDraftsUrl = () => {
+export const getListSocialDraftsUrl = (params?: ListSocialDraftsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/social-drafts`
+  return stringifiedParams.length > 0 ? `/api/social-drafts?${stringifiedParams}` : `/api/social-drafts`
 }
 
 /**
- * @summary List queued social card drafts (pending + reviewed history)
+ * @summary List queued social card drafts, newest first, optionally filtered
  */
-export const listSocialDrafts = async ( options?: RequestInit): Promise<SocialDraft[]> => {
+export const listSocialDrafts = async (params?: ListSocialDraftsParams, options?: RequestInit): Promise<SocialDraft[]> => {
 
-  return customFetch<SocialDraft[]>(getListSocialDraftsUrl(),
+  return customFetch<SocialDraft[]>(getListSocialDraftsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -14543,23 +14564,23 @@ export const listSocialDrafts = async ( options?: RequestInit): Promise<SocialDr
 
 
 
-export const getListSocialDraftsQueryKey = () => {
+export const getListSocialDraftsQueryKey = (params?: ListSocialDraftsParams,) => {
     return [
-    `/api/social-drafts`
+    `/api/social-drafts`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListSocialDraftsQueryOptions = <TData = Awaited<ReturnType<typeof listSocialDrafts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSocialDrafts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListSocialDraftsQueryOptions = <TData = Awaited<ReturnType<typeof listSocialDrafts>>, TError = ErrorType<unknown>>(params?: ListSocialDraftsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSocialDrafts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListSocialDraftsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListSocialDraftsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSocialDrafts>>> = ({ signal }) => listSocialDrafts({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSocialDrafts>>> = ({ signal }) => listSocialDrafts(params, { signal, ...requestOptions });
 
 
 
@@ -14573,15 +14594,15 @@ export type ListSocialDraftsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List queued social card drafts (pending + reviewed history)
+ * @summary List queued social card drafts, newest first, optionally filtered
  */
 
 export function useListSocialDrafts<TData = Awaited<ReturnType<typeof listSocialDrafts>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSocialDrafts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListSocialDraftsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSocialDrafts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListSocialDraftsQueryOptions(options)
+  const queryOptions = getListSocialDraftsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -14594,6 +14615,523 @@ export function useListSocialDrafts<TData = Awaited<ReturnType<typeof listSocial
 
 
 
+export const getRunDraftSweepUrl = () => {
+
+
+
+
+  return `/api/internal/draft-sweep`
+}
+
+/**
+ * Machine-to-machine only. Requires the `x-sweep-secret` header to equal the server's SOCIAL_SWEEP_SECRET; answers 401 otherwise (including when no secret is configured). Sweeps one tenant, or every active tenant when `tenantId` is omitted.
+ * @summary Run the social drafting sweep (scheduled job / fixtures projection)
+ */
+export const runDraftSweep = async (draftSweepRequest?: DraftSweepRequest, options?: RequestInit): Promise<DraftSweepResponse> => {
+
+  return customFetch<DraftSweepResponse>(getRunDraftSweepUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      draftSweepRequest,)
+  }
+);}
+
+
+
+
+export const getRunDraftSweepMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runDraftSweep>>, TError,{data?: BodyType<DraftSweepRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runDraftSweep>>, TError,{data?: BodyType<DraftSweepRequest>}, TContext> => {
+
+const mutationKey = ['runDraftSweep'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runDraftSweep>>, {data?: BodyType<DraftSweepRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  runDraftSweep(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunDraftSweepMutationResult = NonNullable<Awaited<ReturnType<typeof runDraftSweep>>>
+    export type RunDraftSweepMutationBody = BodyType<DraftSweepRequest> | undefined
+    export type RunDraftSweepMutationError = ErrorType<void>
+
+    /**
+ * @summary Run the social drafting sweep (scheduled job / fixtures projection)
+ */
+export const useRunDraftSweep = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runDraftSweep>>, TError,{data?: BodyType<DraftSweepRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runDraftSweep>>,
+        TError,
+        {data?: BodyType<DraftSweepRequest>},
+        TContext
+      > => {
+      return useMutation(getRunDraftSweepMutationOptions(options));
+    }
+
+export const getListClubPhotosUrl = (params?: ListClubPhotosParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/club-photos?${stringifiedParams}` : `/api/club-photos`
+}
+
+/**
+ * @summary List the club's photo library, newest first (admin)
+ */
+export const listClubPhotos = async (params?: ListClubPhotosParams, options?: RequestInit): Promise<ClubPhoto[]> => {
+
+  return customFetch<ClubPhoto[]>(getListClubPhotosUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClubPhotosQueryKey = (params?: ListClubPhotosParams,) => {
+    return [
+    `/api/club-photos`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListClubPhotosQueryOptions = <TData = Awaited<ReturnType<typeof listClubPhotos>>, TError = ErrorType<void>>(params?: ListClubPhotosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubPhotos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClubPhotosQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClubPhotos>>> = ({ signal }) => listClubPhotos(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClubPhotos>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClubPhotosQueryResult = NonNullable<Awaited<ReturnType<typeof listClubPhotos>>>
+export type ListClubPhotosQueryError = ErrorType<void>
+
+
+/**
+ * @summary List the club's photo library, newest first (admin)
+ */
+
+export function useListClubPhotos<TData = Awaited<ReturnType<typeof listClubPhotos>>, TError = ErrorType<void>>(
+ params?: ListClubPhotosParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubPhotos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClubPhotosQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getIngestClubPhotosUrl = () => {
+
+
+
+
+  return `/api/club-photos/ingest`
+}
+
+/**
+ * Each object is converted to an upright JPEG with EXIF (including GPS) stripped, plus a thumbnail; the upload is then deleted. Files fail independently — the response carries a result per object. At most 50 objects per call, 25 MB each.
+ * @summary Convert uploaded objects (JPEG, PNG, WebP, HEIC) into library photos (admin)
+ */
+export const ingestClubPhotos = async (ingestClubPhotosRequest: IngestClubPhotosRequest, options?: RequestInit): Promise<IngestClubPhotosResponse> => {
+
+  return customFetch<IngestClubPhotosResponse>(getIngestClubPhotosUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      ingestClubPhotosRequest,)
+  }
+);}
+
+
+
+
+export const getIngestClubPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestClubPhotos>>, TError,{data: BodyType<IngestClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof ingestClubPhotos>>, TError,{data: BodyType<IngestClubPhotosRequest>}, TContext> => {
+
+const mutationKey = ['ingestClubPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ingestClubPhotos>>, {data: BodyType<IngestClubPhotosRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  ingestClubPhotos(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IngestClubPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof ingestClubPhotos>>>
+    export type IngestClubPhotosMutationBody = BodyType<IngestClubPhotosRequest>
+    export type IngestClubPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary Convert uploaded objects (JPEG, PNG, WebP, HEIC) into library photos (admin)
+ */
+export const useIngestClubPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestClubPhotos>>, TError,{data: BodyType<IngestClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof ingestClubPhotos>>,
+        TError,
+        {data: BodyType<IngestClubPhotosRequest>},
+        TContext
+      > => {
+      return useMutation(getIngestClubPhotosMutationOptions(options));
+    }
+
+export const getTagClubPhotosUrl = () => {
+
+
+
+
+  return `/api/club-photos/tags`
+}
+
+/**
+ * @summary Set season/grade and add or remove player tags on many photos at once (admin)
+ */
+export const tagClubPhotos = async (tagClubPhotosRequest: TagClubPhotosRequest, options?: RequestInit): Promise<ClubPhoto[]> => {
+
+  return customFetch<ClubPhoto[]>(getTagClubPhotosUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      tagClubPhotosRequest,)
+  }
+);}
+
+
+
+
+export const getTagClubPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tagClubPhotos>>, TError,{data: BodyType<TagClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof tagClubPhotos>>, TError,{data: BodyType<TagClubPhotosRequest>}, TContext> => {
+
+const mutationKey = ['tagClubPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof tagClubPhotos>>, {data: BodyType<TagClubPhotosRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  tagClubPhotos(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TagClubPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof tagClubPhotos>>>
+    export type TagClubPhotosMutationBody = BodyType<TagClubPhotosRequest>
+    export type TagClubPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary Set season/grade and add or remove player tags on many photos at once (admin)
+ */
+export const useTagClubPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof tagClubPhotos>>, TError,{data: BodyType<TagClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof tagClubPhotos>>,
+        TError,
+        {data: BodyType<TagClubPhotosRequest>},
+        TContext
+      > => {
+      return useMutation(getTagClubPhotosMutationOptions(options));
+    }
+
+export const getDeleteClubPhotosUrl = () => {
+
+
+
+
+  return `/api/club-photos/delete`
+}
+
+/**
+ * @summary Remove photos from the library (admin)
+ */
+export const deleteClubPhotos = async (deleteClubPhotosRequest: DeleteClubPhotosRequest, options?: RequestInit): Promise<DeleteClubPhotos200> => {
+
+  return customFetch<DeleteClubPhotos200>(getDeleteClubPhotosUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      deleteClubPhotosRequest,)
+  }
+);}
+
+
+
+
+export const getDeleteClubPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubPhotos>>, TError,{data: BodyType<DeleteClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteClubPhotos>>, TError,{data: BodyType<DeleteClubPhotosRequest>}, TContext> => {
+
+const mutationKey = ['deleteClubPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteClubPhotos>>, {data: BodyType<DeleteClubPhotosRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  deleteClubPhotos(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteClubPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof deleteClubPhotos>>>
+    export type DeleteClubPhotosMutationBody = BodyType<DeleteClubPhotosRequest>
+    export type DeleteClubPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove photos from the library (admin)
+ */
+export const useDeleteClubPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteClubPhotos>>, TError,{data: BodyType<DeleteClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteClubPhotos>>,
+        TError,
+        {data: BodyType<DeleteClubPhotosRequest>},
+        TContext
+      > => {
+      return useMutation(getDeleteClubPhotosMutationOptions(options));
+    }
+
+export const getListNotificationsUrl = () => {
+
+
+
+
+  return `/api/notifications`
+}
+
+/**
+ * @summary The club's recent notifications and the unread count (admin)
+ */
+export const listNotifications = async ( options?: RequestInit): Promise<NotificationList> => {
+
+  return customFetch<NotificationList>(getListNotificationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNotificationsQueryKey = () => {
+    return [
+    `/api/notifications`
+    ] as const;
+    }
+
+
+export const getListNotificationsQueryOptions = <TData = Awaited<ReturnType<typeof listNotifications>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNotificationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNotifications>>> = ({ signal }) => listNotifications({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListNotificationsQueryResult = NonNullable<Awaited<ReturnType<typeof listNotifications>>>
+export type ListNotificationsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The club's recent notifications and the unread count (admin)
+ */
+
+export function useListNotifications<TData = Awaited<ReturnType<typeof listNotifications>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotifications>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListNotificationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getMarkNotificationsReadUrl = () => {
+
+
+
+
+  return `/api/notifications/read`
+}
+
+/**
+ * @summary Mark every notification read (admin)
+ */
+export const markNotificationsRead = async ( options?: RequestInit): Promise<NotificationList> => {
+
+  return customFetch<NotificationList>(getMarkNotificationsReadUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getMarkNotificationsReadMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNotificationsRead>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markNotificationsRead>>, TError,void, TContext> => {
+
+const mutationKey = ['markNotificationsRead'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markNotificationsRead>>, void> = () => {
+
+
+          return  markNotificationsRead(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkNotificationsReadMutationResult = NonNullable<Awaited<ReturnType<typeof markNotificationsRead>>>
+
+    export type MarkNotificationsReadMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mark every notification read (admin)
+ */
+export const useMarkNotificationsRead = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markNotificationsRead>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markNotificationsRead>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getMarkNotificationsReadMutationOptions(options));
+    }
+
 export const getGetPendingSocialDraftCountUrl = () => {
 
 
@@ -14603,7 +15141,7 @@ export const getGetPendingSocialDraftCountUrl = () => {
 }
 
 /**
- * @summary Count of social card drafts still awaiting review (status = pending)
+ * @summary Count of social card drafts still awaiting review
  */
 export const getPendingSocialDraftCount = async ( options?: RequestInit): Promise<PendingDraftCount> => {
 
@@ -14650,7 +15188,7 @@ export type GetPendingSocialDraftCountQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Count of social card drafts still awaiting review (status = pending)
+ * @summary Count of social card drafts still awaiting review
  */
 
 export function useGetPendingSocialDraftCount<TData = Awaited<ReturnType<typeof getPendingSocialDraftCount>>, TError = ErrorType<unknown>>(
@@ -14679,6 +15217,9 @@ export const getApproveSocialDraftUrl = (id: number,) => {
   return `/api/social-drafts/${id}/approve`
 }
 
+/**
+ * @summary Mark a draft ready to post (mints its tracked link)
+ */
 export const approveSocialDraft = async (id: number, options?: RequestInit): Promise<SocialDraft> => {
 
   return customFetch<SocialDraft>(getApproveSocialDraftUrl(id),
@@ -14693,7 +15234,7 @@ export const approveSocialDraft = async (id: number, options?: RequestInit): Pro
 
 
 
-export const getApproveSocialDraftMutationOptions = <TError = ErrorType<unknown>,
+export const getApproveSocialDraftMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveSocialDraft>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof approveSocialDraft>>, TError,{id: number}, TContext> => {
 
@@ -14722,9 +15263,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ApproveSocialDraftMutationResult = NonNullable<Awaited<ReturnType<typeof approveSocialDraft>>>
 
-    export type ApproveSocialDraftMutationError = ErrorType<unknown>
+    export type ApproveSocialDraftMutationError = ErrorType<void>
 
-    export const useApproveSocialDraft = <TError = ErrorType<unknown>,
+    /**
+ * @summary Mark a draft ready to post (mints its tracked link)
+ */
+export const useApproveSocialDraft = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveSocialDraft>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof approveSocialDraft>>,
@@ -14733,6 +15277,438 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getApproveSocialDraftMutationOptions(options));
+    }
+
+export const getUpdateSocialDraftUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}`
+}
+
+/**
+ * Records the current content as an "edit" revision first, so the change can be reverted. A caption edit marks the draft edited (later data refreshes keep it); a photo set here is recorded as the admin's choice and never replaced by an automatic pick. Any edit stops auto-promotion.
+ * @summary Edit a draft's caption or swap its photo (keeps a revision)
+ */
+export const updateSocialDraft = async (id: number,
+    updateSocialDraftRequest: UpdateSocialDraftRequest, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getUpdateSocialDraftUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateSocialDraftRequest,)
+  }
+);}
+
+
+
+
+export const getUpdateSocialDraftMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSocialDraft>>, TError,{id: number;data: BodyType<UpdateSocialDraftRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSocialDraft>>, TError,{id: number;data: BodyType<UpdateSocialDraftRequest>}, TContext> => {
+
+const mutationKey = ['updateSocialDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSocialDraft>>, {id: number;data: BodyType<UpdateSocialDraftRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateSocialDraft(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSocialDraftMutationResult = NonNullable<Awaited<ReturnType<typeof updateSocialDraft>>>
+    export type UpdateSocialDraftMutationBody = BodyType<UpdateSocialDraftRequest>
+    export type UpdateSocialDraftMutationError = ErrorType<void>
+
+    /**
+ * @summary Edit a draft's caption or swap its photo (keeps a revision)
+ */
+export const useUpdateSocialDraft = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSocialDraft>>, TError,{id: number;data: BodyType<UpdateSocialDraftRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSocialDraft>>,
+        TError,
+        {id: number;data: BodyType<UpdateSocialDraftRequest>},
+        TContext
+      > => {
+      return useMutation(getUpdateSocialDraftMutationOptions(options));
+    }
+
+export const getCreatePostPackUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/post-pack`
+}
+
+/**
+ * @summary Render a draft's post pack — a PNG per enabled format, its caption and a zip
+ */
+export const createPostPack = async (id: number, options?: RequestInit): Promise<PostPack> => {
+
+  return customFetch<PostPack>(getCreatePostPackUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCreatePostPackMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPostPack>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPostPack>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['createPostPack'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPostPack>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  createPostPack(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePostPackMutationResult = NonNullable<Awaited<ReturnType<typeof createPostPack>>>
+
+    export type CreatePostPackMutationError = ErrorType<void>
+
+    /**
+ * @summary Render a draft's post pack — a PNG per enabled format, its caption and a zip
+ */
+export const useCreatePostPack = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPostPack>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPostPack>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getCreatePostPackMutationOptions(options));
+    }
+
+export const getSendBackSocialDraftUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/send-back`
+}
+
+/**
+ * @summary Return a ready draft to review and stop its auto-promotion
+ */
+export const sendBackSocialDraft = async (id: number, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getSendBackSocialDraftUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSendBackSocialDraftMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendBackSocialDraft>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendBackSocialDraft>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['sendBackSocialDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendBackSocialDraft>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  sendBackSocialDraft(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendBackSocialDraftMutationResult = NonNullable<Awaited<ReturnType<typeof sendBackSocialDraft>>>
+
+    export type SendBackSocialDraftMutationError = ErrorType<void>
+
+    /**
+ * @summary Return a ready draft to review and stop its auto-promotion
+ */
+export const useSendBackSocialDraft = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendBackSocialDraft>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendBackSocialDraft>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getSendBackSocialDraftMutationOptions(options));
+    }
+
+export const getReopenSocialDraftUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/reopen`
+}
+
+/**
+ * @summary Bring a dismissed draft back to review
+ */
+export const reopenSocialDraft = async (id: number, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getReopenSocialDraftUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getReopenSocialDraftMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reopenSocialDraft>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reopenSocialDraft>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['reopenSocialDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reopenSocialDraft>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  reopenSocialDraft(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReopenSocialDraftMutationResult = NonNullable<Awaited<ReturnType<typeof reopenSocialDraft>>>
+
+    export type ReopenSocialDraftMutationError = ErrorType<void>
+
+    /**
+ * @summary Bring a dismissed draft back to review
+ */
+export const useReopenSocialDraft = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reopenSocialDraft>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reopenSocialDraft>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getReopenSocialDraftMutationOptions(options));
+    }
+
+export const getListSocialDraftRevisionsUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/revisions`
+}
+
+/**
+ * @summary Previous versions of a draft, newest first
+ */
+export const listSocialDraftRevisions = async (id: number, options?: RequestInit): Promise<SocialDraftRevision[]> => {
+
+  return customFetch<SocialDraftRevision[]>(getListSocialDraftRevisionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSocialDraftRevisionsQueryKey = (id: number,) => {
+    return [
+    `/api/social-drafts/${id}/revisions`
+    ] as const;
+    }
+
+
+export const getListSocialDraftRevisionsQueryOptions = <TData = Awaited<ReturnType<typeof listSocialDraftRevisions>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSocialDraftRevisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSocialDraftRevisionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSocialDraftRevisions>>> = ({ signal }) => listSocialDraftRevisions(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSocialDraftRevisions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSocialDraftRevisionsQueryResult = NonNullable<Awaited<ReturnType<typeof listSocialDraftRevisions>>>
+export type ListSocialDraftRevisionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Previous versions of a draft, newest first
+ */
+
+export function useListSocialDraftRevisions<TData = Awaited<ReturnType<typeof listSocialDraftRevisions>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSocialDraftRevisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSocialDraftRevisionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRevertSocialDraftUrl = (id: number,
+    revisionId: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/revisions/${revisionId}/revert`
+}
+
+/**
+ * @summary Restore a previous version of a draft (the current version is kept as a revision)
+ */
+export const revertSocialDraft = async (id: number,
+    revisionId: number, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getRevertSocialDraftUrl(id,revisionId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRevertSocialDraftMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revertSocialDraft>>, TError,{id: number;revisionId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revertSocialDraft>>, TError,{id: number;revisionId: number}, TContext> => {
+
+const mutationKey = ['revertSocialDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revertSocialDraft>>, {id: number;revisionId: number}> = (props) => {
+          const {id,revisionId} = props ?? {};
+
+          return  revertSocialDraft(id,revisionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevertSocialDraftMutationResult = NonNullable<Awaited<ReturnType<typeof revertSocialDraft>>>
+
+    export type RevertSocialDraftMutationError = ErrorType<void>
+
+    /**
+ * @summary Restore a previous version of a draft (the current version is kept as a revision)
+ */
+export const useRevertSocialDraft = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revertSocialDraft>>, TError,{id: number;revisionId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revertSocialDraft>>,
+        TError,
+        {id: number;revisionId: number},
+        TContext
+      > => {
+      return useMutation(getRevertSocialDraftMutationOptions(options));
     }
 
 export const getMarkSocialDraftPostedUrl = (id: number,) => {
@@ -14744,7 +15720,7 @@ export const getMarkSocialDraftPostedUrl = (id: number,) => {
 }
 
 /**
- * @summary Mark an approved draft as posted
+ * @summary Mark a draft as posted
  */
 export const markSocialDraftPosted = async (id: number, options?: RequestInit): Promise<SocialDraft> => {
 
@@ -14792,7 +15768,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type MarkSocialDraftPostedMutationError = ErrorType<void>
 
     /**
- * @summary Mark an approved draft as posted
+ * @summary Mark a draft as posted
  */
 export const useMarkSocialDraftPosted = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markSocialDraftPosted>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import {
   db,
   socialDraftsTable,
@@ -12,58 +12,126 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { publicWriteRateLimiter } from "../middlewares/rate-limit";
-import { CreateTrackedLinkBody, GenerateRecapsBody } from "@workspace/api-zod";
+import {
+  CreateTrackedLinkBody,
+  GenerateRecapsBody,
+  UpdateSocialDraftBody,
+} from "@workspace/api-zod";
 import { generateRoundUpDrafts, generateRecapDrafts } from "../lib/roundup";
 import {
   generateMatchSummaryDrafts,
   generateJuniorMatchSummaryDrafts,
 } from "../lib/match-summary-drafter";
 import { getTenantId } from "../middlewares/tenant-context";
+import { effectiveDraftStatus, loadAutoPost, type AutoPost } from "../lib/effective-draft-state";
+import {
+  isDraftStatus,
+  normalizeDraftStatus,
+  storedValuesFor,
+  type DraftStatus,
+} from "../lib/draft-status";
+import {
+  listDraftRevisions,
+  recordDraftRevision,
+  revertDraftToRevision,
+} from "../lib/draft-revisions";
 
 const router: IRouter = Router();
 
 const randomSlug = (): string =>
   Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
 
+/**
+ * A draft row as the API returns it: legacy status values mapped to new names,
+ * and — while auto-post is on — a draft past its deadline reads as ready even
+ * before the sweep stores it (KTD4).
+ */
+function presentDraft<T extends { status: string; autoReadyAt: Date | null }>(
+  row: T,
+  autoPost: AutoPost = { enabled: false },
+  now: Date = new Date(),
+): T & { status: DraftStatus } {
+  return { ...row, status: effectiveDraftStatus(row, autoPost, now) };
+}
+
+function parseId(raw: unknown): number | null {
+  const id = parseInt(String(raw), 10);
+  return Number.isInteger(id) ? id : null;
+}
+
+async function loadDraft(tenantId: number, id: number) {
+  const [draft] = await db
+    .select()
+    .from(socialDraftsTable)
+    .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)));
+  return draft ?? null;
+}
+
 router.get("/social-drafts", requireAdmin, async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
+  const conditions: SQL[] = [eq(socialDraftsTable.tenantId, tenantId)];
+  const status = req.query.status;
+  if (status !== undefined && !isDraftStatus(status)) {
+    res.status(400).json({ error: "Invalid status" });
+    return;
+  }
+  if (typeof req.query.family === "string" && req.query.family) {
+    conditions.push(eq(socialDraftsTable.family, req.query.family));
+  }
+  if (typeof req.query.grade === "string" && req.query.grade) {
+    conditions.push(sql`${socialDraftsTable.cardInput}->>'grade' = ${req.query.grade}`);
+  }
   const rows = await db
     .select()
     .from(socialDraftsTable)
-    .where(eq(socialDraftsTable.tenantId, getTenantId(req)))
+    .where(and(...conditions))
     .orderBy(desc(socialDraftsTable.createdAt));
-  res.json(rows);
+  // Status filters on the effective state, so it's applied after presenting.
+  const autoPost = await loadAutoPost(tenantId);
+  const now = new Date();
+  const drafts = rows.map((r) => presentDraft(r, autoPost, now));
+  res.json(status === undefined ? drafts : drafts.filter((d) => d.status === status));
 });
 
 router.get("/social-drafts/pending-count", requireAdmin, async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
+  const conditions: SQL[] = [
+    eq(socialDraftsTable.tenantId, tenantId),
+    inArray(socialDraftsTable.status, storedValuesFor("awaiting_review")),
+  ];
+  // Drafts past their deadline already read as ready while auto-post is on.
+  if ((await loadAutoPost(tenantId)).enabled) {
+    conditions.push(
+      sql`(${socialDraftsTable.autoReadyAt} IS NULL OR ${socialDraftsTable.autoReadyAt} > now())`,
+    );
+  }
   const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(socialDraftsTable)
-    .where(
-      and(
-        eq(socialDraftsTable.tenantId, getTenantId(req)),
-        eq(socialDraftsTable.status, "pending"),
-      ),
-    );
+    .where(and(...conditions));
   res.json({ count: Number(row?.count ?? 0) });
 });
 
+/** Mark a draft ready to post (the endpoint keeps its original "approve" name). */
 router.post(
   "/social-drafts/:id/approve",
   requireAdmin,
   requireEntitlement("socialStudio"),
   async (req, res): Promise<void> => {
-    const id = parseInt(String(req.params.id), 10);
-    if (!Number.isInteger(id)) {
+    const id = parseId(req.params.id);
+    if (id === null) {
       res.status(400).json({ error: "Invalid id" });
       return;
     }
     const tenantId = getTenantId(req);
-    const [draft] = await db
-      .select()
-      .from(socialDraftsTable)
-      .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)));
+    const draft = await loadDraft(tenantId, id);
     if (!draft) {
       res.status(404).json({ error: "Not found" });
+      return;
+    }
+    const current = normalizeDraftStatus(draft.status);
+    if (current !== "awaiting_review" && current !== "ready") {
+      res.status(409).json({ error: `Cannot mark a ${current} draft ready` });
       return;
     }
     let slug = draft.trackedSlug;
@@ -79,10 +147,40 @@ router.post(
     }
     const [updated] = await db
       .update(socialDraftsTable)
-      .set({ status: "approved", trackedSlug: slug, reviewedAt: new Date() })
+      .set({ status: "ready", trackedSlug: slug, reviewedAt: new Date() })
       .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
       .returning();
-    res.json(updated);
+    res.json(presentDraft(updated));
+  },
+);
+
+/** Return a ready draft to review. Clears auto-promotion so the choice sticks. */
+router.post(
+  "/social-drafts/:id/send-back",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const id = parseId(req.params.id);
+    if (id === null) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const draft = await loadDraft(tenantId, id);
+    if (!draft) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (effectiveDraftStatus(draft, await loadAutoPost(tenantId)) !== "ready") {
+      res.status(409).json({ error: "Only a ready draft can be sent back" });
+      return;
+    }
+    const [updated] = await db
+      .update(socialDraftsTable)
+      .set({ status: "awaiting_review", autoReadyAt: null, reviewedAt: new Date() })
+      .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
+      .returning();
+    res.json(presentDraft(updated));
   },
 );
 
@@ -91,21 +189,26 @@ router.post(
   requireAdmin,
   requireEntitlement("socialStudio"),
   async (req, res): Promise<void> => {
-    const id = parseInt(String(req.params.id), 10);
-    if (!Number.isInteger(id)) {
+    const id = parseId(req.params.id);
+    if (id === null) {
       res.status(400).json({ error: "Invalid id" });
       return;
     }
     const tenantId = getTenantId(req);
+    const draft = await loadDraft(tenantId, id);
+    if (!draft) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (normalizeDraftStatus(draft.status) === "dismissed") {
+      res.status(409).json({ error: "Reopen a dismissed draft before posting it" });
+      return;
+    }
     const [updated] = await db
       .update(socialDraftsTable)
       .set({ status: "posted", reviewedAt: new Date() })
       .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
       .returning();
-    if (!updated) {
-      res.status(404).json({ error: "Not found" });
-      return;
-    }
     // Stamp the linked milestone event so other features (push notifications,
     // "just posted" feeds) and re-detection know this moment has been shared.
     if (updated.milestoneEventId) {
@@ -119,7 +222,7 @@ router.post(
           ),
         );
     }
-    res.json(updated);
+    res.json(presentDraft(updated));
   },
 );
 
@@ -128,8 +231,8 @@ router.post(
   requireAdmin,
   requireEntitlement("socialStudio"),
   async (req, res): Promise<void> => {
-    const id = parseInt(String(req.params.id), 10);
-    if (!Number.isInteger(id)) {
+    const id = parseId(req.params.id);
+    if (id === null) {
       res.status(400).json({ error: "Invalid id" });
       return;
     }
@@ -139,7 +242,11 @@ router.post(
       .set({ status: "dismissed", reviewedAt: new Date() })
       .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
       .returning();
-    if (updated?.milestoneEventId) {
+    if (!updated) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (updated.milestoneEventId) {
       await db
         .update(milestoneEventsTable)
         .set({ dismissedAt: new Date() })
@@ -151,6 +258,133 @@ router.post(
         );
     }
     res.status(204).end();
+  },
+);
+
+/** Bring a dismissed draft back to review. Clears auto-promotion so it waits for A1. */
+router.post(
+  "/social-drafts/:id/reopen",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const id = parseId(req.params.id);
+    if (id === null) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const draft = await loadDraft(tenantId, id);
+    if (!draft) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (normalizeDraftStatus(draft.status) !== "dismissed") {
+      res.status(409).json({ error: "Only a dismissed draft can be reopened" });
+      return;
+    }
+    try {
+      const [updated] = await db
+        .update(socialDraftsTable)
+        .set({ status: "awaiting_review", autoReadyAt: null, reviewedAt: null })
+        .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
+        .returning();
+      res.json(presentDraft(updated));
+    } catch (err) {
+      // A newer undismissed draft already holds this event (dedupe index).
+      if ((err as { code?: string }).code === "23505") {
+        res.status(409).json({ error: "A newer draft for the same event already exists" });
+        return;
+      }
+      throw err;
+    }
+  },
+);
+
+router.patch(
+  "/social-drafts/:id",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const id = parseId(req.params.id);
+    if (id === null) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const parsed = UpdateSocialDraftBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const draft = await loadDraft(tenantId, id);
+    if (!draft) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (normalizeDraftStatus(draft.status) === "dismissed") {
+      res.status(409).json({ error: "Reopen the draft before editing it" });
+      return;
+    }
+    const { caption, photoUrl } = parsed.data;
+    const patch: Partial<typeof socialDraftsTable.$inferInsert> = {
+      // A manual action: stop any pending auto-promotion (KTD4).
+      autoReadyAt: null,
+    };
+    if (caption !== undefined) {
+      patch.caption = caption;
+      // Marks the caption as the admin's: data refreshes keep it.
+      patch.editedAt = new Date();
+    }
+    if (photoUrl !== undefined) {
+      patch.photoUrl = photoUrl;
+      // The admin's choice is never replaced by an automatic pick (KTD6).
+      patch.photoSource = photoUrl === null ? null : "manual";
+      if (photoUrl === null) patch.editedAt = patch.editedAt ?? new Date();
+    }
+    const updated = await db.transaction(async (tx) => {
+      await recordDraftRevision(draft, "edit", tx);
+      const [row] = await tx
+        .update(socialDraftsTable)
+        .set(patch)
+        .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
+        .returning();
+      return row;
+    });
+    res.json(presentDraft(updated));
+  },
+);
+
+router.get("/social-drafts/:id/revisions", requireAdmin, async (req, res): Promise<void> => {
+  const id = parseId(req.params.id);
+  if (id === null) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  if (!(await loadDraft(tenantId, id))) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  res.json(await listDraftRevisions(tenantId, id));
+});
+
+router.post(
+  "/social-drafts/:id/revisions/:revisionId/revert",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const id = parseId(req.params.id);
+    const revisionId = parseId(req.params.revisionId);
+    if (id === null || revisionId === null) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const updated = await revertDraftToRevision(getTenantId(req), id, revisionId);
+    if (!updated) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    res.json(presentDraft(updated));
   },
 );
 

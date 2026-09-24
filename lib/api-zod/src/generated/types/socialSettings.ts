@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { SocialFamilyConfig } from './socialFamilyConfig';
 import type { SocialSettingsMatchSummaryGradeConfig } from './socialSettingsMatchSummaryGradeConfig';
 
 export interface SocialSettings {
@@ -21,6 +22,8 @@ export interface SocialSettings {
   sizeSquare: boolean;
   sizePortrait: boolean;
   sizeStory: boolean;
+  /** Landscape 1200×630 (link previews, X, Facebook). Default off. */
+  sizeLandscape?: boolean;
   sponsorsEnabled: boolean;
   captionsEnabled: boolean;
   clubHashtag: string;
@@ -30,4 +33,19 @@ export interface SocialSettings {
      * @nullable
      */
   seasonStartDate?: Date | null;
+  /**
+     * When the scheduled drafting sweep last completed for this club (read-only).
+     * @nullable
+     */
+  lastSweepAt?: Date | null;
+  /** When on, auto-drafts still awaiting review at their deadline become ready. */
+  autoPostEnabled?: boolean;
+  /** Hours after a draft's own import before it becomes ready. */
+  autoPostWindowHours?: number;
+  /**
+     * Where draft notifications are emailed. Null = in-app only.
+     * @nullable
+     */
+  notificationEmail?: string | null;
+  familyConfig?: SocialFamilyConfig;
 }

@@ -30,6 +30,9 @@ async function buildAll() {
     external: [
       "*.node",
       "sharp",
+      // HEIC decoder: embeds a multi-megabyte wasm; resolved from node_modules
+      // at runtime rather than bundled into both the server and its worker.
+      "heic-convert",
       "better-sqlite3",
       "sqlite3",
       "canvas",
@@ -117,6 +120,20 @@ globalThis.__filename = __bannerUrl.fileURLToPath(import.meta.url);
 globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
+  });
+
+  // Library photo ingest decodes HEIC in a worker thread (KTD7). The worker is
+  // its own entry, emitted beside index.mjs, where image-ingest.ts looks for it.
+  await esbuild({
+    entryPoints: [path.resolve(artifactDir, "src/lib/image-ingest.worker.ts")],
+    platform: "node",
+    bundle: true,
+    format: "esm",
+    outdir: distDir,
+    outExtension: { ".js": ".mjs" },
+    logLevel: "info",
+    external: ["heic-convert"],
+    sourcemap: "linked",
   });
 }
 

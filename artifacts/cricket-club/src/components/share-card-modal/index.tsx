@@ -109,6 +109,8 @@ export function ShareCardModal({
     if (!s || s.sizeSquare) out.push("square");
     if (!s || s.sizePortrait) out.push("portrait");
     if (!s || s.sizeStory) out.push("story");
+    // Landscape is opt-in: only when the club switched it on.
+    if (s?.sizeLandscape) out.push("landscape");
     return out.length ? out : ["square"];
   }, [bundle]);
 

@@ -15,7 +15,7 @@ afterEach(() => {
 const DRAFT = {
   id: 7,
   engine: "milestone",
-  status: "pending",
+  status: "awaiting_review",
   cardInput: { playerName: "Sam Keeper", tierLabel: "100 games" },
   appPath: "/players/1",
   trackedSlug: null,

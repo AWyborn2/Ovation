@@ -3343,6 +3343,7 @@ export const CardSetPlatformSize = {
   square: 'square',
   portrait: 'portrait',
   story: 'story',
+  landscape: 'landscape',
 } as const;
 
 export interface CardSet {
@@ -3376,6 +3377,7 @@ export const GenerateCardSetBodyPlatformSize = {
   square: 'square',
   portrait: 'portrait',
   story: 'story',
+  landscape: 'landscape',
 } as const;
 
 export interface GenerateCardSetBody {
@@ -3393,6 +3395,7 @@ export const AutoseedCardSetBodyPlatformSize = {
   square: 'square',
   portrait: 'portrait',
   story: 'story',
+  landscape: 'landscape',
 } as const;
 
 export interface AutoseedCardSetBody {
@@ -3415,6 +3418,7 @@ export const CardSetInputPlatformSize = {
   square: 'square',
   portrait: 'portrait',
   story: 'story',
+  landscape: 'landscape',
 } as const;
 
 export interface CardSetInput {
@@ -3436,6 +3440,28 @@ export type SocialSettingsMatchSummaryGradeConfig = {[key: string]: {
   enabled: boolean;
 }};
 
+/**
+ * Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.
+ */
+export type SocialFamilySettingGrades = {[key: string]: boolean};
+
+export interface SocialFamilySetting {
+  /** Whether this family auto-drafts at all */
+  enabled: boolean;
+  /** Per-grade overrides. A grade absent here uses the default: seniors on, juniors off. */
+  grades: SocialFamilySettingGrades;
+}
+
+/**
+ * Effective per-family automation switches. Derived from the engine flags until first saved.
+ */
+export interface SocialFamilyConfig {
+  results: SocialFamilySetting;
+  achievements: SocialFamilySetting;
+  roundup: SocialFamilySetting;
+  matchday: SocialFamilySetting;
+}
+
 export interface SocialSettings {
   engineOnDemand: boolean;
   engineMilestone: boolean;
@@ -3450,6 +3476,8 @@ export interface SocialSettings {
   sizeSquare: boolean;
   sizePortrait: boolean;
   sizeStory: boolean;
+  /** Landscape 1200×630 (link previews, X, Facebook). Default off. */
+  sizeLandscape?: boolean;
   sponsorsEnabled: boolean;
   captionsEnabled: boolean;
   clubHashtag: string;
@@ -3459,6 +3487,149 @@ export interface SocialSettings {
      * @nullable
      */
   seasonStartDate?: string | null;
+  /**
+     * When the scheduled drafting sweep last completed for this club (read-only).
+     * @nullable
+     */
+  lastSweepAt?: string | null;
+  /** When on, auto-drafts still awaiting review at their deadline become ready. */
+  autoPostEnabled?: boolean;
+  /** Hours after a draft's own import before it becomes ready. */
+  autoPostWindowHours?: number;
+  /**
+     * Where draft notifications are emailed. Null = in-app only.
+     * @nullable
+     */
+  notificationEmail?: string | null;
+  familyConfig?: SocialFamilyConfig;
+}
+
+export interface Notification {
+  id: number;
+  kind: string;
+  title: string;
+  body: string;
+  /** @nullable */
+  link: string | null;
+  createdAt: string;
+  /** @nullable */
+  readAt: string | null;
+}
+
+export interface NotificationList {
+  unreadCount: number;
+  items: Notification[];
+}
+
+export interface ClubPhoto {
+  id: number;
+  url: string;
+  thumbUrl: string;
+  width: number;
+  height: number;
+  /** @nullable */
+  season: number | null;
+  /** @nullable */
+  grade: string | null;
+  /** @nullable */
+  takenAt: string | null;
+  createdAt: string;
+  playerIds: number[];
+}
+
+export interface IngestClubPhotosRequest {
+  /**
+     * Object paths returned by POST /storage/uploads/request-url.
+     * @minItems 1
+     */
+  objectPaths: string[];
+  season?: number;
+  grade?: string;
+  /** Senior players to tag on every photo in the batch. */
+  playerIds?: number[];
+}
+
+export type IngestClubPhotosResponseResultsItem = {
+  objectPath: string;
+  ok: boolean;
+  photo?: ClubPhoto;
+  error?: string;
+};
+
+export interface IngestClubPhotosResponse {
+  results: IngestClubPhotosResponseResultsItem[];
+}
+
+export interface TagClubPhotosRequest {
+  /** @minItems 1 */
+  photoIds: number[];
+  /**
+     * Set (or with null, clear) the season on every photo. Omit to leave unchanged.
+     * @nullable
+     */
+  season?: number | null;
+  /**
+     * Set (or with null, clear) the grade on every photo. Omit to leave unchanged.
+     * @nullable
+     */
+  grade?: string | null;
+  addPlayerIds?: number[];
+  removePlayerIds?: number[];
+}
+
+export interface DeleteClubPhotosRequest {
+  /** @minItems 1 */
+  photoIds: number[];
+}
+
+/**
+ * scheduled (default): central matches past the watermark plus fixture cards. fixtures: fixture cards only.
+ */
+export type DraftSweepRequestScope = typeof DraftSweepRequestScope[keyof typeof DraftSweepRequestScope];
+
+
+export const DraftSweepRequestScope = {
+  scheduled: 'scheduled',
+  fixtures: 'fixtures',
+} as const;
+
+export interface DraftSweepRequest {
+  /** Sweep only this tenant. Omit to sweep every active tenant. */
+  tenantId?: number;
+  /** scheduled (default): central matches past the watermark plus fixture cards. fixtures: fixture cards only. */
+  scope?: DraftSweepRequestScope;
+}
+
+export type DraftSweepResponseResultsItem = {
+  tenantId: number;
+  ok: boolean;
+  centralMatches: number;
+  matchSummaries: number;
+  matchDay: number;
+  teamLists: number;
+  /** Drafts moved to ready because their auto-post deadline passed. */
+  promoted?: number;
+};
+
+export interface DraftSweepResponse {
+  results: DraftSweepResponseResultsItem[];
+}
+
+export type SocialFamilySettingUpdateGrades = {[key: string]: boolean};
+
+export interface SocialFamilySettingUpdate {
+  enabled?: boolean;
+  grades?: SocialFamilySettingUpdateGrades;
+}
+
+/**
+ * Partial family switches; omitted families and grades keep their current values.
+ */
+export interface SocialFamilyConfigUpdate {
+  results?: SocialFamilySettingUpdate;
+  achievements?: SocialFamilySettingUpdate;
+  roundup?: SocialFamilySettingUpdate;
+  matchday?: SocialFamilySettingUpdate;
 }
 
 /**
@@ -3482,6 +3653,8 @@ export interface SocialSettingsUpdate {
   sizeSquare?: boolean;
   sizePortrait?: boolean;
   sizeStory?: boolean;
+  /** Landscape 1200×630 (link previews, X, Facebook). Default off. */
+  sizeLandscape?: boolean;
   sponsorsEnabled?: boolean;
   captionsEnabled?: boolean;
   clubHashtag?: string;
@@ -3491,6 +3664,15 @@ export interface SocialSettingsUpdate {
      * @nullable
      */
   seasonStartDate?: string | null;
+  familyConfig?: SocialFamilyConfigUpdate;
+  autoPostEnabled?: boolean;
+  /**
+     * @minimum 1
+     * @maximum 168
+     */
+  autoPostWindowHours?: number;
+  /** @nullable */
+  notificationEmail?: string | null;
 }
 
 /**
@@ -4513,12 +4695,43 @@ export interface CheckoutResult {
   disabled: boolean;
 }
 
+export type PostPackImagesItemSize = typeof PostPackImagesItemSize[keyof typeof PostPackImagesItemSize];
+
+
+export const PostPackImagesItemSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
+export type PostPackImagesItem = {
+  size: PostPackImagesItemSize;
+  url: string;
+};
+
+export interface PostPack {
+  images: PostPackImagesItem[];
+  caption: string;
+  zipUrl: string;
+}
+
+export interface UpdateSocialDraftRequest {
+  caption?: string;
+  /**
+     * A library or uploaded image URL; null removes the photo.
+     * @nullable
+     */
+  photoUrl?: string | null;
+}
+
 export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraftStatus];
 
 
 export const SocialDraftStatus = {
-  pending: 'pending',
-  approved: 'approved',
+  awaiting_review: 'awaiting_review',
+  ready: 'ready',
+  posted: 'posted',
   dismissed: 'dismissed',
 } as const;
 
@@ -4543,6 +4756,54 @@ export interface SocialDraft {
   createdAt: string;
   /** @nullable */
   reviewedAt?: string | null;
+  /** @nullable */
+  family?: string | null;
+  /** @nullable */
+  sourceKey?: string | null;
+  /** @nullable */
+  sourceImportedAt?: string | null;
+  /** @nullable */
+  autoReadyAt?: string | null;
+  /** @nullable */
+  packId?: string | null;
+  /** @nullable */
+  caption?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
+  /** @nullable */
+  photoSource?: string | null;
+  adjustments?: unknown;
+  /** @nullable */
+  editedAt?: string | null;
+  /**
+     * Set when a posted draft's source data changed after it was shared
+     * @nullable
+     */
+  staleSince?: string | null;
+}
+
+export type SocialDraftRevisionReason = typeof SocialDraftRevisionReason[keyof typeof SocialDraftRevisionReason];
+
+
+export const SocialDraftRevisionReason = {
+  refresh: 'refresh',
+  edit: 'edit',
+  revert: 'revert',
+} as const;
+
+export interface SocialDraftRevision {
+  id: number;
+  draftId: number;
+  cardInput: unknown;
+  /** @nullable */
+  caption?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
+  /** @nullable */
+  photoSource?: string | null;
+  adjustments?: unknown;
+  reason: SocialDraftRevisionReason;
+  createdAt: string;
 }
 
 export interface PendingDraftCount {
@@ -5896,6 +6157,22 @@ surface?: NavSurface;
  * Admin-only — include items with visible=false. Requires auth.
  */
 includeHidden?: boolean;
+};
+
+export type ListSocialDraftsParams = {
+status?: SocialDraftStatus;
+family?: string;
+grade?: string;
+};
+
+export type ListClubPhotosParams = {
+playerId?: number;
+grade?: string;
+season?: number;
+};
+
+export type DeleteClubPhotos200 = {
+  deleted: number;
 };
 
 export type SweepMatchSummaryDraftsBody = {

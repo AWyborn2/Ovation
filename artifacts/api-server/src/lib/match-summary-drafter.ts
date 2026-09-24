@@ -25,9 +25,11 @@ import { eq, and, ne } from "drizzle-orm";
 import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
 import { matchToSummaryInput, juniorMatchToSummaryInput } from "@workspace/scorecard";
 import { getTenantBrand } from "./tenant-brand";
-import { loadMatchDetail } from "./match-detail";
+import { familyAllows, resolveFamilyConfig } from "./social-families";
+import { loadMatchDetail, loadCentralMatchDetail } from "./match-detail";
 import { overlayNativeOpponents } from "./club-brand";
 import { getPrivateIds, splitScores, MASK_NAME } from "./junior-helpers";
+import { draftKeys, upsertDraftByKey } from "./draft-upsert";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -50,10 +52,12 @@ async function loadSocialSettings(tenantId: number): Promise<SocialSettings | nu
 }
 
 /**
- * Should a draft be generated for this grade? Returns false when:
- *   - The global engineMatchSummary is OFF
- *   - The grade is explicitly disabled in matchSummaryGradeConfig
- *   - The grade is absent from the config AND the default for the match type
+ * Should a draft be generated for this grade? Follows the "results" family
+ * (lib/social-families.ts), which a tenant that never saved family switches
+ * derives from engineMatchSummary + matchSummaryGradeConfig. False when:
+ *   - The results family is OFF
+ *   - The grade is explicitly disabled
+ *   - The grade has no override AND the default for the match type
  *     (senior/junior) is OFF
  *
  * Default: senior ON, junior OFF (junior content is opt-in per grade).
@@ -64,14 +68,7 @@ export function shouldDraftGrade(
   junior: boolean,
 ): boolean {
   if (!settings) return false;
-  if (!settings.engineMatchSummary) return false;
-
-  const config = settings.matchSummaryGradeConfig ?? {};
-  const key = grade ?? "";
-  if (key in config) return config[key].enabled;
-
-  // Default: senior ON, junior OFF.
-  return !junior;
+  return familyAllows(resolveFamilyConfig(settings), "results", grade, junior);
 }
 
 // ---------------------------------------------------------------------------
@@ -249,40 +246,55 @@ async function upsertDraft(
   junior: boolean,
   cardInput: Record<string, unknown>,
   appPath: string,
+  opts: { central?: { seenAt: Date }; grade?: string | null } = {},
 ): Promise<"drafted" | "skipped"> {
-  // Check for an existing non-dismissed draft for this match.
-  const [existing] = await db
-    .select({ id: socialDraftsTable.id, status: socialDraftsTable.status })
-    .from(socialDraftsTable)
-    .where(
-      and(
-        eq(socialDraftsTable.tenantId, tenantId),
-        eq(socialDraftsTable.sourceKind, "matchSummary"),
-        eq(socialDraftsTable.sourceMatchId, matchId),
-        eq(socialDraftsTable.sourceMatchIsJunior, junior),
-        ne(socialDraftsTable.status, "dismissed"),
-      ),
-    );
-
-  if (existing) {
-    // Re-ingest: regenerate the card input on the existing draft.
-    await db
-      .update(socialDraftsTable)
-      .set({ cardInput, appPath })
-      .where(eq(socialDraftsTable.id, existing.id));
+  const { central, grade } = opts;
+  // Re-ingest refreshes the existing draft (keeping a revision), a posted draft
+  // is only marked stale, and unchanged input is a no-op (KTD3).
+  if (central) {
+    // Central match ids are central's own, so they get their own key space and
+    // no native source-match link. The import time is when the sweep first saw
+    // the match (KTD10).
+    await upsertDraftByKey({
+      tenantId,
+      engine: "matchSummary",
+      family: "results",
+      sourceKey: draftKeys.centralMatchSummary(matchId),
+      cardInput,
+      appPath,
+      sourceKind: "matchSummary",
+      sourceImportedAt: central.seenAt,
+      grade,
+    });
     return "drafted";
   }
-
-  // New draft.
-  await db.insert(socialDraftsTable).values({
+  await upsertDraftByKey({
     tenantId,
     engine: "matchSummary",
+    family: "results",
+    sourceKey: draftKeys.matchSummary(matchId, junior),
+    cardInput,
+    appPath,
     sourceKind: "matchSummary",
     sourceMatchId: matchId,
     sourceMatchIsJunior: junior,
-    status: "pending",
-    cardInput,
-    appPath,
+    grade,
+    // Drafts from before source keys existed: find them by match and backfill.
+    findLegacy: async () => {
+      const [legacy] = await db
+        .select()
+        .from(socialDraftsTable)
+        .where(
+          and(
+            eq(socialDraftsTable.tenantId, tenantId),
+            eq(socialDraftsTable.sourceKind, "matchSummary"),
+            eq(socialDraftsTable.sourceMatchId, matchId),
+            eq(socialDraftsTable.sourceMatchIsJunior, junior),
+            ne(socialDraftsTable.status, "dismissed"),
+          ),
+        );
+      return legacy ?? null;
+    },
   });
   return "drafted";
 }
@@ -290,6 +302,14 @@ async function upsertDraft(
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
+
+/**
+ * Where senior match ids come from: the tenant's own match tables, or the
+ * central database for a central-data club (ids are central match ids; the
+ * scorecard's own side is mapped to app player ids through the crosswalk).
+ */
+export type MatchSummarySource =
+  { kind: "native" } | { kind: "central"; clubId: number; seenAt: Date };
 
 /**
  * Generate match-summary social-card drafts for senior matches.
@@ -300,12 +320,13 @@ async function upsertDraft(
 export async function generateMatchSummaryDrafts(
   tenantId: number,
   matchIds: number[],
+  source: MatchSummarySource = { kind: "native" },
 ): Promise<DraftResult> {
   const result: DraftResult = { drafted: 0, skipped: 0, errors: [] };
   if (matchIds.length === 0) return result;
 
   const settings = await loadSocialSettings(tenantId);
-  if (!settings?.engineMatchSummary) {
+  if (!resolveFamilyConfig(settings).results.enabled) {
     result.skipped = matchIds.length;
     return result;
   }
@@ -315,7 +336,10 @@ export async function generateMatchSummaryDrafts(
     const batch = matchIds.slice(i, i + BATCH);
     const outcomes = await Promise.allSettled(
       batch.map(async (matchId) => {
-        const detail = await loadMatchDetail(matchId, tenantId);
+        const detail =
+          source.kind === "central"
+            ? await loadCentralMatchDetail({ tenantId, clubId: source.clubId }, matchId)
+            : await loadMatchDetail(matchId, tenantId);
         if (!detail) {
           result.skipped++;
           return;
@@ -331,6 +355,10 @@ export async function generateMatchSummaryDrafts(
           false,
           cardInput as Record<string, unknown>,
           `/matches/${matchId}`,
+          {
+            central: source.kind === "central" ? { seenAt: source.seenAt } : undefined,
+            grade: detail.grade,
+          },
         );
         if (outcome === "drafted") result.drafted++;
         else result.skipped++;
@@ -360,7 +388,7 @@ export async function generateJuniorMatchSummaryDrafts(
   if (matchIds.length === 0) return result;
 
   const settings = await loadSocialSettings(tenantId);
-  if (!settings?.engineMatchSummary) {
+  if (!resolveFamilyConfig(settings).results.enabled) {
     result.skipped = matchIds.length;
     return result;
   }

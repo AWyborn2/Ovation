@@ -169,9 +169,14 @@ describe("design-packs registry", () => {
     }
   });
 
-  it("broadcast-dark-v1 has three static variants with correct dimensions", () => {
+  it("broadcast-dark-v1 has four static variants with correct dimensions", () => {
     const pack = PACKS.find((p) => p.id === "broadcast-dark-v1")!;
-    expect(pack.variants).toHaveLength(3);
+    expect(pack.variants).toHaveLength(4);
+
+    // Landscape link-preview format (KTD11).
+    const landscape = pack.variants.find((v) => v.key === "landscape")!;
+    expect(landscape.width).toBe(1200);
+    expect(landscape.height).toBe(630);
 
     const square = pack.variants.find((v) => v.key === "square")!;
     expect(square.width).toBe(1080);
@@ -215,11 +220,12 @@ describe("design-packs registry", () => {
     }
   });
 
-  it("materialises broadcast-dark-v1 with all three variants", async () => {
+  it("materialises broadcast-dark-v1 with all four variants", async () => {
     await ensurePackTemplates(42);
 
     const rows = insertedRows.filter((r) => r.packId === "broadcast-dark-v1");
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(4);
+    expect(rows.map((r) => r.packVariant)).toContain("landscape");
     const variants = rows.map((r) => r.packVariant);
     expect(variants).toContain("square");
     expect(variants).toContain("portrait");

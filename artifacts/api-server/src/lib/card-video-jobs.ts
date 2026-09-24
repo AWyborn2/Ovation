@@ -64,7 +64,14 @@ function deriveMeta(
 ): { filename: string; sizeCode: string } {
   const opts = (options ?? {}) as { size?: string };
   const size = typeof opts.size === "string" ? opts.size : "square";
-  const sizeCode = size === "portrait" ? "4x5" : size === "story" ? "9x16" : "1x1";
+  const sizeCode =
+    size === "portrait"
+      ? "4x5"
+      : size === "story"
+        ? "9x16"
+        : size === "landscape"
+          ? "1.91x1"
+          : "1x1";
   const inp = (input ?? {}) as { kind?: string; junior?: boolean };
   const kind = typeof inp.kind === "string" ? inp.kind : "card";
   // The download name carries the tenant's own slug (e.g. "mandurah-junior-…"),

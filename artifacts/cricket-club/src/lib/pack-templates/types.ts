@@ -48,8 +48,14 @@ export type PackSponsorVariant = "on" | "off";
  * every other card has a story layout plus one shared non-story layout that
  * reflows for portrait/square via the `--k` / `--ch` scaling tokens.
  */
+/**
+ * Markup per format. `landscape` (1200×630) is optional: a design without it
+ * renders its square layout centred on the pack's backdrop (KTD11) until a
+ * dedicated landscape layout lands.
+ */
 export type PackTemplateFormats =
-  { story: string; portrait: string; square: string } | { story: string; shared: string };
+  | { story: string; portrait: string; square: string; landscape?: string }
+  | { story: string; shared: string; landscape?: string };
 
 export interface PackCardTemplate {
   /** ShareCardInput kind this design renders. */

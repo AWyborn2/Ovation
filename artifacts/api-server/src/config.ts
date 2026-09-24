@@ -72,6 +72,16 @@ export const env = {
   RENDER_HARNESS_ORIGIN: () => optional("RENDER_HARNESS_ORIGIN"),
   PUPPETEER_EXECUTABLE_PATH: () => optional("PUPPETEER_EXECUTABLE_PATH"),
   CHROMIUM_PATH: () => optional("CHROMIUM_PATH"),
+
+  // ── Social Studio drafting sweep ─────────────────────────────────────────
+  /** Shared secret for POST /api/internal/draft-sweep; unset = endpoint closed. */
+  SOCIAL_SWEEP_SECRET: () => optional("SOCIAL_SWEEP_SECRET"),
+
+  // ── Email (Resend) ───────────────────────────────────────────────────────
+  /** Resend API key; unset = email off (notifications stay in-app). */
+  RESEND_API_KEY: () => optional("RESEND_API_KEY"),
+  /** Sender, e.g. "Ovation <studio@ovation.example>". Unset = email off. */
+  EMAIL_FROM: () => optional("EMAIL_FROM"),
 } as const;
 
 const positiveInt = z.coerce.number().int().positive();
