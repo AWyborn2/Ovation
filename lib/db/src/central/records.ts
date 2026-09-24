@@ -1,4 +1,4 @@
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, isNotNull, sql } from "drizzle-orm";
 import {
   centralDb,
   centralMatchesTable,
@@ -47,13 +47,62 @@ export interface CentralClubRecords {
  * (single innings). Keyed by participant GUID; the route maps the holders' ids
  * via player_id_map. Scorecard-era only.
  */
-export async function centralClubRecords(clubId: number): Promise<CentralClubRecords> {
-  return withCentralCache(cacheKey("centralClubRecords", [clubId]), () =>
-    centralClubRecordsImpl(clubId),
+export async function centralClubRecords(
+  clubId: number,
+  filter?: CentralRecordsFilter,
+): Promise<CentralClubRecords> {
+  // No filter: the original all-time read, unchanged (same cache key, and the
+  // match set is exactly what it always was).
+  if (!hasRecordsFilter(filter)) {
+    return withCentralCache(cacheKey("centralClubRecords", [clubId]), () =>
+      centralClubRecordsImpl(clubId),
+    );
+  }
+  return withCentralCache(cacheKey("centralClubRecords", [clubId, filter]), () =>
+    centralClubRecordsImpl(clubId, filter),
   );
 }
 
-async function centralClubRecordsImpl(clubId: number): Promise<CentralClubRecords> {
+/** Optional grade / season-span restriction for the records reads (KTD5). */
+export interface CentralRecordsFilter {
+  /** App grade label ("A Grade", "1st Grade"). */
+  grade?: string;
+  /** Inclusive season start years. */
+  fromSeason?: number;
+  toSeason?: number;
+}
+
+function hasRecordsFilter(f: CentralRecordsFilter | undefined): f is CentralRecordsFilter {
+  return !!f && (f.grade !== undefined || f.fromSeason !== undefined || f.toSeason !== undefined);
+}
+
+/**
+ * The club's matches restricted to senior grades (junior / pathway / unmapped
+ * labels dropped — juniors isolation) and, optionally, one app grade and an
+ * inclusive season span.
+ */
+export function filterSeniorMatchRows<T extends { grade: string | null; season: string | null }>(
+  rows: T[],
+  filter: CentralRecordsFilter = {},
+): T[] {
+  return rows.filter((m) => {
+    const grade = appGradeFromCentral(m.grade);
+    if (!grade) return false;
+    if (filter.grade !== undefined && grade !== filter.grade) return false;
+    if (filter.fromSeason !== undefined || filter.toSeason !== undefined) {
+      const season = parseSeasonStartYear(m.season);
+      if (season === null) return false;
+      if (filter.fromSeason !== undefined && season < filter.fromSeason) return false;
+      if (filter.toSeason !== undefined && season > filter.toSeason) return false;
+    }
+    return true;
+  });
+}
+
+async function centralClubRecordsImpl(
+  clubId: number,
+  filter?: CentralRecordsFilter,
+): Promise<CentralClubRecords> {
   // Deliberately still JS-aggregated (unlike centralGradeLeaderboard): the
   // single-innings records (highestScore / bestBowling) and every topBy()
   // holder resolve ties by FIRST-encountered row/insertion order, which is the
@@ -62,7 +111,10 @@ async function centralClubRecordsImpl(clubId: number): Promise<CentralClubRecord
   // read is cold + cached. The fetches below are already minimal-column;
   // fielding is additionally grouped to counts per (participant, kind) so the
   // catch regex runs per distinct kind instead of per row.
-  const matchRows = await getClubMatchRows(clubId);
+  // A filtered read also drops junior-graded matches; the unfiltered read keeps
+  // its original match set so `/records` without params is unchanged.
+  const allMatchRows = await getClubMatchRows(clubId);
+  const matchRows = filter ? filterSeniorMatchRows(allMatchRows, filter) : allMatchRows;
   const empty: CentralClubRecords = {
     mostGames: null,
     mostRuns: null,
@@ -730,4 +782,302 @@ async function centralFiveWicketHaulsImpl(clubId: number): Promise<CentralFiveWi
   }
   rows.sort((a, b) => a.grade.localeCompare(b.grade) || b.season.localeCompare(a.season));
   return rows;
+}
+
+// ---------------------------------------------------------------------------
+// Records analytics (stats plan U9 / KTD5): career leaders by metric and the
+// raw material for the highest-score / best-bowling progression. Seniors only
+// (junior / pathway grades dropped), private players excluded, keyed by
+// participant GUID — the route maps GUIDs to tenant ints via player_id_map.
+// ---------------------------------------------------------------------------
+
+export type CentralRecordLeaderMetric = "runs" | "wickets" | "catches" | "hundreds" | "games";
+
+export interface CentralRecordLeader {
+  participantId: string;
+  displayName: string | null;
+  value: number;
+  /** Last senior season (start year) the player appeared for the club, any grade. */
+  lastSeason: number | null;
+}
+
+/**
+ * Every non-private player's total for `metric` over the (optionally grade /
+ * season-filtered) senior matches, highest first. `lastSeason` ignores the
+ * filter — it answers "is this player still playing", not "when did they last
+ * play in this grade".
+ */
+export async function centralRecordLeaders(
+  clubId: number,
+  metric: CentralRecordLeaderMetric,
+  filter: CentralRecordsFilter = {},
+): Promise<CentralRecordLeader[]> {
+  return withCentralCache(cacheKey("centralRecordLeaders", [clubId, metric, filter]), () =>
+    centralRecordLeadersImpl(clubId, metric, filter),
+  );
+}
+
+async function centralRecordLeadersImpl(
+  clubId: number,
+  metric: CentralRecordLeaderMetric,
+  filter: CentralRecordsFilter,
+): Promise<CentralRecordLeader[]> {
+  const senior = filterSeniorMatchRows(await getClubMatchRows(clubId));
+  const seniorIds = senior.map((m) => m.matchId);
+  if (seniorIds.length === 0) return [];
+  const scoped = new Set(filterSeniorMatchRows(senior, filter).map((m) => m.matchId));
+  const seasonOf = new Map(senior.map((m) => [m.matchId, parseSeasonStartYear(m.season)]));
+
+  const [batting, bowling, rosters, fielding] = await Promise.all([
+    centralDb
+      .select({
+        participantId: centralMatchBattingTable.participantId,
+        matchId: centralMatchBattingTable.matchId,
+        runs: centralMatchBattingTable.runs,
+        dismissal: centralMatchBattingTable.dismissal,
+        dismissalType: centralMatchBattingTable.dismissalType,
+      })
+      .from(centralMatchBattingTable)
+      .where(
+        and(
+          eq(centralMatchBattingTable.clubId, clubId),
+          inList(centralMatchBattingTable.matchId, seniorIds),
+        ),
+      ),
+    centralDb
+      .select({
+        participantId: centralMatchBowlingTable.participantId,
+        matchId: centralMatchBowlingTable.matchId,
+        wickets: centralMatchBowlingTable.wickets,
+      })
+      .from(centralMatchBowlingTable)
+      .where(
+        and(
+          eq(centralMatchBowlingTable.clubId, clubId),
+          inList(centralMatchBowlingTable.matchId, seniorIds),
+        ),
+      ),
+    centralDb
+      .select({
+        participantId: centralMatchRostersTable.participantId,
+        matchId: centralMatchRostersTable.matchId,
+      })
+      .from(centralMatchRostersTable)
+      .where(
+        and(
+          eq(centralMatchRostersTable.clubId, clubId),
+          inList(centralMatchRostersTable.matchId, seniorIds),
+        ),
+      ),
+    metric === "catches"
+      ? centralDb
+          .select({
+            participantId: centralFieldingTable.participantId,
+            matchId: centralFieldingTable.matchId,
+            kind: centralFieldingTable.kind,
+          })
+          .from(centralFieldingTable)
+          .where(
+            and(
+              eq(centralFieldingTable.clubId, clubId),
+              inList(centralFieldingTable.matchId, seniorIds),
+            ),
+          )
+      : Promise.resolve([]),
+  ]);
+
+  const lastSeason = new Map<string, number>();
+  const games = new Map<string, Set<number>>();
+  const values = new Map<string, number>();
+  const add = (pid: string, n: number) => values.set(pid, (values.get(pid) ?? 0) + n);
+  const played = (pid: string, matchId: number) => {
+    const s = seasonOf.get(matchId);
+    if (s != null && s > (lastSeason.get(pid) ?? -Infinity)) lastSeason.set(pid, s);
+    if (metric !== "games" || !scoped.has(matchId)) return;
+    let g = games.get(pid);
+    if (!g) {
+      g = new Set();
+      games.set(pid, g);
+    }
+    g.add(matchId);
+  };
+
+  for (const b of batting) {
+    if (!b.participantId || b.matchId === null) continue;
+    played(b.participantId, b.matchId);
+    if (!scoped.has(b.matchId)) continue;
+    if (classifyInnings(b.dismissalType, b.dismissal) === "dnb") continue;
+    const runs = b.runs ?? 0;
+    if (metric === "runs") add(b.participantId, runs);
+    else if (metric === "hundreds" && runs >= 100) add(b.participantId, 1);
+  }
+  for (const b of bowling) {
+    if (!b.participantId || b.matchId === null) continue;
+    played(b.participantId, b.matchId);
+    if (metric === "wickets" && scoped.has(b.matchId)) add(b.participantId, b.wickets ?? 0);
+  }
+  for (const r of rosters) {
+    if (!r.participantId || r.matchId === null) continue;
+    played(r.participantId, r.matchId);
+  }
+  for (const f of fielding) {
+    if (!f.participantId || f.matchId === null || !scoped.has(f.matchId)) continue;
+    // Same catch test as the all-time records card, so leader #1 matches it.
+    if (/catch|caught|^c$|^c\b/i.test(f.kind ?? "")) add(f.participantId, 1);
+  }
+  for (const [pid, g] of games) values.set(pid, g.size);
+
+  const candidates = [...values].filter(([, v]) => v > 0);
+  const names = await centralPlayerNames(candidates.map(([pid]) => pid));
+  return candidates
+    .filter(([pid]) => !names.get(pid)?.isPrivate)
+    .map(([pid, value]) => ({
+      participantId: pid,
+      displayName: names.get(pid)?.displayName ?? null,
+      value,
+      lastSeason: lastSeason.get(pid) ?? null,
+    }))
+    .sort((a, b) => b.value - a.value || (a.displayName ?? "").localeCompare(b.displayName ?? ""));
+}
+
+/** One match's best single innings (score or bowling figures) for the progression. */
+export interface CentralRecordProgressionRow {
+  participantId: string;
+  displayName: string | null;
+  grade: string;
+  season: number;
+  matchId: number;
+  /** Central "YYYY-MM-DD" (or null). */
+  matchDate: string | null;
+  /** highScore: runs scored. bestBowling: wickets taken. */
+  primary: number;
+  /** highScore: 1 when not out, else 0. bestBowling: runs conceded. */
+  secondary: number;
+}
+
+/**
+ * Per senior match (optionally one grade), the club's best non-private batting
+ * innings (`highScore`) or bowling figures (`bestBowling`). The route walks
+ * these chronologically and keeps only the rows that broke the record.
+ */
+export async function centralRecordProgressionRows(
+  clubId: number,
+  kind: "highScore" | "bestBowling",
+  grade?: string,
+): Promise<CentralRecordProgressionRow[]> {
+  return withCentralCache(
+    cacheKey("centralRecordProgressionRows", [clubId, kind, grade ?? null]),
+    () => centralRecordProgressionRowsImpl(clubId, kind, grade),
+  );
+}
+
+async function centralRecordProgressionRowsImpl(
+  clubId: number,
+  kind: "highScore" | "bestBowling",
+  grade: string | undefined,
+): Promise<CentralRecordProgressionRow[]> {
+  // Needs match_date, which the shared getClubMatchRows() projection lacks.
+  const matchRows = filterSeniorMatchRows(
+    await centralDb
+      .select({
+        matchId: centralMatchesTable.matchId,
+        grade: centralMatchesTable.grade,
+        season: centralMatchesTable.season,
+        matchDate: centralMatchesTable.matchDate,
+      })
+      .from(centralMatchesTable)
+      .where(clubInvolvedWhere(clubId)),
+    grade === undefined ? {} : { grade },
+  );
+  const matchIds = matchRows.map((m) => m.matchId);
+  if (matchIds.length === 0) return [];
+  const metaOf = new Map(matchRows.map((m) => [m.matchId, m]));
+
+  type Line = { participantId: string; matchId: number; primary: number; secondary: number };
+  const lines: Line[] = [];
+  if (kind === "highScore") {
+    const batting = await centralDb
+      .select({
+        participantId: centralMatchBattingTable.participantId,
+        matchId: centralMatchBattingTable.matchId,
+        runs: centralMatchBattingTable.runs,
+        dismissal: centralMatchBattingTable.dismissal,
+        dismissalType: centralMatchBattingTable.dismissalType,
+      })
+      .from(centralMatchBattingTable)
+      .where(
+        and(
+          eq(centralMatchBattingTable.clubId, clubId),
+          inList(centralMatchBattingTable.matchId, matchIds),
+          isNotNull(centralMatchBattingTable.runs),
+        ),
+      );
+    for (const b of batting) {
+      if (!b.participantId || b.matchId === null) continue;
+      const inningsKind = classifyInnings(b.dismissalType, b.dismissal);
+      if (inningsKind === "dnb") continue;
+      lines.push({
+        participantId: b.participantId,
+        matchId: b.matchId,
+        primary: b.runs ?? 0,
+        secondary: inningsKind === "notout" ? 1 : 0,
+      });
+    }
+  } else {
+    const bowling = await centralDb
+      .select({
+        participantId: centralMatchBowlingTable.participantId,
+        matchId: centralMatchBowlingTable.matchId,
+        wickets: centralMatchBowlingTable.wickets,
+        runs: centralMatchBowlingTable.runs,
+      })
+      .from(centralMatchBowlingTable)
+      .where(
+        and(
+          eq(centralMatchBowlingTable.clubId, clubId),
+          inList(centralMatchBowlingTable.matchId, matchIds),
+          gte(centralMatchBowlingTable.wickets, 1),
+        ),
+      );
+    for (const b of bowling) {
+      if (!b.participantId || b.matchId === null) continue;
+      lines.push({
+        participantId: b.participantId,
+        matchId: b.matchId,
+        primary: b.wickets ?? 0,
+        secondary: b.runs ?? 0,
+      });
+    }
+  }
+
+  const names = await centralPlayerNames([...new Set(lines.map((l) => l.participantId))]);
+  const better = (a: Line, b: Line): boolean =>
+    kind === "highScore"
+      ? a.primary > b.primary
+      : a.primary > b.primary || (a.primary === b.primary && a.secondary < b.secondary);
+  const bestByMatch = new Map<number, Line>();
+  for (const l of lines) {
+    if (names.get(l.participantId)?.isPrivate) continue;
+    const cur = bestByMatch.get(l.matchId);
+    if (!cur || better(l, cur)) bestByMatch.set(l.matchId, l);
+  }
+
+  const out: CentralRecordProgressionRow[] = [];
+  for (const [matchId, l] of bestByMatch) {
+    const m = metaOf.get(matchId);
+    const appGrade = appGradeFromCentral(m?.grade ?? null);
+    const season = parseSeasonStartYear(m?.season ?? null);
+    if (!m || !appGrade || season === null) continue;
+    out.push({
+      participantId: l.participantId,
+      displayName: names.get(l.participantId)?.displayName ?? null,
+      grade: appGrade,
+      season,
+      matchId,
+      matchDate: m.matchDate,
+      primary: l.primary,
+      secondary: l.secondary,
+    });
+  }
+  return out;
 }
