@@ -7,6 +7,7 @@ import { Image as ImageIcon } from "lucide-react";
 import { ShareCardModal } from "@/components/share-card-modal";
 import { PackCard } from "@/components/pack-card";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
+import { CreateHero } from "@/components/social-studio/create-hero";
 import {
   CardFormRouter,
   PrefillPanel,
@@ -145,12 +146,12 @@ export default function AdminSocialCreate() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
-          Pick a card type, prefill it from your data where available, edit any field, and preview
-          live before exporting.
-        </p>
-      </div>
+      <CreateHero kind={kind} onPick={changeKind} />
+
+      <p className="max-w-[75ch] text-[15px] text-muted-foreground">
+        Prefill it from your data where available, edit any field, and preview live before
+        exporting.
+      </p>
 
       <Card>
         <CardContent className="pt-6 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-end">

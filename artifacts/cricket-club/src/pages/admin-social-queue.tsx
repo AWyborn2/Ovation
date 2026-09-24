@@ -26,8 +26,6 @@ import { Label } from "@/components/ui/label";
 import { ShareCardModal, type EngineKey } from "@/components/share-card-modal";
 import { ListSkeleton, EmptyState, QueryError } from "@/components/data-states";
 import { DataTable, StatusPill, type DataTableColumn } from "@/components/admin-ui";
-import { AutomationCard } from "@/components/social-queue/automation-card";
-import { AutoPostCard } from "@/components/social-queue/auto-post-card";
 import { DraftDrawer } from "@/components/social-queue/draft-drawer";
 import {
   FAMILIES,
@@ -182,9 +180,12 @@ export default function AdminSocialQueue() {
         Last import: {relativeTime(lastImport ?? null)} · Last sweep:{" "}
         {relativeTime(bundle?.settings.lastSweepAt ?? null)}
       </p>
-      <a href="#automation" className="text-sm font-medium text-primary-text underline">
+      <Link
+        href="/admin/social/cards#automation"
+        className="text-sm font-medium text-primary-text underline"
+      >
         Check which cards are switched on
-      </a>
+      </Link>
     </div>
   );
 
@@ -285,10 +286,6 @@ export default function AdminSocialQueue() {
           minWidth={640}
         />
       )}
-
-      <AutomationCard config={bundle?.settings.familyConfig} />
-
-      <AutoPostCard settings={bundle?.settings} />
 
       <Card>
         <CardHeader>
