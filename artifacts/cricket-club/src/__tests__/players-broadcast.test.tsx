@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
+import { screen, cleanup, waitFor, fireEvent, within } from "@testing-library/react";
 import { Route } from "wouter";
 import Players from "@/pages/players";
 import PlayerDetail from "@/pages/player-detail";
@@ -105,9 +105,10 @@ function renderDetail(overrides: Record<string, unknown>) {
   installApiMock({
     "/api/players/42/matches": [],
     "/api/players/42/seasons": [
-      { grade: "A Grade", season: 2022, games: 10 },
-      { grade: "A Grade", season: 2023, games: 10 },
+      { grade: "A Grade", season: 2022, games: 10, runs: 300, highScore: "74" },
+      { grade: "A Grade", season: 2023, games: 10, runs: 340, highScore: "112*" },
     ],
+    "/api/social-settings": { settings: {} },
     "/api/juniors/players/by-senior": [],
     "/api/caps": [{ id: 1, playerId: 42, capNumber: 242 }],
     ...overrides,
@@ -116,11 +117,11 @@ function renderDetail(overrides: Record<string, unknown>) {
 }
 
 describe("Player detail (Broadcast U8)", () => {
-  it("shows name, cap pill, eyebrow with debut, career strip and breadcrumbs", async () => {
+  it("shows name, cap pill, meta line with debut, career strip and breadcrumbs", async () => {
     renderDetail({ "/api/players/42": PLAYER });
     expect(await screen.findByRole("heading", { level: 1 })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Mitchell Caine");
-    expect(screen.getByText("Cap 242")).toBeTruthy();
+    expect(within(screen.getByTestId("profile-hero")).getByText("Cap 242")).toBeTruthy();
     expect(screen.getByText(/Debut 2022\/23/)).toBeTruthy();
     expect(screen.getAllByText("640").length).toBeGreaterThan(0);
     expect(screen.getAllByText("112*").length).toBeGreaterThan(0);
@@ -134,8 +135,9 @@ describe("Player detail (Broadcast U8)", () => {
     cleanup();
     vi.unstubAllGlobals();
     renderDetail({ "/api/players/42": { ...PLAYER, imageUrl: "/api/storage/objects/p.jpg" } });
-    const img = await screen.findByTestId("player-portrait");
-    expect(img.getAttribute("src")).toBe("/api/storage/objects/p.jpg");
+    const hero = await screen.findByTestId("hero-home");
+    expect(hero.querySelector("img")?.getAttribute("src")).toBe("/api/storage/objects/p.jpg");
+    expect(screen.queryByTestId("player-initials")).toBeNull();
   });
 
   it("omits the cap pill for an uncapped player", async () => {

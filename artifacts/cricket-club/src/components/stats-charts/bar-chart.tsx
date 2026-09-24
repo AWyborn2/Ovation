@@ -93,12 +93,15 @@ export function BarMark({
   label,
   labelColor,
   mark,
+  tone,
 }: {
   shape: ShapeProps;
   fill: string;
   label?: ReactNode;
   labelColor?: string;
   mark: MarkProps;
+  /** Exposed as `data-tone` so tests and styles can tell faded bars apart. */
+  tone?: BarTone;
 }): ReactElement {
   const x = shape.x ?? 0;
   const y = shape.y ?? 0;
@@ -112,6 +115,7 @@ export function BarMark({
         d={barPath(x, y, w, h)}
         fill={fill}
         data-testid="chart-bar"
+        data-tone={tone}
         className="cursor-default outline-none transition-[fill] duration-200 hover:[fill:var(--bar-hover)] focus-visible:stroke-[hsl(var(--ring))] focus-visible:[stroke-width:2]"
       />
       {label != null && h >= 18 && (
@@ -210,6 +214,7 @@ export function BarChart<T extends Record<string, unknown>>({
                     label={valueLabels && !grouped && v != null ? formatValue(v) : undefined}
                     labelColor={toneText(t)}
                     mark={markProps(tooltip(row, s))}
+                    tone={t}
                   />
                 </g>
               );
