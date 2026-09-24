@@ -154,6 +154,9 @@ export const cardTemplatesTable = pgTable(
     // The card kind a "layers" design was authored against (drives the editor's
     // field/element context + the gallery thumbnail). Null for BYO backgrounds.
     baseKind: text("base_kind"),
+    // Studio editor template (source = "editor", U18): the pack plus the
+    // editor overlay (adjustments) saved from a card, reused to start new cards.
+    adjustments: jsonb("adjustments"),
     // Layer-editor design (source = "layers"). Empty for BYO backgrounds.
     layers: jsonb("layers").$type<CardLayoutLayer[]>().notNull().default([]),
     // Nullable: BYO backgrounds carry an image URL; "layers" designs have none.

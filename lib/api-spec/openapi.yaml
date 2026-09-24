@@ -4277,6 +4277,90 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/SocialDraft"
+    post:
+      operationId: createSocialDraft
+      tags: [socialCards]
+      summary: Start an ad-hoc card (made by hand, a blank canvas, or from a saved template)
+      description: >-
+        Creates a draft that is awaiting review with no import time, so it never
+        auto-promotes. With templateId, the template's pack and adjustments are
+        applied to the given card input.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSocialDraftRequest"
+      responses:
+        "201":
+          description: The new draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialDraft"
+        "400":
+          description: Invalid body
+        "404":
+          description: Template not found
+
+  /social-drafts/{id}/save-template:
+    post:
+      operationId: saveDraftAsTemplate
+      tags: [socialCards]
+      summary: Save a draft's pack and editor adjustments as a reusable template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveDraftTemplateRequest"
+      responses:
+        "201":
+          description: The saved template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorTemplate"
+        "400":
+          description: Invalid body
+        "404":
+          description: Draft not found
+
+  /editor-templates:
+    get:
+      operationId: listEditorTemplates
+      tags: [socialCards]
+      summary: The club's saved Studio editor templates, newest first
+      responses:
+        "200":
+          description: Templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EditorTemplate"
+
+  /editor-templates/{id}:
+    delete:
+      operationId: deleteEditorTemplate
+      tags: [socialCards]
+      summary: Delete a saved Studio editor template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
 
   /internal/draft-sweep:
     post:
@@ -13278,6 +13362,47 @@ components:
           anyOf:
             - $ref: "#/components/schemas/CardAdjustments"
             - type: "null"
+
+    CreateSocialDraftRequest:
+      type: object
+      required: [cardInput]
+      properties:
+        cardInput:
+          type: object
+          additionalProperties: true
+          description: "The card's ShareCardInput (validated by shape on the web)."
+        packId:
+          type: ["string", "null"]
+          description: "Design pack; 'blank' for a blank canvas."
+        adjustments:
+          anyOf:
+            - $ref: "#/components/schemas/CardAdjustments"
+            - type: "null"
+        templateId:
+          type: integer
+          description: "Start from a saved editor template (its pack and adjustments)."
+
+    SaveDraftTemplateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+
+    EditorTemplate:
+      type: object
+      required: [id, name, baseKind, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        baseKind:
+          type: ["string", "null"]
+          description: "The card kind the template was saved from."
+        packId: { type: ["string", "null"] }
+        adjustments: {}
+        createdAt: { type: string, format: date-time }
 
     CardAdjustments:
       type: object

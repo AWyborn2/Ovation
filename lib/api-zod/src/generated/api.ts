@@ -6669,6 +6669,62 @@ export const ListSocialDraftsResponse = zod.array(ListSocialDraftsResponseItem)
 
 
 /**
+ * Creates a draft that is awaiting review with no import time, so it never auto-promotes. With templateId, the template's pack and adjustments are applied to the given card input.
+ * @summary Start an ad-hoc card (made by hand, a blank canvas, or from a saved template)
+ */
+export const CreateSocialDraftBody = zod.object({
+  "cardInput": zod.record(zod.string(), zod.unknown()).describe('The card\'s ShareCardInput (validated by shape on the web).'),
+  "packId": zod.string().nullish().describe('Design pack; \'blank\' for a blank canvas.'),
+  "adjustments": zod.union([zod.object({
+  "fields": zod.record(zod.string(), zod.string()).optional(),
+  "hidden": zod.array(zod.string()).optional(),
+  "photo": zod.record(zod.string(), zod.unknown()).optional(),
+  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
+  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),zod.null()]).optional(),
+  "templateId": zod.number().optional().describe('Start from a saved editor template (its pack and adjustments).')
+})
+
+
+/**
+ * @summary Save a draft's pack and editor adjustments as a reusable template
+ */
+export const SaveDraftAsTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const saveDraftAsTemplateBodyNameMax = 80;
+
+
+
+export const SaveDraftAsTemplateBody = zod.object({
+  "name": zod.string().min(1).max(saveDraftAsTemplateBodyNameMax)
+})
+
+
+/**
+ * @summary The club's saved Studio editor templates, newest first
+ */
+export const ListEditorTemplatesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "baseKind": zod.string().nullable().describe('The card kind the template was saved from.'),
+  "packId": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "createdAt": zod.coerce.date()
+})
+export const ListEditorTemplatesResponse = zod.array(ListEditorTemplatesResponseItem)
+
+
+/**
+ * @summary Delete a saved Studio editor template
+ */
+export const DeleteEditorTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * Machine-to-machine only. Requires the `x-sweep-secret` header to equal the server's SOCIAL_SWEEP_SECRET; answers 401 otherwise (including when no secret is configured). Sweeps one tenant, or every active tenant when `tenantId` is omitted.
  * @summary Run the social drafting sweep (scheduled job / fixtures projection)
  */

@@ -30,6 +30,9 @@ import {
   substituteFields,
 } from "./html-utils";
 
+/** A card with no pack design: stage colour plus editor layers (Studio U18). */
+export const BLANK_PACK_ID = "blank";
+
 /**
  * Bind an input into its pack template and return native-size, self-contained
  * card HTML. Falls back to the story/shared layout for an unknown size, and to
@@ -53,6 +56,11 @@ export function renderPackCard(
   opts: { animate?: boolean } = {},
 ): string {
   const adj = isEmptyAdjustments(adjustments) ? null : adjustments;
+  if (packId === BLANK_PACK_ID) {
+    // A blank canvas: the club's stage colour and the editor's layers only.
+    const layers = renderFreeLayers(adj, size, opts, packFieldValues(input, data));
+    return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest().inkTint)}">${layers}</div>`;
+  }
   const template = resolveTemplate(input, packId);
   if (!template) return "";
 
@@ -134,6 +142,7 @@ export function packTextFields(
   input: ShareCardInput,
   packId?: string | null,
 ): { key: string; label: string }[] {
+  if (packId === BLANK_PACK_ID) return [];
   const template = resolveTemplate(input, packId);
   if (!template) return [];
   return template.fields
@@ -147,7 +156,8 @@ export function packFieldValues(
   data?: PackCardData | null,
   packId?: string | null,
 ): Record<string, string> {
-  const template = resolveTemplate(input, packId);
+  // A blank canvas still binds the card's data, for live-stat layers.
+  const template = resolveTemplate(input, packId === BLANK_PACK_ID ? null : packId);
   if (!template) return {};
   const bound = bindInput(input);
   if (data) applyPackData(bound, data, input.kind);

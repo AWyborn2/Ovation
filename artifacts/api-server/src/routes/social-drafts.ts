@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import {
   db,
+  cardTemplatesTable,
   socialDraftsTable,
   trackedLinksTable,
   importsTable,
@@ -13,10 +14,13 @@ import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { publicWriteRateLimiter } from "../middlewares/rate-limit";
 import {
+  CreateSocialDraftBody,
   CreateTrackedLinkBody,
   GenerateRecapsBody,
+  SaveDraftAsTemplateBody,
   UpdateSocialDraftBody,
 } from "@workspace/api-zod";
+import { familyOfKind } from "../lib/social-families";
 import { generateRoundUpDrafts, generateRecapDrafts } from "../lib/roundup";
 import {
   generateMatchSummaryDrafts,
@@ -297,6 +301,161 @@ router.post(
       }
       throw err;
     }
+  },
+);
+
+/**
+ * Start an ad-hoc card (U18): made by hand, on a blank canvas, or from a saved
+ * editor template. It waits for review with no auto-promotion and no import
+ * anchor, so it never auto-posts.
+ */
+router.post(
+  "/social-drafts",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const parsed = CreateSocialDraftBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const { cardInput, templateId } = parsed.data;
+    if (typeof cardInput.kind !== "string" || !cardInput.kind) {
+      res.status(400).json({ error: "cardInput.kind is required" });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    let packId = parsed.data.packId ?? null;
+    let adjustments: unknown = parsed.data.adjustments ?? null;
+    if (templateId !== undefined) {
+      const template = await loadEditorTemplate(tenantId, templateId);
+      if (!template) {
+        res.status(404).json({ error: "Template not found" });
+        return;
+      }
+      packId = template.packId;
+      adjustments = template.adjustments;
+    }
+    const [row] = await db
+      .insert(socialDraftsTable)
+      .values({
+        tenantId,
+        engine: "adhoc",
+        status: "awaiting_review",
+        cardInput,
+        family: familyOfKind(cardInput.kind),
+        packId,
+        adjustments,
+        autoReadyAt: null,
+        editedAt: adjustments ? new Date() : null,
+      })
+      .returning();
+    res.status(201).json(presentDraft(row));
+  },
+);
+
+function loadEditorTemplate(tenantId: number, id: number) {
+  return db
+    .select()
+    .from(cardTemplatesTable)
+    .where(
+      and(
+        eq(cardTemplatesTable.id, id),
+        eq(cardTemplatesTable.tenantId, tenantId),
+        eq(cardTemplatesTable.source, "editor"),
+      ),
+    )
+    .then((rows) => rows[0] ?? null);
+}
+
+const presentTemplate = (t: typeof cardTemplatesTable.$inferSelect) => ({
+  id: t.id,
+  name: t.name,
+  baseKind: t.baseKind,
+  packId: t.packId,
+  adjustments: t.adjustments,
+  createdAt: t.createdAt,
+});
+
+/** Save a draft's pack and editor adjustments as a reusable template (U18). */
+router.post(
+  "/social-drafts/:id/save-template",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const id = parseId(req.params.id);
+    if (id === null) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const parsed = SaveDraftAsTemplateBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const draft = await loadDraft(tenantId, id);
+    if (!draft) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    const kind = (draft.cardInput as { kind?: unknown }).kind;
+    const baseKind = typeof kind === "string" ? kind : null;
+    const [row] = await db
+      .insert(cardTemplatesTable)
+      .values({
+        tenantId,
+        name: parsed.data.name.trim(),
+        source: "editor",
+        baseKind,
+        cardKinds: baseKind ? [baseKind] : [],
+        packId: draft.packId,
+        adjustments: draft.adjustments ?? {},
+      })
+      .returning();
+    res.status(201).json(presentTemplate(row));
+  },
+);
+
+router.get("/editor-templates", requireAdmin, async (req, res): Promise<void> => {
+  const rows = await db
+    .select()
+    .from(cardTemplatesTable)
+    .where(
+      and(
+        eq(cardTemplatesTable.tenantId, getTenantId(req)),
+        eq(cardTemplatesTable.source, "editor"),
+      ),
+    )
+    .orderBy(desc(cardTemplatesTable.createdAt));
+  res.json(rows.map(presentTemplate));
+});
+
+router.delete(
+  "/editor-templates/:id",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const id = parseId(req.params.id);
+    if (id === null) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const deleted = await db
+      .delete(cardTemplatesTable)
+      .where(
+        and(
+          eq(cardTemplatesTable.id, id),
+          eq(cardTemplatesTable.tenantId, getTenantId(req)),
+          eq(cardTemplatesTable.source, "editor"),
+        ),
+      )
+      .returning({ id: cardTemplatesTable.id });
+    if (deleted.length === 0) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    res.status(204).end();
   },
 );
 
