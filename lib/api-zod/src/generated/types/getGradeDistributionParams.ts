@@ -21,7 +21,7 @@ toSeason?: number;
  */
 minInnings?: number;
 /**
- * Bowling qualifier in whole overs. Defaults to 50.
+ * Bowling qualifier in whole overs. Defaults to 100.
  * @minimum 0
  */
 minOvers?: number;

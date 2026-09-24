@@ -29,7 +29,7 @@ import { resolveCuration } from "./central-curation";
  */
 
 export const DEFAULT_MIN_INNINGS = 10;
-export const DEFAULT_MIN_OVERS = 50;
+export const DEFAULT_MIN_OVERS = 100;
 /**
  * A batting strike rate needs this many recorded balls faced to count, so a
  * few innings with ball counts can't produce a club "best" of 500+.
