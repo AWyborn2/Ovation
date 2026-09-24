@@ -325,3 +325,37 @@ describe("buildGradeDistribution", () => {
     expect(out.best.battingAverage).toBeNull();
   });
 });
+
+describe("rates only count recorded balls", () => {
+  it("a strike rate needs enough recorded balls, so a few ball counts can't set the club best", () => {
+    const out = buildGradeDistribution(
+      "A Grade",
+      [
+        // 450 runs, but only 20 recorded balls (the rest imported as 0 = unknown).
+        raw(1, { runs: 450, ballsFaced: 20, runsOffBallsFaced: 60 }),
+        raw(2, { runs: 300, ballsFaced: 400, runsOffBallsFaced: 300 }),
+      ],
+      OPTS,
+    );
+    expect(out.players.find((p) => p.playerId === 1)!.batting!.strikeRate).toBeNull();
+    expect(out.best.battingStrikeRate).toBe(75);
+  });
+
+  it("bowling strike rate uses wickets from the same spells as the balls", () => {
+    const out = buildGradeDistribution(
+      "A Grade",
+      [
+        // Career 100 wickets, but the 360 recorded balls brought 12 of them.
+        raw(1, {
+          wickets: 100,
+          runsConceded: 2000,
+          ballsBowled: 360,
+          runsOffBallsBowled: 240,
+          wicketsOffBallsBowled: 12,
+        }),
+      ],
+      OPTS,
+    );
+    expect(out.players[0].bowling!.strikeRate).toBe(30);
+  });
+});

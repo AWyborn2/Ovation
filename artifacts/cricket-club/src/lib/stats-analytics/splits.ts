@@ -4,13 +4,14 @@ import { type InningsEntry, inningsOf, isOut, matchBallsBowled } from "./range";
 import {
   type Analytic,
   battingAverage,
-  battingStrikeRate,
   bestIndices,
   bowlingAverage,
   economyRate,
   insufficient,
   NO_BOWLING_REASON,
   ready,
+  knownBalls,
+  strikeRateOverKnownBalls,
   sumKnown,
 } from "./shared";
 
@@ -103,7 +104,7 @@ function batGroup(
   const out: BattingSplitRow[] = kept.map((r) => {
     const runs = r.list.reduce((s, i) => s + (i.runs ?? 0), 0);
     const outs = r.list.filter(isOut).length;
-    const ballsFaced = sumKnown(r.list.map((i) => i.balls));
+    const ballsFaced = sumKnown(r.list.map((i) => knownBalls(i.balls)));
     return {
       key: r.key,
       label: r.label,
@@ -112,7 +113,7 @@ function batGroup(
       runs,
       ballsFaced,
       average: battingAverage(runs, outs),
-      strikeRate: battingStrikeRate(runs, ballsFaced),
+      strikeRate: strikeRateOverKnownBalls(r.list),
       best: false,
     };
   });

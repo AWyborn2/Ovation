@@ -481,3 +481,32 @@ describe("selection helper", () => {
     expect(helperBowlers(data).map((b) => b.playerId)).toEqual([3, 1]);
   });
 });
+
+describe("season totals with unrecorded balls", () => {
+  it("a season stored with 0 balls faced or bowled never feeds the rates", () => {
+    const t = seasonTotals([
+      season({
+        season: 2007,
+        innings: 15,
+        runs: 886,
+        ballsFaced: 0,
+        wickets: 10,
+        runsConceded: 300,
+        ballsBowled: 0,
+      }),
+      season({
+        season: 2011,
+        innings: 2,
+        runs: 28,
+        ballsFaced: 62,
+        wickets: 2,
+        runsConceded: 30,
+        ballsBowled: 60,
+      }),
+    ]);
+    // 28 off 62, not 914 off 62.
+    expect(t.strikeRate).toBeCloseTo((28 / 62) * 100);
+    expect(t.economy).toBeCloseTo(3);
+    expect(t.bowlingStrikeRate).toBeCloseTo(30);
+  });
+});
