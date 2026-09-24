@@ -93,6 +93,7 @@ import type {
   CreateJuniorBattingLineBody,
   CreateJuniorBowlingLineBody,
   CreateProvisioningExclusionBody,
+  CreateSocialDraftRequest,
   CreateTrackedLinkBody,
   Dashboard,
   DebutEntry,
@@ -101,6 +102,7 @@ import type {
   DirectoryClub,
   DraftSweepRequest,
   DraftSweepResponse,
+  EditorTemplate,
   ErrorEnvelope,
   FiveWicketHaul,
   Fixture,
@@ -240,6 +242,7 @@ import type {
   RecordsDisplaySettingsUpdate,
   RecordsLeaderboards,
   RoundUpInput,
+  SaveDraftTemplateRequest,
   SeasonTopPerformers,
   SeniorOverview,
   SetJuniorSeniorLinkBody,
@@ -14990,6 +14993,297 @@ export function useListSocialDrafts<TData = Awaited<ReturnType<typeof listSocial
 
 
 
+
+export const getCreateSocialDraftUrl = () => {
+
+
+
+
+  return `/api/social-drafts`
+}
+
+/**
+ * Creates a draft that is awaiting review with no import time, so it never auto-promotes. With templateId, the template's pack and adjustments are applied to the given card input.
+ * @summary Start an ad-hoc card (made by hand, a blank canvas, or from a saved template)
+ */
+export const createSocialDraft = async (createSocialDraftRequest: CreateSocialDraftRequest, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getCreateSocialDraftUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createSocialDraftRequest,)
+  }
+);}
+
+
+
+
+export const getCreateSocialDraftMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSocialDraft>>, TError,{data: BodyType<CreateSocialDraftRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSocialDraft>>, TError,{data: BodyType<CreateSocialDraftRequest>}, TContext> => {
+
+const mutationKey = ['createSocialDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSocialDraft>>, {data: BodyType<CreateSocialDraftRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSocialDraft(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSocialDraftMutationResult = NonNullable<Awaited<ReturnType<typeof createSocialDraft>>>
+    export type CreateSocialDraftMutationBody = BodyType<CreateSocialDraftRequest>
+    export type CreateSocialDraftMutationError = ErrorType<void>
+
+    /**
+ * @summary Start an ad-hoc card (made by hand, a blank canvas, or from a saved template)
+ */
+export const useCreateSocialDraft = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSocialDraft>>, TError,{data: BodyType<CreateSocialDraftRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSocialDraft>>,
+        TError,
+        {data: BodyType<CreateSocialDraftRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateSocialDraftMutationOptions(options));
+    }
+
+export const getSaveDraftAsTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/save-template`
+}
+
+/**
+ * @summary Save a draft's pack and editor adjustments as a reusable template
+ */
+export const saveDraftAsTemplate = async (id: number,
+    saveDraftTemplateRequest: SaveDraftTemplateRequest, options?: RequestInit): Promise<EditorTemplate> => {
+
+  return customFetch<EditorTemplate>(getSaveDraftAsTemplateUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveDraftTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getSaveDraftAsTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveDraftAsTemplate>>, TError,{id: number;data: BodyType<SaveDraftTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveDraftAsTemplate>>, TError,{id: number;data: BodyType<SaveDraftTemplateRequest>}, TContext> => {
+
+const mutationKey = ['saveDraftAsTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveDraftAsTemplate>>, {id: number;data: BodyType<SaveDraftTemplateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveDraftAsTemplate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveDraftAsTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof saveDraftAsTemplate>>>
+    export type SaveDraftAsTemplateMutationBody = BodyType<SaveDraftTemplateRequest>
+    export type SaveDraftAsTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Save a draft's pack and editor adjustments as a reusable template
+ */
+export const useSaveDraftAsTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveDraftAsTemplate>>, TError,{id: number;data: BodyType<SaveDraftTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveDraftAsTemplate>>,
+        TError,
+        {id: number;data: BodyType<SaveDraftTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveDraftAsTemplateMutationOptions(options));
+    }
+
+export const getListEditorTemplatesUrl = () => {
+
+
+
+
+  return `/api/editor-templates`
+}
+
+/**
+ * @summary The club's saved Studio editor templates, newest first
+ */
+export const listEditorTemplates = async ( options?: RequestInit): Promise<EditorTemplate[]> => {
+
+  return customFetch<EditorTemplate[]>(getListEditorTemplatesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListEditorTemplatesQueryKey = () => {
+    return [
+    `/api/editor-templates`
+    ] as const;
+    }
+
+
+export const getListEditorTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listEditorTemplates>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEditorTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListEditorTemplatesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEditorTemplates>>> = ({ signal }) => listEditorTemplates({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEditorTemplates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListEditorTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listEditorTemplates>>>
+export type ListEditorTemplatesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The club's saved Studio editor templates, newest first
+ */
+
+export function useListEditorTemplates<TData = Awaited<ReturnType<typeof listEditorTemplates>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEditorTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListEditorTemplatesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDeleteEditorTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/editor-templates/${id}`
+}
+
+/**
+ * @summary Delete a saved Studio editor template
+ */
+export const deleteEditorTemplate = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteEditorTemplateUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteEditorTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEditorTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteEditorTemplate>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteEditorTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteEditorTemplate>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteEditorTemplate(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteEditorTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof deleteEditorTemplate>>>
+
+    export type DeleteEditorTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a saved Studio editor template
+ */
+export const useDeleteEditorTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEditorTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteEditorTemplate>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteEditorTemplateMutationOptions(options));
+    }
 
 export const getRunDraftSweepUrl = () => {
 

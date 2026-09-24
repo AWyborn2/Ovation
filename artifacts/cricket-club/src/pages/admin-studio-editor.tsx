@@ -50,6 +50,7 @@ import {
 import { recolourToBrand, setSponsorLock } from "@/components/studio-editor/content";
 import { EditorToolbar } from "@/components/studio-editor/toolbar";
 import { LayersDrawer } from "@/components/studio-editor/layers-drawer";
+import { SaveTemplateButton } from "@/components/studio-editor/save-template";
 import {
   commit,
   commitFrom,
@@ -358,6 +359,16 @@ function EditorApp({ draftId }: { draftId: number }) {
         dirty={dirty}
         saving={update.isPending}
         onSave={save}
+        actions={
+          <SaveTemplateButton
+            draftId={draftId}
+            beforeSave={() =>
+              dirty
+                ? update.mutateAsync({ id: draftId, data: { adjustments: doc } })
+                : Promise.resolve()
+            }
+          />
+        }
       />
       <div className="flex min-h-0 flex-1">
         <EditorRail items={RAIL} active={panel} onSelect={setPanel} />

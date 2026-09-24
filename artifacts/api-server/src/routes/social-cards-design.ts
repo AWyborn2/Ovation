@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, ne } from "drizzle-orm";
 import { db, cardTemplatesTable, cardLayoutsTable, cardEffectPresetsTable } from "@workspace/db";
 import {
   CreateCardTemplateBody,
@@ -46,7 +46,9 @@ router.get("/card-templates", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(cardTemplatesTable)
-    .where(eq(cardTemplatesTable.tenantId, tenantId))
+    // Studio editor templates (U18) have their own list; they aren't layouts
+    // or backgrounds, so they stay out of this one.
+    .where(and(eq(cardTemplatesTable.tenantId, tenantId), ne(cardTemplatesTable.source, "editor")))
     .orderBy(asc(cardTemplatesTable.displayOrder), asc(cardTemplatesTable.id));
   res.json(rows);
 });
