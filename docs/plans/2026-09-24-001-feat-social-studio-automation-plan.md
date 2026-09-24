@@ -15,7 +15,7 @@ execution: code
 
 - **Objective:** Every data import turns into a queue of on-brand, ready-to-post social cards, with light editing, a club photo library and a one-click post pack; then restyled packs with a landscape format, a card editor, and the full admin redesign.
 - **Product authority:** The Product Contract below. The design bundle `design_handoff_social_studio_admin` (Handoff.md and its `.dc.html` prototypes) is the visual and interaction reference, not a scope authority — where it conflicts with this contract, this contract wins.
-- **Execution profile:** Four shippable milestones in order — M1 automation (U1–U10), M2 packs and landscape (U11–U14), M3 editor (U15–U19), M4 admin redesign (U20–U24). Each unit lands as its own PR. Meta posting (R30) is planned to prerequisites only and is not executed by this plan.
+- **Execution profile:** Four shippable milestones in order — M1 automation (U1–U10, then U25 once U1's build is live), M2 packs and landscape (U11–U14), M3 editor (U15–U19), M4 admin redesign (U20–U24). Each unit lands as its own PR. Meta posting (R30) is planned to prerequisites only and is not executed by this plan.
 - **Stop conditions:** Stop and surface when a unit needs a product decision not settled here, when a schema change cannot be expressed as an incremental migration, or when an external-service choice (KTD14) turns out unavailable.
 - **Tail ownership:** PRs follow `CLAUDE.local.md` (auto-merge on `CLEAN`), except: PRs carrying a migration merge only after Ash approves applying it to prod through the Replit agent and the runner reports it recorded; the posting-window scheduled job (U9) needs Ash to create the Replit Scheduled Deployment; external-service API keys are Ash's to provision.
 - **Open blockers:** None for M1–M4. Meta posting stays blocked on Meta app review and the data-licence decision.
@@ -129,8 +129,9 @@ The club's media officer (for Halls Head, Ash) builds every social post by hand.
 - AE1. **Covers R9.** Given auto-post is on with a 12-hour window, when a Saturday import lands at 6pm and nothing is reviewed, then at 6am Sunday its drafts become ready and A1 gets one in-app and one email notice for the batch. Given auto-post is off, the same drafts stay awaiting review indefinitely.
 - AE2. **Covers R5.** Given a century for a senior player with two tagged library photos and a headshot, the draft uses the newer tagged photo. Given no tagged photos and no headshot, it uses a tagged team photo for that grade, else the pack's no-photo layout.
 - AE3. **Covers R3, R31.** Given a round's results were drafted, when the same round is re-imported with a corrected score, then no second draft appears, every not-yet-posted draft for that match shows the corrected data, and A1 can revert each to its previous version in one click. A posted draft keeps its content and shows a "data changed since posting" notice with a refresh that is itself revertible.
+- AE6. **Covers R8, R9.** Given auto-post is on and a draft is past its deadline, when A1 sends it back or reopens it, it stays awaiting review on every read and after every sweep until A1 marks it ready.
 - AE4. **Covers R2.** Given junior drafting is off for a grade, an import of that grade creates no junior drafts; turning it on affects later imports only.
-- AE5. **Covers R9.** Given auto-post is off and three drafts are past their window, when A1 turns auto-post on, those three become ready at the next check; turning it off later does not return ready drafts to awaiting review.
+- AE5. **Covers R9.** Given auto-post is off and three drafts are past their window, when A1 turns auto-post on, those three read as ready at once and are stored as ready by the next sweep. When A1 turns auto-post off, every draft that currently reads as ready is stored as ready first, so none returns to awaiting review.
 
 ### Success Criteria
 
@@ -164,25 +165,26 @@ The club's media officer (for Halls Head, Ash) builds every social post by hand.
 
 ### Key Technical Decisions
 
-- KTD1. **Evolve `social_drafts`, don't replace it.** Rename statuses in place (`pending` → `awaiting_review`, `approved` → `ready`; `posted`, `dismissed` unchanged) and add: family, source key, source import time, pack id, caption text, chosen photo (URL plus how it was chosen), adjustments (U15), edited flag and a "stale since posting" marker. Existing queue data and the match-summary dedupe index keep working after the rename.
+- KTD1. **Evolve `social_drafts` with an expand-then-contract status rename.** The first migration widens the status check to accept both old and new values (`pending`/`awaiting_review`, `approved`/`ready`) and adds: family, source key, source import time, auto-ready time, pack id, caption text, chosen photo (URL plus how it was chosen), adjustments (U15), edited flag and a "stale since posting" marker. U1 code writes the new values and reads both. A second migration (U25), applied only after U1's build is published, rewrites remaining old values, moves the default to `awaiting_review` and narrows the check. The live build stays valid at every step of the migrate-then-publish sequence.
 - KTD2. **Versions live in a separate revisions table.** Each refresh, edit save or revert writes the prior snapshot (card input, caption, photo, adjustments, reason) to `social_draft_revisions`, capped at 20 per draft. Revert copies a snapshot back and records the current state as a new revision, so revert is itself undoable.
-- KTD3. **Every engine dedupes on a source key.** Match summaries keep their match key; milestones, round-ups, match-day and team-list drafts get a deterministic key (engine, event identity, season, round, grade) with a partial unique index excluding dismissed rows. Engines upsert: a changed input refreshes non-posted drafts through KTD2; a posted draft only gets the stale marker.
-- KTD4. **Posting deadlines use lazy evaluation plus an idempotent sweep.** The API computes the effective state on read (awaiting review past `source_imported_at + window` with auto-post on counts as ready). A protected sweep endpoint persists due drafts to `ready` with a guarded update and sends notifications. A Replit Scheduled Deployment calls it every 15 minutes. Autoscale instances scale to zero, so no in-process timer.
+- KTD3. **Every engine dedupes on a source key.** Match summaries keep their match key; milestones, round-ups, match-day and team-list drafts get a deterministic key (engine, event identity, season, round, grade) with a partial unique index excluding dismissed rows. Engines compute each card input as of the event's own match and round, so later imports never change it. Engines upsert: a changed input refreshes non-posted drafts through KTD2; a posted draft only gets the stale marker; an event that no longer holds (a century corrected to 98) dismisses its unposted draft and marks a posted one stale. Achievements derive per match, not per commit: per-match feats (century, 5-for, debut, cap) key on match, player and feat; career milestone crossings are computed from cumulative totals in match order and key on player, board and tier, recording the crossing match.
+- KTD4. **Posting deadlines use a stored auto-ready time, lazy evaluation and an idempotent sweep.** Each imported draft stores `auto_ready_at` (import time plus window; null for ad-hoc and pre-migration drafts). Send back, reopen and any manual edit clear it, so manual actions stick. The API computes the effective state on read (awaiting review with `auto_ready_at <= now` and auto-post on counts as ready), and transition guards check the effective state. A protected sweep endpoint persists due drafts to `ready` with a guarded update and sends notifications; a Replit Scheduled Deployment calls it every 15 minutes. Turning auto-post off first persists every draft that currently reads as ready. Autoscale instances scale to zero, so no in-process timer.
 - KTD5. **Notifications are in-app first, email best-effort.** One notification row per club per sweep batch is authoritative; email goes through an adapter with one retry, and a failure is logged without blocking the state change. Admins have no email field, so the recipient is a club-level notification email in social settings. Sending is from one platform address.
 - KTD6. **Drafts snapshot their photo.** The chosen image URL is copied onto the draft at pick time, so library edits and deletions never change existing drafts. A data refresh re-runs the pick only when the current photo was auto-picked, never when A1 chose it.
-- KTD7. **HEIC is converted server-side.** HEIC/HEIF joins the storage allowlist; an ingest endpoint converts with `heic-convert` in a worker thread, then uses `sharp` to apply orientation, strip GPS and other EXIF, cap width and write JPEG plus a thumbnail. `sharp` is a new API dependency, as `heic-convert` and `exifr` are.
+- KTD7. **HEIC is converted server-side.** HEIC/HEIF joins the storage allowlist; an ingest endpoint converts with `heic-convert` in a worker thread, then uses `sharp` to apply orientation, strip GPS and other EXIF, cap width and write JPEG plus a thumbnail. `sharp` is a new API dependency, as `heic-convert` and `exifr` are. The worker is a second esbuild entry point in `artifacts/api-server/build.mjs`, loaded from its built path. Ingest accepts files up to 25 MB, 50 files per batch, with at most two concurrent conversions per tenant.
 - KTD8. **Default pack and captions resolve on the server at draft time.** Move pack resolution (`resolvePackIdForKind`) and caption rendering (`lib/captions.ts`) into `lib/scorecard` so the API and web share one implementation, and each draft stores its pack and caption at creation.
-- KTD9. **Post packs render on the server.** One endpoint renders each enabled format through the existing still-render harness and returns a zip plus caption text; it needs `RENDER_HARNESS_ORIGIN` for background use. Phones use the Web Share API with files; desktops download the zip.
-- KTD10. **One drafting sweep serves every club type.** Refactor the post-commit hooks into `runDraftSweep(tenantId, scope)`, called by the existing native import routes, by the central fixtures/results projection scripts after they commit, and by the scheduled job for central-data clubs. Source keys make repeated sweeps safe.
+- KTD9. **Post packs render on the server, then share images, not a zip.** One endpoint renders each enabled format through the existing still-render harness (serialised with the other renders) and returns the image URLs, the caption and a zip URL; it needs `RENDER_HARNESS_ORIGIN` for background use. On phones a second tap calls the Web Share API with the image files (social apps don't accept archives, and share needs a fresh user tap) and copies the caption to the clipboard. Desktops download the zip.
+- KTD10. **One drafting sweep serves every club type, bounded by a watermark.** Refactor the post-commit hooks into `runDraftSweep(tenantId, scope)`, called by the native import routes, by a secret-protected per-tenant drafting endpoint (used by the fixtures projection script) and by the scheduled job for central-data clubs. Each central tenant keeps a sweep watermark (the last central match seen), initialised to "now" when drafting is first enabled, so no history is backfilled; for central drafts the import time is when the sweep first saw the match. Source keys make repeated sweeps safe.
 - KTD11. **Landscape is a first-class size.** Add `landscape` (1200×630) to the size catalogue and every enumeration. Layer geometry becomes fractions of the active format's width, with a migration that leaves existing 1080-wide layers unchanged. Data-heavy types get summarised landscape templates.
-- KTD12. **The editor adjusts pack cards through an overlay, not a layer document.** An `adjustments` object (field overrides, photo transform, hidden slots, free layers positioned in percent of the artboard, with animation) is applied in the pack bind step, identically in the browser and the render harness. Blank-canvas cards are packless cards with only free layers.
+- KTD12. **The editor adjusts pack cards through an overlay, not a layer document.** An `adjustments` object is applied in the pack bind step, identically in the browser and the render harness. Content edits (field overrides, hidden slots, free-layer content, style and animation) are shared across formats; geometry (photo transform and free-layer position and size) is kept per format. A format with no geometry of its own inherits the last-edited format's, and the editor and post pack flag such inherited formats for review. Blank-canvas cards are packless cards with only free layers.
 - KTD13. **Admin UI primitives are built in M1.** A data table, an edit drawer, a settings card with a sticky save bar and a status pill go under `artifacts/cricket-club/src/components/admin-ui/`; M1's Studio pages use them first and M4 adopts them everywhere.
 - KTD14. **External services sit behind adapters.** Photoroom for background removal (remove.bg's API shuts down 1 Dec 2026, and the free in-browser model is AGPL-licensed), Open-Meteo's BOM model for forecasts, and Resend for email. Each adapter is off when its key is missing, and the UI hides the feature.
-- KTD15. **Juniors stay walled off.** Junior drafts keep today's per-grade gating, `junior: true` input and private-player masking; photo pick never runs for junior cards, and library tagging rejects junior players.
+- KTD15. **Juniors stay walled off.** Junior drafts keep today's per-grade gating, `junior: true` input and private-player masking; photo pick never runs for junior cards, and library tagging rejects junior players. Third-party photo processing (background removal) accepts only senior library photos; editor uploads enter the library through the same senior-only ingest before they can be processed.
+- KTD16. **The sweep reports its own health.** Each successful sweep records its run time. The admin hub and the platform console warn when the last sweep is more than an hour old, because the scheduled job drives match-day drafting and all central-tenant drafting, not just notifications.
 
 ### High-Level Technical Design
 
-Draft lifecycle (effective state; revisions are recorded on every content change):
+Draft lifecycle (effective state; transition guards check this state; revisions are recorded on every content change):
 
 ```mermaid
 stateDiagram-v2
@@ -201,14 +203,14 @@ Import to notification:
 
 ```mermaid
 flowchart TB
-  A[Native import route or central projection script] --> B[runDraftSweep tenant, scope]
+  A[Native import, fixtures projection, or scheduled central sweep past watermark] --> B[runDraftSweep tenant, scope]
   B --> C{Family and grade enabled?}
   C -->|no| Z[skip]
   C -->|yes| D[Engine builds card input + source key]
   D --> E[Resolve pack, caption, photo]
   E --> F[Upsert draft: insert, refresh with revision, or mark stale]
   G[Scheduled job every 15 min] --> H[Sweep endpoint]
-  H --> I[Guarded update: due awaiting_review to ready]
+  H --> I[Guarded update: auto_ready_at due, awaiting_review to ready]
   I --> J[One in-app notification per club]
   J --> K[Email adapter, best effort]
 ```
@@ -217,6 +219,9 @@ flowchart TB
 
 - The PlayHQ fixtures data (`lib/db/src/schema/fixtures.ts`) is enough for match-day drafts; selected teams for team-list drafts may not exist in any feed, in which case team-list drafting waits for a data source and stays manual (U3).
 - Match-day drafts are created 48 hours before the fixture start by the scheduled sweep.
+- Existing drafts keep a null auto-ready time after migration and never auto-promote.
+- The sweep secret is a Replit secret (`SOCIAL_SWEEP_SECRET`) shared by the API, the scheduled deployment and the fixtures projection script, alongside the API base URL; it rotates by updating all three.
+- Central players missing from the crosswalk are skipped for player-based cards until the crosswalk backfill covers them.
 
 ### Implementation Constraints
 
@@ -236,9 +241,9 @@ flowchart TB
 | U1   | Draft model v2 and revisions              | `lib/db/src/schema/social_cards.ts`, `lib/db/migrations/<next>_*`, `lib/api-spec/openapi.yaml`, `artifacts/api-server/src/routes/social-drafts.ts` | —                   |
 | U2   | Source-key dedupe and correction refresh  | `artifacts/api-server/src/lib/post-commit-social.ts`, `roundup.ts`, `match-milestone-detector.ts`, `match-summary-drafter.ts`                      | U1                  |
 | U3   | Families, grade config and new engines    | `artifacts/api-server/src/lib/social-families.ts`, `social_cards.ts`                                                                               | U2                  |
-| U4   | One sweep for every club type             | `artifacts/api-server/src/lib/draft-sweep.ts`, `scripts/src/playhq-project-fixtures.ts`                                                            | U3                  |
+| U4   | One sweep for every club type             | `artifacts/api-server/src/lib/draft-sweep.ts`, `routes/internal-draft-sweep.ts`, `scripts/src/playhq-project-fixtures.ts`                          | U3                  |
 | U5   | Shared pack and caption resolution        | `lib/scorecard/src/`, `artifacts/api-server/src/lib/draft-enrich.ts`                                                                               | U1, U6 (photo pick) |
-| U6   | Club photo library and HEIC ingest        | `lib/db/src/schema/club_photos.ts`, `artifacts/api-server/src/routes/club-photos.ts`, `routes/storage.ts`                                          | U1                  |
+| U6   | Club photo library and HEIC ingest        | `lib/db/src/schema/club_photos.ts`, `artifacts/api-server/src/routes/club-photos.ts`, `routes/storage.ts`, `artifacts/api-server/build.mjs`        | U1                  |
 | U7   | Admin UI primitives                       | `artifacts/cricket-club/src/components/admin-ui/`                                                                                                  | —                   |
 | U8   | Queue v2 and library pages                | `artifacts/cricket-club/src/pages/admin-social-queue.tsx`, `pages/admin-photo-library.tsx`                                                         | U1, U5, U6, U7      |
 | U9   | Auto-post window, sweep and notifications | `artifacts/api-server/src/routes/social-sweep.ts`, `lib/integrations/email.ts`, `lib/db/src/schema/notifications.ts`                               | U1, U4              |
@@ -257,6 +262,7 @@ flowchart TB
 | U22  | Settings pages on form cards              | `artifacts/cricket-club/src/pages/admin-*-display.tsx` and siblings                                                                                | U7, U20             |
 | U23  | Shared image crop dialog                  | `artifacts/cricket-club/src/components/admin-ui/image-crop-dialog.tsx`                                                                             | U6, U7              |
 | U24  | Import flow and admin hub                 | `artifacts/cricket-club/src/pages/admin-import.tsx`, `pages/admin.tsx`                                                                             | U7, U20             |
+| U25  | Contract the draft status values          | `lib/db/migrations/<next>_social_drafts_status_contract.sql`, `lib/db/src/schema/social_cards.ts`                                                  | U1 (published)      |
 
 ### Milestone 1 — Automation
 
@@ -266,16 +272,18 @@ flowchart TB
 **Requirements:** R3, R6, R8, R31; KTD1, KTD2.
 **Dependencies:** None.
 **Files:** `lib/db/src/schema/social_cards.ts`, a new migration `lib/db/migrations/<next>_social_drafts_v2.sql` (+ journal and snapshot), `lib/api-spec/openapi.yaml`, `artifacts/api-server/src/routes/social-drafts.ts`, `artifacts/api-server/src/routes/social-drafts-v2.test.ts`.
-**Approach:** Migration renames status values in data and the check constraint, adds the KTD1 columns (nullable, defaulted), and creates `social_draft_revisions`. Add routes: list with state/family/grade filters, mark ready, send back, reopen, list revisions, revert. Fix the spec's status enum (it lacks `posted`). Pending count counts awaiting review only.
+**Approach:** The expand migration widens the status check to accept old and new values, adds the KTD1 columns (nullable, defaulted; auto-ready time stays null for existing drafts), and creates `social_draft_revisions`. Code writes new values and reads both, mapping `pending` to awaiting review and `approved` to ready. Add routes: list with state/family/grade filters, mark ready, send back, reopen, list revisions, revert. Fix the spec's status enum (it lacks `posted`). Pending count counts awaiting review only.
 **Patterns to follow:** `social_drafts_match_dedupe` partial index; `routes/social-drafts-sweep.test.ts` setup (tenant stamp, admin cookie, `x-tenant-id`).
 **Test scenarios:**
 
-- Migration converts `pending` rows to `awaiting_review` and `approved` to `ready`; posted and dismissed are unchanged.
+- After the expand migration, a row inserted with `pending` (as the previous build does) is accepted and lists as awaiting review; a row with `approved` lists as ready.
+- Existing drafts have a null auto-ready time after migration.
 - Mark ready, send back, mark posted, dismiss and reopen each move the state as the lifecycle diagram shows; reopen on a non-dismissed draft returns 409.
 - Covers AE3. Reverting to a revision restores card input, caption and photo, and writes the replaced state as a new revision.
 - The 21st revision drops the oldest.
 - Another tenant's draft id returns 404 for every route.
-  **Verification:** API tests pass against Postgres; codegen and migration drift gates are clean.
+
+**Verification:** API tests pass against Postgres; codegen and migration drift gates are clean.
 
 ### U2. Source-key dedupe and correction refresh
 
@@ -283,7 +291,7 @@ flowchart TB
 **Requirements:** R3, R31; KTD3, KTD2.
 **Dependencies:** U1.
 **Files:** `artifacts/api-server/src/lib/post-commit-social.ts`, `artifacts/api-server/src/lib/roundup.ts`, `artifacts/api-server/src/lib/match-milestone-detector.ts`, `artifacts/api-server/src/lib/match-summary-drafter.ts`, `artifacts/api-server/src/lib/draft-upsert.ts`, `artifacts/api-server/src/lib/draft-upsert.test.ts`.
-**Approach:** One `upsertDraftByKey` used by all engines: insert when no undismissed row holds the key; refresh (with a revision) when the input differs and the draft is not posted; set the stale marker on posted drafts. Scope `snapshotCareerTotals` and `snapshotGradeGames` reads to the tenant (`player_grade_stats` lacks `tenant_id`; join through tenant-owned players).
+**Approach:** One `upsertDraftByKey` used by all engines: insert when no undismissed row holds the key; refresh (with a revision) when the input differs and the draft is not posted; set the stale marker on posted drafts; dismiss the unposted draft of an event that no longer holds. Rework achievement detection to derive events per match (KTD3) instead of diffing career snapshots around a commit. Scope `snapshotCareerTotals` and `snapshotGradeGames` reads to the tenant (`player_grade_stats` lacks `tenant_id`; join through tenant-owned players).
 **Execution note:** Start with a failing integration test showing round-up duplicates on a second import.
 **Test scenarios:**
 
@@ -292,7 +300,10 @@ flowchart TB
 - A posted draft keeps its card input and gains the stale marker.
 - A dismissed draft does not block a new draft for the same key.
 - Two tenants importing the same central club data get independent drafts.
-  **Verification:** No engine can create two undismissed drafts with the same key.
+- Re-importing a round where a 100 is corrected to 98 dismisses the unposted century draft; a posted one is marked stale.
+- Importing round N+1 neither refreshes nor marks stale any round N draft.
+
+**Verification:** No engine can create two undismissed drafts with the same key.
 
 ### U3. Families, grade config and new engines
 
@@ -307,21 +318,26 @@ flowchart TB
 - Disabling the Achievements family stops century and 5-for drafts but not match summaries.
 - A fixture 47 hours out gets one match-day draft; a second sweep adds none.
 - Existing tenants' behaviour is unchanged after the settings migration.
-  **Verification:** Each family can be toggled from the API and the next sweep honours it.
+
+**Verification:** Each family can be toggled from the API and the next sweep honours it.
 
 ### U4. One sweep for every club type
 
 **Goal:** Clubs fed from central data get auto-drafts too.
 **Requirements:** R1; KTD10.
 **Dependencies:** U3.
-**Files:** `artifacts/api-server/src/lib/draft-sweep.ts`, `artifacts/api-server/src/lib/import-commit.ts`, `artifacts/api-server/src/routes/imports-csv.ts`, `artifacts/api-server/src/routes/imports-batch.ts`, `scripts/src/playhq-project-fixtures.ts`, `artifacts/api-server/src/lib/draft-sweep.test.ts`.
-**Approach:** Replace the three post-commit hook calls with `runDraftSweep(tenantId, scope)`. For central tenants the sweep reads results through `central-queries.ts` and resolves player ids via the crosswalk in the caller, never in the central query. The projection script calls the sweep endpoint for each affected tenant after it commits; the U9 scheduled job also sweeps central tenants.
+**Files:** `artifacts/api-server/src/lib/draft-sweep.ts`, `artifacts/api-server/src/lib/import-commit.ts`, `artifacts/api-server/src/routes/imports-csv.ts`, `artifacts/api-server/src/routes/imports-batch.ts`, `scripts/src/playhq-project-fixtures.ts`, `artifacts/api-server/src/routes/internal-draft-sweep.ts`, a migration adding the tenant sweep watermark, `artifacts/api-server/src/lib/draft-sweep.test.ts`.
+**Approach:** Replace the three post-commit hook calls with `runDraftSweep(tenantId, scope)`. Add `POST /internal/draft-sweep` (tenant and scope, protected by the sweep secret); the fixtures projection script calls it for each affected tenant after it commits, and the U9 scheduled job calls it for central tenants. For central tenants the sweep reads only matches past the tenant's watermark through `central-queries.ts`, advances the watermark, and resolves player ids via the crosswalk in the caller, never in the central query.
 **Test scenarios:**
 
 - A native CSV import and a central-data update for comparable matches both produce match-summary drafts.
 - Running the sweep twice with no new data creates nothing.
+- Enabling drafting for a central tenant with years of history creates no drafts until a new match appears past the watermark.
+- A central draft's import time is the moment the sweep first saw its match.
+- The drafting endpoint without the secret returns 401.
 - A central tenant's drafts carry app player ids from the crosswalk, not GUIDs; fill-ins (id ≥ 90000) are excluded.
-  **Verification:** `tenant-isolation.test.ts` extended to drafts passes.
+
+**Verification:** `tenant-isolation.test.ts` extended to drafts passes.
 
 ### U5. Shared pack and caption resolution
 
@@ -336,23 +352,27 @@ flowchart TB
 - A junior match summary gets no photo.
 - A tenant whose default pack for match summaries is Sunset gets Sunset on new drafts; changing the default leaves existing drafts unchanged.
 - Web caption output is identical before and after the move for every token in `KNOWN_TOKENS`.
-  **Verification:** `lib/scorecard` tests pass in `pnpm run test:libs`.
+
+**Verification:** `lib/scorecard` tests pass in `pnpm run test:libs`.
 
 ### U6. Club photo library and HEIC ingest
 
 **Goal:** A senior-only, tagged photo library with HEIC support.
 **Requirements:** R10, R11, R12; KTD7, KTD15.
 **Dependencies:** U1.
-**Files:** `lib/db/src/schema/club_photos.ts`, migration `<next>_club_photos.sql`, `lib/api-spec/openapi.yaml`, `artifacts/api-server/src/routes/club-photos.ts`, `artifacts/api-server/src/lib/image-ingest.ts`, `artifacts/api-server/src/lib/image-ingest.worker.ts`, `artifacts/api-server/src/routes/storage.ts`, `artifacts/api-server/src/routes/club-photos.test.ts`, `artifacts/api-server/src/lib/image-ingest.test.ts`.
-**Approach:** `club_photos` (tenant, object path, thumbnail path, width, height, season, grade, taken-at) and `club_photo_players` (photo, player). Allow `image/heic` and `image/heif` uploads; an ingest endpoint converts and stores JPEG plus thumbnail, then deletes the original. Batch tag and batch delete endpoints. Tagging rejects junior players and fill-ins.
+**Files:** `lib/db/src/schema/club_photos.ts`, migration `<next>_club_photos.sql`, `lib/api-spec/openapi.yaml`, `artifacts/api-server/src/routes/club-photos.ts`, `artifacts/api-server/src/lib/image-ingest.ts`, `artifacts/api-server/src/lib/image-ingest.worker.ts`, `artifacts/api-server/src/routes/storage.ts`, `artifacts/api-server/build.mjs`, `artifacts/api-server/src/routes/club-photos.test.ts`, `artifacts/api-server/src/lib/image-ingest.test.ts`.
+**Approach:** `club_photos` (tenant, object path, thumbnail path, width, height, season, grade, taken-at) and `club_photo_players` (photo, player). Allow `image/heic` and `image/heif` uploads; an ingest endpoint converts and stores JPEG plus thumbnail, then deletes the original. Batch tag and batch delete endpoints. Tagging rejects junior players and fill-ins. Add the worker as a second esbuild entry and enforce the KTD7 size, batch and concurrency limits.
 **Test scenarios:**
 
 - A sample iPhone HEIC ingests to an upright JPEG with no GPS EXIF.
 - A corrupt HEIC fails that file only; the rest of the batch succeeds, with per-file errors returned.
 - Batch-tagging ten photos with a grade and two players writes all tags in one call.
 - Tagging a junior participant returns 422.
+- A 30 MB file and a 60-file batch are rejected with clear errors.
+- The production build emits the worker file, and ingest works from the built output.
 - Another tenant cannot list, tag or delete these photos.
-  **Verification:** Ingest of a 7 MB HEIC does not block other requests (worker thread).
+
+**Verification:** Ingest of a 7 MB HEIC does not block other requests (worker thread).
 
 ### U7. Admin UI primitives
 
@@ -367,7 +387,8 @@ flowchart TB
 - Clicking a row opens the drawer with that row; Escape closes it.
 - The save bar appears after an edit and disappears after save or reset.
 - At 375px the table scrolls horizontally without page overflow.
-  **Verification:** Components render in dark and light with no raw hex.
+
+**Verification:** Components render in dark and light with no raw hex.
 
 ### U8. Queue v2 and library pages
 
@@ -375,7 +396,7 @@ flowchart TB
 **Requirements:** R6, R8, R31, R10, R11, R12.
 **Dependencies:** U1, U5, U6, U7.
 **Files:** `artifacts/cricket-club/src/pages/admin-social-queue.tsx`, `artifacts/cricket-club/src/pages/admin-photo-library.tsx`, `artifacts/cricket-club/src/components/social-queue/`, `artifacts/cricket-club/src/pages/admin-groups.tsx`, `artifacts/cricket-club/src/components/admin-layout.tsx`, `artifacts/cricket-club/src/__tests__/social-queue-v2.test.tsx`, `artifacts/cricket-club/src/__tests__/photo-library.test.tsx`.
-**Approach:** Queue chips (awaiting review, ready, posted, dismissed), family and grade filters, rows with thumbnail, title, source and time. A draft drawer shows the card, caption, photo (swap from library), revisions with revert, and the stale notice. The library page supports bulk drag-drop upload with per-file progress, a grid with multi-select and batch tagging. The navigation badge counts awaiting review.
+**Approach:** Queue chips (awaiting review, ready, posted, dismissed), family and grade filters, rows with thumbnail, title, source and time. A draft drawer shows the card, caption, photo (swap from library), revisions with revert, and the stale notice. The library page supports bulk drag-drop upload with per-file progress, a grid with multi-select and batch tagging. The navigation badge counts awaiting review. Until U14 lands, a compact automation card on the queue page holds the family and grade switches (R2). The empty queue explains that drafts appear after the next import, shows the last import and last sweep time, and links to the automation settings.
 **Test scenarios:**
 
 - Covers AE3. A draft with two revisions lists both; reverting calls the revert endpoint and refreshes the drawer.
@@ -383,7 +404,10 @@ flowchart TB
 - Swapping the photo records the manual choice.
 - Selecting three library photos and applying a grade tags all three.
 - A failed file in a bulk upload shows its error while the others complete.
-  **Verification:** Pages pass the junior-isolation and no-raw-hex guard tests.
+- With no drafts, the queue shows the waiting-for-import empty state with the last import time.
+- Turning on Achievements from the queue's automation card saves the family switch.
+
+**Verification:** Pages pass the junior-isolation and no-raw-hex guard tests.
 
 ### U9. Auto-post window, sweep and notifications
 
@@ -391,16 +415,20 @@ flowchart TB
 **Requirements:** R9, R29 (attention count); KTD4, KTD5, KTD14.
 **Dependencies:** U1, U4.
 **Files:** `lib/db/src/schema/notifications.ts`, migration `<next>_auto_post_notifications.sql`, `lib/api-spec/openapi.yaml`, `artifacts/api-server/src/routes/social-sweep.ts`, `artifacts/api-server/src/lib/integrations/email.ts`, `artifacts/api-server/src/lib/effective-draft-state.ts`, `artifacts/cricket-club/src/components/admin-ui/notification-bell.tsx`, `artifacts/cricket-club/src/components/admin-social/auto-post-card.tsx`, tests alongside each.
-**Approach:** Social settings gain auto-post on/off, window hours and notification email. Reads apply the effective-state rule. The sweep endpoint, protected by a shared secret header, promotes due drafts with a guarded update, sweeps central tenants and match-day timing (U3, U4), writes one notification per club per run and emails through Resend. Ad-hoc drafts have no import time and never auto-promote.
+**Approach:** Social settings gain auto-post on/off, window hours and notification email (auto-post without an email sends in-app only). Drafts store `auto_ready_at` at creation; send back, reopen and edits clear it. Reads and transition guards apply the effective-state rule; switching auto-post off persists drafts that read as ready. The notification bell shows an unread count; opening it lists recent notifications, each linking to the queue filtered to that batch, and opening marks them read; with none it shows "No notifications". Each sweep records its run time for KTD16. The sweep endpoint, protected by a shared secret header, promotes due drafts with a guarded update, sweeps central tenants and match-day timing (U3, U4), writes one notification per club per run and emails through Resend. Ad-hoc drafts have no import time and never auto-promote.
 **Test scenarios:**
 
 - Covers AE1. With a 12-hour window, a draft imported at 18:00 is awaiting review at 05:59 and ready at 06:00 by both read and sweep; one notification and one email go out for the batch.
-- Covers AE5. Turning auto-post on promotes three overdue drafts at the next sweep; turning it off leaves ready drafts ready.
+- Covers AE5. Turning auto-post on makes three overdue drafts read as ready at once, stored by the next sweep; turning it off stores every draft reading as ready, and none returns to awaiting review.
+- Covers AE6. A draft sent back after its deadline stays awaiting review on read and after a sweep.
+- Marking posted a draft that reads as ready (stored as awaiting review) succeeds.
+- The bell shows the unread count, and opening it marks the notifications read.
 - Two concurrent sweeps promote each draft once and send one email.
 - The email adapter failing twice still leaves the drafts ready and the in-app notification present.
 - A sweep call without the secret returns 401.
 - An ad-hoc draft stays awaiting review past any window.
-  **Verification:** Operational note — Ash creates a Replit Scheduled Deployment calling the sweep every 15 minutes, and sets the Resend key and platform sender.
+
+**Verification:** Operational note — Ash creates a Replit Scheduled Deployment calling the sweep every 15 minutes, and sets the Resend key and platform sender.
 
 ### U10. Post pack
 
@@ -408,14 +436,15 @@ flowchart TB
 **Requirements:** R7, R8; KTD9.
 **Dependencies:** U5, U8.
 **Files:** `lib/api-spec/openapi.yaml`, `artifacts/api-server/src/routes/post-pack.ts`, `artifacts/api-server/src/routes/post-pack.test.ts`, `artifacts/cricket-club/src/components/post-pack/post-pack-button.tsx`, `artifacts/cricket-club/src/components/post-pack/__tests__/post-pack.test.tsx`.
-**Approach:** The endpoint renders each enabled format of a draft through the still harness with tenant data and returns a zip with images and `caption.txt`. The web button uses `navigator.share` with files where supported, else downloads; afterwards it offers "Mark posted". Renders are serialised through the existing render queue.
+**Approach:** The endpoint renders each enabled format of a draft through the still harness with tenant data, serialised with the other renders, and returns the image URLs, the caption and a zip URL. On phones the button renders first, then shows a Share button that calls `navigator.share` with the image files and copies the caption to the clipboard; on desktop it downloads the zip. Formats with inherited editor geometry (U15) are flagged before sharing. Afterwards it offers "Mark posted".
 **Test scenarios:**
 
-- A draft with square and story enabled returns a zip holding two PNGs and the caption.
+- A draft with square and story enabled returns two image URLs, the caption, and a zip holding both PNGs and `caption.txt`.
 - A junior draft's images use the juniors palette and masked private names.
-- On a browser with `navigator.canShare({files})` the share sheet is used; otherwise a download starts.
+- On a browser with `navigator.canShare({files})` the Share tap shares the PNG files and copies the caption; otherwise a download starts.
 - Another tenant's draft returns 404.
-  **Verification:** A real post pack for a Halls Head draft opens and every image shows club branding.
+
+**Verification:** A real post pack for a Halls Head draft opens and every image shows club branding.
 
 ### Milestone 2 — Packs and landscape
 
@@ -432,7 +461,8 @@ flowchart TB
 - An existing 1080-wide layout renders unchanged in square.
 - A landscape still renders at exactly 1200×630.
 - Settings round-trip `sizeLandscape`.
-  **Verification:** Parity, lint and animation pack tests stay green.
+
+**Verification:** Parity, lint and animation pack tests stay green.
 
 ### U12. Pack skeleton and Broadcast Dark restyle
 
@@ -448,7 +478,8 @@ flowchart TB
 - A tenant with a purple accent renders purple chips and rules with no gold literals.
 - A photo-less milestone keeps its content column justified.
 - A 12-row leaderboard renders five rows in landscape.
-  **Verification:** Recorded PNG review for all 68 renders.
+
+**Verification:** Recorded PNG review for all 68 renders.
 
 ### U13. Restyle the other four packs
 
@@ -462,7 +493,8 @@ flowchart TB
 
 - Each pack covers 17 types × 4 formats and passes lint and parity.
 - Switching a tenant's default pack re-renders a draft in the new pack with brand colours applied.
-  **Verification:** Recorded PNG review per pack.
+
+**Verification:** Recorded PNG review per pack.
 
 ### U14. Studio admin pages restyle
 
@@ -476,7 +508,8 @@ flowchart TB
 - Changing the default pack for a type saves and shows on the next draft.
 - Turning a family off from Cards settings hides it from new drafts.
 - The junior banner carries no raw hex.
-  **Verification:** `pack-card-mounts` stays green; every mount passes `data`.
+
+**Verification:** `pack-card-mounts` stays green; every mount passes `data`.
 
 ### Milestone 3 — Card editor
 
@@ -491,9 +524,11 @@ flowchart TB
 
 - Overriding a headline changes only that field.
 - Hiding a slot removes it and the layout stays intact.
-- A free text layer at 10%/10% lands at the same relative spot in square and landscape.
+- A free layer placed in square and never edited in landscape inherits square's geometry in landscape and is flagged as inherited; after editing it in landscape, each format keeps its own geometry.
 - Harness and browser renders of the same adjustments produce identical markup.
-  **Verification:** Existing drafts without adjustments render byte-identically.
+- A rendered PNG of one adjusted card (cropped photo, overridden headline, free layer) matches between browser preview and harness; the comparison is recorded in the PR.
+
+**Verification:** Existing drafts without adjustments render byte-identically.
 
 ### U16. Editor canvas core
 
@@ -501,7 +536,7 @@ flowchart TB
 **Requirements:** R16, R19.
 **Dependencies:** U15.
 **Files:** `artifacts/cricket-club/src/components/studio-editor/editor-shell.tsx`, `canvas.tsx`, `selection.tsx`, `guides.ts`, `history.ts`, `shortcuts.ts`, `layers-drawer.tsx`, `artifacts/cricket-club/src/pages/admin-studio-editor.tsx`, `artifacts/cricket-club/src/components/studio-editor/__tests__/`.
-**Approach:** Always-dark editor palette, top bar (back, resize menu, undo/redo, title, primary action), rail plus 340px panel, bottom page strip and zoom. Selection handles with rotate snapping, multi-select, groups with double-click to enter, smart guides snapping within 0.8%, keyboard shortcuts as the handoff lists, undo/redo as snapshots capped at 40. It reuses what fits from `components/card-layout-editor/` (pointer drag, snapping), which is retired once U18 covers its callers.
+**Approach:** Always-dark editor palette, top bar (back, resize menu, undo/redo, title, primary action), rail plus 340px panel, bottom page strip and zoom. Selection handles with rotate snapping, multi-select, groups with double-click to enter, smart guides snapping within 0.8%, keyboard shortcuts as the handoff lists, undo/redo as snapshots capped at 40. It reuses what fits from `components/card-layout-editor/` (pointer drag, snapping), which is retired once U18 covers its callers. The editor supports desktop and tablet widths of 1024px and up; below that it shows the card preview with a notice to open the editor on a larger screen.
 **Test scenarios:**
 
 - Undo and redo restore the prior adjustments in order; a new edit clears redo.
@@ -509,7 +544,9 @@ flowchart TB
 - Shift-click toggles multi-select; grouping then clicking a member selects the group.
 - Dragging within 0.8% of the page centre snaps to it.
 - Below 1280px the primary action stays visible.
-  **Verification:** Opening a queue draft in the editor and saving writes adjustments and one revision.
+- At 768px the editor shows the preview and the larger-screen notice instead of the canvas.
+
+**Verification:** Opening a queue draft in the editor and saving writes adjustments and one revision.
 
 ### U17. Editor panels and content layers
 
@@ -517,14 +554,15 @@ flowchart TB
 **Requirements:** R16, R17.
 **Dependencies:** U16, U6.
 **Files:** `artifacts/cricket-club/src/components/studio-editor/panels/*.tsx` (templates, elements, cricket, players, text, photos, uploads, live stats, brand), `artifacts/cricket-club/src/components/studio-editor/layers/*.tsx` (shape, sticker, chart, medal, player block, live field), tests alongside.
-**Approach:** Photos panel reads the club library with season, grade and player chips. Cricket charts (run worm, runs per over, wagon wheel, bowling figures, ladder) render from the draft's scorecard data. Live stat fields bind to the card's data and show a "Live" tag. The brand panel offers recolour-to-brand (nearest brand colour by RGB distance from the tenant's own palette) and a sponsor-strip lock that refuses deletion while on.
+**Approach:** Photos panel reads the club library with season, grade and player chips. Cricket charts (run worm, runs per over, wagon wheel, bowling figures, ladder) render from the draft's scorecard data. Live stat fields bind to the card's data and show a "Live" tag. The brand panel offers recolour-to-brand (nearest brand colour by RGB distance from the tenant's own palette) and a sponsor-strip lock: while on, the strip's delete control is disabled with a tooltip naming the lock and where to turn it off. Photos added through the uploads panel go through the senior-only library ingest (U6).
 **Test scenarios:**
 
 - Adding a player block inserts a grouped photo, name, cap and stats layer set bound to that player.
 - Recolour-to-brand maps a non-brand fill to the nearest tenant colour.
-- With the sponsor lock on, deleting the strip is refused and a missing strip is appended.
+- With the sponsor lock on, the strip's delete control is disabled with its tooltip, the Delete key does nothing on it, and a missing strip is appended.
 - A wagon wheel for a match with no shot data shows its empty state.
-  **Verification:** Every panel works on a pack draft and on a blank canvas.
+
+**Verification:** Every panel works on a pack draft and on a blank canvas.
 
 ### U18. Export, templates and ad-hoc cards
 
@@ -539,7 +577,8 @@ flowchart TB
 - Save as template, then create from it, reproduces the adjustments.
 - A blank-canvas card has no pack and renders only free layers.
 - An ad-hoc card enters the queue awaiting review and never auto-promotes.
-  **Verification:** The old card layout editor has no remaining callers and is removed in this unit.
+
+**Verification:** The old card layout editor has no remaining callers and is removed in this unit.
 
 ### U19. Background removal and forecast adapters
 
@@ -547,14 +586,16 @@ flowchart TB
 **Requirements:** R21, R22; KTD14.
 **Dependencies:** U17.
 **Files:** `artifacts/api-server/src/lib/integrations/background-removal.ts`, `artifacts/api-server/src/lib/integrations/forecast.ts`, `artifacts/api-server/src/routes/studio-tools.ts`, `lib/api-spec/openapi.yaml`, venue coordinates on the club/venue data where missing, tests alongside.
-**Approach:** Background removal calls Photoroom and stores the cut-out PNG in the club library as a derived image. Forecasts call Open-Meteo's BOM model for the venue's coordinates and start hour, cached per venue and hour. Each tool is hidden when its key or venue coordinates are missing.
+**Approach:** Background removal accepts only a senior club-library photo id, calls Photoroom and stores the cut-out PNG in the library as a derived image. Forecasts call Open-Meteo's BOM model for the venue's coordinates and start hour, cached per venue and hour. Each tool is hidden when its key or venue coordinates are missing.
 **Test scenarios:**
 
 - A removal request stores a PNG with transparency and links it to the source photo.
 - A provider error returns a clear failure and leaves the photo unchanged.
+- A request for a photo outside the club library, or tagged with a junior, is rejected before any external call.
 - A forecast for a venue and time returns temperature and conditions; a second request within the hour hits the cache.
 - With no API key configured, the tool's endpoints return 404 and the UI hides the tool.
-  **Verification:** Match-day game-day block shows a forecast for a Halls Head fixture.
+
+**Verification:** Match-day game-day block shows a forecast for a Halls Head fixture.
 
 ### Milestone 4 — Admin redesign
 
@@ -571,7 +612,8 @@ flowchart TB
 - ⌘K opens jump-to and selecting Players navigates there.
 - Entitlement-hidden groups stay hidden.
 - At 375px the sidebar is a sheet and the top bar keeps Create a card.
-  **Verification:** The U14 admin shell test cases still pass.
+
+**Verification:** The U14 admin shell test cases still pass.
 
 ### U21. List pages on table and drawer
 
@@ -585,7 +627,8 @@ flowchart TB
 - Each page lists mocked rows, filters by search, and opens the drawer on row click.
 - Saving in the drawer calls the existing update mutation; delete asks for confirmation.
 - Empty data shows the empty state.
-  **Verification:** Existing admin page tests are updated, not deleted.
+
+**Verification:** Existing admin page tests are updated, not deleted.
 
 ### U22. Settings pages on form cards
 
@@ -598,7 +641,8 @@ flowchart TB
 
 - Editing a toggle shows the save bar; saving persists and hides it; reset restores the loaded values.
 - Navigating away with unsaved changes prompts first.
-  **Verification:** `admin-honours-display.test.tsx` passes.
+
+**Verification:** `admin-honours-display.test.tsx` passes.
 
 ### U23. Shared image crop dialog
 
@@ -612,7 +656,8 @@ flowchart TB
 - A 400×400 headshot shows the low-resolution warning; a 1200×1200 does not.
 - Zooming never exposes empty space inside the frame.
 - A HEIC file is accepted and converted before the crop step.
-  **Verification:** Branding, headshot and sponsor uploads all use the dialog.
+
+**Verification:** Branding, headshot and sponsor uploads all use the dialog.
 
 ### U24. Import flow and admin hub
 
@@ -620,40 +665,57 @@ flowchart TB
 **Requirements:** R28, R29.
 **Dependencies:** U7, U20.
 **Files:** `artifacts/cricket-club/src/pages/admin-import.tsx`, `artifacts/cricket-club/src/components/admin-import/*`, `artifacts/cricket-club/src/pages/admin.tsx`, tests alongside.
-**Approach:** Wrap the existing upload → preview → commit hooks in a step indicator with a new / changed / unchanged summary. The hub shows drafts awaiting review, recent imports and recent notifications from U9.
+**Approach:** Wrap the existing upload → preview → commit hooks in a step indicator with a new / changed / unchanged summary. The hub shows drafts awaiting review, recent imports, recent notifications from U9, and the KTD16 warning when the last sweep is more than an hour old.
 **Test scenarios:**
 
 - A CSV preview shows new, changed and unchanged counts before publish.
 - Publish commits and reports how many drafts the sweep created.
 - The hub lists awaiting-review drafts with a link to the queue.
-  **Verification:** Existing import tests pass unchanged apart from markup.
+- With the last sweep two hours old, the hub shows the sweep warning.
+
+**Verification:** Existing import tests pass unchanged apart from markup.
+
+### U25. Contract the draft status values
+
+**Goal:** Finish the status rename once the new build is live.
+**Requirements:** R6; KTD1.
+**Dependencies:** U1, with its build published to prod.
+**Files:** `lib/db/migrations/<next>_social_drafts_status_contract.sql` (+ journal and snapshot), `lib/db/src/schema/social_cards.ts`, `artifacts/api-server/src/routes/social-drafts.ts`, `artifacts/api-server/src/routes/social-drafts-v2.test.ts`.
+**Approach:** The migration rewrites any remaining `pending` and `approved` rows, sets the default to `awaiting_review` and narrows the check to the new values; code stops reading the old values.
+**Test scenarios:**
+
+- After the migration, no row holds an old value and inserting `pending` fails the check.
+- The queue lists the same drafts before and after the migration.
+
+**Verification:** Applied to prod only after the U1 build is published.
 
 ---
 
 ## Verification Contract
 
-| Gate                  | Command                                                                                                                        | Applies to                    |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
-| Web tests             | `cd artifacts/cricket-club && NODE_ENV=test ./node_modules/.bin/vitest run` (CI: `pnpm --filter @workspace/cricket-club test`) | All web units                 |
-| API integration tests | CI `api-tests` job (Postgres 16); locally needs `DATABASE_URL`                                                                 | U1–U6, U9, U10, U18, U19      |
-| Library tests         | `pnpm run test:libs`                                                                                                           | U5                            |
-| Typecheck             | `pnpm run typecheck`                                                                                                           | Every unit                    |
-| Codegen drift         | Orval codegen from `lib/api-spec`, then no uncommitted diff                                                                    | Units changing `openapi.yaml` |
-| Migration drift       | CI "Migrations match the Drizzle schema"                                                                                       | Units with migrations         |
-| Lint and format       | `pnpm run lint`, `pnpm run format:check` (Prettier 3.9.6)                                                                      | Every unit                    |
-| Build                 | `pnpm --filter @workspace/api-server --filter @workspace/cricket-club run build`                                               | Every PR                      |
-| Pack guards           | `pack-lint`, `pack-coverage-parity`, `pack-animations`, `pack-card-mounts` suites                                              | U11–U15, U17, U18             |
-| Rendered PNG review   | Render every type × format and record the check in the PR                                                                      | U12, U13                      |
-| Prod migration        | Apply via the Replit agent and `lib/db/src/migrate.ts`, confirm recorded, before publish                                       | U1, U3, U6, U9, U11, U18      |
+| Gate                  | Command                                                                                                                        | Applies to                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| Web tests             | `cd artifacts/cricket-club && NODE_ENV=test ./node_modules/.bin/vitest run` (CI: `pnpm --filter @workspace/cricket-club test`) | All web units                     |
+| API integration tests | CI `api-tests` job (Postgres 16); locally needs `DATABASE_URL`                                                                 | U1–U6, U9, U10, U18, U19          |
+| Library tests         | `pnpm run test:libs`                                                                                                           | U5                                |
+| Typecheck             | `pnpm run typecheck`                                                                                                           | Every unit                        |
+| Codegen drift         | Orval codegen from `lib/api-spec`, then no uncommitted diff                                                                    | Units changing `openapi.yaml`     |
+| Migration drift       | CI "Migrations match the Drizzle schema"                                                                                       | Units with migrations             |
+| Lint and format       | `pnpm run lint`, `pnpm run format:check` (Prettier 3.9.6)                                                                      | Every unit                        |
+| Build                 | `pnpm --filter @workspace/api-server --filter @workspace/cricket-club run build`                                               | Every PR                          |
+| Pack guards           | `pack-lint`, `pack-coverage-parity`, `pack-animations`, `pack-card-mounts` suites                                              | U11–U15, U17, U18                 |
+| Rendered PNG review   | Render every type × format and record the check in the PR                                                                      | U12, U13                          |
+| Prod migration        | Apply via the Replit agent and `lib/db/src/migrate.ts`, confirm recorded, before publish                                       | U1, U3, U4, U6, U9, U11, U18, U25 |
 
 ---
 
 ## Definition of Done
 
-- U1–U24 are merged to `main` with CI green.
+- U1–U25 are merged to `main` with CI green; U25's migration is applied only after U1's build is live.
 - Every migration has been applied to prod through the runner, and the ledger shows it recorded before any build containing it was published.
 - The Replit Scheduled Deployment calls the sweep every 15 minutes, and email and external-service keys are configured or their features hidden.
-- AE1–AE5 are covered by passing tests.
+- AE1–AE6 are covered by passing tests.
+- The admin hub and platform console show sweep health.
 - Pack PNG reviews are recorded in the U12 and U13 PRs.
 - Tenant-isolation tests cover drafts, revisions, photos and notifications; no Halls Head literals or raw hex are introduced.
 - The old card layout editor is removed, and no abandoned-approach code remains in the diff.
@@ -670,14 +732,15 @@ flowchart TB
 
 ### Risks & Dependencies
 
-| Risk                                                                      | Mitigation                                                                  |
-| ------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Pack restyle volume (5 packs × 17 types × 4 formats)                      | Shared skeleton first (U12); one PR per pack; PNG review per pack           |
-| Render harness load from post packs and exports                           | Reuse the serialised render queue; post packs render only enabled formats   |
-| Prod schema drift (10 Sep outage pattern)                                 | Incremental migrations only; PRs with migrations wait for the prod apply    |
-| Scheduled job not configured                                              | Lazy evaluation keeps the queue correct; only notifications wait on the job |
-| External service cost or licence (Photoroom, Open-Meteo commercial terms) | Adapters off by default; forecasts licensed before paid plans               |
-| Central tenants reading non-tenant-scoped stats                           | U2 scopes snapshot reads; U4 extends tenant-isolation tests                 |
+| Risk                                                                                                         | Mitigation                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Status rename during the migrate-then-publish gap                                                            | Expand-then-contract (KTD1, U25) keeps the live build valid at every step                                                                         |
+| Pack restyle volume (5 packs × 17 types × 4 formats)                                                         | Shared skeleton first (U12); one PR per pack; PNG review per pack                                                                                 |
+| Render harness load from post packs and exports                                                              | Reuse the serialised render queue; post packs render only enabled formats                                                                         |
+| Prod schema drift (10 Sep outage pattern)                                                                    | Incremental migrations only; PRs with migrations wait for the prod apply                                                                          |
+| Scheduled job missing or failing — it drives notifications, match-day drafts and all central-tenant drafting | Lazy evaluation keeps imported drafts' states correct; the sweep records its last run and the hub and platform console warn after an hour (KTD16) |
+| External service cost or licence (Photoroom, Open-Meteo commercial terms)                                    | Adapters off by default; forecasts licensed before paid plans                                                                                     |
+| Central tenants reading non-tenant-scoped stats                                                              | U2 scopes snapshot reads; U4 extends tenant-isolation tests                                                                                       |
 
 ### Sources & Research
 
