@@ -1,8 +1,9 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
+import { DataTable, EditDrawer, StatusPill, type DataTableColumn } from "@/components/admin-ui";
 
 /** "2024" → "2024/25". */
 export function formatSeason(year: number): string {
@@ -20,12 +21,17 @@ export type SeasonRole = {
   published: boolean;
 };
 
+const selectClass =
+  "h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
 /**
- * Season-grouped list of role records with publish/unpublish-all per season,
- * inline edit forms and confirmed delete. Shared by the senior committee and
- * junior office-bearer admin pages (plan.md §5.6): the pages keep their own
- * hooks (`/api/club-roles` vs `/api/juniors/*`) and forms and hand this board
- * the rows plus callbacks, so juniors isolation is unchanged.
+ * Role records in the admin data table (Social Studio U21): newest season
+ * first, a season picker with publish/unpublish-all for that season, and the
+ * create/edit forms in the edit drawer with a confirmed delete. Shared by the
+ * senior committee and junior office-bearer admin pages (plan.md §5.6): the
+ * pages keep their own hooks (`/api/club-roles` vs `/api/juniors/*`) and forms
+ * and hand this board the rows plus callbacks, so juniors isolation is
+ * unchanged.
  */
 export function SeasonRolesBoard<R extends SeasonRole>({
   rows,
@@ -57,7 +63,7 @@ export function SeasonRolesBoard<R extends SeasonRole>({
   addTitle: string;
   error: string | null;
   empty: { title: string; message: string };
-  /** The small uppercase label above the name (role, or "<grade> captain"). */
+  /** The role column (role, or "<grade> captain"). */
   rowLabel: (r: R) => ReactNode;
   /** "linked …" hint beside the name, or null when the record is unlinked. */
   linkedLabel: (r: R) => string | null;
@@ -71,35 +77,79 @@ export function SeasonRolesBoard<R extends SeasonRole>({
   renderEditForm: (r: R, close: () => void) => ReactNode;
 }) {
   const confirm = useConfirm();
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editing, setEditing] = useState<R | null>(null);
   const [showNew, setShowNew] = useState(false);
+  const [season, setSeason] = useState<number | "all">("all");
 
-  const seasons = useMemo(() => {
-    const bySeason = new Map<number, R[]>();
-    for (const r of rows ?? []) {
-      if (!bySeason.has(r.season)) bySeason.set(r.season, []);
-      bySeason.get(r.season)!.push(r);
-    }
-    return [...bySeason.entries()]
-      .map(([season, rs]) => ({
-        season,
-        rows: [...rs].sort(
-          (a, b) => a.displayOrder - b.displayOrder || a.role.localeCompare(b.role) || a.id - b.id,
-        ),
+  const sorted = useMemo(
+    () =>
+      [...(rows ?? [])].sort(
+        (a, b) =>
+          b.season - a.season ||
+          a.displayOrder - b.displayOrder ||
+          a.role.localeCompare(b.role) ||
+          a.id - b.id,
+      ),
+    [rows],
+  );
+  const seasons = useMemo(() => [...new Set(sorted.map((r) => r.season))], [sorted]);
+  const visible = season === "all" ? sorted : sorted.filter((r) => r.season === season);
+  const allPublished = visible.every((r) => r.published);
+  const nonePublished = visible.every((r) => !r.published);
+
+  const confirmDelete = async (r: R) => {
+    if (
+      !(await confirm({
+        title: deleteTitle,
+        description: deleteDescription(r),
+        confirmText: "Delete",
+        destructive: true,
       }))
-      .sort((a, b) => b.season - a.season);
-  }, [rows]);
+    )
+      return;
+    onDelete(r);
+    setEditing(null);
+  };
+
+  const columns: DataTableColumn<R>[] = [
+    {
+      key: "season",
+      header: "Season",
+      cell: (r) => <span className="tabular-nums">{formatSeason(r.season)}</span>,
+      className: "w-28",
+    },
+    { key: "role", header: "Role", cell: (r) => rowLabel(r) },
+    {
+      key: "name",
+      header: "Name",
+      cell: (r) => {
+        const linked = linkedLabel(r);
+        return (
+          <span className="font-semibold">
+            {r.name}
+            {linked != null && (
+              <span className="ml-2 text-xs font-normal text-muted-foreground">{linked}</span>
+            )}
+          </span>
+        );
+      },
+    },
+    {
+      key: "status",
+      header: "Status",
+      cell: (r) =>
+        r.published ? (
+          <StatusPill tone="success">Published</StatusPill>
+        ) : (
+          <StatusPill tone="attention">Draft</StatusPill>
+        ),
+      className: "w-32",
+    },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-muted-foreground mt-1">{intro}</p>
-        </div>
-        <Button onClick={() => setShowNew((v) => !v)} variant={showNew ? "outline" : "default"}>
-          {showNew ? "Close form" : addLabel}
-        </Button>
-      </div>
+    <div className="space-y-5">
+      <p className="max-w-[75ch] text-[15px] text-muted-foreground">{intro}</p>
 
       {error && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -107,40 +157,38 @@ export function SeasonRolesBoard<R extends SeasonRole>({
         </div>
       )}
 
-      {showNew && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{addTitle}</CardTitle>
-          </CardHeader>
-          <CardContent>{renderNewForm(() => setShowNew(false))}</CardContent>
-        </Card>
-      )}
-
       {isError ? (
         <QueryError onRetry={onRetry} />
       ) : isLoading ? (
         <ListSkeleton />
-      ) : seasons.length === 0 ? (
-        <EmptyState title={empty.title} message={empty.message} />
       ) : (
-        seasons.map((group) => {
-          const allPublished = group.rows.every((r) => r.published);
-          const nonePublished = group.rows.every((r) => !r.published);
-          return (
-            <Card key={group.season}>
-              <CardHeader className="flex flex-row items-center justify-between gap-4">
-                <CardTitle className="text-xl">
-                  {formatSeason(group.season)}
-                  <span className="ml-2 align-middle text-xs font-normal text-muted-foreground">
-                    {group.rows.length} {group.rows.length === 1 ? "record" : "records"}
-                  </span>
-                </CardTitle>
-                <div className="space-x-2 shrink-0">
+        <>
+          {seasons.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground">Season</span>
+                <select
+                  className={selectClass}
+                  value={season}
+                  onChange={(e) =>
+                    setSeason(e.target.value === "all" ? "all" : Number(e.target.value))
+                  }
+                >
+                  <option value="all">All seasons</option>
+                  {seasons.map((s) => (
+                    <option key={s} value={s}>
+                      {formatSeason(s)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {season !== "all" && (
+                <>
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={allPublished || updatePending}
-                    onClick={() => onSetSeasonPublished(group.season, true)}
+                    onClick={() => onSetSeasonPublished(season, true)}
                   >
                     Publish all
                   </Button>
@@ -148,75 +196,63 @@ export function SeasonRolesBoard<R extends SeasonRole>({
                     size="sm"
                     variant="outline"
                     disabled={nonePublished || updatePending}
-                    onClick={() => onSetSeasonPublished(group.season, false)}
+                    onClick={() => onSetSeasonPublished(season, false)}
                   >
                     Unpublish all
                   </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {group.rows.map((r) => {
-                  if (editingId === r.id) {
-                    return (
-                      <div key={r.id} className="rounded-md border border-border bg-muted/30 p-4">
-                        {renderEditForm(r, () => setEditingId(null))}
-                      </div>
-                    );
-                  }
-                  const linked = linkedLabel(r);
-                  return (
-                    <div
-                      key={r.id}
-                      className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
-                    >
-                      <div className="min-w-0">
-                        <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                          {rowLabel(r)}
-                        </span>
-                        <div className="font-medium truncate">
-                          {r.name}
-                          {linked != null && (
-                            <span className="ml-2 text-xs text-muted-foreground">{linked}</span>
-                          )}
-                          {!r.published && (
-                            <span className="ml-2 text-xs font-normal rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-0.5">
-                              Draft
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="space-x-2 shrink-0">
-                        <Button size="sm" variant="outline" onClick={() => setEditingId(r.id)}>
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={deletePending}
-                          onClick={async () => {
-                            if (
-                              !(await confirm({
-                                title: deleteTitle,
-                                description: deleteDescription(r),
-                                confirmText: "Delete",
-                                destructive: true,
-                              }))
-                            )
-                              return;
-                            onDelete(r);
-                          }}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          );
-        })
+                </>
+              )}
+            </div>
+          )}
+          <DataTable
+            label="Role records"
+            rows={visible}
+            columns={columns}
+            getRowId={(r) => r.id}
+            searchText={(r) => `${r.name} ${r.role}`}
+            searchPlaceholder="Search names and roles"
+            filters={[
+              { id: "published", label: "Published", predicate: (r) => r.published },
+              { id: "draft", label: "Drafts", predicate: (r) => !r.published },
+            ]}
+            onRowClick={setEditing}
+            toolbarAction={
+              <Button onClick={() => setShowNew(true)}>
+                <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+                {addLabel}
+              </Button>
+            }
+            emptyState={<EmptyState title={empty.title} message={empty.message} />}
+            minWidth={560}
+          />
+        </>
       )}
+
+      <EditDrawer open={showNew} onOpenChange={setShowNew} title={addTitle}>
+        {showNew && renderNewForm(() => setShowNew(false))}
+      </EditDrawer>
+
+      <EditDrawer
+        open={editing != null}
+        onOpenChange={(o) => !o && setEditing(null)}
+        title={editing ? <>Edit {rowLabel(editing)}</> : ""}
+        description={editing ? `${editing.name} · ${formatSeason(editing.season)}` : undefined}
+        footer={
+          editing ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              disabled={deletePending}
+              onClick={() => confirmDelete(editing)}
+            >
+              Delete
+            </Button>
+          ) : undefined
+        }
+      >
+        {editing && renderEditForm(editing, () => setEditing(null))}
+      </EditDrawer>
     </div>
   );
 }
