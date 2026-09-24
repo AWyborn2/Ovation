@@ -51,7 +51,11 @@ function stubApi(): Req[] {
 }
 
 const century = { kind: "century", playerName: "Sam Keeper", runs: 104 } as ShareCardInput;
-const signing = { kind: "newSigning", playerName: "Sample Player" } as ShareCardInput;
+const signing = {
+  kind: "newSigning",
+  playerFirstName: "Sam",
+  playerLastName: "Lee",
+} as ShareCardInput;
 
 function mount() {
   const requests = stubApi();
