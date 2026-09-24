@@ -1,6 +1,7 @@
-import { and, desc, eq, notInArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, notInArray, sql } from "drizzle-orm";
 import {
   db,
+  socialDraftsTable,
   cardTemplatesTable,
   captionTemplatesTable,
   socialSettingsTable,
@@ -189,6 +190,52 @@ export async function pickDraftPhoto(
     if (gradePhoto) return { url: objectUrl(gradePhoto.objectPath), source: "auto:library-grade" };
   }
   return null;
+}
+
+/**
+ * Give a photo to open drafts that never got one: a draft's photo is picked
+ * when it is created, so drafts made before the library had a match stayed
+ * empty for good. Only drafts with no photo AND no recorded choice are
+ * touched; an admin's pick, or an admin clearing the photo ("none"), is
+ * never overridden (KTD6). Returns how many drafts were filled.
+ */
+export async function fillMissingDraftPhotos(tenantId: number): Promise<number> {
+  const open = await db
+    .select()
+    .from(socialDraftsTable)
+    .where(
+      and(
+        eq(socialDraftsTable.tenantId, tenantId),
+        isNull(socialDraftsTable.photoUrl),
+        isNull(socialDraftsTable.photoSource),
+        eq(socialDraftsTable.sourceMatchIsJunior, false),
+        inArray(socialDraftsTable.status, ["awaiting_review", "ready"]),
+      ),
+    );
+  let filled = 0;
+  for (const d of open) {
+    const input = (d.cardInput ?? {}) as Record<string, unknown>;
+    const photo = await pickDraftPhoto(tenantId, {
+      playerId: playerIdFromAppPath(d.appPath),
+      grade: typeof input.grade === "string" ? input.grade : null,
+      junior: input.junior === true,
+    });
+    if (!photo) continue;
+    const updated = await db
+      .update(socialDraftsTable)
+      .set({ photoUrl: photo.url, photoSource: photo.source })
+      .where(
+        and(
+          eq(socialDraftsTable.id, d.id),
+          eq(socialDraftsTable.tenantId, tenantId),
+          isNull(socialDraftsTable.photoUrl),
+          isNull(socialDraftsTable.photoSource),
+        ),
+      )
+      .returning({ id: socialDraftsTable.id });
+    filled += updated.length;
+  }
+  return filled;
 }
 
 export async function enrichDraft(input: EnrichInput): Promise<DraftEnrichment> {

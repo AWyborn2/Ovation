@@ -89,7 +89,11 @@ export function TemplatesCard() {
     void ensureCardFontsLoaded();
   }, []);
   const templatesQ = useListCardTemplates();
-  const templates = templatesQ.data ?? [];
+  // Uploaded backgrounds only. Built-in design packs (and older layer designs)
+  // share this table but have no background image: listed here they showed
+  // as broken thumbnails with Set default / Edit / Delete that make no sense
+  // for a pack. Packs are managed on the Studio tab.
+  const templates = (templatesQ.data ?? []).filter((t) => t.source === "background");
   const invalidate = () => qc.invalidateQueries({ queryKey: getListCardTemplatesQueryKey() });
 
   const update = useUpdateCardTemplate({ mutation: { onSuccess: invalidate } });
