@@ -2,6 +2,7 @@ import { and, eq, like, ne, sql } from "drizzle-orm";
 import { db, socialDraftsTable, type SocialDraftRow } from "@workspace/db";
 import { normalizeDraftStatus } from "./draft-status";
 import { recordDraftRevision } from "./draft-revisions";
+import { enrichDraft, isAutoPhoto } from "./draft-enrich";
 
 /**
  * One draft per event (Social Studio automation, KTD3).
@@ -36,6 +37,10 @@ export type DraftUpsert = {
   sourceMatchIsJunior?: boolean;
   /** When the import behind this draft landed; defaults to now. */
   sourceImportedAt?: Date;
+  /** The player the card celebrates, for the photo pick (R5). */
+  playerId?: number | null;
+  /** The grade, for a grade photo when no player photo exists (R5). */
+  grade?: string | null;
   /**
    * Finds a pre-key draft for the same event (drafts created before source keys
    * existed). The match returned gets the key backfilled.
@@ -88,7 +93,19 @@ export async function upsertDraftByKey(input: DraftUpsert): Promise<DraftUpsertR
     }
   }
 
+  const enrichment = () =>
+    enrichDraft({
+      tenantId: input.tenantId,
+      engine: input.engine,
+      cardInput: input.cardInput,
+      appPath: input.appPath,
+      playerId: input.playerId,
+      grade: input.grade,
+      junior: input.sourceMatchIsJunior === true,
+    });
+
   if (!existing) {
+    const e = await enrichment();
     try {
       const [row] = await db
         .insert(socialDraftsTable)
@@ -106,6 +123,12 @@ export async function upsertDraftByKey(input: DraftUpsert): Promise<DraftUpsertR
           sourceMatchId: input.sourceMatchId ?? null,
           sourceMatchIsJunior: input.sourceMatchIsJunior ?? false,
           sourceImportedAt: input.sourceImportedAt ?? new Date(),
+          // Pack and caption resolve at creation (KTD8); the photo is a
+          // snapshot so library edits never change the draft (KTD6).
+          packId: e.packId,
+          caption: e.caption,
+          photoUrl: e.photoUrl,
+          photoSource: e.photoSource,
         })
         .returning();
       return { action: "inserted", draft: row };
@@ -131,11 +154,23 @@ export async function upsertDraftByKey(input: DraftUpsert): Promise<DraftUpsertR
   }
 
   const current = existing;
+  // A refresh keeps the draft's pack. It regenerates the caption only if no
+  // one has edited the draft, and re-picks the photo only if the current one
+  // was picked automatically (KTD6).
+  const e = await enrichment();
+  const refreshed = {
+    cardInput: input.cardInput,
+    appPath: input.appPath,
+    ...(current.editedAt == null ? { caption: e.caption } : {}),
+    ...(isAutoPhoto(current.photoSource)
+      ? { photoUrl: e.photoUrl, photoSource: e.photoSource }
+      : {}),
+  };
   const row = await db.transaction(async (tx) => {
     await recordDraftRevision(current, "refresh", tx);
     const [updated] = await tx
       .update(socialDraftsTable)
-      .set({ cardInput: input.cardInput, appPath: input.appPath })
+      .set(refreshed)
       .where(eq(socialDraftsTable.id, current.id))
       .returning();
     return updated;

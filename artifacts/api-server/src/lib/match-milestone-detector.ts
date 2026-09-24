@@ -377,6 +377,7 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
       sourceKey: d.sourceKey,
       cardInput: d.cardInput,
       appPath: `/players/${d.playerId}`,
+      playerId: d.playerId,
       milestoneEventId: event.id,
       sourceImportId: importId,
     });
@@ -398,6 +399,7 @@ async function upsertFeat(
     sourceKey,
     cardInput,
     appPath: `/players/${playerId}`,
+    playerId,
     sourceImportId: importId,
   });
 }

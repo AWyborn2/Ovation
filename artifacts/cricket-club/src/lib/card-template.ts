@@ -1,5 +1,10 @@
+import {
+  DEFAULT_BRAND,
+  findDefaultTemplateRow,
+  resolvePackIdForKind as sharedResolvePackIdForKind,
+  templateAppliesToKind as sharedTemplateAppliesToKind,
+} from "@workspace/scorecard";
 import type { CardTemplate, CardTemplateSlot } from "@workspace/api-client-react";
-import { DEFAULT_BRAND } from "@workspace/scorecard";
 import type { CardKind, ShareCardInput } from "./share-card";
 import { listPackManifests } from "./pack-templates/registry";
 
@@ -222,11 +227,12 @@ export const fieldLabel = (key: string): string => {
   return key;
 };
 
+// Shared with the API (auto-drafts resolve their pack at creation, KTD8):
+// `@workspace/scorecard` owns the rules, these keep the web's CardKind typing.
 export const templateAppliesToKind = (
   template: Pick<CardTemplate, "cardKinds" | "isActive">,
   kind: CardKind,
-): boolean =>
-  template.isActive && (template.cardKinds.length === 0 || template.cardKinds.includes(kind));
+): boolean => sharedTemplateAppliesToKind(template, kind);
 
 const isPackRow = (t: CardTemplate): boolean => t.source === "pack";
 
@@ -241,13 +247,7 @@ const findDefaultRow = (
   templates: readonly CardTemplate[] | undefined | null,
   kind: CardKind,
   matchesSource: (t: CardTemplate) => boolean,
-): CardTemplate | null => {
-  if (!templates?.length) return null;
-  const rows = templates.filter((t) => matchesSource(t) && templateAppliesToKind(t, kind));
-  return (
-    rows.find((t) => t.defaultForKinds?.includes(kind)) ?? rows.find((t) => t.isDefault) ?? null
-  );
-};
+): CardTemplate | null => findDefaultTemplateRow(templates, kind, matchesSource);
 
 /**
  * The design pack a tenant has chosen for `kind`, or `null` for the default.
@@ -264,7 +264,7 @@ const findDefaultRow = (
 export const resolvePackIdForKind = (
   templates: readonly CardTemplate[] | undefined | null,
   kind: CardKind,
-): string | null => findDefaultRow(templates, kind, isPackRow)?.packId ?? null;
+): string | null => sharedResolvePackIdForKind(templates, kind);
 
 /**
  * The design packs a tenant may choose for `kind` — the distinct `packId`s that

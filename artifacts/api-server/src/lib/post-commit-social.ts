@@ -151,6 +151,7 @@ async function queueCareerCrossings(
         threshold: c.threshold,
       },
       appPath: `/players/${c.playerId}`,
+      playerId: c.playerId,
       milestoneEventId: event.id,
       sourceImportId,
     });
