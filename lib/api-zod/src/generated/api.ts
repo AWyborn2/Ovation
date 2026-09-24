@@ -75,6 +75,54 @@ export const CreatePlayerBody = zod.object({
 
 
 /**
+ * Every club player's career batting and bowling against one opponent club, across all senior grades (junior grades and fill-ins are never included). Feeds the Compare selection helper. Identify the opponent with one of `opponentClubId` (the read path's own club id, as on `PlayerMatch.opponentClubId`), `opponentAppClubId` (the app clubs register id, as on `Fixture.opponentClubId`) or `opponentOrgId` (the PlayHQ organisation GUID, as on `PlayhqOpponent.orgId`); the server maps it into the read path's id space, trying them in that order. When the opponent can't be mapped the response carries `resolved: false` and empty lists, rather than a silent empty result.
+ * @summary The whole squad's career record against one opponent club
+ */
+export const getPlayersVsClubQueryMinInningsMin = 0;
+
+
+
+export const GetPlayersVsClubQueryParams = zod.object({
+  "opponentClubId": zod.coerce.number().optional().describe('Opponent club id in the read path\'s own id space (central club id on central tenants, app clubs register id otherwise).'),
+  "opponentAppClubId": zod.coerce.number().optional().describe('Opponent\'s app clubs register id (Fixture.opponentClubId).'),
+  "opponentOrgId": zod.coerce.string().optional().describe('Opponent\'s PlayHQ organisation GUID.'),
+  "minInnings": zod.coerce.number().min(getPlayersVsClubQueryMinInningsMin).optional().describe('Batting qualifier (innings against the club). Defaults to 3.')
+})
+
+export const GetPlayersVsClubResponse = zod.object({
+  "resolved": zod.boolean().describe('False when the opponent couldn\'t be mapped to a club on this read path; both lists are then empty.'),
+  "opponentClubId": zod.number().nullable().describe('The resolved opponent id in the read path\'s own id space; null when unresolved.'),
+  "opponentName": zod.string().nullable(),
+  "minInnings": zod.number(),
+  "batting": zod.array(zod.object({
+  "playerId": zod.number(),
+  "givenName": zod.string(),
+  "surname": zod.string(),
+  "matches": zod.number(),
+  "innings": zod.number(),
+  "notOuts": zod.number(),
+  "outs": zod.number(),
+  "runs": zod.number(),
+  "average": zod.number().nullable().describe('Runs per dismissal; null when never out.'),
+  "highScore": zod.number().nullable(),
+  "highScoreNotOut": zod.boolean()
+})).describe('Players with at least `minInnings` innings against the club, best average first.'),
+  "bowling": zod.array(zod.object({
+  "playerId": zod.number(),
+  "givenName": zod.string(),
+  "surname": zod.string(),
+  "matches": zod.number(),
+  "wickets": zod.number(),
+  "runsConceded": zod.number(),
+  "balls": zod.number().nullable().describe('Balls bowled over spells with recorded overs; null when none recorded.'),
+  "average": zod.number().nullable().describe('Runs per wicket; null with no wickets.'),
+  "bestWickets": zod.number().nullable().describe('Best single-innings figures, wickets part.'),
+  "bestRuns": zod.number().nullable().describe('Best single-innings figures, runs part.')
+})).describe('Players who bowled against the club, most wickets first, then lowest average.')
+})
+
+
+/**
  * @summary Get a player by ID
  */
 export const GetPlayerParams = zod.object({

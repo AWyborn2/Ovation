@@ -152,6 +152,58 @@ paths:
               schema:
                 $ref: "#/components/schemas/Player"
 
+  /players/vs-club:
+    get:
+      operationId: getPlayersVsClub
+      tags: [players]
+      summary: The whole squad's career record against one opponent club
+      description: >-
+        Every club player's career batting and bowling against one opponent
+        club, across all senior grades (junior grades and fill-ins are never
+        included). Feeds the Compare selection helper. Identify the opponent
+        with one of `opponentClubId` (the read path's own club id, as on
+        `PlayerMatch.opponentClubId`), `opponentAppClubId` (the app clubs
+        register id, as on `Fixture.opponentClubId`) or `opponentOrgId` (the
+        PlayHQ organisation GUID, as on `PlayhqOpponent.orgId`); the server maps
+        it into the read path's id space, trying them in that order. When the
+        opponent can't be mapped the response carries `resolved: false` and
+        empty lists, rather than a silent empty result.
+      parameters:
+        - name: opponentClubId
+          in: query
+          required: false
+          description: Opponent club id in the read path's own id space (central club id on central tenants, app clubs register id otherwise).
+          schema:
+            type: integer
+        - name: opponentAppClubId
+          in: query
+          required: false
+          description: Opponent's app clubs register id (Fixture.opponentClubId).
+          schema:
+            type: integer
+        - name: opponentOrgId
+          in: query
+          required: false
+          description: Opponent's PlayHQ organisation GUID.
+          schema:
+            type: string
+        - name: minInnings
+          in: query
+          required: false
+          description: Batting qualifier (innings against the club). Defaults to 3.
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        "200":
+          description: Squad record against the opponent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayersVsClub"
+        "400":
+          description: Invalid query (no opponent given)
+
   /players/{id}:
     get:
       operationId: getPlayer
@@ -6747,6 +6799,88 @@ components:
         stumpings:
           type: ["integer", "null"]
         runOuts:
+          type: ["integer", "null"]
+
+    PlayersVsClub:
+      type: object
+      required: [resolved, opponentClubId, opponentName, minInnings, batting, bowling]
+      properties:
+        resolved:
+          type: boolean
+          description: False when the opponent couldn't be mapped to a club on this read path; both lists are then empty.
+        opponentClubId:
+          description: The resolved opponent id in the read path's own id space; null when unresolved.
+          type: ["integer", "null"]
+        opponentName:
+          type: ["string", "null"]
+        minInnings:
+          type: integer
+        batting:
+          description: Players with at least `minInnings` innings against the club, best average first.
+          type: array
+          items:
+            $ref: "#/components/schemas/VsClubBatter"
+        bowling:
+          description: Players who bowled against the club, most wickets first, then lowest average.
+          type: array
+          items:
+            $ref: "#/components/schemas/VsClubBowler"
+
+    VsClubBatter:
+      type: object
+      required: [playerId, givenName, surname, matches, innings, notOuts, outs, runs, average, highScore, highScoreNotOut]
+      properties:
+        playerId:
+          type: integer
+        givenName:
+          type: string
+        surname:
+          type: string
+        matches:
+          type: integer
+        innings:
+          type: integer
+        notOuts:
+          type: integer
+        outs:
+          type: integer
+        runs:
+          type: integer
+        average:
+          description: Runs per dismissal; null when never out.
+          type: ["number", "null"]
+        highScore:
+          type: ["integer", "null"]
+        highScoreNotOut:
+          type: boolean
+
+    VsClubBowler:
+      type: object
+      required: [playerId, givenName, surname, matches, wickets, runsConceded, balls, average, bestWickets, bestRuns]
+      properties:
+        playerId:
+          type: integer
+        givenName:
+          type: string
+        surname:
+          type: string
+        matches:
+          type: integer
+        wickets:
+          type: integer
+        runsConceded:
+          type: integer
+        balls:
+          description: Balls bowled over spells with recorded overs; null when none recorded.
+          type: ["integer", "null"]
+        average:
+          description: Runs per wicket; null with no wickets.
+          type: ["number", "null"]
+        bestWickets:
+          description: Best single-innings figures, wickets part.
+          type: ["integer", "null"]
+        bestRuns:
+          description: Best single-innings figures, runs part.
           type: ["integer", "null"]
 
     GradeDistribution:
