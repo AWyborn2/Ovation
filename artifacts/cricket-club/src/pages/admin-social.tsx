@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   useGetSocialSettings,
   useListSponsors,
@@ -18,14 +19,27 @@ import {
   SponsorsCard,
   CaptionTemplatesCard,
 } from "@/components/admin-social";
+import { AutomationCard } from "@/components/social-queue/automation-card";
+import { AutoPostCard } from "@/components/social-queue/auto-post-card";
 
-/** Social Media Studio settings: one card per concern under `components/admin-social/`. */
+/**
+ * Social Media Studio "Cards" tab: which cards draft themselves and auto-post
+ * first, then one card per concern under `components/admin-social/`.
+ */
 export default function AdminSocial() {
   const qc = useQueryClient();
   const bundle = useGetSocialSettings();
   const sponsorsQ = useListSponsors();
   const themesQ = useListCardThemes();
   const audioTracksQ = useListCardAudioTracks();
+  const loaded = !!bundle.data;
+
+  // The queue links here as /admin/social/cards#automation; the card only
+  // exists once settings load, so scroll to the hash then.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (loaded && id) document.getElementById(id)?.scrollIntoView?.({ block: "start" });
+  }, [loaded]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: getGetSocialSettingsQueryKey() });
@@ -44,7 +58,8 @@ export default function AdminSocial() {
     <div className="space-y-6">
       <div>
         <p className="max-w-[75ch] text-[15px] text-muted-foreground">
-          Branded share-card factory for Instagram, Facebook, TikTok and X.
+          Which cards draft themselves, how they post, and the themes, sponsors and captions they
+          use.
         </p>
       </div>
 
@@ -54,6 +69,8 @@ export default function AdminSocial() {
         <LoadingState label="Loading social settings…" />
       ) : bundle.data ? (
         <>
+          <AutomationCard config={bundle.data.settings.familyConfig} />
+          <AutoPostCard settings={bundle.data.settings} />
           <SettingsCard settings={bundle.data.settings} onSaved={invalidate} />
           <ThemesCard themes={themesQ.data ?? []} onChanged={invalidateThemes} />
           <AudioTracksCard tracks={audioTracksQ.data ?? []} onChanged={invalidateAudioTracks} />

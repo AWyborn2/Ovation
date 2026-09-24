@@ -8,13 +8,14 @@ import {
   getListCaptainsQueryKey,
   type Captain,
 } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
+import { DataTable, EditDrawer, StatusPill, type DataTableColumn } from "@/components/admin-ui";
+import { Plus } from "lucide-react";
 
 const GRADES = [
   "A Grade",
@@ -59,20 +60,60 @@ export default function AdminCaptains() {
   };
 
   const sorted = [...(captains ?? [])].sort((a, b) => a.username.localeCompare(b.username));
+  const editing = sorted.find((c) => c.id === editingId) ?? null;
+
+  const remove = async (captain: Captain) => {
+    if (
+      !(await confirm({
+        title: "Delete captain",
+        description: `Delete captain "${captain.displayName}"?`,
+        confirmText: "Delete",
+        destructive: true,
+      }))
+    )
+      return;
+    setError(null);
+    deleteCaptain.mutate(
+      { id: captain.id },
+      {
+        onSuccess: () => {
+          setEditingId(null);
+          invalidate();
+        },
+        onError: onMutationError,
+      },
+    );
+  };
+
+  const columns: DataTableColumn<Captain>[] = [
+    {
+      key: "name",
+      header: "Captain",
+      cell: (c) => <span className="font-semibold">{c.displayName}</span>,
+    },
+    {
+      key: "username",
+      header: "Username",
+      cell: (c) => <span className="text-muted-foreground">@{c.username}</span>,
+    },
+    {
+      key: "grades",
+      header: "Grades",
+      cell: (c) =>
+        c.grades.length > 0 ? (
+          c.grades.join(", ")
+        ) : (
+          <StatusPill tone="attention">No grades</StatusPill>
+        ),
+    },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="max-w-[75ch] text-[15px] text-muted-foreground">
-            Create grade captain logins and grant each one the grades they vote for. Captains sign
-            in at <code>/captain</code> to submit their 3-2-1 votes each round.
-          </p>
-        </div>
-        <Button onClick={() => setShowNew((v) => !v)} variant={showNew ? "outline" : "default"}>
-          {showNew ? "Close form" : "New captain"}
-        </Button>
-      </div>
+    <div className="space-y-5">
+      <p className="max-w-[75ch] text-[15px] text-muted-foreground">
+        Create grade captain logins and grant each one the grades they vote for. Captains sign in at{" "}
+        <code>/captain</code> to submit their 3-2-1 votes each round.
+      </p>
 
       {error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -80,104 +121,90 @@ export default function AdminCaptains() {
         </div>
       )}
 
-      {showNew && (
-        <Card>
-          <CardHeader>
-            <CardTitle>New captain</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CaptainForm
-              initial={{ username: "", displayName: "", password: "", grades: [] }}
-              requirePassword
-              pending={createCaptain.isPending}
-              onSubmit={(values) => {
-                setError(null);
-                createCaptain.mutate(
-                  { data: values },
-                  {
-                    onSuccess: () => {
-                      setShowNew(false);
-                      invalidate();
-                    },
-                    onError: onMutationError,
-                  },
-                );
-              }}
-              onCancel={() => setShowNew(false)}
-              submitLabel="Create captain"
-            />
-          </CardContent>
-        </Card>
-      )}
-
       {isError ? (
         <QueryError onRetry={() => refetch()} />
       ) : isLoading ? (
         <ListSkeleton />
-      ) : sorted.length === 0 ? (
-        <EmptyState
-          title="No captains yet"
-          message="Create a captain login to let them submit votes."
-        />
       ) : (
-        sorted.map((captain) => (
-          <Card key={captain.id}>
-            <CardHeader className="flex flex-row items-start justify-between gap-4">
-              <div className="min-w-0">
-                <CardTitle className="text-[22px] leading-none">{captain.displayName}</CardTitle>
-                <div className="text-xs text-muted-foreground mt-1">
-                  @{captain.username} ·{" "}
-                  {captain.grades.length > 0 ? captain.grades.join(", ") : "no grades assigned"}
-                </div>
-              </div>
-              <div className="space-x-2 shrink-0">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setEditingId(editingId === captain.id ? null : captain.id)}
-                >
-                  {editingId === captain.id ? "Close" : "Edit"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={deleteCaptain.isPending}
-                  onClick={async () => {
-                    if (
-                      !(await confirm({
-                        title: "Delete captain",
-                        description: `Delete captain "${captain.displayName}"?`,
-                        confirmText: "Delete",
-                        destructive: true,
-                      }))
-                    )
-                      return;
-                    setError(null);
-                    deleteCaptain.mutate(
-                      { id: captain.id },
-                      { onSuccess: invalidate, onError: onMutationError },
-                    );
-                  }}
-                >
-                  Delete
-                </Button>
-              </div>
-            </CardHeader>
-            {editingId === captain.id && (
-              <CardContent>
-                <EditCaptain
-                  captain={captain}
-                  onError={onMutationError}
-                  onSaved={() => {
-                    setEditingId(null);
-                    invalidate();
-                  }}
-                />
-              </CardContent>
-            )}
-          </Card>
-        ))
+        <DataTable
+          label="Captains"
+          rows={sorted}
+          columns={columns}
+          getRowId={(c) => c.id}
+          searchText={(c) => `${c.displayName} ${c.username} ${c.grades.join(" ")}`}
+          searchPlaceholder="Search captains"
+          onRowClick={(c) => setEditingId(c.id)}
+          toolbarAction={
+            <Button onClick={() => setShowNew(true)}>
+              <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+              New captain
+            </Button>
+          }
+          emptyState={
+            <EmptyState
+              title="No captains yet"
+              message="Create a captain login to let them submit votes."
+            />
+          }
+          minWidth={560}
+        />
       )}
+
+      <EditDrawer open={showNew} onOpenChange={setShowNew} title="New captain">
+        {showNew && (
+          <CaptainForm
+            initial={{ username: "", displayName: "", password: "", grades: [] }}
+            requirePassword
+            pending={createCaptain.isPending}
+            onSubmit={(values) => {
+              setError(null);
+              createCaptain.mutate(
+                { data: values },
+                {
+                  onSuccess: () => {
+                    setShowNew(false);
+                    invalidate();
+                  },
+                  onError: onMutationError,
+                },
+              );
+            }}
+            onCancel={() => setShowNew(false)}
+            submitLabel="Create captain"
+          />
+        )}
+      </EditDrawer>
+
+      <EditDrawer
+        open={editing != null}
+        onOpenChange={(o) => !o && setEditingId(null)}
+        title={editing ? `Edit ${editing.displayName}` : ""}
+        description={editing ? `@${editing.username}` : undefined}
+        footer={
+          editing ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              disabled={deleteCaptain.isPending}
+              onClick={() => remove(editing)}
+            >
+              Delete
+            </Button>
+          ) : undefined
+        }
+      >
+        {editing && (
+          <EditCaptain
+            captain={editing}
+            onError={onMutationError}
+            onSaved={() => {
+              setEditingId(null);
+              invalidate();
+            }}
+          />
+        )}
+      </EditDrawer>
     </div>
   );
 }
@@ -261,7 +288,7 @@ function CaptainForm({
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Username</Label>
           <Input
@@ -297,7 +324,7 @@ function CaptainForm({
 
       <div className="space-y-2">
         <Label>Grades this captain votes for</Label>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {GRADES.map((g) => (
             <label key={g} className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={grades.includes(g)} onChange={() => toggleGrade(g)} />
