@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { MatchStage } from './matchStage';
+import type { PlayerInnings } from './playerInnings';
 
 export interface PlayerMatchLine {
   matchId: number;
@@ -54,4 +55,21 @@ export interface PlayerMatchLine {
   catches: number;
   stumpings: number;
   runOuts: number;
+  /** The player's played innings in this match, in innings order ("did not bat" excluded). Two-innings matches have two entries; the row-level runs/balls/notOut/dismissal fields above stay the collapsed per-match view. Empty when the player did not bat. */
+  innings: PlayerInnings[];
+  /**
+     * True when the club was the home side. Null where home/away isn't recorded (the native read path).
+     * @nullable
+     */
+  isHome: boolean | null;
+  /**
+     * True when the player's club batted first, false when second, null when unknown.
+     * @nullable
+     */
+  battedFirst: boolean | null;
+  /**
+     * The opposition club, in the read path's own id space: the app clubs register on native tenants, central `clubs.club_id` on central-read tenants. Null when the opponent isn't resolved to a club.
+     * @nullable
+     */
+  opponentClubId: number | null;
 }

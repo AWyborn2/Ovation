@@ -204,7 +204,10 @@ export const GetPlayerSeasonsResponseItem = zod.object({
   "fiveWickets": zod.number().nullish(),
   "catches": zod.number().nullish(),
   "stumpings": zod.number().nullish(),
-  "runOuts": zod.number().nullish()
+  "runOuts": zod.number().nullish(),
+  "ballsFaced": zod.number().nullable().describe('Balls faced in the (grade, season), summed from scorecard lines. Null for the baseline row and wherever no scorecard lines exist (unknown, not zero).'),
+  "ballsBowled": zod.number().nullable().describe('Balls bowled (overs converted at 6 balls per over) from scorecard lines. Null for the baseline row and where not recorded.'),
+  "maidens": zod.number().nullable().describe('Maidens from scorecard lines. Null for the baseline row and where not recorded.')
 })
 export const GetPlayerSeasonsResponse = zod.array(GetPlayerSeasonsResponseItem)
 
@@ -243,7 +246,18 @@ export const GetPlayerMatchesResponseItem = zod.object({
   "noBalls": zod.number().nullish(),
   "catches": zod.number(),
   "stumpings": zod.number(),
-  "runOuts": zod.number()
+  "runOuts": zod.number(),
+  "innings": zod.array(zod.object({
+  "runs": zod.number().nullable(),
+  "balls": zod.number().nullable(),
+  "notOut": zod.boolean(),
+  "dismissalType": zod.enum(['caught', 'bowled', 'lbw', 'runOut', 'stumped', 'notOut', 'retired', 'other']).describe('How an innings ended. Caught includes caught-and-bowled; \"other\" covers hit wicket, obstruction, absent and unrecognised text.'),
+  "dismissedBy": zod.string().nullable().describe('The dismissing bowler\'s surname, normalised (lower-case, initials dropped), parsed from the scorecard text. Null for run outs, not outs and blank or masked names. Not an id — neither read path stores the bowler\'s identity.'),
+  "battingPos": zod.number().nullable()
+})).describe('The player\'s played innings in this match, in innings order (\"did not bat\" excluded). Two-innings matches have two entries; the row-level runs\/balls\/notOut\/dismissal fields above stay the collapsed per-match view. Empty when the player did not bat.'),
+  "isHome": zod.boolean().nullable().describe('True when the club was the home side. Null where home\/away isn\'t recorded (the native read path).'),
+  "battedFirst": zod.boolean().nullable().describe('True when the player\'s club batted first, false when second, null when unknown.'),
+  "opponentClubId": zod.number().nullable().describe('The opposition club, in the read path\'s own id space: the app clubs register on native tenants, central `clubs.club_id` on central-read tenants. Null when the opponent isn\'t resolved to a club.')
 })
 export const GetPlayerMatchesResponse = zod.array(GetPlayerMatchesResponseItem)
 
@@ -1659,8 +1673,19 @@ export const UndoSeasonResponse = zod.object({
 
 
 /**
+ * Without parameters: the club's all-time records across every grade,
+exactly as before. With `grade` and/or a season span, every record is
+restricted to that grade and span (junior grades and fill-ins are
+never counted). A span excludes the pre-scorecard baseline rows.
+
  * @summary Club all-time records
  */
+export const GetRecordsQueryParams = zod.object({
+  "grade": zod.coerce.string().optional().describe('Restrict to one senior grade (app grade label, e.g. \"A Grade\").'),
+  "fromSeason": zod.coerce.number().optional().describe('First season (start year, e.g. 2019 for 2019\/20), inclusive.'),
+  "toSeason": zod.coerce.number().optional().describe('Last season (start year), inclusive.')
+})
+
 export const GetRecordsResponse = zod.object({
   "mostGames": zod.object({
   "playerId": zod.number(),
@@ -1752,6 +1777,70 @@ export const GetRecordsResponse = zod.object({
   "value": zod.number(),
   "grades": zod.array(zod.string()).describe('Grades this player has appeared in, ordered by seniority.')
 })
+})
+
+
+/**
+ * Players ranked by a counting metric (runs, wickets, catches, hundreds
+or games) over an optional grade and season span. Ties share a rank.
+Each row carries the player's last senior season at the club (any
+grade), which drives the "still playing" marker. Fill-ins, junior
+grades and private central players are excluded.
+
+ * @summary Career leaders for one record metric
+ */
+export const getRecordLeadersQueryLimitMax = 100;
+
+
+
+export const GetRecordLeadersQueryParams = zod.object({
+  "metric": zod.enum(['runs', 'wickets', 'catches', 'hundreds', 'games']),
+  "grade": zod.coerce.string().optional().describe('Restrict to one senior grade (app grade label, e.g. \"A Grade\").'),
+  "fromSeason": zod.coerce.number().optional().describe('First season (start year, e.g. 2019 for 2019\/20), inclusive.'),
+  "toSeason": zod.coerce.number().optional().describe('Last season (start year), inclusive.'),
+  "limit": zod.coerce.number().min(1).max(getRecordLeadersQueryLimitMax).optional().describe('Maximum rows to return (default 10).')
+})
+
+export const GetRecordLeadersResponse = zod.object({
+  "metric": zod.enum(['runs', 'wickets', 'catches', 'hundreds', 'games']),
+  "entries": zod.array(zod.object({
+  "rank": zod.number().describe('Competition rank (ties share a rank, e.g. 1, 2, 2, 4).'),
+  "playerId": zod.number(),
+  "givenName": zod.string(),
+  "surname": zod.string(),
+  "value": zod.number(),
+  "lastSeason": zod.number().nullable().describe('The player\'s last senior season at the club (start year, any grade). Null when only pre-scorecard baseline totals exist.')
+}))
+})
+
+
+/**
+ * Every time the club's highest score (or best bowling) was broken,
+oldest first, from dated match rows and season rows. A tie doesn't
+break the record. When an undated career record beats every dated
+row, it is appended as a final point with `dated: false`, so the
+series always ends at the record card's value for the same grade.
+
+ * @summary How a single-innings record was broken over time
+ */
+export const GetRecordProgressionQueryParams = zod.object({
+  "kind": zod.enum(['highScore', 'bestBowling']),
+  "grade": zod.coerce.string().optional().describe('Restrict to one senior grade (app grade label, e.g. \"A Grade\").')
+})
+
+export const GetRecordProgressionResponse = zod.object({
+  "kind": zod.enum(['highScore', 'bestBowling']),
+  "points": zod.array(zod.object({
+  "playerId": zod.number(),
+  "givenName": zod.string(),
+  "surname": zod.string(),
+  "grade": zod.string().nullable(),
+  "season": zod.number().nullable().describe('Season start year; null for an undated career record.'),
+  "matchId": zod.number().nullable().describe('The match the record was set in, when known.'),
+  "matchDate": zod.string().nullable(),
+  "value": zod.string().describe('Display value, e.g. \"145\*\" or \"7\/23\".'),
+  "dated": zod.boolean().describe('False for the undated curated record appended as the final point.')
+})).describe('Each time the record was broken, oldest first.')
 })
 
 

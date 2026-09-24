@@ -111,6 +111,9 @@ import type {
   GetGradeLeaderboardParams,
   GetJuniorSeasonTopPerformersParams,
   GetKioskDisplayParams,
+  GetRecordLeadersParams,
+  GetRecordProgressionParams,
+  GetRecordsParams,
   GetSeniorSeasonTopPerformersParams,
   GetSocialClubSeasonTotalsParams,
   GetSocialLadderPrefillParams,
@@ -229,6 +232,8 @@ import type {
   PutTeamListBody,
   ReadinessStatus,
   RecapInput,
+  RecordLeaders,
+  RecordProgression,
   RecordsDisplaySettings,
   RecordsDisplaySettingsUpdate,
   RecordsLeaderboards,
@@ -3252,20 +3257,32 @@ export const useUndoSeason = <TError = ErrorType<void>,
       return useMutation(getUndoSeasonMutationOptions(options));
     }
 
-export const getGetRecordsUrl = () => {
+export const getGetRecordsUrl = (params?: GetRecordsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/records`
+  return stringifiedParams.length > 0 ? `/api/records?${stringifiedParams}` : `/api/records`
 }
 
 /**
+ * Without parameters: the club's all-time records across every grade,
+exactly as before. With `grade` and/or a season span, every record is
+restricted to that grade and span (junior grades and fill-ins are
+never counted). A span excludes the pre-scorecard baseline rows.
+
  * @summary Club all-time records
  */
-export const getRecords = async ( options?: RequestInit): Promise<ClubRecords> => {
+export const getRecords = async (params?: GetRecordsParams, options?: RequestInit): Promise<ClubRecords> => {
 
-  return customFetch<ClubRecords>(getGetRecordsUrl(),
+  return customFetch<ClubRecords>(getGetRecordsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -3278,23 +3295,23 @@ export const getRecords = async ( options?: RequestInit): Promise<ClubRecords> =
 
 
 
-export const getGetRecordsQueryKey = () => {
+export const getGetRecordsQueryKey = (params?: GetRecordsParams,) => {
     return [
-    `/api/records`
+    `/api/records`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetRecordsQueryOptions = <TData = Awaited<ReturnType<typeof getRecords>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetRecordsQueryOptions = <TData = Awaited<ReturnType<typeof getRecords>>, TError = ErrorType<void>>(params?: GetRecordsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetRecordsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetRecordsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRecords>>> = ({ signal }) => getRecords({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRecords>>> = ({ signal }) => getRecords(params, { signal, ...requestOptions });
 
 
 
@@ -3304,19 +3321,199 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type GetRecordsQueryResult = NonNullable<Awaited<ReturnType<typeof getRecords>>>
-export type GetRecordsQueryError = ErrorType<unknown>
+export type GetRecordsQueryError = ErrorType<void>
 
 
 /**
  * @summary Club all-time records
  */
 
-export function useGetRecords<TData = Awaited<ReturnType<typeof getRecords>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export function useGetRecords<TData = Awaited<ReturnType<typeof getRecords>>, TError = ErrorType<void>>(
+ params?: GetRecordsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecords>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetRecordsQueryOptions(options)
+  const queryOptions = getGetRecordsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRecordLeadersUrl = (params: GetRecordLeadersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/records/leaders?${stringifiedParams}` : `/api/records/leaders`
+}
+
+/**
+ * Players ranked by a counting metric (runs, wickets, catches, hundreds
+or games) over an optional grade and season span. Ties share a rank.
+Each row carries the player's last senior season at the club (any
+grade), which drives the "still playing" marker. Fill-ins, junior
+grades and private central players are excluded.
+
+ * @summary Career leaders for one record metric
+ */
+export const getRecordLeaders = async (params: GetRecordLeadersParams, options?: RequestInit): Promise<RecordLeaders> => {
+
+  return customFetch<RecordLeaders>(getGetRecordLeadersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRecordLeadersQueryKey = (params?: GetRecordLeadersParams,) => {
+    return [
+    `/api/records/leaders`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRecordLeadersQueryOptions = <TData = Awaited<ReturnType<typeof getRecordLeaders>>, TError = ErrorType<void>>(params: GetRecordLeadersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecordLeaders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRecordLeadersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRecordLeaders>>> = ({ signal }) => getRecordLeaders(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRecordLeaders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRecordLeadersQueryResult = NonNullable<Awaited<ReturnType<typeof getRecordLeaders>>>
+export type GetRecordLeadersQueryError = ErrorType<void>
+
+
+/**
+ * @summary Career leaders for one record metric
+ */
+
+export function useGetRecordLeaders<TData = Awaited<ReturnType<typeof getRecordLeaders>>, TError = ErrorType<void>>(
+ params: GetRecordLeadersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecordLeaders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRecordLeadersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRecordProgressionUrl = (params: GetRecordProgressionParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/records/progression?${stringifiedParams}` : `/api/records/progression`
+}
+
+/**
+ * Every time the club's highest score (or best bowling) was broken,
+oldest first, from dated match rows and season rows. A tie doesn't
+break the record. When an undated career record beats every dated
+row, it is appended as a final point with `dated: false`, so the
+series always ends at the record card's value for the same grade.
+
+ * @summary How a single-innings record was broken over time
+ */
+export const getRecordProgression = async (params: GetRecordProgressionParams, options?: RequestInit): Promise<RecordProgression> => {
+
+  return customFetch<RecordProgression>(getGetRecordProgressionUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRecordProgressionQueryKey = (params?: GetRecordProgressionParams,) => {
+    return [
+    `/api/records/progression`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRecordProgressionQueryOptions = <TData = Awaited<ReturnType<typeof getRecordProgression>>, TError = ErrorType<void>>(params: GetRecordProgressionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecordProgression>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRecordProgressionQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRecordProgression>>> = ({ signal }) => getRecordProgression(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRecordProgression>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRecordProgressionQueryResult = NonNullable<Awaited<ReturnType<typeof getRecordProgression>>>
+export type GetRecordProgressionQueryError = ErrorType<void>
+
+
+/**
+ * @summary How a single-innings record was broken over time
+ */
+
+export function useGetRecordProgression<TData = Awaited<ReturnType<typeof getRecordProgression>>, TError = ErrorType<void>>(
+ params: GetRecordProgressionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecordProgression>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRecordProgressionQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

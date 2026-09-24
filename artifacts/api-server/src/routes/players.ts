@@ -37,6 +37,8 @@ import { recomputeAggregates } from "../lib/recompute";
 import { dataSource } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
 import { splitCentralName, getPlayerOrderCol, centralParticipantFor } from "../lib/player-helpers";
+import { classifyDismissal } from "../lib/dismissal-parse";
+import { oversToBalls } from "@workspace/scorecard";
 
 const router: IRouter = Router();
 
@@ -469,7 +471,49 @@ router.get("/players/:id/seasons", async (req, res): Promise<void> => {
     ORDER BY s.grade ASC, s.season ASC NULLS FIRST
   `);
 
-  res.json(rows.rows);
+  // Balls faced / bowled and maidens aren't in the snapshot table, so they come
+  // from the per-match lines, per (grade, season). Baseline rows (season null)
+  // and seasons with no scorecard lines stay null — unknown, not zero. Overs
+  // are ball-notation text ("4.3"), converted per line before summing.
+  const lines = await db
+    .select({
+      grade: matchesTable.grade,
+      season: matchesTable.season,
+      batted: matchPlayerLinesTable.batted,
+      balls: matchPlayerLinesTable.balls,
+      bowled: matchPlayerLinesTable.bowled,
+      overs: matchPlayerLinesTable.overs,
+      maidens: matchPlayerLinesTable.maidens,
+    })
+    .from(matchPlayerLinesTable)
+    .innerJoin(matchesTable, eq(matchesTable.id, matchPlayerLinesTable.matchId))
+    .where(eq(matchPlayerLinesTable.playerId, params.data.id));
+  type Extra = { ballsFaced: number | null; ballsBowled: number | null; maidens: number | null };
+  const extras = new Map<string, Extra>();
+  const add = (cur: number | null, v: number | null): number | null =>
+    v == null ? cur : (cur ?? 0) + v;
+  for (const l of lines) {
+    const key = `${l.grade}|${l.season}`;
+    const e = extras.get(key) ?? { ballsFaced: null, ballsBowled: null, maidens: null };
+    if (l.batted) e.ballsFaced = add(e.ballsFaced, l.balls);
+    if (l.bowled) {
+      e.ballsBowled = add(e.ballsBowled, oversToBalls(l.overs));
+      e.maidens = add(e.maidens, l.maidens);
+    }
+    extras.set(key, e);
+  }
+
+  res.json(
+    (rows.rows as { grade: string; season: number | null }[]).map((r) => {
+      const e = r.season == null ? undefined : extras.get(`${r.grade}|${r.season}`);
+      return {
+        ...r,
+        ballsFaced: e?.ballsFaced ?? null,
+        ballsBowled: e?.ballsBowled ?? null,
+        maidens: e?.maidens ?? null,
+      };
+    }),
+  );
 });
 
 router.get("/players/:id/matches", async (req, res): Promise<void> => {
@@ -487,7 +531,23 @@ router.get("/players/:id/matches", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Player not found" });
       return;
     }
-    res.json(await centralPlayerMatchLog(source.clubId, participantId));
+    const log = await centralPlayerMatchLog(source.clubId, participantId);
+    res.json(
+      log.map(({ inningsLines, ...row }) => ({
+        ...row,
+        innings: inningsLines.map((l) => ({
+          runs: l.runs,
+          balls: l.balls,
+          notOut: l.notOut,
+          ...classifyDismissal({
+            text: l.dismissal,
+            notOut: l.notOut,
+            centralType: l.dismissalType,
+          }),
+          battingPos: l.battingPos,
+        })),
+      })),
+    );
     return;
   }
 
@@ -520,13 +580,35 @@ router.get("/players/:id/matches", async (req, res): Promise<void> => {
       catches: matchPlayerLinesTable.catches,
       stumpings: matchPlayerLinesTable.stumpings,
       runOuts: matchPlayerLinesTable.runOuts,
+      battedFirst: matchesTable.hhccBattedFirst,
+      opponentClubId: matchesTable.opponentClubId,
     })
     .from(matchPlayerLinesTable)
     .innerJoin(matchesTable, eq(matchesTable.id, matchPlayerLinesTable.matchId))
     .where(eq(matchPlayerLinesTable.playerId, params.data.id))
     .orderBy(desc(matchesTable.season), desc(matchesTable.round));
 
-  res.json(rows);
+  // Native keeps one line per match, so a match has at most one innings. The
+  // club's own matches table has no home/away, so isHome is unknown (null);
+  // batted-first is the backfilled innings order; opponentClubId is the app
+  // clubs register id.
+  res.json(
+    rows.map((r) => ({
+      ...r,
+      isHome: null,
+      innings: r.batted
+        ? [
+            {
+              runs: r.runs,
+              balls: r.balls,
+              notOut: r.notOut,
+              ...classifyDismissal({ text: r.dismissal, notOut: r.notOut }),
+              battingPos: r.battingPos,
+            },
+          ]
+        : [],
+    })),
+  );
 });
 
 router.patch("/players/:id", requireAdmin, async (req, res): Promise<void> => {
