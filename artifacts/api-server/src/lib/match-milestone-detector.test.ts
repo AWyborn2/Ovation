@@ -103,6 +103,9 @@ vi.mock("./draft-enrich", () => ({
   enrichDraft: async () => ({ packId: null, caption: "", photoUrl: null, photoSource: null }),
   isAutoPhoto: () => true,
 }));
+vi.mock("./effective-draft-state", () => ({
+  autoReadyAtFor: async (_tenantId: number, importedAt: Date) => importedAt,
+}));
 
 import {
   detectAndQueueMatchMilestones,

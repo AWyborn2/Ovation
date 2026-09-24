@@ -41,3 +41,4 @@ export * from "./player_curation";
 export * from "./platform_settings";
 export * from "./provisioning_exclusions";
 export * from "./club_photos";
+export * from "./notifications";

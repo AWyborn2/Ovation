@@ -23,6 +23,7 @@ import {
   generateJuniorMatchSummaryDrafts,
 } from "../lib/match-summary-drafter";
 import { getTenantId } from "../middlewares/tenant-context";
+import { effectiveDraftStatus, loadAutoPost, type AutoPost } from "../lib/effective-draft-state";
 import {
   isDraftStatus,
   normalizeDraftStatus,
@@ -40,9 +41,17 @@ const router: IRouter = Router();
 const randomSlug = (): string =>
   Math.random().toString(36).slice(2, 8) + Math.random().toString(36).slice(2, 6);
 
-/** A draft row as the API returns it: legacy status values mapped to new names. */
-function presentDraft<T extends { status: string }>(row: T): T & { status: DraftStatus } {
-  return { ...row, status: normalizeDraftStatus(row.status) };
+/**
+ * A draft row as the API returns it: legacy status values mapped to new names,
+ * and — while auto-post is on — a draft past its deadline reads as ready even
+ * before the sweep stores it (KTD4).
+ */
+function presentDraft<T extends { status: string; autoReadyAt: Date | null }>(
+  row: T,
+  autoPost: AutoPost = { enabled: false },
+  now: Date = new Date(),
+): T & { status: DraftStatus } {
+  return { ...row, status: effectiveDraftStatus(row, autoPost, now) };
 }
 
 function parseId(raw: unknown): number | null {
@@ -59,14 +68,12 @@ async function loadDraft(tenantId: number, id: number) {
 }
 
 router.get("/social-drafts", requireAdmin, async (req, res): Promise<void> => {
-  const conditions: SQL[] = [eq(socialDraftsTable.tenantId, getTenantId(req))];
+  const tenantId = getTenantId(req);
+  const conditions: SQL[] = [eq(socialDraftsTable.tenantId, tenantId)];
   const status = req.query.status;
-  if (status !== undefined) {
-    if (!isDraftStatus(status)) {
-      res.status(400).json({ error: "Invalid status" });
-      return;
-    }
-    conditions.push(inArray(socialDraftsTable.status, storedValuesFor(status)));
+  if (status !== undefined && !isDraftStatus(status)) {
+    res.status(400).json({ error: "Invalid status" });
+    return;
   }
   if (typeof req.query.family === "string" && req.query.family) {
     conditions.push(eq(socialDraftsTable.family, req.query.family));
@@ -79,19 +86,29 @@ router.get("/social-drafts", requireAdmin, async (req, res): Promise<void> => {
     .from(socialDraftsTable)
     .where(and(...conditions))
     .orderBy(desc(socialDraftsTable.createdAt));
-  res.json(rows.map(presentDraft));
+  // Status filters on the effective state, so it's applied after presenting.
+  const autoPost = await loadAutoPost(tenantId);
+  const now = new Date();
+  const drafts = rows.map((r) => presentDraft(r, autoPost, now));
+  res.json(status === undefined ? drafts : drafts.filter((d) => d.status === status));
 });
 
 router.get("/social-drafts/pending-count", requireAdmin, async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
+  const conditions: SQL[] = [
+    eq(socialDraftsTable.tenantId, tenantId),
+    inArray(socialDraftsTable.status, storedValuesFor("awaiting_review")),
+  ];
+  // Drafts past their deadline already read as ready while auto-post is on.
+  if ((await loadAutoPost(tenantId)).enabled) {
+    conditions.push(
+      sql`(${socialDraftsTable.autoReadyAt} IS NULL OR ${socialDraftsTable.autoReadyAt} > now())`,
+    );
+  }
   const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(socialDraftsTable)
-    .where(
-      and(
-        eq(socialDraftsTable.tenantId, getTenantId(req)),
-        inArray(socialDraftsTable.status, storedValuesFor("awaiting_review")),
-      ),
-    );
+    .where(and(...conditions));
   res.json({ count: Number(row?.count ?? 0) });
 });
 
@@ -154,7 +171,7 @@ router.post(
       res.status(404).json({ error: "Not found" });
       return;
     }
-    if (normalizeDraftStatus(draft.status) !== "ready") {
+    if (effectiveDraftStatus(draft, await loadAutoPost(tenantId)) !== "ready") {
       res.status(409).json({ error: "Only a ready draft can be sent back" });
       return;
     }

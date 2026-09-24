@@ -36,5 +36,14 @@ export interface SocialSettings {
      * @nullable
      */
   lastSweepAt?: Date | null;
+  /** When on, auto-drafts still awaiting review at their deadline become ready. */
+  autoPostEnabled?: boolean;
+  /** Hours after a draft's own import before it becomes ready. */
+  autoPostWindowHours?: number;
+  /**
+     * Where draft notifications are emailed. Null = in-app only.
+     * @nullable
+     */
+  notificationEmail?: string | null;
   familyConfig?: SocialFamilyConfig;
 }

@@ -3486,7 +3486,33 @@ export interface SocialSettings {
      * @nullable
      */
   lastSweepAt?: string | null;
+  /** When on, auto-drafts still awaiting review at their deadline become ready. */
+  autoPostEnabled?: boolean;
+  /** Hours after a draft's own import before it becomes ready. */
+  autoPostWindowHours?: number;
+  /**
+     * Where draft notifications are emailed. Null = in-app only.
+     * @nullable
+     */
+  notificationEmail?: string | null;
   familyConfig?: SocialFamilyConfig;
+}
+
+export interface Notification {
+  id: number;
+  kind: string;
+  title: string;
+  body: string;
+  /** @nullable */
+  link: string | null;
+  createdAt: string;
+  /** @nullable */
+  readAt: string | null;
+}
+
+export interface NotificationList {
+  unreadCount: number;
+  items: Notification[];
 }
 
 export interface ClubPhoto {
@@ -3575,6 +3601,8 @@ export type DraftSweepResponseResultsItem = {
   matchSummaries: number;
   matchDay: number;
   teamLists: number;
+  /** Drafts moved to ready because their auto-post deadline passed. */
+  promoted?: number;
 };
 
 export interface DraftSweepResponse {
@@ -3629,6 +3657,14 @@ export interface SocialSettingsUpdate {
      */
   seasonStartDate?: string | null;
   familyConfig?: SocialFamilyConfigUpdate;
+  autoPostEnabled?: boolean;
+  /**
+     * @minimum 1
+     * @maximum 168
+     */
+  autoPostWindowHours?: number;
+  /** @nullable */
+  notificationEmail?: string | null;
 }
 
 /**

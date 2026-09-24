@@ -71,6 +71,13 @@
       "when": 1790215208200,
       "tag": "0009_club_photos",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790217257368,
+      "tag": "0010_auto_post_notifications",
+      "breakpoints": true
     }
   ]
 }

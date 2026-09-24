@@ -337,6 +337,8 @@ export * from './negativeBaselineWarning';
 export * from './nonPlayerPerson';
 export * from './nonPlayerPersonInput';
 export * from './nonPlayerPersonUpdate';
+export * from './notification';
+export * from './notificationList';
 export * from './opponentClub';
 export * from './partnershipRecord';
 export * from './partnerships';

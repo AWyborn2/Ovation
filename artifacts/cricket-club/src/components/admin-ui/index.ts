@@ -8,3 +8,4 @@ export { EditDrawer, type EditDrawerProps } from "./edit-drawer";
 export { SettingsCard, SettingsRow } from "./settings-card";
 export { SaveBar } from "./save-bar";
 export { StatusPill, type StatusTone } from "./status-pill";
+export { NotificationBell } from "./notification-bell";

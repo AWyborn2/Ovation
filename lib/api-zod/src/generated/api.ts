@@ -4926,6 +4926,9 @@ export const GetSocialSettingsResponse = zod.object({
   "clubUrl": zod.string(),
   "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.'),
   "lastSweepAt": zod.coerce.date().nullish().describe('When the scheduled drafting sweep last completed for this club (read-only).'),
+  "autoPostEnabled": zod.boolean().optional().describe('When on, auto-drafts still awaiting review at their deadline become ready.'),
+  "autoPostWindowHours": zod.number().optional().describe('Hours after a draft\'s own import before it becomes ready.'),
+  "notificationEmail": zod.string().nullish().describe('Where draft notifications are emailed. Null = in-app only.'),
   "familyConfig": zod.object({
   "results": zod.object({
   "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
@@ -4977,6 +4980,10 @@ export const GetSocialSettingsResponse = zod.object({
 /**
  * @summary Update social card settings
  */
+export const updateSocialSettingsBodyAutoPostWindowHoursMax = 168;
+
+
+
 export const UpdateSocialSettingsBody = zod.object({
   "engineOnDemand": zod.boolean().optional(),
   "engineMilestone": zod.boolean().optional(),
@@ -5012,7 +5019,10 @@ export const UpdateSocialSettingsBody = zod.object({
   "enabled": zod.boolean().optional(),
   "grades": zod.record(zod.string(), zod.boolean()).optional()
 }).optional()
-}).optional().describe('Partial family switches; omitted families and grades keep their current values.')
+}).optional().describe('Partial family switches; omitted families and grades keep their current values.'),
+  "autoPostEnabled": zod.boolean().optional(),
+  "autoPostWindowHours": zod.number().min(1).max(updateSocialSettingsBodyAutoPostWindowHoursMax).optional(),
+  "notificationEmail": zod.string().nullish()
 })
 
 export const UpdateSocialSettingsResponse = zod.object({
@@ -5034,6 +5044,9 @@ export const UpdateSocialSettingsResponse = zod.object({
   "clubUrl": zod.string(),
   "seasonStartDate": zod.coerce.date().nullish().describe('Season-start override for countdown cards. Null = derive from the earliest upcoming fixture.'),
   "lastSweepAt": zod.coerce.date().nullish().describe('When the scheduled drafting sweep last completed for this club (read-only).'),
+  "autoPostEnabled": zod.boolean().optional().describe('When on, auto-drafts still awaiting review at their deadline become ready.'),
+  "autoPostWindowHours": zod.number().optional().describe('Hours after a draft\'s own import before it becomes ready.'),
+  "notificationEmail": zod.string().nullish().describe('Where draft notifications are emailed. Null = in-app only.'),
   "familyConfig": zod.object({
   "results": zod.object({
   "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
@@ -6456,7 +6469,8 @@ export const RunDraftSweepResponse = zod.object({
   "centralMatches": zod.number(),
   "matchSummaries": zod.number(),
   "matchDay": zod.number(),
-  "teamLists": zod.number()
+  "teamLists": zod.number(),
+  "promoted": zod.number().optional().describe('Drafts moved to ready because their auto-post deadline passed.')
 }))
 })
 
@@ -6561,6 +6575,40 @@ export const DeleteClubPhotosBody = zod.object({
 
 export const DeleteClubPhotosResponse = zod.object({
   "deleted": zod.number()
+})
+
+
+/**
+ * @summary The club's recent notifications and the unread count (admin)
+ */
+export const ListNotificationsResponse = zod.object({
+  "unreadCount": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "link": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "readAt": zod.coerce.date().nullable()
+}))
+})
+
+
+/**
+ * @summary Mark every notification read (admin)
+ */
+export const MarkNotificationsReadResponse = zod.object({
+  "unreadCount": zod.number(),
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "kind": zod.string(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "link": zod.string().nullable(),
+  "createdAt": zod.coerce.date(),
+  "readAt": zod.coerce.date().nullable()
+}))
 })
 
 
