@@ -35,6 +35,7 @@ import { JuniorSeniorLinkDialog } from "@/components/junior-senior-link-dialog";
 import { ListSkeleton, EmptyState, QueryError, LoadingState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { DataTable, EditDrawer, type DataTableColumn } from "@/components/admin-ui";
+import { HEADSHOT_ASPECTS, ImageCropDialog } from "@/components/admin-ui/image-crop-dialog";
 import { Plus, Search } from "lucide-react";
 import { TradingCardModal } from "@/components/trading-card";
 import { CARD_ROLES, deriveRole } from "@/lib/trading-card";
@@ -514,10 +515,9 @@ function PlayerGallery({ playerId }: { playerId: number }) {
     onError: (e) => setGalleryError(e.message),
   });
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  const [cropOpen, setCropOpen] = useState(false);
+
+  const handleFile = async (file: File) => {
     setGalleryError(null);
     const result = await uploadFile(file);
     if (!result) return;
@@ -534,16 +534,24 @@ function PlayerGallery({ playerId }: { playerId: number }) {
     <div className="space-y-2 rounded-md border bg-muted/30 p-3">
       <div className="flex items-center justify-between">
         <Label>Photo gallery</Label>
-        <label className="cursor-pointer text-sm font-medium text-primary-text hover:underline">
+        <button
+          type="button"
+          className="text-sm font-medium text-primary-text hover:underline disabled:opacity-50"
+          onClick={() => setCropOpen(true)}
+          disabled={busy}
+        >
           {isUploading ? "Uploading…" : "+ Add photo"}
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFile}
-            disabled={busy}
-          />
-        </label>
+        </button>
+        <ImageCropDialog
+          open={cropOpen}
+          onOpenChange={setCropOpen}
+          title="Player headshot"
+          description="Drop a photo or pick one from the library, then frame the face in the circle."
+          aspects={HEADSHOT_ASPECTS}
+          suggestedWidth={800}
+          allowLibrary
+          onCropped={handleFile}
+        />
       </div>
       {galleryError && <p className="text-xs text-destructive">{galleryError}</p>}
       {isLoading ? (
