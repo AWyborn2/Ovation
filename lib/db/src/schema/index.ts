@@ -40,3 +40,4 @@ export * from "./player_id_map";
 export * from "./player_curation";
 export * from "./platform_settings";
 export * from "./provisioning_exclusions";
+export * from "./club_photos";
