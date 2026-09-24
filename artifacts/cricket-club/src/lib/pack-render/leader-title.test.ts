@@ -23,6 +23,9 @@ describe("leaderTitle", () => {
     expect(leaderTitle("Runs")).toEqual(["LEADING", "RUN-SCORER"]);
     expect(leaderTitle("Wickets")).toEqual(["LEADING", "WICKET-TAKER"]);
     expect(leaderTitle("Most Wickets")).toEqual(["LEADING", "WICKET-TAKER"]);
+    // The recap engine's categories.
+    expect(leaderTitle("Champion Bowler")).toEqual(["LEADING", "WICKET-TAKER"]);
+    expect(leaderTitle("Champion Batsman")).toEqual(["LEADING", "RUN-SCORER"]);
     expect(leaderTitle("Dismissals")).toEqual(["SAFE", "HANDS"]);
     expect(leaderTitle("Most Dismissals")).toEqual(["SAFE", "HANDS"]);
   });

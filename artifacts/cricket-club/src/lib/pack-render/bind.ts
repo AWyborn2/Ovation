@@ -373,6 +373,6 @@ export function applyPackData(bound: BoundInput, data: PackCardData, _kind: stri
  */
 export function leaderTitle(category: string): [string, string] {
   if (/dismiss/i.test(category)) return ["SAFE", "HANDS"];
-  if (/wicket/i.test(category)) return ["LEADING", "WICKET-TAKER"];
+  if (/wicket|bowl/i.test(category)) return ["LEADING", "WICKET-TAKER"];
   return ["LEADING", "RUN-SCORER"];
 }
