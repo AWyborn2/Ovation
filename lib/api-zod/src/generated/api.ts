@@ -1085,7 +1085,7 @@ export const GetGradeDistributionQueryParams = zod.object({
   "fromSeason": zod.coerce.number().optional().describe('First season start year (inclusive), e.g. 2021 for 2021\/22.'),
   "toSeason": zod.coerce.number().optional().describe('Last season start year (inclusive).'),
   "minInnings": zod.coerce.number().min(getGradeDistributionQueryMinInningsMin).optional().describe('Batting qualifier. Defaults to 10.'),
-  "minOvers": zod.coerce.number().min(getGradeDistributionQueryMinOversMin).optional().describe('Bowling qualifier in whole overs. Defaults to 50.')
+  "minOvers": zod.coerce.number().min(getGradeDistributionQueryMinOversMin).optional().describe('Bowling qualifier in whole overs. Defaults to 100.')
 })
 
 export const GetGradeDistributionResponse = zod.object({

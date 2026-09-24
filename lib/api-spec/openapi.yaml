@@ -791,7 +791,7 @@ paths:
         - name: minOvers
           in: query
           required: false
-          description: Bowling qualifier in whole overs. Defaults to 50.
+          description: Bowling qualifier in whole overs. Defaults to 100.
           schema:
             type: number
             minimum: 0
