@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, boolean, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { type z } from "zod/v4";
 import { playersTable } from "./players";
@@ -17,9 +17,24 @@ export const premiershipsTable = pgTable(
     result: text("result"),
     mom: text("mom"),
     notes: text("notes"),
+    /**
+     * `central.premiers.id` this row was seeded from (central-backed tenants
+     * only; null for hand-curated rows). The seeding key: a re-seed matches on
+     * it and only backfills, so a club's own edits are never overwritten.
+     */
+    centralPremierId: integer("central_premier_id"),
+    /**
+     * `central.matches.match_id` of the decider — the Grand Final scorecard a
+     * central-backed tenant's `/matches/:id` serves. Null when unknown.
+     */
+    centralMatchId: integer("central_match_id"),
   },
   (t) => ({
     idxTenant: index("premierships_tenant_idx").on(t.tenantId),
+    uniqTenantCentralPremier: uniqueIndex("premierships_tenant_central_premier_uq").on(
+      t.tenantId,
+      t.centralPremierId,
+    ),
   }),
 );
 
@@ -38,6 +53,13 @@ export const premiershipPlayersTable = pgTable(
     isCaptain: boolean("is_captain").notNull().default(false),
     isMotm: boolean("is_motm").notNull().default(false),
     battingOrder: integer("batting_order"),
+    /**
+     * Central PlayHQ participant GUID for a player seeded from a central
+     * scorecard. `player_id` references the NATIVE players table, so a
+     * central-backed tenant's link is resolved at read time through
+     * `player_id_map` instead.
+     */
+    participantId: text("participant_id"),
   },
   (t) => ({
     idxTenant: index("premiership_players_tenant_idx").on(t.tenantId),
