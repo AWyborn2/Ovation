@@ -1,8 +1,28 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { db, awardsTable, awardWinnersTable, clubRolesTable } from "@workspace/db";
-import { shouldReadCentral } from "../lib/tenant";
+import {
+  db,
+  awardsTable,
+  awardWinnersTable,
+  clubRolesTable,
+  playerIdMapTable,
+} from "@workspace/db";
+import { GetRecordLeadersQueryParams, GetRecordProgressionQueryParams } from "@workspace/api-zod";
+import { dataSource, shouldReadCentral } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
+import {
+  formatRecordValue,
+  rankLeaders,
+  recordsFilterFrom,
+  splitDisplayName,
+  walkProgression,
+} from "../lib/records-analytics";
+import {
+  nativeLastSeasons,
+  nativePlayerNames,
+  nativeProgressionCandidates,
+  nativeRecordLeaders,
+} from "../lib/records-native";
 
 const router: IRouter = Router();
 
@@ -168,6 +188,125 @@ router.get("/records-leaderboards", async (req, res): Promise<void> => {
     .filter((lb) => (lb.entries[0]?.count ?? 0) >= 2);
 
   res.json({ roleRecords, awardRecords });
+});
+
+// ---------------------------------------------------------------------------
+// Records analytics (stats plan U9 / KTD5). `/records` itself is served from
+// routes/grades.ts; these sub-paths don't collide with it (Express matches
+// `/records` exactly) and nothing registers a `/records/:param` route.
+// ---------------------------------------------------------------------------
+
+/** GUID → tenant int, from the tenant's player_id_map crosswalk. */
+async function crosswalk(tenantId: number): Promise<Map<string, number>> {
+  const rows = await db
+    .select({ participantId: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
+    .from(playerIdMapTable)
+    .where(eq(playerIdMapTable.tenantId, tenantId));
+  return new Map(rows.map((m) => [m.participantId, m.playerId]));
+}
+
+router.get("/records/leaders", async (req, res): Promise<void> => {
+  const query = GetRecordLeadersQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const { metric, limit = 10 } = query.data;
+  const filter = recordsFilterFrom(query.data) ?? {};
+  const source = await dataSource(req);
+
+  if (source.kind === "central") {
+    const { centralRecordLeaders } = await import("@workspace/db/central-queries");
+    const [rows, intByGuid] = await Promise.all([
+      centralRecordLeaders(source.clubId, metric, filter),
+      crosswalk(source.tenantId),
+    ]);
+    const entries = rankLeaders(rows, limit).map((r) => ({
+      rank: r.rank,
+      playerId: intByGuid.get(r.participantId) ?? 0,
+      ...splitDisplayName(r.displayName),
+      value: r.value,
+      lastSeason: r.lastSeason,
+    }));
+    res.json({ metric, entries });
+    return;
+  }
+
+  const ranked = rankLeaders(await nativeRecordLeaders(metric, filter), limit);
+  const last = await nativeLastSeasons(ranked.map((r) => r.playerId));
+  res.json({
+    metric,
+    entries: ranked.map((r) => ({
+      rank: r.rank,
+      playerId: r.playerId,
+      givenName: r.givenName,
+      surname: r.surname,
+      value: r.value,
+      lastSeason: last.get(r.playerId) ?? null,
+    })),
+  });
+});
+
+router.get("/records/progression", async (req, res): Promise<void> => {
+  const query = GetRecordProgressionQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const { kind } = query.data;
+  const grade = recordsFilterFrom(query.data)?.grade;
+  const source = await dataSource(req);
+
+  if (source.kind === "central") {
+    const { centralRecordProgressionRows } = await import("@workspace/db/central-queries");
+    const [rows, intByGuid] = await Promise.all([
+      centralRecordProgressionRows(source.clubId, kind, grade),
+      crosswalk(source.tenantId),
+    ]);
+    const points = walkProgression(
+      kind,
+      rows.map((r) => ({
+        player: r,
+        grade: r.grade,
+        season: r.season,
+        matchId: r.matchId,
+        matchDate: r.matchDate,
+        value: { primary: r.primary, secondary: r.secondary },
+      })),
+    );
+    res.json({
+      kind,
+      points: points.map((p) => ({
+        playerId: intByGuid.get(p.player.participantId) ?? 0,
+        ...splitDisplayName(p.player.displayName),
+        grade: p.grade,
+        season: p.season,
+        matchId: p.matchId,
+        matchDate: p.matchDate,
+        value: formatRecordValue(kind, p.value),
+        dated: p.dated,
+      })),
+    });
+    return;
+  }
+
+  const { dated, undated } = await nativeProgressionCandidates(kind, grade);
+  const points = walkProgression(kind, dated, undated);
+  const names = await nativePlayerNames([...new Set(points.map((p) => p.player.playerId))]);
+  res.json({
+    kind,
+    points: points.map((p) => ({
+      playerId: p.player.playerId,
+      givenName: names.get(p.player.playerId)?.givenName ?? "",
+      surname: names.get(p.player.playerId)?.surname ?? "",
+      grade: p.grade,
+      season: p.season,
+      matchId: p.matchId,
+      matchDate: p.matchDate,
+      value: formatRecordValue(kind, p.value),
+      dated: p.dated,
+    })),
+  });
 });
 
 export default router;
