@@ -20,13 +20,15 @@ import { fiveFor } from "./five-for";
 import { bigMoment } from "./big-moment";
 
 /**
- * Pack D — Neon Night. Night-sky navy with blurred neon orbs (fixed cyan +
- * tenant accent) on the app-side `hhGlow` pulse, glassmorphism panels, and
- * layered neon-glow display type (`neonText`) in place of Gold Foil's metal
- * ramp. Circular club logo in a cyan glow ring as the story wordmark.
+ * Pack D — Neon Night. Floodlit cricket after dark on the shared card skeleton
+ * (U13): accent and pink radial glows, a mono photo at ~28%, a 5% grid, a
+ * glowing horizon line, neon glow type and a pill outline chip — every light
+ * in the tenant's accent (see `./fragments`).
  *
- * Coverage grows card by card; the api-server `PACKS` entry declares the SAME
- * kinds (enforced by `pack-coverage-parity.test.ts`).
+ * All 19 designs / 17 kinds; the api-server `PACKS` entry declares the SAME
+ * kinds (enforced by `pack-coverage-parity.test.ts`). Every design ships
+ * story, shared (portrait/square) and landscape markup from one
+ * container-query layout.
  */
 export const NEON_NIGHT_PACK: PackManifest = {
   packId: "neon-night-v1",
