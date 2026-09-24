@@ -439,6 +439,21 @@ export interface PlayerSeasonStat {
   stumpings?: number | null;
   /** @nullable */
   runOuts?: number | null;
+  /**
+     * Balls faced in the (grade, season), summed from scorecard lines. Null for the baseline row and wherever no scorecard lines exist (unknown, not zero).
+     * @nullable
+     */
+  ballsFaced: number | null;
+  /**
+     * Balls bowled (overs converted at 6 balls per over) from scorecard lines. Null for the baseline row and where not recorded.
+     * @nullable
+     */
+  ballsBowled: number | null;
+  /**
+     * Maidens from scorecard lines. Null for the baseline row and where not recorded.
+     * @nullable
+     */
+  maidens: number | null;
 }
 
 export interface StatInput {
@@ -1295,6 +1310,39 @@ export interface CommitImportInput {
   reconcileMode?: CommitImportInputReconcileMode;
 }
 
+/**
+ * How an innings ended. Caught includes caught-and-bowled; "other" covers hit wicket, obstruction, absent and unrecognised text.
+ */
+export type DismissalType = typeof DismissalType[keyof typeof DismissalType];
+
+
+export const DismissalType = {
+  caught: 'caught',
+  bowled: 'bowled',
+  lbw: 'lbw',
+  runOut: 'runOut',
+  stumped: 'stumped',
+  notOut: 'notOut',
+  retired: 'retired',
+  other: 'other',
+} as const;
+
+export interface PlayerInnings {
+  /** @nullable */
+  runs: number | null;
+  /** @nullable */
+  balls: number | null;
+  notOut: boolean;
+  dismissalType: DismissalType;
+  /**
+     * The dismissing bowler's surname, normalised (lower-case, initials dropped), parsed from the scorecard text. Null for run outs, not outs and blank or masked names. Not an id — neither read path stores the bowler's identity.
+     * @nullable
+     */
+  dismissedBy: string | null;
+  /** @nullable */
+  battingPos: number | null;
+}
+
 export interface PlayerMatchLine {
   matchId: number;
   grade: string;
@@ -1342,6 +1390,23 @@ export interface PlayerMatchLine {
   catches: number;
   stumpings: number;
   runOuts: number;
+  /** The player's played innings in this match, in innings order ("did not bat" excluded). Two-innings matches have two entries; the row-level runs/balls/notOut/dismissal fields above stay the collapsed per-match view. Empty when the player did not bat. */
+  innings: PlayerInnings[];
+  /**
+     * True when the club was the home side. Null where home/away isn't recorded (the native read path).
+     * @nullable
+     */
+  isHome: boolean | null;
+  /**
+     * True when the player's club batted first, false when second, null when unknown.
+     * @nullable
+     */
+  battedFirst: boolean | null;
+  /**
+     * The opposition club, in the read path's own id space: the app clubs register on native tenants, central `clubs.club_id` on central-read tenants. Null when the opponent isn't resolved to a club.
+     * @nullable
+     */
+  opponentClubId: number | null;
 }
 
 /**

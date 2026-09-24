@@ -204,7 +204,10 @@ export const GetPlayerSeasonsResponseItem = zod.object({
   "fiveWickets": zod.number().nullish(),
   "catches": zod.number().nullish(),
   "stumpings": zod.number().nullish(),
-  "runOuts": zod.number().nullish()
+  "runOuts": zod.number().nullish(),
+  "ballsFaced": zod.number().nullable().describe('Balls faced in the (grade, season), summed from scorecard lines. Null for the baseline row and wherever no scorecard lines exist (unknown, not zero).'),
+  "ballsBowled": zod.number().nullable().describe('Balls bowled (overs converted at 6 balls per over) from scorecard lines. Null for the baseline row and where not recorded.'),
+  "maidens": zod.number().nullable().describe('Maidens from scorecard lines. Null for the baseline row and where not recorded.')
 })
 export const GetPlayerSeasonsResponse = zod.array(GetPlayerSeasonsResponseItem)
 
@@ -243,7 +246,18 @@ export const GetPlayerMatchesResponseItem = zod.object({
   "noBalls": zod.number().nullish(),
   "catches": zod.number(),
   "stumpings": zod.number(),
-  "runOuts": zod.number()
+  "runOuts": zod.number(),
+  "innings": zod.array(zod.object({
+  "runs": zod.number().nullable(),
+  "balls": zod.number().nullable(),
+  "notOut": zod.boolean(),
+  "dismissalType": zod.enum(['caught', 'bowled', 'lbw', 'runOut', 'stumped', 'notOut', 'retired', 'other']).describe('How an innings ended. Caught includes caught-and-bowled; \"other\" covers hit wicket, obstruction, absent and unrecognised text.'),
+  "dismissedBy": zod.string().nullable().describe('The dismissing bowler\'s surname, normalised (lower-case, initials dropped), parsed from the scorecard text. Null for run outs, not outs and blank or masked names. Not an id — neither read path stores the bowler\'s identity.'),
+  "battingPos": zod.number().nullable()
+})).describe('The player\'s played innings in this match, in innings order (\"did not bat\" excluded). Two-innings matches have two entries; the row-level runs\/balls\/notOut\/dismissal fields above stay the collapsed per-match view. Empty when the player did not bat.'),
+  "isHome": zod.boolean().nullable().describe('True when the club was the home side. Null where home\/away isn\'t recorded (the native read path).'),
+  "battedFirst": zod.boolean().nullable().describe('True when the player\'s club batted first, false when second, null when unknown.'),
+  "opponentClubId": zod.number().nullable().describe('The opposition club, in the read path\'s own id space: the app clubs register on native tenants, central `clubs.club_id` on central-read tenants. Null when the opponent isn\'t resolved to a club.')
 })
 export const GetPlayerMatchesResponse = zod.array(GetPlayerMatchesResponseItem)
 

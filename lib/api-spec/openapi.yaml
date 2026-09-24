@@ -6804,7 +6804,7 @@ components:
 
     PlayerSeasonStat:
       type: object
-      required: [grade, season]
+      required: [grade, season, ballsFaced, ballsBowled, maidens]
       properties:
         grade:
           type: string
@@ -6845,6 +6845,22 @@ components:
           type: ["integer", "null"]
         runOuts:
           type: ["integer", "null"]
+        ballsFaced:
+          type: ["integer", "null"]
+          description: >-
+            Balls faced in the (grade, season), summed from scorecard lines.
+            Null for the baseline row and wherever no scorecard lines exist
+            (unknown, not zero).
+        ballsBowled:
+          type: ["integer", "null"]
+          description: >-
+            Balls bowled (overs converted at 6 balls per over) from scorecard
+            lines. Null for the baseline row and where not recorded.
+        maidens:
+          type: ["integer", "null"]
+          description: >-
+            Maidens from scorecard lines. Null for the baseline row and where
+            not recorded.
 
     StatInput:
       type: object
@@ -7859,7 +7875,19 @@ components:
     PlayerMatchLine:
       type: object
       required:
-        [matchId, grade, batted, bowled, catches, stumpings, runOuts]
+        [
+          matchId,
+          grade,
+          batted,
+          bowled,
+          catches,
+          stumpings,
+          runOuts,
+          innings,
+          isHome,
+          battedFirst,
+          opponentClubId,
+        ]
       properties:
         matchId:
           type: integer
@@ -7918,6 +7946,60 @@ components:
           type: integer
         runOuts:
           type: integer
+        innings:
+          type: array
+          description: >-
+            The player's played innings in this match, in innings order ("did
+            not bat" excluded). Two-innings matches have two entries; the
+            row-level runs/balls/notOut/dismissal fields above stay the
+            collapsed per-match view. Empty when the player did not bat.
+          items:
+            $ref: "#/components/schemas/PlayerInnings"
+        isHome:
+          type: ["boolean", "null"]
+          description: >-
+            True when the club was the home side. Null where home/away isn't
+            recorded (the native read path).
+        battedFirst:
+          type: ["boolean", "null"]
+          description: >-
+            True when the player's club batted first, false when second, null
+            when unknown.
+        opponentClubId:
+          type: ["integer", "null"]
+          description: >-
+            The opposition club, in the read path's own id space: the app clubs
+            register on native tenants, central `clubs.club_id` on central-read
+            tenants. Null when the opponent isn't resolved to a club.
+
+    PlayerInnings:
+      type: object
+      required: [runs, balls, notOut, dismissalType, dismissedBy, battingPos]
+      properties:
+        runs:
+          type: ["integer", "null"]
+        balls:
+          type: ["integer", "null"]
+        notOut:
+          type: boolean
+        dismissalType:
+          $ref: "#/components/schemas/DismissalType"
+        dismissedBy:
+          type: ["string", "null"]
+          description: >-
+            The dismissing bowler's surname, normalised (lower-case, initials
+            dropped), parsed from the scorecard text. Null for run outs, not
+            outs and blank or masked names. Not an id — neither read path
+            stores the bowler's identity.
+        battingPos:
+          type: ["integer", "null"]
+
+    DismissalType:
+      type: string
+      enum: [caught, bowled, lbw, runOut, stumped, notOut, retired, other]
+      description: >-
+        How an innings ended. Caught includes caught-and-bowled; "other" covers
+        hit wicket, obstruction, absent and unrecognised text.
 
     OpponentClub:
       type: object
