@@ -1,6 +1,12 @@
 import { Router, type IRouter } from "express";
-import { asc, desc, eq, inArray } from "drizzle-orm";
-import { db, premiershipsTable, premiershipPlayersTable, matchesTable } from "@workspace/db";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import {
+  db,
+  premiershipsTable,
+  premiershipPlayersTable,
+  matchesTable,
+  playerIdMapTable,
+} from "@workspace/db";
 import {
   CreatePremiershipBody,
   UpdatePremiershipBody,
@@ -189,8 +195,113 @@ export function pickGrandFinal(candidates: GfMatch[], prem: PremForLink): number
   return ranked[0].id;
 }
 
-async function loadWithPlayers(id: number) {
-  const [prem] = await db.select().from(premiershipsTable).where(eq(premiershipsTable.id, id));
+type PremiershipRow = typeof premiershipsTable.$inferSelect;
+type PremiershipPlayerRow = typeof premiershipPlayersTable.$inferSelect;
+
+/**
+ * Player link ids for a premiership team list. Curated rows carry a native
+ * `player_id`; rows seeded from a central scorecard carry the participant GUID
+ * instead (`player_id` references the native players table), so for a
+ * central-backed tenant the link resolves through the tenant's player_id_map
+ * crosswalk — the same int ids its `/players/:id` pages serve.
+ */
+export async function resolvePremiershipPlayerIds(
+  tenantId: number,
+  central: boolean,
+  players: PremiershipPlayerRow[],
+): Promise<Map<number, number | null>> {
+  const out = new Map<number, number | null>();
+  const guids = central
+    ? [
+        ...new Set(
+          players
+            .filter((p) => p.playerId == null && p.participantId)
+            .map((p) => p.participantId as string),
+        ),
+      ]
+    : [];
+  const mapped =
+    guids.length > 0
+      ? await db
+          .select({
+            participantId: playerIdMapTable.participantId,
+            playerId: playerIdMapTable.playerId,
+          })
+          .from(playerIdMapTable)
+          .where(
+            and(
+              eq(playerIdMapTable.tenantId, tenantId),
+              inArray(playerIdMapTable.participantId, guids),
+            ),
+          )
+      : [];
+  const byGuid = new Map(mapped.map((m) => [m.participantId, m.playerId]));
+  for (const p of players) {
+    out.set(
+      p.id,
+      p.playerId ?? (central && p.participantId ? (byGuid.get(p.participantId) ?? null) : null),
+    );
+  }
+  return out;
+}
+
+/**
+ * Inverse of {@link resolvePremiershipPlayerIds} for writes. A central-backed
+ * tenant's admin editor sends crosswalk ints (what the GET served), which are
+ * NOT native players ids (the FK target) — store them as the participant GUID
+ * with a null `player_id`. Native tenants store `player_id` as sent.
+ */
+async function toStoredPlayers(
+  tenantId: number,
+  central: boolean,
+  players: PlayerInput[],
+): Promise<{ playerId: number | null; participantId: string | null }[]> {
+  if (!central) {
+    return players.map((p) => ({ playerId: p.playerId ?? null, participantId: null }));
+  }
+  const ids = [...new Set(players.map((p) => p.playerId).filter((id): id is number => id != null))];
+  const mapped =
+    ids.length > 0
+      ? await db
+          .select({
+            participantId: playerIdMapTable.participantId,
+            playerId: playerIdMapTable.playerId,
+          })
+          .from(playerIdMapTable)
+          .where(
+            and(eq(playerIdMapTable.tenantId, tenantId), inArray(playerIdMapTable.playerId, ids)),
+          )
+      : [];
+  const byId = new Map(mapped.map((m) => [m.playerId, m.participantId]));
+  return players.map((p) => ({
+    playerId: null,
+    participantId: p.playerId != null ? (byId.get(p.playerId) ?? null) : null,
+  }));
+}
+
+/** API shape of a premiership: internal seed columns stripped, links resolved. */
+function toApiPremiership(
+  prem: PremiershipRow,
+  players: PremiershipPlayerRow[],
+  playerIds: Map<number, number | null>,
+  matchId: number | null,
+) {
+  const { centralPremierId: _cp, centralMatchId: _cm, ...rest } = prem;
+  return {
+    ...rest,
+    players: players.map(({ participantId: _pid, ...p }) => ({
+      ...p,
+      playerId: playerIds.get(p.id) ?? null,
+    })),
+    matchId,
+  };
+}
+
+async function loadWithPlayers(id: number, tenantId: number) {
+  const [prem] = await db
+    .select()
+    .from(premiershipsTable)
+    .where(and(eq(premiershipsTable.id, id), eq(premiershipsTable.tenantId, tenantId)));
   if (!prem) return null;
   const players = await db
     .select()
@@ -198,6 +309,17 @@ async function loadWithPlayers(id: number) {
     .where(eq(premiershipPlayersTable.premiershipId, id))
     .orderBy(asc(premiershipPlayersTable.battingOrder), asc(premiershipPlayersTable.id));
   return { ...prem, players };
+}
+
+/** A single premiership in API shape, for the write routes' responses. */
+async function loadApiPremiership(req: Parameters<typeof getTenantId>[0], id: number) {
+  const tenantId = getTenantId(req);
+  const full = await loadWithPlayers(id, tenantId);
+  if (!full) return null;
+  const central = await isCentralTenant(req);
+  const { players, ...prem } = full;
+  const playerIds = await resolvePremiershipPlayerIds(tenantId, central, players);
+  return toApiPremiership(prem, players, playerIds, central ? prem.centralMatchId : null);
 }
 
 router.get("/premierships", async (req, res): Promise<void> => {
@@ -261,12 +383,18 @@ router.get("/premierships", async (req, res): Promise<void> => {
     }
   }
 
+  const playerIds = await resolvePremiershipPlayerIds(getTenantId(req), central, players);
   res.json(
-    prems.map((p) => ({
-      ...p,
-      players: byPrem.get(p.id) ?? [],
-      matchId: central ? null : linkPremiershipMatch(p, gfByKey, finalsByKey),
-    })),
+    prems.map((p) =>
+      toApiPremiership(
+        p,
+        byPrem.get(p.id) ?? [],
+        playerIds,
+        // Central tenants: the decider recorded at seed time (a central match
+        // id, which their /matches/:id serves). Native: heuristic GF link.
+        central ? p.centralMatchId : linkPremiershipMatch(p, gfByKey, finalsByKey),
+      ),
+    ),
   );
 });
 
@@ -280,10 +408,14 @@ router.post(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
+    const tenantId = getTenantId(req);
+    const players: PlayerInput[] = parsed.data.players ?? [];
+    const stored = await toStoredPlayers(tenantId, await isCentralTenant(req), players);
     const created = await db.transaction(async (tx) => {
       const [prem] = await tx
         .insert(premiershipsTable)
         .values({
+          tenantId,
           year: parsed.data.year,
           grade: parsed.data.grade,
           competition: parsed.data.competition,
@@ -294,12 +426,12 @@ router.post(
           notes: parsed.data.notes ?? null,
         })
         .returning();
-      const players: PlayerInput[] = parsed.data.players ?? [];
       if (players.length > 0) {
         await tx.insert(premiershipPlayersTable).values(
-          players.map((p) => ({
+          players.map((p, i) => ({
+            tenantId,
             premiershipId: prem.id,
-            playerId: p.playerId ?? null,
+            ...stored[i]!,
             name: p.name,
             isCaptain: p.isCaptain ?? false,
             battingOrder: p.battingOrder ?? null,
@@ -308,7 +440,7 @@ router.post(
       }
       return prem;
     });
-    const full = await loadWithPlayers(created.id);
+    const full = await loadApiPremiership(req, created.id);
     res.status(201).json(full);
   },
 );
@@ -330,6 +462,17 @@ router.patch(
     }
 
     const { players, ...meta } = body.data;
+    const tenantId = getTenantId(req);
+    // Scope every read/write to the caller's tenant: an id alone would let one
+    // club's admin edit (or wipe the team list of) another club's premiership.
+    const ownRow = and(
+      eq(premiershipsTable.id, params.data.id),
+      eq(premiershipsTable.tenantId, tenantId),
+    );
+    const stored =
+      players !== undefined
+        ? await toStoredPlayers(tenantId, await isCentralTenant(req), players)
+        : [];
     const updated = await db
       .transaction(async (tx) => {
         const updateFields: Partial<typeof premiershipsTable.$inferInsert> = {};
@@ -340,14 +483,11 @@ router.patch(
           const [row] = await tx
             .update(premiershipsTable)
             .set(updateFields)
-            .where(eq(premiershipsTable.id, params.data.id))
+            .where(ownRow)
             .returning();
           if (!row) throw new Error("__NOT_FOUND__");
         } else {
-          const [row] = await tx
-            .select()
-            .from(premiershipsTable)
-            .where(eq(premiershipsTable.id, params.data.id));
+          const [row] = await tx.select().from(premiershipsTable).where(ownRow);
           if (!row) throw new Error("__NOT_FOUND__");
         }
         if (players !== undefined) {
@@ -356,9 +496,10 @@ router.patch(
             .where(eq(premiershipPlayersTable.premiershipId, params.data.id));
           if (players.length > 0) {
             await tx.insert(premiershipPlayersTable).values(
-              players.map((p) => ({
+              players.map((p, i) => ({
+                tenantId,
                 premiershipId: params.data.id,
-                playerId: p.playerId ?? null,
+                ...stored[i]!,
                 name: p.name,
                 isCaptain: p.isCaptain ?? false,
                 battingOrder: p.battingOrder ?? null,
@@ -376,7 +517,7 @@ router.patch(
       res.status(404).json({ error: "Premiership not found" });
       return;
     }
-    const full = await loadWithPlayers(params.data.id);
+    const full = await loadApiPremiership(req, params.data.id);
     res.json(full);
   },
 );
@@ -393,7 +534,12 @@ router.delete(
     }
     const [row] = await db
       .delete(premiershipsTable)
-      .where(eq(premiershipsTable.id, params.data.id))
+      .where(
+        and(
+          eq(premiershipsTable.id, params.data.id),
+          eq(premiershipsTable.tenantId, getTenantId(req)),
+        ),
+      )
       .returning();
     if (!row) {
       res.status(404).json({ error: "Premiership not found" });

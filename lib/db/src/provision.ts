@@ -17,6 +17,7 @@ import {
 } from "./schema/provisioning_exclusions";
 import { centralDb, centralClubsTable, isCentralClubProvisionable } from "./central";
 import { centralClubParticipants } from "./central-queries";
+import { seedTenantPremierships, type SeedTenantPremiershipsResult } from "./premierships-seed";
 
 /**
  * Tenant provisioning — the single source of truth for onboarding a club onto the
@@ -27,7 +28,9 @@ import { centralClubParticipants } from "./central-queries";
  *   2. upsert/insert the tenants row (reads_from_central, brand from the central
  *      primary colour),
  *   3. mint the player_id_map crosswalk (one stable per-tenant int id per central
- *      participant the club fielded) — idempotent, continues the per-tenant max.
+ *      participant the club fielded) — idempotent, continues the per-tenant max,
+ *   4. seed the premiership honour board from central.premiers (results, Grand
+ *      Final scorecard link, team lists) — best-effort, after the commit.
  *
  * Importing this module loads ./central (needs CENTRAL_DATABASE_URL), so only the
  * provisioning paths import it — the tenant-only request path never touches it.
@@ -89,6 +92,13 @@ export interface ProvisionTenantResult {
   totalParticipants: number;
   /** The first admin, when `firstAdmin` was supplied. */
   admin?: AdminRow;
+  /**
+   * Premiership honour-board seed outcome. Best-effort: a failure here never
+   * fails provisioning (the tenant is already committed) — `error` carries the
+   * message so the caller can log it, and the seed can be re-run with
+   * `pnpm --filter @workspace/scripts run seed-central-premierships`.
+   */
+  premierships: SeedTenantPremiershipsResult | { error: string };
 }
 
 /** Resolve the central.clubs row by explicit id, else by exact (case-insensitive) name. */
@@ -237,12 +247,23 @@ export async function provisionTenant(
     return { tenant: row, admin, ...mint };
   });
 
+  // Outside the transaction: the honour board is curated content layered on
+  // the tenant, not part of its identity — a central hiccup must not roll back
+  // (or block) onboarding. Idempotent, so an upsert re-run only backfills.
+  let premierships: ProvisionTenantResult["premierships"];
+  try {
+    premierships = await seedTenantPremierships(tenant.id, tenant.centralClubId);
+  } catch (e) {
+    premierships = { error: e instanceof Error ? e.message : String(e) };
+  }
+
   return {
     tenant,
     centralClub: { clubId: club.clubId, name: club.name },
     mintedMappings: minted,
     totalParticipants,
     admin,
+    premierships,
   };
 }
 

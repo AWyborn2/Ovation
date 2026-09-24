@@ -8,6 +8,7 @@ import {
   tenantsTable,
   adminsTable,
   playerIdMapTable,
+  premiershipsTable,
   provisioningExclusionsTable,
 } from "@workspace/db";
 import { hashPassword, encodeSession, SESSION_COOKIE } from "../lib/auth";
@@ -75,6 +76,8 @@ describe("platform-admin tenant management", () => {
     await db.delete(tenantsTable).where(eq(tenantsTable.id, throwawayTenantId));
     if (provisionedTenantId != null) {
       await db.delete(adminsTable).where(eq(adminsTable.tenantId, provisionedTenantId));
+      // Provisioning seeds the premiership board (cascades to its players).
+      await db.delete(premiershipsTable).where(eq(premiershipsTable.tenantId, provisionedTenantId));
       await db.delete(playerIdMapTable).where(eq(playerIdMapTable.tenantId, provisionedTenantId));
       await db.delete(tenantsTable).where(eq(tenantsTable.id, provisionedTenantId));
     }
@@ -262,6 +265,10 @@ describe("platform-admin tenant management", () => {
         })
         .expect(201);
       expect(res.body.centralClubId).toBe(club.centralClubId);
+
+      // Provisioning seeds the premiership board (cascades to its players).
+
+      await db.delete(premiershipsTable).where(eq(premiershipsTable.tenantId, res.body.id));
 
       await db.delete(playerIdMapTable).where(eq(playerIdMapTable.tenantId, res.body.id));
       await db.delete(tenantsTable).where(eq(tenantsTable.id, res.body.id));

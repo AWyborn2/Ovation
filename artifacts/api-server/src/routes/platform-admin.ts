@@ -540,6 +540,13 @@ router.post("/platform/admin/tenants", requirePlatformAdmin, async (req, res): P
       context: "concierge",
     });
 
+    if ("error" in result.premierships) {
+      // Best-effort: the club is live without it; re-run the seed script.
+      req.log?.warn(
+        { tenantId: result.tenant.id, err: result.premierships.error },
+        "provisioning: premiership honour-board seed failed",
+      );
+    }
     if (adminEmail && parsed.data.password) {
       const passwordHash = await hashPassword(parsed.data.password);
       await db.insert(adminsTable).values({

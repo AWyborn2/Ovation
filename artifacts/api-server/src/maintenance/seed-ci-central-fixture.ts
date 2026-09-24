@@ -14,7 +14,10 @@
  *   - six players, one flagged private;
  *   - three A Grade matches across the 2024/25 season with batting, bowling
  *     and roster lines for both sides, so `centralClubParticipants` (the
- *     crosswalk mint) and the leaderboard/summary reads return rows.
+ *     crosswalk mint) and the leaderboard/summary reads return rows;
+ *   - three premiers: Pinjarra's with a linked decider (scores + team list),
+ *     Pinjarra's with no decider or date, and Mandurah's whose decider team
+ *     includes the private player — for the premiership honour-board seed.
  *
  * Writes go through the TENANT `db` handle (same local database in CI) with
  * raw SQL — `centralDb` is read-only by construction and must stay that way.
@@ -121,13 +124,55 @@ const MATCHES = [
   },
 ];
 
+// Deciders reuse the fixture matches (no extra match rows, so the stats suites'
+// counts are unchanged): 1002 Pinjarra 6/121 def Mandurah 10/120; 1001 Halls
+// Head def Mandurah (Mandurah's side includes the private player).
+const PREMIERS = [
+  {
+    id: 1,
+    season: "2024/25",
+    grade: "A Grade",
+    club: 3,
+    opp: 2,
+    matchId: 1002,
+    date: "2024-10-19",
+    venue: "Fixture Oval",
+    confidence: "high",
+    note: null,
+  },
+  {
+    id: 2,
+    season: "2023/24",
+    grade: "B Grade",
+    club: 3,
+    opp: null,
+    matchId: null,
+    date: null,
+    venue: null,
+    confidence: "low",
+    note: "Minor premiers",
+  },
+  {
+    id: 3,
+    season: "2024/25",
+    grade: "A Grade",
+    club: 2,
+    opp: 1,
+    matchId: 1001,
+    date: "2024-10-12",
+    venue: "Fixture Oval",
+    confidence: "high",
+    note: null,
+  },
+];
+
 async function main(): Promise<void> {
   assertLocal("DATABASE_URL");
   assertLocal("CENTRAL_DATABASE_URL");
 
   await db.execute(sql`
     truncate central.match_batting, central.match_bowling, central.match_rosters,
-             central.matches, central.players, central.clubs
+             central.matches, central.players, central.clubs, central.premiers
   `);
 
   for (const c of CLUBS) {
@@ -184,8 +229,19 @@ async function main(): Promise<void> {
     }
   }
 
+  for (const p of PREMIERS) {
+    await db.execute(sql`
+      insert into central.premiers (id, season, grade, format, club_id, club, decider_round, match_date,
+        opponent_club_id, opponent, venue, confidence, note, match_id)
+      values (${p.id}, ${p.season}, ${p.grade}, 'One Day', ${p.club}, ${CLUBS.find((c) => c.id === p.club)!.name},
+        ${p.matchId == null ? null : "Grand Final"}, ${p.date}, ${p.opp},
+        ${p.opp == null ? null : CLUBS.find((c) => c.id === p.opp)!.name}, ${p.venue}, ${p.confidence}, ${p.note}, ${p.matchId})
+    `);
+  }
+
   console.log(
-    `[seed-ci-central-fixture] seeded ${CLUBS.length} clubs, ${PLAYERS.length} players, ${MATCHES.length} matches.`,
+    `[seed-ci-central-fixture] seeded ${CLUBS.length} clubs, ${PLAYERS.length} players, ` +
+      `${MATCHES.length} matches, ${PREMIERS.length} premiers.`,
   );
 }
 

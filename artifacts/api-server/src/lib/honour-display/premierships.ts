@@ -8,7 +8,11 @@
 import { asc, desc, eq, inArray } from "drizzle-orm";
 import { db, premiershipsTable, premiershipPlayersTable, matchesTable } from "@workspace/db";
 
-import { linkPremiershipMatch, premiershipSeasons } from "../../routes/premierships";
+import {
+  linkPremiershipMatch,
+  premiershipSeasons,
+  resolvePremiershipPlayerIds,
+} from "../../routes/premierships";
 import { composeSeasonGrid } from "./shared";
 import { type BoardEntry, type GridColumnOptionOut, type HonourBoardOut } from "./types";
 
@@ -93,7 +97,8 @@ export async function buildPremierships(
   }
 
   // Grand-final match linking reads the NATIVE matches table (Halls Head's).
-  // For a central tenant those ids belong to another club, so skip linking.
+  // A central tenant links the decider recorded at seed time instead
+  // (`central_match_id`, which its /matches/:id serves).
   type GfMatch = {
     id: number;
     grade: string;
@@ -126,6 +131,8 @@ export async function buildPremierships(
     }
   }
 
+  const playerIds = await resolvePremiershipPlayerIds(tenantId, central, players);
+
   const entries: BoardEntry[] = prems.map((p) => {
     const squad = byPrem.get(p.id) ?? [];
     const captainRow = squad.find((s) => s.isCaptain) ?? null;
@@ -137,8 +144,8 @@ export async function buildPremierships(
       season: seasonLabel(startYear),
       primaryText: tidyCompetition(p.competition),
       detail: p.result ?? null,
-      playerId: captainRow?.playerId ?? null,
-      matchId: central ? null : linkPremiershipMatch(p, gfByKey, finalsByKey),
+      playerId: captainRow ? (playerIds.get(captainRow.id) ?? null) : null,
+      matchId: central ? p.centralMatchId : linkPremiershipMatch(p, gfByKey, finalsByKey),
       meta: {
         venue: p.venue,
         date: p.matchDate,
@@ -150,7 +157,7 @@ export async function buildPremierships(
       },
       squad: squad.map((s) => ({
         name: s.name,
-        playerId: s.playerId,
+        playerId: playerIds.get(s.id) ?? null,
         isCaptain: s.isCaptain,
       })),
     };

@@ -21,6 +21,7 @@
  *   - players.ts       participants, careers, player detail / seasons / match log
  *   - records.ts       club records, centuries, five-fors, milestones
  *   - summaries.ts     club totals, grade summaries, dashboard, ladder, grade/season lists
+ *   - premiers.ts      premierships + decider scores + team lists (honour-board seed)
  * Every central read must stay behind this barrel (eslint `no-restricted-imports`
  * on `@workspace/db/central`) so it is club-filtered, cached and tested in one
  * place. The central DB is READ-ONLY from the app: `select` / `execute` only.
@@ -35,4 +36,5 @@ export * from "./central/leaderboards";
 export * from "./central/players";
 export * from "./central/records";
 export * from "./central/summaries";
+export * from "./central/premiers";
 export * from "./central/playhq-fixtures";
