@@ -73,7 +73,7 @@ export const PACKS: DesignPack[] = [
     id: "broadcast-dark-v1",
     name: "Broadcast Dark",
     description:
-      "The standard Ovation card catalogue — 19 Broadcast Dark designs across all 17 card kinds, in three formats: square feed post, portrait feed post, and story.",
+      "The standard Ovation card catalogue — 19 Broadcast Dark designs across all 17 card kinds, in four formats: square feed post, portrait feed post, story, and 1200×630 landscape.",
     // Pack A covers every card kind (19 designs collapse onto 17 kinds;
     // gradeLeader and clubLeaderboard each carry two category-preset designs).
     // `newCap` is deliberately absent from every pack: the kind was retired

@@ -266,13 +266,21 @@ export function bindInput(input: ShareCardInput): BoundInput {
       set(values, "title", input.title);
       set(values, "subtitle", input.subtitle);
       set(values, "season", input.season);
-      rows["leaders"] = (input.leaders ?? []).map((l: ClubLeaderboardLeader) => ({
-        values: {
-          gradeLabel: l.gradeLabel,
-          playerName: l.playerName,
-          value: l.value,
-        },
-      }));
+      rows["leaders"] = (input.leaders ?? []).map((l: ClubLeaderboardLeader) => {
+        // Same stacked grade block as Weekend Wrap: first token large, the
+        // rest as the small sub-label. Binding the whole "A GRADE" into the
+        // large slot left the sub on its "GRADE" sample ("A GRADE / GRADE"),
+        // and a one-token grade like "U15" read "U15 / GRADE".
+        const [gradeHead, ...gradeRest] = (l.gradeLabel ?? "").trim().split(/\s+/);
+        return {
+          values: {
+            gradeLabel: gradeHead ?? "",
+            gradeSub: gradeRest.join(" "),
+            playerName: l.playerName,
+            value: l.value,
+          },
+        };
+      });
       break;
     }
   }

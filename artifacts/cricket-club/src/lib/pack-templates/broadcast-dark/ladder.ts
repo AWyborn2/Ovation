@@ -1,84 +1,61 @@
 import type { PackCardTemplate } from "../types";
+import { SK_MONO } from "../shared";
 import {
-  bgLayers,
+  ACC,
+  DISP,
+  LINE,
+  MUTED,
+  bdCard,
+  bdChip,
+  bdDisplay,
+  bdEyebrow,
+  bdFooterPresented,
+  bdFormats,
+  bdSplit,
   clubHeaderFields,
-  footerRowShared,
-  footerRowStory,
-  formatRoot,
-  goldChip,
-  hashtagFooterStory,
-  headerTag,
-  presentedBy,
   repeatField,
-  sharedColumnRoot,
-  sharedHeader,
-  sponsorsOff,
-  sponsorsOn,
-  storyHeader,
   textField,
+  type BdFormat,
 } from "./fragments";
 
-// A7 — Ladder. Standings table (≤7 rows) with the club's row highlighted.
-// The highlighted row ships as a data-repeat-variant="club" alternate row
-// template (the bundle styles the club's own row with the gold gradient).
+// A7 — Ladder. Standings table with the club's row on the accent (the
+// `data-repeat-variant="club"` alternate row). Up to ten teams on the tall
+// formats; landscape summarises to the top five beside the title.
 
-function storyRow(variant: "base" | "club"): string {
-  if (variant === "club") {
-    return (
-      `<div data-repeat-variant="club" style="display:flex;align-items:center;padding:19px 26px;border-radius:12px;background:linear-gradient(90deg,color-mix(in srgb, var(--gold,#FBAC27) 18%, transparent),color-mix(in srgb, var(--gold,#FBAC27) 5%, transparent));border:1px solid color-mix(in srgb, var(--gold,#FBAC27) 45%, transparent);margin-bottom:10px;font-weight:700;font-size:30px">` +
-      `<span style="width:56px;font-family:var(--disp,'Anton',sans-serif);color:var(--gold,#F5B21A)">{{row.pos}}</span><span style="flex:1;color:var(--gold,#F5B21A)">{{row.team}}</span><span style="width:66px;text-align:center;font-weight:500;color:rgba(255,255,255,.7)">{{row.played}}</span><span style="width:66px;text-align:center;font-weight:500;color:rgba(255,255,255,.7)">{{row.won}}</span><span style="width:66px;text-align:center;font-weight:500;color:rgba(255,255,255,.7)">{{row.lost}}</span><span style="width:92px;text-align:center;font-family:var(--disp,'Anton',sans-serif);font-size:38px;color:var(--gold,#F5B21A)">{{row.points}}</span></div>`
-    );
-  }
+const CELL = "width:7cqmin;flex:none;text-align:center;font-weight:500;color:rgba(242,245,248,.72)";
+/** Points cell — also the marker the ladder row-count test keys on. */
+const PTS = `width:10cqmin;flex:none;text-align:right;font-family:${DISP}`;
+
+function row(variant: "base" | "club"): string {
+  const club = variant === "club";
+  const box = club
+    ? `background:color-mix(in srgb, ${ACC} 18%, transparent);border:.2cqmin solid color-mix(in srgb, ${ACC} 50%, transparent)`
+    : `background:rgba(255,255,255,.05);border:.2cqmin solid rgba(255,255,255,.08)`;
   return (
-    `<div style="display:flex;align-items:center;padding:19px 26px;border-radius:12px;background:rgba(255,255,255,.04);margin-bottom:10px;font-weight:700;font-size:30px">` +
-    `<span style="width:56px;font-family:var(--disp,'Anton',sans-serif);color:rgba(255,255,255,.55)">{{row.pos}}</span><span style="flex:1">{{row.team}}</span><span style="width:66px;text-align:center;font-weight:500;color:rgba(255,255,255,.7)">{{row.played}}</span><span style="width:66px;text-align:center;font-weight:500;color:rgba(255,255,255,.7)">{{row.won}}</span><span style="width:66px;text-align:center;font-weight:500;color:rgba(255,255,255,.7)">{{row.lost}}</span><span style="width:92px;text-align:center;font-family:var(--disp,'Anton',sans-serif);font-size:38px">{{row.points}}</span></div>`
+    `<div${club ? ' data-repeat-variant="club"' : ""} style="display:flex;align-items:center;padding:1.1cqmin 2.2cqmin;margin-top:.8cqmin;border-radius:1cqmin;${box};font-weight:700;font-size:2.9cqmin;line-height:1.2">` +
+    `<span style="width:6cqmin;flex:none;font-family:${DISP};color:${club ? ACC : MUTED}">{{row.pos}}</span>` +
+    `<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis${club ? `;color:${ACC}` : ""}">{{row.team}}</span>` +
+    `<span style="${CELL}">{{row.played}}</span><span style="${CELL}">{{row.won}}</span><span style="${CELL}">{{row.lost}}</span>` +
+    `<span style="${PTS};font-size:3.6cqmin${club ? `;color:${ACC}` : ""}">{{row.points}}</span>` +
+    `</div>`
   );
 }
 
-function sharedRow(variant: "base" | "club"): string {
-  if (variant === "club") {
-    return (
-      `<div data-repeat-variant="club" style="flex:1;display:flex;align-items:center;padding:0 26px;border-radius:12px;background:linear-gradient(90deg,color-mix(in srgb, var(--gold,#FBAC27) 18%, transparent),color-mix(in srgb, var(--gold,#FBAC27) 5%, transparent));border:1px solid color-mix(in srgb, var(--gold,#FBAC27) 45%, transparent);font-weight:700;font-size:28px">` +
-      `<span style="width:52px;font-family:var(--disp,'Anton'),sans-serif;color:var(--gold,#FBAC27)">{{row.pos}}</span><span style="flex:1;color:var(--gold,#FBAC27)">{{row.team}}</span><span style="width:58px;text-align:center;font-weight:500;color:rgba(255,255,255,.7)">{{row.played}}</span><span style="width:58px;text-align:center;font-weight:500;color:rgba(255,255,255,.7)">{{row.won}}</span><span style="width:58px;text-align:center;font-weight:500;color:rgba(255,255,255,.7)">{{row.lost}}</span><span style="width:80px;text-align:center;font-family:var(--disp,'Anton'),sans-serif;font-size:36px;color:var(--gold,#FBAC27)">{{row.points}}</span></div>`
-    );
-  }
-  return (
-    `<div style="flex:1;display:flex;align-items:center;padding:0 26px;border-radius:12px;background:rgba(255,255,255,.04);font-weight:700;font-size:28px">` +
-    `<span style="width:52px;font-family:var(--disp,'Anton'),sans-serif;color:rgba(255,255,255,.55)">{{row.pos}}</span><span style="flex:1">{{row.team}}</span><span style="width:58px;text-align:center;font-weight:500;color:rgba(255,255,255,.7)">{{row.played}}</span><span style="width:58px;text-align:center;font-weight:500;color:rgba(255,255,255,.7)">{{row.won}}</span><span style="width:58px;text-align:center;font-weight:500;color:rgba(255,255,255,.7)">{{row.lost}}</span><span style="width:80px;text-align:center;font-family:var(--disp,'Anton'),sans-serif;font-size:36px">{{row.points}}</span></div>`
-  );
+function build(fmt: BdFormat): string {
+  const head =
+    bdEyebrow("{{competitionName}}") + bdDisplay("{{gradeLabel}} LADDER", 10, ";line-height:.92");
+  const table =
+    `<div style="display:flex;align-items:center;padding:0 2.2cqmin .6cqmin;font-family:${SK_MONO};font-weight:600;font-size:1.9cqmin;letter-spacing:.12em;color:${MUTED};border-bottom:.2cqmin solid ${LINE}">` +
+    `<span style="width:6cqmin;flex:none">#</span><span style="flex:1">TEAM</span><span style="width:7cqmin;flex:none;text-align:center">P</span><span style="width:7cqmin;flex:none;text-align:center">W</span><span style="width:7cqmin;flex:none;text-align:center">L</span><span style="width:10cqmin;flex:none;text-align:right">PTS</span>` +
+    `</div>` +
+    `<div data-repeat="rows" data-repeat-max="${fmt === "landscape" ? 5 : 10}">${row("club")}${row("base")}</div>`;
+  return bdCard({
+    chip: bdChip("LADDER"),
+    tag: "{{asOfLabel}}",
+    body: bdSplit(fmt, head, table),
+    footer: bdFooterPresented("ladder via", { offLeft: "hashtagsExtra" }),
+  });
 }
-
-const storyHtml = formatRoot(
-  bgLayers() +
-    storyHeader(goldChip("LADDER", "story") + headerTag("{{asOfLabel}}")) +
-    `<div style="position:absolute;top:236px;left:70px;right:70px">` +
-    `<div style="font:600 20px/1 ui-monospace,Menlo,monospace;letter-spacing:.22em;color:var(--gold,#F5B21A)">{{competitionName}}</div>` +
-    `<div style="font-family:var(--disp,'Anton',sans-serif);font-size:150px;line-height:.94;text-transform:uppercase;margin-top:12px">{{gradeLabel}} LADDER</div>` +
-    `</div>` +
-    `<div style="position:absolute;top:640px;left:70px;right:70px">` +
-    `<div style="display:flex;align-items:center;padding:0 26px 14px;font:600 18px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:rgba(255,255,255,.45)">` +
-    `<span style="width:56px">#</span><span style="flex:1">TEAM</span><span style="width:66px;text-align:center">P</span><span style="width:66px;text-align:center">W</span><span style="width:66px;text-align:center">L</span><span style="width:92px;text-align:center">PTS</span>` +
-    `</div>` +
-    `<div data-repeat="rows">${storyRow("club")}${storyRow("base")}</div>` +
-    `</div>` +
-    sponsorsOn(footerRowStory(56, presentedBy("ladder via"))) +
-    hashtagFooterStory(60),
-);
-
-const sharedHtml = sharedColumnRoot(
-  bgLayers(),
-  sharedHeader(goldChip("LADDER", "shared") + headerTag("{{asOfLabel}}")) +
-    `<div style="flex:none;margin-top:calc(var(--k,1.4)*10px)"><div style="font:600 20px/1 ui-monospace,Menlo,monospace;letter-spacing:.22em;color:var(--gold,#FBAC27)">{{competitionName}}</div><div style="font-family:var(--disp,'Anton'),sans-serif;font-size:calc(var(--k,1.4)*96px);line-height:.94;text-transform:uppercase;margin-top:10px">{{gradeLabel}} LADDER</div></div>` +
-    `<div style="flex:none;display:flex;align-items:center;padding:calc(var(--k,1.4)*14px) 26px 12px;font:600 17px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:rgba(255,255,255,.45)"><span style="width:52px">#</span><span style="flex:1">TEAM</span><span style="width:58px;text-align:center">P</span><span style="width:58px;text-align:center">W</span><span style="width:58px;text-align:center">L</span><span style="width:80px;text-align:center">PTS</span></div>` +
-    `<div data-repeat="rows" style="flex:1;min-height:0;display:flex;flex-direction:column;gap:9px">${sharedRow("club")}${sharedRow("base")}</div>` +
-    footerRowShared(
-      sponsorsOn(presentedBy("ladder via")) +
-        sponsorsOff(
-          `<div style="font-weight:700;font-size:22px;letter-spacing:.12em;color:var(--gold,#FBAC27)">{{hashtagsExtra}}</div>`,
-        ),
-      ";margin-top:calc(var(--k,1.4)*16px)",
-    ),
-);
 
 export const ladder: PackCardTemplate = {
   kind: "ladder",
@@ -111,8 +88,5 @@ export const ladder: PackCardTemplate = {
       ],
     },
   ],
-  formats: {
-    story: storyHtml,
-    shared: sharedHtml,
-  },
+  formats: bdFormats(build),
 };

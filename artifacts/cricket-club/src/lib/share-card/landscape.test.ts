@@ -30,9 +30,15 @@ describe("landscape renders", () => {
     expect(packNativeSize("landscape")).toEqual({ w: 1200, h: 630 });
   });
 
-  it("letterboxes every pack's square design at the frame's height", () => {
+  it("letterboxes the square design of every pack without a landscape layout", () => {
     const input = sampleCardInput("century");
-    for (const { packId } of listPackManifests()) {
+    const packs = listPackManifests().filter(
+      (p) => !p.designs.some((d) => d.kind === "century" && hasLandscapeFormat(d.template.formats)),
+    );
+    // Broadcast Dark ships real landscape layouts since U12; the others still
+    // fall back until U13.
+    expect(packs.length).toBeGreaterThan(0);
+    for (const { packId } of packs) {
       const html = renderPackCard(
         input,
         "landscape",
@@ -49,6 +55,21 @@ describe("landscape renders", () => {
       expect(html, packId).toContain("width:1080px");
       expect(html, packId).toMatch(/transform:scale\(0\.583/);
     }
+  });
+
+  it("renders a pack's own landscape layout natively at 1200×630 (no letterbox)", () => {
+    const html = renderPackCard(
+      sampleCardInput("century"),
+      "landscape",
+      true,
+      PACK_DEFAULT_TOKENS,
+      false,
+      null,
+      "broadcast-dark-v1",
+    );
+    expect(html).not.toContain("pack-landscape-fallback");
+    expect(html).toContain("width:1200px;height:630px");
+    expect(html).not.toMatch(/transform:scale\(/);
   });
 
   it("leaves square output unchanged by the new format", () => {
