@@ -11,6 +11,15 @@ import { fieldDefaults, hasLandscapeFormat, resolveTemplate, selectFormatHtml } 
 import { packNativeSize, rootStyle, stageInk } from "./tokens";
 import { applyPackData, bindInput } from "./bind";
 import {
+  applyFieldOverrides,
+  hideFields,
+  hideSlots,
+  isEmptyAdjustments,
+  photoFor,
+  renderFreeLayers,
+  type CardAdjustments,
+} from "./adjustments";
+import {
   cleanupEmptyRoles,
   dropEmptyCapNumber,
   dropEmptyImageBlocks,
@@ -39,14 +48,28 @@ export function renderPackCard(
   junior: boolean,
   data?: PackCardData | null,
   packId?: string | null,
+  /** Editor overlay (U15, KTD12). Absent or empty renders byte-identically. */
+  adjustments?: CardAdjustments | null,
+  opts: { animate?: boolean } = {},
 ): string {
+  const adj = isEmptyAdjustments(adjustments) ? null : adjustments;
   const template = resolveTemplate(input, packId);
   if (!template) return "";
 
   // Landscape without a dedicated layout: the square card, scaled to the
   // frame's height and centred on the pack's stage colour (KTD11).
   if (size === "landscape" && !hasLandscapeFormat(template.formats)) {
-    const square = renderPackCard(input, "square", sponsorsOn, tokens, junior, data, packId);
+    const square = renderPackCard(
+      input,
+      "square",
+      sponsorsOn,
+      tokens,
+      junior,
+      data,
+      packId,
+      adj,
+      opts,
+    );
     return letterboxLandscape(square, tokens, packId);
   }
 
@@ -54,7 +77,10 @@ export function renderPackCard(
   // Overlay tenant data (logo, name, hashtags, sponsors, photo) onto the bound
   // input before defaults are merged, so tenant values win over the samples.
   if (data) applyPackData(bound, data, input.kind);
-  const values = { ...fieldDefaults(template), ...bound.values };
+  // Editor field overrides win over the input and the tenant overlay.
+  const values = applyFieldOverrides({ ...fieldDefaults(template), ...bound.values }, adj);
+  // Anything the editor overrode is real content, not a sample to rewrite.
+  for (const key of Object.keys(adj?.fields ?? {})) bound.values[key] = values[key];
   // On a data-bearing render, any template SAMPLE still surfacing (a field the
   // input did not bind) speaks as the tenant rather than a generic club:
   // "YOUR CLUB · 2ND INNINGS" → "MANDURAH · 2ND INNINGS". Only default-derived
@@ -81,7 +107,9 @@ export function renderPackCard(
   // Before slots resolve: an optional block whose image never arrived is removed
   // outright rather than rendering an empty framed placeholder.
   html = dropEmptyImageBlocks(html, bound.images);
-  html = resolveSlots(html, bound.images, values, data?.photoTransform, photoFullBleed);
+  html = hideSlots(html, adj);
+  const photo = photoFor(adj, size)?.value ?? data?.photoTransform;
+  html = resolveSlots(html, bound.images, values, photo, photoFullBleed, adj != null);
   // Drop the "presented by <sponsor>" line entirely when no presenting sponsor
   // resolved (empty value) — must run before substitution while the placeholder
   // is intact. A non-empty sample/tenant value keeps the line.
@@ -91,10 +119,12 @@ export function renderPackCard(
   if (input.kind === "debut" && !values["capNumber"]) {
     html = dropEmptyCapNumber(html);
   }
+  html = hideFields(html, adj);
   html = substituteFields(html, values);
   html = cleanupEmptyRoles(html);
 
-  return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest(packId).inkTint)}">${html}</div>`;
+  const layers = renderFreeLayers(adj, size, opts);
+  return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest(packId).inkTint)}">${html}${layers}</div>`;
 }
 
 /** Wrap a rendered square card in a 1200×630 frame, scaled and centred. */

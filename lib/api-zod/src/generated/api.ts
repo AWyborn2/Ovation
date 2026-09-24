@@ -6668,7 +6668,14 @@ export const UpdateSocialDraftParams = zod.object({
 
 export const UpdateSocialDraftBody = zod.object({
   "caption": zod.string().optional(),
-  "photoUrl": zod.string().nullish().describe('A library or uploaded image URL; null removes the photo.')
+  "photoUrl": zod.string().nullish().describe('A library or uploaded image URL; null removes the photo.'),
+  "adjustments": zod.union([zod.object({
+  "fields": zod.record(zod.string(), zod.string()).optional(),
+  "hidden": zod.array(zod.string()).optional(),
+  "photo": zod.record(zod.string(), zod.unknown()).optional(),
+  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
+  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),zod.null()]).optional().describe('Editor overlay (see CardAdjustments); null clears every edit.')
 })
 
 export const UpdateSocialDraftResponse = zod.object({

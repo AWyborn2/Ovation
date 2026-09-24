@@ -12643,6 +12643,38 @@ components:
         photoUrl:
           type: ["string", "null"]
           description: "A library or uploaded image URL; null removes the photo."
+        adjustments:
+          description: "Editor overlay (see CardAdjustments); null clears every edit."
+          anyOf:
+            - $ref: "#/components/schemas/CardAdjustments"
+            - type: "null"
+
+    CardAdjustments:
+      type: object
+      description: >-
+        Editor overlay applied over a pack template (KTD12). Content (field
+        overrides, hidden elements, free-layer content) is shared across
+        formats; geometry (photo transform, layer boxes) is keyed by format.
+        The web renderer owns the detailed shape; the server stores it as-is.
+      additionalProperties: true
+      properties:
+        fields:
+          type: object
+          additionalProperties: { type: string }
+        hidden:
+          type: array
+          items: { type: string }
+        photo:
+          type: object
+          additionalProperties: true
+        photoEditedAt:
+          type: object
+          additionalProperties: { type: number }
+        layers:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
 
     SocialDraft:
       type: object

@@ -4716,6 +4716,26 @@ export interface PostPack {
   zipUrl: string;
 }
 
+export type CardAdjustmentsFields = {[key: string]: string};
+
+export type CardAdjustmentsPhoto = { [key: string]: unknown };
+
+export type CardAdjustmentsPhotoEditedAt = {[key: string]: number};
+
+export type CardAdjustmentsLayersItem = { [key: string]: unknown };
+
+/**
+ * Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.
+ */
+export interface CardAdjustments {
+  fields?: CardAdjustmentsFields;
+  hidden?: string[];
+  photo?: CardAdjustmentsPhoto;
+  photoEditedAt?: CardAdjustmentsPhotoEditedAt;
+  layers?: CardAdjustmentsLayersItem[];
+  [key: string]: unknown;
+ }
+
 export interface UpdateSocialDraftRequest {
   caption?: string;
   /**
@@ -4723,6 +4743,8 @@ export interface UpdateSocialDraftRequest {
      * @nullable
      */
   photoUrl?: string | null;
+  /** Editor overlay (see CardAdjustments); null clears every edit. */
+  adjustments?: CardAdjustments | null;
 }
 
 export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraftStatus];
