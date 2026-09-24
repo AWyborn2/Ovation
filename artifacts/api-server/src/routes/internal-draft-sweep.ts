@@ -4,6 +4,7 @@ import { eq, isNull } from "drizzle-orm";
 import { db, tenantsTable } from "@workspace/db";
 import { RunDraftSweepBody } from "@workspace/api-zod";
 import { runDraftSweep } from "../lib/draft-sweep";
+import { env } from "../config";
 
 /**
  * `POST /api/internal/draft-sweep` — the machine-to-machine entry to the
@@ -17,7 +18,7 @@ import { runDraftSweep } from "../lib/draft-sweep";
 const router: IRouter = Router();
 
 function secretMatches(req: Request): boolean {
-  const expected = process.env.SOCIAL_SWEEP_SECRET;
+  const expected = env.SOCIAL_SWEEP_SECRET();
   const given = req.get("x-sweep-secret");
   if (!expected || !given) return false;
   const a = Buffer.from(given);

@@ -72,6 +72,10 @@ export const env = {
   RENDER_HARNESS_ORIGIN: () => optional("RENDER_HARNESS_ORIGIN"),
   PUPPETEER_EXECUTABLE_PATH: () => optional("PUPPETEER_EXECUTABLE_PATH"),
   CHROMIUM_PATH: () => optional("CHROMIUM_PATH"),
+
+  // ── Social Studio drafting sweep ─────────────────────────────────────────
+  /** Shared secret for POST /api/internal/draft-sweep; unset = endpoint closed. */
+  SOCIAL_SWEEP_SECRET: () => optional("SOCIAL_SWEEP_SECRET"),
 } as const;
 
 const positiveInt = z.coerce.number().int().positive();
