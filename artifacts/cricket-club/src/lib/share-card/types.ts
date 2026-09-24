@@ -291,11 +291,14 @@ export type ShareCardInput =
       title: string;
       subtitle?: string | null;
       season: string;
-      category: "Runs" | "Wickets";
+      category: ClubLeaderboardCategory;
       leaders: ClubLeaderboardLeader[];
       /** JUNIOR card: forces the junior brown palette + junior labels. */
       junior?: boolean;
     };
+
+/** What a Club Leaderboard ranks each grade by. */
+export type ClubLeaderboardCategory = "Runs" | "Wickets" | "Dismissals";
 
 export type CardKind = ShareCardInput["kind"];
 

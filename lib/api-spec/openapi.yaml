@@ -7591,9 +7591,10 @@ components:
     ClubSeasonGradeLeaders:
       type: object
       description: >-
-        A grade's season leaders for the Club Runs/Wickets leaderboard card
-        (A19/A20). Either leader is null when the grade has no eligible player.
-      required: [gradeLabel, topRunScorer, topWicketTaker]
+        A grade's season leaders for the Club Runs/Wickets/Dismissals
+        leaderboard card (A19/A20). A leader is null when the grade has no
+        eligible player. Dismissals are catches plus stumpings.
+      required: [gradeLabel, topRunScorer, topWicketTaker, topDismissals]
       properties:
         gradeLabel:
           type: string
@@ -7602,6 +7603,10 @@ components:
             - $ref: "#/components/schemas/CardLeader"
             - type: "null"
         topWicketTaker:
+          oneOf:
+            - $ref: "#/components/schemas/CardLeader"
+            - type: "null"
+        topDismissals:
           oneOf:
             - $ref: "#/components/schemas/CardLeader"
             - type: "null"

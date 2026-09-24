@@ -397,9 +397,19 @@ describe("centralClubTotalsBySeason (Club leaderboard card prefill)", () => {
       ],
       [{ participantId: "guid-bat", value: 350 }], // A Grade batting agg
       [{ participantId: "guid-bowl", value: 18 }], // A Grade bowling agg
+      // A Grade fielding: the keeper's 6 catches + 3 stumpings (9) beat the
+      // fielder's 7 catches; run-outs don't count toward dismissals.
+      [
+        { participantId: "guid-keep", kind: "caught", n: 6 },
+        { participantId: "guid-keep", kind: "stumped", n: 3 },
+        { participantId: "guid-field", kind: "caught", n: 7 },
+        { participantId: "guid-field", kind: "run out", n: 4 },
+      ],
       [
         { participantId: "guid-bat", displayName: "J Smith", isPrivate: 0 },
         { participantId: "guid-bowl", displayName: "B Jones", isPrivate: 0 },
+        { participantId: "guid-keep", displayName: "K Gloves", isPrivate: 0 },
+        { participantId: "guid-field", displayName: "F Slips", isPrivate: 0 },
       ],
     );
     const out = await centralClubTotalsBySeason(5, 2024);
@@ -408,6 +418,7 @@ describe("centralClubTotalsBySeason (Club leaderboard card prefill)", () => {
         gradeLabel: "A Grade",
         topRunScorer: { playerName: "J Smith", value: 350 },
         topWicketTaker: { playerName: "B Jones", value: 18 },
+        topDismissals: { playerName: "K Gloves", value: 9 },
       },
     ]);
   });
@@ -424,6 +435,7 @@ describe("centralClubTotalsBySeason (Club leaderboard card prefill)", () => {
         { participantId: "pub-guid", value: 300 },
       ],
       [], // no bowling agg rows
+      [], // no fielding rows
       [
         { participantId: "priv-guid", displayName: "Private Star", isPrivate: 1 },
         { participantId: "pub-guid", displayName: "Public Player", isPrivate: 0 },
@@ -435,6 +447,7 @@ describe("centralClubTotalsBySeason (Club leaderboard card prefill)", () => {
         gradeLabel: "B Grade",
         topRunScorer: { playerName: "Public Player", value: 300 },
         topWicketTaker: null,
+        topDismissals: null,
       },
     ]);
   });
