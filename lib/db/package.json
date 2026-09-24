@@ -8,7 +8,8 @@
     "./schema": "./src/schema/index.ts",
     "./central": "./src/central.ts",
     "./central-queries": "./src/central-queries.ts",
-    "./provision": "./src/provision.ts"
+    "./provision": "./src/provision.ts",
+    "./premierships-seed": "./src/premierships-seed.ts"
   },
   "scripts": {
     "generate": "drizzle-kit generate --config ./drizzle.config.ts",
