@@ -30,6 +30,11 @@ import { resolveCuration } from "./central-curation";
 
 export const DEFAULT_MIN_INNINGS = 10;
 export const DEFAULT_MIN_OVERS = 50;
+/**
+ * A batting strike rate needs this many recorded balls faced to count, so a
+ * few innings with ball counts can't produce a club "best" of 500+.
+ */
+export const MIN_STRIKE_RATE_BALLS = 120;
 
 export interface DistributionOptions {
   fromSeason?: number;
@@ -62,6 +67,8 @@ export interface DistributionRawRow {
   ballsBowled: number | null;
   /** Runs conceded in those same spells (economy numerator). */
   runsOffBallsBowled: number | null;
+  /** Wickets taken in those same spells (bowling strike-rate denominator). */
+  wicketsOffBallsBowled?: number | null;
   maidens: number | null;
 }
 
@@ -121,7 +128,9 @@ export function buildGradeDistribution(
           hundreds: r.hundreds,
           ballsFaced: r.ballsFaced,
           strikeRate:
-            r.ballsFaced && r.ballsFaced > 0 && r.runsOffBallsFaced != null
+            r.ballsFaced != null &&
+            r.ballsFaced >= MIN_STRIKE_RATE_BALLS &&
+            r.runsOffBallsFaced != null
               ? round2((r.runsOffBallsFaced / r.ballsFaced) * 100)
               : null,
         }
@@ -136,7 +145,12 @@ export function buildGradeDistribution(
           runsConceded: r.runsConceded,
           average: r.wickets > 0 ? round2(r.runsConceded / r.wickets) : null,
           economy: r.runsOffBallsBowled != null ? round2((r.runsOffBallsBowled / balls) * 6) : null,
-          strikeRate: r.wickets > 0 ? round2(balls / r.wickets) : null,
+          // Balls and wickets from the same spells: career wickets over
+          // scorecard-era balls would understate it badly.
+          strikeRate: (() => {
+            const w = r.wicketsOffBallsBowled ?? r.wickets;
+            return w > 0 ? round2(balls / w) : null;
+          })(),
           fiveWickets: r.fiveWickets,
         }
       : null;
@@ -243,16 +257,21 @@ export async function loadNativeDistributionRows(
   const lineRows = await db.execute(sql`
     SELECT
       x.player_id AS "playerId",
-      (SUM(x.balls) FILTER (WHERE x.batted AND x.balls IS NOT NULL))::int AS "ballsFaced",
-      (SUM(COALESCE(x.runs, 0)) FILTER (WHERE x.batted AND x.balls IS NOT NULL))::int
+      -- A zero ball count means "not recorded" on imported scorecards, so
+      -- only innings and spells with balls > 0 feed the rates.
+      (SUM(x.balls) FILTER (WHERE x.batted AND x.balls > 0))::int AS "ballsFaced",
+      (SUM(COALESCE(x.runs, 0)) FILTER (WHERE x.batted AND x.balls > 0))::int
         AS "runsOffBallsFaced",
-      (SUM(x.balls_bowled) FILTER (WHERE x.balls_bowled IS NOT NULL))::int AS "ballsBowled",
-      (SUM(COALESCE(x.runs_conceded, 0)) FILTER (WHERE x.balls_bowled IS NOT NULL))::int
+      (SUM(x.balls_bowled) FILTER (WHERE x.balls_bowled > 0))::int AS "ballsBowled",
+      (SUM(COALESCE(x.runs_conceded, 0)) FILTER (WHERE x.balls_bowled > 0))::int
         AS "runsOffBallsBowled",
+      (SUM(COALESCE(x.wickets, 0)) FILTER (WHERE x.balls_bowled > 0))::int
+        AS "wicketsOffBallsBowled",
       (SUM(COALESCE(x.maidens, 0)) FILTER (WHERE x.bowled))::int AS maidens
     FROM (
       SELECT
         l.player_id, l.batted, l.balls, l.runs, l.bowled, l.maidens, l.runs_conceded,
+        l.wickets,
         CASE
           WHEN l.bowled AND trim(l.overs) ~ '^[0-9]+(\\.[0-5])?$'
             THEN split_part(trim(l.overs), '.', 1)::int * 6
@@ -292,6 +311,7 @@ export async function loadNativeDistributionRows(
       runsOffBallsFaced: nOrNull(l?.runsOffBallsFaced),
       ballsBowled: nOrNull(l?.ballsBowled),
       runsOffBallsBowled: nOrNull(l?.runsOffBallsBowled),
+      wicketsOffBallsBowled: nOrNull(l?.wicketsOffBallsBowled),
       maidens: nOrNull(l?.maidens),
     };
   });
@@ -348,6 +368,7 @@ export async function loadCentralDistributionRows(
       runsOffBallsFaced: r.runsOffBallsFaced,
       ballsBowled: r.ballsBowled,
       runsOffBallsBowled: r.runsOffBallsBowled,
+      wicketsOffBallsBowled: r.wicketsOffBallsBowled,
       maidens: r.maidens,
     });
   }

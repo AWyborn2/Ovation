@@ -95,6 +95,29 @@ export function battingStrikeRate(runs: number, balls: number | null): number | 
   return balls != null && balls > 0 ? (runs / balls) * 100 : null;
 }
 
+/** A recorded ball count. Imported scorecards store 0 for "not recorded". */
+export function knownBalls(balls: number | null | undefined): number | null {
+  return balls != null && balls > 0 ? balls : null;
+}
+
+/**
+ * Runs per 100 balls over only the innings that record balls, so runs from
+ * innings without a ball count never inflate the rate.
+ */
+export function strikeRateOverKnownBalls(
+  innings: ReadonlyArray<{ runs?: number | null; balls?: number | null }>,
+): number | null {
+  let runs = 0;
+  let balls = 0;
+  for (const inn of innings) {
+    const b = knownBalls(inn.balls);
+    if (b == null) continue;
+    runs += inn.runs ?? 0;
+    balls += b;
+  }
+  return battingStrikeRate(runs, balls > 0 ? balls : null);
+}
+
 export function bowlingAverage(runsConceded: number, wickets: number): number | null {
   return wickets > 0 ? runsConceded / wickets : null;
 }

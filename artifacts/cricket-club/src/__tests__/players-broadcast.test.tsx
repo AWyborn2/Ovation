@@ -127,6 +127,16 @@ describe("Player detail (Broadcast U8)", () => {
     expect(screen.getAllByText("112*").length).toBeGreaterThan(0);
     expect(screen.getByText("Players").closest("a")?.getAttribute("href")).toBe("/players");
   });
+  it("says the debut predates the season rows when the player has pre-scorecard games", async () => {
+    renderDetail({
+      "/api/players/42": PLAYER,
+      "/api/players/42/seasons": [
+        { grade: "A Grade", season: null, games: 120, runs: 3000, highScore: "140" },
+        { grade: "A Grade", season: 2022, games: 10, runs: 300, highScore: "74" },
+      ],
+    });
+    expect(await screen.findByText(/Debut pre-2022\/23/)).toBeTruthy();
+  });
 
   it("falls back to an initials tile without a photo, and shows the photo when set", async () => {
     renderDetail({ "/api/players/42": PLAYER });

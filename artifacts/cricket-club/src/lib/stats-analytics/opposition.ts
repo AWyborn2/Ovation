@@ -3,11 +3,12 @@ import { type InningsEntry, inningsOf, isOut, matchBallsBowled } from "./range";
 import {
   type Analytic,
   battingAverage,
-  battingStrikeRate,
   bowlingAverage,
   economyRate,
   insufficient,
   ready,
+  knownBalls,
+  strikeRateOverKnownBalls,
   sumKnown,
 } from "./shared";
 import { NOT_RECORDED_REASON } from "./dismissals";
@@ -64,6 +65,8 @@ export function oppositionTable(matches: ReadonlyArray<PlayerMatchLine>): Opposi
   type Acc = {
     row: OppositionRow;
     balls: (number | null)[];
+    /** Each innings' runs and balls, for a strike rate over recorded balls only. */
+    bat: { runs: number; balls: number | null }[];
     bowledBalls: (number | null)[];
     latest: number;
   };
@@ -102,6 +105,7 @@ export function oppositionTable(matches: ReadonlyArray<PlayerMatchLine>): Opposi
           bestBowling: null,
         },
         balls: [],
+        bat: [],
         bowledBalls: [],
         latest: -Infinity,
       };
@@ -121,7 +125,8 @@ export function oppositionTable(matches: ReadonlyArray<PlayerMatchLine>): Opposi
       r.runs += runs;
       if (isOut(inn)) r.outs += 1;
       else r.notOuts += 1;
-      acc.balls.push(inn.balls);
+      acc.balls.push(knownBalls(inn.balls));
+      acc.bat.push({ runs, balls: inn.balls });
       if (
         !r.highScore ||
         runs > r.highScore.runs ||
@@ -144,11 +149,11 @@ export function oppositionTable(matches: ReadonlyArray<PlayerMatchLine>): Opposi
     }
   });
 
-  const rows = [...byKey.values()].map(({ row, balls, bowledBalls }) => {
+  const rows = [...byKey.values()].map(({ row, balls, bat, bowledBalls }) => {
     row.ballsFaced = sumKnown(balls);
     row.ballsBowled = sumKnown(bowledBalls);
     row.average = battingAverage(row.runs, row.outs);
-    row.strikeRate = battingStrikeRate(row.runs, row.ballsFaced);
+    row.strikeRate = strikeRateOverKnownBalls(bat);
     row.bowlingAverage = bowlingAverage(row.runsConceded, row.wickets);
     row.economy = economyRate(row.runsConceded, row.ballsBowled);
     return row;

@@ -199,10 +199,14 @@ export function seasonTotals(rows: ReadonlyArray<PlayerSeasonStat>): SeasonTotal
     catches += r.catches ?? 0;
     highScore = betterHighScore(highScore, parseHighScore(r.highScore));
     bestBowling = betterFigures(bestBowling, parseBestBowling(r.bestBowling));
-    balls.push(r.ballsFaced);
-    if (r.ballsFaced != null) runsWithBalls += r.runs ?? 0;
-    bowled.push(r.ballsBowled);
-    if (r.ballsBowled != null) {
+    // Imported seasons store 0 for "balls not recorded", so only a positive
+    // count is a real one; the rest never reach the rates.
+    const faced = r.ballsFaced != null && r.ballsFaced > 0 ? r.ballsFaced : null;
+    const spells = r.ballsBowled != null && r.ballsBowled > 0 ? r.ballsBowled : null;
+    balls.push(faced);
+    if (faced != null) runsWithBalls += r.runs ?? 0;
+    bowled.push(spells);
+    if (spells != null) {
       concededWithBalls += r.runsConceded ?? 0;
       wicketsWithBalls += r.wickets ?? 0;
     }

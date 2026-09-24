@@ -67,6 +67,8 @@ export interface CentralGradeDistributionRow {
   ballsBowled: number | null;
   /** Runs conceded in those same spells, the economy numerator. */
   runsOffBallsBowled: number | null;
+  /** Wickets taken in those same spells, the bowling strike-rate denominator. */
+  wicketsOffBallsBowled: number | null;
   maidens: number;
   catches: number;
 }
@@ -160,8 +162,8 @@ async function centralGradeDistributionImpl(
         (count(*) filter (where kind <> 'dnb' and runs >= 100))::int as hundreds,
         (count(*) filter (where kind <> 'dnb' and runs >= 50 and runs < 100))::int as fifties,
         (max(runs) filter (where kind <> 'dnb'))::int as high_score,
-        (sum(balls) filter (where kind <> 'dnb' and balls is not null))::int as balls_faced,
-        (sum(runs) filter (where kind <> 'dnb' and balls is not null))::int as runs_off_balls_faced
+        (sum(balls) filter (where kind <> 'dnb' and balls > 0))::int as balls_faced,
+        (sum(runs) filter (where kind <> 'dnb' and balls > 0))::int as runs_off_balls_faced
       from bat_lines
       group by participant_id
     ),
@@ -186,8 +188,9 @@ async function centralGradeDistributionImpl(
         sum(wickets)::int as wickets,
         sum(runs)::int as runs_conceded,
         (count(*) filter (where wickets >= 5))::int as five_wickets,
-        (sum(balls) filter (where balls is not null))::int as balls_bowled,
-        (sum(runs) filter (where balls is not null))::int as runs_off_balls_bowled,
+        (sum(balls) filter (where balls > 0))::int as balls_bowled,
+        (sum(runs) filter (where balls > 0))::int as runs_off_balls_bowled,
+        (sum(wickets) filter (where balls > 0))::int as wickets_off_balls_bowled,
         sum(maidens)::int as maidens
       from bowl_lines
       group by participant_id
@@ -225,6 +228,7 @@ async function centralGradeDistributionImpl(
       coalesce(bowl.five_wickets, 0) as "fiveWickets",
       bowl.balls_bowled as "ballsBowled",
       bowl.runs_off_balls_bowled as "runsOffBallsBowled",
+      bowl.wickets_off_balls_bowled as "wicketsOffBallsBowled",
       coalesce(bowl.maidens, 0) as maidens,
       p.display_name as "displayName",
       p.is_private as "isPrivate"
@@ -275,6 +279,7 @@ async function centralGradeDistributionImpl(
         fiveWickets: num(row.fiveWickets),
         ballsBowled: numOrNull(row.ballsBowled),
         runsOffBallsBowled: numOrNull(row.runsOffBallsBowled),
+        wicketsOffBallsBowled: numOrNull(row.wicketsOffBallsBowled),
         maidens: num(row.maidens),
         catches: fieldingByPid.get(participantId)?.catches ?? 0,
       };

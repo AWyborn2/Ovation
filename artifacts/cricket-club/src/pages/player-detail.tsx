@@ -240,9 +240,16 @@ export default function PlayerDetail() {
     (min, r) => (r.season != null && (min == null || r.season < min) ? r.season : min),
     null,
   );
-  const meta = [gradeList[0], debutSeason != null ? `Debut ${seasonLabel(debutSeason)}` : null]
-    .filter(Boolean)
-    .join(" · ");
+  // Games before the first season row (season-less baseline) mean the real
+  // debut predates the season rows, so say so rather than name a season.
+  const playedBefore = seasons.some((r) => r.season == null && (r.games ?? 0) > 0);
+  const debutLabel =
+    debutSeason == null
+      ? null
+      : playedBefore
+        ? `Debut pre-${seasonLabel(debutSeason)}`
+        : `Debut ${seasonLabel(debutSeason)}`;
+  const meta = [gradeList[0], debutLabel].filter(Boolean).join(" · ");
   const chips = [
     gradeList.length > 0 ? `Grades ${gradeList.map(gradeCode).join(" · ")}` : null,
     premsWon > 0 ? `${premsWon} premiership${premsWon === 1 ? "" : "s"}` : null,

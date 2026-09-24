@@ -64,7 +64,8 @@ describe.skipIf(!process.env.DATABASE_URL)("central grade distribution", () => {
     expect(p.playerId).toBe(mapped!.playerId);
     expect(p).toMatchObject({ givenName: "Casey", surname: "Fixture", games: 2 });
     expect(p.batting).toMatchObject({ innings: 2, runs: 41, highScore: 21, ballsFaced: 82 });
-    expect(p.batting.strikeRate).toBe(50);
+    // 41 off 82 balls is below the 120-ball floor for a strike rate (MIN_STRIKE_RATE_BALLS).
+    expect(p.batting.strikeRate).toBeNull();
     // 2 × 8 decimal overs = 96 balls; economy per six balls, SR balls per wicket.
     expect(p.bowling).toMatchObject({
       overs: "16",
