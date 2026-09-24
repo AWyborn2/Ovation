@@ -49,10 +49,16 @@ describe("gold-foil manifest", () => {
     }
   });
 
-  it("ships all three formats for Match Result (as the bundle does)", () => {
-    const entry = GOLD_FOIL_PACK.designs.find((d) => d.kind === "matchSummary");
-    expect(entry).toBeDefined();
-    expect(Object.keys(entry!.template.formats).sort()).toEqual(["portrait", "square", "story"]);
+  it("ships story, shared and landscape for every design (U13 skeleton)", () => {
+    // U13 folds Match Result's separate portrait/square markup into the one
+    // container-query layout every design now serves, plus a landscape.
+    for (const entry of GOLD_FOIL_PACK.designs) {
+      expect(Object.keys(entry.template.formats).sort(), entry.designKey).toEqual([
+        "landscape",
+        "shared",
+        "story",
+      ]);
+    }
   });
 });
 
@@ -73,9 +79,13 @@ describe("gold-foil rendering", () => {
     expect(html).toContain("hhShine");
   });
 
-  it("keeps the concentric groove field on every format", () => {
+  it("keeps the gold pinstripe and double foil frame on every format", () => {
+    // U13: the handoff's foil signature replaces the old concentric grooves.
     for (const size of SIZES) {
-      expect(render("gold-foil-v1", size), size).toContain("repeating-radial-gradient");
+      const html = render("gold-foil-v1", size);
+      expect(html, size).toContain("repeating-linear-gradient(135deg");
+      expect(html, size).toContain("inset:2.6cqmin");
+      expect(html, size).toContain("inset:3.6cqmin");
     }
   });
 
@@ -102,10 +112,11 @@ describe("gold-foil rendering", () => {
     // data-slot markers, turning them into an <img> or a placeholder div.
     const formats = GOLD_FOIL_PACK.designs.find((d) => d.kind === "matchSummary")!.template
       .formats as Record<string, string>;
-    expect(formats.story).toContain('data-slot="photo"');
-    for (const size of ["portrait", "square"]) {
-      expect(formats[size], size).toContain('data-slot="club.logo"');
-      expect(formats[size], size).toContain('data-slot="opposition.logo"');
+    // U13: one layout serves every format; the slots are in all of them.
+    for (const format of ["story", "shared", "landscape"]) {
+      expect(formats[format], format).toContain('data-slot="photo"');
+      expect(formats[format], format).toContain('data-slot="club.logo"');
+      expect(formats[format], format).toContain('data-slot="opposition.logo"');
     }
   });
 

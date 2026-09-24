@@ -141,13 +141,12 @@ export const PACKS: DesignPack[] = [
     // row, so renaming it would orphan their pack selection. Display name only.
     name: "Metallic Foil",
     description:
-      "Grand-final prestige — a milled metal ramp derived from your club's own accent, a foil ribbon with a seal medallion, and an honour-board frame. Your colour, in metal.",
+      "Grand-final prestige — a sepia photo ghost, gold pinstripe and a thin double foil frame, with foil-gradient numerals milled from your club's own accent. Your colour, in metal. Square, portrait, story and 1200×630 landscape.",
     // COVERAGE CONTRACT: this list must match the kinds in the client manifest
     // (`pack-templates/gold-foil/index.ts`). The two registries live in
     // separate packages and are not cross-checked automatically. Declaring a
     // kind here that the client cannot render offers a tenant a pack that falls
     // back to Broadcast Dark; omitting one the client CAN render just hides it.
-    // Gold Foil is being transcribed card by card — grow both lists together.
     cardKinds: [
       "matchSummary",
       "matchDay",
