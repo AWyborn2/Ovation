@@ -1,13 +1,14 @@
-import {
-  db,
-  playersTable,
-  milestoneEventsTable,
-  socialDraftsTable,
-  capRegisterTable,
-} from "@workspace/db";
+import { db, playersTable, milestoneEventsTable, capRegisterTable } from "@workspace/db";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { GRADE_TO_CAP_CATEGORY } from "./cap-sync";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
+import {
+  draftKeys,
+  draftsWithKeyPrefix,
+  findDraftByKey,
+  upsertDraftByKey,
+  withdrawDraft,
+} from "./draft-upsert";
 
 // Fill-ins (playerId >= FILL_IN_THRESHOLD) are excluded from every stats
 // derivation (match-aggregate.ts, points.ts, roundup.ts, stats.ts), so they
@@ -74,6 +75,7 @@ const MATCH_BOARD_KEYS = ["debut", "century", "fiveFor"] as const;
 type MatchBoardKey = (typeof MATCH_BOARD_KEYS)[number];
 
 type Detected = {
+  sourceKey: string;
   playerId: number;
   boardKey: MatchBoardKey;
   tierIndex: number;
@@ -217,6 +219,7 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
       seenDebut.add(key);
       const name = nameFor(l.playerId);
       detected.push({
+        sourceKey: draftKeys.debut(l.playerId, grade),
         playerId: l.playerId,
         boardKey: "debut",
         tierIndex: 4,
@@ -243,6 +246,9 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
   }
 
   // --- Century / five-wicket haul: per innings/spell in this match.
+  // `qualifying` holds every feat this match's lines support right now, so a
+  // correction that removes one (a 100 corrected to 98) withdraws its card.
+  const qualifying = new Set<string>();
   const centHandled = new Set<number>();
   const fiveHandled = new Set<number>();
   for (const l of lines) {
@@ -250,10 +256,27 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
     if (runs >= 100 && !centHandled.has(l.playerId)) {
       centHandled.add(l.playerId);
       const key = `century|${l.playerId}|${grade}|${season}|${roundKey}`;
-      if (!seenInnings.has(key)) {
+      const sourceKey = draftKeys.matchFeat("century", l.playerId, grade, season, round);
+      qualifying.add(sourceKey);
+      const name = nameFor(l.playerId);
+      const cardInput = {
+        kind: "century",
+        playerName: name,
+        grade,
+        runs,
+        balls: l.balls ?? null,
+        notOut: l.notOut,
+        opponent: opponent ?? null,
+        round: round ?? null,
+        photoUrl: photoFor(l.playerId),
+      };
+      if (await findDraftByKey(tenantId, sourceKey)) {
+        // Already drafted: a corrected score refreshes the same card.
+        await upsertFeat(tenantId, sourceKey, cardInput, l.playerId, importId);
+      } else if (!seenInnings.has(key)) {
         seenInnings.add(key);
-        const name = nameFor(l.playerId);
         detected.push({
+          sourceKey,
           playerId: l.playerId,
           boardKey: "century",
           tierIndex: 1,
@@ -270,17 +293,7 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
             balls: l.balls ?? null,
             notOut: l.notOut,
           },
-          cardInput: {
-            kind: "century",
-            playerName: name,
-            grade,
-            runs,
-            balls: l.balls ?? null,
-            notOut: l.notOut,
-            opponent: opponent ?? null,
-            round: round ?? null,
-            photoUrl: photoFor(l.playerId),
-          },
+          cardInput,
         });
       }
     }
@@ -289,11 +302,28 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
     if (wkts >= 5 && !fiveHandled.has(l.playerId)) {
       fiveHandled.add(l.playerId);
       const key = `fiveFor|${l.playerId}|${grade}|${season}|${roundKey}`;
-      if (!seenInnings.has(key)) {
+      const sourceKey = draftKeys.matchFeat("fiveFor", l.playerId, grade, season, round);
+      qualifying.add(sourceKey);
+      const name = nameFor(l.playerId);
+      const figures = `${wkts}/${l.runsConceded ?? "-"}`;
+      const cardInput = {
+        kind: "fiveFor",
+        playerName: name,
+        grade,
+        wickets: wkts,
+        runsConceded: l.runsConceded ?? null,
+        overs: l.overs ?? null,
+        figures,
+        opponent: opponent ?? null,
+        round: round ?? null,
+        photoUrl: photoFor(l.playerId),
+      };
+      if (await findDraftByKey(tenantId, sourceKey)) {
+        await upsertFeat(tenantId, sourceKey, cardInput, l.playerId, importId);
+      } else if (!seenInnings.has(key)) {
         seenInnings.add(key);
-        const name = nameFor(l.playerId);
-        const figures = `${wkts}/${l.runsConceded ?? "-"}`;
         detected.push({
+          sourceKey,
           playerId: l.playerId,
           boardKey: "fiveFor",
           tierIndex: 2,
@@ -311,20 +341,16 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
             overs: l.overs ?? null,
             figures,
           },
-          cardInput: {
-            kind: "fiveFor",
-            playerName: name,
-            grade,
-            wickets: wkts,
-            runsConceded: l.runsConceded ?? null,
-            overs: l.overs ?? null,
-            figures,
-            opponent: opponent ?? null,
-            round: round ?? null,
-            photoUrl: photoFor(l.playerId),
-          },
+          cardInput,
         });
       }
+    }
+  }
+
+  for (const feat of ["century", "fiveFor"] as const) {
+    const prefix = draftKeys.matchFeatPrefix(feat, grade, season, round);
+    for (const d of await draftsWithKeyPrefix(tenantId, prefix)) {
+      if (!qualifying.has(d.sourceKey ?? "")) await withdrawDraft(d);
     }
   }
 
@@ -344,14 +370,34 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
         payload: d.payload,
       })
       .returning();
-    await db.insert(socialDraftsTable).values({
+    await upsertDraftByKey({
       tenantId,
       engine: "milestone",
-      status: "awaiting_review",
+      family: "achievements",
+      sourceKey: d.sourceKey,
       cardInput: d.cardInput,
       appPath: `/players/${d.playerId}`,
       milestoneEventId: event.id,
       sourceImportId: importId,
     });
   }
+}
+
+/** Refresh an already-drafted century / five-for from corrected match data. */
+async function upsertFeat(
+  tenantId: number,
+  sourceKey: string,
+  cardInput: Record<string, unknown>,
+  playerId: number,
+  importId: number,
+): Promise<void> {
+  await upsertDraftByKey({
+    tenantId,
+    engine: "milestone",
+    family: "achievements",
+    sourceKey,
+    cardInput,
+    appPath: `/players/${playerId}`,
+    sourceImportId: importId,
+  });
 }

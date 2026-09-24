@@ -28,6 +28,7 @@ import { getTenantBrand } from "./tenant-brand";
 import { loadMatchDetail } from "./match-detail";
 import { overlayNativeOpponents } from "./club-brand";
 import { getPrivateIds, splitScores, MASK_NAME } from "./junior-helpers";
+import { draftKeys, upsertDraftByKey } from "./draft-upsert";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -250,39 +251,34 @@ async function upsertDraft(
   cardInput: Record<string, unknown>,
   appPath: string,
 ): Promise<"drafted" | "skipped"> {
-  // Check for an existing non-dismissed draft for this match.
-  const [existing] = await db
-    .select({ id: socialDraftsTable.id, status: socialDraftsTable.status })
-    .from(socialDraftsTable)
-    .where(
-      and(
-        eq(socialDraftsTable.tenantId, tenantId),
-        eq(socialDraftsTable.sourceKind, "matchSummary"),
-        eq(socialDraftsTable.sourceMatchId, matchId),
-        eq(socialDraftsTable.sourceMatchIsJunior, junior),
-        ne(socialDraftsTable.status, "dismissed"),
-      ),
-    );
-
-  if (existing) {
-    // Re-ingest: regenerate the card input on the existing draft.
-    await db
-      .update(socialDraftsTable)
-      .set({ cardInput, appPath })
-      .where(eq(socialDraftsTable.id, existing.id));
-    return "drafted";
-  }
-
-  // New draft.
-  await db.insert(socialDraftsTable).values({
+  // Re-ingest refreshes the existing draft (keeping a revision), a posted draft
+  // is only marked stale, and unchanged input is a no-op (KTD3).
+  await upsertDraftByKey({
     tenantId,
     engine: "matchSummary",
+    family: "results",
+    sourceKey: draftKeys.matchSummary(matchId, junior),
+    cardInput,
+    appPath,
     sourceKind: "matchSummary",
     sourceMatchId: matchId,
     sourceMatchIsJunior: junior,
-    status: "awaiting_review",
-    cardInput,
-    appPath,
+    // Drafts from before source keys existed: find them by match and backfill.
+    findLegacy: async () => {
+      const [legacy] = await db
+        .select()
+        .from(socialDraftsTable)
+        .where(
+          and(
+            eq(socialDraftsTable.tenantId, tenantId),
+            eq(socialDraftsTable.sourceKind, "matchSummary"),
+            eq(socialDraftsTable.sourceMatchId, matchId),
+            eq(socialDraftsTable.sourceMatchIsJunior, junior),
+            ne(socialDraftsTable.status, "dismissed"),
+          ),
+        );
+      return legacy ?? null;
+    },
   });
   return "drafted";
 }
