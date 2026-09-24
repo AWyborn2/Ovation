@@ -3484,6 +3484,37 @@ export interface SocialSettings {
   familyConfig?: SocialFamilyConfig;
 }
 
+/**
+ * scheduled (default): central matches past the watermark plus fixture cards. fixtures: fixture cards only.
+ */
+export type DraftSweepRequestScope = typeof DraftSweepRequestScope[keyof typeof DraftSweepRequestScope];
+
+
+export const DraftSweepRequestScope = {
+  scheduled: 'scheduled',
+  fixtures: 'fixtures',
+} as const;
+
+export interface DraftSweepRequest {
+  /** Sweep only this tenant. Omit to sweep every active tenant. */
+  tenantId?: number;
+  /** scheduled (default): central matches past the watermark plus fixture cards. fixtures: fixture cards only. */
+  scope?: DraftSweepRequestScope;
+}
+
+export type DraftSweepResponseResultsItem = {
+  tenantId: number;
+  ok: boolean;
+  centralMatches: number;
+  matchSummaries: number;
+  matchDay: number;
+  teamLists: number;
+};
+
+export interface DraftSweepResponse {
+  results: DraftSweepResponseResultsItem[];
+}
+
 export type SocialFamilySettingUpdateGrades = {[key: string]: boolean};
 
 export interface SocialFamilySettingUpdate {

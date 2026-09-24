@@ -49,6 +49,69 @@ export async function getClubMatchRows(clubId: number): Promise<CentralClubMatch
   );
 }
 
+// ---------------------------------------------------------------------------
+// Drafting-sweep reads (Social Studio, KTD10). Deliberately UNCACHED: the sweep
+// compares against a per-tenant watermark, and a cached read would hide a
+// newly-loaded match until the TTL lapsed.
+// ---------------------------------------------------------------------------
+
+/** The newest central match id involving the club, or 0 when it has none. */
+export async function centralClubMaxMatchId(clubId: number): Promise<number> {
+  const [row] = await centralDb
+    .select({ max: sql<number | null>`max(${centralMatchesTable.matchId})` })
+    .from(centralMatchesTable)
+    .where(clubInvolvedWhere(clubId));
+  return Number(row?.max ?? 0);
+}
+
+/** One central match past the sweep watermark, with its app grade resolved. */
+export interface CentralNewMatch {
+  matchId: number;
+  /** App grade; junior / pathway / unmapped labels never appear (juniors isolation). */
+  grade: string;
+  season: number | null;
+  matchDate: string | null;
+}
+
+/**
+ * The club's central matches with an id above `afterMatchId`, oldest first,
+ * reading at most `limit` rows. Matches whose grade doesn't map to a senior app
+ * grade are dropped, so junior and pathway games never reach the senior
+ * drafters; `lastSeenId` is the highest id read (dropped rows included), which
+ * is how far the caller's watermark may advance.
+ */
+export async function centralClubMatchesAfter(
+  clubId: number,
+  afterMatchId: number,
+  limit: number,
+): Promise<{ matches: CentralNewMatch[]; lastSeenId: number | null }> {
+  const rows = await centralDb
+    .select({
+      matchId: centralMatchesTable.matchId,
+      grade: centralMatchesTable.grade,
+      season: centralMatchesTable.season,
+      matchDate: centralMatchesTable.matchDate,
+    })
+    .from(centralMatchesTable)
+    .where(and(clubInvolvedWhere(clubId), sql`${centralMatchesTable.matchId} > ${afterMatchId}`))
+    .orderBy(centralMatchesTable.matchId)
+    .limit(limit);
+  const out: CentralNewMatch[] = [];
+  let lastSeenId: number | null = null;
+  for (const r of rows) {
+    lastSeenId = r.matchId;
+    const grade = appGradeFromCentral(r.grade);
+    if (grade === null) continue;
+    out.push({
+      matchId: r.matchId,
+      grade,
+      season: parseSeasonStartYear(r.season),
+      matchDate: r.matchDate,
+    });
+  }
+  return { matches: out, lastSeenId };
+}
+
 /** A club's game, shaped as the app's MatchSummary (the club's perspective). */
 export interface CentralMatchSummary {
   id: number;

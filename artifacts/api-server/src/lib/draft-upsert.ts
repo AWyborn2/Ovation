@@ -184,6 +184,7 @@ export async function draftsWithKeyPrefix(
 export const draftKeys = {
   matchSummary: (matchId: number, junior: boolean) =>
     `matchSummary:${junior ? "junior" : "senior"}:${matchId}`,
+  centralMatchSummary: (centralMatchId: number) => `matchSummary:central:${centralMatchId}`,
   careerMilestone: (playerId: number, boardKey: string, tierIndex: number) =>
     `milestone:${playerId}:${boardKey}:${tierIndex}`,
   matchFeat: (

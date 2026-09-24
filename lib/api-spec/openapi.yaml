@@ -4054,6 +4054,36 @@ paths:
                 items:
                   $ref: "#/components/schemas/SocialDraft"
 
+  /internal/draft-sweep:
+    post:
+      operationId: runDraftSweep
+      tags: [socialCards]
+      summary: Run the social drafting sweep (scheduled job / fixtures projection)
+      description: >-
+        Machine-to-machine only. Requires the `x-sweep-secret` header to equal
+        the server's SOCIAL_SWEEP_SECRET; answers 401 otherwise (including when
+        no secret is configured). Sweeps one tenant, or every active tenant when
+        `tenantId` is omitted.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DraftSweepRequest"
+      responses:
+        "200":
+          description: Sweep results per tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftSweepResponse"
+        "400":
+          description: Invalid body
+        "401":
+          description: Missing or wrong sweep secret
+        "404":
+          description: Tenant not found
+
   /social-drafts/pending-count:
     get:
       operationId: getPendingSocialDraftCount
@@ -10593,6 +10623,40 @@ components:
           description: "Season-start override for countdown cards. Null = derive from the earliest upcoming fixture."
         familyConfig:
           $ref: "#/components/schemas/SocialFamilyConfig"
+
+    DraftSweepRequest:
+      type: object
+      properties:
+        tenantId:
+          type: integer
+          description: "Sweep only this tenant. Omit to sweep every active tenant."
+        scope:
+          type: string
+          enum: [scheduled, fixtures]
+          description: "scheduled (default): central matches past the watermark plus fixture cards. fixtures: fixture cards only."
+
+    DraftSweepResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            required: [tenantId, ok, centralMatches, matchSummaries, matchDay, teamLists]
+            properties:
+              tenantId:
+                type: integer
+              ok:
+                type: boolean
+              centralMatches:
+                type: integer
+              matchSummaries:
+                type: integer
+              matchDay:
+                type: integer
+              teamLists:
+                type: integer
 
     SocialFamilySetting:
       type: object

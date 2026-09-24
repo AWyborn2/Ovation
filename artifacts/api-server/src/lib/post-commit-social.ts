@@ -37,7 +37,7 @@ export type CareerTotals = {
   dismissals: number;
 };
 
-type Logger = { error: (obj: unknown, msg?: string) => void };
+export type Logger = { error: (obj: unknown, msg?: string) => void };
 
 /**
  * Snapshot career totals (summed across all grades) per player from the derived
@@ -189,7 +189,7 @@ async function withdrawBrokenCareerMilestones(
  *  - Round-up drafts: top performers per affected grade for the season (gated on
  *    the roundup family, per grade).
  */
-export async function runPostCommitSocial(opts: {
+export type PostCommitSocialOpts = {
   tenantId: number;
   importId: number;
   affectedGrades: string[];
@@ -198,7 +198,9 @@ export async function runPostCommitSocial(opts: {
   logger: Logger;
   /** Present only for per-match commits; drives debut/cap/century/5-for cards. */
   matchContext?: MatchMilestoneContext;
-}): Promise<void> {
+};
+
+export async function runPostCommitSocial(opts: PostCommitSocialOpts): Promise<void> {
   const { tenantId, importId, affectedGrades, season, beforeMap, logger, matchContext } = opts;
   const [socialSettings] = await db
     .select()
@@ -257,7 +259,7 @@ export async function runPostCommitSocial(opts: {
  * emit a single card across the batch. Round-up drafts run once per affected
  * (grade, season). All gated on the social settings engines.
  */
-export async function runBatchPostCommitSocial(opts: {
+export type BatchPostCommitSocialOpts = {
   tenantId: number;
   /** Representative import id (the first committed match) for crossing events. */
   sourceImportId: number;
@@ -267,7 +269,9 @@ export async function runBatchPostCommitSocial(opts: {
   /** One context per committed match, ordered by round so de-dup is stable. */
   matchContexts: MatchMilestoneContext[];
   logger: Logger;
-}): Promise<void> {
+};
+
+export async function runBatchPostCommitSocial(opts: BatchPostCommitSocialOpts): Promise<void> {
   const { tenantId, sourceImportId, beforeMap, affected, matchContexts, logger } = opts;
   const [socialSettings] = await db
     .select()

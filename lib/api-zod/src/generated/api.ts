@@ -6439,6 +6439,27 @@ export const ListSocialDraftsResponse = zod.array(ListSocialDraftsResponseItem)
 
 
 /**
+ * Machine-to-machine only. Requires the `x-sweep-secret` header to equal the server's SOCIAL_SWEEP_SECRET; answers 401 otherwise (including when no secret is configured). Sweeps one tenant, or every active tenant when `tenantId` is omitted.
+ * @summary Run the social drafting sweep (scheduled job / fixtures projection)
+ */
+export const RunDraftSweepBody = zod.object({
+  "tenantId": zod.number().optional().describe('Sweep only this tenant. Omit to sweep every active tenant.'),
+  "scope": zod.enum(['scheduled', 'fixtures']).optional().describe('scheduled (default): central matches past the watermark plus fixture cards. fixtures: fixture cards only.')
+})
+
+export const RunDraftSweepResponse = zod.object({
+  "results": zod.array(zod.object({
+  "tenantId": zod.number(),
+  "ok": zod.boolean(),
+  "centralMatches": zod.number(),
+  "matchSummaries": zod.number(),
+  "matchDay": zod.number(),
+  "teamLists": zod.number()
+}))
+})
+
+
+/**
  * @summary Count of social card drafts still awaiting review
  */
 export const GetPendingSocialDraftCountResponse = zod.object({

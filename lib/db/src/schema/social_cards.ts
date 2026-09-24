@@ -407,6 +407,12 @@ export const socialSettingsTable = pgTable(
     // Admin override for the season start used by countdown cards. Null = derive
     // from the earliest upcoming fixture (min startAt); set = this date wins.
     seasonStartDate: timestamp("season_start_date", { withTimezone: true }),
+    // Drafting sweep (KTD10). For a central-data club: the highest central
+    // match id the sweep has seen. Null until the first sweep, which sets it to
+    // the club's newest match without drafting — history is never backfilled.
+    centralSweepWatermark: integer("central_sweep_watermark"),
+    // When the drafting sweep last completed for this tenant (sweep health, KTD16).
+    lastSweepAt: timestamp("last_sweep_at", { withTimezone: true }),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

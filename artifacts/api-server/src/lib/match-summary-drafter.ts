@@ -26,7 +26,7 @@ import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
 import { matchToSummaryInput, juniorMatchToSummaryInput } from "@workspace/scorecard";
 import { getTenantBrand } from "./tenant-brand";
 import { familyAllows, resolveFamilyConfig } from "./social-families";
-import { loadMatchDetail } from "./match-detail";
+import { loadMatchDetail, loadCentralMatchDetail } from "./match-detail";
 import { overlayNativeOpponents } from "./club-brand";
 import { getPrivateIds, splitScores, MASK_NAME } from "./junior-helpers";
 import { draftKeys, upsertDraftByKey } from "./draft-upsert";
@@ -246,9 +246,26 @@ async function upsertDraft(
   junior: boolean,
   cardInput: Record<string, unknown>,
   appPath: string,
+  central?: { seenAt: Date },
 ): Promise<"drafted" | "skipped"> {
   // Re-ingest refreshes the existing draft (keeping a revision), a posted draft
   // is only marked stale, and unchanged input is a no-op (KTD3).
+  if (central) {
+    // Central match ids are central's own, so they get their own key space and
+    // no native source-match link. The import time is when the sweep first saw
+    // the match (KTD10).
+    await upsertDraftByKey({
+      tenantId,
+      engine: "matchSummary",
+      family: "results",
+      sourceKey: draftKeys.centralMatchSummary(matchId),
+      cardInput,
+      appPath,
+      sourceKind: "matchSummary",
+      sourceImportedAt: central.seenAt,
+    });
+    return "drafted";
+  }
   await upsertDraftByKey({
     tenantId,
     engine: "matchSummary",
@@ -284,6 +301,14 @@ async function upsertDraft(
 // ---------------------------------------------------------------------------
 
 /**
+ * Where senior match ids come from: the tenant's own match tables, or the
+ * central database for a central-data club (ids are central match ids; the
+ * scorecard's own side is mapped to app player ids through the crosswalk).
+ */
+export type MatchSummarySource =
+  { kind: "native" } | { kind: "central"; clubId: number; seenAt: Date };
+
+/**
  * Generate match-summary social-card drafts for senior matches.
  *
  * For each match: loads the full scorecard, checks grade config, dedupes,
@@ -292,6 +317,7 @@ async function upsertDraft(
 export async function generateMatchSummaryDrafts(
   tenantId: number,
   matchIds: number[],
+  source: MatchSummarySource = { kind: "native" },
 ): Promise<DraftResult> {
   const result: DraftResult = { drafted: 0, skipped: 0, errors: [] };
   if (matchIds.length === 0) return result;
@@ -307,7 +333,10 @@ export async function generateMatchSummaryDrafts(
     const batch = matchIds.slice(i, i + BATCH);
     const outcomes = await Promise.allSettled(
       batch.map(async (matchId) => {
-        const detail = await loadMatchDetail(matchId, tenantId);
+        const detail =
+          source.kind === "central"
+            ? await loadCentralMatchDetail({ tenantId, clubId: source.clubId }, matchId)
+            : await loadMatchDetail(matchId, tenantId);
         if (!detail) {
           result.skipped++;
           return;
@@ -323,6 +352,7 @@ export async function generateMatchSummaryDrafts(
           false,
           cardInput as Record<string, unknown>,
           `/matches/${matchId}`,
+          source.kind === "central" ? { seenAt: source.seenAt } : undefined,
         );
         if (outcome === "drafted") result.drafted++;
         else result.skipped++;

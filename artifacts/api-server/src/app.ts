@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { tenantContext } from "./middlewares/tenant-context";
+import internalDraftSweepRouter from "./routes/internal-draft-sweep";
 import { billingWebhookHandler } from "./routes/billing";
 import { goRedirectRouter } from "./routes/social-drafts";
 import { logger } from "./lib/logger";
@@ -98,6 +99,10 @@ app.post(
 // JSON only. No route reads a form-encoded body, and leaving the urlencoded
 // parser mounted would let a cross-site HTML form POST reach a handler.
 app.use(express.json({ limit: "100kb" }));
+
+// Machine-to-machine drafting sweep: secret-protected, and the tenant comes
+// from the body, so it is mounted ahead of host-based tenant resolution.
+app.use("/api/internal", internalDraftSweepRouter);
 
 // Resolve the tenant (header → env → default) for every API request before the
 // routes run, so handlers can read it via getTenantId(req).
