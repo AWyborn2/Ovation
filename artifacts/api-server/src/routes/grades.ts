@@ -16,8 +16,11 @@ import {
   UpdateRecordsDisplaySettingsBody,
   GetSeniorSeasonTopPerformersQueryParams,
   GetGradeLeaderboardQueryParams,
+  GetRecordsQueryParams,
   GetGradeDistributionQueryParams,
 } from "@workspace/api-zod";
+import { recordsFilterFrom } from "../lib/records-analytics";
+import { nativeFilteredRecords } from "../lib/records-native";
 import { requireAdmin } from "../middlewares/require-admin";
 import { page } from "../lib/page";
 import { dataSource } from "../lib/tenant";
@@ -529,12 +532,20 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
 });
 
 router.get("/records", async (req, res): Promise<void> => {
+  // Optional grade / season span (stats plan U9). No params → the original
+  // all-time read on both paths, unchanged.
+  const query = GetRecordsQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const filter = recordsFilterFrom(query.data);
   const source = await dataSource(req);
   if (source.kind === "central") {
     const { centralClubRecords } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
     const [records, mapRows] = await Promise.all([
-      centralClubRecords(source.clubId),
+      filter ? centralClubRecords(source.clubId, filter) : centralClubRecords(source.clubId),
       db
         .select({
           participantId: playerIdMapTable.participantId,
@@ -609,6 +620,11 @@ router.get("/records", async (req, res): Promise<void> => {
       mostFifties: holder(records.mostFifties),
       mostHundreds: holder(records.mostHundreds),
     });
+    return;
+  }
+
+  if (filter) {
+    res.json(await nativeFilteredRecords(filter));
     return;
   }
 

@@ -2260,6 +2260,74 @@ export interface ClubRecords {
   mostHundreds: PlayerRecord;
 }
 
+export type RecordLeaderMetric = typeof RecordLeaderMetric[keyof typeof RecordLeaderMetric];
+
+
+export const RecordLeaderMetric = {
+  runs: 'runs',
+  wickets: 'wickets',
+  catches: 'catches',
+  hundreds: 'hundreds',
+  games: 'games',
+} as const;
+
+export interface RecordLeaderRow {
+  /** Competition rank (ties share a rank, e.g. 1, 2, 2, 4). */
+  rank: number;
+  playerId: number;
+  givenName: string;
+  surname: string;
+  value: number;
+  /**
+     * The player's last senior season at the club (start year, any grade). Null when only pre-scorecard baseline totals exist.
+     * @nullable
+     */
+  lastSeason: number | null;
+}
+
+export interface RecordLeaders {
+  metric: RecordLeaderMetric;
+  entries: RecordLeaderRow[];
+}
+
+export type RecordProgressionKind = typeof RecordProgressionKind[keyof typeof RecordProgressionKind];
+
+
+export const RecordProgressionKind = {
+  highScore: 'highScore',
+  bestBowling: 'bestBowling',
+} as const;
+
+export interface RecordProgressionPoint {
+  playerId: number;
+  givenName: string;
+  surname: string;
+  /** @nullable */
+  grade: string | null;
+  /**
+     * Season start year; null for an undated career record.
+     * @nullable
+     */
+  season: number | null;
+  /**
+     * The match the record was set in, when known.
+     * @nullable
+     */
+  matchId: number | null;
+  /** @nullable */
+  matchDate: string | null;
+  /** Display value, e.g. "145*" or "7/23". */
+  value: string;
+  /** False for the undated curated record appended as the final point. */
+  dated: boolean;
+}
+
+export interface RecordProgression {
+  kind: RecordProgressionKind;
+  /** Each time the record was broken, oldest first. */
+  points: RecordProgressionPoint[];
+}
+
 export interface Admin {
   id: number;
   username: string;
@@ -6332,6 +6400,59 @@ export type UploadMatchBatchBody = {
   /** One or more .xlsx scorecards, and/or a .zip of them */
   files: Blob[];
 };
+
+export type GetRecordsParams = {
+/**
+ * Restrict to one senior grade (app grade label, e.g. "A Grade").
+ */
+grade?: string;
+/**
+ * First season (start year, e.g. 2019 for 2019/20), inclusive.
+ */
+fromSeason?: number;
+/**
+ * Last season (start year), inclusive.
+ */
+toSeason?: number;
+};
+
+export type GetRecordLeadersParams = {
+metric: RecordLeaderMetric;
+/**
+ * Restrict to one senior grade (app grade label, e.g. "A Grade").
+ */
+grade?: string;
+/**
+ * First season (start year, e.g. 2019 for 2019/20), inclusive.
+ */
+fromSeason?: number;
+/**
+ * Last season (start year), inclusive.
+ */
+toSeason?: number;
+/**
+ * Maximum rows to return (default 10).
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+};
+
+export type GetRecordProgressionParams = {
+kind: GetRecordProgressionKind;
+/**
+ * Restrict to one senior grade (app grade label, e.g. "A Grade").
+ */
+grade?: string;
+};
+
+export type GetRecordProgressionKind = typeof GetRecordProgressionKind[keyof typeof GetRecordProgressionKind];
+
+
+export const GetRecordProgressionKind = {
+  highScore: 'highScore',
+  bestBowling: 'bestBowling',
+} as const;
 
 export type ListFixturesParams = {
 /**
