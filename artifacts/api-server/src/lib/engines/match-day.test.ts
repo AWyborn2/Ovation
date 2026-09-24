@@ -15,6 +15,7 @@ import {
   teamListsTable,
   socialSettingsTable,
   socialDraftsTable,
+  captionTemplatesTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../auth";
 import { generateMatchDayDrafts, matchDayKey } from "./match-day";
@@ -61,6 +62,8 @@ afterAll(async () => {
   await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId));
   await db.delete(teamListsTable).where(eq(teamListsTable.tenantId, tenantId));
   await db.delete(fixturesTable).where(eq(fixturesTable.tenantId, tenantId));
+  // The settings API's ensureSettings seeds default caption templates.
+  await db.delete(captionTemplatesTable).where(eq(captionTemplatesTable.tenantId, tenantId));
   await db.delete(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId));
   await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
   await db.delete(tenantsTable).where(inArray(tenantsTable.id, [tenantId]));
