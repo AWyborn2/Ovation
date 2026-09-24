@@ -1,812 +1,431 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useLocation, useSearch } from "wouter";
+import { useQueries } from "@tanstack/react-query";
 import {
-  useGetRecords,
-  useListGrades,
-  useGetGradeLeaderboard,
-  getGetGradeLeaderboardQueryKey,
+  getGetRecordLeadersQueryKey,
+  getGetRecordLeadersQueryOptions,
+  getGetRecordProgressionQueryKey,
+  getGetRecordsQueryKey,
   useGetPartnerships,
+  useGetRecordLeaders,
+  useGetRecordProgression,
+  useGetRecords,
+  useGetRecordsDisplaySettings,
   useListCenturies,
   useListFiveWicketHauls,
-  useGetRecordsDisplaySettings,
+  useListGrades,
+  type PlayerRecord,
+  type RecordLeaders,
+  type RecordLeaderMetric,
+  type RecordLeaderRow,
+  type RecordProgressionPoint,
   type Stat,
-  type PartnershipRecord,
-  type Century,
-  type FiveWicketHaul,
-  type RecordsDisplaySettings,
 } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "wouter";
-import { Award, ArrowUp, ArrowDown, ChevronsUpDown } from "lucide-react";
-import { GradeBadge, GradeBadgeList, sortGradesBySeniority } from "@/components/grade-badge";
-import { ShareButton } from "@/components/share-button";
-import type { ShareCardInput } from "@/lib/share-card";
-import { CardGridSkeleton, TableSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { Container, Eyebrow, PageStack } from "@/components/broadcast";
+import { sortGradesBySeniority } from "@/components/grade-badge";
+import { SeasonBar } from "@/components/stats-charts";
+import { parseSeasonYear, seasonLabel, useStatsView } from "@/lib/use-stats-view";
+import { cn } from "@/lib/utils";
+import {
+  ALL_GRADES,
+  LEADER_METRICS,
+  bestStandPerWicket,
+  buildRecordWatch,
+  centuriesHeatmap,
+  defaultGradeTab,
+  fiveForsTimeline,
+  fullName,
+  gradeParam,
+  isActive,
+  pairLabel,
+  rangeParams,
+  type ProgressionKind,
+} from "./records/model";
+import { RecordCards, type RecordCardData } from "./records/record-cards";
+import { RecordWatch } from "./records/record-watch";
+import { RecordProgression } from "./records/progression";
+import { CareerLeaders } from "./records/leaders";
+import { Partnerships } from "./records/partnerships";
+import { HundredsHeatmap } from "./records/hundreds-heatmap";
+import { FiveForsTimeline } from "./records/five-fors";
 
-type Tab = "total" | "by-grade" | "partnerships" | "centuries" | "five-for";
+/** Rows the record-watch rules scan per leaderboard. */
+const WATCH_DEPTH = 25;
 
-type RecordRow = {
-  title: string;
-  value: string | number;
-  stat: {
-    playerId: number;
-    givenName: string;
-    surname: string;
-    grade?: string;
-    grades?: string[];
-  } | null;
-};
-
-const parseHs = (hs: string | null | undefined): number => {
-  if (!hs) return 0;
-  const n = parseInt(String(hs).replace(/[^0-9]/g, ""), 10);
-  return isNaN(n) ? 0 : n;
-};
-const parseBb = (bb: string | null | undefined): { wkts: number; runs: number } => {
-  if (!bb) return { wkts: 0, runs: 0 };
-  const m = String(bb).match(/(\d+)\s*\/\s*(\d+)/);
-  return m ? { wkts: parseInt(m[1], 10), runs: parseInt(m[2], 10) } : { wkts: 0, runs: 0 };
-};
-// Master seasons are display strings like "2024/25"; sort on the leading year.
-const seasonYear = (s: string | null | undefined): number => {
-  if (!s) return -Infinity;
-  const m = String(s).match(/(\d{4})/);
-  return m ? parseInt(m[1], 10) : -Infinity;
-};
-// Partnership wickets are ordinals ("1st".."10th"); sort numerically.
-const wicketOrd = (w: string | null | undefined): number => {
-  if (!w) return 999;
-  const m = String(w).match(/(\d+)/);
-  return m ? parseInt(m[1], 10) : 999;
-};
-// Rank best-bowling so "more wickets, fewer runs" sorts highest.
-const figuresRank = (f: string | null | undefined): number => {
-  const { wkts, runs } = parseBb(f);
-  return wkts * 1000 - runs;
-};
-
-// --- Sorting infrastructure ------------------------------------------------
-
-type Dir = "asc" | "desc";
-type SortState = { col: string; dir: Dir };
-
-const parseSort = (s: string | undefined, fallbackCol: string): SortState => {
-  if (!s) return { col: fallbackCol, dir: "desc" };
-  const i = s.lastIndexOf("-");
-  if (i < 0) return { col: s, dir: "desc" };
-  const dir = s.slice(i + 1);
-  return { col: s.slice(0, i), dir: dir === "asc" ? "asc" : "desc" };
-};
-
-function applySort<T>(
-  rows: T[],
-  sort: SortState,
-  getVal: (row: T, col: string) => number | string,
-): T[] {
-  return [...rows].sort((a, b) => {
-    const va = getVal(a, sort.col);
-    const vb = getVal(b, sort.col);
-    let c: number;
-    if (typeof va === "number" && typeof vb === "number") {
-      c = va === vb ? 0 : va < vb ? -1 : 1;
-    } else {
-      c = String(va).localeCompare(String(vb));
-    }
-    return sort.dir === "asc" ? c : -c;
-  });
+/** Folds the five watch leaderboards into one stable object (useQueries combine). */
+function combineWatch(results: Array<{ data?: RecordLeaders; isLoading: boolean }>): {
+  leaders: Partial<Record<RecordLeaderMetric, RecordLeaderRow[] | undefined>>;
+  loading: boolean;
+} {
+  return {
+    leaders: Object.fromEntries(
+      LEADER_METRICS.map((m, i) => [m.key, results[i]?.data?.entries]),
+    ) as Partial<Record<RecordLeaderMetric, RecordLeaderRow[] | undefined>>,
+    loading: results.some((r) => r.isLoading),
+  };
 }
 
-const SortHeader = ({
-  label,
-  col,
-  sort,
-  onSort,
-  className = "",
-}: {
-  label: string;
-  col: string;
-  sort: SortState;
-  onSort: (col: string) => void;
-  className?: string;
-}) => {
-  const active = sort.col === col;
-  return (
-    <th className={`px-4 py-3 ${className}`}>
-      <button
-        type="button"
-        onClick={() => onSort(col)}
-        className={`inline-flex items-center gap-1 font-bold uppercase tracking-wider text-xs ${
-          active ? "text-primary-text" : "text-muted-foreground hover:text-foreground"
-        }`}
-        data-testid={`sort-${col}`}
-      >
-        {label}
-        {active ? (
-          sort.dir === "asc" ? (
-            <ArrowUp className="h-3 w-3" />
-          ) : (
-            <ArrowDown className="h-3 w-3" />
-          )
-        ) : (
-          <ChevronsUpDown className="h-3 w-3 opacity-40" />
-        )}
-      </button>
-    </th>
-  );
-};
+const fmt = (n: number) => n.toLocaleString("en-AU");
 
-const useSort = (initial: SortState): [SortState, (col: string) => void] => {
-  const [sort, setSort] = useState<SortState>(initial);
-  // Re-sync when the admin default arrives after first render.
-  useEffect(() => setSort(initial), [initial.col, initial.dir]);
-  const onSort = (col: string) =>
-    setSort((prev) =>
-      prev.col === col ? { col, dir: prev.dir === "asc" ? "desc" : "asc" } : { col, dir: "desc" },
-    );
-  return [sort, onSort];
-};
+/** "Held 6 yrs" from the season a record was set, relative to the latest season. */
+function tenure(season: number | null | undefined, current: number | null): string | null {
+  if (season == null || current == null) return null;
+  const years = current - season;
+  if (years <= 0) return "New";
+  return `Held ${years} ${years === 1 ? "yr" : "yrs"}`;
+}
 
-const computeGradeRecords = (stats: Stat[]): RecordRow[] => {
-  if (!stats?.length) {
-    return [
-      "Most Games",
-      "Most Runs",
-      "Highest Score",
-      "Most Fifties",
-      "Most Hundreds",
-      "Most Wickets",
-      "Best Bowling",
-      "Most Catches",
-    ].map((title) => ({ title, value: "-", stat: null }));
-  }
-  const meta = (s: Stat) => ({
-    playerId: s.playerId,
-    givenName: s.givenName,
-    surname: s.surname,
-    grade: s.grade,
-  });
-  const max = (key: keyof Stat): RecordRow => {
-    let best: Stat | null = null;
-    let bestV = -1;
-    for (const s of stats) {
-      const v = (s[key] as number | null | undefined) ?? 0;
-      if (v > bestV) {
-        bestV = v;
-        best = s;
-      }
-    }
-    return best
-      ? { title: "", value: bestV, stat: meta(best) }
-      : { title: "", value: 0, stat: null };
-  };
-
-  let bestHs: Stat | null = null;
-  let bestHsV = -1;
-  for (const s of stats) {
-    const v = parseHs(s.highScore);
-    if (v > bestHsV) {
-      bestHsV = v;
-      bestHs = s;
-    }
-  }
-
-  let bestBbStat: Stat | null = null;
-  let bestBb = { wkts: -1, runs: Infinity };
-  for (const s of stats) {
-    const b = parseBb(s.bestBowling);
-    if (b.wkts > bestBb.wkts || (b.wkts === bestBb.wkts && b.runs < bestBb.runs)) {
-      bestBb = b;
-      bestBbStat = s;
-    }
-  }
-
-  const g = max("games");
-  const r = max("runs");
-  const f = max("fifties");
-  const h = max("hundreds");
-  const w = max("wickets");
-  const c = max("catches");
-
-  const guard = (row: RecordRow): RecordRow =>
-    typeof row.value === "number" && row.value <= 0 ? { ...row, value: "-", stat: null } : row;
-
-  return [
-    guard({ title: "Most Games", value: g.value || 0, stat: g.stat }),
-    guard({ title: "Most Runs", value: r.value || 0, stat: r.stat }),
-    bestHsV > 0 && bestHs
-      ? { title: "Highest Score", value: bestHs.highScore ?? "-", stat: meta(bestHs) }
-      : { title: "Highest Score", value: "-", stat: null },
-    guard({ title: "Most Fifties", value: f.value || 0, stat: f.stat }),
-    guard({ title: "Most Hundreds", value: h.value || 0, stat: h.stat }),
-    guard({ title: "Most Wickets", value: w.value || 0, stat: w.stat }),
-    bestBb.wkts > 0 && bestBbStat
-      ? { title: "Best Bowling", value: bestBbStat.bestBowling ?? "-", stat: meta(bestBbStat) }
-      : { title: "Best Bowling", value: "-", stat: null },
-    guard({ title: "Most Catches", value: c.value || 0, stat: c.stat }),
-  ];
-};
-
-const RecordCard = ({ row }: { row: RecordRow }) => {
-  const shareInput: ShareCardInput | null = row.stat
-    ? {
-        kind: "record",
-        title: row.title,
-        playerName: `${row.stat.givenName} ${row.stat.surname}`.trim(),
-        value: row.value,
-        grade: row.stat.grade ?? null,
-      }
-    : null;
-  return (
-    <Card className="hover:border-primary transition-colors group">
-      <CardHeader className="pb-2 flex flex-row items-start justify-between gap-2 space-y-0">
-        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-          {row.title}
-        </CardTitle>
-        {shareInput && (
-          <ShareButton
-            input={shareInput}
-            appPath={`/players/${row.stat!.playerId}`}
-            playerId={row.stat!.playerId}
-            variant="ghost"
-            label=""
-          />
-        )}
-      </CardHeader>
-      <CardContent>
-        <div className="text-3xl font-serif font-bold text-primary-text mb-1 group-hover:scale-105 transition-transform origin-left">
-          {typeof row.value === "number" ? row.value.toLocaleString() : row.value}
-        </div>
-        {row.stat ? (
-          <>
-            <Link
-              href={`/players/${row.stat.playerId}`}
-              className="text-sm font-medium hover:underline text-foreground"
-            >
-              {row.stat.givenName} {row.stat.surname}
-            </Link>
-            {row.stat.grades && row.stat.grades.length > 0 ? (
-              <div className="mt-2">
-                <GradeBadgeList grades={sortGradesBySeniority(row.stat.grades)} size="sm" />
-              </div>
-            ) : (
-              row.stat.grade && (
-                <div className="mt-1 flex items-center gap-2">
-                  <GradeBadge grade={row.stat.grade} size="sm" />
-                  <span className="text-xs text-muted-foreground">{row.stat.grade}</span>
-                </div>
-              )
-            )}
-          </>
-        ) : (
-          <div className="text-sm text-muted-foreground italic">No data</div>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
-
-const PlayerName = ({ playerId, name }: { playerId: number | null | undefined; name: string }) =>
-  playerId != null ? (
-    <Link href={`/players/${playerId}`} className="font-medium hover:underline text-foreground">
-      {name}
-    </Link>
-  ) : (
-    <span className="text-foreground">{name}</span>
-  );
-
-const TableShell = ({
-  head,
-  empty,
-  children,
-}: {
-  head: ReactNode;
-  empty: boolean;
-  children: ReactNode;
-}) => (
-  <div className="bg-card border border-border rounded-md overflow-hidden shadow-md">
-    {empty ? (
-      <EmptyState title="No records yet" message="Records appear here as data is imported." />
-    ) : (
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm sticky-id-col">
-          <thead>
-            <tr className="bg-muted/50 text-left">{head}</tr>
-          </thead>
-          <tbody className="divide-y divide-border">{children}</tbody>
-        </table>
-      </div>
-    )}
-  </div>
-);
-
-// Reusable grade filter dropdown shown above the records tables.
-const GradeFilter = ({
-  grades,
-  value,
-  onChange,
-  allLabel = "All grades",
-}: {
-  grades: string[];
-  value: string;
-  onChange: (g: string) => void;
-  allLabel?: string;
-}) => (
-  <div className="bg-card border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-wrap shadow-md">
-    <span className="text-xs font-bold uppercase tracking-widest text-primary-text">Grade</span>
-    <div className="flex items-center gap-3 self-start">
-      {value && <GradeBadge grade={value} size="md" />}
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
-        data-testid="select-records-grade"
-      >
-        <option value="">{allLabel}</option>
-        {grades.map((g) => (
-          <option key={g} value={g}>
-            {g}
-          </option>
-        ))}
-      </select>
-    </div>
-  </div>
-);
-
-const PartnershipsSection = ({
-  settings,
-  gradeRank,
-}: {
-  settings: RecordsDisplaySettings | undefined;
-  gradeRank: (g: string) => number;
-}) => {
-  const { data, isLoading, isError, refetch } = useGetPartnerships();
-  const records = useMemo(() => data?.records ?? [], [data]);
-  const fiftyPlus = useMemo(() => data?.fiftyPlus ?? [], [data]);
-
-  // Grades present across both partnership lists, in seniority order.
-  const grades = useMemo(
-    () => sortGradesBySeniority(new Set([...records, ...fiftyPlus].map((p) => p.grade))),
-    [records, fiftyPlus],
-  );
-
-  const [grade, setGrade] = useState<string>("");
-  const [applied, setApplied] = useState(false);
-  useEffect(() => {
-    if (!applied && settings) {
-      setGrade(settings.partnershipsDefaultGrade);
-      setApplied(true);
-    }
-  }, [settings, applied]);
-
-  const getVal = (p: PartnershipRecord, col: string): number | string => {
-    switch (col) {
-      case "grade":
-        return gradeRank(p.grade);
-      case "wicket":
-        return wicketOrd(p.wicket);
-      case "runs":
-        return p.runs;
-      case "batsmen":
-        return p.batsmen.toLowerCase();
-      case "opposition":
-        return (p.opposition ?? "").toLowerCase();
-      case "season":
-        return seasonYear(p.season);
-      default:
-        return 0;
-    }
-  };
-
-  // "All grades": the single highest stand for each wicket across every grade,
-  // ordered 1st → 10th. A specific grade: that grade's highest stand per wicket.
-  const bestPerWicket = useMemo(() => {
-    const pool = grade ? records.filter((p) => p.grade === grade) : records;
-    const byWicket = new Map<number, PartnershipRecord>();
-    for (const p of pool) {
-      const ord = wicketOrd(p.wicket);
-      const cur = byWicket.get(ord);
-      if (!cur || p.runs > cur.runs) byWicket.set(ord, p);
-    }
-    return [...byWicket.values()].sort((a, b) => wicketOrd(a.wicket) - wicketOrd(b.wicket));
-  }, [records, grade]);
-
-  const [fiftySort, onFiftySort] = useSort({ col: "runs", dir: "desc" });
-  const fiftyRows = useMemo(() => {
-    const pool = grade ? fiftyPlus.filter((p) => p.grade === grade) : fiftyPlus;
-    return applySort(pool, fiftySort, getVal);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fiftyPlus, grade, fiftySort]);
-
-  if (isError) {
-    return <QueryError onRetry={() => refetch()} />;
-  }
-  if (isLoading) {
-    return <TableSkeleton />;
-  }
-
-  const row = (p: PartnershipRecord) => (
-    <tr key={p.id} className="hover:bg-muted/30">
-      <td className="px-4 py-3">
-        <GradeBadge grade={p.grade} size="sm" />
-      </td>
-      <td className="px-4 py-3 whitespace-nowrap">{p.wicket}</td>
-      <td className="px-4 py-3 font-serif font-bold text-primary-text">{p.runs}</td>
-      <td className="px-4 py-3">{p.batsmen}</td>
-      <td className="px-4 py-3 text-muted-foreground">{p.opposition ?? "-"}</td>
-      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{p.season ?? "-"}</td>
-    </tr>
-  );
-
-  const staticHead = ["Grade", "Wicket", "Runs", "Batsmen", "Opposition", "Season"].map((c) => (
-    <th
-      key={c}
-      className="px-4 py-3 font-bold uppercase tracking-wider text-xs text-muted-foreground"
-    >
-      {c}
-    </th>
-  ));
-
-  return (
-    <div className="space-y-6">
-      <GradeFilter grades={grades} value={grade} onChange={setGrade} />
-      <section className="space-y-3">
-        <h2 className="text-xl font-serif font-bold">
-          {grade
-            ? `Highest Partnership per Wicket — ${grade}`
-            : "Highest Partnership per Wicket (all grades)"}
-        </h2>
-        <TableShell head={staticHead} empty={bestPerWicket.length === 0}>
-          {bestPerWicket.map(row)}
-        </TableShell>
-      </section>
-      <section className="space-y-3">
-        <h2 className="text-xl font-serif font-bold">
-          {grade ? `All 50+ Partnerships — ${grade}` : "All 50+ Partnerships"}
-        </h2>
-        <TableShell
-          head={
-            <>
-              <SortHeader label="Grade" col="grade" sort={fiftySort} onSort={onFiftySort} />
-              <SortHeader label="Wicket" col="wicket" sort={fiftySort} onSort={onFiftySort} />
-              <SortHeader label="Runs" col="runs" sort={fiftySort} onSort={onFiftySort} />
-              <SortHeader label="Batsmen" col="batsmen" sort={fiftySort} onSort={onFiftySort} />
-              <SortHeader
-                label="Opposition"
-                col="opposition"
-                sort={fiftySort}
-                onSort={onFiftySort}
-              />
-              <SortHeader label="Season" col="season" sort={fiftySort} onSort={onFiftySort} />
-            </>
-          }
-          empty={fiftyRows.length === 0}
-        >
-          {fiftyRows.map(row)}
-        </TableShell>
-      </section>
-    </div>
-  );
-};
-
-const CenturiesSection = ({
-  settings,
-  gradeRank,
-  grades,
-}: {
-  settings: RecordsDisplaySettings | undefined;
-  gradeRank: (g: string) => number;
-  grades: string[];
-}) => {
-  const { data, isLoading, isError, refetch } = useListCenturies();
-  const all = useMemo(() => data ?? [], [data]);
-  const [grade, setGrade] = useState<string>("");
-  const [sort, onSort] = useSort(parseSort(settings?.centuriesSort, "season"));
-
-  const getVal = (c: Century, col: string): number | string => {
-    switch (col) {
-      case "grade":
-        return gradeRank(c.grade);
-      case "batsman":
-        return c.batsman.toLowerCase();
-      case "score":
-        return parseHs(c.score);
-      case "season":
-        return seasonYear(c.season);
-      default:
-        return 0;
-    }
-  };
-
-  const rows = useMemo(() => {
-    const pool = grade ? all.filter((c) => c.grade === grade) : all;
-    return applySort(pool, sort, getVal);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [all, grade, sort]);
-
-  if (isError) {
-    return <QueryError onRetry={() => refetch()} />;
-  }
-  if (isLoading) {
-    return <TableSkeleton />;
-  }
-
-  return (
-    <div className="space-y-6">
-      <GradeFilter grades={grades} value={grade} onChange={setGrade} />
-      <TableShell
-        head={
-          <>
-            <SortHeader label="Grade" col="grade" sort={sort} onSort={onSort} />
-            <SortHeader label="Batsman" col="batsman" sort={sort} onSort={onSort} />
-            <SortHeader label="Score" col="score" sort={sort} onSort={onSort} />
-            <SortHeader label="Season" col="season" sort={sort} onSort={onSort} />
-          </>
-        }
-        empty={rows.length === 0}
-      >
-        {rows.map((c: Century) => (
-          <tr key={c.id} className="hover:bg-muted/30">
-            <td className="px-4 py-3">
-              <GradeBadge grade={c.grade} size="sm" />
-            </td>
-            <td className="px-4 py-3">
-              <PlayerName playerId={c.playerId} name={c.batsman} />
-            </td>
-            <td className="px-4 py-3 font-serif font-bold text-primary-text">{c.score ?? "-"}</td>
-            <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{c.season ?? "-"}</td>
-          </tr>
-        ))}
-      </TableShell>
-    </div>
-  );
-};
-
-const FiveForSection = ({
-  settings,
-  gradeRank,
-  grades,
-}: {
-  settings: RecordsDisplaySettings | undefined;
-  gradeRank: (g: string) => number;
-  grades: string[];
-}) => {
-  const { data, isLoading, isError, refetch } = useListFiveWicketHauls();
-  const all = useMemo(() => data ?? [], [data]);
-  const [grade, setGrade] = useState<string>("");
-  const [sort, onSort] = useSort(parseSort(settings?.fiveForSort, "season"));
-
-  const getVal = (f: FiveWicketHaul, col: string): number | string => {
-    switch (col) {
-      case "grade":
-        return gradeRank(f.grade);
-      case "bowler":
-        return f.bowler.toLowerCase();
-      case "figures":
-        return figuresRank(f.figures);
-      case "season":
-        return seasonYear(f.season);
-      default:
-        return 0;
-    }
-  };
-
-  const rows = useMemo(() => {
-    const pool = grade ? all.filter((f) => f.grade === grade) : all;
-    return applySort(pool, sort, getVal);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [all, grade, sort]);
-
-  if (isError) {
-    return <QueryError onRetry={() => refetch()} />;
-  }
-  if (isLoading) {
-    return <TableSkeleton />;
-  }
-
-  return (
-    <div className="space-y-6">
-      <GradeFilter grades={grades} value={grade} onChange={setGrade} />
-      <TableShell
-        head={
-          <>
-            <SortHeader label="Grade" col="grade" sort={sort} onSort={onSort} />
-            <SortHeader label="Bowler" col="bowler" sort={sort} onSort={onSort} />
-            <SortHeader label="Figures" col="figures" sort={sort} onSort={onSort} />
-            <SortHeader label="Season" col="season" sort={sort} onSort={onSort} />
-          </>
-        }
-        empty={rows.length === 0}
-      >
-        {rows.map((f: FiveWicketHaul) => (
-          <tr key={f.id} className="hover:bg-muted/30">
-            <td className="px-4 py-3">
-              <GradeBadge grade={f.grade} size="sm" />
-            </td>
-            <td className="px-4 py-3">
-              <PlayerName playerId={f.playerId} name={f.bowler} />
-            </td>
-            <td className="px-4 py-3 font-serif font-bold text-primary-text">{f.figures ?? "-"}</td>
-            <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{f.season ?? "-"}</td>
-          </tr>
-        ))}
-      </TableShell>
-    </div>
-  );
-};
-
-export default function Records() {
-  const settingsQuery = useGetRecordsDisplaySettings();
-  const settings = settingsQuery.data;
-  const settingsSettled = !settingsQuery.isLoading;
-  const [tab, setTab] = useState<Tab>("total");
-  const [selectedGrade, setSelectedGrade] = useState<string>("");
-  const [tabApplied, setTabApplied] = useState(false);
-  const [gradeApplied, setGradeApplied] = useState(false);
-
-  const {
-    data: records,
-    isLoading: loadingTotal,
-    isError: errorTotal,
-    refetch: refetchTotal,
-  } = useGetRecords();
-  const { data: gradesList } = useListGrades();
-  const grades = useMemo(() => (gradesList ?? []).map((g) => g.grade), [gradesList]);
-
-  // Rank grades by seniority so a "Grade" sort column orders A → Colts.
-  const gradeRank = useMemo(() => {
-    const order = sortGradesBySeniority(grades);
-    const idx = new Map(order.map((g, i) => [g, i]));
-    return (g: string) => idx.get(g) ?? order.length;
-  }, [grades]);
-
-  // Apply the admin default tab once (visitor can still switch afterwards).
-  useEffect(() => {
-    if (!tabApplied && settings) {
-      setTab(settings.defaultTab);
-      setTabApplied(true);
-    }
-  }, [settings, tabApplied]);
-
-  // By Grade default applied ONCE, after settings are settled, so a slow
-  // settings fetch can't be pre-empted by grades arriving first. Admin-chosen
-  // grade wins when set & still valid; otherwise fall back to the first grade.
-  useEffect(() => {
-    if (gradeApplied || grades.length === 0 || !settingsSettled) return;
-    const preferred = settings?.byGradeDefaultGrade;
-    setSelectedGrade(preferred && grades.includes(preferred) ? preferred : grades[0]);
-    setGradeApplied(true);
-  }, [grades, settingsSettled, settings, gradeApplied]);
-
-  const {
-    data: gradeStats,
-    isLoading: loadingGrade,
-    isError: errorGrade,
-    refetch: refetchGrade,
-  } = useGetGradeLeaderboard(selectedGrade, undefined, {
-    query: {
-      enabled: tab === "by-grade" && !!selectedGrade,
-      queryKey: getGetGradeLeaderboardQueryKey(selectedGrade),
+/** The grade tab lives in the URL (`?grade=`) so links reproduce the view. */
+function useGradeParam(): [string | null, (grade: string) => void] {
+  const search = useSearch();
+  const [location, navigate] = useLocation();
+  const grade = useMemo(() => {
+    const raw = new URLSearchParams(search).get("grade");
+    return raw && raw.trim() ? raw.trim() : null;
+  }, [search]);
+  const setGrade = useCallback(
+    (next: string) => {
+      const params = new URLSearchParams(search);
+      params.set("grade", next);
+      navigate(`${location}?${params.toString()}`, { replace: true });
     },
+    [search, location, navigate],
+  );
+  return [grade, setGrade];
+}
+
+/** Single-innings record for a card: the progression's final point in Career. */
+function inningsCard(
+  key: string,
+  label: string,
+  field: "highScore" | "bestBowling",
+  stat: Stat | null | undefined,
+  finalPoint: RecordProgressionPoint | undefined,
+  career: boolean,
+  current: number | null,
+): RecordCardData {
+  if (career && finalPoint) {
+    const season = finalPoint.dated ? finalPoint.season : null;
+    return {
+      key,
+      label,
+      value: finalPoint.value,
+      holder: fullName(finalPoint.givenName, finalPoint.surname),
+      holderId: finalPoint.playerId || null,
+      context:
+        [finalPoint.grade, season != null ? seasonLabel(season) : null]
+          .filter(Boolean)
+          .join(" · ") || null,
+      badge: tenure(season, current),
+    };
+  }
+  const value = stat?.[field];
+  if (!stat || !value) {
+    return { key, label, value: null, holder: null, holderId: null, context: null, badge: null };
+  }
+  return {
+    key,
+    label,
+    value,
+    holder: fullName(stat.givenName, stat.surname),
+    holderId: stat.playerId || null,
+    context:
+      [stat.grade, stat.season != null ? seasonLabel(stat.season) : null]
+        .filter(Boolean)
+        .join(" · ") || null,
+    badge: career ? tenure(stat.season, current) : null,
+  };
+}
+
+function careerCard(
+  key: string,
+  label: string,
+  rec: PlayerRecord | null | undefined,
+  leaders: RecordLeaderRow[] | undefined,
+  current: number | null,
+): RecordCardData {
+  if (!rec || !rec.value) {
+    return { key, label, value: null, holder: null, holderId: null, context: null, badge: null };
+  }
+  const row = leaders?.find((r) => r.playerId === rec.playerId);
+  const grades = sortGradesBySeniority(rec.grades ?? []);
+  return {
+    key,
+    label,
+    value: fmt(rec.value),
+    holder: fullName(rec.givenName, rec.surname),
+    holderId: rec.playerId || null,
+    context: grades.length
+      ? grades.slice(0, 3).join(" · ") + (grades.length > 3 ? ` +${grades.length - 3}` : "")
+      : null,
+    badge: row && isActive(row.lastSeason, current) ? "Active" : null,
+  };
+}
+
+/**
+ * Club records (stats plan U10): record cards, record watch, progression,
+ * career leaders, partnerships, hundreds heatmap and five-fors timeline, driven
+ * by the grade tabs and the shared season bar (range only — no discipline
+ * switch on Records). Every figure comes from the records endpoints and the
+ * curated centuries / five-fors / partnerships lists.
+ */
+export default function Records() {
+  const { view, label: rangeText } = useStatsView();
+  const career = view.from == null && view.to == null;
+  const [urlGrade, setGrade] = useGradeParam();
+  const [leaderMetric, setLeaderMetric] = useState<RecordLeaderMetric>("runs");
+  const [progKind, setProgKind] = useState<ProgressionKind>("highScore");
+
+  const settingsQ = useGetRecordsDisplaySettings();
+  const gradesQ = useListGrades();
+  const grades = useMemo(
+    () =>
+      sortGradesBySeniority(
+        (Array.isArray(gradesQ.data) ? gradesQ.data : []).map((g) => g.grade).filter(Boolean),
+      ),
+    [gradesQ.data],
+  );
+
+  // The admin's records display settings pick the landing tab; the URL wins.
+  const settingsReady = !settingsQ.isLoading && !gradesQ.isLoading;
+  const gradeTab =
+    urlGrade ?? (settingsReady ? defaultGradeTab(settingsQ.data ?? null, grades) : null);
+  const ready = gradeTab != null;
+  const tab = gradeTab ?? ALL_GRADES;
+  const scope = tab === ALL_GRADES ? "all grades" : tab;
+  const gParams = gradeParam(tab);
+  const rParams = rangeParams(view);
+
+  const recordsParams = { ...gParams, ...rParams };
+  const recordsQ = useGetRecords(recordsParams, {
+    query: { enabled: ready, queryKey: getGetRecordsQueryKey(recordsParams) },
   });
+  const hsParams = { kind: "highScore" as const, ...gParams };
+  const hsQ = useGetRecordProgression(hsParams, {
+    query: { enabled: ready, queryKey: getGetRecordProgressionQueryKey(hsParams) },
+  });
+  const bbParams = { kind: "bestBowling" as const, ...gParams };
+  const bbQ = useGetRecordProgression(bbParams, {
+    query: { enabled: ready, queryKey: getGetRecordProgressionQueryKey(bbParams) },
+  });
+  // Record watch reads career leaderboards (grade-scoped, no range) for every metric.
+  const watchQ = useQueries({
+    queries: LEADER_METRICS.map((m) => ({
+      ...getGetRecordLeadersQueryOptions({ metric: m.key, ...gParams, limit: WATCH_DEPTH }),
+      enabled: ready,
+    })),
+    combine: combineWatch,
+  });
+  const watchLeaders = watchQ.leaders;
+  const leaderParams = { metric: leaderMetric, ...gParams, ...rParams, limit: 8 };
+  const leadersQ = useGetRecordLeaders(leaderParams, {
+    query: { enabled: ready, queryKey: getGetRecordLeadersQueryKey(leaderParams) },
+  });
+  const partnershipsQ = useGetPartnerships();
+  const centuriesQ = useListCenturies();
+  const fiveForsQ = useListFiveWicketHauls();
 
-  const totalRows: RecordRow[] = useMemo(() => {
-    if (!records) return [];
-    const agg = (
-      title: string,
-      r: { playerId: number; givenName: string; surname: string; value: number; grades: string[] },
-    ): RecordRow => ({
-      title,
-      value: r.value || 0,
-      stat: { playerId: r.playerId, givenName: r.givenName, surname: r.surname, grades: r.grades },
-    });
-    const peak = (
-      title: string,
-      value: string | number,
-      s: { playerId: number; givenName: string; surname: string; grade: string },
-    ): RecordRow => ({
-      title,
-      value,
-      stat: { playerId: s.playerId, givenName: s.givenName, surname: s.surname, grade: s.grade },
-    });
+  const records = recordsQ.data && !Array.isArray(recordsQ.data) ? recordsQ.data : undefined;
+  const hsPoints = useMemo(() => hsQ.data?.points ?? [], [hsQ.data]);
+  const bbPoints = useMemo(() => bbQ.data?.points ?? [], [bbQ.data]);
+  const centuries = useMemo(
+    () => (Array.isArray(centuriesQ.data) ? centuriesQ.data : []),
+    [centuriesQ.data],
+  );
+  const fiveFors = useMemo(
+    () => (Array.isArray(fiveForsQ.data) ? fiveForsQ.data : []),
+    [fiveForsQ.data],
+  );
+  const partnershipPool = useMemo(
+    () => [...(partnershipsQ.data?.records ?? []), ...(partnershipsQ.data?.fiftyPlus ?? [])],
+    [partnershipsQ.data],
+  );
+  // Seasons this page knows about: drives the season bar, the "since" line and
+  // the "current season" behind the still-playing and tenure badges.
+  const seasons = useMemo(() => {
+    const years = new Set<number>();
+    const add = (s: string | number | null | undefined) => {
+      const y = parseSeasonYear(s);
+      if (y != null) years.add(y);
+    };
+    centuries.forEach((c) => add(c.season));
+    fiveFors.forEach((f) => add(f.season));
+    partnershipPool.forEach((p) => add(p.season));
+    [...hsPoints, ...bbPoints].forEach((p) => add(p.season));
+    return [...years].sort((a, b) => a - b);
+  }, [centuries, fiveFors, partnershipPool, hsPoints, bbPoints]);
+  const currentSeason = useMemo(() => {
+    const last = Object.values(watchLeaders)
+      .flatMap((rows) => rows ?? [])
+      .map((r) => r.lastSeason ?? -Infinity);
+    const max = Math.max(seasons[seasons.length - 1] ?? -Infinity, ...last);
+    return Number.isFinite(max) ? max : null;
+  }, [seasons, watchLeaders]);
+
+  const stands = useMemo(
+    () => bestStandPerWicket(partnershipPool, tab, view),
+    [partnershipPool, tab, view],
+  );
+  const cards = useMemo<RecordCardData[]>(() => {
+    const top = stands.reduce<(typeof stands)[number] | null>(
+      (best, s) => (!best || s.runs > best.runs ? s : best),
+      null,
+    );
+    const standSeason = parseSeasonYear(top?.season);
     return [
-      agg("Most Games", records.mostGames),
-      agg("Most Runs", records.mostRuns),
-      peak("Highest Score", records.highestScore.highScore || "-", records.highestScore),
-      agg("Most Fifties", records.mostFifties),
-      agg("Most Hundreds", records.mostHundreds),
-      agg("Most Wickets", records.mostWickets),
-      peak("Best Bowling", records.bestBowling.bestBowling || "-", records.bestBowling),
-      agg("Most Catches", records.mostCatches),
+      inningsCard(
+        "highScore",
+        "Highest score",
+        "highScore",
+        records?.highestScore,
+        hsPoints[hsPoints.length - 1],
+        career,
+        currentSeason,
+      ),
+      inningsCard(
+        "bestBowling",
+        "Best bowling",
+        "bestBowling",
+        records?.bestBowling,
+        bbPoints[bbPoints.length - 1],
+        career,
+        currentSeason,
+      ),
+      top
+        ? {
+            key: "stand",
+            label: "Highest stand",
+            value: String(top.runs),
+            holder: pairLabel(top.batsmen),
+            holderId: null,
+            context:
+              [`${top.wicket} wicket`, top.season, tab === ALL_GRADES ? top.grade : null]
+                .filter(Boolean)
+                .join(" · ") || null,
+            badge: career ? tenure(standSeason, currentSeason) : null,
+          }
+        : {
+            key: "stand",
+            label: "Highest stand",
+            value: null,
+            holder: null,
+            holderId: null,
+            context: null,
+            badge: null,
+          },
+      careerCard("runs", "Career runs", records?.mostRuns, watchLeaders.runs, currentSeason),
+      careerCard(
+        "wickets",
+        "Career wickets",
+        records?.mostWickets,
+        watchLeaders.wickets,
+        currentSeason,
+      ),
     ];
-  }, [records]);
+  }, [records, hsPoints, bbPoints, stands, career, currentSeason, tab, watchLeaders]);
 
-  const gradeRows = useMemo(() => computeGradeRecords(gradeStats ?? []), [gradeStats]);
+  const watch = useMemo(
+    () => buildRecordWatch(watchLeaders, currentSeason),
+    [watchLeaders, currentSeason],
+  );
+  const heatmap = useMemo(
+    () => centuriesHeatmap(centuries, tab, view, sortGradesBySeniority),
+    [centuries, tab, view],
+  );
+  const timeline = useMemo(() => fiveForsTimeline(fiveFors, tab, view), [fiveFors, tab, view]);
 
-  const rows = tab === "total" ? totalRows : gradeRows;
-  const loading = tab === "total" ? loadingTotal : loadingGrade;
-  const error = tab === "total" ? errorTotal : errorGrade;
-  const refetch = tab === "total" ? refetchTotal : refetchGrade;
+  const tabs = [ALL_GRADES, ...grades];
+  const since = seasons.length
+    ? `Since ${seasonLabel(seasons[0])} · ${seasons[seasons.length - 1] - seasons[0] + 1} seasons`
+    : "All-time club records";
+  const progQ = progKind === "highScore" ? hsQ : bbQ;
+  const loadingCards = !ready || recordsQ.isLoading || (career && (hsQ.isLoading || bbQ.isLoading));
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Award className="h-8 w-8 text-primary-text" />
-        <div>
-          <h1 className="text-3xl font-serif font-bold">Club Records</h1>
-          <p className="text-muted-foreground mt-1">
-            {tab === "total"
-              ? "All-time leading performances across all grades."
-              : tab === "by-grade"
-                ? `Leading performances in ${selectedGrade || "the selected grade"}.`
-                : tab === "partnerships"
-                  ? "Record stands per wicket and every recorded 50+ partnership."
-                  : tab === "centuries"
-                    ? "Individual centuries recorded across the club's history."
-                    : "Five-wicket hauls recorded across the club's history."}
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-card border border-border rounded-md flex flex-wrap overflow-hidden shadow-md">
-        {[
-          { key: "total" as Tab, label: "Total Club Records" },
-          { key: "by-grade" as Tab, label: "By Grade" },
-          { key: "partnerships" as Tab, label: "Partnerships" },
-          { key: "centuries" as Tab, label: "Centuries" },
-          { key: "five-for" as Tab, label: "5-Wicket Hauls" },
-        ].map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-4 md:px-5 py-3 text-xs md:text-sm font-bold uppercase tracking-wider transition-colors ${
-              tab === t.key
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-primary-text"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === "by-grade" && (
-        <div className="bg-card border border-border rounded-md p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 flex-wrap shadow-md">
-          <span className="text-xs font-bold uppercase tracking-widest text-primary-text">
-            Grade
-          </span>
-          <div className="flex items-center gap-3 self-start">
-            {selectedGrade && <GradeBadge grade={selectedGrade} size="md" />}
-            <select
-              value={selectedGrade}
-              onChange={(e) => setSelectedGrade(e.target.value)}
-              className="px-3 py-2 rounded border-2 border-primary bg-card text-foreground text-sm font-medium"
+    <div data-full-bleed="">
+      <SeasonBar seasons={seasons} showDiscipline={false} />
+      <Container className="py-[var(--gap-section)]">
+        <PageStack className="gap-6">
+          <header className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <Eyebrow>{since}</Eyebrow>
+              <h1 className="mt-1 font-serif text-[clamp(40px,5vw,64px)] font-black uppercase leading-[0.95]">
+                Club records
+              </h1>
+            </div>
+            <div
+              role="group"
+              aria-label="Grade"
+              data-testid="records-grade-tabs"
+              className="flex flex-wrap rounded-[10px] border bg-card p-[3px]"
             >
-              {grades.map((g) => (
-                <option key={g} value={g}>
-                  {g}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
+              {tabs.map((g) => {
+                const active = g === tab;
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setGrade(g)}
+                    className={cn(
+                      "h-8 rounded-[7px] px-3.5 text-[13px] font-semibold transition-colors",
+                      active
+                        ? "bg-muted text-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {g === ALL_GRADES ? "All grades" : g}
+                  </button>
+                );
+              })}
+            </div>
+          </header>
 
-      {tab === "partnerships" ? (
-        <PartnershipsSection settings={settings} gradeRank={gradeRank} />
-      ) : tab === "centuries" ? (
-        <CenturiesSection settings={settings} gradeRank={gradeRank} grades={grades} />
-      ) : tab === "five-for" ? (
-        <FiveForSection settings={settings} gradeRank={gradeRank} grades={grades} />
-      ) : error ? (
-        <QueryError onRetry={() => refetch()} />
-      ) : loading ? (
-        <CardGridSkeleton count={8} className="lg:grid-cols-4" />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {rows.map((r) => (
-            <RecordCard key={r.title} row={r} />
-          ))}
-        </div>
-      )}
+          <RecordCards cards={cards} loading={loadingCards} />
+
+          <RecordWatch items={watch} loading={!ready || watchQ.loading} scope={scope} />
+
+          <RecordProgression
+            kind={progKind}
+            onKind={setProgKind}
+            points={progKind === "highScore" ? hsPoints : bbPoints}
+            loading={!ready || progQ.isLoading}
+            error={progQ.isError}
+            scope={scope}
+          />
+
+          <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr))]">
+            <CareerLeaders
+              metric={leaderMetric}
+              onMetric={setLeaderMetric}
+              rows={leadersQ.data?.entries ?? []}
+              loading={!ready || leadersQ.isLoading}
+              error={leadersQ.isError}
+              currentSeason={currentSeason}
+              scope={scope}
+              range={rangeText}
+            />
+            <Partnerships
+              stands={stands}
+              loading={partnershipsQ.isLoading}
+              error={partnershipsQ.isError}
+            />
+          </div>
+
+          <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr))]">
+            <HundredsHeatmap
+              model={heatmap}
+              loading={centuriesQ.isLoading}
+              error={centuriesQ.isError}
+            />
+            <FiveForsTimeline
+              model={timeline}
+              loading={fiveForsQ.isLoading}
+              error={fiveForsQ.isError}
+            />
+          </div>
+        </PageStack>
+      </Container>
     </div>
   );
 }
