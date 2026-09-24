@@ -11,7 +11,6 @@ import {
   getListPlayersQueryKey,
 } from "@workspace/api-client-react";
 import type { CapEntry, CapCategory } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,6 +18,8 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
 import { TableSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
+import { DataTable, EditDrawer, StatusPill, type DataTableColumn } from "@/components/admin-ui";
+import { Plus } from "lucide-react";
 
 export default function AdminCaps() {
   const queryClient = useQueryClient();
@@ -28,9 +29,9 @@ export default function AdminCaps() {
   const updateCap = useUpdateCap();
   const deleteCap = useDeleteCap();
   const recomputeCaps = useRecomputeCaps();
-  const [search, setSearch] = useState("");
   const [category, setCategory] = useState<CapCategory>("male");
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -64,194 +65,237 @@ export default function AdminCaps() {
     return Math.max(...inCategory.map((c) => c.capNumber)) + 1;
   }, [inCategory]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return inCategory;
-    return inCategory.filter(
-      (c) => c.name.toLowerCase().includes(q) || String(c.capNumber).includes(q),
-    );
-  }, [inCategory, search]);
-
   const onMutationError = (e: unknown) => {
     const msg = handleAdminMutationError(e);
     if (msg) setError(msg);
   };
 
+  const editing = inCategory.find((c) => c.id === editingId) ?? null;
+  const listName = category === "female" ? "A Grade Female" : "A Grade Male";
+
+  const remove = async (cap: CapEntry) => {
+    if (
+      !(await confirm({
+        title: "Delete cap entry",
+        description: `Delete cap #${cap.capNumber} (${cap.name})?`,
+        confirmText: "Delete",
+        destructive: true,
+      }))
+    )
+      return;
+    setError(null);
+    deleteCap.mutate(
+      { id: cap.id },
+      {
+        onSuccess: () => {
+          setEditingId(null);
+          invalidate();
+        },
+        onError: onMutationError,
+      },
+    );
+  };
+
+  const columns: DataTableColumn<CapEntry>[] = [
+    {
+      key: "cap",
+      header: "Cap #",
+      className: "w-20",
+      cell: (cap) => <span className="font-bold tabular-nums">{cap.capNumber}</span>,
+    },
+    {
+      key: "name",
+      header: "Name",
+      cell: (cap) => (
+        <span className="font-semibold">
+          {cap.name}
+          {cap.deceased && (
+            <span className="ml-1 font-normal text-muted-foreground" title="Deceased">
+              ✝
+            </span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: "linked",
+      header: "Linked player",
+      cell: (cap) =>
+        cap.playerId != null ? (
+          <LinkedPlayerLabel playerId={cap.playerId} />
+        ) : (
+          <span className="italic text-muted-foreground">— unmatched —</span>
+        ),
+    },
+    {
+      key: "games",
+      header: "Games",
+      className: "w-20",
+      cell: (cap) => <span className="tabular-nums">{cap.inStats ? cap.gamesAGrade : "—"}</span>,
+    },
+    {
+      key: "status",
+      header: "Status",
+      className: "w-32",
+      cell: (cap) =>
+        cap.playerId != null ? (
+          <StatusPill tone="success">Matched</StatusPill>
+        ) : (
+          <StatusPill tone="attention">No link</StatusPill>
+        ),
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-        <div>
-          <p className="max-w-[75ch] text-[15px] text-muted-foreground">
-            Manage the A Grade cap lists. Changes apply immediately to the public honour boards
-            page.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={onRecompute}
-            disabled={recomputeCaps.isPending}
-            title="Refresh every linked cap's games and on-record status from the current stats"
-          >
-            {recomputeCaps.isPending ? "Refreshing…" : "Refresh from stats"}
-          </Button>
-          <Label htmlFor="admin-cap-category">List</Label>
-          <select
-            id="admin-cap-category"
-            value={category}
-            onChange={(e) => {
-              setCategory(e.target.value as CapCategory);
-              setEditingId(null);
-            }}
-            className="h-10 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground"
-          >
-            <option value="male">A Grade Male</option>
-            <option value="female">A Grade Female</option>
-          </select>
-        </div>
+    <div className="space-y-5">
+      <p className="max-w-[75ch] text-[15px] text-muted-foreground">
+        Manage the A Grade cap lists. Changes apply immediately to the public honour boards page.
+      </p>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Label htmlFor="admin-cap-category">List</Label>
+        <select
+          id="admin-cap-category"
+          value={category}
+          onChange={(e) => {
+            setCategory(e.target.value as CapCategory);
+            setEditingId(null);
+          }}
+          className="h-10 rounded-lg border border-input bg-background px-3 text-sm font-medium"
+        >
+          <option value="male">A Grade Male</option>
+          <option value="female">A Grade Female</option>
+        </select>
+        <span className="text-sm text-muted-foreground">{inCategory.length} entries</span>
+        <Button
+          variant="outline"
+          className="ml-auto"
+          onClick={onRecompute}
+          disabled={recomputeCaps.isPending}
+          title="Refresh every linked cap's games and on-record status from the current stats"
+        >
+          {recomputeCaps.isPending ? "Refreshing…" : "Refresh from stats"}
+        </Button>
       </div>
 
-      {notice && <p className="text-sm text-emerald-700 dark:text-emerald-400">{notice}</p>}
+      {notice && <p className="text-sm text-[var(--win-fg)]">{notice}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <AddCapForm
-        key={category}
-        nextCapNumber={nextCapNumber}
-        onCreate={(values) => {
-          setError(null);
-          createCap.mutate(
-            { data: { ...values, category } },
-            {
-              onSuccess: invalidate,
-              onError: onMutationError,
-            },
-          );
-        }}
-        pending={createCap.isPending}
-      />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {category === "female" ? "A Grade Female" : "A Grade Male"}{" "}
-            <span className="text-muted-foreground text-sm font-normal">
-              ({inCategory.length} entries)
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Input
-            placeholder="Filter by name or cap number…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="max-w-md"
-          />
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          {isError ? (
-            <QueryError onRetry={() => refetch()} />
-          ) : isLoading ? (
-            <TableSkeleton />
-          ) : !filtered.length ? (
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <TableSkeleton />
+      ) : (
+        <DataTable
+          label={`${listName} caps`}
+          rows={inCategory}
+          columns={columns}
+          getRowId={(c) => c.id}
+          searchText={(c) => `${c.name} ${c.capNumber}`}
+          searchPlaceholder="Filter by name or cap number…"
+          filters={[
+            { id: "unmatched", label: "No link", predicate: (c) => c.playerId == null },
+            { id: "deceased", label: "Deceased", predicate: (c) => c.deceased },
+          ]}
+          onRowClick={(c) => setEditingId(c.id)}
+          toolbarAction={
+            <Button onClick={() => setAdding(true)}>
+              <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+              Add cap
+            </Button>
+          }
+          emptyState={
             <EmptyState title="No cap entries" message="No caps match this list or filter yet." />
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left border-b">
-                    <th className="py-2 pr-4 w-20">Cap #</th>
-                    <th className="py-2 pr-4">Name</th>
-                    <th className="py-2 pr-4">Linked player</th>
-                    <th className="py-2 pr-4 w-20">Games</th>
-                    <th className="py-2 pr-4 w-24">Status</th>
-                    <th className="py-2 pr-4 w-40 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((cap) =>
-                    editingId === cap.id ? (
-                      <EditCapRow
-                        key={cap.id}
-                        cap={cap}
-                        pending={updateCap.isPending}
-                        onCancel={() => setEditingId(null)}
-                        onSave={(values) => {
-                          setError(null);
-                          updateCap.mutate(
-                            { id: cap.id, data: values },
-                            {
-                              onSuccess: () => {
-                                setEditingId(null);
-                                invalidate();
-                              },
-                              onError: onMutationError,
-                            },
-                          );
-                        }}
-                      />
-                    ) : (
-                      <tr key={cap.id} className="border-b last:border-0">
-                        <td className="py-2 pr-4 tabular-nums font-bold">{cap.capNumber}</td>
-                        <td className="py-2 pr-4">
-                          {cap.name}
-                          {cap.deceased && (
-                            <span className="ml-1 text-muted-foreground" title="Deceased">
-                              ✝
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-2 pr-4">
-                          {cap.playerId != null ? (
-                            <LinkedPlayerLabel playerId={cap.playerId} />
-                          ) : (
-                            <span className="text-muted-foreground italic">— unmatched —</span>
-                          )}
-                        </td>
-                        <td className="py-2 pr-4 tabular-nums">
-                          {cap.inStats ? cap.gamesAGrade : "—"}
-                        </td>
-                        <td className="py-2 pr-4">
-                          {cap.playerId != null ? (
-                            <span className="text-green-700 dark:text-green-400">✓ matched</span>
-                          ) : (
-                            <span className="text-amber-700 dark:text-amber-400">○ no link</span>
-                          )}
-                        </td>
-                        <td className="py-2 pr-4 text-right space-x-2">
-                          <Button size="sm" variant="outline" onClick={() => setEditingId(cap.id)}>
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={async () => {
-                              if (
-                                !(await confirm({
-                                  title: "Delete cap entry",
-                                  description: `Delete cap #${cap.capNumber} (${cap.name})?`,
-                                  confirmText: "Delete",
-                                  destructive: true,
-                                }))
-                              )
-                                return;
-                              setError(null);
-                              deleteCap.mutate(
-                                { id: cap.id },
-                                { onSuccess: invalidate, onError: onMutationError },
-                              );
-                            }}
-                            disabled={deleteCap.isPending}
-                          >
-                            Delete
-                          </Button>
-                        </td>
-                      </tr>
-                    ),
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          }
+          minWidth={620}
+        />
+      )}
+
+      <EditDrawer
+        open={adding}
+        onOpenChange={setAdding}
+        title="Add cap entry"
+        description={listName}
+      >
+        {adding && (
+          <CapForm
+            initial={{
+              capNumber: nextCapNumber,
+              name: "",
+              deceased: false,
+              playerId: null,
+              gamesAGrade: 0,
+              inStats: false,
+            }}
+            pending={createCap.isPending}
+            submitLabel="Add cap"
+            onCancel={() => setAdding(false)}
+            onSubmit={(values) => {
+              setError(null);
+              createCap.mutate(
+                { data: { ...values, category } },
+                {
+                  onSuccess: () => {
+                    setAdding(false);
+                    invalidate();
+                  },
+                  onError: onMutationError,
+                },
+              );
+            }}
+          />
+        )}
+      </EditDrawer>
+
+      <EditDrawer
+        open={editing != null}
+        onOpenChange={(o) => !o && setEditingId(null)}
+        title={editing ? `Cap #${editing.capNumber} · ${editing.name}` : ""}
+        description={listName}
+        footer={
+          editing ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              disabled={deleteCap.isPending}
+              onClick={() => remove(editing)}
+            >
+              Delete
+            </Button>
+          ) : undefined
+        }
+      >
+        {editing && (
+          <CapForm
+            key={editing.id}
+            initial={{
+              capNumber: editing.capNumber,
+              name: editing.name,
+              deceased: editing.deceased,
+              playerId: editing.playerId ?? null,
+              gamesAGrade: editing.gamesAGrade,
+              inStats: editing.inStats,
+            }}
+            pending={updateCap.isPending}
+            submitLabel="Save changes"
+            onCancel={() => setEditingId(null)}
+            onSubmit={(values) => {
+              setError(null);
+              updateCap.mutate(
+                { id: editing.id, data: values },
+                {
+                  onSuccess: () => {
+                    setEditingId(null);
+                    invalidate();
+                  },
+                  onError: onMutationError,
+                },
+              );
+            }}
+          />
+        )}
+      </EditDrawer>
     </div>
   );
 }
@@ -274,29 +318,34 @@ type CapFormValues = {
   inStats: boolean;
 };
 
-function AddCapForm({
-  nextCapNumber,
-  onCreate,
+function CapForm({
+  initial,
   pending,
+  submitLabel,
+  onSubmit,
+  onCancel,
 }: {
-  nextCapNumber: number;
-  onCreate: (v: CapFormValues) => void;
+  initial: CapFormValues;
   pending: boolean;
+  submitLabel: string;
+  onSubmit: (v: CapFormValues) => void;
+  onCancel: () => void;
 }) {
-  const [capNumber, setCapNumber] = useState<number>(nextCapNumber);
-  const [name, setName] = useState("");
-  const [deceased, setDeceased] = useState(false);
-  const [player, setPlayer] = useState<SelectedPlayer | null>(null);
-  const [gamesAGrade, setGamesAGrade] = useState<number>(0);
-  const [inStats, setInStats] = useState(false);
+  const [capNumber, setCapNumber] = useState(initial.capNumber);
+  const [name, setName] = useState(initial.name);
+  const [deceased, setDeceased] = useState(initial.deceased);
+  const [player, setPlayer] = useState<SelectedPlayer | null>(
+    initial.playerId != null
+      ? { id: initial.playerId, surname: "Linked", givenName: "player" }
+      : null,
+  );
+  const [gamesAGrade, setGamesAGrade] = useState(initial.gamesAGrade);
+  const [inStats, setInStats] = useState(initial.inStats);
 
-  // Keep capNumber synced with computed next when user hasn't typed
-  useMemo(() => setCapNumber(nextCapNumber), [nextCapNumber]);
-
-  const onSubmit = (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onCreate({
+    onSubmit({
       capNumber,
       name: name.trim(),
       deceased,
@@ -304,165 +353,64 @@ function AddCapForm({
       gamesAGrade: Number.isFinite(gamesAGrade) ? gamesAGrade : 0,
       inStats,
     });
-    setName("");
-    setDeceased(false);
-    setPlayer(null);
-    setGamesAGrade(0);
-    setInStats(false);
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Add cap entry</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form
-          onSubmit={onSubmit}
-          className="grid gap-4 md:grid-cols-[100px_1fr_1fr_120px_auto] md:items-end"
-        >
-          <div className="space-y-2">
-            <Label htmlFor="cap-number">Cap #</Label>
-            <Input
-              id="cap-number"
-              type="number"
-              value={capNumber}
-              onChange={(e) => setCapNumber(parseInt(e.target.value, 10))}
-              min={1}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="cap-name">Player name</Label>
-            <Input id="cap-name" value={name} onChange={(e) => setName(e.target.value)} required />
-          </div>
-          <div className="space-y-2">
-            <Label>Linked player (optional)</Label>
-            <PlayerTypeahead value={player} onChange={setPlayer} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="cap-games">Games</Label>
-            <Input
-              id="cap-games"
-              type="number"
-              value={gamesAGrade}
-              onChange={(e) => setGamesAGrade(parseInt(e.target.value, 10))}
-              min={0}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={deceased}
-                onChange={(e) => setDeceased(e.target.checked)}
-              />
-              Deceased
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={inStats}
-                onChange={(e) => setInStats(e.target.checked)}
-              />
-              On record
-            </label>
-            <Button type="submit" disabled={pending || !name.trim()}>
-              {pending ? "Adding…" : "Add cap"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
-  );
-}
-
-function EditCapRow({
-  cap,
-  pending,
-  onCancel,
-  onSave,
-}: {
-  cap: CapEntry;
-  pending: boolean;
-  onCancel: () => void;
-  onSave: (v: CapFormValues) => void;
-}) {
-  const [capNumber, setCapNumber] = useState(cap.capNumber);
-  const [name, setName] = useState(cap.name);
-  const [deceased, setDeceased] = useState(cap.deceased);
-  const [player, setPlayer] = useState<SelectedPlayer | null>(
-    cap.playerId != null ? { id: cap.playerId, surname: "Linked", givenName: "player" } : null,
-  );
-  const [gamesAGrade, setGamesAGrade] = useState(cap.gamesAGrade);
-  const [inStats, setInStats] = useState(cap.inStats);
-
-  return (
-    <tr className="border-b last:border-0 bg-muted/30">
-      <td className="py-2 pr-4">
-        <Input
-          type="number"
-          value={capNumber}
-          onChange={(e) => setCapNumber(parseInt(e.target.value, 10))}
-          className="w-20"
-        />
-      </td>
-      <td className="py-2 pr-4">
-        <Input value={name} onChange={(e) => setName(e.target.value)} />
-      </td>
-      <td className="py-2 pr-4">
+    <form onSubmit={submit} className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-[110px_1fr]">
+        <div className="space-y-1">
+          <Label htmlFor="cap-number">Cap #</Label>
+          <Input
+            id="cap-number"
+            type="number"
+            value={capNumber}
+            onChange={(e) => setCapNumber(parseInt(e.target.value, 10))}
+            min={1}
+            required
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="cap-name">Player name</Label>
+          <Input id="cap-name" value={name} onChange={(e) => setName(e.target.value)} required />
+        </div>
+      </div>
+      <div className="space-y-1">
+        <Label>Linked player (optional)</Label>
         <PlayerTypeahead value={player} onChange={setPlayer} />
-      </td>
-      <td className="py-2 pr-4">
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="cap-games">A Grade games</Label>
         <Input
+          id="cap-games"
           type="number"
           value={gamesAGrade}
           onChange={(e) => setGamesAGrade(parseInt(e.target.value, 10))}
           min={0}
-          className="w-20"
+          className="w-32"
         />
-      </td>
-      <td className="py-2 pr-4">
-        <div className="flex flex-col gap-1">
-          <label className="flex items-center gap-1 text-sm">
-            <input
-              type="checkbox"
-              checked={deceased}
-              onChange={(e) => setDeceased(e.target.checked)}
-            />
-            Deceased
-          </label>
-          <label className="flex items-center gap-1 text-sm">
-            <input
-              type="checkbox"
-              checked={inStats}
-              onChange={(e) => setInStats(e.target.checked)}
-            />
-            On record
-          </label>
-        </div>
-      </td>
-      <td className="py-2 pr-4 text-right space-x-2">
-        <Button
-          size="sm"
-          onClick={() =>
-            onSave({
-              capNumber,
-              name: name.trim(),
-              deceased,
-              playerId: player?.id ?? null,
-              gamesAGrade: Number.isFinite(gamesAGrade) ? gamesAGrade : 0,
-              inStats,
-            })
-          }
-          disabled={pending || !name.trim()}
-        >
-          {pending ? "Saving…" : "Save"}
+      </div>
+      <div className="flex flex-wrap gap-5">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={deceased}
+            onChange={(e) => setDeceased(e.target.checked)}
+          />
+          Deceased
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={inStats} onChange={(e) => setInStats(e.target.checked)} />
+          On record
+        </label>
+      </div>
+      <div className="flex gap-2">
+        <Button type="submit" disabled={pending || !name.trim()}>
+          {pending ? "Saving…" : submitLabel}
         </Button>
-        <Button size="sm" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-      </td>
-    </tr>
+      </div>
+    </form>
   );
 }
