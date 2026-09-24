@@ -21,18 +21,11 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Pencil, Trash2, Plus, IdCard } from "lucide-react";
 import { CardLayoutEditor, type TemplateMode } from "@/components/card-layout-editor";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
-import { DEFAULT_PACK_ID } from "@/lib/pack-templates/registry";
 import { usePackSelection } from "@/lib/use-pack-selection";
-import { PackPreviewTile } from "@/components/social-studio/pack-preview-tile";
+import { PackPerTypeSection } from "@/components/social-studio/pack-per-type-section";
 import { DesignPacksSection } from "@/components/social-studio/design-packs-section";
 import { MatchSummarySettings } from "@/components/social-studio/match-summary-settings";
-import {
-  DEFAULT_PACK_NAME,
-  THUMB_SIZE,
-  kindLabel,
-  packName,
-  type CardKind,
-} from "@/lib/social-studio";
+import { THUMB_SIZE, kindLabel, type CardKind } from "@/lib/social-studio";
 import { sampleCardInput } from "@/lib/sample-card-inputs";
 import { renderShareCard, SIZES, type RenderOptions, type ShareCardInput } from "@/lib/share-card";
 import {
@@ -345,12 +338,6 @@ export default function AdminSocialStudio() {
         </p>
       )}
 
-      <p className="text-sm text-muted-foreground">
-        Design every kind of share card from one place. Edit a card type's built-in layout, or build
-        named templates you can assign to one or many card types — and set one as the default for a
-        type so it's applied automatically everywhere that card is shared.
-      </p>
-
       {/* Design packs — the bulk path, met before the per-kind selectors */}
       <DesignPacksSection
         selection={packs}
@@ -361,91 +348,14 @@ export default function AdminSocialStudio() {
         theme={galleryTheme}
       />
 
-      {/* Card types gallery */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Card types</h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {CARD_KIND_OPTIONS.map((o) => {
-            const kind = o.value;
-            const def = defaultByKind.get(kind);
-            return (
-              <PackPreviewTile
-                key={kind}
-                input={galleryInputByKind.get(kind) ?? sampleCardInput(kind, galleryClubName)}
-                theme={galleryTheme}
-                data={galleryDataByKind.get(kind) ?? null}
-                packId={packs.packIdByKind.get(kind) ?? null}
-              >
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-sm font-medium">{o.label}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <select
-                    aria-label={`Design pack for ${o.label}`}
-                    className="h-7 w-full min-w-0 rounded-md border bg-background px-1 text-[11px]"
-                    // No claim and an explicit default-pack claim render the
-                    // same card, so both present as the leading "" option —
-                    // otherwise an explicit default claim holds a value that
-                    // the filtered option list no longer contains and the
-                    // control goes blank.
-                    value={
-                      (packs.packIdByKind.get(kind) ?? DEFAULT_PACK_ID) === DEFAULT_PACK_ID
-                        ? ""
-                        : packs.packIdByKind.get(kind)!
-                    }
-                    // Gate on ANY in-flight pack write, not just this kind's.
-                    // Every kind of a pack claims through the same canonical
-                    // row and the PATCH replaces the whole array, so a second
-                    // selection made against the pre-write cache would drop
-                    // the first claim.
-                    disabled={packs.busy}
-                    onChange={(e) => packs.selectPack(kind, e.target.value)}
-                  >
-                    {/* Explicit leading option: without it a kind with no
-                          claim holds a value absent from the option list and
-                          the control renders blank. */}
-                    <option value="">{DEFAULT_PACK_NAME} (default)</option>
-                    {/* The default pack already has the leading option above;
-                          it is also registered and covers every kind, so mapping
-                          it again would list it twice under two values that
-                          apply the same pack. */}
-                    {(packs.selectablePacksByKind.get(kind) ?? [])
-                      .filter((p) => p !== DEFAULT_PACK_ID)
-                      .map((p) => (
-                        <option key={p} value={p}>
-                          {packName(p)}
-                        </option>
-                      ))}
-                  </select>
-                  {packs.pendingKind === kind && (
-                    <Loader2 className="h-3 w-3 shrink-0 animate-spin text-muted-foreground" />
-                  )}
-                </div>
-                {def && (
-                  // A "layers" template makes the card bypass the pack
-                  // entirely, so the selector above it is not what ships —
-                  // say so, rather than captioning it as a plain default.
-                  <p className="truncate text-[11px] text-muted-foreground">
-                    {def.source === "layers"
-                      ? `Overridden by template: ${def.name}`
-                      : `Default template: ${def.name}`}
-                  </p>
-                )}
-                <div className="flex flex-wrap gap-1.5">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs"
-                    onClick={() => setEditing({ mode: "template-new", baseKind: kind })}
-                  >
-                    <Plus className="mr-1 h-3 w-3" /> Template
-                  </Button>
-                </div>
-              </PackPreviewTile>
-            );
-          })}
-        </div>
-      </section>
+      {/* Which pack each card type uses */}
+      <PackPerTypeSection
+        selection={packs}
+        inputByKind={galleryInputByKind}
+        dataByKind={galleryDataByKind}
+        theme={galleryTheme}
+        templateByKind={defaultByKind}
+      />
 
       {/* Saved layer templates */}
       <section className="space-y-3">
