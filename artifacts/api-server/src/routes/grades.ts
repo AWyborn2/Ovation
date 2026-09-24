@@ -17,6 +17,7 @@ import {
   GetSeniorSeasonTopPerformersQueryParams,
   GetGradeLeaderboardQueryParams,
   GetRecordsQueryParams,
+  GetGradeDistributionQueryParams,
 } from "@workspace/api-zod";
 import { recordsFilterFrom } from "../lib/records-analytics";
 import { nativeFilteredRecords } from "../lib/records-native";
@@ -24,6 +25,11 @@ import { requireAdmin } from "../middlewares/require-admin";
 import { page } from "../lib/page";
 import { dataSource } from "../lib/tenant";
 import { loadGradeLeaderboard } from "../lib/grade-leaderboard";
+import {
+  loadGradeDistribution,
+  DEFAULT_MIN_INNINGS,
+  DEFAULT_MIN_OVERS,
+} from "../lib/grade-distribution";
 import { getTenantId } from "../middlewares/tenant-context";
 import { getOrCreateSettings } from "../lib/settings";
 import { overlayNativeOpponents, overlayCentralOpponents } from "../lib/club-brand";
@@ -96,6 +102,32 @@ router.get("/grades/:grade/leaderboard", async (req, res): Promise<void> => {
   // native path's full grade is already in memory too.
   const rows = await loadGradeLeaderboard(req, grade);
   res.json(page(rows, limit, offset));
+});
+
+// Qualifying players' aggregates + club best for one grade and season span
+// (stats analytics KTD4): profile ranks and the Compare radar. The native /
+// central split, fill-in exclusion and crosswalk live in lib/grade-distribution.
+router.get("/grades/:grade/distribution", async (req, res): Promise<void> => {
+  const rawGrade = Array.isArray(req.params.grade) ? req.params.grade[0] : req.params.grade;
+  const grade = decodeURIComponent(rawGrade);
+  const query = GetGradeDistributionQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const { fromSeason, toSeason, minInnings, minOvers } = query.data;
+  if (fromSeason !== undefined && toSeason !== undefined && fromSeason > toSeason) {
+    res.status(400).json({ error: "fromSeason must not be after toSeason" });
+    return;
+  }
+  res.json(
+    await loadGradeDistribution(await dataSource(req), grade, {
+      fromSeason,
+      toSeason,
+      minInnings: minInnings ?? DEFAULT_MIN_INNINGS,
+      minOvers: minOvers ?? DEFAULT_MIN_OVERS,
+    }),
+  );
 });
 
 router.get("/dashboard", async (req, res): Promise<void> => {

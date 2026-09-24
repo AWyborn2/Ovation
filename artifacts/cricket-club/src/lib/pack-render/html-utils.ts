@@ -316,8 +316,10 @@ export function resolveSlots(
   html: string,
   images: Record<string, string>,
   values: Record<string, string>,
-  photoTransform?: { focalX: number; focalY: number } | null,
+  photoTransform?: { focalX: number; focalY: number; zoom?: number } | null,
   photoFullBleed = false,
+  /** Editor adjustments (U15) scale the photo by `zoom` about its focal point. */
+  honourZoom = false,
 ): string {
   if (photoFullBleed) html = makePhotoSlotFullBleed(html);
   const slotRe = /<div data-slot="([^"]+)" data-slot-type="([^"]+)"([^>]*)><\/div>/g;
@@ -329,6 +331,12 @@ export function resolveSlots(
     const fit = contain ? "contain" : "cover";
     if (url) {
       const pos = type === "photo" ? photoPositionStyle(photoTransform) : "";
+      const zoom = type === "photo" && honourZoom ? (photoTransform?.zoom ?? 1) : 1;
+      if (zoom > 1 && photoTransform) {
+        const fx = Math.round(Math.max(0, Math.min(1, photoTransform.focalX)) * 100);
+        const fy = Math.round(Math.max(0, Math.min(1, photoTransform.focalY)) * 100);
+        return `<div style="width:100%;height:100%;overflow:hidden"><img src="${escapeHtml(url)}" alt="" style="width:100%;height:100%;object-fit:${fit}${pos};display:block;transform:scale(${zoom.toFixed(3)});transform-origin:${fx}% ${fy}%" /></div>`;
+      }
       return `<img src="${escapeHtml(url)}" alt="" style="width:100%;height:100%;object-fit:${fit}${pos};display:block" />`;
     }
     // No URL → placeholder (never an empty <img src>).

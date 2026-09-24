@@ -1006,6 +1006,81 @@ export const GetGradeLeaderboardResponse = zod.array(GetGradeLeaderboardResponse
 
 
 /**
+ * Every qualifying club player's aggregates for the grade over the span, plus the club best per metric. Feeds the profile ranks (percentiles are computed on the client) and the Compare radar's "% of club best". A player qualifies for batting with at least `minInnings` innings and for bowling with at least `minOvers` overs; a player who qualifies for only one gets `null` for the other. Fill-ins and junior grades are never included. Counting stats (games, innings, runs, wickets, catches) come from season rows; ball-based figures (balls faced, overs, maidens, strike rates, economy) come from scorecard lines over the same span. Omitting both seasons means the whole career, which includes pre-scorecard baseline rows for the counting stats only.
+ * @summary Qualifying players' aggregates for one grade and season span
+ */
+export const GetGradeDistributionParams = zod.object({
+  "grade": zod.coerce.string()
+})
+
+export const getGradeDistributionQueryMinInningsMin = 0;
+
+export const getGradeDistributionQueryMinOversMin = 0;
+
+
+
+export const GetGradeDistributionQueryParams = zod.object({
+  "fromSeason": zod.coerce.number().optional().describe('First season start year (inclusive), e.g. 2021 for 2021\/22.'),
+  "toSeason": zod.coerce.number().optional().describe('Last season start year (inclusive).'),
+  "minInnings": zod.coerce.number().min(getGradeDistributionQueryMinInningsMin).optional().describe('Batting qualifier. Defaults to 10.'),
+  "minOvers": zod.coerce.number().min(getGradeDistributionQueryMinOversMin).optional().describe('Bowling qualifier in whole overs. Defaults to 50.')
+})
+
+export const GetGradeDistributionResponse = zod.object({
+  "grade": zod.string(),
+  "fromSeason": zod.number().nullable().describe('Echo of the requested first season; null when unbounded.'),
+  "toSeason": zod.number().nullable().describe('Echo of the requested last season; null when unbounded.'),
+  "minInnings": zod.number(),
+  "minOvers": zod.number(),
+  "players": zod.array(zod.object({
+  "playerId": zod.number(),
+  "givenName": zod.string(),
+  "surname": zod.string(),
+  "games": zod.number(),
+  "catches": zod.number(),
+  "batting": zod.union([zod.object({
+  "innings": zod.number(),
+  "notOuts": zod.number(),
+  "runs": zod.number(),
+  "average": zod.number().nullable().describe('Runs per dismissal; null with no dismissals.'),
+  "highScore": zod.number().nullable(),
+  "fifties": zod.number(),
+  "hundreds": zod.number(),
+  "ballsFaced": zod.number().nullable().describe('Balls faced in scorecard innings with a recorded ball count.'),
+  "strikeRate": zod.number().nullable().describe('Runs per 100 balls over those same innings.')
+}),zod.null()]).describe('Null when the player is below the batting qualifier.'),
+  "bowling": zod.union([zod.object({
+  "overs": zod.string().describe('Scorecard overs bowled, in ball notation (\"123.4\").'),
+  "ballsBowled": zod.number(),
+  "maidens": zod.number(),
+  "wickets": zod.number(),
+  "runsConceded": zod.number(),
+  "average": zod.number().nullable().describe('Runs conceded per wicket; null with no wickets.'),
+  "economy": zod.number().nullable().describe('Runs per six balls over the scorecard spells.'),
+  "strikeRate": zod.number().nullable().describe('Balls per wicket over the scorecard spells; null with no wickets.'),
+  "fiveWickets": zod.number()
+}),zod.null()]).describe('Null when the player is below the bowling qualifier.')
+})),
+  "best": zod.object({
+  "games": zod.number().nullable(),
+  "catches": zod.number().nullable(),
+  "runs": zod.number().nullable(),
+  "battingAverage": zod.number().nullable(),
+  "highScore": zod.number().nullable(),
+  "fifties": zod.number().nullable(),
+  "hundreds": zod.number().nullable(),
+  "battingStrikeRate": zod.number().nullable(),
+  "wickets": zod.number().nullable(),
+  "maidens": zod.number().nullable(),
+  "fiveWickets": zod.number().nullable(),
+  "bowlingAverage": zod.number().nullable(),
+  "economy": zod.number().nullable(),
+  "bowlingStrikeRate": zod.number().nullable()
+}).describe('The club best per metric among qualifiers (null when nobody qualifies). Lower is better for bowlingAverage, economy and bowlingStrikeRate, so those are the minimum; every other metric is the maximum.')
+})
+
+
+/**
  * @summary Club-wide dashboard stats
  */
 export const GetDashboardResponse = zod.object({
@@ -6743,7 +6818,14 @@ export const UpdateSocialDraftParams = zod.object({
 
 export const UpdateSocialDraftBody = zod.object({
   "caption": zod.string().optional(),
-  "photoUrl": zod.string().nullish().describe('A library or uploaded image URL; null removes the photo.')
+  "photoUrl": zod.string().nullish().describe('A library or uploaded image URL; null removes the photo.'),
+  "adjustments": zod.union([zod.object({
+  "fields": zod.record(zod.string(), zod.string()).optional(),
+  "hidden": zod.array(zod.string()).optional(),
+  "photo": zod.record(zod.string(), zod.unknown()).optional(),
+  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
+  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),zod.null()]).optional().describe('Editor overlay (see CardAdjustments); null clears every edit.')
 })
 
 export const UpdateSocialDraftResponse = zod.object({

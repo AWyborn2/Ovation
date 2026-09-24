@@ -107,6 +107,7 @@ import type {
   FixturesResultsPage,
   GenerateCardSetBody,
   GetFixturesResultsLadderParams,
+  GetGradeDistributionParams,
   GetGradeLeaderboardParams,
   GetJuniorSeasonTopPerformersParams,
   GetKioskDisplayParams,
@@ -117,6 +118,7 @@ import type {
   GetSocialClubSeasonTotalsParams,
   GetSocialLadderPrefillParams,
   GetSocialWeekendWrapPrefillParams,
+  GradeDistribution,
   GradeSummary,
   HealthStatus,
   HonourBoard,
@@ -2220,6 +2222,96 @@ export function useGetGradeLeaderboard<TData = Awaited<ReturnType<typeof getGrad
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetGradeLeaderboardQueryOptions(grade,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetGradeDistributionUrl = (grade: string,
+    params?: GetGradeDistributionParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/grades/${grade}/distribution?${stringifiedParams}` : `/api/grades/${grade}/distribution`
+}
+
+/**
+ * Every qualifying club player's aggregates for the grade over the span, plus the club best per metric. Feeds the profile ranks (percentiles are computed on the client) and the Compare radar's "% of club best". A player qualifies for batting with at least `minInnings` innings and for bowling with at least `minOvers` overs; a player who qualifies for only one gets `null` for the other. Fill-ins and junior grades are never included. Counting stats (games, innings, runs, wickets, catches) come from season rows; ball-based figures (balls faced, overs, maidens, strike rates, economy) come from scorecard lines over the same span. Omitting both seasons means the whole career, which includes pre-scorecard baseline rows for the counting stats only.
+ * @summary Qualifying players' aggregates for one grade and season span
+ */
+export const getGradeDistribution = async (grade: string,
+    params?: GetGradeDistributionParams, options?: RequestInit): Promise<GradeDistribution> => {
+
+  return customFetch<GradeDistribution>(getGetGradeDistributionUrl(grade,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGradeDistributionQueryKey = (grade: string,
+    params?: GetGradeDistributionParams,) => {
+    return [
+    `/api/grades/${grade}/distribution`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetGradeDistributionQueryOptions = <TData = Awaited<ReturnType<typeof getGradeDistribution>>, TError = ErrorType<void>>(grade: string,
+    params?: GetGradeDistributionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGradeDistribution>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGradeDistributionQueryKey(grade,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGradeDistribution>>> = ({ signal }) => getGradeDistribution(grade,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(grade), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGradeDistribution>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGradeDistributionQueryResult = NonNullable<Awaited<ReturnType<typeof getGradeDistribution>>>
+export type GetGradeDistributionQueryError = ErrorType<void>
+
+
+/**
+ * @summary Qualifying players' aggregates for one grade and season span
+ */
+
+export function useGetGradeDistribution<TData = Awaited<ReturnType<typeof getGradeDistribution>>, TError = ErrorType<void>>(
+ grade: string,
+    params?: GetGradeDistributionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGradeDistribution>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGradeDistributionQueryOptions(grade,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
