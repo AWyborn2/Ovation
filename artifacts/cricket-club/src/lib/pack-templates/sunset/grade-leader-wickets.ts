@@ -15,6 +15,8 @@ export const gradeLeaderWickets: PackCardTemplate = {
   fields: [
     ...clubHeaderFields(),
     textField("grade", "Grade", "A GRADE"),
+    textField("titleTop", "Heading line 1", "LEADING"),
+    textField("titleBottom", "Heading line 2", "WICKET-TAKER"),
     textField("category", "Category", "WICKETS"),
     textField("value", "Leading value", "24"),
     textField("playerName", "Leader", "Alex Osborne"),

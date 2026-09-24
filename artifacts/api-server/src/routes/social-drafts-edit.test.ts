@@ -72,6 +72,20 @@ describe("PATCH /social-drafts/:id", () => {
     expect(revs[0].reason).toBe("edit");
   });
 
+  it("clearing the photo is recorded as a choice, so a later library fill leaves it empty", async () => {
+    const { draft } = await upsertDraftByKey({
+      tenantId,
+      engine: "roundup",
+      family: "roundup",
+      sourceKey: `edit:${STAMP}:clear`,
+      cardInput: card(13),
+      appPath: "/records",
+    });
+    const res = await patch(draft.id, { photoUrl: null });
+    expect(res.body.photoUrl).toBeNull();
+    expect(res.body.photoSource).toBe("none");
+  });
+
   it("a caption edit marks the draft edited; dismissed drafts are 409", async () => {
     const { draft } = await upsertDraftByKey({
       tenantId,

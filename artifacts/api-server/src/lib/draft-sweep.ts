@@ -15,6 +15,7 @@ import { ensureSettings } from "./social-cards-helpers";
 import { tenantIsCentral, getTenantCentralClubId } from "./tenant";
 import { loadAutoPost, persistDueDrafts } from "./effective-draft-state";
 import { notifyDraftsReady } from "./draft-notifications";
+import { fillMissingDraftPhotos } from "./draft-enrich";
 
 type Logger = PostCommitLogger & {
   info: (obj: unknown, msg?: string) => void;
@@ -103,6 +104,12 @@ export async function runDraftSweep(
     summary.teamLists = (await generateTeamListDrafts(tenantId, now)).drafted;
   } catch (err) {
     logger.error({ err, tenantId }, "team-list drafts failed");
+  }
+
+  try {
+    await fillMissingDraftPhotos(tenantId);
+  } catch (err) {
+    logger.error({ err, tenantId }, "draft photo fill failed");
   }
 
   if (scope.kind === "scheduled") {

@@ -12,6 +12,7 @@ import { getTenantId } from "../middlewares/tenant-context";
 import { nonSeniorPlayerIds, presentPhotos } from "../lib/club-photo-library";
 import { IngestError, MAX_INGEST_BATCH, ingestImage, withTenantSlot } from "../lib/image-ingest";
 import { photoStore } from "../lib/photo-store";
+import { fillMissingDraftPhotos } from "../lib/draft-enrich";
 
 /**
  * `/club-photos` — the club's senior photo library (Social Studio, U6).
@@ -145,6 +146,8 @@ router.post("/club-photos/ingest", requireAdmin, async (req, res): Promise<void>
     : [];
   const photos = await presentPhotos(tenantId, rows);
   const byId = new Map(photos.map((p) => [p.id, p]));
+  // New photos can fill drafts that never had a match in the library.
+  if (rows.length > 0) await fillMissingDraftPhotos(tenantId);
   res.json({
     results: results.map((r) =>
       r.ok
@@ -205,6 +208,8 @@ router.post("/club-photos/tags", requireAdmin, async (req, res): Promise<void> =
     .select()
     .from(clubPhotosTable)
     .where(and(eq(clubPhotosTable.tenantId, tenantId), inArray(clubPhotosTable.id, owned)));
+  // A photo newly tagged with a player or grade can fill drafts that had none.
+  await fillMissingDraftPhotos(tenantId);
   res.json(await presentPhotos(tenantId, rows));
 });
 

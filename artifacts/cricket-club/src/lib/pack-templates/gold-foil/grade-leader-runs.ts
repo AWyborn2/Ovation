@@ -15,6 +15,8 @@ export const gradeLeaderRuns: PackCardTemplate = {
   fields: [
     ...clubHeaderFields(),
     textField("grade", "Grade", "A GRADE"),
+    textField("titleTop", "Heading line 1", "LEADING"),
+    textField("titleBottom", "Heading line 2", "RUN-SCORER"),
     textField("category", "Category", "RUNS"),
     textField("value", "Leading value", "428"),
     textField("playerName", "Leader", "Jack Manuel"),

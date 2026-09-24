@@ -359,6 +359,8 @@ export interface CentralClubSeasonGradeLeaders {
   gradeLabel: string;
   topRunScorer: { playerName: string; value: number } | null;
   topWicketTaker: { playerName: string; value: number } | null;
+  /** Most catches + stumpings (the round-up's "Dismissals" measure). */
+  topDismissals: { playerName: string; value: number } | null;
 }
 
 /**
@@ -409,7 +411,7 @@ async function centralClubTotalsBySeasonImpl(
   const perGrade = await Promise.all(
     grades.map(async (grade) => {
       const ids = gradeMatchIds.get(grade) ?? [];
-      const [batAgg, bowlAgg] = await Promise.all([
+      const [batAgg, bowlAgg, fieldRows] = await Promise.all([
         centralDb
           .select({
             participantId: centralMatchBattingTable.participantId,
@@ -440,8 +442,25 @@ async function centralClubTotalsBySeasonImpl(
           .groupBy(centralMatchBowlingTable.participantId)
           .orderBy(desc(sql`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)`))
           .limit(5),
+        centralDb
+          .select({
+            participantId: centralFieldingTable.participantId,
+            kind: centralFieldingTable.kind,
+            n: sql<number>`count(*)::int`,
+          })
+          .from(centralFieldingTable)
+          .where(
+            and(eq(centralFieldingTable.clubId, clubId), inList(centralFieldingTable.matchId, ids)),
+          )
+          .groupBy(centralFieldingTable.participantId, centralFieldingTable.kind),
       ]);
-      return { grade, batAgg, bowlAgg };
+      // Catches + stumpings per player (run-outs aren't a keeper/fielder
+      // dismissal credit here), top few so a private leader can be skipped.
+      const fieldAgg = [...tallyFielding(fieldRows).entries()]
+        .map(([participantId, t]) => ({ participantId, value: t.catches + t.stumpings }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+      return { grade, batAgg, bowlAgg, fieldAgg };
     }),
   );
 
@@ -450,6 +469,7 @@ async function centralClubTotalsBySeasonImpl(
   for (const g of perGrade) {
     for (const r of g.batAgg) if (r.participantId) ids.add(r.participantId);
     for (const r of g.bowlAgg) if (r.participantId) ids.add(r.participantId);
+    for (const r of g.fieldAgg) ids.add(r.participantId);
   }
   const players = ids.size
     ? await centralDb
@@ -483,5 +503,6 @@ async function centralClubTotalsBySeasonImpl(
     gradeLabel: g.grade,
     topRunScorer: pick(g.batAgg),
     topWicketTaker: pick(g.bowlAgg),
+    topDismissals: pick(g.fieldAgg),
   }));
 }

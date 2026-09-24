@@ -16,6 +16,7 @@ import type {
   TeamListPlayer,
   WeekendWrapMatch,
   ClubLeaderboardLeader,
+  ClubLeaderboardCategory,
 } from "@/lib/share-card";
 import type {
   LadderCardRow,
@@ -204,19 +205,30 @@ export function ladderRowsToState(
   };
 }
 
+const CLUB_LEADER_COPY: Record<ClubLeaderboardCategory, { title: string; subtitle: string }> = {
+  Runs: { title: "CLUB RUN SCORERS", subtitle: "Leading run scorer in each grade" },
+  Wickets: { title: "CLUB WICKET TAKERS", subtitle: "Leading wicket taker in each grade" },
+  Dismissals: { title: "SAFE HANDS", subtitle: "Most catches and stumpings in each grade" },
+};
+
 export function clubSeasonTotalsToState(
   seasonYear: number,
-  category: "Runs" | "Wickets",
+  category: ClubLeaderboardCategory,
   grades: ClubSeasonGradeLeaders[],
 ): {
   title: string;
   subtitle: string;
   season: string;
-  category: "Runs" | "Wickets";
+  category: ClubLeaderboardCategory;
   leaders: ClubLeaderboardLeader[];
 } {
   const leaders: ClubLeaderboardLeader[] = grades.map((g) => {
-    const leader = category === "Runs" ? g.topRunScorer : g.topWicketTaker;
+    const leader =
+      category === "Runs"
+        ? g.topRunScorer
+        : category === "Wickets"
+          ? g.topWicketTaker
+          : (g.topDismissals ?? null);
     return {
       gradeLabel: g.gradeLabel.toUpperCase(),
       playerName: leader?.playerName ?? "",
@@ -224,8 +236,7 @@ export function clubSeasonTotalsToState(
     };
   });
   return {
-    title: category === "Runs" ? "CLUB RUN SCORERS" : "CLUB WICKET TAKERS",
-    subtitle: `Leading ${category === "Runs" ? "run scorer" : "wicket taker"} in each grade`,
+    ...CLUB_LEADER_COPY[category],
     season: seasonLabelFromYear(seasonYear),
     category,
     leaders,

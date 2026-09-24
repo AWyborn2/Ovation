@@ -492,7 +492,8 @@ router.patch(
     if (photoUrl !== undefined) {
       patch.photoUrl = photoUrl;
       // The admin's choice is never replaced by an automatic pick (KTD6).
-      patch.photoSource = photoUrl === null ? null : "manual";
+      // Clearing is a choice too ("none"), so the missing-photo fill leaves it.
+      patch.photoSource = photoUrl === null ? "none" : "manual";
       if (photoUrl === null) patch.editedAt = patch.editedAt ?? new Date();
     }
     if (adjustments !== undefined) {

@@ -9126,8 +9126,12 @@ export const GetSocialClubSeasonTotalsResponseItem = zod.object({
   "topWicketTaker": zod.union([zod.object({
   "playerName": zod.string(),
   "value": zod.number()
+}).describe('A single leader entry for the Club Leaderboard card (name + tally).'),zod.null()]),
+  "topDismissals": zod.union([zod.object({
+  "playerName": zod.string(),
+  "value": zod.number()
 }).describe('A single leader entry for the Club Leaderboard card (name + tally).'),zod.null()])
-}).describe('A grade\'s season leaders for the Club Runs\/Wickets leaderboard card (A19\/A20). Either leader is null when the grade has no eligible player.')
+}).describe('A grade\'s season leaders for the Club Runs\/Wickets\/Dismissals leaderboard card (A19\/A20). A leader is null when the grade has no eligible player. Dismissals are catches plus stumpings.')
 export const GetSocialClubSeasonTotalsResponse = zod.array(GetSocialClubSeasonTotalsResponseItem)
 
 

@@ -95,6 +95,9 @@ export function bindInput(input: ShareCardInput): BoundInput {
       break;
     }
     case "gradeLeader": {
+      const [top, bottom] = leaderTitle(input.category);
+      set(values, "titleTop", top);
+      set(values, "titleBottom", bottom);
       set(values, "grade", input.grade);
       set(values, "category", input.category);
       set(values, "value", input.value);
@@ -362,4 +365,14 @@ export function applyPackData(bound: BoundInput, data: PackCardData, _kind: stri
       if (url) images[slotKey] = url;
     }
   }
+}
+
+/**
+ * The Grade Leader heading for a category, as two lines. Dismissals get their
+ * own ("SAFE HANDS") rather than borrowing the run-scorer heading.
+ */
+export function leaderTitle(category: string): [string, string] {
+  if (/dismiss/i.test(category)) return ["SAFE", "HANDS"];
+  if (/wicket|bowl/i.test(category)) return ["LEADING", "WICKET-TAKER"];
+  return ["LEADING", "RUN-SCORER"];
 }

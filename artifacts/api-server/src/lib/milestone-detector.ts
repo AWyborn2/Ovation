@@ -21,7 +21,13 @@ export const TIER_LABELS: Record<BoardKey, string[]> = {
     "400 Wickets",
     "500 Wickets",
   ],
-  dismissals: ["25 Dismissals", "Half-Century", "Centurion", "150 Dismissals", "200 Dismissals"],
+  dismissals: [
+    "25 Dismissals",
+    "50 Dismissals",
+    "100 Dismissals",
+    "150 Dismissals",
+    "200 Dismissals",
+  ],
 };
 
 export const BOARD_STAT_LABEL: Record<BoardKey, string> = {

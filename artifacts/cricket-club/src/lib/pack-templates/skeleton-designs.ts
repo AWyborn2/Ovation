@@ -502,7 +502,10 @@ export function gradeLeaderFormats(
   footer?: Partial<FooterKeys>,
 ): PackTemplateFormats {
   const ft = keys(BD_KEYS, footer);
-  const title = preset === "Runs" ? "LEADING<br>RUN-SCORER" : "LEADING<br>WICKET-TAKER";
+  // Filled from the category at bind time (see leaderTitle); the preset
+  // only picks the field defaults.
+  void preset;
+  const title = "{{titleTop}}<br>{{titleBottom}}";
   const html = kitCard(look, {
     chip: kitChip("LEADERBOARD"),
     tag: "{{season}}",
