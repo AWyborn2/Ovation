@@ -42,3 +42,4 @@ export * from "./platform_settings";
 export * from "./provisioning_exclusions";
 export * from "./club_photos";
 export * from "./notifications";
+export * from "./card_photo_rules";
