@@ -91,6 +91,37 @@ describe("PATCH /social-drafts/:id", () => {
       .where(eq(socialDraftsTable.id, draft.id));
     expect((await patch(draft.id, { caption: "x" })).status).toBe(409);
   });
+
+  it("saving editor adjustments stores them, marks the draft edited and keeps one revision (U15)", async () => {
+    const { draft } = await upsertDraftByKey({
+      tenantId,
+      engine: "roundup",
+      family: "roundup",
+      sourceKey: `edit:${STAMP}:adjust`,
+      cardInput: card(12),
+      appPath: "/records",
+    });
+    const adjustments = {
+      fields: { headline: "Century maker" },
+      hidden: ["slot:photo"],
+      layers: [
+        {
+          id: "l1",
+          kind: "text",
+          content: "SOLD OUT",
+          geometry: { square: { x: 1, y: 2, w: 3, h: 4 } },
+        },
+      ],
+    };
+    const res = await patch(draft.id, { adjustments });
+    expect(res.status).toBe(200);
+    expect(res.body.adjustments).toEqual(adjustments);
+    expect(res.body.editedAt).not.toBeNull();
+    expect(await listDraftRevisions(tenantId, draft.id)).toHaveLength(1);
+
+    const cleared = await patch(draft.id, { adjustments: null });
+    expect(cleared.body.adjustments).toBeNull();
+  });
 });
 
 describe("stale posted cards (R31)", () => {

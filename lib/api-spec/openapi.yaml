@@ -694,6 +694,65 @@ paths:
                 items:
                   $ref: "#/components/schemas/Stat"
 
+  /grades/{grade}/distribution:
+    get:
+      operationId: getGradeDistribution
+      tags: [grades]
+      summary: Qualifying players' aggregates for one grade and season span
+      description: >-
+        Every qualifying club player's aggregates for the grade over the span,
+        plus the club best per metric. Feeds the profile ranks (percentiles are
+        computed on the client) and the Compare radar's "% of club best". A
+        player qualifies for batting with at least `minInnings` innings and for
+        bowling with at least `minOvers` overs; a player who qualifies for only
+        one gets `null` for the other. Fill-ins and junior grades are never
+        included. Counting stats (games, innings, runs, wickets, catches) come
+        from season rows; ball-based figures (balls faced, overs, maidens,
+        strike rates, economy) come from scorecard lines over the same span.
+        Omitting both seasons means the whole career, which includes
+        pre-scorecard baseline rows for the counting stats only.
+      parameters:
+        - name: grade
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fromSeason
+          in: query
+          required: false
+          description: First season start year (inclusive), e.g. 2021 for 2021/22.
+          schema:
+            type: integer
+        - name: toSeason
+          in: query
+          required: false
+          description: Last season start year (inclusive).
+          schema:
+            type: integer
+        - name: minInnings
+          in: query
+          required: false
+          description: Batting qualifier. Defaults to 10.
+          schema:
+            type: integer
+            minimum: 0
+        - name: minOvers
+          in: query
+          required: false
+          description: Bowling qualifier in whole overs. Defaults to 50.
+          schema:
+            type: number
+            minimum: 0
+      responses:
+        "200":
+          description: Grade distribution
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GradeDistribution"
+        "400":
+          description: Invalid query (e.g. fromSeason after toSeason)
+
   /dashboard:
     get:
       operationId: getDashboard
@@ -6576,6 +6635,172 @@ components:
           type: ["integer", "null"]
         runOuts:
           type: ["integer", "null"]
+
+    GradeDistribution:
+      type: object
+      required: [grade, fromSeason, toSeason, minInnings, minOvers, players, best]
+      properties:
+        grade:
+          type: string
+        fromSeason:
+          description: Echo of the requested first season; null when unbounded.
+          type: ["integer", "null"]
+        toSeason:
+          description: Echo of the requested last season; null when unbounded.
+          type: ["integer", "null"]
+        minInnings:
+          type: integer
+        minOvers:
+          type: number
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/GradeDistributionPlayer"
+        best:
+          $ref: "#/components/schemas/GradeDistributionBest"
+
+    GradeDistributionPlayer:
+      type: object
+      required: [playerId, givenName, surname, games, catches, batting, bowling]
+      properties:
+        playerId:
+          type: integer
+        givenName:
+          type: string
+        surname:
+          type: string
+        games:
+          type: integer
+        catches:
+          type: integer
+        batting:
+          description: Null when the player is below the batting qualifier.
+          oneOf:
+            - $ref: "#/components/schemas/GradeDistributionBatting"
+            - type: "null"
+        bowling:
+          description: Null when the player is below the bowling qualifier.
+          oneOf:
+            - $ref: "#/components/schemas/GradeDistributionBowling"
+            - type: "null"
+
+    GradeDistributionBatting:
+      type: object
+      required:
+        [innings, notOuts, runs, average, highScore, fifties, hundreds, ballsFaced, strikeRate]
+      properties:
+        innings:
+          type: integer
+        notOuts:
+          type: integer
+        runs:
+          type: integer
+        average:
+          description: Runs per dismissal; null with no dismissals.
+          type: ["number", "null"]
+        highScore:
+          type: ["integer", "null"]
+        fifties:
+          type: integer
+        hundreds:
+          type: integer
+        ballsFaced:
+          description: Balls faced in scorecard innings with a recorded ball count.
+          type: ["integer", "null"]
+        strikeRate:
+          description: Runs per 100 balls over those same innings.
+          type: ["number", "null"]
+
+    GradeDistributionBowling:
+      type: object
+      required:
+        [
+          overs,
+          ballsBowled,
+          maidens,
+          wickets,
+          runsConceded,
+          average,
+          economy,
+          strikeRate,
+          fiveWickets,
+        ]
+      properties:
+        overs:
+          description: Scorecard overs bowled, in ball notation ("123.4").
+          type: string
+        ballsBowled:
+          type: integer
+        maidens:
+          type: integer
+        wickets:
+          type: integer
+        runsConceded:
+          type: integer
+        average:
+          description: Runs conceded per wicket; null with no wickets.
+          type: ["number", "null"]
+        economy:
+          description: Runs per six balls over the scorecard spells.
+          type: ["number", "null"]
+        strikeRate:
+          description: Balls per wicket over the scorecard spells; null with no wickets.
+          type: ["number", "null"]
+        fiveWickets:
+          type: integer
+
+    GradeDistributionBest:
+      description: >-
+        The club best per metric among qualifiers (null when nobody qualifies).
+        Lower is better for bowlingAverage, economy and bowlingStrikeRate, so
+        those are the minimum; every other metric is the maximum.
+      type: object
+      required:
+        [
+          games,
+          catches,
+          runs,
+          battingAverage,
+          highScore,
+          fifties,
+          hundreds,
+          battingStrikeRate,
+          wickets,
+          maidens,
+          fiveWickets,
+          bowlingAverage,
+          economy,
+          bowlingStrikeRate,
+        ]
+      properties:
+        games:
+          type: ["integer", "null"]
+        catches:
+          type: ["integer", "null"]
+        runs:
+          type: ["integer", "null"]
+        battingAverage:
+          type: ["number", "null"]
+        highScore:
+          type: ["integer", "null"]
+        fifties:
+          type: ["integer", "null"]
+        hundreds:
+          type: ["integer", "null"]
+        battingStrikeRate:
+          type: ["number", "null"]
+        wickets:
+          type: ["integer", "null"]
+        maidens:
+          type: ["integer", "null"]
+        fiveWickets:
+          type: ["integer", "null"]
+        bowlingAverage:
+          type: ["number", "null"]
+        economy:
+          type: ["number", "null"]
+        bowlingStrikeRate:
+          type: ["number", "null"]
 
     PlayerSeasonStat:
       type: object
@@ -12725,6 +12950,38 @@ components:
         photoUrl:
           type: ["string", "null"]
           description: "A library or uploaded image URL; null removes the photo."
+        adjustments:
+          description: "Editor overlay (see CardAdjustments); null clears every edit."
+          anyOf:
+            - $ref: "#/components/schemas/CardAdjustments"
+            - type: "null"
+
+    CardAdjustments:
+      type: object
+      description: >-
+        Editor overlay applied over a pack template (KTD12). Content (field
+        overrides, hidden elements, free-layer content) is shared across
+        formats; geometry (photo transform, layer boxes) is keyed by format.
+        The web renderer owns the detailed shape; the server stores it as-is.
+      additionalProperties: true
+      properties:
+        fields:
+          type: object
+          additionalProperties: { type: string }
+        hidden:
+          type: array
+          items: { type: string }
+        photo:
+          type: object
+          additionalProperties: true
+        photoEditedAt:
+          type: object
+          additionalProperties: { type: number }
+        layers:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
 
     SocialDraft:
       type: object

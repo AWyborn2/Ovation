@@ -9,7 +9,7 @@ import {
 } from "@/lib/share-card";
 import { prepareAnimation } from "@/lib/share-card-animation";
 import { PackCard } from "@/components/pack-card";
-import { packNativeSize, type PackCardData } from "@/lib/pack-render";
+import { packNativeSize, type CardAdjustments, type PackCardData } from "@/lib/pack-render";
 import { ensureCardFontsLoaded } from "@/lib/card-fonts";
 
 // Metrics returned by init() so the server knows how many frames to capture.
@@ -33,6 +33,8 @@ type StillOptions = {
   data?: PackCardData | null;
   /** Which design pack to render; omitted resolves to the default pack. */
   packId?: string | null;
+  /** Editor overlay (U15), so server stills match the editor preview. */
+  adjustments?: CardAdjustments | null;
 };
 
 // Metrics returned by renderStill() so the server knows what to screenshot.
@@ -183,6 +185,7 @@ export default function CardRenderHarness() {
             junior={options.junior}
             data={options.data ?? null}
             packId={options.packId ?? null}
+            adjustments={options.adjustments ?? null}
             width={native.w}
           />,
         );
