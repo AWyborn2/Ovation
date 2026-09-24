@@ -228,7 +228,7 @@ export function ImageCropDialog({
     setZoom(next);
   };
 
-  const onFrameKey = (e: KeyboardEvent<HTMLDivElement>) => {
+  const onFrameKey = (e: KeyboardEvent<HTMLButtonElement>) => {
     const step = e.shiftKey ? 20 : 5;
     const moves: Record<string, Offset> = {
       ArrowLeft: { x: offset.x + step, y: offset.y },
@@ -388,10 +388,9 @@ export function ImageCropDialog({
             )}
 
             <div className="flex justify-center rounded-xl bg-muted p-4">
-              <div
-                role="application"
+              <button
+                type="button"
                 aria-label="Crop area. Drag or use the arrow keys to move the image."
-                tabIndex={0}
                 data-testid="crop-frame"
                 onKeyDown={onFrameKey}
                 onPointerDown={(e) => {
@@ -417,7 +416,7 @@ export function ImageCropDialog({
                   className="absolute max-w-none select-none"
                   style={imageStyle(1)}
                 />
-              </div>
+              </button>
             </div>
 
             <label className="flex items-center gap-3 text-sm">
