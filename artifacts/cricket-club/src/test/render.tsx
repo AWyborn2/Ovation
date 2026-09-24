@@ -4,6 +4,7 @@ import { Router } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConfirmProvider } from "@/components/confirm-dialog";
+import { ThemeProvider } from "@/lib/theme-context";
 
 /**
  * Render a page component at a given route, wrapped in the providers every page
@@ -19,9 +20,11 @@ export function renderAt(ui: ReactNode, path = "/") {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <ConfirmProvider>
-        <Router hook={hook}>{ui}</Router>
-      </ConfirmProvider>
+      <ThemeProvider>
+        <ConfirmProvider>
+          <Router hook={hook}>{ui}</Router>
+        </ConfirmProvider>
+      </ThemeProvider>
     </QueryClientProvider>,
   );
 }

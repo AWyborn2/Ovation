@@ -8,6 +8,7 @@ import {
   type PlatformBrand,
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
+import { ImageCropDialog, SQUARE_ASPECTS } from "@/components/admin-ui/image-crop-dialog";
 import { ACCENT_HEX, snapHexToAccentToken, type AccentToken } from "@workspace/scorecard";
 import { deriveThemeTokens, hslTripletToHex } from "@/lib/theme-tokens";
 import { useThemeMode } from "@/lib/theme-context";
@@ -164,6 +165,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
     },
   });
 
+  const [logoDialogOpen, setLogoDialogOpen] = useState(false);
   const { uploadFile: uploadLogo, isUploading: isUploadingLogo } = useUpload({
     onError: (e) => setError(e.message),
   });
@@ -174,10 +176,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
     onError: (e) => setError(e.message),
   });
 
-  const handleLogoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  const handleLogoFile = async (file: File) => {
     setError(null);
     setColourNote(null);
 
@@ -467,17 +466,25 @@ function Editor({ brand }: { brand: TenantBrand }) {
                       className="h-12 w-12 rounded object-contain border"
                     />
                   )}
-                  <label className="cursor-pointer text-sm font-medium text-primary-text hover:underline">
+                  <button
+                    type="button"
+                    className="text-sm font-medium text-primary-text hover:underline disabled:opacity-50"
+                    onClick={() => setLogoDialogOpen(true)}
+                    disabled={busy}
+                    data-testid="button-logo-upload"
+                  >
                     {isUploadingLogo ? "Uploading…" : logoUrl ? "Change logo" : "Upload logo"}
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
-                      className="hidden"
-                      onChange={handleLogoFile}
-                      disabled={busy}
-                      data-testid="input-logo-upload"
-                    />
-                  </label>
+                  </button>
+                  <ImageCropDialog
+                    open={logoDialogOpen}
+                    onOpenChange={setLogoDialogOpen}
+                    title="Club crest"
+                    description="Drop your crest, then frame it. SVG logos are used as they are."
+                    aspects={SQUARE_ASPECTS}
+                    suggestedWidth={512}
+                    passThrough={(f) => f.type === "image/svg+xml"}
+                    onCropped={handleLogoFile}
+                  />
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Uploading a logo suggests an accent colour below automatically.

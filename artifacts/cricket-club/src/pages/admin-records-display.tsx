@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useGetRecordsDisplaySettings,
   useUpdateRecordsDisplaySettings,
@@ -8,13 +8,11 @@ import {
   type RecordsDisplaySettingsUpdate,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Save, Loader2 } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { sortGradesBySeniority } from "@/components/grade-badge";
 import { LoadingState, QueryError } from "@/components/data-states";
+import { RadioCards, SettingsSection } from "@/components/display-settings";
+import { SaveBar, SettingsCard, SettingsRow } from "@/components/admin-ui";
 
 type DefaultTab = RecordsDisplaySettings["defaultTab"];
 
@@ -75,7 +73,7 @@ export default function AdminRecordsDisplay() {
       ) : settingsQ.isLoading ? (
         <LoadingState label="Loading records display settings…" />
       ) : settingsQ.data ? (
-        <SettingsCard
+        <RecordsDisplayForm
           settings={settingsQ.data}
           allGrades={allGrades}
           onSaved={() => qc.invalidateQueries({ queryKey: getGetRecordsDisplaySettingsQueryKey() })}
@@ -87,7 +85,7 @@ export default function AdminRecordsDisplay() {
   );
 }
 
-function SettingsCard({
+function RecordsDisplayForm({
   settings,
   allGrades,
   onSaved,
@@ -96,13 +94,24 @@ function SettingsCard({
   allGrades: string[];
   onSaved: () => void;
 }) {
-  const [defaultTab, setDefaultTab] = useState<DefaultTab>(settings.defaultTab);
-  const [byGradeDefaultGrade, setByGradeDefaultGrade] = useState(settings.byGradeDefaultGrade);
-  const [partnershipsDefaultGrade, setPartnershipsDefaultGrade] = useState(
-    settings.partnershipsDefaultGrade,
+  // The loaded values; Reset returns to them and the save bar compares against them.
+  const seeded = useMemo(
+    () => ({
+      defaultTab: settings.defaultTab,
+      byGradeDefaultGrade: settings.byGradeDefaultGrade,
+      partnershipsDefaultGrade: settings.partnershipsDefaultGrade,
+      centuries: splitSort(settings.centuriesSort),
+      fiveFor: splitSort(settings.fiveForSort),
+    }),
+    [settings],
   );
-  const [centuries, setCenturies] = useState(splitSort(settings.centuriesSort));
-  const [fiveFor, setFiveFor] = useState(splitSort(settings.fiveForSort));
+  const [defaultTab, setDefaultTab] = useState<DefaultTab>(seeded.defaultTab);
+  const [byGradeDefaultGrade, setByGradeDefaultGrade] = useState(seeded.byGradeDefaultGrade);
+  const [partnershipsDefaultGrade, setPartnershipsDefaultGrade] = useState(
+    seeded.partnershipsDefaultGrade,
+  );
+  const [centuries, setCenturies] = useState(seeded.centuries);
+  const [fiveFor, setFiveFor] = useState(seeded.fiveFor);
   const [error, setError] = useState<string | null>(null);
 
   const update = useUpdateRecordsDisplaySettings({
@@ -115,13 +124,24 @@ function SettingsCard({
     },
   });
 
-  useEffect(() => {
-    setDefaultTab(settings.defaultTab);
-    setByGradeDefaultGrade(settings.byGradeDefaultGrade);
-    setPartnershipsDefaultGrade(settings.partnershipsDefaultGrade);
-    setCenturies(splitSort(settings.centuriesSort));
-    setFiveFor(splitSort(settings.fiveForSort));
-  }, [settings]);
+  const reset = useCallback(() => {
+    setDefaultTab(seeded.defaultTab);
+    setByGradeDefaultGrade(seeded.byGradeDefaultGrade);
+    setPartnershipsDefaultGrade(seeded.partnershipsDefaultGrade);
+    setCenturies(seeded.centuries);
+    setFiveFor(seeded.fiveFor);
+    setError(null);
+  }, [seeded]);
+  useEffect(reset, [reset]);
+
+  const dirty =
+    JSON.stringify({
+      defaultTab,
+      byGradeDefaultGrade,
+      partnershipsDefaultGrade,
+      centuries,
+      fiveFor,
+    }) !== JSON.stringify(seeded);
 
   const save = () => {
     setError(null);
@@ -142,51 +162,34 @@ function SettingsCard({
   };
 
   const selectClass =
-    "h-10 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground";
+    "h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground";
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Default tab, grades &amp; sorting</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-8">
-        {/* Default tab */}
-        <div>
-          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Default tab
-          </h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            The tab pre-selected when the Records page first opens.
-          </p>
-          <div className="space-y-2 max-w-md">
-            {TABS.map((t) => (
-              <label
-                key={t.value}
-                className={`flex items-center gap-3 border rounded p-3 cursor-pointer transition-colors ${
-                  defaultTab === t.value ? "border-primary bg-primary/5" : "hover:bg-muted"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="defaultTab"
-                  checked={defaultTab === t.value}
-                  onChange={() => setDefaultTab(t.value)}
-                />
-                <span className="font-medium text-sm">{t.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
+    <>
+      <SettingsCard
+        title="Default tab and grades"
+        description="What the Records page shows when it first opens."
+      >
+        <SettingsSection
+          title="Default tab"
+          description="The tab pre-selected when the Records page first opens."
+        >
+          <RadioCards
+            name="defaultTab"
+            value={defaultTab}
+            onChange={setDefaultTab}
+            options={TABS}
+            className="max-w-md space-y-2"
+          />
+        </SettingsSection>
 
-        {/* By Grade default grade */}
-        <div>
-          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            By Grade default grade
-          </h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            The grade pre-selected on the By Grade tab.
-          </p>
+        <SettingsRow
+          label="By Grade default grade"
+          helper="The grade pre-selected on the By Grade tab."
+          htmlFor="records-by-grade-default"
+        >
           <select
+            id="records-by-grade-default"
             value={byGradeDefaultGrade}
             onChange={(e) => setByGradeDefaultGrade(e.target.value)}
             className={selectClass}
@@ -199,18 +202,15 @@ function SettingsCard({
               </option>
             ))}
           </select>
-        </div>
+        </SettingsRow>
 
-        {/* Partnerships default grade */}
-        <div>
-          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Partnerships default grade
-          </h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            The grade filter pre-selected on the Partnerships tab. "All grades" shows the highest
-            stand for each wicket across every grade.
-          </p>
+        <SettingsRow
+          label="Partnerships default grade"
+          helper='The grade filter pre-selected on the Partnerships tab. "All grades" shows the highest stand for each wicket across every grade.'
+          htmlFor="records-partnerships-default"
+        >
           <select
+            id="records-partnerships-default"
             value={partnershipsDefaultGrade}
             onChange={(e) => setPartnershipsDefaultGrade(e.target.value)}
             className={selectClass}
@@ -223,96 +223,80 @@ function SettingsCard({
               </option>
             ))}
           </select>
-        </div>
+        </SettingsRow>
+      </SettingsCard>
 
-        {/* Centuries default sort */}
-        <div>
-          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Centuries default sort
-          </h3>
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Column</Label>
-              <select
-                value={centuries.col}
-                onChange={(e) => setCenturies((p) => ({ ...p, col: e.target.value }))}
-                className={selectClass}
-                data-testid="select-centuries-column"
-              >
-                {CENTURIES_COLUMNS.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Direction</Label>
-              <select
-                value={centuries.dir}
-                onChange={(e) =>
-                  setCenturies((p) => ({ ...p, dir: e.target.value as "asc" | "desc" }))
-                }
-                className={selectClass}
-                data-testid="select-centuries-dir"
-              >
-                <option value="desc">Descending</option>
-                <option value="asc">Ascending</option>
-              </select>
-            </div>
+      <SettingsCard title="Default sorting" description="How the record tables are first sorted.">
+        <SettingsRow label="Centuries" helper="Column and direction for the Centuries table.">
+          <div className="flex flex-wrap gap-2">
+            <select
+              aria-label="Centuries sort column"
+              value={centuries.col}
+              onChange={(e) => setCenturies((p) => ({ ...p, col: e.target.value }))}
+              className={selectClass}
+              data-testid="select-centuries-column"
+            >
+              {CENTURIES_COLUMNS.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Centuries sort direction"
+              value={centuries.dir}
+              onChange={(e) =>
+                setCenturies((p) => ({ ...p, dir: e.target.value as "asc" | "desc" }))
+              }
+              className={selectClass}
+              data-testid="select-centuries-dir"
+            >
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
           </div>
-        </div>
+        </SettingsRow>
 
-        {/* 5-Wicket Hauls default sort */}
-        <div>
-          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            5-Wicket Hauls default sort
-          </h3>
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Column</Label>
-              <select
-                value={fiveFor.col}
-                onChange={(e) => setFiveFor((p) => ({ ...p, col: e.target.value }))}
-                className={selectClass}
-                data-testid="select-five-for-column"
-              >
-                {FIVE_FOR_COLUMNS.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Direction</Label>
-              <select
-                value={fiveFor.dir}
-                onChange={(e) =>
-                  setFiveFor((p) => ({ ...p, dir: e.target.value as "asc" | "desc" }))
-                }
-                className={selectClass}
-                data-testid="select-five-for-dir"
-              >
-                <option value="desc">Descending</option>
-                <option value="asc">Ascending</option>
-              </select>
-            </div>
+        <SettingsRow
+          label="5-Wicket Hauls"
+          helper="Column and direction for the 5-Wicket Hauls table."
+        >
+          <div className="flex flex-wrap gap-2">
+            <select
+              aria-label="5-Wicket Hauls sort column"
+              value={fiveFor.col}
+              onChange={(e) => setFiveFor((p) => ({ ...p, col: e.target.value }))}
+              className={selectClass}
+              data-testid="select-five-for-column"
+            >
+              {FIVE_FOR_COLUMNS.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="5-Wicket Hauls sort direction"
+              value={fiveFor.dir}
+              onChange={(e) => setFiveFor((p) => ({ ...p, dir: e.target.value as "asc" | "desc" }))}
+              className={selectClass}
+              data-testid="select-five-for-dir"
+            >
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
           </div>
-        </div>
+        </SettingsRow>
+      </SettingsCard>
 
-        {error && <div className="text-sm text-destructive">{error}</div>}
-        <div className="flex justify-end">
-          <Button onClick={save} disabled={update.isPending} data-testid="button-save-settings">
-            {update.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            Save settings
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      {error && <div className="text-sm text-destructive">{error}</div>}
+      <SaveBar
+        dirty={dirty}
+        saving={update.isPending}
+        onSave={save}
+        onReset={reset}
+        message={error ?? undefined}
+      />
+    </>
   );
 }

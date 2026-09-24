@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useGetMilestoneBoardSettings,
   useUpdateMilestoneBoardSettings,
@@ -7,13 +7,12 @@ import {
   type MilestoneBoardSettingsUpdate,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Save, Loader2 } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { LoadingState, QueryError } from "@/components/data-states";
+import { SettingsSection } from "@/components/display-settings";
+import { SaveBar, SettingsCard, SettingsRow } from "@/components/admin-ui";
 
 type DisplayMode = MilestoneBoardSettings["displayMode"];
 
@@ -94,7 +93,7 @@ export default function AdminMilestoneBoard() {
       ) : settingsQ.isLoading ? (
         <LoadingState label="Loading milestone board settings…" />
       ) : settingsQ.data ? (
-        <SettingsCard
+        <MilestoneBoardForm
           settings={settingsQ.data}
           onSaved={() => qc.invalidateQueries({ queryKey: getGetMilestoneBoardSettingsQueryKey() })}
         />
@@ -105,21 +104,35 @@ export default function AdminMilestoneBoard() {
   );
 }
 
-function SettingsCard({
+function MilestoneBoardForm({
   settings,
   onSaved,
 }: {
   settings: MilestoneBoardSettings;
   onSaved: () => void;
 }) {
-  const [displayMode, setDisplayMode] = useState<DisplayMode>(settings.displayMode);
-  const [games, setGames] = useState(String(settings.gamesThreshold));
-  const [runs, setRuns] = useState(String(settings.runsThreshold));
-  const [wickets, setWickets] = useState(String(settings.wicketsThreshold));
-  const [recencyWeeks, setRecencyWeeks] = useState(String(settings.recencyWeeks));
-  const [gamesTiers, setGamesTiers] = useState(tiersToText(settings.gamesTiers));
-  const [runsTiers, setRunsTiers] = useState(tiersToText(settings.runsTiers));
-  const [wicketsTiers, setWicketsTiers] = useState(tiersToText(settings.wicketsTiers));
+  // The loaded values; Reset returns to them and the save bar compares against them.
+  const seeded = useMemo(
+    () => ({
+      displayMode: settings.displayMode,
+      games: String(settings.gamesThreshold),
+      runs: String(settings.runsThreshold),
+      wickets: String(settings.wicketsThreshold),
+      recencyWeeks: String(settings.recencyWeeks),
+      gamesTiers: tiersToText(settings.gamesTiers),
+      runsTiers: tiersToText(settings.runsTiers),
+      wicketsTiers: tiersToText(settings.wicketsTiers),
+    }),
+    [settings],
+  );
+  const [displayMode, setDisplayMode] = useState<DisplayMode>(seeded.displayMode);
+  const [games, setGames] = useState(seeded.games);
+  const [runs, setRuns] = useState(seeded.runs);
+  const [wickets, setWickets] = useState(seeded.wickets);
+  const [recencyWeeks, setRecencyWeeks] = useState(seeded.recencyWeeks);
+  const [gamesTiers, setGamesTiers] = useState(seeded.gamesTiers);
+  const [runsTiers, setRunsTiers] = useState(seeded.runsTiers);
+  const [wicketsTiers, setWicketsTiers] = useState(seeded.wicketsTiers);
   const [error, setError] = useState<string | null>(null);
 
   const update = useUpdateMilestoneBoardSettings({
@@ -132,16 +145,30 @@ function SettingsCard({
     },
   });
 
-  useEffect(() => {
-    setDisplayMode(settings.displayMode);
-    setGames(String(settings.gamesThreshold));
-    setRuns(String(settings.runsThreshold));
-    setWickets(String(settings.wicketsThreshold));
-    setRecencyWeeks(String(settings.recencyWeeks));
-    setGamesTiers(tiersToText(settings.gamesTiers));
-    setRunsTiers(tiersToText(settings.runsTiers));
-    setWicketsTiers(tiersToText(settings.wicketsTiers));
-  }, [settings]);
+  const reset = useCallback(() => {
+    setDisplayMode(seeded.displayMode);
+    setGames(seeded.games);
+    setRuns(seeded.runs);
+    setWickets(seeded.wickets);
+    setRecencyWeeks(seeded.recencyWeeks);
+    setGamesTiers(seeded.gamesTiers);
+    setRunsTiers(seeded.runsTiers);
+    setWicketsTiers(seeded.wicketsTiers);
+    setError(null);
+  }, [seeded]);
+  useEffect(reset, [reset]);
+
+  const dirty =
+    JSON.stringify({
+      displayMode,
+      games,
+      runs,
+      wickets,
+      recencyWeeks,
+      gamesTiers,
+      runsTiers,
+      wicketsTiers,
+    }) !== JSON.stringify(seeded);
 
   const values = { gamesThreshold: games, runsThreshold: runs, wicketsThreshold: wickets };
   const setters: Record<string, (v: string) => void> = {
@@ -195,48 +222,41 @@ function SettingsCard({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Display mode &amp; thresholds</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div>
-          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            What to show
-          </h3>
-          <div className="space-y-2">
-            {MODES.map((m) => (
-              <label
-                key={m.value}
-                className={`flex items-start gap-3 border rounded p-3 cursor-pointer transition-colors ${
-                  displayMode === m.value ? "border-primary bg-primary/5" : "hover:bg-muted"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="displayMode"
-                  className="mt-1"
-                  checked={displayMode === m.value}
-                  onChange={() => setDisplayMode(m.value)}
-                />
-                <div>
-                  <div className="font-medium">{m.label}</div>
-                  <div className="text-xs text-muted-foreground">{m.desc}</div>
-                </div>
-              </label>
-            ))}
-          </div>
+    <>
+      <SettingsCard
+        title="Display mode"
+        description="What the Significant Milestones section on the Honour Boards page shows."
+      >
+        <div className="space-y-2 px-5 py-4">
+          {MODES.map((m) => (
+            <label
+              key={m.value}
+              className={`flex cursor-pointer items-start gap-3 rounded border p-3 transition-colors ${
+                displayMode === m.value ? "border-primary bg-primary/5" : "hover:bg-muted"
+              }`}
+            >
+              <input
+                type="radio"
+                name="displayMode"
+                className="mt-1"
+                checked={displayMode === m.value}
+                onChange={() => setDisplayMode(m.value)}
+              />
+              <div>
+                <div className="font-medium">{m.label}</div>
+                <div className="text-xs text-muted-foreground">{m.desc}</div>
+              </div>
+            </label>
+          ))}
         </div>
+      </SettingsCard>
 
-        <div>
-          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Significant thresholds
-          </h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            A club counts as "significant" once it meets or exceeds these values. Used for both
-            recent achievers and approaching players.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <SettingsCard title="Thresholds and tiers">
+        <SettingsSection
+          title="Significant thresholds"
+          description='A club counts as "significant" once it meets or exceeds these values. Used for both recent achievers and approaching players.'
+        >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {THRESHOLDS.map((t) => (
               <div key={t.key} className="space-y-2">
                 <Label htmlFor={t.key}>{t.label}</Label>
@@ -251,40 +271,28 @@ function SettingsCard({
               </div>
             ))}
           </div>
-        </div>
+        </SettingsSection>
 
-        <div>
-          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Recency window
-          </h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            How many weeks back (by real match date) an achievement counts as "recent" on the
-            Milestones tab. The board always lists the most recently achieved milestones first;
-            those within this window get a "Recent" highlight badge.
-          </p>
-          <div className="max-w-[12rem] space-y-2">
-            <Label htmlFor="recencyWeeks">Weeks</Label>
-            <Input
-              id="recencyWeeks"
-              type="number"
-              min={1}
-              value={recencyWeeks}
-              onChange={(e) => setRecencyWeeks(e.target.value)}
-            />
-            <div className="text-xs text-muted-foreground">Default 4</div>
-          </div>
-        </div>
+        <SettingsRow
+          label="Recency window (weeks)"
+          helper='How many weeks back (by real match date) an achievement counts as "recent" on the Milestones tab. Those within this window get a "Recent" badge. Default 4.'
+          htmlFor="recencyWeeks"
+        >
+          <Input
+            id="recencyWeeks"
+            type="number"
+            min={1}
+            value={recencyWeeks}
+            onChange={(e) => setRecencyWeeks(e.target.value)}
+            className="w-28"
+          />
+        </SettingsRow>
 
-        <div>
-          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            Career tiers
-          </h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            Comma-separated milestone tiers for career games, runs and wickets. They drive how
-            significant a career crossing is when ranking the Milestones tab (higher tiers rank
-            first). List values in ascending order; the first value is the lowest tier.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <SettingsSection
+          title="Career tiers"
+          description="Comma-separated milestone tiers for career games, runs and wickets. They drive how significant a career crossing is when ranking the Milestones tab (higher tiers rank first). List values in ascending order; the first value is the lowest tier."
+        >
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {TIERS.map((t) => (
               <div key={t.key} className="space-y-2">
                 <Label htmlFor={t.key}>{t.label}</Label>
@@ -298,20 +306,17 @@ function SettingsCard({
               </div>
             ))}
           </div>
-        </div>
+        </SettingsSection>
+      </SettingsCard>
 
-        {error && <div className="text-sm text-destructive">{error}</div>}
-        <div className="flex justify-end">
-          <Button onClick={save} disabled={update.isPending}>
-            {update.isPending ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            Save settings
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      {error && <div className="text-sm text-destructive">{error}</div>}
+      <SaveBar
+        dirty={dirty}
+        saving={update.isPending}
+        onSave={save}
+        onReset={reset}
+        message={error ?? undefined}
+      />
+    </>
   );
 }

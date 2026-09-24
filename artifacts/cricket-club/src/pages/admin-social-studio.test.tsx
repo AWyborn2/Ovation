@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeAll, vi } from "vitest";
-import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { renderAt } from "../test/render";
 import { installApiMock } from "../test/mock-api";
 import { ConfirmProvider } from "@/components/confirm-dialog";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
+import { packName } from "@/lib/social-studio";
 import type { CardTemplate } from "@workspace/api-client-react";
 import AdminSocialStudio from "./admin-social-studio";
 
@@ -194,7 +195,7 @@ async function renderStudio(templates: CardTemplate[]) {
       <AdminSocialStudio />
     </ConfirmProvider>,
   );
-  await screen.findByText("Card types");
+  await screen.findByText("Pack per card type");
   return writes;
 }
 
@@ -265,19 +266,39 @@ async function renderStatefulStudio(templates: CardTemplate[]) {
       <AdminSocialStudio />
     </ConfirmProvider>,
   );
-  await screen.findByText("Card types");
+  await screen.findByText("Pack per card type");
   return store;
 }
 
-const selectorFor = (label: string) =>
-  screen.getByLabelText(`Design pack for ${label}`) as HTMLSelectElement;
+// U14 replaced the per-type <select> with one swatch radio per pack. These
+// helpers keep the old select semantics: value "" = the default pack.
+const PACK_IDS = [
+  "broadcast-dark-v1",
+  "gold-foil-v1",
+  "bold-type-v1",
+  "neon-night-v1",
+  "sunset-v1",
+];
+const packGroup = (label: string) =>
+  screen.getByRole("radiogroup", { name: `Design pack for ${label}` });
+const selectorFor = (label: string) => {
+  const checked = within(packGroup(label))
+    .getAllByRole("radio")
+    .find((r) => r.getAttribute("aria-checked") === "true");
+  const id = PACK_IDS.find((p) => packName(p) === checked?.getAttribute("aria-label")) ?? "";
+  return { value: id === "broadcast-dark-v1" ? "" : id };
+};
+const pickPack = (label: string, value: string) =>
+  fireEvent.click(
+    within(packGroup(label)).getByRole("radio", { name: packName(value || "broadcast-dark-v1") }),
+  );
 
 describe("admin social studio — per-kind pack selector (R1, R6)", () => {
   it("changing a kind's selector issues one PATCH to that pack's canonical row", async () => {
     const f = fixtureTemplates();
     const writes = await renderStudio(f.all);
 
-    fireEvent.change(selectorFor("Century"), { target: { value: "gold-foil-v1" } });
+    pickPack("Century", "gold-foil-v1");
 
     await waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0].method).toBe("PATCH");
@@ -295,9 +316,7 @@ describe("admin social studio — per-kind pack selector (R1, R6)", () => {
     // kind sits on, because both render that pack. The list carries the default
     // pack once, not twice under two values that do the same thing.
     expect(selectorFor("Match Summary").value).toBe("");
-    fireEvent.change(selectorFor("Match Summary"), {
-      target: { value: "gold-foil-v1" },
-    });
+    pickPack("Match Summary", "gold-foil-v1");
 
     await waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0].url).toContain(`/card-templates/${f.goldSquare.id}`);
@@ -315,7 +334,7 @@ describe("admin social studio — per-kind pack selector (R1, R6)", () => {
 
     // `record` is claimed by Gold Foil; move it back to the default pack.
     expect(selectorFor("Record").value).toBe("gold-foil-v1");
-    fireEvent.change(selectorFor("Record"), { target: { value: "" } });
+    pickPack("Record", "");
 
     await waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0].url).toContain(`/card-templates/${f.broadcastSquare.id}`);
@@ -328,18 +347,20 @@ describe("admin social studio — per-kind pack selector (R1, R6)", () => {
     const f = fixtureTemplates();
     await renderStudio(f.all);
 
-    const sel = selectorFor("Century");
-    expect(sel.value).toBe("");
-    const selected = sel.options[sel.selectedIndex];
-    expect(selected.textContent).toMatch(/Broadcast Dark/);
-    expect(selected.textContent).toMatch(/default/i);
+    // The default pack's swatch is checked and the row names it — never blank.
+    expect(selectorFor("Century").value).toBe("");
+    const row = packGroup("Century").closest("li")!;
+    expect(
+      within(row).getByRole("radio", { name: "Broadcast Dark" }).getAttribute("aria-checked"),
+    ).toBe("true");
+    expect(row.textContent).toMatch(/Broadcast Dark/);
   });
 
   it("a kind whose default is a layers template shows the override warning", async () => {
     const f = fixtureTemplates();
     await renderStudio(f.all);
 
-    expect(screen.getByText("Overridden by template: My Player Layout")).toBeInTheDocument();
+    expect(screen.getByText("Uses your template: My Player Layout")).toBeInTheDocument();
   });
 });
 
@@ -357,7 +378,7 @@ describe("admin social studio — the selection survives the round trip", () => 
     await renderStatefulStudio(f.all);
 
     expect(selectorFor("Century").value).toBe("");
-    fireEvent.change(selectorFor("Century"), { target: { value: "gold-foil-v1" } });
+    pickPack("Century", "gold-foil-v1");
 
     await waitFor(() => expect(selectorFor("Century").value).toBe("gold-foil-v1"));
   });
@@ -366,7 +387,7 @@ describe("admin social studio — the selection survives the round trip", () => 
     const f = fixtureTemplates();
     const store = await renderStatefulStudio(f.all);
 
-    fireEvent.change(selectorFor("Century"), { target: { value: "gold-foil-v1" } });
+    pickPack("Century", "gold-foil-v1");
 
     await waitFor(() =>
       expect(store.find((t) => t.id === f.goldSquare.id)?.defaultForKinds).toContain("century"),
@@ -410,9 +431,9 @@ describe("admin social studio — the selection survives the round trip", () => 
         <AdminSocialStudio />
       </ConfirmProvider>,
     );
-    await screen.findByText("Card types");
+    await screen.findByText("Pack per card type");
 
-    fireEvent.change(selectorFor("Century"), { target: { value: "gold-foil-v1" } });
+    pickPack("Century", "gold-foil-v1");
 
     const banner = await screen.findByText(/internal server error/i);
     expect(banner).toBeInTheDocument();
@@ -428,7 +449,7 @@ describe("admin social studio — the selection survives the round trip", () => 
     const store = await renderStatefulStudio(f.all);
 
     expect(selectorFor("Record").value).toBe("gold-foil-v1");
-    fireEvent.change(selectorFor("Record"), { target: { value: "" } });
+    pickPack("Record", "");
 
     await waitFor(() => expect(selectorFor("Record").value).toBe(""));
     const holders = store.filter((t) => (t.defaultForKinds ?? []).includes("record"));
@@ -455,7 +476,7 @@ describe("admin social studio — pack rows stop masquerading (R5, R6)", () => {
     // The tenant's own default still gets a caption — a "layers" template
     // overrides the pack outright, so it reads as the override rather than a
     // plain default, and it is captioned exactly once (not once per phrasing).
-    expect(screen.getByText("Overridden by template: My Player Layout")).toBeInTheDocument();
+    expect(screen.getByText("Uses your template: My Player Layout")).toBeInTheDocument();
     expect(screen.queryByText(/Default template: My Player Layout/)).toBeNull();
     // Pack claims never surface as a "Default template" caption at all.
     expect(screen.queryByText(/Default template: Gold Foil/)).toBeNull();
@@ -468,7 +489,7 @@ describe("admin social studio — bulk apply is gated (R2, R7)", () => {
     const f = fixtureTemplates();
     const writes = await renderStudio(f.all);
 
-    fireEvent.click(screen.getByLabelText("Use Metallic Foil for all card types"));
+    fireEvent.click(screen.getByLabelText("Use Metallic Foil for every card"));
     const cancel = await screen.findByRole("button", { name: /cancel/i });
     fireEvent.click(cancel);
 
@@ -480,7 +501,7 @@ describe("admin social studio — bulk apply is gated (R2, R7)", () => {
     const f = fixtureTemplates();
     const writes = await renderStudio(f.all);
 
-    fireEvent.click(screen.getByLabelText("Use Metallic Foil for all card types"));
+    fireEvent.click(screen.getByLabelText("Use Metallic Foil for every card"));
 
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog.textContent).toContain("My Player Layout");

@@ -2,6 +2,11 @@ import { useState } from "react";
 import { useUpload } from "@workspace/object-storage-web";
 import type { TenantHeroImages } from "@workspace/api-client-react";
 import { Label } from "@/components/ui/label";
+import {
+  CARD_PHOTO_ASPECTS,
+  HERO_ASPECTS,
+  ImageCropDialog,
+} from "@/components/admin-ui/image-crop-dialog";
 import { CARD_MAX_WIDTH, HERO_MAX_WIDTH, compressImage } from "@/lib/compress-image";
 
 type TopSlot = "home" | "juniors" | "honours";
@@ -86,7 +91,8 @@ export function isEmptyHeroImages(value: TenantHeroImages | null): boolean {
 
 /**
  * Upload controls for a tenant's Broadcast imagery (hero + explore photos).
- * Each file is downscaled in the browser before upload. `basePath` selects the
+ * Each photo is framed in the shared crop dialog (16:9 heroes, 4:3 cards),
+ * then downscaled in the browser before upload. `basePath` selects the
  * upload route: the club admin's own storage, or the platform concierge route.
  */
 export function HeroImageFields({
@@ -107,10 +113,9 @@ export function HeroImageFields({
   const { uploadFile } = useUpload({ basePath, onError: (e) => onError(e.message) });
   const [pending, setPending] = useState<SlotKey | null>(null);
 
-  const handleFile = async (slot: SlotDef, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+  const [cropping, setCropping] = useState<SlotDef | null>(null);
+
+  const handleFile = async (slot: SlotDef, file: File) => {
     setPending(slot.key);
     onBusyChange?.(true);
     try {
@@ -137,17 +142,15 @@ export function HeroImageFields({
               <div className="h-12 w-20 shrink-0 overflow-hidden rounded-sm border border-border bg-muted">
                 {url && <img src={url} alt="" className="h-full w-full object-cover" />}
               </div>
-              <label className="cursor-pointer text-sm font-medium underline-offset-4 hover:underline">
+              <button
+                type="button"
+                className="text-sm font-medium underline-offset-4 hover:underline disabled:opacity-50"
+                onClick={() => setCropping(slot)}
+                disabled={disabled || pending !== null}
+                data-testid={`button-hero-${slot.key}`}
+              >
                 {busy ? "Uploading…" : url ? "Change" : "Upload"}
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  className="hidden"
-                  onChange={(e) => handleFile(slot, e)}
-                  disabled={disabled || pending !== null}
-                  data-testid={`input-hero-${slot.key}`}
-                />
-              </label>
+              </button>
               {url && (
                 <button
                   type="button"
@@ -163,6 +166,17 @@ export function HeroImageFields({
           </div>
         );
       })}
+      <ImageCropDialog
+        open={cropping != null}
+        onOpenChange={(o) => !o && setCropping(null)}
+        title={cropping?.label ?? ""}
+        description={cropping?.hint}
+        aspects={cropping?.maxWidth === HERO_MAX_WIDTH ? HERO_ASPECTS : CARD_PHOTO_ASPECTS}
+        suggestedWidth={cropping?.maxWidth === HERO_MAX_WIDTH ? 1600 : 800}
+        // The platform concierge route has no club photo library.
+        allowLibrary={!basePath}
+        onCropped={(file) => (cropping ? handleFile(cropping, file) : undefined)}
+      />
     </div>
   );
 }

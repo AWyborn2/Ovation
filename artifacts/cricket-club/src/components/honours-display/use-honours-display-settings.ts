@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useUpdateHonourDisplaySettings,
   useListSponsors,
@@ -34,6 +34,32 @@ const APPROACHING_TUNABLE_BOARD: DisplayBoard = {
 
 export type SponsorSlideStyle = "grid" | "single";
 
+type HonoursDisplaySettings = HonourDisplayBundle["settings"];
+
+/** The form's draft fields, seeded from the saved settings. */
+function seedDraft(settings: HonoursDisplaySettings) {
+  return {
+    defaultTemplate: settings.defaultTemplate,
+    sequence: settings.kioskSequence ?? [],
+    dwell: String(settings.kioskDwellMs),
+    speed: String(settings.kioskScrollSpeed),
+    endHold: String(settings.kioskEndHoldMs),
+    sponsorStrip: settings.kioskSponsorStrip,
+    sponsorSlides: settings.kioskSponsorSlides,
+    sponsorSlideEvery: String(settings.kioskSponsorSlideEvery),
+    sponsorSlideStyle: (settings.kioskSponsorSlideStyle ?? "grid") as SponsorSlideStyle,
+    sponsorIds: settings.kioskSponsorIds ?? [],
+    kioskAds: settings.kioskAds ?? [],
+    boardConfigs: settings.boardConfigs ?? {},
+    composites: settings.composites ?? [],
+    customGrids: settings.customGrids ?? [],
+    skins: settings.skins ?? [],
+    colourOverrides: settings.colourOverrides ?? {},
+    defaultFont: settings.defaultFont ?? "",
+  };
+}
+type HonoursDisplayDraft = ReturnType<typeof seedDraft>;
+
 /**
  * Draft state for the honours display / kiosk settings form (plan.md §5.6).
  *
@@ -47,52 +73,79 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
   const { boards, settings, brand } = bundle;
   const boardTitle = useMemo(() => new Map(boards.map((b) => [b.id, b.title])), [boards]);
 
-  const [defaultTemplate, setDefaultTemplate] = useState<string>(settings.defaultTemplate);
-  const [sequence, setSequence] = useState<string[]>(settings.kioskSequence ?? []);
-  const [dwell, setDwell] = useState(String(settings.kioskDwellMs));
-  const [speed, setSpeed] = useState(String(settings.kioskScrollSpeed));
-  const [endHold, setEndHold] = useState(String(settings.kioskEndHoldMs));
-  const [sponsorStrip, setSponsorStrip] = useState(settings.kioskSponsorStrip);
-  const [sponsorSlides, setSponsorSlides] = useState(settings.kioskSponsorSlides);
-  const [sponsorSlideEvery, setSponsorSlideEvery] = useState(
-    String(settings.kioskSponsorSlideEvery),
-  );
+  // The loaded values every field starts from; Reset returns to them and the
+  // save bar compares the draft against them.
+  const seeded = useMemo(() => seedDraft(settings), [settings]);
+
+  const [defaultTemplate, setDefaultTemplate] = useState<string>(seeded.defaultTemplate);
+  const [sequence, setSequence] = useState<string[]>(seeded.sequence);
+  const [dwell, setDwell] = useState(seeded.dwell);
+  const [speed, setSpeed] = useState(seeded.speed);
+  const [endHold, setEndHold] = useState(seeded.endHold);
+  const [sponsorStrip, setSponsorStrip] = useState(seeded.sponsorStrip);
+  const [sponsorSlides, setSponsorSlides] = useState(seeded.sponsorSlides);
+  const [sponsorSlideEvery, setSponsorSlideEvery] = useState(seeded.sponsorSlideEvery);
   const [sponsorSlideStyle, setSponsorSlideStyle] = useState<SponsorSlideStyle>(
-    settings.kioskSponsorSlideStyle ?? "grid",
+    seeded.sponsorSlideStyle,
   );
-  const [sponsorIds, setSponsorIds] = useState<number[]>(settings.kioskSponsorIds ?? []);
-  const [kioskAds, setKioskAds] = useState<KioskAd[]>(settings.kioskAds ?? []);
+  const [sponsorIds, setSponsorIds] = useState<number[]>(seeded.sponsorIds);
+  const [kioskAds, setKioskAds] = useState<KioskAd[]>(seeded.kioskAds);
   const [boardConfigs, setBoardConfigs] = useState<Record<string, BoardDisplayConfig>>(
-    settings.boardConfigs ?? {},
+    seeded.boardConfigs,
   );
-  const [composites, setComposites] = useState<CompositeDef[]>(settings.composites ?? []);
-  const [customGrids, setCustomGrids] = useState<CustomGridDef[]>(settings.customGrids ?? []);
-  const [skins, setSkins] = useState<HonourSkin[]>(settings.skins ?? []);
+  const [composites, setComposites] = useState<CompositeDef[]>(seeded.composites);
+  const [customGrids, setCustomGrids] = useState<CustomGridDef[]>(seeded.customGrids);
+  const [skins, setSkins] = useState<HonourSkin[]>(seeded.skins);
   const [colourOverrides, setColourOverrides] = useState<HonourColourOverrides>(
-    settings.colourOverrides ?? {},
+    seeded.colourOverrides,
   );
-  const [defaultFont, setDefaultFont] = useState<string>(settings.defaultFont ?? "");
+  const [defaultFont, setDefaultFont] = useState<string>(seeded.defaultFont);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setDefaultTemplate(settings.defaultTemplate);
-    setSequence(settings.kioskSequence ?? []);
-    setDwell(String(settings.kioskDwellMs));
-    setSpeed(String(settings.kioskScrollSpeed));
-    setEndHold(String(settings.kioskEndHoldMs));
-    setSponsorStrip(settings.kioskSponsorStrip);
-    setSponsorSlides(settings.kioskSponsorSlides);
-    setSponsorSlideEvery(String(settings.kioskSponsorSlideEvery));
-    setSponsorSlideStyle(settings.kioskSponsorSlideStyle ?? "grid");
-    setSponsorIds(settings.kioskSponsorIds ?? []);
-    setKioskAds(settings.kioskAds ?? []);
-    setBoardConfigs(settings.boardConfigs ?? {});
-    setComposites(settings.composites ?? []);
-    setCustomGrids(settings.customGrids ?? []);
-    setSkins(settings.skins ?? []);
-    setColourOverrides(settings.colourOverrides ?? {});
-    setDefaultFont(settings.defaultFont ?? "");
-  }, [settings]);
+  const reset = useCallback(() => {
+    setDefaultTemplate(seeded.defaultTemplate);
+    setSequence(seeded.sequence);
+    setDwell(seeded.dwell);
+    setSpeed(seeded.speed);
+    setEndHold(seeded.endHold);
+    setSponsorStrip(seeded.sponsorStrip);
+    setSponsorSlides(seeded.sponsorSlides);
+    setSponsorSlideEvery(seeded.sponsorSlideEvery);
+    setSponsorSlideStyle(seeded.sponsorSlideStyle);
+    setSponsorIds(seeded.sponsorIds);
+    setKioskAds(seeded.kioskAds);
+    setBoardConfigs(seeded.boardConfigs);
+    setComposites(seeded.composites);
+    setCustomGrids(seeded.customGrids);
+    setSkins(seeded.skins);
+    setColourOverrides(seeded.colourOverrides);
+    setDefaultFont(seeded.defaultFont);
+    setError(null);
+  }, [seeded]);
+
+  // Re-seed whenever the server bundle changes (e.g. after a save refetch).
+  useEffect(reset, [reset]);
+
+  const draft: HonoursDisplayDraft = {
+    defaultTemplate,
+    sequence,
+    dwell,
+    speed,
+    endHold,
+    sponsorStrip,
+    sponsorSlides,
+    sponsorSlideEvery,
+    sponsorSlideStyle,
+    sponsorIds,
+    kioskAds,
+    boardConfigs,
+    composites,
+    customGrids,
+    skins,
+    colourOverrides,
+    defaultFont,
+  };
+  const dirty = JSON.stringify(draft) !== JSON.stringify(seeded);
 
   const update = useUpdateHonourDisplaySettings({
     mutation: {
@@ -396,6 +449,8 @@ export function useHonoursDisplaySettings(bundle: HonourDisplayBundle, onSaved: 
     // Submit
     error,
     save,
+    reset,
+    dirty,
     isSaving: update.isPending,
   };
 }

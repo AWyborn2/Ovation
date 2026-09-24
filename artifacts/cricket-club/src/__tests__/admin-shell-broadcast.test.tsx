@@ -47,8 +47,12 @@ describe("Admin shell (Broadcast U14)", () => {
     expect(container.querySelector('nav[data-tour="admin-nav"]')).toBeTruthy();
     expect(container.querySelector('[data-tour="admin-nav-/admin/honours"]')).toBeTruthy();
     expect(screen.getByTestId("admin-menu-trigger")).toBeTruthy();
+    // The active group expands into its tabs; the current tab is the page.
     const current = container.querySelector('nav[data-tour="admin-nav"] [aria-current="page"]');
-    expect(current?.textContent).toBe("People");
+    expect(current?.textContent).toBe("Stats");
+    expect(container.querySelector('nav[data-tour="admin-nav"]')?.textContent).toContain(
+      "Junior scorecards",
+    );
   });
 
   it("hides a wholly-paid group the plan lacks", async () => {

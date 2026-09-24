@@ -1,8 +1,9 @@
 import { useLocation } from "wouter";
 import { lazy, Suspense, type ReactNode } from "react";
 import { LoadingState } from "@/components/data-states";
-import { PageHeader, UnderlineTabs } from "@/components/broadcast";
-import { useEntitlements, type Feature } from "@/lib/entitlements";
+import { UnderlineTabs } from "@/components/broadcast";
+import { useEntitlements } from "@/lib/entitlements";
+import { ADMIN_NAV, activeTab } from "@/lib/admin-nav";
 const AdminSocial = lazy(() => import("@/pages/admin-social"));
 const AdminSocialStudio = lazy(() => import("@/pages/admin-social-studio"));
 const AdminSocialCreate = lazy(() => import("@/pages/admin-social-create"));
@@ -36,66 +37,53 @@ const AdminLifeMembers = lazy(() => import("@/pages/admin-life-members"));
 const AdminJuniorPremierships = lazy(() => import("@/pages/admin-junior-premierships"));
 const AdminHonoursDisplay = lazy(() => import("@/pages/admin-honours-display"));
 
-type AdminTab = {
-  value: string;
-  label: string;
-  path: string;
-  element: ReactNode;
-  // Paid feature this tab belongs to. Hidden when the tenant's plan lacks it
-  // (dormant ⇒ every feature resolves on, so nothing hides during the pilot).
-  feature?: Feature;
-};
-
 // Every tab page is a separate lazy chunk: opening one admin tab no longer
-// downloads every admin page (the honours display, social sets, card editors,
-// import tooling, …) in a single ~MB bundle. Only the active tab's chunk loads.
-// Shared tabbed shell for a consolidated admin group. The active tab is driven
-// by the URL (the first tab lives at the group's base path; every other tab is
-// a single path segment under it), so each tab is directly deep-linkable and the
-// side-nav / hub can link straight to a specific tab. Only the active tab's
-// panel is mounted, so each page's queries only fire when its tab opens.
+// downloads every admin page in a single bundle. Only the active tab's chunk
+// loads.
+//
+// Shared tabbed page for an admin group. Titles, tabs, paths and plan gating
+// come from lib/admin-nav.ts (the same source as the sidebar and breadcrumb);
+// this module only maps each tab to its page. The active tab is driven by the
+// URL, so each tab is deep-linkable, and only the active tab's panel mounts.
 function AdminTabGroup({
-  title,
-  description,
-  basePath,
-  tabs,
+  groupKey,
+  pages,
 }: {
-  title: string;
-  description?: string;
-  basePath: string;
-  tabs: AdminTab[];
+  groupKey: string;
+  pages: Record<string, ReactNode>;
 }) {
   const [location, navigate] = useLocation();
   const entitlements = useEntitlements();
-  // Drop tabs the tenant's plan doesn't include, then resolve the active tab from
-  // what's left so a deep-link to a locked tab falls back to the first visible one.
-  const visibleTabs = tabs.filter((t) => !t.feature || entitlements[t.feature]);
-  const active =
-    visibleTabs.find(
-      (t) => t.path !== basePath && (location === t.path || location.startsWith(`${t.path}/`)),
-    )?.value ?? visibleTabs[0]?.value;
-
-  const activeTab = visibleTabs.find((t) => t.value === active);
+  const group = ADMIN_NAV.find((g) => g.key === groupKey)!;
+  // Drop tabs the tenant's plan doesn't include, so a deep-link to a locked
+  // tab falls back to the first visible one.
+  const visibleTabs = group.tabs.filter((t) => !t.feature || entitlements[t.feature]);
+  const tab = activeTab(location, { ...group, tabs: visibleTabs });
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Admin" title={title} subtitle={description} />
-      {!activeTab ? (
+      <header className="space-y-2">
+        <h1 className="font-serif text-[40px] font-bold uppercase leading-none">{group.label}</h1>
+        {group.description && (
+          <p className="max-w-[70ch] text-[15px] text-muted-foreground">{group.description}</p>
+        )}
+      </header>
+      {!tab ? (
         <p className="text-muted-foreground">Upgrade your plan to unlock these tools.</p>
       ) : (
         <div>
           <UnderlineTabs
-            label={title}
+            label={group.label}
             tabs={visibleTabs.map((t) => ({ value: t.value, label: t.label }))}
-            value={activeTab.value}
+            value={tab.value}
             onChange={(v) => {
-              const t = visibleTabs.find((x) => x.value === v);
-              if (t) navigate(t.path);
+              const next = visibleTabs.find((x) => x.value === v);
+              if (next) navigate(next.path);
             }}
           />
           {/* Only the active tab mounts, so each page's queries fire only when opened. */}
-          <div role="tabpanel" aria-label={activeTab.label} className="mt-6">
-            <Suspense fallback={<LoadingState label="Loading…" />}>{activeTab.element}</Suspense>
+          <div role="tabpanel" aria-label={tab.label} className="mt-6">
+            <Suspense fallback={<LoadingState label="Loading…" />}>{pages[tab.value]}</Suspense>
           </div>
         </div>
       )}
@@ -106,74 +94,18 @@ function AdminTabGroup({
 export function AdminSocialGroup() {
   return (
     <AdminTabGroup
-      title="Social Media Studio"
-      description="Branded share-card factory, card builders, junior cards and the review queue."
-      basePath="/admin/social"
-      tabs={[
-        {
-          value: "studio",
-          label: "Studio",
-          path: "/admin/social",
-          element: <AdminSocialStudio />,
-          feature: "socialStudio",
-        },
-        {
-          value: "cards",
-          label: "Cards",
-          path: "/admin/social/cards",
-          element: <AdminSocial />,
-          feature: "socialStudio",
-        },
-        {
-          value: "create",
-          label: "Create a card",
-          path: "/admin/social/create",
-          element: <AdminSocialCreate />,
-          feature: "socialStudio",
-        },
-        {
-          value: "sets",
-          label: "Carousel sets",
-          path: "/admin/social/sets",
-          element: <AdminSocialSets />,
-          feature: "socialStudio",
-        },
-        {
-          value: "fixtures",
-          label: "Fixtures",
-          path: "/admin/social/fixtures",
-          element: <AdminFixtures />,
-          feature: "socialStudio",
-        },
-        {
-          value: "juniors",
-          label: "Junior cards",
-          path: "/admin/social/juniors",
-          element: <AdminJuniorSocial />,
-          feature: "socialStudio",
-        },
-        {
-          value: "trading-cards",
-          label: "Trading cards",
-          path: "/admin/social/trading-cards",
-          element: <AdminTradingCards />,
-          feature: "socialStudio",
-        },
-        {
-          value: "queue",
-          label: "Queue",
-          path: "/admin/social/queue",
-          element: <AdminSocialQueue />,
-          feature: "socialStudio",
-        },
-        {
-          value: "library",
-          label: "Photo library",
-          path: "/admin/social/library",
-          element: <AdminPhotoLibrary />,
-          feature: "socialStudio",
-        },
-      ]}
+      groupKey="social"
+      pages={{
+        studio: <AdminSocialStudio />,
+        cards: <AdminSocial />,
+        create: <AdminSocialCreate />,
+        sets: <AdminSocialSets />,
+        fixtures: <AdminFixtures />,
+        juniors: <AdminJuniorSocial />,
+        "trading-cards": <AdminTradingCards />,
+        queue: <AdminSocialQueue />,
+        library: <AdminPhotoLibrary />,
+      }}
     />
   );
 }
@@ -181,61 +113,17 @@ export function AdminSocialGroup() {
 export function AdminSettingsGroup() {
   return (
     <AdminTabGroup
-      title="Display & Settings"
-      description="Defaults and display options for the public pages, plus site navigation."
-      basePath="/admin/settings"
-      tabs={[
-        {
-          value: "matches",
-          label: "Matches page",
-          path: "/admin/settings",
-          element: <AdminMatchDisplay />,
-        },
-        {
-          value: "records",
-          label: "Records page",
-          path: "/admin/settings/records",
-          element: <AdminRecordsDisplay />,
-        },
-        {
-          value: "honour-boards",
-          label: "Honour boards",
-          path: "/admin/settings/honour-boards",
-          element: <AdminHonourBoards />,
-          feature: "curation",
-        },
-        {
-          value: "milestone-board",
-          label: "Milestone board",
-          path: "/admin/settings/milestone-board",
-          element: <AdminMilestoneBoard />,
-          feature: "curation",
-        },
-        {
-          value: "junior-matches",
-          label: "Junior matches",
-          path: "/admin/settings/junior-matches",
-          element: <AdminJuniorMatchDisplay />,
-        },
-        {
-          value: "tour",
-          label: "Welcome & tour",
-          path: "/admin/settings/tour",
-          element: <AdminTourContent />,
-        },
-        {
-          value: "nav",
-          label: "Navigation & menus",
-          path: "/admin/settings/nav",
-          element: <AdminNav />,
-        },
-        {
-          value: "branding",
-          label: "Branding",
-          path: "/admin/settings/branding",
-          element: <AdminBranding />,
-        },
-      ]}
+      groupKey="settings"
+      pages={{
+        matches: <AdminMatchDisplay />,
+        records: <AdminRecordsDisplay />,
+        "honour-boards": <AdminHonourBoards />,
+        "milestone-board": <AdminMilestoneBoard />,
+        "junior-matches": <AdminJuniorMatchDisplay />,
+        tour: <AdminTourContent />,
+        nav: <AdminNav />,
+        branding: <AdminBranding />,
+      }}
     />
   );
 }
@@ -243,50 +131,17 @@ export function AdminSettingsGroup() {
 export function AdminPeopleGroup() {
   return (
     <AdminTabGroup
-      title="People"
-      description="Players, stats, committee, captains and club officials."
-      basePath="/admin/people"
-      tabs={[
-        { value: "players", label: "Players", path: "/admin/people", element: <AdminPlayers /> },
-        { value: "stats", label: "Stats", path: "/admin/people/stats", element: <AdminStats /> },
-        {
-          value: "junior-scorecards",
-          label: "Junior scorecards",
-          path: "/admin/people/junior-scorecards",
-          element: <AdminJuniorStats />,
-        },
-        {
-          value: "junior-players",
-          label: "Junior players",
-          path: "/admin/people/junior-players",
-          element: <AdminJuniorPlayers />,
-        },
-        {
-          value: "committee",
-          label: "Committee",
-          path: "/admin/people/committee",
-          element: <AdminCommittee />,
-          feature: "curation",
-        },
-        {
-          value: "captains",
-          label: "Captains",
-          path: "/admin/people/captains",
-          element: <AdminCaptains />,
-        },
-        {
-          value: "junior-office-bearers",
-          label: "Junior office bearers",
-          path: "/admin/people/junior-office-bearers",
-          element: <AdminJuniorCommittee />,
-        },
-        {
-          value: "non-players",
-          label: "Non-player people",
-          path: "/admin/people/non-players",
-          element: <AdminPeople />,
-        },
-      ]}
+      groupKey="people"
+      pages={{
+        players: <AdminPlayers />,
+        stats: <AdminStats />,
+        "junior-scorecards": <AdminJuniorStats />,
+        "junior-players": <AdminJuniorPlayers />,
+        committee: <AdminCommittee />,
+        captains: <AdminCaptains />,
+        "junior-office-bearers": <AdminJuniorCommittee />,
+        "non-players": <AdminPeople />,
+      }}
     />
   );
 }
@@ -294,59 +149,16 @@ export function AdminPeopleGroup() {
 export function AdminHonoursGroup() {
   return (
     <AdminTabGroup
-      title="Honours & Records"
-      description="Premierships, awards, Team of the Decade, caps, life members and junior premierships."
-      basePath="/admin/honours"
-      tabs={[
-        {
-          value: "premierships",
-          label: "Premierships",
-          path: "/admin/honours",
-          element: <AdminPremierships />,
-          feature: "curation",
-        },
-        {
-          value: "awards",
-          label: "Awards",
-          path: "/admin/honours/awards",
-          element: <AdminAwards />,
-          feature: "curation",
-        },
-        {
-          value: "team-of-decade",
-          label: "Team of the Decade",
-          path: "/admin/honours/team-of-decade",
-          element: <AdminTeamOfDecade />,
-          feature: "curation",
-        },
-        {
-          value: "caps",
-          label: "Cap register",
-          path: "/admin/honours/caps",
-          element: <AdminCaps />,
-          feature: "curation",
-        },
-        {
-          value: "life-members",
-          label: "Life members",
-          path: "/admin/honours/life-members",
-          element: <AdminLifeMembers />,
-          feature: "curation",
-        },
-        {
-          value: "junior-premierships",
-          label: "Junior premierships",
-          path: "/admin/honours/junior-premierships",
-          element: <AdminJuniorPremierships />,
-        },
-        {
-          value: "display",
-          label: "Display & kiosk",
-          path: "/admin/honours/display",
-          element: <AdminHonoursDisplay />,
-          feature: "clubroomTv",
-        },
-      ]}
+      groupKey="honours"
+      pages={{
+        premierships: <AdminPremierships />,
+        awards: <AdminAwards />,
+        "team-of-decade": <AdminTeamOfDecade />,
+        caps: <AdminCaps />,
+        "life-members": <AdminLifeMembers />,
+        "junior-premierships": <AdminJuniorPremierships />,
+        display: <AdminHonoursDisplay />,
+      }}
     />
   );
 }

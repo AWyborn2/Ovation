@@ -4,8 +4,7 @@ import {
   type HonourDisplayBundle,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { SaveBar } from "@/components/admin-ui";
 import { LoadingState, QueryError } from "@/components/data-states";
 import { KioskLinkCard } from "@/components/honours-display/editors";
 import {
@@ -73,22 +72,15 @@ function SettingsForm({ bundle, onSaved }: { bundle: HonourDisplayBundle; onSave
       <CustomGridSection form={form} />
 
       {form.error && <div className="text-sm text-destructive">{form.error}</div>}
-      <div className="flex justify-end">
-        <Button
-          onClick={form.save}
-          disabled={form.isSaving}
-          data-testid="button-save-honour-display"
-        >
-          {form.isSaving ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4 mr-2" />
-          )}
-          Save settings
-        </Button>
-      </div>
-
       <KioskLinkCard token={form.settings.kioskToken ?? null} onChanged={onSaved} />
+
+      <SaveBar
+        dirty={form.dirty}
+        saving={form.isSaving}
+        onSave={form.save}
+        onReset={form.reset}
+        message={form.error ?? undefined}
+      />
     </div>
   );
 }

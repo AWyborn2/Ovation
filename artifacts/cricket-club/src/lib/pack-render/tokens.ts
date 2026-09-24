@@ -208,6 +208,27 @@ export function darkenHex(hex: string, amount: number): string | null {
 }
 
 /**
+ * Readable ink for type set ON the accent (chips, result banners, sponsor
+ * pills): near-black on a light accent, white on a dark one. Packs have always
+ * read `var(--accent-ink, …)`, but nothing emitted it, so a tenant with a deep
+ * accent (purple, navy) got near-black type on it. WCAG relative luminance;
+ * the 0.4 threshold keeps Halls Head's gold (#FBAC27, L≈0.53) on dark ink.
+ * Returns null for anything that is not a 6-digit hex (the caller then omits
+ * the declaration and the templates' own fallbacks apply).
+ */
+export function accentInk(hex: string): string | null {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  const lin = (c: number) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+  const l = 0.2126 * lin((n >> 16) & 0xff) + 0.7152 * lin((n >> 8) & 0xff) + 0.0722 * lin(n & 0xff);
+  return l > 0.4 ? "#10151B" : "#FFFFFF";
+}
+
+/**
  * The stage colour for this pack: the tenant's `ink` pulled toward the pack's
  * own base by its {@link PackInkTint}, or the tenant's tone verbatim when the
  * pack declares no tint.
@@ -249,6 +270,8 @@ export function rootStyle(
     `--k:${SHARED_K[size] ?? 1.4}`,
   ];
   if (panel2) decls.push(`--panel-2:${panel2}`);
+  const onAccent = accentInk(tokens.accent);
+  if (onAccent) decls.push(`--accent-ink:${onAccent}`);
   return decls.join(";");
 }
 

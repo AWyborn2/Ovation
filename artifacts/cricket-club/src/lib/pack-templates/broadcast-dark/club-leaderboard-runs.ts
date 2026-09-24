@@ -1,62 +1,45 @@
 import type { PackCardTemplate } from "../types";
+import { SK_MONO } from "../shared";
 import {
-  bgLayers,
+  ACC,
+  DISP,
+  MUTED,
+  bdCard,
+  bdChip,
+  bdDisplay,
+  bdEyebrow,
+  bdFooterPresented,
+  bdFormats,
+  bdSplit,
   clubHeaderFields,
-  footerRowShared,
-  footerRowStory,
-  formatRoot,
-  goldChip,
-  hashtagFooterStory,
-  headerTag,
-  presentedBy,
   repeatField,
-  sharedColumnRoot,
-  sharedHeader,
-  sponsorsOff,
-  sponsorsOn,
-  storyHeader,
   textField,
+  type BdFormat,
 } from "./fragments";
 
-// A19 — Club Leaders · Runs (clubLeaderboard · Runs preset). Leading
-// run-scorer for every grade, one card. A20 is the Wickets preset.
+// A19 — Club Leaders · Runs (clubLeaderboard · Runs preset). The handoff's
+// "Club leaders" rows: grade block, leader, value. Up to eight grades on the
+// tall formats; landscape summarises to the top five beside the title. A20
+// (Wickets preset) reuses this layout.
 
-const storyRow =
-  `<div style="display:flex;align-items:center;gap:28px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:30px 34px">` +
-  `<div style="width:120px;flex:none;text-align:center"><div style="font-family:var(--disp,'Anton',sans-serif);font-size:64px;line-height:.85;color:var(--gold,#F5B21A)">{{row.gradeLabel}}</div><div style="font:600 13px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;color:rgba(255,255,255,.5);margin-top:5px">{{row.gradeSub}}</div></div>` +
-  `<div style="flex:1;font-weight:700;font-size:42px;line-height:1.05">{{row.playerName}}</div>` +
-  `<div style="font-family:var(--disp,'Anton',sans-serif);font-size:80px;line-height:.85;color:var(--gold,#F5B21A)">{{row.value}}</div>` +
+const row =
+  `<div style="display:flex;align-items:center;gap:2.6cqmin;padding:1.2cqmin 2.4cqmin;margin-top:1cqmin;border-radius:1cqmin;background:rgba(255,255,255,.05);border:.2cqmin solid rgba(255,255,255,.1)">` +
+  `<div style="width:12cqmin;flex:none"><div style="font-family:${DISP};font-size:4.4cqmin;line-height:.95;color:${ACC};white-space:nowrap">{{row.gradeLabel}}</div><div style="font-family:${SK_MONO};font-weight:600;font-size:1.5cqmin;letter-spacing:.12em;color:${MUTED};margin-top:.4cqmin">{{row.gradeSub}}</div></div>` +
+  `<div style="flex:1;min-width:0;font-weight:600;font-size:3.3cqmin;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{row.playerName}}</div>` +
+  `<div style="flex:none;font-family:${DISP};font-size:5.4cqmin;line-height:.9">{{row.value}}</div>` +
   `</div>`;
 
-const sharedRow =
-  `<div style="flex:1;display:flex;align-items:center;gap:28px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:0 34px">` +
-  `<div style="width:110px;flex:none;text-align:center"><div style="font-family:var(--disp,'Anton'),sans-serif;font-size:60px;line-height:.85;color:var(--gold,#FBAC27)">{{row.gradeLabel}}</div><div style="font:600 13px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;color:rgba(255,255,255,.5);margin-top:5px">{{row.gradeSub}}</div></div>` +
-  `<div style="flex:1;font-weight:700;font-size:40px;line-height:1.05">{{row.playerName}}</div>` +
-  `<div style="font-family:var(--disp,'Anton'),sans-serif;font-size:76px;line-height:.85;color:var(--gold,#FBAC27)">{{row.value}}</div>` +
-  `</div>`;
-
-const storyHtml = formatRoot(
-  bgLayers() +
-    storyHeader(goldChip("{{category}}", "story") + headerTag("{{season}}")) +
-    `<div style="position:absolute;top:230px;left:70px;right:70px"><div style="font:600 20px/1 ui-monospace,Menlo,monospace;letter-spacing:.22em;color:var(--gold,#F5B21A)">{{subtitle}}</div><div style="font-family:var(--disp,'Anton',sans-serif);font-size:132px;line-height:.94;text-transform:uppercase;margin-top:10px">{{title}}</div></div>` +
-    `<div data-repeat="leaders" style="position:absolute;top:600px;left:70px;right:70px;display:flex;flex-direction:column;gap:24px">${storyRow}</div>` +
-    sponsorsOn(footerRowStory(52, presentedBy("stats by"))) +
-    hashtagFooterStory(60),
-);
-
-const sharedHtml = sharedColumnRoot(
-  bgLayers(),
-  sharedHeader(goldChip("{{category}}", "shared") + headerTag("{{season}}")) +
-    `<div style="flex:none;margin-top:calc(var(--k,1.4)*10px)"><div style="font:600 20px/1 ui-monospace,Menlo,monospace;letter-spacing:.22em;color:var(--gold,#FBAC27)">{{subtitle}}</div><div style="font-family:var(--disp,'Anton'),sans-serif;font-size:calc(var(--k,1.4)*96px);line-height:.94;text-transform:uppercase;margin-top:10px">{{title}}</div></div>` +
-    `<div data-repeat="leaders" style="flex:1;min-height:0;display:flex;flex-direction:column;gap:22px;margin-top:calc(var(--k,1.4)*18px)">${sharedRow}</div>` +
-    footerRowShared(
-      sponsorsOn(presentedBy("stats by")) +
-        sponsorsOff(
-          `<div style="font-weight:700;font-size:22px;letter-spacing:.12em;color:var(--gold,#FBAC27)">{{hashtagsExtra}}</div>`,
-        ),
-      ";margin-top:calc(var(--k,1.4)*16px)",
-    ),
-);
+/** Shared Club Leaders markup builder (Runs and Wickets presets). */
+export function clubLeadersBuild(fmt: BdFormat): string {
+  const head = bdEyebrow("{{subtitle}}") + bdDisplay("{{title}}", 10.5, ";line-height:.92");
+  const rows = `<div data-repeat="leaders" data-repeat-max="${fmt === "landscape" ? 5 : 8}">${row}</div>`;
+  return bdCard({
+    chip: bdChip("{{category}}"),
+    tag: "{{season}}",
+    body: bdSplit(fmt, head, rows),
+    footer: bdFooterPresented("stats by", { offLeft: "hashtagsExtra" }),
+  });
+}
 
 export const clubLeaderboardRuns: PackCardTemplate = {
   kind: "clubLeaderboard",
@@ -87,8 +70,5 @@ export const clubLeaderboardRuns: PackCardTemplate = {
       ],
     },
   ],
-  formats: {
-    story: storyHtml,
-    shared: sharedHtml,
-  },
+  formats: bdFormats(clubLeadersBuild),
 };

@@ -73,7 +73,7 @@ export const PACKS: DesignPack[] = [
     id: "broadcast-dark-v1",
     name: "Broadcast Dark",
     description:
-      "The standard Ovation card catalogue — 19 Broadcast Dark designs across all 17 card kinds, in three formats: square feed post, portrait feed post, and story.",
+      "The standard Ovation card catalogue — 19 Broadcast Dark designs across all 17 card kinds, in four formats: square feed post, portrait feed post, story, and 1200×630 landscape.",
     // Pack A covers every card kind (19 designs collapse onto 17 kinds;
     // gradeLeader and clubLeaderboard each carry two category-preset designs).
     // `newCap` is deliberately absent from every pack: the kind was retired
@@ -141,13 +141,12 @@ export const PACKS: DesignPack[] = [
     // row, so renaming it would orphan their pack selection. Display name only.
     name: "Metallic Foil",
     description:
-      "Grand-final prestige — a milled metal ramp derived from your club's own accent, a foil ribbon with a seal medallion, and an honour-board frame. Your colour, in metal.",
+      "Grand-final prestige — a sepia photo ghost, gold pinstripe and a thin double foil frame, with foil-gradient numerals milled from your club's own accent. Your colour, in metal. Square, portrait, story and 1200×630 landscape.",
     // COVERAGE CONTRACT: this list must match the kinds in the client manifest
     // (`pack-templates/gold-foil/index.ts`). The two registries live in
     // separate packages and are not cross-checked automatically. Declaring a
     // kind here that the client cannot render offers a tenant a pack that falls
     // back to Broadcast Dark; omitting one the client CAN render just hides it.
-    // Gold Foil is being transcribed card by card — grow both lists together.
     cardKinds: [
       "matchSummary",
       "matchDay",
@@ -173,9 +172,9 @@ export const PACKS: DesignPack[] = [
     id: "bold-type-v1",
     name: "Bold Type",
     description:
-      "Oversized condensed type as the hero — massive scores, gold outline display faces, flat colour-block compositions. No photography; the type is the design.",
+      "A solid club-colour poster — your accent as the stage, a slate wedge with a mono photo, a giant outline word behind and inverted chips. Square, portrait, story and 1200×630 landscape.",
     // COVERAGE CONTRACT: must match pack-templates/bold-type/index.ts (enforced
-    // by pack-coverage-parity.test.ts). Grows card by card.
+    // by pack-coverage-parity.test.ts).
     cardKinds: [
       "matchSummary",
       "matchDay",
@@ -201,9 +200,9 @@ export const PACKS: DesignPack[] = [
     id: "neon-night-v1",
     name: "Neon Night",
     description:
-      "Night-sky navy with blurred neon orbs, glassmorphism panels and layered neon-glow display type — floodlit cricket after dark.",
+      "Floodlit cricket after dark — accent and pink glows, a mono photo, a 5% grid, a glowing horizon line and neon-glow type, all lit in your club's accent. Square, portrait, story and 1200×630 landscape.",
     // COVERAGE CONTRACT: must match pack-templates/neon-night/index.ts
-    // (enforced by pack-coverage-parity.test.ts). Grows card by card.
+    // (enforced by pack-coverage-parity.test.ts).
     cardKinds: [
       "matchSummary",
       "record",
@@ -229,9 +228,9 @@ export const PACKS: DesignPack[] = [
     id: "sunset-v1",
     name: "Sunset",
     description:
-      "Golden-hour warmth — photo-first stories over a sunset wash, frosted glass panels and script accent type. Club-social warmth where Broadcast Dark is TV graphics.",
+      "Golden-hour warmth — your photo under an orange-to-plum sunset wash, a sun glow in your accent, a frosted glass panel and a script word. Club-social warmth where Broadcast Dark is TV graphics. Square, portrait, story and 1200×630 landscape.",
     // COVERAGE CONTRACT: must match pack-templates/sunset/index.ts (enforced
-    // by pack-coverage-parity.test.ts). Grows card by card.
+    // by pack-coverage-parity.test.ts).
     cardKinds: [
       "matchSummary",
       "teamList",

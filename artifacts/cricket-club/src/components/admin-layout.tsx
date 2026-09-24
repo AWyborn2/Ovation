@@ -4,65 +4,50 @@ import {
   useLogout,
   useGetPendingSocialDraftCount,
   getGetPendingSocialDraftCountQueryKey,
+  useListImports,
+  getListImportsQueryKey,
   type Admin,
 } from "@workspace/api-client-react";
+import { ExternalLink, Menu, Moon, Plus, Search, Sun } from "lucide-react";
 import { useInvalidateAdmin } from "@/lib/admin-auth";
-import { useEntitlements, type Feature } from "@/lib/entitlements";
+import { useEntitlements } from "@/lib/entitlements";
+import { useBrand } from "@/lib/brand-context";
+import { useThemeMode } from "@/lib/theme-context";
+import {
+  adminBreadcrumb,
+  activeTab,
+  groupIsActive,
+  visibleNav,
+  type AdminNavGroup,
+} from "@/lib/admin-nav";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/admin-ui";
+import { AdminJumpTo } from "@/components/admin-ui/admin-jump-to";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Eyebrow, InitialsAvatar } from "@/components/broadcast";
-import {
-  LayoutGrid,
-  Image,
-  Menu,
-  Settings,
-  Users,
-  Trophy,
-  Upload,
-  UserCog,
-  type LucideIcon,
-} from "lucide-react";
+import { InitialsAvatar } from "@/components/broadcast";
 
-type NavItem = {
-  href: string;
-  label: string;
-  icon: LucideIcon;
-  badge?: "social-queue";
-  // Hide a wholly-paid group when the tenant's plan lacks the feature. Mixed
-  // groups stay visible — their paid tabs gate individually inside the group.
-  feature?: Feature;
-};
-
-const NAV: NavItem[] = [
-  { href: "/admin", label: "Hub", icon: LayoutGrid },
-  {
-    href: "/admin/social",
-    label: "Social Media Studio",
-    icon: Image,
-    badge: "social-queue",
-    feature: "socialStudio",
-  },
-  { href: "/admin/settings", label: "Display & Settings", icon: Settings },
-  { href: "/admin/people", label: "People", icon: Users },
-  { href: "/admin/honours", label: "Honours & Records", icon: Trophy },
-  { href: "/admin/import", label: "Import CSV", icon: Upload },
-  { href: "/admin/users", label: "Admin users", icon: UserCog },
-];
-
-const isActive = (location: string, href: string) =>
-  location === href || (href !== "/admin" && location.startsWith(`${href}/`));
+function ago(iso: string | undefined): string | null {
+  if (!iso) return null;
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  return `${days} days ago`;
+}
 
 /**
- * Back-office chrome: a sticky sidebar at ≥ `nav` (900px); below it the same
- * menu opens from a sheet so the admin pages keep the full width on phones.
+ * The admin app shell (Social Studio U20): a 256px sidebar whose active group
+ * expands into its tabs, a glass top bar with the breadcrumb, site status,
+ * notifications and "Create a card", and the page. Below the `nav`
+ * breakpoint the sidebar opens from a sheet; the top bar keeps the primary
+ * action.
  */
 export function AdminLayout({ admin, children }: { admin: Admin; children: ReactNode }) {
   const [location] = useLocation();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const invalidate = useInvalidateAdmin();
-  const logout = useLogout({ mutation: { onSettled: invalidate } });
+  const [jumpOpen, setJumpOpen] = useState(false);
+  const entitlements = useEntitlements();
+  const nav = visibleNav(entitlements);
   const pendingQ = useGetPendingSocialDraftCount({
     query: {
       queryKey: getGetPendingSocialDraftCountQueryKey(),
@@ -72,145 +57,257 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
     },
   });
   const pendingCount = pendingQ.data?.count ?? 0;
-  const entitlements = useEntitlements();
-  const navItems = NAV.filter((item) => !item.feature || entitlements[item.feature]);
-  const current = navItems.find((item) => isActive(location, item.href));
+  const importsQ = useListImports({ query: { queryKey: getListImportsQueryKey() } });
+  const lastImport = (importsQ.data ?? [])
+    .map((i) => i.importedAt)
+    .sort()
+    .at(-1);
+  const crumbs = adminBreadcrumb(location);
+  const canCreate = entitlements.socialStudio;
 
-  const signOut = (
-    <Button
-      variant="outline"
-      size="sm"
-      className="w-full"
-      onClick={() => logout.mutate()}
-      disabled={logout.isPending}
-    >
-      Sign out
-    </Button>
+  const sidebar = (tour: boolean, onNavigate?: () => void) => (
+    <AdminSidebar
+      admin={admin}
+      nav={nav}
+      location={location}
+      pendingCount={pendingCount}
+      tour={tour}
+      onNavigate={onNavigate}
+      onJump={() => {
+        onNavigate?.();
+        setJumpOpen(true);
+      }}
+    />
   );
 
   return (
-    <div className="grid gap-6 py-6 nav:grid-cols-[240px_minmax(0,1fr)]">
-      {/* Phones / tablets: menu in a sheet. */}
-      <div className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2 nav:hidden">
-        <div className="min-w-0">
-          <Eyebrow>Admin</Eyebrow>
-          <div className="truncate text-sm font-semibold">{current?.label ?? "Admin"}</div>
-        </div>
-        <div className="flex items-center gap-1">
-          <NotificationBell />
+    <div className="flex min-h-screen bg-background text-foreground">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-border bg-card nav:flex">
+        {sidebar(true)}
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-30 flex h-[60px] items-center gap-3 border-b border-border bg-[var(--glass)] px-4 backdrop-blur-xl sm:px-8">
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
+                variant="ghost"
+                size="icon"
+                className="nav:hidden"
+                aria-label="Open admin menu"
                 data-testid="admin-menu-trigger"
-                data-tour="admin-nav"
               >
-                <Menu className="h-4 w-4" />
-                Menu
+                <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex w-[280px] flex-col gap-4 overflow-y-auto">
+            <SheetContent side="left" className="flex w-64 flex-col p-0">
               <SheetTitle className="sr-only">Admin menu</SheetTitle>
-              <SignedInAs admin={admin} />
-              <AdminNavList
-                items={navItems}
-                location={location}
-                pendingCount={pendingCount}
-                onNavigate={() => setSheetOpen(false)}
-              />
-              {signOut}
+              {sidebar(false, () => setSheetOpen(false))}
             </SheetContent>
           </Sheet>
-        </div>
+
+          <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
+            <ol className="flex min-w-0 items-center gap-2 text-[13px] text-muted-foreground">
+              {crumbs.map((c, i) => (
+                <li key={`${c}-${i}`} className="flex min-w-0 items-center gap-2">
+                  {i > 0 && <span aria-hidden>/</span>}
+                  <span
+                    className={cn(
+                      "truncate",
+                      i === crumbs.length - 1 && "font-semibold text-foreground",
+                    )}
+                    aria-current={i === crumbs.length - 1 ? "page" : undefined}
+                  >
+                    {c}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </nav>
+
+          {lastImport && (
+            <p className="hidden items-center gap-2 text-xs text-muted-foreground lg:flex">
+              <span className="h-[7px] w-[7px] rounded-full bg-[var(--win-fg)]" aria-hidden />
+              Site live · last import {ago(lastImport)}
+            </p>
+          )}
+          <NotificationBell />
+          {canCreate && (
+            <Button
+              asChild
+              className="h-10 rounded-full px-4 font-semibold transition-transform hover:-translate-y-px"
+            >
+              <Link href="/admin/social/create">
+                <Plus className="h-4 w-4 sm:mr-1.5" aria-hidden />
+                <span className="hidden sm:inline">Create a card</span>
+                <span className="sr-only sm:hidden">Create a card</span>
+              </Link>
+            </Button>
+          )}
+        </header>
+
+        <main className="mx-auto w-full min-w-0 max-w-[1360px] flex-1 p-4 sm:p-8">{children}</main>
       </div>
 
-      {/* Desktop: sticky sidebar under the site header. */}
-      <aside className="hidden h-fit space-y-4 rounded-lg border bg-card p-4 nav:sticky nav:top-[calc(var(--header-h)+16px)] nav:block">
-        <SignedInAs admin={admin} action={<NotificationBell />} />
-        <AdminNavList items={navItems} location={location} pendingCount={pendingCount} tour />
-        {signOut}
-      </aside>
-      <main className="min-w-0">{children}</main>
+      <AdminJumpTo nav={nav} open={jumpOpen} onOpenChange={setJumpOpen} />
     </div>
   );
 }
 
-function SignedInAs({ admin, action }: { admin: Admin; action?: ReactNode }) {
-  return (
-    <div className="flex items-center gap-3 border-b pb-4">
-      <InitialsAvatar name={admin.displayName} size={36} />
-      <div className="min-w-0 flex-1">
-        <Eyebrow>Signed in as</Eyebrow>
-        <div className="truncate text-sm font-semibold">{admin.displayName}</div>
-        <div className="truncate text-xs text-muted-foreground">@{admin.username}</div>
-      </div>
-      {action}
-    </div>
-  );
-}
-
-function AdminNavList({
-  items,
+function AdminSidebar({
+  admin,
+  nav,
   location,
   pendingCount,
   tour,
   onNavigate,
+  onJump,
 }: {
-  items: NavItem[];
+  admin: Admin;
+  nav: AdminNavGroup[];
   location: string;
   pendingCount: number;
   /** Carry the admin-tour anchors (only one copy of the nav may). */
-  tour?: boolean;
+  tour: boolean;
   onNavigate?: () => void;
+  onJump: () => void;
 }) {
+  const brand = useBrand();
+  const invalidate = useInvalidateAdmin();
+  const logout = useLogout({ mutation: { onSettled: invalidate } });
+  const { mode, toggle } = useThemeMode();
+
   return (
-    <nav
-      className="flex flex-col gap-1"
-      aria-label="Admin"
-      data-tour={tour ? "admin-nav" : undefined}
-    >
-      {items.map((item) => {
-        const active = isActive(location, item.href);
-        const showBadge = item.badge === "social-queue" && pendingCount > 0;
-        const Icon = item.icon;
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={onNavigate}
-            aria-current={active ? "page" : undefined}
-            data-tour={tour ? `admin-nav-${item.href}` : undefined}
-            className={cn(
-              "flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
-              active
-                ? "bg-muted font-semibold text-foreground"
-                : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-            )}
-          >
-            <span className="flex min-w-0 items-center gap-2.5">
-              <span
+    <div className="flex h-full w-full flex-col">
+      <div className="flex items-center gap-3 px-5 pb-4 pt-5">
+        {brand.logoUrl ? (
+          <img src={brand.logoUrl} alt="" className="h-10 w-auto shrink-0" />
+        ) : (
+          <InitialsAvatar name={brand.name} size={40} />
+        )}
+        <div className="min-w-0">
+          <div className="truncate font-serif text-[17px] font-bold uppercase leading-tight">
+            {brand.shortName?.trim() || brand.name}
+          </div>
+          <div className="text-xs text-muted-foreground">Club admin</div>
+        </div>
+      </div>
+
+      <div className="px-4">
+        <button
+          type="button"
+          onClick={onJump}
+          className="flex h-[38px] w-full items-center gap-2 rounded-lg border border-border bg-muted px-3 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Search className="h-4 w-4" aria-hidden />
+          <span className="flex-1 text-left">Jump to…</span>
+          <kbd className="rounded-[5px] border border-border px-1.5 font-mono text-[11px]">⌘K</kbd>
+        </button>
+      </div>
+
+      <nav
+        aria-label="Admin"
+        data-tour={tour ? "admin-nav" : undefined}
+        className="mt-4 flex-1 space-y-0.5 overflow-y-auto px-3 pb-4"
+      >
+        {nav.map((group) => {
+          const active = groupIsActive(location, group);
+          const tab = active ? activeTab(location, group) : undefined;
+          const showBadge = group.badge === "social-queue" && pendingCount > 0;
+          return (
+            <div key={group.key}>
+              <Link
+                href={group.href}
+                onClick={onNavigate}
+                aria-current={active && group.tabs.length === 0 ? "page" : undefined}
+                data-tour={tour ? `admin-nav-${group.href}` : undefined}
                 className={cn(
-                  "grid h-7 w-7 shrink-0 place-items-center rounded-md",
-                  active ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary-text",
+                  "flex h-10 items-center gap-3 rounded-lg px-3 text-sm transition-colors",
+                  active
+                    ? "bg-muted font-semibold text-foreground"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                 )}
               >
-                <Icon className="h-4 w-4" />
-              </span>
-              <span className="truncate">{item.label}</span>
-            </span>
-            {showBadge && (
-              <span
-                className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-foreground"
-                aria-label={`${pendingCount} drafts awaiting review`}
-              >
-                {pendingCount > 99 ? "99+" : pendingCount}
-              </span>
-            )}
-          </Link>
-        );
-      })}
-    </nav>
+                <group.icon
+                  className={cn("h-[17px] w-[17px] shrink-0", active && "text-primary-text")}
+                />
+                <span className="flex-1 truncate">{group.label}</span>
+                {showBadge && (
+                  <span
+                    className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-foreground"
+                    aria-label={`${pendingCount} drafts awaiting review`}
+                  >
+                    {pendingCount > 99 ? "99+" : pendingCount}
+                  </span>
+                )}
+              </Link>
+              {active && group.tabs.length > 0 && (
+                <ul className="my-1 ml-[18px] space-y-0.5 border-l border-border pl-2">
+                  {group.tabs.map((t) => {
+                    const current = t.path === tab?.path;
+                    return (
+                      <li key={t.path}>
+                        <Link
+                          href={t.path}
+                          onClick={onNavigate}
+                          aria-current={current ? "page" : undefined}
+                          className={cn(
+                            "flex h-8 items-center justify-between rounded-md px-2.5 text-[13px] transition-colors",
+                            current
+                              ? "bg-primary/15 font-semibold text-primary-text"
+                              : "text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          <span className="truncate">{t.label}</span>
+                          {t.value === "queue" && pendingCount > 0 && (
+                            <span className="text-xs font-semibold text-primary-text">
+                              {pendingCount}
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </nav>
+
+      <div className="space-y-3 border-t border-border p-4">
+        <a
+          href="/"
+          className="flex items-center gap-2 text-[13px] text-muted-foreground hover:text-foreground"
+        >
+          <ExternalLink className="h-4 w-4" aria-hidden /> View public site
+        </a>
+        <div className="flex items-center gap-3">
+          <InitialsAvatar name={admin.displayName} size={34} />
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold">{admin.displayName}</div>
+            <div className="truncate text-xs text-muted-foreground">@{admin.username}</div>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full border border-border"
+            onClick={toggle}
+            aria-label={mode === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {mode === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+        </div>
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => logout.mutate()}
+          disabled={logout.isPending}
+        >
+          Sign out
+        </Button>
+      </div>
+    </div>
   );
 }

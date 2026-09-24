@@ -120,9 +120,11 @@ function PublicRoutes() {
   );
 }
 
+// The admin is its own full-screen app shell (sidebar + top bar), not a page
+// inside the public site's header/footer chrome.
 function AdminRoutes() {
   return (
-    <Layout>
+    <>
       <AdminShell>
         <RouteSuspense>
           <Switch>
@@ -203,7 +205,7 @@ function AdminRoutes() {
           </Switch>
         </RouteSuspense>
       </AdminShell>
-    </Layout>
+    </>
   );
 }
 

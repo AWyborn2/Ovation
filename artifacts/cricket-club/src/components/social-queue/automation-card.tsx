@@ -20,8 +20,8 @@ const FAMILY_HELP: Record<Family, string> = {
 
 /**
  * The automation switches (R2) — which card families draft themselves after
- * each import, and per-grade exceptions for match results. Lives on the queue
- * page until the Cards settings redesign (U14) gives it a home.
+ * each import, and per-grade exceptions for match results. Lives on the Cards
+ * tab (U14), which the queue's empty state links to.
  */
 export function AutomationCard({ config }: { config: SocialFamilyConfig | undefined }) {
   const qc = useQueryClient();

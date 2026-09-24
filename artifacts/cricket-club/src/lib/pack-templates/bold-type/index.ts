@@ -20,15 +20,15 @@ import { clubLeaderboardRuns } from "./club-leaderboard-runs";
 import { clubLeaderboardWickets } from "./club-leaderboard-wickets";
 
 /**
- * Pack C — Bold Type. Oversized condensed type as the hero: 200px+ scores,
- * gold outline-stroke display faces, flat colour-block compositions, mono
- * tracked labels and hard hairline rules. No photography in the story formats —
- * the type IS the design.
+ * Pack C — Bold Type. A solid club-colour poster on the shared card skeleton
+ * (U13): the tenant accent as the stage, type in the ink that reads on it, a
+ * slate wedge with a mono photo, a giant outline word behind and inverted
+ * chips (see `./fragments`).
  *
- * Coverage grows card by card; the api-server `PACKS` entry declares the SAME
- * kinds (enforced by `pack-coverage-parity.test.ts`). Stories transcribed from
- * `Pack C - Bold Type.dc.html`; shared layouts authored in-repo where the
- * bundle ships story-only.
+ * All 19 designs / 17 kinds; the api-server `PACKS` entry declares the SAME
+ * kinds (enforced by `pack-coverage-parity.test.ts`). Every design ships
+ * story, shared (portrait/square) and landscape markup from one
+ * container-query layout.
  */
 export const BOLD_TYPE_PACK: PackManifest = {
   packId: "bold-type-v1",

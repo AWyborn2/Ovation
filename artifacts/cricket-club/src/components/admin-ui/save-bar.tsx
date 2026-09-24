@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
+import { useLeaveGuard } from "./use-leave-guard";
 
 /**
  * The sticky save bar (Social Studio KTD13): shown only while a form has
- * unsaved changes, with Reset and Save.
+ * unsaved changes, with Reset and Save. While shown it also guards leaving the
+ * page (U22), so every form on a save bar asks before discarding edits.
  */
 export function SaveBar({
   dirty,
@@ -17,6 +19,7 @@ export function SaveBar({
   onReset: () => void;
   message?: string;
 }) {
+  useLeaveGuard(dirty);
   if (!dirty) return null;
   return (
     <div

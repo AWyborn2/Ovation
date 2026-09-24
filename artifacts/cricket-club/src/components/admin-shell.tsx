@@ -10,7 +10,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
     return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
   }
   if (!me.data) {
-    return <LoginGate />;
+    // No site chrome around the admin: centre the sign-in card on its own.
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground">
+        <div className="w-full max-w-md">
+          <LoginGate />
+        </div>
+      </div>
+    );
   }
   return <AdminLayout admin={me.data}>{children}</AdminLayout>;
 }

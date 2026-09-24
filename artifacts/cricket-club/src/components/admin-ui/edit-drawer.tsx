@@ -7,6 +7,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /**
  * The admin edit drawer (Social Studio KTD13): a 480px right-hand sheet with a
@@ -28,6 +29,8 @@ export type EditDrawerProps = {
   deleteLabel?: string;
   /** Replaces the default footer entirely. */
   footer?: ReactNode;
+  /** 720px instead of 480px, for editors that manage nested lists. */
+  wide?: boolean;
 };
 
 export function EditDrawer({
@@ -43,11 +46,18 @@ export function EditDrawer({
   saveLabel = "Save",
   deleteLabel = "Delete",
   footer,
+  wide = false,
 }: EditDrawerProps) {
   const hasFooter = footer !== undefined || !!onSave || !!onDelete;
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-[480px]">
+      <SheetContent
+        side="right"
+        className={cn(
+          "flex w-full flex-col gap-0 p-0",
+          wide ? "sm:max-w-[720px]" : "sm:max-w-[480px]",
+        )}
+      >
         <SheetHeader className="border-b border-border px-6 py-4 text-left">
           <SheetTitle>{title}</SheetTitle>
           {description ? (

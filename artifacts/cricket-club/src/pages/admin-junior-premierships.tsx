@@ -6,12 +6,12 @@ import {
   getListJuniorPremiershipsQueryKey,
   type JuniorPremiership,
 } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { DataTable, EditDrawer, StatusPill, type DataTableColumn } from "@/components/admin-ui";
 
 const premTitle = (p: JuniorPremiership) =>
   [p.ageGroup ?? "Junior", p.season].filter(Boolean).join(" · ");
@@ -25,15 +25,47 @@ export default function AdminJuniorPremierships() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getListJuniorPremiershipsQueryKey() });
 
+  const rows = data ?? [];
+  const editing = rows.find((p) => p.id === editingId) ?? null;
+  const captainsOf = (p: JuniorPremiership) =>
+    p.players
+      .filter((pp) => pp.isCaptain)
+      .map((pp) => pp.playerName)
+      .join(", ");
+
+  const columns: DataTableColumn<JuniorPremiership>[] = [
+    {
+      key: "season",
+      header: "Season",
+      className: "w-28",
+      cell: (p) => <span className="tabular-nums">{p.season}</span>,
+    },
+    {
+      key: "age",
+      header: "Age group",
+      cell: (p) => <span className="font-semibold">{p.ageGroup ?? "Junior"}</span>,
+    },
+    { key: "captain", header: "Captain", cell: (p) => captainsOf(p) || "—" },
+    { key: "mom", header: "M.O.M", cell: (p) => p.mom || "—" },
+    {
+      key: "status",
+      header: "Status",
+      className: "w-32",
+      cell: (p) =>
+        captainsOf(p) && p.mom ? (
+          <StatusPill tone="success">Complete</StatusPill>
+        ) : (
+          <StatusPill tone="attention">Needs details</StatusPill>
+        ),
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="max-w-[75ch] text-[15px] text-muted-foreground">
-          Set the captain and man-of-the-match for each junior premiership. These aren&apos;t in the
-          source data, so they&apos;re added by hand here and shown on the junior premiership
-          plaques.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <p className="max-w-[75ch] text-[15px] text-muted-foreground">
+        Set the captain and man-of-the-match for each junior premiership. These aren&apos;t in the
+        source data, so they&apos;re added by hand here and shown on the junior premiership plaques.
+      </p>
 
       {error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -45,63 +77,62 @@ export default function AdminJuniorPremierships() {
         <QueryError onRetry={() => refetch()} />
       ) : isLoading ? (
         <ListSkeleton />
-      ) : (data?.length ?? 0) === 0 ? (
-        <EmptyState
-          title="No junior premierships found"
-          message="Junior premierships will appear here once they're in the data."
-        />
       ) : (
-        data!.map((p) => (
-          <Card key={p.id}>
-            <CardHeader className="flex flex-row justify-between items-start gap-3">
-              <CardTitle>{premTitle(p)}</CardTitle>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setEditingId(editingId === p.id ? null : p.id)}
-                data-testid={`button-edit-${p.id}`}
-              >
-                {editingId === p.id ? "Close" : "Edit"}
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {editingId === p.id ? (
-                <PremForm
-                  prem={p}
-                  pending={update.isPending}
-                  onSubmit={(mom, captainPlayerIds) => {
-                    setError(null);
-                    update.mutate(
-                      { id: p.id, data: { mom, captainPlayerIds } },
-                      {
-                        onSuccess: () => {
-                          setEditingId(null);
-                          invalidate();
-                        },
-                        onError: (e) => setError(handleAdminMutationError(e)),
-                      },
-                    );
-                  }}
-                  onCancel={() => setEditingId(null)}
-                />
-              ) : (
-                <div className="text-sm text-muted-foreground space-y-1">
-                  {p.matchDate && <div>{p.matchDate}</div>}
-                  {p.resultText && <div>{p.resultText}</div>}
-                  <div>
-                    Captain:{" "}
-                    {p.players
-                      .filter((pp) => pp.isCaptain)
-                      .map((pp) => pp.playerName)
-                      .join(", ") || "—"}
-                  </div>
-                  <div>M.O.M: {p.mom || "—"}</div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))
+        <DataTable
+          label="Junior premierships"
+          rows={rows}
+          columns={columns}
+          getRowId={(p) => p.id}
+          searchText={(p) => `${premTitle(p)} ${captainsOf(p)} ${p.mom ?? ""}`}
+          searchPlaceholder="Search season, age group or player"
+          filters={[
+            {
+              id: "needs",
+              label: "Needs details",
+              predicate: (p) => !captainsOf(p) || !p.mom,
+            },
+          ]}
+          onRowClick={(p) => setEditingId(p.id)}
+          emptyState={
+            <EmptyState
+              title="No junior premierships found"
+              message="Junior premierships will appear here once they're in the data."
+            />
+          }
+          minWidth={560}
+        />
       )}
+
+      <EditDrawer
+        open={editing != null}
+        onOpenChange={(o) => !o && setEditingId(null)}
+        title={editing ? premTitle(editing) : ""}
+        description={
+          editing ? [editing.matchDate, editing.resultText].filter(Boolean).join(" · ") : undefined
+        }
+      >
+        {editing && (
+          <PremForm
+            key={editing.id}
+            prem={editing}
+            pending={update.isPending}
+            onSubmit={(mom, captainPlayerIds) => {
+              setError(null);
+              update.mutate(
+                { id: editing.id, data: { mom, captainPlayerIds } },
+                {
+                  onSuccess: () => {
+                    setEditingId(null);
+                    invalidate();
+                  },
+                  onError: (e) => setError(handleAdminMutationError(e)),
+                },
+              );
+            }}
+            onCancel={() => setEditingId(null)}
+          />
+        )}
+      </EditDrawer>
     </div>
   );
 }

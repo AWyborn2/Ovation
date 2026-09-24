@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   useCreateSponsor,
   useUpdateSponsor,
@@ -16,8 +16,9 @@ import type { CardKind } from "@/lib/share-card";
 import { CardKindPicker } from "@/components/card-kind-picker";
 import { EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
+import { ImageCropDialog, SPONSOR_ASPECTS } from "@/components/admin-ui/image-crop-dialog";
 
-/** Sponsor library: add a logo (drag-drop upload) and manage order / kinds / presenting. */
+/** Sponsor library: add a logo (upload and crop) and manage order / kinds / presenting. */
 export function SponsorsCard({
   sponsors,
   onChanged,
@@ -38,8 +39,7 @@ export function SponsorsCard({
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [cardKinds, setCardKinds] = useState<CardKind[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [logoDialogOpen, setLogoDialogOpen] = useState(false);
 
   const { uploadFile, isUploading } = useUpload({
     onError: (e) => setError(e.message),
@@ -82,7 +82,6 @@ export function SponsorsCard({
           setLogoUrl("");
           setPreviewUrl("");
           setCardKinds([]);
-          if (fileRef.current) fileRef.current.value = "";
         },
       },
     );
@@ -139,44 +138,39 @@ export function SponsorsCard({
           </div>
           <div className="space-y-3">
             <Label>Logo (PNG / SVG, transparent)</Label>
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                if (!isUploading) setIsDragging(true);
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                setIsDragging(false);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                setIsDragging(false);
-                if (isUploading) return;
-                const file = e.dataTransfer.files?.[0];
-                if (file) handleFile(file);
-              }}
-              className={`border border-dashed rounded p-4 flex flex-col items-center gap-3 transition-colors ${
-                isDragging ? "border-primary bg-primary/5" : ""
-              }`}
-            >
+            <div className="flex flex-col items-center gap-3 rounded border border-dashed p-4">
               {previewUrl ? (
                 <img src={previewUrl} alt="logo" className="max-h-24 object-contain" />
               ) : (
                 <Upload className="h-8 w-8 text-muted-foreground" />
               )}
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/png,image/svg+xml,image/webp,image/jpeg"
-                onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 disabled={isUploading}
-                className="text-xs"
+                onClick={() => setLogoDialogOpen(true)}
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" /> Uploading…
+                  </>
+                ) : previewUrl ? (
+                  "Change logo"
+                ) : (
+                  "Upload logo"
+                )}
+              </Button>
+              <ImageCropDialog
+                open={logoDialogOpen}
+                onOpenChange={setLogoDialogOpen}
+                title="Sponsor logo"
+                description="Drop the logo, then pick a shape and frame it. SVG logos are used as they are."
+                aspects={SPONSOR_ASPECTS}
+                suggestedWidth={800}
+                passThrough={(f) => f.type === "image/svg+xml"}
+                onCropped={handleFile}
               />
-              {isUploading && (
-                <div className="flex items-center text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 mr-1 animate-spin" /> Uploading…
-                </div>
-              )}
             </div>
             {error && <div className="text-sm text-destructive">{error}</div>}
             <Button onClick={add} disabled={create.isPending || isUploading} className="w-full">

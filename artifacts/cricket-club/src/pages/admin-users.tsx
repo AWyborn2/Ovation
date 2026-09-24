@@ -8,14 +8,15 @@ import {
   getListAdminsQueryKey,
   type Admin,
 } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { PageHeader } from "@/components/broadcast";
+import { InitialsAvatar, PageHeader } from "@/components/broadcast";
 import { handleAdminMutationError, useCurrentAdmin } from "@/lib/admin-auth";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
+import { DataTable, EditDrawer, type DataTableColumn } from "@/components/admin-ui";
+import { Plus } from "lucide-react";
 
 export default function AdminUsers() {
   const qc = useQueryClient();
@@ -26,15 +27,18 @@ export default function AdminUsers() {
   const updateAdmin = useUpdateAdmin();
   const deleteAdmin = useDeleteAdmin();
   const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [newUsername, setNewUsername] = useState("");
   const [newDisplay, setNewDisplay] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getListAdminsQueryKey() });
   const onErr = (e: unknown) => setError(handleAdminMutationError(e));
+  const rows = admins ?? [];
+  const editing = rows.find((a) => a.id === editingId) ?? null;
 
-  const create = (e: React.FormEvent) => {
-    e.preventDefault();
+  const create = () => {
     setError(null);
     if (!newUsername.trim() || !newDisplay.trim() || !newPassword) {
       setError("All fields required");
@@ -53,12 +57,59 @@ export default function AdminUsers() {
           setNewUsername("");
           setNewDisplay("");
           setNewPassword("");
+          setAdding(false);
           invalidate();
         },
         onError: onErr,
       },
     );
   };
+
+  const remove = async (a: Admin) => {
+    if (
+      !(await confirm({
+        title: "Delete admin",
+        description: `Delete admin "${a.username}"?`,
+        confirmText: "Delete",
+        destructive: true,
+      }))
+    )
+      return;
+    setError(null);
+    deleteAdmin.mutate(
+      { id: a.id },
+      {
+        onSuccess: () => {
+          setEditingId(null);
+          invalidate();
+        },
+        onError: onErr,
+      },
+    );
+  };
+
+  const columns: DataTableColumn<Admin>[] = [
+    {
+      key: "name",
+      header: "Admin",
+      cell: (a) => (
+        <span className="flex items-center gap-3">
+          <InitialsAvatar name={a.displayName} size={30} />
+          <span className="font-semibold">
+            {a.displayName}
+            {me.data?.id === a.id && (
+              <span className="ml-2 text-xs font-normal text-muted-foreground">(you)</span>
+            )}
+          </span>
+        </span>
+      ),
+    },
+    {
+      key: "username",
+      header: "Username",
+      cell: (a) => <span className="text-muted-foreground">@{a.username}</span>,
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -72,168 +123,174 @@ export default function AdminUsers() {
           {error}
         </div>
       )}
-      <Card>
-        <CardHeader>
-          <CardTitle>Add admin</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={create} className="grid gap-3 md:grid-cols-4 md:items-end">
-            <div className="space-y-1">
-              <Label>Username</Label>
-              <Input value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label>Display name</Label>
-              <Input value={newDisplay} onChange={(e) => setNewDisplay(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label>Password</Label>
-              <Input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-            </div>
-            <Button type="submit" disabled={createAdmin.isPending}>
-              {createAdmin.isPending ? "Adding…" : "Add admin"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Existing admins</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isError ? (
-            <QueryError onRetry={() => refetch()} />
-          ) : isLoading ? (
-            <ListSkeleton />
-          ) : !admins?.length ? (
-            <EmptyState title="No admins" message="Add an admin user to get started." />
-          ) : (
-            <div className="space-y-3">
-              {admins.map((a) => (
-                <AdminRow
-                  key={a.id}
-                  admin={a}
-                  isSelf={me.data?.id === a.id}
-                  onSave={(patch) =>
-                    updateAdmin.mutate(
-                      { id: a.id, data: patch },
-                      { onSuccess: invalidate, onError: onErr },
-                    )
-                  }
-                  onDelete={async () => {
-                    if (
-                      !(await confirm({
-                        title: "Delete admin",
-                        description: `Delete admin "${a.username}"?`,
-                        confirmText: "Delete",
-                        destructive: true,
-                      }))
-                    )
-                      return;
-                    setError(null);
-                    deleteAdmin.mutate({ id: a.id }, { onSuccess: invalidate, onError: onErr });
-                  }}
-                  pending={updateAdmin.isPending || deleteAdmin.isPending}
-                />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <ListSkeleton />
+      ) : (
+        <DataTable
+          label="Admin users"
+          rows={rows}
+          columns={columns}
+          getRowId={(a) => a.id}
+          searchText={(a) => `${a.displayName} ${a.username}`}
+          searchPlaceholder="Search admins"
+          onRowClick={(a) => setEditingId(a.id)}
+          toolbarAction={
+            <Button onClick={() => setAdding(true)}>
+              <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+              Add admin
+            </Button>
+          }
+          emptyState={<EmptyState title="No admins" message="Add an admin user to get started." />}
+          minWidth={480}
+        />
+      )}
+
+      <EditDrawer
+        open={adding}
+        onOpenChange={setAdding}
+        title="Add admin"
+        onSave={create}
+        saving={createAdmin.isPending}
+        saveLabel="Add admin"
+      >
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            create();
+          }}
+        >
+          <div className="space-y-1">
+            <Label htmlFor="na-username">Username</Label>
+            <Input
+              id="na-username"
+              value={newUsername}
+              onChange={(e) => setNewUsername(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="na-display">Display name</Label>
+            <Input
+              id="na-display"
+              value={newDisplay}
+              onChange={(e) => setNewDisplay(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="na-password">Password</Label>
+            <Input
+              id="na-password"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              autoComplete="new-password"
+            />
+          </div>
+        </form>
+      </EditDrawer>
+
+      <EditDrawer
+        open={editing != null}
+        onOpenChange={(o) => !o && setEditingId(null)}
+        title={editing?.displayName ?? ""}
+        description={editing ? `@${editing.username}` : undefined}
+        footer={
+          editing ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              disabled={deleteAdmin.isPending}
+              onClick={() => remove(editing)}
+            >
+              Delete
+            </Button>
+          ) : undefined
+        }
+      >
+        {editing && (
+          <AdminEditor
+            key={editing.id}
+            admin={editing}
+            pending={updateAdmin.isPending}
+            onCancel={() => setEditingId(null)}
+            onSave={(patch) =>
+              updateAdmin.mutate(
+                { id: editing.id, data: patch },
+                {
+                  onSuccess: () => {
+                    setEditingId(null);
+                    invalidate();
+                  },
+                  onError: onErr,
+                },
+              )
+            }
+          />
+        )}
+      </EditDrawer>
     </div>
   );
 }
 
-function AdminRow({
+function AdminEditor({
   admin,
-  isSelf,
-  onSave,
-  onDelete,
   pending,
+  onSave,
+  onCancel,
 }: {
   admin: Admin;
-  isSelf: boolean;
-  onSave: (patch: { username?: string; displayName?: string; password?: string }) => void;
-  onDelete: () => void;
   pending: boolean;
+  onSave: (patch: { username?: string; displayName?: string; password?: string }) => void;
+  onCancel: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
   const [username, setUsername] = useState(admin.username);
   const [displayName, setDisplayName] = useState(admin.displayName);
   const [password, setPassword] = useState("");
 
-  if (!editing) {
-    return (
-      <div className="flex items-center justify-between gap-3 border-b pb-3 last:border-0 last:pb-0">
-        <div>
-          <div className="font-medium">
-            {admin.displayName}{" "}
-            {isSelf && <span className="text-xs text-muted-foreground">(you)</span>}
-          </div>
-          <div className="text-xs text-muted-foreground">@{admin.username}</div>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
-            Edit
-          </Button>
-          <Button size="sm" variant="outline" onClick={onDelete} disabled={pending}>
-            Delete
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end border-b pb-3 last:border-0">
+    <div className="space-y-4">
       <div className="space-y-1">
-        <Label>Username</Label>
-        <Input value={username} onChange={(e) => setUsername(e.target.value)} />
+        <Label htmlFor="ea-username">Username</Label>
+        <Input id="ea-username" value={username} onChange={(e) => setUsername(e.target.value)} />
       </div>
       <div className="space-y-1">
-        <Label>Display name</Label>
-        <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
-      </div>
-      <div className="space-y-1">
-        <Label>New password</Label>
+        <Label htmlFor="ea-display">Display name</Label>
         <Input
+          id="ea-display"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+        />
+      </div>
+      <div className="space-y-1">
+        <Label htmlFor="ea-password">New password</Label>
+        <Input
+          id="ea-password"
           type="password"
           placeholder="(leave blank to keep)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
         />
       </div>
       <div className="flex gap-2">
         <Button
-          size="sm"
-          onClick={() => {
+          disabled={pending}
+          onClick={() =>
             onSave({
               username: username !== admin.username ? username : undefined,
               displayName: displayName !== admin.displayName ? displayName : undefined,
               password: password || undefined,
-            });
-            setEditing(false);
-            setPassword("");
-          }}
-          disabled={pending}
+            })
+          }
         >
-          Save
+          {pending ? "Saving…" : "Save changes"}
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            setEditing(false);
-            setUsername(admin.username);
-            setDisplayName(admin.displayName);
-            setPassword("");
-          }}
-        >
+        <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>
       </div>

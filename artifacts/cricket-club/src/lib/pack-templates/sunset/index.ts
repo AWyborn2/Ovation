@@ -20,15 +20,15 @@ import { clubLeaderboardRuns } from "./club-leaderboard-runs";
 import { clubLeaderboardWickets } from "./club-leaderboard-wickets";
 
 /**
- * Pack E — Sunset. Golden-hour warmth: a photo-first story format over a
- * sunset wash, frosted glass panels, and Kaushan Script accent type
- * (`scriptText`) against clean grotesk body copy. The softest pack in the
- * catalogue — club-social warmth where Broadcast Dark is TV graphics.
+ * Pack E — Sunset. Golden-hour, club-social warmth on the shared card
+ * skeleton (U13): the full photo under an orange → magenta → plum wash, a sun
+ * glow in the tenant accent, the body on a frosted glass panel with a Kaushan
+ * Script word above it (see `./fragments`).
  *
- * Coverage grows card by card; the api-server `PACKS` entry declares the SAME
- * kinds (enforced by `pack-coverage-parity.test.ts`). Stories transcribed from
- * `Pack E - Sunset.dc.html`; shared layouts authored in-repo where the bundle
- * ships story-only.
+ * All 19 designs / 17 kinds; the api-server `PACKS` entry declares the SAME
+ * kinds (enforced by `pack-coverage-parity.test.ts`). Every design ships
+ * story, shared (portrait/square) and landscape markup from one
+ * container-query layout.
  */
 export const SUNSET_PACK: PackManifest = {
   packId: "sunset-v1",

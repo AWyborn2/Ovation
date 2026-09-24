@@ -15,7 +15,6 @@ import {
   getListJuniorMatchesQueryKey,
   type JuniorPlayerSummary,
 } from "@workspace/api-client-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +27,8 @@ import {
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
+import { DataTable, EditDrawer, StatusPill, type DataTableColumn } from "@/components/admin-ui";
+import { Info, Search } from "lucide-react";
 
 /**
  * Junior players admin: the identity-management home for junior participants.
@@ -42,6 +43,7 @@ export default function AdminJuniorPlayers() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [mergeFor, setMergeFor] = useState<JuniorPlayerSummary | null>(null);
   const [linkFor, setLinkFor] = useState<JuniorPlayerSummary | null>(null);
 
@@ -52,6 +54,7 @@ export default function AdminJuniorPlayers() {
   const { data, isLoading, isError, refetch } = useListJuniorPlayers(listParams, {
     query: { queryKey: getListJuniorPlayersQueryKey(listParams) },
   });
+  const editing = (data ?? []).find((p) => p.participantId === editingId) ?? null;
 
   const invalidateAll = () => {
     // Junior aggregates are computed live from the line tables, so a merge or
@@ -63,13 +66,65 @@ export default function AdminJuniorPlayers() {
   };
   const onErr = (e: unknown) => setError(handleAdminMutationError(e));
 
+  const columns: DataTableColumn<JuniorPlayerSummary>[] = [
+    {
+      key: "name",
+      header: "Player",
+      cell: (p) => <span className="font-semibold">{p.displayName}</span>,
+    },
+    {
+      key: "seasons",
+      header: "Seasons",
+      cell: (p) => (
+        <span className="tabular-nums text-muted-foreground">
+          {p.firstSeason ?? ""}
+          {p.lastSeason && p.lastSeason !== p.firstSeason ? ` – ${p.lastSeason}` : ""}
+        </span>
+      ),
+      className: "w-40",
+    },
+    {
+      key: "stats",
+      header: "G · R · W",
+      cell: (p) => (
+        <span className="tabular-nums">
+          {p.matches ?? 0} · {p.runs ?? 0} · {p.wickets ?? 0}
+        </span>
+      ),
+      className: "w-32",
+    },
+    {
+      key: "status",
+      header: "Status",
+      cell: (p) => (
+        <span className="flex flex-wrap gap-1.5">
+          {p.isPrivate ? (
+            <StatusPill tone="danger">Private</StatusPill>
+          ) : (
+            <StatusPill>Public</StatusPill>
+          )}
+          {p.seniorPlayerId != null && <StatusPill tone="info">Senior linked</StatusPill>}
+        </span>
+      ),
+      className: "w-52",
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <p className="text-muted-foreground">
+    <div className="space-y-5">
+      <p className="max-w-[75ch] text-[15px] text-muted-foreground">
         Rename junior players, manage privacy and senior-profile links, and merge duplicate
         profiles. A merge moves every scorecard line and appearance onto the profile you keep, is
         permanent, and survives data reloads.
       </p>
+
+      <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary-text" aria-hidden />
+        <p>
+          Public junior pages show each player by the display name set here. A private player is
+          hidden from every public junior page, and junior stats never mix with senior stats.
+        </p>
+      </div>
 
       {error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -77,42 +132,75 @@ export default function AdminJuniorPlayers() {
         </div>
       )}
 
-      <Card>
-        <CardContent className="p-4 space-y-4">
-          <Input
-            placeholder="Search junior players by name…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="max-w-md"
-          />
-          {isLoading ? (
-            <ListSkeleton rows={8} />
-          ) : isError ? (
-            <QueryError onRetry={() => refetch()} />
-          ) : !data?.length ? (
+      <label className="relative block sm:max-w-sm">
+        <span className="sr-only">Search junior players</span>
+        <Search
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
+        />
+        <Input
+          placeholder="Search junior players by name…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-10 pl-9"
+        />
+      </label>
+
+      {isLoading ? (
+        <ListSkeleton rows={8} />
+      ) : isError ? (
+        <QueryError onRetry={() => refetch()} />
+      ) : (
+        <DataTable
+          label="Junior players"
+          rows={data ?? []}
+          columns={columns}
+          getRowId={(p) => p.participantId}
+          filters={[
+            { id: "private", label: "Private", predicate: (p) => !!p.isPrivate },
+            {
+              id: "linked",
+              label: "Senior linked",
+              predicate: (p) => p.seniorPlayerId != null,
+            },
+          ]}
+          onRowClick={(p) => setEditingId(p.participantId)}
+          emptyState={
             <EmptyState
               title="No junior players found"
               message={
                 search ? "No junior players match your search." : "No junior players in the data."
               }
             />
-          ) : (
-            <div className="space-y-2">
-              {data.map((p) => (
-                <JuniorPlayerRow
-                  key={p.participantId}
-                  player={p}
-                  clearError={() => setError(null)}
-                  onError={onErr}
-                  onChanged={invalidateAll}
-                  onMerge={() => setMergeFor(p)}
-                  onLink={() => setLinkFor(p)}
-                />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          }
+          minWidth={620}
+        />
+      )}
+
+      <EditDrawer
+        open={editing != null}
+        onOpenChange={(o) => !o && setEditingId(null)}
+        title={editing?.displayName ?? ""}
+        description="Junior profile"
+      >
+        {editing && (
+          <JuniorPlayerEditor
+            key={editing.participantId}
+            player={editing}
+            clearError={() => setError(null)}
+            onError={onErr}
+            onChanged={invalidateAll}
+            onMerge={() => {
+              setMergeFor(editing);
+              setEditingId(null);
+            }}
+            onLink={() => {
+              setLinkFor(editing);
+              setEditingId(null);
+            }}
+          />
+        )}
+      </EditDrawer>
 
       {mergeFor && (
         <JuniorMergeDialog
@@ -136,7 +224,7 @@ export default function AdminJuniorPlayers() {
   );
 }
 
-function JuniorPlayerRow({
+function JuniorPlayerEditor({
   player,
   clearError,
   onError,
@@ -153,100 +241,68 @@ function JuniorPlayerRow({
 }) {
   const confirm = useConfirm();
   const update = useUpdateJuniorParticipant();
-  const [editing, setEditing] = useState(false);
   const [name, setName] = useState(player.displayName);
 
+  const togglePrivate = async () => {
+    const makingPrivate = !player.isPrivate;
+    if (
+      !(await confirm({
+        title: makingPrivate ? "Make player private?" : "Make player public?",
+        description: makingPrivate
+          ? `${player.displayName} will be hidden from every public junior page (scorecard lines are masked, directory/leaderboard entries removed).`
+          : `${player.displayName} will appear on public junior pages again.`,
+        confirmText: makingPrivate ? "Make private" : "Make public",
+        destructive: makingPrivate,
+      }))
+    )
+      return;
+    clearError();
+    update.mutate(
+      { id: player.participantId, data: { isPrivate: makingPrivate } },
+      { onSuccess: onChanged, onError },
+    );
+  };
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-2 last:border-0">
-      <div className="min-w-0">
-        {editing ? (
-          <div className="flex items-center gap-2">
-            <Input value={name} onChange={(e) => setName(e.target.value)} className="w-56" />
-            <Button
-              size="sm"
-              disabled={update.isPending || !name.trim()}
-              onClick={() => {
-                clearError();
-                update.mutate(
-                  { id: player.participantId, data: { displayName: name.trim() } },
-                  {
-                    onSuccess: () => {
-                      setEditing(false);
-                      onChanged();
-                    },
-                    onError,
-                  },
-                );
-              }}
-            >
-              Save
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setEditing(false);
-                setName(player.displayName);
-              }}
-            >
-              Cancel
-            </Button>
-          </div>
-        ) : (
-          <>
-            <span className="font-medium">{player.displayName}</span>
-            {player.isPrivate && (
-              <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-destructive border border-destructive/40 rounded px-1.5 py-0.5">
-                Private
-              </span>
-            )}
-            {player.seniorPlayerId != null && (
-              <span className="ml-2 text-[10px] font-bold uppercase tracking-wider text-primary-text border border-primary/40 rounded px-1.5 py-0.5">
-                Senior linked
-              </span>
-            )}
-            <span className="ml-3 text-xs text-muted-foreground">
-              {player.firstSeason ?? ""}
-              {player.lastSeason && player.lastSeason !== player.firstSeason
-                ? ` – ${player.lastSeason}`
-                : ""}
-              {" · "}
-              {player.matches ?? 0}g · {player.runs ?? 0}r · {player.wickets ?? 0}w
-            </span>
-          </>
-        )}
-      </div>
-      {!editing && (
+    <div className="space-y-5">
+      <div className="space-y-1">
+        <Label htmlFor="jp-name">Display name</Label>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
-            Rename
-          </Button>
+          <Input id="jp-name" value={name} onChange={(e) => setName(e.target.value)} />
           <Button
-            size="sm"
-            variant="outline"
-            disabled={update.isPending}
-            onClick={async () => {
-              const makingPrivate = !player.isPrivate;
-              if (
-                !(await confirm({
-                  title: makingPrivate ? "Make player private?" : "Make player public?",
-                  description: makingPrivate
-                    ? `${player.displayName} will be hidden from every public junior page (scorecard lines are masked, directory/leaderboard entries removed).`
-                    : `${player.displayName} will appear on public junior pages again.`,
-                  confirmText: makingPrivate ? "Make private" : "Make public",
-                  destructive: makingPrivate,
-                }))
-              )
-                return;
+            disabled={update.isPending || !name.trim() || name.trim() === player.displayName}
+            onClick={() => {
               clearError();
               update.mutate(
-                { id: player.participantId, data: { isPrivate: makingPrivate } },
+                { id: player.participantId, data: { displayName: name.trim() } },
                 { onSuccess: onChanged, onError },
               );
             }}
           >
-            {player.isPrivate ? "Make public" : "Make private"}
+            Rename
           </Button>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3">
+        <div>
+          <p className="text-sm font-semibold">
+            {player.isPrivate ? "Private profile" : "Public profile"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {player.isPrivate
+              ? "Hidden from every public junior page."
+              : "Shown on public junior pages."}
+          </p>
+        </div>
+        <Button size="sm" variant="outline" disabled={update.isPending} onClick={togglePrivate}>
+          {player.isPrivate ? "Make public" : "Make private"}
+        </Button>
+      </div>
+
+      <div className="space-y-2 border-t border-border pt-4">
+        <p className="text-sm font-semibold">More</p>
+        <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" onClick={onLink}>
             Senior link…
           </Button>
@@ -254,16 +310,11 @@ function JuniorPlayerRow({
             Merge…
           </Button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
 
-/**
- * Merge a duplicate junior profile into a keeper. Permanent by design (senior
- * merge parity): every line moves onto the keeper and the duplicate profile
- * is deleted; the merge is recorded so it survives juniors data reloads.
- */
 function JuniorMergeDialog({
   duplicate,
   onClose,

@@ -86,16 +86,14 @@ describe("broadcast-dark pack manifest", () => {
 });
 
 describe("broadcast-dark formats", () => {
-  it("match-result exposes story + portrait + square", () => {
-    const entry = designs.find((d) => d.designKey === "match-result");
-    expect(entry).toBeDefined();
-    expect(Object.keys(entry!.template.formats).sort()).toEqual(["portrait", "square", "story"]);
-  });
-
-  it("every other design exposes story + shared", () => {
+  // U12: every design is one cqmin-sized markup served for story and the
+  // shared (portrait/square) layout, plus a landscape layout. Match Result used
+  // to be the only design with separate portrait and square markup; the
+  // container-query skeleton made that split unnecessary.
+  it("every design exposes story + shared + landscape", () => {
     for (const entry of designs) {
-      if (entry.designKey === "match-result") continue;
       expect(Object.keys(entry.template.formats).sort(), `${entry.designKey} formats`).toEqual([
+        "landscape",
         "shared",
         "story",
       ]);

@@ -28,8 +28,12 @@ const WEB_SRC = join(HERE, "..", "..", "..", "cricket-club", "src");
 const PACK_TEMPLATES_DIR = join(WEB_SRC, "lib", "pack-templates");
 const APP_CSS = join(WEB_SRC, "index.css");
 
-/** `animation:<name> ...` / `animation-name:<name>` in an inline style string. */
-const ANIMATION_RE = /animation(?:-name)?:\s*([A-Za-z_][\w-]*)/g;
+/**
+ * `animation:<name> ...` / `animation-name:<name>` in an inline style string,
+ * plus the skeleton kit's animation variables (`--sk-num-anim:<name> ...`):
+ * the kit's own `animation:var(--sk-num-anim,none)` carries no name.
+ */
+const ANIMATION_RE = /(?:animation(?:-name)?|--sk-[\w-]*anim):\s*([A-Za-z_][\w-]*)/g;
 /** CSS keywords that can lead an `animation` shorthand before the name. */
 const NOT_A_NAME = new Set([
   "none",
@@ -51,6 +55,8 @@ const NOT_A_NAME = new Set([
   "paused",
   "normal",
   "reverse",
+  // `animation:var(--sk-num-anim,none)`: the name is read from the variable.
+  "var",
 ]);
 
 function walk(dir: string, out: string[] = []): string[] {

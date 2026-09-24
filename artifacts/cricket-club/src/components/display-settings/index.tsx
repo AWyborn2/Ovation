@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Save, Loader2, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -19,7 +19,11 @@ export function mergeOrder(saved: string[], all: string[]): string[] {
   return [...present, ...rest];
 }
 
-/** Titled block: uppercase heading, helper text, then the control. */
+/**
+ * One block inside an admin `SettingsCard` (Social Studio U22): label and
+ * helper text, then a control too large for a single settings row (radio
+ * cards, ordered lists).
+ */
 export function SettingsSection({
   title,
   description,
@@ -30,11 +34,9 @@ export function SettingsSection({
   children: ReactNode;
 }) {
   return (
-    <div>
-      <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-        {title}
-      </h3>
-      <p className="text-xs text-muted-foreground mb-3">{description}</p>
+    <div className="px-5 py-4">
+      <p className="text-sm font-medium text-foreground">{title}</p>
+      <p className="mb-3 mt-0.5 text-xs text-muted-foreground">{description}</p>
       {children}
     </div>
   );
@@ -58,7 +60,7 @@ export function DefaultSelect({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="h-10 rounded-full border bg-muted px-3.5 text-sm font-medium text-foreground min-w-[14rem]"
+      className="h-10 min-w-[14rem] rounded-lg border border-input bg-background px-3 text-sm text-foreground"
       data-testid={testId}
     >
       <option value="">{allLabel}</option>
@@ -171,26 +173,4 @@ export function moveItem(prev: string[], idx: number, dir: -1 | 1): string[] {
   if (target < 0 || target >= next.length) return prev;
   [next[idx], next[target]] = [next[target], next[idx]];
   return next;
-}
-
-/** Right-aligned "Save settings" button with its pending spinner. */
-export function SaveSettingsButton({
-  onClick,
-  pending,
-}: {
-  onClick: () => void;
-  pending: boolean;
-}) {
-  return (
-    <div className="flex justify-end">
-      <Button onClick={onClick} disabled={pending} data-testid="button-save-settings">
-        {pending ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-        ) : (
-          <Save className="h-4 w-4 mr-2" />
-        )}
-        Save settings
-      </Button>
-    </div>
-  );
 }

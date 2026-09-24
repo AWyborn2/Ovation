@@ -142,12 +142,14 @@ describe("renderPackCard", () => {
   it("renders the hashtag-footer variant (not the sponsor strip) when sponsors are off", () => {
     const input = sampleCardInput("matchSummary");
     const off = renderPackCard(input, "story", false, TOKENS, false);
-    expect(off).not.toContain("PROUDLY SUPPORTED BY");
-    // The story sponsors-off branch is the centered hashtag footer.
+    // U12: the skeleton footer's sponsor strip reads "SUPPORTED BY" (was the
+    // story's "PROUDLY SUPPORTED BY" block).
+    expect(off).not.toContain("SUPPORTED BY");
+    // The sponsors-off branch keeps the hashtag footer.
     expect(off).toContain("#YOURCLUB");
 
     const on = renderPackCard(input, "story", true, TOKENS, false);
-    expect(on).toContain("PROUDLY SUPPORTED BY");
+    expect(on).toContain("SUPPORTED BY");
   });
 
   it("forces the brown junior panel token regardless of the supplied tokens", () => {
@@ -177,7 +179,8 @@ describe("renderPackCard", () => {
 
   it("expands the ladder repeat to exactly the number of rows supplied", () => {
     const base = sampleCardInput("ladder");
-    const rowCell = /width:92px;text-align:center;font-family:var\(--disp/g;
+    // The points cell (U12 skeleton markup; was the story's 92px cell).
+    const rowCell = /width:10cqmin;flex:none;text-align:right;font-family:var\(--disp/g;
 
     const oneRow = {
       ...base,
@@ -1011,9 +1014,10 @@ describe("renderPackCard full-bleed photo placement (B3)", () => {
     photoPlacement: placement,
   });
 
-  // The Player Spotlight story format frames the hero photo in a right-hand
-  // column: `<div style="…width:600px;bottom:0">` directly wraps the slot.
-  const CONTAINED_WRAPPER = 'width:600px;bottom:0"><img';
+  // The Player Spotlight frames the hero photo in the right-hand 62% column
+  // (U12 Broadcast Dark skeleton; was a 600px story column):
+  // `<div style="…;width:62%">` directly wraps the slot.
+  const CONTAINED_WRAPPER = 'width:62%"><img';
   const FULLBLEED_WRAPPER = 'style="position:absolute;inset:0"><img';
 
   it("promotes the hero photo wrapper to full-bleed geometry when chosen", () => {

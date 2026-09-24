@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useGetJuniorMatchDisplaySettings,
   useUpdateJuniorMatchDisplaySettings,
@@ -8,18 +8,17 @@ import {
   type JuniorMatchDisplaySettingsUpdate,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { LoadingState, QueryError } from "@/components/data-states";
 import {
   DefaultSelect,
   OrderList,
   RadioCards,
-  SaveSettingsButton,
   SettingsSection,
   mergeOrder,
   moveItem,
 } from "@/components/display-settings";
+import { SaveBar, SettingsCard, SettingsRow } from "@/components/admin-ui";
 
 type SeasonMode = JuniorMatchDisplaySettings["defaultSeasonMode"];
 
@@ -53,7 +52,7 @@ export default function AdminJuniorMatchDisplay() {
       ) : settingsQ.isLoading ? (
         <LoadingState label="Loading junior match display settings…" />
       ) : settingsQ.data ? (
-        <SettingsCard
+        <JuniorMatchDisplayForm
           settings={settingsQ.data}
           allAgeGroups={allAgeGroups}
           allSeasons={allSeasons}
@@ -68,7 +67,7 @@ export default function AdminJuniorMatchDisplay() {
   );
 }
 
-function SettingsCard({
+function JuniorMatchDisplayForm({
   settings,
   allAgeGroups,
   allSeasons,
@@ -79,12 +78,20 @@ function SettingsCard({
   allSeasons: string[];
   onSaved: () => void;
 }) {
-  const [defaultAgeGroup, setDefaultAgeGroup] = useState(settings.defaultAgeGroup);
-  const [seasonMode, setSeasonMode] = useState<SeasonMode>(settings.defaultSeasonMode);
-  const [specificSeason, setSpecificSeason] = useState(settings.defaultSeason ?? "");
-  const [ageOrder, setAgeOrder] = useState<string[]>(
-    mergeOrder(settings.ageGroupOrder, allAgeGroups),
+  // The loaded values; Reset returns to them and the save bar compares against them.
+  const seeded = useMemo(
+    () => ({
+      defaultAgeGroup: settings.defaultAgeGroup,
+      seasonMode: settings.defaultSeasonMode,
+      specificSeason: settings.defaultSeason ?? "",
+      ageOrder: mergeOrder(settings.ageGroupOrder, allAgeGroups),
+    }),
+    [settings, allAgeGroups],
   );
+  const [defaultAgeGroup, setDefaultAgeGroup] = useState(seeded.defaultAgeGroup);
+  const [seasonMode, setSeasonMode] = useState<SeasonMode>(seeded.seasonMode);
+  const [specificSeason, setSpecificSeason] = useState(seeded.specificSeason);
+  const [ageOrder, setAgeOrder] = useState<string[]>(seeded.ageOrder);
   const [error, setError] = useState<string | null>(null);
 
   const update = useUpdateJuniorMatchDisplaySettings({
@@ -97,12 +104,18 @@ function SettingsCard({
     },
   });
 
-  useEffect(() => {
-    setDefaultAgeGroup(settings.defaultAgeGroup);
-    setSeasonMode(settings.defaultSeasonMode);
-    setSpecificSeason(settings.defaultSeason ?? "");
-    setAgeOrder(mergeOrder(settings.ageGroupOrder, allAgeGroups));
-  }, [settings, allAgeGroups]);
+  const reset = useCallback(() => {
+    setDefaultAgeGroup(seeded.defaultAgeGroup);
+    setSeasonMode(seeded.seasonMode);
+    setSpecificSeason(seeded.specificSeason);
+    setAgeOrder(seeded.ageOrder);
+    setError(null);
+  }, [seeded]);
+  useEffect(reset, [reset]);
+
+  const dirty =
+    JSON.stringify({ defaultAgeGroup, seasonMode, specificSeason, ageOrder }) !==
+    JSON.stringify(seeded);
 
   const move = (idx: number, dir: -1 | 1) => setAgeOrder((prev) => moveItem(prev, idx, dir));
 
@@ -128,14 +141,14 @@ function SettingsCard({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Default filters &amp; ordering</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-8">
-        <SettingsSection
-          title="Default age group"
-          description="The age group pre-selected when the Junior Matches page first opens."
+    <>
+      <SettingsCard
+        title="Default filters"
+        description="What the Junior Matches page shows when it first opens."
+      >
+        <SettingsRow
+          label="Default age group"
+          helper="The age group pre-selected when the Junior Matches page first opens."
         >
           <DefaultSelect
             value={defaultAgeGroup}
@@ -144,7 +157,7 @@ function SettingsCard({
             allLabel="All age groups"
             testId="select-default-age-group"
           />
-        </SettingsSection>
+        </SettingsRow>
 
         <SettingsSection
           title="Default season"
@@ -160,13 +173,13 @@ function SettingsCard({
             value={seasonMode}
             onChange={setSeasonMode}
             options={SEASON_MODES}
-            className="space-y-2"
+            className="max-w-md space-y-2"
             extra={(m) =>
               m.value === "specific" && seasonMode === "specific" ? (
                 <select
                   value={specificSeason}
                   onChange={(e) => setSpecificSeason(e.target.value)}
-                  className="ml-2 px-2 py-1 rounded border border-input bg-card text-foreground text-sm"
+                  className="ml-2 rounded border border-input bg-card px-2 py-1 text-sm text-foreground"
                   data-testid="select-specific-season"
                 >
                   <option value="">Choose…</option>
@@ -180,7 +193,9 @@ function SettingsCard({
             }
           />
         </SettingsSection>
+      </SettingsCard>
 
+      <SettingsCard title="Ordering">
         <SettingsSection
           title="Age-group menu order"
           description="The order age groups appear in the dropdown on the Junior Matches page."
@@ -196,10 +211,16 @@ function SettingsCard({
             })}
           />
         </SettingsSection>
+      </SettingsCard>
 
-        {error && <div className="text-sm text-destructive">{error}</div>}
-        <SaveSettingsButton onClick={save} pending={update.isPending} />
-      </CardContent>
-    </Card>
+      {error && <div className="text-sm text-destructive">{error}</div>}
+      <SaveBar
+        dirty={dirty}
+        saving={update.isPending}
+        onSave={save}
+        onReset={reset}
+        message={error ?? undefined}
+      />
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useGetTourContent,
   useUpdateTourContent,
@@ -8,13 +8,11 @@ import {
   type TourStepContent,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Save, Loader2 } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { LoadingState, QueryError } from "@/components/data-states";
+import { SaveBar, SettingsCard } from "@/components/admin-ui";
 import {
   defaultFanSteps,
   defaultAdminSteps,
@@ -82,22 +80,33 @@ export default function AdminTourContent() {
 }
 
 function Editor({ content, onSaved }: { content: TourContent; onSaved: () => void }) {
-  const [welcomeTitle, setWelcomeTitle] = useState(content.welcomeTitle);
-  const [welcomeBody, setWelcomeBody] = useState(content.welcomeBody);
-  const [fanSteps, setFanSteps] = useState<EditableStep[]>(
-    mergeSteps(defaultFanSteps(), content.fanSteps),
+  // The loaded values; Reset returns to them and the save bar compares against them.
+  const seeded = useMemo(
+    () => ({
+      welcomeTitle: content.welcomeTitle,
+      welcomeBody: content.welcomeBody,
+      fanSteps: mergeSteps(defaultFanSteps(), content.fanSteps),
+      adminSteps: mergeSteps(defaultAdminSteps(), content.adminSteps),
+    }),
+    [content],
   );
-  const [adminSteps, setAdminSteps] = useState<EditableStep[]>(
-    mergeSteps(defaultAdminSteps(), content.adminSteps),
-  );
+  const [welcomeTitle, setWelcomeTitle] = useState(seeded.welcomeTitle);
+  const [welcomeBody, setWelcomeBody] = useState(seeded.welcomeBody);
+  const [fanSteps, setFanSteps] = useState<EditableStep[]>(seeded.fanSteps);
+  const [adminSteps, setAdminSteps] = useState<EditableStep[]>(seeded.adminSteps);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setWelcomeTitle(content.welcomeTitle);
-    setWelcomeBody(content.welcomeBody);
-    setFanSteps(mergeSteps(defaultFanSteps(), content.fanSteps));
-    setAdminSteps(mergeSteps(defaultAdminSteps(), content.adminSteps));
-  }, [content]);
+  const reset = useCallback(() => {
+    setWelcomeTitle(seeded.welcomeTitle);
+    setWelcomeBody(seeded.welcomeBody);
+    setFanSteps(seeded.fanSteps);
+    setAdminSteps(seeded.adminSteps);
+    setError(null);
+  }, [seeded]);
+  useEffect(reset, [reset]);
+
+  const dirty =
+    JSON.stringify({ welcomeTitle, welcomeBody, fanSteps, adminSteps }) !== JSON.stringify(seeded);
 
   const update = useUpdateTourContent({
     mutation: {
@@ -142,15 +151,11 @@ function Editor({ content, onSaved }: { content: TourContent; onSaved: () => voi
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Welcome message</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            Shown once per visitor the first time they open the site. Blank fields fall back to the
-            defaults.
-          </p>
+      <SettingsCard
+        title="Welcome message"
+        description="Shown once per visitor the first time they open the site. Blank fields fall back to the defaults."
+      >
+        <div className="space-y-4 px-5 py-4">
           <div className="space-y-1.5">
             <Label htmlFor="welcome-title">Title</Label>
             <Input
@@ -173,8 +178,8 @@ function Editor({ content, onSaved }: { content: TourContent; onSaved: () => voi
               data-testid="input-welcome-body"
             />
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </SettingsCard>
 
       <StepEditor
         title="Visitor tour steps"
@@ -193,16 +198,13 @@ function Editor({ content, onSaved }: { content: TourContent; onSaved: () => voi
       />
 
       {error && <div className="text-sm text-destructive">{error}</div>}
-      <div className="flex justify-end">
-        <Button onClick={save} disabled={update.isPending} data-testid="button-save-tour-content">
-          {update.isPending ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4 mr-2" />
-          )}
-          Save tour content
-        </Button>
-      </div>
+      <SaveBar
+        dirty={dirty}
+        saving={update.isPending}
+        onSave={save}
+        onReset={reset}
+        message={error ?? undefined}
+      />
     </div>
   );
 }
@@ -226,44 +228,34 @@ function StepEditor({
   ) => void;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <p className="text-xs text-muted-foreground">{description}</p>
-        {steps.map((s, idx) => (
-          <div
-            key={s.key}
-            className="space-y-2 border rounded-md p-4"
-            data-testid={`tour-step-${s.key}`}
-          >
-            <div className="text-xs tabular-nums text-muted-foreground">Step {idx + 1}</div>
-            <div className="space-y-1.5">
-              <Label htmlFor={`${s.key}-title`}>Title</Label>
-              <Input
-                id={`${s.key}-title`}
-                value={s.title}
-                onChange={(e) => onChange(list, idx, "title", e.target.value)}
-                placeholder={s.defaultTitle}
-                data-testid={`input-step-title-${s.key}`}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor={`${s.key}-desc`}>Description</Label>
-              <textarea
-                id={`${s.key}-desc`}
-                value={s.description}
-                onChange={(e) => onChange(list, idx, "description", e.target.value)}
-                placeholder={s.defaultDescription}
-                rows={3}
-                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                data-testid={`input-step-desc-${s.key}`}
-              />
-            </div>
+    <SettingsCard title={title} description={description}>
+      {steps.map((s, idx) => (
+        <div key={s.key} className="space-y-2 px-5 py-4" data-testid={`tour-step-${s.key}`}>
+          <div className="text-xs tabular-nums text-muted-foreground">Step {idx + 1}</div>
+          <div className="space-y-1.5">
+            <Label htmlFor={`${s.key}-title`}>Title</Label>
+            <Input
+              id={`${s.key}-title`}
+              value={s.title}
+              onChange={(e) => onChange(list, idx, "title", e.target.value)}
+              placeholder={s.defaultTitle}
+              data-testid={`input-step-title-${s.key}`}
+            />
           </div>
-        ))}
-      </CardContent>
-    </Card>
+          <div className="space-y-1.5">
+            <Label htmlFor={`${s.key}-desc`}>Description</Label>
+            <textarea
+              id={`${s.key}-desc`}
+              value={s.description}
+              onChange={(e) => onChange(list, idx, "description", e.target.value)}
+              placeholder={s.defaultDescription}
+              rows={3}
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              data-testid={`input-step-desc-${s.key}`}
+            />
+          </div>
+        </div>
+      ))}
+    </SettingsCard>
   );
 }

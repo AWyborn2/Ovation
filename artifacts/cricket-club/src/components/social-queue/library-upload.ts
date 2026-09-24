@@ -26,7 +26,9 @@ export function contentTypeFor(file: File): string {
   return "application/octet-stream";
 }
 
-async function requestUploadUrl(file: File): Promise<{ uploadURL: string; objectPath: string }> {
+export async function requestUploadUrl(
+  file: File,
+): Promise<{ uploadURL: string; objectPath: string }> {
   const res = await fetch("/api/storage/uploads/request-url", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -40,7 +42,7 @@ async function requestUploadUrl(file: File): Promise<{ uploadURL: string; object
   return res.json();
 }
 
-function putWithProgress(
+export function putWithProgress(
   url: string,
   file: File,
   onProgress: (fraction: number) => void,

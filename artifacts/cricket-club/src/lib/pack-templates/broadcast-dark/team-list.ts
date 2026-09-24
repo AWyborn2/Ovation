@@ -1,67 +1,47 @@
 import type { PackCardTemplate } from "../types";
+import { SK_COND, SK_MONO } from "../shared";
 import {
-  SPONSOR_STRIP_STORY,
-  bgLayers,
+  ACC,
+  LINE,
+  MUTED,
+  bdCard,
+  bdChip,
+  bdColumn,
+  bdDisplay,
+  bdEyebrow,
+  bdFooterLogos,
+  bdFormats,
   clubHeaderFields,
-  formatRoot,
-  goldChip,
-  hashtagFooterShared,
-  hashtagFooterStory,
-  headerTag,
   logoField,
   photoField,
   repeatField,
-  sharedColumnRoot,
-  sharedHeader,
-  slot,
-  sponsorStripShared,
-  storyHeader,
   textField,
 } from "./fragments";
 
-// A4 — Team List. Starting XI (≤12 names) with captain & keeper marked, squad
-// photo beside the list. The bundle's 12 hard-coded rows collapse into one
-// data-repeat row template per format; the role suffix "(C)"/"(WK)" renders
-// only when the row has a role.
+// A4 — Team List. The handoff's "The XI": the side in two columns (1–6 down
+// the left, 7–12 down the right) so twelve names fit every format including
+// landscape; squad photo right. The role suffix "(C)"/"(WK)" renders only when
+// the row has one — `cleanupEmptyRoles` drops an empty "()" span.
 
-const storyRow =
-  `<div style="display:flex;align-items:center;gap:22px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.1)">` +
-  `<span style="font-family:var(--disp,'Anton',sans-serif);font-size:38px;color:var(--gold,#F5B21A);width:52px">{{row.number}}</span>` +
-  `<span style="font-weight:700;font-size:34px;line-height:1;flex:1">{{row.surname}} <span style="font-size:22px;color:var(--gold,#F5B21A)">({{row.role}})</span></span>` +
+const row =
+  `<div style="display:flex;align-items:baseline;gap:1.8cqmin;padding:1.1cqmin 0;border-bottom:.2cqmin solid ${LINE};min-width:0">` +
+  `<span style="font-family:${SK_COND};font-weight:800;font-size:3.4cqmin;width:4cqmin;flex:none;color:${ACC}">{{row.number}}</span>` +
+  `<span style="font-weight:600;font-size:3.2cqmin;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">{{row.surname}}</span>` +
+  `<span style="font-family:${SK_COND};font-weight:700;font-size:2.4cqmin;flex:none;color:${ACC}">({{row.role}})</span>` +
   `</div>`;
 
-const storyHtml = formatRoot(
-  bgLayers() +
-    storyHeader(goldChip("TEAM LIST", "story") + headerTag("{{gradeRound}}")) +
-    `<div style="position:absolute;top:236px;left:70px;right:70px">` +
-    `<div style="font:600 20px/1 ui-monospace,Menlo,monospace;letter-spacing:.22em;color:var(--gold,#F5B21A)">{{competitionLine}}</div>` +
-    `<div style="font-family:var(--disp,'Anton',sans-serif);font-size:150px;line-height:.94;text-transform:uppercase;margin-top:12px">TEAM LINE UP</div>` +
-    `</div>` +
-    `<div style="position: absolute; top: 512px; left: 470px; right: 70px; height: 1230px; border-radius: 16px; overflow: hidden; box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold,#FBAC27) 40%, transparent); width: 597px">${slot("squadPhoto", "photo")}</div>` +
-    `<div style="position: absolute; top: 512px; left: 84px; height: 396px; pointer-events: none; border-radius: 16px; box-shadow: inset 0 -90px 90px -40px rgba(8,9,12,.85)"></div>` +
-    `<div style="position: absolute; top: 437px; left: 98px; font: 600 17px/1 ui-monospace,Menlo,monospace; letter-spacing: .16em; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,.8)">{{venueDateTime}}</div>` +
-    `<div data-repeat="players" style="position: absolute; top: 562px; left: 70px; right: 70px; display: flex; flex-direction: column; width: 540px; height: 957px">${storyRow}</div>` +
-    SPONSOR_STRIP_STORY +
-    hashtagFooterStory(66),
-);
-
-const sharedRow =
-  `<div style="flex:1;min-height:0;display:flex;align-items:center;gap:16px;border-bottom:1px solid rgba(255,255,255,.1)">` +
-  `<span style="font-family:var(--disp,'Anton'),sans-serif;font-size:calc(var(--k,1)*34px);color:var(--gold,#FBAC27);width:calc(var(--k,1)*48px)">{{row.number}}</span>` +
-  `<span style="font-weight:700;font-size:calc(var(--k,1)*28px);line-height:1;flex:1">{{row.surname}} <span style="font-size:calc(var(--k,1)*18px);color:var(--gold,#FBAC27)">({{row.role}})</span></span>` +
-  `</div>`;
-
-const sharedHtml = sharedColumnRoot(
-  bgLayers(),
-  sharedHeader(goldChip("TEAM LIST", "shared") + headerTag("{{gradeRound}}")) +
-    `<div style="flex:none;margin-top:calc(var(--k,1.4)*10px)"><div style="font:600 20px/1 ui-monospace,Menlo,monospace;letter-spacing:.22em;color:var(--gold,#FBAC27)">{{competitionLine}}</div><div style="font-family:var(--disp,'Anton'),sans-serif;font-size:calc(var(--k,1.4)*100px);line-height:.94;text-transform:uppercase;margin-top:12px">TEAM LINE UP</div></div>` +
-    `<div style="flex:1;min-height:0;display:flex;gap:26px;margin-top:calc(var(--k,1.4)*18px)">` +
-    `<div data-repeat="players" style="flex:1;min-width:0;display:flex;flex-direction:column">${sharedRow}</div>` +
-    `<div style="flex:1.12;min-width:0;position:relative;border-radius:16px;overflow:hidden;box-shadow:0 0 0 3px color-mix(in srgb, var(--gold,#FBAC27) 40%, transparent)">${slot("squadPhoto", "photo")}<div style="position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 -90px 90px -40px rgba(8,9,12,.85)"></div><div style="position:absolute;bottom:22px;left:24px;right:24px;font:600 calc(var(--k,1)*15px)/1.3 ui-monospace,Menlo,monospace;letter-spacing:.14em;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.8)">{{venueDateTime}}</div></div>` +
-    `</div>` +
-    sponsorStripShared(";margin-top:calc(var(--k,1.4)*16px)") +
-    hashtagFooterShared(";margin-top:calc(var(--k,1.4)*16px)"),
-);
+const html = bdCard({
+  chip: bdChip("TEAM LIST"),
+  tag: "{{gradeRound}}",
+  photo: "squadPhoto",
+  body: bdColumn(
+    bdEyebrow("{{competitionLine}}") +
+      bdDisplay("THE XI", 14) +
+      `<div style="font-family:${SK_MONO};font-weight:500;font-size:2.2cqmin;letter-spacing:.14em;color:${MUTED};margin-top:1.6cqmin">{{venueDateTime}}</div>` +
+      `<div data-repeat="players" data-repeat-max="12" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(6,auto);grid-auto-flow:column;column-gap:5cqmin;width:100%;max-width:92cqmin;margin-top:3cqmin">${row}</div>`,
+  ),
+  footer: bdFooterLogos(),
+});
 
 export const teamList: PackCardTemplate = {
   kind: "teamList",
@@ -91,8 +71,5 @@ export const teamList: PackCardTemplate = {
       ],
     },
   ],
-  formats: {
-    story: storyHtml,
-    shared: sharedHtml,
-  },
+  formats: bdFormats(() => html),
 };
