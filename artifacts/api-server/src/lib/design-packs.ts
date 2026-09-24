@@ -200,9 +200,9 @@ export const PACKS: DesignPack[] = [
     id: "neon-night-v1",
     name: "Neon Night",
     description:
-      "Night-sky navy with blurred neon orbs, glassmorphism panels and layered neon-glow display type — floodlit cricket after dark.",
+      "Floodlit cricket after dark — accent and pink glows, a mono photo, a 5% grid, a glowing horizon line and neon-glow type, all lit in your club's accent. Square, portrait, story and 1200×630 landscape.",
     // COVERAGE CONTRACT: must match pack-templates/neon-night/index.ts
-    // (enforced by pack-coverage-parity.test.ts). Grows card by card.
+    // (enforced by pack-coverage-parity.test.ts).
     cardKinds: [
       "matchSummary",
       "record",
