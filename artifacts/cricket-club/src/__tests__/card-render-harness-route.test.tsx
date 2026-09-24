@@ -19,17 +19,25 @@ import { Router as AppRouter } from "@/App";
 describe("/__card-render route", () => {
   beforeEach(() => {
     installApiMock();
+    // Never let a harness API left over from an earlier render satisfy the
+    // `ready` assertion below — it must come from this mount.
+    delete window.__cardRenderHarness;
   });
 
   it("mounts the render harness while platform brand is still loading", async () => {
     renderAt(<AppRouter />, "/__card-render");
     // The harness page renders <div data-testid="card-render-harness">…</div>
-    // as soon as it mounts and installs window.__cardRenderHarness.
-    // The harness page is a lazy route chunk; on a cold transform cache the
-    // import alone can exceed waitFor's default 1s, so allow the lazy load time.
-    await waitFor(() => expect(screen.getByTestId("card-render-harness")).toBeTruthy(), {
-      timeout: 10_000,
-    });
-    expect(window.__cardRenderHarness?.ready).toBe(true);
+    // and installs window.__cardRenderHarness from a passive effect. The page is
+    // a lazy route chunk, so Suspense resolves outside act() and the div can be
+    // committed a tick before that effect runs — assert both inside the same
+    // waitFor. On a cold transform cache the import alone can exceed waitFor's
+    // default 1s, so allow the lazy load time.
+    await waitFor(
+      () => {
+        expect(screen.getByTestId("card-render-harness")).toBeTruthy();
+        expect(window.__cardRenderHarness?.ready).toBe(true);
+      },
+      { timeout: 10_000 },
+    );
   });
 });
