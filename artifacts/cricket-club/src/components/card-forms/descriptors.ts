@@ -68,6 +68,9 @@ const RUNS_WICKETS = [
   { value: "Wickets", label: "Wickets" },
 ] as const;
 
+/** Leaderboard categories: runs, wickets and fielders' dismissals. */
+const LEADER_CATEGORIES = [...RUNS_WICKETS, { value: "Dismissals", label: "Dismissals" }] as const;
+
 const HOME_AWAY = [
   { value: "HOME", label: "Home" },
   { value: "AWAY", label: "Away" },
@@ -155,7 +158,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
     playerField: { key: "playerName" },
     fields: [
       { key: "grade", label: "Grade", type: "text" },
-      { key: "category", label: "Category", type: "select", options: RUNS_WICKETS },
+      { key: "category", label: "Category", type: "select", options: LEADER_CATEGORIES },
       { key: "playerName", label: "Player name", type: "text" },
       { key: "value", label: "Value", type: "text" },
       { key: "headline", label: "Headline", type: "text", full: true },
@@ -360,7 +363,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
       { key: "title", label: "Title", type: "text", placeholder: "CLUB RUN SCORERS" },
       { key: "subtitle", label: "Subtitle", type: "text" },
       { key: "season", label: "Season", type: "text", placeholder: "2024/25" },
-      { key: "category", label: "Category", type: "select", options: RUNS_WICKETS },
+      { key: "category", label: "Category", type: "select", options: LEADER_CATEGORIES },
     ],
     repeat: {
       key: "leaders",

@@ -30,7 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles } from "lucide-react";
 import { matchToSummaryInput, seasonLabel } from "@/lib/match-summary";
-import type { CardKind } from "@/lib/share-card";
+import type { CardKind, ClubLeaderboardCategory } from "@/lib/share-card";
 import type { CardFormState } from "./logic";
 import { DESCRIPTORS } from "./descriptors";
 import {
@@ -305,7 +305,7 @@ function LadderPrefillPanel({ onApply }: { onApply: Apply }) {
 
 function ClubTotalsPrefillPanel({ onApply }: { onApply: Apply }) {
   const [seasonYear, setSeasonYear] = useState<number>(defaultSeasonYear());
-  const [category, setCategory] = useState<"Runs" | "Wickets">("Runs");
+  const [category, setCategory] = useState<ClubLeaderboardCategory>("Runs");
 
   const params = useMemo(() => ({ season: seasonYear }), [seasonYear]);
   const q = useGetSocialClubSeasonTotals(params, {
@@ -324,10 +324,11 @@ function ClubTotalsPrefillPanel({ onApply }: { onApply: Apply }) {
         <SelectField
           label="Category"
           value={category}
-          onChange={(v) => setCategory(v as "Runs" | "Wickets")}
+          onChange={(v) => setCategory(v as ClubLeaderboardCategory)}
         >
           <option value="Runs">Runs</option>
           <option value="Wickets">Wickets</option>
+          <option value="Dismissals">Dismissals</option>
         </SelectField>
       </div>
       <ApplyButton onClick={apply} disabled={q.isFetching} loading={q.isFetching} />

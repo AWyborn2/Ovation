@@ -11,8 +11,12 @@ import {
   getGetSocialSettingsQueryKey,
   useListCardThemes,
   getListCardThemesQueryKey,
+  useListClubPhotos,
+  getListClubPhotosQueryKey,
   type CardTheme as ApiCardTheme,
+  type ClubPhoto,
 } from "@workspace/api-client-react";
+import { galleryPhotoUrl } from "@/lib/gallery-photo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -166,6 +170,13 @@ export default function AdminSocialStudio() {
     return out;
   }, [galleryClubName]);
 
+  // Previews show a photo in each pack's photo slot (the club's newest team
+  // shot, else a bundled stand-in) so a design is seen as it will post.
+  const photosQ = useListClubPhotos(undefined, {
+    query: { queryKey: getListClubPhotosQueryKey() },
+  });
+  const galleryPhoto = galleryPhotoUrl(photosQ.data as ClubPhoto[] | undefined);
+
   // One payload per card kind, memoised so <PackCard>'s html memo (keyed on
   // `data` identity) is not defeated on every parent re-render.
   const galleryDataByKind = useMemo(() => {
@@ -179,11 +190,12 @@ export default function AdminSocialStudio() {
           hashtag: tenantHashtag(bundle),
           sponsors: kindSponsors(bundle, o.value, sponsorsOn),
           presentingSponsorName: presentingSponsorName(bundle, sponsorsOn),
+          photoUrl: galleryPhoto,
         }),
       );
     }
     return out;
-  }, [bundle]);
+  }, [bundle, galleryPhoto]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: getListCardTemplatesQueryKey() });

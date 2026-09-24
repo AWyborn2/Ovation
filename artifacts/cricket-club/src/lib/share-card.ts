@@ -38,6 +38,7 @@ export {
   type WeekendWrapMatch,
   type LadderRow,
   type ClubLeaderboardLeader,
+  type ClubLeaderboardCategory,
   type ShareCardInput,
   type CardKind,
   type CardTheme,
