@@ -1,77 +1,61 @@
 import type { PackCardTemplate } from "../types";
+import { SK_COND, SK_MONO } from "../shared";
 import {
-  SPONSOR_STRIP_STORY,
-  bgLayers,
+  ACC,
+  LINE,
+  MUTED,
+  bdCard,
+  bdChip,
+  bdDisplay,
+  bdEyebrow,
+  bdFooterLogos,
+  bdFormats,
+  bdSplit,
   clubHeaderFields,
-  formatRoot,
-  goldChip,
-  hashtagFooterShared,
-  hashtagFooterStory,
-  headerTag,
   logoField,
-  sharedColumnRoot,
-  sharedHeader,
   slot,
-  sponsorStripShared,
-  storyHeader,
   textField,
+  type BdFormat,
 } from "./fragments";
 
-// A2 — Match Day. Fixture announce: head-to-head, ground, date, start time.
+// A2 — Match Day. The handoff's "MATCH DAY" title with the round line, then
+// the fixture: both sides with logos and home/away tags, ground/date/start,
+// and the club's note. Landscape sets the title beside the fixture.
 
-const storyHtml = formatRoot(
-  bgLayers() +
-    storyHeader(goldChip("MATCH DAY", "story") + headerTag("{{roundLabel}}")) +
-    `<div style="position:absolute;top:236px;left:70px;right:70px;text-align:center">` +
-    `<div style="font:600 22px/1 ui-monospace,Menlo,monospace;letter-spacing:.28em;color:var(--gold,#F5B21A)">{{roundLabel}}</div>` +
-    `<div style="font-family:var(--disp,'Anton',sans-serif);font-size:154px;line-height:.94;text-transform:uppercase;margin-top:14px">MATCH DAY</div>` +
-    `</div>` +
-    `<div style="position:absolute;top:560px;left:70px;right:70px;display:flex;align-items:center;justify-content:space-between">` +
-    `<div style="width:360px;text-align:center">` +
-    `<div style="width:230px;height:230px;border-radius:50%;overflow:hidden;margin:0 auto;box-shadow:0 0 0 4px color-mix(in srgb, var(--gold,#FBAC27) 50%, transparent)">${slot("clubLogo", "logo", "circle")}</div>` +
-    `<div style="font-family:var(--disp,'Anton',sans-serif);font-size:52px;line-height:1;margin-top:22px;color:var(--gold,#F5B21A)">{{clubName}}</div>` +
-    `<div style="font:500 18px/1 ui-monospace,Menlo,monospace;letter-spacing:.16em;color:rgba(255,255,255,.5);margin-top:8px">{{homeAway}}</div>` +
-    `</div>` +
-    `<div style="font-family:var(--disp,'Anton',sans-serif);font-size:120px;line-height:1;text-shadow:0 0 34px color-mix(in srgb, var(--gold,#FBAC27) 45%, transparent)">VS</div>` +
-    `<div style="width:360px;text-align:center">` +
-    `<div style="width:230px;height:230px;border-radius:50%;overflow:hidden;margin:0 auto;background:var(--surface-2,#1f2530);box-shadow:0 0 0 2px rgba(255,255,255,.16)">${slot("opposition.logo", "logo", "circle")}</div>` +
-    `<div style="font-family:var(--disp,'Anton',sans-serif);font-size:52px;line-height:1;margin-top:22px">{{opposition.name}}</div>` +
-    `<div style="font:500 18px/1 ui-monospace,Menlo,monospace;letter-spacing:.16em;color:rgba(255,255,255,.5);margin-top:8px">{{oppositionHomeAway}}</div>` +
-    `</div>` +
-    `</div>` +
-    `<div style="position:absolute;top:1096px;left:70px;right:70px;background:linear-gradient(90deg,var(--panel,var(--panel,#6E1C2B)),var(--panel-2,var(--panel-2,#4a121e)));border-left:9px solid var(--gold,#F5B21A);border-radius:9px;padding:28px 30px;display:flex;align-items:center;justify-content:space-around;text-align:center">` +
-    `<div><div style="font:600 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;color:rgba(255,255,255,.6)">GROUND</div><div style="font-weight:800;font-size:30px;line-height:1.1;margin-top:10px">{{venue}}</div></div>` +
-    `<div style="width:1px;height:64px;background:rgba(255,255,255,.2)"></div>` +
-    `<div><div style="font:600 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;color:rgba(255,255,255,.6)">DATE</div><div style="font-weight:800;font-size:30px;line-height:1.1;margin-top:10px">{{date}}</div></div>` +
-    `<div style="width:1px;height:64px;background:rgba(255,255,255,.2)"></div>` +
-    `<div><div style="font:600 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;color:rgba(255,255,255,.6)">START</div><div style="font-weight:800;font-size:30px;line-height:1.1;margin-top:10px">{{startTime}}</div></div>` +
-    `</div>` +
-    `<div style="position:absolute;top:1300px;left:70px;right:70px;text-align:center">` +
-    `<div style="font-family:var(--disp,'Anton',sans-serif);font-size:50px;line-height:1;color:var(--gold,#F5B21A)">{{note.title}}</div>` +
-    `<div style="font-weight:500;font-size:24px;line-height:1.3;color:rgba(255,255,255,.72);margin-top:12px">{{note.body}}</div>` +
-    `</div>` +
-    SPONSOR_STRIP_STORY +
-    hashtagFooterStory(66),
-);
+function side(logoKey: string, name: string, tag: string, accent: boolean): string {
+  return (
+    `<div style="display:flex;align-items:center;gap:2.4cqmin;padding:1.4cqmin 0;border-bottom:.2cqmin solid ${LINE}">` +
+    `<div style="width:8cqmin;height:8cqmin;flex:none;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.08)">${slot(logoKey, "logo", "circle")}</div>` +
+    `<div style="flex:1;min-width:0;font-family:${SK_COND};font-weight:800;font-size:5cqmin;line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>` +
+    `<div style="flex:none;font-family:${SK_COND};font-weight:800;font-size:2.4cqmin;letter-spacing:.1em;padding:.6cqmin 1.4cqmin;border-radius:.6cqmin;${accent ? `background:${ACC};color:var(--accent-ink,#10151B)` : `border:.2cqmin solid ${LINE};color:${MUTED}`}">${tag}</div>` +
+    `</div>`
+  );
+}
 
-const sharedHtml = sharedColumnRoot(
-  bgLayers(),
-  sharedHeader(goldChip("MATCH DAY", "shared") + headerTag("{{roundLabel}}")) +
-    `<div style="flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;padding:calc(var(--k,1.4)*14px) 0">` +
-    `<div style="flex:none"><div style="font:600 22px/1 ui-monospace,Menlo,monospace;letter-spacing:.28em;color:var(--gold,#FBAC27)">{{roundLabel}}</div><div style="font-family:var(--disp,'Anton'),sans-serif;font-size:calc(var(--k,1.4)*104px);line-height:.94;text-transform:uppercase;margin-top:14px">MATCH DAY</div></div>` +
-    `<div style="flex:none;width:100%;display:flex;align-items:center;justify-content:space-between;gap:20px">` +
-    `<div style="flex:1;text-align:center"><div style="width:calc(var(--k,1.4)*158px);height:calc(var(--k,1.4)*158px);border-radius:50%;overflow:hidden;margin:0 auto;box-shadow:0 0 0 4px color-mix(in srgb, var(--gold,#FBAC27) 50%, transparent)">${slot("clubLogo", "logo", "circle")}</div><div style="font-family:var(--disp,'Anton'),sans-serif;font-size:calc(var(--k,1.4)*38px);line-height:1;margin-top:20px;color:var(--gold,#FBAC27)">{{clubName}}</div><div style="font:500 17px/1 ui-monospace,Menlo,monospace;letter-spacing:.16em;color:rgba(255,255,255,.5);margin-top:8px">{{homeAway}}</div></div>` +
-    `<div style="flex:none;font-family:var(--disp,'Anton'),sans-serif;font-size:calc(var(--k,1.4)*84px);line-height:1;text-shadow:0 0 34px color-mix(in srgb, var(--gold,#FBAC27) 45%, transparent)">VS</div>` +
-    `<div style="flex:1;text-align:center"><div style="width:calc(var(--k,1.4)*158px);height:calc(var(--k,1.4)*158px);border-radius:50%;overflow:hidden;margin:0 auto;background:var(--surface-2,#1f2530);box-shadow:0 0 0 2px rgba(255,255,255,.16)">${slot("opposition.logo", "logo", "circle")}</div><div style="font-family:var(--disp,'Anton'),sans-serif;font-size:calc(var(--k,1.4)*38px);line-height:1;margin-top:20px">{{opposition.name}}</div><div style="font:500 17px/1 ui-monospace,Menlo,monospace;letter-spacing:.16em;color:rgba(255,255,255,.5);margin-top:8px">{{oppositionHomeAway}}</div></div>` +
+function info(label: string, value: string): string {
+  return `<div style="min-width:0"><div style="font-family:${SK_MONO};font-weight:600;font-size:1.8cqmin;letter-spacing:.18em;color:${MUTED}">${label}</div><div style="font-weight:700;font-size:3.2cqmin;line-height:1.2;margin-top:.6cqmin">${value}</div></div>`;
+}
+
+function build(fmt: BdFormat): string {
+  const head =
+    bdDisplay("MATCH<br>DAY", fmt === "landscape" ? 18 : 16, ";line-height:.84;margin-top:0") +
+    bdEyebrow("{{roundLabel}}", ACC, ";margin-top:2cqmin");
+  const fixture =
+    `<div style="border-top:.2cqmin solid ${LINE}">` +
+    side("clubLogo", "{{clubName}}", "{{homeAway}}", true) +
+    side("opposition.logo", "{{opposition.name}}", "{{oppositionHomeAway}}", false) +
     `</div>` +
-    `<div style="flex:none;width:100%;background:linear-gradient(90deg,var(--panel,#42342B),var(--panel-2,#241c17));border-left:9px solid var(--gold,#FBAC27);border-radius:9px;padding:26px 30px;display:flex;align-items:center;justify-content:space-around">` +
-    `<div><div style="font:600 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;color:rgba(255,255,255,.6)">GROUND</div><div style="font-weight:800;font-size:28px;line-height:1.1;margin-top:10px">{{venue}}</div></div><div style="width:1px;height:56px;background:rgba(255,255,255,.2)"></div><div><div style="font:600 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;color:rgba(255,255,255,.6)">DATE</div><div style="font-weight:800;font-size:28px;line-height:1.1;margin-top:10px">{{date}}</div></div><div style="width:1px;height:56px;background:rgba(255,255,255,.2)"></div><div><div style="font:600 15px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;color:rgba(255,255,255,.6)">START</div><div style="font-weight:800;font-size:28px;line-height:1.1;margin-top:10px">{{startTime}}</div></div>` +
-    `</div>` +
-    `<div style="flex:none"><div style="font-family:var(--disp,'Anton'),sans-serif;font-size:calc(var(--k,1.4)*44px);line-height:1;color:var(--gold,#FBAC27)">{{note.title}}</div><div style="font-weight:500;font-size:23px;line-height:1.3;color:rgba(255,255,255,.72);margin-top:10px">{{note.body}}</div></div>` +
-    `</div>` +
-    sponsorStripShared() +
-    hashtagFooterShared(),
-);
+    `<div style="display:flex;gap:5cqmin;margin-top:2.6cqmin">${info("GROUND", "{{venue}}")}${info("DATE", "{{date}}")}${info("START", "{{startTime}}")}</div>` +
+    `<div style="margin-top:2.6cqmin;padding:1.8cqmin 2.4cqmin;border-left:.8cqmin solid ${ACC};background:rgba(255,255,255,.05);border-radius:0 1cqmin 1cqmin 0">` +
+    `<div style="font-family:${SK_MONO};font-weight:600;font-size:2cqmin;letter-spacing:.16em;color:${ACC}">{{note.title}}</div>` +
+    `<div style="font-size:2.8cqmin;line-height:1.35;margin-top:.6cqmin;color:rgba(242,245,248,.85)">{{note.body}}</div>` +
+    `</div>`;
+  return bdCard({
+    chip: bdChip("MATCH DAY"),
+    body: bdSplit(fmt, head, fixture),
+    footer: bdFooterLogos(),
+  });
+}
 
 export const matchDay: PackCardTemplate = {
   kind: "matchDay",
@@ -95,8 +79,5 @@ export const matchDay: PackCardTemplate = {
     logoField("sponsor3", "Sponsor logo 3", "Sponsor"),
     textField("hashtags", "Hashtag footer", "#YOURCLUB · #YOURLEAGUE"),
   ],
-  formats: {
-    story: storyHtml,
-    shared: sharedHtml,
-  },
+  formats: bdFormats(build),
 };
