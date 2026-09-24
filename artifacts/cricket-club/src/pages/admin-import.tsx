@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { PageHeader } from "@/components/broadcast";
 import { useClubShortName } from "@/lib/brand-context";
+import { useEntitlements } from "@/lib/entitlements";
+import { ImportSteps, PreviewSummary, previewCounts } from "@/components/admin-import/import-steps";
+import { useDraftedOnPublish } from "@/components/admin-import/use-drafted-on-publish";
 import {
   useImportSession,
   useCsvImport,
@@ -55,6 +58,15 @@ export default function AdminImport() {
   };
 
   const noPreview = !csv.preview && !match.preview && !batch.preview;
+  const openPreview = csv.preview ?? match.preview ?? batch.preview;
+  const step = noPreview ? (session.committed ? "publish" : "upload") : "review";
+
+  const { socialStudio } = useEntitlements();
+  const draftedOnPublish = useDraftedOnPublish({
+    reviewing: !noPreview,
+    committed: session.committed,
+    enabled: !!socialStudio,
+  });
 
   // Props every preview card shares (see `PreviewCommonProps`).
   const common = {
@@ -77,11 +89,22 @@ export default function AdminImport() {
         subtitle="Import a whole-season PlayCricket CSV, or add a single match scorecard to the running season totals. Nothing is applied until you Confirm."
       />
 
+      <ImportSteps step={step} done={step === "publish"} />
+
+      {openPreview && <PreviewSummary counts={previewCounts(openPreview)} />}
+
       {session.committed && noPreview && (
         <div className="rounded-md border border-green-600/40 bg-green-600/10 p-4 text-sm space-y-2">
           <p className="font-medium">
             Import applied for {session.committed.label}. Aggregates have been re-derived.
           </p>
+          {draftedOnPublish != null && (
+            <p data-testid="drafted-on-publish">
+              {draftedOnPublish === 0
+                ? "No new social cards were drafted."
+                : `${draftedOnPublish} new social card${draftedOnPublish === 1 ? " is" : "s are"} waiting for review.`}
+            </p>
+          )}
           <Link
             href="/admin/social/queue"
             className="inline-flex items-center text-green-700 dark:text-green-400 font-medium hover:underline"
