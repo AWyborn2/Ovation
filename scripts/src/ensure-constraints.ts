@@ -105,7 +105,12 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
   {
     table: "social_drafts",
     name: "social_drafts_status_check",
-    sql: `"status" IN ('pending', 'approved', 'dismissed', 'posted')`,
+    sql: `"status" IN ('pending', 'approved', 'awaiting_review', 'ready', 'dismissed', 'posted')`,
+  },
+  {
+    table: "social_draft_revisions",
+    name: "social_draft_revisions_reason_check",
+    sql: `"reason" IN ('refresh', 'edit', 'revert')`,
   },
   {
     table: "awards",
@@ -153,6 +158,13 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
     sql: `CREATE UNIQUE INDEX IF NOT EXISTS "tenants_playhq_org_id_uidx"
           ON "tenants" ("playhq_org_id")
           WHERE "playhq_org_id" IS NOT NULL`,
+  },
+  // Social Studio (migration 0005): one undismissed draft per engine event key.
+  {
+    name: "social_drafts_source_key_dedupe",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "social_drafts_source_key_dedupe"
+          ON "social_drafts" ("tenant_id", "source_key")
+          WHERE source_key IS NOT NULL AND status != 'dismissed'`,
   },
   {
     name: "fixtures_tenant_playhq_match_uidx",

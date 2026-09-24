@@ -10,7 +10,8 @@ export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraf
 
 
 export const SocialDraftStatus = {
-  pending: 'pending',
-  approved: 'approved',
+  awaiting_review: 'awaiting_review',
+  ready: 'ready',
+  posted: 'posted',
   dismissed: 'dismissed',
 } as const;

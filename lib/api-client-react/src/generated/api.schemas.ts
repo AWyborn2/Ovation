@@ -4517,8 +4517,9 @@ export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraf
 
 
 export const SocialDraftStatus = {
-  pending: 'pending',
-  approved: 'approved',
+  awaiting_review: 'awaiting_review',
+  ready: 'ready',
+  posted: 'posted',
   dismissed: 'dismissed',
 } as const;
 
@@ -4543,6 +4544,54 @@ export interface SocialDraft {
   createdAt: string;
   /** @nullable */
   reviewedAt?: string | null;
+  /** @nullable */
+  family?: string | null;
+  /** @nullable */
+  sourceKey?: string | null;
+  /** @nullable */
+  sourceImportedAt?: string | null;
+  /** @nullable */
+  autoReadyAt?: string | null;
+  /** @nullable */
+  packId?: string | null;
+  /** @nullable */
+  caption?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
+  /** @nullable */
+  photoSource?: string | null;
+  adjustments?: unknown;
+  /** @nullable */
+  editedAt?: string | null;
+  /**
+     * Set when a posted draft's source data changed after it was shared
+     * @nullable
+     */
+  staleSince?: string | null;
+}
+
+export type SocialDraftRevisionReason = typeof SocialDraftRevisionReason[keyof typeof SocialDraftRevisionReason];
+
+
+export const SocialDraftRevisionReason = {
+  refresh: 'refresh',
+  edit: 'edit',
+  revert: 'revert',
+} as const;
+
+export interface SocialDraftRevision {
+  id: number;
+  draftId: number;
+  cardInput: unknown;
+  /** @nullable */
+  caption?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
+  /** @nullable */
+  photoSource?: string | null;
+  adjustments?: unknown;
+  reason: SocialDraftRevisionReason;
+  createdAt: string;
 }
 
 export interface PendingDraftCount {
@@ -5896,6 +5945,12 @@ surface?: NavSurface;
  * Admin-only — include items with visible=false. Requires auth.
  */
 includeHidden?: boolean;
+};
+
+export type ListSocialDraftsParams = {
+status?: SocialDraftStatus;
+family?: string;
+grade?: string;
 };
 
 export type SweepMatchSummaryDraftsBody = {

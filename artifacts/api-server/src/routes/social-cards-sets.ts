@@ -18,6 +18,7 @@ import {
   AutoseedCardSetBody,
 } from "@workspace/api-zod";
 import type { CardSetSlide } from "@workspace/db";
+import { storedValuesFor } from "../lib/draft-status";
 import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
@@ -232,7 +233,7 @@ router.post(
         and(
           eq(socialDraftsTable.tenantId, tenantId),
           eq(socialDraftsTable.sourceKind, "matchSummary"),
-          eq(socialDraftsTable.status, "approved"),
+          inArray(socialDraftsTable.status, storedValuesFor("ready")),
           eq(socialDraftsTable.sourceMatchIsJunior, junior),
         ),
       );
