@@ -8,7 +8,6 @@ import {
   getListLifeMembersQueryKey,
 } from "@workspace/api-client-react";
 import type { LifeMember } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -16,6 +15,8 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
+import { DataTable, EditDrawer, type DataTableColumn } from "@/components/admin-ui";
+import { Plus } from "lucide-react";
 
 type FormValues = {
   name: string;
@@ -53,18 +54,71 @@ export default function AdminLifeMembers() {
     );
   }, [members]);
 
+  const editing = sorted.find((m) => m.id === editingId) ?? null;
+
+  const remove = async (m: LifeMember) => {
+    if (
+      !(await confirm({
+        title: "Delete life member",
+        description: `Delete life member "${m.name}"?`,
+        confirmText: "Delete",
+        destructive: true,
+      }))
+    )
+      return;
+    setError(null);
+    deleteMember.mutate(
+      { id: m.id },
+      {
+        onSuccess: () => {
+          setEditingId(null);
+          invalidate();
+        },
+        onError: onMutationError,
+      },
+    );
+  };
+
+  const columns: DataTableColumn<LifeMember>[] = [
+    {
+      key: "year",
+      header: "Inducted",
+      className: "w-24",
+      cell: (m) => <span className="tabular-nums">{m.inductionYear}</span>,
+    },
+    {
+      key: "name",
+      header: "Name",
+      cell: (m) => <span className="font-semibold">{m.name}</span>,
+    },
+    {
+      key: "type",
+      header: "Member",
+      cell: (m) => (
+        <span className="text-muted-foreground">
+          {m.isPlayingMember ? "Playing" : "Non-playing"}
+          {m.roleLabel && <> · {m.roleLabel}</>}
+        </span>
+      ),
+    },
+    {
+      key: "linked",
+      header: "Linked",
+      className: "w-28",
+      cell: (m) =>
+        m.playerId != null ? (
+          <span className="font-mono text-xs text-muted-foreground">player #{m.playerId}</span>
+        ) : (
+          "—"
+        ),
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="max-w-[75ch] text-[15px] text-muted-foreground">
-            Manage the Life Members honour board. Changes apply immediately to the public page.
-          </p>
-        </div>
-        <Button onClick={() => setShowNew((v) => !v)} variant={showNew ? "outline" : "default"}>
-          {showNew ? "Close form" : "New life member"}
-        </Button>
-      </div>
+    <div className="space-y-5">
+      <p className="max-w-[75ch] text-[15px] text-muted-foreground">
+        Manage the Life Members honour board. Changes apply immediately to the public page.
+      </p>
 
       {error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -72,143 +126,120 @@ export default function AdminLifeMembers() {
         </div>
       )}
 
-      {showNew && (
-        <Card>
-          <CardHeader>
-            <CardTitle>New life member</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <LifeMemberForm
-              initial={{
-                name: "",
-                inductionYear: new Date().getFullYear(),
-                isPlayingMember: true,
-                playerId: null,
-                roleLabel: null,
-                blurb: "",
-              }}
-              pending={createMember.isPending}
-              onSubmit={(values) => {
-                setError(null);
-                createMember.mutate(
-                  { data: values },
-                  {
-                    onSuccess: () => {
-                      setShowNew(false);
-                      invalidate();
-                    },
-                    onError: onMutationError,
-                  },
-                );
-              }}
-              onCancel={() => setShowNew(false)}
-              submitLabel="Add life member"
-            />
-          </CardContent>
-        </Card>
-      )}
-
       {isError ? (
         <QueryError onRetry={() => refetch()} />
       ) : isLoading ? (
         <ListSkeleton />
-      ) : sorted.length === 0 ? (
-        <EmptyState
-          title="No life members yet"
-          message="Add a life member to populate the honour board."
-        />
       ) : (
-        sorted.map((m) => (
-          <Card key={m.id}>
-            <CardHeader className="flex flex-row items-start justify-between gap-4">
-              <div>
-                <CardTitle className="text-[22px] leading-none">
-                  {m.name}{" "}
-                  <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    inducted {m.inductionYear}
-                  </span>
-                </CardTitle>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {m.isPlayingMember ? "Playing member" : "Non-playing member"}
-                  {m.roleLabel && <> · {m.roleLabel}</>}
-                  {m.playerId != null && <> · player #{m.playerId}</>}
-                </div>
-              </div>
-              <div className="space-x-2 shrink-0">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setEditingId(editingId === m.id ? null : m.id)}
-                >
-                  {editingId === m.id ? "Close" : "Edit"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={async () => {
-                    if (
-                      !(await confirm({
-                        title: "Delete life member",
-                        description: `Delete life member "${m.name}"?`,
-                        confirmText: "Delete",
-                        destructive: true,
-                      }))
-                    )
-                      return;
-                    setError(null);
-                    deleteMember.mutate(
-                      { id: m.id },
-                      { onSuccess: invalidate, onError: onMutationError },
-                    );
-                  }}
-                  disabled={deleteMember.isPending}
-                >
-                  Delete
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {editingId === m.id ? (
-                <LifeMemberForm
-                  initial={{
-                    name: m.name,
-                    inductionYear: m.inductionYear,
-                    isPlayingMember: m.isPlayingMember,
-                    playerId: m.playerId ?? null,
-                    roleLabel: m.roleLabel ?? null,
-                    blurb: m.blurb,
-                  }}
-                  pending={updateMember.isPending}
-                  onSubmit={(values) => {
-                    setError(null);
-                    updateMember.mutate(
-                      { id: m.id, data: values },
-                      {
-                        onSuccess: () => {
-                          setEditingId(null);
-                          invalidate();
-                        },
-                        onError: onMutationError,
-                      },
-                    );
-                  }}
-                  onCancel={() => setEditingId(null)}
-                  submitLabel="Save changes"
-                  knownPlayer={m as LifeMember}
-                />
-              ) : m.blurb ? (
-                <div className="space-y-2 text-sm italic text-muted-foreground border-l-2 border-primary pl-3">
-                  {m.blurb.split(/\n\n+/).map((p, i) => (
-                    <p key={i}>{p}</p>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">No blurb.</p>
-              )}
-            </CardContent>
-          </Card>
-        ))
+        <DataTable
+          label="Life members"
+          rows={sorted}
+          columns={columns}
+          getRowId={(m) => m.id}
+          searchText={(m) => `${m.name} ${m.inductionYear} ${m.roleLabel ?? ""}`}
+          searchPlaceholder="Search life members"
+          filters={[
+            { id: "playing", label: "Playing", predicate: (m) => m.isPlayingMember },
+            { id: "non-playing", label: "Non-playing", predicate: (m) => !m.isPlayingMember },
+          ]}
+          onRowClick={(m) => setEditingId(m.id)}
+          toolbarAction={
+            <Button onClick={() => setShowNew(true)}>
+              <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+              New life member
+            </Button>
+          }
+          emptyState={
+            <EmptyState
+              title="No life members yet"
+              message="Add a life member to populate the honour board."
+            />
+          }
+          minWidth={560}
+        />
       )}
+
+      <EditDrawer open={showNew} onOpenChange={setShowNew} title="New life member">
+        {showNew && (
+          <LifeMemberForm
+            initial={{
+              name: "",
+              inductionYear: new Date().getFullYear(),
+              isPlayingMember: true,
+              playerId: null,
+              roleLabel: null,
+              blurb: "",
+            }}
+            pending={createMember.isPending}
+            onSubmit={(values) => {
+              setError(null);
+              createMember.mutate(
+                { data: values },
+                {
+                  onSuccess: () => {
+                    setShowNew(false);
+                    invalidate();
+                  },
+                  onError: onMutationError,
+                },
+              );
+            }}
+            onCancel={() => setShowNew(false)}
+            submitLabel="Add life member"
+          />
+        )}
+      </EditDrawer>
+
+      <EditDrawer
+        open={editing != null}
+        onOpenChange={(o) => !o && setEditingId(null)}
+        title={editing?.name ?? ""}
+        description={editing ? `Inducted ${editing.inductionYear}` : undefined}
+        footer={
+          editing ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              disabled={deleteMember.isPending}
+              onClick={() => remove(editing)}
+            >
+              Delete
+            </Button>
+          ) : undefined
+        }
+      >
+        {editing && (
+          <LifeMemberForm
+            key={editing.id}
+            initial={{
+              name: editing.name,
+              inductionYear: editing.inductionYear,
+              isPlayingMember: editing.isPlayingMember,
+              playerId: editing.playerId ?? null,
+              roleLabel: editing.roleLabel ?? null,
+              blurb: editing.blurb,
+            }}
+            pending={updateMember.isPending}
+            onSubmit={(values) => {
+              setError(null);
+              updateMember.mutate(
+                { id: editing.id, data: values },
+                {
+                  onSuccess: () => {
+                    setEditingId(null);
+                    invalidate();
+                  },
+                  onError: onMutationError,
+                },
+              );
+            }}
+            onCancel={() => setEditingId(null)}
+            submitLabel="Save changes"
+            knownPlayer={editing}
+          />
+        )}
+      </EditDrawer>
     </div>
   );
 }

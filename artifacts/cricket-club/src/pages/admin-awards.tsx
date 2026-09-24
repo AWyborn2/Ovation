@@ -7,11 +7,12 @@ import {
   useDeleteAward,
   getListAdminAwardsQueryKey,
 } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ListSkeleton, EmptyState, QueryError } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
+import { DataTable, EditDrawer, StatusPill, type DataTableColumn } from "@/components/admin-ui";
+import { ArrowDown, ArrowUp, Plus } from "lucide-react";
 import { MECHANISM_LABEL } from "@/components/admin-awards/constants";
 import { AwardForm } from "@/components/admin-awards/award-form";
 import { WinnersManager } from "@/components/admin-awards/winners-manager";
@@ -62,63 +63,134 @@ export default function AdminAwards() {
     );
   };
 
+  const editing = sorted.find((a) => a.id === editingId) ?? null;
+  type AwardRow = (typeof sorted)[number];
+
+  const remove = async (award: AwardRow) => {
+    if (
+      !(await confirm({
+        title: "Delete award?",
+        description: `Delete award "${award.title}" and all its winners?`,
+        confirmText: "Delete",
+        destructive: true,
+      }))
+    )
+      return;
+    setError(null);
+    deleteAward.mutate(
+      { id: award.id },
+      {
+        onSuccess: () => {
+          setEditingId(null);
+          invalidate();
+        },
+        onError: onMutationError,
+      },
+    );
+  };
+
+  const togglePublished = (award: AwardRow) => {
+    setError(null);
+    updateAward.mutate(
+      { id: award.id, data: { published: !award.published } },
+      { onSuccess: invalidate, onError: onMutationError },
+    );
+  };
+
+  const columns: DataTableColumn<AwardRow>[] = [
+    {
+      key: "order",
+      header: "Order",
+      className: "w-24",
+      cell: (award) => {
+        const index = sorted.indexOf(award);
+        return (
+          <span className="flex gap-1">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              aria-label={`Move ${award.title} up`}
+              disabled={index === 0 || updateAward.isPending}
+              onClick={(e) => {
+                e.stopPropagation();
+                moveAward(index, -1);
+              }}
+            >
+              <ArrowUp className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              aria-label={`Move ${award.title} down`}
+              disabled={index === sorted.length - 1 || updateAward.isPending}
+              onClick={(e) => {
+                e.stopPropagation();
+                moveAward(index, 1);
+              }}
+            >
+              <ArrowDown className="h-4 w-4" />
+            </Button>
+          </span>
+        );
+      },
+    },
+    {
+      key: "title",
+      header: "Award",
+      cell: (award) => (
+        <span className="min-w-0">
+          <span className="block font-semibold">{award.title}</span>
+          <span className="block text-xs text-muted-foreground">
+            <code>{award.key}</code>
+          </span>
+        </span>
+      ),
+    },
+    {
+      key: "mechanism",
+      header: "Decided by",
+      className: "w-44",
+      cell: (award) => (
+        <span className="capitalize">
+          {MECHANISM_LABEL[award.mechanism]}
+          {award.mechanism === "points" && award.pointsGrade && (
+            <span className="text-muted-foreground"> · {award.pointsGrade}</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: "winners",
+      header: "Winners",
+      className: "w-24",
+      cell: (award) => <span className="tabular-nums">{award.winners.length}</span>,
+    },
+    {
+      key: "status",
+      header: "Status",
+      className: "w-32",
+      cell: (award) =>
+        award.published ? (
+          <StatusPill tone="success">Published</StatusPill>
+        ) : (
+          <StatusPill>Draft</StatusPill>
+        ),
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="max-w-[75ch] text-[15px] text-muted-foreground">
-            Create club awards and record their past winners. Each award appears as its own honour
-            board on the website and mobile app.
-          </p>
-        </div>
-        <Button onClick={() => setShowNew((v) => !v)} variant={showNew ? "outline" : "default"}>
-          {showNew ? "Close form" : "New award"}
-        </Button>
-      </div>
+    <div className="space-y-5">
+      <p className="max-w-[75ch] text-[15px] text-muted-foreground">
+        Create club awards and record their past winners. Each award appears as its own honour board
+        on the website and mobile app.
+      </p>
 
       {error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
-      )}
-
-      {showNew && (
-        <Card>
-          <CardHeader>
-            <CardTitle>New award</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AwardForm
-              initial={{
-                key: "",
-                title: "",
-                description: "",
-                displayOrder: (sorted[sorted.length - 1]?.displayOrder ?? -1) + 1,
-                votingEnabled: false,
-                mechanism: "manual",
-                published: false,
-                pointsGrade: null,
-              }}
-              autoKey
-              pending={createAward.isPending}
-              onSubmit={(values) => {
-                setError(null);
-                createAward.mutate(
-                  { data: values },
-                  {
-                    onSuccess: () => {
-                      setShowNew(false);
-                      invalidate();
-                    },
-                    onError: onMutationError,
-                  },
-                );
-              }}
-              onCancel={() => setShowNew(false)}
-              submitLabel="Create award"
-            />
-          </CardContent>
-        </Card>
       )}
 
       {isLoading ? (
@@ -128,153 +200,140 @@ export default function AdminAwards() {
           message="We couldn’t load awards. Please try again."
           onRetry={() => refetch()}
         />
-      ) : sorted.length === 0 ? (
-        <EmptyState title="No awards yet" message="Create an award to get started." />
       ) : (
-        sorted.map((award, index) => (
-          <Card key={award.id}>
-            <CardHeader className="flex flex-row items-start justify-between gap-4">
-              <div className="min-w-0">
-                <CardTitle className="text-[22px] leading-none">
-                  {award.title}
-                  <span
-                    className={`ml-2 align-middle text-xs font-normal rounded px-2 py-0.5 ${
-                      award.published
-                        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {award.published ? "Published" : "Draft"}
-                  </span>
-                  <span className="ml-2 align-middle text-xs font-normal rounded bg-secondary text-secondary-foreground px-2 py-0.5 capitalize">
-                    {MECHANISM_LABEL[award.mechanism]}
-                  </span>
-                  {award.mechanism === "points" && award.pointsGrade && (
-                    <span className="ml-2 align-middle text-xs font-normal rounded bg-primary/15 text-primary-text px-2 py-0.5">
-                      {award.pointsGrade}
-                    </span>
-                  )}
-                </CardTitle>
-                <div className="text-xs text-muted-foreground mt-1">
-                  slug: <code>{award.key}</code> · order {award.displayOrder} ·{" "}
-                  {award.winners.length} {award.winners.length === 1 ? "winner" : "winners"}
-                </div>
-              </div>
-              <div className="space-x-2 shrink-0">
-                <Button
-                  size="sm"
-                  variant={award.published ? "outline" : "default"}
-                  disabled={updateAward.isPending}
-                  onClick={() => {
-                    setError(null);
-                    updateAward.mutate(
-                      { id: award.id, data: { published: !award.published } },
-                      { onSuccess: invalidate, onError: onMutationError },
-                    );
-                  }}
-                >
-                  {award.published ? "Unpublish" : "Publish"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={index === 0 || updateAward.isPending}
-                  onClick={() => moveAward(index, -1)}
-                >
-                  ↑
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={index === sorted.length - 1 || updateAward.isPending}
-                  onClick={() => moveAward(index, 1)}
-                >
-                  ↓
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setEditingId(editingId === award.id ? null : award.id)}
-                >
-                  {editingId === award.id ? "Close" : "Edit"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={async () => {
-                    if (
-                      !(await confirm({
-                        title: "Delete award?",
-                        description: `Delete award "${award.title}" and all its winners?`,
-                        confirmText: "Delete",
-                        destructive: true,
-                      }))
-                    )
-                      return;
-                    setError(null);
-                    deleteAward.mutate(
-                      { id: award.id },
-                      { onSuccess: invalidate, onError: onMutationError },
-                    );
-                  }}
-                  disabled={deleteAward.isPending}
-                >
-                  Delete
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {editingId === award.id && (
-                <div className="rounded-md border border-border bg-muted/30 p-4">
-                  <AwardForm
-                    initial={{
-                      key: award.key,
-                      title: award.title,
-                      description: award.description,
-                      displayOrder: award.displayOrder,
-                      votingEnabled: award.votingEnabled,
-                      mechanism: award.mechanism,
-                      published: award.published,
-                      pointsGrade: award.pointsGrade ?? null,
-                    }}
-                    pending={updateAward.isPending}
-                    onSubmit={(values) => {
-                      setError(null);
-                      updateAward.mutate(
-                        { id: award.id, data: values },
-                        {
-                          onSuccess: () => {
-                            setEditingId(null);
-                            invalidate();
-                          },
-                          onError: onMutationError,
-                        },
-                      );
-                    }}
-                    onCancel={() => setEditingId(null)}
-                    submitLabel="Save changes"
-                  />
-                </div>
-              )}
-
-              {award.description && (
-                <p className="text-sm italic text-muted-foreground border-l-2 border-primary pl-3">
-                  {award.description}
-                </p>
-              )}
-
-              <WinnersManager award={award} onError={onMutationError} onChanged={invalidate} />
-
-              {award.mechanism === "voted" && (
-                <VotingManager award={award} onAwardChanged={invalidate} />
-              )}
-              {award.mechanism === "points" && (
-                <PointsManager award={award} onAwardChanged={invalidate} />
-              )}
-            </CardContent>
-          </Card>
-        ))
+        <DataTable
+          label="Awards"
+          rows={sorted}
+          columns={columns}
+          getRowId={(a) => a.id}
+          searchText={(a) => `${a.title} ${a.key} ${a.description ?? ""}`}
+          searchPlaceholder="Search awards"
+          filters={[
+            { id: "published", label: "Published", predicate: (a) => a.published },
+            { id: "draft", label: "Drafts", predicate: (a) => !a.published },
+          ]}
+          onRowClick={(a) => setEditingId(a.id)}
+          toolbarAction={
+            <Button onClick={() => setShowNew(true)}>
+              <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+              New award
+            </Button>
+          }
+          emptyState={
+            <EmptyState title="No awards yet" message="Create an award to get started." />
+          }
+          minWidth={640}
+        />
       )}
+
+      <EditDrawer open={showNew} onOpenChange={setShowNew} title="New award">
+        {showNew && (
+          <AwardForm
+            initial={{
+              key: "",
+              title: "",
+              description: "",
+              displayOrder: (sorted[sorted.length - 1]?.displayOrder ?? -1) + 1,
+              votingEnabled: false,
+              mechanism: "manual",
+              published: false,
+              pointsGrade: null,
+            }}
+            autoKey
+            pending={createAward.isPending}
+            onSubmit={(values) => {
+              setError(null);
+              createAward.mutate(
+                { data: values },
+                {
+                  onSuccess: () => {
+                    setShowNew(false);
+                    invalidate();
+                  },
+                  onError: onMutationError,
+                },
+              );
+            }}
+            onCancel={() => setShowNew(false)}
+            submitLabel="Create award"
+          />
+        )}
+      </EditDrawer>
+
+      <EditDrawer
+        wide
+        open={editing != null}
+        onOpenChange={(o) => !o && setEditingId(null)}
+        title={editing?.title ?? ""}
+        description={
+          editing
+            ? `${MECHANISM_LABEL[editing.mechanism]} · ${editing.winners.length} ${
+                editing.winners.length === 1 ? "winner" : "winners"
+              }`
+            : undefined
+        }
+        footer={
+          editing ? (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-destructive hover:text-destructive"
+                disabled={deleteAward.isPending}
+                onClick={() => remove(editing)}
+              >
+                Delete
+              </Button>
+              <Button
+                type="button"
+                className="ml-auto"
+                variant={editing.published ? "outline" : "default"}
+                disabled={updateAward.isPending}
+                onClick={() => togglePublished(editing)}
+              >
+                {editing.published ? "Unpublish" : "Publish"}
+              </Button>
+            </>
+          ) : undefined
+        }
+      >
+        {editing && (
+          <div className="space-y-6">
+            <AwardForm
+              key={editing.id}
+              initial={{
+                key: editing.key,
+                title: editing.title,
+                description: editing.description,
+                displayOrder: editing.displayOrder,
+                votingEnabled: editing.votingEnabled,
+                mechanism: editing.mechanism,
+                published: editing.published,
+                pointsGrade: editing.pointsGrade ?? null,
+              }}
+              pending={updateAward.isPending}
+              onSubmit={(values) => {
+                setError(null);
+                updateAward.mutate(
+                  { id: editing.id, data: values },
+                  { onSuccess: invalidate, onError: onMutationError },
+                );
+              }}
+              onCancel={() => setEditingId(null)}
+              submitLabel="Save changes"
+            />
+
+            <WinnersManager award={editing} onError={onMutationError} onChanged={invalidate} />
+
+            {editing.mechanism === "voted" && (
+              <VotingManager award={editing} onAwardChanged={invalidate} />
+            )}
+            {editing.mechanism === "points" && (
+              <PointsManager award={editing} onAwardChanged={invalidate} />
+            )}
+          </div>
+        )}
+      </EditDrawer>
     </div>
   );
 }
