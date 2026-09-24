@@ -280,7 +280,7 @@ async function upsertDraft(
     sourceKind: "matchSummary",
     sourceMatchId: matchId,
     sourceMatchIsJunior: junior,
-    status: "pending",
+    status: "awaiting_review",
     cardInput,
     appPath,
   });

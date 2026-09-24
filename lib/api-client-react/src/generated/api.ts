@@ -162,6 +162,7 @@ import type {
   ListMatchesParams,
   ListNavItemsParams,
   ListPlayersParams,
+  ListSocialDraftsParams,
   ListStatsParams,
   LoginRequest,
   MatchDetail,
@@ -227,6 +228,7 @@ import type {
   SignupResult,
   SlugAvailability,
   SocialDraft,
+  SocialDraftRevision,
   SocialSettings,
   SocialSettingsBundle,
   SocialSettingsUpdate,
@@ -14517,20 +14519,27 @@ export const useUpsertCaptionTemplate = <TError = ErrorType<unknown>,
       return useMutation(getUpsertCaptionTemplateMutationOptions(options));
     }
 
-export const getListSocialDraftsUrl = () => {
+export const getListSocialDraftsUrl = (params?: ListSocialDraftsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/social-drafts`
+  return stringifiedParams.length > 0 ? `/api/social-drafts?${stringifiedParams}` : `/api/social-drafts`
 }
 
 /**
- * @summary List queued social card drafts (pending + reviewed history)
+ * @summary List queued social card drafts, newest first, optionally filtered
  */
-export const listSocialDrafts = async ( options?: RequestInit): Promise<SocialDraft[]> => {
+export const listSocialDrafts = async (params?: ListSocialDraftsParams, options?: RequestInit): Promise<SocialDraft[]> => {
 
-  return customFetch<SocialDraft[]>(getListSocialDraftsUrl(),
+  return customFetch<SocialDraft[]>(getListSocialDraftsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -14543,23 +14552,23 @@ export const listSocialDrafts = async ( options?: RequestInit): Promise<SocialDr
 
 
 
-export const getListSocialDraftsQueryKey = () => {
+export const getListSocialDraftsQueryKey = (params?: ListSocialDraftsParams,) => {
     return [
-    `/api/social-drafts`
+    `/api/social-drafts`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListSocialDraftsQueryOptions = <TData = Awaited<ReturnType<typeof listSocialDrafts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSocialDrafts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListSocialDraftsQueryOptions = <TData = Awaited<ReturnType<typeof listSocialDrafts>>, TError = ErrorType<unknown>>(params?: ListSocialDraftsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSocialDrafts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListSocialDraftsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListSocialDraftsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSocialDrafts>>> = ({ signal }) => listSocialDrafts({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSocialDrafts>>> = ({ signal }) => listSocialDrafts(params, { signal, ...requestOptions });
 
 
 
@@ -14573,15 +14582,15 @@ export type ListSocialDraftsQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List queued social card drafts (pending + reviewed history)
+ * @summary List queued social card drafts, newest first, optionally filtered
  */
 
 export function useListSocialDrafts<TData = Awaited<ReturnType<typeof listSocialDrafts>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSocialDrafts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListSocialDraftsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSocialDrafts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListSocialDraftsQueryOptions(options)
+  const queryOptions = getListSocialDraftsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -14603,7 +14612,7 @@ export const getGetPendingSocialDraftCountUrl = () => {
 }
 
 /**
- * @summary Count of social card drafts still awaiting review (status = pending)
+ * @summary Count of social card drafts still awaiting review
  */
 export const getPendingSocialDraftCount = async ( options?: RequestInit): Promise<PendingDraftCount> => {
 
@@ -14650,7 +14659,7 @@ export type GetPendingSocialDraftCountQueryError = ErrorType<unknown>
 
 
 /**
- * @summary Count of social card drafts still awaiting review (status = pending)
+ * @summary Count of social card drafts still awaiting review
  */
 
 export function useGetPendingSocialDraftCount<TData = Awaited<ReturnType<typeof getPendingSocialDraftCount>>, TError = ErrorType<unknown>>(
@@ -14679,6 +14688,9 @@ export const getApproveSocialDraftUrl = (id: number,) => {
   return `/api/social-drafts/${id}/approve`
 }
 
+/**
+ * @summary Mark a draft ready to post (mints its tracked link)
+ */
 export const approveSocialDraft = async (id: number, options?: RequestInit): Promise<SocialDraft> => {
 
   return customFetch<SocialDraft>(getApproveSocialDraftUrl(id),
@@ -14693,7 +14705,7 @@ export const approveSocialDraft = async (id: number, options?: RequestInit): Pro
 
 
 
-export const getApproveSocialDraftMutationOptions = <TError = ErrorType<unknown>,
+export const getApproveSocialDraftMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveSocialDraft>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof approveSocialDraft>>, TError,{id: number}, TContext> => {
 
@@ -14722,9 +14734,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type ApproveSocialDraftMutationResult = NonNullable<Awaited<ReturnType<typeof approveSocialDraft>>>
 
-    export type ApproveSocialDraftMutationError = ErrorType<unknown>
+    export type ApproveSocialDraftMutationError = ErrorType<void>
 
-    export const useApproveSocialDraft = <TError = ErrorType<unknown>,
+    /**
+ * @summary Mark a draft ready to post (mints its tracked link)
+ */
+export const useApproveSocialDraft = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveSocialDraft>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof approveSocialDraft>>,
@@ -14733,6 +14748,295 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getApproveSocialDraftMutationOptions(options));
+    }
+
+export const getSendBackSocialDraftUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/send-back`
+}
+
+/**
+ * @summary Return a ready draft to review and stop its auto-promotion
+ */
+export const sendBackSocialDraft = async (id: number, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getSendBackSocialDraftUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSendBackSocialDraftMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendBackSocialDraft>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendBackSocialDraft>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['sendBackSocialDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendBackSocialDraft>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  sendBackSocialDraft(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendBackSocialDraftMutationResult = NonNullable<Awaited<ReturnType<typeof sendBackSocialDraft>>>
+
+    export type SendBackSocialDraftMutationError = ErrorType<void>
+
+    /**
+ * @summary Return a ready draft to review and stop its auto-promotion
+ */
+export const useSendBackSocialDraft = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendBackSocialDraft>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendBackSocialDraft>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getSendBackSocialDraftMutationOptions(options));
+    }
+
+export const getReopenSocialDraftUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/reopen`
+}
+
+/**
+ * @summary Bring a dismissed draft back to review
+ */
+export const reopenSocialDraft = async (id: number, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getReopenSocialDraftUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getReopenSocialDraftMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reopenSocialDraft>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reopenSocialDraft>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['reopenSocialDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reopenSocialDraft>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  reopenSocialDraft(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReopenSocialDraftMutationResult = NonNullable<Awaited<ReturnType<typeof reopenSocialDraft>>>
+
+    export type ReopenSocialDraftMutationError = ErrorType<void>
+
+    /**
+ * @summary Bring a dismissed draft back to review
+ */
+export const useReopenSocialDraft = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reopenSocialDraft>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reopenSocialDraft>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getReopenSocialDraftMutationOptions(options));
+    }
+
+export const getListSocialDraftRevisionsUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/revisions`
+}
+
+/**
+ * @summary Previous versions of a draft, newest first
+ */
+export const listSocialDraftRevisions = async (id: number, options?: RequestInit): Promise<SocialDraftRevision[]> => {
+
+  return customFetch<SocialDraftRevision[]>(getListSocialDraftRevisionsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSocialDraftRevisionsQueryKey = (id: number,) => {
+    return [
+    `/api/social-drafts/${id}/revisions`
+    ] as const;
+    }
+
+
+export const getListSocialDraftRevisionsQueryOptions = <TData = Awaited<ReturnType<typeof listSocialDraftRevisions>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSocialDraftRevisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSocialDraftRevisionsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSocialDraftRevisions>>> = ({ signal }) => listSocialDraftRevisions(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSocialDraftRevisions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSocialDraftRevisionsQueryResult = NonNullable<Awaited<ReturnType<typeof listSocialDraftRevisions>>>
+export type ListSocialDraftRevisionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Previous versions of a draft, newest first
+ */
+
+export function useListSocialDraftRevisions<TData = Awaited<ReturnType<typeof listSocialDraftRevisions>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSocialDraftRevisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSocialDraftRevisionsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRevertSocialDraftUrl = (id: number,
+    revisionId: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/revisions/${revisionId}/revert`
+}
+
+/**
+ * @summary Restore a previous version of a draft (the current version is kept as a revision)
+ */
+export const revertSocialDraft = async (id: number,
+    revisionId: number, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getRevertSocialDraftUrl(id,revisionId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRevertSocialDraftMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revertSocialDraft>>, TError,{id: number;revisionId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revertSocialDraft>>, TError,{id: number;revisionId: number}, TContext> => {
+
+const mutationKey = ['revertSocialDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revertSocialDraft>>, {id: number;revisionId: number}> = (props) => {
+          const {id,revisionId} = props ?? {};
+
+          return  revertSocialDraft(id,revisionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevertSocialDraftMutationResult = NonNullable<Awaited<ReturnType<typeof revertSocialDraft>>>
+
+    export type RevertSocialDraftMutationError = ErrorType<void>
+
+    /**
+ * @summary Restore a previous version of a draft (the current version is kept as a revision)
+ */
+export const useRevertSocialDraft = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revertSocialDraft>>, TError,{id: number;revisionId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revertSocialDraft>>,
+        TError,
+        {id: number;revisionId: number},
+        TContext
+      > => {
+      return useMutation(getRevertSocialDraftMutationOptions(options));
     }
 
 export const getMarkSocialDraftPostedUrl = (id: number,) => {
@@ -14744,7 +15048,7 @@ export const getMarkSocialDraftPostedUrl = (id: number,) => {
 }
 
 /**
- * @summary Mark an approved draft as posted
+ * @summary Mark a draft as posted
  */
 export const markSocialDraftPosted = async (id: number, options?: RequestInit): Promise<SocialDraft> => {
 
@@ -14792,7 +15096,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type MarkSocialDraftPostedMutationError = ErrorType<void>
 
     /**
- * @summary Mark an approved draft as posted
+ * @summary Mark a draft as posted
  */
 export const useMarkSocialDraftPosted = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markSocialDraftPosted>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}

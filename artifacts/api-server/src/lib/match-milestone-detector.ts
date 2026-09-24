@@ -347,7 +347,7 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
     await db.insert(socialDraftsTable).values({
       tenantId,
       engine: "milestone",
-      status: "pending",
+      status: "awaiting_review",
       cardInput: d.cardInput,
       appPath: `/players/${d.playerId}`,
       milestoneEventId: event.id,

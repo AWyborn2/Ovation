@@ -4030,7 +4030,20 @@ paths:
     get:
       operationId: listSocialDrafts
       tags: [socialCards]
-      summary: List queued social card drafts (pending + reviewed history)
+      summary: List queued social card drafts, newest first, optionally filtered
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/SocialDraftStatus" }
+        - name: family
+          in: query
+          required: false
+          schema: { type: string }
+        - name: grade
+          in: query
+          required: false
+          schema: { type: string }
       responses:
         "200":
           description: Drafts grouped by status
@@ -4045,7 +4058,7 @@ paths:
     get:
       operationId: getPendingSocialDraftCount
       tags: [socialCards]
-      summary: Count of social card drafts still awaiting review (status = pending)
+      summary: Count of social card drafts still awaiting review
       responses:
         "200":
           description: Pending draft count
@@ -4063,19 +4076,114 @@ paths:
           in: path
           required: true
           schema: { type: integer }
+      summary: Mark a draft ready to post (mints its tracked link)
       responses:
         "200":
-          description: Approved draft with tracked link slug
+          description: The draft, now ready, with its tracked link slug
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SocialDraft"
+        "404":
+          description: Not found
+        "409":
+          description: The draft is posted or dismissed
+
+  /social-drafts/{id}/send-back:
+    post:
+      operationId: sendBackSocialDraft
+      tags: [socialCards]
+      summary: Return a ready draft to review and stop its auto-promotion
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: The draft, now awaiting review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialDraft"
+        "404":
+          description: Not found
+        "409":
+          description: The draft is not ready
+
+  /social-drafts/{id}/reopen:
+    post:
+      operationId: reopenSocialDraft
+      tags: [socialCards]
+      summary: Bring a dismissed draft back to review
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: The draft, now awaiting review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialDraft"
+        "404":
+          description: Not found
+        "409":
+          description: The draft is not dismissed, or a newer draft holds the same event
+
+  /social-drafts/{id}/revisions:
+    get:
+      operationId: listSocialDraftRevisions
+      tags: [socialCards]
+      summary: Previous versions of a draft, newest first
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Revisions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SocialDraftRevision"
+        "404":
+          description: Not found
+
+  /social-drafts/{id}/revisions/{revisionId}/revert:
+    post:
+      operationId: revertSocialDraft
+      tags: [socialCards]
+      summary: Restore a previous version of a draft (the current version is kept as a revision)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: revisionId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: The restored draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialDraft"
+        "404":
+          description: Not found
 
   /social-drafts/{id}/posted:
     post:
       operationId: markSocialDraftPosted
       tags: [socialCards]
-      summary: Mark an approved draft as posted
+      summary: Mark a draft as posted
       parameters:
         - name: id
           in: path
@@ -12035,7 +12143,7 @@ components:
       properties:
         id: { type: integer }
         engine: { type: string }
-        status: { type: string, enum: [pending, approved, dismissed] }
+        status: { $ref: "#/components/schemas/SocialDraftStatus" }
         cardInput: {}
         appPath: { type: string }
         trackedSlug: { type: ["string", "null"] }
@@ -12054,6 +12162,38 @@ components:
           description: "Whether the source match is a junior match"
         createdAt: { type: string, format: date-time }
         reviewedAt: { type: ["string", "null"], format: date-time }
+        family: { type: ["string", "null"] }
+        sourceKey: { type: ["string", "null"] }
+        sourceImportedAt: { type: ["string", "null"], format: date-time }
+        autoReadyAt: { type: ["string", "null"], format: date-time }
+        packId: { type: ["string", "null"] }
+        caption: { type: ["string", "null"] }
+        photoUrl: { type: ["string", "null"] }
+        photoSource: { type: ["string", "null"] }
+        adjustments: {}
+        editedAt: { type: ["string", "null"], format: date-time }
+        staleSince:
+          type: ["string", "null"]
+          format: date-time
+          description: "Set when a posted draft's source data changed after it was shared"
+
+    SocialDraftStatus:
+      type: string
+      enum: [awaiting_review, ready, posted, dismissed]
+
+    SocialDraftRevision:
+      type: object
+      required: [id, draftId, cardInput, reason, createdAt]
+      properties:
+        id: { type: integer }
+        draftId: { type: integer }
+        cardInput: {}
+        caption: { type: ["string", "null"] }
+        photoUrl: { type: ["string", "null"] }
+        photoSource: { type: ["string", "null"] }
+        adjustments: {}
+        reason: { type: string, enum: [refresh, edit, revert] }
+        createdAt: { type: string, format: date-time }
 
     PendingDraftCount:
       type: object

@@ -40,8 +40,15 @@
     {
       "idx": 5,
       "version": "7",
-      "when": 1790214068273,
+      "when": 1790218440821,
       "tag": "0005_premierships_central_seed",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790212807139,
+      "tag": "0006_social_drafts_v2",
       "breakpoints": true
     }
   ]

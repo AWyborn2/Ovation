@@ -146,7 +146,7 @@ const insertCard = async (
 ): Promise<SocialDraft> => {
   const [row] = await db
     .insert(socialDraftsTable)
-    .values({ tenantId, engine, status: "pending", cardInput, appPath, sourceImportId })
+    .values({ tenantId, engine, status: "awaiting_review", cardInput, appPath, sourceImportId })
     .returning();
   return row;
 };

@@ -27,7 +27,7 @@ import { CardGridSkeleton, ListSkeleton, EmptyState, QueryError } from "@/compon
 import { Loader2, Check, X, ExternalLink, Copy } from "lucide-react";
 import type { ShareCardInput } from "@/lib/share-card";
 
-type DraftStatus = "pending" | "approved" | "posted" | "dismissed";
+type DraftStatus = "awaiting_review" | "ready" | "posted" | "dismissed";
 
 type EngineFilter = "all" | Exclude<EngineKey, "ondemand">;
 
@@ -41,7 +41,7 @@ const ENGINE_FILTER_OPTIONS: { value: EngineFilter; label: string }[] = [
 
 export default function AdminSocialQueue() {
   const qc = useQueryClient();
-  const draftsQ = useListSocialDrafts({
+  const draftsQ = useListSocialDrafts(undefined, {
     query: { queryKey: getListSocialDraftsQueryKey() },
   });
   const linksQ = useListTrackedLinks({
@@ -100,7 +100,7 @@ export default function AdminSocialQueue() {
   // draft and its linked milestone event as posted.
   const startApproval = async (d: SocialDraft) => {
     let draft = d;
-    if (d.status === "pending" && !d.trackedSlug) {
+    if (d.status === "awaiting_review" && !d.trackedSlug) {
       try {
         draft = (await approveM.mutateAsync({ id: d.id })) as SocialDraft;
       } catch {
@@ -119,14 +119,14 @@ export default function AdminSocialQueue() {
   const drafts = (draftsQ.data ?? []) as SocialDraft[];
   const byStatus = useMemo(() => {
     const groups: Record<DraftStatus, SocialDraft[]> = {
-      pending: [],
-      approved: [],
+      awaiting_review: [],
+      ready: [],
       posted: [],
       dismissed: [],
     };
     for (const d of drafts) {
       if (engineFilter !== "all" && d.engine !== engineFilter) continue;
-      const key = (d.status as DraftStatus) ?? "pending";
+      const key = (d.status as DraftStatus) ?? "awaiting_review";
       (groups[key] ??= []).push(d);
     }
     return groups;
@@ -221,7 +221,7 @@ export default function AdminSocialQueue() {
                   >
                     Preview & download
                   </Button>
-                  {d.status === "pending" && (
+                  {d.status === "awaiting_review" && (
                     <>
                       <Button
                         type="button"
@@ -247,7 +247,7 @@ export default function AdminSocialQueue() {
                       </Button>
                     </>
                   )}
-                  {d.status === "approved" && (
+                  {d.status === "ready" && (
                     <Button
                       type="button"
                       size="sm"
@@ -337,19 +337,21 @@ export default function AdminSocialQueue() {
         </select>
       </div>
 
-      <Tabs defaultValue="pending">
+      <Tabs defaultValue="awaiting_review">
         <TabsList>
-          <TabsTrigger value="pending">Pending ({byStatus.pending.length})</TabsTrigger>
-          <TabsTrigger value="approved">Approved ({byStatus.approved.length})</TabsTrigger>
+          <TabsTrigger value="awaiting_review">
+            Awaiting review ({byStatus.awaiting_review.length})
+          </TabsTrigger>
+          <TabsTrigger value="ready">Ready ({byStatus.ready.length})</TabsTrigger>
           <TabsTrigger value="posted">Posted ({byStatus.posted.length})</TabsTrigger>
           <TabsTrigger value="dismissed">Dismissed ({byStatus.dismissed.length})</TabsTrigger>
           <TabsTrigger value="links">Tracked links</TabsTrigger>
         </TabsList>
-        <TabsContent value="pending" className="mt-4">
-          {renderList(byStatus.pending)}
+        <TabsContent value="awaiting_review" className="mt-4">
+          {renderList(byStatus.awaiting_review)}
         </TabsContent>
-        <TabsContent value="approved" className="mt-4">
-          {renderList(byStatus.approved)}
+        <TabsContent value="ready" className="mt-4">
+          {renderList(byStatus.ready)}
         </TabsContent>
         <TabsContent value="posted" className="mt-4">
           {renderList(byStatus.posted)}

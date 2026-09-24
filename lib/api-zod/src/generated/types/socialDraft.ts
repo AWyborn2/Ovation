@@ -28,4 +28,28 @@ export interface SocialDraft {
   createdAt: Date;
   /** @nullable */
   reviewedAt?: Date | null;
+  /** @nullable */
+  family?: string | null;
+  /** @nullable */
+  sourceKey?: string | null;
+  /** @nullable */
+  sourceImportedAt?: Date | null;
+  /** @nullable */
+  autoReadyAt?: Date | null;
+  /** @nullable */
+  packId?: string | null;
+  /** @nullable */
+  caption?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
+  /** @nullable */
+  photoSource?: string | null;
+  adjustments?: unknown;
+  /** @nullable */
+  editedAt?: Date | null;
+  /**
+     * Set when a posted draft's source data changed after it was shared
+     * @nullable
+     */
+  staleSince?: Date | null;
 }

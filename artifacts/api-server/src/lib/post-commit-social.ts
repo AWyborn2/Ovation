@@ -122,7 +122,7 @@ async function queueCareerCrossings(
     await db.insert(socialDraftsTable).values({
       tenantId,
       engine: "milestone",
-      status: "pending",
+      status: "awaiting_review",
       cardInput: {
         kind: "milestone",
         playerName: name,

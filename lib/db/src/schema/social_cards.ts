@@ -504,7 +504,11 @@ export const socialDraftsTable = pgTable(
     id: serial("id").primaryKey(),
     tenantId: tenantIdColumn(),
     engine: text("engine").notNull(), // "ondemand" | "milestone" | "roundup" | "recap" | "matchSummary"
-    status: text("status").notNull().default("pending"), // "pending" | "approved" | "dismissed"
+    // "awaiting_review" | "ready" | "posted" | "dismissed". The legacy values
+    // "pending" (= awaiting_review) and "approved" (= ready) stay valid until
+    // the contract migration, so a build from before the rename keeps working
+    // while prod is migrated ahead of publishing. Read through normalizeDraftStatus.
+    status: text("status").notNull().default("pending"),
     cardInput: jsonb("card_input").notNull(), // ShareCardInput JSON
     appPath: text("app_path").notNull().default(""),
     trackedSlug: text("tracked_slug"), // populated when approved
@@ -515,6 +519,25 @@ export const socialDraftsTable = pgTable(
     sourceMatchIsJunior: boolean("source_match_is_junior").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    // Card family ("results" | "achievements" | "roundup" | "matchday" | "trading");
+    // null for drafts created before families existed.
+    family: text("family"),
+    // Deterministic event identity per engine; one undismissed draft per key.
+    sourceKey: text("source_key"),
+    // When the import that produced this draft landed (posting-window anchor).
+    sourceImportedAt: timestamp("source_imported_at", { withTimezone: true }),
+    // When auto-post may promote this draft to ready. Null = never (ad-hoc,
+    // pre-migration drafts, or after A1 sends it back / reopens / edits it).
+    autoReadyAt: timestamp("auto_ready_at", { withTimezone: true }),
+    packId: text("pack_id"),
+    caption: text("caption"),
+    photoUrl: text("photo_url"),
+    // How photoUrl was chosen: "library" | "headshot" | "team" | "manual" | "none".
+    photoSource: text("photo_source"),
+    adjustments: jsonb("adjustments"), // editor overlay (per-format geometry + shared edits)
+    editedAt: timestamp("edited_at", { withTimezone: true }),
+    // Set when a posted draft's source data changed after it was shared.
+    staleSince: timestamp("stale_since", { withTimezone: true }),
   },
   (t) => ({
     // Partial unique index for match summary dedupe. Only enforced when
@@ -523,14 +546,46 @@ export const socialDraftsTable = pgTable(
     matchDedupe: uniqueIndex("social_drafts_match_dedupe")
       .on(t.tenantId, t.sourceKind, t.sourceMatchId, t.sourceMatchIsJunior)
       .where(sql`source_kind = 'matchSummary' AND status != 'dismissed'`),
+    sourceKeyDedupe: uniqueIndex("social_drafts_source_key_dedupe")
+      .on(t.tenantId, t.sourceKey)
+      .where(sql`source_key IS NOT NULL AND status != 'dismissed'`),
     chkStatus: check(
       "social_drafts_status_check",
-      sql`"status" IN ('pending', 'approved', 'dismissed', 'posted')`,
+      sql`"status" IN ('pending', 'approved', 'awaiting_review', 'ready', 'dismissed', 'posted')`,
     ),
   }),
 );
 
 export type SocialDraftRow = typeof socialDraftsTable.$inferSelect;
+
+// Prior versions of a draft's content, written before every refresh, edit and
+// revert so any of them can be restored. Capped per draft in the API.
+export const socialDraftRevisionsTable = pgTable(
+  "social_draft_revisions",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    draftId: integer("draft_id")
+      .notNull()
+      .references(() => socialDraftsTable.id, { onDelete: "cascade" }),
+    cardInput: jsonb("card_input").notNull(),
+    caption: text("caption"),
+    photoUrl: text("photo_url"),
+    photoSource: text("photo_source"),
+    adjustments: jsonb("adjustments"),
+    reason: text("reason").notNull(), // "refresh" | "edit" | "revert"
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    idxDraft: index("social_draft_revisions_draft_idx").on(t.draftId, t.createdAt),
+    chkReason: check(
+      "social_draft_revisions_reason_check",
+      sql`"reason" IN ('refresh', 'edit', 'revert')`,
+    ),
+  }),
+);
+
+export type SocialDraftRevisionRow = typeof socialDraftRevisionsTable.$inferSelect;
 
 // Short links for tracking which cards drive traffic. /go/:slug → targetUrl + log click.
 export const trackedLinksTable = pgTable(
