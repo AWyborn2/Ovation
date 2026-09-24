@@ -19,7 +19,7 @@ import { objectUrl, photoStore } from "../lib/photo-store";
  */
 const router: IRouter = Router();
 
-export type CardSize = "square" | "portrait" | "story";
+export type CardSize = "square" | "portrait" | "story" | "landscape";
 
 type StillRenderer = (
   input: unknown,
@@ -78,6 +78,7 @@ router.post(
       ...(settings.sizeSquare ? (["square"] as const) : []),
       ...(settings.sizePortrait ? (["portrait"] as const) : []),
       ...(settings.sizeStory ? (["story"] as const) : []),
+      ...(settings.sizeLandscape ? (["landscape"] as const) : []),
     ];
     if (sizes.length === 0) sizes.push("square");
 

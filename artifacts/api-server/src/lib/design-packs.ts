@@ -58,6 +58,14 @@ const STANDARD_PACK_VARIANTS: DesignPackVariant[] = [
     motionPreset: "none",
     backgroundKind: "image",
   },
+  {
+    key: "landscape",
+    label: "Landscape (1200×630)",
+    width: 1200,
+    height: 630,
+    motionPreset: "none",
+    backgroundKind: "image",
+  },
 ];
 
 export const PACKS: DesignPack[] = [
@@ -114,6 +122,14 @@ export const PACKS: DesignPack[] = [
         label: "Story (1080×1920)",
         width: 1080,
         height: 1920,
+        motionPreset: "none",
+        backgroundKind: "image",
+      },
+      {
+        key: "landscape",
+        label: "Landscape (1200×630)",
+        width: 1200,
+        height: 630,
         motionPreset: "none",
         backgroundKind: "image",
       },
@@ -207,32 +223,7 @@ export const PACKS: DesignPack[] = [
       "fiveFor",
       "bigMoment",
     ],
-    variants: [
-      {
-        key: "square",
-        label: "Square (1080×1080)",
-        width: 1080,
-        height: 1080,
-        motionPreset: "none",
-        backgroundKind: "image",
-      },
-      {
-        key: "portrait",
-        label: "Portrait (1080×1350)",
-        width: 1080,
-        height: 1350,
-        motionPreset: "none",
-        backgroundKind: "image",
-      },
-      {
-        key: "story",
-        label: "Story (1080×1920)",
-        width: 1080,
-        height: 1920,
-        motionPreset: "none",
-        backgroundKind: "image",
-      },
-    ],
+    variants: STANDARD_PACK_VARIANTS,
   },
   {
     id: "sunset-v1",

@@ -179,14 +179,17 @@ const NATIVE: Record<CardSize, { w: number; h: number }> = {
   square: { w: 1080, h: 1080 },
   portrait: { w: 1080, h: 1350 },
   story: { w: 1080, h: 1920 },
+  landscape: { w: 1200, h: 630 },
 };
 
 // The shared (non-story) layouts flex via `--k`; portrait is taller so it gets
 // more generous type than the square. Story uses its own dedicated layout.
+// Landscape is short, so a dedicated landscape layout runs tighter type.
 const SHARED_K: Record<CardSize, number> = {
   square: 1.0,
   portrait: 1.4,
   story: 1.4,
+  landscape: 0.7,
 };
 
 // ---------------------------------------------------------------------------

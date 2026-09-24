@@ -126,8 +126,21 @@ export function resolveTemplate(
   return (match ?? designs[0]).template;
 }
 
-/** Select the format html for a size. A1 has three; every other card has two. */
+/** Whether a design has its own landscape layout (otherwise it is letterboxed). */
+export function hasLandscapeFormat(formats: PackTemplateFormats): boolean {
+  return typeof formats.landscape === "string" && formats.landscape.length > 0;
+}
+
+/**
+ * Select the format html for a size. A1 has three; every other card has two.
+ * Landscape returns the design's own landscape markup, or — as the fallback
+ * the renderer letterboxes — its square layout.
+ */
 export function selectFormatHtml(formats: PackTemplateFormats, size: CardSize): string {
+  if (size === "landscape") {
+    if (hasLandscapeFormat(formats)) return formats.landscape!;
+    return "portrait" in formats ? formats.square : formats.shared;
+  }
   if ("portrait" in formats) {
     // Match Result — three distinct layouts.
     if (size === "portrait") return formats.portrait;

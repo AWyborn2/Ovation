@@ -7,8 +7,8 @@
 import { getPackManifest } from "../pack-templates/registry";
 import type { ShareCardInput, CardSize } from "../share-card";
 import type { PackCardData, PackTokens } from "./types";
-import { fieldDefaults, resolveTemplate, selectFormatHtml } from "./templates";
-import { rootStyle } from "./tokens";
+import { fieldDefaults, hasLandscapeFormat, resolveTemplate, selectFormatHtml } from "./templates";
+import { packNativeSize, rootStyle, stageInk } from "./tokens";
 import { applyPackData, bindInput } from "./bind";
 import {
   cleanupEmptyRoles,
@@ -42,6 +42,13 @@ export function renderPackCard(
 ): string {
   const template = resolveTemplate(input, packId);
   if (!template) return "";
+
+  // Landscape without a dedicated layout: the square card, scaled to the
+  // frame's height and centred on the pack's stage colour (KTD11).
+  if (size === "landscape" && !hasLandscapeFormat(template.formats)) {
+    const square = renderPackCard(input, "square", sponsorsOn, tokens, junior, data, packId);
+    return letterboxLandscape(square, tokens, packId);
+  }
 
   const bound = bindInput(input);
   // Overlay tenant data (logo, name, hashtags, sponsors, photo) onto the bound
@@ -88,4 +95,34 @@ export function renderPackCard(
   html = cleanupEmptyRoles(html);
 
   return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest(packId).inkTint)}">${html}</div>`;
+}
+
+/** Wrap a rendered square card in a 1200×630 frame, scaled and centred. */
+function letterboxLandscape(
+  squareHtml: string,
+  tokens: PackTokens,
+  packId?: string | null,
+): string {
+  const frame = packNativeSize("landscape");
+  const inner = packNativeSize("square");
+  const scale = frame.h / inner.h;
+  const left = Math.round((frame.w - inner.w * scale) / 2);
+  const ink = stageInk(tokens, getPackManifest(packId).inkTint);
+  const frameStyle = [
+    "position:relative",
+    `width:${frame.w}px`,
+    `height:${frame.h}px`,
+    "overflow:hidden",
+    `background:radial-gradient(circle at 50% 50%, ${tokens.panel} 0%, ${ink} 72%)`,
+  ].join(";");
+  const innerStyle = [
+    "position:absolute",
+    "top:0",
+    `left:${left}px`,
+    `width:${inner.w}px`,
+    `height:${inner.h}px`,
+    `transform:scale(${scale})`,
+    "transform-origin:top left",
+  ].join(";");
+  return `<div class="pack-card-root pack-landscape-fallback" style="${frameStyle}"><div style="${innerStyle}">${squareHtml}</div></div>`;
 }

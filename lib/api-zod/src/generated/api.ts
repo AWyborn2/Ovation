@@ -4479,7 +4479,7 @@ export const DeleteCardLayoutParams = zod.object({
 export const ListCardSetsResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape']),
   "slides": zod.array(zod.object({
   "id": zod.string(),
   "input": zod.record(zod.string(), zod.unknown()),
@@ -4551,7 +4551,7 @@ export const createCardSetBodySlidesMax = 10;
 
 export const CreateCardSetBody = zod.object({
   "name": zod.string().min(1).max(createCardSetBodyNameMax),
-  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape']),
   "slides": zod.array(zod.object({
   "id": zod.string(),
   "input": zod.record(zod.string(), zod.unknown()),
@@ -4616,13 +4616,13 @@ export const GenerateCardSetBody = zod.object({
   "round": zod.number().optional(),
   "season": zod.number().optional(),
   "grades": zod.array(zod.string()).optional(),
-  "platformSize": zod.enum(['square', 'portrait', 'story'])
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape'])
 })
 
 export const GenerateCardSetResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape']),
   "slides": zod.array(zod.object({
   "id": zod.string(),
   "input": zod.record(zod.string(), zod.unknown()),
@@ -4693,14 +4693,14 @@ export const AutoseedCardSetBody = zod.object({
   "round": zod.number(),
   "grade": zod.string().optional(),
   "junior": zod.boolean().default(autoseedCardSetBodyJuniorDefault),
-  "platformSize": zod.enum(['square', 'portrait', 'story'])
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape'])
 })
 
 export const AutoseedCardSetResponse = zod.object({
   "generated": zod.array(zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape']),
   "slides": zod.array(zod.object({
   "id": zod.string(),
   "input": zod.record(zod.string(), zod.unknown()),
@@ -4777,7 +4777,7 @@ export const updateCardSetBodySlidesMax = 10;
 
 export const UpdateCardSetBody = zod.object({
   "name": zod.string().min(1).max(updateCardSetBodyNameMax),
-  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape']),
   "slides": zod.array(zod.object({
   "id": zod.string(),
   "input": zod.record(zod.string(), zod.unknown()),
@@ -4835,7 +4835,7 @@ export const UpdateCardSetBody = zod.object({
 export const UpdateCardSetResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "platformSize": zod.enum(['square', 'portrait', 'story']),
+  "platformSize": zod.enum(['square', 'portrait', 'story', 'landscape']),
   "slides": zod.array(zod.object({
   "id": zod.string(),
   "input": zod.record(zod.string(), zod.unknown()),
@@ -4920,6 +4920,7 @@ export const GetSocialSettingsResponse = zod.object({
   "sizeSquare": zod.boolean(),
   "sizePortrait": zod.boolean(),
   "sizeStory": zod.boolean(),
+  "sizeLandscape": zod.boolean().optional().describe('Landscape 1200×630 (link previews, X, Facebook). Default off.'),
   "sponsorsEnabled": zod.boolean(),
   "captionsEnabled": zod.boolean(),
   "clubHashtag": zod.string(),
@@ -4997,6 +4998,7 @@ export const UpdateSocialSettingsBody = zod.object({
   "sizeSquare": zod.boolean().optional(),
   "sizePortrait": zod.boolean().optional(),
   "sizeStory": zod.boolean().optional(),
+  "sizeLandscape": zod.boolean().optional().describe('Landscape 1200×630 (link previews, X, Facebook). Default off.'),
   "sponsorsEnabled": zod.boolean().optional(),
   "captionsEnabled": zod.boolean().optional(),
   "clubHashtag": zod.string().optional(),
@@ -5038,6 +5040,7 @@ export const UpdateSocialSettingsResponse = zod.object({
   "sizeSquare": zod.boolean(),
   "sizePortrait": zod.boolean(),
   "sizeStory": zod.boolean(),
+  "sizeLandscape": zod.boolean().optional().describe('Landscape 1200×630 (link previews, X, Facebook). Default off.'),
   "sponsorsEnabled": zod.boolean(),
   "captionsEnabled": zod.boolean(),
   "clubHashtag": zod.string(),
@@ -6705,7 +6708,7 @@ export const CreatePostPackParams = zod.object({
 
 export const CreatePostPackResponse = zod.object({
   "images": zod.array(zod.object({
-  "size": zod.enum(['square', 'portrait', 'story']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
   "url": zod.string()
 })),
   "caption": zod.string(),

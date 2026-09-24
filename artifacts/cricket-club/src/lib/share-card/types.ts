@@ -8,6 +8,8 @@ export const SIZES = {
   square: { w: 1080, h: 1080, label: "Feed square", code: "1080x1080" },
   portrait: { w: 1080, h: 1350, label: "Feed portrait", code: "1080x1350" },
   story: { w: 1080, h: 1920, label: "Story / TikTok", code: "1080x1920" },
+  // Link previews, X and Facebook shares (Social Studio KTD11).
+  landscape: { w: 1200, h: 630, label: "Landscape (links, X)", code: "1200x630" },
 } as const;
 
 export type CardSize = keyof typeof SIZES;

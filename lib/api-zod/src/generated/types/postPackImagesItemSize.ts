@@ -13,4 +13,5 @@ export const PostPackImagesItemSize = {
   square: 'square',
   portrait: 'portrait',
   story: 'story',
+  landscape: 'landscape',
 } as const;

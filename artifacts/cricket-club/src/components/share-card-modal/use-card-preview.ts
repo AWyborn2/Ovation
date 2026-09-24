@@ -40,6 +40,7 @@ export function useCardPreview({
     square: null,
     portrait: null,
     story: null,
+    landscape: null,
   });
   const [rendering, setRendering] = useState(false);
 
@@ -75,7 +76,7 @@ export function useCardPreview({
       Object.values(prev).forEach((url) => {
         if (url) URL.revokeObjectURL(url);
       });
-      return { square: null, portrait: null, story: null };
+      return { square: null, portrait: null, story: null, landscape: null };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, invalidateDeps);
@@ -87,7 +88,7 @@ export function useCardPreview({
         Object.values(prev).forEach((url) => {
           if (url) URL.revokeObjectURL(url);
         });
-        return { square: null, portrait: null, story: null };
+        return { square: null, portrait: null, story: null, landscape: null };
       });
     }
   }, [open]);
