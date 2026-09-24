@@ -220,8 +220,9 @@ router.get("/players/:id", async (req, res): Promise<void> => {
   }
 
   // Per-tenant data source: central tenants resolve the int id → GUID via
-  // player_id_map, then read that player's central per-grade career. Curated bits
-  // (premierships/awards) aren't central, so they come back empty.
+  // player_id_map, then read that player's central per-grade career. Awards
+  // aren't central, so they come back empty; premierships come from the
+  // tenant's own board, whose seeded team lists carry the participant GUID.
   const source = await dataSource(req);
   if (source.kind === "central") {
     const { centralPlayerDetail } = await import("@workspace/db/central-queries");
@@ -236,7 +237,33 @@ router.get("/players/:id", async (req, res): Promise<void> => {
       res.status(404).json({ error: "Player not found" });
       return;
     }
-    const detail = await centralPlayerDetail(source.clubId, mapRow.participantId);
+    const [detail, premRows] = await Promise.all([
+      centralPlayerDetail(source.clubId, mapRow.participantId),
+      db
+        .select({
+          id: premiershipsTable.id,
+          year: premiershipsTable.year,
+          grade: premiershipsTable.grade,
+          competition: premiershipsTable.competition,
+          venue: premiershipsTable.venue,
+          matchDate: premiershipsTable.matchDate,
+          result: premiershipsTable.result,
+          mom: premiershipsTable.mom,
+          isCaptain: premiershipPlayersTable.isCaptain,
+        })
+        .from(premiershipPlayersTable)
+        .innerJoin(
+          premiershipsTable,
+          eq(premiershipsTable.id, premiershipPlayersTable.premiershipId),
+        )
+        .where(
+          and(
+            eq(premiershipsTable.tenantId, tenantId),
+            eq(premiershipPlayersTable.participantId, mapRow.participantId),
+          ),
+        )
+        .orderBy(desc(premiershipsTable.year), asc(premiershipsTable.grade)),
+    ]);
     if (!detail || detail.isPrivate) {
       res.status(404).json({ error: "Player not found" });
       return;
@@ -259,8 +286,8 @@ router.get("/players/:id", async (req, res): Promise<void> => {
       cardRating: null,
       isFillIn: false,
       isCapOnly: false,
-      premiershipsWon: 0,
-      premiershipsCaptained: 0,
+      premiershipsWon: premRows.length,
+      premiershipsCaptained: premRows.filter((p) => p.isCaptain).length,
       debutSeason: null,
       seasonsPlayed: null,
       stats: detail.stats.map((s) => ({
@@ -269,7 +296,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
         surname: name.surname,
         givenName: name.givenName,
       })),
-      premierships: [],
+      premierships: premRows,
       awards: [],
     });
     return;
