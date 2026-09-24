@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   useGetMatchDisplaySettings,
   useUpdateMatchDisplaySettings,
@@ -8,7 +8,6 @@ import {
   type MatchDisplaySettingsUpdate,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { sortGradesBySeniority } from "@/components/grade-badge";
@@ -17,11 +16,11 @@ import {
   DefaultSelect,
   OrderList,
   RadioCards,
-  SaveSettingsButton,
   SettingsSection,
   mergeOrder,
   moveItem,
 } from "@/components/display-settings";
+import { SaveBar, SettingsCard, SettingsRow } from "@/components/admin-ui";
 
 type SeasonMode = MatchDisplaySettings["defaultSeasonMode"];
 type RoundOrder = MatchDisplaySettings["roundOrder"];
@@ -68,7 +67,7 @@ export default function AdminMatchDisplay() {
       ) : settingsQ.isLoading ? (
         <LoadingState label="Loading match display settings…" />
       ) : settingsQ.data ? (
-        <SettingsCard
+        <MatchDisplayForm
           settings={settingsQ.data}
           allGrades={allGrades}
           onSaved={() => qc.invalidateQueries({ queryKey: getGetMatchDisplaySettingsQueryKey() })}
@@ -80,7 +79,7 @@ export default function AdminMatchDisplay() {
   );
 }
 
-function SettingsCard({
+function MatchDisplayForm({
   settings,
   allGrades,
   onSaved,
@@ -89,15 +88,22 @@ function SettingsCard({
   allGrades: string[];
   onSaved: () => void;
 }) {
-  const [defaultGrade, setDefaultGrade] = useState(settings.defaultGrade);
-  const [seasonMode, setSeasonMode] = useState<SeasonMode>(settings.defaultSeasonMode);
-  const [specificSeason, setSpecificSeason] = useState(
-    settings.defaultSeason != null ? String(settings.defaultSeason) : "",
+  // The loaded values; Reset returns to them and the save bar compares against them.
+  const seeded = useMemo(
+    () => ({
+      defaultGrade: settings.defaultGrade,
+      seasonMode: settings.defaultSeasonMode,
+      specificSeason: settings.defaultSeason != null ? String(settings.defaultSeason) : "",
+      roundOrder: settings.roundOrder,
+      gradeOrder: mergeOrder(settings.gradeOrder, allGrades),
+    }),
+    [settings, allGrades],
   );
-  const [roundOrder, setRoundOrder] = useState<RoundOrder>(settings.roundOrder);
-  const [gradeOrder, setGradeOrder] = useState<string[]>(
-    mergeOrder(settings.gradeOrder, allGrades),
-  );
+  const [defaultGrade, setDefaultGrade] = useState(seeded.defaultGrade);
+  const [seasonMode, setSeasonMode] = useState<SeasonMode>(seeded.seasonMode);
+  const [specificSeason, setSpecificSeason] = useState(seeded.specificSeason);
+  const [roundOrder, setRoundOrder] = useState<RoundOrder>(seeded.roundOrder);
+  const [gradeOrder, setGradeOrder] = useState<string[]>(seeded.gradeOrder);
   const [error, setError] = useState<string | null>(null);
 
   const update = useUpdateMatchDisplaySettings({
@@ -110,13 +116,19 @@ function SettingsCard({
     },
   });
 
-  useEffect(() => {
-    setDefaultGrade(settings.defaultGrade);
-    setSeasonMode(settings.defaultSeasonMode);
-    setSpecificSeason(settings.defaultSeason != null ? String(settings.defaultSeason) : "");
-    setRoundOrder(settings.roundOrder);
-    setGradeOrder(mergeOrder(settings.gradeOrder, allGrades));
-  }, [settings, allGrades]);
+  const reset = useCallback(() => {
+    setDefaultGrade(seeded.defaultGrade);
+    setSeasonMode(seeded.seasonMode);
+    setSpecificSeason(seeded.specificSeason);
+    setRoundOrder(seeded.roundOrder);
+    setGradeOrder(seeded.gradeOrder);
+    setError(null);
+  }, [seeded]);
+  useEffect(reset, [reset]);
+
+  const dirty =
+    JSON.stringify({ defaultGrade, seasonMode, specificSeason, roundOrder, gradeOrder }) !==
+    JSON.stringify(seeded);
 
   const move = (idx: number, dir: -1 | 1) => setGradeOrder((prev) => moveItem(prev, idx, dir));
 
@@ -144,14 +156,14 @@ function SettingsCard({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Default filters &amp; ordering</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-8">
-        <SettingsSection
-          title="Default grade"
-          description="The grade pre-selected when the Matches page first opens."
+    <>
+      <SettingsCard
+        title="Default filters"
+        description="What the Matches page shows when it first opens."
+      >
+        <SettingsRow
+          label="Default grade"
+          helper="The grade pre-selected when the Matches page first opens."
         >
           <DefaultSelect
             value={defaultGrade}
@@ -160,7 +172,7 @@ function SettingsCard({
             allLabel="All grades"
             testId="select-default-grade"
           />
-        </SettingsSection>
+        </SettingsRow>
 
         <SettingsSection
           title="Default season"
@@ -176,7 +188,7 @@ function SettingsCard({
             value={seasonMode}
             onChange={setSeasonMode}
             options={SEASON_MODES}
-            className="space-y-2"
+            className="max-w-md space-y-2"
             extra={(m) =>
               m.value === "specific" && seasonMode === "specific" ? (
                 <>
@@ -198,7 +210,9 @@ function SettingsCard({
             }
           />
         </SettingsSection>
+      </SettingsCard>
 
+      <SettingsCard title="Ordering" description="How grades and rounds are ordered.">
         <SettingsSection
           title="Grade menu order"
           description="The order grades appear in the grade dropdown on the Matches page."
@@ -224,13 +238,19 @@ function SettingsCard({
             value={roundOrder}
             onChange={setRoundOrder}
             options={ROUND_ORDERS}
-            className="space-y-2 max-w-md"
+            className="max-w-md space-y-2"
           />
         </SettingsSection>
+      </SettingsCard>
 
-        {error && <div className="text-sm text-destructive">{error}</div>}
-        <SaveSettingsButton onClick={save} pending={update.isPending} />
-      </CardContent>
-    </Card>
+      {error && <div className="text-sm text-destructive">{error}</div>}
+      <SaveBar
+        dirty={dirty}
+        saving={update.isPending}
+        onSave={save}
+        onReset={reset}
+        message={error ?? undefined}
+      />
+    </>
   );
 }
