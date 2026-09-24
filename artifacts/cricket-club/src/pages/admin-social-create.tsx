@@ -8,6 +8,7 @@ import { ShareCardModal } from "@/components/share-card-modal";
 import { PackCard } from "@/components/pack-card";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import { CreateHero } from "@/components/social-studio/create-hero";
+import { EditorStarters } from "@/components/social-studio/editor-starters";
 import {
   CardFormRouter,
   PrefillPanel,
@@ -238,6 +239,11 @@ export default function AdminSocialCreate() {
               </Button>
             </CardContent>
           </Card>
+          <EditorStarters
+            input={input}
+            packId={previewPackId}
+            inputFor={(k) => buildCardInput(k, seedState(k, brand), false)}
+          />
         </div>
       </div>
 

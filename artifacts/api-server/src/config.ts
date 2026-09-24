@@ -82,6 +82,15 @@ export const env = {
   RESEND_API_KEY: () => optional("RESEND_API_KEY"),
   /** Sender, e.g. "Ovation <studio@ovation.example>". Unset = email off. */
   EMAIL_FROM: () => optional("EMAIL_FROM"),
+
+  // ── Studio tools (U19) ───────────────────────────────────────────────────
+  /** Photoroom API key for background removal; unset = the tool is off (404). */
+  PHOTOROOM_API_KEY: () => optional("PHOTOROOM_API_KEY"),
+  /**
+   * Open-Meteo commercial API key. Unset = the free, non-commercial API (no
+   * key needed); set before Ovation charges clubs (KTD14 licence note).
+   */
+  OPEN_METEO_API_KEY: () => optional("OPEN_METEO_API_KEY"),
 } as const;
 
 const positiveInt = z.coerce.number().int().positive();

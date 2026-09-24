@@ -47,11 +47,34 @@ describe("toFixtureRow", () => {
       opponentClubId: 42,
       opponentLogoUrl: "https://crest/sbcc.png",
       venue: "Stan Twight Reserve",
+      venueLatitude: null,
+      venueLongitude: null,
       startAt: START,
       isHome: false,
       source: "playhq",
       playhqMatchId: base.id,
     });
+  });
+
+  it("carries the venue coordinates only when both are known", () => {
+    const withCoords = toFixtureRow(
+      { ...base, latitude: -32.54, longitude: 115.74 },
+      HH,
+      1,
+      orgs,
+      new Map(),
+      gradeOf,
+    );
+    expect(withCoords).toMatchObject({ venueLatitude: -32.54, venueLongitude: 115.74 });
+    const half = toFixtureRow(
+      { ...base, latitude: -32.54, longitude: null },
+      HH,
+      1,
+      orgs,
+      new Map(),
+      gradeOf,
+    );
+    expect(half).toMatchObject({ venueLatitude: null, venueLongitude: null });
   });
 
   it("marks a home match and falls back to the team name when the organisation is unknown", () => {

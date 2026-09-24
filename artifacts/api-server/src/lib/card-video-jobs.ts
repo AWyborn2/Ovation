@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { rm } from "node:fs/promises";
-import { renderCardVideo } from "./card-video-renderer";
+import { renderCardVideo, type VideoFormat } from "./card-video-renderer";
 import { logger } from "./logger";
 
 export type JobStatus = "queued" | "rendering" | "encoding" | "done" | "error";
@@ -15,6 +15,8 @@ export type CardVideoJob = {
   filename: string | null;
   sizeCode: string | null;
   filePath: string | null;
+  /** MIME type of the finished file (video/mp4 or image/gif). */
+  contentType: string;
   createdAt: number;
 };
 
@@ -41,7 +43,7 @@ function prune(): void {
 // Public view (no internal file path / tenant) — matches the OpenAPI CardVideoJob schema.
 export function publicJob(
   job: CardVideoJob,
-): Omit<CardVideoJob, "filePath" | "createdAt" | "tenantId"> {
+): Omit<CardVideoJob, "filePath" | "createdAt" | "tenantId" | "contentType"> {
   return {
     id: job.id,
     status: job.status,
@@ -61,6 +63,7 @@ function deriveMeta(
   input: unknown,
   options: unknown,
   filePrefix: string,
+  ext: VideoFormat = "mp4",
 ): { filename: string; sizeCode: string } {
   const opts = (options ?? {}) as { size?: string };
   const size = typeof opts.size === "string" ? opts.size : "square";
@@ -77,7 +80,7 @@ function deriveMeta(
   // The download name carries the tenant's own slug (e.g. "mandurah-junior-…"),
   // never the demo club's initials.
   const prefix = inp.junior ? `${filePrefix}-junior` : filePrefix;
-  return { filename: `${prefix}-${kind}-${sizeCode}.mp4`, sizeCode };
+  return { filename: `${prefix}-${kind}-${sizeCode}.${ext}`, sizeCode };
 }
 
 export function createJob(
@@ -88,10 +91,12 @@ export function createJob(
   harnessOrigin?: string | null,
   /** Tenant slug used as the download filename prefix; falls back to "ovation". */
   filePrefix: string = "ovation",
+  output: { format?: VideoFormat; scale?: number } = {},
 ): CardVideoJob {
   prune();
   const id = randomUUID();
-  const { filename, sizeCode } = deriveMeta(input, options, filePrefix);
+  const format = output.format ?? "mp4";
+  const { filename, sizeCode } = deriveMeta(input, options, filePrefix, format);
   const job: CardVideoJob = {
     id,
     tenantId,
@@ -101,6 +106,7 @@ export function createJob(
     filename,
     sizeCode,
     filePath: null,
+    contentType: format === "gif" ? "image/gif" : "video/mp4",
     createdAt: Date.now(),
   };
   jobs.set(id, job);
@@ -118,6 +124,8 @@ export function createJob(
           input,
           options,
           fps: fps ?? undefined,
+          format,
+          scale: output.scale,
           harnessOrigin,
           onProgress: (p) => {
             const j = jobs.get(id);

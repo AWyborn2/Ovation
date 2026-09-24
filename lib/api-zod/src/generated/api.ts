@@ -6669,6 +6669,62 @@ export const ListSocialDraftsResponse = zod.array(ListSocialDraftsResponseItem)
 
 
 /**
+ * Creates a draft that is awaiting review with no import time, so it never auto-promotes. With templateId, the template's pack and adjustments are applied to the given card input.
+ * @summary Start an ad-hoc card (made by hand, a blank canvas, or from a saved template)
+ */
+export const CreateSocialDraftBody = zod.object({
+  "cardInput": zod.record(zod.string(), zod.unknown()).describe('The card\'s ShareCardInput (validated by shape on the web).'),
+  "packId": zod.string().nullish().describe('Design pack; \'blank\' for a blank canvas.'),
+  "adjustments": zod.union([zod.object({
+  "fields": zod.record(zod.string(), zod.string()).optional(),
+  "hidden": zod.array(zod.string()).optional(),
+  "photo": zod.record(zod.string(), zod.unknown()).optional(),
+  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
+  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),zod.null()]).optional(),
+  "templateId": zod.number().optional().describe('Start from a saved editor template (its pack and adjustments).')
+})
+
+
+/**
+ * @summary Save a draft's pack and editor adjustments as a reusable template
+ */
+export const SaveDraftAsTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const saveDraftAsTemplateBodyNameMax = 80;
+
+
+
+export const SaveDraftAsTemplateBody = zod.object({
+  "name": zod.string().min(1).max(saveDraftAsTemplateBodyNameMax)
+})
+
+
+/**
+ * @summary The club's saved Studio editor templates, newest first
+ */
+export const ListEditorTemplatesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "baseKind": zod.string().nullable().describe('The card kind the template was saved from.'),
+  "packId": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "createdAt": zod.coerce.date()
+})
+export const ListEditorTemplatesResponse = zod.array(ListEditorTemplatesResponseItem)
+
+
+/**
+ * @summary Delete a saved Studio editor template
+ */
+export const DeleteEditorTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * Machine-to-machine only. Requires the `x-sweep-secret` header to equal the server's SOCIAL_SWEEP_SECRET; answers 401 otherwise (including when no secret is configured). Sweeps one tenant, or every active tenant when `tenantId` is omitted.
  * @summary Run the social drafting sweep (scheduled job / fixtures projection)
  */
@@ -6709,7 +6765,8 @@ export const ListClubPhotosResponseItem = zod.object({
   "grade": zod.string().nullable(),
   "takenAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date(),
-  "playerIds": zod.array(zod.number())
+  "playerIds": zod.array(zod.number()),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 })
 export const ListClubPhotosResponse = zod.array(ListClubPhotosResponseItem)
 
@@ -6742,7 +6799,8 @@ export const IngestClubPhotosResponse = zod.object({
   "grade": zod.string().nullable(),
   "takenAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date(),
-  "playerIds": zod.array(zod.number())
+  "playerIds": zod.array(zod.number()),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 }).optional(),
   "error": zod.string().optional()
 }))
@@ -6773,7 +6831,8 @@ export const TagClubPhotosResponseItem = zod.object({
   "grade": zod.string().nullable(),
   "takenAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date(),
-  "playerIds": zod.array(zod.number())
+  "playerIds": zod.array(zod.number()),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 })
 export const TagClubPhotosResponse = zod.array(TagClubPhotosResponseItem)
 
@@ -6790,6 +6849,57 @@ export const DeleteClubPhotosBody = zod.object({
 
 export const DeleteClubPhotosResponse = zod.object({
   "deleted": zod.number()
+})
+
+
+/**
+ * 404 when no background-removal provider key is configured; the editor hides the tool.
+ * @summary Whether background removal is available to this club (admin)
+ */
+export const GetBackgroundRemovalStatusResponse = zod.object({
+  "available": zod.boolean()
+})
+
+
+/**
+ * Accepts only a photo from this club's library whose player tags are all senior players; anything else is refused before the image is sent to the provider. The cut-out is stored as a new library photo (PNG with transparency) linked to its source through `sourcePhotoId`; the source photo is unchanged.
+ * @summary Cut the background out of a senior library photo (admin)
+ */
+export const RemovePhotoBackgroundBody = zod.object({
+  "photoId": zod.number()
+})
+
+export const RemovePhotoBackgroundResponse = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number()),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+})
+
+
+/**
+ * 404 when the fixture is not this club's, has no venue coordinates, or its start hour is outside the forecast range; the editor then hides the forecast block.
+ * @summary The forecast for a fixture's venue at its start hour (admin)
+ */
+export const GetFixtureForecastQueryParams = zod.object({
+  "fixtureId": zod.coerce.number()
+})
+
+export const GetFixtureForecastResponse = zod.object({
+  "fixtureId": zod.number(),
+  "venue": zod.string().nullable(),
+  "hour": zod.coerce.date().describe('The forecast hour (UTC), the fixture\'s start time floored to the hour.'),
+  "temperatureC": zod.number(),
+  "weatherCode": zod.number().describe('WMO weather interpretation code.'),
+  "conditions": zod.string(),
+  "attribution": zod.string()
 })
 
 
@@ -8185,10 +8295,16 @@ export const UpdateJuniorMatchDisplaySettingsResponse = zod.object({
  * Renders the EXACT same data-bound card the browser previews into a guaranteed-compatible H.264/MP4, off the main thread, as a job. `input` and `options` are the opaque ShareCardInput + RenderOptions JSON the client already builds for the preview (the union lives in the frontend). Returns a job id to poll; the browser MediaRecorder path remains as a fallback. Admin-only (enforced by route middleware).
  * @summary Start a server-side MP4 render of an animated share-card (admin only)
  */
+export const createCardVideoJobBodyScaleMax = 3;
+
+
+
 export const CreateCardVideoJobBody = zod.object({
   "input": zod.record(zod.string(), zod.unknown()),
   "options": zod.record(zod.string(), zod.unknown()),
-  "fps": zod.number().nullish()
+  "fps": zod.number().nullish(),
+  "format": zod.enum(['mp4', 'gif']).optional(),
+  "scale": zod.number().min(1).max(createCardVideoJobBodyScaleMax).optional()
 })
 
 
@@ -8221,9 +8337,15 @@ export const DownloadCardVideoJobParams = zod.object({
  * Renders a standard Pack A ("Broadcast Dark") share-card to a PNG through the same headless-Chromium harness the MP4 renderer uses, but in a static mode: the harness mounts the pack card at native size (1080 × 1920/1350/ 1080 by size) and the server screenshots that element. Pack cards are static (no animation pipeline), so this bypasses ffmpeg entirely and streams the image synchronously. `input` is the opaque ShareCardInput JSON the client builds for the preview; `options` carries the size, sponsor toggle, junior flag and theme. Admin-only (enforced by route middleware); BYO (bring-your-own) templates keep the client-side canvas PNG path.
  * @summary Server-side PNG render of a standard (pack) share-card (admin only)
  */
+export const createCardRenderStillBodyScaleMax = 3;
+
+
+
 export const CreateCardRenderStillBody = zod.object({
   "input": zod.record(zod.string(), zod.unknown()),
-  "options": zod.record(zod.string(), zod.unknown())
+  "options": zod.record(zod.string(), zod.unknown()),
+  "format": zod.enum(['png', 'jpg', 'pdf']).optional(),
+  "scale": zod.number().min(1).max(createCardRenderStillBodyScaleMax).optional()
 })
 
 

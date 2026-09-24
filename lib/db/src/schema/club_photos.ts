@@ -1,4 +1,13 @@
-import { pgTable, serial, integer, text, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  integer,
+  text,
+  timestamp,
+  index,
+  uniqueIndex,
+  type AnyPgColumn,
+} from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 
 /**
@@ -24,6 +33,12 @@ export const clubPhotosTable = pgTable(
     grade: text("grade"),
     // When the photo was taken, from the original's EXIF (null when absent).
     takenAt: timestamp("taken_at", { withTimezone: true }),
+    // A derived image (a background-removed cut-out PNG, U19) points at the
+    // library photo it was made from; null for uploaded photos. Deleting the
+    // source keeps the cut-out.
+    sourcePhotoId: integer("source_photo_id").references((): AnyPgColumn => clubPhotosTable.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

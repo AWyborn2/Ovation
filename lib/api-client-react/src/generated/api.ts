@@ -93,6 +93,7 @@ import type {
   CreateJuniorBattingLineBody,
   CreateJuniorBowlingLineBody,
   CreateProvisioningExclusionBody,
+  CreateSocialDraftRequest,
   CreateTrackedLinkBody,
   Dashboard,
   DebutEntry,
@@ -101,11 +102,14 @@ import type {
   DirectoryClub,
   DraftSweepRequest,
   DraftSweepResponse,
+  EditorTemplate,
   ErrorEnvelope,
   FiveWicketHaul,
   Fixture,
+  FixtureForecast,
   FixturesResultsPage,
   GenerateCardSetBody,
+  GetFixtureForecastParams,
   GetFixturesResultsLadderParams,
   GetGradeDistributionParams,
   GetGradeLeaderboardParams,
@@ -239,7 +243,9 @@ import type {
   RecordsDisplaySettings,
   RecordsDisplaySettingsUpdate,
   RecordsLeaderboards,
+  RemovePhotoBackgroundRequest,
   RoundUpInput,
+  SaveDraftTemplateRequest,
   SeasonTopPerformers,
   SeniorOverview,
   SetJuniorSeniorLinkBody,
@@ -258,6 +264,7 @@ import type {
   StatInput,
   StatListResponse,
   StatUpdate,
+  StudioToolStatus,
   SweepMatchSummaryDrafts200,
   SweepMatchSummaryDraftsBody,
   TagClubPhotosRequest,
@@ -14991,6 +14998,297 @@ export function useListSocialDrafts<TData = Awaited<ReturnType<typeof listSocial
 
 
 
+export const getCreateSocialDraftUrl = () => {
+
+
+
+
+  return `/api/social-drafts`
+}
+
+/**
+ * Creates a draft that is awaiting review with no import time, so it never auto-promotes. With templateId, the template's pack and adjustments are applied to the given card input.
+ * @summary Start an ad-hoc card (made by hand, a blank canvas, or from a saved template)
+ */
+export const createSocialDraft = async (createSocialDraftRequest: CreateSocialDraftRequest, options?: RequestInit): Promise<SocialDraft> => {
+
+  return customFetch<SocialDraft>(getCreateSocialDraftUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createSocialDraftRequest,)
+  }
+);}
+
+
+
+
+export const getCreateSocialDraftMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSocialDraft>>, TError,{data: BodyType<CreateSocialDraftRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSocialDraft>>, TError,{data: BodyType<CreateSocialDraftRequest>}, TContext> => {
+
+const mutationKey = ['createSocialDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSocialDraft>>, {data: BodyType<CreateSocialDraftRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSocialDraft(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSocialDraftMutationResult = NonNullable<Awaited<ReturnType<typeof createSocialDraft>>>
+    export type CreateSocialDraftMutationBody = BodyType<CreateSocialDraftRequest>
+    export type CreateSocialDraftMutationError = ErrorType<void>
+
+    /**
+ * @summary Start an ad-hoc card (made by hand, a blank canvas, or from a saved template)
+ */
+export const useCreateSocialDraft = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSocialDraft>>, TError,{data: BodyType<CreateSocialDraftRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSocialDraft>>,
+        TError,
+        {data: BodyType<CreateSocialDraftRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateSocialDraftMutationOptions(options));
+    }
+
+export const getSaveDraftAsTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/save-template`
+}
+
+/**
+ * @summary Save a draft's pack and editor adjustments as a reusable template
+ */
+export const saveDraftAsTemplate = async (id: number,
+    saveDraftTemplateRequest: SaveDraftTemplateRequest, options?: RequestInit): Promise<EditorTemplate> => {
+
+  return customFetch<EditorTemplate>(getSaveDraftAsTemplateUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveDraftTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getSaveDraftAsTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveDraftAsTemplate>>, TError,{id: number;data: BodyType<SaveDraftTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveDraftAsTemplate>>, TError,{id: number;data: BodyType<SaveDraftTemplateRequest>}, TContext> => {
+
+const mutationKey = ['saveDraftAsTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveDraftAsTemplate>>, {id: number;data: BodyType<SaveDraftTemplateRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  saveDraftAsTemplate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveDraftAsTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof saveDraftAsTemplate>>>
+    export type SaveDraftAsTemplateMutationBody = BodyType<SaveDraftTemplateRequest>
+    export type SaveDraftAsTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Save a draft's pack and editor adjustments as a reusable template
+ */
+export const useSaveDraftAsTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveDraftAsTemplate>>, TError,{id: number;data: BodyType<SaveDraftTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveDraftAsTemplate>>,
+        TError,
+        {id: number;data: BodyType<SaveDraftTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveDraftAsTemplateMutationOptions(options));
+    }
+
+export const getListEditorTemplatesUrl = () => {
+
+
+
+
+  return `/api/editor-templates`
+}
+
+/**
+ * @summary The club's saved Studio editor templates, newest first
+ */
+export const listEditorTemplates = async ( options?: RequestInit): Promise<EditorTemplate[]> => {
+
+  return customFetch<EditorTemplate[]>(getListEditorTemplatesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListEditorTemplatesQueryKey = () => {
+    return [
+    `/api/editor-templates`
+    ] as const;
+    }
+
+
+export const getListEditorTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listEditorTemplates>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEditorTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListEditorTemplatesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEditorTemplates>>> = ({ signal }) => listEditorTemplates({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEditorTemplates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListEditorTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listEditorTemplates>>>
+export type ListEditorTemplatesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The club's saved Studio editor templates, newest first
+ */
+
+export function useListEditorTemplates<TData = Awaited<ReturnType<typeof listEditorTemplates>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEditorTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListEditorTemplatesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDeleteEditorTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/editor-templates/${id}`
+}
+
+/**
+ * @summary Delete a saved Studio editor template
+ */
+export const deleteEditorTemplate = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteEditorTemplateUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteEditorTemplateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEditorTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteEditorTemplate>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteEditorTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteEditorTemplate>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteEditorTemplate(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteEditorTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof deleteEditorTemplate>>>
+
+    export type DeleteEditorTemplateMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a saved Studio editor template
+ */
+export const useDeleteEditorTemplate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEditorTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteEditorTemplate>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteEditorTemplateMutationOptions(options));
+    }
+
 export const getRunDraftSweepUrl = () => {
 
 
@@ -15360,6 +15658,241 @@ export const useDeleteClubPhotos = <TError = ErrorType<void>,
       > => {
       return useMutation(getDeleteClubPhotosMutationOptions(options));
     }
+
+export const getGetBackgroundRemovalStatusUrl = () => {
+
+
+
+
+  return `/api/studio-tools/background-removal`
+}
+
+/**
+ * 404 when no background-removal provider key is configured; the editor hides the tool.
+ * @summary Whether background removal is available to this club (admin)
+ */
+export const getBackgroundRemovalStatus = async ( options?: RequestInit): Promise<StudioToolStatus> => {
+
+  return customFetch<StudioToolStatus>(getGetBackgroundRemovalStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBackgroundRemovalStatusQueryKey = () => {
+    return [
+    `/api/studio-tools/background-removal`
+    ] as const;
+    }
+
+
+export const getGetBackgroundRemovalStatusQueryOptions = <TData = Awaited<ReturnType<typeof getBackgroundRemovalStatus>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBackgroundRemovalStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBackgroundRemovalStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBackgroundRemovalStatus>>> = ({ signal }) => getBackgroundRemovalStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBackgroundRemovalStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBackgroundRemovalStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getBackgroundRemovalStatus>>>
+export type GetBackgroundRemovalStatusQueryError = ErrorType<void>
+
+
+/**
+ * @summary Whether background removal is available to this club (admin)
+ */
+
+export function useGetBackgroundRemovalStatus<TData = Awaited<ReturnType<typeof getBackgroundRemovalStatus>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBackgroundRemovalStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBackgroundRemovalStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRemovePhotoBackgroundUrl = () => {
+
+
+
+
+  return `/api/studio-tools/background-removal`
+}
+
+/**
+ * Accepts only a photo from this club's library whose player tags are all senior players; anything else is refused before the image is sent to the provider. The cut-out is stored as a new library photo (PNG with transparency) linked to its source through `sourcePhotoId`; the source photo is unchanged.
+ * @summary Cut the background out of a senior library photo (admin)
+ */
+export const removePhotoBackground = async (removePhotoBackgroundRequest: RemovePhotoBackgroundRequest, options?: RequestInit): Promise<ClubPhoto> => {
+
+  return customFetch<ClubPhoto>(getRemovePhotoBackgroundUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      removePhotoBackgroundRequest,)
+  }
+);}
+
+
+
+
+export const getRemovePhotoBackgroundMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removePhotoBackground>>, TError,{data: BodyType<RemovePhotoBackgroundRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removePhotoBackground>>, TError,{data: BodyType<RemovePhotoBackgroundRequest>}, TContext> => {
+
+const mutationKey = ['removePhotoBackground'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removePhotoBackground>>, {data: BodyType<RemovePhotoBackgroundRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  removePhotoBackground(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemovePhotoBackgroundMutationResult = NonNullable<Awaited<ReturnType<typeof removePhotoBackground>>>
+    export type RemovePhotoBackgroundMutationBody = BodyType<RemovePhotoBackgroundRequest>
+    export type RemovePhotoBackgroundMutationError = ErrorType<void>
+
+    /**
+ * @summary Cut the background out of a senior library photo (admin)
+ */
+export const useRemovePhotoBackground = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removePhotoBackground>>, TError,{data: BodyType<RemovePhotoBackgroundRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removePhotoBackground>>,
+        TError,
+        {data: BodyType<RemovePhotoBackgroundRequest>},
+        TContext
+      > => {
+      return useMutation(getRemovePhotoBackgroundMutationOptions(options));
+    }
+
+export const getGetFixtureForecastUrl = (params: GetFixtureForecastParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/studio-tools/forecast?${stringifiedParams}` : `/api/studio-tools/forecast`
+}
+
+/**
+ * 404 when the fixture is not this club's, has no venue coordinates, or its start hour is outside the forecast range; the editor then hides the forecast block.
+ * @summary The forecast for a fixture's venue at its start hour (admin)
+ */
+export const getFixtureForecast = async (params: GetFixtureForecastParams, options?: RequestInit): Promise<FixtureForecast> => {
+
+  return customFetch<FixtureForecast>(getGetFixtureForecastUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFixtureForecastQueryKey = (params?: GetFixtureForecastParams,) => {
+    return [
+    `/api/studio-tools/forecast`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFixtureForecastQueryOptions = <TData = Awaited<ReturnType<typeof getFixtureForecast>>, TError = ErrorType<void>>(params: GetFixtureForecastParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFixtureForecast>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFixtureForecastQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFixtureForecast>>> = ({ signal }) => getFixtureForecast(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFixtureForecast>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFixtureForecastQueryResult = NonNullable<Awaited<ReturnType<typeof getFixtureForecast>>>
+export type GetFixtureForecastQueryError = ErrorType<void>
+
+
+/**
+ * @summary The forecast for a fixture's venue at its start hour (admin)
+ */
+
+export function useGetFixtureForecast<TData = Awaited<ReturnType<typeof getFixtureForecast>>, TError = ErrorType<void>>(
+ params: GetFixtureForecastParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFixtureForecast>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFixtureForecastQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListNotificationsUrl = () => {
 

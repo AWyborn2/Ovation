@@ -25,7 +25,7 @@ router.post(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    const { input, options, fps } = parsed.data;
+    const { input, options, fps, format, scale } = parsed.data;
     const tenantId = getTenantId(req);
     const [tenant] = await db
       .select({ slug: tenantsTable.slug })
@@ -38,6 +38,7 @@ router.post(
       fps ?? undefined,
       harnessOriginFromHeaders(req.headers),
       tenant?.slug ?? "ovation",
+      { format, scale },
     );
     res.status(201).json(publicJob(job));
   },
@@ -55,7 +56,7 @@ router.get("/card-video/jobs/:id", requireAdmin, async (req, res): Promise<void>
   res.json(publicJob(job));
 });
 
-// Stream the finished MP4.
+// Stream the finished MP4 or GIF.
 router.get("/card-video/jobs/:id/download", requireAdmin, async (req, res): Promise<void> => {
   const job = getJob(String(req.params.id));
   if (!job || job.tenantId !== getTenantId(req) || job.status !== "done" || !job.filePath) {
@@ -69,7 +70,7 @@ router.get("/card-video/jobs/:id/download", requireAdmin, async (req, res): Prom
     res.status(404).json({ error: "Rendered file is no longer available" });
     return;
   }
-  res.setHeader("Content-Type", "video/mp4");
+  res.setHeader("Content-Type", job.contentType);
   res.setHeader("Content-Length", String(size));
   res.setHeader("Content-Disposition", `attachment; filename="${job.filename ?? `${job.id}.mp4`}"`);
   createReadStream(job.filePath).pipe(res);

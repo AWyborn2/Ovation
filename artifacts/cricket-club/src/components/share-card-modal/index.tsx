@@ -11,10 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Wand2 } from "lucide-react";
+import { PenSquare } from "lucide-react";
 import {
   isAnimatedCard,
   type CardSize,
@@ -24,7 +23,7 @@ import {
 import { canExportVideo, videoFormatLabel } from "@/lib/share-card-animation";
 import { packSupportsKind, type PackCardData } from "@/lib/pack-render";
 import { buildPackData as buildSharedPackData, tenantHashtag } from "@/lib/pack-card-data";
-import { CardLayoutEditor } from "@/components/card-layout-editor";
+import { OpenInEditorButton } from "@/components/studio-editor/open-in-editor";
 import type { Props } from "./constants";
 import { usePhotoControls } from "./use-photo-controls";
 import { PhotoControls } from "./photo-controls";
@@ -95,8 +94,6 @@ export function ShareCardModal({
     isAdmin,
     savedLayout,
     layoutSig,
-    editingLayout,
-    setEditingLayout,
     imageOverrides,
   } = layout;
 
@@ -325,32 +322,20 @@ export function ShareCardModal({
           {isAdmin && !selectedTemplate && (
             <div className="flex items-center justify-between rounded border border-dashed px-3 py-2">
               <span className="text-xs text-muted-foreground">
-                {savedLayout.length > 0
-                  ? "This card uses a custom layout."
-                  : "Move, resize and add elements to this card."}
+                Move, resize and add elements to this card in the Studio editor.
               </span>
-              {!editingLayout && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setEditingLayout(true)}
-                >
-                  <Wand2 className="h-3.5 w-3.5 mr-1" />
-                  Customise layout
-                </Button>
-              )}
+              <OpenInEditorButton
+                input={input}
+                packId={isPackCard ? packId : null}
+                onOpened={() => onOpenChange(false)}
+              >
+                <PenSquare className="h-3.5 w-3.5 mr-1" aria-hidden />
+                Open in editor
+              </OpenInEditorButton>
             </div>
           )}
 
-          {editingLayout && isAdmin ? (
-            <CardLayoutEditor
-              input={input}
-              baseOpts={buildOpts(activeSize, photoTransform)}
-              activeSize={activeSize}
-              onClose={() => setEditingLayout(false)}
-            />
-          ) : (
+          {
             <div className="grid gap-4 md:grid-cols-[2fr_3fr]">
               <div className="space-y-3">
                 <PreviewTabs
@@ -426,7 +411,7 @@ export function ShareCardModal({
                 {captionsEnabled && <CaptionsPanel captions={captions} />}
               </div>
             </div>
-          )}
+          }
 
           {isAdmin && animated && serverError && (
             <p className="text-xs text-destructive">

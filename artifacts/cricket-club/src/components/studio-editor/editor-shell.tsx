@@ -40,6 +40,7 @@ export function EditorTopBar({
   dirty,
   saving,
   onSave,
+  actions,
 }: {
   title: string;
   status: ReactNode;
@@ -54,6 +55,8 @@ export function EditorTopBar({
   dirty: boolean;
   saving: boolean;
   onSave: () => void;
+  /** Extra buttons before Save (e.g. Save as template). */
+  actions?: ReactNode;
 }) {
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--ed-line)] bg-[var(--ed-panel)] px-3">
@@ -110,6 +113,7 @@ export function EditorTopBar({
         {status}
       </div>
 
+      {actions}
       <button
         type="button"
         onClick={onSave}

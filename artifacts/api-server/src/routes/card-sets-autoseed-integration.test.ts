@@ -108,7 +108,7 @@ describe("card-sets autoseed: approved drafts → carousel (idempotent)", () => 
         matchIds.map((matchId) => ({
           tenantId,
           engine: "matchSummary",
-          status: "approved",
+          status: "ready",
           sourceKind: "matchSummary",
           sourceMatchId: matchId,
           sourceMatchIsJunior: false,
@@ -139,7 +139,7 @@ describe("card-sets autoseed: approved drafts → carousel (idempotent)", () => 
       .values({
         tenantId,
         engine: "matchSummary",
-        status: "approved",
+        status: "ready",
         sourceKind: "matchSummary",
         sourceMatchId: juniorMatchId,
         sourceMatchIsJunior: true,

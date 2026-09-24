@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { CardVideoJobInputFormat } from './cardVideoJobInputFormat';
 import type { CardVideoJobInputInput } from './cardVideoJobInputInput';
 import type { CardVideoJobInputOptions } from './cardVideoJobInputOptions';
 
@@ -12,4 +13,10 @@ export interface CardVideoJobInput {
   input: CardVideoJobInputInput;
   options: CardVideoJobInputOptions;
   fps?: number | null;
+  format?: CardVideoJobInputFormat;
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  scale?: number;
 }

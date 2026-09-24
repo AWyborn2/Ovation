@@ -4277,6 +4277,90 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/SocialDraft"
+    post:
+      operationId: createSocialDraft
+      tags: [socialCards]
+      summary: Start an ad-hoc card (made by hand, a blank canvas, or from a saved template)
+      description: >-
+        Creates a draft that is awaiting review with no import time, so it never
+        auto-promotes. With templateId, the template's pack and adjustments are
+        applied to the given card input.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSocialDraftRequest"
+      responses:
+        "201":
+          description: The new draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialDraft"
+        "400":
+          description: Invalid body
+        "404":
+          description: Template not found
+
+  /social-drafts/{id}/save-template:
+    post:
+      operationId: saveDraftAsTemplate
+      tags: [socialCards]
+      summary: Save a draft's pack and editor adjustments as a reusable template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveDraftTemplateRequest"
+      responses:
+        "201":
+          description: The saved template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorTemplate"
+        "400":
+          description: Invalid body
+        "404":
+          description: Draft not found
+
+  /editor-templates:
+    get:
+      operationId: listEditorTemplates
+      tags: [socialCards]
+      summary: The club's saved Studio editor templates, newest first
+      responses:
+        "200":
+          description: Templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EditorTemplate"
+
+  /editor-templates/{id}:
+    delete:
+      operationId: deleteEditorTemplate
+      tags: [socialCards]
+      summary: Delete a saved Studio editor template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
 
   /internal/draft-sweep:
     post:
@@ -4420,6 +4504,90 @@ paths:
                     type: integer
         "404":
           description: A photo is not in this club's library
+
+  /studio-tools/background-removal:
+    get:
+      operationId: getBackgroundRemovalStatus
+      tags: [socialCards]
+      summary: Whether background removal is available to this club (admin)
+      description: >-
+        404 when no background-removal provider key is configured; the editor
+        hides the tool.
+      responses:
+        "200":
+          description: The tool is available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudioToolStatus"
+        "401":
+          description: Not signed in
+        "404":
+          description: Background removal is not configured
+    post:
+      operationId: removePhotoBackground
+      tags: [socialCards]
+      summary: Cut the background out of a senior library photo (admin)
+      description: >-
+        Accepts only a photo from this club's library whose player tags are all
+        senior players; anything else is refused before the image is sent to
+        the provider. The cut-out is stored as a new library photo (PNG with
+        transparency) linked to its source through `sourcePhotoId`; the source
+        photo is unchanged.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemovePhotoBackgroundRequest"
+      responses:
+        "200":
+          description: The new cut-out library photo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubPhoto"
+        "400":
+          description: Invalid body
+        "401":
+          description: Not signed in
+        "404":
+          description: Not configured, or the photo is not in this club's library
+        "422":
+          description: The photo is tagged with someone who is not a senior player
+        "502":
+          description: The provider failed; nothing was stored
+
+  /studio-tools/forecast:
+    get:
+      operationId: getFixtureForecast
+      tags: [socialCards]
+      summary: The forecast for a fixture's venue at its start hour (admin)
+      description: >-
+        404 when the fixture is not this club's, has no venue coordinates, or
+        its start hour is outside the forecast range; the editor then hides the
+        forecast block.
+      parameters:
+        - name: fixtureId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Temperature and conditions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FixtureForecast"
+        "400":
+          description: Invalid query
+        "401":
+          description: Not signed in
+        "404":
+          description: No forecast for this fixture
+        "502":
+          description: The forecast provider failed
 
   /notifications:
     get:
@@ -5747,7 +5915,7 @@ paths:
             type: string
       responses:
         "200":
-          description: The rendered MP4 file
+          description: The rendered MP4 or GIF file
           content:
             application/octet-stream:
               schema:
@@ -5779,9 +5947,17 @@ paths:
               $ref: "#/components/schemas/CardRenderStillInput"
       responses:
         "200":
-          description: The rendered PNG image
+          description: The rendered image (PNG, JPG) or PDF
           content:
             image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
               schema:
                 type: string
                 format: binary
@@ -6455,6 +6631,15 @@ components:
         fps:
           type: integer
           nullable: true
+        # Output container: an MP4 clip (default) or an animated GIF.
+        format:
+          type: string
+          enum: [mp4, gif]
+        # Pixel density, 1–3× the card's native size (default 1).
+        scale:
+          type: number
+          minimum: 1
+          maximum: 3
     CardVideoJob:
       type: object
       required: [id, status, progress]
@@ -6492,6 +6677,15 @@ components:
         options:
           type: object
           additionalProperties: true
+        # Output format (default png). PDF is vector, so scale does not apply.
+        format:
+          type: string
+          enum: [png, jpg, pdf]
+        # Pixel density, 1–3× the card's native size (default 1).
+        scale:
+          type: number
+          minimum: 1
+          maximum: 3
     HealthStatus:
       type: object
       properties:
@@ -11526,6 +11720,45 @@ components:
           type: array
           items:
             type: integer
+        sourcePhotoId:
+          type: ["integer", "null"]
+          description: "For a derived image (a background-removed cut-out), the library photo it was made from."
+
+    StudioToolStatus:
+      type: object
+      required: [available]
+      properties:
+        available:
+          type: boolean
+
+    RemovePhotoBackgroundRequest:
+      type: object
+      required: [photoId]
+      properties:
+        photoId:
+          type: integer
+
+    FixtureForecast:
+      type: object
+      required: [fixtureId, venue, hour, temperatureC, weatherCode, conditions, attribution]
+      properties:
+        fixtureId:
+          type: integer
+        venue:
+          type: ["string", "null"]
+        hour:
+          type: string
+          format: date-time
+          description: "The forecast hour (UTC), the fixture's start time floored to the hour."
+        temperatureC:
+          type: integer
+        weatherCode:
+          type: integer
+          description: "WMO weather interpretation code."
+        conditions:
+          type: string
+        attribution:
+          type: string
 
     IngestClubPhotosRequest:
       type: object
@@ -13278,6 +13511,47 @@ components:
           anyOf:
             - $ref: "#/components/schemas/CardAdjustments"
             - type: "null"
+
+    CreateSocialDraftRequest:
+      type: object
+      required: [cardInput]
+      properties:
+        cardInput:
+          type: object
+          additionalProperties: true
+          description: "The card's ShareCardInput (validated by shape on the web)."
+        packId:
+          type: ["string", "null"]
+          description: "Design pack; 'blank' for a blank canvas."
+        adjustments:
+          anyOf:
+            - $ref: "#/components/schemas/CardAdjustments"
+            - type: "null"
+        templateId:
+          type: integer
+          description: "Start from a saved editor template (its pack and adjustments)."
+
+    SaveDraftTemplateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+
+    EditorTemplate:
+      type: object
+      required: [id, name, baseKind, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        baseKind:
+          type: ["string", "null"]
+          description: "The card kind the template was saved from."
+        packId: { type: ["string", "null"] }
+        adjustments: {}
+        createdAt: { type: string, format: date-time }
 
     CardAdjustments:
       type: object

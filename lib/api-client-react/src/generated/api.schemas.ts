@@ -9,10 +9,24 @@ export type CardVideoJobInputInput = { [key: string]: unknown };
 
 export type CardVideoJobInputOptions = { [key: string]: unknown };
 
+export type CardVideoJobInputFormat = typeof CardVideoJobInputFormat[keyof typeof CardVideoJobInputFormat];
+
+
+export const CardVideoJobInputFormat = {
+  mp4: 'mp4',
+  gif: 'gif',
+} as const;
+
 export interface CardVideoJobInput {
   input: CardVideoJobInputInput;
   options: CardVideoJobInputOptions;
   fps?: number | null;
+  format?: CardVideoJobInputFormat;
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  scale?: number;
 }
 
 export type CardVideoJobStatus = typeof CardVideoJobStatus[keyof typeof CardVideoJobStatus];
@@ -39,9 +53,24 @@ export type CardRenderStillInputInput = { [key: string]: unknown };
 
 export type CardRenderStillInputOptions = { [key: string]: unknown };
 
+export type CardRenderStillInputFormat = typeof CardRenderStillInputFormat[keyof typeof CardRenderStillInputFormat];
+
+
+export const CardRenderStillInputFormat = {
+  png: 'png',
+  jpg: 'jpg',
+  pdf: 'pdf',
+} as const;
+
 export interface CardRenderStillInput {
   input: CardRenderStillInputInput;
   options: CardRenderStillInputOptions;
+  format?: CardRenderStillInputFormat;
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  scale?: number;
 }
 
 export interface HealthStatus {
@@ -3847,6 +3876,32 @@ export interface ClubPhoto {
   takenAt: string | null;
   createdAt: string;
   playerIds: number[];
+  /**
+     * For a derived image (a background-removed cut-out), the library photo it was made from.
+     * @nullable
+     */
+  sourcePhotoId?: number | null;
+}
+
+export interface StudioToolStatus {
+  available: boolean;
+}
+
+export interface RemovePhotoBackgroundRequest {
+  photoId: number;
+}
+
+export interface FixtureForecast {
+  fixtureId: number;
+  /** @nullable */
+  venue: string | null;
+  /** The forecast hour (UTC), the fixture's start time floored to the hour. */
+  hour: string;
+  temperatureC: number;
+  /** WMO weather interpretation code. */
+  weatherCode: number;
+  conditions: string;
+  attribution: string;
 }
 
 export interface IngestClubPhotosRequest {
@@ -5057,6 +5112,46 @@ export interface UpdateSocialDraftRequest {
   photoUrl?: string | null;
   /** Editor overlay (see CardAdjustments); null clears every edit. */
   adjustments?: CardAdjustments | null;
+}
+
+/**
+ * The card's ShareCardInput (validated by shape on the web).
+ */
+export type CreateSocialDraftRequestCardInput = { [key: string]: unknown };
+
+export interface CreateSocialDraftRequest {
+  /** The card's ShareCardInput (validated by shape on the web). */
+  cardInput: CreateSocialDraftRequestCardInput;
+  /**
+     * Design pack; 'blank' for a blank canvas.
+     * @nullable
+     */
+  packId?: string | null;
+  adjustments?: CardAdjustments | null;
+  /** Start from a saved editor template (its pack and adjustments). */
+  templateId?: number;
+}
+
+export interface SaveDraftTemplateRequest {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+}
+
+export interface EditorTemplate {
+  id: number;
+  name: string;
+  /**
+     * The card kind the template was saved from.
+     * @nullable
+     */
+  baseKind: string | null;
+  /** @nullable */
+  packId?: string | null;
+  adjustments?: unknown;
+  createdAt: string;
 }
 
 export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraftStatus];
@@ -6601,6 +6696,10 @@ season?: number;
 
 export type DeleteClubPhotos200 = {
   deleted: number;
+};
+
+export type GetFixtureForecastParams = {
+fixtureId: number;
 };
 
 export type SweepMatchSummaryDraftsBody = {

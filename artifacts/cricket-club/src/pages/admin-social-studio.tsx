@@ -4,8 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetSocialSettings,
   useListCardTemplates,
-  useCreateCardTemplate,
-  useUpdateCardTemplate,
   useDeleteCardTemplate,
   getListCardTemplatesQueryKey,
   type CardTemplate,
@@ -18,8 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Pencil, Trash2, Plus, IdCard } from "lucide-react";
-import { CardLayoutEditor, type TemplateMode } from "@/components/card-layout-editor";
+import { Loader2, Trash2, IdCard, PenSquare } from "lucide-react";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import { usePackSelection } from "@/lib/use-pack-selection";
 import { PackPerTypeSection } from "@/components/social-studio/pack-per-type-section";
@@ -107,9 +104,6 @@ function CardThumb({
   );
 }
 
-type EditorState =
-  { mode: "template-new"; baseKind: CardKind } | { mode: "template-edit"; template: CardTemplate };
-
 export default function AdminSocialStudio() {
   const qc = useQueryClient();
   const confirm = useConfirm();
@@ -118,8 +112,6 @@ export default function AdminSocialStudio() {
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
   const templatesQ = useListCardTemplates();
 
-  const [editing, setEditing] = useState<EditorState | null>(null);
-  const [newBaseKind, setNewBaseKind] = useState<CardKind>("milestone");
   const [error, setError] = useState<string | null>(null);
 
   const templates = (templatesQ.data as CardTemplate[] | undefined) ?? [];
@@ -198,50 +190,8 @@ export default function AdminSocialStudio() {
   };
   const onError = (e: unknown) => setError(handleAdminMutationError(e));
 
-  const createMut = useCreateCardTemplate({
-    mutation: {
-      onSuccess: () => {
-        invalidate();
-        setEditing(null);
-      },
-      onError,
-    },
-  });
-  const updateMut = useUpdateCardTemplate({
-    mutation: {
-      onSuccess: () => {
-        invalidate();
-        setEditing(null);
-      },
-      onError,
-    },
-  });
   const deleteMut = useDeleteCardTemplate({
     mutation: { onSuccess: invalidate, onError },
-  });
-
-  const buildTemplateMode = (
-    baseKind: CardKind,
-    init: {
-      name: string;
-      cardKinds: string[];
-      defaultForKinds: string[];
-      id?: number;
-    },
-  ): TemplateMode => ({
-    initialName: init.name,
-    initialCardKinds: init.cardKinds,
-    initialDefaultForKinds: init.defaultForKinds,
-    saving: createMut.isPending || updateMut.isPending,
-    onSaveTemplate: (data) => {
-      setError(null);
-      const body = { ...data, source: "layers" as const, baseKind };
-      if (init.id !== undefined) {
-        updateMut.mutate({ id: init.id, data: body });
-      } else {
-        createMut.mutate({ data: body });
-      }
-    },
   });
 
   // --- Design pack selection -------------------------------------------------
@@ -276,43 +226,6 @@ export default function AdminSocialStudio() {
   }
   if (settingsQ.isLoading || templatesQ.isLoading) {
     return <LoadingState label="Loading studio…" />;
-  }
-
-  // Full-screen editor takes over the tab while open.
-  if (editing) {
-    if (editing.mode === "template-new") {
-      return (
-        <CardLayoutEditor
-          input={sampleCardInput(editing.baseKind)}
-          baseOpts={baseOpts}
-          activeSize={THUMB_SIZE}
-          onClose={() => setEditing(null)}
-          controlledLayout={[]}
-          templateMode={buildTemplateMode(editing.baseKind, {
-            name: "",
-            cardKinds: [editing.baseKind],
-            defaultForKinds: [],
-          })}
-        />
-      );
-    }
-    const t = editing.template;
-    const baseKind = (t.baseKind as CardKind) ?? "milestone";
-    return (
-      <CardLayoutEditor
-        input={sampleCardInput(baseKind)}
-        baseOpts={baseOpts}
-        activeSize={THUMB_SIZE}
-        onClose={() => setEditing(null)}
-        controlledLayout={t.layers ?? []}
-        templateMode={buildTemplateMode(baseKind, {
-          id: t.id,
-          name: t.name,
-          cardKinds: t.cardKinds ?? [],
-          defaultForKinds: t.defaultForKinds ?? [],
-        })}
-      />
-    );
   }
 
   const layerTemplates = templates.filter((t) => t.source === "layers");
@@ -357,37 +270,24 @@ export default function AdminSocialStudio() {
         templateByKind={defaultByKind}
       />
 
-      {/* Saved layer templates */}
+      {/* Templates: new designs are made in the Studio editor (U18). Layer
+          templates from the retired layout editor still render and can be
+          deleted, but no longer edited. */}
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">Templates</h2>
-          <div className="flex items-center gap-1.5">
-            <select
-              className="h-8 rounded-md border bg-background px-2 text-xs"
-              value={newBaseKind}
-              onChange={(e) => setNewBaseKind(e.target.value as CardKind)}
-            >
-              {CARD_KIND_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <Button
-              size="sm"
-              onClick={() => setEditing({ mode: "template-new", baseKind: newBaseKind })}
-            >
-              <Plus className="mr-1 h-3.5 w-3.5" /> New template
-            </Button>
-          </div>
+          <Button size="sm" asChild>
+            <Link href="/admin/social/create">
+              <PenSquare className="mr-1 h-3.5 w-3.5" aria-hidden /> Design in the editor
+            </Link>
+          </Button>
         </div>
+        <p className="text-sm text-muted-foreground">
+          Make a card in the Studio editor and use Save as template to reuse it. Your templates
+          appear under Design it yourself on Create a card.
+        </p>
 
-        {layerTemplates.length === 0 ? (
-          <p className="rounded border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
-            No templates yet. Build one with the layer editor, then assign it to card types and pick
-            a default.
-          </p>
-        ) : (
+        {layerTemplates.length === 0 ? null : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {layerTemplates.map((t) => {
               const baseKind = (t.baseKind as CardKind) ?? "milestone";
@@ -418,19 +318,13 @@ export default function AdminSocialStudio() {
                         ))
                       )}
                     </div>
-                    <div className="flex gap-1.5">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 flex-1 text-xs"
-                        onClick={() => setEditing({ mode: "template-edit", template: t })}
-                      >
-                        <Pencil className="mr-1 h-3 w-3" /> Edit
-                      </Button>
+                    <div className="flex items-center gap-1.5">
+                      <span className="flex-1 text-xs text-muted-foreground">Older layout</span>
                       <Button
                         size="sm"
                         variant="ghost"
                         className="h-7 text-xs text-destructive"
+                        aria-label={`Delete ${t.name}`}
                         onClick={() => handleDelete(t)}
                       >
                         <Trash2 className="h-3 w-3" />

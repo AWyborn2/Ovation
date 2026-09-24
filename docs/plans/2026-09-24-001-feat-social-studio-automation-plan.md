@@ -22,9 +22,9 @@ execution: code
 
 ## Status (24 Sep 2026)
 
-- **Merged to main:** U1–U17 and U20–U24 (#168–#200). Published to prod: M1 plus U11 and U12 only (migrations 0000–0011 recorded).
-- **Built, awaiting Ash (migrations):** U18a #203 (0012), U25 #209 (0013), U19 #210 (0014), all idempotent. Also, with no migration, U18b #205 (downloads) and U18c #208 (old layout editor removed). They are stacked: #203 → #205 → #208, and #203 → #209 → #210.
-- **To finish:** apply 0012 → 0013 → 0014 to prod via the Replit agent and confirm they are recorded. Then merge #203, #209, #210, #205 and #208, retargeting each child to main first. Publishing needs Ash's yes.
+- **All units U1–U25 are merged to main.** The last were U18a #203, U18b #205, U18c #208, U25 #209 and U19 #210.
+- **Prod database:** migrations 0000–0014 are applied and recorded. 0012–0014 were applied on 24 Sep via the Replit agent with Ash's yes; the 23 legacy `pending` drafts now read `awaiting_review`.
+- **Not yet published:** everything after M1, U11 and U12. Publishing needs Ash's yes.
 - **Deviations:**
   - U18b makes GIFs on the server from the same frames as MP4, not through `use-video-export.ts`.
   - U18c keeps existing slide layouts and layer templates rendering, but they can only be cleared or deleted, not edited.

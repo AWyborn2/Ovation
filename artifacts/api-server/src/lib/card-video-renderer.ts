@@ -99,12 +99,55 @@ export type RenderResult = {
   ext: string;
 };
 
+export type VideoFormat = "mp4" | "gif";
+export type StillFormat = "png" | "jpg" | "pdf";
+
+/** Pixel density for exports: 1–3× native (the card's own px size). */
+export function clampScale(scale: number | null | undefined): number {
+  if (typeof scale !== "number" || !Number.isFinite(scale)) return 1;
+  return Math.min(3, Math.max(1, scale));
+}
+
+/**
+ * ffmpeg arguments for a stream of PNG frames on stdin. MP4 is H.264 (even
+ * dimensions for yuv420p); GIF builds a palette from the clip for clean colour.
+ */
+export function ffmpegArgs(format: VideoFormat, fps: number, filePath: string): string[] {
+  const input = ["-y", "-f", "image2pipe", "-framerate", String(fps), "-i", "-"];
+  if (format === "gif") {
+    return [
+      ...input,
+      "-vf",
+      "split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer",
+      "-loop",
+      "0",
+      filePath,
+    ];
+  }
+  return [
+    ...input,
+    "-c:v",
+    "libx264",
+    "-pix_fmt",
+    "yuv420p",
+    "-movflags",
+    "+faststart",
+    "-vf",
+    "pad=ceil(iw/2)*2:ceil(ih/2)*2",
+    filePath,
+  ];
+}
+
 export type RenderParams = {
   jobId: string;
   // Opaque ShareCardInput + RenderOptions JSON, identical to the preview.
   input: unknown;
   options: unknown;
   fps?: number;
+  /** Output container (default mp4). */
+  format?: VideoFormat;
+  /** Pixel density for pack-card clips, 1–3× (default 1). */
+  scale?: number;
   onProgress?: (progress: number) => void;
   // Per-request harness origin (see harnessOriginFromHeaders). Optional: falls
   // back to the env override / localhost when absent.
@@ -116,6 +159,11 @@ type HarnessMeta = {
   height: number;
   durationMs: number;
   loop: boolean;
+  /**
+   * Set for a pack card (DOM animation): frames are seeked with seek() and
+   * screenshotted from this element instead of drawn to a canvas.
+   */
+  selector?: string;
 };
 
 // Shape of the in-page harness installed by the cricket-club web app. The
@@ -131,6 +179,7 @@ type HarnessApi = {
   ready: boolean;
   init: (payload: { input: unknown; options: unknown }) => Promise<HarnessMeta>;
   drawFrame: (t: number) => string;
+  seek: (t: number) => Promise<void>;
   renderStill: (payload: { input: unknown; options: unknown }) => Promise<StillMeta>;
   dispose: () => void;
 };
@@ -153,11 +202,13 @@ function dataUrlToBuffer(dataUrl: string): Buffer {
 // guaranteed-compatible H.264/yuv420p MP4 with +faststart (web/social friendly).
 export async function renderCardVideo(params: RenderParams): Promise<RenderResult> {
   const { jobId, input, options, onProgress } = params;
-  const fps = Math.max(1, Math.min(60, Math.round(params.fps ?? 30)));
+  const format: VideoFormat = params.format === "gif" ? "gif" : "mp4";
+  // GIFs run at 15fps by default: smooth enough, and far smaller files.
+  const fps = Math.max(1, Math.min(60, Math.round(params.fps ?? (format === "gif" ? 15 : 30))));
 
   const { mkdir } = await import("node:fs/promises");
   await mkdir(outputDir(), { recursive: true });
-  const filePath = path.join(outputDir(), `${jobId}.mp4`);
+  const filePath = path.join(outputDir(), `${jobId}.${format}`);
 
   const browser = await getBrowser();
   let page: Page | null = null;
@@ -182,31 +233,21 @@ export async function renderCardVideo(params: RenderParams): Promise<RenderResul
 
     const totalFrames = Math.max(1, Math.round((meta.durationMs / 1000) * fps));
 
+    // A pack card's clip is its DOM, screenshotted per frame at the export scale.
+    const packEl = meta.selector ? await page.$(meta.selector) : null;
+    if (meta.selector) {
+      if (!packEl) throw new Error(`Card element ${meta.selector} not found`);
+      await page.setViewport({
+        width: meta.width,
+        height: meta.height,
+        deviceScaleFactor: clampScale(params.scale),
+      });
+    }
+
     // Spawn ffmpeg reading a stream of PNGs from stdin.
-    const ff = spawn(
-      "ffmpeg",
-      [
-        "-y",
-        "-f",
-        "image2pipe",
-        "-framerate",
-        String(fps),
-        "-i",
-        "-",
-        "-c:v",
-        "libx264",
-        "-pix_fmt",
-        "yuv420p",
-        "-movflags",
-        "+faststart",
-        // Even dimensions are required by yuv420p; the card sizes are already
-        // even, but guard anyway.
-        "-vf",
-        "pad=ceil(iw/2)*2:ceil(ih/2)*2",
-        filePath,
-      ],
-      { stdio: ["pipe", "ignore", "pipe"] },
-    );
+    const ff = spawn("ffmpeg", ffmpegArgs(format, fps, filePath), {
+      stdio: ["pipe", "ignore", "pipe"],
+    });
 
     let ffErr = "";
     ff.stderr?.on("data", (d: Buffer) => {
@@ -225,11 +266,18 @@ export async function renderCardVideo(params: RenderParams): Promise<RenderResul
     // uses (draw(ctx, elapsed/durationMs)). First frame t=0, last frame t=1.
     for (let i = 0; i < totalFrames; i += 1) {
       const t = totalFrames > 1 ? i / (totalFrames - 1) : 0;
-      const dataUrl = (await page.evaluate(
-        (tt) => (globalThis as HarnessGlobal).__cardRenderHarness!.drawFrame(tt),
-        t,
-      )) as string;
-      const buf = dataUrlToBuffer(dataUrl);
+      let buf: Buffer;
+      if (packEl) {
+        await page.evaluate((tt) => (globalThis as HarnessGlobal).__cardRenderHarness!.seek(tt), t);
+        const shot = await packEl.screenshot({ type: "png" });
+        buf = Buffer.isBuffer(shot) ? shot : Buffer.from(shot);
+      } else {
+        const dataUrl = (await page.evaluate(
+          (tt) => (globalThis as HarnessGlobal).__cardRenderHarness!.drawFrame(tt),
+          t,
+        )) as string;
+        buf = dataUrlToBuffer(dataUrl);
+      }
       if (!ff.stdin.write(buf)) {
         await new Promise<void>((resolve) => ff.stdin.once("drain", resolve));
       }
@@ -241,7 +289,9 @@ export async function renderCardVideo(params: RenderParams): Promise<RenderResul
     await ffDone;
     onProgress?.(1);
 
-    return { filePath, contentType: "video/mp4", ext: "mp4" };
+    return format === "gif"
+      ? { filePath, contentType: "image/gif", ext: "gif" }
+      : { filePath, contentType: "video/mp4", ext: "mp4" };
   } finally {
     try {
       await page?.evaluate(() => (globalThis as HarnessGlobal).__cardRenderHarness?.dispose());
@@ -254,11 +304,17 @@ export async function renderCardVideo(params: RenderParams): Promise<RenderResul
 
 export type StillRenderResult = {
   buffer: Buffer;
-  contentType: "image/png";
-  ext: "png";
+  contentType: "image/png" | "image/jpeg" | "application/pdf";
+  ext: StillFormat;
   width: number;
   height: number;
 };
+
+const STILL_TYPES = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  pdf: "application/pdf",
+} as const;
 
 // Render a STATIC pack card to a PNG. Reuses the shared browser pool and the
 // same harness page as the MP4 path, but drives its static mode: the harness
@@ -268,7 +324,9 @@ export async function renderCardStill(
   input: unknown,
   options: unknown,
   harnessOrigin?: string | null,
+  out: { format?: StillFormat; scale?: number } = {},
 ): Promise<StillRenderResult> {
+  const format: StillFormat = out.format ?? "png";
   const browser = await getBrowser();
   let page: Page | null = null;
   try {
@@ -292,23 +350,34 @@ export async function renderCardStill(
 
     // Match the viewport to the native card so the element is fully painted with
     // no device scaling (1080px element → 1080px PNG).
+    // PDF is vector, so it prints at 1×; images render at the export scale.
     await page.setViewport({
       width: meta.width,
       height: meta.height,
-      deviceScaleFactor: 1,
+      deviceScaleFactor: format === "pdf" ? 1 : clampScale(out.scale),
     });
 
     const el = await page.$(meta.selector);
     if (!el) {
       throw new Error(`Card still element ${meta.selector} not found`);
     }
-    const shot = await el.screenshot({ type: "png" });
+    // The card is fixed at the page's top-left, so a page the card's size
+    // prints exactly the card.
+    const shot =
+      format === "pdf"
+        ? await page.pdf({
+            width: `${meta.width}px`,
+            height: `${meta.height}px`,
+            printBackground: true,
+            pageRanges: "1",
+          })
+        : await el.screenshot(format === "jpg" ? { type: "jpeg", quality: 92 } : { type: "png" });
     const buffer = Buffer.isBuffer(shot) ? shot : Buffer.from(shot);
 
     return {
       buffer,
-      contentType: "image/png",
-      ext: "png",
+      contentType: STILL_TYPES[format],
+      ext: format,
       width: meta.width,
       height: meta.height,
     };

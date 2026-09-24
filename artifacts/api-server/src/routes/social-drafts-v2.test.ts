@@ -4,8 +4,10 @@
  * integration test (needs DATABASE_URL).
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import request from "supertest";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import app from "../app";
 import { db, tenantsTable, adminsTable, socialDraftsTable, trackedLinksTable } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
@@ -82,24 +84,79 @@ async function makeDraft(status: string, tenant = tenantId) {
   return row;
 }
 
+const CONTRACT_SQL = readFileSync(
+  path.resolve(__dirname, "../../../../lib/db/migrations/0013_social_drafts_status_contract.sql"),
+  "utf8",
+);
+
 describe("draft states", () => {
-  it("lists legacy 'pending' as awaiting_review and 'approved' as ready", async () => {
-    const pending = await makeDraft("pending");
-    const approved = await makeDraft("approved");
-    const res = await api("get", "/social-drafts");
-    expect(res.status).toBe(200);
-    const byId = new Map(res.body.map((d: { id: number; status: string }) => [d.id, d.status]));
-    expect(byId.get(pending.id)).toBe("awaiting_review");
-    expect(byId.get(approved.id)).toBe("ready");
+  it("the database refuses the retired pending/approved values (U25)", async () => {
+    await expect(makeDraft("pending")).rejects.toThrow();
+    await expect(makeDraft("approved")).rejects.toThrow();
+    const d = await makeDraft("awaiting_review");
+    expect(d.status).toBe("awaiting_review");
   });
 
-  it("filters by status across legacy and new values", async () => {
-    const legacy = await makeDraft("pending");
+  it("the contract migration rewrites legacy rows, so the queue lists the same drafts", async () => {
+    class Rollback extends Error {}
+    const seen: Record<string, string> = {};
+    await db
+      .transaction(async (tx) => {
+        // Recreate the pre-contract table state inside a transaction.
+        await tx.execute(
+          sql.raw(`ALTER TABLE "social_drafts" DROP CONSTRAINT "social_drafts_status_check"`),
+        );
+        const rows = await tx
+          .insert(socialDraftsTable)
+          .values(
+            ["pending", "approved", "awaiting_review", "ready"].map((status) => ({
+              tenantId,
+              engine: "ondemand",
+              status,
+              cardInput: { kind: "record", title: `Contract ${status}` },
+              appPath: "/records",
+            })),
+          )
+          .returning();
+        for (const stmt of CONTRACT_SQL.split("--> statement-breakpoint")) {
+          if (stmt.trim()) await tx.execute(sql.raw(stmt));
+        }
+        const after = await tx
+          .select()
+          .from(socialDraftsTable)
+          .where(
+            inArray(
+              socialDraftsTable.id,
+              rows.map((row) => row.id),
+            ),
+          );
+        for (const row of after) {
+          seen[(row.cardInput as { title: string }).title] = row.status;
+        }
+        const legacy = await tx.execute<{ n: number }>(
+          sql`SELECT count(*)::int AS n FROM social_drafts WHERE status IN ('pending', 'approved')`,
+        );
+        expect(Number(legacy.rows[0].n)).toBe(0);
+        throw new Rollback();
+      })
+      .catch((e) => {
+        if (!(e instanceof Rollback)) throw e;
+      });
+    // What the queue showed for each legacy row is what it now stores.
+    expect(seen).toEqual({
+      "Contract pending": "awaiting_review",
+      "Contract approved": "ready",
+      "Contract awaiting_review": "awaiting_review",
+      "Contract ready": "ready",
+    });
+  });
+
+  it("filters by status", async () => {
     const current = await makeDraft("awaiting_review");
     const ready = await makeDraft("ready");
     const res = await api("get", "/social-drafts?status=awaiting_review");
     const ids = res.body.map((d: { id: number }) => d.id);
-    expect(ids).toEqual(expect.arrayContaining([legacy.id, current.id]));
+    expect(ids).toContain(current.id);
     expect(ids).not.toContain(ready.id);
     expect((await api("get", "/social-drafts?status=bogus")).status).toBe(400);
   });
@@ -109,9 +166,9 @@ describe("draft states", () => {
     expect(d.autoReadyAt).toBeNull();
   });
 
-  it("counts legacy and new awaiting-review drafts", async () => {
+  it("counts awaiting-review drafts", async () => {
     const before = (await api("get", "/social-drafts/pending-count")).body.count;
-    await makeDraft("pending");
+    await makeDraft("awaiting_review");
     await makeDraft("awaiting_review");
     const after = (await api("get", "/social-drafts/pending-count")).body.count;
     expect(after - before).toBe(2);

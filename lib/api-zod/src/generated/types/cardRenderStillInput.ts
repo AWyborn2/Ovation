@@ -5,10 +5,17 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { CardRenderStillInputFormat } from './cardRenderStillInputFormat';
 import type { CardRenderStillInputInput } from './cardRenderStillInputInput';
 import type { CardRenderStillInputOptions } from './cardRenderStillInputOptions';
 
 export interface CardRenderStillInput {
   input: CardRenderStillInputInput;
   options: CardRenderStillInputOptions;
+  format?: CardRenderStillInputFormat;
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  scale?: number;
 }
