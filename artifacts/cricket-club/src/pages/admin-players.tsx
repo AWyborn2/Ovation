@@ -19,7 +19,6 @@ import {
   type Player,
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +34,8 @@ import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeah
 import { JuniorSeniorLinkDialog } from "@/components/junior-senior-link-dialog";
 import { ListSkeleton, EmptyState, QueryError, LoadingState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
+import { DataTable, EditDrawer, type DataTableColumn } from "@/components/admin-ui";
+import { Plus, Search } from "lucide-react";
 import { TradingCardModal } from "@/components/trading-card";
 import { CARD_ROLES, deriveRole } from "@/lib/trading-card";
 import { aggregateCareer } from "@/lib/honour-boards";
@@ -45,8 +46,11 @@ export default function AdminPlayers() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Player | null>(null);
+  const [adding, setAdding] = useState(false);
   const [mergeFor, setMergeFor] = useState<Player | null>(null);
   const [juniorLinkFor, setJuniorLinkFor] = useState<Player | null>(null);
+  const [cardFor, setCardFor] = useState<number | null>(null);
   const [newSurname, setNewSurname] = useState("");
   const [newGiven, setNewGiven] = useState("");
 
@@ -71,55 +75,110 @@ export default function AdminPlayers() {
   const onErr = (e: unknown) => setError(handleAdminMutationError(e));
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.limit)) : 1;
 
+  const remove = async (p: Player) => {
+    const hasStats = (p.totalGames ?? 0) > 0 || (p.totalRuns ?? 0) > 0 || (p.totalWickets ?? 0) > 0;
+    if (
+      !(await confirm(
+        hasStats
+          ? {
+              title: "Delete player with stats?",
+              description: `${p.surname}, ${p.givenName} has stats. Deleting will cascade those stats. Continue?`,
+              confirmText: "Delete",
+              destructive: true,
+            }
+          : {
+              title: "Delete player?",
+              description: `Delete ${p.surname}, ${p.givenName}?`,
+              confirmText: "Delete",
+              destructive: true,
+            },
+      ))
+    )
+      return;
+    setError(null);
+    deletePlayer.mutate(
+      { id: p.id },
+      {
+        onSuccess: () => {
+          setEditing(null);
+          invalidate();
+        },
+        onError: onErr,
+      },
+    );
+  };
+
+  const addPlayer = () => {
+    if (!newSurname.trim() || !newGiven.trim()) return;
+    setError(null);
+    createPlayer.mutate(
+      { data: { surname: newSurname.trim(), givenName: newGiven.trim() } },
+      {
+        onSuccess: () => {
+          setNewSurname("");
+          setNewGiven("");
+          setAdding(false);
+          invalidate();
+        },
+        onError: onErr,
+      },
+    );
+  };
+
+  const columns: DataTableColumn<Player>[] = [
+    {
+      key: "name",
+      header: "Player",
+      cell: (p) => (
+        <span className="font-semibold">
+          {p.surname}, {p.givenName}
+          {p.deceased && (
+            <span className="ml-2 text-xs font-normal text-muted-foreground">✝ deceased</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      key: "games",
+      header: "Games",
+      cell: (p) => <span className="tabular-nums">{p.totalGames ?? 0}</span>,
+      className: "w-24 text-right",
+    },
+    {
+      key: "runs",
+      header: "Runs",
+      cell: (p) => <span className="tabular-nums">{p.totalRuns ?? 0}</span>,
+      className: "w-24 text-right",
+    },
+    {
+      key: "wickets",
+      header: "Wickets",
+      cell: (p) => <span className="tabular-nums">{p.totalWickets ?? 0}</span>,
+      className: "w-24 text-right",
+    },
+    {
+      key: "card",
+      header: "Card role",
+      cell: (p) => p.cardRole ?? <span className="text-muted-foreground">Auto</span>,
+      className: "w-36",
+    },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Add player</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="flex gap-3 items-end"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!newSurname.trim() || !newGiven.trim()) return;
-              setError(null);
-              createPlayer.mutate(
-                { data: { surname: newSurname.trim(), givenName: newGiven.trim() } },
-                {
-                  onSuccess: () => {
-                    setNewSurname("");
-                    setNewGiven("");
-                    invalidate();
-                  },
-                  onError: onErr,
-                },
-              );
-            }}
-          >
-            <div className="space-y-1">
-              <Label>Surname</Label>
-              <Input value={newSurname} onChange={(e) => setNewSurname(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label>Given name</Label>
-              <Input value={newGiven} onChange={(e) => setNewGiven(e.target.value)} />
-            </div>
-            <Button type="submit" disabled={createPlayer.isPending}>
-              Add
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-4 space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="relative min-w-0 flex-1 sm:max-w-sm">
+          <span className="sr-only">Search players</span>
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
           <Input
             placeholder="Search by name…"
             value={search}
@@ -127,93 +186,153 @@ export default function AdminPlayers() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="max-w-md"
+            className="h-10 pl-9"
           />
-          {isLoading ? (
-            <ListSkeleton rows={8} />
-          ) : isError ? (
-            <QueryError
-              message="We couldn’t load the players list. Please try again."
-              onRetry={() => refetch()}
-            />
-          ) : !data?.players.length ? (
+        </label>
+        <Button className="ml-auto" onClick={() => setAdding(true)}>
+          <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+          Add player
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <ListSkeleton rows={8} />
+      ) : isError ? (
+        <QueryError
+          message="We couldn’t load the players list. Please try again."
+          onRetry={() => refetch()}
+        />
+      ) : (
+        <DataTable
+          label="Players"
+          rows={data?.players ?? []}
+          columns={columns}
+          getRowId={(p) => p.id}
+          onRowClick={setEditing}
+          emptyState={
             <EmptyState
               title="No players found"
               message={search ? "No players match your search." : "Add a player to get started."}
             />
-          ) : (
-            <div className="space-y-2">
-              {data.players.map((p) => (
-                <PlayerRow
-                  key={p.id}
-                  player={p}
-                  pending={updatePlayer.isPending || deletePlayer.isPending}
-                  onSave={(patch) =>
-                    updatePlayer.mutate(
-                      { id: p.id, data: patch },
-                      { onSuccess: invalidate, onError: onErr },
-                    )
-                  }
-                  onDelete={async () => {
-                    if (
-                      (p.totalGames ?? 0) > 0 ||
-                      (p.totalRuns ?? 0) > 0 ||
-                      (p.totalWickets ?? 0) > 0
-                    ) {
-                      if (
-                        !(await confirm({
-                          title: "Delete player with stats?",
-                          description: `${p.surname}, ${p.givenName} has stats. Deleting will cascade those stats. Continue?`,
-                          confirmText: "Delete",
-                          destructive: true,
-                        }))
-                      )
-                        return;
-                    } else if (
-                      !(await confirm({
-                        title: "Delete player?",
-                        description: `Delete ${p.surname}, ${p.givenName}?`,
-                        confirmText: "Delete",
-                        destructive: true,
-                      }))
-                    )
-                      return;
-                    setError(null);
-                    deletePlayer.mutate({ id: p.id }, { onSuccess: invalidate, onError: onErr });
-                  }}
-                  onMerge={() => setMergeFor(p)}
-                  onJuniorLink={() => setJuniorLinkFor(p)}
-                />
-              ))}
-            </div>
-          )}
-          {data && data.total > 0 && (
-            <div className="flex items-center justify-between text-sm">
-              <div className="text-muted-foreground">
-                Page {data.page} of {totalPages} — {data.total} players
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={data.page <= 1}
-                >
-                  Prev
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={data.page >= totalPages}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          }
+          minWidth={620}
+        />
+      )}
+
+      {data && data.total > 0 && (
+        <div className="flex items-center justify-between text-sm">
+          <div className="text-muted-foreground">
+            Page {data.page} of {totalPages} — {data.total} players
+          </div>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={data.page <= 1}
+            >
+              Prev
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={data.page >= totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <EditDrawer
+        open={adding}
+        onOpenChange={setAdding}
+        title="Add player"
+        onSave={addPlayer}
+        saving={createPlayer.isPending}
+        saveDisabled={!newSurname.trim() || !newGiven.trim()}
+        saveLabel="Add player"
+      >
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            addPlayer();
+          }}
+        >
+          <div className="space-y-1">
+            <Label htmlFor="new-surname">Surname</Label>
+            <Input
+              id="new-surname"
+              value={newSurname}
+              onChange={(e) => setNewSurname(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="new-given">Given name</Label>
+            <Input id="new-given" value={newGiven} onChange={(e) => setNewGiven(e.target.value)} />
+          </div>
+        </form>
+      </EditDrawer>
+
+      <EditDrawer
+        open={editing != null}
+        onOpenChange={(o) => !o && setEditing(null)}
+        title={editing ? `${editing.surname}, ${editing.givenName}` : ""}
+        description={
+          editing
+            ? `${editing.totalGames ?? 0} games · ${editing.totalRuns ?? 0} runs · ${editing.totalWickets ?? 0} wickets`
+            : undefined
+        }
+        footer={
+          editing ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              disabled={deletePlayer.isPending}
+              onClick={() => remove(editing)}
+            >
+              Delete
+            </Button>
+          ) : undefined
+        }
+      >
+        {editing && (
+          <PlayerEditor
+            key={editing.id}
+            player={editing}
+            pending={updatePlayer.isPending}
+            onSave={(patch) =>
+              updatePlayer.mutate(
+                { id: editing.id, data: patch },
+                {
+                  onSuccess: () => {
+                    setEditing(null);
+                    invalidate();
+                  },
+                  onError: onErr,
+                },
+              )
+            }
+            onCancel={() => setEditing(null)}
+            onCard={() => setCardFor(editing.id)}
+            onMerge={() => {
+              setMergeFor(editing);
+              setEditing(null);
+            }}
+            onJuniorLink={() => {
+              setJuniorLinkFor(editing);
+              setEditing(null);
+            }}
+          />
+        )}
+      </EditDrawer>
+
+      {cardFor != null && (
+        <TradingCardModal playerId={cardFor} open onOpenChange={(o) => !o && setCardFor(null)} />
+      )}
 
       {mergeFor && (
         <MergeDialog
@@ -247,11 +366,12 @@ export default function AdminPlayers() {
   );
 }
 
-function PlayerRow({
+function PlayerEditor({
   player,
   pending,
   onSave,
-  onDelete,
+  onCancel,
+  onCard,
   onMerge,
   onJuniorLink,
 }: {
@@ -264,12 +384,11 @@ function PlayerRow({
     cardRole?: string | null;
     cardRating?: number | null;
   }) => void;
-  onDelete: () => void;
+  onCancel: () => void;
+  onCard: () => void;
   onMerge: () => void;
   onJuniorLink: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [cardOpen, setCardOpen] = useState(false);
   const [surname, setSurname] = useState(player.surname);
   const [givenName, setGivenName] = useState(player.givenName);
   const [deceased, setDeceased] = useState(player.deceased);
@@ -279,34 +398,90 @@ function PlayerRow({
   );
 
   // Surface the role the auto-rule computes for this player, so an admin can
-  // confirm or override it at a glance. Only fetched while the row is open for
-  // editing (the dropdown is hidden otherwise), and only needed for the "Auto"
-  // option — but we resolve it whenever editing so the label is ready.
+  // confirm or override it at a glance (the "Auto — …" option).
   const { data: detail } = useGetPlayer(player.id, {
-    query: { enabled: editing, queryKey: getGetPlayerQueryKey(player.id) },
+    query: { queryKey: getGetPlayerQueryKey(player.id) },
   });
   const suggestedRole = detail ? deriveRole(aggregateCareer(detail.stats)[0]) : null;
 
-  if (!editing) {
-    return (
-      <div className="flex items-center justify-between gap-3 border-b pb-2 last:border-0">
-        <div>
-          <span className="font-medium">
-            {player.surname}, {player.givenName}
-          </span>
-          {player.deceased && (
-            <span className="ml-2 text-xs text-muted-foreground">✝ deceased</span>
-          )}
-          <span className="ml-3 text-xs text-muted-foreground">
-            {player.totalGames ?? 0}g · {player.totalRuns ?? 0}r · {player.totalWickets ?? 0}w
-          </span>
+  const save = () => {
+    const ratingNum = cardRating.trim() === "" ? null : Number(cardRating);
+    const nextRole = cardRole === "" ? null : cardRole;
+    const prevRating = player.cardRating ?? null;
+    const prevRole = player.cardRole ?? null;
+    onSave({
+      surname: surname !== player.surname ? surname : undefined,
+      givenName: givenName !== player.givenName ? givenName : undefined,
+      deceased: deceased !== player.deceased ? deceased : undefined,
+      cardRole: nextRole !== prevRole ? nextRole : undefined,
+      cardRating:
+        ratingNum !== prevRating
+          ? ratingNum != null && Number.isFinite(ratingNum)
+            ? Math.min(5, Math.max(0, Math.round(ratingNum)))
+            : null
+          : undefined,
+    });
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1">
+          <Label htmlFor="p-surname">Surname</Label>
+          <Input id="p-surname" value={surname} onChange={(e) => setSurname(e.target.value)} />
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => setCardOpen(true)}>
-            Card
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
-            Edit
+        <div className="space-y-1">
+          <Label htmlFor="p-given">Given name</Label>
+          <Input id="p-given" value={givenName} onChange={(e) => setGivenName(e.target.value)} />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="p-role">Card role</Label>
+          <select
+            id="p-role"
+            value={cardRole}
+            onChange={(e) => setCardRole(e.target.value)}
+            className="h-10 w-full rounded-md border border-input bg-background px-2 text-sm"
+          >
+            <option value="">{suggestedRole ? `Auto — ${suggestedRole}` : "Auto"}</option>
+            {CARD_ROLES.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="p-rating">Card rating (1-5)</Label>
+          <Input
+            id="p-rating"
+            type="number"
+            min={0}
+            max={5}
+            value={cardRating}
+            onChange={(e) => setCardRating(e.target.value)}
+          />
+        </div>
+      </div>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={deceased} onChange={(e) => setDeceased(e.target.checked)} />
+        Deceased
+      </label>
+      <div className="flex gap-2">
+        <Button onClick={save} disabled={pending}>
+          {pending ? "Saving…" : "Save changes"}
+        </Button>
+        <Button variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+
+      <PlayerGallery playerId={player.id} />
+
+      <div className="space-y-2 border-t border-border pt-4">
+        <p className="text-sm font-semibold">More</p>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={onCard}>
+            Trading card
           </Button>
           <Button size="sm" variant="outline" onClick={onMerge}>
             Merge…
@@ -314,95 +489,8 @@ function PlayerRow({
           <Button size="sm" variant="outline" onClick={onJuniorLink}>
             Juniors…
           </Button>
-          <Button size="sm" variant="outline" onClick={onDelete} disabled={pending}>
-            Delete
-          </Button>
         </div>
-        <TradingCardModal playerId={player.id} open={cardOpen} onOpenChange={setCardOpen} />
       </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-wrap items-end gap-3 border-b pb-3 last:border-0">
-      <div className="space-y-1">
-        <Label>Surname</Label>
-        <Input value={surname} onChange={(e) => setSurname(e.target.value)} />
-      </div>
-      <div className="space-y-1">
-        <Label>Given name</Label>
-        <Input value={givenName} onChange={(e) => setGivenName(e.target.value)} />
-      </div>
-      <div className="space-y-1">
-        <Label>Card role</Label>
-        <select
-          value={cardRole}
-          onChange={(e) => setCardRole(e.target.value)}
-          className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-        >
-          <option value="">{suggestedRole ? `Auto — ${suggestedRole}` : "Auto"}</option>
-          {CARD_ROLES.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="space-y-1">
-        <Label>Card rating (1-5)</Label>
-        <Input
-          type="number"
-          min={0}
-          max={5}
-          value={cardRating}
-          onChange={(e) => setCardRating(e.target.value)}
-          className="w-24"
-        />
-      </div>
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={deceased} onChange={(e) => setDeceased(e.target.checked)} />
-        Deceased
-      </label>
-      <PlayerGallery playerId={player.id} />
-      <Button
-        size="sm"
-        onClick={() => {
-          const ratingNum = cardRating.trim() === "" ? null : Number(cardRating);
-          const nextRole = cardRole === "" ? null : cardRole;
-          const prevRating = player.cardRating ?? null;
-          const prevRole = player.cardRole ?? null;
-          onSave({
-            surname: surname !== player.surname ? surname : undefined,
-            givenName: givenName !== player.givenName ? givenName : undefined,
-            deceased: deceased !== player.deceased ? deceased : undefined,
-            cardRole: nextRole !== prevRole ? nextRole : undefined,
-            cardRating:
-              ratingNum !== prevRating
-                ? ratingNum != null && Number.isFinite(ratingNum)
-                  ? Math.min(5, Math.max(0, Math.round(ratingNum)))
-                  : null
-                : undefined,
-          });
-          setEditing(false);
-        }}
-        disabled={pending}
-      >
-        Save
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => {
-          setEditing(false);
-          setSurname(player.surname);
-          setGivenName(player.givenName);
-          setDeceased(player.deceased);
-          setCardRole(player.cardRole ?? "");
-          setCardRating(player.cardRating != null ? String(player.cardRating) : "");
-        }}
-      >
-        Cancel
-      </Button>
     </div>
   );
 }
@@ -443,7 +531,7 @@ function PlayerGallery({ playerId }: { playerId: number }) {
   const busy = isUploading || addImage.isPending || deleteImage.isPending || setDefault.isPending;
 
   return (
-    <div className="basis-full space-y-2 rounded-md border bg-muted/30 p-3">
+    <div className="space-y-2 rounded-md border bg-muted/30 p-3">
       <div className="flex items-center justify-between">
         <Label>Photo gallery</Label>
         <label className="cursor-pointer text-sm font-medium text-primary-text hover:underline">

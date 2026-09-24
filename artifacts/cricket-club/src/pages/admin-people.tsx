@@ -8,13 +8,14 @@ import {
   getListPeopleQueryKey,
 } from "@workspace/api-client-react";
 import type { NonPlayerPerson } from "@workspace/api-client-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
+import { DataTable, EditDrawer, type DataTableColumn } from "@/components/admin-ui";
+import { Plus } from "lucide-react";
 
 type PersonFormValues = { name: string; bio: string };
 
@@ -38,20 +39,60 @@ export default function AdminPeople() {
     if (msg) setError(msg);
   };
 
+  const rows = people ?? [];
+  const editing = rows.find((p) => p.id === editingId) ?? null;
+
+  const remove = async (p: NonPlayerPerson) => {
+    if (
+      !(await confirm({
+        title: "Delete person",
+        description: `Delete "${p.name}"? Any committee/captain rows linked to them will revert to plain text.`,
+        confirmText: "Delete",
+        destructive: true,
+      }))
+    )
+      return;
+    setError(null);
+    deletePerson.mutate(
+      { id: p.id },
+      {
+        onSuccess: () => {
+          setEditingId(null);
+          invalidate();
+        },
+        onError: onMutationError,
+      },
+    );
+  };
+
+  const columns: DataTableColumn<NonPlayerPerson>[] = [
+    {
+      key: "name",
+      header: "Name",
+      cell: (p) => <span className="font-semibold">{p.name}</span>,
+    },
+    {
+      key: "bio",
+      header: "Bio",
+      cell: (p) => (
+        <span className="line-clamp-1 max-w-[48ch] text-muted-foreground">{p.bio || "—"}</span>
+      ),
+    },
+    {
+      key: "id",
+      header: "ID",
+      cell: (p) => <span className="tabular-nums text-muted-foreground">#{p.id}</span>,
+      className: "w-20",
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="max-w-[75ch] text-[15px] text-muted-foreground">
-            Club officials who served the club but never played (e.g. Secretaries and Treasurers).
-            Add them here, then link them on committee or captain rows so their name becomes a
-            clickable profile.
-          </p>
-        </div>
-        <Button onClick={() => setShowNew((v) => !v)} variant={showNew ? "outline" : "default"}>
-          {showNew ? "Close form" : "Add person"}
-        </Button>
-      </div>
+    <div className="space-y-5">
+      <p className="max-w-[75ch] text-[15px] text-muted-foreground">
+        Club officials who served the club but never played (e.g. Secretaries and Treasurers). Add
+        them here, then link them on committee or captain rows so their name becomes a clickable
+        profile.
+      </p>
 
       {error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -59,119 +100,99 @@ export default function AdminPeople() {
         </div>
       )}
 
-      {showNew && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Add a non-player person</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PersonForm
-              initial={{ name: "", bio: "" }}
-              pending={createPerson.isPending}
-              submitLabel="Add person"
-              onSubmit={(values) => {
-                setError(null);
-                createPerson.mutate(
-                  { data: { name: values.name, bio: values.bio || null } },
-                  {
-                    onSuccess: () => {
-                      setShowNew(false);
-                      invalidate();
-                    },
-                    onError: onMutationError,
-                  },
-                );
-              }}
-              onCancel={() => setShowNew(false)}
-            />
-          </CardContent>
-        </Card>
-      )}
-
       {isError ? (
         <QueryError onRetry={() => refetch()} />
       ) : isLoading ? (
         <ListSkeleton />
-      ) : (people ?? []).length === 0 ? (
-        <EmptyState
-          title="No non-player people yet"
-          message="Add a club official who never played to link them on committee or captain rows."
-        />
       ) : (
-        <Card>
-          <CardContent className="space-y-2 pt-6">
-            {(people ?? []).map((p: NonPlayerPerson) =>
-              editingId === p.id ? (
-                <div key={p.id} className="rounded-md border border-border bg-muted/30 p-4">
-                  <PersonForm
-                    initial={{ name: p.name, bio: p.bio ?? "" }}
-                    pending={updatePerson.isPending}
-                    submitLabel="Save changes"
-                    onSubmit={(values) => {
-                      setError(null);
-                      updatePerson.mutate(
-                        {
-                          id: p.id,
-                          data: { name: values.name, bio: values.bio || null },
-                        },
-                        {
-                          onSuccess: () => {
-                            setEditingId(null);
-                            invalidate();
-                          },
-                          onError: onMutationError,
-                        },
-                      );
-                    }}
-                    onCancel={() => setEditingId(null)}
-                  />
-                </div>
-              ) : (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
-                >
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">
-                      {p.name}
-                      <span className="ml-2 text-xs text-muted-foreground">#{p.id}</span>
-                    </div>
-                    {p.bio && <div className="text-sm text-muted-foreground truncate">{p.bio}</div>}
-                  </div>
-                  <div className="space-x-2 shrink-0">
-                    <Button size="sm" variant="outline" onClick={() => setEditingId(p.id)}>
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={deletePerson.isPending}
-                      onClick={async () => {
-                        if (
-                          !(await confirm({
-                            title: "Delete person",
-                            description: `Delete "${p.name}"? Any committee/captain rows linked to them will revert to plain text.`,
-                            confirmText: "Delete",
-                            destructive: true,
-                          }))
-                        )
-                          return;
-                        setError(null);
-                        deletePerson.mutate(
-                          { id: p.id },
-                          { onSuccess: invalidate, onError: onMutationError },
-                        );
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              ),
-            )}
-          </CardContent>
-        </Card>
+        <DataTable
+          label="Non-player people"
+          rows={rows}
+          columns={columns}
+          getRowId={(p) => p.id}
+          searchText={(p) => `${p.name} ${p.bio ?? ""}`}
+          searchPlaceholder="Search people"
+          onRowClick={(p) => setEditingId(p.id)}
+          toolbarAction={
+            <Button onClick={() => setShowNew(true)}>
+              <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+              Add person
+            </Button>
+          }
+          emptyState={
+            <EmptyState
+              title="No non-player people yet"
+              message="Add a club official who never played to link them on committee or captain rows."
+            />
+          }
+          minWidth={520}
+        />
       )}
+
+      <EditDrawer open={showNew} onOpenChange={setShowNew} title="Add a non-player person">
+        {showNew && (
+          <PersonForm
+            initial={{ name: "", bio: "" }}
+            pending={createPerson.isPending}
+            submitLabel="Add person"
+            onSubmit={(values) => {
+              setError(null);
+              createPerson.mutate(
+                { data: { name: values.name, bio: values.bio || null } },
+                {
+                  onSuccess: () => {
+                    setShowNew(false);
+                    invalidate();
+                  },
+                  onError: onMutationError,
+                },
+              );
+            }}
+            onCancel={() => setShowNew(false)}
+          />
+        )}
+      </EditDrawer>
+
+      <EditDrawer
+        open={editing != null}
+        onOpenChange={(o) => !o && setEditingId(null)}
+        title={editing ? `Edit ${editing.name}` : ""}
+        footer={
+          editing ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              disabled={deletePerson.isPending}
+              onClick={() => remove(editing)}
+            >
+              Delete
+            </Button>
+          ) : undefined
+        }
+      >
+        {editing && (
+          <PersonForm
+            initial={{ name: editing.name, bio: editing.bio ?? "" }}
+            pending={updatePerson.isPending}
+            submitLabel="Save changes"
+            onSubmit={(values) => {
+              setError(null);
+              updatePerson.mutate(
+                { id: editing.id, data: { name: values.name, bio: values.bio || null } },
+                {
+                  onSuccess: () => {
+                    setEditingId(null);
+                    invalidate();
+                  },
+                  onError: onMutationError,
+                },
+              );
+            }}
+            onCancel={() => setEditingId(null)}
+          />
+        )}
+      </EditDrawer>
     </div>
   );
 }
