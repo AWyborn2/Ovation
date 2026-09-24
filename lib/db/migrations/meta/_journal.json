@@ -43,6 +43,13 @@
       "when": 1790212807139,
       "tag": "0005_social_drafts_v2",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790214014965,
+      "tag": "0006_social_family_config",
+      "breakpoints": true
     }
   ]
 }

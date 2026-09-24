@@ -21,6 +21,7 @@ import { getOrCreateSettings } from "../lib/settings";
 import { invalidateMilestonesCache } from "../lib/milestones-cache";
 import { renderCardStill, harnessOriginFromHeaders } from "../lib/card-video-renderer";
 import { DEFAULT_TEMPLATES, ensureSettings } from "../lib/social-cards-helpers";
+import { resolveFamilyConfig, syncFamilySettings } from "../lib/social-families";
 
 import assetsRouter from "./social-cards-assets";
 import designRouter from "./social-cards-design";
@@ -56,7 +57,9 @@ router.get("/social-settings", async (req, res): Promise<void> => {
     .from(captionTemplatesTable)
     .where(eq(captionTemplatesTable.tenantId, tenantId));
   res.json({
-    settings,
+    // The effective family switches — derived from the engine flags until a
+    // tenant first saves them.
+    settings: { ...settings, familyConfig: resolveFamilyConfig(settings) },
     captionTemplates: captionTemplates.map((t) => ({
       engine: t.engine,
       platform: t.platform,
@@ -78,13 +81,15 @@ router.patch(
       return;
     }
     const tenantId = getTenantId(req);
-    await ensureSettings(tenantId);
+    const current = await ensureSettings(tenantId);
+    // Family switches and the legacy engine flags are kept in step both ways.
+    const { familyConfig: _submitted, ...patch } = parsed.data;
     const [row] = await db
       .update(socialSettingsTable)
-      .set({ ...parsed.data, updatedAt: new Date() })
+      .set({ ...patch, ...syncFamilySettings(current, parsed.data), updatedAt: new Date() })
       .where(eq(socialSettingsTable.tenantId, tenantId))
       .returning();
-    res.json(row);
+    res.json({ ...row, familyConfig: resolveFamilyConfig(row) });
   },
 );
 

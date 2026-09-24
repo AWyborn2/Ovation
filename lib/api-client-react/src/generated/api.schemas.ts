@@ -3436,6 +3436,28 @@ export type SocialSettingsMatchSummaryGradeConfig = {[key: string]: {
   enabled: boolean;
 }};
 
+/**
+ * Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.
+ */
+export type SocialFamilySettingGrades = {[key: string]: boolean};
+
+export interface SocialFamilySetting {
+  /** Whether this family auto-drafts at all */
+  enabled: boolean;
+  /** Per-grade overrides. A grade absent here uses the default: seniors on, juniors off. */
+  grades: SocialFamilySettingGrades;
+}
+
+/**
+ * Effective per-family automation switches. Derived from the engine flags until first saved.
+ */
+export interface SocialFamilyConfig {
+  results: SocialFamilySetting;
+  achievements: SocialFamilySetting;
+  roundup: SocialFamilySetting;
+  matchday: SocialFamilySetting;
+}
+
 export interface SocialSettings {
   engineOnDemand: boolean;
   engineMilestone: boolean;
@@ -3459,6 +3481,24 @@ export interface SocialSettings {
      * @nullable
      */
   seasonStartDate?: string | null;
+  familyConfig?: SocialFamilyConfig;
+}
+
+export type SocialFamilySettingUpdateGrades = {[key: string]: boolean};
+
+export interface SocialFamilySettingUpdate {
+  enabled?: boolean;
+  grades?: SocialFamilySettingUpdateGrades;
+}
+
+/**
+ * Partial family switches; omitted families and grades keep their current values.
+ */
+export interface SocialFamilyConfigUpdate {
+  results?: SocialFamilySettingUpdate;
+  achievements?: SocialFamilySettingUpdate;
+  roundup?: SocialFamilySettingUpdate;
+  matchday?: SocialFamilySettingUpdate;
 }
 
 /**
@@ -3491,6 +3531,7 @@ export interface SocialSettingsUpdate {
      * @nullable
      */
   seasonStartDate?: string | null;
+  familyConfig?: SocialFamilyConfigUpdate;
 }
 
 /**
