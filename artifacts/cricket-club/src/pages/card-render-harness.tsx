@@ -11,6 +11,7 @@ import { prepareAnimation } from "@/lib/share-card-animation";
 import { PackCard } from "@/components/pack-card";
 import { packNativeSize, type CardAdjustments, type PackCardData } from "@/lib/pack-render";
 import { ensureCardFontsLoaded } from "@/lib/card-fonts";
+import { clipDuration, seekAnimations } from "@/lib/pack-render/animation-clock";
 
 // Metrics returned by init() so the server knows how many frames to capture.
 type HarnessMeta = {
@@ -18,6 +19,8 @@ type HarnessMeta = {
   height: number;
   durationMs: number;
   loop: boolean;
+  /** Pack-card clips: the element the server screenshots after each seek(). */
+  selector?: string;
 };
 
 // Static-mode payload: the same values that drive the live <PackCard> preview.
@@ -37,6 +40,9 @@ type StillOptions = {
   adjustments?: CardAdjustments | null;
 };
 
+// Clip-mode payload for an animated pack card: the still options plus `pack`.
+type PackClipOptions = StillOptions & { pack?: boolean };
+
 // Metrics returned by renderStill() so the server knows what to screenshot.
 type StillMeta = {
   width: number;
@@ -49,6 +55,8 @@ type HarnessApi = {
   ready: boolean;
   init: (payload: { input: ShareCardInput; options: RenderOptions }) => Promise<HarnessMeta>;
   drawFrame: (t: number) => string;
+  /** Pack-card clips: pause every animation at `t` (0..1) of the clip. */
+  seek: (t: number) => Promise<void>;
   renderStill: (payload: { input: ShareCardInput; options: StillOptions }) => Promise<StillMeta>;
   dispose: () => void;
 };
@@ -97,7 +105,10 @@ async function waitForImages(root: HTMLElement, timeoutMs = 8000): Promise<void>
 // two modes over one page:
 //  - ANIMATED (init/drawFrame): Puppeteer drives the EXACT same `prepareAnimation`
 //    renderer the live preview uses, frame by frame, so server MP4 clips are
-//    pixel-identical to the preview.
+//    pixel-identical to the preview. With `options.pack`, init() instead mounts
+//    the animated <PackCard> (editor layer entrances) and the server seeks its
+//    paused CSS animations frame by frame with seek(), screenshotting the
+//    element (MP4/GIF downloads, U18).
 //  - STATIC / PACK (renderStill): mounts <PackCard> unscaled at native px and
 //    exposes the element so the server can `page.screenshot` a single PNG. Pack
 //    cards are static, so this bypasses the ffmpeg pipeline entirely.
@@ -111,6 +122,9 @@ export default function CardRenderHarness() {
     let ctx: CanvasRenderingContext2D | null = null;
     let stillRoot: Root | null = null;
     let stillContainer: HTMLDivElement | null = null;
+    // Animated pack-card clip (seek mode): its paused animations and length.
+    let packAnimations: Animation[] = [];
+    let packDurationMs = 0;
 
     const teardownStill = () => {
       if (stillRoot) {
@@ -127,6 +141,23 @@ export default function CardRenderHarness() {
       ready: true,
       async init(payload) {
         handle?.cleanup();
+        const packOptions = payload.options as unknown as PackClipOptions;
+        if (packOptions.pack) {
+          // An animated pack card: mount it at native px with its layer
+          // animations, pause them, and seek per frame (see seek()).
+          const native = await mountPack(payload.input, packOptions, true);
+          packAnimations = stillContainer!.getAnimations({ subtree: true });
+          packDurationMs = clipDuration(packAnimations);
+          seekAnimations(packAnimations, 0);
+          setStatus("initialised");
+          return {
+            width: native.w,
+            height: native.h,
+            durationMs: packDurationMs,
+            loop: false,
+            selector: `#${STILL_CONTAINER_ID}`,
+          };
+        }
         handle = await prepareAnimation(payload.input, payload.options);
         canvas = document.createElement("canvas");
         canvas.width = handle.width;
@@ -148,67 +179,14 @@ export default function CardRenderHarness() {
         handle.draw(ctx, Math.max(0, Math.min(1, t)));
         return canvas.toDataURL("image/png");
       },
-      async renderStill(payload) {
-        const { input, options } = payload;
-        const size = options.size;
-        const native = packNativeSize(size);
-
-        // Fresh offscreen container mounted at native px (unscaled). Fixed at the
-        // top-left so its bounding box is a clean native-size clip to screenshot.
-        teardownStill();
-        stillContainer = document.createElement("div");
-        stillContainer.id = STILL_CONTAINER_ID;
-        Object.assign(stillContainer.style, {
-          position: "fixed",
-          top: "0",
-          left: "0",
-          width: `${native.w}px`,
-          height: `${native.h}px`,
-          margin: "0",
-          padding: "0",
-          overflow: "hidden",
-          background: "#000",
-          zIndex: "2147483647",
-        } as Partial<CSSStyleDeclaration>);
-        document.body.appendChild(stillContainer);
-
-        // Reuse the SAME <PackCard> the modal previews. Passing an explicit width
-        // equal to the native width makes its internal scale factor exactly 1, so
-        // the DOM renders at true 1080-wide native resolution with no cropping.
-        stillRoot = createRoot(stillContainer);
-        stillRoot.render(
-          <PackCard
-            input={input}
-            size={size}
-            sponsorsOn={options.sponsorsOn}
-            theme={options.theme ?? null}
-            junior={options.junior}
-            data={options.data ?? null}
-            packId={options.packId ?? null}
-            adjustments={options.adjustments ?? null}
-            width={native.w}
-          />,
-        );
-
-        // Settle web fonts, then wait for slot images, then two animation frames
-        // so the screenshot is stable and fully painted.
-        await ensureCardFontsLoaded();
-        try {
-          const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
-          if (fonts?.ready) await fonts.ready;
-        } catch {
-          // Font Loading API unavailable — proceed with system fallback.
-        }
-        // Let React commit so the <img> slots exist, then wait for every slot
-        // image to finish loading/decoding before we screenshot (see
-        // waitForImages) — otherwise the first card in a batch exports a blank
-        // photo while the image is still fetching.
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-        await waitForImages(stillContainer);
+      async seek(t) {
+        seekAnimations(packAnimations, Math.max(0, Math.min(1, t)) * packDurationMs);
         await new Promise<void>((resolve) =>
           requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
         );
-
+      },
+      async renderStill(payload) {
+        const native = await mountPack(payload.input, payload.options, false);
         setStatus("still");
         return {
           width: native.w,
@@ -221,10 +199,80 @@ export default function CardRenderHarness() {
         handle = null;
         ctx = null;
         canvas = null;
+        packAnimations = [];
         teardownStill();
         setStatus("disposed");
       },
     };
+
+    // Mount <PackCard> at native px in a fixed top-left container the server
+    // screenshots; `animate` plays its layer entrances (for clip export).
+    async function mountPack(
+      input: ShareCardInput,
+      options: StillOptions,
+      animate: boolean,
+    ): Promise<{ w: number; h: number }> {
+      const size = options.size;
+      const native = packNativeSize(size);
+
+      // Fresh offscreen container mounted at native px (unscaled). Fixed at the
+      // top-left so its bounding box is a clean native-size clip to screenshot.
+      teardownStill();
+      stillContainer = document.createElement("div");
+      stillContainer.id = STILL_CONTAINER_ID;
+      Object.assign(stillContainer.style, {
+        position: "fixed",
+        top: "0",
+        left: "0",
+        width: `${native.w}px`,
+        height: `${native.h}px`,
+        margin: "0",
+        padding: "0",
+        overflow: "hidden",
+        background: "#000",
+        zIndex: "2147483647",
+      } as Partial<CSSStyleDeclaration>);
+      document.body.appendChild(stillContainer);
+
+      // Reuse the SAME <PackCard> the modal previews. Passing an explicit width
+      // equal to the native width makes its internal scale factor exactly 1, so
+      // the DOM renders at true 1080-wide native resolution with no cropping.
+      stillRoot = createRoot(stillContainer);
+      stillRoot.render(
+        <PackCard
+          input={input}
+          size={size}
+          sponsorsOn={options.sponsorsOn}
+          theme={options.theme ?? null}
+          junior={options.junior}
+          data={options.data ?? null}
+          packId={options.packId ?? null}
+          adjustments={options.adjustments ?? null}
+          animate={animate}
+          width={native.w}
+        />,
+      );
+
+      // Settle web fonts, then wait for slot images, then two animation frames
+      // so the screenshot is stable and fully painted.
+      await ensureCardFontsLoaded();
+      try {
+        const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
+        if (fonts?.ready) await fonts.ready;
+      } catch {
+        // Font Loading API unavailable — proceed with system fallback.
+      }
+      // Let React commit so the <img> slots exist, then wait for every slot
+      // image to finish loading/decoding before we screenshot (see
+      // waitForImages) — otherwise the first card in a batch exports a blank
+      // photo while the image is still fetching.
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      await waitForImages(stillContainer);
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      return native;
+    }
 
     window.__cardRenderHarness = api;
     return () => {

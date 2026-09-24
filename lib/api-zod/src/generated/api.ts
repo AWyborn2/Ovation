@@ -8241,10 +8241,16 @@ export const UpdateJuniorMatchDisplaySettingsResponse = zod.object({
  * Renders the EXACT same data-bound card the browser previews into a guaranteed-compatible H.264/MP4, off the main thread, as a job. `input` and `options` are the opaque ShareCardInput + RenderOptions JSON the client already builds for the preview (the union lives in the frontend). Returns a job id to poll; the browser MediaRecorder path remains as a fallback. Admin-only (enforced by route middleware).
  * @summary Start a server-side MP4 render of an animated share-card (admin only)
  */
+export const createCardVideoJobBodyScaleMax = 3;
+
+
+
 export const CreateCardVideoJobBody = zod.object({
   "input": zod.record(zod.string(), zod.unknown()),
   "options": zod.record(zod.string(), zod.unknown()),
-  "fps": zod.number().nullish()
+  "fps": zod.number().nullish(),
+  "format": zod.enum(['mp4', 'gif']).optional(),
+  "scale": zod.number().min(1).max(createCardVideoJobBodyScaleMax).optional()
 })
 
 
@@ -8277,9 +8283,15 @@ export const DownloadCardVideoJobParams = zod.object({
  * Renders a standard Pack A ("Broadcast Dark") share-card to a PNG through the same headless-Chromium harness the MP4 renderer uses, but in a static mode: the harness mounts the pack card at native size (1080 × 1920/1350/ 1080 by size) and the server screenshots that element. Pack cards are static (no animation pipeline), so this bypasses ffmpeg entirely and streams the image synchronously. `input` is the opaque ShareCardInput JSON the client builds for the preview; `options` carries the size, sponsor toggle, junior flag and theme. Admin-only (enforced by route middleware); BYO (bring-your-own) templates keep the client-side canvas PNG path.
  * @summary Server-side PNG render of a standard (pack) share-card (admin only)
  */
+export const createCardRenderStillBodyScaleMax = 3;
+
+
+
 export const CreateCardRenderStillBody = zod.object({
   "input": zod.record(zod.string(), zod.unknown()),
-  "options": zod.record(zod.string(), zod.unknown())
+  "options": zod.record(zod.string(), zod.unknown()),
+  "format": zod.enum(['png', 'jpg', 'pdf']).optional(),
+  "scale": zod.number().min(1).max(createCardRenderStillBodyScaleMax).optional()
 })
 
 
