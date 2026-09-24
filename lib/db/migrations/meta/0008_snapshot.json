@@ -1,6 +1,6 @@
 {
-  "id": "eca4b08a-b04a-4105-8830-1ba50c7b9d5c",
-  "prevId": "8bf3251c-e177-4f4d-8233-e22748204d47",
+  "id": "f6b3128c-8547-4f85-a470-dc10ac854ce6",
+  "prevId": "eca4b08a-b04a-4105-8830-1ba50c7b9d5c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -5046,6 +5046,18 @@
         },
         "season_start_date": {
           "name": "season_start_date",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "central_sweep_watermark": {
+          "name": "central_sweep_watermark",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_sweep_at": {
+          "name": "last_sweep_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
