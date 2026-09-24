@@ -3343,6 +3343,7 @@ export const CardSetPlatformSize = {
   square: 'square',
   portrait: 'portrait',
   story: 'story',
+  landscape: 'landscape',
 } as const;
 
 export interface CardSet {
@@ -3376,6 +3377,7 @@ export const GenerateCardSetBodyPlatformSize = {
   square: 'square',
   portrait: 'portrait',
   story: 'story',
+  landscape: 'landscape',
 } as const;
 
 export interface GenerateCardSetBody {
@@ -3393,6 +3395,7 @@ export const AutoseedCardSetBodyPlatformSize = {
   square: 'square',
   portrait: 'portrait',
   story: 'story',
+  landscape: 'landscape',
 } as const;
 
 export interface AutoseedCardSetBody {
@@ -3415,6 +3418,7 @@ export const CardSetInputPlatformSize = {
   square: 'square',
   portrait: 'portrait',
   story: 'story',
+  landscape: 'landscape',
 } as const;
 
 export interface CardSetInput {
@@ -3472,6 +3476,8 @@ export interface SocialSettings {
   sizeSquare: boolean;
   sizePortrait: boolean;
   sizeStory: boolean;
+  /** Landscape 1200×630 (link previews, X, Facebook). Default off. */
+  sizeLandscape?: boolean;
   sponsorsEnabled: boolean;
   captionsEnabled: boolean;
   clubHashtag: string;
@@ -3647,6 +3653,8 @@ export interface SocialSettingsUpdate {
   sizeSquare?: boolean;
   sizePortrait?: boolean;
   sizeStory?: boolean;
+  /** Landscape 1200×630 (link previews, X, Facebook). Default off. */
+  sizeLandscape?: boolean;
   sponsorsEnabled?: boolean;
   captionsEnabled?: boolean;
   clubHashtag?: string;
@@ -4694,6 +4702,7 @@ export const PostPackImagesItemSize = {
   square: 'square',
   portrait: 'portrait',
   story: 'story',
+  landscape: 'landscape',
 } as const;
 
 export type PostPackImagesItem = {

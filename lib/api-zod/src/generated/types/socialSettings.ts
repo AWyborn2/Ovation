@@ -22,6 +22,8 @@ export interface SocialSettings {
   sizeSquare: boolean;
   sizePortrait: boolean;
   sizeStory: boolean;
+  /** Landscape 1200×630 (link previews, X, Facebook). Default off. */
+  sizeLandscape?: boolean;
   sponsorsEnabled: boolean;
   captionsEnabled: boolean;
   clubHashtag: string;

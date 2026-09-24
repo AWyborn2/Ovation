@@ -15,6 +15,9 @@ export const renderShareCard = async (
   input: ShareCardInput,
   opts: RenderOptions,
 ): Promise<Blob> => {
+  // Canvas layouts are authored for the 1080-wide portrait-ish formats; in
+  // landscape the square card is letterboxed on the club's colour (KTD11).
+  if (opts.size === "landscape") return renderLandscapeLetterbox(input, opts);
   const { w: W, h: H } = SIZES[opts.size];
   const scale = W / 1080; // base = 1080 wide
   const canvas = document.createElement("canvas");
@@ -71,6 +74,29 @@ export const renderShareCard = async (
     }, "image/png");
   });
 };
+
+async function renderLandscapeLetterbox(input: ShareCardInput, opts: RenderOptions): Promise<Blob> {
+  const square = await renderShareCard(input, { ...opts, size: "square" });
+  const { w: W, h: H } = SIZES.landscape;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not get canvas 2D context");
+  const p = isJuniorInput(input)
+    ? resolvePalette(juniorThemeFromBrand(opts.brand), opts.brand)
+    : resolvePalette(opts.theme, opts.brand);
+  ctx.fillStyle = p.bgDark;
+  ctx.fillRect(0, 0, W, H);
+  const image = await createImageBitmap(square);
+  ctx.drawImage(image, Math.round((W - H) / 2), 0, H, H);
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Failed to encode PNG"));
+    }, "image/png");
+  });
+}
 
 export const downloadBlob = (blob: Blob, filename: string): void => {
   const url = URL.createObjectURL(blob);

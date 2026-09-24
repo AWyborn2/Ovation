@@ -10661,7 +10661,7 @@ components:
           type: string
         platformSize:
           type: string
-          enum: [square, portrait, story]
+          enum: [square, portrait, story, landscape]
         slides:
           type: array
           items:
@@ -10700,7 +10700,7 @@ components:
             type: string
         platformSize:
           type: string
-          enum: [square, portrait, story]
+          enum: [square, portrait, story, landscape]
 
     AutoseedCardSetBody:
       type: object
@@ -10721,7 +10721,7 @@ components:
           default: false
         platformSize:
           type: string
-          enum: [square, portrait, story]
+          enum: [square, portrait, story, landscape]
 
     AutoseedCardSetResult:
       type: object
@@ -10748,7 +10748,7 @@ components:
           maxLength: 120
         platformSize:
           type: string
-          enum: [square, portrait, story]
+          enum: [square, portrait, story, landscape]
         # A carousel holds between 0 and 10 slides while being drafted; the 2-slide
         # floor for a publishable/exportable set is enforced on publish, not here,
         # so admins can save work-in-progress drafts.
@@ -10805,6 +10805,9 @@ components:
           type: boolean
         sizeStory:
           type: boolean
+        sizeLandscape:
+          type: boolean
+          description: "Landscape 1200×630 (link previews, X, Facebook). Default off."
         sponsorsEnabled:
           type: boolean
         captionsEnabled:
@@ -11086,6 +11089,9 @@ components:
           type: boolean
         sizeStory:
           type: boolean
+        sizeLandscape:
+          type: boolean
+          description: "Landscape 1200×630 (link previews, X, Facebook). Default off."
         sponsorsEnabled:
           type: boolean
         captionsEnabled:
@@ -12621,7 +12627,7 @@ components:
             properties:
               size:
                 type: string
-                enum: [square, portrait, story]
+                enum: [square, portrait, story, landscape]
               url:
                 type: string
         caption:

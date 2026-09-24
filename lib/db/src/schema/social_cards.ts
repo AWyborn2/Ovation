@@ -400,6 +400,8 @@ export const socialSettingsTable = pgTable(
     sizeSquare: boolean("size_square").notNull().default(true),
     sizePortrait: boolean("size_portrait").notNull().default(true),
     sizeStory: boolean("size_story").notNull().default(true),
+    // Landscape 1200×630 for link previews / X / Facebook (KTD11). Opt-in.
+    sizeLandscape: boolean("size_landscape").notNull().default(false),
     sponsorsEnabled: boolean("sponsors_enabled").notNull().default(true),
     captionsEnabled: boolean("captions_enabled").notNull().default(true),
     clubHashtag: text("club_hashtag").notNull().default(""),

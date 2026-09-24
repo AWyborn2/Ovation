@@ -13,4 +13,5 @@ export const CardSetPlatformSize = {
   square: 'square',
   portrait: 'portrait',
   story: 'story',
+  landscape: 'landscape',
 } as const;
