@@ -99,6 +99,13 @@
       "when": 1790232488681,
       "tag": "0013_social_drafts_status_contract",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790232738036,
+      "tag": "0014_studio_tools",
+      "breakpoints": true
     }
   ]
 }
