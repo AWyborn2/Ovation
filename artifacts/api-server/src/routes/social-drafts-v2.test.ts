@@ -7,7 +7,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { eq, inArray } from "drizzle-orm";
 import app from "../app";
-import { db, tenantsTable, adminsTable, socialDraftsTable } from "@workspace/db";
+import { db, tenantsTable, adminsTable, socialDraftsTable, trackedLinksTable } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { MAX_DRAFT_REVISIONS, draftRevisionIds, recordDraftRevision } from "../lib/draft-revisions";
 
@@ -54,6 +54,10 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  // Approving a draft mints a tracked link for the tenant.
+  await db
+    .delete(trackedLinksTable)
+    .where(inArray(trackedLinksTable.tenantId, [tenantId, otherTenantId]));
   await db
     .delete(socialDraftsTable)
     .where(inArray(socialDraftsTable.tenantId, [tenantId, otherTenantId]));
