@@ -15,4 +15,12 @@ season?: number;
  * Only photos tagged with this photo type.
  */
 type?: ClubPhotoType;
+/**
+ * When true, only photos with no grade (the Club-wide folder). Can't be combined with grade.
+ */
+ungraded?: boolean;
+/**
+ * When true, only photos with no photo type (a folder's Unsorted sub-folder). Can't be combined with type.
+ */
+untyped?: boolean;
 };

@@ -4419,6 +4419,22 @@ paths:
           description: Only photos tagged with this photo type.
           schema:
             $ref: "#/components/schemas/ClubPhotoType"
+        - name: ungraded
+          in: query
+          required: false
+          description: >-
+            When true, only photos with no grade (the Club-wide folder). Can't
+            be combined with grade.
+          schema:
+            type: boolean
+        - name: untyped
+          in: query
+          required: false
+          description: >-
+            When true, only photos with no photo type (a folder's Unsorted
+            sub-folder). Can't be combined with type.
+          schema:
+            type: boolean
       responses:
         "200":
           description: Library photos
@@ -4532,6 +4548,40 @@ paths:
           description: A photo is not in this club's library
         "422":
           description: A tagged player is not a senior player of this club
+
+  /club-photos/move:
+    post:
+      operationId: moveClubPhotos
+      tags: [socialCards]
+      summary: File photos into a library folder (grade × photo type) (admin)
+      description: >-
+        Library folders are a view over each photo's grade and photo type: a
+        top-level folder per senior grade plus Club-wide (no grade), and inside
+        each a sub-folder per photo type plus Unsorted (no type). Moving sets
+        the grade (null = Club-wide) and replaces the photo types with the one
+        given (null = Unsorted), so a photo sits in exactly one folder. Open
+        drafts whose photo was picked automatically re-pick afterwards.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveClubPhotosRequest"
+      responses:
+        "200":
+          description: The moved photos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClubPhoto"
+        "400":
+          description: Invalid body or unknown photo type
+        "404":
+          description: A photo is not in this club's library
+        "422":
+          description: The grade is a junior grade (the library is senior-only)
 
   /club-photos/delete:
     post:
@@ -11925,6 +11975,9 @@ components:
           items:
             type: integer
           description: "Senior players to tag on every photo in the batch."
+        photoType:
+          $ref: "#/components/schemas/ClubPhotoType"
+          description: "File every photo in the batch under this photo type (uploading into a library folder)."
 
     GoogleDriveConfig:
       type: object
@@ -12020,12 +12073,33 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ClubPhotoType"
-          description: "Photo types to tag on every photo."
+          description: >-
+            At most one photo type: a photo has one type (its library folder),
+            so adding a type replaces the photo's current type. More than one is
+            a 400.
         removeTypes:
           type: array
           items:
             $ref: "#/components/schemas/ClubPhotoType"
           description: "Photo types to remove from every photo."
+
+    MoveClubPhotosRequest:
+      type: object
+      required: [photoIds, grade, photoType]
+      properties:
+        photoIds:
+          type: array
+          minItems: 1
+          items:
+            type: integer
+        grade:
+          type: ["string", "null"]
+          description: "The senior grade folder, or null for Club-wide (no grade)."
+        photoType:
+          description: "The photo type sub-folder, or null for Unsorted (no type)."
+          oneOf:
+            - $ref: "#/components/schemas/ClubPhotoType"
+            - type: "null"
 
     DeleteClubPhotosRequest:
       type: object

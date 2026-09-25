@@ -1,6 +1,7 @@
 import {
   fetchGoogleDriveFiles,
   ingestClubPhotos,
+  type ClubPhotoType,
   type FetchGoogleDriveFilesResponse,
   type IngestClubPhotosResponse,
 } from "@workspace/api-client-react";
@@ -19,6 +20,15 @@ export type UploadState =
   | { phase: "error"; message: string };
 
 export const INGEST_BATCH = 50;
+
+/**
+ * Where uploaded photos are filed: the library folder they were uploaded into
+ * (a grade and/or photo type). Omitted = Club-wide / Unsorted.
+ */
+export type UploadTarget = { grade?: string; season?: number; photoType?: ClubPhotoType };
+
+type IngestBody = { objectPaths: string[] } & UploadTarget;
+type Ingest = (body: IngestBody) => Promise<IngestClubPhotosResponse>;
 
 /** Browsers often report "" for .heic; the server sniffs bytes, but signing needs a type. */
 export function contentTypeFor(file: File): string {
@@ -71,20 +81,14 @@ export function putWithProgress(
 
 export async function uploadLibraryPhotos(
   files: File[],
-  opts: {
+  opts: UploadTarget & {
     onState: (index: number, state: UploadState) => void;
-    grade?: string;
-    season?: number;
     /** Test seam: the byte upload. */
     put?: typeof putWithProgress;
     /** Test seam: signing. */
     sign?: typeof requestUploadUrl;
     /** Test seam: ingest. */
-    ingest?: (body: {
-      objectPaths: string[];
-      grade?: string;
-      season?: number;
-    }) => Promise<IngestClubPhotosResponse>;
+    ingest?: Ingest;
   },
 ): Promise<void> {
   const put = opts.put ?? putWithProgress;
@@ -114,19 +118,11 @@ export async function uploadLibraryPhotos(
   await ingestInBatches(uploaded, { ...opts, ingest });
 }
 
-type Ingest = (body: {
-  objectPaths: string[];
-  grade?: string;
-  season?: number;
-}) => Promise<IngestClubPhotosResponse>;
-
 /** Convert stored objects into library photos, in chunks the server accepts. */
 async function ingestInBatches(
   uploaded: Array<{ index: number; objectPath: string }>,
-  opts: {
+  opts: UploadTarget & {
     onState: (index: number, state: UploadState) => void;
-    grade?: string;
-    season?: number;
     ingest: Ingest;
   },
 ): Promise<void> {
@@ -137,6 +133,7 @@ async function ingestInBatches(
         objectPaths: chunk.map((c) => c.objectPath),
         grade: opts.grade || undefined,
         season: opts.season,
+        ...(opts.photoType ? { photoType: opts.photoType } : {}),
       });
       for (const r of res.results) {
         const match = chunk.find((c) => c.objectPath === r.objectPath);
@@ -161,10 +158,8 @@ async function ingestInBatches(
  */
 export async function importDrivePhotos(
   pick: DrivePick,
-  opts: {
+  opts: UploadTarget & {
     onState: (index: number, state: UploadState) => void;
-    grade?: string;
-    season?: number;
     /** Test seam: the Drive copy. */
     fetchDrive?: (body: {
       accessToken: string;
