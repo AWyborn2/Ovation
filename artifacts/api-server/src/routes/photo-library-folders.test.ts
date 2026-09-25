@@ -317,6 +317,20 @@ describe("upload into a folder", () => {
     expect(ids(listed.body)).toEqual([res.body.results[0].photo.id]);
   });
 
+  it("rejects an upload into a junior grade with 422", async () => {
+    const upload = `/objects/uploads/folders-${STAMP}-junior.jpg`;
+    objects.set(upload, Buffer.from("x"));
+    const res = await api("post", "/club-photos/ingest").send({
+      objectPaths: [upload],
+      grade: "Under 15",
+    });
+    expect(res.status).toBe(422);
+    // Nothing was ingested: the upload is still in storage.
+    expect(objects.has(upload)).toBe(true);
+    const listed = await api("get", `/club-photos?grade=${encodeURIComponent("Under 15")}`);
+    expect(listed.body).toEqual([]);
+  });
+
   it("rejects an unknown upload type with 400", async () => {
     const res = await api("post", "/club-photos/ingest").send({
       objectPaths: [`/objects/uploads/folders-${STAMP}-none.jpg`],

@@ -288,6 +288,8 @@ export default function AdminPhotoLibrary() {
   // Senior grades (and Club-wide) are the only places a photo can be moved to.
   const moveGrades = [...seniorGrades, CLUB_WIDE];
   const uploadLabel = folderLabel(uploadGrade, uploadType);
+  // The library is senior-only: an older junior-graded folder takes no uploads.
+  const juniorFolder = isJuniorGradeLabel(folder.grade);
 
   return (
     <div className="space-y-6">
@@ -343,44 +345,55 @@ export default function AdminPhotoLibrary() {
         </ol>
       </nav>
 
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label={`Upload photos to ${uploadLabel}`}
-        onClick={() => fileInput.current?.click()}
-        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && fileInput.current?.click()}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={onDrop}
-        className={cn(
-          "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors",
-          dragging ? "border-primary bg-primary/10" : "border-border bg-card hover:bg-muted/60",
-        )}
-      >
-        <Upload className="h-6 w-6 text-muted-foreground" aria-hidden />
-        <p className="text-sm font-medium">Drop photos here, or click to choose</p>
-        <p className="text-xs text-muted-foreground" data-testid="upload-target">
-          Uploading to {uploadLabel}
+      {juniorFolder ? (
+        <p
+          role="note"
+          className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+        >
+          Move these photos to a senior grade or remove them.
         </p>
-        <p className="text-xs text-muted-foreground">JPEG, PNG, WebP or HEIC · up to 25 MB each</p>
-        <input
-          ref={fileInput}
-          type="file"
-          multiple
-          accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
-          className="hidden"
-          data-testid="library-file-input"
-          onChange={(e) => {
-            void startUpload(Array.from(e.target.files ?? []));
-            e.target.value = "";
+      ) : (
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label={`Upload photos to ${uploadLabel}`}
+          onClick={() => fileInput.current?.click()}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && fileInput.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
           }}
-        />
-      </div>
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+          className={cn(
+            "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 text-center transition-colors",
+            dragging ? "border-primary bg-primary/10" : "border-border bg-card hover:bg-muted/60",
+          )}
+        >
+          <Upload className="h-6 w-6 text-muted-foreground" aria-hidden />
+          <p className="text-sm font-medium">Drop photos here, or click to choose</p>
+          <p className="text-xs text-muted-foreground" data-testid="upload-target">
+            Uploading to {uploadLabel}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            JPEG, PNG, WebP or HEIC · up to 25 MB each
+          </p>
+          <input
+            ref={fileInput}
+            type="file"
+            multiple
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+            className="hidden"
+            data-testid="library-file-input"
+            onChange={(e) => {
+              void startUpload(Array.from(e.target.files ?? []));
+              e.target.value = "";
+            }}
+          />
+        </div>
+      )}
 
-      {driveQ.data && (
+      {driveQ.data && !juniorFolder && (
         <div className="flex flex-wrap items-center gap-3">
           <Button
             type="button"

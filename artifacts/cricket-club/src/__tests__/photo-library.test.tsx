@@ -210,6 +210,19 @@ describe("uploading into a folder", () => {
     expect(put).toHaveBeenCalled();
   });
 
+  it("a junior-grade folder offers no uploader, only a note to move or remove", async () => {
+    stubLibrary([...LIBRARY, photo(7, "Under 15")]);
+    renderWithHistory(
+      <AdminPhotoLibrary />,
+      "/admin/social/library?grade=Under%2015&type=unsorted",
+    );
+    await screen.findByRole("button", { name: "Photo 7" });
+    expect(screen.getByText("Move these photos to a senior grade or remove them.")).toBeTruthy();
+    expect(screen.queryByTestId("upload-target")).toBeNull();
+    expect(screen.queryByTestId("library-file-input")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Upload photos/ })).toBeNull();
+  });
+
   it("at the top level, uploads go to Club-wide / Unsorted", async () => {
     stubLibrary();
     renderWithHistory(<AdminPhotoLibrary />, "/admin/social/library");

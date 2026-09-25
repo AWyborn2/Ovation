@@ -129,6 +129,10 @@ router.post("/club-photos/ingest", requireAdmin, async (req, res): Promise<void>
     res.status(400).json({ error: `At most ${MAX_INGEST_BATCH} photos per batch.` });
     return;
   }
+  if (grade && isJuniorGradeLabel(grade)) {
+    res.status(422).json({ error: "The photo library is for senior grades only." });
+    return;
+  }
   const tenantId = getTenantId(req);
   const rejected = await nonSeniorPlayerIds(tenantId, playerIds);
   if (rejected.length > 0) {
