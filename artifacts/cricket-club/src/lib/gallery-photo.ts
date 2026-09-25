@@ -15,3 +15,14 @@ export function galleryPhotoUrl(photos: readonly ClubPhoto[] | null | undefined)
   const team = newest.find((p) => p.grade && p.playerIds.length === 0);
   return (team ?? newest[0])?.url ?? null;
 }
+
+/**
+ * The design-pack preview photo: the club's home hero image when one is set,
+ * otherwise a photo from its library (see galleryPhotoUrl).
+ */
+export function packPreviewPhoto(
+  heroImage: string | null | undefined,
+  photos: readonly ClubPhoto[] | null | undefined,
+): string | null {
+  return heroImage || galleryPhotoUrl(photos);
+}
