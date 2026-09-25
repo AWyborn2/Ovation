@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { ClubPhoto } from "@workspace/api-client-react";
-import { galleryPhotoUrl } from "./gallery-photo";
+import { galleryPhotoUrl, packPreviewPhoto } from "./gallery-photo";
 
 const photo = (over: Partial<ClubPhoto>): ClubPhoto => ({
   id: 1,
@@ -49,5 +49,22 @@ describe("galleryPhotoUrl", () => {
       }),
     ]);
     expect(url).toBe("/player");
+  });
+});
+
+describe("packPreviewPhoto", () => {
+  const library = [photo({ id: 1, url: "/team", grade: "A Grade" })];
+
+  it("uses the club's hero image when one is set", () => {
+    expect(packPreviewPhoto("/hero.jpg", library)).toBe("/hero.jpg");
+  });
+
+  it("falls back to a library photo without a hero image", () => {
+    expect(packPreviewPhoto(null, library)).toBe("/team");
+    expect(packPreviewPhoto("", library)).toBe("/team");
+  });
+
+  it("shows no photo with neither", () => {
+    expect(packPreviewPhoto(null, [])).toBeNull();
   });
 });

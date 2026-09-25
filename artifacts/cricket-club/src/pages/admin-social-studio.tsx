@@ -16,7 +16,8 @@ import {
   type CardTheme as ApiCardTheme,
   type ClubPhoto,
 } from "@workspace/api-client-react";
-import { galleryPhotoUrl } from "@/lib/gallery-photo";
+import { packPreviewPhoto } from "@/lib/gallery-photo";
+import { useHeroImage } from "@/lib/use-hero-image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -170,12 +171,14 @@ export default function AdminSocialStudio() {
     return out;
   }, [galleryClubName]);
 
-  // Previews show a photo in each pack's photo slot (the club's newest team
-  // shot, else its newest library photo) so a design is seen as it will post.
+  // Previews show a photo in each pack's photo slot so a design is seen as it
+  // will post: the club's home hero image, else (no hero set) its newest team
+  // shot or library photo.
+  const heroImage = useHeroImage("home");
   const photosQ = useListClubPhotos(undefined, {
-    query: { queryKey: getListClubPhotosQueryKey() },
+    query: { queryKey: getListClubPhotosQueryKey(), enabled: !heroImage },
   });
-  const galleryPhoto = galleryPhotoUrl(photosQ.data as ClubPhoto[] | undefined);
+  const galleryPhoto = packPreviewPhoto(heroImage, photosQ.data as ClubPhoto[] | undefined);
 
   // One payload per card kind, memoised so <PackCard>'s html memo (keyed on
   // `data` identity) is not defeated on every parent re-render.
