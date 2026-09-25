@@ -108,6 +108,12 @@ export interface PackInkTint {
   toward: string;
   /** Percentage of the TENANT's tone retained (0–100). Higher = more tenant. */
   tenantWeight: number;
+  /**
+   * The tenant share in "Club colours" mode, where the club's own deep shade
+   * is the stage and should clearly read as the club while the pack keeps a
+   * cast of its mood. Omitted = `tenantWeight` in both modes.
+   */
+  clubTenantWeight?: number;
 }
 
 export interface PackManifest {
@@ -121,4 +127,12 @@ export interface PackManifest {
    * output to stay byte-identical.
    */
   inkTint?: PackInkTint;
+  /**
+   * Optional `[packLiteral, clubMarkup]` pairs the renderer swaps into a
+   * design's markup in "Club colours" mode only — for a pack whose identity
+   * includes fixed colours (Sunset's golden-hour sky) that should become the
+   * club's own. Each literal is the exact string the pack's fragments emit, so
+   * "Pack's own look" never touches the markup and stays byte-identical.
+   */
+  clubSwaps?: ReadonlyArray<readonly [string, string]>;
 }

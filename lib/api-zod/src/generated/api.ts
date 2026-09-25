@@ -5160,7 +5160,8 @@ export const GetSocialSettingsResponse = zod.object({
   "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
   "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
 })
-}).optional().describe('Effective per-family automation switches. Derived from the engine flags until first saved.')
+}).optional().describe('Effective per-family automation switches. Derived from the engine flags until first saved.'),
+  "packColourModes": zod.record(zod.string(), zod.enum(['club', 'pack']).describe('How a design pack is coloured for this club. \"club\" (Club colours) — the club\'s background colour becomes the card stage and panel and its primary colour the accent, beating the card theme\'s colours. \"pack\" (Pack\'s own look) — the pack renders with its own palette, theme first.')).optional().describe('Colour mode per design pack id (e.g. \"sunset-v1\"). A pack absent from the map is \"club\".')
 }),
   "captionTemplates": zod.array(zod.object({
   "engine": zod.string(),
@@ -5237,7 +5238,8 @@ export const UpdateSocialSettingsBody = zod.object({
 }).optional().describe('Partial family switches; omitted families and grades keep their current values.'),
   "autoPostEnabled": zod.boolean().optional(),
   "autoPostWindowHours": zod.number().min(1).max(updateSocialSettingsBodyAutoPostWindowHoursMax).optional(),
-  "notificationEmail": zod.string().nullish()
+  "notificationEmail": zod.string().nullish(),
+  "packColourModes": zod.record(zod.string(), zod.enum(['club', 'pack']).describe('How a design pack is coloured for this club. \"club\" (Club colours) — the club\'s background colour becomes the card stage and panel and its primary colour the accent, beating the card theme\'s colours. \"pack\" (Pack\'s own look) — the pack renders with its own palette, theme first.')).describe('Colour mode per design pack id (e.g. \"sunset-v1\"). A pack absent from the map is \"club\".').optional().describe('Merged into the stored map: only the packs sent change, the others keep their mode.')
 })
 
 export const UpdateSocialSettingsResponse = zod.object({
@@ -5280,7 +5282,8 @@ export const UpdateSocialSettingsResponse = zod.object({
   "enabled": zod.boolean().describe('Whether this family auto-drafts at all'),
   "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
 })
-}).optional().describe('Effective per-family automation switches. Derived from the engine flags until first saved.')
+}).optional().describe('Effective per-family automation switches. Derived from the engine flags until first saved.'),
+  "packColourModes": zod.record(zod.string(), zod.enum(['club', 'pack']).describe('How a design pack is coloured for this club. \"club\" (Club colours) — the club\'s background colour becomes the card stage and panel and its primary colour the accent, beating the card theme\'s colours. \"pack\" (Pack\'s own look) — the pack renders with its own palette, theme first.')).optional().describe('Colour mode per design pack id (e.g. \"sunset-v1\"). A pack absent from the map is \"club\".')
 })
 
 

@@ -208,6 +208,13 @@ export function ShareCardModal({
       photoPlacement,
       // B1 — admin per-slot image overrides (any slot the template exposes).
       imageOverrides,
+      // The club's per-pack colour mode, and the style panel's per-card
+      // overrides — which must still beat club colours (they are also folded
+      // into `effectiveTheme` for the pack's-own-look path).
+      packColourModes: bundle?.settings.packColourModes,
+      tokenOverride: isJunior
+        ? null
+        : { accent: style.styleAccent, panel: style.stylePanel, displayFont: style.styleFont },
     });
 
   const { previewUrls, rendering } = useCardPreview({

@@ -372,6 +372,8 @@ export * from './nonPlayerPersonUpdate';
 export * from './notification';
 export * from './notificationList';
 export * from './opponentClub';
+export * from './packColourMode';
+export * from './packColourModes';
 export * from './partnershipRecord';
 export * from './partnerships';
 export * from './passwordResetInfo';

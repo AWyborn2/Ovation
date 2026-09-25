@@ -1,13 +1,13 @@
 /**
  * Pack renderer — theme tokens: resolution priority (junior > override > theme
- * > brand default), the brand → default-token bridge, display fonts, native
- * sizes and the root wrapper style that exposes tokens as CSS custom
- * properties.
+ * > brand default, or junior > override > club brand > theme in "club colours"
+ * mode), the brand → default-token bridge, display fonts, native sizes and the
+ * root wrapper style that exposes tokens as CSS custom properties.
  */
 
 import type { PackInkTint } from "../pack-templates/types";
 import type { CardSize } from "../share-card";
-import { JUNIOR_PANEL, type PackCardData, type PackTokens } from "./types";
+import { JUNIOR_PANEL, type PackCardData, type PackColourMode, type PackTokens } from "./types";
 
 // ---------------------------------------------------------------------------
 // Token resolution (junior force > per-card override > theme > brand default)
@@ -49,7 +49,17 @@ export interface PackTokenSources {
   override?: Partial<PackTokens> | null;
   /** Junior force — the brown panel wins over every source (KTD6). */
   junior?: boolean;
+  /**
+   * Colour mode for the pack being rendered. `"club"` (the product default)
+   * lets the club's brand colours beat the theme's accent / panel / stage: the
+   * theme then contributes only `displayFont` and `textLight`. `"pack"` (and
+   * absent) is the historical `theme > brand` order, unchanged.
+   */
+  mode?: PackColourMode;
 }
+
+/** The theme keys a card theme still contributes in "club colours" mode. */
+const CLUB_MODE_THEME_KEYS: readonly (keyof PackTokens)[] = ["displayFont", "textLight"];
 
 /** Copy only the defined values of a partial onto the target. */
 function assignDefined(target: PackTokens, src?: Partial<PackTokens> | null): void {
@@ -69,10 +79,23 @@ function assignDefined(target: PackTokens, src?: Partial<PackTokens> | null): vo
  *   2. explicit per-card override tokens
  *   3. selected theme's tokens (incl. `displayFont` → `--disp`)
  *   4. tenant brand default
+ *
+ * In `"club"` mode the theme drops to `displayFont` / `textLight` only, so the
+ * brand's accent, panel and stage (already on `brand`) win over the theme's
+ * colours. Override and junior keep their places at the top.
  */
 export function resolvePackTokens(sources: PackTokenSources): PackTokens {
   const resolved: PackTokens = { ...sources.brand };
-  assignDefined(resolved, sources.theme);
+  if (sources.mode === "club") {
+    const theme: Partial<PackTokens> = {};
+    for (const k of CLUB_MODE_THEME_KEYS) {
+      const v = sources.theme?.[k];
+      if (v) theme[k] = v;
+    }
+    assignDefined(resolved, theme);
+  } else {
+    assignDefined(resolved, sources.theme);
+  }
   assignDefined(resolved, sources.override);
   if (sources.junior) resolved.panel = JUNIOR_PANEL;
   return resolved;
@@ -132,38 +155,119 @@ export function normaliseBrandHex(colour?: string | null): string | null {
 /**
  * Bridge a tenant's brand colours onto the pack's DEFAULT token baseline. This
  * is the LOWEST-priority token source: {@link resolvePackTokens} still layers
- * theme, then per-card override, then the junior force on top, so priority stays
- * `junior > override > theme > brand-default`.
+ * theme (or, in "club" mode, only the theme's font and text colour), then
+ * per-card override, then the junior force on top.
  *
- * Mapping (only the tokens a club brand can meaningfully drive):
+ * `"pack"` mode — "Pack's own look", byte-identical to the output before the
+ * club colour mode existed:
  *   - `primaryColour` → `accent` (`--gold`)  — the brand's headline accent
- *   - `juniorsColour` → `panel`  (`--panel`) — the pack panel IS the juniors tone
+ *   - `juniorsColour` → `panel`  (`--panel`)
+ *   - `ink` and `textLight` keep the fixed fallback (a fixed near-black stage).
  *
- * Any brand colour that is absent (null/undefined/empty) leaves that token on
- * the hard-coded {@link PACK_DEFAULT_TOKENS} fallback. `ink` and `textLight` have
- * no brand source and always keep the fallback.
+ * `"club"` mode — "Club colours", the card takes on the club's own identity:
+ *   - `primaryColour`    → `accent`
+ *   - `backgroundColour` → `panel` (falling back to `juniorsColour`), darkened
+ *     only as far as light card type needs to hold 4.5:1 on it
+ *   - `backgroundColour` → `ink` as a deep shade ({@link clubStageInk}), falling
+ *     back to the fixed ink when the club has no background colour.
  *
- * Halls Head parity (invariant — HH MUST stay visually identical): HH's brand is
- * `primaryColour #FBAC27` and `juniorsColour #42342B`, which map onto the default
- * accent/panel unchanged. The brand's `backgroundColour` is deliberately NOT
- * mapped onto `ink`: the pack `ink` is a fixed deep near-black *stage* colour,
- * not a club's mid-tone site background, so bridging it would shift the stage per
- * club — and specifically would push HH's ink from #101216 to its slate
- * background #333F48, breaking parity. Leaving `ink` fixed keeps HH byte-for-byte
- * identical while still letting non-HH brands seed their accent + panel.
+ * Any brand colour that is absent or invalid leaves that token on the
+ * hard-coded {@link PACK_DEFAULT_TOKENS} fallback.
  */
-export function brandDefaultTokens(brand?: PackCardData["brand"]): PackTokens {
+export function brandDefaultTokens(
+  brand?: PackCardData["brand"],
+  mode: PackColourMode = "pack",
+): PackTokens {
   const tokens: PackTokens = { ...PACK_DEFAULT_TOKENS };
   if (!brand) return tokens;
   // Sanitise + normalise each brand colour at the boundary: only a strict hex
   // literal survives (→ default token otherwise), and it is normalised to a
-  // 6-digit hex so `darkenHex` can derive `--panel-2`. HH's clean 6-digit
-  // #FBAC27 / #42342B pass through unchanged, preserving parity.
+  // 6-digit hex so `darkenHex` can derive `--panel-2`. Tokens flow unescaped
+  // into an inline style, so no brand colour may bypass this.
   const accent = normaliseBrandHex(brand.primaryColour);
-  const panel = normaliseBrandHex(brand.juniorsColour);
+  const juniors = normaliseBrandHex(brand.juniorsColour);
   if (accent) tokens.accent = accent;
-  if (panel) tokens.panel = panel;
+  if (mode === "club") {
+    const background = normaliseBrandHex(brand.backgroundColour);
+    const panel = background ? legibleShade(background, 0) : juniors;
+    if (panel) tokens.panel = panel;
+    const ink = clubStageInk(background);
+    if (ink) tokens.ink = ink;
+  } else if (juniors) {
+    tokens.panel = juniors;
+  }
   return tokens;
+}
+
+/**
+ * Whether a brand carries any colour "club colours" mode can use. A brand with
+ * none renders the pack's own look instead, so a brand-less preview (gallery
+ * samples, a tenant that never set colours) is unchanged by the mode.
+ */
+export function hasClubColours(brand?: PackCardData["brand"]): boolean {
+  return Boolean(
+    brand && (normaliseBrandHex(brand.backgroundColour) || normaliseBrandHex(brand.primaryColour)),
+  );
+}
+
+/** How far the club background is darkened to become the stage by default. */
+export const CLUB_STAGE_DARKEN = 0.55;
+
+/**
+ * The dimmest light ink the packs set on the stage and panel (Metallic Foil's
+ * cream) — the reference for the legibility clamp, so every pack's type
+ * clears it.
+ */
+export const LIGHT_TYPE_REF = "#F6EBD0";
+
+/** WCAG AA for body text. */
+export const MIN_TEXT_CONTRAST = 4.5;
+
+/**
+ * The club's deep stage: its `backgroundColour` darkened by
+ * {@link CLUB_STAGE_DARKEN}, or further when that still leaves light card type
+ * under 4.5:1 (a club with a pale background). Null when the club has no valid
+ * background colour — the caller keeps the fixed default ink.
+ */
+export function clubStageInk(background?: string | null): string | null {
+  const hex = normaliseBrandHex(background);
+  return hex ? legibleShade(hex, CLUB_STAGE_DARKEN) : null;
+}
+
+/**
+ * `hex` darkened by at least `minDarken`, then in 5% steps until light type
+ * ({@link LIGHT_TYPE_REF}) reaches {@link MIN_TEXT_CONTRAST} on it. Falls back
+ * to the fixed default ink should nothing pass.
+ */
+function legibleShade(hex: string, minDarken: number): string {
+  for (let step = Math.round(minDarken * 20); step <= 19; step++) {
+    const shade = step === 0 ? hex : darkenHex(hex, step / 20);
+    if (shade && contrastRatio(shade, LIGHT_TYPE_REF) >= MIN_TEXT_CONTRAST) {
+      return shade.toUpperCase();
+    }
+  }
+  return PACK_DEFAULT_TOKENS.ink;
+}
+
+/** WCAG relative luminance of a 6-digit hex, or null when it is not one. */
+export function relativeLuminance(hex: string): number | null {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  const lin = (c: number) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * lin((n >> 16) & 0xff) + 0.7152 * lin((n >> 8) & 0xff) + 0.0722 * lin(n & 0xff);
+}
+
+/** WCAG contrast ratio between two 6-digit hexes (1 when either is invalid). */
+export function contrastRatio(a: string, b: string): number {
+  const la = relativeLuminance(a);
+  const lb = relativeLuminance(b);
+  if (la == null || lb == null) return 1;
+  const [hi, lo] = la > lb ? [la, lb] : [lb, la];
+  return (hi + 0.05) / (lo + 0.05);
 }
 
 /** Curated display-font families behind the `--disp` token. */
@@ -217,14 +321,8 @@ export function darkenHex(hex: string, amount: number): string | null {
  * the declaration and the templates' own fallbacks apply).
  */
 export function accentInk(hex: string): string | null {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return null;
-  const n = parseInt(m[1], 16);
-  const lin = (c: number) => {
-    const v = c / 255;
-    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-  };
-  const l = 0.2126 * lin((n >> 16) & 0xff) + 0.7152 * lin((n >> 8) & 0xff) + 0.0722 * lin(n & 0xff);
+  const l = relativeLuminance(hex);
+  if (l == null) return null;
   return l > 0.4 ? "#10151B" : "#FFFFFF";
 }
 
@@ -237,10 +335,18 @@ export function accentInk(hex: string): string | null {
  * — the same technique the metallic foil ramp uses on `--gold`. A pack that
  * simply hard-coded its own base would look identical for every club, which is
  * the opposite failure.
+ *
+ * In "club colours" mode the pack's `clubTenantWeight` (when it declares one)
+ * replaces `tenantWeight`, leaning the stage mostly to the club.
  */
-export function stageInk(tokens: PackTokens, tint?: PackInkTint): string {
+export function stageInk(
+  tokens: PackTokens,
+  tint?: PackInkTint,
+  mode: PackColourMode = "pack",
+): string {
   if (!tint) return tokens.ink;
-  const w = Math.max(0, Math.min(100, tint.tenantWeight));
+  const weight = mode === "club" ? (tint.clubTenantWeight ?? tint.tenantWeight) : tint.tenantWeight;
+  const w = Math.max(0, Math.min(100, weight));
   return `color-mix(in srgb, ${tokens.ink} ${w}%, ${tint.toward})`;
 }
 
@@ -249,12 +355,13 @@ export function rootStyle(
   junior: boolean,
   size: CardSize,
   inkTint?: PackInkTint,
+  mode: PackColourMode = "pack",
 ): string {
   const native = NATIVE[size] ?? NATIVE.story;
   const panel = junior ? JUNIOR_PANEL : tokens.panel;
   const panel2 = darkenHex(panel, 0.42);
   const disp = DISPLAY_FONT_FAMILY[tokens.displayFont ?? "anton"] ?? DISPLAY_FONT_FAMILY.anton;
-  const ink = stageInk(tokens, inkTint);
+  const ink = stageInk(tokens, inkTint, mode);
   const decls: string[] = [
     `position:relative`,
     `width:${native.w}px`,

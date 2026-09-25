@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { PackColourModes } from './packColourModes';
 import type { SocialFamilyConfigUpdate } from './socialFamilyConfigUpdate';
 import type { SocialSettingsUpdateMatchSummaryGradeConfig } from './socialSettingsUpdateMatchSummaryGradeConfig';
 
@@ -42,4 +43,6 @@ export interface SocialSettingsUpdate {
   autoPostWindowHours?: number;
   /** @nullable */
   notificationEmail?: string | null;
+  /** Merged into the stored map: only the packs sent change, the others keep their mode. */
+  packColourModes?: PackColourModes;
 }

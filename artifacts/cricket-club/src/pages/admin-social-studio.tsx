@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Trash2, IdCard, PenSquare } from "lucide-react";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import { usePackSelection } from "@/lib/use-pack-selection";
+import { usePackColourModes } from "@/lib/use-pack-colour-modes";
 import { PackPerTypeSection } from "@/components/social-studio/pack-per-type-section";
 import { DesignPacksSection } from "@/components/social-studio/design-packs-section";
 import { MatchSummarySettings } from "@/components/social-studio/match-summary-settings";
@@ -124,6 +125,8 @@ export default function AdminSocialStudio() {
   // Everything about the tenant's design-pack choice — what each kind resolves
   // to, what it could resolve to, and the two write paths that change it.
   const packs = usePackSelection({ templates, confirm });
+  // Per-pack "Club colours / Pack's own look" (writes the settings bundle).
+  const colourModes = usePackColourModes(bundle);
   // Which of the TENANT'S OWN templates (if any) is the default for each card
   // kind. Pack rows share the `defaultForKinds` column but are deliberately
   // excluded: a pack claim is reported by the pack selector below, and only
@@ -194,6 +197,7 @@ export default function AdminSocialStudio() {
           sponsors: kindSponsors(bundle, o.value, sponsorsOn),
           presentingSponsorName: presentingSponsorName(bundle, sponsorsOn),
           photoUrl: galleryPhoto,
+          packColourModes: bundle?.settings.packColourModes,
         }),
       );
     }
@@ -260,9 +264,9 @@ export default function AdminSocialStudio() {
           The selector is controlled off server state and always snaps back on
           the render `setPendingKind` forces, so without this banner a failure
           is indistinguishable from success. */}
-      {(error || packs.error) && (
+      {(error || packs.error || colourModes.error) && (
         <p className="rounded border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error ?? packs.error}
+          {error ?? packs.error ?? colourModes.error}
         </p>
       )}
 
@@ -274,6 +278,7 @@ export default function AdminSocialStudio() {
         }
         previewData={galleryDataByKind.get("matchSummary") ?? null}
         theme={galleryTheme}
+        colourModes={colourModes}
       />
 
       {/* Which pack each card type uses */}

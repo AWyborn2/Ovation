@@ -425,6 +425,13 @@ export const socialSettingsTable = pgTable(
     // Club-level address for draft notifications (admins have no email field).
     // Null = in-app only.
     notificationEmail: text("notification_email"),
+    // Design-pack colour mode per pack id: "club" (Club colours — the club's
+    // background/primary drive the stage, panel and accent) or "pack" (Pack's
+    // own look). A pack absent from the map is "club".
+    packColourModes: jsonb("pack_colour_modes")
+      .$type<Record<string, "club" | "pack">>()
+      .notNull()
+      .default({}),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
