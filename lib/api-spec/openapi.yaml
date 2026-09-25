@@ -4505,6 +4505,78 @@ paths:
         "404":
           description: A photo is not in this club's library
 
+  /card-photo-rules:
+    get:
+      operationId: listCardPhotoRules
+      tags: [socialCards]
+      summary: List the club's card photo rules (admin)
+      description: >-
+        One rule per grade and card type says how a draft's photo is picked:
+        the card's featured player, a random photo of the grade, or one fixed
+        library photo. Grades and card types without a rule use the automatic
+        order. Junior cards never get a photo.
+      responses:
+        "200":
+          description: The club's rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardPhotoRule"
+        "401":
+          description: Not signed in
+    put:
+      operationId: saveCardPhotoRules
+      tags: [socialCards]
+      summary: Set the photo rule for one grade and one or more card types (admin)
+      description: >-
+        Creates or replaces the rule for each (grade, card type). A fixed rule
+        needs a photo from this club's library. Open drafts of that grade and
+        card type whose photo was picked automatically are re-picked; a photo an
+        admin chose or cleared is kept.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveCardPhotoRulesRequest"
+      responses:
+        "200":
+          description: The saved rules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardPhotoRule"
+        "400":
+          description: Invalid body, or a fixed rule without a photo
+        "404":
+          description: The photo is not in this club's library
+        "422":
+          description: The photo is tagged with a junior grade
+
+  /card-photo-rules/{id}:
+    delete:
+      operationId: deleteCardPhotoRule
+      tags: [socialCards]
+      summary: Remove a card photo rule (admin)
+      description: >-
+        The grade and card type go back to the automatic order; open drafts
+        whose photo was picked automatically are re-picked.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
   /studio-tools/background-removal:
     get:
       operationId: getBackgroundRemovalStatus
@@ -11837,6 +11909,57 @@ components:
           minItems: 1
           items:
             type: integer
+
+    CardPhotoRuleMode:
+      type: string
+      enum: [player, random, fixed]
+      description: >-
+        player = the card's featured player (a match summary features the
+        club's top run-scorer), falling back to a random grade photo; random = a
+        photo of the grade, stable per draft; fixed = one library photo.
+
+    CardPhotoRule:
+      type: object
+      required: [id, grade, cardKind, mode, photoId, photoThumbUrl, updatedAt]
+      properties:
+        id:
+          type: integer
+        grade:
+          type: string
+        cardKind:
+          type: string
+        mode:
+          $ref: "#/components/schemas/CardPhotoRuleMode"
+        photoId:
+          type: ["integer", "null"]
+          description: "The fixed photo; null for other modes, or when a fixed photo was removed from the library."
+        photoThumbUrl:
+          type: ["string", "null"]
+        updatedAt:
+          type: string
+          format: date-time
+
+    SaveCardPhotoRulesRequest:
+      type: object
+      required: [grade, cardKinds, mode]
+      properties:
+        grade:
+          type: string
+          minLength: 1
+          maxLength: 80
+        cardKinds:
+          type: array
+          minItems: 1
+          maxItems: 40
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+        mode:
+          $ref: "#/components/schemas/CardPhotoRuleMode"
+        photoId:
+          type: ["integer", "null"]
+          description: "Required for a fixed rule; ignored otherwise."
 
     DraftSweepRequest:
       type: object

@@ -48,6 +48,12 @@ export type DraftUpsert = {
   /** The grade, for a grade photo when no player photo exists (R5). */
   grade?: string | null;
   /**
+   * The card's featured player for a "player" card photo rule, when it is not
+   * `playerId` (a match result features the club's top performer). Only a
+   * rule uses it; the automatic photo order is unchanged.
+   */
+  featuredPlayerId?: number | null;
+  /**
    * Finds a pre-key draft for the same event (drafts created before source keys
    * existed). The match returned gets the key backfilled.
    */
@@ -108,6 +114,9 @@ export async function upsertDraftByKey(input: DraftUpsert): Promise<DraftUpsertR
       playerId: input.playerId,
       grade: input.grade,
       junior: input.sourceMatchIsJunior === true,
+      // A random photo rule is seeded by the event key, so a refresh keeps it.
+      seed: input.sourceKey,
+      featuredPlayerId: input.featuredPlayerId,
     });
 
   if (!existing) {

@@ -6853,6 +6853,62 @@ export const DeleteClubPhotosResponse = zod.object({
 
 
 /**
+ * One rule per grade and card type says how a draft's photo is picked: the card's featured player, a random photo of the grade, or one fixed library photo. Grades and card types without a rule use the automatic order. Junior cards never get a photo.
+ * @summary List the club's card photo rules (admin)
+ */
+export const ListCardPhotoRulesResponseItem = zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "cardKind": zod.string(),
+  "mode": zod.enum(['player', 'random', 'fixed']).describe('player = the card\'s featured player (a match summary features the club\'s top run-scorer), falling back to a random grade photo; random = a photo of the grade, stable per draft; fixed = one library photo.'),
+  "photoId": zod.number().nullable().describe('The fixed photo; null for other modes, or when a fixed photo was removed from the library.'),
+  "photoThumbUrl": zod.string().nullable(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListCardPhotoRulesResponse = zod.array(ListCardPhotoRulesResponseItem)
+
+
+/**
+ * Creates or replaces the rule for each (grade, card type). A fixed rule needs a photo from this club's library. Open drafts of that grade and card type whose photo was picked automatically are re-picked; a photo an admin chose or cleared is kept.
+ * @summary Set the photo rule for one grade and one or more card types (admin)
+ */
+export const saveCardPhotoRulesBodyGradeMax = 80;
+
+export const saveCardPhotoRulesBodyCardKindsItemMax = 40;
+
+export const saveCardPhotoRulesBodyCardKindsMax = 40;
+
+
+
+export const SaveCardPhotoRulesBody = zod.object({
+  "grade": zod.string().min(1).max(saveCardPhotoRulesBodyGradeMax),
+  "cardKinds": zod.array(zod.string().min(1).max(saveCardPhotoRulesBodyCardKindsItemMax)).min(1).max(saveCardPhotoRulesBodyCardKindsMax),
+  "mode": zod.enum(['player', 'random', 'fixed']).describe('player = the card\'s featured player (a match summary features the club\'s top run-scorer), falling back to a random grade photo; random = a photo of the grade, stable per draft; fixed = one library photo.'),
+  "photoId": zod.number().nullish().describe('Required for a fixed rule; ignored otherwise.')
+})
+
+export const SaveCardPhotoRulesResponseItem = zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "cardKind": zod.string(),
+  "mode": zod.enum(['player', 'random', 'fixed']).describe('player = the card\'s featured player (a match summary features the club\'s top run-scorer), falling back to a random grade photo; random = a photo of the grade, stable per draft; fixed = one library photo.'),
+  "photoId": zod.number().nullable().describe('The fixed photo; null for other modes, or when a fixed photo was removed from the library.'),
+  "photoThumbUrl": zod.string().nullable(),
+  "updatedAt": zod.coerce.date()
+})
+export const SaveCardPhotoRulesResponse = zod.array(SaveCardPhotoRulesResponseItem)
+
+
+/**
+ * The grade and card type go back to the automatic order; open drafts whose photo was picked automatically are re-picked.
+ * @summary Remove a card photo rule (admin)
+ */
+export const DeleteCardPhotoRuleParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * 404 when no background-removal provider key is configured; the editor hides the tool.
  * @summary Whether background removal is available to this club (admin)
  */

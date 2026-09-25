@@ -16,6 +16,8 @@ import { EmptyState, ListSkeleton, QueryError } from "@/components/data-states";
 import { SettingsCard, SettingsRow, StatusPill } from "@/components/admin-ui";
 import { useConfirm } from "@/components/confirm-dialog";
 import { uploadLibraryPhotos, type UploadState } from "@/components/social-queue/library-upload";
+import { CardPhotoRules } from "@/components/social-queue/card-photo-rules";
+import { isJuniorGradeLabel } from "@workspace/scorecard";
 import { cn } from "@/lib/utils";
 
 type Upload = { name: string; state: UploadState };
@@ -40,6 +42,7 @@ export default function AdminPhotoLibrary() {
   const [playerSearch, setPlayerSearch] = useState("");
   const [playerIds, setPlayerIds] = useState<Set<number>>(new Set());
   const [tagError, setTagError] = useState<string | null>(null);
+  const [useFor, setUseFor] = useState<{ photoId: number; nonce: number } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const refresh = () => qc.invalidateQueries({ queryKey: getListClubPhotosQueryKey() });
@@ -314,11 +317,23 @@ export default function AdminPhotoLibrary() {
                       .join(" · ") || "Untagged"}
                   </span>
                 </button>
+                {!isJuniorGradeLabel(p.grade) && (
+                  <button
+                    type="button"
+                    aria-label={`Use photo ${p.id} for cards`}
+                    onClick={() => setUseFor({ photoId: p.id, nonce: Date.now() })}
+                    className="px-2 text-xs font-medium text-primary-text hover:underline"
+                  >
+                    Use for…
+                  </button>
+                )}
               </li>
             );
           })}
         </ul>
       )}
+
+      <CardPhotoRules photos={photos} useFor={useFor} />
     </div>
   );
 }

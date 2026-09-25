@@ -66,6 +66,7 @@ import type {
   CardEffectPresetInput,
   CardLayout,
   CardLayoutInput,
+  CardPhotoRule,
   CardRenderStillInput,
   CardSet,
   CardSetInput,
@@ -245,6 +246,7 @@ import type {
   RecordsLeaderboards,
   RemovePhotoBackgroundRequest,
   RoundUpInput,
+  SaveCardPhotoRulesRequest,
   SaveDraftTemplateRequest,
   SeasonTopPerformers,
   SeniorOverview,
@@ -15657,6 +15659,227 @@ export const useDeleteClubPhotos = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteClubPhotosMutationOptions(options));
+    }
+
+export const getListCardPhotoRulesUrl = () => {
+
+
+
+
+  return `/api/card-photo-rules`
+}
+
+/**
+ * One rule per grade and card type says how a draft's photo is picked: the card's featured player, a random photo of the grade, or one fixed library photo. Grades and card types without a rule use the automatic order. Junior cards never get a photo.
+ * @summary List the club's card photo rules (admin)
+ */
+export const listCardPhotoRules = async ( options?: RequestInit): Promise<CardPhotoRule[]> => {
+
+  return customFetch<CardPhotoRule[]>(getListCardPhotoRulesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCardPhotoRulesQueryKey = () => {
+    return [
+    `/api/card-photo-rules`
+    ] as const;
+    }
+
+
+export const getListCardPhotoRulesQueryOptions = <TData = Awaited<ReturnType<typeof listCardPhotoRules>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCardPhotoRules>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCardPhotoRulesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCardPhotoRules>>> = ({ signal }) => listCardPhotoRules({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCardPhotoRules>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCardPhotoRulesQueryResult = NonNullable<Awaited<ReturnType<typeof listCardPhotoRules>>>
+export type ListCardPhotoRulesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List the club's card photo rules (admin)
+ */
+
+export function useListCardPhotoRules<TData = Awaited<ReturnType<typeof listCardPhotoRules>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCardPhotoRules>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCardPhotoRulesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveCardPhotoRulesUrl = () => {
+
+
+
+
+  return `/api/card-photo-rules`
+}
+
+/**
+ * Creates or replaces the rule for each (grade, card type). A fixed rule needs a photo from this club's library. Open drafts of that grade and card type whose photo was picked automatically are re-picked; a photo an admin chose or cleared is kept.
+ * @summary Set the photo rule for one grade and one or more card types (admin)
+ */
+export const saveCardPhotoRules = async (saveCardPhotoRulesRequest: SaveCardPhotoRulesRequest, options?: RequestInit): Promise<CardPhotoRule[]> => {
+
+  return customFetch<CardPhotoRule[]>(getSaveCardPhotoRulesUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveCardPhotoRulesRequest,)
+  }
+);}
+
+
+
+
+export const getSaveCardPhotoRulesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveCardPhotoRules>>, TError,{data: BodyType<SaveCardPhotoRulesRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveCardPhotoRules>>, TError,{data: BodyType<SaveCardPhotoRulesRequest>}, TContext> => {
+
+const mutationKey = ['saveCardPhotoRules'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveCardPhotoRules>>, {data: BodyType<SaveCardPhotoRulesRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveCardPhotoRules(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveCardPhotoRulesMutationResult = NonNullable<Awaited<ReturnType<typeof saveCardPhotoRules>>>
+    export type SaveCardPhotoRulesMutationBody = BodyType<SaveCardPhotoRulesRequest>
+    export type SaveCardPhotoRulesMutationError = ErrorType<void>
+
+    /**
+ * @summary Set the photo rule for one grade and one or more card types (admin)
+ */
+export const useSaveCardPhotoRules = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveCardPhotoRules>>, TError,{data: BodyType<SaveCardPhotoRulesRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveCardPhotoRules>>,
+        TError,
+        {data: BodyType<SaveCardPhotoRulesRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveCardPhotoRulesMutationOptions(options));
+    }
+
+export const getDeleteCardPhotoRuleUrl = (id: number,) => {
+
+
+
+
+  return `/api/card-photo-rules/${id}`
+}
+
+/**
+ * The grade and card type go back to the automatic order; open drafts whose photo was picked automatically are re-picked.
+ * @summary Remove a card photo rule (admin)
+ */
+export const deleteCardPhotoRule = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCardPhotoRuleUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCardPhotoRuleMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCardPhotoRule>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCardPhotoRule>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCardPhotoRule'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCardPhotoRule>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCardPhotoRule(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCardPhotoRuleMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCardPhotoRule>>>
+
+    export type DeleteCardPhotoRuleMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a card photo rule (admin)
+ */
+export const useDeleteCardPhotoRule = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCardPhotoRule>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCardPhotoRule>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCardPhotoRuleMutationOptions(options));
     }
 
 export const getGetBackgroundRemovalStatusUrl = () => {

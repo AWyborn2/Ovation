@@ -30,6 +30,7 @@ import { loadMatchDetail, loadCentralMatchDetail } from "./match-detail";
 import { overlayNativeOpponents } from "./club-brand";
 import { getPrivateIds, splitScores, MASK_NAME } from "./junior-helpers";
 import { draftKeys, upsertDraftByKey } from "./draft-upsert";
+import { topPerformerPlayerId } from "./match-top-performer";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -246,9 +247,13 @@ async function upsertDraft(
   junior: boolean,
   cardInput: Record<string, unknown>,
   appPath: string,
-  opts: { central?: { seenAt: Date }; grade?: string | null } = {},
+  opts: {
+    central?: { seenAt: Date };
+    grade?: string | null;
+    featuredPlayerId?: number | null;
+  } = {},
 ): Promise<"drafted" | "skipped"> {
-  const { central, grade } = opts;
+  const { central, grade, featuredPlayerId } = opts;
   // Re-ingest refreshes the existing draft (keeping a revision), a posted draft
   // is only marked stale, and unchanged input is a no-op (KTD3).
   if (central) {
@@ -265,6 +270,7 @@ async function upsertDraft(
       sourceKind: "matchSummary",
       sourceImportedAt: central.seenAt,
       grade,
+      featuredPlayerId,
     });
     return "drafted";
   }
@@ -279,6 +285,7 @@ async function upsertDraft(
     sourceMatchId: matchId,
     sourceMatchIsJunior: junior,
     grade,
+    featuredPlayerId,
     // Drafts from before source keys existed: find them by match and backfill.
     findLegacy: async () => {
       const [legacy] = await db
@@ -358,6 +365,8 @@ export async function generateMatchSummaryDrafts(
           {
             central: source.kind === "central" ? { seenAt: source.seenAt } : undefined,
             grade: detail.grade,
+            // The club's top performer, for a "player" card photo rule.
+            featuredPlayerId: topPerformerPlayerId(detail.lines),
           },
         );
         if (outcome === "drafted") result.drafted++;

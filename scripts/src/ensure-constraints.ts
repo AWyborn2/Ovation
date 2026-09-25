@@ -122,6 +122,11 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     name: "nav_items_surface_check",
     sql: `"surface" IN ('senior_menu', 'junior_menu', 'junior_quick_links', 'admin_tiles')`,
   },
+  {
+    table: "card_photo_rules",
+    name: "card_photo_rules_mode_check",
+    sql: `"mode" IN ('player', 'random', 'fixed')`,
+  },
 ];
 
 /**

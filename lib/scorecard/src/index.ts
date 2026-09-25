@@ -34,6 +34,7 @@ export { formatDismissal } from "./dismissal";
 export { oversToBalls, ballsToOvers, sumOvers, economy } from "./overs";
 export { buildScorecard } from "./mapping";
 export { FILL_IN_THRESHOLD, isFillInPlayerId } from "./fill-in";
+export { isJuniorGradeLabel } from "./junior-grade";
 export * from "./honour-boards";
 export * from "./nav";
 export { buildJuniorScorecard } from "./junior-mapping";
