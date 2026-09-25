@@ -141,6 +141,7 @@ export default function AdminSocialCreate() {
         hashtag: tenantHashtag(bundle),
         sponsors: kindSponsors(bundle, kind, sponsorsOn),
         presentingSponsorName: presentingSponsorName(bundle, sponsorsOn),
+        packColourModes: bundle?.settings.packColourModes,
       }),
     [bundle, brand, kind, sponsorsOn],
   );

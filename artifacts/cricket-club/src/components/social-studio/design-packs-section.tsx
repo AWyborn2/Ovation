@@ -6,7 +6,9 @@ import { SegmentedControl } from "@/components/broadcast";
 import { type PackCardData } from "@/lib/pack-render";
 import { type CardSize, type ShareCardInput } from "@/lib/share-card";
 import { PackPreviewTile } from "@/components/social-studio/pack-preview-tile";
+import { Switch } from "@/components/ui/switch";
 import type { PackSelection } from "@/lib/use-pack-selection";
+import type { PackColourModes } from "@/lib/use-pack-colour-modes";
 
 const FORMATS: { value: CardSize; label: string }[] = [
   { value: "square", label: "Square" },
@@ -16,25 +18,66 @@ const FORMATS: { value: CardSize; label: string }[] = [
 ];
 
 /**
+ * The per-pack "Club colours / Pack's own look" switch. On = the pack takes on
+ * the club's colours (the default); off = the pack's own palette. The tile's
+ * preview repaints as soon as it flips (see `usePackColourModes`).
+ */
+function ColourModeSwitch({
+  packId,
+  packName,
+  colourModes,
+}: {
+  packId: string;
+  packName: string;
+  colourModes: PackColourModes;
+}) {
+  const club = colourModes.modeFor(packId) === "club";
+  const pending = colourModes.pendingPackId === packId;
+  const id = `pack-colours-${packId}`;
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <label htmlFor={id} className="text-[13px] font-medium">
+        {club ? "Club colours" : "Pack's own look"}
+      </label>
+      <span className="flex items-center gap-1.5">
+        {pending && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+        <Switch
+          id={id}
+          aria-label={`${packName}: use club colours`}
+          checked={club}
+          disabled={pending}
+          onCheckedChange={(on) => colourModes.setMode(packId, on ? "club" : "pack")}
+        />
+      </span>
+    </div>
+  );
+}
+
+/**
  * Design packs (Social Studio U14): one live preview per pack in the chosen
  * format, which pack is the club's default (the one most card types use),
- * how many types use each, and "Use for every card".
+ * how many types use each, "Use for every card", and whether each pack wears
+ * the club's colours or its own.
  */
 export function DesignPacksSection({
   selection,
   previewInput,
   previewData,
   theme,
+  colourModes,
 }: {
   selection: PackSelection;
   /** The sample card every pack tile previews (Match Summary). */
   previewInput: ShareCardInput;
   previewData: PackCardData | null;
   theme: ApiCardTheme | null;
+  colourModes: PackColourModes;
 }) {
   const [format, setFormat] = useState<CardSize>("square");
   const { availablePacks, bulkPackId, busy, kindsUsing, applyPackEverywhere } = selection;
   if (availablePacks.length === 0) return null;
+  // Every tile shares one sample payload; the per-pack mode rides on it and
+  // `PackCard` picks each tile's own entry by its pack id.
 
   const usage = availablePacks.map((p) => ({ ...p, used: kindsUsing(p.packId) }));
   const defaultPack = usage.reduce((best, p) => (p.used > best.used ? p : best), usage[0]);
@@ -76,6 +119,11 @@ export function DesignPacksSection({
                   ? "Not in use"
                   : `Used by ${pack.used} card type${pack.used === 1 ? "" : "s"}`}
               </p>
+              <ColourModeSwitch
+                packId={pack.packId}
+                packName={pack.name}
+                colourModes={colourModes}
+              />
               <Button
                 variant="outline"
                 className="h-9 w-full font-semibold"

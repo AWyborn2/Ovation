@@ -3809,6 +3809,22 @@ export interface SocialFamilyConfig {
   matchday: SocialFamilySetting;
 }
 
+/**
+ * How a design pack is coloured for this club. "club" (Club colours) — the club's background colour becomes the card stage and panel and its primary colour the accent, beating the card theme's colours. "pack" (Pack's own look) — the pack renders with its own palette, theme first.
+ */
+export type PackColourMode = typeof PackColourMode[keyof typeof PackColourMode];
+
+
+export const PackColourMode = {
+  club: 'club',
+  pack: 'pack',
+} as const;
+
+/**
+ * Colour mode per design pack id (e.g. "sunset-v1"). A pack absent from the map is "club".
+ */
+export interface PackColourModes {[key: string]: PackColourMode}
+
 export interface SocialSettings {
   engineOnDemand: boolean;
   engineMilestone: boolean;
@@ -3849,6 +3865,7 @@ export interface SocialSettings {
      */
   notificationEmail?: string | null;
   familyConfig?: SocialFamilyConfig;
+  packColourModes?: PackColourModes;
 }
 
 export interface Notification {
@@ -4163,6 +4180,8 @@ export interface SocialSettingsUpdate {
   autoPostWindowHours?: number;
   /** @nullable */
   notificationEmail?: string | null;
+  /** Merged into the stored map: only the packs sent change, the others keep their mode. */
+  packColourModes?: PackColourModes;
 }
 
 /**

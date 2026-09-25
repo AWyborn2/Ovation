@@ -17,7 +17,7 @@
  * the unit tests can call it without React.
  */
 
-import type { PackCardData } from "./pack-render";
+import type { PackCardData, PackColourMode } from "./pack-render";
 import {
   sponsorAppliesToKind,
   type CardKind,
@@ -61,6 +61,14 @@ export interface BuildPackDataOptions {
   photoPlacement?: PhotoPlacement | null;
   /** Admin per-slot image overrides (B1). Only forwarded when non-empty. */
   imageOverrides?: Record<string, string> | null;
+  /**
+   * The club's per-pack colour modes (`settings.packColourModes`). Absent →
+   * every pack in "Club colours". Pass it from the settings bundle on EVERY
+   * surface so previews, the editor and server renders agree.
+   */
+  packColourModes?: Record<string, string> | null;
+  /** Per-card style-panel overrides (share modal). Only forwarded when set. */
+  tokenOverride?: PackCardData["tokenOverride"];
 }
 
 /**
@@ -79,7 +87,13 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
     photoTransform,
     photoPlacement,
     imageOverrides,
+    packColourModes,
+    tokenOverride,
   } = options;
+  const modes = packModesFrom(packColourModes);
+  const override = tokenOverride
+    ? Object.fromEntries(Object.entries(tokenOverride).filter(([, v]) => Boolean(v)))
+    : null;
 
   return {
     brand: brand
@@ -88,9 +102,9 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
           // Club tagline (A9) → the pack header sub-line; empty when unset.
           tagline: brand.tagline,
           logoUrl: brand.logoUrl,
-          // Colours seed the pack's DEFAULT token palette (primary → accent,
-          // juniors → panel) via `brandDefaultTokens`; background is carried but
-          // not mapped onto the fixed deep-ink stage.
+          // Colours seed the pack's DEFAULT token palette via
+          // `brandDefaultTokens`: primary → accent always; background → panel
+          // and deep stage in "Club colours", juniors → panel in "Pack's own look".
           primaryColour: brand.primaryColour,
           backgroundColour: brand.backgroundColour,
           juniorsColour: brand.juniorsColour,
@@ -108,7 +122,25 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
     // one built before per-slot overrides existed.
     imagesOverride:
       imageOverrides && Object.keys(imageOverrides).length ? imageOverrides : undefined,
+    // Only the packs a club switched to "Pack's own look" need a key; absent =
+    // "Club colours" everywhere.
+    ...(modes ? { packColourModes: modes } : {}),
+    ...(override && Object.keys(override).length ? { tokenOverride: override } : {}),
   };
+}
+
+/**
+ * Narrow a stored mode map (the API types it as plain strings) to the
+ * renderer's vocabulary: only `"pack"` entries matter, since absent already
+ * means `"club"`. Null when no pack is on its own look.
+ */
+function packModesFrom(
+  raw: Record<string, string> | null | undefined,
+): Record<string, PackColourMode> | null {
+  if (!raw) return null;
+  const out: Record<string, PackColourMode> = {};
+  for (const [packId, mode] of Object.entries(raw)) if (mode === "pack") out[packId] = "pack";
+  return Object.keys(out).length ? out : null;
 }
 
 // ---------------------------------------------------------------------------

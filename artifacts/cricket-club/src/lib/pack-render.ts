@@ -29,6 +29,7 @@
 export {
   JUNIOR_PANEL,
   type PackTokens,
+  type PackColourMode,
   type PackPhotoPlacement,
   type PackCardData,
   type PackImageSlot,
@@ -48,6 +49,9 @@ export {
   PACK_DEFAULT_TOKENS,
   normaliseBrandHex,
   brandDefaultTokens,
+  hasClubColours,
+  clubStageInk,
+  contrastRatio,
   DISPLAY_FONT_FAMILY,
   packNativeSize,
 } from "./pack-render/tokens";
@@ -55,6 +59,8 @@ export {
 export {
   BLANK_PACK_ID,
   renderPackCard,
+  packColourModeFor,
+  resolveCardTokens,
   packFieldValues,
   packTextFields,
 } from "./pack-render/render";

@@ -34,8 +34,9 @@ export const NEON_NIGHT_PACK: PackManifest = {
   packId: "neon-night-v1",
   name: "Neon Night",
   // The cyan glow needs a cool night-navy behind it, which is what this pack's
-  // own `var(--ink,#081426)` asks for.
-  inkTint: { toward: "#081426", tenantWeight: 50 },
+  // own `var(--ink,#081426)` asks for. In "Club colours" the stage leans 85% to
+  // the club's own deep shade, keeping just a night cast.
+  inkTint: { toward: "#081426", tenantWeight: 50, clubTenantWeight: 85 },
   designs: [
     { designKey: "match-result", kind: "matchSummary", template: matchResult },
     { designKey: "record", kind: "record", template: record },

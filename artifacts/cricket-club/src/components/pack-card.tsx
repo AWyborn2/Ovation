@@ -5,9 +5,7 @@ import { ensureCardFontsLoaded } from "@/lib/card-fonts";
 import {
   renderPackCard,
   packNativeSize,
-  resolvePackTokens,
-  tokensFromCardTheme,
-  brandDefaultTokens,
+  resolveCardTokens,
   type CardAdjustments,
   type PackCardData,
 } from "@/lib/pack-render";
@@ -65,26 +63,17 @@ export function PackCard({
   className,
 }: PackCardProps) {
   const native = packNativeSize(size);
-  // Resolve tokens by priority: junior force > theme (with folded overrides) >
-  // brand default. The explicit override level lives in `resolvePackTokens`;
-  // callers fold per-card overrides into `theme` so the server harness (which
-  // only threads `theme`) stays pixel-identical to this preview.
-  //
-  // The brand default baseline is now derived from the tenant brand colours on
-  // `data.brand` (primary → accent, juniors → panel) via `brandDefaultTokens`,
-  // falling back to the hard-coded Broadcast-Dark palette for any colour the
-  // brand omits. Halls Head's seeded brand reproduces that palette exactly, so
-  // HH stays visually identical; other tenants get their own brand colours as
-  // the pack's default look before any theme/override is applied.
-  const brandColour = data?.brand;
+  // Resolve tokens through `resolveCardTokens`, the one resolver every pack
+  // surface shares (the server harness mounts this same component). The club's
+  // per-pack colour mode rides on `data.packColourModes`:
+  //   - "Club colours" (default): junior > per-card override > club brand
+  //     (accent, panel, deep stage) > theme's font / text colour.
+  //   - "Pack's own look": junior > override > theme > brand, as before.
+  // Per-card overrides arrive on `data.tokenOverride` (and are still folded into
+  // `theme` by the share modal for the pack-mode path).
   const tokens = useMemo(
-    () =>
-      resolvePackTokens({
-        brand: brandDefaultTokens(brandColour),
-        theme: tokensFromCardTheme(theme),
-        junior,
-      }),
-    [theme, junior, brandColour?.primaryColour, brandColour?.juniorsColour],
+    () => resolveCardTokens({ theme, junior, data, packId }),
+    [theme, junior, data, packId],
   );
 
   const html = useMemo(
