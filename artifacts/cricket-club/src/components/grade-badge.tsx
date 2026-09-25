@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { BadgeStyleContext } from "@/lib/brand-context";
+import { BadgeStyleContext, useBrand } from "@/lib/brand-context";
 
 interface GradeMeta {
   full: string;
@@ -91,7 +91,8 @@ const SIZE_PX: Record<Size, number> = { sm: 44, md: 68, lg: 112 };
 
 const ACCENT = "hsl(var(--accent))";
 
-export type BadgeStyle = "diamond" | "shield" | "hexagon" | "oval" | "crest";
+/** SVG outline shapes, plus "logo": the club logo with the grade underneath. */
+export type BadgeStyle = "diamond" | "shield" | "hexagon" | "oval" | "crest" | "logo";
 
 export const BADGE_STYLE_LABELS: Record<BadgeStyle, string> = {
   diamond: "Diamond",
@@ -99,13 +100,21 @@ export const BADGE_STYLE_LABELS: Record<BadgeStyle, string> = {
   hexagon: "Hexagon",
   oval: "Oval",
   crest: "Crest",
+  logo: "Club logo",
 };
 
-export const BADGE_STYLE_ORDER: BadgeStyle[] = ["diamond", "shield", "hexagon", "oval", "crest"];
+export const BADGE_STYLE_ORDER: BadgeStyle[] = [
+  "diamond",
+  "shield",
+  "hexagon",
+  "oval",
+  "crest",
+  "logo",
+];
 
 type BadgeRenderFn = (px: number, accent: string) => React.ReactNode;
 
-const BADGE_STYLES: Record<BadgeStyle, BadgeRenderFn> = {
+const BADGE_STYLES: Record<Exclude<BadgeStyle, "logo">, BadgeRenderFn> = {
   diamond: (px, accent) => (
     <svg width={px} height={px} viewBox="0 0 100 100" fill="none" aria-hidden>
       <polygon
@@ -183,16 +192,49 @@ export const GradeBadge = ({
   badgeStyle: badgeStyleProp,
 }: GradeBadgeProps) => {
   const contextStyle = useContext(BadgeStyleContext);
+  const brand = useBrand();
   const activeStyle: BadgeStyle = (badgeStyleProp ?? contextStyle) as BadgeStyle;
 
   const meta = getMeta(grade);
   const px = SIZE_PX[size];
 
+  // Club logo with the grade in small text underneath. A club with no logo
+  // falls back to the diamond outline.
+  if (activeStyle === "logo" && brand.logoUrl) {
+    const label = size === "lg" ? meta.bannerLong : meta.bannerShort;
+    const fontPx = Math.max(7, px * (label.length > 7 ? 0.12 : 0.15));
+    return (
+      <div
+        role="img"
+        aria-label={meta.full}
+        title={meta.full}
+        data-badge-style="logo"
+        className={`inline-flex shrink-0 select-none flex-col items-center justify-center gap-[2px] ${className ?? ""}`}
+        style={{ width: px, height: px }}
+      >
+        <img
+          src={brand.logoUrl}
+          alt=""
+          aria-hidden
+          draggable={false}
+          style={{ width: px * 0.64, height: px * 0.64, objectFit: "contain" }}
+        />
+        <span
+          className="font-mono font-semibold uppercase leading-none text-muted-foreground"
+          style={{ fontSize: fontPx, letterSpacing: "0.06em", whiteSpace: "nowrap" }}
+        >
+          {label}
+        </span>
+      </div>
+    );
+  }
+
   const diamondLabel = size === "lg" ? meta.bannerLong : meta.bannerShort;
   const diamondScale = diamondLabel.length > 7 ? 0.075 : diamondLabel.length > 5 ? 0.09 : 0.11;
   const diamondFontPx = Math.max(7, px * diamondScale);
 
-  const renderBadge = BADGE_STYLES[activeStyle] ?? BADGE_STYLES.diamond;
+  const renderBadge =
+    BADGE_STYLES[activeStyle as Exclude<BadgeStyle, "logo">] ?? BADGE_STYLES.diamond;
 
   return (
     <div

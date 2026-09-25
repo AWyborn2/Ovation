@@ -38,7 +38,7 @@ export interface UpdateTenantBrandBody {
   /** The "App look" selector: true = Ovation Broadcast (fixed navy base), false = Club look (surfaces derived from backgroundColour). */
   useNavyBase?: boolean;
   /**
-     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).
      * @nullable
      */
   badgeStyle?: string | null;

@@ -39,7 +39,7 @@ export interface AdminTenant {
   /** @nullable */
   juniorsColour?: string | null;
   /**
-     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).
      * @nullable
      */
   badgeStyle?: string | null;
