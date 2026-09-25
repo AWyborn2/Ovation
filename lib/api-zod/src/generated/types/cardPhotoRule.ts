@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CardPhotoRuleMode } from './cardPhotoRuleMode';
+import type { ClubPhotoType } from './clubPhotoType';
 
 export interface CardPhotoRule {
   id: number;
@@ -19,5 +20,7 @@ export interface CardPhotoRule {
   photoId: number | null;
   /** @nullable */
   photoThumbUrl: string | null;
+  /** Random and player rules: only photos with this type tag (falling back to any grade photo when none match). */
+  photoType: ClubPhotoType | null;
   updatedAt: Date;
 }

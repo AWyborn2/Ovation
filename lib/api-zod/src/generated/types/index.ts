@@ -151,6 +151,7 @@ export * from './checkoutBodyPlan';
 export * from './checkoutResult';
 export * from './checkSlugAvailableParams';
 export * from './clubPhoto';
+export * from './clubPhotoType';
 export * from './clubRecords';
 export * from './clubRole';
 export * from './clubRoleInput';

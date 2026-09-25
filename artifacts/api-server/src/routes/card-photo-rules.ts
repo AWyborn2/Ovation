@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { db, cardPhotoRulesTable, clubPhotosTable, type CardPhotoRuleRow } from "@workspace/db";
 import { SaveCardPhotoRulesBody } from "@workspace/api-zod";
-import { isJuniorGradeLabel } from "@workspace/scorecard";
+import { isJuniorGradeLabel, isPhotoType } from "@workspace/scorecard";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { repickRuleDraftPhotos } from "../lib/draft-enrich";
@@ -33,6 +33,7 @@ async function presentRules(tenantId: number, rows: CardPhotoRuleRow[]) {
     mode: r.mode,
     photoId: r.photoId,
     photoThumbUrl: r.photoId != null ? (thumbById.get(r.photoId) ?? null) : null,
+    photoType: isPhotoType(r.photoType) ? r.photoType : null,
     updatedAt: r.updatedAt.toISOString(),
   }));
 }
@@ -89,17 +90,21 @@ router.put("/card-photo-rules", requireAdmin, async (req, res): Promise<void> =>
     photoId = photo.id;
   }
 
+  // A type narrows a random pool (and a player rule's fallback); a fixed rule
+  // has one photo, so it has no type.
+  const photoType = mode === "fixed" ? null : (parsed.data.photoType ?? null);
+
   const now = new Date();
   const rows = await db
     .insert(cardPhotoRulesTable)
-    .values(kinds.map((cardKind) => ({ tenantId, grade, cardKind, mode, photoId })))
+    .values(kinds.map((cardKind) => ({ tenantId, grade, cardKind, mode, photoId, photoType })))
     .onConflictDoUpdate({
       target: [
         cardPhotoRulesTable.tenantId,
         cardPhotoRulesTable.grade,
         cardPhotoRulesTable.cardKind,
       ],
-      set: { mode, photoId, updatedAt: now },
+      set: { mode, photoId, photoType, updatedAt: now },
     })
     .returning();
   await repickRuleDraftPhotos(tenantId, grade, kinds);
