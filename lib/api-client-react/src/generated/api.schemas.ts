@@ -3951,6 +3951,52 @@ export interface DeleteClubPhotosRequest {
 }
 
 /**
+ * player = the card's featured player (a match summary features the club's top run-scorer), falling back to a random grade photo; random = a photo of the grade, stable per draft; fixed = one library photo.
+ */
+export type CardPhotoRuleMode = typeof CardPhotoRuleMode[keyof typeof CardPhotoRuleMode];
+
+
+export const CardPhotoRuleMode = {
+  player: 'player',
+  random: 'random',
+  fixed: 'fixed',
+} as const;
+
+export interface CardPhotoRule {
+  id: number;
+  grade: string;
+  cardKind: string;
+  mode: CardPhotoRuleMode;
+  /**
+     * The fixed photo; null for other modes, or when a fixed photo was removed from the library.
+     * @nullable
+     */
+  photoId: number | null;
+  /** @nullable */
+  photoThumbUrl: string | null;
+  updatedAt: string;
+}
+
+export interface SaveCardPhotoRulesRequest {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  grade: string;
+  /**
+     * @minItems 1
+     * @maxItems 40
+     */
+  cardKinds: string[];
+  mode: CardPhotoRuleMode;
+  /**
+     * Required for a fixed rule; ignored otherwise.
+     * @nullable
+     */
+  photoId?: number | null;
+}
+
+/**
  * scheduled (default): central matches past the watermark plus fixture cards. fixtures: fixture cards only.
  */
 export type DraftSweepRequestScope = typeof DraftSweepRequestScope[keyof typeof DraftSweepRequestScope];
