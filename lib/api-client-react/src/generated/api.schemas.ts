@@ -252,6 +252,11 @@ export interface PlayerDetail {
   premiershipsCaptained?: number | null;
   /** @nullable */
   imageUrl?: string | null;
+  /**
+     * A photo-library photo tagged with this player (solo shots first, then newest); the profile shows it when there is no headshot.
+     * @nullable
+     */
+  libraryPhotoUrl?: string | null;
   /** @nullable */
   cardRole?: string | null;
   /** @nullable */

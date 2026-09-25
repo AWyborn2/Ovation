@@ -286,3 +286,31 @@ describe("Google Drive import", () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe("profile photo from the library", () => {
+  it("a player with no headshot gets a library photo they're tagged in, solo shots first", async () => {
+    const [group, solo] = await Promise.all([
+      upload("profile-group.jpg", await jpeg()),
+      upload("profile-solo.jpg", await jpeg()),
+    ]);
+    const g = await api("post", "/club-photos/ingest").send({
+      objectPaths: [group],
+      playerIds,
+    });
+    const s = await api("post", "/club-photos/ingest").send({
+      objectPaths: [solo],
+      playerIds: [playerIds[0]],
+    });
+    const soloUrl = s.body.results[0].photo.url;
+    expect(g.body.results[0].ok).toBe(true);
+
+    const res = await api("get", `/players/${playerIds[0]}`);
+    expect(res.status).toBe(200);
+    expect(res.body.imageUrl ?? null).toBeNull();
+    expect(res.body.libraryPhotoUrl).toBe(soloUrl);
+
+    // Another club's library never leaks onto this club's profile.
+    const other = await api("get", `/players/${playerIds[0]}`, "other");
+    if (other.status === 200) expect(other.body.libraryPhotoUrl ?? null).toBeNull();
+  });
+});
