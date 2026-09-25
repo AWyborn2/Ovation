@@ -1612,7 +1612,7 @@ export interface TenantBrand {
   /** When true the tenant UI uses the full navy base (dark-only design mode). Defaults false. */
   useNavyBase?: boolean;
   /**
-     * The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default "diamond" style.
+     * The grade-badge SVG shape (diamond | shield | hexagon | oval | crest | logo). Null = the default "diamond" style.
      * @nullable
      */
   badgeStyle?: string | null;
@@ -1661,7 +1661,7 @@ export interface UpdateTenantBrandBody {
   /** The "App look" selector: true = Ovation Broadcast (fixed navy base), false = Club look (surfaces derived from backgroundColour). */
   useNavyBase?: boolean;
   /**
-     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).
      * @nullable
      */
   badgeStyle?: string | null;
@@ -1715,7 +1715,7 @@ export interface UpdateAdminTenantBrandBody {
   /** When true the tenant UI uses the navy base (dark-only mode). */
   useNavyBase?: boolean;
   /**
-     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).
      * @nullable
      */
   badgeStyle?: string | null;
@@ -1957,7 +1957,7 @@ export interface AdminTenant {
   /** @nullable */
   juniorsColour?: string | null;
   /**
-     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).
      * @nullable
      */
   badgeStyle?: string | null;

@@ -43,7 +43,7 @@ export interface TenantBrand {
   /** When true the tenant UI uses the full navy base (dark-only design mode). Defaults false. */
   useNavyBase?: boolean;
   /**
-     * The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default "diamond" style.
+     * The grade-badge SVG shape (diamond | shield | hexagon | oval | crest | logo). Null = the default "diamond" style.
      * @nullable
      */
   badgeStyle?: string | null;
