@@ -3937,6 +3937,8 @@ export interface IngestClubPhotosRequest {
   grade?: string;
   /** Senior players to tag on every photo in the batch. */
   playerIds?: number[];
+  /** File every photo in the batch under this photo type (uploading into a library folder). */
+  photoType?: ClubPhotoType;
 }
 
 export interface GoogleDriveConfig {
@@ -3997,10 +3999,22 @@ export interface TagClubPhotosRequest {
   grade?: string | null;
   addPlayerIds?: number[];
   removePlayerIds?: number[];
-  /** Photo types to tag on every photo. */
+  /** At most one photo type: a photo has one type (its library folder), so adding a type replaces the photo's current type. More than one is a 400. */
   addTypes?: ClubPhotoType[];
   /** Photo types to remove from every photo. */
   removeTypes?: ClubPhotoType[];
+}
+
+export interface MoveClubPhotosRequest {
+  /** @minItems 1 */
+  photoIds: number[];
+  /**
+     * The senior grade folder, or null for Club-wide (no grade).
+     * @nullable
+     */
+  grade: string | null;
+  /** The photo type sub-folder, or null for Unsorted (no type). */
+  photoType: ClubPhotoType | null;
 }
 
 export interface DeleteClubPhotosRequest {
@@ -6805,6 +6819,14 @@ season?: number;
  * Only photos tagged with this photo type.
  */
 type?: ClubPhotoType;
+/**
+ * When true, only photos with no grade (the Club-wide folder). Can't be combined with grade.
+ */
+ungraded?: boolean;
+/**
+ * When true, only photos with no photo type (a folder's Unsorted sub-folder). Can't be combined with type.
+ */
+untyped?: boolean;
 };
 
 export type DeleteClubPhotos200 = {

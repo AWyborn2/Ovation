@@ -375,33 +375,41 @@ describe("a rule's photo type", () => {
 });
 
 describe("bulk type tagging", () => {
-  it("adds and removes types on several photos, and the list filters by type", async () => {
+  it("sets and removes a type on several photos, and the list filters by type", async () => {
     const ids = [photos.pool1, photos.pool3];
     const added = await api("post", "/club-photos/tags").send({
       photoIds: ids,
-      addTypes: ["fielding", "team"],
+      addTypes: ["fielding"],
     });
     expect(added.status).toBe(200);
-    for (const p of added.body) expect(p.photoTypes).toEqual(["fielding", "team"]);
+    for (const p of added.body) expect(p.photoTypes).toEqual(["fielding"]);
 
     const filtered = await api("get", "/club-photos?type=fielding");
     expect(filtered.status).toBe(200);
     expect(filtered.body.map((p: { id: number }) => p.id).sort()).toEqual([...ids].sort());
 
-    const removed = await api("post", "/club-photos/tags").send({
+    // One type per photo: adding another replaces it.
+    const replaced = await api("post", "/club-photos/tags").send({
       photoIds: ids,
       addTypes: ["celebrating"],
-      removeTypes: ["fielding"],
     });
-    expect(removed.status).toBe(200);
-    for (const p of removed.body) expect(p.photoTypes).toEqual(["team", "celebrating"]);
+    expect(replaced.status).toBe(200);
+    for (const p of replaced.body) expect(p.photoTypes).toEqual(["celebrating"]);
     expect((await api("get", "/club-photos?type=fielding")).body).toEqual([]);
 
     const cleared = await api("post", "/club-photos/tags").send({
       photoIds: ids,
-      removeTypes: ["team", "celebrating"],
+      removeTypes: ["celebrating"],
     });
     for (const p of cleared.body) expect(p.photoTypes).toEqual([]);
+  });
+
+  it("rejects adding more than one type at once", async () => {
+    const res = await api("post", "/club-photos/tags").send({
+      photoIds: [photos.pool1],
+      addTypes: ["fielding", "team"],
+    });
+    expect(res.status).toBe(400);
   });
 
   it("rejects unknown types with 400", async () => {

@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 import AdminPhotoLibrary from "@/pages/admin-photo-library";
-import { renderAt } from "@/test/render";
+import { renderAt, renderWithHistory } from "@/test/render";
 
 afterEach(() => {
   cleanup();
@@ -90,7 +90,8 @@ describe("card photo rules", () => {
 
   it("“Use for…” saves that photo for a grade's match results and team lists in one request", async () => {
     const requests = stubApi();
-    renderAt(<AdminPhotoLibrary />, "/admin/social/library");
+    // Photo 2 has no grade or type: the Club-wide Unsorted folder.
+    renderWithHistory(<AdminPhotoLibrary />, "/admin/social/library?grade=club-wide&type=unsorted");
     fireEvent.click(await screen.findByRole("button", { name: "Use photo 2 for cards" }));
 
     // The photo is already chosen; junior-graded photos are not offered.
@@ -149,8 +150,18 @@ describe("card photo rules", () => {
 
   it("junior-graded photos get no “Use for…” action", async () => {
     stubApi();
-    renderAt(<AdminPhotoLibrary />, "/admin/social/library");
+    const senior = renderWithHistory(
+      <AdminPhotoLibrary />,
+      "/admin/social/library?grade=A%20Grade&type=unsorted",
+    );
     await screen.findByRole("button", { name: "Use photo 1 for cards" });
+    senior.unmount();
+    // An older junior-graded photo still shows (so it can be moved or removed).
+    renderWithHistory(
+      <AdminPhotoLibrary />,
+      "/admin/social/library?grade=Under%2015&type=unsorted",
+    );
+    await screen.findByRole("button", { name: "Photo 3" });
     expect(screen.queryByRole("button", { name: "Use photo 3 for cards" })).toBeNull();
   });
 
