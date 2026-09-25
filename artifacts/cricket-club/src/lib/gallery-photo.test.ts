@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { ClubPhoto } from "@workspace/api-client-react";
-import { galleryPhotoUrl, PLACEHOLDER_CARD_PHOTO } from "./gallery-photo";
+import { galleryPhotoUrl } from "./gallery-photo";
 
 const photo = (over: Partial<ClubPhoto>): ClubPhoto => ({
   id: 1,
@@ -17,9 +17,9 @@ const photo = (over: Partial<ClubPhoto>): ClubPhoto => ({
 });
 
 describe("galleryPhotoUrl", () => {
-  it("uses the placeholder until the club has photos", () => {
-    expect(galleryPhotoUrl(undefined)).toBe(PLACEHOLDER_CARD_PHOTO);
-    expect(galleryPhotoUrl([])).toBe(PLACEHOLDER_CARD_PHOTO);
+  it("shows no photo until the club has library photos", () => {
+    expect(galleryPhotoUrl(undefined)).toBeNull();
+    expect(galleryPhotoUrl([])).toBeNull();
   });
 
   it("prefers the newest team shot over a newer player photo", () => {
