@@ -127,6 +127,55 @@ describe("Player detail (Broadcast U8)", () => {
     expect(screen.getAllByText("112*").length).toBeGreaterThan(0);
     expect(screen.getByText("Players").closest("a")?.getAttribute("href")).toBe("/players");
   });
+  it("with no headshot, shows a library photo the player is tagged in", async () => {
+    renderDetail({
+      "/distribution": {
+        grade: "A Grade",
+        fromSeason: null,
+        toSeason: null,
+        minInnings: 10,
+        minOvers: 100,
+        players: [],
+        best: {},
+      },
+      "/api/players/42": {
+        ...PLAYER,
+        imageUrl: null,
+        libraryPhotoUrl: "/api/storage/objects/library/solo",
+      },
+    });
+    const hero = await screen.findByTestId("profile-hero");
+    await waitFor(() =>
+      expect(hero.querySelector("img")?.getAttribute("src")).toBe(
+        "/api/storage/objects/library/solo",
+      ),
+    );
+    expect(within(hero).queryByTestId("player-initials")).toBeNull();
+  });
+
+  it("a headshot wins over a tagged library photo", async () => {
+    renderDetail({
+      "/distribution": {
+        grade: "A Grade",
+        fromSeason: null,
+        toSeason: null,
+        minInnings: 10,
+        minOvers: 100,
+        players: [],
+        best: {},
+      },
+      "/api/players/42": {
+        ...PLAYER,
+        imageUrl: "/api/storage/objects/headshot",
+        libraryPhotoUrl: "/api/storage/objects/library/solo",
+      },
+    });
+    const hero = await screen.findByTestId("profile-hero");
+    await waitFor(() =>
+      expect(hero.querySelector("img")?.getAttribute("src")).toBe("/api/storage/objects/headshot"),
+    );
+  });
+
   it("says the debut predates the season rows when the player has pre-scorecard games", async () => {
     renderDetail({
       "/api/players/42": PLAYER,
