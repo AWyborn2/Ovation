@@ -6754,7 +6754,9 @@ export const ListClubPhotosQueryParams = zod.object({
   "playerId": zod.coerce.number().optional(),
   "grade": zod.coerce.string().optional(),
   "season": zod.coerce.number().optional(),
-  "type": zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).optional().describe('Only photos tagged with this photo type.')
+  "type": zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).optional().describe('Only photos tagged with this photo type.'),
+  "ungraded": zod.coerce.boolean().optional().describe('When true, only photos with no grade (the Club-wide folder). Can\'t be combined with grade.'),
+  "untyped": zod.coerce.boolean().optional().describe('When true, only photos with no photo type (a folder\'s Unsorted sub-folder). Can\'t be combined with type.')
 })
 
 export const ListClubPhotosResponseItem = zod.object({
@@ -6785,7 +6787,8 @@ export const IngestClubPhotosBody = zod.object({
   "objectPaths": zod.array(zod.string()).min(1).describe('Object paths returned by POST \/storage\/uploads\/request-url.'),
   "season": zod.number().optional(),
   "grade": zod.string().optional(),
-  "playerIds": zod.array(zod.number()).optional().describe('Senior players to tag on every photo in the batch.')
+  "playerIds": zod.array(zod.number()).optional().describe('Senior players to tag on every photo in the batch.'),
+  "photoType": zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).optional().describe('File every photo in the batch under this photo type (uploading into a library folder).')
 })
 
 export const IngestClubPhotosResponse = zod.object({
@@ -6859,7 +6862,7 @@ export const TagClubPhotosBody = zod.object({
   "grade": zod.string().nullish().describe('Set (or with null, clear) the grade on every photo. Omit to leave unchanged.'),
   "addPlayerIds": zod.array(zod.number()).optional(),
   "removePlayerIds": zod.array(zod.number()).optional(),
-  "addTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.')).optional().describe('Photo types to tag on every photo.'),
+  "addTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.')).optional().describe('At most one photo type: a photo has one type (its library folder), so adding a type replaces the photo\'s current type. More than one is a 400.'),
   "removeTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.')).optional().describe('Photo types to remove from every photo.')
 })
 
@@ -6878,6 +6881,36 @@ export const TagClubPhotosResponseItem = zod.object({
   "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 })
 export const TagClubPhotosResponse = zod.array(TagClubPhotosResponseItem)
+
+
+/**
+ * Library folders are a view over each photo's grade and photo type: a top-level folder per senior grade plus Club-wide (no grade), and inside each a sub-folder per photo type plus Unsorted (no type). Moving sets the grade (null = Club-wide) and replaces the photo types with the one given (null = Unsorted), so a photo sits in exactly one folder. Open drafts whose photo was picked automatically re-pick afterwards.
+ * @summary File photos into a library folder (grade × photo type) (admin)
+ */
+
+
+
+export const MoveClubPhotosBody = zod.object({
+  "photoIds": zod.array(zod.number()).min(1),
+  "grade": zod.string().nullable().describe('The senior grade folder, or null for Club-wide (no grade).'),
+  "photoType": zod.union([zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.'),zod.null()]).describe('The photo type sub-folder, or null for Unsorted (no type).')
+})
+
+export const MoveClubPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number()),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.')),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+})
+export const MoveClubPhotosResponse = zod.array(MoveClubPhotosResponseItem)
 
 
 /**

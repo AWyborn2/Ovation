@@ -1,13 +1,15 @@
 import { Router, type IRouter } from "express";
-import { and, arrayContains, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, arrayContains, desc, eq, inArray, isNull, sql, type SQL } from "drizzle-orm";
 import { db, clubPhotosTable, clubPhotoPlayersTable, type ClubPhotoRow } from "@workspace/db";
 import {
   IngestClubPhotosBody,
   TagClubPhotosBody,
   DeleteClubPhotosBody,
+  MoveClubPhotosBody,
   FetchGoogleDriveFilesBody,
   ListClubPhotosQueryParams,
 } from "@workspace/api-zod";
+import { isJuniorGradeLabel } from "@workspace/scorecard";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { nonSeniorPlayerIds, presentPhotos } from "../lib/club-photo-library";
@@ -25,6 +27,11 @@ import {
  * Upload happens through the existing signed-URL flow; `ingest` then converts
  * each uploaded object (HEIC included) into a library photo. All routes are
  * admin-only and tenant-scoped.
+ *
+ * Library folders are a view over `grade` x `photo_types`, not a table: a
+ * top-level folder per senior grade plus Club-wide (no grade), and inside each
+ * a sub-folder per photo type plus Unsorted (no type). A photo has at most one
+ * type, so it sits in exactly one folder; `move` and `ingest` file photos.
  */
 const router: IRouter = Router();
 
@@ -46,6 +53,14 @@ function textArray(values: readonly string[]): SQL {
   )}]::text[]`;
 }
 
+/**
+ * A boolean query flag. Zod's coerce turns any non-empty string (even "false")
+ * into true, so only an actual true / "true" / "1" counts.
+ */
+function queryFlag(raw: unknown): boolean {
+  return raw === true || raw === "true" || raw === "1";
+}
+
 async function addTags(tenantId: number, photoIds: number[], playerIds: number[]): Promise<void> {
   const values = photoIds.flatMap((photoId) =>
     playerIds.map((playerId) => ({ tenantId, photoId, playerId })),
@@ -62,10 +77,18 @@ router.get("/club-photos", requireAdmin, async (req, res): Promise<void> => {
   }
   const tenantId = getTenantId(req);
   const { playerId, grade, season, type } = parsed.data;
+  const ungraded = queryFlag(req.query.ungraded);
+  const untyped = queryFlag(req.query.untyped);
+  if ((ungraded && grade) || (untyped && type)) {
+    res.status(400).json({ error: "Ask for a grade (or type), or for none, not both." });
+    return;
+  }
   const conditions = [eq(clubPhotosTable.tenantId, tenantId)];
   if (grade) conditions.push(eq(clubPhotosTable.grade, grade));
+  if (ungraded) conditions.push(isNull(clubPhotosTable.grade));
   if (season != null) conditions.push(eq(clubPhotosTable.season, season));
   if (type) conditions.push(arrayContains(clubPhotosTable.photoTypes, [type]));
+  if (untyped) conditions.push(sql`cardinality(${clubPhotosTable.photoTypes}) = 0`);
   if (playerId != null) {
     const tagged = await db
       .select({ photoId: clubPhotoPlayersTable.photoId })
@@ -101,9 +124,13 @@ router.post("/club-photos/ingest", requireAdmin, async (req, res): Promise<void>
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { objectPaths, season, grade, playerIds = [] } = parsed.data;
+  const { objectPaths, season, grade, photoType, playerIds = [] } = parsed.data;
   if (objectPaths.length > MAX_INGEST_BATCH) {
     res.status(400).json({ error: `At most ${MAX_INGEST_BATCH} photos per batch.` });
+    return;
+  }
+  if (grade && isJuniorGradeLabel(grade)) {
+    res.status(422).json({ error: "The photo library is for senior grades only." });
     return;
   }
   const tenantId = getTenantId(req);
@@ -132,6 +159,8 @@ router.post("/club-photos/ingest", requireAdmin, async (req, res): Promise<void>
               height: image.height,
               season: season ?? null,
               grade: grade ?? null,
+              // Uploading into a library folder files the photo under its type.
+              photoTypes: photoType ? [photoType] : [],
               takenAt: image.takenAt,
             })
             .returning();
@@ -162,8 +191,13 @@ router.post("/club-photos/ingest", requireAdmin, async (req, res): Promise<void>
     : [];
   const photos = await presentPhotos(tenantId, rows);
   const byId = new Map(photos.map((p) => [p.id, p]));
-  // New photos can fill drafts that never had a match in the library.
-  if (rows.length > 0) await fillMissingDraftPhotos(tenantId);
+  // New photos can fill drafts that never had a match in the library; photos
+  // uploaded into a folder (a grade and/or type) can also change which photo
+  // open auto drafts prefer, the same as a move.
+  if (rows.length > 0) {
+    await fillMissingDraftPhotos(tenantId);
+    if (photoType || grade) await repickTypedDraftPhotos(tenantId);
+  }
   res.json({
     results: results.map((r) =>
       r.ok
@@ -238,6 +272,11 @@ router.post("/club-photos/tags", requireAdmin, async (req, res): Promise<void> =
     res.status(400).json({ error: "A photo type can't be added and removed at once." });
     return;
   }
+  // A photo has one type (its library folder): adding one replaces the old.
+  if (new Set(addTypes).size > 1) {
+    res.status(400).json({ error: "A photo has one type. Add one type at a time." });
+    return;
+  }
   const rejected = await nonSeniorPlayerIds(tenantId, addPlayerIds);
   if (rejected.length > 0) {
     res.status(422).json({ error: "Only senior players can be tagged.", playerIds: rejected });
@@ -258,9 +297,11 @@ router.post("/club-photos/tags", requireAdmin, async (req, res): Promise<void> =
     const patch: Partial<Pick<ClubPhotoRow, "season" | "grade">> & { photoTypes?: SQL } = {};
     if (season !== undefined) patch.season = season;
     if (grade !== undefined) patch.grade = grade;
-    if (addTypes.length > 0 || removeTypes.length > 0) {
-      // Add, then remove, keeping each type once.
-      patch.photoTypes = sql`ARRAY(SELECT DISTINCT t FROM unnest(array_cat(${clubPhotosTable.photoTypes}, ${textArray(addTypes)})) AS t WHERE t <> ALL(${textArray(removeTypes)}) ORDER BY t)`;
+    if (addTypes.length > 0) {
+      // One type per photo: the added type replaces whatever was there.
+      patch.photoTypes = textArray(addTypes.slice(0, 1));
+    } else if (removeTypes.length > 0) {
+      patch.photoTypes = sql`ARRAY(SELECT DISTINCT t FROM unnest(${clubPhotosTable.photoTypes}) AS t WHERE t <> ALL(${textArray(removeTypes)}) ORDER BY t)`;
     }
     if (Object.keys(patch).length > 0) {
       await tx
@@ -298,6 +339,51 @@ router.post("/club-photos/tags", requireAdmin, async (req, res): Promise<void> =
   );
   await fillMissingDraftPhotos(tenantId);
   if (typesChanged) await repickTypedDraftPhotos(tenantId);
+  res.json(await presentPhotos(tenantId, rows));
+});
+
+/**
+ * File photos into a library folder: set the grade (null = Club-wide) and
+ * replace the photo types with the one given (null = Unsorted). Senior grades
+ * only; the library never supplies junior cards (KTD15).
+ */
+router.post("/club-photos/move", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = MoveClubPhotosBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const { photoIds, photoType } = parsed.data;
+  const grade = parsed.data.grade?.trim() || null;
+  if (grade && isJuniorGradeLabel(grade)) {
+    res.status(422).json({ error: "The photo library is for senior grades only." });
+    return;
+  }
+  const owned = await tenantPhotoIds(tenantId, photoIds);
+  if (owned.length !== new Set(photoIds).size) {
+    res.status(404).json({ error: "photo not found" });
+    return;
+  }
+  const inTenant = and(eq(clubPhotosTable.tenantId, tenantId), inArray(clubPhotosTable.id, owned));
+  const before = await db.select().from(clubPhotosTable).where(inTenant);
+  await db
+    .update(clubPhotosTable)
+    .set({ grade, photoTypes: textArray(photoType ? [photoType] : []) })
+    .where(inTenant);
+  const rows = await db
+    .select()
+    .from(clubPhotosTable)
+    .where(inTenant)
+    .orderBy(desc(clubPhotosTable.createdAt), desc(clubPhotosTable.id));
+  // Same as a type change: a photo in a new grade or type folder can fill
+  // drafts that had none and change which photo open auto drafts prefer.
+  const folderOf = (r: ClubPhotoRow) => `${r.grade ?? ""}|${[...r.photoTypes].sort().join(",")}`;
+  const beforeFolder = new Map(before.map((r) => [r.id, folderOf(r)]));
+  if (rows.some((r) => beforeFolder.get(r.id) !== folderOf(r))) {
+    await fillMissingDraftPhotos(tenantId);
+    await repickTypedDraftPhotos(tenantId);
+  }
   res.json(await presentPhotos(tenantId, rows));
 });
 

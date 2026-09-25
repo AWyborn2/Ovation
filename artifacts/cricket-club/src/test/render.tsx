@@ -13,6 +13,31 @@ import { ThemeProvider } from "@/lib/theme-context";
  * NOT included here because the page components don't require them directly;
  * the full-App smoke test exercises those.
  */
+/**
+ * Like {@link renderAt}, but navigation works and the query string is read, so
+ * a page that keeps state in the URL can be driven and inspected. `url()`
+ * returns the latest location (path + search).
+ */
+export function renderWithHistory(ui: ReactNode, path = "/") {
+  const loc = memoryLocation({ path, record: true });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+  });
+  const utils = render(
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <ConfirmProvider>
+          <Router hook={loc.hook} searchHook={loc.searchHook}>
+            {ui}
+          </Router>
+        </ConfirmProvider>
+      </ThemeProvider>
+    </QueryClientProvider>,
+  );
+  const url = () => loc.history!.at(-1)!;
+  return { ...utils, url };
+}
+
 export function renderAt(ui: ReactNode, path = "/") {
   const { hook } = memoryLocation({ path, static: true });
   const queryClient = new QueryClient({

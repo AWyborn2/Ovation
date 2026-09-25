@@ -200,6 +200,7 @@ import type {
   MilestoneBoardSettings,
   MilestoneBoardSettingsUpdate,
   MilestonesBoard,
+  MoveClubPhotosRequest,
   NavItem,
   NavItemInput,
   NavItemUpdate,
@@ -15741,6 +15742,78 @@ export const useTagClubPhotos = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getTagClubPhotosMutationOptions(options));
+    }
+
+export const getMoveClubPhotosUrl = () => {
+
+
+
+
+  return `/api/club-photos/move`
+}
+
+/**
+ * Library folders are a view over each photo's grade and photo type: a top-level folder per senior grade plus Club-wide (no grade), and inside each a sub-folder per photo type plus Unsorted (no type). Moving sets the grade (null = Club-wide) and replaces the photo types with the one given (null = Unsorted), so a photo sits in exactly one folder. Open drafts whose photo was picked automatically re-pick afterwards.
+ * @summary File photos into a library folder (grade × photo type) (admin)
+ */
+export const moveClubPhotos = async (moveClubPhotosRequest: MoveClubPhotosRequest, options?: RequestInit): Promise<ClubPhoto[]> => {
+
+  return customFetch<ClubPhoto[]>(getMoveClubPhotosUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      moveClubPhotosRequest,)
+  }
+);}
+
+
+
+
+export const getMoveClubPhotosMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moveClubPhotos>>, TError,{data: BodyType<MoveClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof moveClubPhotos>>, TError,{data: BodyType<MoveClubPhotosRequest>}, TContext> => {
+
+const mutationKey = ['moveClubPhotos'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof moveClubPhotos>>, {data: BodyType<MoveClubPhotosRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  moveClubPhotos(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MoveClubPhotosMutationResult = NonNullable<Awaited<ReturnType<typeof moveClubPhotos>>>
+    export type MoveClubPhotosMutationBody = BodyType<MoveClubPhotosRequest>
+    export type MoveClubPhotosMutationError = ErrorType<void>
+
+    /**
+ * @summary File photos into a library folder (grade × photo type) (admin)
+ */
+export const useMoveClubPhotos = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moveClubPhotos>>, TError,{data: BodyType<MoveClubPhotosRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof moveClubPhotos>>,
+        TError,
+        {data: BodyType<MoveClubPhotosRequest>},
+        TContext
+      > => {
+      return useMutation(getMoveClubPhotosMutationOptions(options));
     }
 
 export const getDeleteClubPhotosUrl = () => {

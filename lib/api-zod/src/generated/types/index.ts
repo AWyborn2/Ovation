@@ -355,6 +355,7 @@ export * from './milestoneBoardSettingsUpdateDisplayMode';
 export * from './milestoneItem';
 export * from './milestoneItemKind';
 export * from './milestonesBoard';
+export * from './moveClubPhotosRequest';
 export * from './nameMatchCandidate';
 export * from './navItem';
 export * from './navItemInput';

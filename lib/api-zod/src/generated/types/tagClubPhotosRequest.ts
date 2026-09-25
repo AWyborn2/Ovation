@@ -22,7 +22,7 @@ export interface TagClubPhotosRequest {
   grade?: string | null;
   addPlayerIds?: number[];
   removePlayerIds?: number[];
-  /** Photo types to tag on every photo. */
+  /** At most one photo type: a photo has one type (its library folder), so adding a type replaces the photo's current type. More than one is a 400. */
   addTypes?: ClubPhotoType[];
   /** Photo types to remove from every photo. */
   removeTypes?: ClubPhotoType[];
