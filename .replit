@@ -40,3 +40,15 @@ channel = "stable-25_05"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-55b7da39-8b7b-465e-a80e-6fbe1afa8120"
+
+[userenv]
+
+[userenv.shared]
+
+[userenv.development]
+GOOGLE_DRIVE_APP_ID = "820410890915"
+GOOGLE_DRIVE_CLIENT_ID = "820410890915-f4d8glrr68f2kmf8bq4lb1lim3ftdnef.apps.googleusercontent.com"
+
+[userenv.production]
+GOOGLE_DRIVE_APP_ID = "820410890915"
+GOOGLE_DRIVE_CLIENT_ID = "820410890915-f4d8glrr68f2kmf8bq4lb1lim3ftdnef.apps.googleusercontent.com"
