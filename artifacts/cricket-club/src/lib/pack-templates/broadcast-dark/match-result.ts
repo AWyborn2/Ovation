@@ -35,7 +35,7 @@ function side(prefix: "club" | "opposition", dim: boolean): string {
     `<div style="display:flex;align-items:flex-end;gap:3cqmin;width:100%;min-width:0${dim ? ";opacity:.74" : ""}">` +
     `<div style="width:8cqmin;height:8cqmin;flex:none;border-radius:1cqmin;overflow:hidden;background:rgba(255,255,255,.08);margin-bottom:1.2cqmin">${slot(`${prefix}.logo`, "logo", "rounded", 8)}</div>` +
     `<div style="flex:1;min-width:0;padding-bottom:1.2cqmin">` +
-    `<div style="font-family:${SK_COND};font-weight:800;font-size:6cqmin;line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{${prefix}.name}}</div>` +
+    `<div data-fit="10" style="font-family:${SK_COND};font-weight:800;font-size:calc(6cqmin * var(--fit,1));line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{${prefix}.name}}</div>` +
     `<div style="font-family:${SK_MONO};font-weight:500;font-size:2cqmin;letter-spacing:.14em;color:${MUTED};margin-top:.8cqmin">{{${prefix}.oversLabel}}</div>` +
     `</div>` +
     `<div style="flex:none;font-family:${DISP};font-size:17cqmin;line-height:.9">{{${prefix}.score}}</div>` +

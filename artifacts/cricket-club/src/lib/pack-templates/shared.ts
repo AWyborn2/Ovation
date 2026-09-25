@@ -160,7 +160,7 @@ export function skeletonHeader(chipHtml: string, tag = ""): string {
     `<div style="display:flex;align-items:center;gap:2cqmin;min-width:0">` +
     `<div style="width:9.5cqmin;height:9.5cqmin;flex:none;filter:var(--sk-logo-fx,none)">${CLUB_LOGO_SLOT}</div>` +
     `<div style="min-width:0">` +
-    `<div style="font-family:${SK_COND};font-weight:800;font-size:4.4cqmin;line-height:1;letter-spacing:.01em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:var(--sk-glow,none)">{{clubName}}</div>` +
+    `<div data-fit="26" style="font-family:${SK_COND};font-weight:800;font-size:calc(4.4cqmin * var(--fit,1));line-height:1;letter-spacing:.01em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:var(--sk-glow,none)">{{clubName}}</div>` +
     `<div style="font-family:${SK_MONO};font-weight:500;font-size:1.5cqmin;line-height:1.2;letter-spacing:.22em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--sk-muted,rgba(255,255,255,.6));margin-top:.8cqmin">{{clubTagline}}</div>` +
     `</div></div>` +
     `<div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:1cqmin">${chipHtml}${tagHtml}</div>` +

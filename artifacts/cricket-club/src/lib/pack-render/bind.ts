@@ -12,6 +12,7 @@ import type {
   ClubLeaderboardLeader,
 } from "../share-card";
 import type { BoundInput, PackCardData, PackRow } from "./types";
+import { cardTeamName } from "./name-fit";
 
 export function set(
   target: Record<string, string>,
@@ -53,8 +54,8 @@ export function bindInput(input: ShareCardInput): BoundInput {
     case "matchSummary": {
       set(values, "matchTitle", input.matchTitle);
       set(values, "result", input.result);
-      set(values, "club.name", input.club.name);
-      set(values, "opposition.name", input.opposition.name);
+      set(values, "club.name", cardTeamName(input.club.name));
+      set(values, "opposition.name", cardTeamName(input.opposition.name));
       if (input.club.logoUrl) images["club.logo"] = input.club.logoUrl;
       if (input.opposition.logoUrl) images["opposition.logo"] = input.opposition.logoUrl;
       const clubInn = input.innings.find((i) => i.teamKey === "club");
@@ -119,7 +120,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
       set(values, "season", input.season);
       set(values, "playerName", input.playerName);
       set(values, "round", input.round);
-      set(values, "opponent", input.opponent);
+      set(values, "opponent", input.opponent && cardTeamName(input.opponent));
       // Bound EXPLICITLY, empty string and all — never via set(), which returns
       // early on null and leaves the key absent. An absent key falls through to
       // the template's sample ("246" in every pack), so a debut card for a
@@ -135,7 +136,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
       set(values, "grade", input.grade);
       set(values, "runs", input.runs);
       set(values, "balls", input.balls);
-      set(values, "opponent", input.opponent);
+      set(values, "opponent", input.opponent && cardTeamName(input.opponent));
       set(values, "round", input.round);
       if (input.photoUrl) images["photo"] = input.photoUrl;
       break;
@@ -146,7 +147,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
       set(values, "wickets", input.wickets);
       set(values, "figures", input.figures);
       set(values, "overs", input.overs);
-      set(values, "opponent", input.opponent);
+      set(values, "opponent", input.opponent && cardTeamName(input.opponent));
       set(values, "round", input.round);
       if (input.photoUrl) images["photo"] = input.photoUrl;
       break;
@@ -162,7 +163,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
     }
     case "matchDay": {
       set(values, "roundLabel", input.roundLabel);
-      set(values, "opposition.name", input.oppositionName);
+      set(values, "opposition.name", cardTeamName(input.oppositionName));
       set(values, "homeAway", input.homeAway);
       set(values, "oppositionHomeAway", input.homeAway === "HOME" ? "AWAY" : "HOME");
       set(values, "venue", input.venue);
@@ -220,7 +221,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
         variant: r.isClub ? "club" : undefined,
         values: {
           pos: String(r.pos),
-          team: r.team,
+          team: cardTeamName(r.team),
           played: String(r.played),
           won: String(r.won),
           lost: String(r.lost),
@@ -230,7 +231,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
       break;
     }
     case "bigMoment": {
-      set(values, "oppositionName", input.oppositionName);
+      set(values, "oppositionName", cardTeamName(input.oppositionName));
       set(values, "momentLabel", input.momentLabel);
       set(values, "playerName", input.playerName);
       set(values, "runs", input.runs);
@@ -314,7 +315,7 @@ export function applyPackData(bound: BoundInput, data: PackCardData, _kind: stri
 
   // A2 — club name + hashtags from the resolved brand / settings, replacing the
   // hard-coded "HALLS HEAD" / "#HALLSHEAD" sample defaults.
-  if (data.brand?.name) set(values, "clubName", data.brand.name);
+  if (data.brand?.name) set(values, "clubName", cardTeamName(data.brand.name));
   // S1: this runs only for a real (data-bearing) render, so the sample hashtag
   // must NEVER survive — overwrite unconditionally, using "" when the tenant has
   // no configured hashtag, so another club's "#HALLSHEAD" can't leak through.
