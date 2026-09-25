@@ -18,6 +18,7 @@ import {
   clubPhotoPlayersTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
+import { taggedPlayerPhotoUrl } from "../lib/club-photo-library";
 import { setPhotoStore, type PhotoStore } from "../lib/photo-store";
 
 const STAMP = Date.now();
@@ -304,13 +305,12 @@ describe("profile photo from the library", () => {
     const soloUrl = s.body.results[0].photo.url;
     expect(g.body.results[0].ok).toBe(true);
 
-    const res = await api("get", `/players/${playerIds[0]}`);
-    expect(res.status).toBe(200);
-    expect(res.body.imageUrl ?? null).toBeNull();
-    expect(res.body.libraryPhotoUrl).toBe(soloUrl);
-
+    // The helper behind GET /players/:id. This test club is a non-#1 native
+    // tenant, so the stats route itself fails closed (409) by design.
+    expect(await taggedPlayerPhotoUrl(tenantId, playerIds[0])).toBe(soloUrl);
     // Another club's library never leaks onto this club's profile.
-    const other = await api("get", `/players/${playerIds[0]}`, "other");
-    if (other.status === 200) expect(other.body.libraryPhotoUrl ?? null).toBeNull();
+    expect(await taggedPlayerPhotoUrl(otherTenantId, playerIds[0])).toBeNull();
+    // A player with no tagged photos gets none.
+    expect(await taggedPlayerPhotoUrl(tenantId, 987654)).toBeNull();
   });
 });
