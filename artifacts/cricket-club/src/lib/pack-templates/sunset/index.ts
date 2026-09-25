@@ -1,4 +1,5 @@
 import type { PackManifest } from "../types";
+import { SUNSET_BASE, SUNSET_CLUB_BASE, SUNSET_CLUB_SKY, SUNSET_SKY } from "./fragments";
 import { matchResult } from "./match-result";
 import { teamList } from "./team-list";
 import { weekendWrap } from "./weekend-wrap";
@@ -42,7 +43,15 @@ export const SUNSET_PACK: PackManifest = {
   // seeded #322F3D: 50% gives #221d22, red and blue level). At 35% red leads
   // and it reads as dusk. Neon Night's base carries enough blue to hold its
   // own at 50%; this one does not.
-  inkTint: { toward: "#120a07", tenantWeight: 35 },
+  //
+  // In "Club colours" the sky itself becomes the club's (see `clubSwaps`), so
+  // the stage no longer has to carry the warmth: it leans 85% to the club.
+  inkTint: { toward: "#120a07", tenantWeight: 35, clubTenantWeight: 85 },
+  // "Club colours": the club's own sunset in place of the golden-hour sky.
+  clubSwaps: [
+    [SUNSET_BASE, SUNSET_CLUB_BASE],
+    [SUNSET_SKY, SUNSET_CLUB_SKY],
+  ],
   designs: [
     { designKey: "match-result", kind: "matchSummary", template: matchResult },
     { designKey: "team-list", kind: "teamList", template: teamList },

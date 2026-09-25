@@ -6,9 +6,20 @@
 
 import { getPackManifest } from "../pack-templates/registry";
 import type { ShareCardInput, CardSize } from "../share-card";
-import type { PackCardData, PackTokens } from "./types";
+import type { CardThemeLike } from "./tokens";
+import type { PackCardData, PackColourMode, PackTokens } from "./types";
 import { fieldDefaults, hasLandscapeFormat, resolveTemplate, selectFormatHtml } from "./templates";
-import { packNativeSize, rootStyle, stageInk } from "./tokens";
+import {
+  brandDefaultTokens,
+  DISPLAY_FONT_FAMILY,
+  hasClubColours,
+  normaliseBrandHex,
+  packNativeSize,
+  resolvePackTokens,
+  rootStyle,
+  stageInk,
+  tokensFromCardTheme,
+} from "./tokens";
 import { applyPackData, bindInput } from "./bind";
 import {
   applyFieldOverrides,
@@ -34,6 +45,80 @@ import {
 export const BLANK_PACK_ID = "blank";
 
 /**
+ * The colour mode `packId` renders in for this club: `"pack"` when the club
+ * switched that pack to "Pack's own look", otherwise `"club"` — except that a
+ * brand with no usable colour always gets the pack's own look, so brand-less
+ * previews are untouched. The pack id is resolved the way the renderer
+ * resolves it (unknown/omitted → the default pack), so the stored key and the
+ * rendered design always agree.
+ */
+export function packColourModeFor(
+  data: PackCardData | null | undefined,
+  packId?: string | null,
+): PackColourMode {
+  if (!hasClubColours(data?.brand)) return "pack";
+  const id = packId === BLANK_PACK_ID ? BLANK_PACK_ID : getPackManifest(packId).packId;
+  return data?.packColourModes?.[id] === "pack" ? "pack" : "club";
+}
+
+/**
+ * The tokens every pack surface renders with — `PackCard` (Studio previews,
+ * create page, share modal, editor canvas) and, through it, the server
+ * still/clip harness. Priority: junior > per-card override > theme > brand in
+ * "pack's own look"; junior > per-card override > club brand > theme's font and
+ * text colour in "club colours".
+ */
+export function resolveCardTokens({
+  theme,
+  junior,
+  data,
+  packId,
+}: {
+  theme?: CardThemeLike | null;
+  junior: boolean;
+  data?: PackCardData | null;
+  packId?: string | null;
+}): PackTokens {
+  const mode = packColourModeFor(data, packId);
+  return resolvePackTokens({
+    brand: brandDefaultTokens(data?.brand, mode),
+    theme: tokensFromCardTheme(theme),
+    override: sanitisedOverride(data?.tokenOverride),
+    junior,
+    mode,
+  });
+}
+
+/**
+ * Per-card overrides arrive over the wire to the still harness, and tokens are
+ * written unescaped into an inline style — so colours pass the same strict hex
+ * gate as brand colours, and the font key is only ever looked up, never
+ * emitted.
+ */
+function sanitisedOverride(o: PackCardData["tokenOverride"]): Partial<PackTokens> | null {
+  if (!o) return null;
+  const out: Partial<PackTokens> = {};
+  const accent = normaliseBrandHex(o.accent);
+  const panel = normaliseBrandHex(o.panel);
+  if (accent) out.accent = accent;
+  if (panel) out.panel = panel;
+  const font = o.displayFont;
+  if (typeof font === "string" && Object.prototype.hasOwnProperty.call(DISPLAY_FONT_FAMILY, font)) {
+    out.displayFont = font;
+  }
+  return out;
+}
+
+/** Apply a pack's club-mode markup swaps (e.g. Sunset's club sky). */
+function applyClubSwaps(html: string, packId: string | null | undefined): string {
+  const swaps = getPackManifest(packId).clubSwaps;
+  if (!swaps) return html;
+  let out = html;
+  for (const [from, to] of swaps) out = out.split(from).join(to);
+  return out;
+}
+
+/**
  * Bind an input into its pack template and return native-size, self-contained
  * card HTML. Falls back to the story/shared layout for an unknown size, and to
  * template samples for any field the input does not supply.
@@ -56,10 +141,13 @@ export function renderPackCard(
   opts: { animate?: boolean } = {},
 ): string {
   const adj = isEmptyAdjustments(adjustments) ? null : adjustments;
+  // Club colours vs the pack's own look: drives the stage tint weight and any
+  // club-mode markup swaps. ("pack" leaves the output byte-identical.)
+  const mode = packColourModeFor(data, packId);
   if (packId === BLANK_PACK_ID) {
     // A blank canvas: the club's stage colour and the editor's layers only.
     const layers = renderFreeLayers(adj, size, opts, packFieldValues(input, data));
-    return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest().inkTint)}">${layers}</div>`;
+    return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest().inkTint, mode)}">${layers}</div>`;
   }
   const template = resolveTemplate(input, packId);
   if (!template) return "";
@@ -78,7 +166,7 @@ export function renderPackCard(
       adj,
       opts,
     );
-    return letterboxLandscape(square, tokens, packId);
+    return letterboxLandscape(square, tokens, packId, mode);
   }
 
   const bound = bindInput(input);
@@ -112,6 +200,9 @@ export function renderPackCard(
   const photoFullBleed = data?.photoPlacement === "fullBleed" && Boolean(bound.images["photo"]);
 
   let html = selectFormatHtml(template.formats, size);
+  // Club-mode markup swaps run on the template itself, before any field value
+  // is substituted, so card text can never be rewritten by them.
+  if (mode === "club") html = applyClubSwaps(html, packId);
   html = selectSponsorVariant(html, sponsorsOn);
   html = expandRepeats(html, bound.rows, template);
   // Before slots resolve: an optional block whose image never arrived is removed
@@ -134,7 +225,7 @@ export function renderPackCard(
   html = cleanupEmptyRoles(html);
 
   const layers = renderFreeLayers(adj, size, opts, values);
-  return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest(packId).inkTint)}">${html}${layers}</div>`;
+  return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest(packId).inkTint, mode)}">${html}${layers}</div>`;
 }
 
 /** The editable text fields a design exposes, in template order (editor Content panel). */
@@ -168,13 +259,14 @@ export function packFieldValues(
 function letterboxLandscape(
   squareHtml: string,
   tokens: PackTokens,
-  packId?: string | null,
+  packId: string | null | undefined,
+  mode: PackColourMode,
 ): string {
   const frame = packNativeSize("landscape");
   const inner = packNativeSize("square");
   const scale = frame.h / inner.h;
   const left = Math.round((frame.w - inner.w * scale) / 2);
-  const ink = stageInk(tokens, getPackManifest(packId).inkTint);
+  const ink = stageInk(tokens, getPackManifest(packId).inkTint, mode);
   const frameStyle = [
     "position:relative",
     `width:${frame.w}px`,

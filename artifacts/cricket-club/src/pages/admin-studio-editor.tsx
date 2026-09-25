@@ -195,6 +195,7 @@ function EditorApp({ draftId }: { draftId: number }) {
         hashtag: tenantHashtag(bundle),
         sponsors: kindSponsors(bundle, input.kind, true),
         presentingSponsorName: presentingSponsorName(bundle, true),
+        packColourModes: bundle?.settings.packColourModes,
       }),
       photoUrl: draft.photoUrl ?? undefined,
     }),

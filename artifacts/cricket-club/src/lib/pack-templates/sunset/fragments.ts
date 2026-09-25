@@ -61,12 +61,34 @@ const VARS = [
   "--sk-pill-r:99cqmin",
 ].join(";");
 
+/** Plum base (the handoff's #2A1036, carrying some of the tenant's stage). */
+export const SUNSET_BASE = "background:color-mix(in srgb, var(--ink,#2A1036) 40%, #2A1036)";
+/** The pack's own golden-hour sky: orange → magenta → plum. */
+export const SUNSET_SKY =
+  "background:linear-gradient(180deg,rgba(255,122,69,.55) 0%,rgba(194,24,91,.5) 50%,rgba(42,16,54,.92) 100%)";
+
+/**
+ * "Club colours" base: the club's own deep stage (`--ink`, already the club's
+ * background shade in that mode) in place of the plum.
+ */
+export const SUNSET_CLUB_BASE = "background:var(--ink,#2A1036)";
+/**
+ * "Club colours" sky — the club's own sunset: a light tint of its primary at
+ * the horizon, through the primary, down into its dark background. The
+ * primary is pulled toward the stage at the middle stop so a pale primary
+ * never washes the cream type out.
+ */
+export const SUNSET_CLUB_SKY =
+  "background:linear-gradient(180deg," +
+  `color-mix(in srgb, color-mix(in srgb, ${S} 70%, #fff) 60%, transparent) 0%,` +
+  `color-mix(in srgb, color-mix(in srgb, ${S} 75%, var(--ink,#2A1036)) 55%, transparent) 50%,` +
+  "color-mix(in srgb, var(--ink,#2A1036) 92%, transparent) 100%)";
+
 function layers(photo: string | undefined): string {
   return (
-    // Plum base (the handoff's #2A1036, carrying some of the tenant's stage).
-    `<div style="position:absolute;inset:0;background:color-mix(in srgb, var(--ink,#2A1036) 40%, #2A1036)"></div>` +
+    `<div style="position:absolute;inset:0;${SUNSET_BASE}"></div>` +
     (photo ? treatedPhoto(photo, "inset:0", slot(photo, "photo")) : "") +
-    `<div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,122,69,.55) 0%,rgba(194,24,91,.5) 50%,rgba(42,16,54,.92) 100%)"></div>` +
+    `<div style="position:absolute;inset:0;pointer-events:none;${SUNSET_SKY}"></div>` +
     // The sun, in the tenant accent.
     `<div style="position:absolute;right:-12cqmin;top:-12cqmin;width:46cqmin;height:46cqmin;border-radius:50%;pointer-events:none;background:radial-gradient(circle,color-mix(in srgb, ${GLOW_TEXT} 85%, transparent) 0%,color-mix(in srgb, ${S} 25%, transparent) 45%,transparent 70%)"></div>`
   );
