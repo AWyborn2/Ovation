@@ -5,6 +5,7 @@ import {
   IngestClubPhotosBody,
   TagClubPhotosBody,
   DeleteClubPhotosBody,
+  FetchGoogleDriveFilesBody,
   ListClubPhotosQueryParams,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
@@ -13,6 +14,11 @@ import { nonSeniorPlayerIds, presentPhotos } from "../lib/club-photo-library";
 import { IngestError, MAX_INGEST_BATCH, ingestImage, withTenantSlot } from "../lib/image-ingest";
 import { photoStore } from "../lib/photo-store";
 import { fillMissingDraftPhotos, repickTypedDraftPhotos } from "../lib/draft-enrich";
+import {
+  DriveFileError,
+  downloadDriveFile,
+  googleDriveConfig,
+} from "../lib/integrations/google-drive";
 
 /**
  * `/club-photos` — the club's senior photo library (Social Studio, U6).
@@ -165,6 +171,51 @@ router.post("/club-photos/ingest", requireAdmin, async (req, res): Promise<void>
         : { objectPath: r.objectPath, ok: false, error: r.error },
     ),
   });
+});
+
+/** Google Picker settings; 404 hides the Drive import when keys are unset. */
+router.get("/club-photos/google-drive", requireAdmin, (_req, res): void => {
+  const config = googleDriveConfig();
+  if (!config) {
+    res.status(404).json({ error: "Google Drive import is not configured" });
+    return;
+  }
+  res.json(config);
+});
+
+/**
+ * Copy picked Drive photos into storage; the client then ingests the returned
+ * object paths exactly like uploads (conversion, EXIF strip, tagging rules).
+ */
+router.post("/club-photos/google-drive/fetch", requireAdmin, async (req, res): Promise<void> => {
+  if (!googleDriveConfig()) {
+    res.status(404).json({ error: "Google Drive import is not configured" });
+    return;
+  }
+  const parsed = FetchGoogleDriveFilesBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Pick up to 50 photos to import." });
+    return;
+  }
+  const { accessToken, fileIds } = parsed.data;
+  const tenantId = getTenantId(req);
+  const store = photoStore();
+  const results = await Promise.all(
+    fileIds.map((fileId) =>
+      withTenantSlot(tenantId, async () => {
+        try {
+          const file = await downloadDriveFile(fileId, accessToken);
+          const objectPath = await store.write(file.data, file.mimeType);
+          return { fileId, ok: true, objectPath, name: file.name };
+        } catch (err) {
+          if (!(err instanceof DriveFileError)) req.log.warn({ fileId }, "drive import failed");
+          const error = err instanceof DriveFileError ? err.message : "Couldn't import that file.";
+          return { fileId, ok: false, error };
+        }
+      }),
+    ),
+  );
+  res.json({ results });
 });
 
 router.post("/club-photos/tags", requireAdmin, async (req, res): Promise<void> => {

@@ -4459,6 +4459,53 @@ paths:
         "422":
           description: A tagged player is not a senior player of this club
 
+  /club-photos/google-drive:
+    get:
+      operationId: getGoogleDriveConfig
+      tags: [socialCards]
+      summary: Google Drive picker settings for importing library photos (admin)
+      description: >-
+        The public client id, API key and app id the Google Picker needs. 404
+        when the club's deployment has no Google Drive keys, and the import
+        button stays hidden.
+      responses:
+        "200":
+          description: Picker settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GoogleDriveConfig"
+        "404":
+          description: Google Drive import is not configured
+
+  /club-photos/google-drive/fetch:
+    post:
+      operationId: fetchGoogleDriveFiles
+      tags: [socialCards]
+      summary: Copy picked Google Drive photos into storage for ingest (admin)
+      description: >-
+        Downloads each picked file with the admin's short-lived Google access
+        token (drive.file scope, never stored) into storage and returns its
+        object path, ready for POST /club-photos/ingest. Only images up to 25 MB;
+        files fail independently. At most 50 files per call.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FetchGoogleDriveFilesRequest"
+      responses:
+        "200":
+          description: Per-file results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FetchGoogleDriveFilesResponse"
+        "400":
+          description: Invalid body or batch too large
+        "404":
+          description: Google Drive import is not configured
+
   /club-photos/tags:
     post:
       operationId: tagClubPhotos
@@ -11875,6 +11922,54 @@ components:
           items:
             type: integer
           description: "Senior players to tag on every photo in the batch."
+
+    GoogleDriveConfig:
+      type: object
+      required: [clientId, apiKey, appId]
+      properties:
+        clientId:
+          type: string
+        apiKey:
+          type: string
+        appId:
+          type: string
+          description: "Google Cloud project number (lets drive.file cover picked files)."
+
+    FetchGoogleDriveFilesRequest:
+      type: object
+      required: [accessToken, fileIds]
+      properties:
+        accessToken:
+          type: string
+          minLength: 1
+          description: "Short-lived Google OAuth token from the picker sign-in; used once, never stored."
+        fileIds:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            type: string
+
+    FetchGoogleDriveFilesResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            required: [fileId, ok]
+            properties:
+              fileId:
+                type: string
+              ok:
+                type: boolean
+              objectPath:
+                type: string
+              name:
+                type: string
+              error:
+                type: string
 
     IngestClubPhotosResponse:
       type: object

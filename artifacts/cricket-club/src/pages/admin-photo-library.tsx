@@ -7,16 +7,23 @@ import {
   useDeleteClubPhotos,
   useListPlayers,
   getListPlayersQueryKey,
+  useGetGoogleDriveConfig,
+  getGetGoogleDriveConfigQueryKey,
   type ClubPhoto,
   type ClubPhotoType,
 } from "@workspace/api-client-react";
-import { Check, Upload } from "lucide-react";
+import { Check, HardDrive, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState, ListSkeleton, QueryError } from "@/components/data-states";
 import { SettingsCard, SettingsRow, StatusPill } from "@/components/admin-ui";
 import { useConfirm } from "@/components/confirm-dialog";
-import { uploadLibraryPhotos, type UploadState } from "@/components/social-queue/library-upload";
+import {
+  importDrivePhotos,
+  uploadLibraryPhotos,
+  type UploadState,
+} from "@/components/social-queue/library-upload";
+import { pickDrivePhotos } from "@/components/social-queue/google-drive-picker";
 import { CardPhotoRules } from "@/components/social-queue/card-photo-rules";
 import { isJuniorGradeLabel, PHOTO_TYPES, PHOTO_TYPE_LABELS } from "@workspace/scorecard";
 import { cn } from "@/lib/utils";
@@ -78,6 +85,12 @@ export default function AdminPhotoLibrary() {
   const [tagError, setTagError] = useState<string | null>(null);
   const [useFor, setUseFor] = useState<{ photoId: number; nonce: number } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  // Google Drive import shows only when the deployment has Google keys (404 = hidden).
+  const driveQ = useGetGoogleDriveConfig({
+    query: { queryKey: getGetGoogleDriveConfigQueryKey(), retry: false, staleTime: Infinity },
+  });
+  const [driveBusy, setDriveBusy] = useState(false);
+  const [driveError, setDriveError] = useState<string | null>(null);
 
   const refresh = () => qc.invalidateQueries({ queryKey: getListClubPhotosQueryKey() });
   const tagM = useTagClubPhotos({
@@ -126,6 +139,30 @@ export default function AdminPhotoLibrary() {
         setUploads((prev) => prev.map((u, j) => (j === start + i ? { ...u, state } : u))),
     });
     refresh();
+  };
+
+  const importFromDrive = async () => {
+    if (!driveQ.data) return;
+    setDriveError(null);
+    setDriveBusy(true);
+    try {
+      const pick = await pickDrivePhotos(driveQ.data);
+      if (!pick) return;
+      const start = uploads.length;
+      setUploads((prev) => [
+        ...prev,
+        ...pick.files.map((f) => ({ name: f.name, state: { phase: "converting" } as UploadState })),
+      ]);
+      await importDrivePhotos(pick, {
+        onState: (i, state) =>
+          setUploads((prev) => prev.map((u, j) => (j === start + i ? { ...u, state } : u))),
+      });
+      refresh();
+    } catch (err) {
+      setDriveError(err instanceof Error ? err.message : "Google Drive import didn't finish.");
+    } finally {
+      setDriveBusy(false);
+    }
   };
 
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
@@ -233,6 +270,28 @@ export default function AdminPhotoLibrary() {
           }}
         />
       </div>
+
+      {driveQ.data && (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={driveBusy}
+            onClick={() => void importFromDrive()}
+          >
+            <HardDrive className="mr-2 h-4 w-4" aria-hidden />
+            Import from Google Drive
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            Only the photos you pick are shared with Ovation.
+          </span>
+          {driveError && (
+            <p role="alert" className="w-full text-sm text-destructive">
+              {driveError}
+            </p>
+          )}
+        </div>
+      )}
 
       {uploads.length > 0 && (
         <ul

@@ -3934,6 +3934,38 @@ export interface IngestClubPhotosRequest {
   playerIds?: number[];
 }
 
+export interface GoogleDriveConfig {
+  clientId: string;
+  apiKey: string;
+  /** Google Cloud project number (lets drive.file cover picked files). */
+  appId: string;
+}
+
+export interface FetchGoogleDriveFilesRequest {
+  /**
+     * Short-lived Google OAuth token from the picker sign-in; used once, never stored.
+     * @minLength 1
+     */
+  accessToken: string;
+  /**
+     * @minItems 1
+     * @maxItems 50
+     */
+  fileIds: string[];
+}
+
+export type FetchGoogleDriveFilesResponseResultsItem = {
+  fileId: string;
+  ok: boolean;
+  objectPath?: string;
+  name?: string;
+  error?: string;
+};
+
+export interface FetchGoogleDriveFilesResponse {
+  results: FetchGoogleDriveFilesResponseResultsItem[];
+}
+
 export type IngestClubPhotosResponseResultsItem = {
   objectPath: string;
   ok: boolean;
