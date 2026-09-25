@@ -335,7 +335,8 @@ export default function PlayerDetail() {
 
           <ProfileHero
             fullName={fullName}
-            photo={player.imageUrl ?? null}
+            // Headshot first, then a photo-library shot they are tagged in.
+            photo={player.imageUrl ?? player.libraryPhotoUrl ?? null}
             clubPhoto={clubPhoto}
             capNumber={capEntry?.capNumber ?? null}
             meta={meta || null}

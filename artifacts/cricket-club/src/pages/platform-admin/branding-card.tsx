@@ -267,7 +267,7 @@ export function BrandingCard({ tenantId, tenant }: { tenantId: number; tenant: A
   const [logoUrl, setLogoUrl] = useState(tenant.logoUrl ?? "");
   const [faviconUrl, setFaviconUrl] = useState(tenant.faviconUrl ?? "");
   const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(
-    (tenant.badgeStyle as BadgeStyle | null | undefined) ?? "diamond",
+    (tenant.badgeStyle as BadgeStyle | null | undefined) ?? "logo",
   );
   const [useNavyBase, setUseNavyBase] = useState<boolean>(tenant.useNavyBase ?? false);
   const [colourMode, setColourMode] = useState<ColourMode>("token");

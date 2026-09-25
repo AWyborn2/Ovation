@@ -109,7 +109,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
   const [customTertiary, setCustomTertiary] = useState(brand.juniorsColour ?? "#2A4060");
 
   const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(
-    (brand.badgeStyle as BadgeStyle | null | undefined) ?? "diamond",
+    (brand.badgeStyle as BadgeStyle | null | undefined) ?? "logo",
   );
   const [useNavyBase, setUseNavyBase] = useState<boolean>(brand.useNavyBase ?? false);
   const [backgroundUrl, setBackgroundUrl] = useState(brand.backgroundUrl ?? "");
@@ -136,7 +136,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
     setCustomPrimary(brand.backgroundColour ?? "#1A3350");
     setCustomSecondary(brand.primaryColour ?? ACCENT_HEX[snapped]);
     setCustomTertiary(brand.juniorsColour ?? "#2A4060");
-    setBadgeStyle((brand.badgeStyle as BadgeStyle | null | undefined) ?? "diamond");
+    setBadgeStyle((brand.badgeStyle as BadgeStyle | null | undefined) ?? "logo");
     setUseNavyBase(brand.useNavyBase ?? false);
     setBackgroundUrl(brand.backgroundUrl ?? "");
     setOverrides({ ...(brand.themeOverrides ?? {}) });
