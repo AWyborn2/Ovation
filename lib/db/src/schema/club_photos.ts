@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
   serial,
@@ -6,9 +7,30 @@ import {
   timestamp,
   index,
   uniqueIndex,
+  check,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
+
+/**
+ * Photo type tags a library photo can carry (several per photo). Mirrors
+ * `PHOTO_TYPES` in `@workspace/scorecard`, which maps card types to the tags
+ * they prefer; the check constraints below keep the database to this set.
+ */
+export const CLUB_PHOTO_TYPES = [
+  "batting",
+  "bowling",
+  "fielding",
+  "team",
+  "celebrating",
+  "batting_milestone",
+  "bowling_milestone",
+] as const;
+
+/** `ARRAY['batting', …]::text[]` for the check constraints. */
+export const clubPhotoTypesSqlArray = sql.raw(
+  `ARRAY[${CLUB_PHOTO_TYPES.map((t) => `'${t}'`).join(", ")}]::text[]`,
+);
 
 /**
  * The club's photo library (Social Studio, R10–R12). Senior-only: photos are
@@ -39,10 +61,17 @@ export const clubPhotosTable = pgTable(
     sourcePhotoId: integer("source_photo_id").references((): AnyPgColumn => clubPhotosTable.id, {
       onDelete: "set null",
     }),
+    // Photo type tags (CLUB_PHOTO_TYPES); a card prefers photos of the types
+    // its card type asks for, then falls back to any photo.
+    photoTypes: text("photo_types").array().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     idxTenantCreated: index("club_photos_tenant_created_idx").on(t.tenantId, t.createdAt),
+    chkPhotoTypes: check(
+      "club_photos_photo_types_check",
+      sql`"photo_types" <@ ${clubPhotoTypesSqlArray}`,
+    ),
   }),
 );
 

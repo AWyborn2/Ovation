@@ -118,6 +118,35 @@ describe("card photo rules", () => {
     });
   });
 
+  it("a random rule can narrow to a photo type, and the row shows it", async () => {
+    const requests = stubApi([
+      { ...rule(4, "B Grade", "fiveFor", "random"), photoType: "bowling" },
+    ]);
+    renderAt(<AdminPhotoLibrary />, "/admin/social/library");
+    const list = await screen.findByRole("list", { name: "Card photo rules" });
+    expect(within(list).getAllByRole("listitem")[0].textContent).toContain("Bowling");
+
+    fireEvent.click(screen.getByRole("button", { name: "Add a rule" }));
+    // No type choice for a one-photo rule.
+    fireEvent.click(screen.getByLabelText(/One photo/));
+    expect(screen.queryByLabelText("Photo type")).toBeNull();
+    fireEvent.click(screen.getByLabelText(/Random grade photo/));
+    fireEvent.change(screen.getByLabelText("Grade"), { target: { value: "A Grade" } });
+    fireEvent.click(screen.getByRole("button", { name: "Ladder" }));
+    fireEvent.change(screen.getByLabelText("Photo type"), { target: { value: "team" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save rule" }));
+
+    await waitFor(() => {
+      const put = requests.find((r) => r.method === "PUT" && r.url.includes("/card-photo-rules"));
+      expect(put?.body).toEqual({
+        grade: "A Grade",
+        cardKinds: ["ladder"],
+        mode: "random",
+        photoType: "team",
+      });
+    });
+  });
+
   it("junior-graded photos get no “Use for…” action", async () => {
     stubApi();
     renderAt(<AdminPhotoLibrary />, "/admin/social/library");

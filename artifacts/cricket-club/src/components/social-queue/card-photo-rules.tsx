@@ -9,8 +9,9 @@ import {
   type CardPhotoRule,
   type CardPhotoRuleMode,
   type ClubPhoto,
+  type ClubPhotoType,
 } from "@workspace/api-client-react";
-import { isJuniorGradeLabel } from "@workspace/scorecard";
+import { isJuniorGradeLabel, PHOTO_TYPES, PHOTO_TYPE_LABELS } from "@workspace/scorecard";
 import { Check, ImageOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EditDrawer, SettingsCard } from "@/components/admin-ui";
@@ -39,13 +40,14 @@ export const MODE_OPTIONS: { value: CardPhotoRuleMode; label: string; helper: st
 
 const modeLabel = (m: string) => MODE_OPTIONS.find((o) => o.value === m)?.label ?? m;
 
-/** Rules that share a grade, mode and photo read as one row. */
+/** Rules that share a grade, mode, photo and photo type read as one row. */
 type RuleGroup = {
   key: string;
   grade: string;
   mode: CardPhotoRuleMode;
   photoId: number | null;
   photoThumbUrl: string | null;
+  photoType: ClubPhotoType | null;
   rules: CardPhotoRule[];
 };
 
@@ -54,13 +56,14 @@ const KIND_ORDER = new Map(CARD_KIND_OPTIONS.map((o, i) => [o.value as string, i
 function groupRules(rules: CardPhotoRule[]): RuleGroup[] {
   const groups = new Map<string, RuleGroup>();
   for (const r of rules) {
-    const key = `${r.grade}|${r.mode}|${r.photoId ?? ""}`;
+    const key = `${r.grade}|${r.mode}|${r.photoId ?? ""}|${r.photoType ?? ""}`;
     const g = groups.get(key) ?? {
       key,
       grade: r.grade,
       mode: r.mode,
       photoId: r.photoId ?? null,
       photoThumbUrl: r.photoThumbUrl ?? null,
+      photoType: r.photoType ?? null,
       rules: [],
     };
     g.rules.push(r);
@@ -80,6 +83,8 @@ type Draft = {
   kinds: string[];
   mode: CardPhotoRuleMode;
   photoId: number | null;
+  /** Random and player rules: only photos with this type tag. */
+  photoType: ClubPhotoType | null;
   /** The rules this edit replaces (editing an existing row). */
   replacing: CardPhotoRule[];
 };
@@ -127,7 +132,14 @@ export function CardPhotoRules({
   useEffect(() => {
     if (!useFor) return;
     setError(null);
-    setDraft({ grade: "", kinds: [], mode: "fixed", photoId: useFor.photoId, replacing: [] });
+    setDraft({
+      grade: "",
+      kinds: [],
+      mode: "fixed",
+      photoId: useFor.photoId,
+      photoType: null,
+      replacing: [],
+    });
   }, [useFor]);
 
   const open = (next: Draft) => {
@@ -140,6 +152,7 @@ export function CardPhotoRules({
       kinds: g.rules.map((r) => r.cardKind),
       mode: g.mode,
       photoId: g.photoId,
+      photoType: g.photoType,
       replacing: g.rules,
     });
 
@@ -159,6 +172,7 @@ export function CardPhotoRules({
           cardKinds: draft.kinds,
           mode: draft.mode,
           ...(draft.mode === "fixed" ? { photoId: draft.photoId } : {}),
+          ...(draft.mode !== "fixed" && draft.photoType ? { photoType: draft.photoType } : {}),
         },
       });
       // Card types dropped from the row (or a changed grade) lose their rule.
@@ -247,6 +261,12 @@ export function CardPhotoRules({
               </div>
               <span className="text-sm text-foreground">
                 {g.mode === "fixed" && g.photoId == null ? "Photo removed" : modeLabel(g.mode)}
+                {g.mode !== "fixed" && g.photoType && (
+                  <span className="text-muted-foreground">
+                    {" · "}
+                    {PHOTO_TYPE_LABELS[g.photoType]}
+                  </span>
+                )}
               </span>
               <div className="flex gap-1">
                 <Button type="button" variant="outline" size="sm" onClick={() => edit(g)}>
@@ -272,7 +292,14 @@ export function CardPhotoRules({
           type="button"
           variant="outline"
           onClick={() =>
-            open({ grade: "", kinds: [], mode: "player", photoId: null, replacing: [] })
+            open({
+              grade: "",
+              kinds: [],
+              mode: "player",
+              photoId: null,
+              photoType: null,
+              replacing: [],
+            })
           }
         >
           Add a rule
@@ -345,6 +372,37 @@ export function CardPhotoRules({
                 </label>
               ))}
             </fieldset>
+
+            {draft.mode !== "fixed" && (
+              <div className="space-y-2">
+                <label htmlFor="rule-photo-type" className="text-sm font-medium text-foreground">
+                  Photo type
+                </label>
+                <select
+                  id="rule-photo-type"
+                  value={draft.photoType ?? ""}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      photoType: (e.target.value || null) as ClubPhotoType | null,
+                    })
+                  }
+                  className="block h-10 w-full rounded-lg border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">Any type</option>
+                  {PHOTO_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {PHOTO_TYPE_LABELS[t]}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  {draft.mode === "random"
+                    ? "Pick only from grade photos tagged with this type. Any grade photo if none are."
+                    : "When the player has no photo, pick a grade photo tagged with this type."}
+                </p>
+              </div>
+            )}
 
             {draft.mode === "fixed" && (
               <div className="space-y-2">

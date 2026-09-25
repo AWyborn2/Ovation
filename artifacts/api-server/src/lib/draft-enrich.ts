@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, like, notInArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, like, or, sql, type SQL } from "drizzle-orm";
 import {
   db,
   socialDraftsTable,
@@ -17,6 +17,9 @@ import {
   resolvePackIdForKind,
   truncateForPlatform,
   isFillInPlayerId,
+  isPhotoType,
+  preferredPhotoTypes,
+  type PhotoType,
 } from "@workspace/scorecard";
 import { DEFAULT_TEMPLATES } from "./social-cards-helpers";
 import { objectUrl } from "./photo-store";
@@ -154,6 +157,40 @@ const newestFirst = () => [
   desc(clubPhotosTable.id),
 ];
 
+/**
+ * Rank a photo by the card's preferred photo types: 0 for a photo with the
+ * first type, 1 for the second, …, and `types.length` for a photo with none of
+ * them. Null when the card has no preference (every photo ranks the same).
+ */
+function typeRank(types: readonly PhotoType[]): SQL | null {
+  if (types.length === 0) return null;
+  const cases = types.map(
+    (t, i) => sql`WHEN ${t} = ANY(${clubPhotosTable.photoTypes}) THEN ${sql.raw(String(i))}`,
+  );
+  return sql`CASE ${sql.join(cases, sql` `)} ELSE ${sql.raw(String(types.length))} END`;
+}
+
+/** The preference order first (when there is one), then newest first. */
+const preferredThenNewest = (types: readonly PhotoType[]) => {
+  const rank = typeRank(types);
+  return rank ? [rank, ...newestFirst()] : newestFirst();
+};
+
+/**
+ * Narrow `rows` to the photos of the most preferred type any of them has
+ * (`types` in order); all of `rows` when none match or there is no preference.
+ */
+export function preferredPool<T extends { photoTypes: readonly string[] }>(
+  rows: readonly T[],
+  types: readonly PhotoType[],
+): readonly T[] {
+  for (const t of types) {
+    const matching = rows.filter((r) => r.photoTypes.includes(t));
+    if (matching.length > 0) return matching;
+  }
+  return rows;
+}
+
 /** FNV-1a: a small, stable string hash for the per-draft random pick. */
 function hash32(s: string): number {
   let h = 0x811c9dc5;
@@ -184,10 +221,14 @@ export function seededPick<T extends { id: number }>(rows: readonly T[], seed: s
   return best;
 }
 
-/** A player's newest tagged library photo, then their default headshot. */
+/**
+ * A player's tagged library photo — of the card's preferred photo types when
+ * there is one, else the newest — then their default headshot.
+ */
 async function playerPhoto(
   tenantId: number,
   playerId: number,
+  types: readonly PhotoType[],
 ): Promise<{ url: string; from: "library" | "headshot" } | null> {
   const [tagged] = await db
     .select({ objectPath: clubPhotosTable.objectPath })
@@ -200,7 +241,7 @@ async function playerPhoto(
         eq(clubPhotoPlayersTable.playerId, playerId),
       ),
     )
-    .orderBy(...newestFirst())
+    .orderBy(...preferredThenNewest(types))
     .limit(1);
   if (tagged) return { url: objectUrl(tagged.objectPath), from: "library" };
 
@@ -218,19 +259,31 @@ async function playerPhoto(
   return headshot?.imageUrl ? { url: headshot.imageUrl, from: "headshot" } : null;
 }
 
-/** A photo of the grade, chosen per draft by its seed (see {@link seededPick}). */
+/**
+ * A photo of the grade, chosen per draft by its seed (see {@link seededPick}).
+ * A rule's `ruleType` narrows the pool to photos with that type tag (the whole
+ * grade when none have it); within the pool, photos of the card's preferred
+ * types come first (see {@link preferredPool}).
+ */
 async function randomGradePhoto(
   tenantId: number,
   grade: string,
   seed: string | null,
+  ruleType: PhotoType | null,
+  types: readonly PhotoType[],
 ): Promise<string | null> {
   const rows = await db
-    .select({ id: clubPhotosTable.id, objectPath: clubPhotosTable.objectPath })
+    .select({
+      id: clubPhotosTable.id,
+      objectPath: clubPhotosTable.objectPath,
+      photoTypes: clubPhotosTable.photoTypes,
+    })
     .from(clubPhotosTable)
     .where(and(eq(clubPhotosTable.tenantId, tenantId), eq(clubPhotosTable.grade, grade)))
     .orderBy(...newestFirst());
   if (rows.length === 0) return null;
-  return objectUrl(seededPick(rows, seed).objectPath);
+  const ruled = ruleType ? preferredPool(rows, [ruleType]) : rows;
+  return objectUrl(seededPick(preferredPool(ruled, types), seed).objectPath);
 }
 
 /**
@@ -250,6 +303,11 @@ export type PhotoPickOptions = {
   seed?: string | null;
   /** The card's featured player for a "player" rule; defaults to `playerId`. */
   featuredPlayerId?: FeaturedPlayer;
+  /**
+   * The photo types the card prefers, most preferred first (see
+   * `preferredPhotoTypes`); empty or omitted = no preference.
+   */
+  photoTypes?: readonly PhotoType[];
 };
 
 type PhotoPick = { url: string; source: PhotoSource };
@@ -268,6 +326,8 @@ async function pickByRule(tenantId: number, opts: PhotoPickOptions): Promise<Pho
       ),
     );
   if (!rule) return null;
+  const types = opts.photoTypes ?? [];
+  const ruleType = isPhotoType(rule.photoType) ? rule.photoType : null;
 
   if (rule.mode === "fixed") {
     // The photo was removed from the library: back to the automatic order.
@@ -287,13 +347,13 @@ async function pickByRule(tenantId: number, opts: PhotoPickOptions): Promise<Pho
           ? opts.featuredPlayerId
           : opts.playerId;
     if (featured != null && featured > 0 && !isFillInPlayerId(featured)) {
-      const photo = await playerPhoto(tenantId, featured);
+      const photo = await playerPhoto(tenantId, featured, types);
       if (photo) return { url: photo.url, source: "auto:rule-player" };
     }
   }
 
   // "random", and a "player" rule with no photo of the player.
-  const url = await randomGradePhoto(tenantId, opts.grade, opts.seed ?? null);
+  const url = await randomGradePhoto(tenantId, opts.grade, opts.seed ?? null, ruleType, types);
   return url ? { url, source: "auto:rule-random" } : null;
 }
 
@@ -302,7 +362,9 @@ async function pickByRule(tenantId: number, opts: PhotoPickOptions): Promise<Pho
  * (a fixed photo, a random grade photo, or the featured player); with no rule —
  * or a rule that finds nothing — R5's automatic order: a library photo tagged
  * with the player (newest first), the player's headshot, then a photo of the
- * grade. Junior cards never get a photo, whatever the rule says (KTD15).
+ * grade. Wherever a step chooses among several library photos, photos of the
+ * card's preferred photo types (`opts.photoTypes`, in order) win, falling back
+ * to any photo. Junior cards never get a photo, whatever the rule says (KTD15).
  */
 export async function pickDraftPhoto(
   tenantId: number,
@@ -312,8 +374,9 @@ export async function pickDraftPhoto(
   const ruled = await pickByRule(tenantId, opts);
   if (ruled) return ruled;
 
+  const types = opts.photoTypes ?? [];
   if (opts.playerId != null) {
-    const photo = await playerPhoto(tenantId, opts.playerId);
+    const photo = await playerPhoto(tenantId, opts.playerId, types);
     if (photo)
       return {
         url: photo.url,
@@ -322,31 +385,16 @@ export async function pickDraftPhoto(
   }
 
   if (opts.grade) {
-    // Prefer a team shot (no individual tags) over a player's action photo.
-    const taggedIds = db
-      .select({ id: clubPhotoPlayersTable.photoId })
-      .from(clubPhotoPlayersTable)
-      .where(eq(clubPhotoPlayersTable.tenantId, tenantId));
-    const [team] = await db
+    // The card's preferred photo types first; then a team shot (no individual
+    // player tags) over a player's action photo; then the newest.
+    const playerTagged = sql`EXISTS (SELECT 1 FROM ${clubPhotoPlayersTable} WHERE ${clubPhotoPlayersTable.photoId} = ${clubPhotosTable.id} AND ${clubPhotoPlayersTable.tenantId} = ${tenantId})`;
+    const rank = typeRank(types);
+    const [gradePhoto] = await db
       .select({ objectPath: clubPhotosTable.objectPath })
       .from(clubPhotosTable)
-      .where(
-        and(
-          eq(clubPhotosTable.tenantId, tenantId),
-          eq(clubPhotosTable.grade, opts.grade),
-          notInArray(clubPhotosTable.id, taggedIds),
-        ),
-      )
-      .orderBy(...newestFirst())
+      .where(and(eq(clubPhotosTable.tenantId, tenantId), eq(clubPhotosTable.grade, opts.grade)))
+      .orderBy(...(rank ? [rank] : []), playerTagged, ...newestFirst())
       .limit(1);
-    const [gradePhoto] = team
-      ? [team]
-      : await db
-          .select({ objectPath: clubPhotosTable.objectPath })
-          .from(clubPhotosTable)
-          .where(and(eq(clubPhotosTable.tenantId, tenantId), eq(clubPhotosTable.grade, opts.grade)))
-          .orderBy(...newestFirst())
-          .limit(1);
     if (gradePhoto) return { url: objectUrl(gradePhoto.objectPath), source: "auto:library-grade" };
   }
   return null;
@@ -364,6 +412,7 @@ function draftPickOptions(tenantId: number, d: SocialDraftRow): PhotoPickOptions
     kind,
     // Drafts are created with their source key as the seed (enrichDraft).
     seed: d.sourceKey ?? `draft:${d.id}`,
+    photoTypes: preferredPhotoTypes(input),
     featuredPlayerId:
       kind === "matchSummary"
         ? async () => {
@@ -422,33 +471,44 @@ const autoPhotoSql = () =>
   or(isNull(socialDraftsTable.photoSource), like(socialDraftsTable.photoSource, "auto:%"));
 
 /**
- * A card photo rule changed (saved or removed): re-pick the photo of every open
- * senior draft of that grade and card kind whose photo was picked
- * automatically. A photo an admin chose ("manual") or cleared ("none") is
- * never replaced (KTD6). Returns how many drafts changed.
+ * At most this many open drafts are re-picked when a photo's type tags change
+ * (newest first); older drafts keep their photo until something else refreshes
+ * them.
  */
-export async function repickRuleDraftPhotos(
+export const REPICK_LIMIT = 200;
+
+/**
+ * Re-pick the photo of open senior drafts whose photo was picked automatically
+ * — all of the club's, or only those of one grade and card kinds. A photo an
+ * admin chose ("manual") or cleared ("none") is never replaced (KTD6). Returns
+ * how many drafts changed.
+ */
+async function repickAutoDraftPhotos(
   tenantId: number,
-  grade: string,
-  kinds: readonly string[],
+  scope: { grade: string; kinds: readonly string[] } | null,
+  limit?: number,
 ): Promise<number> {
-  if (kinds.length === 0) return 0;
-  const open = await db
+  const conditions = [
+    eq(socialDraftsTable.tenantId, tenantId),
+    eq(socialDraftsTable.sourceMatchIsJunior, false),
+    inArray(socialDraftsTable.status, OPEN_STATUSES),
+    autoPhotoSql(),
+  ];
+  if (scope) {
+    conditions.push(
+      inArray(sql<string>`${socialDraftsTable.cardInput}->>'kind'`, [...scope.kinds]),
+    );
+  }
+  const query = db
     .select()
     .from(socialDraftsTable)
-    .where(
-      and(
-        eq(socialDraftsTable.tenantId, tenantId),
-        eq(socialDraftsTable.sourceMatchIsJunior, false),
-        inArray(socialDraftsTable.status, OPEN_STATUSES),
-        inArray(sql<string>`${socialDraftsTable.cardInput}->>'kind'`, [...kinds]),
-        autoPhotoSql(),
-      ),
-    );
+    .where(and(...conditions))
+    .orderBy(desc(socialDraftsTable.id));
+  const open = limit != null ? await query.limit(limit) : await query;
   let changed = 0;
   for (const d of open) {
     const opts = draftPickOptions(tenantId, d);
-    if (opts.junior || opts.grade !== grade) continue;
+    if (opts.junior || (scope && opts.grade !== scope.grade)) continue;
     const photo = await pickDraftPhoto(tenantId, opts);
     const next = { photoUrl: photo?.url ?? null, photoSource: photo?.source ?? null };
     if (next.photoUrl === d.photoUrl && next.photoSource === d.photoSource) continue;
@@ -468,6 +528,29 @@ export async function repickRuleDraftPhotos(
   return changed;
 }
 
+/**
+ * A card photo rule changed (saved or removed): re-pick the photo of every open
+ * senior draft of that grade and card kind whose photo was picked
+ * automatically.
+ */
+export async function repickRuleDraftPhotos(
+  tenantId: number,
+  grade: string,
+  kinds: readonly string[],
+): Promise<number> {
+  if (kinds.length === 0) return 0;
+  return repickAutoDraftPhotos(tenantId, { grade, kinds });
+}
+
+/**
+ * A library photo's type tags changed: re-pick the club's newest open drafts
+ * whose photo was picked automatically (at most {@link REPICK_LIMIT}), so a
+ * newly tagged batting milestone photo reaches the open century drafts.
+ */
+export async function repickTypedDraftPhotos(tenantId: number): Promise<number> {
+  return repickAutoDraftPhotos(tenantId, null, REPICK_LIMIT);
+}
+
 export async function enrichDraft(input: EnrichInput): Promise<DraftEnrichment> {
   const kind = typeof input.cardInput.kind === "string" ? input.cardInput.kind : "";
   const junior = input.junior === true || input.cardInput.junior === true;
@@ -483,6 +566,7 @@ export async function enrichDraft(input: EnrichInput): Promise<DraftEnrichment> 
       kind,
       seed: input.seed ?? null,
       featuredPlayerId: input.featuredPlayerId !== undefined ? input.featuredPlayerId : playerId,
+      photoTypes: preferredPhotoTypes(input.cardInput),
     }),
   ]);
   return {

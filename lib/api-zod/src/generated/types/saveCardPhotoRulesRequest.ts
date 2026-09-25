@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CardPhotoRuleMode } from './cardPhotoRuleMode';
+import type { ClubPhotoType } from './clubPhotoType';
 
 export interface SaveCardPhotoRulesRequest {
   /**
@@ -24,4 +25,6 @@ export interface SaveCardPhotoRulesRequest {
      * @nullable
      */
   photoId?: number | null;
+  /** Random and player rules: narrow the pool to photos with this type tag. Ignored for a fixed rule. */
+  photoType?: ClubPhotoType | null;
 }

@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { ClubPhotoType } from './clubPhotoType';
 
 export interface ClubPhoto {
   id: number;
@@ -20,6 +21,7 @@ export interface ClubPhoto {
   takenAt: Date | null;
   createdAt: Date;
   playerIds: number[];
+  photoTypes: ClubPhotoType[];
   /**
      * For a derived image (a background-removed cut-out), the library photo it was made from.
      * @nullable
