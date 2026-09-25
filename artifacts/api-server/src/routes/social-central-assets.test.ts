@@ -9,7 +9,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
-import { and, eq, inArray, like, sql } from "drizzle-orm";
+import { and, eq, like, sql } from "drizzle-orm";
 import app from "../app";
 import {
   db,
@@ -19,15 +19,16 @@ import {
   premiershipsTable,
   socialSettingsTable,
   socialDraftsTable,
-  captionTemplatesTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { invalidateTenantConfigCache } from "../lib/tenant";
 import { runDraftSweep } from "../lib/draft-sweep";
+import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
 
-const CLUB = 9951;
-const OPP = 9952;
-const OTHER_CLUB = 9953;
+// Central club ids no other suite uses (tenants.central_club_id is unique).
+const CLUB = 97651;
+const OPP = 97652;
+const OTHER_CLUB = 97653;
 const BASE = 9_500_000 + (Date.now() % 50_000) * 10;
 const LINE_BASE = BASE * 10;
 const STAMP = Date.now();
@@ -35,18 +36,17 @@ const WATERMARK = 4242;
 
 // Participants: a mapped star, an unmapped bowler, a private player who would
 // top the runs, and a junior who only played a junior grade.
-const G_STAR = `9951${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000001";
-const G_UNMAPPED = `9951${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000002";
-const G_PRIVATE = `9951${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000003";
-const G_JUNIOR = `9951${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000004";
+const G_STAR = `9765${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000001";
+const G_UNMAPPED = `9765${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000002";
+const G_PRIVATE = `9765${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000003";
+const G_JUNIOR = `9765${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000004";
 // Played juniors last season (700 runs) and 300 senior runs this season: only
 // the junior runs would take them past 1000 career runs.
-const G_CROSSOVER = `9951${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000005";
+const G_CROSSOVER = `9765${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000005";
 const GUIDS = [G_STAR, G_UNMAPPED, G_PRIVATE, G_JUNIOR, G_CROSSOVER];
 
 let tenantId: number;
 let otherTenantId: number;
-const adminIds: number[] = [];
 let cookie: string;
 let otherCookie: string;
 let lineId = LINE_BASE;
@@ -99,7 +99,6 @@ async function admin(tid: number, suffix: string): Promise<string> {
       passwordHash: "x",
     })
     .returning();
-  adminIds.push(a.id);
   return `${SESSION_COOKIE}=${encodeSession({ adminId: a.id, issuedAt: Date.now() })}`;
 }
 
@@ -182,28 +181,39 @@ beforeAll(async () => {
   await bat(SENIOR[0], G_CROSSOVER, "C Crossover", 300);
 });
 
+/** Run every cleanup step even if an earlier one (or the suite) failed. */
+async function bestEffort(steps: Array<() => Promise<unknown>>): Promise<void> {
+  for (const step of steps) {
+    try {
+      await step();
+    } catch (err) {
+      console.warn("social-central-assets cleanup step failed", err);
+    }
+  }
+}
+
 afterAll(async () => {
   const lo = BASE;
   const hi = BASE + 10;
-  await db.execute(sql`delete from central.fielding where match_id >= ${lo} and match_id < ${hi}`);
-  await db.execute(
-    sql`delete from central.match_batting where match_id >= ${lo} and match_id < ${hi}`,
-  );
-  await db.execute(
-    sql`delete from central.match_bowling where match_id >= ${lo} and match_id < ${hi}`,
-  );
-  await db.execute(sql`delete from central.matches where match_id >= ${lo} and match_id < ${hi}`);
-  await db.execute(
-    sql`delete from central.players where participant_id = any(${sql.param(GUIDS)})`,
-  );
-  const tenants = [tenantId, otherTenantId];
-  await db.delete(socialDraftsTable).where(inArray(socialDraftsTable.tenantId, tenants));
-  await db.delete(captionTemplatesTable).where(inArray(captionTemplatesTable.tenantId, tenants));
-  await db.delete(socialSettingsTable).where(inArray(socialSettingsTable.tenantId, tenants));
-  await db.delete(premiershipsTable).where(inArray(premiershipsTable.tenantId, tenants));
-  await db.delete(playerIdMapTable).where(inArray(playerIdMapTable.tenantId, tenants));
-  await db.delete(adminsTable).where(inArray(adminsTable.id, adminIds));
-  await db.delete(tenantsTable).where(inArray(tenantsTable.id, tenants));
+  await bestEffort([
+    () =>
+      db.execute(sql`delete from central.fielding where match_id >= ${lo} and match_id < ${hi}`),
+    () =>
+      db.execute(
+        sql`delete from central.match_batting where match_id >= ${lo} and match_id < ${hi}`,
+      ),
+    () =>
+      db.execute(
+        sql`delete from central.match_bowling where match_id >= ${lo} and match_id < ${hi}`,
+      ),
+    () => db.execute(sql`delete from central.matches where match_id >= ${lo} and match_id < ${hi}`),
+    () =>
+      db.execute(sql`delete from central.players where participant_id = any(${sql.param(GUIDS)})`),
+    // Every app row the suite's code paths created for its tenants (settings
+    // seeded lazily — milestone_board_settings, caption templates — drafts,
+    // revisions, tracked links, admins, …), then the tenants themselves.
+    () => purgeTestTenants([tenantId, otherTenantId]),
+  ]);
 });
 
 const post = (path: string, body: object, as: "a" | "b" = "a") =>
