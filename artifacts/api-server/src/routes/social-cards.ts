@@ -27,6 +27,11 @@ import { persistDueDrafts } from "../lib/effective-draft-state";
 // Deliberately loose: the address is only ever a recipient for our own mail.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Design-pack ids as the spec's `PackColourModes` declares them. Zod does not
+// carry `propertyNames` / `maxProperties`, so the route enforces both.
+const PACK_ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const MAX_PACK_MODES = 32;
+
 import assetsRouter from "./social-cards-assets";
 import designRouter from "./social-cards-design";
 import setsRouter from "./social-cards-sets";
@@ -92,16 +97,33 @@ router.patch(
       return;
     }
     if (typeof email === "string") parsed.data.notificationEmail = email.trim() || null;
+    // Per-pack colour modes merge into the stored map, so toggling one pack's
+    // tile never clobbers another's (two admins, two tiles, no lost write).
+    let packColourModes: Record<string, "club" | "pack"> | undefined;
+    if (parsed.data.packColourModes) {
+      const merged = { ...(current.packColourModes ?? {}), ...parsed.data.packColourModes };
+      const keys = Object.keys(merged);
+      if (keys.length > MAX_PACK_MODES || !keys.every((k) => PACK_ID_RE.test(k))) {
+        res.status(400).json({ error: "Unknown design pack." });
+        return;
+      }
+      packColourModes = merged;
+    }
     // Turning auto-post off first stores every draft that already reads as
     // ready, so none quietly returns to review (KTD4, AE5).
     if (current.autoPostEnabled && parsed.data.autoPostEnabled === false) {
       await persistDueDrafts(tenantId);
     }
     // Family switches and the legacy engine flags are kept in step both ways.
-    const { familyConfig: _submitted, ...patch } = parsed.data;
+    const { familyConfig: _submitted, packColourModes: _modes, ...patch } = parsed.data;
     const [row] = await db
       .update(socialSettingsTable)
-      .set({ ...patch, ...syncFamilySettings(current, parsed.data), updatedAt: new Date() })
+      .set({
+        ...patch,
+        ...syncFamilySettings(current, parsed.data),
+        ...(packColourModes ? { packColourModes } : {}),
+        updatedAt: new Date(),
+      })
       .where(eq(socialSettingsTable.tenantId, tenantId))
       .returning();
     res.json({ ...row, familyConfig: resolveFamilyConfig(row) });

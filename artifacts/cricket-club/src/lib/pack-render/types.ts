@@ -24,6 +24,17 @@ export interface PackTokens {
 export const JUNIOR_PANEL = "#42342B";
 
 /**
+ * How a design pack is coloured for a club (stored per club, per pack):
+ *
+ *   - `"club"` — "Club colours" (the default): the club's background becomes
+ *     the stage and panel and its primary the accent, beating the card theme's
+ *     colours; tinted packs lean mostly to the club.
+ *   - `"pack"` — "Pack's own look": the pack renders exactly as it did before
+ *     the switch existed (theme > brand, the pack's own tint and sky).
+ */
+export type PackColourMode = "club" | "pack";
+
+/**
  * Placement of the player hero photo on a pack card. Mirrors the canvas
  * renderer's feature-vs-headshot concept (`PhotoPlacement` in `share-card.ts`):
  *
@@ -60,10 +71,9 @@ export interface PackCardData {
   /**
    * Tenant brand → top-left `clubLogo` slot + `clubName` header value, and the
    * DEFAULT pack token palette (see {@link brandDefaultTokens}). The colour
-   * fields mirror the resolved `ClubBrand`: `primaryColour` seeds the accent and
-   * `juniorsColour` seeds the panel. `backgroundColour` is carried for
-   * completeness but intentionally NOT mapped onto the fixed deep-ink stage
-   * (see {@link brandDefaultTokens} for why).
+   * fields mirror the resolved `ClubBrand`: `primaryColour` seeds the accent;
+   * in "club colours" mode `backgroundColour` seeds the panel and the deep
+   * stage, in "pack's own look" mode `juniorsColour` seeds the panel.
    */
   brand?: {
     name?: string | null;
@@ -118,6 +128,25 @@ export interface PackCardData {
    * bound or overlaid value, so existing renders are byte-identical.
    */
   imagesOverride?: Record<string, string> | null;
+  /**
+   * The club's colour mode per pack id (`social_settings.pack_colour_modes`).
+   * A pack absent from the map — or the whole map absent — is `"club"`. Carried
+   * on the data (rather than resolved per call site) so the pack chosen at
+   * render time picks its own mode on every surface, the server harness
+   * included. See {@link packColourModeFor}.
+   */
+  packColourModes?: Record<string, PackColourMode> | null;
+  /**
+   * Explicit per-card token overrides (the share modal's style panel). They
+   * win over every source but the junior panel in BOTH colour modes. Callers
+   * also fold them into the theme for older consumers; carrying them here is
+   * what keeps them on top when club colours outrank the theme.
+   */
+  tokenOverride?: {
+    accent?: string | null;
+    panel?: string | null;
+    displayFont?: string | null;
+  } | null;
 }
 
 /** An image slot (photo/logo) a pack template exposes, for the per-slot editor. */

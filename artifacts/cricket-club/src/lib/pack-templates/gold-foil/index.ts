@@ -40,8 +40,10 @@ export const GOLD_FOIL_PACK: PackManifest = {
   // Foil only reads as metal against a near-black stage — that is why every
   // fragment in this pack asks for `var(--ink,#070603)`. Half the club's tone,
   // half that base: the card still carries the tenant's colour, and the ramp
-  // keeps the contrast it needs.
-  inkTint: { toward: "#070603", tenantWeight: 50 },
+  // keeps the contrast it needs. In "Club colours" the club's own deep shade is
+  // the stage, so it leans 85% club: the club's hue reads, the near-black still
+  // gives the metal its depth.
+  inkTint: { toward: "#070603", tenantWeight: 50, clubTenantWeight: 85 },
   designs: [
     { designKey: "match-result", kind: "matchSummary", template: matchResult },
     { designKey: "match-day", kind: "matchDay", template: matchDay },
