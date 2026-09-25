@@ -86,6 +86,13 @@ export const env = {
   // ── Studio tools (U19) ───────────────────────────────────────────────────
   /** Photoroom API key for background removal; unset = the tool is off (404). */
   PHOTOROOM_API_KEY: () => optional("PHOTOROOM_API_KEY"),
+  // ── Google Drive photo import ────────────────────────────────────────────
+  /** Google Picker OAuth client id; all three unset = the import is hidden (404). */
+  GOOGLE_DRIVE_CLIENT_ID: () => optional("GOOGLE_DRIVE_CLIENT_ID"),
+  /** Browser API key for the Google Picker (restrict it to this site). */
+  GOOGLE_DRIVE_API_KEY: () => optional("GOOGLE_DRIVE_API_KEY"),
+  /** Google Cloud project number, so drive.file covers the picked files. */
+  GOOGLE_DRIVE_APP_ID: () => optional("GOOGLE_DRIVE_APP_ID"),
   /**
    * Open-Meteo commercial API key. Unset = the free, non-commercial API (no
    * key needed); set before Ovation charges clubs (KTD14 licence note).

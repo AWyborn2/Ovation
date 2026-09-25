@@ -235,3 +235,54 @@ describe("tenant isolation", () => {
     expect(del.body).toEqual({ deleted: 1 });
   });
 });
+
+describe("Google Drive import", () => {
+  it("is hidden (404) until all three Google keys are set", async () => {
+    const saved = {
+      id: process.env.GOOGLE_DRIVE_CLIENT_ID,
+      key: process.env.GOOGLE_DRIVE_API_KEY,
+      app: process.env.GOOGLE_DRIVE_APP_ID,
+    };
+    delete process.env.GOOGLE_DRIVE_CLIENT_ID;
+    delete process.env.GOOGLE_DRIVE_API_KEY;
+    delete process.env.GOOGLE_DRIVE_APP_ID;
+    try {
+      expect((await api("get", "/club-photos/google-drive")).status).toBe(404);
+      const fetchRes = await api("post", "/club-photos/google-drive/fetch").send({
+        accessToken: "t",
+        fileIds: ["1AbCdEfGhIjKlMnOp"],
+      });
+      expect(fetchRes.status).toBe(404);
+
+      process.env.GOOGLE_DRIVE_CLIENT_ID = "cid.apps.googleusercontent.com";
+      process.env.GOOGLE_DRIVE_API_KEY = "AIzaKey";
+      process.env.GOOGLE_DRIVE_APP_ID = "123456";
+      const cfg = await api("get", "/club-photos/google-drive");
+      expect(cfg.status).toBe(200);
+      expect(cfg.body).toEqual({
+        clientId: "cid.apps.googleusercontent.com",
+        apiKey: "AIzaKey",
+        appId: "123456",
+      });
+      // A bad body is refused before any Google call.
+      const bad = await api("post", "/club-photos/google-drive/fetch").send({ fileIds: [] });
+      expect(bad.status).toBe(400);
+    } finally {
+      for (const [k, v] of [
+        ["GOOGLE_DRIVE_CLIENT_ID", saved.id],
+        ["GOOGLE_DRIVE_API_KEY", saved.key],
+        ["GOOGLE_DRIVE_APP_ID", saved.app],
+      ] as const) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    }
+  });
+
+  it("needs an admin", async () => {
+    const res = await request(app)
+      .get("/api/club-photos/google-drive")
+      .set("x-tenant-id", String(tenantId));
+    expect(res.status).toBe(401);
+  });
+});

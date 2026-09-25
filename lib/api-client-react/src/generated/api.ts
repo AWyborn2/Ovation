@@ -105,6 +105,8 @@ import type {
   DraftSweepResponse,
   EditorTemplate,
   ErrorEnvelope,
+  FetchGoogleDriveFilesRequest,
+  FetchGoogleDriveFilesResponse,
   FiveWicketHaul,
   Fixture,
   FixtureForecast,
@@ -124,6 +126,7 @@ import type {
   GetSocialClubSeasonTotalsParams,
   GetSocialLadderPrefillParams,
   GetSocialWeekendWrapPrefillParams,
+  GoogleDriveConfig,
   GradeDistribution,
   GradeSummary,
   HealthStatus,
@@ -15517,6 +15520,156 @@ export const useIngestClubPhotos = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getIngestClubPhotosMutationOptions(options));
+    }
+
+export const getGetGoogleDriveConfigUrl = () => {
+
+
+
+
+  return `/api/club-photos/google-drive`
+}
+
+/**
+ * The public client id, API key and app id the Google Picker needs. 404 when the club's deployment has no Google Drive keys, and the import button stays hidden.
+ * @summary Google Drive picker settings for importing library photos (admin)
+ */
+export const getGoogleDriveConfig = async ( options?: RequestInit): Promise<GoogleDriveConfig> => {
+
+  return customFetch<GoogleDriveConfig>(getGetGoogleDriveConfigUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGoogleDriveConfigQueryKey = () => {
+    return [
+    `/api/club-photos/google-drive`
+    ] as const;
+    }
+
+
+export const getGetGoogleDriveConfigQueryOptions = <TData = Awaited<ReturnType<typeof getGoogleDriveConfig>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGoogleDriveConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGoogleDriveConfigQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGoogleDriveConfig>>> = ({ signal }) => getGoogleDriveConfig({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGoogleDriveConfig>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGoogleDriveConfigQueryResult = NonNullable<Awaited<ReturnType<typeof getGoogleDriveConfig>>>
+export type GetGoogleDriveConfigQueryError = ErrorType<void>
+
+
+/**
+ * @summary Google Drive picker settings for importing library photos (admin)
+ */
+
+export function useGetGoogleDriveConfig<TData = Awaited<ReturnType<typeof getGoogleDriveConfig>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGoogleDriveConfig>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGoogleDriveConfigQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getFetchGoogleDriveFilesUrl = () => {
+
+
+
+
+  return `/api/club-photos/google-drive/fetch`
+}
+
+/**
+ * Downloads each picked file with the admin's short-lived Google access token (drive.file scope, never stored) into storage and returns its object path, ready for POST /club-photos/ingest. Only images up to 25 MB; files fail independently. At most 50 files per call.
+ * @summary Copy picked Google Drive photos into storage for ingest (admin)
+ */
+export const fetchGoogleDriveFiles = async (fetchGoogleDriveFilesRequest: FetchGoogleDriveFilesRequest, options?: RequestInit): Promise<FetchGoogleDriveFilesResponse> => {
+
+  return customFetch<FetchGoogleDriveFilesResponse>(getFetchGoogleDriveFilesUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      fetchGoogleDriveFilesRequest,)
+  }
+);}
+
+
+
+
+export const getFetchGoogleDriveFilesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof fetchGoogleDriveFiles>>, TError,{data: BodyType<FetchGoogleDriveFilesRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof fetchGoogleDriveFiles>>, TError,{data: BodyType<FetchGoogleDriveFilesRequest>}, TContext> => {
+
+const mutationKey = ['fetchGoogleDriveFiles'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof fetchGoogleDriveFiles>>, {data: BodyType<FetchGoogleDriveFilesRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  fetchGoogleDriveFiles(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FetchGoogleDriveFilesMutationResult = NonNullable<Awaited<ReturnType<typeof fetchGoogleDriveFiles>>>
+    export type FetchGoogleDriveFilesMutationBody = BodyType<FetchGoogleDriveFilesRequest>
+    export type FetchGoogleDriveFilesMutationError = ErrorType<void>
+
+    /**
+ * @summary Copy picked Google Drive photos into storage for ingest (admin)
+ */
+export const useFetchGoogleDriveFiles = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof fetchGoogleDriveFiles>>, TError,{data: BodyType<FetchGoogleDriveFilesRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof fetchGoogleDriveFiles>>,
+        TError,
+        {data: BodyType<FetchGoogleDriveFilesRequest>},
+        TContext
+      > => {
+      return useMutation(getFetchGoogleDriveFilesMutationOptions(options));
     }
 
 export const getTagClubPhotosUrl = () => {

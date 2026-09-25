@@ -1,4 +1,10 @@
-import { ingestClubPhotos, type IngestClubPhotosResponse } from "@workspace/api-client-react";
+import {
+  fetchGoogleDriveFiles,
+  ingestClubPhotos,
+  type FetchGoogleDriveFilesResponse,
+  type IngestClubPhotosResponse,
+} from "@workspace/api-client-react";
+import type { DrivePick } from "./google-drive-picker";
 
 /**
  * Bulk upload for the photo library (R10): each file gets a signed upload URL
@@ -105,10 +111,29 @@ export async function uploadLibraryPhotos(
     }),
   );
 
+  await ingestInBatches(uploaded, { ...opts, ingest });
+}
+
+type Ingest = (body: {
+  objectPaths: string[];
+  grade?: string;
+  season?: number;
+}) => Promise<IngestClubPhotosResponse>;
+
+/** Convert stored objects into library photos, in chunks the server accepts. */
+async function ingestInBatches(
+  uploaded: Array<{ index: number; objectPath: string }>,
+  opts: {
+    onState: (index: number, state: UploadState) => void;
+    grade?: string;
+    season?: number;
+    ingest: Ingest;
+  },
+): Promise<void> {
   for (let i = 0; i < uploaded.length; i += INGEST_BATCH) {
     const chunk = uploaded.slice(i, i + INGEST_BATCH);
     try {
-      const res = await ingest({
+      const res = await opts.ingest({
         objectPaths: chunk.map((c) => c.objectPath),
         grade: opts.grade || undefined,
         season: opts.season,
@@ -127,4 +152,48 @@ export async function uploadLibraryPhotos(
       }
     }
   }
+}
+
+/**
+ * Import photos picked in Google Drive: the server copies each file into
+ * storage with the admin's short-lived Google token, then they're converted
+ * exactly like uploads. Files fail independently.
+ */
+export async function importDrivePhotos(
+  pick: DrivePick,
+  opts: {
+    onState: (index: number, state: UploadState) => void;
+    grade?: string;
+    season?: number;
+    /** Test seam: the Drive copy. */
+    fetchDrive?: (body: {
+      accessToken: string;
+      fileIds: string[];
+    }) => Promise<FetchGoogleDriveFilesResponse>;
+    /** Test seam: ingest. */
+    ingest?: Ingest;
+  },
+): Promise<void> {
+  const fetchDrive = opts.fetchDrive ?? ((body) => fetchGoogleDriveFiles(body));
+  const ingest = opts.ingest ?? ((body) => ingestClubPhotos(body));
+  pick.files.forEach((_, index) => opts.onState(index, { phase: "converting" }));
+  const fetched: Array<{ index: number; objectPath: string }> = [];
+  try {
+    const res = await fetchDrive({
+      accessToken: pick.accessToken,
+      fileIds: pick.files.map((f) => f.id),
+    });
+    for (const r of res.results) {
+      const index = pick.files.findIndex((f) => f.id === r.fileId);
+      if (index < 0) continue;
+      if (r.ok && r.objectPath) fetched.push({ index, objectPath: r.objectPath });
+      else opts.onState(index, { phase: "error", message: r.error ?? "Couldn't import." });
+    }
+  } catch {
+    pick.files.forEach((_, index) =>
+      opts.onState(index, { phase: "error", message: "Couldn't reach Google Drive." }),
+    );
+    return;
+  }
+  await ingestInBatches(fetched, { ...opts, ingest });
 }

@@ -6808,6 +6808,42 @@ export const IngestClubPhotosResponse = zod.object({
 
 
 /**
+ * The public client id, API key and app id the Google Picker needs. 404 when the club's deployment has no Google Drive keys, and the import button stays hidden.
+ * @summary Google Drive picker settings for importing library photos (admin)
+ */
+export const GetGoogleDriveConfigResponse = zod.object({
+  "clientId": zod.string(),
+  "apiKey": zod.string(),
+  "appId": zod.string().describe('Google Cloud project number (lets drive.file cover picked files).')
+})
+
+
+/**
+ * Downloads each picked file with the admin's short-lived Google access token (drive.file scope, never stored) into storage and returns its object path, ready for POST /club-photos/ingest. Only images up to 25 MB; files fail independently. At most 50 files per call.
+ * @summary Copy picked Google Drive photos into storage for ingest (admin)
+ */
+
+export const fetchGoogleDriveFilesBodyFileIdsMax = 50;
+
+
+
+export const FetchGoogleDriveFilesBody = zod.object({
+  "accessToken": zod.string().min(1).describe('Short-lived Google OAuth token from the picker sign-in; used once, never stored.'),
+  "fileIds": zod.array(zod.string()).min(1).max(fetchGoogleDriveFilesBodyFileIdsMax)
+})
+
+export const FetchGoogleDriveFilesResponse = zod.object({
+  "results": zod.array(zod.object({
+  "fileId": zod.string(),
+  "ok": zod.boolean(),
+  "objectPath": zod.string().optional(),
+  "name": zod.string().optional(),
+  "error": zod.string().optional()
+}))
+})
+
+
+/**
  * @summary Set season/grade and add or remove player tags on many photos at once (admin)
  */
 
