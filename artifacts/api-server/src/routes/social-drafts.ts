@@ -28,7 +28,7 @@ import {
   generateJuniorMatchSummaryDrafts,
 } from "../lib/match-summary-drafter";
 import { getTenantId } from "../middlewares/tenant-context";
-import { tenantIsCentral } from "../lib/tenant";
+import { NATIVE_STATS_TENANT_ID, tenantIsCentral } from "../lib/tenant";
 import { backfillMatchDrafts } from "../lib/draft-sweep";
 import { effectiveDraftStatus, loadAutoPost, type AutoPost } from "../lib/effective-draft-state";
 import { isDraftStatus, normalizeDraftStatus, type DraftStatus } from "../lib/draft-status";
@@ -610,6 +610,21 @@ router.post(
     const season: number | undefined =
       req.body?.season != null ? parseInt(String(req.body.season), 10) : undefined;
     const grade: string | undefined = req.body?.grade || undefined;
+
+    // The senior path reads the NATIVE match tables, which hold only tenant #1's
+    // matches (they carry no tenant column). Any other tenant drafting from them
+    // would get tenant #1's games under its own brand, so refuse; its past
+    // matches are drafted through /social-drafts/backfill-matches instead.
+    const hasTarget =
+      (Array.isArray(matchIds) && matchIds.length > 0) ||
+      (season != null && Number.isInteger(season));
+    if (!junior && hasTarget && tenantId !== NATIVE_STATS_TENANT_ID) {
+      res.status(409).json({
+        error:
+          "Senior match drafts for this club come from its own data: use POST /social-drafts/backfill-matches",
+      });
+      return;
+    }
 
     let ids: number[] = [];
 

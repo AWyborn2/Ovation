@@ -39,7 +39,10 @@ const G_STAR = `9951${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000001";
 const G_UNMAPPED = `9951${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000002";
 const G_PRIVATE = `9951${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000003";
 const G_JUNIOR = `9951${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000004";
-const GUIDS = [G_STAR, G_UNMAPPED, G_PRIVATE, G_JUNIOR];
+// Played juniors last season (700 runs) and 300 senior runs this season: only
+// the junior runs would take them past 1000 career runs.
+const G_CROSSOVER = `9951${STAMP}`.slice(0, 8) + "-0000-4000-8000-000000000005";
+const GUIDS = [G_STAR, G_UNMAPPED, G_PRIVATE, G_JUNIOR, G_CROSSOVER];
 
 let tenantId: number;
 let otherTenantId: number;
@@ -52,6 +55,7 @@ const SENIOR = [BASE + 1, BASE + 2, BASE + 3];
 const JUNIOR_MATCH = BASE + 4;
 const LAST_SEASON = BASE + 5;
 const OTHER_CLUB_MATCH = BASE + 6;
+const JUNIOR_LAST_SEASON = BASE + 7;
 
 async function centralMatch(
   id: number,
@@ -149,7 +153,8 @@ beforeAll(async () => {
   await db.execute(sql`
     insert into central.players (participant_id, display_name, is_private)
     values (${G_STAR}, 'R Star', 0), (${G_UNMAPPED}, 'U Bowler', 0),
-      (${G_PRIVATE}, 'P Hidden', 1), (${G_JUNIOR}, 'J Kid', 0)
+      (${G_PRIVATE}, 'P Hidden', 1), (${G_JUNIOR}, 'J Kid', 0),
+      (${G_CROSSOVER}, 'C Crossover', 0)
   `);
 
   for (const [i, id] of SENIOR.entries()) {
@@ -171,6 +176,10 @@ beforeAll(async () => {
   // Last season, and another club's match.
   await centralMatch(LAST_SEASON, { season: "2023/24" });
   await centralMatch(OTHER_CLUB_MATCH, { home: OTHER_CLUB, away: OPP });
+  // Juniors-isolation crossover: junior runs last season, senior runs this one.
+  await centralMatch(JUNIOR_LAST_SEASON, { grade: "Under 15 Boys", season: "2023/24" });
+  await bat(JUNIOR_LAST_SEASON, G_CROSSOVER, "C Crossover", 700);
+  await bat(SENIOR[0], G_CROSSOVER, "C Crossover", 300);
 });
 
 afterAll(async () => {
@@ -283,6 +292,15 @@ describe("central season recap", () => {
     expect(drafts.find((d) => d.sourceKey.endsWith("Champion Batsman"))?.appPath).toBe(
       "/players/41",
     );
+  });
+
+  it("junior runs never push a player over a recap milestone", async () => {
+    const res = await post("/social-recaps", { grade: "A Grade", season: 2024 });
+    const drafts = res.body as Draft[];
+    expect(drafts.filter((d) => d.cardInput.kind === "milestone")).toEqual([
+      expect.objectContaining({ sourceKey: "recap:2024:A Grade:milestone:R Star:1000 Runs" }),
+    ]);
+    expect(JSON.stringify(drafts)).not.toContain("C Crossover");
   });
 
   it("a junior grade produces no recap at all", async () => {

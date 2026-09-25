@@ -17373,7 +17373,7 @@ export const sweepMatchSummaryDrafts = async (sweepMatchSummaryDraftsBody: Sweep
 
 
 
-export const getSweepMatchSummaryDraftsMutationOptions = <TError = ErrorType<unknown>,
+export const getSweepMatchSummaryDraftsMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>, TError,{data: BodyType<SweepMatchSummaryDraftsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>, TError,{data: BodyType<SweepMatchSummaryDraftsBody>}, TContext> => {
 
@@ -17402,12 +17402,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type SweepMatchSummaryDraftsMutationResult = NonNullable<Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>>
     export type SweepMatchSummaryDraftsMutationBody = BodyType<SweepMatchSummaryDraftsBody>
-    export type SweepMatchSummaryDraftsMutationError = ErrorType<unknown>
+    export type SweepMatchSummaryDraftsMutationError = ErrorType<void>
 
     /**
  * @summary Sweep matches to generate match summary drafts
  */
-export const useSweepMatchSummaryDrafts = <TError = ErrorType<unknown>,
+export const useSweepMatchSummaryDrafts = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>, TError,{data: BodyType<SweepMatchSummaryDraftsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>,
