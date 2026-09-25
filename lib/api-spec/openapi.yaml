@@ -5088,6 +5088,39 @@ paths:
                     items:
                       type: string
                 required: [drafted, skipped, errors]
+        "409":
+          description: |
+            Senior drafts from the native match tables are only for the native
+            club (tenant #1). Any other club drafts its past matches with
+            POST /social-drafts/backfill-matches.
+
+  /social-drafts/backfill-matches:
+    post:
+      summary: Draft match-result cards for a club's past matches
+      description: |
+        Drafts Match Result cards for matches the club has already played, for
+        any club type. A central-data club drafts from its own central matches
+        (senior grades only); the native club from its own match tables. Uses
+        the same source keys as the automatic drafting sweep, so a re-run never
+        duplicates a card, and it never moves the sweep's watermark. At most 60
+        matches are drafted per call (newest first); `capped` says more matched.
+      operationId: backfillMatchDrafts
+      tags: [social-drafts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BackfillMatchesInput"
+      responses:
+        "200":
+          description: Backfill results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BackfillMatchesResult"
+        "400":
+          description: Invalid body
 
   /tracked-links:
     get:
@@ -14017,6 +14050,42 @@ components:
       properties:
         grade: { type: string }
         season: { type: integer }
+
+    BackfillMatchesInput:
+      type: object
+      required: [season]
+      properties:
+        season:
+          type: integer
+          description: Season start year (2024 = 2024/25).
+        grade:
+          type: string
+          minLength: 1
+          description: Limit to one of the club's grades.
+        matchIds:
+          type: array
+          maxItems: 60
+          items: { type: integer }
+          description: Draft only these matches (must be the club's, in the season).
+
+    BackfillMatchesResult:
+      type: object
+      required: [considered, drafted, skipped, capped, errors]
+      properties:
+        considered:
+          type: integer
+          description: Matches drafted or skipped in this call (at most 60).
+        drafted:
+          type: integer
+          description: New or refreshed drafts. A re-run over the same matches drafts 0.
+        skipped:
+          type: integer
+        capped:
+          type: boolean
+          description: True when more matches matched than the per-call cap.
+        errors:
+          type: array
+          items: { type: string }
 
     TrackedLink:
       type: object

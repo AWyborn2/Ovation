@@ -3,8 +3,6 @@ import { Link, useLocation, useSearch } from "wouter";
 import {
   useListSocialDrafts,
   getListSocialDraftsQueryKey,
-  useGenerateRoundUp,
-  generateRecaps,
   markSocialDraftPosted,
   useListTrackedLinks,
   getListTrackedLinksQueryKey,
@@ -17,16 +15,15 @@ import {
   type SocialSettingsBundle,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ImageIcon, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ImageIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ShareCardModal, type EngineKey } from "@/components/share-card-modal";
 import { ListSkeleton, EmptyState, QueryError } from "@/components/data-states";
 import { DataTable, StatusPill, type DataTableColumn } from "@/components/admin-ui";
 import { DraftDrawer } from "@/components/social-queue/draft-drawer";
+import { GenerateFromDataCard } from "@/components/social-queue/generate-from-data";
 import {
   FAMILIES,
   FAMILY_LABEL,
@@ -72,14 +69,11 @@ export default function AdminSocialQueue() {
   const [grade, setGrade] = useState<string>("all");
   const [open, setOpen] = useState<SocialDraft | null>(null);
   const [preview, setPreview] = useState<SocialDraft | null>(null);
-  const [ruGrade, setRuGrade] = useState("A Grade");
-  const [ruSeason, setRuSeason] = useState<number>(new Date().getFullYear());
 
   const invalidateDrafts = () => {
     qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
     qc.invalidateQueries({ queryKey: getGetPendingSocialDraftCountQueryKey() });
   };
-  const roundupM = useGenerateRoundUp({ mutation: { onSuccess: invalidateDrafts } });
 
   const drafts = useMemo(() => (draftsQ.data ?? []) as SocialDraft[], [draftsQ.data]);
   const counts = useMemo(() => {
@@ -175,6 +169,8 @@ export default function AdminSocialQueue() {
       <p className="font-medium text-foreground">No drafts yet</p>
       <p>
         Cards are drafted automatically after the next results import, and on each scheduled sweep.
+        To draft from past seasons now, use &ldquo;Create from your club&rsquo;s data&rdquo; below
+        the list.
       </p>
       <p className="text-xs">
         Last import: {relativeTime(lastImport ?? null)} · Last sweep:{" "}
@@ -287,50 +283,7 @@ export default function AdminSocialQueue() {
         />
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Generate by hand</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="ru-grade">Grade</Label>
-            <Input
-              id="ru-grade"
-              value={ruGrade}
-              onChange={(e) => setRuGrade(e.target.value)}
-              className="w-40"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="ru-season">Season</Label>
-            <Input
-              id="ru-season"
-              type="number"
-              value={ruSeason}
-              onChange={(e) => setRuSeason(parseInt(e.target.value, 10) || ruSeason)}
-              className="w-28"
-            />
-          </div>
-          <Button
-            type="button"
-            onClick={() => roundupM.mutate({ data: { grade: ruGrade, season: ruSeason } })}
-            disabled={roundupM.isPending}
-          >
-            {roundupM.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Generate round-up
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={async () => {
-              await generateRecaps({ grade: ruGrade, season: ruSeason });
-              invalidateDrafts();
-            }}
-          >
-            Generate season recap
-          </Button>
-        </CardContent>
-      </Card>
+      <GenerateFromDataCard onDrafted={invalidateDrafts} />
 
       <Card>
         <CardHeader>

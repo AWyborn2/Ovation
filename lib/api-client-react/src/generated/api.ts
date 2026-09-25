@@ -41,6 +41,8 @@ import type {
   AwardWinner,
   AwardWinnerInput,
   AwardWinnerUpdate,
+  BackfillMatchesInput,
+  BackfillMatchesResult,
   Ballot,
   BallotInput,
   BallotReview,
@@ -17371,7 +17373,7 @@ export const sweepMatchSummaryDrafts = async (sweepMatchSummaryDraftsBody: Sweep
 
 
 
-export const getSweepMatchSummaryDraftsMutationOptions = <TError = ErrorType<unknown>,
+export const getSweepMatchSummaryDraftsMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>, TError,{data: BodyType<SweepMatchSummaryDraftsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>, TError,{data: BodyType<SweepMatchSummaryDraftsBody>}, TContext> => {
 
@@ -17400,12 +17402,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type SweepMatchSummaryDraftsMutationResult = NonNullable<Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>>
     export type SweepMatchSummaryDraftsMutationBody = BodyType<SweepMatchSummaryDraftsBody>
-    export type SweepMatchSummaryDraftsMutationError = ErrorType<unknown>
+    export type SweepMatchSummaryDraftsMutationError = ErrorType<void>
 
     /**
  * @summary Sweep matches to generate match summary drafts
  */
-export const useSweepMatchSummaryDrafts = <TError = ErrorType<unknown>,
+export const useSweepMatchSummaryDrafts = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>, TError,{data: BodyType<SweepMatchSummaryDraftsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof sweepMatchSummaryDrafts>>,
@@ -17414,6 +17416,84 @@ export const useSweepMatchSummaryDrafts = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getSweepMatchSummaryDraftsMutationOptions(options));
+    }
+
+export const getBackfillMatchDraftsUrl = () => {
+
+
+
+
+  return `/api/social-drafts/backfill-matches`
+}
+
+/**
+ * Drafts Match Result cards for matches the club has already played, for
+any club type. A central-data club drafts from its own central matches
+(senior grades only); the native club from its own match tables. Uses
+the same source keys as the automatic drafting sweep, so a re-run never
+duplicates a card, and it never moves the sweep's watermark. At most 60
+matches are drafted per call (newest first); `capped` says more matched.
+
+ * @summary Draft match-result cards for a club's past matches
+ */
+export const backfillMatchDrafts = async (backfillMatchesInput: BackfillMatchesInput, options?: RequestInit): Promise<BackfillMatchesResult> => {
+
+  return customFetch<BackfillMatchesResult>(getBackfillMatchDraftsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backfillMatchesInput,)
+  }
+);}
+
+
+
+
+export const getBackfillMatchDraftsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof backfillMatchDrafts>>, TError,{data: BodyType<BackfillMatchesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof backfillMatchDrafts>>, TError,{data: BodyType<BackfillMatchesInput>}, TContext> => {
+
+const mutationKey = ['backfillMatchDrafts'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof backfillMatchDrafts>>, {data: BodyType<BackfillMatchesInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  backfillMatchDrafts(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BackfillMatchDraftsMutationResult = NonNullable<Awaited<ReturnType<typeof backfillMatchDrafts>>>
+    export type BackfillMatchDraftsMutationBody = BodyType<BackfillMatchesInput>
+    export type BackfillMatchDraftsMutationError = ErrorType<void>
+
+    /**
+ * @summary Draft match-result cards for a club's past matches
+ */
+export const useBackfillMatchDrafts = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof backfillMatchDrafts>>, TError,{data: BodyType<BackfillMatchesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof backfillMatchDrafts>>,
+        TError,
+        {data: BodyType<BackfillMatchesInput>},
+        TContext
+      > => {
+      return useMutation(getBackfillMatchDraftsMutationOptions(options));
     }
 
 export const getListTrackedLinksUrl = () => {

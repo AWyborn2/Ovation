@@ -23,6 +23,8 @@ import type {
   ClubSeasonGradeLeaders,
   WeekendWrap,
   Fixture,
+  MilestoneItem,
+  Premiership,
   TeamListPlayer as TeamListPlayerDto,
 } from "@workspace/api-client-react";
 import type { CardFormState } from "./logic";
@@ -263,5 +265,53 @@ export function weekendWrapToState(wrap: WeekendWrap): {
       performers: m.performers,
       outcome: WRAP_OUTCOME[m.outcome] ?? "draw",
     })),
+  };
+}
+
+// --------------------------------------------------------------------------
+// Milestone / premiership (the club's own milestone feed and premierships)
+// --------------------------------------------------------------------------
+
+const BOARD_LABEL: Record<string, string> = {
+  games: "Games",
+  runs: "Runs",
+  wickets: "Wickets",
+  dismissals: "Dismissals",
+};
+
+/**
+ * A career-tier crossing from the club's milestone feed (`GET /milestones`,
+ * central-backed for a central-data club) → the Milestone card's fields.
+ */
+export function milestoneItemToState(item: MilestoneItem): CardFormState {
+  const key = item.boardKey ?? "games";
+  const label = BOARD_LABEL[key] ?? key;
+  const threshold = item.threshold ?? item.value;
+  return {
+    playerName: item.playerName,
+    tierLabel: `${threshold} ${label}`,
+    tierIndex: Math.min(Math.max(item.tierIndex ?? 0, 0), 6),
+    milestoneLabel: `Career ${label}`,
+    currentValue: item.value,
+    threshold,
+    headline: `${threshold} career ${label.toLowerCase()}`,
+  };
+}
+
+/** Season start year of a premiership won in calendar `year` (finals Jan–Jun close the previous season). */
+export function premiershipSeasonYear(p: Pick<Premiership, "year" | "matchDate">): number {
+  const m = /^(\d{4})-(\d{2})/.exec(p.matchDate ?? "");
+  if (m) return Number(m[2]) >= 7 ? Number(m[1]) : Number(m[1]) - 1;
+  return p.year - 1;
+}
+
+/** One of the club's premierships → the Premiership card's fields. */
+export function premiershipToState(p: Premiership): CardFormState {
+  return {
+    grade: p.grade,
+    year: premiershipSeasonYear(p),
+    competition: p.competition,
+    result: p.result ?? "",
+    mom: p.mom ?? "",
   };
 }

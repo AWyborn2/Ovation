@@ -29,7 +29,7 @@ import { familyAllows, resolveFamilyConfig } from "./social-families";
 import { loadMatchDetail, loadCentralMatchDetail } from "./match-detail";
 import { overlayNativeOpponents } from "./club-brand";
 import { getPrivateIds, splitScores, MASK_NAME } from "./junior-helpers";
-import { draftKeys, upsertDraftByKey } from "./draft-upsert";
+import { draftKeys, upsertDraftByKey, type DraftUpsertResult } from "./draft-upsert";
 import { topPerformerPlayerId } from "./match-top-performer";
 
 // ---------------------------------------------------------------------------
@@ -241,6 +241,17 @@ async function loadJuniorMatchDetail(matchId: number, tenantId: number, privateI
 // Draft upsert — insert new or update existing (re-ingest regeneration)
 // ---------------------------------------------------------------------------
 
+/**
+ * A keyed upsert only counts as drafted when it wrote a card (new or
+ * refreshed). Re-running over matches whose cards are unchanged — or already
+ * posted — drafts nothing, so a repeat backfill reports 0.
+ */
+function draftOutcome(result: DraftUpsertResult | undefined): "drafted" | "skipped" {
+  return result && (result.action === "unchanged" || result.action === "stale")
+    ? "skipped"
+    : "drafted";
+}
+
 async function upsertDraft(
   tenantId: number,
   matchId: number,
@@ -260,7 +271,7 @@ async function upsertDraft(
     // Central match ids are central's own, so they get their own key space and
     // no native source-match link. The import time is when the sweep first saw
     // the match (KTD10).
-    await upsertDraftByKey({
+    const result = await upsertDraftByKey({
       tenantId,
       engine: "matchSummary",
       family: "results",
@@ -272,9 +283,9 @@ async function upsertDraft(
       grade,
       featuredPlayerId,
     });
-    return "drafted";
+    return draftOutcome(result);
   }
-  await upsertDraftByKey({
+  const result = await upsertDraftByKey({
     tenantId,
     engine: "matchSummary",
     family: "results",
@@ -303,7 +314,7 @@ async function upsertDraft(
       return legacy ?? null;
     },
   });
-  return "drafted";
+  return draftOutcome(result);
 }
 
 // ---------------------------------------------------------------------------

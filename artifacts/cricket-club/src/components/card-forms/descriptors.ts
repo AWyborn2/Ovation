@@ -51,7 +51,7 @@ export interface RepeatSpec {
 }
 
 /** Which prefill panel a kind offers (or none). */
-export type PrefillSource = "match" | "fixture" | "stats" | "none";
+export type PrefillSource = "match" | "fixture" | "stats" | "milestone" | "premiership" | "none";
 
 export interface KindDescriptor {
   /** Bespoke kinds render their own editor (matchSummary). */
@@ -105,7 +105,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
   matchSummary: { bespoke: true, fields: [], prefill: "match" },
 
   milestone: {
-    prefill: "none",
+    prefill: "milestone",
     playerField: { key: "playerName" },
     fields: [
       { key: "playerName", label: "Player name", type: "text" },
@@ -167,7 +167,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
   },
 
   premiership: {
-    prefill: "none",
+    prefill: "premiership",
     fields: [
       { key: "grade", label: "Grade", type: "text" },
       { key: "year", label: "Season start year", type: "number", placeholder: "2024" },

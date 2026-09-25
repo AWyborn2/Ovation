@@ -7446,6 +7446,36 @@ export const SweepMatchSummaryDraftsResponse = zod.object({
 
 
 /**
+ * Drafts Match Result cards for matches the club has already played, for
+any club type. A central-data club drafts from its own central matches
+(senior grades only); the native club from its own match tables. Uses
+the same source keys as the automatic drafting sweep, so a re-run never
+duplicates a card, and it never moves the sweep's watermark. At most 60
+matches are drafted per call (newest first); `capped` says more matched.
+
+ * @summary Draft match-result cards for a club's past matches
+ */
+
+export const backfillMatchDraftsBodyMatchIdsMax = 60;
+
+
+
+export const BackfillMatchDraftsBody = zod.object({
+  "season": zod.number().describe('Season start year (2024 = 2024\/25).'),
+  "grade": zod.string().min(1).optional().describe('Limit to one of the club\'s grades.'),
+  "matchIds": zod.array(zod.number()).max(backfillMatchDraftsBodyMatchIdsMax).optional().describe('Draft only these matches (must be the club\'s, in the season).')
+})
+
+export const BackfillMatchDraftsResponse = zod.object({
+  "considered": zod.number().describe('Matches drafted or skipped in this call (at most 60).'),
+  "drafted": zod.number().describe('New or refreshed drafts. A re-run over the same matches drafts 0.'),
+  "skipped": zod.number(),
+  "capped": zod.boolean().describe('True when more matches matched than the per-call cap.'),
+  "errors": zod.array(zod.string())
+})
+
+
+/**
  * @summary List tracked short links with click counts
  */
 export const ListTrackedLinksResponseItem = zod.object({

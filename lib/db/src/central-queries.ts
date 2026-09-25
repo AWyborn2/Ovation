@@ -25,6 +25,7 @@
  *   - premiers.ts      premierships + decider scores + team lists (honour-board seed)
  *   - grade-distribution.ts  per-player raw aggregates for one grade + season span
  *   - vs-club.ts       per-player career record against one opponent club (+ club id lookups)
+ *   - social-recap.ts  Social Studio round-up / season recap inputs for one grade + season
  * Every central read must stay behind this barrel (eslint `no-restricted-imports`
  * on `@workspace/db/central`) so it is club-filtered, cached and tested in one
  * place. The central DB is READ-ONLY from the app: `select` / `execute` only.
@@ -44,3 +45,4 @@ export * from "./central/premiers";
 export * from "./central/grade-distribution";
 export * from "./central/vs-club";
 export * from "./central/playhq-fixtures";
+export * from "./central/social-recap";
