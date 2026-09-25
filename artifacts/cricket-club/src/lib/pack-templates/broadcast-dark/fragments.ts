@@ -81,8 +81,8 @@ const BD_VARS = [
 
 /** The two accent slashes, top-right (card cqmin). */
 export const BD_SLASHES =
-  `<div style="position:absolute;top:-4cqmin;right:14cqmin;width:3cqmin;height:34cqmin;background:${ACC};transform:skewX(-22deg);pointer-events:none"></div>` +
-  `<div style="position:absolute;top:-4cqmin;right:9cqmin;width:1.4cqmin;height:26cqmin;background:${ACC};opacity:.55;transform:skewX(-22deg);pointer-events:none"></div>`;
+  `<div style="position:absolute;top:-4cqmin;right:14cqmin;width:3cqmin;height:18cqmin;background:${ACC};transform:skewX(-22deg);pointer-events:none"></div>` +
+  `<div style="position:absolute;top:-4cqmin;right:9cqmin;width:1.4cqmin;height:13cqmin;background:${ACC};opacity:.55;transform:skewX(-22deg);pointer-events:none"></div>`;
 
 /**
  * The right-hand photo with its left and bottom fades. Every piece is marked
