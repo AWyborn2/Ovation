@@ -13,6 +13,7 @@ const photo = (over: Partial<ClubPhoto>): ClubPhoto => ({
   takenAt: null,
   createdAt: "2026-09-01",
   playerIds: [],
+  photoTypes: [],
   ...over,
 });
 

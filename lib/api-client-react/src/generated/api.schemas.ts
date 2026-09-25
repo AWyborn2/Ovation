@@ -3863,6 +3863,22 @@ export interface NotificationList {
   items: Notification[];
 }
 
+/**
+ * A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.
+ */
+export type ClubPhotoType = typeof ClubPhotoType[keyof typeof ClubPhotoType];
+
+
+export const ClubPhotoType = {
+  batting: 'batting',
+  bowling: 'bowling',
+  fielding: 'fielding',
+  team: 'team',
+  celebrating: 'celebrating',
+  batting_milestone: 'batting_milestone',
+  bowling_milestone: 'bowling_milestone',
+} as const;
+
 export interface ClubPhoto {
   id: number;
   url: string;
@@ -3877,6 +3893,7 @@ export interface ClubPhoto {
   takenAt: string | null;
   createdAt: string;
   playerIds: number[];
+  photoTypes: ClubPhotoType[];
   /**
      * For a derived image (a background-removed cut-out), the library photo it was made from.
      * @nullable
@@ -3943,6 +3960,10 @@ export interface TagClubPhotosRequest {
   grade?: string | null;
   addPlayerIds?: number[];
   removePlayerIds?: number[];
+  /** Photo types to tag on every photo. */
+  addTypes?: ClubPhotoType[];
+  /** Photo types to remove from every photo. */
+  removeTypes?: ClubPhotoType[];
 }
 
 export interface DeleteClubPhotosRequest {
@@ -3974,6 +3995,8 @@ export interface CardPhotoRule {
   photoId: number | null;
   /** @nullable */
   photoThumbUrl: string | null;
+  /** Random and player rules: only photos with this type tag (falling back to any grade photo when none match). */
+  photoType: ClubPhotoType | null;
   updatedAt: string;
 }
 
@@ -3994,6 +4017,8 @@ export interface SaveCardPhotoRulesRequest {
      * @nullable
      */
   photoId?: number | null;
+  /** Random and player rules: narrow the pool to photos with this type tag. Ignored for a fixed rule. */
+  photoType?: ClubPhotoType | null;
 }
 
 /**
@@ -6739,6 +6764,10 @@ export type ListClubPhotosParams = {
 playerId?: number;
 grade?: string;
 season?: number;
+/**
+ * Only photos tagged with this photo type.
+ */
+type?: ClubPhotoType;
 };
 
 export type DeleteClubPhotos200 = {

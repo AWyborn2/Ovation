@@ -5,9 +5,14 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { ClubPhotoType } from './clubPhotoType';
 
 export type ListClubPhotosParams = {
 playerId?: number;
 grade?: string;
 season?: number;
+/**
+ * Only photos tagged with this photo type.
+ */
+type?: ClubPhotoType;
 };

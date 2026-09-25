@@ -49,3 +49,4 @@ export {
 } from "./match-summary-input";
 export * from "./captions";
 export * from "./pack-resolve";
+export * from "./photo-types";

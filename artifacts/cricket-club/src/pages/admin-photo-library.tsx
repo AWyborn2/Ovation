@@ -1,4 +1,4 @@
-import { useRef, useState, type DragEvent } from "react";
+import { useMemo, useRef, useState, type DragEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListClubPhotos,
@@ -8,6 +8,7 @@ import {
   useListPlayers,
   getListPlayersQueryKey,
   type ClubPhoto,
+  type ClubPhotoType,
 } from "@workspace/api-client-react";
 import { Check, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,15 +18,42 @@ import { SettingsCard, SettingsRow, StatusPill } from "@/components/admin-ui";
 import { useConfirm } from "@/components/confirm-dialog";
 import { uploadLibraryPhotos, type UploadState } from "@/components/social-queue/library-upload";
 import { CardPhotoRules } from "@/components/social-queue/card-photo-rules";
-import { isJuniorGradeLabel } from "@workspace/scorecard";
+import { isJuniorGradeLabel, PHOTO_TYPES, PHOTO_TYPE_LABELS } from "@workspace/scorecard";
 import { cn } from "@/lib/utils";
 
 type Upload = { name: string; state: UploadState };
 
+/** A pending bulk change to one photo type on the selected photos. */
+type TypeEdit = "add" | "remove";
+
+/** Whether all, some or none of `photos` carry `type`. */
+function typeCoverage(photos: ClubPhoto[], type: ClubPhotoType): "all" | "some" | "none" {
+  const n = photos.filter((p) => (p.photoTypes ?? []).includes(type)).length;
+  return n === 0 ? "none" : n === photos.length ? "all" : "some";
+}
+
+/** Small type chips under a library photo. */
+function PhotoTypeChips({ types }: { types: readonly ClubPhotoType[] }) {
+  if (types.length === 0) return null;
+  return (
+    <span className="flex flex-wrap gap-1 px-2 pb-1">
+      {types.map((t) => (
+        <span
+          key={t}
+          className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground"
+        >
+          {PHOTO_TYPE_LABELS[t]}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 /**
  * The club photo library (R10–R12): bulk upload (HEIC converted on the
- * server), a grid with multi-select, and batch tagging by grade, season and
- * senior player. Photos here feed auto-drafts, never junior cards.
+ * server), a grid with multi-select, batch tagging by grade, season, senior
+ * player and photo type, and a photo type filter. Photos here feed
+ * auto-drafts, never junior cards; each card type prefers certain photo types.
  */
 export default function AdminPhotoLibrary() {
   const qc = useQueryClient();
@@ -34,6 +62,12 @@ export default function AdminPhotoLibrary() {
     query: { queryKey: getListClubPhotosQueryKey() },
   });
   const photos = (photosQ.data ?? []) as ClubPhoto[];
+  const [typeFilter, setTypeFilter] = useState<ClubPhotoType | "">("");
+  const shown = useMemo(
+    () => (typeFilter ? photos.filter((p) => (p.photoTypes ?? []).includes(typeFilter)) : photos),
+    [photos, typeFilter],
+  );
+  const [typeEdits, setTypeEdits] = useState<Partial<Record<ClubPhotoType, TypeEdit>>>({});
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [dragging, setDragging] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -52,6 +86,7 @@ export default function AdminPhotoLibrary() {
         refresh();
         setSelected(new Set());
         setPlayerIds(new Set());
+        setTypeEdits({});
         setTagError(null);
       },
       onError: () =>
@@ -107,17 +142,54 @@ export default function AdminPhotoLibrary() {
       return next;
     });
 
+  const selectedPhotos = photos.filter((p) => selected.has(p.id));
+
+  /** A type chip is on when it will be added, or every selected photo has it. */
+  const typeState = (t: ClubPhotoType): boolean | "mixed" => {
+    const edit = typeEdits[t];
+    if (edit) return edit === "add";
+    const coverage = typeCoverage(selectedPhotos, t);
+    return coverage === "some" ? "mixed" : coverage === "all";
+  };
+
+  const toggleType = (t: ClubPhotoType) => {
+    const next: TypeEdit = typeState(t) === true ? "remove" : "add";
+    const coverage = typeCoverage(selectedPhotos, t);
+    setTypeEdits((prev) => {
+      const edits = { ...prev };
+      // Back to how the photos already are: nothing to change.
+      if ((next === "add" && coverage === "all") || (next === "remove" && coverage === "none"))
+        delete edits[t];
+      else edits[t] = next;
+      return edits;
+    });
+  };
+
   const applyTags = () => {
     const seasonNum = season.trim() ? Number(season) : undefined;
+    const addTypes = PHOTO_TYPES.filter((t) => typeEdits[t] === "add");
+    const removeTypes = PHOTO_TYPES.filter((t) => typeEdits[t] === "remove");
     tagM.mutate({
       data: {
         photoIds: Array.from(selected),
         ...(grade.trim() ? { grade: grade.trim() } : {}),
         ...(seasonNum && Number.isInteger(seasonNum) ? { season: seasonNum } : {}),
         ...(playerIds.size ? { addPlayerIds: Array.from(playerIds) } : {}),
+        ...(addTypes.length ? { addTypes } : {}),
+        ...(removeTypes.length ? { removeTypes } : {}),
       },
     });
   };
+
+  const chip = (on: boolean | "mixed") =>
+    cn(
+      "rounded-full border px-2 py-0.5 text-xs transition-colors",
+      on === true
+        ? "border-primary bg-primary text-primary-foreground"
+        : on === "mixed"
+          ? "border-primary bg-primary/10 text-foreground"
+          : "border-border bg-transparent text-muted-foreground hover:border-primary/50",
+    );
 
   const players = playersQ.data?.players ?? [];
 
@@ -240,6 +312,27 @@ export default function AdminPhotoLibrary() {
               ))}
             </div>
           </SettingsRow>
+          <SettingsRow
+            label="Photo types"
+            helper="Cards prefer photos of their type, e.g. a century picks a batting milestone photo."
+          >
+            <div className="flex w-64 flex-wrap gap-1.5" role="group" aria-label="Photo types">
+              {PHOTO_TYPES.map((t) => {
+                const on = typeState(t);
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    aria-pressed={on}
+                    className={chip(on)}
+                    onClick={() => toggleType(t)}
+                  >
+                    {PHOTO_TYPE_LABELS[t]}
+                  </button>
+                );
+              })}
+            </div>
+          </SettingsRow>
           <div className="flex flex-wrap items-center gap-2 px-5 py-4">
             {tagError && <p className="text-sm text-destructive">{tagError}</p>}
             <Button
@@ -274,6 +367,27 @@ export default function AdminPhotoLibrary() {
         </SettingsCard>
       )}
 
+      {photos.length > 0 && (
+        <div className="flex items-center gap-2">
+          <label htmlFor="photo-type-filter" className="text-sm font-medium text-foreground">
+            Filter by type
+          </label>
+          <select
+            id="photo-type-filter"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as ClubPhotoType | "")}
+            className="h-9 rounded-lg border border-input bg-background px-3 text-sm"
+          >
+            <option value="">All photos</option>
+            {PHOTO_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {PHOTO_TYPE_LABELS[t]}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {photosQ.isLoading ? (
         <ListSkeleton rows={3} />
       ) : photosQ.isError ? (
@@ -286,12 +400,17 @@ export default function AdminPhotoLibrary() {
           title="No photos yet"
           message="Upload senior team and match photos to get started."
         />
+      ) : shown.length === 0 ? (
+        <EmptyState
+          title="No photos of this type"
+          message="Select photos and tag them with a photo type, or show all photos."
+        />
       ) : (
         <ul
           className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
           aria-label="Library photos"
         >
-          {photos.map((p) => {
+          {shown.map((p) => {
             const on = selected.has(p.id);
             return (
               <li key={p.id}>
@@ -316,6 +435,7 @@ export default function AdminPhotoLibrary() {
                       .filter(Boolean)
                       .join(" · ") || "Untagged"}
                   </span>
+                  <PhotoTypeChips types={p.photoTypes ?? []} />
                 </button>
                 {!isJuniorGradeLabel(p.grade) && (
                   <button

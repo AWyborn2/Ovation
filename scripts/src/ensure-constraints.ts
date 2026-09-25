@@ -127,6 +127,17 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     name: "card_photo_rules_mode_check",
     sql: `"mode" IN ('player', 'random', 'fixed')`,
   },
+  // Photo type tags (migration 0016).
+  {
+    table: "club_photos",
+    name: "club_photos_photo_types_check",
+    sql: `"photo_types" <@ ARRAY['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']::text[]`,
+  },
+  {
+    table: "card_photo_rules",
+    name: "card_photo_rules_photo_type_check",
+    sql: `"photo_type" IS NULL OR "photo_type" = ANY (ARRAY['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']::text[])`,
+  },
 ];
 
 /**

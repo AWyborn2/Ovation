@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, arrayContains, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db, clubPhotosTable, clubPhotoPlayersTable, type ClubPhotoRow } from "@workspace/db";
 import {
   IngestClubPhotosBody,
@@ -12,7 +12,7 @@ import { getTenantId } from "../middlewares/tenant-context";
 import { nonSeniorPlayerIds, presentPhotos } from "../lib/club-photo-library";
 import { IngestError, MAX_INGEST_BATCH, ingestImage, withTenantSlot } from "../lib/image-ingest";
 import { photoStore } from "../lib/photo-store";
-import { fillMissingDraftPhotos } from "../lib/draft-enrich";
+import { fillMissingDraftPhotos, repickTypedDraftPhotos } from "../lib/draft-enrich";
 
 /**
  * `/club-photos` — the club's senior photo library (Social Studio, U6).
@@ -31,6 +31,15 @@ async function tenantPhotoIds(tenantId: number, photoIds: number[]): Promise<num
   return rows.map((r) => r.id);
 }
 
+/** A `text[]` literal for `values` (drizzle would expand a bare array into a list). */
+function textArray(values: readonly string[]): SQL {
+  if (values.length === 0) return sql`'{}'::text[]`;
+  return sql`ARRAY[${sql.join(
+    values.map((v) => sql`${v}`),
+    sql`, `,
+  )}]::text[]`;
+}
+
 async function addTags(tenantId: number, photoIds: number[], playerIds: number[]): Promise<void> {
   const values = photoIds.flatMap((photoId) =>
     playerIds.map((playerId) => ({ tenantId, photoId, playerId })),
@@ -46,10 +55,11 @@ router.get("/club-photos", requireAdmin, async (req, res): Promise<void> => {
     return;
   }
   const tenantId = getTenantId(req);
-  const { playerId, grade, season } = parsed.data;
+  const { playerId, grade, season, type } = parsed.data;
   const conditions = [eq(clubPhotosTable.tenantId, tenantId)];
   if (grade) conditions.push(eq(clubPhotosTable.grade, grade));
   if (season != null) conditions.push(eq(clubPhotosTable.season, season));
+  if (type) conditions.push(arrayContains(clubPhotosTable.photoTypes, [type]));
   if (playerId != null) {
     const tagged = await db
       .select({ photoId: clubPhotoPlayersTable.photoId })
@@ -164,7 +174,19 @@ router.post("/club-photos/tags", requireAdmin, async (req, res): Promise<void> =
     return;
   }
   const tenantId = getTenantId(req);
-  const { photoIds, season, grade, addPlayerIds = [], removePlayerIds = [] } = parsed.data;
+  const {
+    photoIds,
+    season,
+    grade,
+    addPlayerIds = [],
+    removePlayerIds = [],
+    addTypes = [],
+    removeTypes = [],
+  } = parsed.data;
+  if (addTypes.some((t) => removeTypes.includes(t))) {
+    res.status(400).json({ error: "A photo type can't be added and removed at once." });
+    return;
+  }
   const rejected = await nonSeniorPlayerIds(tenantId, addPlayerIds);
   if (rejected.length > 0) {
     res.status(422).json({ error: "Only senior players can be tagged.", playerIds: rejected });
@@ -176,10 +198,19 @@ router.post("/club-photos/tags", requireAdmin, async (req, res): Promise<void> =
     return;
   }
 
+  const before = await db
+    .select({ id: clubPhotosTable.id, photoTypes: clubPhotosTable.photoTypes })
+    .from(clubPhotosTable)
+    .where(and(eq(clubPhotosTable.tenantId, tenantId), inArray(clubPhotosTable.id, owned)));
+
   await db.transaction(async (tx) => {
-    const patch: Partial<Pick<ClubPhotoRow, "season" | "grade">> = {};
+    const patch: Partial<Pick<ClubPhotoRow, "season" | "grade">> & { photoTypes?: SQL } = {};
     if (season !== undefined) patch.season = season;
     if (grade !== undefined) patch.grade = grade;
+    if (addTypes.length > 0 || removeTypes.length > 0) {
+      // Add, then remove, keeping each type once.
+      patch.photoTypes = sql`ARRAY(SELECT DISTINCT t FROM unnest(array_cat(${clubPhotosTable.photoTypes}, ${textArray(addTypes)})) AS t WHERE t <> ALL(${textArray(removeTypes)}) ORDER BY t)`;
+    }
     if (Object.keys(patch).length > 0) {
       await tx
         .update(clubPhotosTable)
@@ -208,8 +239,14 @@ router.post("/club-photos/tags", requireAdmin, async (req, res): Promise<void> =
     .select()
     .from(clubPhotosTable)
     .where(and(eq(clubPhotosTable.tenantId, tenantId), inArray(clubPhotosTable.id, owned)));
-  // A photo newly tagged with a player or grade can fill drafts that had none.
+  // A photo newly tagged with a player or grade can fill drafts that had none;
+  // a change of photo types can change which photo open drafts prefer.
+  const typesBefore = new Map(before.map((b) => [b.id, [...b.photoTypes].sort().join(",")]));
+  const typesChanged = rows.some(
+    (r) => typesBefore.get(r.id) !== [...r.photoTypes].sort().join(","),
+  );
   await fillMissingDraftPhotos(tenantId);
+  if (typesChanged) await repickTypedDraftPhotos(tenantId);
   res.json(await presentPhotos(tenantId, rows));
 });
 

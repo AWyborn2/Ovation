@@ -159,6 +159,7 @@ export async function cutOutLibraryPhoto(tenantId: number, photoId: number): Pro
         season: source.season,
         grade: source.grade,
         takenAt: source.takenAt,
+        photoTypes: source.photoTypes,
         sourcePhotoId: source.id,
       })
       .returning();

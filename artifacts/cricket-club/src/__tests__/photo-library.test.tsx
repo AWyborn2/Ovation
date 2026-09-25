@@ -5,7 +5,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import { screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 import AdminPhotoLibrary from "@/pages/admin-photo-library";
 import { renderAt } from "@/test/render";
 import {
@@ -19,7 +19,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const photo = (id: number) => ({
+const photo = (id: number, photoTypes: string[] = []) => ({
   id,
   url: `/api/storage/objects/library/${id}`,
   thumbUrl: `/api/storage/objects/library/${id}-t`,
@@ -30,6 +30,95 @@ const photo = (id: number) => ({
   takenAt: null,
   createdAt: "2026-09-20T10:00:00Z",
   playerIds: [],
+  photoTypes,
+});
+
+type Req = { method: string; url: string; body: unknown };
+
+function stubLibrary(photos: unknown[]) {
+  const requests: Req[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input.toString();
+      const method = (init?.method ?? "GET").toUpperCase();
+      requests.push({
+        method,
+        url,
+        body: typeof init?.body === "string" ? JSON.parse(init.body) : undefined,
+      });
+      const payload = url.includes("/club-photos") && method === "GET" ? photos : [];
+      return new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }),
+  );
+  return requests;
+}
+
+describe("photo types", () => {
+  it("shows each photo's type tags as chips", async () => {
+    stubLibrary([photo(1, ["batting_milestone", "team"]), photo(2)]);
+    renderAt(<AdminPhotoLibrary />, "/admin/social/library");
+    const first = await screen.findByRole("button", { name: "Photo 1" });
+    expect(first.textContent).toContain("Batting milestone");
+    expect(first.textContent).toContain("Team");
+    expect(screen.getByRole("button", { name: "Photo 2" }).textContent).not.toContain("Team");
+  });
+
+  it("bulk-tags and untags the selected photos by type", async () => {
+    const requests = stubLibrary([photo(1, ["team"]), photo(2, ["team"]), photo(3)]);
+    renderAt(<AdminPhotoLibrary />, "/admin/social/library");
+    fireEvent.click(await screen.findByRole("button", { name: "Photo 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Photo 2" }));
+
+    const types = screen.getByRole("group", { name: "Photo types" });
+    // Every selected photo is a team photo: the chip starts on.
+    const team = within(types).getByRole("button", { name: "Team" });
+    expect(team.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(team);
+    expect(team.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(within(types).getByRole("button", { name: "Bowling" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply tags" }));
+
+    await waitFor(() => {
+      const tag = requests.find((r) => r.method === "POST" && r.url.includes("/club-photos/tags"));
+      expect(tag?.body).toEqual({
+        photoIds: [1, 2],
+        addTypes: ["bowling"],
+        removeTypes: ["team"],
+      });
+    });
+  });
+
+  it("shows a mixed chip when only some selected photos have the type", async () => {
+    stubLibrary([photo(1, ["fielding"]), photo(2)]);
+    renderAt(<AdminPhotoLibrary />, "/admin/social/library");
+    fireEvent.click(await screen.findByRole("button", { name: "Photo 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Photo 2" }));
+    const types = screen.getByRole("group", { name: "Photo types" });
+    expect(
+      within(types).getByRole("button", { name: "Fielding" }).getAttribute("aria-pressed"),
+    ).toBe("mixed");
+  });
+
+  it("filters the grid by photo type", async () => {
+    stubLibrary([photo(1, ["bowling"]), photo(2, ["batting"]), photo(3)]);
+    renderAt(<AdminPhotoLibrary />, "/admin/social/library");
+    await screen.findByRole("button", { name: "Photo 3" });
+    fireEvent.change(screen.getByLabelText("Filter by type"), { target: { value: "bowling" } });
+    const grid = screen.getByRole("list", { name: "Library photos" });
+    expect(within(grid).getAllByRole("listitem")).toHaveLength(1);
+    expect(within(grid).getByRole("button", { name: "Photo 1" })).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Filter by type"), { target: { value: "fielding" } });
+    expect(screen.getByText("No photos of this type")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Filter by type"), { target: { value: "" } });
+    expect(
+      within(screen.getByRole("list", { name: "Library photos" })).getAllByRole("listitem"),
+    ).toHaveLength(3);
+  });
 });
 
 describe("photo library page", () => {
@@ -46,7 +135,9 @@ describe("photo library page", () => {
           body: typeof init?.body === "string" ? JSON.parse(init.body) : undefined,
         });
         const payload =
-          url.includes("/club-photos") && method === "GET" ? [1, 2, 3, 4].map(photo) : [];
+          url.includes("/club-photos") && method === "GET"
+            ? [1, 2, 3, 4].map((id) => photo(id))
+            : [];
         return new Response(JSON.stringify(payload), {
           status: 200,
           headers: { "content-type": "application/json" },

@@ -6,7 +6,7 @@ import {
   playerIdMapTable,
   type ClubPhotoRow,
 } from "@workspace/db";
-import { isFillInPlayerId } from "@workspace/scorecard";
+import { PHOTO_TYPES, isFillInPlayerId, type PhotoType } from "@workspace/scorecard";
 import { tenantIsCentral } from "./tenant";
 import { objectUrl } from "./photo-store";
 
@@ -54,6 +54,7 @@ export type PhotoDto = {
   takenAt: string | null;
   createdAt: string;
   playerIds: number[];
+  photoTypes: PhotoType[];
   sourcePhotoId: number | null;
 };
 
@@ -83,6 +84,8 @@ export async function presentPhotos(tenantId: number, rows: ClubPhotoRow[]): Pro
     takenAt: r.takenAt?.toISOString() ?? null,
     createdAt: r.createdAt.toISOString(),
     playerIds: (byPhoto.get(r.id) ?? []).sort((a, b) => a - b),
+    // In the canonical order, whatever order they were tagged in.
+    photoTypes: PHOTO_TYPES.filter((t) => r.photoTypes.includes(t)),
     sourcePhotoId: r.sourcePhotoId ?? null,
   }));
 }

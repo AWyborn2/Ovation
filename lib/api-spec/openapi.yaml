@@ -4413,6 +4413,12 @@ paths:
           required: false
           schema:
             type: integer
+        - name: type
+          in: query
+          required: false
+          description: Only photos tagged with this photo type.
+          schema:
+            $ref: "#/components/schemas/ClubPhotoType"
       responses:
         "200":
           description: Library photos
@@ -11769,9 +11775,18 @@ components:
           items:
             $ref: "#/components/schemas/Notification"
 
+    ClubPhotoType:
+      type: string
+      enum: [batting, bowling, fielding, team, celebrating, batting_milestone, bowling_milestone]
+      description: >-
+        A photo type tag. Each card type prefers certain types when its photo is
+        picked automatically (a century prefers batting milestone, then batting),
+        falling back to any photo.
+
     ClubPhoto:
       type: object
-      required: [id, url, thumbUrl, width, height, season, grade, takenAt, createdAt, playerIds]
+      required:
+        [id, url, thumbUrl, width, height, season, grade, takenAt, createdAt, playerIds, photoTypes]
       properties:
         id:
           type: integer
@@ -11797,6 +11812,10 @@ components:
           type: array
           items:
             type: integer
+        photoTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClubPhotoType"
         sourcePhotoId:
           type: ["integer", "null"]
           description: "For a derived image (a background-removed cut-out), the library photo it was made from."
@@ -11899,6 +11918,16 @@ components:
           type: array
           items:
             type: integer
+        addTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClubPhotoType"
+          description: "Photo types to tag on every photo."
+        removeTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClubPhotoType"
+          description: "Photo types to remove from every photo."
 
     DeleteClubPhotosRequest:
       type: object
@@ -11920,7 +11949,7 @@ components:
 
     CardPhotoRule:
       type: object
-      required: [id, grade, cardKind, mode, photoId, photoThumbUrl, updatedAt]
+      required: [id, grade, cardKind, mode, photoId, photoThumbUrl, photoType, updatedAt]
       properties:
         id:
           type: integer
@@ -11935,6 +11964,11 @@ components:
           description: "The fixed photo; null for other modes, or when a fixed photo was removed from the library."
         photoThumbUrl:
           type: ["string", "null"]
+        photoType:
+          description: "Random and player rules: only photos with this type tag (falling back to any grade photo when none match)."
+          oneOf:
+            - $ref: "#/components/schemas/ClubPhotoType"
+            - type: "null"
         updatedAt:
           type: string
           format: date-time
@@ -11960,6 +11994,11 @@ components:
         photoId:
           type: ["integer", "null"]
           description: "Required for a fixed rule; ignored otherwise."
+        photoType:
+          description: "Random and player rules: narrow the pool to photos with this type tag. Ignored for a fixed rule."
+          oneOf:
+            - $ref: "#/components/schemas/ClubPhotoType"
+            - type: "null"
 
     DraftSweepRequest:
       type: object
