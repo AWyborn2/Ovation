@@ -26,7 +26,7 @@ function side(logoKey: string, name: string, tag: string, accent: boolean): stri
   return (
     `<div style="display:flex;align-items:center;gap:2.4cqmin;padding:1.4cqmin 0;border-bottom:.2cqmin solid ${LINE}">` +
     `<div style="width:8cqmin;height:8cqmin;flex:none;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.08)">${slot(logoKey, "logo", "circle")}</div>` +
-    `<div style="flex:1;min-width:0;font-family:${SK_COND};font-weight:800;font-size:5cqmin;line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>` +
+    `<div data-fit="17" style="flex:1;min-width:0;font-family:${SK_COND};font-weight:800;font-size:calc(5cqmin * var(--fit,1));line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>` +
     `<div style="flex:none;font-family:${SK_COND};font-weight:800;font-size:2.4cqmin;letter-spacing:.1em;padding:.6cqmin 1.4cqmin;border-radius:.6cqmin;${accent ? `background:${ACC};color:var(--accent-ink,#10151B)` : `border:.2cqmin solid ${LINE};color:${MUTED}`}">${tag}</div>` +
     `</div>`
   );

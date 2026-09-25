@@ -59,7 +59,7 @@ describe("switching a draft's pack (U13)", () => {
           }
           // Brand colour applied, tenant identity bound.
           expect(html, ctx).toContain("--gold:#7C3AED");
-          expect(html, ctx).toMatch(/Demo Cricket Club/i);
+          expect(html, ctx).toMatch(/>Demo</); // name shown without "Cricket Club"
           expect(html, ctx).toContain("#DEMOCC");
           expect(html, ctx).not.toContain("pack-landscape-fallback");
           if (size === "square") outputs.set(packId, html);

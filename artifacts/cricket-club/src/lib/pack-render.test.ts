@@ -289,7 +289,7 @@ describe("renderPackCard with tenant data (PackCardData)", () => {
     // clubLogo slot resolves to the tenant logo image.
     expect(html).toContain('src="https://cdn.example.com/logo.png"');
     // clubName header uses the tenant name (not the "HALLS HEAD" sample).
-    expect(html).toContain("Test Cricket Club");
+    expect(html).toContain(">Test<"); // "Cricket Club" is dropped: the tagline says it
     // First three sponsor logos fill sponsor1..3.
     expect(html).toContain('src="https://cdn.example.com/spon-a.png"');
     expect(html).toContain('src="https://cdn.example.com/spon-b.png"');

@@ -58,7 +58,7 @@ function resultSide(prefix: "club" | "opposition", dim: boolean): string {
     `<div style="display:flex;align-items:flex-end;gap:3cqmin;width:100%;min-width:0${dim ? ";opacity:.74" : ""}">` +
     `<div style="width:8cqmin;height:8cqmin;flex:none;border-radius:1cqmin;overflow:hidden;background:${K.panel};margin-bottom:1.2cqmin">${slot(`${prefix}.logo`, "logo", "rounded", 8)}</div>` +
     `<div style="flex:1;min-width:0;padding-bottom:1.2cqmin">` +
-    `<div style="font-family:${SK_COND};font-weight:800;font-size:6cqmin;line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{${prefix}.name}}</div>` +
+    `<div data-fit="14" style="font-family:${SK_COND};font-weight:800;font-size:calc(6cqmin * var(--fit,1));line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{${prefix}.name}}</div>` +
     `<div style="font-family:${SK_MONO};font-weight:500;font-size:2cqmin;letter-spacing:.14em;color:${K.muted};margin-top:.8cqmin">{{${prefix}.oversLabel}}</div>` +
     `</div>` +
     (dim
@@ -111,7 +111,7 @@ function fixtureSide(logoKey: string, name: string, tag: string, accent: boolean
   return (
     `<div style="display:flex;align-items:center;gap:2.4cqmin;padding:1.4cqmin 0;border-bottom:.2cqmin solid ${K.line}">` +
     `<div style="width:8cqmin;height:8cqmin;flex:none;border-radius:50%;overflow:hidden;background:${K.panel}">${slot(logoKey, "logo", "circle")}</div>` +
-    `<div style="flex:1;min-width:0;font-family:${SK_COND};font-weight:800;font-size:5cqmin;line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>` +
+    `<div data-fit="17" style="flex:1;min-width:0;font-family:${SK_COND};font-weight:800;font-size:calc(5cqmin * var(--fit,1));line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>` +
     `<div style="flex:none;font-family:${SK_COND};font-weight:800;font-size:2.4cqmin;letter-spacing:.1em;padding:.6cqmin 1.4cqmin;border-radius:${K.pillR};${accent ? `background:${K.acc};color:${K.accInk};box-shadow:${K.pillGlow}` : `border:.2cqmin solid ${K.line};color:${K.muted}`}">${tag}</div>` +
     `</div>`
   );

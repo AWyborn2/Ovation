@@ -29,6 +29,7 @@ import {
   selectSponsorVariant,
   substituteFields,
 } from "./html-utils";
+import { fitNames } from "./name-fit";
 
 /** A card with no pack design: stage colour plus editor layers (Studio U18). */
 export const BLANK_PACK_ID = "blank";
@@ -131,6 +132,8 @@ export function renderPackCard(
   }
   html = hideFields(html, adj);
   html = substituteFields(html, values);
+  // Long club and team names shrink to fit, then wrap, instead of "…".
+  html = fitNames(html);
   html = cleanupEmptyRoles(html);
 
   const layers = renderFreeLayers(adj, size, opts, values);
