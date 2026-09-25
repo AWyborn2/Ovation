@@ -43,7 +43,7 @@ export interface UpdateAdminTenantBrandBody {
   /** When true the tenant UI uses the navy base (dark-only mode). */
   useNavyBase?: boolean;
   /**
-     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+     * Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).
      * @nullable
      */
   badgeStyle?: string | null;
