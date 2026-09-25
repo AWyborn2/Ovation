@@ -1,7 +1,8 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
   clubPhotoPlayersTable,
+  clubPhotosTable,
   playersTable,
   playerIdMapTable,
   type ClubPhotoRow,
@@ -88,4 +89,35 @@ export async function presentPhotos(tenantId: number, rows: ClubPhotoRow[]): Pro
     photoTypes: PHOTO_TYPES.filter((t) => r.photoTypes.includes(t)),
     sourcePhotoId: r.sourcePhotoId ?? null,
   }));
+}
+
+/**
+ * A library photo of this player for their profile when they have no headshot:
+ * solo shots first (fewest players tagged), then the newest. Library photos
+ * are senior-only, so a junior or fill-in never matches. Null when untagged.
+ */
+export async function taggedPlayerPhotoUrl(
+  tenantId: number,
+  playerId: number,
+): Promise<string | null> {
+  if (isFillInPlayerId(playerId)) return null;
+  const tagCount = sql<number>`(select count(*) from ${clubPhotoPlayersTable} t2 where t2.photo_id = ${clubPhotosTable.id})`;
+  const [row] = await db
+    .select({ objectPath: clubPhotosTable.objectPath })
+    .from(clubPhotoPlayersTable)
+    .innerJoin(clubPhotosTable, eq(clubPhotosTable.id, clubPhotoPlayersTable.photoId))
+    .where(
+      and(
+        eq(clubPhotoPlayersTable.tenantId, tenantId),
+        eq(clubPhotosTable.tenantId, tenantId),
+        eq(clubPhotoPlayersTable.playerId, playerId),
+      ),
+    )
+    .orderBy(
+      asc(tagCount),
+      desc(sql`coalesce(${clubPhotosTable.takenAt}, ${clubPhotosTable.createdAt})`),
+      desc(clubPhotosTable.id),
+    )
+    .limit(1);
+  return row ? objectUrl(row.objectPath) : null;
 }

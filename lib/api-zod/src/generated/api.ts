@@ -138,6 +138,7 @@ export const GetPlayerResponse = zod.object({
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
   "imageUrl": zod.string().nullish(),
+  "libraryPhotoUrl": zod.string().nullish().describe('A photo-library photo tagged with this player (solo shots first, then newest); the profile shows it when there is no headshot.'),
   "cardRole": zod.string().nullish(),
   "cardRating": zod.number().nullish(),
   "debutSeason": zod.number().nullish().describe('Inferred club debut season (start year, e.g. 2019 for 2019\/20), derived from the match-data era. Only set for players whose entire record sits in the reliable scorecard era (zero pre-scorecard baseline games); null when the career predates reliable match data.'),
@@ -476,7 +477,7 @@ export const GetMatchResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
-  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest | logo). Null = the default \"diamond\" style.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).'),
   "heroImages": zod.union([zod.object({
   "home": zod.string().max(getMatchResponseClubOneHeroImagesOneHomeMax).nullish(),
@@ -608,7 +609,7 @@ export const UpdateMatchRoundResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
-  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest | logo). Null = the default \"diamond\" style.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).'),
   "heroImages": zod.union([zod.object({
   "home": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneHomeMax).nullish(),
@@ -736,7 +737,7 @@ export const SetMatchHatTrickResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
-  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest | logo). Null = the default \"diamond\" style.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).'),
   "heroImages": zod.union([zod.object({
   "home": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneHomeMax).nullish(),
@@ -8480,7 +8481,7 @@ export const GetTenantBrandResponse = zod.union([zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
-  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest | logo). Null = the default \"diamond\" style.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).'),
   "heroImages": zod.union([zod.object({
   "home": zod.string().max(getTenantBrandResponseOneHeroImagesOneHomeMax).nullish(),
@@ -8529,7 +8530,7 @@ export const UpdateTenantBrandBody = zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('The \"App look\" selector: true = Ovation Broadcast (fixed navy base), false = Club look (surfaces derived from backgroundColour).'),
-  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Curated per-token theme overrides (surface\/panel\/border\/alert colours, corner radius, font) keyed by CSS custom property. Null clears all overrides back to the fully-derived theme.'),
   "heroImages": zod.union([zod.object({
   "home": zod.string().max(updateTenantBrandBodyHeroImagesOneHomeMax).nullish(),
@@ -8569,7 +8570,7 @@ export const UpdateTenantBrandResponse = zod.object({
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the full navy base (dark-only design mode). Defaults false.'),
-  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest). Null = the default \"diamond\" style.'),
+  "badgeStyle": zod.string().nullish().describe('The grade-badge SVG shape (diamond | shield | hexagon | oval | crest | logo). Null = the default \"diamond\" style.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Optional per-token theme overrides keyed by CSS custom property (e.g. {\"--card\": \"#101826\", \"--radius\": \"0.75rem\"}). Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null = a fully-derived theme (the default).'),
   "heroImages": zod.union([zod.object({
   "home": zod.string().max(updateTenantBrandResponseHeroImagesOneHomeMax).nullish(),
@@ -8715,7 +8716,7 @@ export const ListAllTenantsResponseItem = zod.object({
   "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
-  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
   "heroImages": zod.union([zod.object({
@@ -8791,7 +8792,7 @@ export const GetAdminTenantResponse = zod.object({
   "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
-  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
   "heroImages": zod.union([zod.object({
@@ -8859,7 +8860,7 @@ export const UpdateAdminTenantResponse = zod.object({
   "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
-  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
   "heroImages": zod.union([zod.object({
@@ -8913,7 +8914,7 @@ export const UpdateAdminTenantBrandBody = zod.object({
   "primaryColour": zod.string().regex(updateAdminTenantBrandBodyPrimaryColourRegExp).nullish(),
   "juniorsColour": zod.string().regex(updateAdminTenantBrandBodyJuniorsColourRegExp).nullish(),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant UI uses the navy base (dark-only mode).'),
-  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Full per-token theme overrides (the premium concierge \"custom design\" offering) keyed by CSS custom property. Colour tokens carry a 6-digit hex; --radius \/ --app-font-\* carry a raw CSS value. Null clears all overrides back to the fully-derived theme.'),
   "heroImages": zod.union([zod.object({
   "home": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneHomeMax).nullish(),
@@ -8959,7 +8960,7 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
-  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
   "heroImages": zod.union([zod.object({
@@ -9022,7 +9023,7 @@ export const ArchiveAdminTenantResponse = zod.object({
   "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
-  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
   "heroImages": zod.union([zod.object({
@@ -9079,7 +9080,7 @@ export const RestoreAdminTenantResponse = zod.object({
   "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish(),
-  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).'),
+  "badgeStyle": zod.string().nullish().describe('Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).'),
   "useNavyBase": zod.boolean().optional().describe('When true the tenant\'s structural surfaces use the fixed Ovation navy scale instead of being derived from backgroundColour.'),
   "themeOverrides": zod.record(zod.string(), zod.string()).nullish().describe('Per-token theme overrides keyed by CSS custom property, or null when the theme is fully derived. Surfaced so the concierge editor can seed its custom-design controls from the tenant\'s saved overrides.'),
   "heroImages": zod.union([zod.object({

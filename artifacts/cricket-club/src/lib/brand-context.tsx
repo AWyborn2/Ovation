@@ -58,7 +58,7 @@ const PlatformContext = createContext<PlatformState>({
 
 /**
  * Badge style context — the tenant's chosen SVG badge shape key (e.g.
- * "diamond", "shield", "hexagon"). Defaults to "diamond". Read by `GradeBadge`
+ * "diamond", "shield", "hexagon", "logo"). A club with none gets "logo". Read by `GradeBadge`
  * so every badge on the page reflects the tenant setting without prop-drilling.
  */
 export const BadgeStyleContext = createContext<string>("diamond");
@@ -156,8 +156,11 @@ export function BrandProvider({ children }: { children: ReactNode }) {
     applyBrandTheme(brand, mode);
   }, [brand, isPlatform, mode]);
 
-  // Badge style — read from the API response (null / undefined → "diamond").
-  const badgeStyle = (!isPlatform && (q.data as TenantBrand | undefined)?.badgeStyle) || "diamond";
+  // Badge style from the API. A club that never chose one gets the club-logo
+  // badge; the platform (no club logo) and the moment before the club's brand
+  // arrives (which would show the default logo) keep the diamond outline.
+  const badgeStyle =
+    isPlatform || !q.data ? "diamond" : (q.data as TenantBrand).badgeStyle || "logo";
 
   return (
     <PlatformContext.Provider value={{ isPlatform, isLoading: q.isLoading }}>

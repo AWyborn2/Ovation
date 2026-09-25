@@ -117,8 +117,15 @@
     {
       "idx": 16,
       "version": "7",
-      "when": 1790298274764,
-      "tag": "0016_photo_type_tags",
+      "when": 1790299719625,
+      "tag": "0016_badge_style_club_logo",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790304687184,
+      "tag": "0017_photo_type_tags",
       "breakpoints": true
     }
   ]

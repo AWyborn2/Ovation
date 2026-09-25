@@ -6939,6 +6939,9 @@ components:
           type: ["integer", "null"]
         imageUrl:
           type: ["string", "null"]
+        libraryPhotoUrl:
+          type: ["string", "null"]
+          description: "A photo-library photo tagged with this player (solo shots first, then newest); the profile shows it when there is no headshot."
         cardRole:
           type: ["string", "null"]
         cardRating:
@@ -8668,7 +8671,7 @@ components:
         badgeStyle:
           type: ["string", "null"]
           description: >-
-            The grade-badge SVG shape (diamond | shield | hexagon | oval | crest).
+            The grade-badge SVG shape (diamond | shield | hexagon | oval | crest | logo).
             Null = the default "diamond" style.
         themeOverrides:
           type: ["object", "null"]
@@ -8761,7 +8764,7 @@ components:
             false = Club look (surfaces derived from backgroundColour).
         badgeStyle:
           type: ["string", "null"]
-          description: Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+          description: Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).
         themeOverrides:
           type: ["object", "null"]
           additionalProperties:
@@ -8814,7 +8817,7 @@ components:
           description: When true the tenant UI uses the navy base (dark-only mode).
         badgeStyle:
           type: ["string", "null"]
-          description: Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+          description: Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).
         themeOverrides:
           type: ["object", "null"]
           additionalProperties:
@@ -9092,7 +9095,7 @@ components:
           type: ["string", "null"]
         badgeStyle:
           type: ["string", "null"]
-          description: Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest).
+          description: Grade-badge SVG shape key (diamond | shield | hexagon | oval | crest | logo).
         useNavyBase:
           type: boolean
           description: >-
