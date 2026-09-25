@@ -14,6 +14,7 @@ import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { publicWriteRateLimiter } from "../middlewares/rate-limit";
 import {
+  BackfillMatchDraftsBody,
   CreateSocialDraftBody,
   CreateTrackedLinkBody,
   GenerateRecapsBody,
@@ -27,6 +28,8 @@ import {
   generateJuniorMatchSummaryDrafts,
 } from "../lib/match-summary-drafter";
 import { getTenantId } from "../middlewares/tenant-context";
+import { NATIVE_STATS_TENANT_ID, tenantIsCentral } from "../lib/tenant";
+import { backfillMatchDrafts } from "../lib/draft-sweep";
 import { effectiveDraftStatus, loadAutoPost, type AutoPost } from "../lib/effective-draft-state";
 import { isDraftStatus, normalizeDraftStatus, type DraftStatus } from "../lib/draft-status";
 import {
@@ -559,15 +562,20 @@ router.post(
       res.status(400).json({ error: "grade and season required" });
       return;
     }
-    const [imp] = await db
-      .select({ id: importsTable.id })
-      .from(importsTable)
-      .where(
-        sql`${importsTable.grade} = ${grade} AND ${importsTable.season} = ${season} AND ${importsTable.status} = 'committed'`,
-      )
-      .orderBy(desc(importsTable.importedAt))
-      .limit(1);
-    const created = await generateRoundUpDrafts(getTenantId(req), grade, season, imp?.id ?? null);
+    const tenantId = getTenantId(req);
+    // Imports belong to the native club; a central-data club's round-up is read
+    // from the central scorecards and has no import to stamp.
+    const [imp] = (await tenantIsCentral(tenantId))
+      ? []
+      : await db
+          .select({ id: importsTable.id })
+          .from(importsTable)
+          .where(
+            sql`${importsTable.grade} = ${grade} AND ${importsTable.season} = ${season} AND ${importsTable.status} = 'committed'`,
+          )
+          .orderBy(desc(importsTable.importedAt))
+          .limit(1);
+    const created = await generateRoundUpDrafts(tenantId, grade, season, imp?.id ?? null);
     res.json(created);
   },
 );
@@ -602,6 +610,21 @@ router.post(
     const season: number | undefined =
       req.body?.season != null ? parseInt(String(req.body.season), 10) : undefined;
     const grade: string | undefined = req.body?.grade || undefined;
+
+    // The senior path reads the NATIVE match tables, which hold only tenant #1's
+    // matches (they carry no tenant column). Any other tenant drafting from them
+    // would get tenant #1's games under its own brand, so refuse; its past
+    // matches are drafted through /social-drafts/backfill-matches instead.
+    const hasTarget =
+      (Array.isArray(matchIds) && matchIds.length > 0) ||
+      (season != null && Number.isInteger(season));
+    if (!junior && hasTarget && tenantId !== NATIVE_STATS_TENANT_ID) {
+      res.status(409).json({
+        error:
+          "Senior match drafts for this club come from its own data: use POST /social-drafts/backfill-matches",
+      });
+      return;
+    }
 
     let ids: number[] = [];
 
@@ -644,6 +667,32 @@ router.post(
       : await generateMatchSummaryDrafts(tenantId, ids);
 
     res.json(result);
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Backfill: draft Match Result cards for the club's past matches, for every
+// club type. Same engine and source keys as the sweep (re-runs add nothing);
+// never touches the sweep watermark.
+// ---------------------------------------------------------------------------
+router.post(
+  "/social-drafts/backfill-matches",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const parsed = BackfillMatchDraftsBody.safeParse(req.body);
+    if (!parsed.success || !Number.isInteger(parsed.data.season)) {
+      res.status(400).json({ error: "season required; at most 60 matchIds" });
+      return;
+    }
+    const { season, grade, matchIds } = parsed.data;
+    res.json(
+      await backfillMatchDrafts(getTenantId(req), {
+        season,
+        grade,
+        matchIds: matchIds?.filter(Number.isInteger),
+      }),
+    );
   },
 );
 

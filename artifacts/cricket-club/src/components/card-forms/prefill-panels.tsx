@@ -21,9 +21,14 @@ import {
   getGetSocialClubSeasonTotalsQueryKey,
   useGetSocialWeekendWrapPrefill,
   getGetSocialWeekendWrapPrefillQueryKey,
+  useGetMilestonesBoard,
+  useListPremierships,
   type MatchSummary as MatchSummaryDto,
+  type MilestoneItem,
+  type Premiership,
   type Fixture,
 } from "@workspace/api-client-react";
+import { useClubGrades } from "@/hooks/use-club-grades";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -42,21 +47,10 @@ import {
   ladderRowsToState,
   clubSeasonTotalsToState,
   weekendWrapToState,
+  milestoneItemToState,
+  premiershipToState,
+  premiershipSeasonYear,
 } from "./prefill";
-
-/** Senior grade list shared by the prefill pickers. */
-export const GRADES = [
-  "A Grade",
-  "B Grade",
-  "C Grade",
-  "D Grade",
-  "E Grade",
-  "F Grade",
-  "Female A Grade",
-  "Female B Grade",
-  "PPL",
-  "Colts",
-];
 
 const selectClass =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
@@ -74,6 +68,8 @@ export function PrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
   const source = DESCRIPTORS[kind].prefill;
   if (source === "match") return <MatchPrefillPanel kind={kind} onApply={onApply} />;
   if (source === "fixture") return <FixturePrefillPanel kind={kind} onApply={onApply} />;
+  if (source === "milestone") return <MilestonePrefillPanel onApply={onApply} />;
+  if (source === "premiership") return <PremiershipPrefillPanel onApply={onApply} />;
   if (source === "stats") {
     if (kind === "ladder") return <LadderPrefillPanel onApply={onApply} />;
     if (kind === "clubLeaderboard") return <ClubTotalsPrefillPanel onApply={onApply} />;
@@ -85,13 +81,17 @@ export function PrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
 /* --------------------------------------------------------------- From match */
 
 function MatchPrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply }) {
-  const [grade, setGrade] = useState<string>(GRADES[0]);
+  // The club's own grades (central-backed for a central-data club), never a
+  // fixed list — a picker must not offer a grade the club doesn't play.
+  const { grades } = useClubGrades();
+  const [pickedGrade, setGrade] = useState<string>("");
+  const grade = pickedGrade || grades[0] || "";
   const [season, setSeason] = useState<number | null>(null);
   const [matchId, setMatchId] = useState<number | null>(null);
 
   const params = useMemo(() => ({ grade }), [grade]);
   const matchesQ = useListMatches(params, {
-    query: { queryKey: getListMatchesQueryKey(params) },
+    query: { enabled: grade !== "", queryKey: getListMatchesQueryKey(params) },
   });
   const matches = (matchesQ.data ?? []) as MatchSummaryDto[];
 
@@ -149,7 +149,7 @@ function MatchPrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply }
             setMatchId(null);
           }}
         >
-          {GRADES.map((g) => (
+          {grades.map((g) => (
             <option key={g} value={g}>
               {g}
             </option>
@@ -193,6 +193,7 @@ function MatchPrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply }
 /* ------------------------------------------------------------- From fixture */
 
 function FixturePrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply }) {
+  const { grades } = useClubGrades();
   const [grade, setGrade] = useState<string>("");
   const [fixtureId, setFixtureId] = useState<number | null>(null);
 
@@ -241,7 +242,7 @@ function FixturePrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
           }}
         >
           <option value="">All grades</option>
-          {GRADES.map((g) => (
+          {grades.map((g) => (
             <option key={g} value={g}>
               {g}
             </option>
@@ -273,7 +274,9 @@ function FixturePrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
 /* --------------------------------------------------------------- From stats */
 
 function LadderPrefillPanel({ onApply }: { onApply: Apply }) {
-  const [grade, setGrade] = useState<string>(GRADES[0]);
+  const { grades } = useClubGrades();
+  const [pickedGrade, setGrade] = useState<string>("");
+  const grade = pickedGrade || grades[0] || "";
   const [seasonYear, setSeasonYear] = useState<number>(defaultSeasonYear());
 
   const params = useMemo(() => ({ grade, season: seasonYear }), [grade, seasonYear]);
@@ -290,7 +293,7 @@ function LadderPrefillPanel({ onApply }: { onApply: Apply }) {
     <PrefillCard title="Prefill from the ladder" hint="Loads the current standings for the grade.">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <SelectField label="Grade" value={grade} onChange={setGrade}>
-          {GRADES.map((g) => (
+          {grades.map((g) => (
             <option key={g} value={g}>
               {g}
             </option>
@@ -364,6 +367,87 @@ function WeekendWrapPrefillPanel({ onApply }: { onApply: Apply }) {
         </div>
       </div>
       <ApplyButton onClick={apply} disabled={q.isFetching} loading={q.isFetching} />
+    </PrefillCard>
+  );
+}
+
+/* ------------------------------------------- From milestones / premierships */
+
+/** Career-tier crossings from the club's milestone feed (central-backed where the club is). */
+function MilestonePrefillPanel({ onApply }: { onApply: Apply }) {
+  const q = useGetMilestonesBoard();
+  const items = useMemo(
+    () => ((q.data?.items ?? []) as MilestoneItem[]).filter((i) => i.kind === "career"),
+    [q.data],
+  );
+  const [id, setId] = useState<string>("");
+  const selected = items.find((i) => i.id === id) ?? null;
+
+  const label = (i: MilestoneItem) =>
+    `${i.playerName} — ${i.label}${i.season != null ? ` (${seasonLabel(i.season)})` : ""}`;
+
+  return (
+    <PrefillCard
+      title="Prefill from a career milestone"
+      hint="Picks a career total a player has passed; the figures stay editable."
+    >
+      <SelectField label="Milestone" value={id} disabled={items.length === 0} onChange={setId}>
+        <option value="">
+          {q.isLoading
+            ? "Loading milestones…"
+            : items.length === 0
+              ? "No career milestones yet"
+              : "Select a milestone…"}
+        </option>
+        {items.map((i) => (
+          <option key={i.id} value={i.id}>
+            {label(i)}
+          </option>
+        ))}
+      </SelectField>
+      <ApplyButton
+        onClick={() => selected && onApply(milestoneItemToState(selected))}
+        disabled={!selected}
+      />
+    </PrefillCard>
+  );
+}
+
+/** One of the club's premierships (seeded from the association's records for a central-data club). */
+function PremiershipPrefillPanel({ onApply }: { onApply: Apply }) {
+  const q = useListPremierships();
+  const prems = (q.data ?? []) as Premiership[];
+  const [id, setId] = useState<number | null>(null);
+  const selected = prems.find((p) => p.id === id) ?? null;
+
+  return (
+    <PrefillCard
+      title="Prefill from a premiership"
+      hint="Fills the grade, season, competition and result; add a team photo below."
+    >
+      <SelectField
+        label="Premiership"
+        value={id == null ? "" : String(id)}
+        disabled={prems.length === 0}
+        onChange={(v) => setId(v ? Number(v) : null)}
+      >
+        <option value="">
+          {q.isLoading
+            ? "Loading premierships…"
+            : prems.length === 0
+              ? "No premierships yet"
+              : "Select a premiership…"}
+        </option>
+        {prems.map((p) => (
+          <option key={p.id} value={p.id}>
+            {`${seasonLabel(premiershipSeasonYear(p))} ${p.grade} — ${p.competition}`}
+          </option>
+        ))}
+      </SelectField>
+      <ApplyButton
+        onClick={() => selected && onApply(premiershipToState(selected))}
+        disabled={!selected}
+      />
     </PrefillCard>
   );
 }

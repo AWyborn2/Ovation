@@ -5386,6 +5386,32 @@ export interface RoundUpInput {
   season: number;
 }
 
+export interface BackfillMatchesInput {
+  /** Season start year (2024 = 2024/25). */
+  season: number;
+  /**
+     * Limit to one of the club's grades.
+     * @minLength 1
+     */
+  grade?: string;
+  /**
+     * Draft only these matches (must be the club's, in the season).
+     * @maxItems 60
+     */
+  matchIds?: number[];
+}
+
+export interface BackfillMatchesResult {
+  /** Matches drafted or skipped in this call (at most 60). */
+  considered: number;
+  /** New or refreshed drafts. A re-run over the same matches drafts 0. */
+  drafted: number;
+  skipped: number;
+  /** True when more matches matched than the per-call cap. */
+  capped: boolean;
+  errors: string[];
+}
+
 export interface TrackedLink {
   id: number;
   slug: string;

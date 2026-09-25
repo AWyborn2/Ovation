@@ -32,6 +32,8 @@ export * from './awardVotingConfigUpdate';
 export * from './awardWinner';
 export * from './awardWinnerInput';
 export * from './awardWinnerUpdate';
+export * from './backfillMatchesInput';
+export * from './backfillMatchesResult';
 export * from './backfillPlayerFigures';
 export * from './ballot';
 export * from './ballotInput';
