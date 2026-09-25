@@ -11,6 +11,11 @@ import {
 import { eq, and, inArray, lt, sql } from "drizzle-orm";
 import { BOARD_STAT_LABEL, type BoardKey } from "./milestone-detector";
 import { tenantIsCentral } from "./tenant";
+import {
+  loadCentralGradeSeason,
+  loadCentralRecapMilestones,
+  type MilestoneCardRow,
+} from "./roundup-central";
 import { upsertDraftByKey } from "./draft-upsert";
 import { premiershipSeasons } from "../routes/premierships";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
@@ -19,8 +24,12 @@ import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
 type SocialDraft = SocialDraftRow;
 
-type PerformerRow = {
-  playerId: number;
+/**
+ * `playerId` is the app player id, or null for a central participant with no
+ * `player_id_map` row (the card is still drafted, just without a player link).
+ */
+export type PerformerRow = {
+  playerId: number | null;
   runs: number;
   wickets: number;
   dismissals: number;
@@ -28,8 +37,8 @@ type PerformerRow = {
   givenName: string;
 };
 
-type InningsRow = {
-  playerId: number;
+export type InningsRow = {
+  playerId: number | null;
   surname: string;
   givenName: string;
   highScore: string | null;
@@ -95,6 +104,10 @@ const queryInningsRows = async (grade: string, season: number): Promise<InningsR
 
 const fullName = (s: { givenName: string; surname: string }) =>
   `${s.givenName} ${s.surname}`.trim();
+
+/** A player card's link; an unmapped central player links to the players list. */
+export const playerPath = (playerId: number | null): string =>
+  playerId == null ? "/players" : `/players/${playerId}`;
 
 const seasonLabel = (year: number) => `${year}/${String((year + 1) % 100).padStart(2, "0")}`;
 
@@ -193,24 +206,48 @@ const bestBowlingPerformance = (rows: InningsRow[]) =>
     .filter((x): x is { r: InningsRow; b: { wkts: number; runs: number } } => x.b != null)
     .sort((a, b) => b.b.wkts - a.b.wkts || a.b.runs - b.b.runs)[0];
 
-// Generates "top performer" drafts for a single (grade, season) by querying the
-// season-scoped snapshot table (player_grade_season_stats), so we never blend
-// historic totals into a single round/season call-out.
+//** Everything a round-up needs for one (grade, season), from either read path. */
+export type RoundUpData = {
+  performers: PerformerRow[];
+  innings: InningsRow[];
+  latestRound: number | null;
+};
+
+/**
+ * Where a (grade, season)'s figures come from. A central-data club reads its
+ * own club's scorecards from the central DB (senior grades only, private
+ * players omitted, ids crosswalked); every other tenant keeps the native
+ * season snapshot tables exactly as before.
+ */
+async function loadRoundUpData(
+  tenantId: number,
+  grade: string,
+  season: number,
+): Promise<RoundUpData> {
+  if (await tenantIsCentral(tenantId)) return loadCentralGradeSeason(tenantId, grade, season);
+  const performers = await queryPerformers(grade, { season });
+  const innings = await queryInningsRows(grade, season);
+  return { performers, innings, latestRound: await latestRound(grade, season) };
+}
+
+// Generates "top performer" drafts for a single (grade, season) from season-
+// scoped figures (the native player_grade_season_stats snapshot, or the central
+// scorecards for that season), so we never blend historic totals into a single
+// round/season call-out.
 export async function generateRoundUpDrafts(
   tenantId: number,
   grade: string,
   season: number,
   sourceImportId: number | null,
 ): Promise<SocialDraft[]> {
-  // Round-ups are computed from the native (Halls Head) stats tables. A central
-  // tenant has no native data of its own — generating here would celebrate the
-  // demo club's players under that tenant, so bail rather than leak.
-  if (await tenantIsCentral(tenantId)) return [];
-  const stats = await queryPerformers(grade, { season });
-  const innings = await queryInningsRows(grade, season);
+  const {
+    performers: stats,
+    innings,
+    latestRound: round,
+  } = await loadRoundUpData(tenantId, grade, season);
   const created: SocialDraft[] = [];
   const headline = `${grade} ${seasonLabel(season)} Round-up`;
-  const keyBase = `roundup:${season}:${grade}:${(await latestRound(grade, season)) ?? "none"}`;
+  const keyBase = `roundup:${season}:${grade}:${round ?? "none"}`;
 
   const topRuns = topBatting(stats);
   const topWkts = topBowling(stats);
@@ -225,7 +262,7 @@ export async function generateRoundUpDrafts(
         tenantId,
         "roundup",
         gradeLeaderCard(grade, "Runs", topRuns, topRuns.runs, headline),
-        `/players/${topRuns.playerId}`,
+        playerPath(topRuns.playerId),
         sourceImportId,
       ),
     );
@@ -236,7 +273,7 @@ export async function generateRoundUpDrafts(
         tenantId,
         "roundup",
         gradeLeaderCard(grade, "Wickets", topWkts, topWkts.wickets, headline),
-        `/players/${topWkts.playerId}`,
+        playerPath(topWkts.playerId),
         sourceImportId,
       ),
     );
@@ -253,7 +290,7 @@ export async function generateRoundUpDrafts(
           bestBowl.r.bestBowling ?? `${bestBowl.b.wkts}/${bestBowl.b.runs}`,
           headline,
         ),
-        `/players/${bestBowl.r.playerId}`,
+        playerPath(bestBowl.r.playerId),
         sourceImportId,
       ),
     );
@@ -270,7 +307,7 @@ export async function generateRoundUpDrafts(
           bestBat.r.highScore ?? String(bestBat.n),
           headline,
         ),
-        `/players/${bestBat.r.playerId}`,
+        playerPath(bestBat.r.playerId),
         sourceImportId,
       ),
     );
@@ -281,22 +318,20 @@ export async function generateRoundUpDrafts(
         tenantId,
         "roundup",
         gradeLeaderCard(grade, "Dismissals", topKeeper, topKeeper.dismissals, headline),
-        `/players/${topKeeper.playerId}`,
+        playerPath(topKeeper.playerId),
         sourceImportId,
       ),
     );
   return created;
 }
 
-// Milestones unlocked in a (grade, season): milestone_events don't carry a grade
-// directly, so we join through the import that produced them.
-async function generateMilestoneRecapCards(
+// Native milestones unlocked in a (grade, season): milestone_events don't carry
+// a grade directly, so we join through the import that produced them.
+async function loadNativeRecapMilestones(
   tenantId: number,
   grade: string,
   season: number,
-  headline: string,
-): Promise<SocialDraft[]> {
-  const keyBase = `recap:${season}:${grade}`;
+): Promise<MilestoneCardRow[]> {
   const rows = await db
     .select({
       playerId: milestoneEventsTable.playerId,
@@ -335,10 +370,34 @@ async function generateMilestoneRecapCards(
     for (const p of players) nameById.set(p.id, fullName(p));
   }
 
+  return rows.map((r) => ({
+    playerId: r.playerId,
+    playerName:
+      (r.payload as { name?: string } | null)?.name ?? nameById.get(r.playerId) ?? "Unknown",
+    tierLabel: r.tierLabel,
+    tierIndex: r.tierIndex,
+    milestoneLabel: BOARD_STAT_LABEL[r.boardKey as BoardKey] ?? r.boardKey,
+    value: r.value,
+    threshold: r.threshold,
+  }));
+}
+
+// Milestones unlocked in a (grade, season), from whichever read path the club
+// uses. One card per (player, tier), keyed identically on both paths.
+async function generateMilestoneRecapCards(
+  tenantId: number,
+  grade: string,
+  season: number,
+  headline: string,
+  central: boolean,
+): Promise<SocialDraft[]> {
+  const keyBase = `recap:${season}:${grade}`;
+  const rows = central
+    ? await loadCentralRecapMilestones(tenantId, grade, season)
+    : await loadNativeRecapMilestones(tenantId, grade, season);
+
   const created: SocialDraft[] = [];
   for (const r of rows) {
-    const name =
-      (r.payload as { name?: string } | null)?.name ?? nameById.get(r.playerId) ?? "Unknown";
     created.push(
       await insertCard(
         keyBase,
@@ -346,15 +405,15 @@ async function generateMilestoneRecapCards(
         "recap",
         {
           kind: "milestone",
-          playerName: name,
+          playerName: r.playerName,
           tierLabel: r.tierLabel,
           tierIndex: r.tierIndex,
-          milestoneLabel: BOARD_STAT_LABEL[r.boardKey as BoardKey] ?? r.boardKey,
+          milestoneLabel: r.milestoneLabel,
           currentValue: r.value,
           threshold: r.threshold,
           headline,
         },
-        `/players/${r.playerId}`,
+        playerPath(r.playerId),
         null,
       ),
     );
@@ -365,6 +424,8 @@ async function generateMilestoneRecapCards(
 // A premiership card, if the club won this grade in this season. `year` is the
 // calendar year of the win, so map it to its season start year the same way the
 // honour boards do (premiershipSeasons) rather than comparing it to `season`.
+// The premierships table is tenant-scoped curated content (a central club's is
+// seeded from central.premiers), so it reads the same way for every club.
 async function generatePremiershipRecapCards(
   tenantId: number,
   grade: string,
@@ -413,9 +474,10 @@ export async function generateRecapDrafts(
   grade: string,
   season: number,
 ): Promise<SocialDraft[]> {
-  // Native-derived (see generateRoundUpDrafts) — no recap for central tenants.
-  if (await tenantIsCentral(tenantId)) return [];
-  const stats = await queryPerformers(grade, { season });
+  const central = await tenantIsCentral(tenantId);
+  const stats = central
+    ? (await loadCentralGradeSeason(tenantId, grade, season)).performers
+    : await queryPerformers(grade, { season });
   const created: SocialDraft[] = [];
   const headline = `${grade} ${seasonLabel(season)} Season Recap`;
   const keyBase = `recap:${season}:${grade}`;
@@ -431,7 +493,7 @@ export async function generateRecapDrafts(
         tenantId,
         "recap",
         gradeLeaderCard(grade, "Champion Batsman", topRuns, topRuns.runs, headline),
-        `/players/${topRuns.playerId}`,
+        playerPath(topRuns.playerId),
         null,
       ),
     );
@@ -442,7 +504,7 @@ export async function generateRecapDrafts(
         tenantId,
         "recap",
         gradeLeaderCard(grade, "Champion Bowler", topWkts, topWkts.wickets, headline),
-        `/players/${topWkts.playerId}`,
+        playerPath(topWkts.playerId),
         null,
       ),
     );
@@ -453,12 +515,12 @@ export async function generateRecapDrafts(
         tenantId,
         "recap",
         gradeLeaderCard(grade, "Most Dismissals", topKeeper, topKeeper.dismissals, headline),
-        `/players/${topKeeper.playerId}`,
+        playerPath(topKeeper.playerId),
         null,
       ),
     );
 
-  created.push(...(await generateMilestoneRecapCards(tenantId, grade, season, headline)));
+  created.push(...(await generateMilestoneRecapCards(tenantId, grade, season, headline, central)));
   created.push(...(await generatePremiershipRecapCards(tenantId, grade, season, headline)));
 
   return created;
