@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { BackfillMatchesInputIncludeItem } from './backfillMatchesInputIncludeItem';
 
 export interface BackfillMatchesInput {
   /** Season start year (2024 = 2024/25). */
@@ -19,4 +20,13 @@ export interface BackfillMatchesInput {
      * @maxItems 60
      */
   matchIds?: number[];
+  /**
+     * What to draft. `results` = Match Result cards (the default when
+  omitted); `achievements` = centuries, five-fors, senior debuts and
+  career milestones from those matches (central-data clubs).
+
+     * @minItems 1
+     * @maxItems 2
+     */
+  include?: BackfillMatchesInputIncludeItem[];
 }

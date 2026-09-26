@@ -17433,6 +17433,9 @@ any club type. A central-data club drafts from its own central matches
 the same source keys as the automatic drafting sweep, so a re-run never
 duplicates a card, and it never moves the sweep's watermark. At most 60
 matches are drafted per call (newest first); `capped` says more matched.
+With `include: [results, achievements]` a central-data club also gets
+the centuries, five-fors, senior debuts and career milestones of those
+matches (the achievements family; senior grades and players only).
 
  * @summary Draft match-result cards for a club's past matches
  */

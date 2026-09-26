@@ -197,11 +197,14 @@ export function buildTradingCardData(
         : null,
     debutYear,
     careerSpan: player.seasonsPlayed ?? null,
+    // Chosen gallery image, else a library photo the player is tagged in
+    // (social assets lead with those), else the headshot, else the avatar.
     photoUrl:
       overrideImageUrl ??
+      player.libraryPhotoUrl ??
       player.imageUrl ??
       (isFemalePlayer(player, agg) ? avatarFemale : avatarMale),
-    usingFallback: !(overrideImageUrl ?? player.imageUrl),
+    usingFallback: !(overrideImageUrl ?? player.imageUrl ?? player.libraryPhotoUrl),
     stats: {
       matches: agg?.games ?? 0,
       runs,

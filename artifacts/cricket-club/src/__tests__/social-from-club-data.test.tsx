@@ -163,6 +163,54 @@ describe("queue: create from your club's data", () => {
     expect(await within(dialog).findByText(/2 match result cards drafted/i)).toBeInTheDocument();
   });
 
+  it("draft past matches: the achievements checkbox asks for centuries, five-fors, debuts and milestones", async () => {
+    const requests = stubApi(
+      queueRoutes([
+        {
+          method: "POST",
+          match: /\/api\/social-drafts\/backfill-matches$/,
+          reply: () => ({
+            considered: 3,
+            drafted: 3,
+            skipped: 0,
+            capped: false,
+            errors: [],
+            achievements: 4,
+          }),
+        },
+      ]),
+    );
+    renderAt(<AdminSocialQueue />, "/admin/social/queue");
+    fireEvent.click(await screen.findByRole("button", { name: /draft past matches/i }));
+    const dialog = await screen.findByRole("dialog");
+    const box = within(dialog).getByRole("checkbox", {
+      name: "Also draft centuries, five-fors, debuts and milestones",
+    });
+    // Off by default, so the dialog keeps drafting Match Result cards only.
+    expect(box).not.toBeChecked();
+    fireEvent.click(box);
+    expect(box).toBeChecked();
+
+    await waitFor(() =>
+      expect(within(dialog).getByRole("button", { name: /draft 3 matches/i })).toBeEnabled(),
+    );
+    fireEvent.click(within(dialog).getByRole("button", { name: /draft 3 matches/i }));
+    await waitFor(() =>
+      expect(
+        requests.find((r) => r.method === "POST" && /backfill-matches/.test(r.url))?.body,
+      ).toEqual({
+        season: 2024,
+        matchIds: [101, 102, 103],
+        include: ["results", "achievements"],
+      }),
+    );
+    expect(
+      await within(dialog).findByText(
+        /3 match result cards drafted\. 4 century, five-for, debut or milestone cards drafted/i,
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("draft past matches: a re-run reports nothing new", async () => {
     stubApi(
       queueRoutes([

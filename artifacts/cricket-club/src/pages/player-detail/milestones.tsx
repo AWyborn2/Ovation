@@ -7,12 +7,19 @@ import type {
   PlayerSeasonStat,
 } from "@workspace/api-client-react";
 import { ChartCard } from "@/components/stats-charts";
-import { careerFirsts, tierCrossings, type MilestoneTiers } from "@/lib/stats-analytics";
+import {
+  careerFirsts,
+  sortMatchesChronological,
+  tierCrossings,
+  type MilestoneTiers,
+} from "@/lib/stats-analytics";
+import { CricketCap } from "@/components/icons/cricket-cap";
 import { inStatsRange, seasonLabel, type StatsView } from "@/lib/use-stats-view";
 import { cn } from "@/lib/utils";
 
 export type MilestoneKind =
   | "debut"
+  | "aGradeDebut"
   | "firstFifty"
   | "firstHundred"
   | "firstFiveFor"
@@ -30,10 +37,13 @@ export interface MilestoneEvent {
   season: number | null;
   /** Major honours get a solid marker. */
   major: boolean;
+  /** A debut that was also the A Grade debut (the cap): shown with the cap icon. */
+  aGrade?: boolean;
 }
 
 const ICONS: Record<MilestoneKind, ComponentType<{ className?: string }>> = {
   debut: Flag,
+  aGradeDebut: CricketCap,
   firstFifty: Star,
   firstHundred: Flame,
   firstFiveFor: Target,
@@ -59,12 +69,23 @@ export function premiershipSeason(p: Pick<PlayerPremiership, "year" | "matchDate
   return p.year - 1;
 }
 
+/**
+ * "v Opponent", or the competition alone when the opponent field holds a
+ * competition label instead ("A Grade: Wyllie Cup" reads "Wyllie Cup").
+ */
+export function versus(opponent: string | null | undefined): string | null {
+  const o = opponent?.trim();
+  if (!o) return null;
+  const comp = /^[^:]*grade\s*:\s*(.+)$/i.exec(o);
+  return comp ? comp[1].trim() : `v ${o}`;
+}
+
 const where = (season: number | null, opponent: string | null, pre: boolean) =>
   pre
     ? "Before scorecards"
-    : [season != null ? seasonLabel(season) : null, opponent ? `v ${opponent}` : null]
-        .filter(Boolean)
-        .join(" · ");
+    : [season != null ? seasonLabel(season) : null, versus(opponent)].filter(Boolean).join(" · ");
+
+const isAGrade = (grade: string | null | undefined) => /^\s*a\s*grade\s*$/i.test(grade ?? "");
 
 /**
  * Every career moment, oldest first: debut / first 50 / first 100 / first
@@ -88,7 +109,34 @@ export function milestoneEvents({
   awards: ReadonlyArray<PlayerAward>;
 }): MilestoneEvent[] {
   const out: MilestoneEvent[] = [];
+  // The A Grade debut (when the cap was earned). Unknown when the player has
+  // A Grade games from before the scorecard era.
+  const aGradeBeforeScorecards = seasons.some(
+    (s) => s.season == null && isAGrade(s.grade) && (s.games ?? 0) > 0,
+  );
+  const firstAGrade = aGradeBeforeScorecards
+    ? null
+    : (sortMatchesChronological(matches).find((m) => isAGrade(m.grade)) ?? null);
+  const capLabel = capNumber != null ? `Cap ${capNumber}` : null;
+  let aGradePlaced = false;
+
   for (const f of careerFirsts(matches, seasons)) {
+    // Club debut and A Grade debut in the same game: one combined moment.
+    if (f.kind === "debut" && firstAGrade && f.matchId === firstAGrade.matchId) {
+      aGradePlaced = true;
+      out.push({
+        key: "first-debut",
+        kind: "debut",
+        title: capLabel ? `Debut · ${capLabel}` : "Debut",
+        sub: ["Club & A Grade debut", where(f.season, f.opponent, false)]
+          .filter(Boolean)
+          .join(" · "),
+        season: f.season,
+        major: true,
+        aGrade: true,
+      });
+      continue;
+    }
     const score =
       f.value != null && f.kind !== "debut"
         ? f.kind === "firstFiveFor"
@@ -104,7 +152,18 @@ export function milestoneEvents({
       major: false,
     });
   }
-  if (capNumber != null) {
+  if (firstAGrade && !aGradePlaced) {
+    // A later A Grade debut: its own moment, dated where the cap was earned.
+    out.push({
+      key: "a-grade-debut",
+      kind: "aGradeDebut",
+      title: capLabel ? `A Grade debut · ${capLabel}` : "A Grade debut",
+      sub: where(firstAGrade.season ?? null, firstAGrade.opponent ?? null, false),
+      season: firstAGrade.season ?? null,
+      major: true,
+    });
+  } else if (!firstAGrade && capNumber != null) {
+    // The A Grade debut isn't in the scorecards: an undated cap, as before.
     out.push({
       key: "cap",
       kind: "cap",
@@ -205,7 +264,7 @@ export function MilestoneTimeline({
             className="absolute left-0 right-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-gradient-to-r from-border to-primary"
           />
           {events.map((e, i) => {
-            const Icon = ICONS[e.kind];
+            const Icon = e.aGrade ? CricketCap : ICONS[e.kind];
             const inRange =
               e.season == null
                 ? view.from == null && view.to == null

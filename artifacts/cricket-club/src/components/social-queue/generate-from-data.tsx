@@ -3,7 +3,9 @@
  * central-data — can draft cards from its own history on demand:
  *   - a season recap or round-up for one of the club's grades and seasons;
  *   - Match Result cards for past matches ("Draft past matches"), which the
- *     automatic sweep never drafts because it only watches for new games.
+ *     automatic sweep never drafts because it only watches for new games —
+ *     optionally with those matches' centuries, five-fors, debuts and
+ *     milestones.
  * Grades come from the club's own grade list and seasons from its own matches,
  * so a picker never offers a grade the club doesn't play.
  */
@@ -14,6 +16,7 @@ import {
   useGenerateRoundUp,
   useGenerateRecaps,
   useBackfillMatchDrafts,
+  BackfillMatchesInputIncludeItem,
   type MatchSummary,
   type BackfillMatchesResult,
 } from "@workspace/api-client-react";
@@ -212,6 +215,8 @@ export function BackfillMatchesDialog({
     setPicked(new Set(matches.slice(0, BACKFILL_LIMIT).map((m) => m.id)));
   }, [matches]);
 
+  // Off by default: the dialog drafts Match Result cards unless asked for more.
+  const [withAchievements, setWithAchievements] = useState(false);
   const [result, setResult] = useState<BackfillMatchesResult | null>(null);
   const backfillM = useBackfillMatchDrafts({
     mutation: {
@@ -238,6 +243,14 @@ export function BackfillMatchesDialog({
         season: effectiveSeason,
         ...(grade ? { grade } : {}),
         matchIds: matches.filter((m) => picked.has(m.id)).map((m) => m.id),
+        ...(withAchievements
+          ? {
+              include: [
+                BackfillMatchesInputIncludeItem.results,
+                BackfillMatchesInputIncludeItem.achievements,
+              ],
+            }
+          : {}),
       },
     });
   };
@@ -345,11 +358,29 @@ export function BackfillMatchesDialog({
           )}
         </div>
 
+        <label className="flex cursor-pointer items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={withAchievements}
+            onChange={(e) => {
+              setWithAchievements(e.target.checked);
+              setResult(null);
+            }}
+          />
+          <span>Also draft centuries, five-fors, debuts and milestones</span>
+        </label>
+
         {result && (
           <p role="status" className="text-sm text-foreground">
             {result.drafted === 0
               ? "Nothing new to draft — those matches are already drafted, or Match Result cards are switched off."
               : `${plural(result.drafted, "match result card")} drafted.`}
+            {result.achievements != null
+              ? result.achievements === 0
+                ? " No new century, five-for, debut or milestone cards."
+                : ` ${plural(result.achievements, "century, five-for, debut or milestone card")} drafted.`
+              : ""}
             {result.capped ? ` Only the first ${BACKFILL_LIMIT} were drafted.` : ""}
           </p>
         )}

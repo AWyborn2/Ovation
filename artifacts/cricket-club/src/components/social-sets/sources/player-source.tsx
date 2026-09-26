@@ -31,7 +31,8 @@ export function PlayerSource({ onAdd }: { onAdd: (i: ShareCardInput) => void }) 
       playerName: `${p.givenName} ${p.surname}`.trim(),
       gradesPlayed: p.gradesPlayed,
       stats,
-      photoUrl: p.imageUrl,
+      // A library photo the player is tagged in first, then the headshot.
+      photoUrl: p.libraryPhotoUrl ?? p.imageUrl,
     };
   };
 

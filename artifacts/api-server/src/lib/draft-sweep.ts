@@ -19,6 +19,7 @@ import { tenantIsCentral, getTenantCentralClubId, NATIVE_STATS_TENANT_ID } from 
 import { loadAutoPost, persistDueDrafts } from "./effective-draft-state";
 import { notifyDraftsReady } from "./draft-notifications";
 import { fillMissingDraftPhotos } from "./draft-enrich";
+import { draftCentralAchievements } from "./central-achievements";
 
 type Logger = PostCommitLogger & {
   info: (obj: unknown, msg?: string) => void;
@@ -31,6 +32,7 @@ type Logger = PostCommitLogger & {
  * - `import` / `batch`: a native import just committed — the post-commit
  *   engines run against the tenant's own tables.
  * - `scheduled`: the periodic job. A central-data club drafts match summaries
+ *   and achievement cards (centuries, five-fors, debuts, career milestones)
  *   for central matches past its watermark; every club gets its match-day and
  *   team-list cards.
  * - `fixtures`: the fixtures projection just refreshed a tenant's schedule —
@@ -48,6 +50,8 @@ export type SweepScope =
 export type SweepSummary = {
   centralMatches: number;
   matchSummaries: number;
+  /** Century / five-for / debut / milestone cards drafted from central matches. */
+  achievements: number;
   matchDay: number;
   teamLists: number;
   /** Drafts moved to ready because their auto-post deadline passed. */
@@ -71,6 +75,7 @@ export async function runDraftSweep(
   const summary: SweepSummary = {
     centralMatches: 0,
     matchSummaries: 0,
+    achievements: 0,
     matchDay: 0,
     teamLists: 0,
     promoted: 0,
@@ -93,6 +98,7 @@ export async function runDraftSweep(
       const central = await sweepCentralMatches(tenantId, now, logger);
       summary.centralMatches = central.seen;
       summary.matchSummaries = central.drafted;
+      summary.achievements = central.achievements;
     } catch (err) {
       logger.error({ err, tenantId }, "central draft sweep failed");
     }
@@ -136,15 +142,16 @@ export async function runDraftSweep(
 }
 
 /**
- * Draft match summaries for a central-data club's matches past its watermark,
- * then advance the watermark. The first sweep only records the club's newest
- * match, so switching drafting on never floods the queue with history.
+ * Draft match summaries and achievement cards for a central-data club's matches
+ * past its watermark, then advance the watermark. The first sweep only records
+ * the club's newest match, so switching drafting on never floods the queue with
+ * history.
  */
 export async function sweepCentralMatches(
   tenantId: number,
   now: Date,
   logger: Logger,
-): Promise<{ seen: number; drafted: number }> {
+): Promise<{ seen: number; drafted: number; achievements: number }> {
   const { centralClubMaxMatchId, centralClubMatchesAfter } =
     await import("@workspace/db/central-queries");
   const settings = await ensureSettings(tenantId);
@@ -152,7 +159,7 @@ export async function sweepCentralMatches(
 
   if (settings.centralSweepWatermark == null) {
     await setWatermark(tenantId, await centralClubMaxMatchId(clubId));
-    return { seen: 0, drafted: 0 };
+    return { seen: 0, drafted: 0, achievements: 0 };
   }
 
   const { matches, lastSeenId } = await centralClubMatchesAfter(
@@ -160,7 +167,7 @@ export async function sweepCentralMatches(
     settings.centralSweepWatermark,
     CENTRAL_SWEEP_LIMIT,
   );
-  if (lastSeenId == null) return { seen: 0, drafted: 0 };
+  if (lastSeenId == null) return { seen: 0, drafted: 0, achievements: 0 };
 
   const recent = matches.filter((m) => {
     const t = m.matchDate ? Date.parse(m.matchDate) : NaN;
@@ -181,9 +188,24 @@ export async function sweepCentralMatches(
   if (result.errors.length > 0) {
     logger.warn({ tenantId, errors: result.errors }, "central match summary drafts had errors");
   }
+  // Centuries, five-fors, debuts and career milestones from the same matches
+  // (achievements family; the per-grade switches apply inside).
+  let achievements = 0;
+  try {
+    achievements = (
+      await draftCentralAchievements(
+        tenantId,
+        clubId,
+        recent.map((m) => m.matchId),
+        now,
+      )
+    ).drafted;
+  } catch (err) {
+    logger.error({ err, tenantId }, "central achievement drafts failed");
+  }
   await draftCentralRoundUps(tenantId, settings, recent, logger);
   await setWatermark(tenantId, lastSeenId);
-  return { seen: matches.length, drafted: result.drafted };
+  return { seen: matches.length, drafted: result.drafted, achievements };
 }
 
 /**
@@ -217,20 +239,28 @@ async function draftCentralRoundUps(
 /** Most past matches drafted by one backfill call. */
 export const BACKFILL_MATCH_LIMIT = 60;
 
+/** What a backfill drafts: Match Result cards, achievement cards, or both. */
+export type BackfillInclude = "results" | "achievements";
+
 export type BackfillMatchesInput = {
   /** Season start year (2024 = 2024/25). */
   season: number;
   grade?: string;
   /** Only these matches — still limited to the club's own senior matches in the season. */
   matchIds?: number[];
+  /** Default `["results"]`: Match Result cards only. */
+  include?: BackfillInclude[];
 };
 
 export type BackfillMatchesResult = {
   considered: number;
+  /** Match Result cards drafted (new or refreshed). */
   drafted: number;
   skipped: number;
   capped: boolean;
   errors: string[];
+  /** Achievement cards drafted, present when `include` asked for them. */
+  achievements?: number;
 };
 
 /**
@@ -245,6 +275,11 @@ export type BackfillMatchesResult = {
  * Drafting goes through the same engine and source keys as the sweep, so a
  * re-run refreshes nothing and adds nothing. The sweep watermark is never read
  * or moved.
+ *
+ * With `include: ["achievements"]` a central-data club also gets the
+ * centuries, five-fors, debuts and career milestones of those matches, exactly
+ * as the sweep drafts them. The native club's achievement cards come from its
+ * imports (they need the pre-import career snapshot), so it drafts none here.
  */
 export async function backfillMatchDrafts(
   tenantId: number,
@@ -260,6 +295,7 @@ export async function backfillMatchDrafts(
     };
   };
 
+  const include = new Set<BackfillInclude>(input.include?.length ? input.include : ["results"]);
   let ids: number[];
   let capped: boolean;
   let source: MatchSummarySource;
@@ -283,8 +319,17 @@ export async function backfillMatchDrafts(
     return { considered: 0, drafted: 0, skipped: 0, capped: false, errors: [] };
   }
 
-  const result = await generateMatchSummaryDrafts(tenantId, ids, source);
-  return { considered: ids.length, ...result, capped };
+  const result = include.has("results")
+    ? await generateMatchSummaryDrafts(tenantId, ids, source)
+    : { drafted: 0, skipped: 0, errors: [] as string[] };
+  const out: BackfillMatchesResult = { considered: ids.length, ...result, capped };
+  if (include.has("achievements")) {
+    out.achievements =
+      source.kind === "central"
+        ? (await draftCentralAchievements(tenantId, source.clubId, ids, now)).drafted
+        : 0;
+  }
+  return out;
 }
 
 async function setWatermark(tenantId: number, matchId: number): Promise<void> {

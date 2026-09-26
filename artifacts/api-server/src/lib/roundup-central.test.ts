@@ -130,7 +130,7 @@ describe("loadCentralRecapMilestones", () => {
 
     const rows = await loadCentralRecapMilestones(3, "A Grade", 2024);
 
-    expect(centralMilestones).toHaveBeenCalledWith(55, TIER_THRESHOLDS, { seniorOnly: true });
+    expect(centralMilestones).toHaveBeenCalledWith(55, TIER_THRESHOLDS);
     expect(rows).toEqual([
       {
         playerId: 101,

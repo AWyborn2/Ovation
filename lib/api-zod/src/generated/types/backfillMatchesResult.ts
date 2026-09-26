@@ -15,4 +15,7 @@ export interface BackfillMatchesResult {
   /** True when more matches matched than the per-call cap. */
   capped: boolean;
   errors: string[];
+  /** Achievement cards (centuries, five-fors, debuts, milestones) drafted, new or refreshed. Present only when `include` asked for achievements.
+   */
+  achievements?: number;
 }

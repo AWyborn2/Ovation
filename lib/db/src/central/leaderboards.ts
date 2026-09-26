@@ -9,7 +9,7 @@ import {
 } from "../central";
 import type { PlayerGradeStat } from "../schema";
 import { cacheKey, withCentralCache } from "./cache";
-import { getClubMatchRows } from "./club-matches";
+import { getClubMatchRows, seniorMatchRows } from "./club-matches";
 import { appGradeFromCentral, centralSeasonMatchesStartYear, parseSeasonStartYear } from "./grades";
 import { isPrivateRow } from "./privacy";
 import { battingInningsKindSql, round2, splitDisplayName, tallyFielding } from "./scoring";
@@ -286,7 +286,8 @@ async function centralLeadersImpl(
   metric: "runs" | "wickets",
   opts: { season?: number; appGrade?: string },
 ): Promise<{ participantId: string; displayName: string | null; value: number }[]> {
-  const matchRows = await getClubMatchRows(clubId);
+  // Senior matches only, even when no grade is asked for.
+  const matchRows = seniorMatchRows(await getClubMatchRows(clubId));
   const matchIds = matchRows
     .filter((m) => opts.season === undefined || parseSeasonStartYear(m.season) === opts.season)
     .filter((m) => opts.appGrade === undefined || appGradeFromCentral(m.grade) === opts.appGrade)
@@ -369,9 +370,9 @@ export interface CentralClubSeasonGradeLeaders {
  * season it returns the top run scorer and top wicket taker (name + value), so
  * the card can render its four rows for either category.
  *
- * Seniors-only by construction: junior grades never exist in central data and
- * `appGradeFromCentral` returns null for anything it can't map, so junior
- * grades are excluded from this senior prefill (R20).
+ * Seniors-only: central data does hold junior / pathway grades, but
+ * `appGradeFromCentral` returns null for them (and anything it can't map), so
+ * they are excluded from this senior prefill (R20).
  *
  * Fill-in exclusion (`playerId >= 90000`) is inherited from upstream: central
  * identifies players by PlayHQ GUID (no int fill-in sentinel exists), and the

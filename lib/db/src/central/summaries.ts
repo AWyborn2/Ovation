@@ -8,7 +8,7 @@ import {
   centralLadderTable,
 } from "../central";
 import { cacheKey, withCentralCache } from "./cache";
-import { getClubMatchRows, type CentralClubMatchRow } from "./club-matches";
+import { getClubMatchRows, seniorMatchRows, type CentralClubMatchRow } from "./club-matches";
 import { appGradeFromCentral, classifyCentralGrade, parseSeasonStartYear } from "./grades";
 import { centralPlayerCareers } from "./players";
 import { battingInningsKindSql } from "./scoring";
@@ -37,7 +37,8 @@ export async function listCentralGradesForClub(
 /** Distinct season start-years a club played, newest-first (for the season picker). */
 export async function centralClubSeasons(clubId: number): Promise<number[]> {
   return withCentralCache(cacheKey("centralClubSeasons", [clubId]), async () => {
-    const rows = await getClubMatchRows(clubId);
+    // Seasons with senior matches only; a junior-only season isn't offered.
+    const rows = seniorMatchRows(await getClubMatchRows(clubId));
     const set = new Set<number>();
     for (const r of rows) {
       const y = parseSeasonStartYear(r.season);
@@ -106,7 +107,8 @@ async function centralClubTotalsImpl(
   wickets: number;
   grades: number;
 }> {
-  const matchRows = preloadedMatchRows ?? (await getClubMatchRows(clubId));
+  // Senior totals only: junior matches never add players, games, runs or wickets.
+  const matchRows = seniorMatchRows(preloadedMatchRows ?? (await getClubMatchRows(clubId)));
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) {
     return { players: 0, games: 0, runs: 0, wickets: 0, grades: 0 };
@@ -493,7 +495,9 @@ async function centralDashboardImpl(clubId: number): Promise<CentralDashboard> {
   // reads (each used to re-issue the identical matches query) and this
   // function's own fielding fetch — 4 redundant round trips saved, and the
   // fielding read runs in parallel with the aggregates.
-  const matchRows = await getClubMatchRows(clubId);
+  // Senior matches only, so the fielding read (top fielder) never counts a
+  // junior catch either.
+  const matchRows = seniorMatchRows(await getClubMatchRows(clubId));
   const matchIds = matchRows.map((m) => m.matchId);
 
   const [totals, gradeSummaries, careers, fielding] = await Promise.all([

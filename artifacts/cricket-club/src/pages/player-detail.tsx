@@ -272,7 +272,9 @@ export default function PlayerDetail() {
         ? [{ label: "Premierships", value: player.premiershipsWon ?? 0 }]
         : []),
     ],
-    photoUrl: player.imageUrl,
+    // Social assets lead with a library photo the player is tagged in, then
+    // the headshot (the profile hero itself keeps the headshot first).
+    photoUrl: player.libraryPhotoUrl ?? player.imageUrl ?? null,
   };
 
   const adminPhotoControls = isAdmin ? (

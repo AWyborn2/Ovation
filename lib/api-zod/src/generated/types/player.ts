@@ -25,6 +25,11 @@ export interface Player {
   premiershipsCaptained?: number | null;
   /** @nullable */
   imageUrl?: string | null;
+  /**
+     * A photo-library photo tagged with this player (solo shots first, then newest). Social assets use it before the headshot.
+     * @nullable
+     */
+  libraryPhotoUrl?: string | null;
   /** @nullable */
   cardRole?: string | null;
   /** @nullable */

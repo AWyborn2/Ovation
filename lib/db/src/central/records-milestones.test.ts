@@ -1,8 +1,8 @@
 /**
- * centralMilestones — the `seniorOnly` career walk (juniors isolation for the
- * Social Studio season recap). Runs against a mocked centralDb: a player whose
- * junior runs would push them over a career tier must not cross it when only
- * senior matches count, while the default (board) behaviour is unchanged.
+ * centralMilestones — career totals are senior-only (juniors isolation), for
+ * the milestones board and the Social Studio alike. Runs against a mocked
+ * centralDb: a player whose junior runs would push them over a career tier
+ * must never cross it.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -73,19 +73,19 @@ beforeEach(() => {
   queuedSelects.length = 0;
 });
 
-describe("centralMilestones seniorOnly", () => {
+describe("centralMilestones senior-only career walk", () => {
   it("junior runs never push a player over a career tier", async () => {
     queueScenario();
-    const out = await centralMilestones(CLUB, TIERS, { seniorOnly: true });
+    const out = await centralMilestones(CLUB, TIERS);
     expect(out.filter((m) => m.kind === "career")).toEqual([]);
   });
 
-  it("the default walk (the milestones board) is unchanged", async () => {
+  it("senior runs alone still cross the tier", async () => {
     queueScenario();
-    // A different tiers object so the default call isn't served from cache.
-    const out = await centralMilestones(CLUB, { ...TIERS });
+    // A different tiers object so this call isn't served from cache.
+    const out = await centralMilestones(CLUB, { ...TIERS, runs: [300] });
     expect(out.filter((m) => m.kind === "career")).toEqual([
-      expect.objectContaining({ boardKey: "runs", threshold: 1000, value: 1000, matchId: 2 }),
+      expect.objectContaining({ boardKey: "runs", threshold: 300, value: 300, matchId: 2 }),
     ]);
   });
 });

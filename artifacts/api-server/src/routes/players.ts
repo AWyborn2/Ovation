@@ -37,7 +37,7 @@ import { requireAdmin } from "../middlewares/require-admin";
 import { recomputeAggregates } from "../lib/recompute";
 import { dataSource } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
-import { taggedPlayerPhotoUrl } from "../lib/club-photo-library";
+import { taggedPlayerPhotoUrl, withLibraryPhotos } from "../lib/club-photo-library";
 import { splitCentralName, getPlayerOrderCol, centralParticipantFor } from "../lib/player-helpers";
 import { classifyDismissal } from "../lib/dismissal-parse";
 import { oversToBalls } from "@workspace/scorecard";
@@ -130,7 +130,7 @@ router.get("/players", async (req, res): Promise<void> => {
     });
 
     res.json({
-      players: rows.slice(offset, offset + lim),
+      players: await withLibraryPhotos(getTenantId(req), rows.slice(offset, offset + lim)),
       total: rows.length,
       page: Number(page),
       limit: lim,
@@ -176,7 +176,7 @@ router.get("/players", async (req, res): Promise<void> => {
     ]);
 
     res.json({
-      players,
+      players: await withLibraryPhotos(getTenantId(req), players),
       total: Number(totalResult[0]?.count ?? 0),
       page: Number(page),
       limit: lim,
@@ -193,7 +193,7 @@ router.get("/players", async (req, res): Promise<void> => {
   ]);
 
   res.json({
-    players,
+    players: await withLibraryPhotos(getTenantId(req), players),
     total: Number(totalResult[0]?.count ?? 0),
     page: Number(page),
     limit: lim,
@@ -413,10 +413,9 @@ router.get("/players/:id", async (req, res): Promise<void> => {
 
   res.json({
     ...playerRow,
-    // Only looked up when there is no headshot to show.
-    libraryPhotoUrl: playerRow.imageUrl
-      ? null
-      : await taggedPlayerPhotoUrl(getTenantId(req), params.data.id),
+    // Always returned: social assets lead with it; the profile hero only
+    // falls back to it when there is no headshot.
+    libraryPhotoUrl: await taggedPlayerPhotoUrl(getTenantId(req), params.data.id),
     premiershipsWon: premRows.length,
     premiershipsCaptained: premRows.filter((r) => r.isCaptain).length,
     debutSeason,

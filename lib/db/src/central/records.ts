@@ -111,10 +111,8 @@ async function centralClubRecordsImpl(
   // read is cold + cached. The fetches below are already minimal-column;
   // fielding is additionally grouped to counts per (participant, kind) so the
   // catch regex runs per distinct kind instead of per row.
-  // A filtered read also drops junior-graded matches; the unfiltered read keeps
-  // its original match set so `/records` without params is unchanged.
-  const allMatchRows = await getClubMatchRows(clubId);
-  const matchRows = filter ? filterSeniorMatchRows(allMatchRows, filter) : allMatchRows;
+  // Senior matches only, filtered or not: a junior score is never a club record.
+  const matchRows = filterSeniorMatchRows(await getClubMatchRows(clubId), filter);
   const empty: CentralClubRecords = {
     mostGames: null,
     mostRuns: null,
@@ -449,19 +447,6 @@ const DEFAULT_CAREER_TIERS = {
 // client-side "Dismissals Club" bands on the honour-boards page (10/25/50/75/100).
 const DEFAULT_DISMISSALS_TIERS = [10, 25, 50, 75, 100];
 
-/** Options for {@link centralMilestones}. */
-export interface CentralMilestonesOptions {
-  /**
-   * Count only senior-grade matches (grades the classifier maps to an app
-   * grade) towards the career running totals, so junior / pathway runs,
-   * wickets, games and dismissals can never push a player over a tier
-   * (juniors isolation). Used by the Social Studio season recap. Default false
-   * keeps the milestones board's existing behaviour, where only the EMITTING
-   * match must be senior.
-   */
-  seniorOnly?: boolean;
-}
-
 export async function centralMilestones(
   clubId: number,
   tiers: {
@@ -470,14 +455,12 @@ export async function centralMilestones(
     wickets: number[];
     dismissals?: number[];
   } = DEFAULT_CAREER_TIERS,
-  opts: CentralMilestonesOptions = {},
 ): Promise<CentralMilestone[]> {
-  const seniorOnly = opts.seniorOnly === true;
-  // The default call keeps its original cache key.
-  const key = seniorOnly
-    ? cacheKey("centralMilestones", [clubId, tiers, "seniorOnly"])
-    : cacheKey("centralMilestones", [clubId, tiers]);
-  return withCentralCache(key, () => centralMilestonesImpl(clubId, tiers, seniorOnly));
+  // Career totals are senior-only (juniors isolation): junior and senior
+  // stats are never combined. "seniorOnly" in the key retires any cache entry
+  // from the old walk, which counted junior matches.
+  const key = cacheKey("centralMilestones", [clubId, tiers, "seniorOnly"]);
+  return withCentralCache(key, () => centralMilestonesImpl(clubId, tiers));
 }
 
 async function centralMilestonesImpl(
@@ -488,7 +471,6 @@ async function centralMilestonesImpl(
     wickets: number[];
     dismissals?: number[];
   },
-  seniorOnly: boolean,
 ): Promise<CentralMilestone[]> {
   // Deliberately still JS-aggregated: career tier-crossings need each player's
   // full per-match running totals walked in chronological order against
@@ -707,7 +689,7 @@ async function centralMilestonesImpl(
       const meta = metaOf.get(mId);
       // Senior-only totals: a junior / pathway / unmapped match contributes
       // nothing, so it can neither count towards nor trigger a crossing.
-      if (seniorOnly && !meta?.grade) continue;
+      if (!meta?.grade) continue;
       const contrib = {
         games: acc.matches.has(mId) ? 1 : 0,
         runs: acc.runsByMatch.get(mId) ?? 0,

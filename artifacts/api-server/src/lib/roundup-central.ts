@@ -37,13 +37,15 @@ export type MilestoneCardRow = {
   threshold: number;
 };
 
-type Identity = {
+export type CentralIdentity = {
   playerIdFor: (participantId: string) => number | null;
+  /** True when this tenant's crosswalk maps the GUID to a fill-in id. */
+  isFillIn: (participantId: string) => boolean;
   nameFor: (participantId: string, displayName: string | null) => string;
 };
 
 /** The tenant's GUID → app id crosswalk plus its display-name overrides. */
-async function loadIdentity(tenantId: number): Promise<Identity> {
+export async function loadCentralIdentity(tenantId: number): Promise<CentralIdentity> {
   const [mapRows, curation] = await Promise.all([
     db
       .select({
@@ -60,6 +62,7 @@ async function loadIdentity(tenantId: number): Promise<Identity> {
       const id = intByGuid.get(participantId);
       return id != null && id > 0 && id < FILL_IN_THRESHOLD ? id : null;
     },
+    isFillIn: (participantId) => (intByGuid.get(participantId) ?? 0) >= FILL_IN_THRESHOLD,
     nameFor: (participantId, displayName) =>
       curation.nameByGuid.get(participantId) ?? displayName ?? "Unknown",
   };
@@ -85,7 +88,7 @@ export async function loadCentralGradeSeason(
   const clubId = await getTenantCentralClubId(tenantId);
   const [raw, identity] = await Promise.all([
     centralGradeSeasonSocial(clubId, grade, season),
-    loadIdentity(tenantId),
+    loadCentralIdentity(tenantId),
   ]);
 
   const byName = <T extends { participantId: string; displayName: string | null }>(
@@ -126,13 +129,13 @@ export async function loadCentralRecapMilestones(
   const { centralMilestones } = await import("@workspace/db/central-queries");
   const clubId = await getTenantCentralClubId(tenantId);
   const [raw, identity] = await Promise.all([
-    centralMilestones(clubId, TIER_THRESHOLDS, { seniorOnly: true }),
-    loadIdentity(tenantId),
+    centralMilestones(clubId, TIER_THRESHOLDS),
+    loadCentralIdentity(tenantId),
   ]);
 
   const out: MilestoneCardRow[] = [];
   for (const m of raw) {
-    // seniorOnly: junior / pathway matches add nothing to the running totals,
+    // Senior-only: junior / pathway matches add nothing to the running totals,
     // and private players and junior-grade crossings are already omitted.
     if (m.kind !== "career" || m.grade !== grade || m.season !== season) continue;
     const key = (m.boardKey ?? "games") as BoardKey;

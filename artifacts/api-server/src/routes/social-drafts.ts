@@ -685,12 +685,13 @@ router.post(
       res.status(400).json({ error: "season required; at most 60 matchIds" });
       return;
     }
-    const { season, grade, matchIds } = parsed.data;
+    const { season, grade, matchIds, include } = parsed.data;
     res.json(
       await backfillMatchDrafts(getTenantId(req), {
         season,
         grade,
         matchIds: matchIds?.filter(Number.isInteger),
+        include,
       }),
     );
   },
