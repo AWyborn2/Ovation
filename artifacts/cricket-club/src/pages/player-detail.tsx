@@ -272,7 +272,8 @@ export default function PlayerDetail() {
         ? [{ label: "Premierships", value: player.premiershipsWon ?? 0 }]
         : []),
     ],
-    photoUrl: player.imageUrl,
+    // The headshot, else a library photo the player is tagged in (as the hero shows).
+    photoUrl: player.imageUrl ?? player.libraryPhotoUrl ?? null,
   };
 
   const adminPhotoControls = isAdmin ? (
