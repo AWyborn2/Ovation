@@ -11,6 +11,8 @@ export type DraftSweepResponseResultsItem = {
   ok: boolean;
   centralMatches: number;
   matchSummaries: number;
+  /** Century / five-for / debut / milestone cards drafted from central matches. */
+  achievements?: number;
   matchDay: number;
   teamLists: number;
   /** Drafts moved to ready because their auto-post deadline passed. */

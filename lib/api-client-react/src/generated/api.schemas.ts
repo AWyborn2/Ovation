@@ -4112,6 +4112,8 @@ export type DraftSweepResponseResultsItem = {
   ok: boolean;
   centralMatches: number;
   matchSummaries: number;
+  /** Century / five-for / debut / milestone cards drafted from central matches. */
+  achievements?: number;
   matchDay: number;
   teamLists: number;
   /** Drafts moved to ready because their auto-post deadline passed. */
@@ -5386,6 +5388,14 @@ export interface RoundUpInput {
   season: number;
 }
 
+export type BackfillMatchesInputIncludeItem = typeof BackfillMatchesInputIncludeItem[keyof typeof BackfillMatchesInputIncludeItem];
+
+
+export const BackfillMatchesInputIncludeItem = {
+  results: 'results',
+  achievements: 'achievements',
+} as const;
+
 export interface BackfillMatchesInput {
   /** Season start year (2024 = 2024/25). */
   season: number;
@@ -5399,6 +5409,15 @@ export interface BackfillMatchesInput {
      * @maxItems 60
      */
   matchIds?: number[];
+  /**
+     * What to draft. `results` = Match Result cards (the default when
+  omitted); `achievements` = centuries, five-fors, senior debuts and
+  career milestones from those matches (central-data clubs).
+
+     * @minItems 1
+     * @maxItems 2
+     */
+  include?: BackfillMatchesInputIncludeItem[];
 }
 
 export interface BackfillMatchesResult {
@@ -5410,6 +5429,9 @@ export interface BackfillMatchesResult {
   /** True when more matches matched than the per-call cap. */
   capped: boolean;
   errors: string[];
+  /** Achievement cards (centuries, five-fors, debuts, milestones) drafted, new or refreshed. Present only when `include` asked for achievements.
+   */
+  achievements?: number;
 }
 
 export interface TrackedLink {
