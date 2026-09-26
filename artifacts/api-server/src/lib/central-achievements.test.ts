@@ -7,6 +7,7 @@
  * dismissed card is never drafted again.
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import type * as DraftUpsertModule from "./draft-upsert";
 
 const h = vi.hoisted(() => {
   type Row = Record<string, unknown>;
@@ -73,7 +74,7 @@ vi.mock("./roundup", () => ({
   playerPath: (id: number | null) => (id == null ? "/players" : `/players/${id}`),
 }));
 vi.mock("./draft-upsert", async () => {
-  const actual = await vi.importActual<typeof import("./draft-upsert")>("./draft-upsert");
+  const actual = await vi.importActual<typeof DraftUpsertModule>("./draft-upsert");
   return {
     draftKeys: actual.draftKeys,
     findDraftByKey: h.findDraftByKey,
