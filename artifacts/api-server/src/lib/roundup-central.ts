@@ -129,13 +129,13 @@ export async function loadCentralRecapMilestones(
   const { centralMilestones } = await import("@workspace/db/central-queries");
   const clubId = await getTenantCentralClubId(tenantId);
   const [raw, identity] = await Promise.all([
-    centralMilestones(clubId, TIER_THRESHOLDS, { seniorOnly: true }),
+    centralMilestones(clubId, TIER_THRESHOLDS),
     loadCentralIdentity(tenantId),
   ]);
 
   const out: MilestoneCardRow[] = [];
   for (const m of raw) {
-    // seniorOnly: junior / pathway matches add nothing to the running totals,
+    // Senior-only: junior / pathway matches add nothing to the running totals,
     // and private players and junior-grade crossings are already omitted.
     if (m.kind !== "career" || m.grade !== grade || m.season !== season) continue;
     const key = (m.boardKey ?? "games") as BoardKey;
