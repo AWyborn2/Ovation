@@ -49,6 +49,15 @@ export async function getClubMatchRows(clubId: number): Promise<CentralClubMatch
   );
 }
 
+/**
+ * Only the senior matches (juniors isolation): junior / pathway / unmapped
+ * grades are dropped, so they never count towards a senior total. Junior and
+ * senior stats are never combined.
+ */
+export function seniorMatchRows<T extends { grade: string | null }>(rows: T[]): T[] {
+  return rows.filter((m) => appGradeFromCentral(m.grade) !== null);
+}
+
 // ---------------------------------------------------------------------------
 // Drafting-sweep reads (Social Studio, KTD10). Deliberately UNCACHED: the sweep
 // compares against a per-tenant watermark, and a cached read would hide a
