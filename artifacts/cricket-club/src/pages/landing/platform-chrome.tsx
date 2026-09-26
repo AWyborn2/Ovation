@@ -39,8 +39,16 @@ export function PlatformHeader({ showDirectory = true }: { showDirectory?: boole
 export function PlatformFooter() {
   return (
     <footer className="border-t">
-      <div className="mx-auto max-w-[1280px] px-[var(--pad)] py-8 text-sm text-muted-foreground">
-        © {new Date().getFullYear()} Ovation. A white-label cricket stats platform.
+      <div className="mx-auto flex max-w-[1280px] flex-wrap items-center justify-between gap-3 px-[var(--pad)] py-8 text-sm text-muted-foreground">
+        <span>© {new Date().getFullYear()} Ovation. A white-label cricket stats platform.</span>
+        <nav aria-label="Legal" className="flex gap-4">
+          <Link href="/privacy" className="hover:text-foreground">
+            Privacy
+          </Link>
+          <Link href="/terms" className="hover:text-foreground">
+            Terms
+          </Link>
+        </nav>
       </div>
     </footer>
   );
