@@ -250,16 +250,23 @@ export async function draftsWithKeyPrefix(
     );
 }
 
+/**
+ * Who a player card is about, in a source key: the app player id, or — for a
+ * central-data player with no crosswalk row — an opaque token for their
+ * participant GUID (`centralPlayerKey`), so the card still dedupes.
+ */
+export type PlayerKeyRef = number | string;
+
 /** Stable key builders, one per engine. */
 export const draftKeys = {
   matchSummary: (matchId: number, junior: boolean) =>
     `matchSummary:${junior ? "junior" : "senior"}:${matchId}`,
   centralMatchSummary: (centralMatchId: number) => `matchSummary:central:${centralMatchId}`,
-  careerMilestone: (playerId: number, boardKey: string, tierIndex: number) =>
+  careerMilestone: (playerId: PlayerKeyRef, boardKey: string, tierIndex: number) =>
     `milestone:${playerId}:${boardKey}:${tierIndex}`,
   matchFeat: (
     boardKey: "century" | "fiveFor",
-    playerId: number,
+    playerId: PlayerKeyRef,
     grade: string,
     season: number,
     round: number | null,
@@ -270,7 +277,7 @@ export const draftKeys = {
     season: number,
     round: number | null,
   ) => `feat:${boardKey}:${grade}:${season}:${round ?? "none"}:`,
-  debut: (playerId: number, grade: string) => `debut:${grade}:${playerId}`,
+  debut: (playerId: PlayerKeyRef, grade: string) => `debut:${grade}:${playerId}`,
   roundUp: (season: number, grade: string, round: number | null, category: string) =>
     `roundup:${season}:${grade}:${round ?? "none"}:${category}`,
   recap: (season: number, grade: string, category: string) =>

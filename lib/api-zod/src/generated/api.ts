@@ -6743,6 +6743,7 @@ export const RunDraftSweepResponse = zod.object({
   "ok": zod.boolean(),
   "centralMatches": zod.number(),
   "matchSummaries": zod.number(),
+  "achievements": zod.number().optional().describe('Century \/ five-for \/ debut \/ milestone cards drafted from central matches.'),
   "matchDay": zod.number(),
   "teamLists": zod.number(),
   "promoted": zod.number().optional().describe('Drafts moved to ready because their auto-post deadline passed.')
@@ -7452,18 +7453,24 @@ any club type. A central-data club drafts from its own central matches
 the same source keys as the automatic drafting sweep, so a re-run never
 duplicates a card, and it never moves the sweep's watermark. At most 60
 matches are drafted per call (newest first); `capped` says more matched.
+With `include: [results, achievements]` a central-data club also gets
+the centuries, five-fors, senior debuts and career milestones of those
+matches (the achievements family; senior grades and players only).
 
  * @summary Draft match-result cards for a club's past matches
  */
 
 export const backfillMatchDraftsBodyMatchIdsMax = 60;
 
+export const backfillMatchDraftsBodyIncludeMax = 2;
+
 
 
 export const BackfillMatchDraftsBody = zod.object({
   "season": zod.number().describe('Season start year (2024 = 2024\/25).'),
   "grade": zod.string().min(1).optional().describe('Limit to one of the club\'s grades.'),
-  "matchIds": zod.array(zod.number()).max(backfillMatchDraftsBodyMatchIdsMax).optional().describe('Draft only these matches (must be the club\'s, in the season).')
+  "matchIds": zod.array(zod.number()).max(backfillMatchDraftsBodyMatchIdsMax).optional().describe('Draft only these matches (must be the club\'s, in the season).'),
+  "include": zod.array(zod.enum(['results', 'achievements'])).min(1).max(backfillMatchDraftsBodyIncludeMax).optional().describe('What to draft. `results` = Match Result cards (the default when\nomitted); `achievements` = centuries, five-fors, senior debuts and\ncareer milestones from those matches (central-data clubs).\n')
 })
 
 export const BackfillMatchDraftsResponse = zod.object({
@@ -7471,7 +7478,8 @@ export const BackfillMatchDraftsResponse = zod.object({
   "drafted": zod.number().describe('New or refreshed drafts. A re-run over the same matches drafts 0.'),
   "skipped": zod.number(),
   "capped": zod.boolean().describe('True when more matches matched than the per-call cap.'),
-  "errors": zod.array(zod.string())
+  "errors": zod.array(zod.string()),
+  "achievements": zod.number().optional().describe('Achievement cards (centuries, five-fors, debuts, milestones) drafted, new or refreshed. Present only when `include` asked for achievements.\n')
 })
 
 

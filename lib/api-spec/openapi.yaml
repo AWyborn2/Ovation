@@ -5104,6 +5104,9 @@ paths:
         the same source keys as the automatic drafting sweep, so a re-run never
         duplicates a card, and it never moves the sweep's watermark. At most 60
         matches are drafted per call (newest first); `capped` says more matched.
+        With `include: [results, achievements]` a central-data club also gets
+        the centuries, five-fors, senior debuts and career milestones of those
+        matches (the achievements family; senior grades and players only).
       operationId: backfillMatchDrafts
       tags: [social-drafts]
       requestBody:
@@ -12236,6 +12239,9 @@ components:
                 type: integer
               matchSummaries:
                 type: integer
+              achievements:
+                type: integer
+                description: "Century / five-for / debut / milestone cards drafted from central matches."
               matchDay:
                 type: integer
               teamLists:
@@ -14067,6 +14073,17 @@ components:
           maxItems: 60
           items: { type: integer }
           description: Draft only these matches (must be the club's, in the season).
+        include:
+          type: array
+          minItems: 1
+          maxItems: 2
+          items:
+            type: string
+            enum: [results, achievements]
+          description: |
+            What to draft. `results` = Match Result cards (the default when
+            omitted); `achievements` = centuries, five-fors, senior debuts and
+            career milestones from those matches (central-data clubs).
 
     BackfillMatchesResult:
       type: object
@@ -14086,6 +14103,11 @@ components:
         errors:
           type: array
           items: { type: string }
+        achievements:
+          type: integer
+          description: >
+            Achievement cards (centuries, five-fors, debuts, milestones) drafted,
+            new or refreshed. Present only when `include` asked for achievements.
 
     TrackedLink:
       type: object
