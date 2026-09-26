@@ -54,6 +54,7 @@ export const ListPlayersResponse = zod.object({
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
   "imageUrl": zod.string().nullish(),
+  "libraryPhotoUrl": zod.string().nullish().describe('A photo-library photo tagged with this player (solo shots first, then newest). Social assets use it before the headshot.'),
   "cardRole": zod.string().nullish(),
   "cardRating": zod.number().nullish()
 })),
@@ -138,7 +139,7 @@ export const GetPlayerResponse = zod.object({
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
   "imageUrl": zod.string().nullish(),
-  "libraryPhotoUrl": zod.string().nullish().describe('A photo-library photo tagged with this player (solo shots first, then newest); the profile shows it when there is no headshot.'),
+  "libraryPhotoUrl": zod.string().nullish().describe('A photo-library photo tagged with this player (solo shots first, then newest). Social assets use it first; the profile shows it when there is no headshot.'),
   "cardRole": zod.string().nullish(),
   "cardRating": zod.number().nullish(),
   "debutSeason": zod.number().nullish().describe('Inferred club debut season (start year, e.g. 2019 for 2019\/20), derived from the match-data era. Only set for players whose entire record sits in the reliable scorecard era (zero pre-scorecard baseline games); null when the career predates reliable match data.'),
@@ -214,6 +215,7 @@ export const UpdatePlayerResponse = zod.object({
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
   "imageUrl": zod.string().nullish(),
+  "libraryPhotoUrl": zod.string().nullish().describe('A photo-library photo tagged with this player (solo shots first, then newest). Social assets use it before the headshot.'),
   "cardRole": zod.string().nullish(),
   "cardRating": zod.number().nullish()
 })
@@ -1164,6 +1166,7 @@ export const GetDashboardResponse = zod.object({
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
   "imageUrl": zod.string().nullish(),
+  "libraryPhotoUrl": zod.string().nullish().describe('A photo-library photo tagged with this player (solo shots first, then newest). Social assets use it before the headshot.'),
   "cardRole": zod.string().nullish(),
   "cardRating": zod.number().nullish()
 }),
@@ -1179,6 +1182,7 @@ export const GetDashboardResponse = zod.object({
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
   "imageUrl": zod.string().nullish(),
+  "libraryPhotoUrl": zod.string().nullish().describe('A photo-library photo tagged with this player (solo shots first, then newest). Social assets use it before the headshot.'),
   "cardRole": zod.string().nullish(),
   "cardRating": zod.number().nullish()
 }),
@@ -1194,6 +1198,7 @@ export const GetDashboardResponse = zod.object({
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
   "imageUrl": zod.string().nullish(),
+  "libraryPhotoUrl": zod.string().nullish().describe('A photo-library photo tagged with this player (solo shots first, then newest). Social assets use it before the headshot.'),
   "cardRole": zod.string().nullish(),
   "cardRating": zod.number().nullish()
 }),
@@ -2232,6 +2237,7 @@ export const MergePlayerResponse = zod.object({
   "premiershipsWon": zod.number().nullish(),
   "premiershipsCaptained": zod.number().nullish(),
   "imageUrl": zod.string().nullish(),
+  "libraryPhotoUrl": zod.string().nullish().describe('A photo-library photo tagged with this player (solo shots first, then newest). Social assets use it before the headshot.'),
   "cardRole": zod.string().nullish(),
   "cardRating": zod.number().nullish()
 })

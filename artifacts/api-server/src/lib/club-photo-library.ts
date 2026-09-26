@@ -96,6 +96,49 @@ export async function presentPhotos(tenantId: number, rows: ClubPhotoRow[]): Pro
  * solo shots first (fewest players tagged), then the newest. Library photos
  * are senior-only, so a junior or fill-in never matches. Null when untagged.
  */
+/**
+ * The tagged library photo for each of `playerIds` (same choice as
+ * {@link taggedPlayerPhotoUrl}: solo shots first, then newest), in one query.
+ * Players with no tagged photo, and fill-ins, are absent from the map.
+ */
+export async function taggedPlayerPhotoUrls(
+  tenantId: number,
+  playerIds: number[],
+): Promise<Map<number, string>> {
+  const ids = [...new Set(playerIds.filter((id) => id > 0 && !isFillInPlayerId(id)))];
+  const out = new Map<number, string>();
+  if (ids.length === 0) return out;
+  const rows = await db.execute<{ player_id: number; object_path: string }>(sql`
+    SELECT DISTINCT ON (t.player_id) t.player_id, p.object_path
+    FROM ${clubPhotoPlayersTable} t
+    JOIN ${clubPhotosTable} p ON p.id = t.photo_id
+    WHERE t.tenant_id = ${tenantId}
+      AND p.tenant_id = ${tenantId}
+      AND t.player_id IN (${sql.join(
+        ids.map((id) => sql`${id}`),
+        sql`, `,
+      )})
+    ORDER BY t.player_id,
+      (SELECT count(*) FROM ${clubPhotoPlayersTable} t2 WHERE t2.photo_id = p.id) ASC,
+      coalesce(p.taken_at, p.created_at) DESC,
+      p.id DESC
+  `);
+  for (const r of rows.rows) out.set(Number(r.player_id), objectUrl(r.object_path));
+  return out;
+}
+
+/** Attach each player's tagged library photo (`libraryPhotoUrl`) to a list page. */
+export async function withLibraryPhotos<T extends { id: number }>(
+  tenantId: number,
+  players: T[],
+): Promise<(T & { libraryPhotoUrl: string | null })[]> {
+  const urls = await taggedPlayerPhotoUrls(
+    tenantId,
+    players.map((p) => p.id),
+  );
+  return players.map((p) => ({ ...p, libraryPhotoUrl: urls.get(p.id) ?? null }));
+}
+
 export async function taggedPlayerPhotoUrl(
   tenantId: number,
   playerId: number,

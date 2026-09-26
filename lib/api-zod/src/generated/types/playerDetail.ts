@@ -23,7 +23,7 @@ export interface PlayerDetail {
   /** @nullable */
   imageUrl?: string | null;
   /**
-     * A photo-library photo tagged with this player (solo shots first, then newest); the profile shows it when there is no headshot.
+     * A photo-library photo tagged with this player (solo shots first, then newest). Social assets use it first; the profile shows it when there is no headshot.
      * @nullable
      */
   libraryPhotoUrl?: string | null;
