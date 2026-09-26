@@ -111,10 +111,8 @@ async function centralClubRecordsImpl(
   // read is cold + cached. The fetches below are already minimal-column;
   // fielding is additionally grouped to counts per (participant, kind) so the
   // catch regex runs per distinct kind instead of per row.
-  // A filtered read also drops junior-graded matches; the unfiltered read keeps
-  // its original match set so `/records` without params is unchanged.
-  const allMatchRows = await getClubMatchRows(clubId);
-  const matchRows = filter ? filterSeniorMatchRows(allMatchRows, filter) : allMatchRows;
+  // Senior matches only, filtered or not: a junior score is never a club record.
+  const matchRows = filterSeniorMatchRows(await getClubMatchRows(clubId), filter);
   const empty: CentralClubRecords = {
     mostGames: null,
     mostRuns: null,

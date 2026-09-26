@@ -10,7 +10,7 @@ import {
 } from "../central";
 import type { PlayerGradeStat } from "../schema";
 import { cacheKey, withCentralCache } from "./cache";
-import { getClubMatchRows, type CentralClubMatchRow } from "./club-matches";
+import { getClubMatchRows, seniorMatchRows, type CentralClubMatchRow } from "./club-matches";
 import { appGradeFromCentral, parseRound, parseSeasonStartYear, parseStage } from "./grades";
 import { isPrivateParticipant, isPrivateRow } from "./privacy";
 import {
@@ -135,7 +135,8 @@ async function centralPlayerCareersImpl(
   clubId: number,
   preloadedMatchRows?: CentralClubMatchRow[],
 ): Promise<CentralPlayerCareer[]> {
-  const matchRows = preloadedMatchRows ?? (await getClubMatchRows(clubId));
+  // Senior careers only: junior matches never add games, runs or wickets.
+  const matchRows = seniorMatchRows(preloadedMatchRows ?? (await getClubMatchRows(clubId)));
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) return [];
 
