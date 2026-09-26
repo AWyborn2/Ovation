@@ -6944,6 +6944,9 @@ components:
           type: ["integer", "null"]
         imageUrl:
           type: ["string", "null"]
+        libraryPhotoUrl:
+          type: ["string", "null"]
+          description: "A photo-library photo tagged with this player (solo shots first, then newest). Social assets use it before the headshot."
         cardRole:
           type: ["string", "null"]
         cardRating:
@@ -7024,7 +7027,7 @@ components:
           type: ["string", "null"]
         libraryPhotoUrl:
           type: ["string", "null"]
-          description: "A photo-library photo tagged with this player (solo shots first, then newest); the profile shows it when there is no headshot."
+          description: "A photo-library photo tagged with this player (solo shots first, then newest). Social assets use it first; the profile shows it when there is no headshot."
         cardRole:
           type: ["string", "null"]
         cardRating:

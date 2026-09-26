@@ -1,6 +1,6 @@
 /**
- * The player's "Share to socials" card uses the same photo as the profile
- * hero: the headshot, else a library photo the player is tagged in.
+ * The player's "Share to socials" card leads with a library photo the player
+ * is tagged in, then the headshot.
  */
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { cleanup, waitFor } from "@testing-library/react";
@@ -56,12 +56,17 @@ describe("player share card photo", () => {
     await waitFor(() => expect(lastPhoto()).toBe("/api/storage/objects/library/jack"));
   });
 
-  it("uses the headshot when there is one", async () => {
+  it("prefers the tagged photo over the headshot, and uses the headshot without one", async () => {
     open({
       ...PLAYER,
       imageUrl: "/api/storage/objects/headshot",
       libraryPhotoUrl: "/api/storage/objects/library/jack",
     });
+    await waitFor(() => expect(lastPhoto()).toBe("/api/storage/objects/library/jack"));
+    cleanup();
+    vi.unstubAllGlobals();
+    shared.inputs.length = 0;
+    open({ ...PLAYER, imageUrl: "/api/storage/objects/headshot", libraryPhotoUrl: null });
     await waitFor(() => expect(lastPhoto()).toBe("/api/storage/objects/headshot"));
   });
 });

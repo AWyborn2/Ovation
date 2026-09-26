@@ -31,12 +31,15 @@ describe("trading card photo", () => {
     expect(d.usingFallback).toBe(false);
   });
 
-  it("prefers the headshot, and a chosen gallery image over both", () => {
+  it("prefers the tagged photo over the headshot, and a chosen gallery image over both", () => {
     const p = player({
       imageUrl: "/api/storage/objects/headshot",
       libraryPhotoUrl: "/api/storage/objects/library/jack",
     });
-    expect(buildTradingCardData(p, []).photoUrl).toBe("/api/storage/objects/headshot");
+    expect(buildTradingCardData(p, []).photoUrl).toBe("/api/storage/objects/library/jack");
+    expect(
+      buildTradingCardData(player({ imageUrl: "/api/storage/objects/headshot" }), []).photoUrl,
+    ).toBe("/api/storage/objects/headshot");
     expect(buildTradingCardData(p, [], "/api/storage/objects/chosen").photoUrl).toBe(
       "/api/storage/objects/chosen",
     );
