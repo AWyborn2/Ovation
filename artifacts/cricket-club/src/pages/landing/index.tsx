@@ -2,6 +2,7 @@ import { Switch, Route } from "wouter";
 import LandingPage from "./landing-page";
 import SignupPage from "./signup-page";
 import DirectoryPage from "./directory-page";
+import { PrivacyPage, TermsPage } from "./legal-pages";
 import { PlatformAdminRoutes } from "@/pages/platform-admin";
 
 /**
@@ -16,6 +17,8 @@ export function LandingRoutes() {
       <Route path="/directory" component={DirectoryPage} />
       <Route path="/clubs" component={DirectoryPage} />
       <Route path="/signup" component={SignupPage} />
+      <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/terms" component={TermsPage} />
       {/* The super-admin console (gated by the platform session). */}
       <Route path="/platform-admin/*" component={PlatformAdminRoutes} />
       <Route path="/platform-admin" component={PlatformAdminRoutes} />
