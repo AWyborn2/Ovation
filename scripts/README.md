@@ -35,15 +35,16 @@ to `CENTRAL_DATABASE_URL`: `normalize-central-active-clubs` (repairs
 
 ## Central-model tooling (multi-tenant aware)
 
-| Script                                                              | Purpose                                                                                                                                               |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `compare-central-leaderboard`                                       | Proof harness comparing native vs central leaderboards.                                                                                               |
-| `diagnose-central-identity`                                         | Read-only central identity diagnostics.                                                                                                               |
-| `backfill-player-id-map`                                            | Mints the int↔GUID crosswalk for a tenant (`--dry-run`).                                                                                              |
-| `seed-tenants`, `seed-mandurah-tenant`, `seed-central-premierships` | Concierge tenant seeding. `seed-central-premierships -- --all` re-seeds every central club's premiership board (results, scorecard link, team lists). |
-| `topup-clubs`                                                       | PCA club branding top-up (`src/data/pca-clubs.ts`; tested).                                                                                           |
-| `null-legacy-placeholder-logos`                                     | Clears placeholder logos (`--live` gate).                                                                                                             |
-| `rebrand-seeded-card-themes`                                        | Rebrands seeded card themes.                                                                                                                          |
+| Script                                                              | Purpose                                                                                                                                                                |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `compare-central-leaderboard`                                       | Proof harness comparing native vs central leaderboards.                                                                                                                |
+| `diagnose-central-identity`                                         | Read-only central identity diagnostics.                                                                                                                                |
+| `hh-crosswalk`                                                      | READ-ONLY: links Halls Head native players to central participant GUIDs from scorecard evidence and compares career totals (`--out=<dir>`; never writes; tested core). |
+| `backfill-player-id-map`                                            | Mints the int↔GUID crosswalk for a tenant (`--dry-run`).                                                                                                               |
+| `seed-tenants`, `seed-mandurah-tenant`, `seed-central-premierships` | Concierge tenant seeding. `seed-central-premierships -- --all` re-seeds every central club's premiership board (results, scorecard link, team lists).                  |
+| `topup-clubs`                                                       | PCA club branding top-up (`src/data/pca-clubs.ts`; tested).                                                                                                            |
+| `null-legacy-placeholder-logos`                                     | Clears placeholder logos (`--live` gate).                                                                                                                              |
+| `rebrand-seeded-card-themes`                                        | Rebrands seeded card themes.                                                                                                                                           |
 
 ## Tenant #1 (Halls Head) curated seeds and loaders
 
