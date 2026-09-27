@@ -22,6 +22,7 @@
     "load-matches": "tsx ./src/load-matches.ts",
     "backfill-innings-order": "tsx ./src/backfill-innings-order.ts",
     "compare-central-leaderboard": "tsx ./src/compare-central-leaderboard.ts",
+    "hh-crosswalk": "tsx ./src/hh-central-crosswalk.ts",
     "seed-tenants": "tsx ./src/seed-tenants.ts",
     "seed-mandurah-tenant": "tsx ./src/seed-mandurah-tenant.ts",
     "seed-central-premierships": "tsx ./src/seed-central-premierships.ts",
