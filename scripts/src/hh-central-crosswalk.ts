@@ -24,57 +24,30 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { eq } from "drizzle-orm";
-import {
-  getPool,
-  closeDb,
-  matchesTable,
-  matchPlayerLinesTable,
-  playersTable,
-  playerGradeSeasonStatsTable,
-} from "@workspace/db";
-import {
-  centralDb,
-  closeCentralDb,
-  centralMatchesTable,
-  centralMatchBattingTable,
-  centralMatchBowlingTable,
-  centralMatchRostersTable,
-  centralFieldingTable,
-  centralPlayersTable,
-} from "@workspace/db/central";
-import {
-  HALLS_HEAD_CENTRAL_CLUB_ID,
-  appGradeFromCentral,
-  clubInvolvedWhere,
-  inList,
-  parseSeasonStartYear,
-} from "@workspace/db/central-queries";
+import { closeDb } from "@workspace/db";
+import { closeCentralDb } from "@workspace/db/central";
+import { HALLS_HEAD_CENTRAL_CLUB_ID, parseSeasonStartYear } from "@workspace/db/central-queries";
 import {
   TOTAL_KEYS,
-  assignMatch,
-  buildCentralAppearances,
-  classifyPlayer,
   comparePlayer,
-  detectConflicts,
+  linkNativeToCentral,
   isFillIn,
-  linkMatches,
   toCsv,
   validateArgs,
   zeroTotals,
   type CentralAppearance,
-  type CentralMatch,
-  type LineAssignment,
   type NativeLine,
-  type NativeMatch,
   type NativePlayer,
   type PlayerComparison,
-  type PlayerLink,
   type Totals,
 } from "./hh-central-crosswalk-core";
+import {
+  HALLS_HEAD_TENANT_ID,
+  isCentralPrivate,
+  readCentral,
+  readNative,
+} from "./hh-central-crosswalk-read";
 
-const HALLS_HEAD_TENANT_ID = 1;
 const CLUB = HALLS_HEAD_CENTRAL_CLUB_ID;
 
 const USAGE = `hh-crosswalk — READ-ONLY Halls Head native ↔ central participant crosswalk + career comparison.
@@ -88,168 +61,6 @@ Requires DATABASE_URL (native) and CENTRAL_DATABASE_URL (central). Never writes 
 
 function outArg(argv: string[]): string | undefined {
   return argv.find((a) => a.startsWith("--out="))?.slice("--out=".length);
-}
-
-// ---------------------------------------------------------------------------
-// Native reads — one READ ONLY transaction, always rolled back
-// ---------------------------------------------------------------------------
-
-interface NativeData {
-  players: NativePlayer[];
-  matches: NativeMatch[];
-  lines: NativeLine[];
-  pgss: {
-    playerId: number;
-    grade: string;
-    season: number | null;
-    games: number | null;
-    innings: number | null;
-    runs: number | null;
-    wickets: number | null;
-    catches: number | null;
-  }[];
-}
-
-async function readNative(): Promise<NativeData> {
-  const client = await getPool().connect();
-  try {
-    await client.query("BEGIN TRANSACTION READ ONLY");
-    await client.query("SET LOCAL statement_timeout = '300s'");
-    const ro = drizzle(client);
-    const [players, matches, lines, pgss] = [
-      await ro
-        .select({
-          id: playersTable.id,
-          givenName: playersTable.givenName,
-          surname: playersTable.surname,
-          isCapOnly: playersTable.isCapOnly,
-        })
-        .from(playersTable),
-      await ro
-        .select({
-          id: matchesTable.id,
-          sourceKey: matchesTable.sourceKey,
-          season: matchesTable.season,
-          grade: matchesTable.grade,
-          abandoned: matchesTable.abandoned,
-        })
-        .from(matchesTable),
-      await ro
-        .select({
-          matchId: matchPlayerLinesTable.matchId,
-          playerId: matchPlayerLinesTable.playerId,
-          batted: matchPlayerLinesTable.batted,
-          battingPos: matchPlayerLinesTable.battingPos,
-          runs: matchPlayerLinesTable.runs,
-          balls: matchPlayerLinesTable.balls,
-          notOut: matchPlayerLinesTable.notOut,
-          bowled: matchPlayerLinesTable.bowled,
-          overs: matchPlayerLinesTable.overs,
-          maidens: matchPlayerLinesTable.maidens,
-          runsConceded: matchPlayerLinesTable.runsConceded,
-          wickets: matchPlayerLinesTable.wickets,
-          catches: matchPlayerLinesTable.catches,
-          stumpings: matchPlayerLinesTable.stumpings,
-          runOuts: matchPlayerLinesTable.runOuts,
-        })
-        .from(matchPlayerLinesTable),
-      await ro
-        .select({
-          playerId: playerGradeSeasonStatsTable.playerId,
-          grade: playerGradeSeasonStatsTable.grade,
-          season: playerGradeSeasonStatsTable.season,
-          games: playerGradeSeasonStatsTable.games,
-          innings: playerGradeSeasonStatsTable.innings,
-          runs: playerGradeSeasonStatsTable.runs,
-          wickets: playerGradeSeasonStatsTable.wickets,
-          catches: playerGradeSeasonStatsTable.catches,
-        })
-        .from(playerGradeSeasonStatsTable),
-    ];
-    return { players, matches, lines, pgss };
-  } finally {
-    // Nothing was written (the transaction is READ ONLY) — roll back regardless.
-    await client.query("ROLLBACK").catch(() => undefined);
-    client.release();
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Central reads — SELECT only through the read-only proxy, club 1
-// ---------------------------------------------------------------------------
-
-async function readCentral() {
-  const matches: CentralMatch[] = await centralDb
-    .select({
-      matchId: centralMatchesTable.matchId,
-      playhqMatchId: centralMatchesTable.playhqMatchId,
-      season: centralMatchesTable.season,
-      grade: centralMatchesTable.grade,
-    })
-    .from(centralMatchesTable)
-    .where(clubInvolvedWhere(CLUB));
-  const batting = await centralDb
-    .select({
-      matchId: centralMatchBattingTable.matchId,
-      innings: centralMatchBattingTable.innings,
-      batOrder: centralMatchBattingTable.batOrder,
-      participantId: centralMatchBattingTable.participantId,
-      playerName: centralMatchBattingTable.playerName,
-      runs: centralMatchBattingTable.runs,
-      balls: centralMatchBattingTable.balls,
-      dismissal: centralMatchBattingTable.dismissal,
-      dismissalType: centralMatchBattingTable.dismissalType,
-    })
-    .from(centralMatchBattingTable)
-    .where(eq(centralMatchBattingTable.clubId, CLUB));
-  const bowling = await centralDb
-    .select({
-      matchId: centralMatchBowlingTable.matchId,
-      innings: centralMatchBowlingTable.innings,
-      participantId: centralMatchBowlingTable.participantId,
-      playerName: centralMatchBowlingTable.playerName,
-      overs: centralMatchBowlingTable.overs,
-      maidens: centralMatchBowlingTable.maidens,
-      runs: centralMatchBowlingTable.runs,
-      wickets: centralMatchBowlingTable.wickets,
-    })
-    .from(centralMatchBowlingTable)
-    .where(eq(centralMatchBowlingTable.clubId, CLUB));
-  const rosters = await centralDb
-    .select({
-      matchId: centralMatchRostersTable.matchId,
-      participantId: centralMatchRostersTable.participantId,
-      playerName: centralMatchRostersTable.playerName,
-    })
-    .from(centralMatchRostersTable)
-    .where(eq(centralMatchRostersTable.clubId, CLUB));
-  const fielding = await centralDb
-    .select({
-      matchId: centralFieldingTable.matchId,
-      participantId: centralFieldingTable.participantId,
-      kind: centralFieldingTable.kind,
-    })
-    .from(centralFieldingTable)
-    .where(eq(centralFieldingTable.clubId, CLUB));
-
-  const pids = [
-    ...new Set(
-      [...batting, ...bowling, ...rosters, ...fielding]
-        .map((r) => r.participantId)
-        .filter((p): p is string => Boolean(p)),
-    ),
-  ];
-  const players = pids.length
-    ? await centralDb
-        .select({
-          participantId: centralPlayersTable.participantId,
-          displayName: centralPlayersTable.displayName,
-          isPrivate: centralPlayersTable.isPrivate,
-        })
-        .from(centralPlayersTable)
-        .where(inList(centralPlayersTable.participantId, pids))
-    : [];
-  return { matches, batting, bowling, rosters, fielding, players };
 }
 
 // ---------------------------------------------------------------------------
@@ -288,82 +99,26 @@ async function main(): Promise<void> {
     `  matches=${central.matches.length} batting=${central.batting.length} bowling=${central.bowling.length} rosters=${central.rosters.length} fielding=${central.fielding.length}`,
   );
 
-  // ---- Matches -------------------------------------------------------------
+  // ---- Matcher (shared with persist-hh-crosswalk) ------------------------
   const playerById = new Map(native.players.map((p) => [p.id, p]));
   const nativeMatchById = new Map(native.matches.map((m) => [m.id, m]));
-  const links = linkMatches(native.matches, central.matches);
-  const seniorCentral = new Set(
-    central.matches.filter((m) => appGradeFromCentral(m.grade) !== null).map((m) => m.matchId),
-  );
-  /** Senior native match → central match id. */
-  const linkByNativeMatch = new Map<number, number>();
-  const nativeMatchByCentral = new Map<number, number>();
-  const juniorExcludedNative = new Set<number>();
-  for (const l of links.values()) {
-    if (!l.senior) {
-      juniorExcludedNative.add(l.nativeMatchId);
-      continue;
-    }
-    if (l.centralMatchId != null) {
-      linkByNativeMatch.set(l.nativeMatchId, l.centralMatchId);
-      nativeMatchByCentral.set(l.centralMatchId, l.nativeMatchId);
-    }
-  }
+  const {
+    playerLinks,
+    conflicts,
+    assignments,
+    appIndex,
+    linkByNativeMatch,
+    nativeMatchByCentral,
+    juniorExcludedNative,
+    seniorCentral,
+    seniorLines,
+    fillInLines,
+  } = linkNativeToCentral({ native, central });
   const abandoned = new Set(native.matches.filter((m) => m.abandoned).map((m) => m.id));
-
-  const appIndex = buildCentralAppearances(central);
   const centralName = new Map(central.players.map((p) => [p.participantId, p.displayName]));
   const centralPrivate = new Map(
-    central.players.map((p) => [p.participantId, Number(p.isPrivate ?? 0) === 1]),
+    central.players.map((p) => [p.participantId, isCentralPrivate(p.isPrivate)]),
   );
-
-  // ---- Lines ---------------------------------------------------------------
-  const fillInLines = native.lines.filter((l) => isFillIn(l.playerId));
-  const seniorLines = native.lines.filter(
-    (l) => !isFillIn(l.playerId) && !juniorExcludedNative.has(l.matchId),
-  );
-  const linesByMatch = new Map<number, NativeLine[]>();
-  for (const l of seniorLines) {
-    const arr = linesByMatch.get(l.matchId) ?? [];
-    arr.push(l);
-    linesByMatch.set(l.matchId, arr);
-  }
-
-  // ---- Per-match assignment ------------------------------------------------
-  const assignments: LineAssignment[] = [];
-  const totalLinesByPlayer = new Map<number, number>();
-  const unlinkedLinesByPlayer = new Map<number, number>();
-  for (const [nativeMatchId, lines] of linesByMatch) {
-    const cid = linkByNativeMatch.get(nativeMatchId);
-    if (cid == null) {
-      for (const l of lines)
-        unlinkedLinesByPlayer.set(l.playerId, (unlinkedLinesByPlayer.get(l.playerId) ?? 0) + 1);
-      continue;
-    }
-    for (const l of lines)
-      totalLinesByPlayer.set(l.playerId, (totalLinesByPlayer.get(l.playerId) ?? 0) + 1);
-    const apps = [...(appIndex.byMatch.get(cid)?.values() ?? [])];
-    assignments.push(...assignMatch(nativeMatchId, cid, lines, apps, playerById, centralName));
-  }
-  const assignByPlayer = new Map<number, LineAssignment[]>();
-  for (const a of assignments) {
-    const arr = assignByPlayer.get(a.nativePlayerId) ?? [];
-    arr.push(a);
-    assignByPlayer.set(a.nativePlayerId, arr);
-  }
-
-  // ---- Classify every native player ---------------------------------------
-  const playerLinks: PlayerLink[] = native.players
-    .map((p) =>
-      classifyPlayer(
-        p.id,
-        assignByPlayer.get(p.id) ?? [],
-        totalLinesByPlayer.get(p.id) ?? 0,
-        unlinkedLinesByPlayer.get(p.id) ?? 0,
-      ),
-    )
-    .sort((a, b) => a.nativePlayerId - b.nativePlayerId);
-  const conflicts = detectConflicts(playerLinks.filter((l) => l.status !== "EXCLUDED_FILL_IN"));
 
   // ---- Comparison (CLEAN only) --------------------------------------------
   const pgssSeasonal = new Map<number, Totals>();

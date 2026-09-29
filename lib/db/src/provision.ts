@@ -1,4 +1,4 @@
-import { eq, ilike } from "drizzle-orm";
+import { and, eq, ilike, isNotNull, lt, max } from "drizzle-orm";
 import { db, type Db } from "./index";
 
 /**
@@ -9,6 +9,8 @@ import { db, type Db } from "./index";
 type TenantExecutor = Pick<Db, "select" | "insert">;
 import { tenantsTable, type TenantRow } from "./schema/tenants";
 import { playerIdMapTable } from "./schema/player_id_map";
+import { playerCurationTable } from "./schema/player_curation";
+import { playersTable } from "./schema/players";
 import { adminsTable, type AdminRow } from "./schema/admins";
 import {
   provisioningExclusionsTable,
@@ -267,6 +269,19 @@ export async function provisionTenant(
   };
 }
 
+/**
+ * Minted player ids stay strictly below this: ids >= 90000 are the native
+ * fill-in (90001+) and cap-only (95001+) ranges, excluded from every derivation.
+ */
+export const MINT_ID_CEILING = 90000;
+
+/**
+ * Halls Head: the tenant whose player ids are its native `players.id`s. Its
+ * crosswalk maps keeper GUIDs onto those ids (scripts/persist-hh-crosswalk), so
+ * anything minted for it starts above the highest native id.
+ */
+const NATIVE_STATS_TENANT_ID = 1;
+
 export interface MintPlayerIdMapResult {
   /** New crosswalk rows inserted this run (0 when already fully mapped). */
   minted: number;
@@ -296,11 +311,47 @@ export async function mintPlayerIdMap(
     })
     .from(playerIdMapTable)
     .where(eq(playerIdMapTable.tenantId, tenantId));
-  const mappedGuids = new Set(existing.map((e) => e.participantId));
-  let nextId = existing.reduce((m, e) => Math.max(m, e.playerId), 0) + 1;
+  // Merged-away GUIDs fold into their keeper on read, so they never get a
+  // fresh id of their own (KTD2). Any crosswalk row they already have is kept.
+  const mergedAway = await executor
+    .select({ participantId: playerCurationTable.participantId })
+    .from(playerCurationTable)
+    .where(
+      and(
+        eq(playerCurationTable.tenantId, tenantId),
+        isNotNull(playerCurationTable.mergedIntoParticipantId),
+      ),
+    );
+  const skipGuids = new Set([
+    ...existing.map((e) => e.participantId),
+    ...mergedAway.map((m) => m.participantId),
+  ]);
+
+  // Continue the per-tenant sequence below the fill-in / cap-only ranges. For
+  // Halls Head, whose persisted keeper rows reuse native `players.id`s, start
+  // above the highest native id so a minted id never collides with one.
+  let floor = existing.reduce(
+    (m, e) => (e.playerId < MINT_ID_CEILING ? Math.max(m, e.playerId) : m),
+    0,
+  );
+  if (tenantId === NATIVE_STATS_TENANT_ID) {
+    const [row] = await executor
+      .select({ maxId: max(playersTable.id) })
+      .from(playersTable)
+      .where(lt(playersTable.id, MINT_ID_CEILING));
+    floor = Math.max(floor, Number(row?.maxId ?? 0));
+  }
+
+  let nextId = floor + 1;
   const toInsert = participants
-    .filter((p) => !mappedGuids.has(p.participantId))
+    .filter((p) => !skipGuids.has(p.participantId))
     .map((p) => ({ tenantId, participantId: p.participantId, playerId: nextId++ }));
+  if (toInsert.length > 0 && nextId - 1 >= MINT_ID_CEILING) {
+    throw new Error(
+      `mintPlayerIdMap: tenant ${tenantId} would mint player id ${nextId - 1}, at or above ` +
+        `${MINT_ID_CEILING} (the fill-in / cap-only range). Nothing was minted.`,
+    );
+  }
   if (toInsert.length > 0) {
     await executor.insert(playerIdMapTable).values(toInsert);
   }

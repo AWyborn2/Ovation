@@ -54,13 +54,52 @@ export const NATIVE_STATS_TENANT_ID = 1;
  */
 export class NativeStatsUnavailableError extends Error {
   readonly status = 409;
-  constructor(readonly tenantId: number) {
-    super(
-      `Tenant ${tenantId} is configured for native stats reads, but the native ` +
-        `stats tables are not tenant-scoped. Set reads_from_central = true.`,
-    );
+  constructor(
+    readonly tenantId: number,
+    message = `Tenant ${tenantId} is configured for native stats reads, but the native ` +
+      `stats tables are not tenant-scoped. Set reads_from_central = true.`,
+  ) {
+    super(message);
     this.name = "NativeStatsUnavailableError";
   }
+}
+
+/**
+ * The write-side twin of {@link decideReadsFromCentral}: may this tenant write
+ * the native stats tables (imports, players, merges, the photo gallery)?
+ *
+ * Only tenant #1, and only while it is NOT configured to read central. Any
+ * other tenant writing there would edit Halls Head's history under its own
+ * admin; tenant #1 after cut-over keeps its data in the club layer, so native
+ * writes would change rows nothing reads.
+ *
+ * Deliberately uses the raw `reads_from_central` flag, NOT the
+ * `CENTRAL_READS=0` kill-switch: that switch is an incident fallback for
+ * reads and must never re-open native writes for a cut-over tenant.
+ *
+ * Throws {@link NativeStatsUnavailableError} (409) when refused.
+ */
+export function decideNativeStatsWrite(tenantId: number, readsFromCentral: boolean): void {
+  if (tenantId !== NATIVE_STATS_TENANT_ID || readsFromCentral) {
+    throw new NativeStatsUnavailableError(
+      tenantId,
+      `Tenant ${tenantId} cannot write the native stats tables: they hold only ` +
+        `tenant ${NATIVE_STATS_TENANT_ID}'s native history, and this tenant's ` +
+        `stats come from the central database.`,
+    );
+  }
+}
+
+/**
+ * {@link decideNativeStatsWrite} for a tenant id, reading its config. A tenant
+ * other than #1 is refused without a lookup.
+ */
+export async function assertNativeStatsWriteTenant(tenantId: number): Promise<void> {
+  if (tenantId !== NATIVE_STATS_TENANT_ID) {
+    decideNativeStatsWrite(tenantId, false);
+    return;
+  }
+  decideNativeStatsWrite(tenantId, (await getTenantConfig(tenantId)).readsFromCentral);
 }
 
 interface TenantConfig {
