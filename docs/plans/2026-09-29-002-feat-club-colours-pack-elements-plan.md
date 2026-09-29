@@ -1,5 +1,5 @@
 ---
-title: Club Colours Design Pack and Studio Element Library - Plan
+title: Club Kit Design Pack and Studio Element Library - Plan
 type: feat
 date: 2026-09-29
 topic: club-colours-pack-elements
@@ -9,13 +9,13 @@ product_contract_source: design-handoff
 execution: code
 ---
 
-# Club Colours Design Pack and Studio Element Library - Plan
+# Club Kit Design Pack and Studio Element Library - Plan
 
 ## Goal Capsule
 
-- **Objective:** Ship the "Club Colours" design handoff (8 card kinds × 4 formats = 32 templates) as a registered Social Media Studio pack, and make every element of it (trim photo frames, crest watermark, monogram, kind chip, tricolour rule, hashtag block, sponsor strip, score bars, leader rows, game-day rows, XI list, trading-card frame, premiership stars and GF panel, junior highlight rows, background) insertable from the Studio editor's Elements panel when an ad-hoc design is created.
+- **Objective:** Ship the "Club Colours" design handoff as the **Club Kit** pack (8 card kinds × 4 formats = 32 templates) in the Social Media Studio, and make every element of it (trim photo frames, crest watermark, monogram, kind chip, tricolour rule, hashtag block, sponsor strip, score bars, leader rows, game-day rows, XI list, trading-card frame, premiership stars and GF panel, junior highlight rows, background) insertable from the Studio editor's Elements panel when an ad-hoc design is created.
 - **Product authority:** Ash (owner). The handoff (`docs/design-handoffs/club-colours-pack/Handoff.md`) is the product contract for look and behaviour. This plan governs how.
-- **Open blockers:** D1 (pack display name / id) must be answered before U2 merges. D2–D4 can be answered at their units.
+- **Open blockers:** None for U1. D1 is resolved (Club Kit). D2–D4 can be answered at their units.
 - **Stop conditions:** Stop and ask before any prod migration (only U11 has one), before changing a Halls Head-parity digest for an existing pack, and if a unit would make any existing pack's "Pack's own look" render change.
 - **Execution profile:** One PR per unit, each shippable. Pack PRs follow the catalogue convention (one commit per card). Element-library PRs land behind nothing: the Elements panel just gains categories.
 
@@ -25,7 +25,7 @@ execution: code
 
 ### Summary
 
-A new pack where every colour comes from the tenant's brand tokens, with contrast-safe derived variables (`--pt`, `--onp`), square corners, full-colour photos in a diagonal "jumper-trim" frame, and Barlow Condensed / IBM Plex type. It covers result, milestone, club leaders, game day, team list, trading card, premiership and juniors in square, portrait, story and landscape. Each visual building block is also a reusable Studio element, authored once and shared by the pack templates and the editor, so an ad-hoc design can mix them freely.
+A new pack where every colour comes from the tenant's brand tokens, with contrast-safe derived variables (`--pt`, `--onp`), square corners, full-colour photos in a diagonal "club-kit" frame, and Barlow Condensed / IBM Plex type. It covers result, milestone, club leaders, game day, team list, trading card, premiership and juniors in square, portrait, story and landscape. Each visual building block is also a reusable Studio element, authored once and shared by the pack templates and the editor, so an ad-hoc design can mix them freely.
 
 ### What exists today (research, 29 Sep 2026)
 
@@ -58,7 +58,7 @@ A new pack where every colour comes from the tenant's brand tokens, with contras
 - **R4** Add new kinds for game day (all grades this round), trading card and juniors highlights, flowing through openapi → codegen, sample inputs, card-kind picker, prefill and auto-draft where the data exists.
 - **R5** Every named element in the handoff §6 ("Photo", "Trim", "Crest", "Kind chip", "Headline", "Score bar (home/away)", "Sponsor strip", "Hashtag") and every §5 data block is a Studio element. Each can be inserted into any ad-hoc design (blank canvas or on top of any pack), recoloured through brand tokens, positioned per format, and bound to live card data where the source kind provides it.
 - **R6** Elements are authored once. The pack templates and the element renderer call the same fragment functions, so they can't drift.
-- **R7** Ad-hoc creation offers the 32 designs as starting points ("Start from a Club Colours design"), plus a "Club Colours background" blank canvas.
+- **R7** Ad-hoc creation offers the 32 designs as starting points ("Start from a Club Kit design"), plus a "Club Kit background" blank canvas.
 - **R8** Juniors: first name + surname initial only; the junior palette is forced; no identifiable-child photo unless consent exists (and today none does). Juniors isolation (`/api/juniors/*` only) is preserved.
 - **R9** Auto-fit: long club names ellipsize, and `tenants.shortName` (already a column) feeds tight slots. With no crest, the watermark is hidden and the monogram disc is shown.
 - **R10** Result states WIN / LOSS / DRAW / TIE / NO RESULT. The club always stays on the top `--p` bar.
@@ -66,7 +66,7 @@ A new pack where every colour comes from the tenant's brand tokens, with contras
 
 ### Decisions needed from Ash
 
-- **D1 — Name and id (blocker for U2).** _Recommended:_ display name **"Jumper Trim"**, `packId: "jumper-trim-v1"`, with the handoff's "Club Colours" name kept as the design-system label in docs. _Alternative:_ keep "Club Colours" and rename the per-pack switch labels to "Use club brand" / "Pack's own look". That touches `admin-social-studio-colour-mode.test.tsx` and every pack's UI copy.
+- **D1 — Name and id. RESOLVED (Ash, 29 Sep 2026):** display name **"Club Kit"**, `packId: "club-kit-v1"`. The handoff's "Club Colours" name stays only as the design-handoff folder name, because it collides with the per-pack "Club colours" colour-mode switch.
 - **D2 — What "Pack's own look" means for this pack.** Because every colour is club-derived, the parity test still needs club mode ≠ pack mode for a branded club. _Recommended:_ pack mode uses a fixed neutral demo palette (amber `#FBAC27` / slate `#333F48` / ink `#10151B`, the handoff's sample values without the Halls Head identity), and **club mode is the default**.
 - **D3 — Junior photos.** _Recommended:_ ship with junior cards using a club action/team photo picked by an admin (never a player-tagged junior photo), and defer a consent model to its own plan. The handoff's "parent consent" rule then becomes "no player-linked junior photo until consent data exists".
 - **D4 — Leaders metric.** The handoff lists runs / wickets / catches. _Recommended:_ ship Runs + Wickets (the existing `clubLeaderboard` presets) now, with catches added after the catches rule in the hybrid-stats plan (R6/U15) settles.
@@ -83,8 +83,8 @@ A new pack where every colour comes from the tenant's brand tokens, with contras
 ### Key Technical Decisions
 
 - **KTD1 — Build on the skeleton kit with a bespoke look, not a hand-written Broadcast-Dark-style pack.** The skeleton already provides the header (crest, name, tagline, kind chip), body box, footer (rule, sponsors, hashtag), native landscape, the contract tests (`describeSkeletonPack`) and field-key parity. The handoff's anatomy maps onto it: `PackLook.vars` for tokens, `PackLook.layers(photo, deco)` for background + watermark + trim + photo frame, and `bodyStyle`/`column` for the per-format body placement (§4). Where the skeleton's fixed pieces differ from the handoff (tricolour rule 6/1/3, notched chip, solid hashtag block), add **optional hooks** to `PackLook` (`footerRule`, `chip`, `hashtag`) whose default output is byte-identical for existing packs. _U1 is a spike that proves this on `matchSummary`; if the skeleton root/body string contract can't hold the trim geometry, fall back to a pack-local frame and a local contract test._
-- **KTD2 — One fragment module, two consumers.** `pack-templates/jumper-trim/elements/*.ts` exports pure functions `(opts) => html` for each element: `trimFrame`, `watermarkCrest`, `monogram`, `kindChip`, `tricolourRule`, `hashtagBlock`, `sponsorStrip`, `scoreBars`, `leaderRows`, `gradeRows`, `xiList`, `tradingFrame`, `premStars`, `gfPanel`, `juniorRows`, `headline`, `eyebrow` and `background`. Pack designs compose them with `{{field}}` placeholders. The element renderer calls the same functions with concrete values. This satisfies R6 and mirrors how `layer-kinds.ts` renders charts, medals and stickers.
-- **KTD3 — Colour derivation lives in the renderer, not the markup.** Add `deriveTrimTokens(brand, {junior})` in `pack-render/tokens.ts` (WCAG helpers already exist there for `clubStageInk`; reuse them, and add `mix`). It emits the handoff variables as `--jt-*` CSS custom properties on the card root **only when the active pack declares them** (a new optional `PackManifest.tokens` hook), so other packs' root style is untouched (R11). Elements inserted on other packs get the same variables from the element layer's own wrapper, computed from `data.brand`, so a Jumper Trim score bar looks right on a Sunset card.
+- **KTD2 — One fragment module, two consumers.** `pack-templates/club-kit/elements/*.ts` exports pure functions `(opts) => html` for each element: `trimFrame`, `watermarkCrest`, `monogram`, `kindChip`, `tricolourRule`, `hashtagBlock`, `sponsorStrip`, `scoreBars`, `leaderRows`, `gradeRows`, `xiList`, `tradingFrame`, `premStars`, `gfPanel`, `juniorRows`, `headline`, `eyebrow` and `background`. Pack designs compose them with `{{field}}` placeholders. The element renderer calls the same functions with concrete values. This satisfies R6 and mirrors how `layer-kinds.ts` renders charts, medals and stickers.
+- **KTD3 — Colour derivation lives in the renderer, not the markup.** Add `deriveTrimTokens(brand, {junior})` in `pack-render/tokens.ts` (WCAG helpers already exist there for `clubStageInk`; reuse them, and add `mix`). It emits the handoff variables as `--ck-*` CSS custom properties on the card root **only when the active pack declares them** (a new optional `PackManifest.tokens` hook), so other packs' root style is untouched (R11). Elements inserted on other packs get the same variables from the element layer's own wrapper, computed from `data.brand`, so a Club Kit score bar looks right on a Sunset card.
 - **KTD4 — New FreeLayer kind `"element"` rather than new style primitives.** `{ kind:"element", elementId, props, bind? }`: the renderer looks up `elementId` in a registry and calls the fragment. This avoids widening `FreeLayer.style` with user-controlled `clip-path` / `background` CSS: element HTML is trusted repo code, and user input only arrives through `props`, which are escaped text, token names from an allow-list and numbers. The server stores adjustments opaquely (`additionalProperties:true`), so no codegen or migration is needed. `cssValue` sanitising stays as it is.
 - **KTD5 — Element registry is generic, with the pack as its first contributor.** `lib/studio-elements/registry.ts` holds `ElementDef = { id, category, packId?, label, keywords, defaultBox(size), props schema, dataKinds?, fromInput?(input) , render(props, ctx) }`. The categories are **Backgrounds & frames**, **Brand**, **Headlines**, **Match data**, **Leaders & lists**, **Collectables** and **Juniors**. `ElementsPanel` renders the catalogue with search, category tabs and live thumbnails (the `renderFreeLayers` of a single element on a sample input). The five existing shapes move into the registry as `basic/*` so nothing is lost.
 - **KTD6 — Data binding for composite elements.** An element with `dataKinds` (e.g. score bars → `matchSummary`) pre-fills its props from the draft's `cardInput` via `fromInput`, and stays live while `bind:true`. When the draft kind doesn't match (e.g. score bars on a blank canvas), it inserts with sample props from `sampleCardInput(kind)` as editable text, clearly marked "sample" in the layers drawer. Repeating rows (leaders, grades, XI, juniors) are props arrays, capped at the handoff maxima (5 / 5 / 12 / 3).
@@ -97,7 +97,7 @@ A new pack where every colour comes from the tenant's brand tokens, with contras
 ```mermaid
 flowchart LR
   B[ClubBrand + tenant shortName/hashtag/sponsors] --> T[deriveTrimTokens]
-  F[jumper-trim/elements/* fragments] --> P[Pack designs 8 handoff + 11 skeleton + 3 new kinds]
+  F[club-kit/elements/* fragments] --> P[Pack designs 8 handoff + 11 skeleton + 3 new kinds]
   F --> R[studio-elements registry]
   T --> P
   T --> R
@@ -117,42 +117,42 @@ U1 → U2 → (U3, U4, U5 in parallel) → U6 → U7 → U8 → U9 → U10. U11 
 
 ### U1. Spike: tokens + trim frame on the skeleton (matchSummary only)
 
-- **Files:** `pack-render/tokens.ts` (`deriveTrimTokens`, `mix`, contrast reuse), `pack-templates/types.ts` (optional `tokens`, `footerRule`, `chip`, `hashtag` hooks), `pack-templates/skeleton-kit.ts` (hooks with byte-identical defaults), `pack-templates/jumper-trim/elements/{background,trim-frame,watermark,monogram,kind-chip,tricolour-rule,hashtag,sponsor-strip}.ts`, `index.html` (Barlow 900).
+- **Files:** `pack-render/tokens.ts` (`deriveTrimTokens`, `mix`, contrast reuse), `pack-templates/types.ts` (optional `tokens`, `footerRule`, `chip`, `hashtag` hooks), `pack-templates/skeleton-kit.ts` (hooks with byte-identical defaults), `pack-templates/club-kit/elements/{background,trim-frame,watermark,monogram,kind-chip,tricolour-rule,hashtag,sponsor-strip}.ts`, `index.html` (Barlow 900).
 - **Tests:** `deriveTrimTokens` unit tests against the handoff cases (HHCC amber → `--onp` = ink; red/navy demo; purple override; dark primary gets `--pt` lightened, each ≥ 4.5:1). Existing `pack-own-look-parity` digests unchanged.
 - **Done when:** a matchSummary square + portrait + story + landscape renders in the harness matching screenshots 01/02, and all existing pack tests are green.
 
 ### U2. Register the pack with the 8 handoff designs
 
-- **Files:** `pack-templates/jumper-trim/{index,fragments}.ts` + `match-result.ts`, `milestone.ts`, `club-leaderboard-runs.ts`, `club-leaderboard-wickets.ts`, `team-list.ts`, `premiership.ts`; `registry.ts`; api-server `lib/design-packs.ts` `PACKS`; `social-studio.ts` `PACK_SWATCH`; the `PACK_IDS` arrays in `pack-render.test.ts` and `admin-social-studio.test.tsx`; `pack-switch.test.ts` `PACK_MARKERS`; new `jumper-trim-skeleton.test.ts`; `pack-own-look-parity` digests for the new pack.
+- **Files:** `pack-templates/club-kit/{index,fragments}.ts` + `match-result.ts`, `milestone.ts`, `club-leaderboard-runs.ts`, `club-leaderboard-wickets.ts`, `team-list.ts`, `premiership.ts`; `registry.ts`; api-server `lib/design-packs.ts` `PACKS`; `social-studio.ts` `PACK_SWATCH`; the `PACK_IDS` arrays in `pack-render.test.ts` and `admin-social-studio.test.tsx`; `pack-switch.test.ts` `PACK_MARKERS`; new `club-kit-skeleton.test.ts`; `pack-own-look-parity` digests for the new pack.
 - **Per-format rules:** side frame (square/landscape) vs top frame with the H table (story 46cqh; portrait 24cqh for list-heavy kinds, 31cqh otherwise); body max-width 52% on side formats; `--msSz`/`--premSz`/`--mdSz` per format.
 - **Result states (R10)** from `matchSummary` result fields; winning-side ordering kept with the club on the `--p` bar.
 - **Done when:** the pack appears in Design packs for every tenant after restart, and pack-lint, coverage parity, skeleton contract and switch tests pass. One commit per card.
 
 ### U3. Remaining kinds in the pack look (R3)
 
-- Skeleton body builders from `skeleton-designs.ts` for debut, century, fiveFor, record, player, gradeLeader ×2, weekendWrap, ladder, bigMoment, newSigning and countdown, each wrapped in the Jumper Trim look (frame, chip, footer). Landscape caps from the contract (ladder 5, leaderboard 5).
+- Skeleton body builders from `skeleton-designs.ts` for debut, century, fiveFor, record, player, gradeLeader ×2, weekendWrap, ladder, bigMoment, newSigning and countdown, each wrapped in the Club Kit look (frame, chip, footer). Landscape caps from the contract (ladder 5, leaderboard 5).
 - **Done when:** every one of the 17 existing kinds renders natively in all four formats.
 
 ### U4. New kind `roundFixtures` (game day, all grades)
 
 - openapi enum + `RoundFixturesInput` schema (date, round, rows: grade, opponent, venue, start time; ≤5) → codegen; `share-card/types.ts`, `CARD_KINDS`, `sample-card-inputs.ts`, `card-kind-picker.tsx`, `create-hero.tsx`; prefill in `routes/social-prefill.ts` from `fixtures` for the tenant's round; optional auto-draft engine hook in `lib/engines/match-day.ts` (one card per round, not per grade).
-- Designs: Jumper Trim bespoke (GAME / DAY, grade tiles) + a Broadcast Dark reference + skeleton designs for the other packs.
+- Designs: Club Kit bespoke (GAME / DAY, grade tiles) + a Broadcast Dark reference + skeleton designs for the other packs.
 - **Tests:** prefill tenant isolation; pack-lint parity; an engine test that a round with 4 grades yields one draft.
 
 ### U5. New kinds `tradingCard` and `juniorHighlights`
 
 - `tradingCard`: cap number, name, role, 4 stats, `cardPhoto` slot (headshot/action via `club_photo_players`). Prefill via `central-queries.ts` career views (respect `is_private`; exclude fill-ins `playerId >= 90000`). Inner card: 5:7, `--p` border, −3° rotation, shadow; centred in tall formats and left-aligned in square/landscape.
 - `juniorHighlights`: grade, round, ≤3 rows (name, note, figure). Prefill from `/api/juniors/*` only; names masked to "First S." server-side; the junior palette is forced; privacy footnote is fixed copy; photo slot per D3.
-- Plus the `junior:true` path of every Jumper Trim design swaps `--base`/`--s` per §1 (the flag already exists on 8 kinds).
+- Plus the `junior:true` path of every Club Kit design swaps `--base`/`--s` per §1 (the flag already exists on 8 kinds).
 - **Tests:** a junior prefill never returns a full surname; `tradingCard` excludes private players; parity tests.
 
 ### U6. Element registry + `FreeLayer` kind `"element"`
 
-- **Files:** `lib/studio-elements/{registry,types,index}.ts`; `pack-render/adjustments.ts` (`FreeLayer` union + `layerInner` branch that wraps output in a `container-type:size` box carrying `--jt-*` tokens from `data.brand`); `studio-editor/document.ts` (sponsor-lock rule KTD7); move the five shapes into `basic/*`.
+- **Files:** `lib/studio-elements/{registry,types,index}.ts`; `pack-render/adjustments.ts` (`FreeLayer` union + `layerInner` branch that wraps output in a `container-type:size` box carrying `--ck-*` tokens from `data.brand`); `studio-editor/document.ts` (sponsor-lock rule KTD7); move the five shapes into `basic/*`.
 - **Security:** props are validated against each element's schema (text is escaped, colours come from the token allow-list `p|s|chalk|base|onp|pt` or a `#rrggbb` checked by regex, numbers are clamped). An unknown `elementId` renders nothing and logs once.
 - **Tests:** round trip through `PATCH /social-drafts/:id` (opaque storage); the server harness renders an element layer identically to the client; `isEmptyAdjustments` is unchanged; a malicious prop (`</div><script>`) is escaped.
 
-### U7. Register every Jumper Trim element (R5)
+### U7. Register every Club Kit element (R5)
 
 - Backgrounds & frames: background (base gradient + glow), side trim frame, top trim frame (with photo slot + focal/zoom props), trim stripes only.
 - Brand: crest, watermark crest, monogram disc, club name lockup, kind chip (editable label), tricolour rule, hashtag block, sponsor strip (live).
@@ -174,13 +174,13 @@ U1 → U2 → (U3, U4, U5 in parallel) → U6 → U7 → U8 → U9 → U10. U11 
 
 ### U9. Ad-hoc starters (R7)
 
-- `editor-starters.tsx`: "Start from a design", a picker of all 32 Jumper Trim templates (kind × format thumbnails). Picking one creates the draft with `packId: jumper-trim-v1`, the kind's sample or prefilled `cardInput`, and the chosen format. Also a "Club Colours background" blank canvas: `BLANK_PACK_ID` + a pre-inserted background element.
+- `editor-starters.tsx`: "Start from a design", a picker of all 32 Club Kit templates (kind × format thumbnails). Picking one creates the draft with `packId: club-kit-v1`, the kind's sample or prefilled `cardInput`, and the chosen format. Also a "Club Kit background" blank canvas: `BLANK_PACK_ID` + a pre-inserted background element.
 - `admin-social-create.tsx` passes the selected format through.
 - **Tests:** extend `editor-starters.test.tsx` and `social-drafts-adhoc.test.ts` (draft carries the packId and adjustments; tenant isolation of templates unchanged).
 
 ### U10. Editor fidelity fixes the pack depends on
 
-- `canvas.tsx:202` / `admin-studio-editor.tsx:329` hard-code `junior={false}`; pass the draft's junior flag so junior Jumper Trim cards preview in the junior palette.
+- `canvas.tsx:202` / `admin-studio-editor.tsx:329` hard-code `junior={false}`; pass the draft's junior flag so junior Club Kit cards preview in the junior palette.
 - Update `.agents/memory/social-studio-template-model.md` and add `.agents/memory/studio-elements.md` (registry, `kind:"element"`, single-source fragments, token wrapper).
 
 ### U11. (Optional) Per-photo focal point
