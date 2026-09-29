@@ -8,11 +8,12 @@
 import type { CardLeader } from './cardLeader';
 
 /**
- * A grade's season leaders for the Club Runs/Wickets/Dismissals leaderboard card (A19/A20). A leader is null when the grade has no eligible player. Dismissals are catches plus stumpings.
+ * A grade's season leaders for the Club Runs/Wickets/Dismissals leaderboard card (A19/A20). A leader is null when the grade has no eligible player. Dismissals are catches plus stumpings; Catches are catches alone.
  */
 export interface ClubSeasonGradeLeaders {
   gradeLabel: string;
   topRunScorer: CardLeader | null;
   topWicketTaker: CardLeader | null;
   topDismissals: CardLeader | null;
+  topCatches: CardLeader | null;
 }

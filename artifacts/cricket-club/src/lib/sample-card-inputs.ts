@@ -253,6 +253,40 @@ const SAMPLES: { [K in ShareCardInput["kind"]]: Extract<ShareCardInput, { kind: 
       { gradeLabel: "U15", playerName: "Harry Osborne", value: "291" },
     ],
   },
+  roundFixtures: {
+    kind: "roundFixtures",
+    roundLabel: "ROUND 15",
+    date: "SATURDAY 14 FEB",
+    fixtures: [
+      { grade: "A", opponent: "Baldivis", venue: "Sample Oval", startTime: "1:00" },
+      { grade: "B", opponent: "Rockingham", venue: "Rockingham Park", startTime: "1:00" },
+      { grade: "C", opponent: "Pinjarra", venue: "Sample Oval 2", startTime: "12:30" },
+      { grade: "F", opponent: "Mandurah", venue: "Mandurah Reserve", startTime: "9:00" },
+    ],
+  },
+  tradingCard: {
+    kind: "tradingCard",
+    playerName: "Sample Player",
+    role: "Batting all-rounder",
+    capNumber: 242,
+    season: "2025/26",
+    stats: [
+      { label: "Matches", value: "48" },
+      { label: "Runs", value: "1,294" },
+      { label: "Wickets", value: "61" },
+      { label: "Average", value: "29.8" },
+    ],
+  },
+  juniorHighlights: {
+    kind: "juniorHighlights",
+    grade: "UNDER 13",
+    roundLabel: "ROUND 9 · SATURDAY",
+    highlights: [
+      { name: "Riley Thompson", note: "Top score", figure: "52*" },
+      { name: "Ava Morgan", note: "Best bowling", figure: "3/9" },
+      { name: "Noah Kelly", note: "Run out from the deep", figure: "RO" },
+    ],
+  },
 };
 
 /**

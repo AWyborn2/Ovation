@@ -792,13 +792,14 @@ export interface CardLeader {
 }
 
 /**
- * A grade's season leaders for the Club Runs/Wickets/Dismissals leaderboard card (A19/A20). A leader is null when the grade has no eligible player. Dismissals are catches plus stumpings.
+ * A grade's season leaders for the Club Runs/Wickets/Dismissals leaderboard card (A19/A20). A leader is null when the grade has no eligible player. Dismissals are catches plus stumpings; Catches are catches alone.
  */
 export interface ClubSeasonGradeLeaders {
   gradeLabel: string;
   topRunScorer: CardLeader | null;
   topWicketTaker: CardLeader | null;
   topDismissals: CardLeader | null;
+  topCatches: CardLeader | null;
 }
 
 export type WeekendWrapMatchOutcome = typeof WeekendWrapMatchOutcome[keyof typeof WeekendWrapMatchOutcome];
@@ -3119,6 +3120,9 @@ export const CardKind = {
   newSigning: 'newSigning',
   countdown: 'countdown',
   clubLeaderboard: 'clubLeaderboard',
+  roundFixtures: 'roundFixtures',
+  tradingCard: 'tradingCard',
+  juniorHighlights: 'juniorHighlights',
 } as const;
 
 export interface Sponsor {

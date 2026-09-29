@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&amp;family=IBM+Plex+Sans:wght@400;600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0;background:#0B1014;font-family:'IBM Plex Sans',sans-serif} a{color:#FBAC27} a:hover{color:#FFC45C}</style>
+</helmet>
+<div style="min-height:100vh;background:#0B1014;color:#F2F5F8;padding:56px 56px 96px;display:flex;flex-direction:column;gap:48px">
+  <header style="display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap">
+    <div style="display:flex;flex-direction:column;gap:10px;max-width:760px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.2em;color:#8E9BA7">DESIGN PACK · NEW</span>
+      <h1 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:72px;line-height:.9;text-transform:uppercase">Club <span style="color:#FBAC27">Colours</span></h1>
+      <p style="margin:0;font-size:16px;line-height:1.55;color:#C4CDD5;text-wrap:pretty">Built entirely from the club's brand tokens. Photos are duotoned in the primary colour, the jumper-trim stripe uses primary, chalk and secondary, and juniors cards swap to the juniors colour. Change the brand and every card follows.</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <sc-for list="{{ tokens }}" as="t" hint-placeholder-count="5">
+        <div style="display:flex;flex-direction:column;gap:6px;width:112px">
+          <span style="height:56px;border-radius:10px;background:{{ t.hex }};border:1px solid #26313A"></span>
+          <span style="font-size:13px;font-weight:600">{{ t.label }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E9BA7">{{ t.token }} · {{ t.hex }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </header>
+
+  <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
+    <section style="display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:baseline;gap:14px;border-bottom:1px solid #26313A;padding-bottom:12px">
+        <span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;color:#FBAC27">{{ r.n }}</span>
+        <h2 style="margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:30px;text-transform:uppercase;line-height:1">{{ r.label }}</h2>
+        <span style="font-size:13px;color:#8E9BA7">{{ r.note }}</span>
+      </div>
+      <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap">
+        <sc-for list="{{ r.cards }}" as="c" hint-placeholder-count="4">
+          <figure style="margin:0;display:flex;flex-direction:column;gap:8px;width:{{ c.w }}">
+            <div style="border-radius:10px;overflow:hidden;box-shadow:0 24px 48px -20px rgba(0,0,0,.7)"><dc-import name="Club Pack Card" brand="{{ brand }}" kind="{{ r.kind }}" format="{{ c.format }}" hint-size="100%,300px"></dc-import></div>
+            <figcaption style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#8E9BA7">{{ c.label }}</figcaption>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;brand&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;hhcc&quot;,&quot;demo&quot;],&quot;default&quot;:&quot;hhcc&quot;,&quot;tsType&quot;:&quot;'hhcc'|'demo'&quot;}}">
+const BR = {
+  hhcc: [['Primary', 'primaryColour', '#FBAC27'], ['Secondary', 'secondaryColour', '#333F48'], ['Juniors', 'juniorsColour', '#42342B'], ['Ink', 'ink', '#10151B'], ['Chalk', 'textLight', '#F2F5F8']],
+  demo: [['Primary', 'primaryColour', '#E4002B'], ['Secondary', 'secondaryColour', '#1E2A4A'], ['Juniors', 'juniorsColour', '#2E7A5C'], ['Ink', 'ink', '#0C1220'], ['Chalk', 'textLight', '#F4F6FA']],
+};
+const KINDS = [['result', 'Match result', 'Auto-drafted after every results import'], ['milestone', 'Player milestone', 'Career runs, wickets, games and caps'], ['leaders', 'Top performers', 'Season or round leaderboard'], ['matchday', 'Game day', 'All grades playing this round'], ['team', 'Team selection', 'The XI plus 12th player'], ['trading', 'Trading card', 'Collectable player card'], ['premiership', 'Premiership', 'Grand final win'], ['junior', 'Juniors', 'Forces the juniors colour and privacy rules']];
+const FMTS = [['square', 'SQUARE · 1080×1080', '360px'], ['portrait', 'PORTRAIT · 1080×1350', '320px'], ['story', 'STORY · 1080×1920', '270px'], ['landscape', 'LANDSCAPE · 1200×630', '520px']];
+class Component extends DCLogic {
+  renderVals() {
+    const brand = BR[this.props.brand] ? this.props.brand : 'hhcc';
+    return {
+      brand,
+      tokens: BR[brand].map(([label, token, hex]) => ({ label, token, hex })),
+      rows: KINDS.map(([kind, label, note], i) => ({ n: String(i + 1).padStart(2, '0'), kind, label, note, cards: FMTS.map(([format, l, w]) => ({ format, label: l, w })) })),
+    };
+  }
+}
+</script>
+</body>
+</html>

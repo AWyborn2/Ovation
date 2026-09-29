@@ -147,5 +147,11 @@ export const cardBaseFilename = (input: ShareCardInput, brand?: ClubBrand | null
       return `${clubSlug}-countdown-${slugify(input.eventLabel)}`;
     case "clubLeaderboard":
       return `${clubSlug}-${jr}leaderboard-${slugify(input.category)}`;
+    case "roundFixtures":
+      return `${clubSlug}-${jr}gameday-${slugify(input.roundLabel)}`;
+    case "tradingCard":
+      return `${clubSlug}-tradingcard-${slugify(input.playerName)}`;
+    case "juniorHighlights":
+      return `${clubSlug}-juniors-${slugify(input.grade)}-${slugify(input.roundLabel)}`;
   }
 };

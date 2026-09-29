@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&amp;family=IBM+Plex+Sans:wght@400;600;700&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>body{margin:0} a{color:#FBAC27} a:hover{color:#FFC45C}</style>
+</helmet>
+<div style="{{ rootStyle }}">
+<div style="position:relative;width:100%;aspect-ratio:{{ ratio }};container-type:size;overflow:hidden;background:var(--base);color:var(--chalk);font-family:'IBM Plex Sans',sans-serif">
+
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 0% 100%,var(--glowc) 0%,transparent 60%),linear-gradient(160deg,var(--base) 0%,var(--base2) 100%)"></div>
+  <img src="{{ crest }}" alt="" style="display:var(--crestd);position:absolute;left:-14cqmin;bottom:-16cqmin;width:70cqmin;height:70cqmin;object-fit:contain;opacity:.07;filter:grayscale(1) brightness(3)">
+
+  <sc-for list="{{ trim }}" as="tr" hint-placeholder-count="3"><div style="{{ tr.style }}"></div></sc-for>
+  <div style="position:absolute;left:var(--phL);top:0;width:var(--phW);height:var(--phH);clip-path:var(--phClip);background:var(--base)">
+    <img src="{{ photo }}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:{{ photoPos }};">
+    <div style="position:absolute;inset:0;background:var(--phFade)"></div>
+  </div>
+
+
+  <div style="position:relative;height:100%;box-sizing:border-box;padding:6cqmin;display:flex;flex-direction:column;gap:3cqmin">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:2cqmin">
+      <div style="display:flex;align-items:center;gap:2cqmin;min-width:0">
+        <img src="{{ crest }}" alt="{{ clubName }}" style="display:var(--crestd);height:10cqmin;width:auto">
+        <span style="display:var(--monod);width:10cqmin;height:10cqmin;flex:none;border-radius:50%;background:var(--p);color:var(--onp);font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:4.6cqmin;align-items:center;justify-content:center">{{ mono }}</span>
+        <div style="min-width:0">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:4.6cqmin;line-height:.95;text-transform:uppercase;white-space:nowrap">{{ shortName }}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:1.5cqmin;letter-spacing:.22em;color:var(--chalk2);margin-top:.8cqmin;white-space:nowrap">{{ tagline }}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:stretch;flex:none;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:2.5cqmin;letter-spacing:.12em;text-transform:uppercase">
+        <span style="width:1.2cqmin;background:var(--s)"></span><span style="padding:1cqmin 2.2cqmin;background:var(--p);color:var(--onp)">{{ chip }}</span>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:0;display:flex;flex-direction:column;justify-content:var(--bodyJ)">
+      <div style="max-width:var(--bodyMax);width:100%;display:flex;flex-direction:column">
+
+        <sc-if value="{{ kResult }}" hint-placeholder-val="{{ true }}">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.8cqmin;letter-spacing:.22em;color:var(--pt)">{{ resEyebrow }}</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:24cqmin;line-height:.8;text-transform:uppercase;color:var(--pt);margin-top:1.4cqmin">Win</div>
+          <div style="display:flex;flex-direction:column;gap:.8cqmin;margin-top:2.6cqmin">
+            <div style="display:flex;align-items:center;gap:2cqmin;padding:1.6cqmin 2.4cqmin;background:var(--p);color:var(--onp)"><span style="flex:1;min-width:0;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:4.2cqmin;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ shortName }}</span><span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:6cqmin;line-height:1">{{ resUs }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:1.6cqmin;opacity:.75">50 OV</span></div>
+            <div style="display:flex;align-items:center;gap:2cqmin;padding:1.6cqmin 2.4cqmin;background:var(--panel);border-left:1.2cqmin solid var(--s)"><span style="flex:1;min-width:0;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:4.2cqmin;text-transform:uppercase;color:var(--chalk2)">{{ resOpp }}</span><span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:6cqmin;line-height:1;color:var(--chalk2)">{{ resThem }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:1.6cqmin;color:var(--chalk2)">47.2 OV</span></div>
+          </div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:4.2cqmin;text-transform:uppercase;margin-top:2.4cqmin">{{ resMargin }}</div>
+          <div style="display:flex;gap:3cqmin;flex-wrap:wrap;margin-top:1.4cqmin;font-size:2cqmin;color:var(--chalk2)"><span><strong style="color:var(--chalk)">{{ resBat }}</strong></span><span><strong style="color:var(--chalk)">{{ resBowl }}</strong></span></div>
+        </sc-if>
+
+        <sc-if value="{{ kMilestone }}" hint-placeholder-val="{{ false }}">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.8cqmin;letter-spacing:.22em;color:var(--pt)">CAREER MILESTONE</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:var(--msSz);line-height:.8;color:var(--pt);margin-top:1.6cqmin;letter-spacing:-.01em">1,000</div>
+          <div style="display:flex;align-items:center;gap:2cqmin;margin-top:1.6cqmin"><span style="height:1.6cqmin;width:10cqmin;background:linear-gradient(90deg,var(--p) 60%,var(--chalk) 60% 75%,var(--s) 75%)"></span><span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:6cqmin;line-height:1;text-transform:uppercase">Club runs</span></div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:9cqmin;line-height:.9;text-transform:uppercase;margin-top:3cqmin;white-space:pre-line">{{ msName }}</div>
+          <div style="font-size:2.2cqmin;color:var(--chalk2);margin-top:1.2cqmin">{{ msMeta }}</div>
+        </sc-if>
+
+        <sc-if value="{{ kLeaders }}" hint-placeholder-val="{{ false }}">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:10cqmin;line-height:.88;text-transform:uppercase">Club<br><span style="color:var(--pt)">leaders</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.8cqmin;letter-spacing:.22em;color:var(--chalk2);margin-top:1.4cqmin">RUNS · 2025/26 · ALL GRADES</div>
+          <div style="display:flex;flex-direction:column;gap:1cqmin;margin-top:3cqmin">
+            <sc-for list="{{ leaders }}" as="l" hint-placeholder-count="5">
+              <div style="position:relative;display:flex;align-items:center;gap:2cqmin;height:6.4cqmin;padding:0 2cqmin;background:var(--panel);overflow:hidden">
+                <span style="position:absolute;left:0;top:0;bottom:0;width:{{ l.pct }};background:{{ l.bar }}"></span>
+                <span style="position:relative;width:3cqmin;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:3.6cqmin;color:{{ l.rankC }}">{{ l.rank }}</span>
+                <span style="position:relative;flex:1;min-width:0;font-weight:700;font-size:2.4cqmin;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{{ l.nameC }}">{{ l.name }}</span>
+                <span style="position:relative;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:4cqmin;color:{{ l.nameC }}">{{ l.val }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ kMatchday }}" hint-placeholder-val="{{ false }}">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.8cqmin;letter-spacing:.22em;color:var(--pt)">SATURDAY 14 FEB · ROUND 15</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:var(--mdSz);line-height:.82;text-transform:uppercase;margin-top:1.4cqmin">Game<br><span style="color:var(--pt)">day</span></div>
+          <div style="display:flex;flex-direction:column;gap:.8cqmin;margin-top:3cqmin">
+            <sc-for list="{{ fixtures }}" as="f" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:6cqmin 1fr auto;align-items:center;gap:2cqmin;padding:1.3cqmin 2cqmin 1.3cqmin 0;background:var(--panel)">
+                <span style="align-self:stretch;display:flex;align-items:center;justify-content:center;background:var(--p);color:var(--onp);font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:3.4cqmin">{{ f.g }}</span>
+                <span style="min-width:0"><span style="display:block;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:3.4cqmin;line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">v {{ f.opp }}</span><span style="display:block;font-size:1.8cqmin;color:var(--chalk2);margin-top:.4cqmin;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.venue }}</span></span>
+                <span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:3.6cqmin;color:var(--pt)">{{ f.time }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ kTeam }}" hint-placeholder-val="{{ false }}">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.8cqmin;letter-spacing:.22em;color:var(--pt)">A GRADE · V MANDURAH · RD 15</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:12cqmin;line-height:.85;text-transform:uppercase;margin-top:1.2cqmin">The <span style="color:var(--pt)">XI</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7cqmin 2.4cqmin;margin-top:2.6cqmin">
+            <sc-for list="{{ team }}" as="p" hint-placeholder-count="12">
+              <div style="display:flex;align-items:center;gap:1.6cqmin;height:5cqmin;border-bottom:.15cqmin solid var(--line)">
+                <span style="width:3.4cqmin;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:3cqmin;color:var(--pt)">{{ p.n }}</span>
+                <span style="flex:1;min-width:0;font-weight:600;font-size:2.3cqmin;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:1.5cqmin;color:var(--chalk2)">{{ p.tag }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ kTrading }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;justify-content:var(--tcJ)">
+            <div style="position:relative;width:46cqmin;aspect-ratio:5/7;padding:1.2cqmin;background:var(--p);box-shadow:0 3cqmin 6cqmin -2cqmin rgba(0,0,0,.6);transform:rotate(-3deg)">
+              <div style="position:relative;height:100%;overflow:hidden;background:var(--base)">
+                <img src="assets/action-drive-sm.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 30%;">
+                <div style="position:absolute;inset:0;background:linear-gradient(0deg,var(--base) 0%,transparent 55%)"></div>
+                <div style="position:absolute;left:0;right:0;top:0;height:2.4cqmin;display:flex"><span style="flex:3;background:var(--s)"></span><span style="flex:1;background:var(--chalk)"></span><span style="flex:3;background:var(--s)"></span></div>
+                <div style="position:absolute;top:4cqmin;left:2cqmin;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:3.6cqmin;color:var(--chalk);background:var(--s);padding:.3cqmin 1.2cqmin">#242</div>
+                <img src="{{ crest }}" alt="" style="display:var(--crestd);position:absolute;top:3.4cqmin;right:2cqmin;height:7cqmin;width:auto">
+                <div style="position:absolute;left:2cqmin;right:2cqmin;bottom:2cqmin;color:var(--chalk)">
+                  <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:5.4cqmin;line-height:.9;text-transform:uppercase">Mitchell<br>Caine</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:1.3cqmin;letter-spacing:.2em;color:var(--pt);margin-top:.8cqmin">BATTING ALL-ROUNDER</div>
+                  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.6cqmin;margin-top:1.4cqmin;text-align:center">
+                    <sc-for list="{{ tcStats }}" as="s" hint-placeholder-count="4"><div style="background:var(--panel);padding:.7cqmin 0;border-top:.4cqmin solid var(--p)"><div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:3cqmin;line-height:1">{{ s.v }}</div><div style="font-size:1.1cqmin;letter-spacing:.12em;color:var(--chalk2)">{{ s.l }}</div></div></sc-for>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ kPrem }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:1.4cqmin"><sc-for list="{{ stars }}" as="st" hint-placeholder-count="3"><span style="width:4cqmin;height:4cqmin;background:var(--p);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)"></span></sc-for></div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:var(--premSz);line-height:.8;text-transform:uppercase;color:var(--pt);margin-top:2cqmin">Premiers</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:6cqmin;line-height:1;text-transform:uppercase;margin-top:1.4cqmin">2025/26 Female A Grade</div>
+          <div style="display:flex;align-items:stretch;margin-top:3cqmin;background:var(--panel)">
+            <span style="width:1.4cqmin;background:var(--p)"></span>
+            <div style="flex:1;padding:1.8cqmin 2.4cqmin;display:flex;flex-direction:column;gap:.6cqmin"><span style="font-family:'IBM Plex Mono',monospace;font-size:1.6cqmin;letter-spacing:.2em;color:var(--chalk2)">GRAND FINAL · RUSHTON PARK</span><span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:4cqmin;text-transform:uppercase">{{ premLine }}</span><span style="font-size:2cqmin;color:var(--chalk2)">Player of the final: E. Burns 64 &amp; 2/18</span></div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.7cqmin;letter-spacing:.2em;color:var(--pt);margin-top:2cqmin">{{ premCount }}</div>
+        </sc-if>
+
+        <sc-if value="{{ kJunior }}" hint-placeholder-val="{{ false }}">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.8cqmin;letter-spacing:.22em;color:var(--pt)">UNDER 13 · ROUND 9 · SATURDAY</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14cqmin;line-height:.84;text-transform:uppercase;margin-top:1.4cqmin">Juniors<br><span style="color:var(--pt)">shine</span></div>
+          <div style="display:flex;flex-direction:column;gap:.8cqmin;margin-top:3cqmin">
+            <sc-for list="{{ juniors }}" as="j" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:2cqmin;padding:1.4cqmin 2cqmin;background:var(--panel);border-left:1.2cqmin solid var(--p)">
+                <span style="flex:1;min-width:0"><span style="display:block;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:3.8cqmin;line-height:1;text-transform:uppercase">{{ j.name }}</span><span style="display:block;font-size:1.8cqmin;color:var(--chalk2);margin-top:.4cqmin">{{ j.note }}</span></span>
+                <span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:5cqmin;color:var(--pt)">{{ j.fig }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:1.8cqmin;color:var(--chalk2);margin-top:2cqmin">First names and initials only · photos with parent consent</div>
+        </sc-if>
+
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:1.6cqmin">
+      <div style="display:flex;height:.8cqmin;gap:.6cqmin"><span style="flex:6;background:var(--p)"></span><span style="flex:1;background:var(--chalk)"></span><span style="flex:3;background:var(--s)"></span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:2cqmin">
+        <div style="display:flex;align-items:center;gap:2cqmin;font-size:1.7cqmin;color:var(--chalk2);min-width:0;white-space:nowrap;overflow:hidden"><span style="font-family:'IBM Plex Mono',monospace;letter-spacing:.18em">SUPPORTED BY</span><sc-for list="{{ sponsors }}" as="sp" hint-placeholder-count="2"><span style="font-weight:700;color:var(--chalk);font-size:2cqmin">{{ sp }}</span></sc-for></div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:2.9cqmin;letter-spacing:.04em;color:var(--onp);background:var(--p);padding:.6cqmin 1.6cqmin;flex:none">{{ hashtag }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:540,&quot;height&quot;:540},&quot;brand&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;hhcc&quot;,&quot;demo&quot;],&quot;default&quot;:&quot;hhcc&quot;,&quot;tsType&quot;:&quot;'hhcc'|'demo'&quot;,&quot;section&quot;:&quot;Brand&quot;},&quot;primary&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#FBAC27&quot;,&quot;#E4002B&quot;,&quot;#1E6FD9&quot;,&quot;#2E7A5C&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Brand&quot;},&quot;secondary&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#333F48&quot;,&quot;#1E2A4A&quot;,&quot;#5B2A86&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Brand&quot;},&quot;juniors&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#42342B&quot;,&quot;#2E7A5C&quot;,&quot;#7A2E4A&quot;],&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Brand&quot;},&quot;kind&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;result&quot;,&quot;milestone&quot;,&quot;leaders&quot;,&quot;matchday&quot;,&quot;team&quot;,&quot;trading&quot;,&quot;premiership&quot;,&quot;junior&quot;],&quot;default&quot;:&quot;result&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Card&quot;},&quot;format&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;square&quot;,&quot;portrait&quot;,&quot;story&quot;,&quot;landscape&quot;],&quot;default&quot;:&quot;square&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Card&quot;},&quot;junior&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Card&quot;}}">
+const BRANDS = {
+  hhcc: { name: 'Halls Head Cricket Club', short: 'Halls Head', mono: 'HH', founded: 1991, primary: '#FBAC27', secondary: '#333F48', juniors: '#42342B', ink: '#10151B', chalk: '#F2F5F8', crest: 'assets/hhcc-logo.png', hashtag: '#GOHEADS', sponsors: ['Bendigo Bank', '4Life Physio'], opp: 'Mandurah' },
+  demo: { name: 'Coastal Districts Cricket Club', short: 'Coastal Districts', mono: 'CD', founded: 1978, primary: '#E4002B', secondary: '#1E2A4A', juniors: '#2E7A5C', ink: '#0C1220', chalk: '#F4F6FA', crest: '', hashtag: '#UPTHEDISTRICTS', sponsors: ['Harbour Hotel', 'Seaview Motors'], opp: 'Rockingham' },
+};
+const KINDS = {
+  result: { chip: 'Result', photo: 'assets/action-sweep-sm.jpg', pos: '52% 35%' },
+  milestone: { chip: 'Milestone', photo: 'assets/action-drive-sm.jpg', pos: '50% 30%' },
+  leaders: { chip: 'Leaders', photo: 'assets/action-highfive-sm.jpg', pos: '45% 30%' },
+  matchday: { chip: 'Round 15', photo: 'assets/action-handshake-sm.jpg', pos: '55% 35%' },
+  team: { chip: 'Team list', photo: 'assets/action-stumps-sm.jpg', pos: '45% 40%' },
+  trading: { chip: 'Collectable', photo: 'assets/action-drive-sm.jpg', pos: '50% 30%' },
+  premiership: { chip: 'Premiers', photo: 'assets/female-premiership-sm.jpg', pos: '50% 40%' },
+  junior: { chip: 'Juniors', photo: 'assets/action-highfive-sm.jpg', pos: '45% 30%' },
+};
+const RATIO = { square: '1 / 1', portrait: '1080 / 1350', story: '1080 / 1920', landscape: '1200 / 630' };
+const hex = (h) => { const m = /^#?([0-9a-f]{6})$/i.exec((h || '').trim()); return m ? '#' + m[1].toUpperCase() : null; };
+const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const lum = (h) => { const c = rgb(h).map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+const mix = (a, b, t) => { const A = rgb(a), B = rgb(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); };
+const rgba = (h, a) => 'rgba(' + rgb(h).join(',') + ',' + a + ')';
+
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const B = Object.assign({}, BRANDS[p.brand] || BRANDS.hhcc);
+    ['primary', 'secondary', 'juniors', 'ink', 'chalk'].forEach((k) => { const v = hex(p[k]); if (v) B[k] = v; });
+    const kind = KINDS[p.kind] ? p.kind : 'result';
+    const K = KINDS[kind];
+    const fmt = RATIO[p.format] ? p.format : 'square';
+    const tall = fmt === 'portrait' || fmt === 'story';
+    const junior = kind === 'junior' || !!p.junior;
+    const base = junior ? mix(B.juniors, '#000000', 0.45) : B.ink;
+    const onp = contrast(B.primary, '#FFFFFF') >= contrast(B.primary, B.ink) ? '#FFFFFF' : B.ink;
+    let pt = B.primary;
+    for (let i = 0; i < 6 && contrast(pt, base) < 4.5; i++) pt = mix(pt, '#FFFFFF', 0.22);
+    const V = {
+      '--p': B.primary, '--s': junior ? B.juniors : B.secondary, '--pt': pt, '--onp': onp,
+      '--base': base, '--base2': mix(base, junior ? B.juniors : B.secondary, 0.35), '--glowc': rgba(B.primary, 0.16),
+      '--chalk': B.chalk, '--chalk2': rgba(B.chalk, 0.68), '--panel': rgba(B.chalk, 0.07), '--line': rgba(B.chalk, 0.14),
+      '--crestd': B.crest ? 'block' : 'none', '--monod': B.crest ? 'none' : 'flex',
+      '--phL': tall ? '0cqw' : '54cqw', '--phW': tall ? '100cqw' : '46cqw', '--phH': tall ? (fmt === 'story' ? '46cqh' : (['matchday', 'team', 'junior', 'leaders'].indexOf(kind) >= 0 ? '24cqh' : '31cqh')) : '100cqh',
+      '--phClip': tall ? 'polygon(0 0,100% 0,100% 78%,0 100%)' : 'polygon(24% 0,100% 0,100% 100%,0 100%)',
+      '--phFade': tall ? 'linear-gradient(0deg,' + rgba(base, 0.55) + ' 0%,transparent 40%),linear-gradient(180deg,' + rgba(base, 0.7) + ' 0%,transparent 30%)' : 'linear-gradient(90deg,' + rgba(base, 0.35) + ' 0%,transparent 40%)',
+      '--mdSz': fmt === 'portrait' ? '12cqmin' : '16cqmin', '--msSz': tall ? '30cqmin' : '23cqmin', '--premSz': tall ? '19cqmin' : '14.5cqmin', '--bodyJ': tall ? 'flex-end' : 'center', '--bodyMax': tall ? '100%' : '52%', '--tcJ': tall ? 'center' : 'flex-start',
+    };
+    if (!tall && kind === 'trading') { V['--bodyMax'] = '100%'; }
+    const trim = [[3.8, V['--s']], [2.8, B.chalk], [2, B.primary]].map(([d, c]) => ({ style: tall
+      ? { position: 'absolute', left: 0, top: 0, width: '100%', height: 'calc(var(--phH) + ' + d + 'cqmin)', background: c, clipPath: 'polygon(0 0,100% 0,100% calc(var(--phH) * .78 + ' + d + 'cqmin),0 100%)' }
+      : { position: 'absolute', top: 0, height: '100%', left: 'calc(var(--phL) - ' + d + 'cqmin)', width: 'calc(var(--phW) + ' + d + 'cqmin)', background: c, clipPath: 'polygon(calc(var(--phW) * .24 + ' + d + 'cqmin) 0,100% 0,100% 100%,0 100%)' } }));
+    const rootStyle = Object.assign({ width: '100%', overflow: 'hidden', borderRadius: 'inherit' }, V);
+    const lead = [['Blake Anderson', 512], ['Mitchell Caine', 438], ['Rylan Arms', 401], ['Timothy Allen', 356], ['Brent Anderson', 322]];
+    return {
+      rootStyle, trim, ratio: RATIO[fmt], crest: B.crest || 'assets/hhcc-logo.png', clubName: B.name, shortName: B.short, mono: B.mono,
+      tagline: 'CRICKET CLUB · EST. ' + B.founded, chip: K.chip, photo: K.photo, photoPos: K.pos, hashtag: B.hashtag, sponsors: B.sponsors,
+      kResult: kind === 'result', kMilestone: kind === 'milestone', kLeaders: kind === 'leaders', kMatchday: kind === 'matchday', kTeam: kind === 'team', kTrading: kind === 'trading', kPrem: kind === 'premiership', kJunior: kind === 'junior',
+      resEyebrow: 'A GRADE · ROUND 14 · HOME', resUs: '6/214', resThem: '188', resOpp: B.opp, resMargin: 'Won by 26 runs', resBat: 'B. Anderson 87', resBowl: 'B. Allen 4/31',
+      msName: 'Mitchell\nCaine', msMeta: 'Cap 242 · A Grade · 48 matches · 3,412 career runs',
+      leaders: lead.map(([name, v], i) => ({ rank: i + 1, name, val: v, pct: Math.round((v / 512) * 100) + '%', bar: i === 0 ? B.primary : rgba(B.primary, 0.22), rankC: i === 0 ? onp : pt, nameC: i === 0 ? onp : B.chalk })),
+      fixtures: [['A', B.opp, 'Home · Main oval', '12:30'], ['B', 'Baldivis', 'Baldivis Oval', '12:30'], ['C', 'Waroona', 'Peelwood #2', '1:00'], ['F', 'Pinjarra', 'Home · Oval 2', '9:00']].map(([g, opp, venue, time]) => ({ g, opp, venue, time })),
+      team: [['1', 'B. Anderson', ''], ['2', 'R. Arms', ''], ['3', 'M. Caine', '(c)'], ['4', 'T. Allen', ''], ['5', 'B. Anderson', ''], ['6', 'J. Wylie', 'wk'], ['7', 'C. Adams', ''], ['8', 'B. Allen', ''], ['9', 'D. Arrowsmith', ''], ['10', 'E. Burns', ''], ['11', 'L. Cross', ''], ['12', 'S. Hughes', '12th']].map(([n, name, tag]) => ({ n, name, tag })),
+      tcStats: [['48', 'M'], ['1284', 'RUNS'], ['61', 'WKTS'], ['29.9', 'AVG']].map(([v, l]) => ({ v, l })),
+      stars: [1, 2, 3], premLine: B.short + ' 5/176 def ' + B.opp + ' 142', premCount: 'THIRD FLAG IN FIVE SEASONS',
+      juniors: [['Noah P.', '52 not out · first half century', '52*'], ['Ava T.', '3 wickets, 2 catches', '3/9'], ['Leo M.', 'Direct-hit run out', 'RO']].map(([name, note, fig]) => ({ name, note, fig })),
+    };
+  }
+}
+</script>
+</body>
+</html>

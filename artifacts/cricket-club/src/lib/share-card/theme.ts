@@ -69,7 +69,7 @@ export const juniorThemeFromBrand = (brand?: ClubBrand | null): CardTheme => ({
 
 // True when an input is a junior-flagged card kind.
 export const isJuniorInput = (input: ShareCardInput): boolean =>
-  "junior" in input && input.junior === true;
+  input.kind === "juniorHighlights" || ("junior" in input && input.junior === true);
 
 export const resolvePalette = (theme?: CardTheme | null, brand?: ClubBrand | null): Palette => {
   const fallback = themeFromBrand(brand);

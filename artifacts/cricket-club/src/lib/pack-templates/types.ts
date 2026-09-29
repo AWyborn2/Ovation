@@ -11,6 +11,8 @@
  * `--panel`, `--ink`, `--disp`, surface tokens, `--k` / `--ch` scaling).
  */
 
+import type { PackCardData, PackTokens } from "../pack-render/types";
+
 export type PackTemplateFieldType = "text" | "photo" | "logo" | "repeat";
 
 export interface PackTemplateField {
@@ -80,10 +82,11 @@ export interface PackDesignEntry {
   designKey: string;
   kind: string;
   /**
-   * Category preset for the two kinds that map two designs each
-   * (gradeLeader and clubLeaderboard: "Runs" | "Wickets").
+   * Category preset for the kinds that map several designs
+   * (gradeLeader and clubLeaderboard: "Runs" | "Wickets", plus Club Kit's
+   * "Catches" | "Dismissals" leaderboards).
    */
-  categoryPreset?: "Runs" | "Wickets";
+  categoryPreset?: "Runs" | "Wickets" | "Catches" | "Dismissals";
   template: PackCardTemplate;
 }
 
@@ -135,4 +138,23 @@ export interface PackManifest {
    * "Pack's own look" never touches the markup and stays byte-identical.
    */
   clubSwaps?: ReadonlyArray<readonly [string, string]>;
+  /**
+   * `"club-only"`: the pack is built entirely from the club's colours, so it
+   * has no "Pack's own look" — the per-pack colour switch is hidden and a
+   * stored `"pack"` choice is ignored (Club Kit).
+   */
+  colourMode?: "club-only";
+  /**
+   * Extra custom-property declarations for the card root (no leading `;`),
+   * computed per render — e.g. Club Kit's derived `--ck-*` palette. Only
+   * packs that declare it get them, so other packs' output is unchanged.
+   */
+  rootVars?(ctx: PackRootVarsContext): string;
+}
+
+/** What {@link PackManifest.rootVars} is computed from. */
+export interface PackRootVarsContext {
+  tokens: PackTokens;
+  brand: PackCardData["brand"] | null | undefined;
+  junior: boolean;
 }

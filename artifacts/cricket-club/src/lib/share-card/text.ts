@@ -68,6 +68,12 @@ export const headlineFor = (input: ShareCardInput): string => {
       return input.eventLabel;
     case "clubLeaderboard":
       return input.title;
+    case "roundFixtures":
+      return `${input.roundLabel} • Game Day`;
+    case "tradingCard":
+      return "Trading Card";
+    case "juniorHighlights":
+      return `${input.grade} • Juniors`;
   }
 };
 

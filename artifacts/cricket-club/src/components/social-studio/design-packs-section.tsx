@@ -4,6 +4,7 @@ import { type CardTheme as ApiCardTheme } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/broadcast";
 import { type PackCardData } from "@/lib/pack-render";
+import { getPackManifest } from "@/lib/pack-templates/registry";
 import { type CardSize, type ShareCardInput } from "@/lib/share-card";
 import { PackPreviewTile } from "@/components/social-studio/pack-preview-tile";
 import { Switch } from "@/components/ui/switch";
@@ -119,11 +120,16 @@ export function DesignPacksSection({
                   ? "Not in use"
                   : `Used by ${pack.used} card type${pack.used === 1 ? "" : "s"}`}
               </p>
-              <ColourModeSwitch
-                packId={pack.packId}
-                packName={pack.name}
-                colourModes={colourModes}
-              />
+              {getPackManifest(pack.packId).colourMode === "club-only" ? (
+                // Built from the club's colours: there is no own look to switch to.
+                <p className="text-[13px] font-medium">Always in your club colours</p>
+              ) : (
+                <ColourModeSwitch
+                  packId={pack.packId}
+                  packName={pack.name}
+                  colourModes={colourModes}
+                />
+              )}
               <Button
                 variant="outline"
                 className="h-9 w-full font-semibold"

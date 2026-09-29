@@ -74,6 +74,9 @@ export function bindInput(input: ShareCardInput): BoundInput {
         set(values, "resultVerb", "MATCH DRAWN");
         set(values, "resultVerbShort", "DRAW");
       }
+      // One-word headline (Club Kit): WIN / LOSS / DRAW, or TIE / NO RESULT
+      // when the result line says so. The club always keeps the top bar.
+      set(values, "resultWord", resultWord(input.resultWinner, input.result));
       break;
     }
     case "player": {
@@ -270,26 +273,77 @@ export function bindInput(input: ShareCardInput): BoundInput {
       set(values, "title", input.title);
       set(values, "subtitle", input.subtitle);
       set(values, "season", input.season);
-      rows["leaders"] = (input.leaders ?? []).map((l: ClubLeaderboardLeader) => {
+      // Value bars (Club Kit): each leader's share of the best value, and the
+      // best row marked `top` for its full primary bar.
+      const leaderValues = (input.leaders ?? []).map((l) => parseFloat(String(l.value)) || 0);
+      const best = Math.max(0, ...leaderValues);
+      const topIdx = best > 0 ? leaderValues.indexOf(best) : -1;
+      rows["leaders"] = (input.leaders ?? []).map((l: ClubLeaderboardLeader, idx) => {
         // Same stacked grade block as Weekend Wrap: first token large, the
         // rest as the small sub-label. Binding the whole "A GRADE" into the
         // large slot left the sub on its "GRADE" sample ("A GRADE / GRADE"),
         // and a one-token grade like "U15" read "U15 / GRADE".
         const [gradeHead, ...gradeRest] = (l.gradeLabel ?? "").trim().split(/\s+/);
         return {
+          variant: idx === topIdx ? "top" : undefined,
           values: {
             gradeLabel: gradeHead ?? "",
             gradeSub: gradeRest.join(" "),
             playerName: l.playerName,
             value: l.value,
+            barPct: String(best > 0 ? Math.round((leaderValues[idx] / best) * 100) : 0),
           },
         };
       });
       break;
     }
+    case "roundFixtures": {
+      set(values, "roundLabel", input.roundLabel);
+      set(values, "date", input.date);
+      rows["fixtures"] = (input.fixtures ?? []).map((f) => ({
+        values: {
+          grade: f.grade,
+          opponent: cardTeamName(f.opponent),
+          venue: f.venue,
+          startTime: f.startTime,
+        },
+      }));
+      break;
+    }
+    case "tradingCard": {
+      set(values, "playerName", input.playerName);
+      set(values, "role", input.role);
+      set(values, "season", input.season);
+      // Bound explicitly (as on debut): an absent cap must never fall back to
+      // the template's sample number.
+      values["capNumber"] = input.capNumber != null ? String(input.capNumber) : "";
+      (input.stats ?? []).slice(0, 4).forEach((st, idx) => {
+        set(values, `stat${idx + 1}Value`, st.value);
+        set(values, `stat${idx + 1}Label`, st.label);
+      });
+      if (input.photoUrl) images["cardPhoto"] = input.photoUrl;
+      break;
+    }
+    case "juniorHighlights": {
+      set(values, "grade", input.grade);
+      set(values, "roundLabel", input.roundLabel);
+      // Juniors privacy: first name + surname initial only, whatever was typed.
+      rows["highlights"] = (input.highlights ?? []).slice(0, 3).map((h) => ({
+        values: { name: juniorDisplayName(h.name), note: h.note, figure: h.figure },
+      }));
+      break;
+    }
   }
 
   return { values, images, rows };
+}
+
+/** "Riley Thompson" → "Riley T." — a junior's name as a card may print it. */
+export function juniorDisplayName(name: string): string {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return parts[0] ?? "";
+  const last = parts[parts.length - 1].replace(/\.$/, "");
+  return `${parts[0]} ${last[0]?.toUpperCase() ?? ""}.`;
 }
 
 /**
@@ -374,6 +428,15 @@ export function applyPackData(bound: BoundInput, data: PackCardData, _kind: stri
  */
 export function leaderTitle(category: string): [string, string] {
   if (/dismiss/i.test(category)) return ["SAFE", "HANDS"];
+  if (/catch/i.test(category)) return ["LEADING", "CATCHER"];
   if (/wicket|bowl/i.test(category)) return ["LEADING", "WICKET-TAKER"];
   return ["LEADING", "RUN-SCORER"];
+}
+
+/** The one-word result headline for a match summary. */
+export function resultWord(winner: "club" | "opposition" | "draw", result: string): string {
+  if (/no result|abandon/i.test(result)) return "NO RESULT";
+  if (/\btie[d]?\b/i.test(result)) return "TIE";
+  if (winner === "draw") return "DRAW";
+  return winner === "club" ? "WIN" : "LOSS";
 }

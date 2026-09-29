@@ -20,6 +20,7 @@ const PACK_MARKERS: Record<string, string> = {
   "bold-type-v1": "-webkit-text-stroke:.35cqmin",
   "neon-night-v1": "0 0/5cqmin 5cqmin",
   "sunset-v1": "font-family:'Kaushan Script',cursive",
+  "club-kit-v1": 'data-ck-rule="1"',
 };
 
 const BRAND = {

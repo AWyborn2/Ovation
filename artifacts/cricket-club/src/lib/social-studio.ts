@@ -53,6 +53,9 @@ export const KIND_BLURB: Record<CardKind, string> = {
   newSigning: "New signings, made by hand",
   countdown: "Countdown to a fixture or event",
   clubLeaderboard: "Club-wide leaders by grade",
+  roundFixtures: "Every grade playing this round (Club Kit)",
+  tradingCard: "Collectable player cards (Club Kit)",
+  juniorHighlights: "Junior stars of the round (Club Kit)",
 };
 
 /**
@@ -66,6 +69,9 @@ export const PACK_SWATCH: Record<string, string> = {
   "bold-type-v1": "linear-gradient(135deg, #FBAC27 60%, #10151B 60%)",
   "neon-night-v1": "linear-gradient(135deg, #05070D 40%, #22D3EE 80%, #EC4899)",
   "sunset-v1": "linear-gradient(180deg, #FF7A45, #C2185B 55%, #2A1036)",
+  // Club Kit wears the club's colours; its swatch is the jumper trim.
+  "club-kit-v1":
+    "linear-gradient(120deg, #10151B 50%, #333F48 50% 58%, #F2F5F8 58% 62%, #FBAC27 62%)",
 };
 
 /**
@@ -90,6 +96,9 @@ const KIND_KEYWORDS: Record<CardKind, string[]> = {
   newSigning: ["signing", "new player", "recruit", "welcome"],
   countdown: ["countdown", "days to go", "season launch", "event"],
   clubLeaderboard: ["club leaderboard", "club leaders", "across the club"],
+  roundFixtures: ["game day", "all grades", "fixtures", "this round", "round preview"],
+  tradingCard: ["trading card", "collectable", "player card", "footy card"],
+  juniorHighlights: ["juniors", "junior highlights", "kids", "juniors shine"],
 };
 
 /**

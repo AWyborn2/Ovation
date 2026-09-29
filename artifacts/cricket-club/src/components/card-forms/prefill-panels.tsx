@@ -331,6 +331,7 @@ function ClubTotalsPrefillPanel({ onApply }: { onApply: Apply }) {
         >
           <option value="Runs">Runs</option>
           <option value="Wickets">Wickets</option>
+          <option value="Catches">Catches</option>
           <option value="Dismissals">Dismissals</option>
         </SelectField>
       </div>
