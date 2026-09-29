@@ -15,6 +15,7 @@ import {
   type NegativeBaselineWarning,
 } from "../lib/baseline-reconcile";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireNativeStatsTenant } from "../middlewares/require-native-stats-tenant";
 import { adminWriteRateLimiter } from "../middlewares/rate-limit";
 import { buildResolutionMap } from "../lib/import-body-parsers";
 import {
@@ -55,6 +56,7 @@ const router: IRouter = Router();
 router.post(
   "/imports/match-batch",
   requireAdmin,
+  requireNativeStatsTenant,
   adminWriteRateLimiter,
   batchUpload.array("files", 80),
   async (req: Request, res): Promise<void> => {
@@ -278,6 +280,7 @@ router.post(
 router.post(
   "/imports/match-batch/:id/revalidate",
   requireAdmin,
+  requireNativeStatsTenant,
   adminWriteRateLimiter,
   async (req, res): Promise<void> => {
     const id = parseInt(String(req.params.id), 10);
@@ -309,6 +312,7 @@ router.post(
 router.post(
   "/imports/match-batch/:id/commit",
   requireAdmin,
+  requireNativeStatsTenant,
   adminWriteRateLimiter,
   async (req, res): Promise<void> => {
     const id = parseInt(String(req.params.id), 10);
@@ -569,6 +573,7 @@ router.post(
 router.post(
   "/imports/undo-season",
   requireAdmin,
+  requireNativeStatsTenant,
   adminWriteRateLimiter,
   async (req, res): Promise<void> => {
     const grade = typeof req.body?.grade === "string" ? req.body.grade : "";

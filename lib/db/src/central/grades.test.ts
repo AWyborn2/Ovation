@@ -78,10 +78,48 @@ describe("classifyCentralGrade — PCA behaviour is unchanged", () => {
   });
 
   it("deliberate PCA exclusions still return null", () => {
-    expect(appGradeFromCentral("Ladies T20")).toBeNull();
     expect(appGradeFromCentral("Female C Grade")).toBeNull();
+    expect(appGradeFromCentral("Senior Female C Grade")).toBeNull();
     expect(appGradeFromCentral("Charity Match")).toBeNull();
     expect(appGradeFromCentral(null)).toBeNull();
     expect(appGradeFromCentral("")).toBeNull();
+  });
+});
+
+describe("classifyCentralGrade — Ladies T20 is senior Female B Grade (plan U3)", () => {
+  it("maps the Ladies T20 label to Female B Grade, with an explaining note", () => {
+    const m = classifyCentralGrade("Ladies T20");
+    expect(m.appGrade).toBe("Female B Grade");
+    expect(m.note).toMatch(/ladies t20/i);
+  });
+
+  it("tolerates case and whitespace variants of the label", () => {
+    expect(appGradeFromCentral("ladies t20")).toBe("Female B Grade");
+    expect(appGradeFromCentral("  LADIES T20  ")).toBe("Female B Grade");
+    expect(appGradeFromCentral("Ladies  T20")).toBe("Female B Grade");
+  });
+
+  it("leaves the other female grades where they were", () => {
+    expect(appGradeFromCentral("Senior Female A Grade")).toBe("Female A Grade");
+    expect(appGradeFromCentral("Rio Tinto Female A Grade")).toBe("Female A Grade");
+    expect(appGradeFromCentral("Mid-Year T20 Female A Grade")).toBe("Female A Grade");
+    expect(appGradeFromCentral("Senior Female B Grade")).toBe("Female B Grade");
+  });
+
+  it("keeps junior girls' competitions out of the senior read (juniors isolation)", () => {
+    for (const label of ["Under 15 Girls", "Under 13 Girls", "U14 Girls", "U17 Girls T20"]) {
+      expect(appGradeFromCentral(label), label).toBeNull();
+    }
+  });
+
+  it("leaves WA women's labels unchanged", () => {
+    expect(appGradeFromCentral("Women's First Grade")).toBe("Women's 1st Grade");
+    expect(appGradeFromCentral("Women's 2nd Grade")).toBe("Women's 2nd Grade");
+    expect(appGradeFromCentral("Female B Grade T20")).toBe("Female B Grade");
+  });
+
+  it("does not catch unrelated T20 labels", () => {
+    expect(appGradeFromCentral("T20: B Grade")).toBe("B Grade");
+    expect(appGradeFromCentral("Senior Men T20 Div1")).toBe("T20");
   });
 });

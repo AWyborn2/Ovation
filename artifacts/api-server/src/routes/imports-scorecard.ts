@@ -7,6 +7,7 @@ import { buildNameMatcher } from "../lib/name-match";
 import { getTenantId } from "../middlewares/tenant-context";
 import { loadBackfillBaseFigures } from "../lib/baseline-reconcile";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireNativeStatsTenant } from "../middlewares/require-native-stats-tenant";
 import { adminWriteRateLimiter } from "../middlewares/rate-limit";
 import { type BackfillFigures, loadRoster } from "../lib/import-helpers";
 import { scorecardUpload, type MulterRequest } from "../lib/import-upload";
@@ -22,6 +23,7 @@ const router: IRouter = Router();
 router.post(
   "/imports/match-xlsx",
   requireAdmin,
+  requireNativeStatsTenant,
   adminWriteRateLimiter,
   scorecardUpload.single("file"),
   async (req: Request, res): Promise<void> => {

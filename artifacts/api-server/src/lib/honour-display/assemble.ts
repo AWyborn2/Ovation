@@ -82,10 +82,10 @@ export async function assembleBoards(
     buildMilestoneBoard(source),
     buildAwardPoints(tenantId),
     buildRecordsLeaderboards(tenantId),
-    buildRecordsByGrade(),
+    buildRecordsByGrade(source),
     buildTeamOfDecade(tenantId),
     buildClubRecords(tenantId),
-    buildMostGames(),
+    buildMostGames(source),
   ]);
 
   const boards: HonourBoardOut[] = [];
