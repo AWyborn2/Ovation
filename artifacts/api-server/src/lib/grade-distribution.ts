@@ -1,10 +1,10 @@
-import { eq, sql, type SQL } from "drizzle-orm";
+import { sql, type SQL } from "drizzle-orm";
 import type { z } from "zod";
-import { db, playerIdMapTable } from "@workspace/db";
+import { db } from "@workspace/db";
 import { FILL_IN_THRESHOLD, ballsToOvers } from "@workspace/scorecard";
 import type { GetGradeDistributionResponse } from "@workspace/api-zod";
 import type { DataSource } from "./tenant";
-import { resolveCuration } from "./central-curation";
+import { loadClubIdentity } from "./club-overlay";
 
 /**
  * Grade distribution (stats analytics KTD4): every qualifying club player's
@@ -328,28 +328,20 @@ export async function loadCentralDistributionRows(
 ): Promise<DistributionRawRow[]> {
   const { centralGradeDistribution, splitDisplayName } =
     await import("@workspace/db/central-queries");
-  const [rows, mapRows, curation] = await Promise.all([
-    centralGradeDistribution(grade, {
-      clubId: source.clubId,
-      fromSeason: o.fromSeason,
-      toSeason: o.toSeason,
-    }),
-    db
-      .select({
-        participantId: playerIdMapTable.participantId,
-        playerId: playerIdMapTable.playerId,
-      })
-      .from(playerIdMapTable)
-      .where(eq(playerIdMapTable.tenantId, source.tenantId)),
-    resolveCuration(source.tenantId),
-  ]);
-  const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+  const identity = await loadClubIdentity(source.tenantId);
+  const rows = await centralGradeDistribution(grade, {
+    clubId: source.clubId,
+    fromSeason: o.fromSeason,
+    toSeason: o.toSeason,
+    merges: identity.merges,
+  });
+  const { intByGuid, nameByGuid } = identity;
 
   const out: DistributionRawRow[] = [];
   for (const r of rows) {
     const playerId = intByGuid.get(r.participantId);
     if (!playerId) continue;
-    const name = splitDisplayName(curation.nameByGuid.get(r.participantId) ?? r.displayName ?? "");
+    const name = splitDisplayName(nameByGuid.get(r.participantId) ?? r.displayName ?? "");
     out.push({
       playerId,
       ...name,

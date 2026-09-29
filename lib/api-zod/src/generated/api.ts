@@ -7539,12 +7539,14 @@ export const ListPlayerCurationResponseItem = zod.object({
   "participantId": zod.string(),
   "overrideDisplayName": zod.string().nullable(),
   "mergedIntoParticipantId": zod.string().nullable(),
+  "mergeStatus": zod.enum(['suggested', 'confirmed', 'rejected']).nullable().describe('Review state of the merge (null when there is no merge). Only confirmed folds.'),
   "updatedAt": zod.coerce.date()
 })
 export const ListPlayerCurationResponse = zod.array(ListPlayerCurationResponseItem)
 
 
 /**
+ * A merge points this participant at a keeper participant. Only a `confirmed` merge folds the two careers on read (the default when a merge target is given without a status); `suggested` and `rejected` record review state and keep them separate. A merge is refused unless both participants have played for the tenant's central club, neither is private, and it does not create a cycle or a chain deeper than 16.
  * @summary Rename and/or merge one central participant for this tenant
  */
 export const UpsertPlayerCurationParams = zod.object({
@@ -7558,7 +7560,8 @@ export const upsertPlayerCurationBodyOverrideDisplayNameMax = 120;
 
 export const UpsertPlayerCurationBody = zod.object({
   "overrideDisplayName": zod.string().min(1).max(upsertPlayerCurationBodyOverrideDisplayNameMax).nullish(),
-  "mergedIntoParticipantId": zod.string().min(1).nullish()
+  "mergedIntoParticipantId": zod.string().min(1).nullish(),
+  "mergeStatus": zod.enum(['suggested', 'confirmed', 'rejected']).optional().describe('Review state for the merge. Defaults to confirmed when a merge target is given; ignored (stored null) when there is none.')
 })
 
 export const UpsertPlayerCurationResponse = zod.object({
@@ -7567,6 +7570,7 @@ export const UpsertPlayerCurationResponse = zod.object({
   "participantId": zod.string(),
   "overrideDisplayName": zod.string().nullable(),
   "mergedIntoParticipantId": zod.string().nullable(),
+  "mergeStatus": zod.enum(['suggested', 'confirmed', 'rejected']).nullable().describe('Review state of the merge (null when there is no merge). Only confirmed folds.'),
   "updatedAt": zod.coerce.date()
 })
 

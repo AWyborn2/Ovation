@@ -320,7 +320,7 @@ describe("GET /players/vs-club — central", () => {
     h.orgToCentral.set("org-rivals", 12);
     const res = await request(app).get("/api/players/vs-club?opponentOrgId=org-rivals");
     expect(res.status).toBe(200);
-    expect(h.centralCalls).toEqual([{ clubId: 1, opponentClubId: 12 }]);
+    expect(h.centralCalls).toEqual([{ clubId: 1, opponentClubId: 12, merges: new Map() }]);
     expect(res.body).toMatchObject({
       resolved: true,
       opponentClubId: 12,
@@ -353,7 +353,7 @@ describe("GET /players/vs-club — central", () => {
     h.tenantRows = [{ centralClubId: 12, playhqOrgId: null }];
     const res = await request(app).get("/api/players/vs-club?opponentAppClubId=55");
     expect(res.body).toMatchObject({ resolved: true, opponentClubId: 12 });
-    expect(h.centralCalls).toEqual([{ clubId: 1, opponentClubId: 12 }]);
+    expect(h.centralCalls).toEqual([{ clubId: 1, opponentClubId: 12, merges: new Map() }]);
   });
 
   it("maps an app register id via its PlayHQ org when the club isn't a tenant", async () => {

@@ -103,6 +103,9 @@ async function commitPlan(tx: Tx, tenantId: number, plan: PersistPlan): Promise<
         tenantId,
         participantId: m.participantId,
         mergedIntoParticipantId: m.keeperParticipantId,
+        // Scorecard-evidence merges, reviewed via the dry run before --commit:
+        // confirmed, so they fold on read (only confirmed merges do).
+        mergeStatus: "confirmed" as const,
       })),
     );
   }
@@ -110,7 +113,11 @@ async function commitPlan(tx: Tx, tenantId: number, plan: PersistPlan): Promise<
     // Only ever fills an EMPTY merge pointer; the rename (if any) is kept.
     const res = await tx
       .update(playerCurationTable)
-      .set({ mergedIntoParticipantId: m.keeperParticipantId, updatedAt: new Date() })
+      .set({
+        mergedIntoParticipantId: m.keeperParticipantId,
+        mergeStatus: "confirmed",
+        updatedAt: new Date(),
+      })
       .where(
         and(
           eq(playerCurationTable.tenantId, tenantId),
@@ -314,7 +321,7 @@ async function main(): Promise<void> {
       })),
     undo:
       "DELETE the inserted player_id_map rows and player_curation rows (tenant_id + participant_id); " +
-      "set merged_into_participant_id back to NULL on the updated curation rows.",
+      "set merged_into_participant_id and merge_status back to NULL on the updated curation rows.",
   };
   writeFileSync(path.join(outDir, "reversal.json"), JSON.stringify(reversal, null, 2) + "\n");
   console.log(

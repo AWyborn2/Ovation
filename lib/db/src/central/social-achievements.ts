@@ -8,6 +8,12 @@ import {
   centralMatchesTable,
 } from "../central";
 import { appGradeFromCentral, parseRound, parseSeasonStartYear } from "./grades";
+import {
+  canonicalizeLines,
+  foldPlayerNames,
+  mergeGroupMembers,
+  type CentralMerges,
+} from "./merges";
 import { centralPlayerNames } from "./privacy";
 import { classifyFieldingKind, classifyInnings } from "./scoring";
 import { clubInvolvedWhere, inList } from "./where";
@@ -117,6 +123,13 @@ export interface FoldAchievementsInput {
   fielding: readonly AchievementFieldingLine[];
   names: ReadonlyMap<string, { displayName: string | null; isPrivate: boolean }>;
   tiers: AchievementTiers;
+  /**
+   * The club's confirmed merges (merged-away GUID -> keeper). Lines fold to the
+   * keeper before anything is walked, so a merged pair has ONE career: it
+   * crosses a tier once, debuts once, and is omitted when any GUID in the
+   * group is private. `names` must then carry every group member.
+   */
+  merges?: CentralMerges;
 }
 
 const BOARD_KEYS = ["games", "runs", "wickets", "dismissals"] as const;
@@ -136,7 +149,15 @@ const BOARD_KEYS = ["games", "runs", "wickets", "dismissals"] as const;
  *
  * Matches are walked in (season, date, id) order.
  */
-export function foldMatchAchievements(input: FoldAchievementsInput): CentralAchievement[] {
+export function foldMatchAchievements(raw: FoldAchievementsInput): CentralAchievement[] {
+  const input = {
+    ...raw,
+    batting: canonicalizeLines(raw.batting, raw.merges),
+    bowling: canonicalizeLines(raw.bowling, raw.merges),
+    rosters: canonicalizeLines(raw.rosters, raw.merges),
+    fielding: canonicalizeLines(raw.fielding, raw.merges),
+    names: foldPlayerNames(raw.names, raw.merges),
+  };
   const metaOf = new Map<number, AchievementMatchMeta & { grade: string; season: number }>();
   for (const m of input.matches) {
     if (m.grade == null || m.season == null) continue; // senior matches only
@@ -310,11 +331,17 @@ export function foldMatchAchievements(input: FoldAchievementsInput): CentralAchi
  * Centuries, five-wicket hauls, senior debuts and career milestones (senior
  * totals only) that the club's players achieved in `matchIds`. Ids that aren't
  * the club's senior matches are ignored. Private players are omitted.
+ *
+ * With `merges` (the tenant's confirmed merges), each merged group is one
+ * career: its whole history is read and folded to the keeper, so a combined
+ * total crosses a tier once — and only in a target match, never retroactively
+ * for history (KTD8).
  */
 export async function centralMatchAchievements(
   clubId: number,
   matchIds: readonly number[],
   tiers: AchievementTiers,
+  merges?: CentralMerges,
 ): Promise<CentralAchievement[]> {
   if (matchIds.length === 0) return [];
   const matchRows = await centralDb
@@ -386,10 +413,17 @@ export async function centralMatchAchievements(
         ),
       ),
   ]);
-  const players = [
+  const inMatch = [
     ...new Set([...inTargets(tb), ...inTargets(tw), ...inTargets(tr), ...inTargets(tf)]),
   ];
-  if (players.length === 0) return [];
+  if (inMatch.length === 0) return [];
+  // A merged player's career spans every GUID in their group, so read the whole
+  // group's history (the keeper and each GUID folded into it) — otherwise a
+  // keeper would re-cross tiers the combined career passed long ago.
+  const players = mergeGroupMembers(
+    inMatch.map((p) => merges?.get(p) ?? p),
+    merges,
+  );
 
   // Those players' senior history for the club (targets included).
   const [batting, bowling, rosters, fielding, names] = await Promise.all([
@@ -465,5 +499,6 @@ export async function centralMatchAchievements(
     fielding,
     names,
     tiers,
+    merges,
   });
 }

@@ -5185,6 +5185,13 @@ paths:
       operationId: upsertPlayerCuration
       tags: [players]
       summary: Rename and/or merge one central participant for this tenant
+      description: >-
+        A merge points this participant at a keeper participant. Only a
+        `confirmed` merge folds the two careers on read (the default when a
+        merge target is given without a status); `suggested` and `rejected`
+        record review state and keep them separate. A merge is refused unless
+        both participants have played for the tenant's central club, neither is
+        private, and it does not create a cycle or a chain deeper than 16.
       parameters:
         - name: participantId
           in: path
@@ -5204,7 +5211,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/PlayerCuration"
         "400":
-          description: Invalid body, or a player merged into itself
+          description: >-
+            Invalid body, a player merged into itself, a participant from
+            another club, a private participant, or a cycle / over-long chain
     delete:
       operationId: deletePlayerCuration
       tags: [players]
@@ -13856,13 +13865,27 @@ components:
 
     PlayerCuration:
       type: object
-      required: [id, tenantId, participantId, overrideDisplayName, mergedIntoParticipantId, updatedAt]
+      required:
+        [
+          id,
+          tenantId,
+          participantId,
+          overrideDisplayName,
+          mergedIntoParticipantId,
+          mergeStatus,
+          updatedAt,
+        ]
       properties:
         id: { type: integer }
         tenantId: { type: integer }
         participantId: { type: string }
         overrideDisplayName: { type: string, nullable: true }
         mergedIntoParticipantId: { type: string, nullable: true }
+        mergeStatus:
+          type: string
+          enum: [suggested, confirmed, rejected]
+          nullable: true
+          description: Review state of the merge (null when there is no merge). Only confirmed folds.
         updatedAt: { type: string, format: date-time }
 
     PlayerCurationBody:
@@ -13877,6 +13900,12 @@ components:
           type: string
           minLength: 1
           nullable: true
+        mergeStatus:
+          type: string
+          enum: [suggested, confirmed, rejected]
+          description: >-
+            Review state for the merge. Defaults to confirmed when a merge
+            target is given; ignored (stored null) when there is none.
 
     CheckoutBody:
       type: object

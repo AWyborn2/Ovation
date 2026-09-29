@@ -258,10 +258,30 @@ describe("GET /grades/:grade/distribution — central", () => {
     expect(b).toMatchObject({ givenName: "Jo", surname: "Smithers" });
     // WA label and span handed to the central read for the tenant's club.
     expect(h.centralCalls).toEqual([
-      ["1st Grade", { clubId: 101, fromSeason: 2021, toSeason: 2025 }],
+      ["1st Grade", { clubId: 101, fromSeason: 2021, toSeason: 2025, merges: new Map() }],
     ]);
     // Never the native tables on a central tenant.
     expect(h.executed).toHaveLength(0);
+  });
+
+  it("hands only CONFIRMED merges to the central read (U6)", async () => {
+    // The central read folds each merged-away GUID into its keeper; here it
+    // returns the keeper's row, which keeps the keeper's crosswalk id.
+    h.centralRows = [centralRow("g-a")];
+    h.mapRows = [
+      { participantId: "g-a", playerId: 41 },
+      { participantId: "g-b", playerId: 42 },
+      { participantId: "g-c", playerId: 43 },
+    ];
+    h.curationRows = [
+      { participantId: "g-b", mergedIntoParticipantId: "g-a", mergeStatus: "confirmed" },
+      { participantId: "g-c", mergedIntoParticipantId: "g-a", mergeStatus: "suggested" },
+    ];
+    const res = await request(app).get("/api/grades/1st%20Grade/distribution").expect(200);
+    expect(h.centralCalls).toEqual([
+      ["1st Grade", expect.objectContaining({ merges: new Map([["g-b", "g-a"]]) })],
+    ]);
+    expect(res.body.players.map((p: { playerId: number }) => p.playerId)).toEqual([41]);
   });
 
   it("derives strike rate from balls faced", async () => {

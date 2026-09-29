@@ -1,8 +1,6 @@
-import { eq } from "drizzle-orm";
-import { db, playerIdMapTable } from "@workspace/db";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { getTenantCentralClubId } from "./tenant";
-import { resolveCuration } from "./central-curation";
+import { loadClubIdentity } from "./club-overlay";
 import {
   BOARD_STAT_LABEL,
   TIER_LABELS,
@@ -42,21 +40,18 @@ export type CentralIdentity = {
   /** True when this tenant's crosswalk maps the GUID to a fill-in id. */
   isFillIn: (participantId: string) => boolean;
   nameFor: (participantId: string, displayName: string | null) => string;
+  /** Confirmed merges (merged-away GUID -> keeper), for the central reads to fold. */
+  merges: ReadonlyMap<string, string>;
 };
 
-/** The tenant's GUID → app id crosswalk plus its display-name overrides. */
+/**
+ * The tenant's GUID → app id crosswalk plus its display-name overrides and
+ * confirmed merges (the club overlay's identity slice): a merged-away GUID
+ * resolves to its keeper's id and name.
+ */
 export async function loadCentralIdentity(tenantId: number): Promise<CentralIdentity> {
-  const [mapRows, curation] = await Promise.all([
-    db
-      .select({
-        participantId: playerIdMapTable.participantId,
-        playerId: playerIdMapTable.playerId,
-      })
-      .from(playerIdMapTable)
-      .where(eq(playerIdMapTable.tenantId, tenantId)),
-    resolveCuration(tenantId),
-  ]);
-  const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+  const identity = await loadClubIdentity(tenantId);
+  const intByGuid = identity.intByGuid;
   return {
     playerIdFor: (participantId) => {
       const id = intByGuid.get(participantId);
@@ -64,7 +59,8 @@ export async function loadCentralIdentity(tenantId: number): Promise<CentralIden
     },
     isFillIn: (participantId) => (intByGuid.get(participantId) ?? 0) >= FILL_IN_THRESHOLD,
     nameFor: (participantId, displayName) =>
-      curation.nameByGuid.get(participantId) ?? displayName ?? "Unknown",
+      identity.nameFor(participantId, displayName) ?? "Unknown",
+    merges: identity.merges,
   };
 }
 
@@ -86,10 +82,8 @@ export async function loadCentralGradeSeason(
 ): Promise<RoundUpData> {
   const { centralGradeSeasonSocial } = await import("@workspace/db/central-queries");
   const clubId = await getTenantCentralClubId(tenantId);
-  const [raw, identity] = await Promise.all([
-    centralGradeSeasonSocial(clubId, grade, season),
-    loadCentralIdentity(tenantId),
-  ]);
+  const identity = await loadCentralIdentity(tenantId);
+  const raw = await centralGradeSeasonSocial(clubId, grade, season, identity.merges);
 
   const byName = <T extends { participantId: string; displayName: string | null }>(
     rows: T[],
@@ -128,10 +122,8 @@ export async function loadCentralRecapMilestones(
 ): Promise<MilestoneCardRow[]> {
   const { centralMilestones } = await import("@workspace/db/central-queries");
   const clubId = await getTenantCentralClubId(tenantId);
-  const [raw, identity] = await Promise.all([
-    centralMilestones(clubId, TIER_THRESHOLDS),
-    loadCentralIdentity(tenantId),
-  ]);
+  const identity = await loadCentralIdentity(tenantId);
+  const raw = await centralMilestones(clubId, TIER_THRESHOLDS, identity.merges);
 
   const out: MilestoneCardRow[] = [];
   for (const m of raw) {

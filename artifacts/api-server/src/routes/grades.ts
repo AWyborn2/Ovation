@@ -10,7 +10,6 @@ import {
   clubsTable,
   capRegisterTable,
   recordsDisplaySettingsTable,
-  playerIdMapTable,
 } from "@workspace/db";
 import {
   UpdateRecordsDisplaySettingsBody,
@@ -31,6 +30,7 @@ import {
   DEFAULT_MIN_OVERS,
 } from "../lib/grade-distribution";
 import { getTenantId } from "../middlewares/tenant-context";
+import { loadClubIdentity } from "../lib/club-overlay";
 import { getOrCreateSettings } from "../lib/settings";
 import { overlayNativeOpponents, overlayCentralOpponents } from "../lib/club-brand";
 import {
@@ -132,23 +132,15 @@ router.get("/grades/:grade/distribution", async (req, res): Promise<void> => {
 
 router.get("/dashboard", async (req, res): Promise<void> => {
   // Central tenants: totals, top performers and grade summaries all derived from
-  // the central PCA database, filtered to their club. Top-performer GUIDs are
-  // mapped to the tenant's int player ids via player_id_map.
+  // the central PCA database, filtered to their club, with the club's confirmed
+  // merges folded in. Top-performer GUIDs are mapped to the tenant's int player
+  // ids via player_id_map.
   const source = await dataSource(req);
   if (source.kind === "central") {
     const { centralDashboard } = await import("@workspace/db/central-queries");
-    const tenantId = getTenantId(req);
-    const [dash, mapRows] = await Promise.all([
-      centralDashboard(source.clubId),
-      db
-        .select({
-          participantId: playerIdMapTable.participantId,
-          playerId: playerIdMapTable.playerId,
-        })
-        .from(playerIdMapTable)
-        .where(eq(playerIdMapTable.tenantId, tenantId)),
-    ]);
-    const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+    const identity = await loadClubIdentity(getTenantId(req));
+    const dash = await centralDashboard(source.clubId, identity.merges);
+    const intByGuid = identity.intByGuid;
     const splitName = (dn: string | null) => {
       const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
       if (parts.length === 0) return { givenName: "", surname: "" };
@@ -237,19 +229,12 @@ router.get("/overview", async (req, res): Promise<void> => {
   if (source.kind === "central") {
     const central = await import("@workspace/db/central-queries");
     const clubId = source.clubId;
-    const tenantId = getTenantId(req);
-    const [totals, seasons, mapRows] = await Promise.all([
-      central.centralClubTotals(clubId),
+    const identity = await loadClubIdentity(getTenantId(req));
+    const [totals, seasons] = await Promise.all([
+      central.centralClubTotals(clubId, undefined, identity.merges),
       central.centralClubSeasons(clubId),
-      db
-        .select({
-          participantId: playerIdMapTable.participantId,
-          playerId: playerIdMapTable.playerId,
-        })
-        .from(playerIdMapTable)
-        .where(eq(playerIdMapTable.tenantId, tenantId)),
     ]);
-    const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+    const intByGuid = identity.intByGuid;
     const latestSeason = seasons[0] ?? null;
 
     let recentMatches: Awaited<ReturnType<typeof central.centralClubMatches>> = [];
@@ -285,8 +270,8 @@ router.get("/overview", async (req, res): Promise<void> => {
         value: l.value,
       });
       const [runs, wkts] = await Promise.all([
-        central.centralSeasonLeaders(clubId, latestSeason, "runs"),
-        central.centralSeasonLeaders(clubId, latestSeason, "wickets"),
+        central.centralSeasonLeaders(clubId, latestSeason, "runs", undefined, identity.merges),
+        central.centralSeasonLeaders(clubId, latestSeason, "wickets", undefined, identity.merges),
       ]);
       topRunScorers = runs.map(toLeader);
       topWicketTakers = wkts.map(toLeader);
@@ -406,20 +391,14 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
 
   // Central tenants: leaders, season default and grade chips all come from the
   // central PCA database filtered to the tenant's club — never the native
-  // (Halls Head) snapshot tables. GUIDs map to tenant int ids via player_id_map.
+  // (Halls Head) snapshot tables. Confirmed merges fold into the keeper; GUIDs
+  // map to tenant int ids via player_id_map.
   const source = await dataSource(req);
   if (source.kind === "central") {
     const central = await import("@workspace/db/central-queries");
     const clubId = source.clubId;
-    const tenantId = getTenantId(req);
-    const mapRows = await db
-      .select({
-        participantId: playerIdMapTable.participantId,
-        playerId: playerIdMapTable.playerId,
-      })
-      .from(playerIdMapTable)
-      .where(eq(playerIdMapTable.tenantId, tenantId));
-    const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+    const identity = await loadClubIdentity(getTenantId(req));
+    const { merges, intByGuid } = identity;
     const splitName = (dn: string | null) => {
       const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
       if (parts.length === 0) return { givenName: "", surname: "" };
@@ -434,8 +413,8 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
 
     if (allTime) {
       const [runs, wkts, availableGrades] = await Promise.all([
-        central.centralAllTimeLeaders(clubId, "runs", grade),
-        central.centralAllTimeLeaders(clubId, "wickets", grade),
+        central.centralAllTimeLeaders(clubId, "runs", grade, merges),
+        central.centralAllTimeLeaders(clubId, "wickets", grade, merges),
         central.centralGradesForSeason(clubId, null),
       ]);
       res.json({
@@ -465,8 +444,8 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
     }
 
     const [runs, wkts, availableGrades] = await Promise.all([
-      central.centralSeasonLeaders(clubId, season, "runs", grade),
-      central.centralSeasonLeaders(clubId, season, "wickets", grade),
+      central.centralSeasonLeaders(clubId, season, "runs", grade, merges),
+      central.centralSeasonLeaders(clubId, season, "wickets", grade, merges),
       central.centralGradesForSeason(clubId, season),
     ]);
     res.json({
@@ -543,18 +522,9 @@ router.get("/records", async (req, res): Promise<void> => {
   const source = await dataSource(req);
   if (source.kind === "central") {
     const { centralClubRecords } = await import("@workspace/db/central-queries");
-    const tenantId = getTenantId(req);
-    const [records, mapRows] = await Promise.all([
-      filter ? centralClubRecords(source.clubId, filter) : centralClubRecords(source.clubId),
-      db
-        .select({
-          participantId: playerIdMapTable.participantId,
-          playerId: playerIdMapTable.playerId,
-        })
-        .from(playerIdMapTable)
-        .where(eq(playerIdMapTable.tenantId, tenantId)),
-    ]);
-    const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+    const identity = await loadClubIdentity(getTenantId(req));
+    const records = await centralClubRecords(source.clubId, filter ?? undefined, identity.merges);
+    const intByGuid = identity.intByGuid;
     const split = (dn: string | null) => {
       const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
       if (parts.length === 0) return { givenName: "", surname: "" };

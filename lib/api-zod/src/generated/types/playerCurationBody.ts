@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { PlayerCurationBodyMergeStatus } from './playerCurationBodyMergeStatus';
 
 export interface PlayerCurationBody {
   /**
@@ -14,4 +15,6 @@ export interface PlayerCurationBody {
   overrideDisplayName?: string | null;
   /** @minLength 1 */
   mergedIntoParticipantId?: string | null;
+  /** Review state for the merge. Defaults to confirmed when a merge target is given; ignored (stored null) when there is none. */
+  mergeStatus?: PlayerCurationBodyMergeStatus;
 }

@@ -5177,14 +5177,40 @@ export interface RecapInput {
   season: number;
 }
 
+/**
+ * Review state of the merge (null when there is no merge). Only confirmed folds.
+ */
+export type PlayerCurationMergeStatus = typeof PlayerCurationMergeStatus[keyof typeof PlayerCurationMergeStatus] | null;
+
+
+export const PlayerCurationMergeStatus = {
+  suggested: 'suggested',
+  confirmed: 'confirmed',
+  rejected: 'rejected',
+} as const;
+
 export interface PlayerCuration {
   id: number;
   tenantId: number;
   participantId: string;
   overrideDisplayName: string | null;
   mergedIntoParticipantId: string | null;
+  /** Review state of the merge (null when there is no merge). Only confirmed folds. */
+  mergeStatus: PlayerCurationMergeStatus;
   updatedAt: string;
 }
+
+/**
+ * Review state for the merge. Defaults to confirmed when a merge target is given; ignored (stored null) when there is none.
+ */
+export type PlayerCurationBodyMergeStatus = typeof PlayerCurationBodyMergeStatus[keyof typeof PlayerCurationBodyMergeStatus];
+
+
+export const PlayerCurationBodyMergeStatus = {
+  suggested: 'suggested',
+  confirmed: 'confirmed',
+  rejected: 'rejected',
+} as const;
 
 export interface PlayerCurationBody {
   /**
@@ -5194,6 +5220,8 @@ export interface PlayerCurationBody {
   overrideDisplayName?: string | null;
   /** @minLength 1 */
   mergedIntoParticipantId?: string | null;
+  /** Review state for the merge. Defaults to confirmed when a merge target is given; ignored (stored null) when there is none. */
+  mergeStatus?: PlayerCurationBodyMergeStatus;
 }
 
 export type CheckoutBodyPlan = typeof CheckoutBodyPlan[keyof typeof CheckoutBodyPlan];

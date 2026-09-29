@@ -127,19 +127,48 @@ export async function taggedPlayerPhotoUrls(
   return out;
 }
 
-/** Attach each player's tagged library photo (`libraryPhotoUrl`) to a list page. */
+/**
+ * Attach each player's tagged library photo (`libraryPhotoUrl`) to a list page.
+ * `aliasesOf` lists other ids that are the same player (a confirmed merge's
+ * merged-away crosswalk ids), so a photo tagged on any of them is used when the
+ * player's own id has none.
+ */
 export async function withLibraryPhotos<T extends { id: number }>(
   tenantId: number,
   players: T[],
+  aliasesOf: (id: number) => number[] = () => [],
 ): Promise<(T & { libraryPhotoUrl: string | null })[]> {
   const urls = await taggedPlayerPhotoUrls(
     tenantId,
-    players.map((p) => p.id),
+    players.flatMap((p) => [p.id, ...aliasesOf(p.id)]),
   );
-  return players.map((p) => ({ ...p, libraryPhotoUrl: urls.get(p.id) ?? null }));
+  const pick = (id: number) =>
+    urls.get(id) ??
+    aliasesOf(id)
+      .map((a) => urls.get(a))
+      .find((u) => u !== undefined) ??
+    null;
+  return players.map((p) => ({ ...p, libraryPhotoUrl: pick(p.id) }));
 }
 
+/**
+ * The profile photo for a player: the tagged photo of the first id in
+ * `playerIds` that has one. Pass a merged player's ids (presented id first) so
+ * a photo tagged on a merged-away id still shows on the keeper.
+ */
 export async function taggedPlayerPhotoUrl(
+  tenantId: number,
+  playerIds: number | readonly number[],
+): Promise<string | null> {
+  const ids = typeof playerIds === "number" ? [playerIds] : playerIds;
+  for (const id of ids) {
+    const url = await taggedSinglePlayerPhotoUrl(tenantId, id);
+    if (url) return url;
+  }
+  return null;
+}
+
+async function taggedSinglePlayerPhotoUrl(
   tenantId: number,
   playerId: number,
 ): Promise<string | null> {

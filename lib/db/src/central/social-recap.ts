@@ -7,6 +7,7 @@ import {
   centralMatchesTable,
 } from "../central";
 import { appGradeFromCentral, parseRound, parseSeasonStartYear } from "./grades";
+import { canonicalizeLines, type CentralMerges } from "./merges";
 import { centralPlayerNames } from "./privacy";
 import { classifyInnings, tallyFielding } from "./scoring";
 import { clubInvolvedWhere, inList } from "./where";
@@ -198,6 +199,8 @@ export async function centralGradeSeasonSocial(
   clubId: number,
   appGrade: string,
   season: number,
+  /** The tenant's confirmed merges: a merged pair is one performer. */
+  merges?: CentralMerges,
 ): Promise<CentralGradeSeasonSocial> {
   const matchRows = await centralDb
     .select({
@@ -257,8 +260,12 @@ export async function centralGradeSeasonSocial(
       .groupBy(centralFieldingTable.participantId, centralFieldingTable.kind),
   ]);
 
-  const folded = foldGradeSeasonSocial(batting, bowling, fielding);
-  const names = await centralPlayerNames([...folded.keys()]);
+  const folded = foldGradeSeasonSocial(
+    canonicalizeLines(batting, merges),
+    canonicalizeLines(bowling, merges),
+    canonicalizeLines(fielding, merges),
+  );
+  const names = await centralPlayerNames([...folded.keys()], merges);
 
   const performers: CentralSeasonPerformer[] = [];
   const innings: CentralSeasonInnings[] = [];

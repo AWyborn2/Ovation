@@ -8,9 +8,9 @@ import {
   matchHatTricksTable,
   playersTable,
   clubsTable,
-  playerIdMapTable,
 } from "@workspace/db";
 import { getTenantBrand } from "./tenant-brand";
+import { loadClubIdentity } from "./club-overlay";
 import { dataSource, type DataSource } from "./tenant";
 import {
   getOpponentBrandsByAppClubId,
@@ -177,18 +177,19 @@ export async function loadCentralMatchDetail(
   source: { tenantId: number; clubId: number },
   matchId: number,
 ) {
-  const { centralMatchScorecard } = await import("@workspace/db/central-queries");
+  const { centralMatchScorecard, mergedPrivateKeepers } =
+    await import("@workspace/db/central-queries");
   const { tenantId, clubId } = source;
   const card = await centralMatchScorecard(clubId, matchId);
   if (!card) return null;
-  const mapRows = await db
-    .select({
-      participantId: playerIdMapTable.participantId,
-      playerId: playerIdMapTable.playerId,
-    })
-    .from(playerIdMapTable)
-    .where(eq(playerIdMapTable.tenantId, tenantId));
-  const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+  // A merged-away GUID links to its keeper, and a line is masked when anyone in
+  // its merged group is private (confirmed merges, KTD2).
+  const identity = await loadClubIdentity(tenantId);
+  const intByGuid = identity.intByGuid;
+  const privateKeepers = await mergedPrivateKeepers(identity.merges);
+  const isPrivateLine = (l: { isPrivate: boolean; participantId: string | null }) =>
+    l.isPrivate ||
+    (l.participantId !== null && privateKeepers.has(identity.canonicalOf(l.participantId)));
 
   const { playerCount, ...summary } = card.summary;
   void playerCount;
@@ -206,13 +207,14 @@ export async function loadCentralMatchDetail(
     clubBattedFirst: card.battedFirst,
     club: await getTenantBrand(tenantId),
     lines: card.lines.map((l, i) => {
-      const name = l.isPrivate
+      const masked = isPrivateLine(l);
+      const name = masked
         ? { givenName: "Private", surname: "Player" }
         : splitCentralName(l.displayName);
       return {
         id: i,
         // Private players are masked (no link); otherwise the mapped int id.
-        playerId: l.isPrivate || !l.participantId ? 0 : (intByGuid.get(l.participantId) ?? 0),
+        playerId: masked || !l.participantId ? 0 : (intByGuid.get(l.participantId) ?? 0),
         surname: name.surname,
         givenName: name.givenName,
         batted: l.batted,

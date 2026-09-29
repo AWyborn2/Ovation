@@ -12,7 +12,8 @@ import type { PlayerGradeStat } from "../schema";
 import { cacheKey, withCentralCache } from "./cache";
 import { getClubMatchRows, seniorMatchRows, type CentralClubMatchRow } from "./club-matches";
 import { appGradeFromCentral, parseRound, parseSeasonStartYear, parseStage } from "./grades";
-import { isPrivateParticipant, isPrivateRow } from "./privacy";
+import { canonicalPidSql, groupByCanonicalPid, mergesCacheArg, type CentralMerges } from "./merges";
+import { isPrivateGroup, isPrivateRow, mergedPrivateKeepers } from "./privacy";
 import {
   battedFirstFrom,
   buildInningsLines,
@@ -121,20 +122,29 @@ export interface CentralPlayerCareer {
  * rows. Games = distinct matches the player appeared in (roster ∪ batting ∪
  * bowling); runs from batting; wickets from bowling; grades = the app grades of
  * those matches. Scorecard-era only.
+ *
+ * `merges` (the tenant's confirmed merges) folds each merged-away GUID into its
+ * keeper before grouping: one row per keeper, games = distinct matches across
+ * the group, private when any GUID in the group is.
  */
 export async function centralPlayerCareers(
   clubId: number,
   preloadedMatchRows?: CentralClubMatchRow[],
+  merges?: CentralMerges,
 ): Promise<CentralPlayerCareer[]> {
-  return withCentralCache(cacheKey("centralPlayerCareers", [clubId]), () =>
-    centralPlayerCareersImpl(clubId, preloadedMatchRows),
+  return withCentralCache(cacheKey("centralPlayerCareers", [clubId, mergesCacheArg(merges)]), () =>
+    centralPlayerCareersImpl(clubId, preloadedMatchRows, merges),
   );
 }
 
 async function centralPlayerCareersImpl(
   clubId: number,
   preloadedMatchRows?: CentralClubMatchRow[],
+  merges?: CentralMerges,
 ): Promise<CentralPlayerCareer[]> {
+  const batPid = canonicalPidSql(centralMatchBattingTable.participantId, merges);
+  const bowlPid = canonicalPidSql(centralMatchBowlingTable.participantId, merges);
+  const rosterPid = canonicalPidSql(centralMatchRostersTable.participantId, merges);
   // Senior careers only: junior matches never add games, runs or wickets.
   const matchRows = seniorMatchRows(preloadedMatchRows ?? (await getClubMatchRows(clubId)));
   const matchIds = matchRows.map((m) => m.matchId);
@@ -153,7 +163,7 @@ async function centralPlayerCareersImpl(
   const [batAgg, bowlAgg, appearanceRes] = await Promise.all([
     centralDb
       .select({
-        participantId: centralMatchBattingTable.participantId,
+        participantId: sql<string>`${batPid}`,
         runs: sql<number>`coalesce(sum(${centralMatchBattingTable.runs}), 0)::int`,
       })
       .from(centralMatchBattingTable)
@@ -165,10 +175,10 @@ async function centralPlayerCareersImpl(
           ne(centralMatchBattingTable.participantId, ""),
         ),
       )
-      .groupBy(centralMatchBattingTable.participantId),
+      .groupBy(groupByCanonicalPid(centralMatchBattingTable.participantId, merges)),
     centralDb
       .select({
-        participantId: centralMatchBowlingTable.participantId,
+        participantId: sql<string>`${bowlPid}`,
         wickets: sql<number>`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)::int`,
       })
       .from(centralMatchBowlingTable)
@@ -180,11 +190,11 @@ async function centralPlayerCareersImpl(
           ne(centralMatchBowlingTable.participantId, ""),
         ),
       )
-      .groupBy(centralMatchBowlingTable.participantId),
+      .groupBy(groupByCanonicalPid(centralMatchBowlingTable.participantId, merges)),
     centralDb.execute(sql`
       with apps as (
         select
-          ${centralMatchBattingTable.participantId} as participant_id,
+          ${batPid} as participant_id,
           ${centralMatchBattingTable.matchId} as match_id
         from ${centralMatchBattingTable}
         where ${centralMatchBattingTable.clubId} = ${clubId}
@@ -193,7 +203,7 @@ async function centralPlayerCareersImpl(
           and ${centralMatchBattingTable.participantId} <> ''
         union
         select
-          ${centralMatchBowlingTable.participantId},
+          ${bowlPid},
           ${centralMatchBowlingTable.matchId}
         from ${centralMatchBowlingTable}
         where ${centralMatchBowlingTable.clubId} = ${clubId}
@@ -202,7 +212,7 @@ async function centralPlayerCareersImpl(
           and ${centralMatchBowlingTable.participantId} <> ''
         union
         select
-          ${centralMatchRostersTable.participantId},
+          ${rosterPid},
           ${centralMatchRostersTable.matchId}
         from ${centralMatchRostersTable}
         where ${centralMatchRostersTable.clubId} = ${clubId}
@@ -229,14 +239,17 @@ async function centralPlayerCareersImpl(
   const wktsByPid = new Map(bowlAgg.map((b) => [b.participantId, Number(b.wickets)]));
 
   const ids = appearances.map((a) => a.participantId);
-  const players = await centralDb
-    .select({
-      participantId: centralPlayersTable.participantId,
-      displayName: centralPlayersTable.displayName,
-      isPrivate: centralPlayersTable.isPrivate,
-    })
-    .from(centralPlayersTable)
-    .where(inList(centralPlayersTable.participantId, ids));
+  const [players, privateKeepers] = await Promise.all([
+    centralDb
+      .select({
+        participantId: centralPlayersTable.participantId,
+        displayName: centralPlayersTable.displayName,
+        isPrivate: centralPlayersTable.isPrivate,
+      })
+      .from(centralPlayersTable)
+      .where(inList(centralPlayersTable.participantId, ids)),
+    mergedPrivateKeepers(merges),
+  ]);
   const byId = new Map(players.map((p) => [p.participantId, p]));
 
   return appearances.map((a) => {
@@ -251,13 +264,26 @@ async function centralPlayerCareersImpl(
     return {
       participantId: a.participantId,
       displayName: p?.displayName ?? null,
-      isPrivate: isPrivateRow(p),
+      isPrivate: isPrivateRow(p) || privateKeepers.has(a.participantId),
       games: Number(a.games),
       runs: runsByPid.get(a.participantId) ?? 0,
       wickets: wktsByPid.get(a.participantId) ?? 0,
       grades,
     };
   });
+}
+
+/**
+ * A player's GUIDs for the single-player reads: the keeper first, then any GUID
+ * a confirmed merge folds into it (the route supplies the whole group). A lone
+ * GUID is the one-member group.
+ */
+export type CentralPlayerGroup = string | readonly string[];
+
+function groupIds(group: CentralPlayerGroup): string[] {
+  const ids = typeof group === "string" ? [group] : [...new Set(group)];
+  if (ids.length === 0) throw new Error("central player read needs at least one participant id");
+  return ids;
 }
 
 /** One central player's club career: name + totals + per-grade PlayerGradeStat[]. */
@@ -279,20 +305,25 @@ export interface CentralPlayerDetail {
  * player_id_map first. Returns null when the participant has no lines for the
  * club. Fielding/curated bits (premierships/awards) are not central — the route
  * returns them empty for central tenants. Scorecard-era only.
+ *
+ * `group` may be a merged player's GUIDs (keeper first): their lines combine
+ * into one career, named after the keeper and private if any GUID is.
  */
 export async function centralPlayerDetail(
   clubId: number,
-  participantId: string,
+  group: CentralPlayerGroup,
 ): Promise<CentralPlayerDetail | null> {
-  return withCentralCache(cacheKey("centralPlayerDetail", [clubId, participantId]), () =>
-    centralPlayerDetailImpl(clubId, participantId),
+  const ids = groupIds(group);
+  return withCentralCache(cacheKey("centralPlayerDetail", [clubId, ids]), () =>
+    centralPlayerDetailImpl(clubId, ids),
   );
 }
 
 async function centralPlayerDetailImpl(
   clubId: number,
-  participantId: string,
+  ids: string[],
 ): Promise<CentralPlayerDetail | null> {
+  const participantId = ids[0]!;
   const matchRows = await getClubMatchRows(clubId);
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) return null;
@@ -310,7 +341,7 @@ async function centralPlayerDetailImpl(
       .where(
         and(
           eq(centralMatchBattingTable.clubId, clubId),
-          eq(centralMatchBattingTable.participantId, participantId),
+          inList(centralMatchBattingTable.participantId, ids),
           inList(centralMatchBattingTable.matchId, matchIds),
         ),
       ),
@@ -324,7 +355,7 @@ async function centralPlayerDetailImpl(
       .where(
         and(
           eq(centralMatchBowlingTable.clubId, clubId),
-          eq(centralMatchBowlingTable.participantId, participantId),
+          inList(centralMatchBowlingTable.participantId, ids),
           inList(centralMatchBowlingTable.matchId, matchIds),
         ),
       ),
@@ -334,18 +365,20 @@ async function centralPlayerDetailImpl(
       .where(
         and(
           eq(centralMatchRostersTable.clubId, clubId),
-          eq(centralMatchRostersTable.participantId, participantId),
+          inList(centralMatchRostersTable.participantId, ids),
           inList(centralMatchRostersTable.matchId, matchIds),
         ),
       ),
     centralDb
       .select({
+        participantId: centralPlayersTable.participantId,
         displayName: centralPlayersTable.displayName,
         isPrivate: centralPlayersTable.isPrivate,
       })
       .from(centralPlayersTable)
-      .where(eq(centralPlayersTable.participantId, participantId)),
+      .where(inList(centralPlayersTable.participantId, ids)),
   ]);
+  const keeperRow = players.find((p) => p.participantId === participantId);
 
   interface G {
     games: Set<number>;
@@ -464,8 +497,9 @@ async function centralPlayerDetailImpl(
 
   return {
     participantId,
-    displayName: players[0]?.displayName ?? null,
-    isPrivate: isPrivateRow(players[0]),
+    displayName: keeperRow?.displayName ?? null,
+    // A merged group is private when any of its GUIDs is (KTD2).
+    isPrivate: players.some((p) => isPrivateRow(p)),
     games: stats.reduce((s, r) => s + (r.games ?? 0), 0),
     runs: stats.reduce((s, r) => s + (r.runs ?? 0), 0),
     wickets: stats.reduce((s, r) => s + (r.wickets ?? 0), 0),
@@ -510,18 +544,19 @@ export interface CentralPlayerSeasonRow {
  */
 export async function centralPlayerSeasons(
   clubId: number,
-  participantId: string,
+  group: CentralPlayerGroup,
 ): Promise<CentralPlayerSeasonRow[]> {
-  return withCentralCache(cacheKey("centralPlayerSeasons", [clubId, participantId]), () =>
-    centralPlayerSeasonsImpl(clubId, participantId),
+  const ids = groupIds(group);
+  return withCentralCache(cacheKey("centralPlayerSeasons", [clubId, ids]), () =>
+    centralPlayerSeasonsImpl(clubId, ids),
   );
 }
 
 async function centralPlayerSeasonsImpl(
   clubId: number,
-  participantId: string,
+  ids: string[],
 ): Promise<CentralPlayerSeasonRow[]> {
-  if (await isPrivateParticipant(participantId)) return [];
+  if (await isPrivateGroup(ids)) return [];
 
   const matchRows = await getClubMatchRows(clubId);
   const keyOfMatch = new Map<number, { grade: string; season: number }>();
@@ -547,7 +582,7 @@ async function centralPlayerSeasonsImpl(
       .where(
         and(
           eq(centralMatchBattingTable.clubId, clubId),
-          eq(centralMatchBattingTable.participantId, participantId),
+          inList(centralMatchBattingTable.participantId, ids),
           inList(centralMatchBattingTable.matchId, matchIds),
         ),
       ),
@@ -563,7 +598,7 @@ async function centralPlayerSeasonsImpl(
       .where(
         and(
           eq(centralMatchBowlingTable.clubId, clubId),
-          eq(centralMatchBowlingTable.participantId, participantId),
+          inList(centralMatchBowlingTable.participantId, ids),
           inList(centralMatchBowlingTable.matchId, matchIds),
         ),
       ),
@@ -573,7 +608,7 @@ async function centralPlayerSeasonsImpl(
       .where(
         and(
           eq(centralMatchRostersTable.clubId, clubId),
-          eq(centralMatchRostersTable.participantId, participantId),
+          inList(centralMatchRostersTable.participantId, ids),
           inList(centralMatchRostersTable.matchId, matchIds),
         ),
       ),
@@ -586,7 +621,7 @@ async function centralPlayerSeasonsImpl(
       .where(
         and(
           eq(centralFieldingTable.clubId, clubId),
-          eq(centralFieldingTable.participantId, participantId),
+          inList(centralFieldingTable.participantId, ids),
           inList(centralFieldingTable.matchId, matchIds),
         ),
       ),
@@ -784,18 +819,19 @@ export interface CentralPlayerMatchRow {
  */
 export async function centralPlayerMatchLog(
   clubId: number,
-  participantId: string,
+  group: CentralPlayerGroup,
 ): Promise<CentralPlayerMatchRow[]> {
-  return withCentralCache(cacheKey("centralPlayerMatchLog", [clubId, participantId]), () =>
-    centralPlayerMatchLogImpl(clubId, participantId),
+  const ids = groupIds(group);
+  return withCentralCache(cacheKey("centralPlayerMatchLog", [clubId, ids]), () =>
+    centralPlayerMatchLogImpl(clubId, ids),
   );
 }
 
 async function centralPlayerMatchLogImpl(
   clubId: number,
-  participantId: string,
+  ids: string[],
 ): Promise<CentralPlayerMatchRow[]> {
-  if (await isPrivateParticipant(participantId)) return [];
+  if (await isPrivateGroup(ids)) return [];
 
   const [batting, bowling, rosters, fielding] = await Promise.all([
     centralDb
@@ -814,7 +850,7 @@ async function centralPlayerMatchLogImpl(
       .where(
         and(
           eq(centralMatchBattingTable.clubId, clubId),
-          eq(centralMatchBattingTable.participantId, participantId),
+          inList(centralMatchBattingTable.participantId, ids),
         ),
       ),
     centralDb
@@ -831,7 +867,7 @@ async function centralPlayerMatchLogImpl(
       .where(
         and(
           eq(centralMatchBowlingTable.clubId, clubId),
-          eq(centralMatchBowlingTable.participantId, participantId),
+          inList(centralMatchBowlingTable.participantId, ids),
         ),
       ),
     centralDb
@@ -840,7 +876,7 @@ async function centralPlayerMatchLogImpl(
       .where(
         and(
           eq(centralMatchRostersTable.clubId, clubId),
-          eq(centralMatchRostersTable.participantId, participantId),
+          inList(centralMatchRostersTable.participantId, ids),
         ),
       ),
     centralDb
@@ -852,7 +888,7 @@ async function centralPlayerMatchLogImpl(
       .where(
         and(
           eq(centralFieldingTable.clubId, clubId),
-          eq(centralFieldingTable.participantId, participantId),
+          inList(centralFieldingTable.participantId, ids),
         ),
       ),
   ]);

@@ -389,6 +389,8 @@ export * from './player';
 export * from './playerAward';
 export * from './playerCuration';
 export * from './playerCurationBody';
+export * from './playerCurationBodyMergeStatus';
+export * from './playerCurationMergeStatus';
 export * from './playerDetail';
 export * from './playerImage';
 export * from './playerImageInput';
