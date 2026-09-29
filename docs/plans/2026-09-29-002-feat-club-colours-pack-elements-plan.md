@@ -4,7 +4,7 @@ type: feat
 date: 2026-09-29
 topic: club-colours-pack-elements
 artifact_contract: ce-unified-plan/v1
-artifact_readiness: implementation-ready-pending-decisions
+artifact_readiness: implementation-ready
 product_contract_source: design-handoff
 execution: code
 ---
@@ -15,7 +15,7 @@ execution: code
 
 - **Objective:** Ship the "Club Colours" design handoff as the **Club Kit** pack (8 card kinds × 4 formats = 32 templates) in the Social Media Studio, and make every element of it (trim photo frames, crest watermark, monogram, kind chip, tricolour rule, hashtag block, sponsor strip, score bars, leader rows, game-day rows, XI list, trading-card frame, premiership stars and GF panel, junior highlight rows, background) insertable from the Studio editor's Elements panel when an ad-hoc design is created.
 - **Product authority:** Ash (owner). The handoff (`docs/design-handoffs/club-colours-pack/Handoff.md`) is the product contract for look and behaviour. This plan governs how.
-- **Open blockers:** None for U1. D1 (Club Kit), D3 (junior photos) and D4 (catches now) are resolved. D2 is only needed by U2.
+- **Open blockers:** None. D1 (Club Kit), D2 (always club colours), D3 (junior photos) and D4 (catches now) are all resolved.
 - **Stop conditions:** Stop and ask before any prod migration (only U11 has one), before changing a Halls Head-parity digest for an existing pack, and if a unit would make any existing pack's "Pack's own look" render change.
 - **Execution profile:** One PR per unit, each shippable. Pack PRs follow the catalogue convention (one commit per card). Element-library PRs land behind nothing: the Elements panel just gains categories.
 
@@ -67,7 +67,7 @@ A new pack where every colour comes from the tenant's brand tokens, with contras
 ### Decisions needed from Ash
 
 - **D1 — Name and id. RESOLVED (Ash, 29 Sep 2026):** display name **"Club Kit"**, `packId: "club-kit-v1"`. The handoff's "Club Colours" name stays only as the design-handoff folder name, because it collides with the per-pack "Club colours" colour-mode switch.
-- **D2 — What "Pack's own look" means for this pack.** Because every colour is club-derived, the parity test still needs club mode ≠ pack mode for a branded club. _Recommended:_ pack mode uses a fixed neutral demo palette (amber `#FBAC27` / slate `#333F48` / ink `#10151B`, the handoff's sample values without the Halls Head identity), and **club mode is the default**.
+- **D2 — Colour mode. RESOLVED (Ash, 29 Sep 2026): Club Kit always uses the club's colours.** The per-pack "Club colours" / "Pack's own look" switch is hidden for this pack. A new optional `PackManifest.colourMode: "club-only"` makes `packColourModeFor` ignore any stored `pack` setting for it, and `design-packs-section.tsx` omits the switch. A neutral fallback palette (amber `#FBAC27` / slate `#333F48` / ink `#10151B`, with no Halls Head identity) is used **only** when a club has no usable brand colours, so a brandless club never renders a blank card. `pack-own-look-parity.test.ts` treats `club-only` packs as a documented exception: a branded render must follow the brand, and a brandless render must match the fallback digest.
 - **D3 — Junior photos. RESOLVED (Ash, 29 Sep 2026): recommendation accepted.** _Recommended:_ ship with junior cards using a club action/team photo picked by an admin (never a player-tagged junior photo), and defer a consent model to its own plan. The handoff's "parent consent" rule then becomes "no player-linked junior photo until consent data exists".
 - **D4 — Leaders metric. RESOLVED (Ash, 29 Sep 2026): build catches now and have it ready to go.** Club Kit ships Runs, Wickets, **Catches** and **Dismissals** leader designs. `Dismissals` (catches + stumpings, "SAFE HANDS") already exists end to end (`ClubLeaderboardCategory`, `central/leaderboards.ts` `topDismissals`). `Catches` is new (catches only; see U3b). Both read through the existing stats path, so when the catches rule in the hybrid-stats plan (U15) changes how catches are counted, the cards follow with no pack change.
 
@@ -123,7 +123,7 @@ U1 → U2 → (U3, U3b, U4, U5 in parallel) → U6 → U7 → U8 → U9 → U10.
 
 ### U2. Register the pack with the 8 handoff designs
 
-- **Files:** `pack-templates/club-kit/{index,fragments}.ts` + `match-result.ts`, `milestone.ts`, `club-leaderboard-runs.ts`, `club-leaderboard-wickets.ts`, `team-list.ts`, `premiership.ts`; `registry.ts`; api-server `lib/design-packs.ts` `PACKS`; `social-studio.ts` `PACK_SWATCH`; the `PACK_IDS` arrays in `pack-render.test.ts` and `admin-social-studio.test.tsx`; `pack-switch.test.ts` `PACK_MARKERS`; new `club-kit-skeleton.test.ts`; `pack-own-look-parity` digests for the new pack.
+- **Files:** `pack-templates/club-kit/{index,fragments}.ts` + `match-result.ts`, `milestone.ts`, `club-leaderboard-runs.ts`, `club-leaderboard-wickets.ts`, `team-list.ts`, `premiership.ts`; `registry.ts`; api-server `lib/design-packs.ts` `PACKS`; `social-studio.ts` `PACK_SWATCH`; the `PACK_IDS` arrays in `pack-render.test.ts` and `admin-social-studio.test.tsx`; `pack-switch.test.ts` `PACK_MARKERS`; new `club-kit-skeleton.test.ts`; `pack-own-look-parity` club-only exception + brandless fallback digest; `colourMode: "club-only"` in the manifest and `design-packs-section.tsx` hiding the switch (with an `admin-social-studio-colour-mode.test.tsx` case).
 - **Per-format rules:** side frame (square/landscape) vs top frame with the H table (story 46cqh; portrait 24cqh for list-heavy kinds, 31cqh otherwise); body max-width 52% on side formats; `--msSz`/`--premSz`/`--mdSz` per format.
 - **Result states (R10)** from `matchSummary` result fields; winning-side ordering kept with the club on the `--p` bar.
 - **Done when:** the pack appears in Design packs for every tenant after restart, and pack-lint, coverage parity, skeleton contract and switch tests pass. One commit per card.
