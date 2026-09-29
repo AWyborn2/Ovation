@@ -34,8 +34,9 @@ import {
 } from "@workspace/api-zod";
 import { playerIdMapTable } from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireNativeStatsTenant } from "../middlewares/require-native-stats-tenant";
 import { recomputeAggregates } from "../lib/recompute";
-import { dataSource } from "../lib/tenant";
+import { dataSource, NATIVE_STATS_TENANT_ID } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
 import { taggedPlayerPhotoUrl, withLibraryPhotos } from "../lib/club-photo-library";
 import { splitCentralName, getPlayerOrderCol, centralParticipantFor } from "../lib/player-helpers";
@@ -45,6 +46,13 @@ import { resolveOpponentClub } from "../lib/opponent-club";
 import { DEFAULT_VS_CLUB_MIN_INNINGS, loadVsClub } from "../lib/vs-club";
 
 const router: IRouter = Router();
+
+/**
+ * Every write below touches the native `players` register, its merges or its
+ * photo gallery — tables that hold only Halls Head's native history. Admin
+ * auth first (so anonymous is still a 401), then the native-stats fence.
+ */
+const nativeAdmin = [requireAdmin, requireNativeStatsTenant] as const;
 
 router.get("/players", async (req, res): Promise<void> => {
   const query = ListPlayersQueryParams.safeParse(req.query);
@@ -200,7 +208,7 @@ router.get("/players", async (req, res): Promise<void> => {
   });
 });
 
-router.post("/players", requireAdmin, async (req, res): Promise<void> => {
+router.post("/players", ...nativeAdmin, async (req, res): Promise<void> => {
   const parsed = CreatePlayerBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -644,7 +652,7 @@ router.get("/players/:id/matches", async (req, res): Promise<void> => {
   );
 });
 
-router.patch("/players/:id", requireAdmin, async (req, res): Promise<void> => {
+router.patch("/players/:id", ...nativeAdmin, async (req, res): Promise<void> => {
   const params = UpdatePlayerParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -677,7 +685,7 @@ router.patch("/players/:id", requireAdmin, async (req, res): Promise<void> => {
   res.json(player);
 });
 
-router.delete("/players/:id", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/players/:id", ...nativeAdmin, async (req, res): Promise<void> => {
   const params = DeletePlayerParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -733,16 +741,21 @@ router.get("/players/:id/images", async (req, res): Promise<void> => {
     return;
   }
   const playerId = params.data.id;
+  const tenantId = getTenantId(req);
   const order = [
     desc(playerImagesTable.isDefault),
     asc(playerImagesTable.sortOrder),
     asc(playerImagesTable.id),
   ] as const;
+  const ownRows = and(
+    eq(playerImagesTable.tenantId, tenantId),
+    eq(playerImagesTable.playerId, playerId),
+  );
 
   let images = await db
     .select()
     .from(playerImagesTable)
-    .where(eq(playerImagesTable.playerId, playerId))
+    .where(ownRows)
     .orderBy(...order);
 
   // Self-healing backfill: a player that pre-dates the gallery may have a legacy
@@ -750,30 +763,33 @@ router.get("/players/:id/images", async (req, res): Promise<void> => {
   // the admin gallery and per-card pickers always include the existing photo,
   // even if the post-merge backfill hasn't run. Insert is guarded so concurrent
   // GETs can't create duplicates.
-  if (images.length === 0) {
+  //
+  // Only for the tenant that owns the native `players` table: healing for any
+  // other tenant would copy Halls Head's photo into that tenant's gallery.
+  if (images.length === 0 && tenantId === NATIVE_STATS_TENANT_ID) {
     const [player] = await db
       .select({ imageUrl: playersTable.imageUrl })
       .from(playersTable)
       .where(eq(playersTable.id, playerId));
     if (player?.imageUrl) {
       await db.execute(sql`
-        INSERT INTO player_images (player_id, image_url, sort_order, is_default)
-        SELECT ${playerId}, ${player.imageUrl}, 0, true
+        INSERT INTO player_images (tenant_id, player_id, image_url, sort_order, is_default)
+        SELECT ${tenantId}, ${playerId}, ${player.imageUrl}, 0, true
         WHERE NOT EXISTS (
-          SELECT 1 FROM player_images WHERE player_id = ${playerId}
+          SELECT 1 FROM player_images WHERE tenant_id = ${tenantId} AND player_id = ${playerId}
         )
       `);
       images = await db
         .select()
         .from(playerImagesTable)
-        .where(eq(playerImagesTable.playerId, playerId))
+        .where(ownRows)
         .orderBy(...order);
     }
   }
   res.json(images);
 });
 
-router.post("/players/:id/images", requireAdmin, async (req, res): Promise<void> => {
+router.post("/players/:id/images", ...nativeAdmin, async (req, res): Promise<void> => {
   const params = AddPlayerImageParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -810,6 +826,7 @@ router.post("/players/:id/images", requireAdmin, async (req, res): Promise<void>
       const [row] = await tx
         .insert(playerImagesTable)
         .values({
+          tenantId: getTenantId(req),
           playerId,
           imageUrl,
           sortOrder: nextSort,
@@ -843,7 +860,7 @@ router.post("/players/:id/images", requireAdmin, async (req, res): Promise<void>
   res.status(201).json(created);
 });
 
-router.delete("/players/:id/images/:imageId", requireAdmin, async (req, res): Promise<void> => {
+router.delete("/players/:id/images/:imageId", ...nativeAdmin, async (req, res): Promise<void> => {
   const params = DeletePlayerImageParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -901,7 +918,7 @@ router.delete("/players/:id/images/:imageId", requireAdmin, async (req, res): Pr
 
 router.post(
   "/players/:id/images/:imageId/default",
-  requireAdmin,
+  ...nativeAdmin,
   async (req, res): Promise<void> => {
     const params = SetDefaultPlayerImageParams.safeParse(req.params);
     if (!params.success) {
@@ -949,7 +966,7 @@ router.post(
   },
 );
 
-router.post("/players/:id/merge", requireAdmin, async (req, res): Promise<void> => {
+router.post("/players/:id/merge", ...nativeAdmin, async (req, res): Promise<void> => {
   const params = MergePlayerParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

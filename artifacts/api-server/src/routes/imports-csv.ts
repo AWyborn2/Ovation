@@ -14,6 +14,7 @@ import {
   type NegativeBaselineWarning,
 } from "../lib/baseline-reconcile";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireNativeStatsTenant } from "../middlewares/require-native-stats-tenant";
 import { adminWriteRateLimiter } from "../middlewares/rate-limit";
 import { buildResolutionMap } from "../lib/import-body-parsers";
 import {
@@ -47,6 +48,7 @@ const router: IRouter = Router();
 router.post(
   "/imports/playcricket-csv",
   requireAdmin,
+  requireNativeStatsTenant,
   adminWriteRateLimiter,
   scorecardUpload.single("file"),
   async (req: Request, res): Promise<void> => {
@@ -224,6 +226,7 @@ router.post(
 router.post(
   "/imports/:id/commit",
   requireAdmin,
+  requireNativeStatsTenant,
   adminWriteRateLimiter,
   async (req, res): Promise<void> => {
     const id = parseInt(String(req.params.id), 10);
@@ -420,6 +423,7 @@ router.post(
 router.delete(
   "/imports/:id",
   requireAdmin,
+  requireNativeStatsTenant,
   adminWriteRateLimiter,
   async (req, res): Promise<void> => {
     const id = parseInt(String(req.params.id), 10);
