@@ -5224,6 +5224,60 @@ export interface PlayerCurationBody {
   mergeStatus?: PlayerCurationBodyMergeStatus;
 }
 
+export interface DuplicateEvidence {
+  participantId: string;
+  /** The central display name ("Private player" for a private participant) */
+  displayName: string | null;
+  isPrivate: boolean;
+  /** Senior matches this participant played for the club */
+  games: number;
+  /** Seasons played for the club ("2024/25"), ascending */
+  seasons: string[];
+  grades: string[];
+}
+
+export type DuplicatePairStatus = typeof DuplicatePairStatus[keyof typeof DuplicatePairStatus];
+
+
+export const DuplicatePairStatus = {
+  suggested: 'suggested',
+  confirmed: 'confirmed',
+  rejected: 'rejected',
+} as const;
+
+export interface DuplicatePair {
+  /** The duplicate participant (whose curation row points at the keeper) */
+  participantId: string;
+  keeperParticipantId: string;
+  status: DuplicatePairStatus;
+  updatedAt: string;
+  keeper: DuplicateEvidence;
+  duplicate: DuplicateEvidence;
+  /** Seasons between the two careers (0 when they overlap) */
+  seasonGap: number | null;
+  sharedGrades: string[];
+}
+
+export interface DuplicateReview {
+  suggested: DuplicatePair[];
+  confirmed: DuplicatePair[];
+  rejected: DuplicatePair[];
+}
+
+export type DuplicateReviewBodyAction = typeof DuplicateReviewBodyAction[keyof typeof DuplicateReviewBodyAction];
+
+
+export const DuplicateReviewBodyAction = {
+  confirm: 'confirm',
+  reject: 'reject',
+  undo: 'undo',
+  reopen: 'reopen',
+} as const;
+
+export interface DuplicateReviewBody {
+  action: DuplicateReviewBodyAction;
+}
+
 export type CheckoutBodyPlan = typeof CheckoutBodyPlan[keyof typeof CheckoutBodyPlan];
 
 

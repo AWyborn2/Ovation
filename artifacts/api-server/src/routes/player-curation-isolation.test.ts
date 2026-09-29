@@ -118,6 +118,35 @@ describe("player curation: tenant-scoped, admin-only", () => {
       .expect(400);
   });
 
+  it("a tenant-2 admin can't review tenant 1's duplicate suggestion (U7)", async () => {
+    const dup = `cur-dup-t1-${STAMP}`;
+    const keeper = `cur-keep-t1-${STAMP}`;
+    await db.insert(playerCurationTable).values({
+      tenantId: 1,
+      participantId: dup,
+      mergedIntoParticipantId: keeper,
+      mergeStatus: "suggested",
+    });
+    try {
+      for (const action of ["confirm", "reject"]) {
+        await request(app)
+          .post(`/api/player-curation/duplicates/${dup}/review`)
+          .set("Cookie", adminCookie)
+          .set("x-tenant-id", String(tenant2Id))
+          .send({ action })
+          .expect(404);
+      }
+      const [row] = await db
+        .select()
+        .from(playerCurationTable)
+        .where(eq(playerCurationTable.participantId, dup));
+      expect(row?.tenantId).toBe(1);
+      expect(row?.mergeStatus).toBe("suggested");
+    } finally {
+      await db.delete(playerCurationTable).where(eq(playerCurationTable.participantId, dup));
+    }
+  });
+
   it("clears curation on delete", async () => {
     await request(app)
       .delete(`/api/player-curation/${GUID}`)

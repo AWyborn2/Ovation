@@ -18,7 +18,7 @@ import {
   mergesCacheArg,
   type CentralMerges,
 } from "./merges";
-import { isPrivateRow, mergedPrivateKeepers } from "./privacy";
+import { centralPlayerNames, isPrivateRow, mergedPrivateKeepers } from "./privacy";
 import { battingInningsKindSql, round2, splitDisplayName, tallyFielding } from "./scoring";
 import { inList } from "./where";
 
@@ -414,16 +414,22 @@ export interface CentralClubSeasonGradeLeaders {
 export async function centralClubTotalsBySeason(
   clubId: number,
   season: number,
+  /** The tenant's confirmed merges: a merged pair is one leader, named as its keeper. */
+  merges?: CentralMerges,
 ): Promise<CentralClubSeasonGradeLeaders[]> {
-  return withCentralCache(cacheKey("centralClubTotalsBySeason", [clubId, season]), () =>
-    centralClubTotalsBySeasonImpl(clubId, season),
+  return withCentralCache(
+    cacheKey("centralClubTotalsBySeason", [clubId, season, mergesCacheArg(merges)]),
+    () => centralClubTotalsBySeasonImpl(clubId, season, merges),
   );
 }
 
 async function centralClubTotalsBySeasonImpl(
   clubId: number,
   season: number,
+  merges?: CentralMerges,
 ): Promise<CentralClubSeasonGradeLeaders[]> {
+  const batPid = canonicalPidSql(centralMatchBattingTable.participantId, merges);
+  const bowlPid = canonicalPidSql(centralMatchBowlingTable.participantId, merges);
   const matchRows = await getClubMatchRows(clubId);
   const gradeMatchIds = new Map<string, number[]>();
   for (const m of matchRows) {
@@ -446,7 +452,7 @@ async function centralClubTotalsBySeasonImpl(
       const [batAgg, bowlAgg, fieldRows] = await Promise.all([
         centralDb
           .select({
-            participantId: centralMatchBattingTable.participantId,
+            participantId: sql<string | null>`${batPid}`,
             value: sql<number>`coalesce(sum(${centralMatchBattingTable.runs}), 0)`,
           })
           .from(centralMatchBattingTable)
@@ -456,12 +462,12 @@ async function centralClubTotalsBySeasonImpl(
               inList(centralMatchBattingTable.matchId, ids),
             ),
           )
-          .groupBy(centralMatchBattingTable.participantId)
+          .groupBy(groupByCanonicalPid(centralMatchBattingTable.participantId, merges))
           .orderBy(desc(sql`coalesce(sum(${centralMatchBattingTable.runs}), 0)`))
           .limit(5),
         centralDb
           .select({
-            participantId: centralMatchBowlingTable.participantId,
+            participantId: sql<string | null>`${bowlPid}`,
             value: sql<number>`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)`,
           })
           .from(centralMatchBowlingTable)
@@ -471,7 +477,7 @@ async function centralClubTotalsBySeasonImpl(
               inList(centralMatchBowlingTable.matchId, ids),
             ),
           )
-          .groupBy(centralMatchBowlingTable.participantId)
+          .groupBy(groupByCanonicalPid(centralMatchBowlingTable.participantId, merges))
           .orderBy(desc(sql`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)`))
           .limit(5),
         centralDb
@@ -488,12 +494,13 @@ async function centralClubTotalsBySeasonImpl(
       ]);
       // Catches + stumpings per player (run-outs aren't a keeper/fielder
       // dismissal credit here), top few so a private leader can be skipped.
-      const fieldAgg = [...tallyFielding(fieldRows).entries()]
+      const fielding = tallyFielding(canonicalizeLines(fieldRows, merges));
+      const fieldAgg = [...fielding.entries()]
         .map(([participantId, t]) => ({ participantId, value: t.catches + t.stumpings }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 5);
       // Catches alone (the Club Kit "Catches" leaderboard).
-      const catchAgg = [...tallyFielding(fieldRows).entries()]
+      const catchAgg = [...fielding.entries()]
         .map(([participantId, t]) => ({ participantId, value: t.catches }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 5);
@@ -501,7 +508,9 @@ async function centralClubTotalsBySeasonImpl(
     }),
   );
 
-  // One round trip resolves display names + privacy for every candidate.
+  // One round trip resolves display names + privacy for every candidate. With
+  // merges the candidates are keepers: each keeps its own name and is private
+  // when any GUID folded into it is.
   const ids = new Set<string>();
   for (const g of perGrade) {
     for (const r of g.batAgg) if (r.participantId) ids.add(r.participantId);
@@ -509,18 +518,8 @@ async function centralClubTotalsBySeasonImpl(
     for (const r of g.fieldAgg) ids.add(r.participantId);
     for (const r of g.catchAgg) ids.add(r.participantId);
   }
-  const players = ids.size
-    ? await centralDb
-        .select({
-          participantId: centralPlayersTable.participantId,
-          displayName: centralPlayersTable.displayName,
-          isPrivate: centralPlayersTable.isPrivate,
-        })
-        .from(centralPlayersTable)
-        // ≤10 candidates per grade — small by construction.
-        .where(inArray(centralPlayersTable.participantId, [...ids]))
-    : [];
-  const byId = new Map(players.map((p) => [p.participantId, p]));
+  // A few candidates per grade (plus their merged members) — small by construction.
+  const byId = await centralPlayerNames([...ids], merges);
 
   const pick = (
     agg: { participantId: string | null; value: number }[],
@@ -528,7 +527,7 @@ async function centralClubTotalsBySeasonImpl(
     for (const a of agg) {
       if (!a.participantId) continue;
       const p = byId.get(a.participantId);
-      if (isPrivateRow(p)) continue; // private excluded
+      if (p?.isPrivate) continue; // private excluded (the whole merged group)
       const value = Number(a.value ?? 0);
       if (value <= 0) continue;
       const name = p?.displayName?.trim();

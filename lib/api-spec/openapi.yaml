@@ -5227,6 +5227,63 @@ paths:
         "204":
           description: Cleared
 
+  /player-curation/duplicates:
+    get:
+      operationId: listPlayerDuplicates
+      tags: [players]
+      summary: Duplicate-player review for this tenant's central club (runs the suggestion engine)
+      description: >-
+        Finds likely split identities for the tenant's central club — two
+        participants who both played for the club, were never in the same
+        match, share an "Initial Surname" and are both public — and records any
+        new ones as suggested merges (idempotent; a pair already suggested,
+        confirmed or rejected is never suggested again). Returns every
+        suggested, confirmed and rejected pair with each participant's
+        evidence. Only confirmed pairs fold careers.
+      responses:
+        "200":
+          description: The tenant's duplicate review lists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DuplicateReview"
+
+  /player-curation/duplicates/{participantId}/review:
+    post:
+      operationId: reviewPlayerDuplicate
+      tags: [players]
+      summary: Confirm, reject, undo or reopen one duplicate pair
+      description: >-
+        `participantId` is the pair's duplicate (the participant whose curation
+        row points at the keeper). confirm and reject act on a suggested pair,
+        undo returns a confirmed pair to suggested (splitting the careers
+        again), and reopen returns a rejected pair to suggested. Confirming
+        never drafts social cards for past matches.
+      parameters:
+        - name: participantId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DuplicateReviewBody"
+      responses:
+        "200":
+          description: The pair after the change
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DuplicatePair"
+        "400":
+          description: Invalid action, or a merge the curation rules refuse (private, cycle, another club)
+        "404":
+          description: No duplicate pair for this participant in this tenant
+        "409":
+          description: The action doesn't apply to the pair's current state
+
   /billing/checkout:
     post:
       operationId: createBillingCheckout
@@ -13906,6 +13963,81 @@ components:
           description: >-
             Review state for the merge. Defaults to confirmed when a merge
             target is given; ignored (stored null) when there is none.
+
+    DuplicateEvidence:
+      type: object
+      required: [participantId, displayName, isPrivate, games, seasons, grades]
+      properties:
+        participantId: { type: string }
+        displayName:
+          type: string
+          nullable: true
+          description: The central display name ("Private player" for a private participant)
+        isPrivate: { type: boolean }
+        games:
+          type: integer
+          description: Senior matches this participant played for the club
+        seasons:
+          type: array
+          items: { type: string }
+          description: Seasons played for the club ("2024/25"), ascending
+        grades:
+          type: array
+          items: { type: string }
+
+    DuplicatePair:
+      type: object
+      required:
+        [
+          participantId,
+          keeperParticipantId,
+          status,
+          updatedAt,
+          keeper,
+          duplicate,
+          seasonGap,
+          sharedGrades,
+        ]
+      properties:
+        participantId:
+          type: string
+          description: The duplicate participant (whose curation row points at the keeper)
+        keeperParticipantId: { type: string }
+        status:
+          type: string
+          enum: [suggested, confirmed, rejected]
+        updatedAt: { type: string, format: date-time }
+        keeper: { $ref: "#/components/schemas/DuplicateEvidence" }
+        duplicate: { $ref: "#/components/schemas/DuplicateEvidence" }
+        seasonGap:
+          type: integer
+          nullable: true
+          description: Seasons between the two careers (0 when they overlap)
+        sharedGrades:
+          type: array
+          items: { type: string }
+
+    DuplicateReview:
+      type: object
+      required: [suggested, confirmed, rejected]
+      properties:
+        suggested:
+          type: array
+          items: { $ref: "#/components/schemas/DuplicatePair" }
+        confirmed:
+          type: array
+          items: { $ref: "#/components/schemas/DuplicatePair" }
+        rejected:
+          type: array
+          items: { $ref: "#/components/schemas/DuplicatePair" }
+
+    DuplicateReviewBody:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [confirm, reject, undo, reopen]
 
     CheckoutBody:
       type: object
