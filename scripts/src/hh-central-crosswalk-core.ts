@@ -252,6 +252,23 @@ export function buildCentralAppearances(input: {
   return { byMatch, nullParticipantRows };
 }
 
+/**
+ * Invert the appearance index: participant GUID → the club's central match ids
+ * it appears in. Two GUIDs sharing a match are two different people, which is
+ * what the crosswalk persistence uses to refuse a split-identity merge.
+ */
+export function matchesByParticipant(index: CentralAppearanceIndex): Map<string, Set<number>> {
+  const out = new Map<string, Set<number>>();
+  for (const [matchId, apps] of index.byMatch) {
+    for (const pid of apps.keys()) {
+      const s = out.get(pid) ?? new Set<number>();
+      s.add(matchId);
+      out.set(pid, s);
+    }
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Pairwise scoring
 // ---------------------------------------------------------------------------

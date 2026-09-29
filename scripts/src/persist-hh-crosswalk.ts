@@ -7,7 +7,11 @@
  *   - player_id_map: one row per CLEAN player, keeper GUID → native players.id
  *   - player_curation: merged_into_participant_id = keeper for each other GUID
  *     the same player was assigned (split identities)
- * AMBIGUOUS players and every unsafe row go to review.csv only. Nothing visible
+ * Split identities (AMBIGUOUS only because the player's lines spread over
+ * several of its own GUIDs) are persisted the same way once every GUID passes
+ * the split gate (not shared, not weak-only, not private, never two in one
+ * central match). Other AMBIGUOUS players and every unsafe row go to
+ * review.csv only, with a specific reason code. Nothing visible
  * changes: Halls Head still reads native until its cut-over.
  *
  *   # preview (default — READ ONLY, writes nothing to any database)
@@ -34,6 +38,7 @@ import { closeCentralDb } from "@workspace/db/central";
 import { HALLS_HEAD_CENTRAL_CLUB_ID } from "@workspace/db/central-queries";
 import {
   linkNativeToCentral,
+  matchesByParticipant,
   toCsv,
   type NativePlayer,
   type PlayerLink,
@@ -159,13 +164,19 @@ async function main(): Promise<void> {
   const native = await readNative();
   console.log(`Reading central club_id=${HALLS_HEAD_CENTRAL_CLUB_ID} (read-only proxy)…`);
   const central = await readCentral();
-  const { playerLinks, conflicts } = linkNativeToCentral({ native, central });
+  const { playerLinks, conflicts, appIndex } = linkNativeToCentral({ native, central });
   const privateByGuid = new Map(
     central.players.map((p) => [p.participantId, isCentralPrivate(p.isPrivate)]),
   );
+  const centralMatchesByGuid = matchesByParticipant(appIndex);
 
   const existing = await readExisting(db, tenantId);
-  const plan = planPersistence({ links: playerLinks, privateByGuid, ...existing });
+  const plan = planPersistence({
+    links: playerLinks,
+    privateByGuid,
+    centralMatchesByGuid,
+    ...existing,
+  });
 
   // ---- Report (local files only) ----------------------------------------
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -269,7 +280,12 @@ async function main(): Promise<void> {
       sql`LOCK TABLE ${playerIdMapTable}, ${playerCurationTable} IN SHARE ROW EXCLUSIVE MODE`,
     );
     const now = await readExisting(tx, tenantId);
-    const txPlan = planPersistence({ links: playerLinks, privateByGuid, ...now });
+    const txPlan = planPersistence({
+      links: playerLinks,
+      privateByGuid,
+      centralMatchesByGuid,
+      ...now,
+    });
     if (writeSet(txPlan) !== writeSet(plan)) {
       throw new Error("rows changed since the preview — aborting, nothing written. Re-run.");
     }
