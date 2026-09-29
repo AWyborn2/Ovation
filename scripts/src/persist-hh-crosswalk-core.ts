@@ -4,14 +4,26 @@
  * rule is unit-tested (persist-hh-crosswalk.test.ts).
  *
  * Input: the matcher's per-player classification (hh-central-crosswalk-core
- * `linkNativeToCentral`), central privacy flags, and what tenant 1 already has
- * in `player_id_map` / `player_curation`. Output: the exact rows to write, the
- * rows already in place, and a review list of everything deliberately NOT
- * written.
+ * `linkNativeToCentral`), central privacy flags, the central matches each GUID
+ * appears in for the club, and what tenant 1 already has in `player_id_map` /
+ * `player_curation`. Output: the exact rows to write, the rows already in
+ * place, and a review list of everything deliberately NOT written.
  *
  * Rules (plan U4, KTD2, KTD3):
- *   - Only CLEAN, non-fill-in players are persisted. AMBIGUOUS players go to the
- *     review list only. Fill-ins (id >= 90000) are never mapped.
+ *   - CLEAN, non-fill-in players are persisted. Fill-ins (id >= 90000) are
+ *     never mapped.
+ *   - SPLIT IDENTITIES: an AMBIGUOUS player whose assigned lines are spread over
+ *     2+ GUIDs is the same person under several central identities (the native
+ *     register already merged them). It is persisted like a CLEAN player —
+ *     keeper map row + merges — only when ALL hold:
+ *       · no other native player has lines assigned to any of its GUIDs
+ *         (else SHARED_GUID);
+ *       · every GUID has at least one strong/medium line (else WEAK_ONLY);
+ *       · no GUID is private (else PRIVATE_GUID);
+ *       · no two of its GUIDs appear in the same central match for the club —
+ *         two GUIDs on one scorecard are two people (else SAME_MATCH).
+ *     Any other AMBIGUOUS player (single GUID, weak evidence …) goes to the
+ *     review list as AMBIGUOUS.
  *   - The keeper GUID is the player's top candidate (most assigned lines — the
  *     order `classifyPlayer` already sorts by). Tenant 1's crosswalk row maps
  *     keeper → native `players.id`, so every curated link stays valid.
@@ -22,9 +34,10 @@
  *     or merge is reported for review, never replaced. Re-running is a no-op.
  *   - A merge is only written when it is safe to fold two GUIDs into one person:
  *     the secondary GUID is claimed by no other native player, neither side is
- *     private, and the secondary carries real (strong/medium) scorecard evidence.
+ *     private, the secondary carries real (strong/medium) scorecard evidence,
+ *     and the two never share a central match.
  */
-import { isFillIn, type PlayerLink } from "./hh-central-crosswalk-core";
+import { isFillIn, type ParticipantEvidence, type PlayerLink } from "./hh-central-crosswalk-core";
 
 export interface ExistingMapRow {
   participantId: string;
@@ -38,13 +51,21 @@ export interface ExistingCurationRow {
 
 export type ReviewReason =
   | "AMBIGUOUS"
+  // Split-identity (AMBIGUOUS across the player's own GUIDs) refusals:
+  | "SHARED_GUID"
+  | "WEAK_ONLY"
+  | "PRIVATE_GUID"
+  | "SAME_MATCH"
+  // Keeper row refusals:
   | "KEEPER_CLAIMED_BY_MULTIPLE_NATIVE"
   | "KEEPER_IS_MERGED_AWAY"
   | "EXISTING_MAP_DIFFERS"
   | "NATIVE_ID_TAKEN"
+  // Per-merge refusals (CLEAN players' minor secondary GUIDs):
   | "MERGE_SHARED_GUID"
   | "MERGE_PRIVATE"
   | "MERGE_WEAK_EVIDENCE"
+  | "MERGE_SAME_MATCH"
   | "MERGE_EXISTING_DIFFERS";
 
 export interface ReviewRow {
@@ -76,7 +97,10 @@ export interface PersistPlan {
   review: ReviewRow[];
   counts: {
     clean: number;
+    /** Every player the matcher classed AMBIGUOUS (split-resolved ones included). */
     ambiguous: number;
+    /** AMBIGUOUS split identities that passed every check and are persisted. */
+    splitResolved: number;
     skippedFillIn: number;
     /** Keeper rows in place after commit (new + unchanged). */
     mapRows: number;
@@ -89,6 +113,12 @@ export interface PersistPlanInput {
   links: PlayerLink[];
   /** Participant GUID → central is_private. Unknown GUIDs count as not private. */
   privateByGuid: Map<string, boolean>;
+  /**
+   * Participant GUID → the club's central match ids it appears in (any
+   * scorecard/roster row). Two GUIDs sharing a match are two people. A GUID
+   * missing from the map is treated as appearing in no match.
+   */
+  centralMatchesByGuid: Map<string, Set<number>>;
   existingMap: ExistingMapRow[];
   existingCuration: ExistingCurationRow[];
 }
@@ -97,8 +127,17 @@ export interface PersistPlanInput {
 const hasSolidEvidence = (c: { strong: number; medium: number }): boolean =>
   c.strong + c.medium > 0;
 
+/** Central matches both GUIDs appear in, ascending. */
+function sharedMatches(byGuid: Map<string, Set<number>>, a: string, b: string): number[] {
+  const x = byGuid.get(a);
+  const y = byGuid.get(b);
+  if (!x || !y) return [];
+  const [small, big] = x.size <= y.size ? [x, y] : [y, x];
+  return [...small].filter((m) => big.has(m)).sort((p, q) => p - q);
+}
+
 export function planPersistence(input: PersistPlanInput): PersistPlan {
-  const { links, privateByGuid } = input;
+  const { links, privateByGuid, centralMatchesByGuid } = input;
   const isPrivate = (g: string): boolean => privateByGuid.get(g) === true;
   const mapByGuid = new Map(input.existingMap.map((r) => [r.participantId, r.playerId]));
   const guidByPlayerId = new Map(input.existingMap.map((r) => [r.playerId, r.participantId]));
@@ -112,7 +151,14 @@ export function planPersistence(input: PersistPlanInput): PersistPlan {
     merges: [],
     mergesUnchanged: [],
     review: [],
-    counts: { clean: 0, ambiguous: 0, skippedFillIn: 0, mapRows: 0, mergeRows: 0 },
+    counts: {
+      clean: 0,
+      ambiguous: 0,
+      splitResolved: 0,
+      skippedFillIn: 0,
+      mapRows: 0,
+      mergeRows: 0,
+    },
   };
 
   // Which native players claim each GUID at all (any candidate, any status bar
@@ -132,30 +178,93 @@ export function planPersistence(input: PersistPlanInput): PersistPlan {
       keeperOf.set(l.participantId, arr);
     }
   }
+  const otherClaimants = (g: string, nativeId: number): number[] =>
+    [...(claimants.get(g) ?? [])].filter((id) => id !== nativeId).sort((a, b) => a - b);
+
+  /**
+   * Split-identity gate for an AMBIGUOUS player spread over 2+ GUIDs. Returns
+   * the first failed condition (checked in a fixed order), or null when the
+   * player is safe to persist as keeper + merges.
+   */
+  const splitRefusal = (l: PlayerLink): Omit<ReviewRow, "nativePlayerId"> | null => {
+    const cands: ParticipantEvidence[] = l.candidates;
+    for (const c of cands) {
+      const others = otherClaimants(c.participantId, l.nativePlayerId);
+      if (others.length > 0) {
+        return {
+          participantId: c.participantId,
+          reason: "SHARED_GUID",
+          detail: `also assigned to native player(s) ${others.join(", ")}`,
+        };
+      }
+    }
+    for (const c of cands) {
+      if (!hasSolidEvidence(c)) {
+        return {
+          participantId: c.participantId,
+          reason: "WEAK_ONLY",
+          detail: `${c.lines} weak line(s) only (presence/name tie-break)`,
+        };
+      }
+    }
+    for (const c of cands) {
+      if (isPrivate(c.participantId)) {
+        return {
+          participantId: c.participantId,
+          reason: "PRIVATE_GUID",
+          detail: "central marks this participant private",
+        };
+      }
+    }
+    for (let i = 0; i < cands.length; i++) {
+      for (let j = i + 1; j < cands.length; j++) {
+        const a = cands[i]!.participantId;
+        const b = cands[j]!.participantId;
+        const shared = sharedMatches(centralMatchesByGuid, a, b);
+        if (shared.length > 0) {
+          return {
+            participantId: b,
+            reason: "SAME_MATCH",
+            detail: `${a} and ${b} both appear in central match(es) ${shared.join(", ")} — two people`,
+          };
+        }
+      }
+    }
+    return null;
+  };
 
   for (const l of links) {
     if (isFillIn(l.nativePlayerId) || l.status === "EXCLUDED_FILL_IN") {
       plan.counts.skippedFillIn += 1;
       continue;
     }
-    if (l.status === "AMBIGUOUS") {
-      plan.counts.ambiguous += 1;
-      plan.review.push({
-        nativePlayerId: l.nativePlayerId,
-        participantId: l.participantId,
-        reason: "AMBIGUOUS",
-        detail: l.notes.join("; "),
-      });
-      continue;
-    }
-    if (l.status !== "CLEAN" || !l.participantId) continue;
-    plan.counts.clean += 1;
-
-    const keeper = l.participantId;
     const nativeId = l.nativePlayerId;
-    const review = (reason: ReviewReason, detail: string, pid: string | null = keeper): void => {
+    const reviewRow = (reason: ReviewReason, detail: string, pid: string | null): void => {
       plan.review.push({ nativePlayerId: nativeId, participantId: pid, reason, detail });
     };
+
+    let split = false;
+    if (l.status === "AMBIGUOUS") {
+      plan.counts.ambiguous += 1;
+      if (l.candidates.length < 2 || !l.participantId) {
+        reviewRow("AMBIGUOUS", l.notes.join("; "), l.participantId);
+        continue;
+      }
+      const refusal = splitRefusal(l);
+      if (refusal) {
+        plan.review.push({ nativePlayerId: nativeId, ...refusal });
+        continue;
+      }
+      split = true;
+    } else if (l.status === "CLEAN" && l.participantId) {
+      plan.counts.clean += 1;
+    } else {
+      continue;
+    }
+
+    const keeper = l.participantId;
+    const review = (reason: ReviewReason, detail: string, pid: string | null = keeper): void =>
+      reviewRow(reason, detail, pid);
 
     // ---- Keeper crosswalk row -----------------------------------------
     const rivals = (keeperOf.get(keeper) ?? []).filter((id) => id !== nativeId);
@@ -183,12 +292,15 @@ export function planPersistence(input: PersistPlanInput): PersistPlan {
     const row = { nativePlayerId: nativeId, participantId: keeper, playerId: nativeId };
     if (mapped === nativeId) plan.mapUnchanged.push(row);
     else plan.mapInserts.push(row);
+    if (split) plan.counts.splitResolved += 1;
 
     // ---- Merges of the player's other GUIDs into the keeper ------------
+    // (For a split identity the gate above already proved every GUID safe; the
+    // per-merge checks below then only ever trip on existing curation rows.)
     for (const c of l.candidates) {
       const g = c.participantId;
       if (g === keeper) continue;
-      const others = [...(claimants.get(g) ?? [])].filter((id) => id !== nativeId);
+      const others = otherClaimants(g, nativeId);
       if (others.length > 0) {
         review("MERGE_SHARED_GUID", `also assigned to native player(s) ${others.join(", ")}`, g);
         continue;
@@ -199,6 +311,15 @@ export function planPersistence(input: PersistPlanInput): PersistPlan {
       }
       if (!hasSolidEvidence(c)) {
         review("MERGE_WEAK_EVIDENCE", `${c.lines} weak line(s) only`, g);
+        continue;
+      }
+      const shared = sharedMatches(centralMatchesByGuid, keeper, g);
+      if (shared.length > 0) {
+        review(
+          "MERGE_SAME_MATCH",
+          `${g} and keeper ${keeper} both appear in central match(es) ${shared.join(", ")}`,
+          g,
+        );
         continue;
       }
       const existing = curationByGuid.get(g);

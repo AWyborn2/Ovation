@@ -21,8 +21,12 @@
  * Rules:
  *   - Only matches with `opponent_club_id IS NULL` are candidates; a match that
  *     already has a club link is never touched.
- *   - The opponent name is the opposing side's central team name (falling back
- *     to the central club's name).
+ *   - The opponent name matches what already-linked matches use: when the match
+ *     gets an app club link it is that club's register name (`clubs.name`, read
+ *     from the native DB); otherwise the central CLUB name, falling back to the
+ *     central team name only when the club has none. Central team names are
+ *     inconsistent ("Mandurah", "Rockingham Hornets Cricket Club", "X A Grade"),
+ *     so they are the last resort. The preview records each name's source.
  *   - The app `clubs` id comes from a central-club -> app-club map LEARNED from
  *     native matches that already have `opponent_club_id` and link to central.
  *     The most frequent pairing wins (the `centralClubIdForPlayhqOrg` rule in
@@ -65,6 +69,12 @@ export interface OpponentValues {
   opponentClubId: number | null;
 }
 
+/**
+ * Where `next.opponent` came from: the app clubs register name of the linked
+ * club, the central club name, or (last resort) the central team name.
+ */
+export type NameSource = "app_club" | "central_club" | "central_team";
+
 export interface RepairUpdate {
   matchId: number;
   sourceKey: string;
@@ -72,6 +82,7 @@ export interface RepairUpdate {
   centralClubId: number;
   previous: OpponentValues;
   next: OpponentValues;
+  nameSource: NameSource;
 }
 
 export type SkipReason =
@@ -111,6 +122,8 @@ export interface RepairPlan {
     nameOnly: number;
     unchanged: number;
     skipped: number;
+    /** Updates by where the new opponent name came from. */
+    nameSource: Record<NameSource, number>;
   };
 }
 
@@ -185,14 +198,38 @@ export function learnClubMap(
   return out;
 }
 
+/**
+ * The opponent name to write, and where it came from. A match that gets an app
+ * club link takes that club's register name (`clubs.name`), so it groups with
+ * the matches already linked to the same club. An unlinked match takes the
+ * central CLUB name ("Mandurah Cricket Club", not "Mandurah A Grade"), and only
+ * falls back to the central team name when the club has none. The register
+ * name falls back the same way if it is somehow blank.
+ */
+export function opponentName(src: {
+  appClubName: string | null;
+  centralClubName: string | null;
+  teamName: string | null;
+}): { name: string; source: NameSource } | null {
+  const app = clean(src.appClubName);
+  if (app) return { name: app, source: "app_club" };
+  const club = clean(src.centralClubName);
+  if (club) return { name: club, source: "central_club" };
+  const team = clean(src.teamName);
+  if (team) return { name: team, source: "central_team" };
+  return null;
+}
+
 /** Build the full repair plan. Pure; the preview prints it, --commit applies it. */
 export function planRepair(input: {
   native: readonly NativeMatch[];
   central: readonly CentralMatch[];
   centralClubNames: ReadonlyMap<number, string | null>;
+  /** The app clubs register (native DB): clubs.id -> clubs.name. */
+  appClubNames: ReadonlyMap<number, string | null>;
   clubId: number;
 }): RepairPlan {
-  const { native, central, centralClubNames, clubId } = input;
+  const { native, central, centralClubNames, appClubNames, clubId } = input;
   const byKey = indexCentral(central);
   const clubMap = learnClubMap(native, central, clubId);
 
@@ -221,17 +258,19 @@ export function planRepair(input: {
       skipped.push({ matchId: n.id, sourceKey: n.sourceKey, reason: "club_not_in_match" });
       continue;
     }
-    const clubName =
-      side.centralClubId == null ? null : clean(centralClubNames.get(side.centralClubId));
-    const name = side.teamName ?? clubName;
-    if (!name || side.centralClubId == null) {
+    const appClubId =
+      side.centralClubId == null ? null : (clubMap.get(side.centralClubId)?.appClubId ?? null);
+    const named = opponentName({
+      appClubName: appClubId == null ? null : (appClubNames.get(appClubId) ?? null),
+      centralClubName:
+        side.centralClubId == null ? null : (centralClubNames.get(side.centralClubId) ?? null),
+      teamName: side.teamName,
+    });
+    if (!named || side.centralClubId == null) {
       skipped.push({ matchId: n.id, sourceKey: n.sourceKey, reason: "no_opponent_name" });
       continue;
     }
-    const next: OpponentValues = {
-      opponent: name,
-      opponentClubId: clubMap.get(side.centralClubId)?.appClubId ?? null,
-    };
+    const next: OpponentValues = { opponent: named.name, opponentClubId: appClubId };
     if (next.opponent === n.opponent && next.opponentClubId === null) {
       unchanged++;
       continue;
@@ -243,6 +282,7 @@ export function planRepair(input: {
       centralClubId: side.centralClubId,
       previous: { opponent: n.opponent, opponentClubId: n.opponentClubId },
       next,
+      nameSource: named.source,
     });
   }
 
@@ -265,6 +305,8 @@ export function planRepair(input: {
     .map(({ centralClubId, name, matches }) => ({ centralClubId, name, matches }));
 
   const withClub = updates.filter((u) => u.next.opponentClubId !== null).length;
+  const nameSource: Record<NameSource, number> = { app_club: 0, central_club: 0, central_team: 0 };
+  for (const u of updates) nameSource[u.nameSource]++;
   return {
     updates,
     skipped,
@@ -280,6 +322,7 @@ export function planRepair(input: {
       nameOnly: updates.length - withClub,
       unchanged,
       skipped: skipped.length,
+      nameSource,
     },
   };
 }
@@ -397,15 +440,25 @@ function printPlan(plan: RepairPlan): void {
     `To update: ${c.toUpdate} (name + club ${c.withClub}, name only ${c.nameOnly}); ` +
       `unchanged ${c.unchanged}; skipped ${c.skipped}`,
   );
+  console.log(
+    `Opponent name from: app clubs register ${c.nameSource.app_club}, ` +
+      `central club ${c.nameSource.central_club}, central team ${c.nameSource.central_team}`,
+  );
   const reasons = new Map<string, number>();
   for (const s of plan.skipped) reasons.set(s.reason, (reasons.get(s.reason) ?? 0) + 1);
   for (const [r, n] of reasons) console.log(`  skipped ${r}: ${n}`);
-  console.log("\nPer opposing club (central id -> app club id: matches):");
+  console.log("\nPer opposing club (central id -> app club id: matches, name written [source]):");
   for (const p of plan.perClub) {
     const link = plan.clubMap.get(p.centralClubId);
     const learned = link ? ` [learned ${link.votes}/${link.total}]` : "";
+    const written = new Set(
+      plan.updates
+        .filter((u) => u.centralClubId === p.centralClubId)
+        .map((u) => `"${u.next.opponent}" [${u.nameSource}]`),
+    );
     console.log(
-      `  ${p.centralClubId} ${p.name ?? "?"} -> ${p.appClubId ?? "UNRESOLVED"}: ${p.matches}${learned}`,
+      `  ${p.centralClubId} ${p.name ?? "?"} -> ${p.appClubId ?? "UNRESOLVED"}: ${p.matches}${learned}` +
+        ` => ${[...written].join(", ")}`,
     );
   }
   if (plan.unresolvedClubs.length) {
@@ -437,7 +490,7 @@ async function main(): Promise<void> {
   const { mkdirSync, readFileSync, writeFileSync } = await import("node:fs");
   const path = await import("node:path");
   const { and, eq, isNull, sql } = await import("drizzle-orm");
-  const { db, closeDb, matchesTable, tenantsTable } = await import("@workspace/db");
+  const { db, closeDb, clubsTable, matchesTable, tenantsTable } = await import("@workspace/db");
   const { confirmDatabaseTarget } = await import("./lib/cli");
 
   const commit = argv.includes("--commit");
@@ -537,10 +590,15 @@ async function main(): Promise<void> {
       const clubs = await centralDb
         .select({ clubId: centralClubsTable.clubId, name: centralClubsTable.name })
         .from(centralClubsTable);
+      // The app clubs register (native DB) — the names linked matches already use.
+      const appClubs = await db
+        .select({ id: clubsTable.id, name: clubsTable.name })
+        .from(clubsTable);
       const plan = planRepair({
         native,
         central,
         centralClubNames: new Map(clubs.map((c) => [c.clubId, c.name])),
+        appClubNames: new Map(appClubs.map((c) => [c.id, c.name])),
         clubId,
       });
       printPlan(plan);
