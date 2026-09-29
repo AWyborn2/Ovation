@@ -31,6 +31,7 @@ export const JUNIOR_CAPABLE: ReadonlySet<CardKind> = new Set<CardKind>([
   "ladder",
   "bigMoment",
   "clubLeaderboard",
+  "roundFixtures",
 ]);
 
 /**
