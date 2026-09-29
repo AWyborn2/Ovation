@@ -14,7 +14,8 @@
  * Built from the dump's ground-truth distinct labels. App grades:
  * "A Grade".."F Grade", "Female A Grade", "Female B Grade", "PPL", "Colts".
  * `appGrade: null` means deliberately unmapped (charity one-offs, Female C the
- * app doesn't have, the Ladies-T20 Female-B predecessor we don't auto-merge).
+ * app doesn't have, junior / pathway grades). "Ladies T20", the Female B
+ * predecessor, maps to "Female B Grade".
  */
 // ---------------------------------------------------------------------------
 // WA Premier Cricket (second association, Phase 3). Its grade vocabulary is
@@ -134,10 +135,13 @@ export function classifyCentralGrade(centralGrade: string | null): CentralGradeM
   if (/\bfemale\s*a\b/.test(lower)) {
     return { appGrade: "Female A Grade", note: formatNote };
   }
+  // Ladies T20 (PCA 2017/18–2022/23) is the competition that became Senior
+  // Female B Grade, so it counts as Female B Grade for every central club —
+  // exactly as the native Halls Head app already recorded it.
   if (/\bladies\s*t20\b/.test(lower)) {
     return {
-      appGrade: null,
-      note: "Female B predecessor (Ladies T20) — review, not auto-merged",
+      appGrade: "Female B Grade",
+      note: "Ladies T20 — the Female B Grade predecessor, counted as Female B Grade",
     };
   }
   if (/\bfemale\s*b\b/.test(lower)) {
