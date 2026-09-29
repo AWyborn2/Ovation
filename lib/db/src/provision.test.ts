@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type * as CentralQueries from "./central-queries";
 
 /** FIFO of result sets the mocked centralDb.select() query resolves to. */
 const queuedCentralResults: unknown[][] = [];
@@ -34,12 +35,24 @@ vi.mock("./index", () => ({
   db: { select: () => makeSelectBuilder(queuedTenantResults) },
 }));
 
-import { provisionTenant, ProvisionError } from "./provision";
+/** Participants mintPlayerIdMap sees for the club (mocked central read). */
+let clubParticipants: { participantId: string; displayName: string | null; isPrivate: boolean }[] =
+  [];
+vi.mock("./central-queries", async (importOriginal) => ({
+  ...(await importOriginal<typeof CentralQueries>()),
+  centralClubParticipants: async () => clubParticipants,
+}));
+
+import { provisionTenant, ProvisionError, mintPlayerIdMap, MINT_ID_CEILING } from "./provision";
 import { isCentralClubProvisionable } from "./central-schema/clubs";
+import { playerIdMapTable } from "./schema/player_id_map";
+import { playerCurationTable } from "./schema/player_curation";
+import { playersTable } from "./schema/players";
 
 beforeEach(() => {
   queuedCentralResults.length = 0;
   queuedTenantResults.length = 0;
+  clubParticipants = [];
 });
 
 afterEach(() => {
@@ -164,5 +177,135 @@ describe("provisionTenant: exclusion guard", () => {
       caught = e;
     }
     expect(caught).not.toBeInstanceOf(ProvisionError);
+  });
+});
+
+/**
+ * A fake tenant executor for mintPlayerIdMap: each select resolves by the table
+ * it reads (crosswalk / curation / native players), and inserts are recorded.
+ */
+function fakeExecutor(state: {
+  map?: { participantId: string; playerId: number }[];
+  curation?: { participantId: string }[];
+  nativeMax?: number | null;
+}) {
+  const inserted: { tenantId: number; participantId: string; playerId: number }[] = [];
+  const reads: unknown[] = [];
+  const resultFor = (table: unknown): unknown[] => {
+    reads.push(table);
+    if (table === playerIdMapTable) return state.map ?? [];
+    if (table === playerCurationTable) return state.curation ?? [];
+    if (table === playersTable) return [{ maxId: state.nativeMax ?? null }];
+    throw new Error("unexpected table");
+  };
+  const executor = {
+    select() {
+      let table: unknown;
+      const builder = {
+        from(t: unknown) {
+          table = t;
+          return builder;
+        },
+        where() {
+          return builder;
+        },
+        then(onFulfilled: (v: unknown[]) => unknown, onRejected?: (e: unknown) => unknown) {
+          return Promise.resolve()
+            .then(() => resultFor(table))
+            .then(onFulfilled, onRejected);
+        },
+      };
+      return builder;
+    },
+    insert(table: unknown) {
+      if (table !== playerIdMapTable) throw new Error("mint may only insert crosswalk rows");
+      return {
+        values: async (rows: typeof inserted) => {
+          inserted.push(...rows);
+        },
+      };
+    },
+  };
+  return { executor: executor as never, inserted, reads };
+}
+
+const guid = (n: number): string => `00000000-0000-0000-0000-${String(n).padStart(12, "0")}`;
+const participants = (...ns: number[]) =>
+  ns.map((n) => ({ participantId: guid(n), displayName: null, isPrivate: false }));
+
+describe("mintPlayerIdMap: guards", () => {
+  it("continues the per-tenant sequence and skips already-mapped GUIDs (regression)", async () => {
+    clubParticipants = participants(1, 2, 3);
+    const f = fakeExecutor({ map: [{ participantId: guid(1), playerId: 5 }] });
+    const r = await mintPlayerIdMap(7, 12, f.executor);
+    expect(f.inserted).toEqual([
+      { tenantId: 7, participantId: guid(2), playerId: 6 },
+      { tenantId: 7, participantId: guid(3), playerId: 7 },
+    ]);
+    expect(r).toEqual({ minted: 2, totalParticipants: 3 });
+  });
+
+  it("never mints a merged-away GUID", async () => {
+    clubParticipants = participants(1, 2);
+    const f = fakeExecutor({ curation: [{ participantId: guid(2) }] });
+    await mintPlayerIdMap(7, 12, f.executor);
+    expect(f.inserted.map((r) => r.participantId)).toEqual([guid(1)]);
+  });
+
+  it("for Halls Head (tenant 1) starts above the highest native player id", async () => {
+    clubParticipants = participants(1, 2, 3);
+    // Persisted keeper rows reuse native ids (e.g. 40, 812); native max is 1500.
+    const f = fakeExecutor({
+      map: [
+        { participantId: guid(1), playerId: 40 },
+        { participantId: guid(2), playerId: 812 },
+      ],
+      nativeMax: 1500,
+    });
+    await mintPlayerIdMap(1, 1, f.executor);
+    expect(f.inserted).toEqual([{ tenantId: 1, participantId: guid(3), playerId: 1501 }]);
+    expect(f.reads).toContain(playersTable);
+  });
+
+  it("does not consult native players for any other tenant", async () => {
+    clubParticipants = participants(1);
+    const f = fakeExecutor({ nativeMax: 1500 });
+    await mintPlayerIdMap(7, 12, f.executor);
+    expect(f.inserted).toEqual([{ tenantId: 7, participantId: guid(1), playerId: 1 }]);
+    expect(f.reads).not.toContain(playersTable);
+  });
+
+  it("ignores ids in the fill-in / cap-only range when continuing the sequence", async () => {
+    clubParticipants = participants(1, 2);
+    const f = fakeExecutor({ map: [{ participantId: guid(1), playerId: 95001 }] });
+    await mintPlayerIdMap(7, 12, f.executor);
+    expect(f.inserted).toEqual([{ tenantId: 7, participantId: guid(2), playerId: 1 }]);
+  });
+
+  it("refuses to mint an id >= 90000, writing nothing", async () => {
+    expect(MINT_ID_CEILING).toBe(90000);
+    clubParticipants = participants(1, 2, 3);
+    const f = fakeExecutor({ map: [{ participantId: guid(1), playerId: MINT_ID_CEILING - 2 }] });
+    await expect(mintPlayerIdMap(7, 12, f.executor)).rejects.toThrow(/90000/);
+    expect(f.inserted).toEqual([]);
+  });
+
+  it("after Halls Head persistence, never collides with a native id or reaches 90000", async () => {
+    clubParticipants = participants(...Array.from({ length: 50 }, (_, i) => i + 1));
+    const keeperRows = Array.from({ length: 10 }, (_, i) => ({
+      participantId: guid(i + 1),
+      playerId: (i + 1) * 100, // native ids up to 1000
+    }));
+    const f = fakeExecutor({
+      map: keeperRows,
+      curation: [{ participantId: guid(11) }], // merged away
+      nativeMax: 2400,
+    });
+    await mintPlayerIdMap(1, 1, f.executor);
+    const ids = f.inserted.map((r) => r.playerId);
+    expect(ids).toHaveLength(39);
+    expect(Math.min(...ids)).toBe(2401);
+    expect(ids.every((id) => id > 2400 && id < MINT_ID_CEILING)).toBe(true);
+    expect(f.inserted.some((r) => r.participantId === guid(11))).toBe(false);
   });
 });
