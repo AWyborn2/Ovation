@@ -27,6 +27,7 @@ import type {
   Premiership,
   TeamListPlayer as TeamListPlayerDto,
 } from "@workspace/api-client-react";
+import { isJuniorGradeLabel } from "@workspace/scorecard";
 import type { CardFormState } from "./logic";
 
 // --------------------------------------------------------------------------
@@ -151,6 +152,124 @@ export function fixtureToCountdownState(fixture: Fixture): CardFormState {
     dateVenue: [date, venue].filter(Boolean).join(" • "),
     fixtureLine: `${fixture.grade} vs ${fixture.opponentName}`,
   };
+}
+
+// --------------------------------------------------------------------------
+// Round-derived (roundFixtures — game day, every grade this round)
+// --------------------------------------------------------------------------
+
+/** Most grades a game-day card lists (the Club Kit layout's cap). */
+export const ROUND_FIXTURES_CAP = 5;
+
+/** One round's fixtures, seniors and juniors kept apart (juniors isolation). */
+export interface FixtureRound {
+  /** Stable key for a select. */
+  key: string;
+  /** "ROUND 15", or "" when PlayHQ gave no round label. */
+  roundLabel: string;
+  /** The weekend's Saturday (local date, YYYY-MM-DD). */
+  weekend: string;
+  junior: boolean;
+  /** Earliest start first. */
+  fixtures: Fixture[];
+}
+
+/** YYYY-MM-DD (local) of the weekend a start falls in: Sunday → the day before, else the coming Saturday. */
+function weekendOf(d: Date): string {
+  const day = d.getDay();
+  const shift = day === 0 ? -1 : (6 - day + 7) % 7;
+  const sat = new Date(d.getFullYear(), d.getMonth(), d.getDate() + shift);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${sat.getFullYear()}-${pad(sat.getMonth() + 1)}-${pad(sat.getDate())}`;
+}
+
+/**
+ * Group fixtures into rounds: the same round label on the same weekend (a
+ * round's grades can span Friday night to Sunday). Senior and junior grades
+ * never share a group, so a game-day card never blends them. Rounds come
+ * back in date order.
+ */
+export function groupFixturesByRound(fixtures: readonly Fixture[]): FixtureRound[] {
+  const groups = new Map<string, FixtureRound>();
+  for (const f of fixtures) {
+    const d = parseDate(f.startAt);
+    if (!d) continue;
+    const weekend = weekendOf(d);
+    const roundLabel = roundLabelOf(f);
+    const junior = isJuniorGradeLabel(f.grade);
+    const key = `${weekend}|${roundLabel}|${junior ? "junior" : "senior"}`;
+    let g = groups.get(key);
+    if (!g) {
+      g = { key, roundLabel, weekend, junior, fixtures: [] };
+      groups.set(key, g);
+    }
+    g.fixtures.push(f);
+  }
+  const start = (f: Fixture) => parseDate(f.startAt)?.getTime() ?? 0;
+  const out = [...groups.values()];
+  for (const g of out) g.fixtures.sort((a, b) => start(a) - start(b) || a.id - b.id);
+  return out.sort(
+    (a, b) =>
+      start(a.fixtures[0]) - start(b.fixtures[0]) || (a.junior ? 1 : 0) - (b.junior ? 1 : 0),
+  );
+}
+
+/**
+ * The grade tile text: "A Grade" → "A", "Female A Grade" → "FA",
+ * "Under 15" → "U15", "T20" → "T20".
+ */
+export function gradeTile(grade: string): string {
+  const words = grade
+    .replace(/\bgrade\b/gi, "")
+    .replace(/\bcricket\b/gi, "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (words.length === 0) return grade.trim().slice(0, 3).toUpperCase();
+  if (words.length === 1) return words[0].slice(0, 3).toUpperCase();
+  return words
+    .map((w) => (/\d/.test(w) ? w.replace(/[^0-9]/g, "") : w[0]))
+    .join("")
+    .slice(0, 4)
+    .toUpperCase();
+}
+
+/** "SATURDAY 14 FEB". */
+function formatRoundDate(iso: string | null | undefined): string {
+  const d = parseDate(iso);
+  if (!d) return "";
+  return d
+    .toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "short" })
+    .replace(",", "")
+    .toUpperCase();
+}
+
+/** A round's fixtures → the game-day card's fields (up to {@link ROUND_FIXTURES_CAP} grades). */
+export function fixtureRoundToState(round: FixtureRound): CardFormState {
+  const first = round.fixtures[0];
+  return {
+    roundLabel: round.roundLabel,
+    date: formatRoundDate(first?.startAt),
+    fixtures: round.fixtures.slice(0, ROUND_FIXTURES_CAP).map((f) => ({
+      grade: gradeTile(f.grade),
+      opponent: f.opponentName,
+      venue: f.venue || (f.isHome ? "Home" : "Away"),
+      startTime: formatFixtureTime(f.startAt),
+    })),
+    junior: round.junior,
+  };
+}
+
+/** The select label for a round: "ROUND 15 · SAT 14 FEB · 4 grades (juniors)". */
+export function fixtureRoundLabel(round: FixtureRound): string {
+  const n = round.fixtures.length;
+  return [
+    round.roundLabel || "Round",
+    formatFixtureDate(round.fixtures[0]?.startAt),
+    `${n} grade${n === 1 ? "" : "s"}${round.junior ? " (juniors)" : ""}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 /** The team-list meta fields (heading/competition/venue line) derived from a fixture. */

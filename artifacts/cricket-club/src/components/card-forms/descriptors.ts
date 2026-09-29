@@ -51,7 +51,15 @@ export interface RepeatSpec {
 }
 
 /** Which prefill panel a kind offers (or none). */
-export type PrefillSource = "match" | "fixture" | "stats" | "milestone" | "premiership" | "none";
+export type PrefillSource =
+  | "match"
+  | "fixture"
+  /** A whole round of fixtures (game day, every grade). */
+  | "round"
+  | "stats"
+  | "milestone"
+  | "premiership"
+  | "none";
 
 export interface KindDescriptor {
   /** Bespoke kinds render their own editor (matchSummary). */
@@ -383,7 +391,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
   },
 
   roundFixtures: {
-    prefill: "none",
+    prefill: "round",
     fields: [
       { key: "date", label: "Date", type: "text", placeholder: "SATURDAY 14 FEB" },
       { key: "roundLabel", label: "Round", type: "text", placeholder: "ROUND 15" },
