@@ -16,6 +16,7 @@ import {
   clubRolesTable,
   partnershipRecordsTable,
   playerGradeStatsTable,
+  playerIdMapTable,
   playersTable,
 } from "@workspace/db";
 
@@ -286,8 +287,88 @@ export async function buildRecordsLeaderboards(tenantId: number): Promise<Honour
   return out;
 }
 
-/** Per-grade statistical record holders (mirrors the Records "By Grade" tab). */
-export async function buildRecordsByGrade(): Promise<HonourBoardOut[]> {
+/**
+ * The tenant's crosswalk (central participant GUID -> tenant int player id),
+ * resolved in the route layer per the central-read identity pattern.
+ */
+async function crosswalkFor(tenantId: number): Promise<Map<string, number>> {
+  const rows = await db
+    .select({ participantId: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
+    .from(playerIdMapTable)
+    .where(eq(playerIdMapTable.tenantId, tenantId));
+  return new Map(rows.map((r) => [r.participantId, r.playerId]));
+}
+
+function recordsByGradeBoard(grade: string, entries: BoardEntry[]): HonourBoardOut {
+  return {
+    id: `records_grade:${grade}`,
+    category: "records_by_grade",
+    layout: "list",
+    title: `${grade} Records`,
+    subtitle: "Leading performances in this grade",
+    entries,
+  };
+}
+
+/**
+ * Per-grade statistical record holders (mirrors the Records "By Grade" tab).
+ *
+ * The native stats tables hold only tenant #1's history, so a central tenant
+ * builds the same boards from its own central club (senior grades only,
+ * private players never shown), with holders linked through its crosswalk.
+ */
+export async function buildRecordsByGrade(source: DataSource): Promise<HonourBoardOut[]> {
+  if (source.kind === "central") return buildCentralRecordsByGrade(source);
+  return buildNativeRecordsByGrade();
+}
+
+async function buildCentralRecordsByGrade(
+  source: Extract<DataSource, { kind: "central" }>,
+): Promise<HonourBoardOut[]> {
+  const { centralClubRecords, centralGradesForSeason } =
+    await import("@workspace/db/central-queries");
+  const [grades, intByGuid] = await Promise.all([
+    centralGradesForSeason(source.clubId, null),
+    crosswalkFor(source.tenantId),
+  ]);
+  const perGrade = await Promise.all(
+    grades.map(async (grade) => ({
+      grade,
+      records: await centralClubRecords(source.clubId, { grade }),
+    })),
+  );
+
+  const out: HonourBoardOut[] = [];
+  for (const { grade, records } of perGrade.sort(
+    (a, b) => gradeRank(a.grade) - gradeRank(b.grade) || a.grade.localeCompare(b.grade),
+  )) {
+    const entries: BoardEntry[] = [];
+    const push = (
+      label: string,
+      h: { participantId: string; displayName: string | null; value: number | string } | null,
+    ) => {
+      if (!h || h.value === 0 || h.value === "") return;
+      const name = (h.displayName ?? "").trim();
+      if (!name) return;
+      entries.push({
+        season: "",
+        primaryText: label,
+        detail: `${h.value} — ${name}`,
+        playerId: intByGuid.get(h.participantId) ?? null,
+      });
+    };
+    push("Most Games", records.mostGames);
+    push("Most Runs", records.mostRuns);
+    push("Highest Score", records.highestScore);
+    push("Most Wickets", records.mostWickets);
+    push("Best Bowling", records.bestBowling);
+    push("Most Catches", records.mostCatches);
+    if (entries.length > 0) out.push(recordsByGradeBoard(grade, entries));
+  }
+  return out;
+}
+
+async function buildNativeRecordsByGrade(): Promise<HonourBoardOut[]> {
   const rows = await db
     .select({
       playerId: playerGradeStatsTable.playerId,
@@ -350,20 +431,65 @@ export async function buildRecordsByGrade(): Promise<HonourBoardOut[]> {
     pushTop("Most Catches", mostCatches, mostCatches?.catches ?? 0);
 
     if (entries.length === 0) continue;
-    out.push({
-      id: `records_grade:${grade}`,
-      category: "records_by_grade",
-      layout: "list",
-      title: `${grade} Records`,
-      subtitle: "Leading performances in this grade",
-      entries,
-    });
+    out.push(recordsByGradeBoard(grade, entries));
   }
   return out;
 }
 
-/** Most career appearances — real players only (id < FILL_IN_THRESHOLD), games > 0. */
-export async function buildMostGames(): Promise<HonourBoardOut | null> {
+const MOST_GAMES_LIMIT = 50;
+
+function mostGamesBoard(
+  rows: { name: string; games: number; playerId: number | null }[],
+): HonourBoardOut | null {
+  if (rows.length === 0) return null;
+  return {
+    id: "most_games",
+    category: "most_games",
+    layout: "list",
+    title: "Most Games Played",
+    subtitle: "Career appearances for the club",
+    entries: rows.map((r, i) => ({
+      season: "",
+      primaryText: r.name,
+      detail: `${r.games} games`,
+      playerId: r.playerId,
+      meta: { rank: i + 1 },
+    })),
+  };
+}
+
+/**
+ * Most career appearances for the club. Native: real players only
+ * (id < FILL_IN_THRESHOLD), games > 0. Central: the tenant club's senior
+ * careers from central, private and unnamed players left out, linked through
+ * the tenant's crosswalk.
+ */
+export async function buildMostGames(source: DataSource): Promise<HonourBoardOut | null> {
+  if (source.kind === "central") return buildCentralMostGames(source);
+  return buildNativeMostGames();
+}
+
+async function buildCentralMostGames(
+  source: Extract<DataSource, { kind: "central" }>,
+): Promise<HonourBoardOut | null> {
+  const { centralPlayerCareers } = await import("@workspace/db/central-queries");
+  const [careers, intByGuid] = await Promise.all([
+    centralPlayerCareers(source.clubId),
+    crosswalkFor(source.tenantId),
+  ]);
+  const rows = careers
+    .filter((c) => !c.isPrivate && c.games > 0 && (c.displayName ?? "").trim() !== "")
+    .map((c) => ({
+      name: c.displayName!.trim(),
+      games: c.games,
+      playerId: intByGuid.get(c.participantId) ?? null,
+    }))
+    .sort((a, b) => b.games - a.games || a.name.localeCompare(b.name))
+    .slice(0, MOST_GAMES_LIMIT);
+  return mostGamesBoard(rows);
+}
+
+async function buildNativeMostGames(): Promise<HonourBoardOut | null> {
   const rows = await db
     .select({
       id: playersTable.id,
@@ -374,20 +500,12 @@ export async function buildMostGames(): Promise<HonourBoardOut | null> {
     .from(playersTable)
     .where(and(lt(playersTable.id, FILL_IN_THRESHOLD), gt(playersTable.totalGames, 0)))
     .orderBy(desc(playersTable.totalGames), asc(playersTable.surname))
-    .limit(50);
-  if (rows.length === 0) return null;
-  return {
-    id: "most_games",
-    category: "most_games",
-    layout: "list",
-    title: "Most Games Played",
-    subtitle: "Career appearances for the club",
-    entries: rows.map((r, i) => ({
-      season: "",
-      primaryText: `${r.givenName ?? ""} ${r.surname}`.trim(),
-      detail: `${r.totalGames} games`,
+    .limit(MOST_GAMES_LIMIT);
+  return mostGamesBoard(
+    rows.map((r) => ({
+      name: `${r.givenName ?? ""} ${r.surname}`.trim(),
+      games: r.totalGames ?? 0,
       playerId: r.id,
-      meta: { rank: i + 1 },
     })),
-  };
+  );
 }
