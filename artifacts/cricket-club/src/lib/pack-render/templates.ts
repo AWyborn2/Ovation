@@ -119,10 +119,26 @@ export function resolveTemplate(
   const designs = designsByKind(packId).get(input.kind);
   if (!designs || designs.length === 0) return null;
   if (designs.length === 1) return designs[0].template;
-  // gradeLeader / clubLeaderboard: choose Runs vs Wickets by category.
+  // gradeLeader / clubLeaderboard: the design whose preset matches the
+  // category exactly, else Runs vs Wickets (a pack without a Catches or
+  // Dismissals design serves those from its Runs design, as before).
   const category = (input as { category?: string }).category ?? "Runs";
   const wantsWickets = /wicket|bowl/i.test(category);
-  const match = designs.find((d) => (d.categoryPreset === "Wickets") === wantsWickets);
+  const preset = /catch/i.test(category)
+    ? "Catches"
+    : /dismiss/i.test(category)
+      ? "Dismissals"
+      : wantsWickets
+        ? "Wickets"
+        : "Runs";
+  const exact = designs.find((d) => d.categoryPreset === preset);
+  if (exact) return exact.template;
+  const match = designs.find(
+    (d) =>
+      (d.categoryPreset === "Wickets") === wantsWickets &&
+      d.categoryPreset !== "Catches" &&
+      d.categoryPreset !== "Dismissals",
+  );
   return (match ?? designs[0]).template;
 }
 

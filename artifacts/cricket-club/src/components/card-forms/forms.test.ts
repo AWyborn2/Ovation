@@ -1,4 +1,5 @@
 import { createElement } from "react";
+import { resolvePackIdForKind } from "@/lib/card-template";
 import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
 import { CARD_KINDS } from "@/lib/share-card";
@@ -38,8 +39,11 @@ describe("card-forms: every kind builds a renderable input", () => {
       const state = initialCardState(kind);
       const input = buildCardInput(kind, state, false);
       expect(input.kind).toBe(kind);
+      // The pack a card of this kind renders in (Club Kit-only kinds resolve
+      // to Club Kit rather than the default pack).
+      const packId = resolvePackIdForKind(null, kind);
       for (const size of SIZES) {
-        const html = renderPackCard(input, size, true, TOKENS, false);
+        const html = renderPackCard(input, size, true, TOKENS, false, null, packId);
         expect(html.length).toBeGreaterThan(0);
         expect(hasUnresolved(html)).toBe(false);
       }
@@ -276,8 +280,15 @@ describe("card-forms: prefill mappers", () => {
         topRunScorer: { playerName: "Jack Manuel", value: 428 },
         topWicketTaker: { playerName: "Tom Burrage", value: 24 },
         topDismissals: { playerName: "Sam Keeper", value: 14 },
+        topCatches: { playerName: "Sam Slips", value: 11 },
       },
-      { gradeLabel: "B Grade", topRunScorer: null, topWicketTaker: null, topDismissals: null },
+      {
+        gradeLabel: "B Grade",
+        topRunScorer: null,
+        topWicketTaker: null,
+        topDismissals: null,
+        topCatches: null,
+      },
     ];
     const runs = clubSeasonTotalsToState(2024, "Runs", grades);
     expect(runs.category).toBe("Runs");
@@ -290,6 +301,9 @@ describe("card-forms: prefill mappers", () => {
     const dismissals = clubSeasonTotalsToState(2024, "Dismissals", grades);
     expect(dismissals).toMatchObject({ title: "SAFE HANDS", category: "Dismissals" });
     expect(dismissals.leaders?.[0]).toMatchObject({ playerName: "Sam Keeper", value: "14" });
+    const catches = clubSeasonTotalsToState(2024, "Catches", grades);
+    expect(catches).toMatchObject({ title: "CLUB CATCHERS", category: "Catches" });
+    expect(catches.leaders?.[0]).toMatchObject({ playerName: "Sam Slips", value: "11" });
     const wickets = clubSeasonTotalsToState(2024, "Wickets", grades);
     expect(wickets.leaders?.[0]).toMatchObject({ playerName: "Tom Burrage", value: "24" });
     // Empty grade renders as a blank-but-present row (still editable).

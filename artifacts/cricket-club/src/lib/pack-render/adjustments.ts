@@ -13,6 +13,9 @@
 import type { CardSize } from "../share-card";
 import { escapeHtml } from "./html-utils";
 import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
+import { renderElement, type ElementLayerState } from "../studio-elements/registry";
+import { clubKitPaletteFor, clubKitVars } from "./club-kit-vars";
+import type { PackCardData, PackTokens } from "./types";
 
 export type PhotoAdjust = { focalX: number; focalY: number; zoom: number };
 
@@ -24,7 +27,15 @@ export type LayerAnimation = {
   delayMs?: number;
 };
 
-export type FreeLayerKind = "text" | "shape" | "image" | "medal" | "sticker" | "chart";
+export type FreeLayerKind =
+  | "text"
+  | "shape"
+  | "image"
+  | "medal"
+  | "sticker"
+  | "chart"
+  /** A Studio library element (`lib/studio-elements`), e.g. Club Kit score bars. */
+  | "element";
 
 export type FreeLayer = {
   id: string;
@@ -50,6 +61,8 @@ export type FreeLayer = {
   chart?: ChartSpec;
   /** The player a player-block layer belongs to. */
   playerId?: number;
+  /** A library element's id and edited props (`kind: "element"`). */
+  element?: ElementLayerState;
   style?: {
     color?: string;
     background?: string;
@@ -208,7 +221,19 @@ export const LAYER_KEYFRAMES =
 const cssValue = (v: string | undefined): string | undefined =>
   v == null ? undefined : v.replace(/[";<>{}]/g, "");
 
-function layerInner(layer: FreeLayer, values: Record<string, string>): string {
+/** Per-render context for library elements (club colours, crest, live rows). */
+export interface FreeLayerContext {
+  tokens?: PackTokens;
+  brand?: PackCardData["brand"] | null;
+  junior?: boolean;
+  rows?: Record<string, Array<Record<string, string>>>;
+}
+
+function layerInner(
+  layer: FreeLayer,
+  values: Record<string, string>,
+  ctx: FreeLayerContext = {},
+): string {
   const raw = layer.style ?? {};
   const s = {
     ...raw,
@@ -249,6 +274,14 @@ function layerInner(layer: FreeLayer, values: Record<string, string>): string {
       return renderSticker(layer.content ?? "Howzat!");
     case "chart":
       return layer.chart ? renderChart(layer.chart) : "";
+    case "element":
+      return layer.element
+        ? renderElement(layer.element, {
+            values,
+            rows: ctx.rows ?? {},
+            crestUrl: ctx.brand?.logoUrl ?? null,
+          })
+        : "";
   }
 }
 
@@ -263,9 +296,18 @@ export function renderFreeLayers(
   opts: { animate?: boolean } = {},
   /** Card field values, for live-bound text layers. */
   values: Record<string, string> = {},
+  /** Club colours / crest / live rows for library elements. */
+  ctx: FreeLayerContext = {},
 ): string {
   const layers = adj?.layers ?? [];
   if (layers.length === 0) return "";
+  // Library elements read the Club Kit palette, derived from the club's
+  // brand; only an overlay that carries one gets the extra declarations.
+  const hasElement = layers.some((l) => l.kind === "element" && !l.hidden);
+  const palette =
+    hasElement && ctx.tokens
+      ? `;${clubKitVars(clubKitPaletteFor(ctx.tokens, ctx.brand, ctx.junior ?? false))}`
+      : "";
   const parts = layers.map((layer) => {
     if (layer.hidden) return "";
     const box = resolveGeometry(layer.geometry, layer.editedAt, size);
@@ -283,8 +325,8 @@ export function renderFreeLayers(
       anim ? `animation:${anim}` : "",
       anim && layer.animation?.delayMs ? `animation-delay:${layer.animation.delayMs}ms` : "",
     ].filter(Boolean);
-    return `<div data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${box.from}"` : ""} style="${css.join(";")}">${layerInner(layer, values)}</div>`;
+    return `<div data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${box.from}"` : ""} style="${css.join(";")}">${layerInner(layer, values, ctx)}</div>`;
   });
   const style = opts.animate ? `<style>${LAYER_KEYFRAMES}</style>` : "";
-  return `<div class="pack-free-layers" style="position:absolute;inset:0;pointer-events:none;container-type:inline-size">${style}${parts.join("")}</div>`;
+  return `<div class="pack-free-layers" style="position:absolute;inset:0;pointer-events:none;container-type:inline-size${palette}">${style}${parts.join("")}</div>`;
 }

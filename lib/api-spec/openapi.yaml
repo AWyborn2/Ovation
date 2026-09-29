@@ -7810,8 +7810,9 @@ components:
       description: >-
         A grade's season leaders for the Club Runs/Wickets/Dismissals
         leaderboard card (A19/A20). A leader is null when the grade has no
-        eligible player. Dismissals are catches plus stumpings.
-      required: [gradeLabel, topRunScorer, topWicketTaker, topDismissals]
+        eligible player. Dismissals are catches plus stumpings; Catches are
+        catches alone.
+      required: [gradeLabel, topRunScorer, topWicketTaker, topDismissals, topCatches]
       properties:
         gradeLabel:
           type: string
@@ -7824,6 +7825,10 @@ components:
             - $ref: "#/components/schemas/CardLeader"
             - type: "null"
         topDismissals:
+          oneOf:
+            - $ref: "#/components/schemas/CardLeader"
+            - type: "null"
+        topCatches:
           oneOf:
             - $ref: "#/components/schemas/CardLeader"
             - type: "null"
@@ -11090,7 +11095,10 @@ components:
       # which covers the same moment with a superset of its fields. Nothing in
       # the app emits or renders it any more, so it is gone from this enum too.
       type: string
-      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard]
+      # roundFixtures / tradingCard / juniorHighlights are the Club Kit card
+      # types (game day across all grades, a collectable player card, junior
+      # highlights).
+      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard, roundFixtures, tradingCard, juniorHighlights]
 
     Sponsor:
       type: object

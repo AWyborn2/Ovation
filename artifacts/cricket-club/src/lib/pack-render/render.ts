@@ -36,6 +36,7 @@ import {
   dropEmptyImageBlocks,
   dropEmptyPresentedBy,
   expandRepeats,
+  initialsOf,
   resolveSlots,
   selectSponsorVariant,
   substituteFields,
@@ -57,6 +58,8 @@ export function packColourModeFor(
   data: PackCardData | null | undefined,
   packId?: string | null,
 ): PackColourMode {
+  // A club-only pack (Club Kit) has no "Pack's own look": always club colours.
+  if (packId !== BLANK_PACK_ID && getPackManifest(packId).colourMode === "club-only") return "club";
   if (!hasClubColours(data?.brand)) return "pack";
   const id = packId === BLANK_PACK_ID ? BLANK_PACK_ID : getPackManifest(packId).packId;
   return data?.packColourModes?.[id] === "pack" ? "pack" : "club";
@@ -110,6 +113,21 @@ function sanitisedOverride(o: PackCardData["tokenOverride"]): Partial<PackTokens
   return out;
 }
 
+/** Field values plus the club's monogram (initials), for library elements. */
+function withMonogram(values: Record<string, string>): Record<string, string> {
+  if (values.clubMonogram || !values.clubName) return values;
+  return { ...values, clubMonogram: initialsOf(values.clubName) };
+}
+
+/** Bound repeat rows as plain cell maps, for live library elements. */
+function rowValues(
+  rows: Record<string, Array<{ values: Record<string, string> }>>,
+): Record<string, Array<Record<string, string>>> {
+  const out: Record<string, Array<Record<string, string>>> = {};
+  for (const [key, list] of Object.entries(rows)) out[key] = list.map((r) => r.values);
+  return out;
+}
+
 /** Apply a pack's club-mode markup swaps (e.g. Sunset's club sky). */
 function applyClubSwaps(html: string, packId: string | null | undefined): string {
   const swaps = getPackManifest(packId).clubSwaps;
@@ -142,12 +160,19 @@ export function renderPackCard(
   opts: { animate?: boolean } = {},
 ): string {
   const adj = isEmptyAdjustments(adjustments) ? null : adjustments;
+  // Junior highlights are always a junior card (juniors palette).
+  if (input.kind === "juniorHighlights") junior = true;
   // Club colours vs the pack's own look: drives the stage tint weight and any
   // club-mode markup swaps. ("pack" leaves the output byte-identical.)
   const mode = packColourModeFor(data, packId);
   if (packId === BLANK_PACK_ID) {
     // A blank canvas: the club's stage colour and the editor's layers only.
-    const layers = renderFreeLayers(adj, size, opts, packFieldValues(input, data));
+    const layers = renderFreeLayers(adj, size, opts, withMonogram(packFieldValues(input, data)), {
+      tokens,
+      brand: data?.brand,
+      junior,
+      rows: rowValues(bindInput(input).rows),
+    });
     return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest().inkTint, mode)}">${layers}</div>`;
   }
   const template = resolveTemplate(input, packId);
@@ -178,6 +203,10 @@ export function renderPackCard(
   if (adj?.images) Object.assign(bound.images, adj.images);
   // Editor field overrides win over the input and the tenant overlay.
   const values = applyFieldOverrides({ ...fieldDefaults(template), ...bound.values }, adj);
+  // The monogram stand-in for a crest: the tenant's initials unless overridden.
+  if (!adj?.fields?.clubMonogram && "clubMonogram" in values && bound.values.clubName) {
+    values.clubMonogram = initialsOf(bound.values.clubName);
+  }
   // Anything the editor overrode is real content, not a sample to rewrite.
   for (const key of Object.keys(adj?.fields ?? {})) bound.values[key] = values[key];
   // On a data-bearing render, any template SAMPLE still surfacing (a field the
@@ -227,8 +256,15 @@ export function renderPackCard(
   html = fitNames(html);
   html = cleanupEmptyRoles(html);
 
-  const layers = renderFreeLayers(adj, size, opts, values);
-  return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest(packId).inkTint, mode)}">${html}${layers}</div>`;
+  const layers = renderFreeLayers(adj, size, opts, withMonogram(values), {
+    tokens,
+    brand: data?.brand,
+    junior,
+    rows: rowValues(bound.rows),
+  });
+  const manifest = getPackManifest(packId);
+  const extra = manifest.rootVars?.({ tokens, brand: data?.brand, junior });
+  return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, manifest.inkTint, mode)}${extra ? `;${extra}` : ""}">${html}${layers}</div>`;
 }
 
 /** The editable text fields a design exposes, in template order (editor Content panel). */

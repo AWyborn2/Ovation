@@ -27,4 +27,7 @@ export const CardKind = {
   newSigning: 'newSigning',
   countdown: 'countdown',
   clubLeaderboard: 'clubLeaderboard',
+  roundFixtures: 'roundFixtures',
+  tradingCard: 'tradingCard',
+  juniorHighlights: 'juniorHighlights',
 } as const;

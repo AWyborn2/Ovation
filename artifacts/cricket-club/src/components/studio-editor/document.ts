@@ -87,9 +87,53 @@ export function setImage(doc: EditorDoc, slot: string, url: string): EditorDoc {
   return { ...doc, images: { ...(doc.images ?? {}), [slot]: url } };
 }
 
-/** Delete layers; locked layers survive. */
+/** A sponsor-strip library element, which the sponsor lock protects. */
+export const isSponsorElement = (l: FreeLayer): boolean =>
+  l.kind === "element" && l.element?.id === "ck.sponsor-strip";
+
+/** Delete layers; locked layers (and a locked sponsor strip) survive. */
 export function removeLayers(doc: EditorDoc, ids: string[]): EditorDoc {
-  return mapLayers(doc, (l) => (ids.includes(l.id) && !l.locked ? null : l));
+  return mapLayers(doc, (l) =>
+    ids.includes(l.id) && !l.locked && !(doc.sponsorLock && isSponsorElement(l)) ? null : l,
+  );
+}
+
+/** Stacking moves for the selected layers (later in the list = drawn on top). */
+export type ReorderMove = "forward" | "backward" | "front" | "back";
+
+/** Move layers up / down the stack, keeping their relative order. */
+export function reorderLayers(doc: EditorDoc, ids: string[], move: ReorderMove): EditorDoc {
+  const layers = [...layersOf(doc)];
+  const picked = layers.filter((l) => ids.includes(l.id));
+  if (picked.length === 0) return doc;
+  if (move === "front" || move === "back") {
+    const rest = layers.filter((l) => !ids.includes(l.id));
+    return { ...doc, layers: move === "front" ? [...rest, ...picked] : [...picked, ...rest] };
+  }
+  const order = move === "forward" ? [...layers.keys()].reverse() : [...layers.keys()];
+  for (const i of order) {
+    if (!ids.includes(layers[i].id)) continue;
+    const j = move === "forward" ? i + 1 : i - 1;
+    if (j < 0 || j >= layers.length || ids.includes(layers[j].id)) continue;
+    [layers[i], layers[j]] = [layers[j], layers[i]];
+  }
+  return { ...doc, layers };
+}
+
+/** Set (or clear, with `null`) one edited prop on a library element layer. */
+export function setElementProp(
+  doc: EditorDoc,
+  id: string,
+  key: string,
+  value: string | null,
+): EditorDoc {
+  return mapLayers(doc, (l) => {
+    if (l.id !== id || l.kind !== "element" || !l.element) return l;
+    const props = { ...(l.element.props ?? {}) };
+    if (value === null) delete props[key];
+    else props[key] = value;
+    return { ...l, element: { ...l.element, props } };
+  });
 }
 
 /** Duplicate layers, offset by 2% at `size`; returns the new ids. */

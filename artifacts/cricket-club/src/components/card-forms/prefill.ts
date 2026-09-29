@@ -210,6 +210,7 @@ export function ladderRowsToState(
 const CLUB_LEADER_COPY: Record<ClubLeaderboardCategory, { title: string; subtitle: string }> = {
   Runs: { title: "CLUB RUN SCORERS", subtitle: "Leading run scorer in each grade" },
   Wickets: { title: "CLUB WICKET TAKERS", subtitle: "Leading wicket taker in each grade" },
+  Catches: { title: "CLUB CATCHERS", subtitle: "Most catches in each grade" },
   Dismissals: { title: "SAFE HANDS", subtitle: "Most catches and stumpings in each grade" },
 };
 
@@ -230,7 +231,9 @@ export function clubSeasonTotalsToState(
         ? g.topRunScorer
         : category === "Wickets"
           ? g.topWicketTaker
-          : (g.topDismissals ?? null);
+          : category === "Catches"
+            ? (g.topCatches ?? null)
+            : (g.topDismissals ?? null);
     return {
       gradeLabel: g.gradeLabel.toUpperCase(),
       playerName: leader?.playerName ?? "",

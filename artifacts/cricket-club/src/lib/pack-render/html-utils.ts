@@ -102,6 +102,19 @@ export function dropEmptyImageBlocks(html: string, images: Record<string, string
     }
     m = re.exec(out);
   }
+  // The inverse: a stand-in shown only while the image is missing (Club Kit's
+  // monogram disc in place of a crest).
+  const inv = /<div[^>]*?\sdata-drop-if-image="([^"]+)"/;
+  m = inv.exec(out);
+  while (m) {
+    const key = m[1];
+    if (images[key]) {
+      out = out.slice(0, m.index) + out.slice(divBounds(out, m.index).end);
+    } else {
+      out = out.slice(0, m.index) + out.slice(m.index).replace(` data-drop-if-image="${key}"`, "");
+    }
+    m = inv.exec(out);
+  }
   return out;
 }
 

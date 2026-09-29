@@ -11,6 +11,10 @@ execution: code
 
 # Club Kit Design Pack and Studio Element Library - Plan
 
+## Status (29 Sep 2026)
+
+Implemented: U1–U10 and U3b (Club Kit pack with all 17 existing kinds plus the three new ones, Catches leaderboard, element library with 29 elements, ad-hoc starters, stacking order, sponsor lock on the sponsor-strip element). Deviations from the plan: Club Kit is authored in card cqmin with its own per-format markup rather than on the skeleton's auto-fit body (KTD1 fallback), and the three new kinds are Club Kit-only (no Broadcast Dark reference designs; `PACK_ONLY_KINDS` in `pack-lint.test.ts`). Game-day prefill from fixtures and a trading-card prefill from career stats are not built yet (manual entry works). U11 (per-photo focal point) is not started.
+
 ## Goal Capsule
 
 - **Objective:** Ship the "Club Colours" design handoff as the **Club Kit** pack (8 card kinds × 4 formats = 32 templates) in the Social Media Studio, and make every element of it (trim photo frames, crest watermark, monogram, kind chip, tricolour rule, hashtag block, sponsor strip, score bars, leader rows, game-day rows, XI list, trading-card frame, premiership stars and GF panel, junior highlight rows, background) insertable from the Studio editor's Elements panel when an ad-hoc design is created.

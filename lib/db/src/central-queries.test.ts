@@ -419,6 +419,8 @@ describe("centralClubTotalsBySeason (Club leaderboard card prefill)", () => {
         topRunScorer: { playerName: "J Smith", value: 350 },
         topWicketTaker: { playerName: "B Jones", value: 18 },
         topDismissals: { playerName: "K Gloves", value: 9 },
+        // Catches alone: the fielder's 7 beat the keeper's 6 (stumpings excluded).
+        topCatches: { playerName: "F Slips", value: 7 },
       },
     ]);
   });
@@ -448,6 +450,7 @@ describe("centralClubTotalsBySeason (Club leaderboard card prefill)", () => {
         topRunScorer: { playerName: "Public Player", value: 300 },
         topWicketTaker: null,
         topDismissals: null,
+        topCatches: null,
       },
     ]);
   });

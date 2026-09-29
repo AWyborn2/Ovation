@@ -244,6 +244,8 @@ export default function AdminSocialCreate() {
             input={input}
             packId={previewPackId}
             inputFor={(k) => buildCardInput(k, seedState(k, brand), false)}
+            data={packData}
+            theme={previewTheme}
           />
         </div>
       </div>

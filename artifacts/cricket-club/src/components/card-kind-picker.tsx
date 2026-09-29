@@ -26,6 +26,9 @@ export const CARD_KIND_OPTIONS: { value: CardKind; label: string }[] = [
   { value: "newSigning", label: "New Signing" },
   { value: "countdown", label: "Countdown" },
   { value: "clubLeaderboard", label: "Club Leaderboard" },
+  { value: "roundFixtures", label: "Game Day" },
+  { value: "tradingCard", label: "Trading Card" },
+  { value: "juniorHighlights", label: "Junior Highlights" },
 ];
 
 // Chip picker for the card types a sponsor or template applies to.

@@ -61,12 +61,38 @@ const EXTRA_KEY_ALLOWLIST: Record<string, readonly string[]> = {
   // Sunset's story is photo-first (full-bleed background) with its own story
   // hashtag footer — same two extras as Gold Foil.
   "sunset-v1/matchSummary": ["photo", "clubHashtag"],
+  // Club Kit: every card shows a monogram disc in place of a missing crest
+  // (`clubMonogram`, filled from the club's initials at render time).
+  "club-kit-v1/*": ["clubMonogram"],
+  // Club Kit's match result: the one-word WIN / LOSS headline (bound from
+  // `resultWinner` by bindInput) and the hashtag block.
+  "club-kit-v1/matchSummary": ["clubHashtag", "resultWord"],
+  // Club Kit gives these kinds the jumper-trim photo frame; Broadcast Dark's
+  // designs have no photo. The slot takes the tenant's selected photo.
+  "club-kit-v1/clubLeaderboard": ["photo"],
+  "club-kit-v1/ladder": ["photo"],
+  "club-kit-v1/weekendWrap": ["photo"],
+  "club-kit-v1/matchDay": ["photo"],
+  "club-kit-v1/countdown": ["photo"],
+  "club-kit-v1/bigMoment": ["photo"],
 };
 
-/** The reference design for a kind, matched on category preset when present. */
+/** Kinds a single pack introduces, with no reference design (by pack id). */
+const PACK_ONLY_KINDS: Record<string, readonly string[]> = {
+  "club-kit-v1": ["roundFixtures", "tradingCard", "juniorHighlights"],
+};
+
+/**
+ * The reference design for a kind, matched on category preset when present.
+ * The Catches / Dismissals leaderboard presets (Club Kit) bind exactly what
+ * the Runs design binds — only the category differs — so Runs is their
+ * reference.
+ */
 function referenceDesign(kind: string, categoryPreset?: string) {
+  const preset =
+    categoryPreset === "Catches" || categoryPreset === "Dismissals" ? "Runs" : categoryPreset;
   return getPackManifest(DEFAULT_PACK_ID).designs.find(
-    (d) => d.kind === kind && (categoryPreset ? d.categoryPreset === categoryPreset : true),
+    (d) => d.kind === kind && (preset ? d.categoryPreset === preset : true),
   );
 }
 
@@ -99,6 +125,10 @@ describe("field-key parity across packs (R4)", () => {
       const problems: string[] = [];
       for (const entry of pack.designs) {
         const ref = referenceDesign(entry.kind, entry.categoryPreset);
+        // Club Kit-only kinds have no reference design: bindInput maps them
+        // directly (see its roundFixtures / tradingCard / juniorHighlights
+        // cases), and only Club Kit renders them.
+        if (!ref && PACK_ONLY_KINDS[pack.packId]?.includes(entry.kind)) continue;
         if (!ref) {
           problems.push(
             `${entry.designKey}: kind "${entry.kind}" has no reference design — ` +
@@ -107,7 +137,10 @@ describe("field-key parity across packs (R4)", () => {
           continue;
         }
         const refKeys = new Set(ref.template.fields.map((f) => f.key));
-        const allowed = new Set(EXTRA_KEY_ALLOWLIST[`${pack.packId}/${entry.kind}`] ?? []);
+        const allowed = new Set([
+          ...(EXTRA_KEY_ALLOWLIST[`${pack.packId}/${entry.kind}`] ?? []),
+          ...(EXTRA_KEY_ALLOWLIST[`${pack.packId}/*`] ?? []),
+        ]);
         for (const field of entry.template.fields) {
           if (refKeys.has(field.key) || allowed.has(field.key)) continue;
           problems.push(

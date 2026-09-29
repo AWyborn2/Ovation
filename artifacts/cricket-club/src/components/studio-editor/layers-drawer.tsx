@@ -4,6 +4,7 @@ import {
   Eye,
   EyeOff,
   Image as ImageIcon,
+  LayoutTemplate,
   Lock,
   Shapes,
   Sticker,
@@ -22,6 +23,7 @@ const ICON: Record<FreeLayer["kind"], LucideIcon> = {
   medal: Award,
   sticker: Sticker,
   chart: BarChart3,
+  element: LayoutTemplate,
 };
 
 /**

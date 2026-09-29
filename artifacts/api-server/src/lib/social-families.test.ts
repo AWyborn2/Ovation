@@ -26,8 +26,8 @@ const legacy = (over: Partial<Settings> = {}): Settings =>
   }) as Settings;
 
 describe("card kind → family", () => {
-  it("assigns all 17 card types to one of the four families", () => {
-    expect(Object.keys(CARD_KIND_FAMILY)).toHaveLength(17);
+  it("assigns all 20 card types to one of the four families", () => {
+    expect(Object.keys(CARD_KIND_FAMILY)).toHaveLength(20);
     for (const family of Object.values(CARD_KIND_FAMILY)) {
       expect(SOCIAL_FAMILIES).toContain(family);
     }
