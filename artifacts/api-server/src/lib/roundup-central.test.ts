@@ -59,7 +59,7 @@ describe("loadCentralGradeSeason", () => {
 
     const data = await loadCentralGradeSeason(3, "A Grade", 2024);
 
-    expect(centralGradeSeasonSocial).toHaveBeenCalledWith(55, "A Grade", 2024);
+    expect(centralGradeSeasonSocial).toHaveBeenCalledWith(55, "A Grade", 2024, new Map());
     expect(data.latestRound).toBe(9);
     // Sorted by name (curated names first): A Smith, Bea Curated, F Fill, Z Unmapped.
     expect(data.performers.map((p) => [p.givenName, p.surname, p.playerId])).toEqual([
@@ -130,7 +130,7 @@ describe("loadCentralRecapMilestones", () => {
 
     const rows = await loadCentralRecapMilestones(3, "A Grade", 2024);
 
-    expect(centralMilestones).toHaveBeenCalledWith(55, TIER_THRESHOLDS);
+    expect(centralMilestones).toHaveBeenCalledWith(55, TIER_THRESHOLDS, new Map());
     expect(rows).toEqual([
       {
         playerId: 101,

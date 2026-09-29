@@ -1,15 +1,15 @@
 import { Router, type IRouter } from "express";
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc } from "drizzle-orm";
 import {
   db,
   partnershipRecordsTable,
   partnerships50PlusTable,
   centuriesTable,
   fiveWicketHaulsTable,
-  playerIdMapTable,
 } from "@workspace/db";
 import { dataSource } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
+import { loadClubIdentity } from "../lib/club-overlay";
 
 const router: IRouter = Router();
 
@@ -21,15 +21,6 @@ const router: IRouter = Router();
 // NOT in central (no partnership data), so a central tenant gets an empty list
 // — its own curated partnerships, which it hasn't added — rather than another
 // club's. Native tenants (Halls Head) keep the curated tables in all three.
-
-/** Map central participant GUIDs to a tenant's int player ids. */
-async function playerIdMapForTenant(tenantId: number): Promise<Map<string, number>> {
-  const rows = await db
-    .select({ participantId: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
-    .from(playerIdMapTable)
-    .where(eq(playerIdMapTable.tenantId, tenantId));
-  return new Map(rows.map((r) => [r.participantId, r.playerId]));
-}
 
 router.get("/partnerships", async (req, res): Promise<void> => {
   // No partnership data in central — central tenants get their own (empty) list.
@@ -60,10 +51,9 @@ router.get("/centuries", async (req, res): Promise<void> => {
   if (source.kind === "central") {
     const { centralCenturies } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
-    const [rows, idMap] = await Promise.all([
-      centralCenturies(source.clubId),
-      playerIdMapForTenant(tenantId),
-    ]);
+    // Confirmed merges: a merged-away GUID's hundreds show under the keeper.
+    const { merges, intByGuid: idMap } = await loadClubIdentity(tenantId);
+    const rows = await centralCenturies(source.clubId, merges);
     res.json(
       rows.map((c, i) => ({
         id: i + 1,
@@ -89,10 +79,8 @@ router.get("/five-wicket-hauls", async (req, res): Promise<void> => {
   if (source.kind === "central") {
     const { centralFiveWicketHauls } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
-    const [rows, idMap] = await Promise.all([
-      centralFiveWicketHauls(source.clubId),
-      playerIdMapForTenant(tenantId),
-    ]);
+    const { merges, intByGuid: idMap } = await loadClubIdentity(tenantId);
+    const rows = await centralFiveWicketHauls(source.clubId, merges);
     res.json(
       rows.map((f, i) => ({
         id: i + 1,

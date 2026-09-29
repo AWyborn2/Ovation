@@ -17,6 +17,7 @@ import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { isCentralTenant, NATIVE_STATS_TENANT_ID } from "../lib/tenant";
+import { loadClubIdentity } from "../lib/club-overlay";
 
 const router: IRouter = Router();
 
@@ -211,31 +212,12 @@ export async function resolvePremiershipPlayerIds(
   players: PremiershipPlayerRow[],
 ): Promise<Map<number, number | null>> {
   const out = new Map<number, number | null>();
-  const guids = central
-    ? [
-        ...new Set(
-          players
-            .filter((p) => p.playerId == null && p.participantId)
-            .map((p) => p.participantId as string),
-        ),
-      ]
-    : [];
-  const mapped =
-    guids.length > 0
-      ? await db
-          .select({
-            participantId: playerIdMapTable.participantId,
-            playerId: playerIdMapTable.playerId,
-          })
-          .from(playerIdMapTable)
-          .where(
-            and(
-              eq(playerIdMapTable.tenantId, tenantId),
-              inArray(playerIdMapTable.participantId, guids),
-            ),
-          )
-      : [];
-  const byGuid = new Map(mapped.map((m) => [m.participantId, m.playerId]));
+  const needsCrosswalk = central && players.some((p) => p.playerId == null && p.participantId);
+  // Through the club overlay, so a merged-away GUID on a team list links to its
+  // keeper (confirmed merges, KTD2).
+  const byGuid = needsCrosswalk
+    ? (await loadClubIdentity(tenantId)).intByGuid
+    : new Map<string, number>();
   for (const p of players) {
     out.set(
       p.id,

@@ -11,7 +11,14 @@ import type { PlayerGradeStat } from "../schema";
 import { cacheKey, withCentralCache } from "./cache";
 import { getClubMatchRows, seniorMatchRows } from "./club-matches";
 import { appGradeFromCentral, centralSeasonMatchesStartYear, parseSeasonStartYear } from "./grades";
-import { isPrivateRow } from "./privacy";
+import {
+  canonicalizeLines,
+  canonicalPidSql,
+  groupByCanonicalPid,
+  mergesCacheArg,
+  type CentralMerges,
+} from "./merges";
+import { isPrivateRow, mergedPrivateKeepers } from "./privacy";
 import { battingInningsKindSql, round2, splitDisplayName, tallyFielding } from "./scoring";
 import { inList } from "./where";
 
@@ -63,10 +70,17 @@ export async function centralGradeLeaderboard(
      * "Initial Surname" so a club's curated names show on its leaderboard.
      */
     nameByGuid?: Map<string, string>;
+    /**
+     * Tenant confirmed merges (merged-away GUID -> keeper). Folded before
+     * grouping, so a merged pair is one row under the keeper; masked when any
+     * GUID in the group is private.
+     */
+    merges?: CentralMerges;
   },
 ): Promise<PlayerGradeStat[]> {
   const clubId = opts.clubId;
-  return withCentralCache(cacheKey("centralGradeLeaderboard", [appGrade, clubId, opts]), () =>
+  const keyOpts = { ...opts, merges: mergesCacheArg(opts.merges) };
+  return withCentralCache(cacheKey("centralGradeLeaderboard", [appGrade, clubId, keyOpts]), () =>
     centralGradeLeaderboardImpl(appGrade, clubId, opts),
   );
 }
@@ -78,8 +92,11 @@ async function centralGradeLeaderboardImpl(
     seasonStartYear?: number;
     intByGuid?: Map<string, number>;
     nameByGuid?: Map<string, string>;
+    merges?: CentralMerges;
   },
 ): Promise<PlayerGradeStat[]> {
+  const batPid = canonicalPidSql(centralMatchBattingTable.participantId, opts.merges);
+  const rosterPid = canonicalPidSql(centralMatchRostersTable.participantId, opts.merges);
   // 1. Central matches involving this club, narrowed to the requested app grade
   //    (and optionally a single season). Grade mapping is per-label, so resolve
   //    it in JS rather than SQL.
@@ -118,7 +135,7 @@ async function centralGradeLeaderboardImpl(
     centralDb.execute(sql`
     with i as (
       select
-        ${centralMatchBattingTable.participantId} as participant_id,
+        ${batPid} as participant_id,
         ${centralMatchBattingTable.matchId} as match_id,
         coalesce(${centralMatchBattingTable.runs}, 0) as runs,
         ${battingInningsKindSql} as kind
@@ -145,11 +162,11 @@ async function centralGradeLeaderboardImpl(
       from (
         select participant_id, match_id from i
         union
-        select ${centralMatchRostersTable.participantId}, ${centralMatchRostersTable.matchId}
+        select ${rosterPid}, ${centralMatchRostersTable.matchId}
         from ${centralMatchRostersTable}
         where ${centralMatchRostersTable.clubId} = ${clubId}
           and ${inList(centralMatchRostersTable.matchId, matchIds)}
-          and ${centralMatchRostersTable.participantId} in (select participant_id from bat)
+          and ${rosterPid} in (select participant_id from bat)
       ) apps
       group by participant_id
     )
@@ -183,7 +200,8 @@ async function centralGradeLeaderboardImpl(
       )
       .groupBy(centralFieldingTable.participantId, centralFieldingTable.kind),
   ]);
-  const fieldingByPid = tallyFielding(fieldingRows);
+  const fieldingByPid = tallyFielding(canonicalizeLines(fieldingRows, opts.merges));
+  const privateKeepers = await mergedPrivateKeepers(opts.merges);
   const aggRows = result.rows as Array<{
     participantId: string;
     innings: number;
@@ -207,7 +225,7 @@ async function centralGradeLeaderboardImpl(
     const hsEnc = Number(r.hsEnc);
     const highScore = hsEnc >> 1;
     const highScoreNotOut = (hsEnc & 1) === 1;
-    const isPrivate = isPrivateRow(r);
+    const isPrivate = isPrivateRow(r) || privateKeepers.has(participantId);
     const name = isPrivate
       ? { givenName: "Private", surname: "Player" }
       : splitDisplayName(opts.nameByGuid?.get(participantId) ?? r.displayName ?? participantId);
@@ -262,10 +280,11 @@ export async function centralSeasonLeaders(
   season: number,
   metric: "runs" | "wickets",
   appGrade?: string,
+  merges?: CentralMerges,
 ): Promise<{ participantId: string; displayName: string | null; value: number }[]> {
   return withCentralCache(
-    cacheKey("centralSeasonLeaders", [clubId, season, metric, appGrade]),
-    () => centralLeadersImpl(clubId, metric, { season, appGrade }),
+    cacheKey("centralSeasonLeaders", [clubId, season, metric, appGrade, mergesCacheArg(merges)]),
+    () => centralLeadersImpl(clubId, metric, { season, appGrade, merges }),
   );
 }
 
@@ -275,17 +294,23 @@ export async function centralAllTimeLeaders(
   clubId: number,
   metric: "runs" | "wickets",
   appGrade?: string,
+  merges?: CentralMerges,
 ): Promise<{ participantId: string; displayName: string | null; value: number }[]> {
-  return withCentralCache(cacheKey("centralAllTimeLeaders", [clubId, metric, appGrade]), () =>
-    centralLeadersImpl(clubId, metric, { appGrade }),
+  return withCentralCache(
+    cacheKey("centralAllTimeLeaders", [clubId, metric, appGrade, mergesCacheArg(merges)]),
+    () => centralLeadersImpl(clubId, metric, { appGrade, merges }),
   );
 }
 
 async function centralLeadersImpl(
   clubId: number,
   metric: "runs" | "wickets",
-  opts: { season?: number; appGrade?: string },
+  opts: { season?: number; appGrade?: string; merges?: CentralMerges },
 ): Promise<{ participantId: string; displayName: string | null; value: number }[]> {
+  // Folded to the keeper IN the GROUP BY, so a merged player's combined total
+  // is what gets ranked (and cut at 25), not each GUID's share.
+  const batPid = canonicalPidSql(centralMatchBattingTable.participantId, opts.merges);
+  const bowlPid = canonicalPidSql(centralMatchBowlingTable.participantId, opts.merges);
   // Senior matches only, even when no grade is asked for.
   const matchRows = seniorMatchRows(await getClubMatchRows(clubId));
   const matchIds = matchRows
@@ -298,7 +323,7 @@ async function centralLeadersImpl(
     metric === "runs"
       ? await centralDb
           .select({
-            participantId: centralMatchBattingTable.participantId,
+            participantId: sql<string | null>`${batPid}`,
             value: sql<number>`coalesce(sum(${centralMatchBattingTable.runs}), 0)`,
           })
           .from(centralMatchBattingTable)
@@ -308,12 +333,12 @@ async function centralLeadersImpl(
               inList(centralMatchBattingTable.matchId, matchIds),
             ),
           )
-          .groupBy(centralMatchBattingTable.participantId)
+          .groupBy(groupByCanonicalPid(centralMatchBattingTable.participantId, opts.merges))
           .orderBy(desc(sql`coalesce(sum(${centralMatchBattingTable.runs}), 0)`))
           .limit(25)
       : await centralDb
           .select({
-            participantId: centralMatchBowlingTable.participantId,
+            participantId: sql<string | null>`${bowlPid}`,
             value: sql<number>`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)`,
           })
           .from(centralMatchBowlingTable)
@@ -323,28 +348,32 @@ async function centralLeadersImpl(
               inList(centralMatchBowlingTable.matchId, matchIds),
             ),
           )
-          .groupBy(centralMatchBowlingTable.participantId)
+          .groupBy(groupByCanonicalPid(centralMatchBowlingTable.participantId, opts.merges))
           .orderBy(desc(sql`coalesce(sum(${centralMatchBowlingTable.wickets}), 0)`))
           .limit(25);
 
   const ids = agg.map((a) => a.participantId).filter((p): p is string => Boolean(p));
   if (ids.length === 0) return [];
-  const players = await centralDb
-    .select({
-      participantId: centralPlayersTable.participantId,
-      displayName: centralPlayersTable.displayName,
-      isPrivate: centralPlayersTable.isPrivate,
-    })
-    .from(centralPlayersTable)
-    // The top-25 candidates — small by construction.
-    .where(inArray(centralPlayersTable.participantId, ids));
+  const [players, privateKeepers] = await Promise.all([
+    centralDb
+      .select({
+        participantId: centralPlayersTable.participantId,
+        displayName: centralPlayersTable.displayName,
+        isPrivate: centralPlayersTable.isPrivate,
+      })
+      .from(centralPlayersTable)
+      // The top-25 candidates — small by construction.
+      .where(inArray(centralPlayersTable.participantId, ids)),
+    mergedPrivateKeepers(opts.merges),
+  ]);
   const byId = new Map(players.map((p) => [p.participantId, p]));
 
   const out: { participantId: string; displayName: string | null; value: number }[] = [];
   for (const a of agg) {
     if (!a.participantId) continue;
     const p = byId.get(a.participantId);
-    if (isPrivateRow(p)) continue; // private excluded from leaderboards
+    // Private excluded from leaderboards (a merged group when any GUID is).
+    if (isPrivateRow(p) || privateKeepers.has(a.participantId)) continue;
     const value = Number(a.value ?? 0);
     if (value <= 0) continue;
     out.push({ participantId: a.participantId, displayName: p?.displayName ?? null, value });

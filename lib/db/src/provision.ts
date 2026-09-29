@@ -313,6 +313,8 @@ export async function mintPlayerIdMap(
     .where(eq(playerIdMapTable.tenantId, tenantId));
   // Merged-away GUIDs fold into their keeper on read, so they never get a
   // fresh id of their own (KTD2). Any crosswalk row they already have is kept.
+  // Only a CONFIRMED merge folds: a suggested or rejected pair is still two
+  // players, and each needs its own id.
   const mergedAway = await executor
     .select({ participantId: playerCurationTable.participantId })
     .from(playerCurationTable)
@@ -320,6 +322,7 @@ export async function mintPlayerIdMap(
       and(
         eq(playerCurationTable.tenantId, tenantId),
         isNotNull(playerCurationTable.mergedIntoParticipantId),
+        eq(playerCurationTable.mergeStatus, "confirmed"),
       ),
     );
   const skipGuids = new Set([

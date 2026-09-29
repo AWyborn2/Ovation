@@ -10,7 +10,8 @@ import {
 import { cacheKey, withCentralCache } from "./cache";
 import { getClubMatchRows, type CentralClubMatchRow } from "./club-matches";
 import { appGradeFromCentral, parseSeasonStartYear } from "./grades";
-import { isPrivateRow } from "./privacy";
+import { canonicalizeLines, canonicalPidSql, mergesCacheArg, type CentralMerges } from "./merges";
+import { isPrivateRow, mergedPrivateKeepers } from "./privacy";
 import { battingInningsKindSql, tallyFielding } from "./scoring";
 import { inList } from "./where";
 
@@ -118,12 +119,19 @@ export function gradeDistributionMatchIds(
  */
 export async function centralGradeDistribution(
   appGrade: string,
-  opts: { clubId: number } & GradeDistributionSpan,
+  /** `merges`: the tenant's confirmed merges, folded to the keeper before grouping. */
+  opts: { clubId: number; merges?: CentralMerges } & GradeDistributionSpan,
 ): Promise<CentralGradeDistributionRow[]> {
-  const { clubId, fromSeason, toSeason } = opts;
+  const { clubId, fromSeason, toSeason, merges } = opts;
   return withCentralCache(
-    cacheKey("centralGradeDistribution", [appGrade, clubId, fromSeason, toSeason]),
-    () => centralGradeDistributionImpl(appGrade, clubId, { fromSeason, toSeason }),
+    cacheKey("centralGradeDistribution", [
+      appGrade,
+      clubId,
+      fromSeason,
+      toSeason,
+      mergesCacheArg(merges),
+    ]),
+    () => centralGradeDistributionImpl(appGrade, clubId, { fromSeason, toSeason }, merges),
   );
 }
 
@@ -131,6 +139,7 @@ async function centralGradeDistributionImpl(
   appGrade: string,
   clubId: number,
   span: GradeDistributionSpan,
+  merges?: CentralMerges,
 ): Promise<CentralGradeDistributionRow[]> {
   const matchIds = gradeDistributionMatchIds(await getClubMatchRows(clubId), appGrade, span);
   if (matchIds.length === 0) return [];
@@ -139,12 +148,13 @@ async function centralGradeDistributionImpl(
   const w = centralMatchBowlingTable;
   const r = centralMatchRostersTable;
   const hasParticipant = (col: AnyColumn) => sql`${col} is not null and ${col} <> ''`;
+  const pid = (col: AnyColumn) => canonicalPidSql(col, merges);
 
-  const [result, fieldingRows] = await Promise.all([
+  const [result, fieldingRows, privateKeepers] = await Promise.all([
     centralDb.execute(sql`
     with bat_lines as (
       select
-        ${b.participantId} as participant_id,
+        ${pid(b.participantId)} as participant_id,
         coalesce(${b.runs}, 0) as runs,
         ${b.balls} as balls,
         ${battingInningsKindSql} as kind
@@ -169,7 +179,7 @@ async function centralGradeDistributionImpl(
     ),
     bowl_lines as (
       select
-        ${w.participantId} as participant_id,
+        ${pid(w.participantId)} as participant_id,
         coalesce(${w.wickets}, 0) as wickets,
         coalesce(${w.runs}, 0) as runs,
         coalesce(${w.maidens}, 0) as maidens,
@@ -198,15 +208,15 @@ async function centralGradeDistributionImpl(
     games as (
       select participant_id, count(distinct match_id)::int as games
       from (
-        select ${b.participantId} as participant_id, ${b.matchId} as match_id from ${b}
+        select ${pid(b.participantId)} as participant_id, ${b.matchId} as match_id from ${b}
         where ${b.clubId} = ${clubId} and ${inList(b.matchId, matchIds)}
           and ${hasParticipant(b.participantId)}
         union
-        select ${w.participantId}, ${w.matchId} from ${w}
+        select ${pid(w.participantId)}, ${w.matchId} from ${w}
         where ${w.clubId} = ${clubId} and ${inList(w.matchId, matchIds)}
           and ${hasParticipant(w.participantId)}
         union
-        select ${r.participantId}, ${r.matchId} from ${r}
+        select ${pid(r.participantId)}, ${r.matchId} from ${r}
         where ${r.clubId} = ${clubId} and ${inList(r.matchId, matchIds)}
           and ${hasParticipant(r.participantId)}
       ) apps
@@ -251,15 +261,20 @@ async function centralGradeDistributionImpl(
         ),
       )
       .groupBy(centralFieldingTable.participantId, centralFieldingTable.kind),
+    mergedPrivateKeepers(merges),
   ]);
 
-  const fieldingByPid = tallyFielding(fieldingRows);
+  const fieldingByPid = tallyFielding(canonicalizeLines(fieldingRows, merges));
   const num = (v: unknown): number => Number(v ?? 0);
   const numOrNull = (v: unknown): number | null => (v == null ? null : Number(v));
   const rows = result.rows as Array<Record<string, unknown>>;
 
   return rows
-    .filter((row) => !isPrivateRow({ isPrivate: numOrNull(row.isPrivate) }))
+    .filter(
+      (row) =>
+        !isPrivateRow({ isPrivate: numOrNull(row.isPrivate) }) &&
+        !privateKeepers.has(String(row.participantId)),
+    )
     .map((row) => {
       const participantId = String(row.participantId);
       return {

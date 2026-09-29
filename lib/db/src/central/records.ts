@@ -6,12 +6,12 @@ import {
   centralMatchBowlingTable,
   centralMatchRostersTable,
   centralFieldingTable,
-  centralPlayersTable,
 } from "../central";
 import { cacheKey, withCentralCache } from "./cache";
 import { getClubMatchRows } from "./club-matches";
 import { appGradeFromCentral, parseSeasonStartYear, seasonLabelFromStartYear } from "./grades";
-import { centralPlayerNames, isPrivateRow } from "./privacy";
+import { canonicalGuid, canonicalizeLines, mergesCacheArg, type CentralMerges } from "./merges";
+import { centralPlayerNames } from "./privacy";
 import { classifyFieldingKind, classifyInnings } from "./scoring";
 import { clubInvolvedWhere, inList } from "./where";
 
@@ -50,16 +50,19 @@ export interface CentralClubRecords {
 export async function centralClubRecords(
   clubId: number,
   filter?: CentralRecordsFilter,
+  /** The tenant's confirmed merges: a merged pair is one record holder. */
+  merges?: CentralMerges,
 ): Promise<CentralClubRecords> {
-  // No filter: the original all-time read, unchanged (same cache key, and the
-  // match set is exactly what it always was).
+  // No filter: the original all-time read (the match set is exactly what it
+  // always was).
   if (!hasRecordsFilter(filter)) {
-    return withCentralCache(cacheKey("centralClubRecords", [clubId]), () =>
-      centralClubRecordsImpl(clubId),
+    return withCentralCache(cacheKey("centralClubRecords", [clubId, mergesCacheArg(merges)]), () =>
+      centralClubRecordsImpl(clubId, undefined, merges),
     );
   }
-  return withCentralCache(cacheKey("centralClubRecords", [clubId, filter]), () =>
-    centralClubRecordsImpl(clubId, filter),
+  return withCentralCache(
+    cacheKey("centralClubRecords", [clubId, filter, mergesCacheArg(merges)]),
+    () => centralClubRecordsImpl(clubId, filter, merges),
   );
 }
 
@@ -102,6 +105,7 @@ export function filterSeniorMatchRows<T extends { grade: string | null; season: 
 async function centralClubRecordsImpl(
   clubId: number,
   filter?: CentralRecordsFilter,
+  merges?: CentralMerges,
 ): Promise<CentralClubRecords> {
   // Deliberately still JS-aggregated (unlike centralGradeLeaderboard): the
   // single-innings records (highestScore / bestBowling) and every topBy()
@@ -127,7 +131,7 @@ async function centralClubRecordsImpl(
   if (matchIds.length === 0) return empty;
   const matchGrade = new Map(matchRows.map((m) => [m.matchId, appGradeFromCentral(m.grade)]));
 
-  const [batting, bowling, rosters, fielding] = await Promise.all([
+  const [rawBatting, rawBowling, rawRosters, rawFielding] = await Promise.all([
     centralDb
       .select({
         participantId: centralMatchBattingTable.participantId,
@@ -184,6 +188,11 @@ async function centralClubRecordsImpl(
       )
       .groupBy(centralFieldingTable.participantId, centralFieldingTable.kind),
   ]);
+  // Confirmed merges fold to the keeper before anything is aggregated.
+  const batting = canonicalizeLines(rawBatting, merges);
+  const bowling = canonicalizeLines(rawBowling, merges);
+  const rosters = canonicalizeLines(rawRosters, merges);
+  const fielding = canonicalizeLines(rawFielding, merges);
 
   interface Agg {
     games: Set<number>;
@@ -274,19 +283,9 @@ async function centralClubRecordsImpl(
   }
 
   // Every participant the club ever fielded — bind as one array parameter.
-  const ids = [...agg.keys()];
-  const players = ids.length
-    ? await centralDb
-        .select({
-          participantId: centralPlayersTable.participantId,
-          displayName: centralPlayersTable.displayName,
-          isPrivate: centralPlayersTable.isPrivate,
-        })
-        .from(centralPlayersTable)
-        .where(inList(centralPlayersTable.participantId, ids))
-    : [];
-  const byId = new Map(players.map((p) => [p.participantId, p]));
-  const isPrivate = (pid: string) => isPrivateRow(byId.get(pid));
+  // With merges, a keeper is private when any GUID in its group is.
+  const byId = await centralPlayerNames([...agg.keys()], merges);
+  const isPrivate = (pid: string) => byId.get(pid)?.isPrivate === true;
   const nameOf = (pid: string) => byId.get(pid)?.displayName ?? null;
 
   const topBy = (pick: (a: Agg) => number): CentralRecordHolder | null => {
@@ -357,13 +356,19 @@ export interface CentralFiveWicketHaul {
   season: string;
 }
 
-export async function centralCenturies(clubId: number): Promise<CentralCentury[]> {
-  return withCentralCache(cacheKey("centralCenturies", [clubId]), () =>
-    centralCenturiesImpl(clubId),
+export async function centralCenturies(
+  clubId: number,
+  merges?: CentralMerges,
+): Promise<CentralCentury[]> {
+  return withCentralCache(cacheKey("centralCenturies", [clubId, mergesCacheArg(merges)]), () =>
+    centralCenturiesImpl(clubId, merges),
   );
 }
 
-async function centralCenturiesImpl(clubId: number): Promise<CentralCentury[]> {
+async function centralCenturiesImpl(
+  clubId: number,
+  merges?: CentralMerges,
+): Promise<CentralCentury[]> {
   const matchRows = await getClubMatchRows(clubId);
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) return [];
@@ -394,10 +399,11 @@ async function centralCenturiesImpl(clubId: number): Promise<CentralCentury[]> {
       ),
     );
 
-  const hundreds = batting.filter((b) => b.participantId);
-  const names = await centralPlayerNames([
-    ...new Set(hundreds.map((b) => b.participantId as string)),
-  ]);
+  const hundreds = canonicalizeLines(batting, merges).filter((b) => b.participantId);
+  const names = await centralPlayerNames(
+    [...new Set(hundreds.map((b) => b.participantId as string))],
+    merges,
+  );
 
   const rows: CentralCentury[] = [];
   for (const b of hundreds) {
@@ -455,12 +461,17 @@ export async function centralMilestones(
     wickets: number[];
     dismissals?: number[];
   } = DEFAULT_CAREER_TIERS,
+  /**
+   * The tenant's confirmed merges: a merged group walks ONE career, so a
+   * combined total crosses each tier once, under the keeper.
+   */
+  merges?: CentralMerges,
 ): Promise<CentralMilestone[]> {
   // Career totals are senior-only (juniors isolation): junior and senior
   // stats are never combined. "seniorOnly" in the key retires any cache entry
   // from the old walk, which counted junior matches.
-  const key = cacheKey("centralMilestones", [clubId, tiers, "seniorOnly"]);
-  return withCentralCache(key, () => centralMilestonesImpl(clubId, tiers));
+  const key = cacheKey("centralMilestones", [clubId, tiers, "seniorOnly", mergesCacheArg(merges)]);
+  return withCentralCache(key, () => centralMilestonesImpl(clubId, tiers, merges));
 }
 
 async function centralMilestonesImpl(
@@ -471,6 +482,7 @@ async function centralMilestonesImpl(
     wickets: number[];
     dismissals?: number[];
   },
+  merges?: CentralMerges,
 ): Promise<CentralMilestone[]> {
   // Deliberately still JS-aggregated: career tier-crossings need each player's
   // full per-match running totals walked in chronological order against
@@ -513,7 +525,7 @@ async function centralMilestonesImpl(
   // having played even in matches where they didn't bat or bowl) and fielding
   // (for the dismissals career ladder) are independent given matchIds — run all
   // four round trips in parallel.
-  const [batting, bowling, rosters, fielding] = await Promise.all([
+  const [rawBatting, rawBowling, rawRosters, rawFielding] = await Promise.all([
     centralDb
       .select({
         participantId: centralMatchBattingTable.participantId,
@@ -566,6 +578,11 @@ async function centralMilestonesImpl(
         ),
       ),
   ]);
+  // Confirmed merges fold to the keeper before the walk: one career per group.
+  const batting = canonicalizeLines(rawBatting, merges);
+  const bowling = canonicalizeLines(rawBowling, merges);
+  const rosters = canonicalizeLines(rawRosters, merges);
+  const fielding = canonicalizeLines(rawFielding, merges);
 
   const centuries = batting.filter(
     (b) => (b.runs ?? 0) >= 100 && b.participantId && b.matchId !== null,
@@ -624,7 +641,7 @@ async function centralMilestonesImpl(
 
   // Names for every participant that could cross a tier (superset of the
   // century/five-for authors).
-  const names = await centralPlayerNames([...byPid.keys()]);
+  const names = await centralPlayerNames([...byPid.keys()], merges);
 
   const out: CentralMilestone[] = [];
   for (const b of centuries) {
@@ -727,13 +744,20 @@ async function centralMilestonesImpl(
   return out;
 }
 
-export async function centralFiveWicketHauls(clubId: number): Promise<CentralFiveWicketHaul[]> {
-  return withCentralCache(cacheKey("centralFiveWicketHauls", [clubId]), () =>
-    centralFiveWicketHaulsImpl(clubId),
+export async function centralFiveWicketHauls(
+  clubId: number,
+  merges?: CentralMerges,
+): Promise<CentralFiveWicketHaul[]> {
+  return withCentralCache(
+    cacheKey("centralFiveWicketHauls", [clubId, mergesCacheArg(merges)]),
+    () => centralFiveWicketHaulsImpl(clubId, merges),
   );
 }
 
-async function centralFiveWicketHaulsImpl(clubId: number): Promise<CentralFiveWicketHaul[]> {
+async function centralFiveWicketHaulsImpl(
+  clubId: number,
+  merges?: CentralMerges,
+): Promise<CentralFiveWicketHaul[]> {
   const matchRows = await getClubMatchRows(clubId);
   const matchIds = matchRows.map((m) => m.matchId);
   if (matchIds.length === 0) return [];
@@ -763,10 +787,11 @@ async function centralFiveWicketHaulsImpl(clubId: number): Promise<CentralFiveWi
       ),
     );
 
-  const fivers = bowling.filter((b) => b.participantId);
-  const names = await centralPlayerNames([
-    ...new Set(fivers.map((b) => b.participantId as string)),
-  ]);
+  const fivers = canonicalizeLines(bowling, merges).filter((b) => b.participantId);
+  const names = await centralPlayerNames(
+    [...new Set(fivers.map((b) => b.participantId as string))],
+    merges,
+  );
 
   const rows: CentralFiveWicketHaul[] = [];
   for (const b of fivers) {
@@ -814,9 +839,12 @@ export async function centralRecordLeaders(
   clubId: number,
   metric: CentralRecordLeaderMetric,
   filter: CentralRecordsFilter = {},
+  /** The tenant's confirmed merges: a merged pair ranks as one player. */
+  merges?: CentralMerges,
 ): Promise<CentralRecordLeader[]> {
-  return withCentralCache(cacheKey("centralRecordLeaders", [clubId, metric, filter]), () =>
-    centralRecordLeadersImpl(clubId, metric, filter),
+  return withCentralCache(
+    cacheKey("centralRecordLeaders", [clubId, metric, filter, mergesCacheArg(merges)]),
+    () => centralRecordLeadersImpl(clubId, metric, filter, merges),
   );
 }
 
@@ -824,6 +852,7 @@ async function centralRecordLeadersImpl(
   clubId: number,
   metric: CentralRecordLeaderMetric,
   filter: CentralRecordsFilter,
+  merges?: CentralMerges,
 ): Promise<CentralRecordLeader[]> {
   const senior = filterSeniorMatchRows(await getClubMatchRows(clubId));
   const seniorIds = senior.map((m) => m.matchId);
@@ -831,7 +860,7 @@ async function centralRecordLeadersImpl(
   const scoped = new Set(filterSeniorMatchRows(senior, filter).map((m) => m.matchId));
   const seasonOf = new Map(senior.map((m) => [m.matchId, parseSeasonStartYear(m.season)]));
 
-  const [batting, bowling, rosters, fielding] = await Promise.all([
+  const [rawBatting, rawBowling, rawRosters, rawFielding] = await Promise.all([
     centralDb
       .select({
         participantId: centralMatchBattingTable.participantId,
@@ -888,6 +917,10 @@ async function centralRecordLeadersImpl(
           )
       : Promise.resolve([]),
   ]);
+  const batting = canonicalizeLines(rawBatting, merges);
+  const bowling = canonicalizeLines(rawBowling, merges);
+  const rosters = canonicalizeLines(rawRosters, merges);
+  const fielding = canonicalizeLines(rawFielding, merges);
 
   const lastSeason = new Map<string, number>();
   const games = new Map<string, Set<number>>();
@@ -931,7 +964,10 @@ async function centralRecordLeadersImpl(
   for (const [pid, g] of games) values.set(pid, g.size);
 
   const candidates = [...values].filter(([, v]) => v > 0);
-  const names = await centralPlayerNames(candidates.map(([pid]) => pid));
+  const names = await centralPlayerNames(
+    candidates.map(([pid]) => pid),
+    merges,
+  );
   return candidates
     .filter(([pid]) => !names.get(pid)?.isPrivate)
     .map(([pid, value]) => ({
@@ -967,10 +1003,12 @@ export async function centralRecordProgressionRows(
   clubId: number,
   kind: "highScore" | "bestBowling",
   grade?: string,
+  /** The tenant's confirmed merges: record holders are shown as their keeper. */
+  merges?: CentralMerges,
 ): Promise<CentralRecordProgressionRow[]> {
   return withCentralCache(
-    cacheKey("centralRecordProgressionRows", [clubId, kind, grade ?? null]),
-    () => centralRecordProgressionRowsImpl(clubId, kind, grade),
+    cacheKey("centralRecordProgressionRows", [clubId, kind, grade ?? null, mergesCacheArg(merges)]),
+    () => centralRecordProgressionRowsImpl(clubId, kind, grade, merges),
   );
 }
 
@@ -978,6 +1016,7 @@ async function centralRecordProgressionRowsImpl(
   clubId: number,
   kind: "highScore" | "bestBowling",
   grade: string | undefined,
+  merges?: CentralMerges,
 ): Promise<CentralRecordProgressionRow[]> {
   // Needs match_date, which the shared getClubMatchRows() projection lacks.
   const matchRows = filterSeniorMatchRows(
@@ -1020,7 +1059,7 @@ async function centralRecordProgressionRowsImpl(
       const inningsKind = classifyInnings(b.dismissalType, b.dismissal);
       if (inningsKind === "dnb") continue;
       lines.push({
-        participantId: b.participantId,
+        participantId: canonicalGuid(b.participantId, merges),
         matchId: b.matchId,
         primary: b.runs ?? 0,
         secondary: inningsKind === "notout" ? 1 : 0,
@@ -1045,7 +1084,7 @@ async function centralRecordProgressionRowsImpl(
     for (const b of bowling) {
       if (!b.participantId || b.matchId === null) continue;
       lines.push({
-        participantId: b.participantId,
+        participantId: canonicalGuid(b.participantId, merges),
         matchId: b.matchId,
         primary: b.wickets ?? 0,
         secondary: b.runs ?? 0,
@@ -1053,7 +1092,7 @@ async function centralRecordProgressionRowsImpl(
     }
   }
 
-  const names = await centralPlayerNames([...new Set(lines.map((l) => l.participantId))]);
+  const names = await centralPlayerNames([...new Set(lines.map((l) => l.participantId))], merges);
   const better = (a: Line, b: Line): boolean =>
     kind === "highScore"
       ? a.primary > b.primary

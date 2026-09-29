@@ -1,16 +1,16 @@
 import type { Request } from "express";
 import { desc, eq } from "drizzle-orm";
-import { db, playerGradeStatsTable, playerIdMapTable, type PlayerGradeStat } from "@workspace/db";
+import { db, playerGradeStatsTable, type PlayerGradeStat } from "@workspace/db";
 import { dataSource, type DataSource } from "./tenant";
-import { resolveCuration } from "./central-curation";
+import { loadClubIdentity } from "./club-overlay";
 
 /**
  * The per-grade career leaderboard (every player's aggregate for one grade),
  * from the correct data source for a tenant. Served by
  * `GET /grades/:grade/leaderboard` and consumed in bulk by the carousel-set
- * generator (routes/social-cards). On the central path the crosswalk maps
- * PlayHQ GUIDs to the app's int player ids and curation supplies name
- * overrides.
+ * generator (routes/social-cards). On the central path the club overlay maps
+ * PlayHQ GUIDs to the app's int player ids, folds confirmed merges into one
+ * row per player and supplies curated name overrides.
  *
  * Extracted from routes/grades.ts so routes never import routes.
  */
@@ -21,21 +21,12 @@ export async function loadGradeLeaderboardForSource(
   if (source.kind === "central") {
     const { centralGradeLeaderboard } = await import("@workspace/db/central-queries");
     const { tenantId, clubId } = source;
-    const [mapRows, curation] = await Promise.all([
-      db
-        .select({
-          participantId: playerIdMapTable.participantId,
-          playerId: playerIdMapTable.playerId,
-        })
-        .from(playerIdMapTable)
-        .where(eq(playerIdMapTable.tenantId, tenantId)),
-      resolveCuration(tenantId),
-    ]);
-    const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+    const identity = await loadClubIdentity(tenantId);
     return centralGradeLeaderboard(grade, {
       clubId,
-      intByGuid,
-      nameByGuid: curation.nameByGuid,
+      intByGuid: identity.intByGuid,
+      nameByGuid: identity.nameByGuid,
+      merges: identity.merges,
     });
   }
 

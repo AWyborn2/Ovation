@@ -54,6 +54,7 @@ const h = vi.hoisted(() => {
       playerIdFor: (pid: string) => ({ "g-star": 41, "g-debut": 42 })[pid] ?? null,
       isFillIn: (pid: string) => pid === "g-fillin",
       nameFor: (_pid: string, name: string | null) => name ?? "Unknown",
+      merges: new Map([["g-star-2", "g-star"]]),
     },
   };
 });
@@ -282,6 +283,8 @@ describe("draftCentralAchievements", () => {
       77,
       [501],
       expect.objectContaining({ runs: expect.any(Array), dismissals: expect.any(Array) }),
+      // The tenant's confirmed merges go into the detection (one career per group).
+      new Map([["g-star-2", "g-star"]]),
     );
     expect(h.upsertDraftByKey).toHaveBeenCalledWith(
       expect.objectContaining({

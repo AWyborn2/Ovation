@@ -17735,6 +17735,7 @@ export const getUpsertPlayerCurationUrl = (participantId: string,) => {
 }
 
 /**
+ * A merge points this participant at a keeper participant. Only a `confirmed` merge folds the two careers on read (the default when a merge target is given without a status); `suggested` and `rejected` record review state and keep them separate. A merge is refused unless both participants have played for the tenant's central club, neither is private, and it does not create a cycle or a chain deeper than 16.
  * @summary Rename and/or merge one central participant for this tenant
  */
 export const upsertPlayerCuration = async (participantId: string,

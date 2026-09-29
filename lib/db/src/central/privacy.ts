@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { centralDb, centralPlayersTable } from "../central";
+import { foldPlayerNames, hasMerges, mergeGroupMembers, type CentralMerges } from "./merges";
 import { inList } from "./where";
 
 // ---------------------------------------------------------------------------
@@ -62,15 +63,31 @@ export async function isPrivateParticipant(participantId: string): Promise<boole
   return isPrivateRow(p);
 }
 
+/** True when ANY of the participants is private — a merged group's privacy (KTD2). */
+export async function isPrivateGroup(participantIds: readonly string[]): Promise<boolean> {
+  if (participantIds.length === 0) return false;
+  if (participantIds.length === 1) return isPrivateParticipant(participantIds[0]!);
+  const rows = await centralDb
+    .select({ isPrivate: centralPlayersTable.isPrivate })
+    .from(centralPlayersTable)
+    .where(inList(centralPlayersTable.participantId, [...participantIds]));
+  return rows.some((r) => isPrivateRow(r));
+}
+
 /**
  * Display name + privacy for a set of participants, one round trip. Used by the
  * honour-board reads (centuries, five-fors, milestones) whose id lists can span
  * every participant a club ever fielded — hence the array-bound `inList`.
+ *
+ * With `merges`, `ids` are keepers: each keeps its own display name and is
+ * private when any GUID merged into it is (the group is read in the same trip).
  */
 export async function centralPlayerNames(
   ids: string[],
+  merges?: CentralMerges | null,
 ): Promise<Map<string, { displayName: string | null; isPrivate: boolean }>> {
   if (ids.length === 0) return new Map();
+  const lookup = hasMerges(merges) ? mergeGroupMembers(ids, merges) : ids;
   const players = await centralDb
     .select({
       participantId: centralPlayersTable.participantId,
@@ -78,11 +95,34 @@ export async function centralPlayerNames(
       isPrivate: centralPlayersTable.isPrivate,
     })
     .from(centralPlayersTable)
-    .where(inList(centralPlayersTable.participantId, ids));
-  return new Map(
+    .where(inList(centralPlayersTable.participantId, lookup));
+  const byId = new Map(
     players.map((p) => [
       p.participantId,
       { displayName: p.displayName, isPrivate: isPrivateRow(p) },
     ]),
   );
+  return hasMerges(merges) ? new Map(foldPlayerNames(byId, merges)) : byId;
+}
+
+/**
+ * Keepers with a PRIVATE GUID merged into them — for reads that resolve the
+ * keeper's own privacy in SQL, so they can still mask/omit the whole group.
+ * One round trip over the merged-away GUIDs; empty (no query) without merges.
+ */
+export async function mergedPrivateKeepers(merges?: CentralMerges | null): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (!hasMerges(merges)) return out;
+  const rows = await centralDb
+    .select({
+      participantId: centralPlayersTable.participantId,
+      isPrivate: centralPlayersTable.isPrivate,
+    })
+    .from(centralPlayersTable)
+    .where(inList(centralPlayersTable.participantId, [...merges.keys()]));
+  for (const r of rows) {
+    const keeper = merges.get(r.participantId);
+    if (keeper && isPrivateRow(r)) out.add(keeper);
+  }
+  return out;
 }
