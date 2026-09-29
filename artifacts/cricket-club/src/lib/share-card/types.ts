@@ -295,10 +295,46 @@ export type ShareCardInput =
       leaders: ClubLeaderboardLeader[];
       /** JUNIOR card: forces the junior brown palette + junior labels. */
       junior?: boolean;
+    }
+  | {
+      /** Game day: every grade the club plays this round (Club Kit). */
+      kind: "roundFixtures";
+      roundLabel: string;
+      date: string;
+      fixtures: RoundFixture[];
+      /** JUNIOR card: forces the junior palette. */
+      junior?: boolean;
+    }
+  | {
+      /** A collectable player trading card (Club Kit). */
+      kind: "tradingCard";
+      playerName: string;
+      role?: string | null;
+      capNumber?: string | number | null;
+      season?: string | null;
+      /** Up to four stats, e.g. Matches / Runs / Wickets / Average. */
+      stats: { label: string; value: string }[];
+      photoUrl?: string | null;
+    }
+  | {
+      /**
+       * Junior highlights (Club Kit). Always junior: the juniors palette, and
+       * names print as first name + surname initial only.
+       */
+      kind: "juniorHighlights";
+      grade: string;
+      roundLabel: string;
+      highlights: JuniorHighlight[];
     };
 
+/** One grade's fixture on a game-day card. */
+export type RoundFixture = { grade: string; opponent: string; venue: string; startTime: string };
+
+/** One junior highlight: the player, what they did, and the figure. */
+export type JuniorHighlight = { name: string; note: string; figure: string };
+
 /** What a Club Leaderboard ranks each grade by. */
-export type ClubLeaderboardCategory = "Runs" | "Wickets" | "Dismissals";
+export type ClubLeaderboardCategory = "Runs" | "Wickets" | "Catches" | "Dismissals";
 
 export type CardKind = ShareCardInput["kind"];
 
@@ -320,6 +356,9 @@ export const CARD_KINDS: CardKind[] = [
   "newSigning",
   "countdown",
   "clubLeaderboard",
+  "roundFixtures",
+  "tradingCard",
+  "juniorHighlights",
 ];
 
 // A sponsor with an empty cardKinds list applies to every card type; otherwise

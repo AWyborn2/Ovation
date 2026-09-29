@@ -168,7 +168,9 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
   **agent-only** working notes (may lag; this file wins on conflict), `docs/` is
   **human-facing** (plans, follow-ups, product review), `CONCEPTS.md` is the shared
   **vocabulary**. `plan.md` is the improvement plan this codebase is being worked
-  through. Tooling metadata you can ignore unless you are changing it: `.design-sync/`
+  through. Design handoffs (reference prototypes, not production code) live in
+  `docs/design-handoffs/`; the Club Kit pack (from the Club Colours handoff) + Studio element library plan is
+  `docs/plans/2026-09-29-002-feat-club-colours-pack-elements-plan.md`. Tooling metadata you can ignore unless you are changing it: `.design-sync/`
   (design-token sync config), `.mcp.json` (MCP servers for assistants),
   `skills-lock.json` (installed assistant skills).
 - Replit-only pieces: `.replit`, `replit.nix`, `scripts/post-merge.sh` (runs migrate +

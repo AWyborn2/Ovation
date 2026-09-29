@@ -4,6 +4,7 @@ import type { CardSize } from "@/lib/share-card";
 import { isSponsorSlot } from "@/lib/pack-render/adjustments";
 import { cn } from "@/lib/utils";
 import { newId, type EditorDoc } from "./document";
+import { ElementLibrary } from "./element-library";
 
 const input =
   "h-9 w-full rounded-lg border border-[var(--ed-line)] bg-[var(--ed-card)] px-2.5 text-sm text-[var(--ed-ink)] placeholder:text-[var(--ed-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ed-accent)]";
@@ -197,14 +198,30 @@ const SHAPES = [
   { label: "Bar", radius: 0, w: 100, h: 8 },
 ];
 
-/** Basic shapes that add a free shape layer (the full element library is U17). */
+/**
+ * Basic shapes, then the Club Kit element library — every piece of the Club
+ * Kit pack, insertable on any card in the club's colours.
+ */
 export function ElementsPanel({
   size,
   onAdd,
+  paletteVars = "",
+  crestUrl = null,
 }: {
   size: CardSize;
   onAdd: (layer: FreeLayer) => void;
+  paletteVars?: string;
+  crestUrl?: string | null;
 }) {
+  return (
+    <>
+      <BasicShapes size={size} onAdd={onAdd} />
+      <ElementLibrary size={size} paletteVars={paletteVars} crestUrl={crestUrl} onAdd={onAdd} />
+    </>
+  );
+}
+
+function BasicShapes({ size, onAdd }: { size: CardSize; onAdd: (layer: FreeLayer) => void }) {
   return (
     <div className="mt-3 grid grid-cols-3 gap-2">
       {SHAPES.map((s) => (

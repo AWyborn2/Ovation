@@ -68,8 +68,12 @@ const RUNS_WICKETS = [
   { value: "Wickets", label: "Wickets" },
 ] as const;
 
-/** Leaderboard categories: runs, wickets and fielders' dismissals. */
-const LEADER_CATEGORIES = [...RUNS_WICKETS, { value: "Dismissals", label: "Dismissals" }] as const;
+/** Leaderboard categories: runs, wickets, catches and fielders' dismissals. */
+const LEADER_CATEGORIES = [
+  ...RUNS_WICKETS,
+  { value: "Catches", label: "Catches" },
+  { value: "Dismissals", label: "Dismissals" },
+] as const;
 
 const HOME_AWAY = [
   { value: "HOME", label: "Home" },
@@ -375,6 +379,67 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
         { key: "value", label: "Value", type: "text", width: "w-24" },
       ],
       newRow: () => ({ gradeLabel: "", playerName: "", value: "" }),
+    },
+  },
+
+  roundFixtures: {
+    prefill: "none",
+    fields: [
+      { key: "date", label: "Date", type: "text", placeholder: "SATURDAY 14 FEB" },
+      { key: "roundLabel", label: "Round", type: "text", placeholder: "ROUND 15" },
+    ],
+    repeat: {
+      key: "fixtures",
+      label: "Grades playing (up to 5)",
+      addLabel: "Add grade",
+      columns: [
+        { key: "grade", label: "Grade", type: "text", width: "w-16" },
+        { key: "opponent", label: "Opponent", type: "text" },
+        { key: "venue", label: "Venue", type: "text" },
+        { key: "startTime", label: "Start", type: "text", width: "w-20" },
+      ],
+      newRow: () => ({ grade: "", opponent: "", venue: "", startTime: "" }),
+    },
+  },
+
+  tradingCard: {
+    prefill: "none",
+    playerField: { key: "playerName" },
+    fields: [
+      { key: "playerName", label: "Player name", type: "text" },
+      { key: "role", label: "Role", type: "text", placeholder: "Batting all-rounder" },
+      { key: "capNumber", label: "Cap number", type: "text" },
+      { key: "season", label: "Season", type: "text", placeholder: "2025/26" },
+      photo("Card photo"),
+    ],
+    repeat: {
+      key: "stats",
+      label: "Stats (up to 4)",
+      addLabel: "Add stat",
+      columns: [
+        { key: "value", label: "Value", type: "text", width: "w-24" },
+        { key: "label", label: "Label", type: "text" },
+      ],
+      newRow: () => ({ value: "", label: "" }),
+    },
+  },
+
+  juniorHighlights: {
+    prefill: "none",
+    fields: [
+      { key: "grade", label: "Grade", type: "text", placeholder: "UNDER 13" },
+      { key: "roundLabel", label: "Round", type: "text", placeholder: "ROUND 9 · SATURDAY" },
+    ],
+    repeat: {
+      key: "highlights",
+      label: "Highlights (up to 3) — first name + surname initial only print",
+      addLabel: "Add highlight",
+      columns: [
+        { key: "name", label: "Name", type: "text" },
+        { key: "note", label: "Note", type: "text" },
+        { key: "figure", label: "Figure", type: "text", width: "w-20" },
+      ],
+      newRow: () => ({ name: "", note: "", figure: "" }),
     },
   },
 };

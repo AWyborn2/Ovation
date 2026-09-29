@@ -1,5 +1,17 @@
-import { Copy, Group, Lock, Trash2, Ungroup, Unlock } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowDownToLine,
+  ArrowUp,
+  ArrowUpToLine,
+  Copy,
+  Group,
+  Lock,
+  Trash2,
+  Ungroup,
+  Unlock,
+} from "lucide-react";
 import type { FreeLayer } from "@/lib/pack-render";
+import type { ReorderMove } from "./document";
 import { cn } from "@/lib/utils";
 
 const btn =
@@ -28,6 +40,7 @@ export function EditorToolbar({
   onDelete,
   onGroup,
   onUngroup,
+  onReorder,
 }: {
   selected: FreeLayer[];
   isGroup: boolean;
@@ -38,6 +51,8 @@ export function EditorToolbar({
   onDelete: () => void;
   onGroup: () => void;
   onUngroup: () => void;
+  /** Stacking order (bring forward / send backward / to front / to back). */
+  onReorder?: (move: ReorderMove) => void;
 }) {
   if (selected.length === 0) {
     return (
@@ -125,6 +140,42 @@ export function EditorToolbar({
       >
         {locked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
       </button>
+      {onReorder && (
+        <div className="flex items-center" role="group" aria-label="Arrange">
+          <button
+            type="button"
+            className={btn}
+            onClick={() => onReorder("front")}
+            aria-label="Bring to front"
+          >
+            <ArrowUpToLine className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className={btn}
+            onClick={() => onReorder("forward")}
+            aria-label="Bring forward"
+          >
+            <ArrowUp className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className={btn}
+            onClick={() => onReorder("backward")}
+            aria-label="Send backward"
+          >
+            <ArrowDown className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            className={btn}
+            onClick={() => onReorder("back")}
+            aria-label="Send to back"
+          >
+            <ArrowDownToLine className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       <button type="button" className={btn} onClick={onDuplicate} aria-label="Duplicate">
         <Copy className="h-4 w-4" />
       </button>

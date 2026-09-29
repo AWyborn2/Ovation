@@ -86,6 +86,37 @@ describe("EditorStarters", () => {
     expect(posted(requests)[0].body).toEqual({ cardInput: century, packId: "blank" });
   });
 
+  it("starts on the Club Kit background: a blank canvas carrying the background element", async () => {
+    const { requests } = mount();
+    fireEvent.click(screen.getByRole("button", { name: /club kit background/i }));
+    await waitFor(() => expect(posted(requests)).toHaveLength(1));
+    const body = posted(requests)[0].body as {
+      packId: string;
+      adjustments: { layers: { kind: string; element: { id: string } }[] };
+    };
+    expect(body.packId).toBe("blank");
+    expect(body.adjustments.layers[0]).toMatchObject({
+      kind: "element",
+      element: { id: "ck.background" },
+    });
+  });
+
+  it("offers every Club Kit design as a starting point", async () => {
+    const { requests } = mount();
+    fireEvent.click(screen.getByRole("button", { name: "Start from Club Kit Century" }));
+    await waitFor(() => expect(posted(requests)).toHaveLength(1));
+    expect(posted(requests)[0].body).toEqual({ cardInput: century, packId: "club-kit-v1" });
+    // A design of another kind opens with a card of that kind.
+    fireEvent.click(
+      screen.getByRole("button", { name: "Start from Club Kit Club Leaders — Catches" }),
+    );
+    await waitFor(() => expect(posted(requests)).toHaveLength(2));
+    expect(posted(requests)[1].body).toMatchObject({
+      packId: "club-kit-v1",
+      cardInput: { category: "Catches" },
+    });
+  });
+
   it("lists saved templates; Create from this uses a card of the template's type", async () => {
     const { requests, inputFor } = mount();
     expect(await screen.findByText("Signing with game time")).toBeTruthy();

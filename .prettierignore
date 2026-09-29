@@ -8,3 +8,4 @@ docs/product-review/
 .agents/
 lib/api-spec/openapi.yaml
 lib/db/migrations/
+docs/design-handoffs/

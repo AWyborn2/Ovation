@@ -78,17 +78,32 @@ function digest(packId: string, scenario: Scenario, mode: "club" | "pack"): stri
   return hash.digest("hex");
 }
 
+/** Packs with a "Pack's own look" (every pack but the club-only ones). */
+const DUAL_MODE = listPackManifests().filter((m) => m.colourMode !== "club-only");
+const CLUB_ONLY = listPackManifests().filter((m) => m.colourMode === "club-only");
+
 describe("Pack's own look is byte-identical to before club colours", () => {
-  it("covers every registered pack", () => {
+  it("covers every registered pack with an own look", () => {
     const packs = new Set(Object.keys(BEFORE).map((k) => k.split("/")[0]));
-    expect([...packs].sort()).toEqual(
-      listPackManifests()
-        .map((m) => m.packId)
-        .sort(),
-    );
+    expect([...packs].sort()).toEqual(DUAL_MODE.map((m) => m.packId).sort());
   });
 
-  for (const manifest of listPackManifests()) {
+  // A club-only pack (Club Kit) IS the club's colours: a stored "Pack's own
+  // look" choice is ignored, and a branded club's render follows its brand.
+  for (const manifest of CLUB_ONLY) {
+    it(`${manifest.name}: always renders in club colours`, () => {
+      for (const scenario of Object.keys(SCENARIOS) as Scenario[]) {
+        expect(digest(manifest.packId, scenario, "pack"), scenario).toBe(
+          digest(manifest.packId, scenario, "club"),
+        );
+      }
+      expect(digest(manifest.packId, "brandOnly", "club")).not.toBe(
+        digest(manifest.packId, "brandless", "club"),
+      );
+    });
+  }
+
+  for (const manifest of DUAL_MODE) {
     it(`${manifest.name}: every design, size and scenario matches`, () => {
       for (const scenario of Object.keys(SCENARIOS) as Scenario[]) {
         expect(digest(manifest.packId, scenario, "pack"), scenario).toBe(

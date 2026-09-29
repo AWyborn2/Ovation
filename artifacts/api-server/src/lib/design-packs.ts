@@ -252,6 +252,37 @@ export const PACKS: DesignPack[] = [
     ],
     variants: STANDARD_PACK_VARIANTS,
   },
+  {
+    id: "club-kit-v1",
+    name: "Club Kit",
+    description:
+      "Built from your club's colours — every chip, bar and stripe is your primary and secondary, with a diagonal jumper-trim photo frame, square corners and bold condensed type. Always in your colours. Square, portrait, story and 1200×630 landscape.",
+    // COVERAGE CONTRACT: must match pack-templates/club-kit/index.ts (enforced
+    // by pack-coverage-parity.test.ts).
+    cardKinds: [
+      "matchSummary",
+      "teamList",
+      "weekendWrap",
+      "ladder",
+      "player",
+      "milestone",
+      "debut",
+      "century",
+      "fiveFor",
+      "bigMoment",
+      "matchDay",
+      "countdown",
+      "newSigning",
+      "premiership",
+      "record",
+      "gradeLeader",
+      "clubLeaderboard",
+      "roundFixtures",
+      "tradingCard",
+      "juniorHighlights",
+    ],
+    variants: STANDARD_PACK_VARIANTS,
+  },
 ];
 
 export function getPackById(id: string): DesignPack | undefined {

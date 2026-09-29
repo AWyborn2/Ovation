@@ -362,6 +362,8 @@ export interface CentralClubSeasonGradeLeaders {
   topWicketTaker: { playerName: string; value: number } | null;
   /** Most catches + stumpings (the round-up's "Dismissals" measure). */
   topDismissals: { playerName: string; value: number } | null;
+  /** Most catches alone (fielders and keepers; stumpings excluded). */
+  topCatches: { playerName: string; value: number } | null;
 }
 
 /**
@@ -461,7 +463,12 @@ async function centralClubTotalsBySeasonImpl(
         .map(([participantId, t]) => ({ participantId, value: t.catches + t.stumpings }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 5);
-      return { grade, batAgg, bowlAgg, fieldAgg };
+      // Catches alone (the Club Kit "Catches" leaderboard).
+      const catchAgg = [...tallyFielding(fieldRows).entries()]
+        .map(([participantId, t]) => ({ participantId, value: t.catches }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+      return { grade, batAgg, bowlAgg, fieldAgg, catchAgg };
     }),
   );
 
@@ -471,6 +478,7 @@ async function centralClubTotalsBySeasonImpl(
     for (const r of g.batAgg) if (r.participantId) ids.add(r.participantId);
     for (const r of g.bowlAgg) if (r.participantId) ids.add(r.participantId);
     for (const r of g.fieldAgg) ids.add(r.participantId);
+    for (const r of g.catchAgg) ids.add(r.participantId);
   }
   const players = ids.size
     ? await centralDb
@@ -505,5 +513,6 @@ async function centralClubTotalsBySeasonImpl(
     topRunScorer: pick(g.batAgg),
     topWicketTaker: pick(g.bowlAgg),
     topDismissals: pick(g.fieldAgg),
+    topCatches: pick(g.catchAgg),
   }));
 }

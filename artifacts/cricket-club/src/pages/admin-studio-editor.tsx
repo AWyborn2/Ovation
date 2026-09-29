@@ -50,6 +50,7 @@ import {
 } from "@/components/studio-editor/content-panels";
 import { recolourToBrand, setSponsorLock } from "@/components/studio-editor/content";
 import { EditorToolbar } from "@/components/studio-editor/toolbar";
+import { ElementPropsEditor } from "@/components/studio-editor/element-library";
 import { LayersDrawer } from "@/components/studio-editor/layers-drawer";
 import { SaveTemplateButton } from "@/components/studio-editor/save-template";
 import { DownloadMenu } from "@/components/studio-editor/export/download-menu";
@@ -67,10 +68,13 @@ import {
   addLayers,
   duplicate,
   group as groupLayers,
+  isSponsorElement,
   layersOf,
   nudge,
   removeLayers,
+  reorderLayers,
   selectionFor,
+  setElementProp,
   setField,
   setImage,
   setPhoto,
@@ -88,9 +92,11 @@ import {
   packNativeSize,
   packTextFields,
   photoFor,
+  resolveCardTokens,
   type CardAdjustments,
   type FreeLayer,
 } from "@/lib/pack-render";
+import { clubKitPaletteFor, clubKitVars } from "@/lib/pack-render/club-kit-vars";
 import { resolvePackIdForKind } from "@/lib/card-template";
 import { useBrand } from "@/lib/brand-context";
 import {
@@ -308,6 +314,14 @@ function EditorApp({ draftId }: { draftId: number }) {
     bundle?.brand?.juniorsColour ?? brand.juniorsColour,
   ].filter((c): c is string => !!c);
   const fieldValues = packFieldValues(input, data, packId);
+  // The club's Club Kit palette, for the element library's thumbnails.
+  const elementPalette = clubKitVars(
+    clubKitPaletteFor(
+      resolveCardTokens({ theme, junior: false, data, packId }),
+      data?.brand,
+      false,
+    ),
+  );
 
   const native = packNativeSize(format);
   const title = draftHeading(draft);
@@ -400,7 +414,14 @@ function EditorApp({ draftId }: { draftId: number }) {
               />
             )}
             {panel === "text" && <TextPanel size={format} onAdd={addFreeLayer} />}
-            {panel === "elements" && <ElementsPanel size={format} onAdd={addFreeLayer} />}
+            {panel === "elements" && (
+              <ElementsPanel
+                size={format}
+                onAdd={addFreeLayer}
+                paletteVars={elementPalette}
+                crestUrl={(bundle?.brand ?? brand).logoUrl ?? null}
+              />
+            )}
             {panel === "cricket" && (
               <CricketPanel
                 size={format}
@@ -476,7 +497,15 @@ function EditorApp({ draftId }: { draftId: number }) {
               }}
               onGroup={() => edit(groupLayers(doc, selection).doc)}
               onUngroup={() => edit(ungroup(doc, selection))}
+              onReorder={(move) => edit(reorderLayers(doc, selection, move))}
             />
+            {selected.length === 1 && selected[0].kind === "element" && (
+              <ElementPropsEditor
+                layer={selected[0]}
+                values={fieldValues}
+                onProp={(k, v) => edit(setElementProp(doc, selected[0].id, k, v))}
+              />
+            )}
           </div>
           <EditorCanvas
             doc={doc}
@@ -508,7 +537,10 @@ function EditorApp({ draftId }: { draftId: number }) {
               onSelect={(lid) => setSelection([lid])}
               onToggleHidden={(lid) => {
                 const l = layers.find((x) => x.id === lid);
-                if (l) edit(updateLayer(doc, lid, { hidden: !l.hidden }));
+                // A locked sponsor strip stays visible.
+                if (l && !(doc.sponsorLock && isSponsorElement(l) && !l.hidden)) {
+                  edit(updateLayer(doc, lid, { hidden: !l.hidden }));
+                }
               }}
               onToggleLocked={(lid) => {
                 const l = layers.find((x) => x.id === lid);

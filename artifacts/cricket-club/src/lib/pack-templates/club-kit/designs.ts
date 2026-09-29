@@ -1,0 +1,778 @@
+import type {
+  PackCardTemplate,
+  PackDesignEntry,
+  PackSponsorVariant,
+  PackTemplateField,
+  PackTemplateRepeat,
+} from "../types";
+import { BROADCAST_DARK_PACK } from "../broadcast-dark";
+import { clubHeaderFields, photoField, repeatField, slot, textField } from "../shared";
+import {
+  ckCard,
+  ckFormats,
+  headerCrest,
+  isTall,
+  type CkFooter,
+  type CkFormat,
+  type FrameDepth,
+} from "./card";
+import {
+  C,
+  CK_COND,
+  CK_MONO,
+  CK_SANS,
+  cq,
+  display,
+  eyebrow,
+  gfPanel,
+  gradeRow,
+  juniorRow,
+  leaderRow,
+  meta,
+  premStars,
+  scoreBars,
+  statCell,
+  tradingFrame,
+  tricolourDash,
+  twoLineTitle,
+  xiList,
+  xiRow,
+} from "./parts";
+
+/**
+ * Club Kit designs — one per kind (plus the Runs / Wickets / Catches /
+ * Dismissals leader presets), each the handoff's body for that kind (§5) on
+ * the Club Kit card (§2–§4).
+ *
+ * Field keys come from the Broadcast Dark reference design for the same kind
+ * (field-key parity, `pack-lint.test.ts`): a design declares exactly the
+ * reference fields its markup uses, plus the few Club Kit extras allowlisted
+ * there (`clubMonogram`, a frame `photo` on kinds whose reference has none,
+ * `clubHashtag` for the hashtag block, `resultWord` for the WIN / LOSS
+ * headline).
+ */
+
+const u = cq;
+
+/** Header + footer fields every Club Kit-only design declares. */
+const HEADER_FIELDS: PackTemplateField[] = [
+  ...clubHeaderFields(),
+  textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
+  textField("sponsorPresentedBy", "Presented-by sponsor", "Your Sponsor"),
+];
+
+/** Extra (non-reference) field definitions Club Kit may declare. */
+const EXTRA_FIELDS: Record<string, PackTemplateField> = {
+  clubMonogram: textField("clubMonogram", "Club monogram (no crest)", "YC"),
+  photo: photoField("photo", "Frame photo", "Club photo"),
+  clubHashtag: textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
+  resultWord: textField("resultWord", "Result headline", "WIN"),
+};
+
+function fieldUsed(field: PackTemplateField, html: string): boolean {
+  if (field.type === "text") return html.includes(`{{${field.key}}}`);
+  if (field.type === "repeat") return html.includes(`data-repeat="${field.key}"`);
+  return html.includes(`data-slot="${field.key}"`);
+}
+
+interface DesignSpec {
+  kind: string;
+  designKey: string;
+  name: string;
+  categoryPreset?: PackDesignEntry["categoryPreset"];
+  /** Reference preset to take fields from (defaults to `categoryPreset`). */
+  refPreset?: PackDesignEntry["categoryPreset"];
+  build: (f: CkFormat) => string;
+  /** Row fields added to a reference repeat, by repeat key. */
+  rowExtras?: Record<string, PackTemplateField[]>;
+  /**
+   * Club Kit-only kinds (no Broadcast Dark design to take fields from): the
+   * design's own field list and repeats.
+   */
+  own?: { fields: PackTemplateField[]; repeats?: PackTemplateRepeat[] };
+}
+
+function referenceFor(kind: string, preset?: string) {
+  const ref = BROADCAST_DARK_PACK.designs.find(
+    (d) => d.kind === kind && (preset ? d.categoryPreset === preset : true),
+  );
+  if (!ref) throw new Error(`Club Kit: no reference design for ${kind}/${preset ?? "-"}`);
+  return ref.template;
+}
+
+function design(spec: DesignSpec): PackDesignEntry {
+  const formats = ckFormats(spec.build);
+  const html = Object.values(formats).join("\n");
+  const ref = spec.own
+    ? { fields: [...spec.own.fields, ...HEADER_FIELDS], repeats: spec.own.repeats }
+    : referenceFor(spec.kind, spec.refPreset ?? spec.categoryPreset);
+  const refKeys = new Set(ref.fields.map((f) => f.key));
+  const fields: PackTemplateField[] = [
+    ...ref.fields.filter((f) => fieldUsed(f, html)),
+    ...Object.values(EXTRA_FIELDS).filter((f) => !refKeys.has(f.key) && fieldUsed(f, html)),
+  ];
+  const repeats: PackTemplateRepeat[] | undefined = ref.repeats
+    ?.filter((r) => html.includes(`data-repeat="${r.key}"`))
+    .map((r) => ({
+      ...r,
+      maxRows: Math.max(r.maxRows, 12),
+      fields: [...r.fields, ...(spec.rowExtras?.[r.key] ?? [])],
+    }));
+  const sponsorVariants: PackSponsorVariant[] = [];
+  if (html.includes('data-sponsors="on"')) sponsorVariants.push("on");
+  if (html.includes('data-sponsors="off"')) sponsorVariants.push("off");
+  const template: PackCardTemplate = {
+    kind: spec.kind,
+    designKey: spec.designKey,
+    name: spec.name,
+    formats,
+    fields,
+    ...(repeats && repeats.length ? { repeats } : {}),
+    sponsorVariants,
+  };
+  return {
+    designKey: spec.designKey,
+    kind: spec.kind,
+    ...(spec.categoryPreset ? { categoryPreset: spec.categoryPreset } : {}),
+    template,
+  };
+}
+
+const NAME_FOOTER: CkFooter = { hashtag: "clubHashtag", sponsors: "name" };
+const LOGO_FOOTER: CkFooter = { hashtag: "hashtags", sponsors: "logos", off: true };
+
+/** Hero number size by format (milestone-style numerals, handoff §4). */
+const heroSize = (f: CkFormat, tall: number, flat: number) => (isTall(f) ? tall : flat);
+
+function card(
+  f: CkFormat,
+  chip: string,
+  body: string,
+  footer: CkFooter,
+  photo: string | undefined = "photo",
+  depth: FrameDepth = "hero",
+): string {
+  return ckCard({ format: f, chip, photo, depth, body, footer });
+}
+
+const col = (inner: string, gap = 0) =>
+  `<div style="display:flex;flex-direction:column;align-items:flex-start;gap:${gap}cqmin;width:100%;min-width:0">${inner}</div>`;
+
+// ---------------------------------------------------------------------------
+// The eight handoff kinds
+// ---------------------------------------------------------------------------
+
+const matchResult = design({
+  kind: "matchSummary",
+  designKey: "match-result",
+  name: "Match Result",
+  build: (f) =>
+    card(
+      f,
+      "RESULT",
+      col(
+        eyebrow(u, "{{matchTitle}}") +
+          display(
+            u,
+            "{{resultWord}}",
+            f === "landscape" ? 20 : 24,
+            `;line-height:.8;color:${C.pt};margin-top:1cqmin`,
+          ) +
+          `<div style="width:100%;margin-top:2.4cqmin">` +
+          scoreBars(
+            u,
+            { name: "{{club.name}}", score: "{{club.score}}", overs: "{{club.oversLabel}}" },
+            {
+              name: "{{opposition.name}}",
+              score: "{{opposition.score}}",
+              overs: "{{opposition.oversLabel}}",
+            },
+          ) +
+          `</div>` +
+          `<div style="font-family:${CK_COND};font-weight:700;font-size:4.2cqmin;line-height:1.05;text-transform:uppercase;margin-top:2.4cqmin">{{result}}</div>` +
+          `<div style="font-family:${CK_SANS};font-weight:700;font-size:2cqmin;line-height:1.35;margin-top:1cqmin;color:${C.chalk}">{{club.performers}}</div>`,
+      ),
+      { hashtag: "clubHashtag", sponsors: "logos", off: true },
+    ),
+});
+
+const milestone = design({
+  kind: "milestone",
+  designKey: "milestone",
+  name: "Player Milestone",
+  build: (f) =>
+    card(
+      f,
+      "MILESTONE",
+      col(
+        eyebrow(u, "{{tierLabel}}") +
+          display(
+            u,
+            "{{currentValue}}",
+            heroSize(f, 30, 23),
+            `;line-height:.82;letter-spacing:-.01em;color:${C.pt}`,
+          ) +
+          `<div style="display:flex;align-items:center;gap:2cqmin;margin-top:1.4cqmin">${tricolourDash(u)}${display(u, "{{milestoneLabel}}", 6, "", 800)}</div>` +
+          display(u, "{{playerName}}", 9, ";line-height:.9;margin-top:2.4cqmin") +
+          meta(u, "{{headline}}", ";margin-top:1.6cqmin;max-width:100%"),
+      ),
+      NAME_FOOTER,
+    ),
+});
+
+function leadersDesign(
+  preset: "Runs" | "Wickets" | "Catches" | "Dismissals",
+  refPreset: "Runs" | "Wickets",
+) {
+  const slug = preset.toLowerCase();
+  return design({
+    kind: "clubLeaderboard",
+    designKey: `club-leaderboard-${slug}`,
+    name: `Club Leaders — ${preset}`,
+    categoryPreset: preset,
+    refPreset,
+    rowExtras: { leaders: [textField("barPct", "Bar length (%)", "100")] },
+    build: (f) => {
+      const max = f === "landscape" ? 5 : f === "story" ? 8 : 6;
+      const rows =
+        leaderRow(
+          u,
+          true,
+          {
+            rank: "{{row.gradeLabel}}",
+            name: "{{row.playerName}}",
+            value: "{{row.value}}",
+            pct: "{{row.barPct}}%",
+          },
+          ' data-repeat-variant="top"',
+        ) +
+        leaderRow(u, false, {
+          rank: "{{row.gradeLabel}}",
+          name: "{{row.playerName}}",
+          value: "{{row.value}}",
+          pct: "{{row.barPct}}%",
+        });
+      return card(
+        f,
+        "{{category}}",
+        col(
+          eyebrow(u, "{{subtitle}} · {{season}}", C.chalk2) +
+            display(u, "{{title}}", 10, `;line-height:.88;margin-top:1cqmin`) +
+            `<div data-repeat="leaders" data-repeat-max="${max}" style="width:100%;margin-top:1.6cqmin">${rows}</div>`,
+        ),
+        { hashtag: "clubHashtag", sponsors: "name", off: true },
+        "photo",
+        "list",
+      );
+    },
+  });
+}
+
+const matchDay = design({
+  kind: "matchDay",
+  designKey: "match-day",
+  name: "Game Day",
+  build: (f) =>
+    card(
+      f,
+      "GAME DAY",
+      col(
+        eyebrow(u, "{{date}} · {{roundLabel}}") +
+          twoLineTitle(u, "GAME", "DAY", f === "portrait" ? 12 : 16) +
+          `<div style="width:100%;margin-top:2cqmin">` +
+          gradeRow(u, {
+            grade: "{{homeAway}}",
+            opponent: "v {{opposition.name}}",
+            venue: "{{venue}}",
+            time: "{{startTime}}",
+          }) +
+          `</div>`,
+      ),
+      LOGO_FOOTER,
+      "photo",
+      "list",
+    ),
+});
+
+const teamList = design({
+  kind: "teamList",
+  designKey: "team-list",
+  name: "Team Selection",
+  build: (f) =>
+    card(
+      f,
+      "TEAM LIST",
+      col(
+        eyebrow(u, "{{gradeRound}} · {{competitionLine}}") +
+          display(u, `THE <span style="color:${C.pt}">XI</span>`, 12, ";margin-top:1cqmin") +
+          meta(u, "{{venueDateTime}}", ";margin-top:.8cqmin") +
+          `<div style="width:100%;margin-top:1.6cqmin">` +
+          xiList(
+            u,
+            xiRow(u, {
+              n: "{{row.number}}",
+              name: "{{row.surname}}",
+              tag: `<span style="color:${C.chalk2}">({{row.role}})</span>`,
+            }),
+            ' data-repeat="players" data-repeat-max="12"',
+          ) +
+          `</div>`,
+      ),
+      LOGO_FOOTER,
+      "squadPhoto",
+      "list",
+    ),
+});
+
+const premiership = design({
+  kind: "premiership",
+  designKey: "premiership",
+  name: "Premiership",
+  build: (f) =>
+    card(
+      f,
+      "PREMIERS",
+      col(
+        premStars(u) +
+          display(
+            u,
+            "PREMIERS",
+            heroSize(f, 19, 14.5),
+            `;line-height:.8;color:${C.pt};margin-top:1.4cqmin`,
+          ) +
+          display(u, "{{season}} {{grade}}", 6, ";margin-top:1cqmin", 800) +
+          `<div style="width:100%;margin-top:2.4cqmin">` +
+          gfPanel(u, {
+            venue: "{{competition}}",
+            score: "{{result}}",
+            potf: `Player of the final · <strong style="color:${C.chalk}">{{mom}}</strong>`,
+          }) +
+          `</div>`,
+      ),
+      { hashtag: "hashtags", sponsors: "name", label: "SEASON SUPPORTED BY" },
+      "teamPhoto",
+    ),
+});
+
+// ---------------------------------------------------------------------------
+// The remaining kinds, in the same look
+// ---------------------------------------------------------------------------
+
+const playerSpotlight = design({
+  kind: "player",
+  designKey: "player-spotlight",
+  name: "Player Spotlight",
+  build: (f) =>
+    card(
+      f,
+      "SPOTLIGHT",
+      col(
+        eyebrow(u, "PLAYER SPOTLIGHT · {{season}}") +
+          display(u, "{{playerName}}", 9, ";line-height:.9;margin-top:1.2cqmin") +
+          `<div style="display:flex;gap:.8cqmin;width:100%;margin-top:2.4cqmin">` +
+          [1, 2, 3].map((n) => statCell(u, `{{stat${n}Value}}`, `{{stat${n}Label}}`)).join("") +
+          `</div>` +
+          meta(u, "{{headline}}", ";margin-top:2cqmin"),
+      ),
+      NAME_FOOTER,
+    ),
+});
+
+const record = design({
+  kind: "record",
+  designKey: "record",
+  name: "Club Record",
+  build: (f) =>
+    card(
+      f,
+      "RECORD",
+      col(
+        eyebrow(u, "CLUB RECORD · {{grade}}") +
+          display(u, "{{title}}", 6, ";margin-top:1cqmin", 800) +
+          display(
+            u,
+            "{{value}}",
+            heroSize(f, 30, 23),
+            `;line-height:.82;color:${C.pt};margin-top:1cqmin`,
+          ) +
+          `<div style="display:flex;align-items:center;gap:2cqmin;margin-top:1.6cqmin">${tricolourDash(u)}${display(u, "{{playerName}}", 7, "", 900)}</div>`,
+      ),
+      { hashtag: "clubHashtag", sponsors: "name", off: true },
+    ),
+});
+
+function gradeLeaderDesign(preset: "Runs" | "Wickets") {
+  return design({
+    kind: "gradeLeader",
+    designKey: `grade-leader-${preset.toLowerCase()}`,
+    name: `Grade Leader — ${preset}`,
+    categoryPreset: preset,
+    build: (f) =>
+      card(
+        f,
+        "LEADER",
+        col(
+          eyebrow(u, "{{grade}} · {{season}}") +
+            twoLineTitle(u, "{{titleTop}}", "{{titleBottom}}", 7) +
+            display(
+              u,
+              "{{value}}",
+              heroSize(f, 28, 22),
+              `;line-height:.82;color:${C.pt};margin-top:1.6cqmin`,
+            ) +
+            `<div style="display:flex;align-items:center;gap:2cqmin;margin-top:1.4cqmin">${tricolourDash(u)}${display(u, "{{category}}", 5, "", 800)}</div>` +
+            display(u, "{{playerName}}", 8, ";line-height:.9;margin-top:2cqmin"),
+        ),
+        { hashtag: "clubHashtag", sponsors: "name", off: true },
+      ),
+  });
+}
+
+const debut = design({
+  kind: "debut",
+  designKey: "debut",
+  name: "Debut",
+  build: (f) =>
+    card(
+      f,
+      "DEBUT",
+      col(
+        eyebrow(u, "FIRST GRADE DEBUT · {{grade}} · {{season}}") +
+          display(u, "{{playerName}}", 10, ";line-height:.9;margin-top:1.4cqmin") +
+          meta(u, "Round {{round}} · vs {{opponent}} — {{tributeLine}}", ";margin-top:1.6cqmin") +
+          `<div style="font-family:${CK_COND};font-weight:900;font-size:4cqmin;line-height:1;padding:.8cqmin 1.8cqmin;margin-top:2.2cqmin;background:${C.p};color:${C.onp}">CAP {{capNumber}}</div>`,
+      ),
+      { hashtag: "clubHashtag", sponsors: "name", off: true },
+    ),
+});
+
+const MATCH_LINE = "{{grade}} · vs {{opponent}} · RD {{round}}";
+
+const century = design({
+  kind: "century",
+  designKey: "century",
+  name: "Century",
+  build: (f) =>
+    card(
+      f,
+      "CENTURY",
+      col(
+        eyebrow(u, "RAISED THE BAT") +
+          `<div style="display:flex;align-items:flex-end;gap:1.6cqmin">${display(u, "{{runs}}", heroSize(f, 30, 23), `;line-height:.82;color:${C.pt}`)}${display(u, "({{balls}})", 5, `;color:${C.chalk2};padding-bottom:1cqmin`, 700)}</div>` +
+          `<div style="display:flex;align-items:center;gap:2cqmin;margin-top:1.4cqmin">${tricolourDash(u)}${display(u, "CENTURY", 6, "", 800)}</div>` +
+          display(u, "{{playerName}}", 9, ";line-height:.9;margin-top:2.2cqmin") +
+          eyebrow(u, MATCH_LINE, C.chalk2, ";margin-top:1.4cqmin"),
+      ),
+      { hashtag: "clubHashtag", sponsors: "name", off: true },
+    ),
+});
+
+const fiveFor = design({
+  kind: "fiveFor",
+  designKey: "five-for",
+  name: "Five-for",
+  build: (f) =>
+    card(
+      f,
+      "FIVE-FOR",
+      col(
+        eyebrow(u, "{{wickets}} WICKETS") +
+          `<div style="display:flex;align-items:flex-end;gap:1.6cqmin">${display(u, "{{figures}}", heroSize(f, 26, 20), `;line-height:.82;color:${C.pt}`)}${display(u, "({{overs}})", 5, `;color:${C.chalk2};padding-bottom:1cqmin`, 700)}</div>` +
+          `<div style="display:flex;align-items:center;gap:2cqmin;margin-top:1.4cqmin">${tricolourDash(u)}${display(u, "FIVE-FOR", 6, "", 800)}</div>` +
+          display(u, "{{playerName}}", 9, ";line-height:.9;margin-top:2.2cqmin") +
+          eyebrow(u, MATCH_LINE, C.chalk2, ";margin-top:1.4cqmin"),
+      ),
+      { hashtag: "clubHashtag", sponsors: "name", off: true },
+    ),
+});
+
+function wrapRow(lost: boolean): string {
+  return (
+    `<div${lost ? ' data-repeat-variant="lost"' : ""} style="display:flex;align-items:center;gap:1.8cqmin;padding:1cqmin 1.6cqmin 1cqmin 1cqmin;margin-top:.8cqmin;background:${C.panel}${lost ? ";opacity:.8" : ""}">` +
+    `<div style="flex:none;width:6cqmin;height:6cqmin;display:flex;flex-direction:column;align-items:center;justify-content:center;background:${lost ? C.s : C.p};color:${lost ? C.chalk : C.onp}"><div style="font-family:${CK_COND};font-weight:900;font-size:3.2cqmin;line-height:1">{{row.gradeLabel}}</div><div style="font-family:${CK_MONO};font-size:.9cqmin;letter-spacing:.1em">{{row.gradeSub}}</div></div>` +
+    `<div style="flex:1;min-width:0"><div style="font-family:${CK_COND};font-weight:800;font-size:3cqmin;line-height:1.05;text-transform:uppercase">{{row.resultLine}}</div><div style="font-family:${CK_SANS};font-size:1.8cqmin;line-height:1.3;margin-top:.4cqmin;color:${C.chalk2}">{{row.performers}}</div></div>` +
+    `<div style="flex:none;font-family:${CK_COND};font-weight:900;font-size:3cqmin;line-height:1;color:${lost ? C.chalk2 : C.pt}">{{row.outcome}}</div>` +
+    `</div>`
+  );
+}
+
+const weekendWrap = design({
+  kind: "weekendWrap",
+  designKey: "weekend-wrap",
+  name: "Weekend Wrap",
+  build: (f) =>
+    card(
+      f,
+      "ROUND WRAP",
+      col(
+        eyebrow(u, "{{roundLabel}} · {{dateRange}}") +
+          twoLineTitle(u, "WEEKEND", "WRAP", f === "portrait" ? 10 : 12) +
+          `<div data-repeat="matches" data-repeat-max="${f === "landscape" ? 4 : 5}" style="width:100%;margin-top:1.6cqmin">${wrapRow(false)}${wrapRow(true)}</div>`,
+      ),
+      { hashtag: "clubHashtag", sponsors: "name", off: true },
+      "photo",
+      "list",
+    ),
+});
+
+function ladderRowHtml(club: boolean): string {
+  const cell = `flex:none;width:5.4cqmin;text-align:center;color:${club ? C.onp : C.chalk2}`;
+  return (
+    `<div${club ? ' data-repeat-variant="club"' : ""} style="display:flex;align-items:center;gap:1cqmin;height:4.6cqmin;padding:0 1.6cqmin;margin-top:.6cqmin;font-family:${CK_SANS};font-weight:600;font-size:2.1cqmin;background:${club ? C.p : C.panel};color:${club ? C.onp : C.chalk}">` +
+    `<span style="flex:none;width:4cqmin;font-family:${CK_COND};font-weight:900;font-size:2.8cqmin;color:${club ? C.onp : C.pt}">{{row.pos}}</span>` +
+    `<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{row.team}}</span>` +
+    `<span style="${cell}">{{row.played}}</span><span style="${cell}">{{row.won}}</span><span style="${cell}">{{row.lost}}</span>` +
+    `<span style="flex:none;width:6cqmin;text-align:right;font-family:${CK_COND};font-weight:900;font-size:2.8cqmin">{{row.points}}</span>` +
+    `</div>`
+  );
+}
+
+const ladder = design({
+  kind: "ladder",
+  designKey: "ladder",
+  name: "Ladder",
+  build: (f) =>
+    card(
+      f,
+      "LADDER",
+      col(
+        eyebrow(u, "{{competitionName}} · {{asOfLabel}}") +
+          display(u, "{{gradeLabel}} LADDER", 9, ";margin-top:1cqmin") +
+          `<div style="width:100%;margin-top:1.4cqmin"><div style="display:flex;gap:1cqmin;padding:0 1.6cqmin;font-family:${CK_MONO};font-size:1.4cqmin;letter-spacing:.14em;color:${C.chalk2}"><span style="flex:none;width:4cqmin">#</span><span style="flex:1">TEAM</span><span style="flex:none;width:5.4cqmin;text-align:center">P</span><span style="flex:none;width:5.4cqmin;text-align:center">W</span><span style="flex:none;width:5.4cqmin;text-align:center">L</span><span style="flex:none;width:6cqmin;text-align:right">PTS</span></div>` +
+          `<div data-repeat="rows" data-repeat-max="${f === "landscape" ? 5 : f === "story" ? 10 : 8}">${ladderRowHtml(true)}${ladderRowHtml(false)}</div></div>`,
+      ),
+      { hashtag: "clubHashtag", sponsors: "name", off: true },
+      "photo",
+      "list",
+    ),
+});
+
+const bigMoment = design({
+  kind: "bigMoment",
+  designKey: "big-moment",
+  name: "Big Moment",
+  build: (f) =>
+    card(
+      f,
+      "LIVE",
+      col(
+        eyebrow(u, "{{inningsLabel}} · vs {{oppositionName}}") +
+          display(
+            u,
+            "{{momentLabel}}",
+            heroSize(f, 16, 13),
+            `;line-height:.84;color:${C.pt};margin-top:1cqmin`,
+          ) +
+          display(u, "{{playerName}}", 7, ";margin-top:1.4cqmin") +
+          meta(u, "{{runs}} ({{balls}}) · {{boundaryDetail}}", ";margin-top:.8cqmin") +
+          `<div style="display:flex;background:${C.panel};width:100%;margin-top:2cqmin"><div style="width:1.4cqmin;flex:none;background:${C.p}"></div><div style="padding:1.6cqmin 2.2cqmin">` +
+          display(u, "{{liveScore}}", 7) +
+          meta(u, "{{oversChaseLine}}", ";margin-top:.6cqmin") +
+          `<div style="display:inline-block;font-family:${CK_COND};font-weight:800;font-size:2.6cqmin;padding:.6cqmin 1.4cqmin;margin-top:1.2cqmin;background:${C.p};color:${C.onp}">{{equation}}</div>` +
+          `</div></div>`,
+      ),
+      { hashtag: "clubHashtag", sponsors: "name", off: true },
+    ),
+});
+
+const newSigning = design({
+  kind: "newSigning",
+  designKey: "new-signing",
+  name: "New Signing",
+  build: (f) =>
+    card(
+      f,
+      "NEW SIGNING",
+      col(
+        eyebrow(u, "WELCOME TO THE CLUB · {{season}}") +
+          twoLineTitle(u, "{{playerFirstName}}", "{{playerLastName}}", 10) +
+          `<div style="display:flex;align-items:center;gap:2cqmin;margin-top:1.8cqmin">${tricolourDash(u)}${display(u, "{{role}}", 4.4, "", 800)}</div>` +
+          meta(
+            u,
+            `From <strong style="color:${C.chalk}">{{formerClub}}</strong>`,
+            ";margin-top:1.2cqmin",
+          ),
+      ),
+      NAME_FOOTER,
+    ),
+});
+
+const countdown = design({
+  kind: "countdown",
+  designKey: "countdown",
+  name: "Countdown",
+  build: (f) =>
+    card(
+      f,
+      "COUNTDOWN",
+      col(
+        eyebrow(u, "{{eventLabel}}") +
+          twoLineTitle(u, "{{hypeLine1}}", "{{hypeLine2}}", 8) +
+          `<div style="display:flex;align-items:flex-end;gap:2cqmin;margin-top:1.6cqmin">${display(u, "{{daysToGo}}", heroSize(f, 26, 20), `;line-height:.82;color:${C.pt}`)}${display(u, "DAYS<br>TO GO", 5, ";line-height:.95;padding-bottom:1cqmin", 800)}</div>` +
+          display(u, "{{dateVenue}}", 4.2, ";margin-top:1.6cqmin", 800) +
+          meta(u, "{{fixtureLine}}", ";margin-top:.6cqmin"),
+      ),
+      { hashtag: "clubHashtag", sponsors: "name", off: true },
+    ),
+});
+
+// ---------------------------------------------------------------------------
+// Club Kit-only kinds
+// ---------------------------------------------------------------------------
+
+const roundFixtures = design({
+  kind: "roundFixtures",
+  designKey: "game-day",
+  name: "Game Day — All Grades",
+  own: {
+    fields: [
+      textField("date", "Date", "SATURDAY 14 FEB"),
+      textField("roundLabel", "Round", "ROUND 15"),
+      repeatField("fixtures", "Grades playing", "Up to 5 grades"),
+    ],
+    repeats: [
+      {
+        key: "fixtures",
+        maxRows: 5,
+        fields: [
+          textField("grade", "Grade", "A"),
+          textField("opponent", "Opponent", "Opposition"),
+          textField("venue", "Venue", "Home Oval"),
+          textField("startTime", "Start", "1:00"),
+        ],
+      },
+    ],
+  },
+  build: (f) =>
+    card(
+      f,
+      "{{roundLabel}}",
+      col(
+        eyebrow(u, "{{date}} · {{roundLabel}}") +
+          twoLineTitle(u, "GAME", "DAY", f === "portrait" ? 12 : 16) +
+          `<div data-repeat="fixtures" data-repeat-max="${f === "landscape" ? 4 : 5}" style="width:100%;margin-top:1.8cqmin">` +
+          gradeRow(u, {
+            grade: "{{row.grade}}",
+            opponent: "v {{row.opponent}}",
+            venue: "{{row.venue}}",
+            time: "{{row.startTime}}",
+          }) +
+          `</div>`,
+      ),
+      NAME_FOOTER,
+      "photo",
+      "list",
+    ),
+});
+
+const tradingCard = design({
+  kind: "tradingCard",
+  designKey: "trading-card",
+  name: "Trading Card",
+  own: {
+    fields: [
+      textField("playerName", "Player name", "SAMPLE PLAYER"),
+      textField("role", "Role", "BATTING ALL-ROUNDER"),
+      textField("capNumber", "Cap number", "242"),
+      textField("season", "Season", "2025/26"),
+      ...[1, 2, 3, 4].flatMap((n) => [
+        textField(`stat${n}Value`, `Stat ${n} value`, ["48", "1,294", "61", "29.8"][n - 1]),
+        textField(`stat${n}Label`, `Stat ${n} label`, ["M", "RUNS", "WKTS", "AVG"][n - 1]),
+      ]),
+      photoField("cardPhoto", "Card photo", "Player photo"),
+      photoField("photo", "Frame photo", "Club photo"),
+    ],
+  },
+  build: (f) => {
+    const frame = tradingFrame(u, {
+      photo: slot("cardPhoto", "photo"),
+      crest: `<div style="position:relative;width:100%;height:100%">${headerCrest().replace(/10cqmin/g, "7cqmin")}</div>`,
+      cap: "#{{capNumber}}",
+      name: "{{playerName}}",
+      role: "{{role}}",
+      stats: [1, 2, 3, 4].map((n) => ({ value: `{{stat${n}Value}}`, label: `{{stat${n}Label}}` })),
+    });
+    const tall = isTall(f);
+    return ckCard({
+      format: f,
+      chip: "COLLECTABLE",
+      photo: "photo",
+      body: `<div style="display:flex;justify-content:${tall ? "center" : "flex-start"};align-items:center;width:100%;height:100%;padding:${tall ? "0" : "0 0 0 2cqmin"}">${frame}</div>`,
+      footer: NAME_FOOTER,
+      wide: true,
+    });
+  },
+});
+
+const juniorHighlights = design({
+  kind: "juniorHighlights",
+  designKey: "junior-highlights",
+  name: "Juniors Shine",
+  own: {
+    fields: [
+      textField("grade", "Grade", "UNDER 13"),
+      textField("roundLabel", "Round", "ROUND 9 · SATURDAY"),
+      repeatField("highlights", "Highlights", "Up to 3 juniors"),
+      photoField("photo", "Club photo (no identifiable child)", "Club photo"),
+    ],
+    repeats: [
+      {
+        key: "highlights",
+        maxRows: 3,
+        fields: [
+          textField("name", "Name", "Riley T."),
+          textField("note", "Note", "Top score"),
+          textField("figure", "Figure", "52*"),
+        ],
+      },
+    ],
+  },
+  build: (f) =>
+    card(
+      f,
+      "JUNIORS",
+      col(
+        eyebrow(u, "{{grade}} · {{roundLabel}}") +
+          twoLineTitle(u, "JUNIORS", "SHINE", f === "square" || f === "landscape" ? 12 : 14) +
+          `<div data-repeat="highlights" data-repeat-max="3" style="width:100%;margin-top:1.8cqmin">` +
+          juniorRow(u, { name: "{{row.name}}", note: "{{row.note}}", figure: "{{row.figure}}" }) +
+          `</div>` +
+          meta(
+            u,
+            "First names and initials only · photos with parent consent",
+            ";margin-top:1.4cqmin;font-size:1.8cqmin",
+          ),
+      ),
+      NAME_FOOTER,
+      "photo",
+      "list",
+    ),
+});
+
+/** Every Club Kit design, in registry order. */
+export const CLUB_KIT_DESIGNS: PackDesignEntry[] = [
+  matchResult,
+  teamList,
+  weekendWrap,
+  ladder,
+  playerSpotlight,
+  milestone,
+  debut,
+  century,
+  fiveFor,
+  bigMoment,
+  matchDay,
+  countdown,
+  newSigning,
+  premiership,
+  record,
+  gradeLeaderDesign("Runs"),
+  gradeLeaderDesign("Wickets"),
+  leadersDesign("Runs", "Runs"),
+  leadersDesign("Wickets", "Wickets"),
+  leadersDesign("Catches", "Runs"),
+  leadersDesign("Dismissals", "Runs"),
+  roundFixtures,
+  tradingCard,
+  juniorHighlights,
+];

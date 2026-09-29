@@ -47,6 +47,9 @@ export const ROW_CAPS: Partial<Record<CardKind, { key: string; cap: number; min:
   // player stats are a fixed trio (A3); treated as a capped repeat for a
   // uniform editor.
   player: { key: "stats", cap: 3, min: 1 },
+  roundFixtures: { key: "fixtures", cap: 5, min: 1 },
+  tradingCard: { key: "stats", cap: 4, min: 1 },
+  juniorHighlights: { key: "highlights", cap: 3, min: 1 },
 };
 
 /**

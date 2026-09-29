@@ -185,6 +185,21 @@ export const CARD_FIELD_CATALOG: Record<CardKind, TemplateFieldDef[]> = {
     { key: "leader4Name", label: "Leader 4 name", type: "text" },
     { key: "leader4Value", label: "Leader 4 value", type: "text" },
   ],
+  roundFixtures: [
+    { key: "roundLabel", label: "Round", type: "text" },
+    { key: "date", label: "Date", type: "text" },
+  ],
+  tradingCard: [
+    { key: "playerName", label: "Player name", type: "text" },
+    { key: "role", label: "Role", type: "text" },
+    { key: "capNumber", label: "Cap number", type: "text" },
+    { key: "season", label: "Season", type: "text" },
+    PHOTO_FIELD,
+  ],
+  juniorHighlights: [
+    { key: "grade", label: "Grade", type: "text" },
+    { key: "roundLabel", label: "Round", type: "text" },
+  ],
 };
 
 // All bindable fields for a kind, common fields first.
@@ -264,7 +279,17 @@ const findDefaultRow = (
 export const resolvePackIdForKind = (
   templates: readonly CardTemplate[] | undefined | null,
   kind: CardKind,
-): string | null => sharedResolvePackIdForKind(templates, kind);
+): string | null => {
+  const chosen = sharedResolvePackIdForKind(templates, kind);
+  const manifests = listPackManifests();
+  const renders = (packId: string) =>
+    manifests.some((m) => m.packId === packId && m.designs.some((d) => d.kind === kind));
+  // A kind only some packs design (Club Kit's game day, trading card and
+  // junior highlights) falls back to the first pack that renders it, rather
+  // than to a default pack that would render nothing.
+  if (renders(chosen ?? manifests[0]?.packId ?? "")) return chosen;
+  return manifests.find((m) => m.designs.some((d) => d.kind === kind))?.packId ?? chosen;
+};
 
 /**
  * The design packs a tenant may choose for `kind` — the distinct `packId`s that
@@ -603,6 +628,23 @@ export const resolveTextField = (
             : leader.value;
       }
       return base[key] ?? "";
+    }
+    case "roundFixtures": {
+      const map: Record<string, string> = { roundLabel: input.roundLabel, date: input.date };
+      return map[key] ?? "";
+    }
+    case "tradingCard": {
+      const map: Record<string, string> = {
+        playerName: input.playerName,
+        role: input.role ?? "",
+        capNumber: input.capNumber != null ? str(input.capNumber) : "",
+        season: input.season ?? "",
+      };
+      return map[key] ?? "";
+    }
+    case "juniorHighlights": {
+      const map: Record<string, string> = { grade: input.grade, roundLabel: input.roundLabel };
+      return map[key] ?? "";
     }
   }
 };
