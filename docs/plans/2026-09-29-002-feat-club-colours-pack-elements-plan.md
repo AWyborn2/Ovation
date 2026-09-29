@@ -15,7 +15,7 @@ execution: code
 
 - **Objective:** Ship the "Club Colours" design handoff as the **Club Kit** pack (8 card kinds × 4 formats = 32 templates) in the Social Media Studio, and make every element of it (trim photo frames, crest watermark, monogram, kind chip, tricolour rule, hashtag block, sponsor strip, score bars, leader rows, game-day rows, XI list, trading-card frame, premiership stars and GF panel, junior highlight rows, background) insertable from the Studio editor's Elements panel when an ad-hoc design is created.
 - **Product authority:** Ash (owner). The handoff (`docs/design-handoffs/club-colours-pack/Handoff.md`) is the product contract for look and behaviour. This plan governs how.
-- **Open blockers:** None for U1. D1 is resolved (Club Kit). D2–D4 can be answered at their units.
+- **Open blockers:** None for U1. D1 (Club Kit), D3 (junior photos) and D4 (catches now) are resolved. D2 is only needed by U2.
 - **Stop conditions:** Stop and ask before any prod migration (only U11 has one), before changing a Halls Head-parity digest for an existing pack, and if a unit would make any existing pack's "Pack's own look" render change.
 - **Execution profile:** One PR per unit, each shippable. Pack PRs follow the catalogue convention (one commit per card). Element-library PRs land behind nothing: the Elements panel just gains categories.
 
@@ -40,7 +40,7 @@ A new pack where every colour comes from the tenant's brand tokens, with contras
 | -------------------------------- | --------------------------------------------------------------- | --------------------------------------------- |
 | result                           | `matchSummary`                                                  | none                                          |
 | milestone                        | `milestone`                                                     | none                                          |
-| leaders                          | `clubLeaderboard` (Runs / Wickets designs)                      | Catches metric not offered (see D4)           |
+| leaders                          | `clubLeaderboard` (Runs / Wickets designs; Dismissals data)     | Catches-only category is new (U3b)            |
 | team                             | `teamList` (maxRows 12)                                         | none                                          |
 | premiership                      | `premiership`                                                   | may need `flagCount` / GF fields              |
 | matchday (all grades this round) | **none** (`matchDay` is one fixture)                            | new kind                                      |
@@ -68,8 +68,8 @@ A new pack where every colour comes from the tenant's brand tokens, with contras
 
 - **D1 — Name and id. RESOLVED (Ash, 29 Sep 2026):** display name **"Club Kit"**, `packId: "club-kit-v1"`. The handoff's "Club Colours" name stays only as the design-handoff folder name, because it collides with the per-pack "Club colours" colour-mode switch.
 - **D2 — What "Pack's own look" means for this pack.** Because every colour is club-derived, the parity test still needs club mode ≠ pack mode for a branded club. _Recommended:_ pack mode uses a fixed neutral demo palette (amber `#FBAC27` / slate `#333F48` / ink `#10151B`, the handoff's sample values without the Halls Head identity), and **club mode is the default**.
-- **D3 — Junior photos.** _Recommended:_ ship with junior cards using a club action/team photo picked by an admin (never a player-tagged junior photo), and defer a consent model to its own plan. The handoff's "parent consent" rule then becomes "no player-linked junior photo until consent data exists".
-- **D4 — Leaders metric.** The handoff lists runs / wickets / catches. _Recommended:_ ship Runs + Wickets (the existing `clubLeaderboard` presets) now, with catches added after the catches rule in the hybrid-stats plan (R6/U15) settles.
+- **D3 — Junior photos. RESOLVED (Ash, 29 Sep 2026): recommendation accepted.** _Recommended:_ ship with junior cards using a club action/team photo picked by an admin (never a player-tagged junior photo), and defer a consent model to its own plan. The handoff's "parent consent" rule then becomes "no player-linked junior photo until consent data exists".
+- **D4 — Leaders metric. RESOLVED (Ash, 29 Sep 2026): build catches now and have it ready to go.** Club Kit ships Runs, Wickets, **Catches** and **Dismissals** leader designs. `Dismissals` (catches + stumpings, "SAFE HANDS") already exists end to end (`ClubLeaderboardCategory`, `central/leaderboards.ts` `topDismissals`). `Catches` is new (catches only; see U3b). Both read through the existing stats path, so when the catches rule in the hybrid-stats plan (U15) changes how catches are counted, the cards follow with no pack change.
 
 ### Scope boundaries
 
@@ -109,7 +109,7 @@ flowchart LR
 
 ### Sequencing
 
-U1 → U2 → (U3, U4, U5 in parallel) → U6 → U7 → U8 → U9 → U10. U11 is independent and optional.
+U1 → U2 → (U3, U3b, U4, U5 in parallel) → U6 → U7 → U8 → U9 → U10. U11 is independent and optional.
 
 ---
 
@@ -132,6 +132,14 @@ U1 → U2 → (U3, U4, U5 in parallel) → U6 → U7 → U8 → U9 → U10. U11 
 
 - Skeleton body builders from `skeleton-designs.ts` for debut, century, fiveFor, record, player, gradeLeader ×2, weekendWrap, ladder, bigMoment, newSigning and countdown, each wrapped in the Club Kit look (frame, chip, footer). Landscape caps from the contract (ladder 5, leaderboard 5).
 - **Done when:** every one of the 17 existing kinds renders natively in all four formats.
+
+### U3b. Catches leaderboard (D4)
+
+- **Data:** add a catches-only aggregate beside `fieldAgg` in `lib/db/src/central/leaderboards.ts` (`topCatches`: fielding catches, excluding stumpings and fill-ins `playerId >= 90000`), exposed through `central-queries.ts` and the club season totals route. Add `topCatches` to the openapi response schema and run codegen.
+- **Kind:** extend `ClubLeaderboardCategory` with `"Catches"`. Update `CLUB_LEADER_COPY` ("CLUB / CATCHERS", "Most catches in each grade"), `descriptors.ts` `LEADER_CATEGORIES`, the prefill category select, and `categoryPreset` in `pack-templates/types.ts` (`"Runs" | "Wickets" | "Catches" | "Dismissals"`).
+- **Designs:** `club-kit/club-leaderboard-catches.ts` and `club-leaderboard-dismissals.ts`, plus Broadcast Dark reference designs for both presets so pack-lint field parity holds. Other packs fall back to their Dismissals/Runs design until they get their own.
+- **Tests:** a central leaderboard test where a keeper's stumpings count in Dismissals and not in Catches; a fill-in never leads; prefill tenant isolation; pack-lint and coverage parity.
+- **Done when:** an admin can pick Catches on the Leaders card, it prefills per grade, and it renders in all four formats.
 
 ### U4. New kind `roundFixtures` (game day, all grades)
 
