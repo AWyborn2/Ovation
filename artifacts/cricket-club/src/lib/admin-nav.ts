@@ -120,9 +120,14 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     label: "People",
     href: "/admin/people",
     icon: Users,
-    description: "Players, stats, committee, captains and club officials.",
+    description: "Players, duplicate players, stats, committee, captains and club officials.",
     tabs: [
       { value: "players", label: "Players", path: "/admin/people" },
+      {
+        value: "duplicates",
+        label: "Duplicate players",
+        path: "/admin/people/duplicates",
+      },
       { value: "stats", label: "Stats", path: "/admin/people/stats" },
       {
         value: "junior-scorecards",

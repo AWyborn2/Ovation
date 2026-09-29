@@ -460,6 +460,41 @@ describe("centralClubTotalsBySeason (Club leaderboard card prefill)", () => {
     queuedResults.push([{ matchId: 1, grade: "A Grade", season: "Summer 2023/24" }]);
     await expect(centralClubTotalsBySeason(5, 2024)).resolves.toEqual([]);
   });
+
+  it("with merges: leaders are keepers, named as the keeper, private when any member is (U7)", async () => {
+    process.env.CENTRAL_CACHE_TTL_MS = "0";
+    const merges = new Map([
+      ["away-pub", "keeper-pub"],
+      ["away-priv", "keeper-2"],
+    ]);
+    queuedResults.push(
+      [{ matchId: 1, grade: "A Grade", season: "Summer 2024/25" }],
+      // Batting agg is already folded to keepers in SQL.
+      [
+        { participantId: "keeper-2", value: 500 },
+        { participantId: "keeper-pub", value: 300 },
+      ],
+      [],
+      // Fielding lines are folded in JS: away-pub's 2 catches join keeper-pub's 2.
+      [
+        { participantId: "keeper-pub", kind: "caught", n: 2 },
+        { participantId: "away-pub", kind: "caught", n: 2 },
+        { participantId: "other", kind: "caught", n: 3 },
+      ],
+      // Names for the keepers AND their merged members, in one trip.
+      [
+        { participantId: "keeper-2", displayName: "K Two", isPrivate: 0 },
+        { participantId: "away-priv", displayName: "K Two", isPrivate: 1 },
+        { participantId: "keeper-pub", displayName: "Chris Keeper", isPrivate: 0 },
+        { participantId: "away-pub", displayName: "C Keeper", isPrivate: 0 },
+        { participantId: "other", displayName: "O Ther", isPrivate: 0 },
+      ],
+    );
+    const [grade] = await centralClubTotalsBySeason(5, 2024, merges);
+    // keeper-2's group holds a private GUID, so the next public leader is picked.
+    expect(grade?.topRunScorer).toEqual({ playerName: "Chris Keeper", value: 300 });
+    expect(grade?.topCatches).toEqual({ playerName: "Chris Keeper", value: 4 });
+  });
 });
 
 describe("centralPlayerMatchLog enriched rows (stats U3)", () => {

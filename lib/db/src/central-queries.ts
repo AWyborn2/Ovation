@@ -28,6 +28,7 @@
  *   - social-recap.ts  Social Studio round-up / season recap inputs for one grade + season
  *   - social-achievements.ts  Social Studio per-match centuries, five-fors, debuts, milestones
  *   - merges.ts        a tenant's confirmed player merges, folded into the reads above
+ *   - duplicates.ts    per-GUID appearance evidence for duplicate-player suggestions
  * Every central read must stay behind this barrel (eslint `no-restricted-imports`
  * on `@workspace/db/central`) so it is club-filtered, cached and tested in one
  * place. The central DB is READ-ONLY from the app: `select` / `execute` only.
@@ -50,3 +51,4 @@ export * from "./central/vs-club";
 export * from "./central/playhq-fixtures";
 export * from "./central/social-recap";
 export * from "./central/social-achievements";
+export * from "./central/duplicates";

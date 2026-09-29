@@ -1,10 +1,11 @@
 import { Router, type IRouter } from "express";
 import { and, eq, desc, isNotNull, ne } from "drizzle-orm";
-import { UpsertPlayerCurationBody } from "@workspace/api-zod";
+import { ReviewPlayerDuplicateBody, UpsertPlayerCurationBody } from "@workspace/api-zod";
 import { db, playerCurationTable, type MergeStatus } from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { findMergeProblem, MAX_MERGE_CHAIN } from "../lib/central-curation";
+import { refreshDuplicateReview } from "../lib/duplicate-suggestions";
 import { invalidateMilestonesCache } from "../lib/milestones-cache";
 import { getTenantCentralClubId, TenantNotFoundError } from "../lib/tenant";
 
@@ -154,6 +155,118 @@ router.put("/player-curation/:participantId", requireAdmin, async (req, res): Pr
   invalidateMilestonesCache(tenantId);
   res.json(row);
 });
+
+// ---------------------------------------------------------------------------
+// Duplicate-player review (hybrid stats plan U7). The engine records likely
+// split identities as `suggested` merges; an admin confirms or rejects each,
+// and can undo a confirmed pair or reopen a rejected one:
+//
+//   suggested --confirm--> confirmed --undo--> suggested
+//   suggested --reject---> rejected  --reopen-> suggested
+//
+// A pair is addressed by its duplicate GUID (the curation row that points at
+// the keeper). Every lookup is scoped to the requesting tenant, so another
+// club's pair is simply not found. Confirming only changes review state: it
+// folds careers on read (club-overlay.ts) and never runs the draft sweep, so
+// no card is ever drafted for a past match (KTD8).
+// ---------------------------------------------------------------------------
+
+type ReviewPlayerDuplicateBodyAction = "confirm" | "reject" | "undo" | "reopen";
+
+const REVIEW_TRANSITIONS: Record<
+  ReviewPlayerDuplicateBodyAction,
+  { from: MergeStatus; to: MergeStatus }
+> = {
+  confirm: { from: "suggested", to: "confirmed" },
+  reject: { from: "suggested", to: "rejected" },
+  undo: { from: "confirmed", to: "suggested" },
+  reopen: { from: "rejected", to: "suggested" },
+};
+
+const ACTION_LABEL: Record<ReviewPlayerDuplicateBodyAction, string> = {
+  confirm: "confirmed",
+  reject: "rejected",
+  undo: "undone",
+  reopen: "reopened",
+};
+
+// The review lists (runs the suggestion engine first; idempotent).
+router.get("/player-curation/duplicates", requireAdmin, async (req, res): Promise<void> => {
+  res.json(await refreshDuplicateReview(getTenantId(req)));
+});
+
+router.post(
+  "/player-curation/duplicates/:participantId/review",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const tenantId = getTenantId(req);
+    const participantId = paramStr(req.params.participantId);
+    const parsed = ReviewPlayerDuplicateBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid body", details: parsed.error.issues });
+      return;
+    }
+    const { from, to } = REVIEW_TRANSITIONS[parsed.data.action];
+
+    const [row] = await db
+      .select()
+      .from(playerCurationTable)
+      .where(
+        and(
+          eq(playerCurationTable.tenantId, tenantId),
+          eq(playerCurationTable.participantId, participantId),
+        ),
+      );
+    if (!row?.mergedIntoParticipantId || !row.mergeStatus) {
+      res.status(404).json({ error: "No duplicate pair for this player." });
+      return;
+    }
+    if (row.mergeStatus !== from) {
+      res.status(409).json({
+        error: `This pair is ${row.mergeStatus}, so it can't be ${ACTION_LABEL[parsed.data.action]}.`,
+      });
+      return;
+    }
+    // A pair about to fold (confirm) or re-enter the merge graph (reopen) is
+    // held to the same rules as an admin's own merge: same club, public, no
+    // loop. Reject and undo only ever un-fold, so they are always allowed.
+    if (parsed.data.action === "confirm" || parsed.data.action === "reopen") {
+      const refusal = await mergeRefusal(tenantId, participantId, row.mergedIntoParticipantId, to);
+      if (refusal) {
+        res.status(400).json({ error: refusal });
+        return;
+      }
+    }
+
+    const [updated] = await db
+      .update(playerCurationTable)
+      .set({ mergeStatus: to, updatedAt: new Date() })
+      .where(
+        and(
+          eq(playerCurationTable.tenantId, tenantId),
+          eq(playerCurationTable.participantId, participantId),
+          eq(playerCurationTable.mergeStatus, from),
+        ),
+      )
+      .returning();
+    if (!updated) {
+      res.status(409).json({ error: "This pair changed while you were reviewing it." });
+      return;
+    }
+    // Confirm and undo change careers on the milestone board's cached build.
+    if (from === "confirmed" || to === "confirmed") invalidateMilestonesCache(tenantId);
+
+    const review = await refreshDuplicateReview(tenantId);
+    const pair = [...review.suggested, ...review.confirmed, ...review.rejected].find(
+      (p) => p.participantId === participantId,
+    );
+    if (!pair) {
+      res.status(404).json({ error: "No duplicate pair for this player." });
+      return;
+    }
+    res.json(pair);
+  },
+);
 
 // Clear curation for one participant (revert to central defaults).
 router.delete("/player-curation/:participantId", requireAdmin, async (req, res): Promise<void> => {
