@@ -75,10 +75,7 @@ export interface RepairUpdate {
 }
 
 export type SkipReason =
-  | "no_source_key"
-  | "no_central_match"
-  | "club_not_in_match"
-  | "no_opponent_name";
+  "no_source_key" | "no_central_match" | "club_not_in_match" | "no_opponent_name";
 
 export interface Skipped {
   matchId: number;
