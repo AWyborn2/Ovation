@@ -43,6 +43,10 @@ import {
   fixtureToMatchDayState,
   fixtureToCountdownState,
   fixtureToTeamListMeta,
+  fixtureRoundLabel,
+  fixtureRoundToState,
+  groupFixturesByRound,
+  ROUND_FIXTURES_CAP,
   teamListPlayersToState,
   ladderRowsToState,
   clubSeasonTotalsToState,
@@ -68,6 +72,7 @@ export function PrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
   const source = DESCRIPTORS[kind].prefill;
   if (source === "match") return <MatchPrefillPanel kind={kind} onApply={onApply} />;
   if (source === "fixture") return <FixturePrefillPanel kind={kind} onApply={onApply} />;
+  if (source === "round") return <RoundPrefillPanel onApply={onApply} />;
   if (source === "milestone") return <MilestonePrefillPanel onApply={onApply} />;
   if (source === "premiership") return <PremiershipPrefillPanel onApply={onApply} />;
   if (source === "stats") {
@@ -266,6 +271,58 @@ function FixturePrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
         onClick={apply}
         disabled={fixtureId == null || (kind === "teamList" && teamListQ.isLoading)}
         loading={kind === "teamList" && teamListQ.isLoading}
+      />
+    </PrefillCard>
+  );
+}
+
+/* ---------------------------------------------------------- From a round */
+
+/**
+ * Game day (roundFixtures): pick an upcoming round and every grade the club
+ * plays in it fills the card. Senior and junior grades are separate rounds,
+ * so one card never blends them.
+ */
+function RoundPrefillPanel({ onApply }: { onApply: Apply }) {
+  const params = useMemo(() => ({ upcomingOnly: true }), []);
+  const fixturesQ = useListFixtures(params);
+  const rounds = useMemo(
+    () => groupFixturesByRound((fixturesQ.data ?? []) as Fixture[]),
+    [fixturesQ.data],
+  );
+  const [key, setKey] = useState<string>("");
+  const selected = rounds.find((r) => r.key === key) ?? rounds[0] ?? null;
+  const over = selected ? selected.fixtures.length - ROUND_FIXTURES_CAP : 0;
+
+  return (
+    <PrefillCard
+      title="Prefill from this round's fixtures"
+      hint={`Every grade playing that round, earliest start first (up to ${ROUND_FIXTURES_CAP}).`}
+    >
+      <SelectField
+        label="Round"
+        value={selected?.key ?? ""}
+        disabled={rounds.length === 0}
+        onChange={setKey}
+      >
+        {rounds.length === 0 && (
+          <option value="">{fixturesQ.isLoading ? "Loading…" : "No upcoming fixtures"}</option>
+        )}
+        {rounds.map((r) => (
+          <option key={r.key} value={r.key}>
+            {fixtureRoundLabel(r)}
+          </option>
+        ))}
+      </SelectField>
+      {over > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {over} more grade{over === 1 ? "" : "s"} than the card holds: the latest start
+          {over === 1 ? " is" : "s are"} left off. Edit the rows to choose.
+        </p>
+      )}
+      <ApplyButton
+        onClick={() => selected && onApply(fixtureRoundToState(selected))}
+        disabled={!selected}
       />
     </PrefillCard>
   );

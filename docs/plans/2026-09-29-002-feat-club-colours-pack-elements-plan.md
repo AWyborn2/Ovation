@@ -13,7 +13,7 @@ execution: code
 
 ## Status (29 Sep 2026)
 
-Implemented: U1–U10 and U3b (Club Kit pack with all 17 existing kinds plus the three new ones, Catches leaderboard, element library with 29 elements, ad-hoc starters, stacking order, sponsor lock on the sponsor-strip element). Deviations from the plan: Club Kit is authored in card cqmin with its own per-format markup rather than on the skeleton's auto-fit body (KTD1 fallback), and the three new kinds are Club Kit-only (no Broadcast Dark reference designs; `PACK_ONLY_KINDS` in `pack-lint.test.ts`). Game-day prefill from fixtures and a trading-card prefill from career stats are not built yet (manual entry works). U11 (per-photo focal point) is not started.
+Implemented: U1–U10 and U3b (Club Kit pack with all 17 existing kinds plus the three new ones, Catches leaderboard, element library with 29 elements, ad-hoc starters, stacking order, sponsor lock on the sponsor-strip element). Deviations from the plan: Club Kit is authored in card cqmin with its own per-format markup rather than on the skeleton's auto-fit body (KTD1 fallback), and the three new kinds are Club Kit-only (no Broadcast Dark reference designs; `PACK_ONLY_KINDS` in `pack-lint.test.ts`). Game-day prefill from fixtures is built (pick an upcoming round; senior and junior grades are separate rounds). A trading-card prefill from career stats is not built yet (manual entry works). U11 (per-photo focal point) is not started.
 
 ## Goal Capsule
 
