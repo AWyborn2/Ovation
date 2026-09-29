@@ -17,6 +17,14 @@ _Avoid:_ central PCA DB
 
 The mode in which a tenant's stats are served by filtering the central database to that tenant's club, rather than from native app tables. A given tenant either reads from central or from its own native tables.
 
+### Club layer
+
+A tenant's own data that sits on top of the central database in the hybrid stats model: pre-digital history, confirmed identity merges, fill-ins and reviewable corrections. It only adds to or corrects central; it is never a second copy of central's scorecards.
+
+### Pre-digital boundary
+
+The first season the central database supplies for a club, set per club with per-grade overrides. Seasons before it come from the club's own history, and it and later seasons from central, so no season is counted from both sources.
+
 ## Player identity
 
 ### Participant GUID
