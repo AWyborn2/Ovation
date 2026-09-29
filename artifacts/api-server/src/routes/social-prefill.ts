@@ -1,6 +1,8 @@
 import { Router, type IRouter } from "express";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
+import { getTenantId } from "../middlewares/tenant-context";
+import { loadClubIdentity } from "../lib/club-overlay";
 import { getRequestCentralClubId } from "../lib/tenant";
 
 /**
@@ -8,7 +10,9 @@ import { getRequestCentralClubId } from "../lib/tenant";
  * (Ladder A7, Club Runs/Wickets leaderboard A19/A20, Weekend Wrap A6). All
  * reads funnel through `@workspace/db/central-queries` (repo invariant) and are
  * gated to socialStudio admins. central-queries is imported lazily so the
- * tenant-only server path never loads the central pool.
+ * tenant-only server path never loads the central pool. The leader and
+ * performer picks fold the tenant's confirmed player merges (club overlay), so
+ * a merged pair is one player here as everywhere else.
  */
 const router: IRouter = Router();
 
@@ -52,8 +56,9 @@ router.get(
       return;
     }
     const clubId = await getRequestCentralClubId(req);
+    const { merges } = await loadClubIdentity(getTenantId(req));
     const { centralClubTotalsBySeason } = await import("@workspace/db/central-queries");
-    res.json(await centralClubTotalsBySeason(clubId, season));
+    res.json(await centralClubTotalsBySeason(clubId, season, merges));
   },
 );
 
@@ -69,8 +74,9 @@ router.get(
       return;
     }
     const clubId = await getRequestCentralClubId(req);
+    const { merges } = await loadClubIdentity(getTenantId(req));
     const { centralWeekendWrap } = await import("@workspace/db/central-queries");
-    res.json(await centralWeekendWrap(clubId, season, round));
+    res.json(await centralWeekendWrap(clubId, season, round, merges));
   },
 );
 

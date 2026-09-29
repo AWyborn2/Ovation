@@ -7584,6 +7584,124 @@ export const DeletePlayerCurationParams = zod.object({
 
 
 /**
+ * Finds likely split identities for the tenant's central club — two participants who both played for the club, were never in the same match, share an "Initial Surname" and are both public — and records any new ones as suggested merges (idempotent; a pair already suggested, confirmed or rejected is never suggested again). Returns every suggested, confirmed and rejected pair with each participant's evidence. Only confirmed pairs fold careers.
+ * @summary Duplicate-player review for this tenant's central club (runs the suggestion engine)
+ */
+export const ListPlayerDuplicatesResponse = zod.object({
+  "suggested": zod.array(zod.object({
+  "participantId": zod.string().describe('The duplicate participant (whose curation row points at the keeper)'),
+  "keeperParticipantId": zod.string(),
+  "status": zod.enum(['suggested', 'confirmed', 'rejected']),
+  "updatedAt": zod.coerce.date(),
+  "keeper": zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().nullable().describe('The central display name (\"Private player\" for a private participant)'),
+  "isPrivate": zod.boolean(),
+  "games": zod.number().describe('Senior matches this participant played for the club'),
+  "seasons": zod.array(zod.string()).describe('Seasons played for the club (\"2024\/25\"), ascending'),
+  "grades": zod.array(zod.string())
+}),
+  "duplicate": zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().nullable().describe('The central display name (\"Private player\" for a private participant)'),
+  "isPrivate": zod.boolean(),
+  "games": zod.number().describe('Senior matches this participant played for the club'),
+  "seasons": zod.array(zod.string()).describe('Seasons played for the club (\"2024\/25\"), ascending'),
+  "grades": zod.array(zod.string())
+}),
+  "seasonGap": zod.number().nullable().describe('Seasons between the two careers (0 when they overlap)'),
+  "sharedGrades": zod.array(zod.string())
+})),
+  "confirmed": zod.array(zod.object({
+  "participantId": zod.string().describe('The duplicate participant (whose curation row points at the keeper)'),
+  "keeperParticipantId": zod.string(),
+  "status": zod.enum(['suggested', 'confirmed', 'rejected']),
+  "updatedAt": zod.coerce.date(),
+  "keeper": zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().nullable().describe('The central display name (\"Private player\" for a private participant)'),
+  "isPrivate": zod.boolean(),
+  "games": zod.number().describe('Senior matches this participant played for the club'),
+  "seasons": zod.array(zod.string()).describe('Seasons played for the club (\"2024\/25\"), ascending'),
+  "grades": zod.array(zod.string())
+}),
+  "duplicate": zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().nullable().describe('The central display name (\"Private player\" for a private participant)'),
+  "isPrivate": zod.boolean(),
+  "games": zod.number().describe('Senior matches this participant played for the club'),
+  "seasons": zod.array(zod.string()).describe('Seasons played for the club (\"2024\/25\"), ascending'),
+  "grades": zod.array(zod.string())
+}),
+  "seasonGap": zod.number().nullable().describe('Seasons between the two careers (0 when they overlap)'),
+  "sharedGrades": zod.array(zod.string())
+})),
+  "rejected": zod.array(zod.object({
+  "participantId": zod.string().describe('The duplicate participant (whose curation row points at the keeper)'),
+  "keeperParticipantId": zod.string(),
+  "status": zod.enum(['suggested', 'confirmed', 'rejected']),
+  "updatedAt": zod.coerce.date(),
+  "keeper": zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().nullable().describe('The central display name (\"Private player\" for a private participant)'),
+  "isPrivate": zod.boolean(),
+  "games": zod.number().describe('Senior matches this participant played for the club'),
+  "seasons": zod.array(zod.string()).describe('Seasons played for the club (\"2024\/25\"), ascending'),
+  "grades": zod.array(zod.string())
+}),
+  "duplicate": zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().nullable().describe('The central display name (\"Private player\" for a private participant)'),
+  "isPrivate": zod.boolean(),
+  "games": zod.number().describe('Senior matches this participant played for the club'),
+  "seasons": zod.array(zod.string()).describe('Seasons played for the club (\"2024\/25\"), ascending'),
+  "grades": zod.array(zod.string())
+}),
+  "seasonGap": zod.number().nullable().describe('Seasons between the two careers (0 when they overlap)'),
+  "sharedGrades": zod.array(zod.string())
+}))
+})
+
+
+/**
+ * `participantId` is the pair's duplicate (the participant whose curation row points at the keeper). confirm and reject act on a suggested pair, undo returns a confirmed pair to suggested (splitting the careers again), and reopen returns a rejected pair to suggested. Confirming never drafts social cards for past matches.
+ * @summary Confirm, reject, undo or reopen one duplicate pair
+ */
+export const ReviewPlayerDuplicateParams = zod.object({
+  "participantId": zod.coerce.string()
+})
+
+export const ReviewPlayerDuplicateBody = zod.object({
+  "action": zod.enum(['confirm', 'reject', 'undo', 'reopen'])
+})
+
+export const ReviewPlayerDuplicateResponse = zod.object({
+  "participantId": zod.string().describe('The duplicate participant (whose curation row points at the keeper)'),
+  "keeperParticipantId": zod.string(),
+  "status": zod.enum(['suggested', 'confirmed', 'rejected']),
+  "updatedAt": zod.coerce.date(),
+  "keeper": zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().nullable().describe('The central display name (\"Private player\" for a private participant)'),
+  "isPrivate": zod.boolean(),
+  "games": zod.number().describe('Senior matches this participant played for the club'),
+  "seasons": zod.array(zod.string()).describe('Seasons played for the club (\"2024\/25\"), ascending'),
+  "grades": zod.array(zod.string())
+}),
+  "duplicate": zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().nullable().describe('The central display name (\"Private player\" for a private participant)'),
+  "isPrivate": zod.boolean(),
+  "games": zod.number().describe('Senior matches this participant played for the club'),
+  "seasons": zod.array(zod.string()).describe('Seasons played for the club (\"2024\/25\"), ascending'),
+  "grades": zod.array(zod.string())
+}),
+  "seasonGap": zod.number().nullable().describe('Seasons between the two careers (0 when they overlap)'),
+  "sharedGrades": zod.array(zod.string())
+})
+
+
+/**
  * @summary Start an upgrade checkout for the current tenant (inert while billing is disabled)
  */
 export const CreateBillingCheckoutBody = zod.object({

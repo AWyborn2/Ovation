@@ -10,7 +10,8 @@ import {
 } from "../central";
 import { cacheKey, withCentralCache } from "./cache";
 import { appGradeFromCentral, parseRound, parseSeasonStartYear, parseStage } from "./grades";
-import { isPrivateRow } from "./privacy";
+import { canonicalizeLines, mergesCacheArg, type CentralMerges } from "./merges";
+import { centralPlayerNames, isPrivateRow } from "./privacy";
 import { classifyInnings } from "./scoring";
 import { clubInvolvedWhere, inList } from "./where";
 
@@ -380,9 +381,12 @@ export async function centralWeekendWrap(
   clubId: number,
   season: number,
   round: number,
+  /** The tenant's confirmed merges: a performer is named (and privacy-checked) as their keeper. */
+  merges?: CentralMerges,
 ): Promise<CentralWeekendWrap> {
-  return withCentralCache(cacheKey("centralWeekendWrap", [clubId, season, round]), () =>
-    centralWeekendWrapImpl(clubId, season, round),
+  return withCentralCache(
+    cacheKey("centralWeekendWrap", [clubId, season, round, mergesCacheArg(merges)]),
+    () => centralWeekendWrapImpl(clubId, season, round, merges),
   );
 }
 
@@ -390,6 +394,7 @@ async function centralWeekendWrapImpl(
   clubId: number,
   season: number,
   round: number,
+  merges?: CentralMerges,
 ): Promise<CentralWeekendWrap> {
   const roundLabel = `Round ${round}`;
   const seasonMatches = await centralClubMatches(clubId, { season });
@@ -442,14 +447,14 @@ async function centralWeekendWrapImpl(
   ]);
 
   const topBat = new Map<number, { participantId: string; runs: number }>();
-  for (const b of battingLines) {
+  for (const b of canonicalizeLines(battingLines, merges)) {
     if (!b.participantId || b.matchId == null) continue;
     const runs = b.runs ?? 0;
     const prev = topBat.get(b.matchId);
     if (!prev || runs > prev.runs) topBat.set(b.matchId, { participantId: b.participantId, runs });
   }
   const topBowl = new Map<number, { participantId: string; wickets: number; runs: number }>();
-  for (const b of bowlingLines) {
+  for (const b of canonicalizeLines(bowlingLines, merges)) {
     if (!b.participantId || b.matchId == null) continue;
     const wickets = b.wickets ?? 0;
     const prev = topBowl.get(b.matchId);
@@ -459,25 +464,16 @@ async function centralWeekendWrapImpl(
   }
 
   // Resolve performer names + privacy in one round trip (private players are
-  // dropped from the performer line, same rule as the leaderboards).
+  // dropped from the performer line, same rule as the leaderboards). With
+  // merges the performers are keepers: named as the keeper, and private when
+  // any GUID folded into them is. At most two performers per picked match.
   const perfIds = new Set<string>();
   for (const t of topBat.values()) perfIds.add(t.participantId);
   for (const t of topBowl.values()) perfIds.add(t.participantId);
-  const players = perfIds.size
-    ? await centralDb
-        .select({
-          participantId: centralPlayersTable.participantId,
-          displayName: centralPlayersTable.displayName,
-          isPrivate: centralPlayersTable.isPrivate,
-        })
-        .from(centralPlayersTable)
-        // At most two performers per picked match.
-        .where(inArray(centralPlayersTable.participantId, [...perfIds]))
-    : [];
-  const playerById = new Map(players.map((p) => [p.participantId, p]));
+  const playerById = await centralPlayerNames([...perfIds], merges);
   const nameOf = (participantId: string): string | null => {
     const p = playerById.get(participantId);
-    if (isPrivateRow(p)) return null;
+    if (p?.isPrivate) return null;
     const name = p?.displayName?.trim();
     return name && name.length ? name : null;
   };

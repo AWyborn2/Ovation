@@ -22,6 +22,7 @@ const AdminTourContent = lazy(() => import("@/pages/admin-tour-content"));
 const AdminBranding = lazy(() => import("@/pages/admin-branding"));
 const AdminNav = lazy(() => import("@/pages/admin-nav"));
 const AdminPlayers = lazy(() => import("@/pages/admin-players"));
+const AdminPlayerDuplicates = lazy(() => import("@/pages/admin-player-duplicates"));
 const AdminStats = lazy(() => import("@/pages/admin-stats"));
 const AdminJuniorStats = lazy(() => import("@/pages/admin-junior-stats"));
 const AdminJuniorPlayers = lazy(() => import("@/pages/admin-junior-players"));
@@ -134,6 +135,7 @@ export function AdminPeopleGroup() {
       groupKey="people"
       pages={{
         players: <AdminPlayers />,
+        duplicates: <AdminPlayerDuplicates />,
         stats: <AdminStats />,
         "junior-scorecards": <AdminJuniorStats />,
         "junior-players": <AdminJuniorPlayers />,

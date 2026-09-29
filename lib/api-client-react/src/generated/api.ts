@@ -105,6 +105,9 @@ import type {
   DirectoryClub,
   DraftSweepRequest,
   DraftSweepResponse,
+  DuplicatePair,
+  DuplicateReview,
+  DuplicateReviewBody,
   EditorTemplate,
   ErrorEnvelope,
   FetchGoogleDriveFilesRequest,
@@ -17867,6 +17870,157 @@ export const useDeletePlayerCuration = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeletePlayerCurationMutationOptions(options));
+    }
+
+export const getListPlayerDuplicatesUrl = () => {
+
+
+
+
+  return `/api/player-curation/duplicates`
+}
+
+/**
+ * Finds likely split identities for the tenant's central club — two participants who both played for the club, were never in the same match, share an "Initial Surname" and are both public — and records any new ones as suggested merges (idempotent; a pair already suggested, confirmed or rejected is never suggested again). Returns every suggested, confirmed and rejected pair with each participant's evidence. Only confirmed pairs fold careers.
+ * @summary Duplicate-player review for this tenant's central club (runs the suggestion engine)
+ */
+export const listPlayerDuplicates = async ( options?: RequestInit): Promise<DuplicateReview> => {
+
+  return customFetch<DuplicateReview>(getListPlayerDuplicatesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPlayerDuplicatesQueryKey = () => {
+    return [
+    `/api/player-curation/duplicates`
+    ] as const;
+    }
+
+
+export const getListPlayerDuplicatesQueryOptions = <TData = Awaited<ReturnType<typeof listPlayerDuplicates>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPlayerDuplicates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPlayerDuplicatesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPlayerDuplicates>>> = ({ signal }) => listPlayerDuplicates({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPlayerDuplicates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPlayerDuplicatesQueryResult = NonNullable<Awaited<ReturnType<typeof listPlayerDuplicates>>>
+export type ListPlayerDuplicatesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Duplicate-player review for this tenant's central club (runs the suggestion engine)
+ */
+
+export function useListPlayerDuplicates<TData = Awaited<ReturnType<typeof listPlayerDuplicates>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPlayerDuplicates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPlayerDuplicatesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getReviewPlayerDuplicateUrl = (participantId: string,) => {
+
+
+
+
+  return `/api/player-curation/duplicates/${participantId}/review`
+}
+
+/**
+ * `participantId` is the pair's duplicate (the participant whose curation row points at the keeper). confirm and reject act on a suggested pair, undo returns a confirmed pair to suggested (splitting the careers again), and reopen returns a rejected pair to suggested. Confirming never drafts social cards for past matches.
+ * @summary Confirm, reject, undo or reopen one duplicate pair
+ */
+export const reviewPlayerDuplicate = async (participantId: string,
+    duplicateReviewBody: DuplicateReviewBody, options?: RequestInit): Promise<DuplicatePair> => {
+
+  return customFetch<DuplicatePair>(getReviewPlayerDuplicateUrl(participantId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      duplicateReviewBody,)
+  }
+);}
+
+
+
+
+export const getReviewPlayerDuplicateMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewPlayerDuplicate>>, TError,{participantId: string;data: BodyType<DuplicateReviewBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewPlayerDuplicate>>, TError,{participantId: string;data: BodyType<DuplicateReviewBody>}, TContext> => {
+
+const mutationKey = ['reviewPlayerDuplicate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewPlayerDuplicate>>, {participantId: string;data: BodyType<DuplicateReviewBody>}> = (props) => {
+          const {participantId,data} = props ?? {};
+
+          return  reviewPlayerDuplicate(participantId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewPlayerDuplicateMutationResult = NonNullable<Awaited<ReturnType<typeof reviewPlayerDuplicate>>>
+    export type ReviewPlayerDuplicateMutationBody = BodyType<DuplicateReviewBody>
+    export type ReviewPlayerDuplicateMutationError = ErrorType<void>
+
+    /**
+ * @summary Confirm, reject, undo or reopen one duplicate pair
+ */
+export const useReviewPlayerDuplicate = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewPlayerDuplicate>>, TError,{participantId: string;data: BodyType<DuplicateReviewBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reviewPlayerDuplicate>>,
+        TError,
+        {participantId: string;data: BodyType<DuplicateReviewBody>},
+        TContext
+      > => {
+      return useMutation(getReviewPlayerDuplicateMutationOptions(options));
     }
 
 export const getCreateBillingCheckoutUrl = () => {
