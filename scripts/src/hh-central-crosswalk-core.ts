@@ -726,6 +726,128 @@ export function detectConflicts(links: PlayerLink[]): Conflict[] {
 }
 
 // ---------------------------------------------------------------------------
+// The whole matcher: match linking → per-match assignment → classification
+// ---------------------------------------------------------------------------
+
+export interface MatcherInput {
+  native: { players: NativePlayer[]; matches: NativeMatch[]; lines: NativeLine[] };
+  central: {
+    matches: CentralMatch[];
+    batting: CentralBattingRow[];
+    bowling: CentralBowlingRow[];
+    rosters: CentralRosterRow[];
+    fielding: CentralFieldingRow[];
+    players: { participantId: string; displayName: string | null }[];
+  };
+}
+
+export interface MatcherResult {
+  /** Every native player's classification, sorted by native id. */
+  playerLinks: PlayerLink[];
+  /** Conflicts across the non-fill-in links. */
+  conflicts: Conflict[];
+  assignments: LineAssignment[];
+  appIndex: CentralAppearanceIndex;
+  /** Senior native match → central match id. */
+  linkByNativeMatch: Map<number, number>;
+  nativeMatchByCentral: Map<number, number>;
+  /** Native matches whose central counterpart is a junior/unmapped grade. */
+  juniorExcludedNative: Set<number>;
+  /** Central matches that map to a senior app grade. */
+  seniorCentral: Set<number>;
+  /** Native lines that are neither fill-ins nor in a junior-excluded match. */
+  seniorLines: NativeLine[];
+  fillInLines: NativeLine[];
+}
+
+/**
+ * Run the full scorecard-evidence matcher over already-read native + central
+ * rows. Shared by the read-only diagnostic (hh-central-crosswalk.ts) and the
+ * persistence script (persist-hh-crosswalk.ts) so both classify identically.
+ */
+export function linkNativeToCentral({ native, central }: MatcherInput): MatcherResult {
+  const playerById = new Map(native.players.map((p) => [p.id, p]));
+  const links = linkMatches(native.matches, central.matches);
+  const seniorCentral = new Set(
+    central.matches.filter((m) => appGradeFromCentral(m.grade) !== null).map((m) => m.matchId),
+  );
+  const linkByNativeMatch = new Map<number, number>();
+  const nativeMatchByCentral = new Map<number, number>();
+  const juniorExcludedNative = new Set<number>();
+  for (const l of links.values()) {
+    if (!l.senior) {
+      juniorExcludedNative.add(l.nativeMatchId);
+      continue;
+    }
+    if (l.centralMatchId != null) {
+      linkByNativeMatch.set(l.nativeMatchId, l.centralMatchId);
+      nativeMatchByCentral.set(l.centralMatchId, l.nativeMatchId);
+    }
+  }
+
+  const appIndex = buildCentralAppearances(central);
+  const centralName = new Map(central.players.map((p) => [p.participantId, p.displayName]));
+
+  const fillInLines = native.lines.filter((l) => isFillIn(l.playerId));
+  const seniorLines = native.lines.filter(
+    (l) => !isFillIn(l.playerId) && !juniorExcludedNative.has(l.matchId),
+  );
+  const linesByMatch = new Map<number, NativeLine[]>();
+  for (const l of seniorLines) {
+    const arr = linesByMatch.get(l.matchId) ?? [];
+    arr.push(l);
+    linesByMatch.set(l.matchId, arr);
+  }
+
+  const assignments: LineAssignment[] = [];
+  const totalLinesByPlayer = new Map<number, number>();
+  const unlinkedLinesByPlayer = new Map<number, number>();
+  for (const [nativeMatchId, lines] of linesByMatch) {
+    const cid = linkByNativeMatch.get(nativeMatchId);
+    if (cid == null) {
+      for (const l of lines)
+        unlinkedLinesByPlayer.set(l.playerId, (unlinkedLinesByPlayer.get(l.playerId) ?? 0) + 1);
+      continue;
+    }
+    for (const l of lines)
+      totalLinesByPlayer.set(l.playerId, (totalLinesByPlayer.get(l.playerId) ?? 0) + 1);
+    const apps = [...(appIndex.byMatch.get(cid)?.values() ?? [])];
+    assignments.push(...assignMatch(nativeMatchId, cid, lines, apps, playerById, centralName));
+  }
+  const assignByPlayer = new Map<number, LineAssignment[]>();
+  for (const a of assignments) {
+    const arr = assignByPlayer.get(a.nativePlayerId) ?? [];
+    arr.push(a);
+    assignByPlayer.set(a.nativePlayerId, arr);
+  }
+
+  const playerLinks: PlayerLink[] = native.players
+    .map((p) =>
+      classifyPlayer(
+        p.id,
+        assignByPlayer.get(p.id) ?? [],
+        totalLinesByPlayer.get(p.id) ?? 0,
+        unlinkedLinesByPlayer.get(p.id) ?? 0,
+      ),
+    )
+    .sort((a, b) => a.nativePlayerId - b.nativePlayerId);
+  const conflicts = detectConflicts(playerLinks.filter((l) => l.status !== "EXCLUDED_FILL_IN"));
+
+  return {
+    playerLinks,
+    conflicts,
+    assignments,
+    appIndex,
+    linkByNativeMatch,
+    nativeMatchByCentral,
+    juniorExcludedNative,
+    seniorCentral,
+    seniorLines,
+    fillInLines,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Comparison (part 2)
 // ---------------------------------------------------------------------------
 
