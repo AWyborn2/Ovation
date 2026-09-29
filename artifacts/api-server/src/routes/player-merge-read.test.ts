@@ -19,15 +19,18 @@ import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 /**
  * Confirmed merges fold on every central read (hybrid stats plan U6, KTD2).
  *
- * Seeds a tiny central club (9701) whose one real player appears under THREE
- * PlayHQ GUIDs — A (keeper), B and C, one match each — plus a private GUID P
- * and an opposition player O at club 9702. Then walks the read surfaces as
- * central tenants with different curation:
+ * Seeds four tiny central clubs (one per test tenant — `tenants.central_club_id`
+ * is unique). The same person appears in each under THREE PlayHQ GUIDs — A
+ * (keeper), B and C, one match each — alongside a private GUID P, all against
+ * an opposition player O at club 9702. The GUIDs are the same across the clubs
+ * (a central player can play for several), so a merge made by one tenant can be
+ * checked against another tenant reading the very same GUIDs. The tenants:
  *
- *   T1: B -> A confirmed (via the admin route); C -> A suggested, then rejected
- *   T2: no merges (same central club — a merge never crosses tenants)
- *   T4: A -> B -> C confirmed (a chain folds to C)
- *   T5: P -> A confirmed (a private GUID masks the whole group)
+ *   T1 (club 9701): B -> A confirmed (via the admin route); C -> A suggested,
+ *                   then rejected
+ *   T2 (club 9703): no merges — T1's merge must never reach it
+ *   T4 (club 9704): A -> B -> C confirmed (a chain folds to C)
+ *   T5 (club 9705): P -> A confirmed (a private GUID masks the whole group)
  *
  * Real-DB integration (runs in CI's API integration job, where DATABASE_URL and
  * CENTRAL_DATABASE_URL are the same throwaway Postgres). The central rows are
@@ -48,9 +51,15 @@ const isLocalDb = (() => {
 })();
 
 const STAMP = Date.now();
-const CLUB = 9701;
+const CLUB_T1 = 9701;
 const OPP = 9702;
-const MATCHES = [970001, 970002, 970003];
+const CLUB_T2 = 9703;
+const CLUB_T4 = 9704;
+const CLUB_T5 = 9705;
+const CLUBS = [CLUB_T1, CLUB_T2, CLUB_T4, CLUB_T5];
+/** Three matches per club: club * 100 + 11..13 (970111-970113 for 9701). */
+const matchesOf = (club: number) => [1, 2, 3].map((n) => club * 100 + 10 + n);
+const ALL_MATCHES = CLUBS.flatMap(matchesOf);
 const LINE_BASE = 9_700_000;
 const A = "97000000-0000-4000-8000-00000000000a";
 const B = "97000000-0000-4000-8000-00000000000b";
@@ -59,112 +68,98 @@ const P = "97000000-0000-4000-8000-00000000000f";
 const O = "97000000-0000-4000-8000-0000000000ff";
 const GRADE = "A Grade";
 
-// (guid, match, runs, wickets) for the club side. A/B/C are one person.
+/** (guid, match index, runs, wickets) for a club side. A/B/C are one person. */
 const CLUB_LINES: [string, number, number, number][] = [
-  [A, MATCHES[0]!, 40, 2],
-  [P, MATCHES[0]!, 10, 0],
-  [B, MATCHES[1]!, 60, 3],
-  [C, MATCHES[2]!, 25, 1],
+  [A, 0, 40, 2],
+  [P, 0, 10, 0],
+  [B, 1, 60, 3],
+  [C, 2, 25, 1],
 ];
 
+type Line = { guid: string; match: number; runs: number; wkts: number; club: number };
+
 async function seedCentral(): Promise<void> {
-  await db.execute(sql`
-    insert into central.clubs (club_id, name, short_name, primary_colour, parent_club_id, lineage_role, active_from, active_to)
-    values (${CLUB}, 'Merge Test CC', 'MTCC', '#123456', null, null, '2002/03', null),
-           (${OPP}, 'Merge Opp CC', 'MOCC', '#654321', null, null, '2002/03', null)
-  `);
-  const players: [string, string, number, number][] = [
-    [A, "Ava Merge", 0, CLUB],
-    [B, "A Merge", 0, CLUB],
-    [C, "Av Merge", 0, CLUB],
-    [P, "Pat Private", 1, CLUB],
-    [O, "Olly Opp", 0, OPP],
+  const clubRows: [number, string][] = [
+    [CLUB_T1, "Merge Test One CC"],
+    [OPP, "Merge Opp CC"],
+    [CLUB_T2, "Merge Test Two CC"],
+    [CLUB_T4, "Merge Test Four CC"],
+    [CLUB_T5, "Merge Test Five CC"],
   ];
-  for (const [id, name, priv, club] of players) {
+  for (const [id, name] of clubRows) {
+    await db.execute(sql`
+      insert into central.clubs (club_id, name, short_name, primary_colour, parent_club_id, lineage_role, active_from, active_to)
+      values (${id}, ${name}, ${`M${id}`}, '#123456', null, null, '2002/03', null)
+    `);
+  }
+  const players: [string, string, number][] = [
+    [A, "Ava Merge", 0],
+    [B, "A Merge", 0],
+    [C, "Av Merge", 0],
+    [P, "Pat Private", 1],
+    [O, "Olly Opp", 0],
+  ];
+  for (const [id, name, priv] of players) {
     await db.execute(sql`
       insert into central.players (participant_id, display_name, is_private, current_club_id, first_season, last_season, matches)
-      values (${id}, ${name}, ${priv}, ${club}, '2024/25', '2024/25', 1)
+      values (${id}, ${name}, ${priv}, ${CLUB_T1}, '2024/25', '2024/25', 1)
     `);
   }
-  for (const [i, m] of MATCHES.entries()) {
-    await db.execute(sql`
-      insert into central.matches (match_id, playhq_match_id, season, grade, grade_id, comp_type, round, match_date, venue,
-        status, home_club_id, away_club_id, home_team, away_team, home_score, away_score, toss_winner_club_id, winner_club_id, result_text)
-      values (${m}, ${`merge-test-${m}`}, '2024/25', ${GRADE}, 'grade-a', 'One Day', ${String(i + 1)}, ${`2024-11-0${i + 1}`},
-        'Merge Oval', 'Completed', ${CLUB}, ${OPP}, 'Merge Test CC', 'Merge Opp CC', '5/150', '10/120', ${CLUB}, ${CLUB},
-        'Merge Test CC won')
-    `);
+
+  const lines: Line[] = [];
+  for (const club of CLUBS) {
+    const clubName = clubRows.find(([id]) => id === club)![1];
+    for (const [i, m] of matchesOf(club).entries()) {
+      await db.execute(sql`
+        insert into central.matches (match_id, playhq_match_id, season, grade, grade_id, comp_type, round, match_date, venue,
+          status, home_club_id, away_club_id, home_team, away_team, home_score, away_score, toss_winner_club_id, winner_club_id, result_text)
+        values (${m}, ${`merge-test-${m}`}, '2024/25', ${GRADE}, 'grade-a', 'One Day', ${String(i + 1)}, ${`2024-11-0${i + 1}`},
+          'Merge Oval', 'Completed', ${club}, ${OPP}, ${clubName}, 'Merge Opp CC', '5/150', '10/120', ${club}, ${club},
+          ${`${clubName} won`})
+      `);
+      lines.push({ guid: O, match: m, runs: 12, wkts: 1, club: OPP });
+    }
+    for (const [guid, i, runs, wkts] of CLUB_LINES) {
+      lines.push({ guid, match: matchesOf(club)[i]!, runs, wkts, club });
+    }
   }
+
   let id = LINE_BASE;
-  const lines: [string, number, number, number, number, string, string][] = [
-    ...CLUB_LINES.map(
-      ([g, m, r, w]) =>
-        [g, m, r, w, CLUB, "Merge Test CC", g] as [
-          string,
-          number,
-          number,
-          number,
-          number,
-          string,
-          string,
-        ],
-    ),
-    ...MATCHES.map(
-      (m) =>
-        [O, m, 12, 1, OPP, "Merge Opp CC", O] as [
-          string,
-          number,
-          number,
-          number,
-          number,
-          string,
-          string,
-        ],
-    ),
-  ];
-  for (const [guid, m, runs, wkts, club, team] of lines) {
+  for (const { guid, match, runs, wkts, club } of lines) {
+    const home = club !== OPP;
     await db.execute(sql`
       insert into central.match_batting (id, match_id, innings, club_id, team_name, bat_order, participant_id, player_name,
         runs, balls, fours, sixes, strike_rate, dismissal, dismissal_type, fielder)
-      values (${id++}, ${m}, ${club === CLUB ? 1 : 2}, ${club}, ${team}, 1, ${guid}, 'x',
+      values (${id++}, ${match}, ${home ? 1 : 2}, ${club}, 'x', 1, ${guid}, 'x',
         ${runs}, ${runs}, 0, 0, 100, 'b Bowler', 'bowled', null)
     `);
     await db.execute(sql`
       insert into central.match_bowling (id, match_id, innings, club_id, team_name, participant_id, player_name,
         overs, maidens, runs, wickets, economy, wides, no_balls)
-      values (${id++}, ${m}, ${club === CLUB ? 2 : 1}, ${club}, ${team}, ${guid}, 'x', 5, 0, 20, ${wkts}, 4, 0, 0)
+      values (${id++}, ${match}, ${home ? 2 : 1}, ${club}, 'x', ${guid}, 'x', 5, 0, 20, ${wkts}, 4, 0, 0)
     `);
     await db.execute(sql`
       insert into central.match_rosters (id, match_id, club_id, team_name, participant_id, player_name)
-      values (${id++}, ${m}, ${club}, ${team}, ${guid}, 'x')
+      values (${id++}, ${match}, ${club}, 'x', ${guid}, 'x')
     `);
   }
 }
 
 async function cleanCentral(): Promise<void> {
-  const guids = [A, B, C, P, O];
-  await db.execute(
-    sql`delete from central.match_batting where id >= ${LINE_BASE} and id < ${LINE_BASE + 1000}`,
-  );
-  await db.execute(
-    sql`delete from central.match_bowling where id >= ${LINE_BASE} and id < ${LINE_BASE + 1000}`,
-  );
-  await db.execute(
-    sql`delete from central.match_rosters where id >= ${LINE_BASE} and id < ${LINE_BASE + 1000}`,
-  );
-  await db.execute(
-    sql`delete from central.matches where match_id in (${sql.join(
-      MATCHES.map((m) => sql`${m}`),
+  const inList = (xs: (number | string)[]) =>
+    sql.join(
+      xs.map((x) => sql`${x}`),
       sql`, `,
-    )})`,
-  );
+    );
+  const range = sql`id >= ${LINE_BASE} and id < ${LINE_BASE + 10_000}`;
+  await db.execute(sql`delete from central.match_batting where ${range}`);
+  await db.execute(sql`delete from central.match_bowling where ${range}`);
+  await db.execute(sql`delete from central.match_rosters where ${range}`);
+  await db.execute(sql`delete from central.matches where match_id in (${inList(ALL_MATCHES)})`);
   await db.execute(
-    sql`delete from central.players where participant_id in (${sql.join(
-      guids.map((g) => sql`${g}`),
-      sql`, `,
-    )})`,
+    sql`delete from central.players where participant_id in (${inList([A, B, C, P, O])})`,
   );
-  await db.execute(sql`delete from central.clubs where club_id in (${CLUB}, ${OPP})`);
+  await db.execute(sql`delete from central.clubs where club_id in (${inList([...CLUBS, OPP])})`);
 }
 
 describe.skipIf(!isLocalDb)("confirmed merges fold on every central read", () => {
@@ -184,12 +179,12 @@ describe.skipIf(!isLocalDb)("confirmed merges fold on every central read", () =>
   const get = (tenantId: number, path: string) =>
     request(app).get(`/api${path}`).set(asTenant(tenantId));
 
-  async function makeTenant(label: string): Promise<number> {
+  async function makeTenant(label: string, club: number): Promise<number> {
     const [t] = await db
       .insert(tenantsTable)
       .values({
         slug: `merge-read-${label}-${STAMP}`,
-        centralClubId: CLUB,
+        centralClubId: club,
         name: `Merge Read ${label}`,
         readsFromCentral: true,
       })
@@ -231,10 +226,10 @@ describe.skipIf(!isLocalDb)("confirmed merges fold on every central read", () =>
       idOf[g] = p.id;
     }
 
-    t1 = await makeTenant("t1");
-    t2 = await makeTenant("t2");
-    t4 = await makeTenant("t4");
-    t5 = await makeTenant("t5");
+    t1 = await makeTenant("t1", CLUB_T1);
+    t2 = await makeTenant("t2", CLUB_T2);
+    t4 = await makeTenant("t4", CLUB_T4);
+    t5 = await makeTenant("t5", CLUB_T5);
     await merge(t4, A, B);
     await merge(t4, B, C);
     await merge(t5, P, A);
@@ -383,7 +378,7 @@ describe.skipIf(!isLocalDb)("confirmed merges fold on every central read", () =>
     });
   });
 
-  it("a merge never crosses tenants: the same club without merges sees two players", async () => {
+  it("a merge never crosses tenants: another tenant reading the same GUIDs sees two players", async () => {
     const rows = await directory(t2);
     expect(rows.find((r) => r.id === idOf[A])).toMatchObject({ totalRuns: 40, totalGames: 1 });
     expect(rows.find((r) => r.id === idOf[B])).toMatchObject({ totalRuns: 60, totalGames: 1 });
