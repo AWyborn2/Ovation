@@ -6,6 +6,7 @@ import {
   db,
   adminsTable,
   honourDisplaySettingsTable,
+  milestoneBoardSettingsTable,
   playerGradeStatsTable,
   playerIdMapTable,
   playersTable,
@@ -142,9 +143,16 @@ describe.skipIf(!process.env.DATABASE_URL)("honour display: stats boards are ten
     if (adminIds.length) await db.delete(adminsTable).where(inArray(adminsTable.id, adminIds));
     for (const tenantId of [centralTenantId, emptyTenantId]) {
       if (!tenantId) continue;
+      // Settings singletons the display READ lazily provisions (the honour
+      // display's own, and the milestones board's via buildMilestonesForSource).
+      // Both FK to tenants, so they must go before the tenant row — a leftover
+      // tenant on central club 2 breaks later suites' unique central_club_id.
       await db
         .delete(honourDisplaySettingsTable)
         .where(eq(honourDisplaySettingsTable.tenantId, tenantId));
+      await db
+        .delete(milestoneBoardSettingsTable)
+        .where(eq(milestoneBoardSettingsTable.tenantId, tenantId));
       await db.delete(playerIdMapTable).where(eq(playerIdMapTable.tenantId, tenantId));
       await db.delete(tenantsTable).where(eq(tenantsTable.id, tenantId));
     }
