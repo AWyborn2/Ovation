@@ -13,6 +13,7 @@ import { appGradeFromCentral, classifyCentralGrade, parseSeasonStartYear } from 
 import { centralPlayerCareers } from "./players";
 import { battingInningsKindSql } from "./scoring";
 import { inList } from "./where";
+import { canonicalizeLines, canonicalPidSql, mergesCacheArg, type CentralMerges } from "./merges";
 
 /**
  * Distinct central `matches.grade` labels for a club, with the app grade each
@@ -85,6 +86,8 @@ export async function centralGradesForSeason(
 export async function centralClubTotals(
   clubId: number,
   preloadedMatchRows?: CentralClubMatchRow[],
+  /** The tenant's confirmed merges: a merged pair counts as one player. */
+  merges?: CentralMerges,
 ): Promise<{
   players: number;
   games: number;
@@ -92,14 +95,15 @@ export async function centralClubTotals(
   wickets: number;
   grades: number;
 }> {
-  return withCentralCache(cacheKey("centralClubTotals", [clubId]), () =>
-    centralClubTotalsImpl(clubId, preloadedMatchRows),
+  return withCentralCache(cacheKey("centralClubTotals", [clubId, mergesCacheArg(merges)]), () =>
+    centralClubTotalsImpl(clubId, preloadedMatchRows, merges),
   );
 }
 
 async function centralClubTotalsImpl(
   clubId: number,
   preloadedMatchRows?: CentralClubMatchRow[],
+  merges?: CentralMerges,
 ): Promise<{
   players: number;
   games: number;
@@ -127,7 +131,7 @@ async function centralClubTotalsImpl(
     centralDb
       .select({
         games: sql<number>`count(*)::int`,
-        players: sql<number>`count(distinct nullif(${centralMatchRostersTable.participantId}, ''))::int`,
+        players: sql<number>`count(distinct nullif(${canonicalPidSql(centralMatchRostersTable.participantId, merges)}, ''))::int`,
       })
       .from(centralMatchRostersTable)
       .where(
@@ -484,13 +488,20 @@ export interface CentralDashboard {
   gradeSummaries: CentralGradeSummary[];
 }
 
-export async function centralDashboard(clubId: number): Promise<CentralDashboard> {
-  return withCentralCache(cacheKey("centralDashboard", [clubId]), () =>
-    centralDashboardImpl(clubId),
+export async function centralDashboard(
+  clubId: number,
+  /** The tenant's confirmed merges: top performers and the player count fold them. */
+  merges?: CentralMerges,
+): Promise<CentralDashboard> {
+  return withCentralCache(cacheKey("centralDashboard", [clubId, mergesCacheArg(merges)]), () =>
+    centralDashboardImpl(clubId, merges),
   );
 }
 
-async function centralDashboardImpl(clubId: number): Promise<CentralDashboard> {
+async function centralDashboardImpl(
+  clubId: number,
+  merges?: CentralMerges,
+): Promise<CentralDashboard> {
   // Fetch the club's match rows ONCE and thread them into the three aggregate
   // reads (each used to re-issue the identical matches query) and this
   // function's own fielding fetch — 4 redundant round trips saved, and the
@@ -501,9 +512,9 @@ async function centralDashboardImpl(clubId: number): Promise<CentralDashboard> {
   const matchIds = matchRows.map((m) => m.matchId);
 
   const [totals, gradeSummaries, careers, fielding] = await Promise.all([
-    centralClubTotals(clubId, matchRows),
+    centralClubTotals(clubId, matchRows, merges),
     centralGradeSummaries(clubId, matchRows),
-    centralPlayerCareers(clubId, matchRows),
+    centralPlayerCareers(clubId, matchRows, merges),
     matchIds.length
       ? centralDb
           .select({
@@ -520,7 +531,7 @@ async function centralDashboardImpl(clubId: number): Promise<CentralDashboard> {
       : Promise.resolve([]),
   ]);
   const catchesByPid = new Map<string, number>();
-  for (const f of fielding) {
+  for (const f of canonicalizeLines(fielding, merges)) {
     if (!f.participantId) continue;
     const kind = (f.kind ?? "").toLowerCase();
     if (/catch|caught|^c$/.test(kind) && !/run\s*out|stump/.test(kind)) {

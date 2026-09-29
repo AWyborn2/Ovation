@@ -175,11 +175,16 @@ export async function draftCentralAchievements(
   if (!families.achievements.enabled) return result;
 
   const { centralMatchAchievements } = await import("@workspace/db/central-queries");
-  const [achievements, identity, caps] = await Promise.all([
-    centralMatchAchievements(clubId, matchIds, TIER_THRESHOLDS),
-    loadCentralIdentity(tenantId),
-    loadCaps(tenantId),
-  ]);
+  // Confirmed merges fold into the keeper: a merged player's combined career
+  // crosses each tier once, and only in these (new) matches — history is never
+  // re-drafted (KTD8; the fold only reports crossings IN `matchIds`).
+  const [identity, caps] = await Promise.all([loadCentralIdentity(tenantId), loadCaps(tenantId)]);
+  const achievements = await centralMatchAchievements(
+    clubId,
+    matchIds,
+    TIER_THRESHOLDS,
+    identity.merges,
+  );
   const drafts = buildAchievementDrafts(achievements, identity, families, (playerId, grade) => {
     const category = GRADE_TO_CAP_CATEGORY[grade];
     return category ? (caps.get(`${category}|${playerId}`) ?? null) : null;

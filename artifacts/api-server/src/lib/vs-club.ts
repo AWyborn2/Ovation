@@ -1,16 +1,10 @@
 import { and, eq, lt } from "drizzle-orm";
 import type { z } from "zod";
-import {
-  db,
-  matchesTable,
-  matchPlayerLinesTable,
-  playerIdMapTable,
-  playersTable,
-} from "@workspace/db";
+import { db, matchesTable, matchPlayerLinesTable, playersTable } from "@workspace/db";
 import { FILL_IN_THRESHOLD, oversToBalls } from "@workspace/scorecard";
 import type { GetPlayersVsClubResponse } from "@workspace/api-zod";
 import type { DataSource } from "./tenant";
-import { resolveCuration } from "./central-curation";
+import { loadClubIdentity } from "./club-overlay";
 import type { ResolvedOpponent } from "./opponent-club";
 
 /**
@@ -226,18 +220,13 @@ export async function loadCentralVsClubRows(
   opponentClubId: number,
 ): Promise<VsClubRawRow[]> {
   const { centralVsClub, splitDisplayName } = await import("@workspace/db/central-queries");
-  const [rows, mapRows, curation] = await Promise.all([
-    centralVsClub({ clubId: source.clubId, opponentClubId }),
-    db
-      .select({
-        participantId: playerIdMapTable.participantId,
-        playerId: playerIdMapTable.playerId,
-      })
-      .from(playerIdMapTable)
-      .where(eq(playerIdMapTable.tenantId, source.tenantId)),
-    resolveCuration(source.tenantId),
-  ]);
-  const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+  const identity = await loadClubIdentity(source.tenantId);
+  const rows = await centralVsClub({
+    clubId: source.clubId,
+    opponentClubId,
+    merges: identity.merges,
+  });
+  const { intByGuid, nameByGuid } = identity;
 
   const out: VsClubRawRow[] = [];
   for (const r of rows) {
@@ -246,7 +235,7 @@ export async function loadCentralVsClubRows(
     const { participantId, displayName, ...figures } = r;
     out.push({
       playerId,
-      ...splitDisplayName(curation.nameByGuid.get(participantId) ?? displayName ?? ""),
+      ...splitDisplayName(nameByGuid.get(participantId) ?? displayName ?? ""),
       ...figures,
     });
   }

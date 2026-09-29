@@ -16,12 +16,12 @@ import {
   clubRolesTable,
   partnershipRecordsTable,
   playerGradeStatsTable,
-  playerIdMapTable,
   playersTable,
 } from "@workspace/db";
 
 import { buildMilestonesForSource } from "../../routes/milestones";
 import type { DataSource } from "../tenant";
+import { loadClubIdentity } from "../club-overlay";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { seasonLabel } from "./premierships";
 import { gradeRank } from "./shared";
@@ -287,18 +287,6 @@ export async function buildRecordsLeaderboards(tenantId: number): Promise<Honour
   return out;
 }
 
-/**
- * The tenant's crosswalk (central participant GUID -> tenant int player id),
- * resolved in the route layer per the central-read identity pattern.
- */
-async function crosswalkFor(tenantId: number): Promise<Map<string, number>> {
-  const rows = await db
-    .select({ participantId: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
-    .from(playerIdMapTable)
-    .where(eq(playerIdMapTable.tenantId, tenantId));
-  return new Map(rows.map((r) => [r.participantId, r.playerId]));
-}
-
 function recordsByGradeBoard(grade: string, entries: BoardEntry[]): HonourBoardOut {
   return {
     id: `records_grade:${grade}`,
@@ -327,14 +315,17 @@ async function buildCentralRecordsByGrade(
 ): Promise<HonourBoardOut[]> {
   const { centralClubRecords, centralGradesForSeason } =
     await import("@workspace/db/central-queries");
-  const [grades, intByGuid] = await Promise.all([
+  // The club overlay's identity: crosswalk ids with confirmed merges folded,
+  // so a merged pair holds a record as one player (KTD2).
+  const [grades, identity] = await Promise.all([
     centralGradesForSeason(source.clubId, null),
-    crosswalkFor(source.tenantId),
+    loadClubIdentity(source.tenantId),
   ]);
+  const intByGuid = identity.intByGuid;
   const perGrade = await Promise.all(
     grades.map(async (grade) => ({
       grade,
-      records: await centralClubRecords(source.clubId, { grade }),
+      records: await centralClubRecords(source.clubId, { grade }, identity.merges),
     })),
   );
 
@@ -473,10 +464,9 @@ async function buildCentralMostGames(
   source: Extract<DataSource, { kind: "central" }>,
 ): Promise<HonourBoardOut | null> {
   const { centralPlayerCareers } = await import("@workspace/db/central-queries");
-  const [careers, intByGuid] = await Promise.all([
-    centralPlayerCareers(source.clubId),
-    crosswalkFor(source.tenantId),
-  ]);
+  // Confirmed merges fold into the keeper: a merged pair's games are one career.
+  const { merges, intByGuid } = await loadClubIdentity(source.tenantId);
+  const careers = await centralPlayerCareers(source.clubId, undefined, merges);
   const rows = careers
     .filter((c) => !c.isPrivate && c.games > 0 && (c.displayName ?? "").trim() !== "")
     .map((c) => ({

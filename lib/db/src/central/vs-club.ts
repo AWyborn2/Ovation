@@ -12,6 +12,7 @@ import {
 import { cacheKey, withCentralCache } from "./cache";
 import { appGradeFromCentral, parseSeasonStartYear } from "./grades";
 import { centralOversToBalls } from "./match-innings";
+import { canonicalizeLines, mergesCacheArg, type CentralMerges } from "./merges";
 import { centralPlayerNames } from "./privacy";
 import { classifyInnings } from "./scoring";
 import { inList } from "./where";
@@ -219,17 +220,21 @@ async function matchesBetween(
 export async function centralVsClub(opts: {
   clubId: number;
   opponentClubId: number;
+  /** The tenant's confirmed merges: a merged pair is one row under the keeper. */
+  merges?: CentralMerges;
 }): Promise<CentralVsClubRow[]> {
-  const { clubId, opponentClubId } = opts;
+  const { clubId, opponentClubId, merges } = opts;
   if (clubId === opponentClubId) return [];
-  return withCentralCache(cacheKey("centralVsClub", [clubId, opponentClubId]), () =>
-    centralVsClubImpl(clubId, opponentClubId),
+  return withCentralCache(
+    cacheKey("centralVsClub", [clubId, opponentClubId, mergesCacheArg(merges)]),
+    () => centralVsClubImpl(clubId, opponentClubId, merges),
   );
 }
 
 async function centralVsClubImpl(
   clubId: number,
   opponentClubId: number,
+  merges?: CentralMerges,
 ): Promise<CentralVsClubRow[]> {
   const matchIds = vsClubSeniorMatchIds(await matchesBetween(clubId, opponentClubId));
   if (matchIds.length === 0) return [];
@@ -289,11 +294,14 @@ async function centralVsClubImpl(
 
   const rows = aggregateVsClubLines({
     matchIds,
-    batting: nn(batting),
-    bowling: nn(bowling),
-    appearances: [...nn(rosters), ...nn(fielding)],
+    batting: canonicalizeLines(nn(batting), merges),
+    bowling: canonicalizeLines(nn(bowling), merges),
+    appearances: canonicalizeLines([...nn(rosters), ...nn(fielding)], merges),
   });
-  const names = await centralPlayerNames(rows.map((x) => x.participantId));
+  const names = await centralPlayerNames(
+    rows.map((x) => x.participantId),
+    merges,
+  );
   return rows
     .filter((x) => !names.get(x.participantId)?.isPrivate)
     .map((x) => ({ ...x, displayName: names.get(x.participantId)?.displayName ?? null }));

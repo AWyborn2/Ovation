@@ -1,6 +1,7 @@
-import { eq, and, desc, asc } from "drizzle-orm";
-import { db, playersTable, playerIdMapTable } from "@workspace/db";
+import { desc, asc } from "drizzle-orm";
+import { playersTable } from "@workspace/db";
 import { getTenantId } from "../middlewares/tenant-context";
+import { loadClubIdentity } from "./club-overlay";
 
 /**
  * Shared helpers for the players routes: central-name splitting, directory
@@ -35,20 +36,18 @@ export function getPlayerOrderCol(sortBy: string | undefined, sortOrder: string 
 }
 
 /**
- * Resolve a central tenant's int player id to the participant GUID, or null
- * when the id isn't in this tenant's crosswalk. Central-tenant int ids overlap
- * the native players.id range, so the native tables must NEVER be queried with
- * a central tenant's id — resolve via player_id_map or 404.
+ * Resolve a central tenant's int player id to that player's participant GUIDs
+ * — the keeper first, then every GUID a confirmed merge folds into it — or null
+ * when the id isn't in this tenant's crosswalk. A merged-away player's id
+ * resolves to its keeper's group (KTD2). Central-tenant int ids overlap the
+ * native players.id range, so the native tables must NEVER be queried with a
+ * central tenant's id — resolve via player_id_map or 404.
  */
-export async function centralParticipantFor(
+export async function centralPlayerGroupFor(
   req: Parameters<typeof getTenantId>[0],
   playerId: number,
-): Promise<string | null> {
-  const [mapRow] = await db
-    .select({ participantId: playerIdMapTable.participantId })
-    .from(playerIdMapTable)
-    .where(
-      and(eq(playerIdMapTable.tenantId, getTenantId(req)), eq(playerIdMapTable.playerId, playerId)),
-    );
-  return mapRow?.participantId ?? null;
+): Promise<string[] | null> {
+  const identity = await loadClubIdentity(getTenantId(req));
+  const keeper = identity.guidForPlayerId(playerId);
+  return keeper === null ? null : identity.membersOf(keeper);
 }

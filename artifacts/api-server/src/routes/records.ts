@@ -1,15 +1,10 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, inArray } from "drizzle-orm";
-import {
-  db,
-  awardsTable,
-  awardWinnersTable,
-  clubRolesTable,
-  playerIdMapTable,
-} from "@workspace/db";
+import { db, awardsTable, awardWinnersTable, clubRolesTable } from "@workspace/db";
 import { GetRecordLeadersQueryParams, GetRecordProgressionQueryParams } from "@workspace/api-zod";
 import { dataSource, shouldReadCentral } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
+import { loadClubIdentity } from "../lib/club-overlay";
 import {
   formatRecordValue,
   rankLeaders,
@@ -196,15 +191,6 @@ router.get("/records-leaderboards", async (req, res): Promise<void> => {
 // `/records` exactly) and nothing registers a `/records/:param` route.
 // ---------------------------------------------------------------------------
 
-/** GUID → tenant int, from the tenant's player_id_map crosswalk. */
-async function crosswalk(tenantId: number): Promise<Map<string, number>> {
-  const rows = await db
-    .select({ participantId: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
-    .from(playerIdMapTable)
-    .where(eq(playerIdMapTable.tenantId, tenantId));
-  return new Map(rows.map((m) => [m.participantId, m.playerId]));
-}
-
 router.get("/records/leaders", async (req, res): Promise<void> => {
   const query = GetRecordLeadersQueryParams.safeParse(req.query);
   if (!query.success) {
@@ -217,10 +203,9 @@ router.get("/records/leaders", async (req, res): Promise<void> => {
 
   if (source.kind === "central") {
     const { centralRecordLeaders } = await import("@workspace/db/central-queries");
-    const [rows, intByGuid] = await Promise.all([
-      centralRecordLeaders(source.clubId, metric, filter),
-      crosswalk(source.tenantId),
-    ]);
+    // Confirmed merges fold into the keeper, so a merged pair ranks once.
+    const { merges, intByGuid } = await loadClubIdentity(source.tenantId);
+    const rows = await centralRecordLeaders(source.clubId, metric, filter, merges);
     const entries = rankLeaders(rows, limit).map((r) => ({
       rank: r.rank,
       playerId: intByGuid.get(r.participantId) ?? 0,
@@ -259,10 +244,8 @@ router.get("/records/progression", async (req, res): Promise<void> => {
 
   if (source.kind === "central") {
     const { centralRecordProgressionRows } = await import("@workspace/db/central-queries");
-    const [rows, intByGuid] = await Promise.all([
-      centralRecordProgressionRows(source.clubId, kind, grade),
-      crosswalk(source.tenantId),
-    ]);
+    const { merges, intByGuid } = await loadClubIdentity(source.tenantId);
+    const rows = await centralRecordProgressionRows(source.clubId, kind, grade, merges);
     const points = walkProgression(
       kind,
       rows.map((r) => ({

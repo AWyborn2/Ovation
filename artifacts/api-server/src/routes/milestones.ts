@@ -9,7 +9,6 @@ import {
   playersTable,
   playerGradeSeasonStatsTable,
   capRegisterTable,
-  playerIdMapTable,
 } from "@workspace/db";
 import { CAP_CATEGORY_TO_GRADE } from "../lib/cap-sync";
 import {
@@ -19,7 +18,7 @@ import {
   type DataSource,
 } from "../lib/tenant";
 
-import { resolveCuration } from "../lib/central-curation";
+import { loadClubIdentity } from "../lib/club-overlay";
 import { getOrCreateSettings } from "../lib/settings";
 import { logger } from "../lib/logger";
 import { withMilestonesCache } from "../lib/milestones-cache";
@@ -364,28 +363,21 @@ async function buildCentralMilestones(
     runs: settings?.runsTiers ?? DEFAULT_RUNS_TIERS,
     wickets: settings?.wicketsTiers ?? DEFAULT_WICKETS_TIERS,
   };
-  const [raw, mapRows, curation] = await Promise.all([
+  // Confirmed merges fold into the keeper, so a merged player's combined career
+  // crosses each tier once.
+  const identity = await loadClubIdentity(tenantId);
+  const raw = await optionalSection(
     // The one remote dependency on this path. A central outage should cost the
     // milestone items, not the whole homepage board — and because a degraded
     // build is never cached, it recovers on the next request.
-    optionalSection(
-      "central_milestones",
-      health,
-      async () => centralMilestones(clubId, tiers),
-      [] as Awaited<ReturnType<typeof centralMilestones>>,
-    ),
-    db
-      .select({
-        participantId: playerIdMapTable.participantId,
-        playerId: playerIdMapTable.playerId,
-      })
-      .from(playerIdMapTable)
-      .where(eq(playerIdMapTable.tenantId, tenantId)),
-    resolveCuration(tenantId),
-  ]);
-  const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+    "central_milestones",
+    health,
+    async () => centralMilestones(clubId, tiers, identity.merges),
+    [] as Awaited<ReturnType<typeof centralMilestones>>,
+  );
+  const intByGuid = identity.intByGuid;
   const nameFor = (participantId: string, displayName: string | null): string =>
-    curation.nameByGuid.get(participantId) ?? displayName ?? "Unknown";
+    identity.nameFor(participantId, displayName) ?? "Unknown";
 
   const items: MilestoneItem[] = raw.map((m) => {
     if (m.kind === "career") {

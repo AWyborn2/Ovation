@@ -32,14 +32,14 @@ import {
   SetDefaultPlayerImageParams,
   GetPlayersVsClubQueryParams,
 } from "@workspace/api-zod";
-import { playerIdMapTable } from "@workspace/db";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireNativeStatsTenant } from "../middlewares/require-native-stats-tenant";
 import { recomputeAggregates } from "../lib/recompute";
 import { dataSource, NATIVE_STATS_TENANT_ID } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
 import { taggedPlayerPhotoUrl, withLibraryPhotos } from "../lib/club-photo-library";
-import { splitCentralName, getPlayerOrderCol, centralParticipantFor } from "../lib/player-helpers";
+import { splitCentralName, getPlayerOrderCol, centralPlayerGroupFor } from "../lib/player-helpers";
+import { loadClubIdentity } from "../lib/club-overlay";
 import { classifyDismissal } from "../lib/dismissal-parse";
 import { oversToBalls } from "@workspace/scorecard";
 import { resolveOpponentClub } from "../lib/opponent-club";
@@ -68,23 +68,16 @@ router.get("/players", async (req, res): Promise<void> => {
 
   // Per-tenant data source: central tenants get the directory from the central
   // PCA DB filtered to their club, with central GUIDs translated to this tenant's
-  // int ids via player_id_map (so /players/:id links stay int-based). Native
+  // int ids via player_id_map (so /players/:id links stay int-based) and the
+  // club's confirmed merges folded into one row per player (KTD2). Native
   // tenants fall through to the unchanged tenant query below.
   const source = await dataSource(req);
   if (source.kind === "central") {
     const { centralPlayerCareers } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
-    const [careers, mapRows] = await Promise.all([
-      centralPlayerCareers(source.clubId),
-      db
-        .select({
-          participantId: playerIdMapTable.participantId,
-          playerId: playerIdMapTable.playerId,
-        })
-        .from(playerIdMapTable)
-        .where(eq(playerIdMapTable.tenantId, tenantId)),
-    ]);
-    const intByGuid = new Map(mapRows.map((m) => [m.participantId, m.playerId]));
+    const identity = await loadClubIdentity(tenantId);
+    const careers = await centralPlayerCareers(source.clubId, undefined, identity.merges);
+    const intByGuid = identity.intByGuid;
 
     let rows = careers
       // Privacy: private players are excluded from the directory. Unmapped GUIDs
@@ -137,8 +130,13 @@ router.get("/players", async (req, res): Promise<void> => {
       return a.surname.localeCompare(b.surname) * dir;
     });
 
+    // A merged player's photos may be tagged on a merged-away id.
+    const aliasesOf = (id: number) => {
+      const keeper = identity.guidForPlayerId(id);
+      return keeper === null ? [] : identity.intsOf(keeper).filter((x) => x !== id);
+    };
     res.json({
-      players: await withLibraryPhotos(getTenantId(req), rows.slice(offset, offset + lim)),
+      players: await withLibraryPhotos(tenantId, rows.slice(offset, offset + lim), aliasesOf),
       total: rows.length,
       page: Number(page),
       limit: lim,
@@ -259,25 +257,26 @@ router.get("/players/:id", async (req, res): Promise<void> => {
   }
 
   // Per-tenant data source: central tenants resolve the int id → GUID via
-  // player_id_map, then read that player's central per-grade career. Awards
-  // aren't central, so they come back empty; premierships come from the
-  // tenant's own board, whose seeded team lists carry the participant GUID.
+  // player_id_map, then read that player's central per-grade career. A
+  // merged-away id resolves to its keeper, and the career covers every GUID in
+  // the confirmed merge group (KTD2). Premierships come from the tenant's own
+  // board (seeded team lists carry the participant GUID); awards from its award
+  // winners, linked by any of the group's ids.
   const source = await dataSource(req);
   if (source.kind === "central") {
     const { centralPlayerDetail } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
-    const [mapRow] = await db
-      .select({ participantId: playerIdMapTable.participantId })
-      .from(playerIdMapTable)
-      .where(
-        and(eq(playerIdMapTable.tenantId, tenantId), eq(playerIdMapTable.playerId, params.data.id)),
-      );
-    if (!mapRow) {
+    const identity = await loadClubIdentity(tenantId);
+    const keeper = identity.guidForPlayerId(params.data.id);
+    if (keeper === null) {
       res.status(404).json({ error: "Player not found" });
       return;
     }
-    const [detail, premRows] = await Promise.all([
-      centralPlayerDetail(source.clubId, mapRow.participantId),
+    const members = identity.membersOf(keeper);
+    const groupIds = identity.intsOf(keeper);
+    const playerId = identity.intByGuid.get(keeper) ?? params.data.id;
+    const [detail, premRows, awardRows] = await Promise.all([
+      centralPlayerDetail(source.clubId, members),
       db
         .select({
           id: premiershipsTable.id,
@@ -298,10 +297,29 @@ router.get("/players/:id", async (req, res): Promise<void> => {
         .where(
           and(
             eq(premiershipsTable.tenantId, tenantId),
-            eq(premiershipPlayersTable.participantId, mapRow.participantId),
+            inArray(premiershipPlayersTable.participantId, members),
           ),
         )
         .orderBy(desc(premiershipsTable.year), asc(premiershipsTable.grade)),
+      // Published awards (both the award and the winner row), this tenant only.
+      db
+        .select({
+          key: awardsTable.key,
+          title: awardsTable.title,
+          season: awardWinnersTable.season,
+        })
+        .from(awardWinnersTable)
+        .innerJoin(awardsTable, eq(awardsTable.id, awardWinnersTable.awardId))
+        .where(
+          and(
+            eq(awardWinnersTable.tenantId, tenantId),
+            eq(awardsTable.tenantId, tenantId),
+            inArray(awardWinnersTable.playerId, groupIds),
+            eq(awardWinnersTable.published, true),
+            eq(awardsTable.published, true),
+          ),
+        )
+        .orderBy(asc(awardsTable.displayOrder), desc(awardWinnersTable.season)),
     ]);
     if (!detail || detail.isPrivate) {
       res.status(404).json({ error: "Player not found" });
@@ -312,7 +330,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
         ? splitCentralName(detail.displayName)
         : { givenName: "", surname: "" };
     res.json({
-      id: params.data.id,
+      id: playerId,
       surname: name.surname,
       givenName: name.givenName,
       gradesPlayed: detail.grades.join(","),
@@ -321,7 +339,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
       totalWickets: detail.wickets,
       deceased: false,
       imageUrl: null,
-      libraryPhotoUrl: await taggedPlayerPhotoUrl(tenantId, params.data.id),
+      libraryPhotoUrl: await taggedPlayerPhotoUrl(tenantId, groupIds),
       cardRole: null,
       cardRating: null,
       isFillIn: false,
@@ -332,12 +350,12 @@ router.get("/players/:id", async (req, res): Promise<void> => {
       seasonsPlayed: null,
       stats: detail.stats.map((s) => ({
         ...s,
-        playerId: params.data.id,
+        playerId,
         surname: name.surname,
         givenName: name.givenName,
       })),
       premierships: premRows,
-      awards: [],
+      awards: awardRows,
     });
     return;
   }
@@ -444,12 +462,12 @@ router.get("/players/:id/seasons", async (req, res): Promise<void> => {
   const source = await dataSource(req);
   if (source.kind === "central") {
     const { centralPlayerSeasons } = await import("@workspace/db/central-queries");
-    const participantId = await centralParticipantFor(req, params.data.id);
-    if (!participantId) {
+    const group = await centralPlayerGroupFor(req, params.data.id);
+    if (!group) {
       res.status(404).json({ error: "Player not found" });
       return;
     }
-    res.json(await centralPlayerSeasons(source.clubId, participantId));
+    res.json(await centralPlayerSeasons(source.clubId, group));
     return;
   }
 
@@ -567,12 +585,12 @@ router.get("/players/:id/matches", async (req, res): Promise<void> => {
   const source = await dataSource(req);
   if (source.kind === "central") {
     const { centralPlayerMatchLog } = await import("@workspace/db/central-queries");
-    const participantId = await centralParticipantFor(req, params.data.id);
-    if (!participantId) {
+    const group = await centralPlayerGroupFor(req, params.data.id);
+    if (!group) {
       res.status(404).json({ error: "Player not found" });
       return;
     }
-    const log = await centralPlayerMatchLog(source.clubId, participantId);
+    const log = await centralPlayerMatchLog(source.clubId, group);
     res.json(
       log.map(({ inningsLines, ...row }) => ({
         ...row,
