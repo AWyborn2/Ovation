@@ -186,6 +186,23 @@ export function appGradeFromCentral(centralGrade: string | null): string | null 
 }
 
 /**
+ * True when `grade` is an app grade a SENIOR central read can produce — the
+ * guard the club overlay (hybrid stats plan U10, R8) applies to club history
+ * rows, which carry a free-text app grade rather than a central label. A grade
+ * is senior when the classifier maps it to itself ("A Grade", "Female B
+ * Grade", "1st Grade", "Colts" …); junior / pathway / unmapped labels ("Under
+ * 15", "Female C Grade") and un-normalised aliases ("Ladies T20", which is
+ * stored as "Female B Grade") are not. "T20" is the one app grade the
+ * classifier only reaches through a longer WA label, so it is listed.
+ */
+export function isSeniorAppGrade(grade: string | null | undefined): boolean {
+  if (!grade) return false;
+  const g = grade.trim();
+  if (g === "T20") return true;
+  return appGradeFromCentral(g) === g;
+}
+
+/**
  * True when a central `matches.season` text (e.g. "Summer 2002/03") belongs to
  * the app's integer start-year season (2002). Used only by the optional
  * season-scoped comparison; the live endpoint aggregates all seasons (career).

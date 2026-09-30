@@ -2,7 +2,7 @@ import type { Request } from "express";
 import { desc, eq } from "drizzle-orm";
 import { db, playerGradeStatsTable, type PlayerGradeStat } from "@workspace/db";
 import { dataSource, type DataSource } from "./tenant";
-import { loadClubIdentity } from "./club-overlay";
+import { buildClubStats, clubGradeLeaderboard, loadClubOverlay } from "./club-overlay";
 
 /**
  * The per-grade career leaderboard (every player's aggregate for one grade),
@@ -21,7 +21,14 @@ export async function loadGradeLeaderboardForSource(
   if (source.kind === "central") {
     const { centralGradeLeaderboard } = await import("@workspace/db/central-queries");
     const { tenantId, clubId } = source;
-    const identity = await loadClubIdentity(tenantId);
+    const overlay = await loadClubOverlay(tenantId);
+    const identity = overlay.identity;
+    if (overlay.active) {
+      // Club overlay (U10): history before the boundary, central from it on,
+      // corrections applied; no layer at all keeps the original read below.
+      const stats = await buildClubStats(overlay, tenantId, clubId);
+      return clubGradeLeaderboard(stats, grade, { nameByGuid: identity.nameByGuid });
+    }
     return centralGradeLeaderboard(grade, {
       clubId,
       intByGuid: identity.intByGuid,

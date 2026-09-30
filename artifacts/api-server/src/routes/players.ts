@@ -41,7 +41,14 @@ import { dataSource, NATIVE_STATS_TENANT_ID } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
 import { taggedPlayerPhotoUrl, withLibraryPhotos } from "../lib/club-photo-library";
 import { splitCentralName, getPlayerOrderCol, centralPlayerGroupFor } from "../lib/player-helpers";
-import { loadClubIdentity } from "../lib/club-overlay";
+import {
+  buildClubStats,
+  clubCareers,
+  clubPlayerDetail,
+  clubPlayerSeasons,
+  loadClubOverlay,
+  overlayKeyForPlayerId,
+} from "../lib/club-overlay";
 import { classifyDismissal } from "../lib/dismissal-parse";
 import { oversToBalls } from "@workspace/scorecard";
 import { resolveOpponentClub } from "../lib/opponent-club";
@@ -77,9 +84,15 @@ router.get("/players", async (req, res): Promise<void> => {
   if (source.kind === "central") {
     const { centralPlayerCareers } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
-    const identity = await loadClubIdentity(tenantId);
-    const careers = await centralPlayerCareers(source.clubId, undefined, identity.merges);
-    const intByGuid = identity.intByGuid;
+    // The club overlay (U10): with a boundary, club history or corrections the
+    // careers come from the overlay; without, the original central read.
+    const overlay = await loadClubOverlay(tenantId);
+    const identity = overlay.identity;
+    const stats = overlay.active ? await buildClubStats(overlay, tenantId, source.clubId) : null;
+    const careers = stats
+      ? clubCareers(stats)
+      : await centralPlayerCareers(source.clubId, undefined, identity.merges);
+    const intByGuid = stats ? stats.intByGuid : identity.intByGuid;
 
     let rows = careers
       // Privacy: private players are excluded from the directory. Unmapped GUIDs
@@ -268,17 +281,22 @@ router.get("/players/:id", async (req, res): Promise<void> => {
   if (source.kind === "central") {
     const { centralPlayerDetail } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
-    const identity = await loadClubIdentity(tenantId);
-    const keeper = identity.guidForPlayerId(params.data.id);
+    const overlay = await loadClubOverlay(tenantId);
+    const identity = overlay.identity;
+    // A history-only player (no crosswalk row) resolves to its overlay key.
+    const keeper = overlayKeyForPlayerId(overlay, params.data.id);
     if (keeper === null) {
       res.status(404).json({ error: "Player not found" });
       return;
     }
     const members = identity.membersOf(keeper);
-    const groupIds = identity.intsOf(keeper);
+    const owned = identity.intsOf(keeper);
+    const groupIds = owned.length > 0 ? owned : [params.data.id];
     const playerId = identity.intByGuid.get(keeper) ?? params.data.id;
     const [detail, premRows, awardRows] = await Promise.all([
-      centralPlayerDetail(source.clubId, members),
+      overlay.active
+        ? buildClubStats(overlay, tenantId, source.clubId).then((s) => clubPlayerDetail(s, keeper))
+        : centralPlayerDetail(source.clubId, members),
       db
         .select({
           id: premiershipsTable.id,
@@ -473,6 +491,20 @@ router.get("/players/:id/seasons", async (req, res): Promise<void> => {
   const source = await dataSource(req);
   if (source.kind === "central") {
     const { centralPlayerSeasons } = await import("@workspace/db/central-queries");
+    const tenantId = getTenantId(req);
+    const overlay = await loadClubOverlay(tenantId);
+    if (overlay.active) {
+      // Club overlay (U10): pre-boundary seasons from club history, the
+      // boundary season on from central, corrections applied.
+      const key = overlayKeyForPlayerId(overlay, params.data.id);
+      if (key === null) {
+        res.status(404).json({ error: "Player not found" });
+        return;
+      }
+      const stats = await buildClubStats(overlay, tenantId, source.clubId);
+      res.json(clubPlayerSeasons(stats, key));
+      return;
+    }
     const group = await centralPlayerGroupFor(req, params.data.id);
     if (!group) {
       res.status(404).json({ error: "Player not found" });
