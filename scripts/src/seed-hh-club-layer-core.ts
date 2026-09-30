@@ -595,7 +595,7 @@ export function readCsvRows(text: string): string[][] {
   let row: string[] = [];
   let cell = "";
   let quoted = false;
-  const s = text.replace(/^﻿/, "");
+  const s = text.replace(/^\uFEFF/, "");
   for (let i = 0; i < s.length; i++) {
     const ch = s[i]!;
     if (quoted) {
