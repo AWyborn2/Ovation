@@ -155,6 +155,13 @@
       "when": 1790740554224,
       "tag": "0021_club_history_store",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790743703959,
+      "tag": "0022_club_history_curated_rows",
+      "breakpoints": true
     }
   ]
 }

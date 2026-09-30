@@ -202,6 +202,51 @@ export const clubHistoryBoundariesTable = pgTable(
   }),
 );
 
+/**
+ * Curated tables a history import can write honours into (KTD4): an award it
+ * had to create, an award winner, a century, a five-wicket haul, a club record.
+ */
+export const CLUB_HISTORY_CURATED_TARGETS = [
+  "award",
+  "award_winner",
+  "century",
+  "five_wicket_haul",
+  "club_record",
+] as const;
+export type ClubHistoryCuratedTarget = (typeof CLUB_HISTORY_CURATED_TARGETS)[number];
+
+/**
+ * Which curated rows a history batch created (hybrid stats plan U11, KTD4,
+ * migration 0022). Imported honours land in the EXISTING curated tables so
+ * they show on the pages clubs already use; this tag is how undo finds and
+ * removes exactly those rows (and nothing an admin added by hand). The tags
+ * cascade with their batch, so undo deletes the curated rows FIRST, then the
+ * batch.
+ */
+export const clubHistoryCuratedRowsTable = pgTable(
+  "club_history_curated_rows",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    batchId: integer("batch_id")
+      .notNull()
+      .references(() => clubHistoryBatchesTable.id, { onDelete: "cascade" }),
+    /** Which curated table `row_id` is in. */
+    target: text("target").$type<ClubHistoryCuratedTarget>().notNull(),
+    /** The curated row's id in that table (no FK: it spans several tables). */
+    rowId: integer("row_id").notNull(),
+  },
+  (t) => ({
+    idxTenant: index("club_history_curated_rows_tenant_idx").on(t.tenantId),
+    idxBatch: index("club_history_curated_rows_batch_idx").on(t.batchId),
+    uqTargetRow: unique("club_history_curated_rows_target_row_unique").on(t.target, t.rowId),
+    chkTarget: check(
+      "club_history_curated_rows_target_check",
+      sql`"target" IN ('award', 'award_winner', 'century', 'five_wicket_haul', 'club_record')`,
+    ),
+  }),
+);
+
 export type ClubHistoryBatch = typeof clubHistoryBatchesTable.$inferSelect;
 export type ClubHistoryBatchCoverage = typeof clubHistoryBatchCoverageTable.$inferSelect;
 export type ClubHistoryRow = typeof clubHistoryRowsTable.$inferSelect;

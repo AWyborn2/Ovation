@@ -75,3 +75,4 @@ export const db: Db = lazyProxy(getDb);
 export const pool: pg.Pool = lazyProxy(getPool);
 
 export * from "./schema";
+export * from "./player-id-mint";

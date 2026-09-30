@@ -125,6 +125,13 @@ const CONSTRAINTS: ConstraintSpec[] = [
     columns: ["tenant_id", "grade"],
     nullsNotDistinct: true,
   },
+  // History import curated-row tags (migration 0022, U11): a curated row is
+  // tagged by at most one batch.
+  {
+    table: "club_history_curated_rows",
+    name: "club_history_curated_rows_target_row_unique",
+    columns: ["target", "row_id"],
+  },
 ];
 
 /** CHECK constraints for the comment-only value sets (plan.md §5.4). */
@@ -195,6 +202,11 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     table: "club_history_rows",
     name: "club_history_rows_player_id_check",
     sql: `"player_id" > 0`,
+  },
+  {
+    table: "club_history_curated_rows",
+    name: "club_history_curated_rows_target_check",
+    sql: `"target" IN ('award', 'award_winner', 'century', 'five_wicket_haul', 'club_record')`,
   },
   {
     table: "club_history_boundaries",
@@ -365,6 +377,7 @@ const INDEXES: { name: string; table: string; columns: string[] }[] = [
     "club_history_batch_coverage",
     "club_history_rows",
     "club_corrections",
+    "club_history_curated_rows",
   ].map((table) => ({ name: `${table}_tenant_idx`, table, columns: ["tenant_id"] })),
 ];
 

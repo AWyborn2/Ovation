@@ -2026,6 +2026,193 @@ export interface AdminResetIssued {
   created: boolean;
 }
 
+/**
+ * career = career totals per player and grade (with first / last season); season = season totals; match = one player's line in one match; honours = awards, centuries, five-wicket hauls and club records.
+ */
+export type HistoryImportTemplate = typeof HistoryImportTemplate[keyof typeof HistoryImportTemplate];
+
+
+export const HistoryImportTemplate = {
+  career: 'career',
+  season: 'season',
+  match: 'match',
+  honours: 'honours',
+} as const;
+
+export interface HistoryImportPreviewBody {
+  /** The CSV file */
+  file: Blob;
+  template: HistoryImportTemplate;
+}
+
+export interface HistoryImportCommitBody {
+  /** The same CSV file that was previewed */
+  file: Blob;
+  template: HistoryImportTemplate;
+  /** Admin-facing name for the batch, e.g. "1985–2002 career totals (club book)". */
+  label: string;
+  note?: string;
+  /** JSON object of confirmed span links: imported player key -> the suggested tenant player id to join. Omit or "{}" for none. */
+  links?: string;
+}
+
+export interface HistoryRowIssue {
+  /** Spreadsheet row number (the header is row 1). */
+  row: number;
+  column?: string;
+  message: string;
+}
+
+export interface HistoryCoverage {
+  grade: string;
+  /**
+     * Season start year (2003 = 2003/04); null = career totals.
+     * @nullable
+     */
+  season: number | null;
+}
+
+export interface HistoryCareerDelta {
+  games: number;
+  innings: number;
+  notOuts: number;
+  runs: number;
+  /** @nullable */
+  highScore: number | null;
+  ballsBowled: number;
+  runsConceded: number;
+  wickets: number;
+  fifties: number;
+  hundreds: number;
+  fiveWickets: number;
+  catches: number;
+  stumpings: number;
+  runOuts: number;
+}
+
+/**
+ * A central player of this club, or an earlier import's pre-digital player.
+ */
+export type HistorySpanSuggestionKind = typeof HistorySpanSuggestionKind[keyof typeof HistorySpanSuggestionKind];
+
+
+export const HistorySpanSuggestionKind = {
+  central: 'central',
+  history: 'history',
+} as const;
+
+export interface HistorySpanSuggestion {
+  /** The tenant player id the rows would join. */
+  playerId: number;
+  participantId: string;
+  /** @nullable */
+  displayName: string | null;
+  /** A central player of this club, or an earlier import's pre-digital player. */
+  kind: HistorySpanSuggestionKind;
+  /** @nullable */
+  firstSeason: number | null;
+  /** @nullable */
+  lastSeason: number | null;
+  reason: string;
+}
+
+export interface HistoryPreviewPlayer {
+  /** The player's key in this file (use it in commit `links`). */
+  key: string;
+  name: string;
+  rows: number[];
+  grades: string[];
+  firstSeason: number;
+  lastSeason: number;
+  delta: HistoryCareerDelta;
+  suggestions: HistorySpanSuggestion[];
+}
+
+export type HistoryPreviewHonourType = typeof HistoryPreviewHonourType[keyof typeof HistoryPreviewHonourType];
+
+
+export const HistoryPreviewHonourType = {
+  award: 'award',
+  century: 'century',
+  five_wickets: 'five_wickets',
+  club_record: 'club_record',
+} as const;
+
+export interface HistoryPreviewHonour {
+  row: number;
+  type: HistoryPreviewHonourType;
+  name: string;
+  /** @nullable */
+  title: string | null;
+  /** @nullable */
+  season: number | null;
+  /** @nullable */
+  grade: string | null;
+  /** @nullable */
+  detail: string | null;
+  /**
+     * The club player linked by an exact, unique name match (else null).
+     * @nullable
+     */
+  playerId: number | null;
+  /** @nullable */
+  linkedName: string | null;
+}
+
+export interface HistoryImportPreview {
+  template: HistoryImportTemplate;
+  rowCount: number;
+  errors: HistoryRowIssue[];
+  warnings: HistoryRowIssue[];
+  coverage: HistoryCoverage[];
+  players: HistoryPreviewPlayer[];
+  honours: HistoryPreviewHonour[];
+}
+
+export interface HistoryImportCommitResult {
+  batchId: number;
+  rows: number;
+  honours: number;
+  linkedPlayers: number;
+  newPlayers: number;
+  coverage: HistoryCoverage[];
+}
+
+export interface HistoryImportBatch {
+  id: number;
+  label: string;
+  source: string;
+  /** @nullable */
+  note: string | null;
+  /** @nullable */
+  createdBy: string | null;
+  createdAt: string;
+  rows: number;
+  honours: number;
+  coverage: HistoryCoverage[];
+}
+
+export interface HistoryImportUndoResult {
+  batchId: number;
+  rowsRemoved: number;
+  honoursRemoved: number;
+  playersRemoved: number;
+}
+
+export interface HistoryBoundary {
+  /**
+     * App grade; null = the club default.
+     * @nullable
+     */
+  grade: string | null;
+  /** First season central supplies (2003 = 2003/04). */
+  startSeason: number;
+}
+
+export interface ReplaceHistoryBoundariesBody {
+  boundaries: HistoryBoundary[];
+}
+
 export interface PasswordResetInfo {
   username: string;
   displayName: string;

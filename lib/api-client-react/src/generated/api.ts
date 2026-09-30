@@ -135,6 +135,14 @@ import type {
   GradeDistribution,
   GradeSummary,
   HealthStatus,
+  HistoryBoundary,
+  HistoryImportBatch,
+  HistoryImportCommitBody,
+  HistoryImportCommitResult,
+  HistoryImportPreview,
+  HistoryImportPreviewBody,
+  HistoryImportTemplate,
+  HistoryImportUndoResult,
   HonourBoard,
   HonourBoardInput,
   HonourBoardOverride,
@@ -254,6 +262,7 @@ import type {
   RecordsDisplaySettingsUpdate,
   RecordsLeaderboards,
   RemovePhotoBackgroundRequest,
+  ReplaceHistoryBoundariesBody,
   RoundUpInput,
   SaveCardPhotoRulesRequest,
   SaveDraftTemplateRequest,
@@ -22664,6 +22673,538 @@ export const useIssueTenantAdminReset = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getIssueTenantAdminResetMutationOptions(options));
+    }
+
+export const getGetHistoryImportTemplateUrl = (template: HistoryImportTemplate,) => {
+
+
+
+
+  return `/api/platform/admin/history-import/templates/${template}`
+}
+
+/**
+ * @summary Download a club history CSV template (every column, one example row): career totals, season totals, match scorecards or honours.
+ */
+export const getHistoryImportTemplate = async (template: HistoryImportTemplate, options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getGetHistoryImportTemplateUrl(template),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetHistoryImportTemplateQueryKey = (template: HistoryImportTemplate,) => {
+    return [
+    `/api/platform/admin/history-import/templates/${template}`
+    ] as const;
+    }
+
+
+export const getGetHistoryImportTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getHistoryImportTemplate>>, TError = ErrorType<void>>(template: HistoryImportTemplate, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHistoryImportTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetHistoryImportTemplateQueryKey(template);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getHistoryImportTemplate>>> = ({ signal }) => getHistoryImportTemplate(template, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(template), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getHistoryImportTemplate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetHistoryImportTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getHistoryImportTemplate>>>
+export type GetHistoryImportTemplateQueryError = ErrorType<void>
+
+
+/**
+ * @summary Download a club history CSV template (every column, one example row): career totals, season totals, match scorecards or honours.
+ */
+
+export function useGetHistoryImportTemplate<TData = Awaited<ReturnType<typeof getHistoryImportTemplate>>, TError = ErrorType<void>>(
+ template: HistoryImportTemplate, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getHistoryImportTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetHistoryImportTemplateQueryOptions(template,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPreviewTenantHistoryImportUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/history-import/preview`
+}
+
+/**
+ * @summary Validate a club history CSV and preview it (hybrid stats plan U11). Writes nothing. Reports every problem with its spreadsheet row number, each imported player's career delta, and span suggestions (a central player of the club whose first season is adjacent to the boundary) — suggestions only, never linked unless confirmed at commit.
+ */
+export const previewTenantHistoryImport = async (id: number,
+    historyImportPreviewBody: HistoryImportPreviewBody, options?: RequestInit): Promise<HistoryImportPreview> => {
+    const formData = new FormData();
+formData.append(`file`, historyImportPreviewBody.file);
+formData.append(`template`, historyImportPreviewBody.template);
+
+  return customFetch<HistoryImportPreview>(getPreviewTenantHistoryImportUrl(id),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getPreviewTenantHistoryImportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewTenantHistoryImport>>, TError,{id: number;data: BodyType<HistoryImportPreviewBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewTenantHistoryImport>>, TError,{id: number;data: BodyType<HistoryImportPreviewBody>}, TContext> => {
+
+const mutationKey = ['previewTenantHistoryImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewTenantHistoryImport>>, {id: number;data: BodyType<HistoryImportPreviewBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  previewTenantHistoryImport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewTenantHistoryImportMutationResult = NonNullable<Awaited<ReturnType<typeof previewTenantHistoryImport>>>
+    export type PreviewTenantHistoryImportMutationBody = BodyType<HistoryImportPreviewBody>
+    export type PreviewTenantHistoryImportMutationError = ErrorType<void>
+
+    /**
+ * @summary Validate a club history CSV and preview it (hybrid stats plan U11). Writes nothing. Reports every problem with its spreadsheet row number, each imported player's career delta, and span suggestions (a central player of the club whose first season is adjacent to the boundary) — suggestions only, never linked unless confirmed at commit.
+ */
+export const usePreviewTenantHistoryImport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewTenantHistoryImport>>, TError,{id: number;data: BodyType<HistoryImportPreviewBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewTenantHistoryImport>>,
+        TError,
+        {id: number;data: BodyType<HistoryImportPreviewBody>},
+        TContext
+      > => {
+      return useMutation(getPreviewTenantHistoryImportMutationOptions(options));
+    }
+
+export const getCommitTenantHistoryImportUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/history-import/commit`
+}
+
+/**
+ * @summary Import a club history CSV as one batch. The file is validated again; confirmed span links join rows to the central player's id, every other player becomes a pre-digital player. Honours rows go into the club's curated tables. Never drafts social cards.
+ */
+export const commitTenantHistoryImport = async (id: number,
+    historyImportCommitBody: HistoryImportCommitBody, options?: RequestInit): Promise<HistoryImportCommitResult> => {
+    const formData = new FormData();
+formData.append(`file`, historyImportCommitBody.file);
+formData.append(`template`, historyImportCommitBody.template);
+formData.append(`label`, historyImportCommitBody.label);
+if(historyImportCommitBody.note !== undefined) {
+ formData.append(`note`, historyImportCommitBody.note);
+ }
+if(historyImportCommitBody.links !== undefined) {
+ formData.append(`links`, historyImportCommitBody.links);
+ }
+
+  return customFetch<HistoryImportCommitResult>(getCommitTenantHistoryImportUrl(id),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getCommitTenantHistoryImportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitTenantHistoryImport>>, TError,{id: number;data: BodyType<HistoryImportCommitBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof commitTenantHistoryImport>>, TError,{id: number;data: BodyType<HistoryImportCommitBody>}, TContext> => {
+
+const mutationKey = ['commitTenantHistoryImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof commitTenantHistoryImport>>, {id: number;data: BodyType<HistoryImportCommitBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  commitTenantHistoryImport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CommitTenantHistoryImportMutationResult = NonNullable<Awaited<ReturnType<typeof commitTenantHistoryImport>>>
+    export type CommitTenantHistoryImportMutationBody = BodyType<HistoryImportCommitBody>
+    export type CommitTenantHistoryImportMutationError = ErrorType<void>
+
+    /**
+ * @summary Import a club history CSV as one batch. The file is validated again; confirmed span links join rows to the central player's id, every other player becomes a pre-digital player. Honours rows go into the club's curated tables. Never drafts social cards.
+ */
+export const useCommitTenantHistoryImport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitTenantHistoryImport>>, TError,{id: number;data: BodyType<HistoryImportCommitBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof commitTenantHistoryImport>>,
+        TError,
+        {id: number;data: BodyType<HistoryImportCommitBody>},
+        TContext
+      > => {
+      return useMutation(getCommitTenantHistoryImportMutationOptions(options));
+    }
+
+export const getListTenantHistoryBatchesUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/history-import/batches`
+}
+
+/**
+ * @summary The club's history import batches, newest first.
+ */
+export const listTenantHistoryBatches = async (id: number, options?: RequestInit): Promise<HistoryImportBatch[]> => {
+
+  return customFetch<HistoryImportBatch[]>(getListTenantHistoryBatchesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTenantHistoryBatchesQueryKey = (id: number,) => {
+    return [
+    `/api/platform/admin/tenants/${id}/history-import/batches`
+    ] as const;
+    }
+
+
+export const getListTenantHistoryBatchesQueryOptions = <TData = Awaited<ReturnType<typeof listTenantHistoryBatches>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTenantHistoryBatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTenantHistoryBatchesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTenantHistoryBatches>>> = ({ signal }) => listTenantHistoryBatches(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTenantHistoryBatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTenantHistoryBatchesQueryResult = NonNullable<Awaited<ReturnType<typeof listTenantHistoryBatches>>>
+export type ListTenantHistoryBatchesQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club's history import batches, newest first.
+ */
+
+export function useListTenantHistoryBatches<TData = Awaited<ReturnType<typeof listTenantHistoryBatches>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTenantHistoryBatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTenantHistoryBatchesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUndoTenantHistoryBatchUrl = (id: number,
+    batchId: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/history-import/batches/${batchId}`
+}
+
+/**
+ * @summary Undo a history batch: its rows and coverage, the curated honours rows it created, and any pre-digital player it created that nothing else uses.
+ */
+export const undoTenantHistoryBatch = async (id: number,
+    batchId: number, options?: RequestInit): Promise<HistoryImportUndoResult> => {
+
+  return customFetch<HistoryImportUndoResult>(getUndoTenantHistoryBatchUrl(id,batchId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getUndoTenantHistoryBatchMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof undoTenantHistoryBatch>>, TError,{id: number;batchId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof undoTenantHistoryBatch>>, TError,{id: number;batchId: number}, TContext> => {
+
+const mutationKey = ['undoTenantHistoryBatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof undoTenantHistoryBatch>>, {id: number;batchId: number}> = (props) => {
+          const {id,batchId} = props ?? {};
+
+          return  undoTenantHistoryBatch(id,batchId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UndoTenantHistoryBatchMutationResult = NonNullable<Awaited<ReturnType<typeof undoTenantHistoryBatch>>>
+
+    export type UndoTenantHistoryBatchMutationError = ErrorType<void>
+
+    /**
+ * @summary Undo a history batch: its rows and coverage, the curated honours rows it created, and any pre-digital player it created that nothing else uses.
+ */
+export const useUndoTenantHistoryBatch = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof undoTenantHistoryBatch>>, TError,{id: number;batchId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof undoTenantHistoryBatch>>,
+        TError,
+        {id: number;batchId: number},
+        TContext
+      > => {
+      return useMutation(getUndoTenantHistoryBatchMutationOptions(options));
+    }
+
+export const getGetTenantHistoryBoundariesUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/history-import/boundaries`
+}
+
+/**
+ * @summary The club's pre-digital boundaries: the first season central supplies, as a club default (grade null) plus per-grade overrides.
+ */
+export const getTenantHistoryBoundaries = async (id: number, options?: RequestInit): Promise<HistoryBoundary[]> => {
+
+  return customFetch<HistoryBoundary[]>(getGetTenantHistoryBoundariesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTenantHistoryBoundariesQueryKey = (id: number,) => {
+    return [
+    `/api/platform/admin/tenants/${id}/history-import/boundaries`
+    ] as const;
+    }
+
+
+export const getGetTenantHistoryBoundariesQueryOptions = <TData = Awaited<ReturnType<typeof getTenantHistoryBoundaries>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTenantHistoryBoundaries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTenantHistoryBoundariesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTenantHistoryBoundaries>>> = ({ signal }) => getTenantHistoryBoundaries(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTenantHistoryBoundaries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTenantHistoryBoundariesQueryResult = NonNullable<Awaited<ReturnType<typeof getTenantHistoryBoundaries>>>
+export type GetTenantHistoryBoundariesQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club's pre-digital boundaries: the first season central supplies, as a club default (grade null) plus per-grade overrides.
+ */
+
+export function useGetTenantHistoryBoundaries<TData = Awaited<ReturnType<typeof getTenantHistoryBoundaries>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTenantHistoryBoundaries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTenantHistoryBoundariesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getReplaceTenantHistoryBoundariesUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/history-import/boundaries`
+}
+
+/**
+ * @summary Replace the club's boundaries. Seasons before a grade's boundary come only from club history and central seasons before it stop counting, so this changes the club's public numbers.
+ */
+export const replaceTenantHistoryBoundaries = async (id: number,
+    replaceHistoryBoundariesBody: ReplaceHistoryBoundariesBody, options?: RequestInit): Promise<HistoryBoundary[]> => {
+
+  return customFetch<HistoryBoundary[]>(getReplaceTenantHistoryBoundariesUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      replaceHistoryBoundariesBody,)
+  }
+);}
+
+
+
+
+export const getReplaceTenantHistoryBoundariesMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof replaceTenantHistoryBoundaries>>, TError,{id: number;data: BodyType<ReplaceHistoryBoundariesBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof replaceTenantHistoryBoundaries>>, TError,{id: number;data: BodyType<ReplaceHistoryBoundariesBody>}, TContext> => {
+
+const mutationKey = ['replaceTenantHistoryBoundaries'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof replaceTenantHistoryBoundaries>>, {id: number;data: BodyType<ReplaceHistoryBoundariesBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  replaceTenantHistoryBoundaries(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReplaceTenantHistoryBoundariesMutationResult = NonNullable<Awaited<ReturnType<typeof replaceTenantHistoryBoundaries>>>
+    export type ReplaceTenantHistoryBoundariesMutationBody = BodyType<ReplaceHistoryBoundariesBody>
+    export type ReplaceTenantHistoryBoundariesMutationError = ErrorType<void>
+
+    /**
+ * @summary Replace the club's boundaries. Seasons before a grade's boundary come only from club history and central seasons before it stop counting, so this changes the club's public numbers.
+ */
+export const useReplaceTenantHistoryBoundaries = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof replaceTenantHistoryBoundaries>>, TError,{id: number;data: BodyType<ReplaceHistoryBoundariesBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof replaceTenantHistoryBoundaries>>,
+        TError,
+        {id: number;data: BodyType<ReplaceHistoryBoundariesBody>},
+        TContext
+      > => {
+      return useMutation(getReplaceTenantHistoryBoundariesMutationOptions(options));
     }
 
 export const getGetSocialLadderPrefillUrl = (params: GetSocialLadderPrefillParams,) => {
