@@ -9394,6 +9394,181 @@ export const IssueTenantAdminResetBody = zod.object({
 
 
 /**
+ * @summary Download a club history CSV template (every column, one example row): career totals, season totals, match scorecards or honours.
+ */
+export const GetHistoryImportTemplateParams = zod.object({
+  "template": zod.enum(['career', 'season', 'match', 'honours'])
+})
+
+
+/**
+ * @summary Validate a club history CSV and preview it (hybrid stats plan U11). Writes nothing. Reports every problem with its spreadsheet row number, each imported player's career delta, and span suggestions (a central player of the club whose first season is adjacent to the boundary) — suggestions only, never linked unless confirmed at commit.
+ */
+export const PreviewTenantHistoryImportParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const PreviewTenantHistoryImportBody = zod.object({
+  "file": zod.instanceof(File).describe('The CSV file'),
+  "template": zod.enum(['career', 'season', 'match', 'honours']).describe('career = career totals per player and grade (with first \/ last season); season = season totals; match = one player\'s line in one match; honours = awards, centuries, five-wicket hauls and club records.')
+})
+
+export const PreviewTenantHistoryImportResponse = zod.object({
+  "template": zod.enum(['career', 'season', 'match', 'honours']).describe('career = career totals per player and grade (with first \/ last season); season = season totals; match = one player\'s line in one match; honours = awards, centuries, five-wicket hauls and club records.'),
+  "rowCount": zod.number(),
+  "errors": zod.array(zod.object({
+  "row": zod.number().describe('Spreadsheet row number (the header is row 1).'),
+  "column": zod.string().optional(),
+  "message": zod.string()
+})),
+  "warnings": zod.array(zod.object({
+  "row": zod.number().describe('Spreadsheet row number (the header is row 1).'),
+  "column": zod.string().optional(),
+  "message": zod.string()
+})),
+  "coverage": zod.array(zod.object({
+  "grade": zod.string(),
+  "season": zod.number().nullable().describe('Season start year (2003 = 2003\/04); null = career totals.')
+})),
+  "players": zod.array(zod.object({
+  "key": zod.string().describe('The player\'s key in this file (use it in commit `links`).'),
+  "name": zod.string(),
+  "rows": zod.array(zod.number()),
+  "grades": zod.array(zod.string()),
+  "firstSeason": zod.number(),
+  "lastSeason": zod.number(),
+  "delta": zod.object({
+  "games": zod.number(),
+  "innings": zod.number(),
+  "notOuts": zod.number(),
+  "runs": zod.number(),
+  "highScore": zod.number().nullable(),
+  "ballsBowled": zod.number(),
+  "runsConceded": zod.number(),
+  "wickets": zod.number(),
+  "fifties": zod.number(),
+  "hundreds": zod.number(),
+  "fiveWickets": zod.number(),
+  "catches": zod.number(),
+  "stumpings": zod.number(),
+  "runOuts": zod.number()
+}),
+  "suggestions": zod.array(zod.object({
+  "playerId": zod.number().describe('The tenant player id the rows would join.'),
+  "participantId": zod.string(),
+  "displayName": zod.string().nullable(),
+  "kind": zod.enum(['central', 'history']).describe('A central player of this club, or an earlier import\'s pre-digital player.'),
+  "firstSeason": zod.number().nullable(),
+  "lastSeason": zod.number().nullable(),
+  "reason": zod.string()
+}))
+})),
+  "honours": zod.array(zod.object({
+  "row": zod.number(),
+  "type": zod.enum(['award', 'century', 'five_wickets', 'club_record']),
+  "name": zod.string(),
+  "title": zod.string().nullable(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "detail": zod.string().nullable(),
+  "playerId": zod.number().nullable().describe('The club player linked by an exact, unique name match (else null).'),
+  "linkedName": zod.string().nullable()
+}))
+})
+
+
+/**
+ * @summary Import a club history CSV as one batch. The file is validated again; confirmed span links join rows to the central player's id, every other player becomes a pre-digital player. Honours rows go into the club's curated tables. Never drafts social cards.
+ */
+export const CommitTenantHistoryImportParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CommitTenantHistoryImportBody = zod.object({
+  "file": zod.instanceof(File).describe('The same CSV file that was previewed'),
+  "template": zod.enum(['career', 'season', 'match', 'honours']).describe('career = career totals per player and grade (with first \/ last season); season = season totals; match = one player\'s line in one match; honours = awards, centuries, five-wicket hauls and club records.'),
+  "label": zod.string().describe('Admin-facing name for the batch, e.g. \"1985–2002 career totals (club book)\".'),
+  "note": zod.string().optional(),
+  "links": zod.string().optional().describe('JSON object of confirmed span links: imported player key -> the suggested tenant player id to join. Omit or \"{}\" for none.')
+})
+
+
+/**
+ * @summary The club's history import batches, newest first.
+ */
+export const ListTenantHistoryBatchesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListTenantHistoryBatchesResponseItem = zod.object({
+  "id": zod.number(),
+  "label": zod.string(),
+  "source": zod.string(),
+  "note": zod.string().nullable(),
+  "createdBy": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "rows": zod.number(),
+  "honours": zod.number(),
+  "coverage": zod.array(zod.object({
+  "grade": zod.string(),
+  "season": zod.number().nullable().describe('Season start year (2003 = 2003\/04); null = career totals.')
+}))
+})
+export const ListTenantHistoryBatchesResponse = zod.array(ListTenantHistoryBatchesResponseItem)
+
+
+/**
+ * @summary Undo a history batch: its rows and coverage, the curated honours rows it created, and any pre-digital player it created that nothing else uses.
+ */
+export const UndoTenantHistoryBatchParams = zod.object({
+  "id": zod.coerce.number(),
+  "batchId": zod.coerce.number()
+})
+
+export const UndoTenantHistoryBatchResponse = zod.object({
+  "batchId": zod.number(),
+  "rowsRemoved": zod.number(),
+  "honoursRemoved": zod.number(),
+  "playersRemoved": zod.number()
+})
+
+
+/**
+ * @summary The club's pre-digital boundaries: the first season central supplies, as a club default (grade null) plus per-grade overrides.
+ */
+export const GetTenantHistoryBoundariesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetTenantHistoryBoundariesResponseItem = zod.object({
+  "grade": zod.string().nullable().describe('App grade; null = the club default.'),
+  "startSeason": zod.number().describe('First season central supplies (2003 = 2003\/04).')
+})
+export const GetTenantHistoryBoundariesResponse = zod.array(GetTenantHistoryBoundariesResponseItem)
+
+
+/**
+ * @summary Replace the club's boundaries. Seasons before a grade's boundary come only from club history and central seasons before it stop counting, so this changes the club's public numbers.
+ */
+export const ReplaceTenantHistoryBoundariesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ReplaceTenantHistoryBoundariesBody = zod.object({
+  "boundaries": zod.array(zod.object({
+  "grade": zod.string().nullable().describe('App grade; null = the club default.'),
+  "startSeason": zod.number().describe('First season central supplies (2003 = 2003\/04).')
+}))
+})
+
+export const ReplaceTenantHistoryBoundariesResponseItem = zod.object({
+  "grade": zod.string().nullable().describe('App grade; null = the club default.'),
+  "startSeason": zod.number().describe('First season central supplies (2003 = 2003\/04).')
+})
+export const ReplaceTenantHistoryBoundariesResponse = zod.array(ReplaceTenantHistoryBoundariesResponseItem)
+
+
+/**
  * Reads the central `ladder` table (all-time cumulative per grade; it has no season/points/position columns, so `points` and `pos` are derived and `season` does not currently filter). One row per club (folded grade labels deduped). Empty grade returns [].
  * @summary Ladder card (A7) prefill — grade standings from the central PCA ladder, with the tenant's own club row flagged. Admin + socialStudio entitlement.
  */
