@@ -17,6 +17,7 @@ import { clearMilestonesCache } from "../lib/milestones-cache";
 import { resetClubOverlayTableProbe } from "../lib/club-overlay";
 import { sweepCentralMatches } from "../lib/draft-sweep";
 import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
+import { invalidateTenantConfigCache } from "../lib/tenant";
 
 /**
  * Club corrections admin API (hybrid stats plan U16; R15, KTD7, KTD8).
@@ -24,9 +25,9 @@ import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
  * Tenant A reads central club 9861; tenant B reads 9863. Central (all 2024/25
  * unless noted):
  *
- *   M1  A v OPP, A Grade   — Ann (A) bats 40, takes a catch; Fay (A) only
- *                            fields (a catch); Ross (A) is on the team sheet
- *                            only; Olly bats for OPP.
+ *   M1  A v OPP, A Grade   — Ann (A) bats 40, takes a catch; Fay (A, a
+ *                            PRIVATE player) only fields (a catch); Ross (A)
+ *                            is on the team sheet only; Olly bats for OPP.
  *   M2  A v OPP, Under 15  — Ann bats 200 (junior: never correctable).
  *   M3  B v OPP, A Grade   — not A's match.
  *   M5  A v OPP, 2002/03   — Ann bats 20: before A's 2003 boundary.
@@ -37,7 +38,11 @@ import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
  * (never born stale), junior and pre-boundary matches are refused, the list
  * shows stale corrections with U10's reason, a re-correction replaces the
  * current one, the actor is recorded, corrections never draft social cards or
- * move the sweep watermark (KTD8), and a missing table is a clear 503.
+ * move the sweep watermark (KTD8), and a missing table is a clear 503. Also:
+ * the club admin sees a private player's real name on these admin endpoints
+ * while the public player pages keep hiding them, and the status endpoint
+ * tells a club still on its own native stats that corrections won't reach its
+ * public pages yet.
  *
  * Real-DB integration (CI's API job: DATABASE_URL and CENTRAL_DATABASE_URL are
  * the same throwaway Postgres, migrations applied). The central rows are
@@ -84,15 +89,15 @@ async function seedCentral(): Promise<void> {
       values (${id}, ${name}, ${`C${id}`}, '#123456', null, null, '2002/03', null)
     `);
   }
-  for (const [id, name] of [
-    [ANN, "Ann Able"],
-    [FAY, "Fay Fielder"],
-    [ROSS, "Ross Roster"],
-    [OLLY, "Olly Opp"],
+  for (const [id, name, isPrivate] of [
+    [ANN, "Ann Able", 0],
+    [FAY, "Fay Fielder", 1],
+    [ROSS, "Ross Roster", 0],
+    [OLLY, "Olly Opp", 0],
   ] as const) {
     await db.execute(sql`
       insert into central.players (participant_id, display_name, is_private, current_club_id, first_season, last_season, matches)
-      values (${id}, ${name}, 0, ${CLUB_A}, '2002/03', '2024/25', 1)
+      values (${id}, ${name}, ${isPrivate}, ${CLUB_A}, '2002/03', '2024/25', 1)
     `);
   }
   const matches: [number, string, string, number, number, string][] = [
@@ -178,6 +183,7 @@ describe.skipIf(!isLocalDb)("club corrections admin (tenant-scoped)", () => {
     };
     return {
       list: () => h(request(app).get("/api/club-corrections")),
+      status: () => h(request(app).get("/api/club-corrections/status")),
       search: (q = "") =>
         h(request(app).get(`/api/club-corrections/matches?q=${encodeURIComponent(q)}`)),
       match: (m: number) => h(request(app).get(`/api/club-corrections/matches/${m}`)),
@@ -210,14 +216,14 @@ describe.skipIf(!isLocalDb)("club corrections admin (tenant-scoped)", () => {
         .where(eq(socialSettingsTable.tenantId, tenantId))
     )[0]?.w ?? null;
 
-  async function makeTenant(label: string, club: number): Promise<number> {
+  async function makeTenant(label: string, club: number, readsFromCentral = true): Promise<number> {
     const [row] = await db
       .insert(tenantsTable)
       .values({
         slug: `club-corrections-${label}-${STAMP}`,
         centralClubId: club,
         name: `Club Corrections ${label}`,
-        readsFromCentral: true,
+        readsFromCentral,
       })
       .returning();
     return row.id;
@@ -269,6 +275,7 @@ describe.skipIf(!isLocalDb)("club corrections admin (tenant-scoped)", () => {
   it("refuses anyone who isn't the club's own admin", async () => {
     for (const client of [as(a), as(a, cookieB)]) {
       await client.list().expect(401);
+      await client.status().expect(401);
       await client.search().expect(401);
       await client.match(M1).expect(401);
       await client.create(annRuns()).expect(401);
@@ -480,6 +487,66 @@ describe.skipIf(!isLocalDb)("club corrections admin (tenant-scoped)", () => {
     expect(row!.removedAt).not.toBeNull();
     expect(row!.removedBy).toBe("admin:owner-a");
     await A().remove(annId).expect(404);
+  });
+
+  it("status: a central club's corrections reach its public pages", async () => {
+    expect((await A().status().expect(200)).body).toEqual({ appliedToPublicPages: true });
+  });
+
+  it("status: a club still on its own native stats is told corrections won't show yet", async () => {
+    // Flip tenant A to "still on its own native stats" (like Halls Head today)
+    // for this test only: central_club_id is unique, so a second tenant can't
+    // share club A.
+    await db.update(tenantsTable).set({ readsFromCentral: false }).where(eq(tenantsTable.id, a));
+    invalidateTenantConfigCache(a);
+    try {
+      expect((await A().status().expect(200)).body).toEqual({ appliedToPublicPages: false });
+      // Saving is not blocked: the native club's admin can still open matches.
+      await A().match(M1).expect(200);
+    } finally {
+      await db.update(tenantsTable).set({ readsFromCentral: true }).where(eq(tenantsTable.id, a));
+      invalidateTenantConfigCache(a);
+    }
+  });
+
+  it("the club admin sees a private player's real name on the corrections screen", async () => {
+    const res = await A().match(M1).expect(200);
+    const fay = (
+      res.body.lines as { participantId: string; displayName: string | null; isPrivate: boolean }[]
+    ).find((l) => l.participantId === FAY)!;
+    expect(fay).toMatchObject({ displayName: "Fay Fielder", isPrivate: true });
+
+    const created = await A()
+      .create({
+        playhqMatchId: phq(M1),
+        participantId: FAY,
+        field: "catches",
+        previousValue: 1,
+        newValue: 2,
+      })
+      .expect(201);
+    expect(created.body).toMatchObject({ displayName: "Fay Fielder", isPrivate: true });
+    try {
+      const list = (await A().list().expect(200)).body as {
+        id: number;
+        displayName: string | null;
+        isPrivate: boolean;
+      }[];
+      expect(list.find((c) => c.id === created.body.id)).toMatchObject({
+        displayName: "Fay Fielder",
+        isPrivate: true,
+      });
+
+      // Regression: the public player pages still hide her, exactly as before.
+      await request(app).get("/api/players/702").set("x-tenant-id", String(a)).expect(404);
+      const directory = await request(app)
+        .get("/api/players")
+        .set("x-tenant-id", String(a))
+        .expect(200);
+      expect(JSON.stringify(directory.body)).not.toContain("Fielder");
+    } finally {
+      await A().remove(created.body.id).expect(204);
+    }
   });
 
   it("gives a clear 503 when the corrections table is missing", async () => {

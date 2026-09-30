@@ -9,6 +9,7 @@ import type { ClubCorrectionFigure } from './clubCorrectionFigure';
 
 export interface ClubCorrectionLine {
   participantId: string;
+  /** The player's real name, shown to the club admin even when the player is private (public pages keep hiding private players) */
   displayName: string | null;
   isPrivate: boolean;
   figures: ClubCorrectionFigure[];

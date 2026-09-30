@@ -88,6 +88,7 @@ import type {
   ClubCorrectionBody,
   ClubCorrectionMatch,
   ClubCorrectionMatchDetail,
+  ClubCorrectionsStatus,
   ClubPhoto,
   ClubRecords,
   ClubRole,
@@ -18186,6 +18187,84 @@ export const useCreateClubCorrection = <TError = ErrorType<void>,
       > => {
       return useMutation(getCreateClubCorrectionMutationOptions(options));
     }
+
+export const getGetClubCorrectionsStatusUrl = () => {
+
+
+
+
+  return `/api/club-corrections/status`
+}
+
+/**
+ * Corrections apply on read to the association data. A club still reading its own native stats (not yet switched to association data) can save corrections, but they only appear on its public pages once the club switches; the admin screen shows a notice when `appliedToPublicPages` is false.
+ * @summary Whether the club's corrections reach its public pages yet (admin)
+ */
+export const getClubCorrectionsStatus = async ( options?: RequestInit): Promise<ClubCorrectionsStatus> => {
+
+  return customFetch<ClubCorrectionsStatus>(getGetClubCorrectionsStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClubCorrectionsStatusQueryKey = () => {
+    return [
+    `/api/club-corrections/status`
+    ] as const;
+    }
+
+
+export const getGetClubCorrectionsStatusQueryOptions = <TData = Awaited<ReturnType<typeof getClubCorrectionsStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubCorrectionsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClubCorrectionsStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClubCorrectionsStatus>>> = ({ signal }) => getClubCorrectionsStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClubCorrectionsStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClubCorrectionsStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getClubCorrectionsStatus>>>
+export type GetClubCorrectionsStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Whether the club's corrections reach its public pages yet (admin)
+ */
+
+export function useGetClubCorrectionsStatus<TData = Awaited<ReturnType<typeof getClubCorrectionsStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubCorrectionsStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClubCorrectionsStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getRemoveClubCorrectionUrl = (id: number,) => {
 
