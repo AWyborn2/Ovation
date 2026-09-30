@@ -14,6 +14,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
+import { assertPlayerInTenantSpace } from "../lib/curated-player-space";
 
 const router: IRouter = Router();
 
@@ -149,6 +150,7 @@ router.post(
       res.status(400).json({ error: body.error.message });
       return;
     }
+    await assertPlayerInTenantSpace(getTenantId(req), body.data.playerId);
     const values = {
       tenantId: getTenantId(req),
       boardKey: params.data.key,
@@ -157,18 +159,38 @@ router.post(
       hidden: body.data.hidden ?? false,
       note: body.data.note ?? "",
     };
-    const [row] = await db
-      .insert(honourBoardOverridesTable)
-      .values(values)
-      .onConflictDoUpdate({
-        target: [honourBoardOverridesTable.boardKey, honourBoardOverridesTable.playerId],
-        set: {
-          pinned: values.pinned,
-          hidden: values.hidden,
-          note: values.note,
-        },
-      })
-      .returning();
+    // One override per (tenant, board, player): another club's override for
+    // the same board key and player id is a different row (U8, R17). Written as
+    // update-else-insert rather than ON CONFLICT (cols) so it works against
+    // both the old global (board_key, player_id) index and migration 0020's
+    // per-tenant one — the code can deploy before the migration is applied.
+    const own = and(
+      eq(honourBoardOverridesTable.tenantId, values.tenantId),
+      eq(honourBoardOverridesTable.boardKey, values.boardKey),
+      eq(honourBoardOverridesTable.playerId, values.playerId),
+    );
+    const update = () =>
+      db
+        .update(honourBoardOverridesTable)
+        .set({ pinned: values.pinned, hidden: values.hidden, note: values.note })
+        .where(own)
+        .returning();
+    let [row] = await update();
+    if (!row) {
+      [row] = await db
+        .insert(honourBoardOverridesTable)
+        .values(values)
+        .onConflictDoNothing()
+        .returning();
+      // Lost a race with a concurrent insert of the same override: update it.
+      if (!row) [row] = await update();
+    }
+    if (!row) {
+      // Only reachable before migration 0020: the old global index holds
+      // another club's override for this board key and player id.
+      res.status(409).json({ error: "Override could not be saved; try again" });
+      return;
+    }
     res.json(row);
   },
 );

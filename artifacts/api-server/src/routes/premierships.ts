@@ -16,6 +16,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
+import { assertPlayerInTenantSpace } from "../lib/curated-player-space";
 import { isCentralTenant, NATIVE_STATS_TENANT_ID } from "../lib/tenant";
 import { loadClubIdentity } from "../lib/club-overlay";
 
@@ -392,6 +393,10 @@ router.post(
     }
     const tenantId = getTenantId(req);
     const players: PlayerInput[] = parsed.data.players ?? [];
+    await assertPlayerInTenantSpace(
+      tenantId,
+      players.map((p) => p.playerId),
+    );
     const stored = await toStoredPlayers(tenantId, await isCentralTenant(req), players);
     const created = await db.transaction(async (tx) => {
       const [prem] = await tx
@@ -451,6 +456,12 @@ router.patch(
       eq(premiershipsTable.id, params.data.id),
       eq(premiershipsTable.tenantId, tenantId),
     );
+    if (players !== undefined) {
+      await assertPlayerInTenantSpace(
+        tenantId,
+        players.map((p) => p.playerId),
+      );
+    }
     const stored =
       players !== undefined
         ? await toStoredPlayers(tenantId, await isCentralTenant(req), players)

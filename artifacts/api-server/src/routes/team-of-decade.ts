@@ -15,6 +15,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
+import { assertPlayerInTenantSpace } from "../lib/curated-player-space";
 
 const router: IRouter = Router();
 
@@ -188,6 +189,7 @@ router.post(
       res.status(404).json({ error: "Board not found" });
       return;
     }
+    await assertPlayerInTenantSpace(tenantId, body.data.playerId);
     const [row] = await db
       .insert(teamOfDecadeMembersTable)
       .values({
@@ -222,6 +224,7 @@ router.patch(
       res.status(400).json({ error: body.error.message });
       return;
     }
+    await assertPlayerInTenantSpace(getTenantId(req), body.data.playerId);
     const [row] = await db
       .update(teamOfDecadeMembersTable)
       .set(body.data)

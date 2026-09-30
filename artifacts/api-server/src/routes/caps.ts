@@ -11,6 +11,7 @@ import { CreateCapBody, UpdateCapBody, UpdateCapParams, DeleteCapParams } from "
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
+import { assertPlayerInTenantSpace, curatedIdsAreNative } from "../lib/curated-player-space";
 import { CAP_CATEGORY_TO_GRADE, recomputeCapsFromStats } from "../lib/cap-sync";
 
 const router: IRouter = Router();
@@ -33,6 +34,7 @@ router.get("/caps", async (req, res): Promise<void> => {
  * no match record, with cap number as the tiebreak.
  */
 router.get("/caps/debutants", async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
   const caps = await db
     .select({
       capNumber: capRegisterTable.capNumber,
@@ -41,21 +43,26 @@ router.get("/caps/debutants", async (req, res): Promise<void> => {
       playerId: capRegisterTable.playerId,
     })
     .from(capRegisterTable)
-    .where(
-      and(eq(capRegisterTable.tenantId, getTenantId(req)), isNotNull(capRegisterTable.playerId)),
-    );
+    .where(and(eq(capRegisterTable.tenantId, tenantId), isNotNull(capRegisterTable.playerId)));
 
+  // Debut dates come from the NATIVE match history, which holds only Halls
+  // Head's players. Another club's cap ids are its own crosswalk ids (U8), so
+  // reading them against native lines would date its caps by whichever Halls
+  // Head player shares the integer — leave them undated instead.
+  const native = await curatedIdsAreNative(tenantId);
   const grades = Object.values(CAP_CATEGORY_TO_GRADE);
-  const lines = await db
-    .select({
-      playerId: matchPlayerLinesTable.playerId,
-      grade: matchesTable.grade,
-      season: matchesTable.season,
-      round: matchesTable.round,
-    })
-    .from(matchPlayerLinesTable)
-    .innerJoin(matchesTable, eq(matchesTable.id, matchPlayerLinesTable.matchId))
-    .where(inArray(matchesTable.grade, grades));
+  const lines = !native
+    ? []
+    : await db
+        .select({
+          playerId: matchPlayerLinesTable.playerId,
+          grade: matchesTable.grade,
+          season: matchesTable.season,
+          round: matchesTable.round,
+        })
+        .from(matchPlayerLinesTable)
+        .innerJoin(matchesTable, eq(matchesTable.id, matchPlayerLinesTable.matchId))
+        .where(inArray(matchesTable.grade, grades));
 
   // Earliest (season, round) per (playerId, grade) from the permanent history.
   // Skip lines missing a season/round — they can't be ordered as a debut date.
@@ -73,15 +80,17 @@ router.get("/caps/debutants", async (req, res): Promise<void> => {
   // established player who merely appears in an imported match. A match record
   // only dates a debut when the player has NO prior games in that grade before
   // that season (seeded baseline rows carry season = NULL = pre-records career).
-  const snapshots = await db
-    .select({
-      playerId: playerGradeSeasonStatsTable.playerId,
-      grade: playerGradeSeasonStatsTable.grade,
-      season: playerGradeSeasonStatsTable.season,
-      games: playerGradeSeasonStatsTable.games,
-    })
-    .from(playerGradeSeasonStatsTable)
-    .where(inArray(playerGradeSeasonStatsTable.grade, grades));
+  const snapshots = !native
+    ? []
+    : await db
+        .select({
+          playerId: playerGradeSeasonStatsTable.playerId,
+          grade: playerGradeSeasonStatsTable.grade,
+          season: playerGradeSeasonStatsTable.season,
+          games: playerGradeSeasonStatsTable.games,
+        })
+        .from(playerGradeSeasonStatsTable)
+        .where(inArray(playerGradeSeasonStatsTable.grade, grades));
 
   const snapsByKey = new Map<string, { season: number | null; games: number }[]>();
   for (const s of snapshots) {
@@ -144,6 +153,9 @@ router.post(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
+    await assertPlayerInTenantSpace(getTenantId(req), parsed.data.playerId);
+    // Cached games come from the native stats, which are Halls Head's alone.
+    const nativeStats = await curatedIdsAreNative(getTenantId(req));
     try {
       const category = parsed.data.category ?? "male";
       const playerId = parsed.data.playerId ?? null;
@@ -165,7 +177,7 @@ router.post(
         // A cap created already linked to a player should immediately reflect that
         // player's real grade games / on-record status from the existing stats,
         // rather than the (often 0) hand-entered values.
-        if (playerId != null) {
+        if (playerId != null && nativeStats) {
           await recomputeCapsFromStats(tx, getTenantId(req), [
             category === "female" ? "female" : "male",
           ]);
@@ -209,6 +221,8 @@ router.patch(
       res.status(400).json({ error: body.error.message });
       return;
     }
+    await assertPlayerInTenantSpace(getTenantId(req), body.data.playerId);
+    const nativeStats = await curatedIdsAreNative(getTenantId(req));
     try {
       const row = await db.transaction(async (tx) => {
         const [updatedRow] = await tx
@@ -232,7 +246,7 @@ router.patch(
               .update(capRegisterTable)
               .set({ inStats: false, gamesAGrade: 0 })
               .where(eq(capRegisterTable.id, updatedRow.id));
-          } else {
+          } else if (nativeStats) {
             const category = updatedRow.category === "female" ? "female" : "male";
             await recomputeCapsFromStats(tx, getTenantId(req), [category]);
           }
@@ -272,6 +286,19 @@ router.post(
   requireAdmin,
   requireEntitlement("curation"),
   async (req, res): Promise<void> => {
+    // Only a native-stats club's caps can be reconciled against the native
+    // stats; another club's linked ids are its own crosswalk ids (U8).
+    if (!(await curatedIdsAreNative(getTenantId(req)))) {
+      res.json({
+        updated: 0,
+        categories: (["male", "female"] as const).map((category) => ({
+          category,
+          grade: CAP_CATEGORY_TO_GRADE[category],
+          updated: 0,
+        })),
+      });
+      return;
+    }
     const categories = await db.transaction((tx) => recomputeCapsFromStats(tx, getTenantId(req)));
     const updated = categories.reduce((sum, c) => sum + c.updated, 0);
     res.json({ updated, categories });

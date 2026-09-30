@@ -10,6 +10,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
+import { assertPlayerInTenantSpace, curatedIdsAreNative } from "../lib/curated-player-space";
 
 const router: IRouter = Router();
 
@@ -58,13 +59,20 @@ const parseBestBowling = (bb: string | null | undefined): { wkts: number; runs: 
 };
 
 router.get("/life-members", async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
   const rows = await db
     .select()
     .from(lifeMembersTable)
-    .where(eq(lifeMembersTable.tenantId, getTenantId(req)))
+    .where(eq(lifeMembersTable.tenantId, tenantId))
     .orderBy(asc(lifeMembersTable.inductionYear), asc(lifeMembersTable.name));
 
-  const playerIds = rows.map((r) => r.playerId).filter((id): id is number => id !== null);
+  // Career stats come from the NATIVE stats, which hold only Halls Head's
+  // players. Another club's life-member ids are its own crosswalk ids (U8), so
+  // they never read native stats (that would show whichever Halls Head player
+  // shares the integer).
+  const playerIds = (await curatedIdsAreNative(tenantId))
+    ? rows.map((r) => r.playerId).filter((id): id is number => id !== null)
+    : [];
 
   const statsByPlayer = new Map<number, AggregatedStats>();
   if (playerIds.length > 0) {
@@ -149,6 +157,7 @@ router.post(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
+    await assertPlayerInTenantSpace(getTenantId(req), parsed.data.playerId);
     const [row] = await db
       .insert(lifeMembersTable)
       .values({
@@ -180,6 +189,7 @@ router.patch(
       res.status(400).json({ error: body.error.message });
       return;
     }
+    await assertPlayerInTenantSpace(getTenantId(req), body.data.playerId);
     const [row] = await db
       .update(lifeMembersTable)
       .set(body.data)

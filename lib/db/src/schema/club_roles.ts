@@ -1,5 +1,4 @@
 import { pgTable, serial, integer, text, boolean, index, unique } from "drizzle-orm/pg-core";
-import { playersTable } from "./players";
 import { nonPlayerPeopleTable } from "./non_player_people";
 import { tenantIdColumn } from "./_tenant";
 
@@ -13,12 +12,11 @@ import { tenantIdColumn } from "./_tenant";
  * `published` gates public visibility: admins can prepare a season privately and
  * publish later. Historical rows loaded from the spreadsheet are published.
  *
- * NOTE: a composite UNIQUE on (season, role, grade) with NULLS NOT DISTINCT is
- * enforced in Postgres but intentionally NOT declared here — drizzle-kit 0.31
- * can't detect existing multi-column uniques and re-proposes them every push,
- * hanging the non-interactive post-merge migration. It is (re)created
- * idempotently by `scripts/src/ensure-constraints.ts`. See cap_register.ts for
- * the full rationale.
+ * Identity: UNIQUE NULLS NOT DISTINCT (tenant_id, season, role, grade) — one
+ * holder of a role per season (and grade) PER CLUB. It replaced a global
+ * (season, role, grade) unique that let only one club in the platform have a
+ * 2024 President (hybrid stats plan U8, R17). Created by migration 0020 and
+ * verified by `scripts/src/ensure-constraints.ts`.
  */
 export const clubRolesTable = pgTable(
   "club_roles",
@@ -28,9 +26,11 @@ export const clubRolesTable = pgTable(
     season: integer("season").notNull(),
     role: text("role").notNull(),
     grade: text("grade"),
-    playerId: integer("player_id").references(() => playersTable.id, {
-      onDelete: "set null",
-    }),
+    // A player id in the TENANT's id space (its crosswalk ints; for Halls Head
+    // also its native players.id while it reads native) — deliberately no FK to
+    // the native players table (hybrid stats plan U8, KTD3). Writes are checked
+    // by assertPlayerInTenantSpace (api-server/src/lib/curated-player-space.ts).
+    playerId: integer("player_id"),
     // Alternative link target for office bearers who never played (no row in
     // `players`). Mutually exclusive with `playerId` at the app level.
     nonPlayerId: integer("non_player_id").references(() => nonPlayerPeopleTable.id, {
@@ -44,8 +44,8 @@ export const clubRolesTable = pgTable(
     idxSeason: index("club_roles_season_idx").on(t.season),
     idxGrade: index("club_roles_grade_idx").on(t.grade),
     idxTenant: index("club_roles_tenant_idx").on(t.tenantId),
-    uqSeasonRoleGrade: unique("club_roles_season_role_grade_unique")
-      .on(t.season, t.role, t.grade)
+    uqTenantSeasonRoleGrade: unique("club_roles_tenant_season_role_grade_unique")
+      .on(t.tenantId, t.season, t.role, t.grade)
       .nullsNotDistinct(),
   }),
 );

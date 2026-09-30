@@ -186,7 +186,8 @@ async function main() {
         pointsGrade: a.pointsGrade ?? null,
       })
       .onConflictDoUpdate({
-        target: awardsTable.key,
+        // Award keys are unique per tenant (awards_tenant_key_unique, U8).
+        target: [awardsTable.tenantId, awardsTable.key],
         set: {
           title: a.title,
           description: a.description,

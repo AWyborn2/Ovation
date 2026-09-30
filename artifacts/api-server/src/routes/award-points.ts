@@ -19,6 +19,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
+import { assertPlayerInTenantSpace } from "../lib/curated-player-space";
 import {
   computeLeaderboard,
   configCategories,
@@ -298,6 +299,7 @@ router.post("/points-configs/:id/finalise", requireAdmin, async (req, res): Prom
   }
 
   const { entries, winnerPlayerIds } = await computeLeaderboard(config, award.pointsGrade);
+  await assertPlayerInTenantSpace(award.tenantId, winnerPlayerIds);
   const nameById = new Map(entries.map((e) => [e.playerId, e.name]));
 
   // Replace any previously-finalised winners for this award+season so finalise

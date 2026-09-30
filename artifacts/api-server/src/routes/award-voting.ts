@@ -28,6 +28,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireCaptain, type RequestWithCaptain } from "../middlewares/require-captain";
 import { getTenantId } from "../middlewares/tenant-context";
+import { assertPlayerInTenantSpace } from "../lib/curated-player-space";
 import { normaliseGrades } from "../lib/normalise-grades";
 import {
   computeTally,
@@ -336,6 +337,7 @@ router.patch(
       res.status(404).json({ error: "Config not found" });
       return;
     }
+    await assertPlayerInTenantSpace(getTenantId(req), picks);
     const [config] = await db
       .select()
       .from(awardVotingConfigTable)
@@ -467,6 +469,7 @@ router.post("/voting-configs/:id/finalise", requireAdmin, async (req, res): Prom
   }
 
   const { winnerPlayerIds } = await computeTally(config);
+  await assertPlayerInTenantSpace(award.tenantId, winnerPlayerIds);
   const names = await loadPlayerNames(winnerPlayerIds);
 
   // Replace any previously-finalised winners for this award+season so finalise
@@ -638,6 +641,13 @@ router.post("/captain/ballots", requireCaptain, async (req, res): Promise<void> 
     res.status(403).json({ error: "You are not permitted to vote for this grade" });
     return;
   }
+  // The config must belong to the captain's club, and every pick must be one
+  // of that club's players (curated player ids are per tenant, U8).
+  if (!(await votingConfigTenantOk(configId, getTenantId(req)))) {
+    res.status(404).json({ error: "Voting config not found" });
+    return;
+  }
+  await assertPlayerInTenantSpace(getTenantId(req), picks);
   const [config] = await db
     .select()
     .from(awardVotingConfigTable)

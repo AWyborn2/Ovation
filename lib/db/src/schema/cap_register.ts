@@ -1,5 +1,4 @@
 import { pgTable, serial, integer, text, boolean, index, unique } from "drizzle-orm/pg-core";
-import { playersTable } from "./players";
 import { tenantIdColumn } from "./_tenant";
 
 // NOTE: Postgres enforces a composite UNIQUE constraint
@@ -37,9 +36,11 @@ export const capRegisterTable = pgTable(
     // True when cap-sync created this row from imported stats (so rollback can
     // safely remove it). False for caps entered/edited by the club by hand.
     autoCreated: boolean("auto_created").notNull().default(false),
-    playerId: integer("player_id").references(() => playersTable.id, {
-      onDelete: "set null",
-    }),
+    // A player id in the TENANT's id space (its crosswalk ints; for Halls Head
+    // also its native players.id while it reads native) — deliberately no FK to
+    // the native players table (hybrid stats plan U8, KTD3). Writes are checked
+    // by assertPlayerInTenantSpace (api-server/src/lib/curated-player-space.ts).
+    playerId: integer("player_id"),
   },
   (t) => ({
     idxTenant: index("cap_register_tenant_idx").on(t.tenantId),
