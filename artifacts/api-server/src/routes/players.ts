@@ -8,8 +8,6 @@ import {
   playerGradeSeasonStatsTable,
   premiershipsTable,
   premiershipPlayersTable,
-  capRegisterTable,
-  lifeMembersTable,
   matchesTable,
   matchPlayerLinesTable,
   awardsTable,
@@ -35,7 +33,10 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireNativeStatsTenant } from "../middlewares/require-native-stats-tenant";
 import { assertPlayerInTenantSpace } from "../lib/curated-player-space";
-import { detachDeletedNativePlayers } from "../lib/curated-player-detach";
+import {
+  detachDeletedNativePlayers,
+  reassignMergedNativePlayer,
+} from "../lib/curated-player-detach";
 import { recomputeAggregates } from "../lib/recompute";
 import { dataSource, NATIVE_STATS_TENANT_ID } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
@@ -1060,32 +1061,23 @@ router.post("/players/:id/merge", ...nativeAdmin, async (req, res): Promise<void
         .from(playerGradeSeasonStatsTable)
         .where(eq(playerGradeSeasonStatsTable.playerId, duplicateId));
 
-      // Reassign every reference from duplicate → keeper. The curated links
-      // follow for Halls Head (tenant 1) only: curated player ids are per
-      // tenant since migration 0020 (hybrid stats plan U8), so another club's
-      // row with the same integer is that club's own crosswalk player.
-      const hh = NATIVE_STATS_TENANT_ID;
+      // Reassign every reference from duplicate → keeper.
       await tx
         .update(playerGradeSeasonStatsTable)
         .set({ playerId: keeperId })
         .where(eq(playerGradeSeasonStatsTable.playerId, duplicateId));
-      await tx
-        .update(premiershipPlayersTable)
-        .set({ playerId: keeperId })
-        .where(
-          and(
-            eq(premiershipPlayersTable.tenantId, hh),
-            eq(premiershipPlayersTable.playerId, duplicateId),
-          ),
+      // Every Halls Head (tenant 1) curated link moves to the keeper — never
+      // cleared (owner decision, 30 Sep 2026). Curated player ids are per
+      // tenant since migration 0020 (hybrid stats plan U8), so another club's
+      // row with the same integer is that club's own crosswalk player and is
+      // left alone. Links the keeper already has are de-duplicated, not failed.
+      const deduped = await reassignMergedNativePlayer(tx, duplicateId, keeperId);
+      if (Object.keys(deduped).length > 0) {
+        req.log.info(
+          { duplicateId, keeperId, deduped },
+          "player merge dropped curated links the keeper already had",
         );
-      await tx
-        .update(capRegisterTable)
-        .set({ playerId: keeperId })
-        .where(and(eq(capRegisterTable.tenantId, hh), eq(capRegisterTable.playerId, duplicateId)));
-      await tx
-        .update(lifeMembersTable)
-        .set({ playerId: keeperId })
-        .where(and(eq(lifeMembersTable.tenantId, hh), eq(lifeMembersTable.playerId, duplicateId)));
+      }
       // Junior→senior profile cross-reference (link-only column, no FK, never
       // stats): follow the keeper so linked junior profiles stay connected.
       await tx
@@ -1093,10 +1085,9 @@ router.post("/players/:id/merge", ...nativeAdmin, async (req, res): Promise<void
         .set({ seniorPlayerId: keeperId })
         .where(eq(juniorParticipantsTable.seniorPlayerId, duplicateId));
 
-      // Delete duplicate (cascades aggregates rows); Halls Head's remaining
-      // curated links to it are cleared as the dropped FKs did.
+      // Delete duplicate (cascades aggregates rows). Its curated links have
+      // all moved above, so nothing is left to detach.
       await tx.delete(playersTable).where(eq(playersTable.id, duplicateId));
-      await detachDeletedNativePlayers(tx, [duplicateId]);
 
       const affected = dupGrades.map((g) => g.grade);
       if (affected.length > 0) {
