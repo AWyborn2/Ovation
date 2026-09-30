@@ -5284,6 +5284,141 @@ paths:
         "409":
           description: The action doesn't apply to the pair's current state
 
+  /club-corrections:
+    get:
+      operationId: listClubCorrections
+      tags: [players]
+      summary: The club's corrections to association figures, active and stale (admin)
+      description: >-
+        Every correction this club has in force (removed ones are not listed).
+        Each is checked against the association data now: `active` when the
+        association still shows the figure it was made against, `stale` (with
+        the reason) when the association changed that figure, no longer has
+        the player's line, or the match is before the club's history boundary.
+        A stale correction is skipped on read.
+      responses:
+        "200":
+          description: The club's corrections, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClubCorrection"
+        "409":
+          description: The club has no association data to correct
+        "503":
+          description: The corrections store isn't in this database yet (migration 0021)
+    post:
+      operationId: createClubCorrection
+      tags: [players]
+      summary: Correct one association figure on one player's match line (admin)
+      description: >-
+        The match must be one of the club's senior association matches, the
+        player must have a line for the club in it, the field must be
+        correctable and `previousValue` must equal the association's figure
+        now, so a correction is never born stale. A correction for a field
+        that already has one replaces it. Applied on read only: the
+        association data is never changed, and no social cards are drafted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClubCorrectionBody"
+      responses:
+        "201":
+          description: The correction, in force
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubCorrection"
+        "400":
+          description: Invalid body (unknown field, value out of range, no change)
+        "409":
+          description: >-
+            The association figure is no longer `previousValue` (body carries
+            `centralValue`), or the club has no association data
+        "422":
+          description: >-
+            The match isn't the club's, is a junior match, is before the club's
+            history boundary, or the player has no line for the club in it
+        "503":
+          description: The corrections store isn't in this database yet (migration 0021)
+
+  /club-corrections/{id}:
+    delete:
+      operationId: removeClubCorrection
+      tags: [players]
+      summary: Remove a correction, so the association figure shows again (admin)
+      description: >-
+        Soft removal: the correction stays in the audit history with who
+        removed it and when, and stops applying on read.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Removed
+        "404":
+          description: No correction in force with this id for this club
+        "503":
+          description: The corrections store isn't in this database yet (migration 0021)
+
+  /club-corrections/matches:
+    get:
+      operationId: searchClubCorrectionMatches
+      tags: [players]
+      summary: Find one of the club's senior association matches to correct (admin)
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string, maxLength: 80 }
+          description: Words matched against the date, opponent, round, grade and season
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 40 }
+      responses:
+        "200":
+          description: Matching senior matches, newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClubCorrectionMatch"
+        "409":
+          description: The club has no association data to correct
+
+  /club-corrections/matches/{matchId}:
+    get:
+      operationId: getClubCorrectionMatch
+      tags: [players]
+      summary: One match's club player lines with each correctable figure (admin)
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema: { type: integer }
+          description: The association match id (`ClubCorrectionMatch.matchId`)
+      responses:
+        "200":
+          description: The match and the club's player lines
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubCorrectionMatchDetail"
+        "404":
+          description: Not one of the club's senior matches
+        "409":
+          description: The club has no association data to correct
+        "503":
+          description: The corrections store isn't in this database yet (migration 0021)
+
   /billing/checkout:
     post:
       operationId: createBillingCheckout
@@ -14550,6 +14685,158 @@ components:
         rejected:
           type: array
           items: { $ref: "#/components/schemas/DuplicatePair" }
+
+    ClubCorrectionField:
+      type: string
+      description: >-
+        A correctable figure. Integers only: bowling is corrected in balls (not
+        overs) and not_out as 0 or 1.
+      enum:
+        [
+          runs,
+          balls_faced,
+          fours,
+          sixes,
+          not_out,
+          balls_bowled,
+          maidens,
+          runs_conceded,
+          wickets,
+          wides,
+          no_balls,
+          catches,
+          stumpings,
+          run_outs,
+        ]
+
+    ClubCorrectionMatch:
+      type: object
+      required:
+        [
+          matchId,
+          playhqMatchId,
+          season,
+          grade,
+          round,
+          matchDate,
+          opponent,
+          clubScore,
+          opponentScore,
+        ]
+      properties:
+        matchId: { type: integer, description: The association match id }
+        playhqMatchId:
+          type: string
+          nullable: true
+          description: PlayHQ match id; a match without one can't be corrected
+        season: { type: integer, nullable: true, description: Season start year }
+        grade: { type: string }
+        round: { type: string, nullable: true }
+        matchDate: { type: string, nullable: true }
+        opponent: { type: string, nullable: true }
+        clubScore: { type: string, nullable: true }
+        opponentScore: { type: string, nullable: true }
+
+    ClubCorrectionFigure:
+      type: object
+      required: [field, value]
+      properties:
+        field: { $ref: "#/components/schemas/ClubCorrectionField" }
+        value: { type: integer, description: The association figure now }
+        correction:
+          type: object
+          nullable: true
+          description: The correction in force on this figure, if any
+          required: [id, previousValue, newValue]
+          properties:
+            id: { type: integer }
+            previousValue: { type: integer }
+            newValue: { type: integer }
+
+    ClubCorrectionLine:
+      type: object
+      required: [participantId, displayName, isPrivate, figures]
+      properties:
+        participantId: { type: string }
+        displayName: { type: string, nullable: true }
+        isPrivate: { type: boolean }
+        figures:
+          type: array
+          items: { $ref: "#/components/schemas/ClubCorrectionFigure" }
+
+    ClubCorrectionMatchDetail:
+      type: object
+      required: [match, lines]
+      properties:
+        match: { $ref: "#/components/schemas/ClubCorrectionMatch" }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/ClubCorrectionLine" }
+
+    ClubCorrectionBody:
+      type: object
+      required: [playhqMatchId, participantId, field, previousValue, newValue]
+      properties:
+        playhqMatchId: { type: string, minLength: 1, maxLength: 200 }
+        participantId: { type: string, minLength: 1, maxLength: 200 }
+        field: { $ref: "#/components/schemas/ClubCorrectionField" }
+        previousValue:
+          type: integer
+          minimum: 0
+          description: The association figure the admin saw (must equal it now)
+        newValue: { type: integer, minimum: 0, maximum: 100000 }
+        note: { type: string, nullable: true, maxLength: 500 }
+
+    ClubCorrection:
+      type: object
+      required:
+        [
+          id,
+          playhqMatchId,
+          participantId,
+          field,
+          previousValue,
+          newValue,
+          note,
+          createdBy,
+          createdAt,
+          status,
+          staleReason,
+          centralValue,
+          displayName,
+          isPrivate,
+          match,
+        ]
+      properties:
+        id: { type: integer }
+        playhqMatchId: { type: string }
+        participantId: { type: string }
+        field: { $ref: "#/components/schemas/ClubCorrectionField" }
+        previousValue: { type: integer }
+        newValue: { type: integer }
+        note: { type: string, nullable: true }
+        createdBy: { type: string }
+        createdAt: { type: string, format: date-time }
+        status:
+          type: string
+          enum: [active, stale]
+        staleReason:
+          type: string
+          nullable: true
+          enum: [mismatch, not_found, before_boundary]
+          description: >-
+            mismatch — the association figure changed; not_found — the
+            association no longer has the player's line in the match;
+            before_boundary — the match is before the club's history boundary
+        centralValue:
+          type: integer
+          nullable: true
+          description: The association figure now (null when the line wasn't found)
+        displayName: { type: string, nullable: true }
+        isPrivate: { type: boolean }
+        match:
+          allOf: [{ $ref: "#/components/schemas/ClubCorrectionMatch" }]
+          nullable: true
 
     DuplicateReviewBody:
       type: object

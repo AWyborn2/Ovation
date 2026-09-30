@@ -30,6 +30,7 @@
  *   - merges.ts        a tenant's confirmed player merges, folded into the reads above
  *   - duplicates.ts    per-GUID appearance evidence for duplicate-player suggestions
  *   - partials.ts      (participant, grade, season) partial aggregates + corrected-player lines for the club overlay
+ *   - corrections.ts   match search, match lookup and match participants for the corrections admin screen (uncached)
  * Every central read must stay behind this barrel (eslint `no-restricted-imports`
  * on `@workspace/db/central`) so it is club-filtered, cached and tested in one
  * place. The central DB is READ-ONLY from the app: `select` / `execute` only.
@@ -54,3 +55,4 @@ export * from "./central/social-recap";
 export * from "./central/social-achievements";
 export * from "./central/duplicates";
 export * from "./central/partials";
+export * from "./central/corrections";

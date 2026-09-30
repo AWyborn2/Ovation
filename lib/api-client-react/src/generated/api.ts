@@ -84,6 +84,10 @@ import type {
   CheckSlugAvailableParams,
   CheckoutBody,
   CheckoutResult,
+  ClubCorrection,
+  ClubCorrectionBody,
+  ClubCorrectionMatch,
+  ClubCorrectionMatchDetail,
   ClubPhoto,
   ClubRecords,
   ClubRole,
@@ -266,6 +270,7 @@ import type {
   RoundUpInput,
   SaveCardPhotoRulesRequest,
   SaveDraftTemplateRequest,
+  SearchClubCorrectionMatchesParams,
   SeasonTopPerformers,
   SeniorOverview,
   SetJuniorSeniorLinkBody,
@@ -18031,6 +18036,388 @@ export const useReviewPlayerDuplicate = <TError = ErrorType<void>,
       > => {
       return useMutation(getReviewPlayerDuplicateMutationOptions(options));
     }
+
+export const getListClubCorrectionsUrl = () => {
+
+
+
+
+  return `/api/club-corrections`
+}
+
+/**
+ * Every correction this club has in force (removed ones are not listed). Each is checked against the association data now: `active` when the association still shows the figure it was made against, `stale` (with the reason) when the association changed that figure, no longer has the player's line, or the match is before the club's history boundary. A stale correction is skipped on read.
+ * @summary The club's corrections to association figures, active and stale (admin)
+ */
+export const listClubCorrections = async ( options?: RequestInit): Promise<ClubCorrection[]> => {
+
+  return customFetch<ClubCorrection[]>(getListClubCorrectionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClubCorrectionsQueryKey = () => {
+    return [
+    `/api/club-corrections`
+    ] as const;
+    }
+
+
+export const getListClubCorrectionsQueryOptions = <TData = Awaited<ReturnType<typeof listClubCorrections>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubCorrections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClubCorrectionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClubCorrections>>> = ({ signal }) => listClubCorrections({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClubCorrections>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClubCorrectionsQueryResult = NonNullable<Awaited<ReturnType<typeof listClubCorrections>>>
+export type ListClubCorrectionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club's corrections to association figures, active and stale (admin)
+ */
+
+export function useListClubCorrections<TData = Awaited<ReturnType<typeof listClubCorrections>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubCorrections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClubCorrectionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateClubCorrectionUrl = () => {
+
+
+
+
+  return `/api/club-corrections`
+}
+
+/**
+ * The match must be one of the club's senior association matches, the player must have a line for the club in it, the field must be correctable and `previousValue` must equal the association's figure now, so a correction is never born stale. A correction for a field that already has one replaces it. Applied on read only: the association data is never changed, and no social cards are drafted.
+ * @summary Correct one association figure on one player's match line (admin)
+ */
+export const createClubCorrection = async (clubCorrectionBody: ClubCorrectionBody, options?: RequestInit): Promise<ClubCorrection> => {
+
+  return customFetch<ClubCorrection>(getCreateClubCorrectionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      clubCorrectionBody,)
+  }
+);}
+
+
+
+
+export const getCreateClubCorrectionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClubCorrection>>, TError,{data: BodyType<ClubCorrectionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createClubCorrection>>, TError,{data: BodyType<ClubCorrectionBody>}, TContext> => {
+
+const mutationKey = ['createClubCorrection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createClubCorrection>>, {data: BodyType<ClubCorrectionBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createClubCorrection(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateClubCorrectionMutationResult = NonNullable<Awaited<ReturnType<typeof createClubCorrection>>>
+    export type CreateClubCorrectionMutationBody = BodyType<ClubCorrectionBody>
+    export type CreateClubCorrectionMutationError = ErrorType<void>
+
+    /**
+ * @summary Correct one association figure on one player's match line (admin)
+ */
+export const useCreateClubCorrection = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClubCorrection>>, TError,{data: BodyType<ClubCorrectionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createClubCorrection>>,
+        TError,
+        {data: BodyType<ClubCorrectionBody>},
+        TContext
+      > => {
+      return useMutation(getCreateClubCorrectionMutationOptions(options));
+    }
+
+export const getRemoveClubCorrectionUrl = (id: number,) => {
+
+
+
+
+  return `/api/club-corrections/${id}`
+}
+
+/**
+ * Soft removal: the correction stays in the audit history with who removed it and when, and stops applying on read.
+ * @summary Remove a correction, so the association figure shows again (admin)
+ */
+export const removeClubCorrection = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveClubCorrectionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveClubCorrectionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeClubCorrection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeClubCorrection>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['removeClubCorrection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeClubCorrection>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  removeClubCorrection(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveClubCorrectionMutationResult = NonNullable<Awaited<ReturnType<typeof removeClubCorrection>>>
+
+    export type RemoveClubCorrectionMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a correction, so the association figure shows again (admin)
+ */
+export const useRemoveClubCorrection = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeClubCorrection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeClubCorrection>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRemoveClubCorrectionMutationOptions(options));
+    }
+
+export const getSearchClubCorrectionMatchesUrl = (params?: SearchClubCorrectionMatchesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/club-corrections/matches?${stringifiedParams}` : `/api/club-corrections/matches`
+}
+
+/**
+ * @summary Find one of the club's senior association matches to correct (admin)
+ */
+export const searchClubCorrectionMatches = async (params?: SearchClubCorrectionMatchesParams, options?: RequestInit): Promise<ClubCorrectionMatch[]> => {
+
+  return customFetch<ClubCorrectionMatch[]>(getSearchClubCorrectionMatchesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchClubCorrectionMatchesQueryKey = (params?: SearchClubCorrectionMatchesParams,) => {
+    return [
+    `/api/club-corrections/matches`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchClubCorrectionMatchesQueryOptions = <TData = Awaited<ReturnType<typeof searchClubCorrectionMatches>>, TError = ErrorType<void>>(params?: SearchClubCorrectionMatchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchClubCorrectionMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchClubCorrectionMatchesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchClubCorrectionMatches>>> = ({ signal }) => searchClubCorrectionMatches(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchClubCorrectionMatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchClubCorrectionMatchesQueryResult = NonNullable<Awaited<ReturnType<typeof searchClubCorrectionMatches>>>
+export type SearchClubCorrectionMatchesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Find one of the club's senior association matches to correct (admin)
+ */
+
+export function useSearchClubCorrectionMatches<TData = Awaited<ReturnType<typeof searchClubCorrectionMatches>>, TError = ErrorType<void>>(
+ params?: SearchClubCorrectionMatchesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchClubCorrectionMatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchClubCorrectionMatchesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetClubCorrectionMatchUrl = (matchId: number,) => {
+
+
+
+
+  return `/api/club-corrections/matches/${matchId}`
+}
+
+/**
+ * @summary One match's club player lines with each correctable figure (admin)
+ */
+export const getClubCorrectionMatch = async (matchId: number, options?: RequestInit): Promise<ClubCorrectionMatchDetail> => {
+
+  return customFetch<ClubCorrectionMatchDetail>(getGetClubCorrectionMatchUrl(matchId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClubCorrectionMatchQueryKey = (matchId: number,) => {
+    return [
+    `/api/club-corrections/matches/${matchId}`
+    ] as const;
+    }
+
+
+export const getGetClubCorrectionMatchQueryOptions = <TData = Awaited<ReturnType<typeof getClubCorrectionMatch>>, TError = ErrorType<void>>(matchId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubCorrectionMatch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClubCorrectionMatchQueryKey(matchId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClubCorrectionMatch>>> = ({ signal }) => getClubCorrectionMatch(matchId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(matchId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClubCorrectionMatch>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClubCorrectionMatchQueryResult = NonNullable<Awaited<ReturnType<typeof getClubCorrectionMatch>>>
+export type GetClubCorrectionMatchQueryError = ErrorType<void>
+
+
+/**
+ * @summary One match's club player lines with each correctable figure (admin)
+ */
+
+export function useGetClubCorrectionMatch<TData = Awaited<ReturnType<typeof getClubCorrectionMatch>>, TError = ErrorType<void>>(
+ matchId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClubCorrectionMatch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClubCorrectionMatchQueryOptions(matchId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getCreateBillingCheckoutUrl = () => {
 

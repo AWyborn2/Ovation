@@ -5,6 +5,7 @@ import { renderAt } from "@/test/render";
 import { installApiMock } from "@/test/mock-api";
 import AdminPlayers from "@/pages/admin-players";
 import AdminPlayerDuplicates from "@/pages/admin-player-duplicates";
+import AdminCorrections from "@/pages/admin-corrections";
 import AdminPeople from "@/pages/admin-people";
 import AdminCommittee from "@/pages/admin-committee";
 import AdminCaptains from "@/pages/admin-captains";
@@ -30,6 +31,7 @@ afterEach(() => {
 const LEAVES: [string, ComponentType, string][] = [
   ["admin-players", AdminPlayers, "/admin/people"],
   ["admin-player-duplicates", AdminPlayerDuplicates, "/admin/people/duplicates"],
+  ["admin-corrections", AdminCorrections, "/admin/people/corrections"],
   ["admin-people", AdminPeople, "/admin/people/non-players"],
   ["admin-committee", AdminCommittee, "/admin/people/committee"],
   ["admin-captains", AdminCaptains, "/admin/people/captains"],
