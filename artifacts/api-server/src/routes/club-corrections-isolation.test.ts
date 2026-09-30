@@ -17,6 +17,7 @@ import { clearMilestonesCache } from "../lib/milestones-cache";
 import { resetClubOverlayTableProbe } from "../lib/club-overlay";
 import { sweepCentralMatches } from "../lib/draft-sweep";
 import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
+import { invalidateTenantConfigCache } from "../lib/tenant";
 
 /**
  * Club corrections admin API (hybrid stats plan U16; R15, KTD7, KTD8).
@@ -170,10 +171,8 @@ type Correction = {
 describe.skipIf(!isLocalDb)("club corrections admin (tenant-scoped)", () => {
   let a: number;
   let b: number;
-  let n: number;
   let cookieA: string;
   let cookieB: string;
-  let cookieN: string;
   let prevTtl: string | undefined;
   const log = { error: () => {}, warn: () => {}, info: () => {} };
 
@@ -238,8 +237,6 @@ describe.skipIf(!isLocalDb)("club corrections admin (tenant-scoped)", () => {
     await seedCentral();
     a = await makeTenant("a", CLUB_A);
     b = await makeTenant("b", CLUB_B);
-    // A club still on its own native stats (like Halls Head today).
-    n = await makeTenant("native", CLUB_A, false);
     await db.insert(playerIdMapTable).values([
       { tenantId: a, participantId: ANN, playerId: ANN_ID },
       { tenantId: a, participantId: FAY, playerId: 702 },
@@ -257,7 +254,6 @@ describe.skipIf(!isLocalDb)("club corrections admin (tenant-scoped)", () => {
     };
     cookieA = await cookieFor(a, "owner-a");
     cookieB = await cookieFor(b, "owner-b");
-    cookieN = await cookieFor(n, "owner-n");
     // KTD8: the club's first sweep only records its newest match (no drafts).
     expect(await sweepCentralMatches(a, new Date("2024-11-20T00:00:00Z"), log)).toEqual({
       seen: 0,
@@ -269,7 +265,7 @@ describe.skipIf(!isLocalDb)("club corrections admin (tenant-scoped)", () => {
   afterAll(async () => {
     process.env.CENTRAL_CACHE_TTL_MS = prevTtl;
     if (prevTtl === undefined) delete process.env.CENTRAL_CACHE_TTL_MS;
-    await purgeTestTenants([a, b, n]);
+    await purgeTestTenants([a, b]);
     await cleanCentral();
     clearMilestonesCache();
   });
@@ -498,11 +494,19 @@ describe.skipIf(!isLocalDb)("club corrections admin (tenant-scoped)", () => {
   });
 
   it("status: a club still on its own native stats is told corrections won't show yet", async () => {
-    expect((await as(n, cookieN).status().expect(200)).body).toEqual({
-      appliedToPublicPages: false,
-    });
-    // Saving is not blocked: the native club's admin can still open matches.
-    await as(n, cookieN).match(M1).expect(200);
+    // Flip tenant A to "still on its own native stats" (like Halls Head today)
+    // for this test only: central_club_id is unique, so a second tenant can't
+    // share club A.
+    await db.update(tenantsTable).set({ readsFromCentral: false }).where(eq(tenantsTable.id, a));
+    invalidateTenantConfigCache(a);
+    try {
+      expect((await A().status().expect(200)).body).toEqual({ appliedToPublicPages: false });
+      // Saving is not blocked: the native club's admin can still open matches.
+      await A().match(M1).expect(200);
+    } finally {
+      await db.update(tenantsTable).set({ readsFromCentral: true }).where(eq(tenantsTable.id, a));
+      invalidateTenantConfigCache(a);
+    }
   });
 
   it("the club admin sees a private player's real name on the corrections screen", async () => {
