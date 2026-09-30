@@ -30,7 +30,13 @@ import {
   DEFAULT_MIN_OVERS,
 } from "../lib/grade-distribution";
 import { getTenantId } from "../middlewares/tenant-context";
-import { loadClubIdentity } from "../lib/club-overlay";
+import {
+  buildClubStats,
+  clubRecords,
+  clubTopLeaders,
+  loadClubIdentity,
+  loadClubOverlay,
+} from "../lib/club-overlay";
 import { getOrCreateSettings } from "../lib/settings";
 import { overlayNativeOpponents, overlayCentralOpponents } from "../lib/club-brand";
 import {
@@ -397,8 +403,13 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
   if (source.kind === "central") {
     const central = await import("@workspace/db/central-queries");
     const clubId = source.clubId;
-    const identity = await loadClubIdentity(getTenantId(req));
-    const { merges, intByGuid } = identity;
+    const tenantId = getTenantId(req);
+    const overlay = await loadClubOverlay(tenantId);
+    const { merges } = overlay.identity;
+    // Club overlay (U10): leaders from the overlaid stats when the tenant has a
+    // club layer (history before the boundary, corrections).
+    const stats = overlay.active ? await buildClubStats(overlay, tenantId, clubId) : null;
+    const intByGuid = stats ? stats.intByGuid : overlay.identity.intByGuid;
     const splitName = (dn: string | null) => {
       const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
       if (parts.length === 0) return { givenName: "", surname: "" };
@@ -413,8 +424,12 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
 
     if (allTime) {
       const [runs, wkts, availableGrades] = await Promise.all([
-        central.centralAllTimeLeaders(clubId, "runs", grade, merges),
-        central.centralAllTimeLeaders(clubId, "wickets", grade, merges),
+        stats
+          ? clubTopLeaders(stats, "runs", { grade })
+          : central.centralAllTimeLeaders(clubId, "runs", grade, merges),
+        stats
+          ? clubTopLeaders(stats, "wickets", { grade })
+          : central.centralAllTimeLeaders(clubId, "wickets", grade, merges),
         central.centralGradesForSeason(clubId, null),
       ]);
       res.json({
@@ -444,8 +459,12 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
     }
 
     const [runs, wkts, availableGrades] = await Promise.all([
-      central.centralSeasonLeaders(clubId, season, "runs", grade, merges),
-      central.centralSeasonLeaders(clubId, season, "wickets", grade, merges),
+      stats
+        ? clubTopLeaders(stats, "runs", { grade, fromSeason: season, toSeason: season })
+        : central.centralSeasonLeaders(clubId, season, "runs", grade, merges),
+      stats
+        ? clubTopLeaders(stats, "wickets", { grade, fromSeason: season, toSeason: season })
+        : central.centralSeasonLeaders(clubId, season, "wickets", grade, merges),
       central.centralGradesForSeason(clubId, season),
     ]);
     res.json({
@@ -522,9 +541,15 @@ router.get("/records", async (req, res): Promise<void> => {
   const source = await dataSource(req);
   if (source.kind === "central") {
     const { centralClubRecords } = await import("@workspace/db/central-queries");
-    const identity = await loadClubIdentity(getTenantId(req));
-    const records = await centralClubRecords(source.clubId, filter ?? undefined, identity.merges);
-    const intByGuid = identity.intByGuid;
+    const tenantId = getTenantId(req);
+    const overlay = await loadClubOverlay(tenantId);
+    // Club overlay (U10): with a boundary, history or corrections the holders
+    // come from the overlaid stats; otherwise the original central read.
+    const stats = overlay.active ? await buildClubStats(overlay, tenantId, source.clubId) : null;
+    const records = stats
+      ? clubRecords(stats, filter ?? undefined)
+      : await centralClubRecords(source.clubId, filter ?? undefined, overlay.identity.merges);
+    const intByGuid = stats ? stats.intByGuid : overlay.identity.intByGuid;
     const split = (dn: string | null) => {
       const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
       if (parts.length === 0) return { givenName: "", surname: "" };

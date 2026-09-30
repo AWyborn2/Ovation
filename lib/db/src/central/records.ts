@@ -476,14 +476,66 @@ export async function centralMilestones(
 
 async function centralMilestonesImpl(
   clubId: number,
-  tiers: {
-    games: number[];
-    runs: number[];
-    wickets: number[];
-    dismissals?: number[];
-  },
+  tiers: MilestoneTiers,
   merges?: CentralMerges,
 ): Promise<CentralMilestone[]> {
+  return walkCentralMilestones(await loadMilestoneInputs(clubId, merges), tiers);
+}
+
+/** Career tier ladders for the milestone walk. */
+export interface MilestoneTiers {
+  games: number[];
+  runs: number[];
+  wickets: number[];
+  dismissals?: number[];
+}
+
+/** One participant's per-match running-total inputs (keeper GUID when merged). */
+export interface CentralMilestoneCareer {
+  runsByMatch: Map<number, number>;
+  wktsByMatch: Map<number, number>;
+  dismByMatch: Map<number, number>;
+  matches: Set<number>;
+}
+
+/**
+ * Everything the milestone walk consumes, fetched once per club (+ merges):
+ * match meta, per-participant per-match contributions, the century and
+ * five-for lines, and names/privacy. The club overlay (hybrid stats plan U10)
+ * walks these with its boundary, history and corrections applied — see
+ * {@link walkCentralMilestones}.
+ */
+export interface CentralMilestoneInputs {
+  metaOf: Map<
+    number,
+    {
+      grade: string | null;
+      season: number | null;
+      matchDate: string | null;
+      opponent: string | null;
+    }
+  >;
+  careers: Map<string, CentralMilestoneCareer>;
+  centuries: Array<{ participantId: string; matchId: number; runs: number }>;
+  fivers: Array<{ participantId: string; matchId: number; wickets: number }>;
+  names: Map<string, { displayName: string | null; isPrivate: boolean }>;
+}
+
+/** The milestone inputs for a club, cached by club + the tenant's confirmed merges. */
+export async function centralMilestoneInputs(
+  clubId: number,
+  merges?: CentralMerges,
+): Promise<CentralMilestoneInputs> {
+  return withCentralCache(
+    cacheKey("centralMilestoneInputs", [clubId, "seniorOnly", mergesCacheArg(merges)]),
+    () => loadMilestoneInputs(clubId, merges),
+  );
+}
+
+async function loadMilestoneInputs(
+  clubId: number,
+  merges?: CentralMerges,
+): Promise<CentralMilestoneInputs> {
   // Deliberately still JS-aggregated: career tier-crossings need each player's
   // full per-match running totals walked in chronological order against
   // caller-supplied tier arrays — a sequential scan that doesn't reduce to a
@@ -508,8 +560,15 @@ async function centralMilestonesImpl(
     .from(centralMatchesTable)
     .where(clubInvolvedWhere(clubId));
   const matchIds = matchRows.map((m) => m.matchId);
-  if (matchIds.length === 0) return [];
-  const metaOf = new Map(
+  const empty: CentralMilestoneInputs = {
+    metaOf: new Map(),
+    careers: new Map(),
+    centuries: [],
+    fivers: [],
+    names: new Map(),
+  };
+  if (matchIds.length === 0) return empty;
+  const metaOf: CentralMilestoneInputs["metaOf"] = new Map(
     matchRows.map((m) => [
       m.matchId,
       {
@@ -584,24 +643,24 @@ async function centralMilestonesImpl(
   const rosters = canonicalizeLines(rawRosters, merges);
   const fielding = canonicalizeLines(rawFielding, merges);
 
-  const centuries = batting.filter(
-    (b) => (b.runs ?? 0) >= 100 && b.participantId && b.matchId !== null,
-  );
-  const fivers = bowling.filter(
-    (b) => (b.wickets ?? 0) >= 5 && b.participantId && b.matchId !== null,
-  );
+  const centuries: CentralMilestoneInputs["centuries"] = [];
+  for (const b of batting) {
+    if ((b.runs ?? 0) >= 100 && b.participantId && b.matchId !== null) {
+      centuries.push({ participantId: b.participantId, matchId: b.matchId, runs: b.runs ?? 0 });
+    }
+  }
+  const fivers: CentralMilestoneInputs["fivers"] = [];
+  for (const b of bowling) {
+    if ((b.wickets ?? 0) >= 5 && b.participantId && b.matchId !== null) {
+      fivers.push({ participantId: b.participantId, matchId: b.matchId, wickets: b.wickets ?? 0 });
+    }
+  }
 
   // Per-participant running-total inputs: runs and wickets per match, and the
   // set of matches played (rosters unioned with batted/bowled matches).
-  interface CareerAcc {
-    runsByMatch: Map<number, number>;
-    wktsByMatch: Map<number, number>;
-    dismByMatch: Map<number, number>;
-    matches: Set<number>;
-  }
-  const byPid = new Map<string, CareerAcc>();
-  const accFor = (pid: string): CareerAcc => {
-    let a = byPid.get(pid);
+  const careers = new Map<string, CentralMilestoneCareer>();
+  const accFor = (pid: string): CentralMilestoneCareer => {
+    let a = careers.get(pid);
     if (!a) {
       a = {
         runsByMatch: new Map(),
@@ -609,7 +668,7 @@ async function centralMilestonesImpl(
         dismByMatch: new Map(),
         matches: new Set(),
       };
-      byPid.set(pid, a);
+      careers.set(pid, a);
     }
     return a;
   };
@@ -641,42 +700,128 @@ async function centralMilestonesImpl(
 
   // Names for every participant that could cross a tier (superset of the
   // century/five-for authors).
-  const names = await centralPlayerNames([...byPid.keys()], merges);
+  const names = await centralPlayerNames([...careers.keys()], merges);
+  return { metaOf, careers, centuries, fivers, names };
+}
+
+/** Running-total seed / per-match adjustment for the milestone walk. */
+export interface MilestoneTotals {
+  games: number;
+  runs: number;
+  wickets: number;
+  dismissals: number;
+}
+
+/**
+ * The club overlay's view of the walk (hybrid stats plan U10). Absent, the
+ * walk is exactly the plain central one.
+ */
+export interface MilestoneOverlay {
+  /** True for a (grade, season) central does not supply for this club (before the boundary). */
+  dropBucket?: (grade: string, season: number | null) => boolean;
+  /**
+   * Totals a keeper carries INTO its first central match (pre-boundary club
+   * history). They never emit a crossing of their own — a milestone needs a
+   * match — but a central match that takes the total over a tier does.
+   */
+  baseTotals?: ReadonlyMap<string, MilestoneTotals>;
+  /** Correction deltas per (keeper GUID, match id), keyed `${guid}\u0000${matchId}`. */
+  matchDeltas?: ReadonlyMap<string, Omit<MilestoneTotals, "games">>;
+  /** Keepers to leave out entirely (fill-ins). */
+  exclude?: ReadonlySet<string>;
+}
+
+/**
+ * Walk the inputs into milestones: centuries, five-fors and career tier
+ * crossings. Pure. Senior-only: a junior / pathway / unmapped match neither
+ * counts towards nor triggers anything.
+ */
+export function walkCentralMilestones(
+  inputs: CentralMilestoneInputs,
+  tiers: MilestoneTiers,
+  overlay?: MilestoneOverlay,
+): CentralMilestone[] {
+  const { metaOf, careers, names } = inputs;
+  const dropped = (matchId: number): boolean => {
+    const meta = metaOf.get(matchId);
+    if (!meta?.grade) return true;
+    return overlay?.dropBucket?.(meta.grade, meta.season) === true;
+  };
+  const delta = (pid: string, matchId: number) =>
+    overlay?.matchDeltas?.get(`${pid}\u0000${matchId}`);
+  const excluded = (pid: string) => overlay?.exclude?.has(pid) === true;
 
   const out: CentralMilestone[] = [];
-  for (const b of centuries) {
-    const meta = metaOf.get(b.matchId as number);
-    if (!meta?.grade || meta.season === null) continue;
-    const p = names.get(b.participantId as string);
-    if (p?.isPrivate) continue;
+  const pushLine = (
+    kind: "century" | "fiveFor",
+    participantId: string,
+    matchId: number,
+    value: number,
+  ) => {
+    const meta = metaOf.get(matchId);
+    if (!meta?.grade || meta.season === null) return;
+    if (dropped(matchId) || excluded(participantId)) return;
+    const p = names.get(participantId);
+    if (p?.isPrivate) return;
     out.push({
-      kind: "century",
-      participantId: b.participantId as string,
+      kind,
+      participantId,
       displayName: p?.displayName ?? null,
       grade: meta.grade,
       season: meta.season,
-      matchId: b.matchId as number,
+      matchId,
       matchDate: meta.matchDate,
       opponent: meta.opponent,
-      value: b.runs ?? 0,
+      value,
     });
-  }
-  for (const b of fivers) {
-    const meta = metaOf.get(b.matchId as number);
-    if (!meta?.grade || meta.season === null) continue;
-    const p = names.get(b.participantId as string);
-    if (p?.isPrivate) continue;
-    out.push({
-      kind: "fiveFor",
-      participantId: b.participantId as string,
-      displayName: p?.displayName ?? null,
-      grade: meta.grade,
-      season: meta.season,
-      matchId: b.matchId as number,
-      matchDate: meta.matchDate,
-      opponent: meta.opponent,
-      value: b.wickets ?? 0,
-    });
+  };
+
+  if (!overlay?.matchDeltas?.size) {
+    for (const b of inputs.centuries) pushLine("century", b.participantId, b.matchId, b.runs);
+    for (const b of inputs.fivers) pushLine("fiveFor", b.participantId, b.matchId, b.wickets);
+  } else {
+    // A correction can make or unmake a century / five-for: judge the
+    // corrected match figure (corrections are per match, so a two-innings
+    // match is judged on its corrected total for the corrected player only).
+    const seen = new Set<string>();
+    for (const b of inputs.centuries) {
+      const k = `${b.participantId}\u0000${b.matchId}`;
+      const d = delta(b.participantId, b.matchId);
+      if (!d) {
+        pushLine("century", b.participantId, b.matchId, b.runs);
+        continue;
+      }
+      if (seen.has(k)) continue;
+      seen.add(k);
+      const runs = (careers.get(b.participantId)?.runsByMatch.get(b.matchId) ?? 0) + d.runs;
+      if (runs >= 100) pushLine("century", b.participantId, b.matchId, runs);
+    }
+    for (const b of inputs.fivers) {
+      const k = `${b.participantId}\u0000${b.matchId}`;
+      const d = delta(b.participantId, b.matchId);
+      if (!d) {
+        pushLine("fiveFor", b.participantId, b.matchId, b.wickets);
+        continue;
+      }
+      if (seen.has(`w${k}`)) continue;
+      seen.add(`w${k}`);
+      const wkts = (careers.get(b.participantId)?.wktsByMatch.get(b.matchId) ?? 0) + d.wickets;
+      if (wkts >= 5) pushLine("fiveFor", b.participantId, b.matchId, wkts);
+    }
+    for (const [k, d] of overlay.matchDeltas) {
+      const [pid, m] = k.split("\u0000") as [string, string];
+      const matchId = Number(m);
+      const acc = careers.get(pid);
+      if (!acc) continue;
+      if (d.runs !== 0 && !seen.has(k)) {
+        const runs = (acc.runsByMatch.get(matchId) ?? 0) + d.runs;
+        if (runs >= 100) pushLine("century", pid, matchId, runs);
+      }
+      if (d.wickets !== 0 && !seen.has(`w${k}`)) {
+        const wkts = (acc.wktsByMatch.get(matchId) ?? 0) + d.wickets;
+        if (wkts >= 5) pushLine("fiveFor", pid, matchId, wkts);
+      }
+    }
   }
 
   // Career crossings: walk each participant's matches in chronological order
@@ -693,25 +838,33 @@ async function centralMilestonesImpl(
     { key: "wickets" as const, tiers: tiers.wickets },
     { key: "dismissals" as const, tiers: tiers.dismissals ?? DEFAULT_DISMISSALS_TIERS },
   ];
-  for (const [pid, acc] of byPid) {
+  for (const [pid, acc] of careers) {
     const p = names.get(pid);
-    if (p?.isPrivate) continue;
+    if (p?.isPrivate || excluded(pid)) continue;
     // Walk over appearances unioned with fielding-only matches so dismissal
     // crossings still fire in a match where the player neither batted nor bowled;
     // `games` contrib stays gated on a real appearance so the games tally is
     // unchanged.
     const ordered = [...new Set([...acc.matches, ...acc.dismByMatch.keys()])].sort(chrono);
-    const totals = { games: 0, runs: 0, wickets: 0, dismissals: 0 };
+    const base = overlay?.baseTotals?.get(pid);
+    const totals = {
+      games: base?.games ?? 0,
+      runs: base?.runs ?? 0,
+      wickets: base?.wickets ?? 0,
+      dismissals: base?.dismissals ?? 0,
+    };
     for (const mId of ordered) {
       const meta = metaOf.get(mId);
       // Senior-only totals: a junior / pathway / unmapped match contributes
-      // nothing, so it can neither count towards nor trigger a crossing.
-      if (!meta?.grade) continue;
+      // nothing, so it can neither count towards nor trigger a crossing. Nor
+      // does a match before the club's boundary (club history supplies it).
+      if (!meta?.grade || dropped(mId)) continue;
+      const d = delta(pid, mId);
       const contrib = {
         games: acc.matches.has(mId) ? 1 : 0,
-        runs: acc.runsByMatch.get(mId) ?? 0,
-        wickets: acc.wktsByMatch.get(mId) ?? 0,
-        dismissals: acc.dismByMatch.get(mId) ?? 0,
+        runs: (acc.runsByMatch.get(mId) ?? 0) + (d?.runs ?? 0),
+        wickets: (acc.wktsByMatch.get(mId) ?? 0) + (d?.wickets ?? 0),
+        dismissals: (acc.dismByMatch.get(mId) ?? 0) + (d?.dismissals ?? 0),
       };
       for (const spec of tierSpecs) {
         const prev = totals[spec.key];

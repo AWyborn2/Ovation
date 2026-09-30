@@ -5,7 +5,7 @@
  * labels (the *-consistency suites depend on PCA mapping staying identical).
  */
 import { describe, expect, it } from "vitest";
-import { appGradeFromCentral, classifyCentralGrade } from "./grades";
+import { appGradeFromCentral, classifyCentralGrade, isSeniorAppGrade } from "./grades";
 
 describe("classifyCentralGrade — WA Premier Cricket labels", () => {
   it("maps numbered senior grades to '<n>th Grade'", () => {
@@ -121,5 +121,31 @@ describe("classifyCentralGrade — Ladies T20 is senior Female B Grade (plan U3)
   it("does not catch unrelated T20 labels", () => {
     expect(appGradeFromCentral("T20: B Grade")).toBe("B Grade");
     expect(appGradeFromCentral("Senior Men T20 Div1")).toBe("T20");
+  });
+});
+
+describe("isSeniorAppGrade — the club overlay's history-row guard (U10, R8)", () => {
+  it("accepts every senior app grade the classifier produces", () => {
+    for (const g of [
+      "A Grade",
+      "F Grade",
+      "Female A Grade",
+      "Female B Grade",
+      "PPL",
+      "Colts",
+      "1st Grade",
+      "Women's 1st Grade",
+      "One Day Grade 1",
+      "Masters",
+      "T20",
+    ]) {
+      expect([g, isSeniorAppGrade(g)]).toEqual([g, true]);
+    }
+  });
+
+  it("rejects junior, unmapped and un-normalised labels", () => {
+    for (const g of ["Under 15", "U15 Juniors", "Female C Grade", "Ladies T20", "", null]) {
+      expect([g, isSeniorAppGrade(g)]).toEqual([g, false]);
+    }
   });
 });

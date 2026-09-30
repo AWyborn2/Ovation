@@ -4,7 +4,12 @@ import { db, awardsTable, awardWinnersTable, clubRolesTable } from "@workspace/d
 import { GetRecordLeadersQueryParams, GetRecordProgressionQueryParams } from "@workspace/api-zod";
 import { dataSource, shouldReadCentral } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
-import { loadClubIdentity } from "../lib/club-overlay";
+import {
+  buildClubStats,
+  clubRecordLeaders,
+  loadClubIdentity,
+  loadClubOverlay,
+} from "../lib/club-overlay";
 import {
   formatRecordValue,
   rankLeaders,
@@ -204,8 +209,16 @@ router.get("/records/leaders", async (req, res): Promise<void> => {
   if (source.kind === "central") {
     const { centralRecordLeaders } = await import("@workspace/db/central-queries");
     // Confirmed merges fold into the keeper, so a merged pair ranks once.
-    const { merges, intByGuid } = await loadClubIdentity(source.tenantId);
-    const rows = await centralRecordLeaders(source.clubId, metric, filter, merges);
+    const overlay = await loadClubOverlay(source.tenantId);
+    // Club overlay (U10): history before the boundary + corrections when the
+    // tenant has a club layer; otherwise the original central read.
+    const stats = overlay.active
+      ? await buildClubStats(overlay, source.tenantId, source.clubId)
+      : null;
+    const intByGuid = stats ? stats.intByGuid : overlay.identity.intByGuid;
+    const rows = stats
+      ? clubRecordLeaders(stats, metric, filter)
+      : await centralRecordLeaders(source.clubId, metric, filter, overlay.identity.merges);
     const entries = rankLeaders(rows, limit).map((r) => ({
       rank: r.rank,
       playerId: intByGuid.get(r.participantId) ?? 0,

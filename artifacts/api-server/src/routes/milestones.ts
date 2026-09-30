@@ -18,7 +18,7 @@ import {
   type DataSource,
 } from "../lib/tenant";
 
-import { loadClubIdentity } from "../lib/club-overlay";
+import { loadClubOverlay, overlayMilestones } from "../lib/club-overlay";
 import { getOrCreateSettings } from "../lib/settings";
 import { logger } from "../lib/logger";
 import { withMilestonesCache } from "../lib/milestones-cache";
@@ -365,14 +365,22 @@ async function buildCentralMilestones(
   };
   // Confirmed merges fold into the keeper, so a merged player's combined career
   // crosses each tier once.
-  const identity = await loadClubIdentity(tenantId);
+  // The club overlay (U10): with a boundary, club history or corrections the
+  // walk skips pre-boundary central matches, starts each player from their
+  // pre-boundary history totals and applies corrections; with no club layer
+  // it is the original central walk.
+  const overlay = await loadClubOverlay(tenantId);
+  const identity = overlay.identity;
   const raw = await optionalSection(
     // The one remote dependency on this path. A central outage should cost the
     // milestone items, not the whole homepage board — and because a degraded
     // build is never cached, it recovers on the next request.
     "central_milestones",
     health,
-    async () => centralMilestones(clubId, tiers, identity.merges),
+    async () =>
+      overlay.active
+        ? overlayMilestones(overlay, tenantId, clubId, tiers)
+        : centralMilestones(clubId, tiers, identity.merges),
     [] as Awaited<ReturnType<typeof centralMilestones>>,
   );
   const intByGuid = identity.intByGuid;
