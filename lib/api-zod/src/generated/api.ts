@@ -7718,7 +7718,7 @@ export const ListClubCorrectionsResponseItem = zod.object({
   "status": zod.enum(['active', 'stale']),
   "staleReason": zod.enum(['mismatch', 'not_found', 'before_boundary']).nullable().describe('mismatch — the association figure changed; not_found — the association no longer has the player\'s line in the match; before_boundary — the match is before the club\'s history boundary'),
   "centralValue": zod.number().nullable().describe('The association figure now (null when the line wasn\'t found)'),
-  "displayName": zod.string().nullable(),
+  "displayName": zod.string().nullable().describe('The player\'s real name, shown to the club admin even when the player is private (public pages keep hiding private players)'),
   "isPrivate": zod.boolean(),
   "match": zod.object({
   "matchId": zod.number().describe('The association match id'),
@@ -7759,6 +7759,15 @@ export const CreateClubCorrectionBody = zod.object({
   "previousValue": zod.number().min(createClubCorrectionBodyPreviousValueMin).describe('The association figure the admin saw (must equal it now)'),
   "newValue": zod.number().min(createClubCorrectionBodyNewValueMin).max(createClubCorrectionBodyNewValueMax),
   "note": zod.string().max(createClubCorrectionBodyNoteMax).nullish()
+})
+
+
+/**
+ * Corrections apply on read to the association data. A club still reading its own native stats (not yet switched to association data) can save corrections, but they only appear on its public pages once the club switches; the admin screen shows a notice when `appliedToPublicPages` is false.
+ * @summary Whether the club's corrections reach its public pages yet (admin)
+ */
+export const GetClubCorrectionsStatusResponse = zod.object({
+  "appliedToPublicPages": zod.boolean().describe('False while the club still reads its own native stats: corrections are saved but only show on its public pages once it switches to association data.')
 })
 
 
@@ -7821,7 +7830,7 @@ export const GetClubCorrectionMatchResponse = zod.object({
 }),
   "lines": zod.array(zod.object({
   "participantId": zod.string(),
-  "displayName": zod.string().nullable(),
+  "displayName": zod.string().nullable().describe('The player\'s real name, shown to the club admin even when the player is private (public pages keep hiding private players)'),
   "isPrivate": zod.boolean(),
   "figures": zod.array(zod.object({
   "field": zod.enum(['runs', 'balls_faced', 'fours', 'sixes', 'not_out', 'balls_bowled', 'maidens', 'runs_conceded', 'wickets', 'wides', 'no_balls', 'catches', 'stumpings', 'run_outs']).describe('A correctable figure. Integers only: bowling is corrected in balls (not overs) and not_out as 0 or 1.'),

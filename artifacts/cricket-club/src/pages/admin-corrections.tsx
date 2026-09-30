@@ -5,6 +5,7 @@ import {
   getSearchClubCorrectionMatchesQueryKey,
   useCreateClubCorrection,
   useGetClubCorrectionMatch,
+  useGetClubCorrectionsStatus,
   useListClubCorrections,
   useRemoveClubCorrection,
   useSearchClubCorrectionMatches,
@@ -21,7 +22,7 @@ import { StatusPill } from "@/components/admin-ui";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { handleAdminMutationError } from "@/lib/admin-auth";
-import { Info } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
 
 /**
  * Stat corrections (hybrid stats plan U16). The club's match figures come from
@@ -100,19 +101,49 @@ const STALE_TEXT: Record<string, (c: ClubCorrection) => string> = {
     "This match is now before the club's history boundary, where the club's own history is used, so this correction is skipped.",
 };
 
+/**
+ * A player's name as the club admin sees it: the real name, even for a
+ * private player (the public pages keep hiding them — only this admin screen
+ * shows it).
+ */
 function playerName(c: { displayName: string | null; isPrivate: boolean }): string {
-  if (c.isPrivate) return "Private player";
-  return c.displayName ?? "Unknown player";
+  return c.displayName ?? (c.isPrivate ? "Private player" : "Unknown player");
+}
+
+/** The player-picker option: the real name, marked when the player is private. */
+function playerOptionLabel(c: { displayName: string | null; isPrivate: boolean }): string {
+  return c.isPrivate && c.displayName ? `${c.displayName} (private)` : playerName(c);
 }
 
 export default function AdminCorrections() {
   const [tab, setTab] = useState<TabKey>("list");
   const [notice, setNotice] = useState<string | null>(null);
   const list = useListClubCorrections();
+  const status = useGetClubCorrectionsStatus();
   const count = list.data?.length ?? 0;
+  // Only an explicit "not yet" from the API shows the notice.
+  const notOnPublicPagesYet = status.data?.appliedToPublicPages === false;
 
   return (
     <div className="space-y-5">
+      {notOnPublicPagesYet && (
+        <div
+          data-testid="corrections-native-notice"
+          role="note"
+          className="flex items-start gap-2 rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm"
+        >
+          <AlertTriangle
+            className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-300"
+            aria-hidden
+          />
+          <p>
+            <span className="font-semibold">Not on your public pages yet.</span> Your club still
+            shows its own stats, so corrections you make here are saved but will only appear on the
+            club&rsquo;s public pages once the club switches to association data.
+          </p>
+        </div>
+      )}
+
       <p className="max-w-[75ch] text-[15px] text-muted-foreground">
         The club&rsquo;s match figures come from the association. When one is wrong, correct it
         here: pick the match, the player and the figure, then enter the right number. The corrected
@@ -152,7 +183,11 @@ export default function AdminCorrections() {
       ) : (
         <NewCorrection
           onSaved={() => {
-            setNotice("Correction saved. It now shows across the site.");
+            setNotice(
+              notOnPublicPagesYet
+                ? "Correction saved. It will show on the club's public pages once the club switches to association data."
+                : "Correction saved. It now shows across the site.",
+            );
             setTab("list");
           }}
         />
@@ -233,7 +268,17 @@ function CorrectionList({ query }: { query: ListQuery }) {
           >
             <div className="flex flex-wrap items-start gap-3">
               <div className="min-w-0 flex-1 space-y-1">
-                <div className="text-base font-semibold">{playerName(c)}</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-base font-semibold">{playerName(c)}</span>
+                  {c.isPrivate && (
+                    <span
+                      className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground"
+                      title="This player is private: their name is hidden on the club's public pages."
+                    >
+                      Private
+                    </span>
+                  )}
+                </div>
                 <div className="text-sm text-muted-foreground">
                   {c.match ? matchSummary(c.match) : `PlayHQ match ${c.playhqMatchId}`}
                 </div>
@@ -445,7 +490,7 @@ function NewCorrection({ onSaved }: { onSaved: () => void }) {
               <option value="">Choose a player…</option>
               {sortedLines.map((l) => (
                 <option key={l.participantId} value={l.participantId}>
-                  {playerName(l)}
+                  {playerOptionLabel(l)}
                 </option>
               ))}
             </select>

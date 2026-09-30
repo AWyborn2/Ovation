@@ -17,6 +17,7 @@ import {
   checkNewCorrection,
   correctionActor,
   CorrectionsStoreMissingError,
+  correctionsStatus,
   describeCorrections,
   lineFigures,
   withCorrectionsStore,
@@ -215,14 +216,26 @@ describe("describeCorrections", () => {
     expect(out[0]).toMatchObject({ status: "stale", staleReason: "before_boundary" });
   });
 
-  it("masks a private player's name", () => {
+  it("shows the club admin a private player's real name, flagged private", () => {
+    // Admin-only list: the admin needs to know whose figure they corrected.
+    // Public reads keep masking (routes/club-corrections-isolation.test.ts).
     const out = describeCorrections([row({})], {
       lines: [line()],
       boundaries: [],
       matches: [match()],
       players: new Map([[G, { displayName: "Secret", isPrivate: true }]]),
     });
-    expect(out[0]).toMatchObject({ displayName: null, isPrivate: true });
+    expect(out[0]).toMatchObject({ displayName: "Secret", isPrivate: true });
+  });
+});
+
+describe("correctionsStatus", () => {
+  it("a club still reading its own native stats: corrections don't reach public pages yet", () => {
+    expect(correctionsStatus(false)).toEqual({ appliedToPublicPages: false });
+  });
+
+  it("a club reading association data: corrections show on public pages", () => {
+    expect(correctionsStatus(true)).toEqual({ appliedToPublicPages: true });
   });
 });
 

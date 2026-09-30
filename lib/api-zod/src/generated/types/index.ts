@@ -161,6 +161,7 @@ export * from './clubCorrectionFigureCorrection';
 export * from './clubCorrectionLine';
 export * from './clubCorrectionMatch';
 export * from './clubCorrectionMatchDetail';
+export * from './clubCorrectionsStatus';
 export * from './clubCorrectionStaleReason';
 export * from './clubCorrectionStatus';
 export * from './clubPhoto';
