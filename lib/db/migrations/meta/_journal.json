@@ -148,6 +148,13 @@
       "when": 1790726605272,
       "tag": "0020_per_tenant_player_space",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790740554224,
+      "tag": "0021_club_history_store",
+      "breakpoints": true
     }
   ]
 }
