@@ -92,6 +92,15 @@ import { tenantsTable } from "./tenants";
  *   profiles (duplicate GUID → keeper GUID, flat, permanent); the ETL
  *   re-applies it after its full replace (step 7) but never deletes it.
  *   Directly tenant-scoped like the corrections journal.
+ *
+ * APPLIED (club history layer, hybrid stats plan U9 / migration 0021):
+ *   club_history_batches, club_history_batch_coverage, club_history_rows,
+ *   club_history_boundaries, club_corrections — directly tenant-scoped from
+ *   day one (every read filters, every write sets it from request context).
+ *   Batch coverage and rows also cascade from their batch, but carry
+ *   tenant_id themselves so no read has to join through the batch.
+ *   club_history_curated_rows (U11 / migration 0022) — which curated rows a
+ *   history batch created; directly tenant-scoped the same way.
  * ───────────────────────────────────────────────────────────────────────────
  */
 export const tenantIdColumn = () =>

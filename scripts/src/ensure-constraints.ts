@@ -110,6 +110,28 @@ const CONSTRAINTS: ConstraintSpec[] = [
     columns: ["tenant_id", "key"],
     replaces: ["team_of_decade_boards_key_unique"],
   },
+  // Club history store (migration 0021, hybrid stats plan U9): one coverage row
+  // per (batch, grade, season) — NULL season = career grain — and one boundary
+  // per (tenant, grade) — NULL grade = the club default.
+  {
+    table: "club_history_batch_coverage",
+    name: "club_history_batch_coverage_batch_grade_season_unique",
+    columns: ["batch_id", "grade", "season"],
+    nullsNotDistinct: true,
+  },
+  {
+    table: "club_history_boundaries",
+    name: "club_history_boundaries_tenant_grade_unique",
+    columns: ["tenant_id", "grade"],
+    nullsNotDistinct: true,
+  },
+  // History import curated-row tags (migration 0022, U11): a curated row is
+  // tagged by at most one batch.
+  {
+    table: "club_history_curated_rows",
+    name: "club_history_curated_rows_target_row_unique",
+    columns: ["target", "row_id"],
+  },
 ];
 
 /** CHECK constraints for the comment-only value sets (plan.md §5.4). */
@@ -159,6 +181,52 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     table: "card_photo_rules",
     name: "card_photo_rules_photo_type_check",
     sql: `"photo_type" IS NULL OR "photo_type" = ANY (ARRAY['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']::text[])`,
+  },
+  // Club history store and corrections journal (migration 0021, U9).
+  {
+    table: "club_history_rows",
+    name: "club_history_rows_grain_check",
+    sql: `"grain" IN ('career', 'season', 'match')`,
+  },
+  {
+    table: "club_history_rows",
+    name: "club_history_rows_grain_season_check",
+    sql: `("grain" = 'career') = ("season" IS NULL)`,
+  },
+  {
+    table: "club_history_rows",
+    name: "club_history_rows_match_descriptor_check",
+    sql: `"grain" = 'match' OR ("match_date" IS NULL AND "opponent" IS NULL AND "round" IS NULL)`,
+  },
+  {
+    table: "club_history_rows",
+    name: "club_history_rows_player_id_check",
+    sql: `"player_id" > 0`,
+  },
+  {
+    table: "club_history_curated_rows",
+    name: "club_history_curated_rows_target_check",
+    sql: `"target" IN ('award', 'award_winner', 'century', 'five_wicket_haul', 'club_record')`,
+  },
+  {
+    table: "club_history_boundaries",
+    name: "club_history_boundaries_start_season_check",
+    sql: `"start_season" BETWEEN 1800 AND 2200`,
+  },
+  {
+    table: "club_corrections",
+    name: "club_corrections_field_check",
+    sql: `"field" IN ('runs', 'balls_faced', 'fours', 'sixes', 'not_out', 'balls_bowled', 'maidens', 'runs_conceded', 'wickets', 'wides', 'no_balls', 'catches', 'stumpings', 'run_outs')`,
+  },
+  {
+    table: "club_corrections",
+    name: "club_corrections_values_check",
+    sql: `"previous_value" >= 0 AND "new_value" >= 0 AND "previous_value" <> "new_value" AND ("field" <> 'not_out' OR ("previous_value" IN (0, 1) AND "new_value" IN (0, 1)))`,
+  },
+  {
+    table: "club_corrections",
+    name: "club_corrections_identity_check",
+    sql: `btrim("playhq_match_id") <> '' AND btrim("participant_id") <> ''`,
   },
 ];
 
@@ -231,6 +299,14 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
           ON "honour_board_overrides" ("tenant_id", "board_key", "player_id")`,
     dropIndexes: ["hbo_board_player_unique"],
   },
+  // One ACTIVE club correction per (tenant, match, participant, field)
+  // (migration 0021, U9); reversed rows (removed_at set) stay as history.
+  {
+    name: "club_corrections_active_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "club_corrections_active_uidx"
+          ON "club_corrections" ("tenant_id", "playhq_match_id", "participant_id", "field")
+          WHERE "removed_at" IS NULL`,
+  },
   // Bulk master-DB load: unique on the master source key.
   {
     name: "matches_source_key_uidx",
@@ -297,6 +373,11 @@ const INDEXES: { name: string; table: string; columns: string[] }[] = [
     "milestone_events",
     "team_of_decade_boards",
     "team_of_decade_members",
+    "club_history_batches",
+    "club_history_batch_coverage",
+    "club_history_rows",
+    "club_corrections",
+    "club_history_curated_rows",
   ].map((table) => ({ name: `${table}_tenant_idx`, table, columns: ["tenant_id"] })),
 ];
 

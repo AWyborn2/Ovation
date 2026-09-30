@@ -21,7 +21,7 @@ import {
 
 import { buildMilestonesForSource } from "../../routes/milestones";
 import type { DataSource } from "../tenant";
-import { loadClubIdentity } from "../club-overlay";
+import { buildClubStats, clubCareers, clubRecords, loadClubOverlay } from "../club-overlay";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { seasonLabel } from "./premierships";
 import { gradeRank } from "./shared";
@@ -317,15 +317,26 @@ async function buildCentralRecordsByGrade(
     await import("@workspace/db/central-queries");
   // The club overlay's identity: crosswalk ids with confirmed merges folded,
   // so a merged pair holds a record as one player (KTD2).
-  const [grades, identity] = await Promise.all([
+  const [centralGrades, overlay] = await Promise.all([
     centralGradesForSeason(source.clubId, null),
-    loadClubIdentity(source.tenantId),
+    loadClubOverlay(source.tenantId),
   ]);
-  const intByGuid = identity.intByGuid;
+  const identity = overlay.identity;
+  // The club overlay (U10): with a boundary, club history or corrections the
+  // holders come from the overlaid stats (a history-only grade gets a board too).
+  const stats = overlay.active
+    ? await buildClubStats(overlay, source.tenantId, source.clubId)
+    : null;
+  const intByGuid = stats ? stats.intByGuid : identity.intByGuid;
+  const grades = stats
+    ? [...new Set([...centralGrades, ...stats.buckets.map((b) => b.grade)])]
+    : centralGrades;
   const perGrade = await Promise.all(
     grades.map(async (grade) => ({
       grade,
-      records: await centralClubRecords(source.clubId, { grade }, identity.merges),
+      records: stats
+        ? clubRecords(stats, { grade })
+        : await centralClubRecords(source.clubId, { grade }, identity.merges),
     })),
   );
 
@@ -465,8 +476,14 @@ async function buildCentralMostGames(
 ): Promise<HonourBoardOut | null> {
   const { centralPlayerCareers } = await import("@workspace/db/central-queries");
   // Confirmed merges fold into the keeper: a merged pair's games are one career.
-  const { merges, intByGuid } = await loadClubIdentity(source.tenantId);
-  const careers = await centralPlayerCareers(source.clubId, undefined, merges);
+  const overlay = await loadClubOverlay(source.tenantId);
+  const stats = overlay.active
+    ? await buildClubStats(overlay, source.tenantId, source.clubId)
+    : null;
+  const intByGuid = stats ? stats.intByGuid : overlay.identity.intByGuid;
+  const careers = stats
+    ? clubCareers(stats)
+    : await centralPlayerCareers(source.clubId, undefined, overlay.identity.merges);
   const rows = careers
     .filter((c) => !c.isPrivate && c.games > 0 && (c.displayName ?? "").trim() !== "")
     .map((c) => ({

@@ -45,6 +45,7 @@ import honourDisplayRouter from "./honour-display";
 import tenantRouter from "./tenant";
 import platformRouter from "./platform";
 import platformAdminRouter from "./platform-admin";
+import historyImportRouter from "./history-import";
 import billingRouter from "./billing";
 
 const router: IRouter = Router();
@@ -94,6 +95,7 @@ router.use(honourDisplayRouter);
 router.use(tenantRouter);
 router.use(platformRouter);
 router.use(platformAdminRouter);
+router.use(historyImportRouter);
 router.use(platformStorageRouter);
 router.use(billingRouter);
 

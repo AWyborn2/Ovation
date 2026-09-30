@@ -170,8 +170,32 @@ export default function TenantDetail() {
         <StatusCard tenantId={id} tenant={tenant} />
 
         <BrandingCard key={tenant.id} tenantId={id} tenant={tenant} />
+        <HistoryImportLinkCard tenantId={id} />
       </div>
     </div>
+  );
+}
+
+/** Link to the concierge club history import (hybrid stats plan U11). */
+function HistoryImportLinkCard({ tenantId }: { tenantId: number }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Club history</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Set the pre-digital boundary and import the club&rsquo;s older history — career or season
+          totals, scorecards and honours — with a preview and undo.
+        </p>
+        <Link
+          href={`/platform-admin/tenants/${tenantId}/history-import`}
+          className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-muted"
+        >
+          Open history import
+        </Link>
+      </CardContent>
+    </Card>
   );
 }
 

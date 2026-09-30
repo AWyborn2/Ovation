@@ -6790,6 +6790,234 @@ paths:
         "404":
           description: No such tenant.
 
+  /platform/admin/history-import/templates/{template}:
+    get:
+      operationId: getHistoryImportTemplate
+      tags: [platformAdmin]
+      summary: >-
+        Download a club history CSV template (every column, one example row):
+        career totals, season totals, match scorecards or honours.
+      parameters:
+        - name: template
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/HistoryImportTemplate"
+      responses:
+        "200":
+          description: The CSV template
+          content:
+            text/csv:
+              schema:
+                type: string
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such template.
+
+  /platform/admin/tenants/{id}/history-import/preview:
+    post:
+      operationId: previewTenantHistoryImport
+      tags: [platformAdmin]
+      summary: >-
+        Validate a club history CSV and preview it (hybrid stats plan U11).
+        Writes nothing. Reports every problem with its spreadsheet row number,
+        each imported player's career delta, and span suggestions (a central
+        player of the club whose first season is adjacent to the boundary) —
+        suggestions only, never linked unless confirmed at commit.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/HistoryImportPreviewBody"
+      responses:
+        "200":
+          description: The preview (check `errors` before committing)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryImportPreview"
+        "400":
+          description: Missing file or unknown template.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+        "503":
+          description: The club history tables (migrations 0021 / 0022) are missing.
+
+  /platform/admin/tenants/{id}/history-import/commit:
+    post:
+      operationId: commitTenantHistoryImport
+      tags: [platformAdmin]
+      summary: >-
+        Import a club history CSV as one batch. The file is validated again;
+        confirmed span links join rows to the central player's id, every other
+        player becomes a pre-digital player. Honours rows go into the club's
+        curated tables. Never drafts social cards.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/HistoryImportCommitBody"
+      responses:
+        "201":
+          description: The batch was written
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryImportCommitResult"
+        "400":
+          description: Missing file, label or template, or a link that isn't one of the suggestions.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+        "409":
+          description: The club's player id space is full (ids stay below 90000).
+        "422":
+          description: The file has errors (the body carries the preview).
+        "503":
+          description: The club history tables (migrations 0021 / 0022) are missing.
+
+  /platform/admin/tenants/{id}/history-import/batches:
+    get:
+      operationId: listTenantHistoryBatches
+      tags: [platformAdmin]
+      summary: The club's history import batches, newest first.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The batches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HistoryImportBatch"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+        "503":
+          description: The club history tables (migrations 0021 / 0022) are missing.
+
+  /platform/admin/tenants/{id}/history-import/batches/{batchId}:
+    delete:
+      operationId: undoTenantHistoryBatch
+      tags: [platformAdmin]
+      summary: >-
+        Undo a history batch: its rows and coverage, the curated honours rows it
+        created, and any pre-digital player it created that nothing else uses.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The batch was undone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HistoryImportUndoResult"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such batch for this tenant.
+        "503":
+          description: The club history tables (migrations 0021 / 0022) are missing.
+
+  /platform/admin/tenants/{id}/history-import/boundaries:
+    get:
+      operationId: getTenantHistoryBoundaries
+      tags: [platformAdmin]
+      summary: >-
+        The club's pre-digital boundaries: the first season central supplies,
+        as a club default (grade null) plus per-grade overrides.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The boundaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HistoryBoundary"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+        "503":
+          description: The club history tables (migrations 0021 / 0022) are missing.
+    put:
+      operationId: replaceTenantHistoryBoundaries
+      tags: [platformAdmin]
+      summary: >-
+        Replace the club's boundaries. Seasons before a grade's boundary come
+        only from club history and central seasons before it stop counting, so
+        this changes the club's public numbers.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplaceHistoryBoundariesBody"
+      responses:
+        "200":
+          description: The saved boundaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HistoryBoundary"
+        "400":
+          description: A grade that isn't senior, a bad season or a duplicate.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+        "503":
+          description: The club history tables (migrations 0021 / 0022) are missing.
+
   /social-prefill/ladder:
     get:
       operationId: getSocialLadderPrefill
@@ -9344,6 +9572,298 @@ components:
         created:
           type: boolean
           description: True when the admin was bootstrapped (did not previously exist).
+
+    HistoryImportTemplate:
+      type: string
+      enum: [career, season, match, honours]
+      description: >-
+        career = career totals per player and grade (with first / last season);
+        season = season totals; match = one player's line in one match;
+        honours = awards, centuries, five-wicket hauls and club records.
+
+    HistoryImportPreviewBody:
+      type: object
+      required: [file, template]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: The CSV file
+        template:
+          $ref: "#/components/schemas/HistoryImportTemplate"
+
+    HistoryImportCommitBody:
+      type: object
+      required: [file, template, label]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: The same CSV file that was previewed
+        template:
+          $ref: "#/components/schemas/HistoryImportTemplate"
+        label:
+          type: string
+          description: Admin-facing name for the batch, e.g. "1985–2002 career totals (club book)".
+        note:
+          type: string
+        links:
+          type: string
+          description: >-
+            JSON object of confirmed span links: imported player key -> the
+            suggested tenant player id to join. Omit or "{}" for none.
+
+    HistoryRowIssue:
+      type: object
+      required: [row, message]
+      properties:
+        row:
+          type: integer
+          description: Spreadsheet row number (the header is row 1).
+        column:
+          type: string
+        message:
+          type: string
+
+    HistoryCoverage:
+      type: object
+      required: [grade, season]
+      properties:
+        grade:
+          type: string
+        season:
+          type: ["integer", "null"]
+          description: Season start year (2003 = 2003/04); null = career totals.
+
+    HistoryCareerDelta:
+      type: object
+      required:
+        [
+          games,
+          innings,
+          notOuts,
+          runs,
+          highScore,
+          ballsBowled,
+          runsConceded,
+          wickets,
+          fifties,
+          hundreds,
+          fiveWickets,
+          catches,
+          stumpings,
+          runOuts,
+        ]
+      properties:
+        games:
+          type: integer
+        innings:
+          type: integer
+        notOuts:
+          type: integer
+        runs:
+          type: integer
+        highScore:
+          type: ["integer", "null"]
+        ballsBowled:
+          type: integer
+        runsConceded:
+          type: integer
+        wickets:
+          type: integer
+        fifties:
+          type: integer
+        hundreds:
+          type: integer
+        fiveWickets:
+          type: integer
+        catches:
+          type: integer
+        stumpings:
+          type: integer
+        runOuts:
+          type: integer
+
+    HistorySpanSuggestion:
+      type: object
+      required: [playerId, participantId, displayName, kind, firstSeason, lastSeason, reason]
+      properties:
+        playerId:
+          type: integer
+          description: The tenant player id the rows would join.
+        participantId:
+          type: string
+        displayName:
+          type: ["string", "null"]
+        kind:
+          type: string
+          enum: [central, history]
+          description: A central player of this club, or an earlier import's pre-digital player.
+        firstSeason:
+          type: ["integer", "null"]
+        lastSeason:
+          type: ["integer", "null"]
+        reason:
+          type: string
+
+    HistoryPreviewPlayer:
+      type: object
+      required: [key, name, rows, grades, firstSeason, lastSeason, delta, suggestions]
+      properties:
+        key:
+          type: string
+          description: The player's key in this file (use it in commit `links`).
+        name:
+          type: string
+        rows:
+          type: array
+          items:
+            type: integer
+        grades:
+          type: array
+          items:
+            type: string
+        firstSeason:
+          type: integer
+        lastSeason:
+          type: integer
+        delta:
+          $ref: "#/components/schemas/HistoryCareerDelta"
+        suggestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistorySpanSuggestion"
+
+    HistoryPreviewHonour:
+      type: object
+      required: [row, type, name, title, season, grade, detail, playerId, linkedName]
+      properties:
+        row:
+          type: integer
+        type:
+          type: string
+          enum: [award, century, five_wickets, club_record]
+        name:
+          type: string
+        title:
+          type: ["string", "null"]
+        season:
+          type: ["integer", "null"]
+        grade:
+          type: ["string", "null"]
+        detail:
+          type: ["string", "null"]
+        playerId:
+          type: ["integer", "null"]
+          description: The club player linked by an exact, unique name match (else null).
+        linkedName:
+          type: ["string", "null"]
+
+    HistoryImportPreview:
+      type: object
+      required: [template, rowCount, errors, warnings, coverage, players, honours]
+      properties:
+        template:
+          $ref: "#/components/schemas/HistoryImportTemplate"
+        rowCount:
+          type: integer
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryRowIssue"
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryRowIssue"
+        coverage:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryCoverage"
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryPreviewPlayer"
+        honours:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryPreviewHonour"
+
+    HistoryImportCommitResult:
+      type: object
+      required: [batchId, rows, honours, linkedPlayers, newPlayers, coverage]
+      properties:
+        batchId:
+          type: integer
+        rows:
+          type: integer
+        honours:
+          type: integer
+        linkedPlayers:
+          type: integer
+        newPlayers:
+          type: integer
+        coverage:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryCoverage"
+
+    HistoryImportBatch:
+      type: object
+      required: [id, label, source, note, createdBy, createdAt, rows, honours, coverage]
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+        source:
+          type: string
+        note:
+          type: ["string", "null"]
+        createdBy:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        rows:
+          type: integer
+        honours:
+          type: integer
+        coverage:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryCoverage"
+
+    HistoryImportUndoResult:
+      type: object
+      required: [batchId, rowsRemoved, honoursRemoved, playersRemoved]
+      properties:
+        batchId:
+          type: integer
+        rowsRemoved:
+          type: integer
+        honoursRemoved:
+          type: integer
+        playersRemoved:
+          type: integer
+
+    HistoryBoundary:
+      type: object
+      required: [grade, startSeason]
+      properties:
+        grade:
+          type: ["string", "null"]
+          description: App grade; null = the club default.
+        startSeason:
+          type: integer
+          description: First season central supplies (2003 = 2003/04).
+
+    ReplaceHistoryBoundariesBody:
+      type: object
+      required: [boundaries]
+      properties:
+        boundaries:
+          type: array
+          items:
+            $ref: "#/components/schemas/HistoryBoundary"
 
     PasswordResetInfo:
       type: object
