@@ -1,6 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { capRegisterTable, playerGradeStatsTable } from "@workspace/db";
 import { GRADE_TO_CAP_CATEGORY, type CapSyncTx } from "./cap-sync";
+import { detachDeletedNativePlayers } from "./curated-player-detach";
 
 /**
  * Reconcile A Grade / Female A Grade cap lists AFTER stats were rolled back
@@ -80,17 +81,24 @@ export async function cleanupOrphanPlayers(tx: CapSyncTx, candidateIds: number[]
     candidateIds.map((id) => sql`${id}`),
     sql`, `,
   )})`;
-  const result = await tx.execute(sql`
+  // Curated links are checked for Halls Head (tenant 1) only: curated player ids
+  // are per-tenant since migration 0020, and another club's row carrying the
+  // same integer is that club's own crosswalk player, not a native one.
+  const result = await tx.execute<{ id: number }>(sql`
     DELETE FROM players p
     WHERE p.id IN ${ids}
       AND NOT EXISTS (SELECT 1 FROM player_grade_season_stats s WHERE s.player_id = p.id)
       AND NOT EXISTS (SELECT 1 FROM player_grade_stats s WHERE s.player_id = p.id)
       AND NOT EXISTS (SELECT 1 FROM match_player_lines m WHERE m.player_id = p.id)
-      AND NOT EXISTS (SELECT 1 FROM premiership_players pp WHERE pp.player_id = p.id)
-      AND NOT EXISTS (SELECT 1 FROM cap_register c WHERE c.player_id = p.id)
-      AND NOT EXISTS (SELECT 1 FROM life_members l WHERE l.player_id = p.id)
-      AND NOT EXISTS (SELECT 1 FROM honour_board_overrides h WHERE h.player_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM premiership_players pp WHERE pp.player_id = p.id AND pp.tenant_id = 1)
+      AND NOT EXISTS (SELECT 1 FROM cap_register c WHERE c.player_id = p.id AND c.tenant_id = 1)
+      AND NOT EXISTS (SELECT 1 FROM life_members l WHERE l.player_id = p.id AND l.tenant_id = 1)
+      AND NOT EXISTS (SELECT 1 FROM honour_board_overrides h WHERE h.player_id = p.id AND h.tenant_id = 1)
+    RETURNING p.id
   `);
-  const rowCount = (result as { rowCount?: number } | null)?.rowCount;
-  return typeof rowCount === "number" ? rowCount : 0;
+  const deleted = (result?.rows ?? []).map((r) => Number(r.id));
+  // What the dropped curated foreign keys did on delete (award winners, ToD,
+  // club roles, photos, ballots, centuries / five-fors), Halls Head only.
+  await detachDeletedNativePlayers(tx, deleted);
+  return deleted.length;
 }

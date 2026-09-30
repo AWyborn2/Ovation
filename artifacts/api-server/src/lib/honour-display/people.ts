@@ -8,6 +8,7 @@
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { db, lifeMembersTable, clubRolesTable, playerGradeStatsTable } from "@workspace/db";
 
+import { curatedIdsAreNative } from "../curated-player-space";
 import { seasonLabel } from "./premierships";
 import { composeSeasonGrid, gradeRank } from "./shared";
 import { type GridColumnOptionOut, type HonourBoardOut, type LifeMemberStatsOut } from "./types";
@@ -114,8 +115,12 @@ export async function buildLifeMembers(tenantId: number): Promise<HonourBoardOut
     .where(eq(lifeMembersTable.tenantId, tenantId))
     .orderBy(asc(lifeMembersTable.inductionYear), asc(lifeMembersTable.name));
   if (rows.length === 0) return null;
+  // Native stats are Halls Head's alone; another club's ids are its own
+  // crosswalk ids (U8) and must never pick up a Halls Head career.
   const statsByPlayer = await aggregateLifeMemberStats(
-    rows.map((r) => r.playerId).filter((id): id is number => id != null),
+    (await curatedIdsAreNative(tenantId))
+      ? rows.map((r) => r.playerId).filter((id): id is number => id != null)
+      : [],
   );
   return {
     id: "life_members",

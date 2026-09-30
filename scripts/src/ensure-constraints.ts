@@ -82,11 +82,33 @@ const CONSTRAINTS: ConstraintSpec[] = [
     name: "award_points_config_award_season_unique",
     columns: ["award_id", "season"],
   },
+  // Curated keys are unique PER TENANT (migration 0020, hybrid stats plan U8,
+  // R17): two clubs may each have a 2024 President or an "a-grade" board.
+  // `replaces` drops the global uniques these superseded.
   {
     table: "club_roles",
-    name: "club_roles_season_role_grade_unique",
-    columns: ["season", "role", "grade"],
+    name: "club_roles_tenant_season_role_grade_unique",
+    columns: ["tenant_id", "season", "role", "grade"],
     nullsNotDistinct: true,
+    replaces: ["club_roles_season_role_grade_unique"],
+  },
+  {
+    table: "honour_boards",
+    name: "honour_boards_tenant_key_unique",
+    columns: ["tenant_id", "key"],
+    replaces: ["honour_boards_key_unique"],
+  },
+  {
+    table: "awards",
+    name: "awards_tenant_key_unique",
+    columns: ["tenant_id", "key"],
+    replaces: ["awards_key_unique"],
+  },
+  {
+    table: "team_of_decade_boards",
+    name: "team_of_decade_boards_tenant_key_unique",
+    columns: ["tenant_id", "key"],
+    replaces: ["team_of_decade_boards_key_unique"],
   },
 ];
 
@@ -200,6 +222,14 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
       "matches_grade_season_round_stage_unique",
       "matches_grade_season_round_unique",
     ],
+  },
+  // One override per (tenant, board, player) (migration 0020, U8): the global
+  // (board_key, player_id) index let one club's upsert rewrite another's row.
+  {
+    name: "hbo_tenant_board_player_unique",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "hbo_tenant_board_player_unique"
+          ON "honour_board_overrides" ("tenant_id", "board_key", "player_id")`,
+    dropIndexes: ["hbo_board_player_unique"],
   },
   // Bulk master-DB load: unique on the master source key.
   {

@@ -14,6 +14,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
+import { assertPlayerInTenantSpace } from "../lib/curated-player-space";
 
 const router: IRouter = Router();
 
@@ -149,6 +150,7 @@ router.post(
       res.status(400).json({ error: body.error.message });
       return;
     }
+    await assertPlayerInTenantSpace(getTenantId(req), body.data.playerId);
     const values = {
       tenantId: getTenantId(req),
       boardKey: params.data.key,
@@ -161,7 +163,13 @@ router.post(
       .insert(honourBoardOverridesTable)
       .values(values)
       .onConflictDoUpdate({
-        target: [honourBoardOverridesTable.boardKey, honourBoardOverridesTable.playerId],
+        // Per tenant (hbo_tenant_board_player_unique): another club's override
+        // for the same board key and player id is a different row.
+        target: [
+          honourBoardOverridesTable.tenantId,
+          honourBoardOverridesTable.boardKey,
+          honourBoardOverridesTable.playerId,
+        ],
         set: {
           pinned: values.pinned,
           hidden: values.hidden,

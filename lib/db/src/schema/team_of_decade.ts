@@ -1,5 +1,4 @@
-import { pgTable, serial, integer, text, boolean, index } from "drizzle-orm/pg-core";
-import { playersTable } from "./players";
+import { pgTable, serial, integer, text, boolean, index, unique } from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 
 export const teamOfDecadeBoardsTable = pgTable(
@@ -7,8 +6,8 @@ export const teamOfDecadeBoardsTable = pgTable(
   {
     id: serial("id").primaryKey(),
     tenantId: tenantIdColumn(),
-    // NOTE(tenant): `key` is globally unique; multi-tenant wants UNIQUE(tenant_id, key).
-    key: text("key").notNull().unique(),
+    // Unique per tenant (team_of_decade_boards_tenant_key_unique, U8, R17).
+    key: text("key").notNull(),
     title: text("title").notNull(),
     teamLabel: text("team_label").notNull().default(""),
     periodLabel: text("period_label").notNull().default(""),
@@ -18,6 +17,7 @@ export const teamOfDecadeBoardsTable = pgTable(
   },
   (t) => ({
     idxTenant: index("team_of_decade_boards_tenant_idx").on(t.tenantId),
+    uqTenantKey: unique("team_of_decade_boards_tenant_key_unique").on(t.tenantId, t.key),
   }),
 );
 
@@ -29,9 +29,11 @@ export const teamOfDecadeMembersTable = pgTable(
     boardId: integer("board_id")
       .notNull()
       .references(() => teamOfDecadeBoardsTable.id, { onDelete: "cascade" }),
-    playerId: integer("player_id").references(() => playersTable.id, {
-      onDelete: "set null",
-    }),
+    // A player id in the TENANT's id space (its crosswalk ints; for Halls Head
+    // also its native players.id while it reads native) — deliberately no FK to
+    // the native players table (hybrid stats plan U8, KTD3). Writes are checked
+    // by assertPlayerInTenantSpace (api-server/src/lib/curated-player-space.ts).
+    playerId: integer("player_id"),
     name: text("name").notNull(),
     battingOrder: integer("batting_order").notNull().default(0),
     role: text("role").notNull().default(""),

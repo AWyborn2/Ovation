@@ -1,7 +1,6 @@
 import { pgTable, serial, integer, text, boolean, timestamp, unique } from "drizzle-orm/pg-core";
 import { awardsTable } from "./awards";
 import { captainsTable } from "./captains";
-import { playersTable } from "./players";
 
 /**
  * Per-(award, season) 3-2-1 voting configuration. An award only becomes a voted
@@ -53,15 +52,11 @@ export const awardBallotsTable = pgTable(
       .references(() => captainsTable.id, { onDelete: "cascade" }),
     grade: text("grade").notNull(),
     round: integer("round").notNull(),
-    pick1PlayerId: integer("pick1_player_id")
-      .notNull()
-      .references(() => playersTable.id, { onDelete: "cascade" }),
-    pick2PlayerId: integer("pick2_player_id")
-      .notNull()
-      .references(() => playersTable.id, { onDelete: "cascade" }),
-    pick3PlayerId: integer("pick3_player_id")
-      .notNull()
-      .references(() => playersTable.id, { onDelete: "cascade" }),
+    // Player ids in the award's tenant id space — no FK to native players
+    // (hybrid stats plan U8, KTD3); checked by assertPlayerInTenantSpace.
+    pick1PlayerId: integer("pick1_player_id").notNull(),
+    pick2PlayerId: integer("pick2_player_id").notNull(),
+    pick3PlayerId: integer("pick3_player_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
