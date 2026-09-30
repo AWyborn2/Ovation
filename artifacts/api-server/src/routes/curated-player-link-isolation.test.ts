@@ -913,7 +913,8 @@ describe("curated player links stay inside the club's own player id space", () =
       expect(before.cap?.playerId).toBe(native.A);
       expect(before.role?.playerId).toBe(native.A);
       expect(before.overrides.map((o) => o.playerId)).toEqual([native.A]);
-      expect(before.prem?.players.map((p) => p.playerId)).toEqual([native.A]);
+      // (The team list may also hold the crosswalk-only id an earlier case added.)
+      expect(before.prem?.players.filter((p) => p.playerId === native.A)).toHaveLength(1);
       expect(before.player.givenName).toBe("NativeA");
       expect(before.player.awards).toEqual(
         expect.arrayContaining([expect.objectContaining({ key: fx[T1]!.awardKey })]),
