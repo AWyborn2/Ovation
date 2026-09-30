@@ -1,6 +1,5 @@
-import { pgTable, serial, integer, text, boolean, index, check } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, boolean, index, check, unique } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { playersTable } from "./players";
 import { tenantIdColumn } from "./_tenant";
 
 export const awardsTable = pgTable(
@@ -8,8 +7,8 @@ export const awardsTable = pgTable(
   {
     id: serial("id").primaryKey(),
     tenantId: tenantIdColumn(),
-    // NOTE(tenant): `key` is globally unique; multi-tenant wants UNIQUE(tenant_id, key).
-    key: text("key").notNull().unique(),
+    // Unique per tenant (awards_tenant_key_unique, hybrid stats plan U8, R17).
+    key: text("key").notNull(),
     title: text("title").notNull(),
     description: text("description").notNull().default(""),
     displayOrder: integer("display_order").notNull().default(0),
@@ -25,6 +24,7 @@ export const awardsTable = pgTable(
   },
   (t) => ({
     idxTenant: index("awards_tenant_idx").on(t.tenantId),
+    uqTenantKey: unique("awards_tenant_key_unique").on(t.tenantId, t.key),
     chkMechanism: check(
       "awards_mechanism_check",
       sql`"mechanism" IN ('voted', 'points', 'manual')`,
@@ -41,9 +41,11 @@ export const awardWinnersTable = pgTable(
       .notNull()
       .references(() => awardsTable.id, { onDelete: "cascade" }),
     season: integer("season").notNull(),
-    playerId: integer("player_id").references(() => playersTable.id, {
-      onDelete: "set null",
-    }),
+    // A player id in the TENANT's id space (its crosswalk ints; for Halls Head
+    // also its native players.id while it reads native) — deliberately no FK to
+    // the native players table (hybrid stats plan U8, KTD3). Writes are checked
+    // by assertPlayerInTenantSpace (api-server/src/lib/curated-player-space.ts).
+    playerId: integer("player_id"),
     name: text("name").notNull(),
     displayOrder: integer("display_order").notNull().default(0),
     // Public visibility for an individual winner row. Defaults true so a

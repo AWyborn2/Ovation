@@ -1,5 +1,4 @@
 import { pgTable, serial, integer, text, index } from "drizzle-orm/pg-core";
-import { playersTable } from "./players";
 import { tenantIdColumn } from "./_tenant";
 
 /**
@@ -14,9 +13,11 @@ export const centuriesTable = pgTable(
   {
     id: serial("id").primaryKey(),
     tenantId: tenantIdColumn(),
-    playerId: integer("player_id").references(() => playersTable.id, {
-      onDelete: "set null",
-    }),
+    // A player id in the TENANT's id space (its crosswalk ints; for Halls Head
+    // also its native players.id while it reads native) — deliberately no FK to
+    // the native players table (hybrid stats plan U8, KTD3). Writes are checked
+    // by assertPlayerInTenantSpace (api-server/src/lib/curated-player-space.ts).
+    playerId: integer("player_id"),
     grade: text("grade").notNull(),
     batsman: text("batsman").notNull(),
     score: text("score"),
@@ -32,9 +33,11 @@ export const fiveWicketHaulsTable = pgTable(
   {
     id: serial("id").primaryKey(),
     tenantId: tenantIdColumn(),
-    playerId: integer("player_id").references(() => playersTable.id, {
-      onDelete: "set null",
-    }),
+    // A player id in the TENANT's id space (its crosswalk ints; for Halls Head
+    // also its native players.id while it reads native) — deliberately no FK to
+    // the native players table (hybrid stats plan U8, KTD3). Writes are checked
+    // by assertPlayerInTenantSpace (api-server/src/lib/curated-player-space.ts).
+    playerId: integer("player_id"),
     grade: text("grade").notNull(),
     bowler: text("bowler").notNull(),
     figures: text("figures"),

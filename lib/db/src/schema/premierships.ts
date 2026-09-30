@@ -1,7 +1,6 @@
 import { pgTable, serial, integer, text, boolean, index, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { type z } from "zod/v4";
-import { playersTable } from "./players";
 import { tenantIdColumn } from "./_tenant";
 
 export const premiershipsTable = pgTable(
@@ -46,18 +45,20 @@ export const premiershipPlayersTable = pgTable(
     premiershipId: integer("premiership_id")
       .notNull()
       .references(() => premiershipsTable.id, { onDelete: "cascade" }),
-    playerId: integer("player_id").references(() => playersTable.id, {
-      onDelete: "set null",
-    }),
+    // A player id in the TENANT's id space (its crosswalk ints; for Halls Head
+    // also its native players.id while it reads native) — deliberately no FK to
+    // the native players table (hybrid stats plan U8, KTD3). Writes are checked
+    // by assertPlayerInTenantSpace (api-server/src/lib/curated-player-space.ts).
+    playerId: integer("player_id"),
     name: text("name").notNull(),
     isCaptain: boolean("is_captain").notNull().default(false),
     isMotm: boolean("is_motm").notNull().default(false),
     battingOrder: integer("batting_order"),
     /**
      * Central PlayHQ participant GUID for a player seeded from a central
-     * scorecard. `player_id` references the NATIVE players table, so a
-     * central-backed tenant's link is resolved at read time through
-     * `player_id_map` instead.
+     * scorecard (or linked by a central-backed tenant's admin). Such a row's
+     * `player_id` stays null and the link is resolved at read time through the
+     * tenant's `player_id_map`, so a merged-away GUID lands on its keeper.
      */
     participantId: text("participant_id"),
   },
