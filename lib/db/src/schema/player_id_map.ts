@@ -17,6 +17,15 @@ import { tenantsTable } from "./tenants";
  * scorecard evidence), keeping every vote, cap, photo and honour link valid.
  * Anything minted for tenant 1 starts above the highest native id.
  *
+ * Pre-digital-only players (club history, hybrid stats plan U9/U11, KTD3) are
+ * people central has never seen, so they have no PlayHQ GUID. They get a
+ * SYNTHETIC row here so they share the tenant's player id space: the
+ * `participant_id` is a club-local key `club:<uuid>` (lower-case v4 UUID),
+ * which can never collide with a PlayHQ GUID and is never looked up in
+ * central. Minting rules are the same as for GUIDs (skip >= 90000; tenant 1
+ * starts above its highest native id). Readers joining the map to central
+ * must skip the `club:` prefix. No minting code exists yet (U11 adds it).
+ *
  * Invariants: the map is 1:1 per tenant (both unique indexes below). A split
  * identity keeps ONE row — for its keeper GUID; every other GUID is folded into
  * the keeper via `player_curation.merged_into_participant_id`, and minting
