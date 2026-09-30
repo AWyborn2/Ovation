@@ -23,6 +23,7 @@ const AdminBranding = lazy(() => import("@/pages/admin-branding"));
 const AdminNav = lazy(() => import("@/pages/admin-nav"));
 const AdminPlayers = lazy(() => import("@/pages/admin-players"));
 const AdminPlayerDuplicates = lazy(() => import("@/pages/admin-player-duplicates"));
+const AdminCorrections = lazy(() => import("@/pages/admin-corrections"));
 const AdminStats = lazy(() => import("@/pages/admin-stats"));
 const AdminJuniorStats = lazy(() => import("@/pages/admin-junior-stats"));
 const AdminJuniorPlayers = lazy(() => import("@/pages/admin-junior-players"));
@@ -136,6 +137,7 @@ export function AdminPeopleGroup() {
       pages={{
         players: <AdminPlayers />,
         duplicates: <AdminPlayerDuplicates />,
+        corrections: <AdminCorrections />,
         stats: <AdminStats />,
         "junior-scorecards": <AdminJuniorStats />,
         "junior-players": <AdminJuniorPlayers />,

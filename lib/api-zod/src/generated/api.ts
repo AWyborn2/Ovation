@@ -7702,6 +7702,141 @@ export const ReviewPlayerDuplicateResponse = zod.object({
 
 
 /**
+ * Every correction this club has in force (removed ones are not listed). Each is checked against the association data now: `active` when the association still shows the figure it was made against, `stale` (with the reason) when the association changed that figure, no longer has the player's line, or the match is before the club's history boundary. A stale correction is skipped on read.
+ * @summary The club's corrections to association figures, active and stale (admin)
+ */
+export const ListClubCorrectionsResponseItem = zod.object({
+  "id": zod.number(),
+  "playhqMatchId": zod.string(),
+  "participantId": zod.string(),
+  "field": zod.enum(['runs', 'balls_faced', 'fours', 'sixes', 'not_out', 'balls_bowled', 'maidens', 'runs_conceded', 'wickets', 'wides', 'no_balls', 'catches', 'stumpings', 'run_outs']).describe('A correctable figure. Integers only: bowling is corrected in balls (not overs) and not_out as 0 or 1.'),
+  "previousValue": zod.number(),
+  "newValue": zod.number(),
+  "note": zod.string().nullable(),
+  "createdBy": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "status": zod.enum(['active', 'stale']),
+  "staleReason": zod.enum(['mismatch', 'not_found', 'before_boundary']).nullable().describe('mismatch — the association figure changed; not_found — the association no longer has the player\'s line in the match; before_boundary — the match is before the club\'s history boundary'),
+  "centralValue": zod.number().nullable().describe('The association figure now (null when the line wasn\'t found)'),
+  "displayName": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "match": zod.object({
+  "matchId": zod.number().describe('The association match id'),
+  "playhqMatchId": zod.string().nullable().describe('PlayHQ match id; a match without one can\'t be corrected'),
+  "season": zod.number().nullable().describe('Season start year'),
+  "grade": zod.string(),
+  "round": zod.string().nullable(),
+  "matchDate": zod.string().nullable(),
+  "opponent": zod.string().nullable(),
+  "clubScore": zod.string().nullable(),
+  "opponentScore": zod.string().nullable()
+}).nullable()
+})
+export const ListClubCorrectionsResponse = zod.array(ListClubCorrectionsResponseItem)
+
+
+/**
+ * The match must be one of the club's senior association matches, the player must have a line for the club in it, the field must be correctable and `previousValue` must equal the association's figure now, so a correction is never born stale. A correction for a field that already has one replaces it. Applied on read only: the association data is never changed, and no social cards are drafted.
+ * @summary Correct one association figure on one player's match line (admin)
+ */
+export const createClubCorrectionBodyPlayhqMatchIdMax = 200;
+
+export const createClubCorrectionBodyParticipantIdMax = 200;
+
+export const createClubCorrectionBodyPreviousValueMin = 0;
+
+export const createClubCorrectionBodyNewValueMin = 0;
+export const createClubCorrectionBodyNewValueMax = 100000;
+
+export const createClubCorrectionBodyNoteMax = 500;
+
+
+
+export const CreateClubCorrectionBody = zod.object({
+  "playhqMatchId": zod.string().min(1).max(createClubCorrectionBodyPlayhqMatchIdMax),
+  "participantId": zod.string().min(1).max(createClubCorrectionBodyParticipantIdMax),
+  "field": zod.enum(['runs', 'balls_faced', 'fours', 'sixes', 'not_out', 'balls_bowled', 'maidens', 'runs_conceded', 'wickets', 'wides', 'no_balls', 'catches', 'stumpings', 'run_outs']).describe('A correctable figure. Integers only: bowling is corrected in balls (not overs) and not_out as 0 or 1.'),
+  "previousValue": zod.number().min(createClubCorrectionBodyPreviousValueMin).describe('The association figure the admin saw (must equal it now)'),
+  "newValue": zod.number().min(createClubCorrectionBodyNewValueMin).max(createClubCorrectionBodyNewValueMax),
+  "note": zod.string().max(createClubCorrectionBodyNoteMax).nullish()
+})
+
+
+/**
+ * Soft removal: the correction stays in the audit history with who removed it and when, and stops applying on read.
+ * @summary Remove a correction, so the association figure shows again (admin)
+ */
+export const RemoveClubCorrectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Find one of the club's senior association matches to correct (admin)
+ */
+export const searchClubCorrectionMatchesQueryQMax = 80;
+
+export const searchClubCorrectionMatchesQueryLimitDefault = 40;
+export const searchClubCorrectionMatchesQueryLimitMax = 100;
+
+
+
+export const SearchClubCorrectionMatchesQueryParams = zod.object({
+  "q": zod.coerce.string().max(searchClubCorrectionMatchesQueryQMax).optional().describe('Words matched against the date, opponent, round, grade and season'),
+  "limit": zod.coerce.number().min(1).max(searchClubCorrectionMatchesQueryLimitMax).default(searchClubCorrectionMatchesQueryLimitDefault)
+})
+
+export const SearchClubCorrectionMatchesResponseItem = zod.object({
+  "matchId": zod.number().describe('The association match id'),
+  "playhqMatchId": zod.string().nullable().describe('PlayHQ match id; a match without one can\'t be corrected'),
+  "season": zod.number().nullable().describe('Season start year'),
+  "grade": zod.string(),
+  "round": zod.string().nullable(),
+  "matchDate": zod.string().nullable(),
+  "opponent": zod.string().nullable(),
+  "clubScore": zod.string().nullable(),
+  "opponentScore": zod.string().nullable()
+})
+export const SearchClubCorrectionMatchesResponse = zod.array(SearchClubCorrectionMatchesResponseItem)
+
+
+/**
+ * @summary One match's club player lines with each correctable figure (admin)
+ */
+export const GetClubCorrectionMatchParams = zod.object({
+  "matchId": zod.coerce.number().describe('The association match id (`ClubCorrectionMatch.matchId`)')
+})
+
+export const GetClubCorrectionMatchResponse = zod.object({
+  "match": zod.object({
+  "matchId": zod.number().describe('The association match id'),
+  "playhqMatchId": zod.string().nullable().describe('PlayHQ match id; a match without one can\'t be corrected'),
+  "season": zod.number().nullable().describe('Season start year'),
+  "grade": zod.string(),
+  "round": zod.string().nullable(),
+  "matchDate": zod.string().nullable(),
+  "opponent": zod.string().nullable(),
+  "clubScore": zod.string().nullable(),
+  "opponentScore": zod.string().nullable()
+}),
+  "lines": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "figures": zod.array(zod.object({
+  "field": zod.enum(['runs', 'balls_faced', 'fours', 'sixes', 'not_out', 'balls_bowled', 'maidens', 'runs_conceded', 'wickets', 'wides', 'no_balls', 'catches', 'stumpings', 'run_outs']).describe('A correctable figure. Integers only: bowling is corrected in balls (not overs) and not_out as 0 or 1.'),
+  "value": zod.number().describe('The association figure now'),
+  "correction": zod.object({
+  "id": zod.number(),
+  "previousValue": zod.number(),
+  "newValue": zod.number()
+}).nullish().describe('The correction in force on this figure, if any')
+}))
+}))
+})
+
+
+/**
  * @summary Start an upgrade checkout for the current tenant (inert while billing is disabled)
  */
 export const CreateBillingCheckoutBody = zod.object({

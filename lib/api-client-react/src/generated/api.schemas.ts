@@ -5451,6 +5451,139 @@ export interface DuplicateReview {
   rejected: DuplicatePair[];
 }
 
+/**
+ * A correctable figure. Integers only: bowling is corrected in balls (not overs) and not_out as 0 or 1.
+ */
+export type ClubCorrectionField = typeof ClubCorrectionField[keyof typeof ClubCorrectionField];
+
+
+export const ClubCorrectionField = {
+  runs: 'runs',
+  balls_faced: 'balls_faced',
+  fours: 'fours',
+  sixes: 'sixes',
+  not_out: 'not_out',
+  balls_bowled: 'balls_bowled',
+  maidens: 'maidens',
+  runs_conceded: 'runs_conceded',
+  wickets: 'wickets',
+  wides: 'wides',
+  no_balls: 'no_balls',
+  catches: 'catches',
+  stumpings: 'stumpings',
+  run_outs: 'run_outs',
+} as const;
+
+export interface ClubCorrectionMatch {
+  /** The association match id */
+  matchId: number;
+  /** PlayHQ match id; a match without one can't be corrected */
+  playhqMatchId: string | null;
+  /** Season start year */
+  season: number | null;
+  grade: string;
+  round: string | null;
+  matchDate: string | null;
+  opponent: string | null;
+  clubScore: string | null;
+  opponentScore: string | null;
+}
+
+/**
+ * The correction in force on this figure, if any
+ */
+export type ClubCorrectionFigureCorrection = {
+  id: number;
+  previousValue: number;
+  newValue: number;
+} | null;
+
+export interface ClubCorrectionFigure {
+  field: ClubCorrectionField;
+  /** The association figure now */
+  value: number;
+  /** The correction in force on this figure, if any */
+  correction?: ClubCorrectionFigureCorrection;
+}
+
+export interface ClubCorrectionLine {
+  participantId: string;
+  displayName: string | null;
+  isPrivate: boolean;
+  figures: ClubCorrectionFigure[];
+}
+
+export interface ClubCorrectionMatchDetail {
+  match: ClubCorrectionMatch;
+  lines: ClubCorrectionLine[];
+}
+
+export interface ClubCorrectionBody {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  playhqMatchId: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  participantId: string;
+  field: ClubCorrectionField;
+  /**
+     * The association figure the admin saw (must equal it now)
+     * @minimum 0
+     */
+  previousValue: number;
+  /**
+     * @minimum 0
+     * @maximum 100000
+     */
+  newValue: number;
+  /** @maxLength 500 */
+  note?: string | null;
+}
+
+export type ClubCorrectionStatus = typeof ClubCorrectionStatus[keyof typeof ClubCorrectionStatus];
+
+
+export const ClubCorrectionStatus = {
+  active: 'active',
+  stale: 'stale',
+} as const;
+
+/**
+ * mismatch — the association figure changed; not_found — the association no longer has the player's line in the match; before_boundary — the match is before the club's history boundary
+ */
+export type ClubCorrectionStaleReason = typeof ClubCorrectionStaleReason[keyof typeof ClubCorrectionStaleReason] | null;
+
+
+export const ClubCorrectionStaleReason = {
+  mismatch: 'mismatch',
+  not_found: 'not_found',
+  before_boundary: 'before_boundary',
+} as const;
+
+export interface ClubCorrection {
+  id: number;
+  playhqMatchId: string;
+  participantId: string;
+  field: ClubCorrectionField;
+  previousValue: number;
+  newValue: number;
+  note: string | null;
+  createdBy: string;
+  createdAt: string;
+  status: ClubCorrectionStatus;
+  /** mismatch — the association figure changed; not_found — the association no longer has the player's line in the match; before_boundary — the match is before the club's history boundary */
+  staleReason: ClubCorrectionStaleReason;
+  /** The association figure now (null when the line wasn't found) */
+  centralValue: number | null;
+  displayName: string | null;
+  isPrivate: boolean;
+  match: ClubCorrectionMatch | null;
+}
+
 export type DuplicateReviewBodyAction = typeof DuplicateReviewBodyAction[keyof typeof DuplicateReviewBodyAction];
 
 
@@ -7193,6 +7326,19 @@ export type SweepMatchSummaryDrafts200 = {
   drafted: number;
   skipped: number;
   errors: string[];
+};
+
+export type SearchClubCorrectionMatchesParams = {
+/**
+ * Words matched against the date, opponent, round, grade and season
+ * @maxLength 80
+ */
+q?: string;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
 };
 
 export type GetJuniorSeasonTopPerformersParams = {
