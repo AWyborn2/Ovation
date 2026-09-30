@@ -139,3 +139,83 @@ export async function mintSyntheticPlayers(
   );
   return players;
 }
+
+/** A pinned mint that would break the tenant's id space (nothing is written). */
+export class PinnedPlayerIdError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PinnedPlayerIdError";
+  }
+}
+
+/**
+ * Mint synthetic players at EXPLICIT ids (hybrid stats plan U12, KTD3). Halls
+ * Head's baseline-only native players (no scorecard lines, so no PlayHQ GUID)
+ * keep their existing native `players.id`: each gets a `club:<uuid>` crosswalk
+ * row pinned to that id, plus the curation row carrying its display name, so
+ * every curated link (vote, cap, photo, honour) keeps resolving after cut-over.
+ *
+ * Guards, checked before anything is written: every id is a positive integer
+ * below {@link MINT_ID_CEILING} (never the fill-in / cap-only range), no id is
+ * listed twice, and no id is already used in the tenant's crosswalk (by a GUID
+ * or another synthetic player). Serialised with the same advisory lock as
+ * {@link mintSyntheticPlayers}; pass a transaction handle so the rows roll back
+ * with the caller's writes.
+ */
+export async function mintPinnedSyntheticPlayers(
+  executor: Pick<Db, "select" | "insert" | "execute">,
+  tenantId: number,
+  pins: ReadonlyArray<{ playerId: number; displayName: string }>,
+): Promise<SyntheticPlayer[]> {
+  if (pins.length === 0) return [];
+  const seen = new Set<number>();
+  for (const p of pins) {
+    if (!Number.isInteger(p.playerId) || p.playerId <= 0) {
+      throw new PinnedPlayerIdError(`Pinned player id ${p.playerId} isn't a positive integer.`);
+    }
+    if (p.playerId >= MINT_ID_CEILING) {
+      throw new PinnedPlayerIdError(
+        `Pinned player id ${p.playerId} is at or above ${MINT_ID_CEILING} (the fill-in / ` +
+          `cap-only range). Nothing was minted.`,
+      );
+    }
+    if (seen.has(p.playerId)) {
+      throw new PinnedPlayerIdError(`Pinned player id ${p.playerId} is listed twice.`);
+    }
+    seen.add(p.playerId);
+  }
+
+  await executor.execute(sql`select pg_advisory_xact_lock(${MINT_LOCK_KEY}, ${tenantId})`);
+  const existing = await executor
+    .select({ playerId: playerIdMapTable.playerId })
+    .from(playerIdMapTable)
+    .where(eq(playerIdMapTable.tenantId, tenantId));
+  const taken = [...new Set(existing.map((e) => e.playerId).filter((id) => seen.has(id)))].sort(
+    (a, b) => a - b,
+  );
+  if (taken.length > 0) {
+    throw new PinnedPlayerIdError(
+      `Tenant ${tenantId} already uses player id(s) ${taken.join(", ")} in its crosswalk. ` +
+        `Nothing was minted.`,
+    );
+  }
+
+  const players = pins.map((p) => ({
+    participantId: newSyntheticParticipantKey(),
+    playerId: p.playerId,
+    displayName: p.displayName,
+  }));
+  await executor
+    .insert(playerIdMapTable)
+    .values(
+      players.map((p) => ({ tenantId, participantId: p.participantId, playerId: p.playerId })),
+    );
+  await executor.insert(playerCurationTable).values(
+    players.map((p) => ({
+      tenantId,
+      participantId: p.participantId,
+      overrideDisplayName: p.displayName,
+    })),
+  );
+  return players;
+}

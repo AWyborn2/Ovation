@@ -25,6 +25,7 @@
     "hh-crosswalk": "tsx ./src/hh-central-crosswalk.ts",
     "repair-hh-opponents": "tsx ./src/repair-hh-opponents.ts",
     "persist-hh-crosswalk": "tsx ./src/persist-hh-crosswalk.ts",
+    "seed-hh-club-layer": "tsx ./src/seed-hh-club-layer.ts",
     "seed-tenants": "tsx ./src/seed-tenants.ts",
     "seed-mandurah-tenant": "tsx ./src/seed-mandurah-tenant.ts",
     "seed-central-premierships": "tsx ./src/seed-central-premierships.ts",

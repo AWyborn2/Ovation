@@ -1,18 +1,24 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { clubHistoryBatchCoverageTable, clubHistoryRowsTable } from "@workspace/db";
 import {
   HISTORY_TEMPLATES,
   HistoryStoreMissingError,
   buildHistoryPreview,
+  historyFigureProblems,
   historyTemplateCsv,
+  insertHistoryRows,
   loadSeniorGradeNormaliser,
   namesCompatible,
+  parseBestBowling,
+  parseHighScore,
   parseHistoryCsv,
   parseSeasonCell,
   planPlayerLinks,
   toHistoryRow,
   withHistoryStore,
+  type HistoryFigures,
   type HistoryValidationContext,
   type SpanCandidate,
 } from "./history-import";
@@ -389,5 +395,96 @@ describe("draft safety (KTD8)", () => {
       expect(s).not.toMatch(/draft-sweep|post-commit-social|social-drafts|draft-upsert/);
       expect(s).not.toMatch(/milestoneEventsTable|socialDraftsTable|runDraftSweep/);
     }
+  });
+});
+
+describe("library pieces the Halls Head seed reuses (U12)", () => {
+  const figures = (over: Partial<HistoryFigures> = {}): HistoryFigures => ({
+    games: null,
+    innings: null,
+    notOuts: null,
+    runs: null,
+    highScore: null,
+    highScoreNotOut: null,
+    ballsFaced: null,
+    fours: null,
+    sixes: null,
+    fifties: null,
+    hundreds: null,
+    ballsBowled: null,
+    maidens: null,
+    runsConceded: null,
+    wickets: null,
+    bestBowlingWickets: null,
+    bestBowlingRuns: null,
+    fiveWickets: null,
+    catches: null,
+    stumpings: null,
+    runOuts: null,
+    ...over,
+  });
+
+  it("historyFigureProblems applies the import's sanity checks to prepared figures", () => {
+    expect(historyFigureProblems("career", figures({ games: 10, runs: 300 }))).toEqual([]);
+    expect(historyFigureProblems("season", figures())).toEqual(["The row has no figures."]);
+    expect(historyFigureProblems("season", figures({ innings: 3, notOuts: 4 }))).toEqual([
+      "not_outs is more than innings.",
+    ]);
+    expect(historyFigureProblems("season", figures({ runs: 9000 }))[0]).toMatch(/more than 5000/);
+  });
+
+  it("parses native high score and best bowling cells", () => {
+    const errs: string[] = [];
+    const err = (_c: string | undefined, m: string) => errs.push(m);
+    expect(parseHighScore("134*", err)).toEqual({ value: 134, notOut: true });
+    expect(parseBestBowling("6/31", err)).toEqual({ wickets: 6, runs: 31 });
+    expect(parseHighScore("n/a", err)).toBeNull();
+    expect(errs).toHaveLength(1);
+  });
+
+  it("insertHistoryRows writes the rows in chunks and their coverage, for one batch", async () => {
+    const inserts: Array<{ table: unknown; rows: unknown[] }> = [];
+    const tx = {
+      insert: (table: unknown) => ({
+        values: async (rows: unknown[]) => {
+          inserts.push({ table, rows });
+        },
+      }),
+    };
+    const row = (playerId: number, grade: string, season: number | null) => ({
+      ...figures({ runs: 10 }),
+      playerId,
+      grade,
+      season,
+      grain: season === null ? ("career" as const) : ("season" as const),
+    });
+    const rows = [
+      ...Array.from({ length: 501 }, (_, i) => row(i + 1, "A Grade", null)),
+      row(7, "B Grade", 2001),
+      row(8, "B Grade", 2001),
+    ];
+    const res = await insertHistoryRows(tx as never, 1, 42, rows);
+    expect(res.rows).toBe(503);
+    expect(res.coverage).toEqual([
+      { grade: "A Grade", season: null },
+      { grade: "B Grade", season: 2001 },
+    ]);
+    const rowInserts = inserts.filter((i) => i.table === clubHistoryRowsTable);
+    expect(rowInserts.map((i) => i.rows.length)).toEqual([500, 3]);
+    expect(rowInserts[0]!.rows[0]).toMatchObject({
+      tenantId: 1,
+      batchId: 42,
+      playerId: 1,
+      grade: "A Grade",
+      season: null,
+      grain: "career",
+      runs: 10,
+      matchDate: null,
+    });
+    const cov = inserts.find((i) => i.table === clubHistoryBatchCoverageTable)!;
+    expect(cov.rows).toEqual([
+      { tenantId: 1, batchId: 42, grade: "A Grade", season: null },
+      { tenantId: 1, batchId: 42, grade: "B Grade", season: 2001 },
+    ]);
   });
 });

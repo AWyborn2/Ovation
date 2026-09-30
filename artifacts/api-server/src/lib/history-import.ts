@@ -633,7 +633,7 @@ export function parseHistoryCsv(
   return out;
 }
 
-type ErrFn = (column: string | undefined, message: string) => void;
+export type ErrFn = (column: string | undefined, message: string) => void;
 
 function parseCount(raw: string, column: string, err: ErrFn): number | null {
   if (raw === "") return null;
@@ -645,7 +645,7 @@ function parseCount(raw: string, column: string, err: ErrFn): number | null {
 }
 
 /** "134*" -> 134 not out; "134" -> 134. */
-function parseHighScore(raw: string, err: ErrFn): { value: number; notOut: boolean } | null {
+export function parseHighScore(raw: string, err: ErrFn): { value: number; notOut: boolean } | null {
   if (raw === "") return null;
   const m = /^(\d+)(\*?)$/.exec(raw);
   if (!m) {
@@ -667,7 +667,10 @@ function parseOvers(raw: string, err: ErrFn): number | null {
 }
 
 /** "6/31" or "6-31" -> 6 wickets for 31. */
-function parseBestBowling(raw: string, err: ErrFn): { wickets: number; runs: number } | null {
+export function parseBestBowling(
+  raw: string,
+  err: ErrFn,
+): { wickets: number; runs: number } | null {
   if (raw === "") return null;
   const m = /^(\d{1,2})\s*[/-]\s*(\d{1,3})$/.exec(raw);
   if (!m) {
@@ -871,6 +874,17 @@ function checkFigures(grain: ClubHistoryGrain, f: HistoryFigures, err: ErrFn): v
   if (f.maidens !== null && f.ballsBowled !== null && f.maidens * 6 > f.ballsBowled) {
     err("maidens", "maidens is more than overs bowled.");
   }
+}
+
+/**
+ * The import's figure sanity checks (caps per grain, figures that must agree)
+ * on already-prepared figures, as messages. For callers that build rows
+ * without a CSV — U12's Halls Head native seed reports these as warnings.
+ */
+export function historyFigureProblems(grain: ClubHistoryGrain, f: HistoryFigures): string[] {
+  const out: string[] = [];
+  checkFigures(grain, f, (_column, message) => out.push(message));
+  return out;
 }
 
 function parseHonourRow(
@@ -1332,6 +1346,102 @@ export function toHistoryRow(
   };
 }
 
+/**
+ * A history row whose player is already resolved to a tenant player id — what
+ * a CSV row becomes after linking, and what U12's native seed builds directly.
+ */
+export interface PreparedHistoryRow extends HistoryFigures {
+  playerId: number;
+  grade: string;
+  grain: ClubHistoryGrain;
+  /** Season start year; null for career grain. */
+  season: number | null;
+  matchDate?: string | null;
+  opponent?: string | null;
+  round?: string | null;
+}
+
+type Inserter = Pick<typeof db, "insert">;
+
+/** Insert one batch row (inside the caller's transaction) and return its id. */
+export async function insertHistoryBatch(
+  tx: Inserter,
+  batch: {
+    tenantId: number;
+    source: string;
+    label: string;
+    note?: string | null;
+    createdBy: string | null;
+  },
+): Promise<number> {
+  const [row] = await tx
+    .insert(clubHistoryBatchesTable)
+    .values({
+      tenantId: batch.tenantId,
+      source: batch.source,
+      label: batch.label,
+      note: batch.note ?? null,
+      createdBy: batch.createdBy,
+    })
+    .returning({ id: clubHistoryBatchesTable.id });
+  return row!.id;
+}
+
+/**
+ * Write a batch's history rows (500 per statement) and its coverage, inside
+ * the caller's transaction. Shared by the CSV commit and U12's native seed so
+ * both produce identical store rows; undo is {@link undoHistoryBatch}.
+ */
+export async function insertHistoryRows(
+  tx: Inserter,
+  tenantId: number,
+  batchId: number,
+  prepared: readonly PreparedHistoryRow[],
+): Promise<{ rows: number; coverage: Array<{ grade: string; season: number | null }> }> {
+  const rows: InsertClubHistoryRow[] = prepared.map((r) => ({
+    tenantId,
+    batchId,
+    playerId: r.playerId,
+    grade: r.grade,
+    season: r.grain === "career" ? null : r.season,
+    grain: r.grain,
+    matchDate: r.matchDate ?? null,
+    opponent: r.opponent ?? null,
+    round: r.round ?? null,
+    games: r.games,
+    innings: r.innings,
+    notOuts: r.notOuts,
+    runs: r.runs,
+    highScore: r.highScore,
+    highScoreNotOut: r.highScoreNotOut,
+    ballsFaced: r.ballsFaced,
+    fours: r.fours,
+    sixes: r.sixes,
+    fifties: r.fifties,
+    hundreds: r.hundreds,
+    ballsBowled: r.ballsBowled,
+    maidens: r.maidens,
+    runsConceded: r.runsConceded,
+    wickets: r.wickets,
+    bestBowlingWickets: r.bestBowlingWickets,
+    bestBowlingRuns: r.bestBowlingRuns,
+    fiveWickets: r.fiveWickets,
+    catches: r.catches,
+    stumpings: r.stumpings,
+    runOuts: r.runOuts,
+  }));
+  for (let i = 0; i < rows.length; i += 500) {
+    await tx.insert(clubHistoryRowsTable).values(rows.slice(i, i + 500));
+  }
+  const coverage = coverageOf(prepared.map((r) => ({ grade: r.grade, season: r.season })));
+  if (coverage.length > 0) {
+    await tx
+      .insert(clubHistoryBatchCoverageTable)
+      .values(coverage.map((c) => ({ tenantId, batchId, ...c })));
+  }
+  return { rows: rows.length, coverage };
+}
+
 // ── Errors ─────────────────────────────────────────────────────────────────
 
 /** An import request the route answers with `status` (and the preview, when there is one). */
@@ -1646,17 +1756,13 @@ export async function commitHistoryImport(
 
   return withHistoryStore(() =>
     db.transaction(async (tx) => {
-      const [batch] = await tx
-        .insert(clubHistoryBatchesTable)
-        .values({
-          tenantId: input.tenantId,
-          source: input.source?.trim() || `csv:${input.template}`,
-          label,
-          note: input.note?.trim() || null,
-          createdBy: input.createdBy,
-        })
-        .returning({ id: clubHistoryBatchesTable.id });
-      const batchId = batch!.id;
+      const batchId = await insertHistoryBatch(tx, {
+        tenantId: input.tenantId,
+        source: input.source?.trim() || `csv:${input.template}`,
+        label,
+        note: input.note?.trim() || null,
+        createdBy: input.createdBy,
+      });
 
       const minted = await mintSyntheticPlayers(
         tx,
@@ -1666,24 +1772,18 @@ export async function commitHistoryImport(
       const idByKey = new Map(plan.linked);
       plan.newPlayers.forEach((p, i) => idByKey.set(p.key, minted[i]!.playerId));
 
-      const rows = parsed.stats.map((r) =>
-        toHistoryRow(r, input.tenantId, batchId, idByKey.get(r.playerKey)!),
+      const { rows, coverage } = await insertHistoryRows(
+        tx,
+        input.tenantId,
+        batchId,
+        parsed.stats.map((r) => ({ ...r, playerId: idByKey.get(r.playerKey)! })),
       );
-      for (let i = 0; i < rows.length; i += 500) {
-        await tx.insert(clubHistoryRowsTable).values(rows.slice(i, i + 500));
-      }
-      const coverage = coverageOf(parsed.stats);
-      if (coverage.length > 0) {
-        await tx
-          .insert(clubHistoryBatchCoverageTable)
-          .values(coverage.map((c) => ({ tenantId: input.tenantId, batchId, ...c })));
-      }
 
       const honours = await writeHonours(tx, input.tenantId, batchId, preview.honours);
 
       return {
         batchId,
-        rows: rows.length,
+        rows,
         honours,
         linkedPlayers: plan.linked.size,
         newPlayers: minted.length,
