@@ -6,6 +6,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { tenantContext } from "./middlewares/tenant-context";
 import internalDraftSweepRouter from "./routes/internal-draft-sweep";
+import internalPlayhqIngestRouter from "./routes/internal-playhq-ingest";
 import { billingWebhookHandler } from "./routes/billing";
 import { goRedirectRouter } from "./routes/social-drafts";
 import { logger } from "./lib/logger";
@@ -89,6 +90,11 @@ app.post(
   express.raw({ type: "application/json", limit: "100kb" }),
   billingWebhookHandler,
 );
+
+// PlayHQ sync ingest: secret-protected and tenant-agnostic like the draft sweep, but its
+// bodies are whole harness dumps, so it is mounted ahead of the global 100kb parser and
+// parses its own body (after the secret check) with a higher ceiling.
+app.use("/api/internal/playhq", internalPlayhqIngestRouter);
 
 // Explicit body ceilings, pinned at body-parser's own default rather than left
 // implicit. Bodies here are small JSON (settings patches, import reconcile

@@ -37,9 +37,39 @@ execution: code
 
 ## Status (1 Oct 2026)
 
-Planned; nothing built. Ash's decisions: unattended (D1); apply for the public API key (D2);
-pre-fill lineups once we can show they are published (D3); alerts to both Ash and tenant admins
-(D4); stale doc fixed (D5, in PR #261).
+Ash's decisions: unattended (D1); apply for the public API key (D2); pre-fill lineups once we can
+show they are published (D3); alerts to both Ash and tenant admins (D4); stale doc fixed (D5, in
+PR #261).
+
+**S1 (in progress).** Three passing runs on 1 Oct from GitHub-hosted runners: 39/39 calls, no
+retries, with both the headless and a desktop user agent. That counts as day 1; the 8, 9 and
+10 Oct re-runs complete the "three days" criterion.
+
+**S2 (partly answered).** `/scores/matches/{id}` already carries `teams[].players` (empty 9
+days out). The guessed `/lineups`, `/players` and `/teams` paths don't exist. The 8–10 Oct
+re-runs will show when the list fills.
+
+**U1–U3: built, on PR #261.** Deviations from the units below:
+
+- The loader lives in `lib/db/src/playhq-ingest/` (export `@workspace/db/playhq-ingest`), not a
+  new `lib/playhq-ingest` package. The API server and the projection already depend on
+  `@workspace/db`, so this avoids a new workspace package and lockfile change.
+- There are no chunked uploads yet (KTD6). The S1 weekly plan exports 69 KB gzipped, so a single
+  request with a 50 MB decompressed limit and `Content-Encoding: gzip` covers every planned plan.
+  Add chunking if a dump outgrows it.
+- U4 (`playhq_sync_enabled`) isn't built. Until it is, ingest projects every tenant linked to an
+  organisation in the dump, exactly as the CLI does.
+- The junior filter (R3) applies on the endpoint path only. The hand-run CLI keeps its old
+  behaviour; the harness already drops juniors by default.
+
+**Ash to provision before the endpoint is live (in order):**
+
+1. Re-apply the schema once: `playhq-load -- --init --yes`. This adds the new `scrape_runs`
+   columns; the CLI's next load needs them.
+2. Run `scripts/sql/playhq-ingest-role.sql` in the Supabase SQL editor, then
+   `alter role playhq_ingest with password '…'`.
+3. In Replit secrets, set `PLAYHQ_INGEST_DATABASE_URL` (user `playhq_ingest.<ref>`, session
+   pooler) and `PLAYHQ_SYNC_SECRET`.
 
 ---
 

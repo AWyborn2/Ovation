@@ -4392,6 +4392,42 @@ paths:
         "404":
           description: Tenant not found
 
+  /internal/playhq/ingest:
+    post:
+      operationId: ingestPlayhqDump
+      tags: [fixtures]
+      summary: Load a PlayHQ harness dump (scheduled sync / manual upload)
+      description: >-
+        Machine-to-machine only. Requires the `x-sync-secret` header to equal the
+        server's PLAYHQ_SYNC_SECRET; answers 401 otherwise (including when no secret is
+        configured), and 503 when PLAYHQ_INGEST_DATABASE_URL is unset or its role can
+        write outside schema `playhq`. Loads the dump into `playhq.*` (junior and pathway
+        grades are dropped), records a `playhq.scrape_runs` row, projects fixtures for
+        every tenant linked to an organisation in the dump, and runs the fixtures draft
+        sweep for the tenants it touched. Accepts `Content-Encoding: gzip`; the body
+        limit applies to the decompressed JSON.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayhqIngestRequest"
+      responses:
+        "200":
+          description: Loaded (status `partial` when projection or a sweep failed after the load committed)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayhqIngestResponse"
+        "400":
+          description: Invalid body or not a harness dump
+        "401":
+          description: Missing or wrong sync secret
+        "413":
+          description: Body too large
+        "503":
+          description: Ingest database not configured, or its role is not scoped to playhq
+
   /club-photos:
     get:
       operationId: listClubPhotos
@@ -13000,6 +13036,111 @@ components:
               promoted:
                 type: integer
                 description: "Drafts moved to ready because their auto-post deadline passed."
+
+    PlayhqIngestRequest:
+      type: object
+      required: [collector, dump]
+      properties:
+        collector:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: "^[a-z0-9][a-z0-9_-]*$"
+          description: "Which collector produced the dump: gha-headless, manual, public-api, …"
+        planName:
+          type: string
+          maxLength: 40
+          description: "The scheduled plan this run served (weekly, matchday, …)."
+        status:
+          type: string
+          enum: [ok, partial, failed]
+          description: "Collector outcome. partial = collected with errors; failed = gave up (whatever was collected is still loaded)."
+        errors:
+          type: array
+          maxItems: 200
+          items:
+            type: object
+            additionalProperties: true
+          description: "The collector's own error list (harness __ov.status().errors)."
+        durationMs:
+          type: integer
+          minimum: 0
+        sourceName:
+          type: string
+          maxLength: 200
+          description: "Label stored as scrape_runs.source_file (defaults to collector + exportedAt)."
+        dump:
+          $ref: "#/components/schemas/PlayhqHarnessDump"
+
+    PlayhqHarnessDump:
+      type: object
+      description: "The harness export: __ov.dump() (gunzipped __ov.exportInfo/export chunks)."
+      required: [version, exportedAt, records]
+      properties:
+        version:
+          type: string
+        exportedAt:
+          type: string
+        origin:
+          type: string
+        records:
+          type: array
+          items:
+            type: object
+            required: [kind, id]
+            additionalProperties: true
+            properties:
+              key:
+                type: string
+              kind:
+                type: string
+              id:
+                type: string
+              fetchedAt:
+                type: string
+
+    PlayhqIngestResponse:
+      type: object
+      required: [status, runIds, counts, fixtureChanges, juniorGradesDropped, tenants, warnings]
+      properties:
+        status:
+          type: string
+          enum: [ok, partial, failed]
+        runIds:
+          type: array
+          items:
+            type: integer
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: "Rows upserted per playhq table."
+        fixtureChanges:
+          type: integer
+        juniorGradesDropped:
+          type: integer
+        tenants:
+          type: array
+          items:
+            type: object
+            required: [tenantId, slug, matches, inserted, updated, swept]
+            properties:
+              tenantId:
+                type: integer
+              slug:
+                type: string
+              matches:
+                type: integer
+              inserted:
+                type: integer
+              updated:
+                type: integer
+              swept:
+                type: boolean
+        warnings:
+          type: array
+          items:
+            type: string
 
     SocialFamilySetting:
       type: object

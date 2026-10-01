@@ -1,0 +1,171 @@
+import {
+  assertIngestScope,
+  dropJuniorGrades,
+  getPlayhqIngestPool,
+  loadRows,
+  projectFixtures,
+  rowsFromDump,
+  type Dump,
+  type LoadRows,
+  type Queryable,
+  type RunMeta,
+} from "@workspace/db/playhq-ingest";
+import type { z } from "zod";
+import type { IngestPlayhqDumpResponse } from "@workspace/api-zod";
+import { runDraftSweep } from "./draft-sweep";
+
+type Logger = Parameters<typeof runDraftSweep>[2];
+type PlayhqIngestResponse = z.infer<typeof IngestPlayhqDumpResponse>;
+
+export interface IngestInput {
+  collector: string;
+  planName?: string;
+  status?: "ok" | "partial" | "failed";
+  errors?: Record<string, unknown>[];
+  durationMs?: number;
+  sourceName?: string;
+  dump: Dump;
+}
+
+/** Every grade a dump's rows point at, so known-junior grades can be looked up. */
+function referencedGradeIds(rows: LoadRows): string[] {
+  const ids = new Set<string>();
+  for (const table of [
+    rows.grades.map((g) => ({ grade_id: g.id })),
+    rows.teams,
+    rows.matches,
+    rows.ladders,
+    rows.player_grade_stats,
+    rows.scorecards,
+  ])
+    for (const r of table) if (typeof r.grade_id === "string") ids.add(r.grade_id);
+  return [...ids];
+}
+
+/**
+ * The scheduled-sync ingest (docs/plans/2026-10-01-001-feat-playhq-scheduled-sync-plan.md, U3):
+ * load one harness dump into `playhq.*` through the playhq-scoped role, then project the
+ * fixtures of every tenant linked to an organisation in it and run their fixtures sweep.
+ *
+ * The load is one transaction. Projection and sweeps run after it commits: a failure there
+ * is reported (run status `partial`, a warning) and never undoes the load, so a re-send
+ * of the same dump retries the follow-up work idempotently.
+ */
+export async function ingestPlayhqDump(
+  input: IngestInput,
+  log: Logger,
+): Promise<PlayhqIngestResponse> {
+  const pool = getPlayhqIngestPool();
+  await assertIngestScope(pool);
+  const reader = pool as unknown as Queryable;
+
+  const sourceName = input.sourceName ?? `${input.collector} ${input.dump.exportedAt}`;
+  const parsed = rowsFromDump(input.dump, sourceName);
+  if (parsed.runs.length === 0)
+    // A dump with no plan record (hand-assembled, or a future collector) still gets a run row.
+    parsed.runs.push({
+      source_file: sourceName,
+      org_id: null,
+      plan: null,
+      exported_at: Number.isNaN(Date.parse(input.dump.exportedAt))
+        ? null
+        : new Date(input.dump.exportedAt).toISOString(),
+      notes: `harness ${input.dump.version} (no plan record)`,
+      harness_version: input.dump.version,
+    });
+
+  // Juniors isolation: drop junior/pathway grades by name, and by what playhq already knows.
+  const gradeIds = referencedGradeIds(parsed);
+  const known = gradeIds.length
+    ? await reader.query<{ id: string }>(
+        `select id from playhq.grades where id = any($1::uuid[]) and is_junior`,
+        [gradeIds],
+      )
+    : { rows: [] };
+  const { rows, droppedGradeIds } = dropJuniorGrades(
+    parsed,
+    known.rows.map((r) => r.id),
+  );
+
+  const meta: RunMeta = {
+    collector: input.collector,
+    planName: input.planName ?? null,
+    status: input.status ?? "ok",
+    errors: input.errors ?? null,
+    durationMs: input.durationMs ?? null,
+  };
+  const client = await pool.connect();
+  let loaded: Awaited<ReturnType<typeof loadRows>>;
+  try {
+    await client.query("begin");
+    loaded = await loadRows(client as unknown as Queryable, rows, sourceName, meta);
+    await client.query("commit");
+  } catch (err) {
+    await client.query("rollback").catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  const warnings: string[] = [];
+  const orgIds = [
+    ...new Set(
+      rows.matches
+        .flatMap((m) => [m.home_org_id, m.away_org_id])
+        .filter((id): id is string => typeof id === "string"),
+    ),
+  ];
+  let summaries: Awaited<ReturnType<typeof projectFixtures>> = [];
+  try {
+    summaries = await projectFixtures({
+      orgIds,
+      central: reader,
+      log: (line) => log.info({ orgIds: orgIds.length }, `playhq projection: ${line}`),
+    });
+  } catch (err) {
+    log.error({ err }, "playhq ingest: fixtures projection failed");
+    warnings.push(`fixtures projection failed: ${err instanceof Error ? err.message : err}`);
+  }
+
+  const tenants: PlayhqIngestResponse["tenants"] = [];
+  for (const s of summaries) {
+    let swept = false;
+    if (s.inserted + s.updated > 0)
+      try {
+        await runDraftSweep(s.tenantId, { kind: "fixtures" }, log);
+        swept = true;
+      } catch (err) {
+        log.error({ err, tenantId: s.tenantId }, "playhq ingest: draft sweep failed");
+        warnings.push(`draft sweep failed for tenant ${s.tenantId}`);
+      }
+    tenants.push({
+      tenantId: s.tenantId,
+      slug: s.slug,
+      matches: s.matches,
+      inserted: s.inserted,
+      updated: s.updated,
+      swept,
+    });
+  }
+
+  let status = meta.status ?? "ok";
+  if (warnings.length && status === "ok") status = "partial";
+  if (warnings.length && loaded.runIds.length)
+    await reader.query(
+      `update playhq.scrape_runs
+          set status = $2,
+              errors = coalesce(errors, '[]'::jsonb) || $3::jsonb
+        where id = any($1::bigint[])`,
+      [loaded.runIds, status, JSON.stringify(warnings.map((w) => ({ stage: "ingest", error: w })))],
+    );
+
+  return {
+    status,
+    runIds: loaded.runIds,
+    counts: loaded.counts,
+    fixtureChanges: loaded.counts.fixture_changes ?? 0,
+    juniorGradesDropped: droppedGradeIds.length,
+    tenants,
+    warnings,
+  };
+}

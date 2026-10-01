@@ -248,6 +248,8 @@ import type {
   PlayerSeasonStat,
   PlayerUpdate,
   PlayersVsClub,
+  PlayhqIngestRequest,
+  PlayhqIngestResponse,
   PlayhqLadder,
   PointsConfigInput,
   PointsConfigUpdate,
@@ -15385,6 +15387,78 @@ export const useRunDraftSweep = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRunDraftSweepMutationOptions(options));
+    }
+
+export const getIngestPlayhqDumpUrl = () => {
+
+
+
+
+  return `/api/internal/playhq/ingest`
+}
+
+/**
+ * Machine-to-machine only. Requires the `x-sync-secret` header to equal the server's PLAYHQ_SYNC_SECRET; answers 401 otherwise (including when no secret is configured), and 503 when PLAYHQ_INGEST_DATABASE_URL is unset or its role can write outside schema `playhq`. Loads the dump into `playhq.*` (junior and pathway grades are dropped), records a `playhq.scrape_runs` row, projects fixtures for every tenant linked to an organisation in the dump, and runs the fixtures draft sweep for the tenants it touched. Accepts `Content-Encoding: gzip`; the body limit applies to the decompressed JSON.
+ * @summary Load a PlayHQ harness dump (scheduled sync / manual upload)
+ */
+export const ingestPlayhqDump = async (playhqIngestRequest: PlayhqIngestRequest, options?: RequestInit): Promise<PlayhqIngestResponse> => {
+
+  return customFetch<PlayhqIngestResponse>(getIngestPlayhqDumpUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      playhqIngestRequest,)
+  }
+);}
+
+
+
+
+export const getIngestPlayhqDumpMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestPlayhqDump>>, TError,{data: BodyType<PlayhqIngestRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof ingestPlayhqDump>>, TError,{data: BodyType<PlayhqIngestRequest>}, TContext> => {
+
+const mutationKey = ['ingestPlayhqDump'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ingestPlayhqDump>>, {data: BodyType<PlayhqIngestRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  ingestPlayhqDump(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IngestPlayhqDumpMutationResult = NonNullable<Awaited<ReturnType<typeof ingestPlayhqDump>>>
+    export type IngestPlayhqDumpMutationBody = BodyType<PlayhqIngestRequest>
+    export type IngestPlayhqDumpMutationError = ErrorType<void>
+
+    /**
+ * @summary Load a PlayHQ harness dump (scheduled sync / manual upload)
+ */
+export const useIngestPlayhqDump = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestPlayhqDump>>, TError,{data: BodyType<PlayhqIngestRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof ingestPlayhqDump>>,
+        TError,
+        {data: BodyType<PlayhqIngestRequest>},
+        TContext
+      > => {
+      return useMutation(getIngestPlayhqDumpMutationOptions(options));
     }
 
 export const getListClubPhotosUrl = (params?: ListClubPhotosParams,) => {
