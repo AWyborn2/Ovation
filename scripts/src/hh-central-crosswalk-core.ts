@@ -1085,7 +1085,7 @@ export function toCsv(header: string[], rows: unknown[][]): string {
 /** Flags the runner accepts. Anything else is refused. */
 export const ALLOWED_FLAGS = new Set(["--out", "--help", "-h"]);
 
-const WRITE_FLAG_RE =
+export const WRITE_FLAG_RE =
   /write|apply|commit|insert|update|delete|upsert|seed|backfill|persist|save-map|fix|migrate|force|yes|execute|mint/i;
 
 /**

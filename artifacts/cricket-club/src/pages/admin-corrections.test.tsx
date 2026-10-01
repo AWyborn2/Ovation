@@ -6,6 +6,7 @@ import type {
   ClubCorrection,
   ClubCorrectionMatch,
   ClubCorrectionMatchDetail,
+  ClubIdentityDriftItem,
 } from "@workspace/api-client-react";
 import { ADMIN_NAV } from "@/lib/admin-nav";
 import AdminCorrections from "./admin-corrections";
@@ -274,5 +275,101 @@ describe("admin corrections", () => {
     setupApi({ "/club-corrections": [] });
     renderAt(<AdminCorrections />, "/admin/people/corrections");
     expect(await screen.findByText(/no corrections/i)).toBeTruthy();
+  });
+});
+
+/**
+ * Broken links (hybrid stats plan U17): players the club still links to whose
+ * association record has gone, listed beside the stale corrections with the
+ * club's own rows that depend on them. Read-only; hidden when there are none.
+ */
+describe("admin corrections: broken links", () => {
+  const driftItem = (over: Partial<ClubIdentityDriftItem>): ClubIdentityDriftItem => ({
+    participantId: "gone-guid",
+    kind: "keeper",
+    playerId: 702,
+    displayName: "Gary Gone",
+    stillInCentral: false,
+    mergedIntoParticipantId: null,
+    mergedIntoDisplayName: null,
+    mergeStatus: null,
+    mergedFrom: [],
+    curatedRows: [],
+    corrections: [],
+    ...over,
+  });
+
+  it("is hidden when every link is intact", async () => {
+    setupApi({ "/club-identity-drift": [], "/club-corrections": [correction({})] });
+    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    await screen.findByTestId("correction-1");
+    expect(screen.queryByTestId("broken-links")).toBeNull();
+    expect(screen.queryByText(/broken links/i)).toBeNull();
+  });
+
+  it("stays hidden when the check itself fails", async () => {
+    installApiMock({ "/club-corrections": [correction({})] });
+    const base = globalThis.fetch;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url =
+          typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+        return url.includes("/club-identity-drift")
+          ? new Response(JSON.stringify({ error: "nope" }), { status: 503 })
+          : base(input, init);
+      }),
+    );
+    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    await screen.findByTestId("correction-1");
+    expect(screen.queryByTestId("broken-links")).toBeNull();
+  });
+
+  it("lists a missing player with the club rows and corrections that depend on them", async () => {
+    setupApi({
+      "/club-identity-drift": [
+        driftItem({
+          curatedRows: [
+            { table: "award_winners", rowId: 5, label: "Club Champion (2019)" },
+            { table: "life_members", rowId: 9, label: "Gary Gone (2020)" },
+          ],
+          corrections: [{ id: 31, playhqMatchId: "phq-11", field: "runs" }],
+        }),
+        driftItem({
+          participantId: "dupe-guid",
+          kind: "merged_away",
+          playerId: 703,
+          displayName: null,
+          stillInCentral: true,
+          mergedIntoParticipantId: "ann-guid",
+          mergedIntoDisplayName: "Ann Able",
+          mergeStatus: "confirmed",
+        }),
+      ],
+      "/club-corrections": [],
+    });
+    renderAt(<AdminCorrections />, "/admin/people/corrections");
+
+    const section = await screen.findByTestId("broken-links");
+    expect(within(section).getByRole("heading", { name: /broken links \(2\)/i })).toBeTruthy();
+
+    const gone = within(section).getByTestId("broken-link-gone-guid");
+    expect(within(gone).getByText("Gary Gone")).toBeTruthy();
+    expect(within(gone).getByText(/no longer has this player/i)).toBeTruthy();
+    expect(within(gone).getByText(/Award: Club Champion \(2019\)/)).toBeTruthy();
+    expect(within(gone).getByText(/Life member: Gary Gone \(2020\)/)).toBeTruthy();
+    expect(within(gone).getByText(/Correction: Runs/)).toBeTruthy();
+    expect(within(gone).getByText(/gone-guid/)).toBeTruthy();
+
+    const dupe = within(section).getByTestId("broken-link-dupe-guid");
+    expect(within(dupe).getByText("Unknown player")).toBeTruthy();
+    expect(within(dupe).getByText(/merged into Ann Able/i)).toBeTruthy();
+    expect(within(dupe).getByText(/no matches for this club/i)).toBeTruthy();
+    expect(within(dupe).getByText(/nothing else depends on this link/i)).toBeTruthy();
+
+    // Read-only: nothing here changes anything.
+    expect(within(section).queryByRole("button")).toBeNull();
+    // The corrections list beside it is unaffected.
+    expect(screen.getByText(/no corrections/i)).toBeTruthy();
   });
 });
