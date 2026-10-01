@@ -67,6 +67,8 @@ export {
 export {
   inheritedFormats,
   isEmptyAdjustments,
+  slideAdjustments,
+  withSlideAdjustments,
   photoFor,
   resolveGeometry,
   type CardAdjustments,

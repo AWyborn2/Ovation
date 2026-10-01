@@ -11,6 +11,8 @@ import {
 } from "@/lib/share-card";
 import type { PackCardData } from "@/lib/pack-render";
 import { AnimatedCardPreview } from "./animated-card-preview";
+import { CardSetStrip } from "@/components/card-sets/card-set-strip";
+import { slidesForSize } from "@/lib/card-sets/plan";
 
 /** Size tabs + the live preview (animated / pack DOM / canvas PNG). */
 export function PreviewTabs({
@@ -62,44 +64,58 @@ export function PreviewTabs({
       </TabsList>
       {enabledSizes.map((s) => (
         <TabsContent key={s} value={s} className="mt-3">
-          <div
-            className="bg-muted border rounded-md flex items-center justify-center overflow-hidden"
-            style={{ aspectRatio: `${SIZES[s].w} / ${SIZES[s].h}`, maxHeight: 500 }}
-          >
-            {animated ? (
-              <AnimatedCardPreview
-                input={input}
-                opts={buildOpts(s, renderTransform)}
-                sig={animSig}
-                soundOn={soundOn}
-              />
-            ) : input && isPackCard ? (
-              // Pack cards preview as a live scaled DOM subtree; only BYO
-              // templates use the canvas path below. Reuses `isPackCard`
-              // rather than re-deriving the condition, so the preview and
-              // the export path can never disagree about which renderer
-              // owns this card.
-              <PackCard
-                input={input}
-                size={s}
-                sponsorsOn={includeSponsors}
-                theme={effectiveTheme}
-                junior={isJunior}
-                data={buildPackData(renderTransform)}
-                packId={packId}
-              />
-            ) : rendering && !previewUrls[s] ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            ) : previewUrls[s] ? (
-              <img
-                src={previewUrls[s]!}
-                alt="Card preview"
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <span className="text-xs text-muted-foreground">Preparing preview…</span>
-            )}
-          </div>
+          {input && isPackCard && !animated && slidesForSize(input, s).length > 1 ? (
+            // A big round posts as a balanced card set: preview every slide.
+            <CardSetStrip
+              input={input}
+              size={s}
+              sponsorsOn={includeSponsors}
+              theme={effectiveTheme}
+              junior={isJunior}
+              data={buildPackData(renderTransform)}
+              packId={packId}
+              slideWidth={s === "story" ? 180 : 240}
+            />
+          ) : (
+            <div
+              className="bg-muted border rounded-md flex items-center justify-center overflow-hidden"
+              style={{ aspectRatio: `${SIZES[s].w} / ${SIZES[s].h}`, maxHeight: 500 }}
+            >
+              {animated ? (
+                <AnimatedCardPreview
+                  input={input}
+                  opts={buildOpts(s, renderTransform)}
+                  sig={animSig}
+                  soundOn={soundOn}
+                />
+              ) : input && isPackCard ? (
+                // Pack cards preview as a live scaled DOM subtree; only BYO
+                // templates use the canvas path below. Reuses `isPackCard`
+                // rather than re-deriving the condition, so the preview and
+                // the export path can never disagree about which renderer
+                // owns this card.
+                <PackCard
+                  input={input}
+                  size={s}
+                  sponsorsOn={includeSponsors}
+                  theme={effectiveTheme}
+                  junior={isJunior}
+                  data={buildPackData(renderTransform)}
+                  packId={packId}
+                />
+              ) : rendering && !previewUrls[s] ? (
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              ) : previewUrls[s] ? (
+                <img
+                  src={previewUrls[s]!}
+                  alt="Card preview"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <span className="text-xs text-muted-foreground">Preparing preview…</span>
+              )}
+            </div>
+          )}
         </TabsContent>
       ))}
     </Tabs>

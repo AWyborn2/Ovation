@@ -73,6 +73,22 @@ export type TeamListPlayer = {
   role?: "C" | "WK" | "C/WK";
 };
 
+/**
+ * Fields a card carries when it is one slide of a balanced card set
+ * (`lib/card-sets`). All optional: a card outside a set has none of them.
+ */
+export type SetSlideFields = {
+  /** This slide is the set's cover. */
+  setRole?: "cover";
+  /** Page marker on a detail slide, e.g. "2/3". */
+  setPage?: string | null;
+  /** Row size shared by every detail slide in the set. */
+  density?: SetDensity;
+};
+
+/** Row sizes a detail slide may use (one per set, so every slide matches). */
+export type SetDensity = "spotlight" | "standard" | "compact";
+
 export type WeekendWrapMatch = {
   gradeLabel: string;
   resultLine: string;
@@ -223,7 +239,7 @@ export type ShareCardInput =
       /** JUNIOR card: forces the junior brown palette + junior labels. */
       junior?: boolean;
     }
-  | {
+  | ({
       kind: "teamList";
       gradeRound: string;
       competitionLine: string;
@@ -232,15 +248,15 @@ export type ShareCardInput =
       squadPhotoUrl?: string | null;
       /** JUNIOR card: forces the junior brown palette + junior labels. */
       junior?: boolean;
-    }
-  | {
+    } & SetSlideFields)
+  | ({
       kind: "weekendWrap";
       roundLabel: string;
       dateRange: string;
       matches: WeekendWrapMatch[];
       /** JUNIOR card: forces the junior brown palette + junior labels. */
       junior?: boolean;
-    }
+    } & SetSlideFields)
   | {
       kind: "ladder";
       competitionName: string;
@@ -296,7 +312,7 @@ export type ShareCardInput =
       /** JUNIOR card: forces the junior brown palette + junior labels. */
       junior?: boolean;
     }
-  | {
+  | ({
       /** Game day: every grade the club plays this round (Club Kit). */
       kind: "roundFixtures";
       roundLabel: string;
@@ -304,7 +320,7 @@ export type ShareCardInput =
       fixtures: RoundFixture[];
       /** JUNIOR card: forces the junior palette. */
       junior?: boolean;
-    }
+    } & SetSlideFields)
   | {
       /** A collectable player trading card (Club Kit). */
       kind: "tradingCard";
@@ -316,6 +332,16 @@ export type ShareCardInput =
       stats: { label: string; value: string }[];
       photoUrl?: string | null;
     }
+  | ({
+      /**
+       * A round of team lists (balanced card sets): posts as a cover naming
+       * every team, then one team-list card per team.
+       */
+      kind: "teamListRound";
+      roundLabel: string;
+      date: string;
+      teams: RoundTeam[];
+    } & SetSlideFields)
   | {
       /**
        * Junior highlights (Club Kit). Always junior: the juniors palette, and
@@ -326,6 +352,20 @@ export type ShareCardInput =
       roundLabel: string;
       highlights: JuniorHighlight[];
     };
+
+/**
+ * One team in a round of team lists: exactly a `teamList` card's fields plus
+ * the grade it is for (which also decides its section: junior teams are never
+ * on the same post as senior teams).
+ */
+export type RoundTeam = {
+  grade: string;
+  gradeRound: string;
+  competitionLine: string;
+  venueDateTime: string;
+  players: TeamListPlayer[];
+  squadPhotoUrl?: string | null;
+};
 
 /** One grade's fixture on a game-day card. */
 export type RoundFixture = { grade: string; opponent: string; venue: string; startTime: string };
@@ -359,6 +399,7 @@ export const CARD_KINDS: CardKind[] = [
   "roundFixtures",
   "tradingCard",
   "juniorHighlights",
+  "teamListRound",
 ];
 
 // A sponsor with an empty cardKinds list applies to every card type; otherwise

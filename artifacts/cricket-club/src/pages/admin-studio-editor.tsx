@@ -93,9 +93,14 @@ import {
   packTextFields,
   photoFor,
   resolveCardTokens,
+  slideAdjustments,
+  withSlideAdjustments,
   type CardAdjustments,
   type FreeLayer,
 } from "@/lib/pack-render";
+import { isJuniorSlide, isSetKind, slidesForSize } from "@/lib/card-sets/plan";
+import { CardSetStrip } from "@/components/card-sets/card-set-strip";
+import { SetOptionsBar } from "@/components/card-sets/set-options";
 import { clubKitPaletteFor, clubKitVars } from "@/lib/pack-render/club-kit-vars";
 import { resolvePackIdForKind } from "@/lib/card-template";
 import { useBrand } from "@/lib/brand-context";
@@ -212,37 +217,60 @@ function EditorApp({ draftId }: { draftId: number }) {
   const [history, setHistory] = useState<History<EditorDoc>>(() => createHistory(saved));
   const [savedJson, setSavedJson] = useState(() => JSON.stringify(saved));
   const gestureBase = useRef<EditorDoc | null>(null);
-  const doc = history.present;
-  const dirty = JSON.stringify(doc) !== savedJson;
+  // The root document: the card's own edits plus, for a balanced set, each
+  // slide's edits (`slides`) and the set's options (`set`).
+  const rootDoc = history.present;
+  const dirty = JSON.stringify(rootDoc) !== savedJson;
 
   const [format, setFormat] = useState<CardSize>("square");
+  // Balanced card sets (plan 2026-10-01-001): the slides this card posts as
+  // at the current format, and the one being edited.
+  const slides = useMemo(
+    () => slidesForSize(input, format, rootDoc.set),
+    [input, format, rootDoc.set],
+  );
+  const [slideKey, setSlideKey] = useState("single");
+  const slide = slides.find((s) => s.key === slideKey) ?? slides[0]!;
+  const slideKeyRef = useRef(slide.key);
+  slideKeyRef.current = slide.key;
+  const doc: EditorDoc = slideAdjustments(rootDoc, slide.key) ?? {};
+  const slideInput = slide.input;
+  const slideJunior = isJuniorSlide(slide, false);
   const [selection, setSelection] = useState<string[]>([]);
   const [inside, setInside] = useState<string | null>(null);
   const [panel, setPanel] = useState<string | null>("content");
   const [layersOpen, setLayersOpen] = useState(false);
   const [zoom, setZoom] = useState(100);
 
-  const edit = useCallback((next: EditorDoc) => setHistory((h) => commit(h, next)), []);
+  // Every edit lands on the active slide's adjustments inside the root.
+  const edit = useCallback(
+    (next: EditorDoc) =>
+      setHistory((h) => commit(h, withSlideAdjustments(h.present, slideKeyRef.current, next))),
+    [],
+  );
   const onCanvasChange = (next: EditorDoc, done: boolean) => {
+    const key = slideKeyRef.current;
     if (!done) {
       if (!gestureBase.current) gestureBase.current = history.present;
-      setHistory((h) => replace(h, next));
+      setHistory((h) => replace(h, withSlideAdjustments(h.present, key, next)));
       return;
     }
     const base = gestureBase.current;
     gestureBase.current = null;
-    if (base) setHistory((h) => commitFrom(h, base, next));
+    if (base) setHistory((h) => commitFrom(h, base, withSlideAdjustments(base, key, next)));
   };
+  const setSetOptions = (set: NonNullable<CardAdjustments["set"]>) =>
+    setHistory((h) => commit(h, { ...h.present, set: { ...h.present.set, ...set } }));
 
   const update = useUpdateSocialDraft({
     mutation: {
       onSuccess: () => {
-        setSavedJson(JSON.stringify(doc));
+        setSavedJson(JSON.stringify(rootDoc));
         qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
       },
     },
   });
-  const save = () => update.mutate({ id: draftId, data: { adjustments: doc } });
+  const save = () => update.mutate({ id: draftId, data: { adjustments: rootDoc } });
 
   const layers = layersOf(doc);
   const selected = layers.filter((l) => selection.includes(l.id));
@@ -313,13 +341,14 @@ function EditorApp({ draftId }: { draftId: number }) {
     bundle?.brand?.backgroundColour ?? brand.backgroundColour,
     bundle?.brand?.juniorsColour ?? brand.juniorsColour,
   ].filter((c): c is string => !!c);
-  const fieldValues = packFieldValues(input, data, packId);
+  const slideData = slideJunior ? { ...data, photoUrl: undefined } : data;
+  const fieldValues = packFieldValues(slideInput, slideData, packId);
   // The club's Club Kit palette, for the element library's thumbnails.
   const elementPalette = clubKitVars(
     clubKitPaletteFor(
-      resolveCardTokens({ theme, junior: false, data, packId }),
+      resolveCardTokens({ theme, junior: slideJunior, data, packId }),
       data?.brand,
-      false,
+      slideJunior,
     ),
   );
 
@@ -379,14 +408,22 @@ function EditorApp({ draftId }: { draftId: number }) {
         actions={
           <>
             <DownloadMenu
-              card={{ input, size: format, theme, data, packId, adjustments: doc }}
+              card={{
+                input: slideInput,
+                size: format,
+                theme,
+                data: slideData,
+                packId,
+                adjustments: doc,
+                junior: slideJunior,
+              }}
               baseName={cardBaseFilename(input, bundle?.brand ?? brand)}
             />
             <SaveTemplateButton
               draftId={draftId}
               beforeSave={() =>
                 dirty
-                  ? update.mutateAsync({ id: draftId, data: { adjustments: doc } })
+                  ? update.mutateAsync({ id: draftId, data: { adjustments: rootDoc } })
                   : Promise.resolve()
               }
             />
@@ -403,9 +440,9 @@ function EditorApp({ draftId }: { draftId: number }) {
             {panel === "content" && (
               <ContentPanel
                 doc={doc}
-                fields={packTextFields(input, packId)}
+                fields={packTextFields(slideInput, packId)}
                 values={fieldValues}
-                slots={packImageSlots(input, { packId, includeHidden: true })}
+                slots={packImageSlots(slideInput, { packId, includeHidden: true })}
                 size={format}
                 photo={photoFor(doc, format)?.value ?? { focalX: 0.5, focalY: 0.5, zoom: 1 }}
                 onField={(k, v) => edit(setField(doc, k, v))}
@@ -442,7 +479,7 @@ function EditorApp({ draftId }: { draftId: number }) {
             {panel === "live" && (
               <LiveStatsPanel
                 size={format}
-                fields={packTextFields(input, packId)}
+                fields={packTextFields(slideInput, packId)}
                 values={fieldValues}
                 onAdd={addFreeLayer}
               />
@@ -511,10 +548,11 @@ function EditorApp({ draftId }: { draftId: number }) {
             doc={doc}
             size={format}
             width={boardW}
-            input={input}
+            input={slideInput}
             theme={theme}
-            data={data}
+            data={slideData}
             packId={packId}
+            junior={slideJunior}
             selection={selection}
             onSelect={(lid) => {
               if (lid === null) {
@@ -530,6 +568,36 @@ function EditorApp({ draftId }: { draftId: number }) {
             }}
             onChange={onCanvasChange}
           />
+          {slides.length > 1 || (isSetKind(input.kind) && format !== "landscape") ? (
+            <div className="mt-6 flex w-full max-w-4xl flex-col gap-3">
+              <SetOptionsBar
+                options={rootDoc.set ?? {}}
+                onChange={setSetOptions}
+                slideCount={slides.length}
+              />
+              {slides.length > 1 && (
+                <CardSetStrip
+                  input={input}
+                  size={format}
+                  sponsorsOn
+                  theme={theme}
+                  junior={false}
+                  data={data}
+                  packId={packId}
+                  options={rootDoc.set}
+                  adjustments={rootDoc}
+                  slideWidth={120}
+                  selectedKey={slide.key}
+                  onSelect={(s) => {
+                    setSlideKey(s.key);
+                    setSelection([]);
+                    setInside(null);
+                  }}
+                  className="text-[var(--ed-ink2)]"
+                />
+              )}
+            </div>
+          ) : null}
           {layersOpen && (
             <LayersDrawer
               layers={layers}

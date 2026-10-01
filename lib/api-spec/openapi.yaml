@@ -11838,7 +11838,7 @@ components:
       # roundFixtures / tradingCard / juniorHighlights are the Club Kit card
       # types (game day across all grades, a collectable player card, junior
       # highlights).
-      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard, roundFixtures, tradingCard, juniorHighlights]
+      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard, roundFixtures, tradingCard, juniorHighlights, teamListRound]
 
     Sponsor:
       type: object
@@ -14918,6 +14918,12 @@ components:
                 enum: [square, portrait, story, landscape]
               url:
                 type: string
+              page:
+                type: integer
+                description: "Slide position in a balanced card set (1 = cover or first card); absent for a single card."
+              of:
+                type: integer
+                description: "Number of slides in the set; absent for a single card."
         caption:
           type: string
         zipUrl:

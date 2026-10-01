@@ -3310,6 +3310,7 @@ export const CardKind = {
   roundFixtures: 'roundFixtures',
   tradingCard: 'tradingCard',
   juniorHighlights: 'juniorHighlights',
+  teamListRound: 'teamListRound',
 } as const;
 
 export interface Sponsor {
@@ -5637,6 +5638,10 @@ export const PostPackImagesItemSize = {
 export type PostPackImagesItem = {
   size: PostPackImagesItemSize;
   url: string;
+  /** Slide position in a balanced card set (1 = cover or first card); absent for a single card. */
+  page?: number;
+  /** Number of slides in the set; absent for a single card. */
+  of?: number;
 };
 
 export interface PostPack {

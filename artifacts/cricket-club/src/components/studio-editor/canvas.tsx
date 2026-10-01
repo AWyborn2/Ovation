@@ -42,6 +42,7 @@ export function EditorCanvas({
   theme,
   data,
   packId,
+  junior = false,
   selection,
   onSelect,
   onToggle,
@@ -56,6 +57,8 @@ export function EditorCanvas({
   theme: ApiCardTheme | null;
   data: PackCardData | null;
   packId: string | null;
+  /** A junior card (a junior slide of a balanced set): juniors palette. */
+  junior?: boolean;
   selection: string[];
   onSelect: (id: string | null) => void;
   onToggle: (id: string) => void;
@@ -199,7 +202,7 @@ export function EditorCanvas({
         input={input}
         size={size}
         sponsorsOn
-        junior={false}
+        junior={junior}
         theme={theme}
         data={data}
         packId={packId}

@@ -6,7 +6,7 @@ import { CARD_KINDS } from "@/lib/share-card";
 import { renderPackCard, type PackTokens } from "@/lib/pack-render";
 import { GenericCardForm } from "./fields";
 import { DESCRIPTORS } from "./descriptors";
-import { initialCardState, buildCardInput, JUNIOR_CAPABLE, ROW_CAPS } from "./logic";
+import { initialCardState, buildCardInput, JUNIOR_CAPABLE, ROW_CAPS, SET_ROW_CAP } from "./logic";
 import {
   ladderRowsToState,
   teamListPlayersToState,
@@ -258,8 +258,8 @@ describe("card-forms: repeat-row editors respect template row caps", () => {
     expect(ROW_CAPS.clubLeaderboard?.cap).toBe(4);
   });
 
-  it("weekendWrap caps at 4 matches", () => {
-    const matches = Array.from({ length: 6 }, (_, i) => ({
+  it("weekendWrap keeps the whole round (a long round posts as a balanced set)", () => {
+    const matches = Array.from({ length: 30 }, (_, i) => ({
       gradeLabel: `G${i + 1}`,
       resultLine: "won",
       performers: "",
@@ -267,8 +267,8 @@ describe("card-forms: repeat-row editors respect template row caps", () => {
     }));
     const state = { ...initialCardState("weekendWrap"), matches };
     const input = buildCardInput("weekendWrap", state, false) as { matches: unknown[] };
-    expect(input.matches).toHaveLength(4);
-    expect(ROW_CAPS.weekendWrap?.cap).toBe(4);
+    expect(input.matches).toHaveLength(SET_ROW_CAP);
+    expect(ROW_CAPS.weekendWrap?.cap).toBe(SET_ROW_CAP);
   });
 });
 

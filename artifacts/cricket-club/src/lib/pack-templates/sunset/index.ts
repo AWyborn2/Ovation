@@ -1,5 +1,12 @@
 import type { PackManifest } from "../types";
-import { SUNSET_BASE, SUNSET_CLUB_BASE, SUNSET_CLUB_SKY, SUNSET_SKY } from "./fragments";
+import { TEAM_LISTS_COVER, WEEKEND_WRAP_COVER, skeletonCover } from "../cover";
+import {
+  SUNSET_BASE,
+  SUNSET_CLUB_BASE,
+  SUNSET_CLUB_SKY,
+  SUNSET_SKY,
+  SUNSET_LOOK,
+} from "./fragments";
 import { matchResult } from "./match-result";
 import { teamList } from "./team-list";
 import { weekendWrap } from "./weekend-wrap";
@@ -92,5 +99,9 @@ export const SUNSET_PACK: PackManifest = {
       categoryPreset: "Wickets",
       template: clubLeaderboardWickets,
     },
+    skeletonCover(SUNSET_LOOK, WEEKEND_WRAP_COVER),
+    skeletonCover(SUNSET_LOOK, TEAM_LISTS_COVER),
+    // Kind literal for the server coverage parity test.
+    // kind: "teamListRound"
   ],
 };

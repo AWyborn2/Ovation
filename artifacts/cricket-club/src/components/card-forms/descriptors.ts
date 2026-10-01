@@ -56,6 +56,8 @@ export type PrefillSource =
   | "fixture"
   /** A whole round of fixtures (game day, every grade). */
   | "round"
+  /** A round's published team lists (one post, a card per team). */
+  | "teamlists"
   | "stats"
   | "milestone"
   | "premiership"
@@ -430,6 +432,14 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
       ],
       newRow: () => ({ value: "", label: "" }),
     },
+  },
+
+  teamListRound: {
+    prefill: "teamlists",
+    fields: [
+      { key: "roundLabel", label: "Round", type: "text", placeholder: "ROUND 15" },
+      { key: "date", label: "Date", type: "text", placeholder: "SATURDAY 14 FEB" },
+    ],
   },
 
   juniorHighlights: {
