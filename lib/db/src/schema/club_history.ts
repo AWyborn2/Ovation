@@ -40,6 +40,26 @@ export const CLUB_HISTORY_GRAINS = ["career", "season", "match"] as const;
 export type ClubHistoryGrain = (typeof CLUB_HISTORY_GRAINS)[number];
 
 /**
+ * `club_history_batches.source` of a SUPPLEMENT batch (Halls Head cut-over,
+ * Oct 2026): hand-entered SEASON totals the club keeps as history even though
+ * they are at or after the grade's boundary — seasons that exist only as a
+ * stored total, with no scorecard lines in the club's own data and none in
+ * central for that player, grade and season.
+ *
+ * The one-source-per-(grade, season) rule (KTD5) still holds per PLAYER: the
+ * club overlay counts a supplement season only when the player has no central
+ * bucket for that grade and season, and otherwise ignores and reports it —
+ * never double-counted. Supplement batches write NO coverage rows: they claim
+ * one player's season, not the whole (grade, season). The ordinary history
+ * import still refuses rows at or after the boundary; supplement rows are
+ * written only through the explicit supplement path
+ * (`insertSupplementRows`, api-server/src/lib/history-import.ts).
+ *
+ * Marked by the batch source so no schema change is needed.
+ */
+export const CLUB_HISTORY_SUPPLEMENT_SOURCE = "supplement";
+
+/**
  * One import of club history (a spreadsheet, a scanned book, the Halls Head
  * native seed). Undo = delete the batch: its rows and coverage cascade.
  */

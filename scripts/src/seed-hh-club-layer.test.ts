@@ -715,6 +715,7 @@ describe("planSeed", () => {
       maps: [],
       pins: [],
       batchRows: 0,
+      supplement: [],
     });
   });
 
@@ -805,6 +806,8 @@ describe("planSeed", () => {
       pinned: 1,
       batchId: 77,
       historyRows: 3,
+      supplementBatchId: null,
+      supplementRows: 0,
     });
     expect(ops.map(([op, t]) => [op, tableName(t)])).toEqual([
       ["delete", "club_history_boundaries"],
@@ -850,6 +853,8 @@ describe("planSeed", () => {
       pinned: 0,
       batchId: null,
       historyRows: 0,
+      supplementBatchId: null,
+      supplementRows: 0,
     });
   });
 
