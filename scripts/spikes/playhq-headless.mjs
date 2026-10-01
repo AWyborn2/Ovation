@@ -104,10 +104,12 @@ async function main() {
       const walk = (v) => {
         if (Array.isArray(v)) return v.forEach(walk);
         if (!v || typeof v !== "object") return;
-        const start = v.startDateTime || v.matchStartDateTime || v.startDate || v.date;
-        if (v.id && start && !seen.has(v.id) && Date.parse(start) > now) {
+        // Match rows: {id, status, matchSchedule:[{startDateTime}], teams:[{owningOrganisation}]}.
+        const start = v.matchSchedule?.[0]?.startDateTime;
+        const ours = v.teams?.some((t) => t.owningOrganisation?.id === orgId);
+        if (v.id && start && ours && !seen.has(v.id) && Date.parse(start) > now) {
           seen.add(v.id);
-          upcoming.push({ id: v.id, start, status: v.status });
+          upcoming.push({ id: v.id, start, status: v.status, round: v.round?.name });
         }
         Object.values(v).forEach(walk);
       };
