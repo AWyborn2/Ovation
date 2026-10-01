@@ -10,12 +10,13 @@ import {
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { adminWriteRateLimiter } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
-import { getTenantCentralClubId, TenantNotFoundError } from "../lib/tenant";
+import { getTenantCentralClubId, tenantIsCentral, TenantNotFoundError } from "../lib/tenant";
 import { loadClubIdentity } from "../lib/club-overlay";
 import {
   checkNewCorrection,
   correctionActor,
   CorrectionsStoreMissingError,
+  correctionsStatus,
   describeCorrections,
   lineFigures,
   withCorrectionsStore,
@@ -135,6 +136,13 @@ router.get("/club-corrections", requireAdmin, async (req, res): Promise<void> =>
   }
 });
 
+// Whether saved corrections reach the club's public pages yet: not while the
+// club still reads its own native stats. The raw flag, not the fail-closed
+// read decision — this only drives a notice, never a stats read.
+router.get("/club-corrections/status", requireAdmin, async (req, res): Promise<void> => {
+  res.json(correctionsStatus(await tenantIsCentral(getTenantId(req))));
+});
+
 router.get("/club-corrections/matches", requireAdmin, async (req, res): Promise<void> => {
   const query = SearchClubCorrectionMatchesQueryParams.safeParse(req.query);
   if (!query.success) {
@@ -187,7 +195,8 @@ router.get("/club-corrections/matches/:matchId", requireAdmin, async (req, res):
           const p = players.get(l.participantId);
           return {
             participantId: l.participantId,
-            displayName: p?.isPrivate ? null : (p?.displayName ?? null),
+            // Admin-only: a private player's real name, flagged `isPrivate`.
+            displayName: p?.displayName ?? null,
             isPrivate: p?.isPrivate ?? false,
             figures: lineFigures(l).map((f) => {
               const c = inForce.get(`${l.participantId}\u0000${f.field}`);

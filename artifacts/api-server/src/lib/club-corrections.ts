@@ -123,6 +123,17 @@ export function lineFigures(
   return CORRECTABLE_FIELDS.map((field) => ({ field, value: lineFieldValue(line, field) }));
 }
 
+/**
+ * Whether the club's corrections reach its public pages yet. Corrections are
+ * applied on read to the association data, so a club still reading its own
+ * native stats (`tenants.reads_from_central` false — Halls Head today) can
+ * save them, but they only show publicly once it switches. Saving is never
+ * blocked; the admin screen shows a notice instead. Pure.
+ */
+export function correctionsStatus(readsFromCentral: boolean): { appliedToPublicPages: boolean } {
+  return { appliedToPublicPages: readsFromCentral };
+}
+
 /** Who made (or removed) a correction, as the journal records it. */
 export function correctionActor(admin: { id: number; username: string }): string {
   return `admin:${admin.username}`;
@@ -204,7 +215,9 @@ export function describeCorrections(
         status: stale ? "stale" : "active",
         staleReason: stale?.reason ?? null,
         centralValue: stale ? stale.centralValue : line ? lineFieldValue(line, r.field) : null,
-        displayName: player?.isPrivate ? null : (player?.displayName ?? null),
+        // Admin-only: the club admin sees a private player's real name
+        // (flagged `isPrivate`); public reads keep masking them.
+        displayName: player?.displayName ?? null,
         isPrivate: player?.isPrivate ?? false,
         match: m && m.grade !== null ? { ...m, grade: m.grade } : null,
       };

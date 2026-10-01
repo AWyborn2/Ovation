@@ -25,6 +25,7 @@ export interface ClubCorrection {
   staleReason: ClubCorrectionStaleReason;
   /** The association figure now (null when the line wasn't found) */
   centralValue: number | null;
+  /** The player's real name, shown to the club admin even when the player is private (public pages keep hiding private players) */
   displayName: string | null;
   isPrivate: boolean;
   match: ClubCorrectionMatch | null;

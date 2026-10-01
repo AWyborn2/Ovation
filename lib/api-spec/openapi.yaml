@@ -5346,6 +5346,25 @@ paths:
         "503":
           description: The corrections store isn't in this database yet (migration 0021)
 
+  /club-corrections/status:
+    get:
+      operationId: getClubCorrectionsStatus
+      tags: [players]
+      summary: Whether the club's corrections reach its public pages yet (admin)
+      description: >-
+        Corrections apply on read to the association data. A club still
+        reading its own native stats (not yet switched to association data)
+        can save corrections, but they only appear on its public pages once
+        the club switches; the admin screen shows a notice when
+        `appliedToPublicPages` is false.
+      responses:
+        "200":
+          description: The club's corrections status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClubCorrectionsStatus"
+
   /club-corrections/{id}:
     delete:
       operationId: removeClubCorrection
@@ -14753,12 +14772,28 @@ components:
             previousValue: { type: integer }
             newValue: { type: integer }
 
+    ClubCorrectionsStatus:
+      type: object
+      required: [appliedToPublicPages]
+      properties:
+        appliedToPublicPages:
+          type: boolean
+          description: >-
+            False while the club still reads its own native stats: corrections
+            are saved but only show on its public pages once it switches to
+            association data.
+
     ClubCorrectionLine:
       type: object
       required: [participantId, displayName, isPrivate, figures]
       properties:
         participantId: { type: string }
-        displayName: { type: string, nullable: true }
+        displayName:
+          type: string
+          nullable: true
+          description: >-
+            The player's real name, shown to the club admin even when the
+            player is private (public pages keep hiding private players)
         isPrivate: { type: boolean }
         figures:
           type: array
@@ -14832,7 +14867,12 @@ components:
           type: integer
           nullable: true
           description: The association figure now (null when the line wasn't found)
-        displayName: { type: string, nullable: true }
+        displayName:
+          type: string
+          nullable: true
+          description: >-
+            The player's real name, shown to the club admin even when the
+            player is private (public pages keep hiding private players)
         isPrivate: { type: boolean }
         match:
           allOf: [{ $ref: "#/components/schemas/ClubCorrectionMatch" }]

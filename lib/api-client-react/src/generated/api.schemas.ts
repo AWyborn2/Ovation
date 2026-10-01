@@ -5506,8 +5506,14 @@ export interface ClubCorrectionFigure {
   correction?: ClubCorrectionFigureCorrection;
 }
 
+export interface ClubCorrectionsStatus {
+  /** False while the club still reads its own native stats: corrections are saved but only show on its public pages once it switches to association data. */
+  appliedToPublicPages: boolean;
+}
+
 export interface ClubCorrectionLine {
   participantId: string;
+  /** The player's real name, shown to the club admin even when the player is private (public pages keep hiding private players) */
   displayName: string | null;
   isPrivate: boolean;
   figures: ClubCorrectionFigure[];
@@ -5579,6 +5585,7 @@ export interface ClubCorrection {
   staleReason: ClubCorrectionStaleReason;
   /** The association figure now (null when the line wasn't found) */
   centralValue: number | null;
+  /** The player's real name, shown to the club admin even when the player is private (public pages keep hiding private players) */
   displayName: string | null;
   isPrivate: boolean;
   match: ClubCorrectionMatch | null;

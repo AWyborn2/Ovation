@@ -27,6 +27,9 @@ import {
   premiershipsTable,
   premiershipPlayersTable,
   playerImagesTable,
+  clubPhotosTable,
+  clubPhotoPlayersTable,
+  centuriesTable,
 } from "@workspace/db";
 import {
   encodeSession,
@@ -91,7 +94,14 @@ describe("curated player links stay inside the club's own player id space", () =
   let captainCookie2: string;
 
   /** Native (tenant 1) players. */
-  const native: Record<"A" | "B" | "D" | "E", number> = { A: 0, B: 0, D: 0, E: 0 };
+  const native: Record<"A" | "B" | "D" | "E" | "M" | "K", number> = {
+    A: 0,
+    B: 0,
+    D: 0,
+    E: 0,
+    M: 0, // merged away onto K
+    K: 0,
+  };
   let freeT1 = 0; // tenant 1 crosswalk-only id (no native row)
   let freeT2 = 0; // tenant 2 crosswalk id with no native row
   let outside = 0; // in nobody's space
@@ -247,7 +257,7 @@ describe("curated player links stay inside the club's own player id space", () =
     // These cases pin Halls Head's pre-cut-over rules (native ids accepted).
     expect(t1Row?.readsFromCentral ?? false).toBe(false);
 
-    for (const k of ["A", "B", "D", "E"] as const) {
+    for (const k of ["A", "B", "D", "E", "M", "K"] as const) {
       const [p] = await db
         .insert(playersTable)
         .values({ surname: `Uspace${STAMP}`, givenName: `Native${k}` })
@@ -415,6 +425,10 @@ describe("curated player links stay inside the club's own player id space", () =
           sql`${premiershipsTable.competition} like 'U8 %'`,
         ),
       );
+    await db
+      .delete(clubPhotosTable) // cascades the tags
+      .where(sql`${clubPhotosTable.objectPath} like ${`%${STAMP}%`}`);
+    await db.delete(captainsTable).where(sql`${captainsTable.username} like ${`%${STAMP}%`}`);
     await db.delete(playerImagesTable).where(inArray(playerImagesTable.playerId, ids));
     await db.delete(playerIdMapTable).where(eq(playerIdMapTable.tenantId, t2));
     await db
@@ -762,6 +776,21 @@ describe("curated player links stay inside the club's own player id space", () =
       await db
         .insert(playerImagesTable)
         .values({ tenantId: T1, playerId: native.D, imageUrl: "https://example.test/d.jpg" });
+      const [t1Tod] = await db
+        .insert(teamOfDecadeMembersTable)
+        .values({ tenantId: T1, boardId: fx[T1]!.todBoardId, name: "d", playerId: native.D })
+        .returning();
+      const [t1Role] = await db
+        .insert(clubRolesTable)
+        .values({
+          tenantId: T1,
+          season: 2003,
+          role: `U8 Role del ${STAMP}`,
+          name: "d",
+          playerId: native.D,
+          published: true,
+        })
+        .returning();
 
       await request(app)
         .delete(`/api/players/${native.D}`)
@@ -782,6 +811,15 @@ describe("curated player links stay inside the club's own player id space", () =
         .where(inArray(awardWinnersTable.id, [t1Win.id, t2Win.id]));
       expect(wins.find((r) => r.id === t1Win.id)?.playerId).toBeNull();
       expect(wins.find((r) => r.id === t2Win.id)?.playerId).toBe(native.D);
+
+      // A plain delete still detaches (a merge moves them instead, below).
+      const [tod] = await db
+        .select()
+        .from(teamOfDecadeMembersTable)
+        .where(eq(teamOfDecadeMembersTable.id, t1Tod.id));
+      expect(tod?.playerId).toBeNull();
+      const [role] = await db.select().from(clubRolesTable).where(eq(clubRolesTable.id, t1Role.id));
+      expect(role?.playerId).toBeNull();
 
       const overrides = await db
         .select()
@@ -826,6 +864,204 @@ describe("curated player links stay inside the club's own player id space", () =
         .where(inArray(lifeMembersTable.id, [t1Life.id, t2Life.id]));
       expect(life.find((r) => r.id === t1Life.id)?.playerId).toBe(native.A);
       expect(life.find((r) => r.id === t2Life.id)?.playerId).toBe(native.E);
+    });
+
+    it("merge: award winners, ToD members, club roles, photos and ballots MOVE to the keeper (owner decision 30 Sep 2026); collisions de-duplicate", async () => {
+      const { M, K } = native;
+      const winners = await db
+        .insert(awardWinnersTable)
+        .values([
+          { tenantId: T1, awardId: fx[T1]!.awardId, season: 2011, playerId: M, name: "m" },
+          { tenantId: t2, awardId: fx[t2]!.awardId, season: 2011, playerId: M, name: "m" },
+        ])
+        .returning();
+      const tods = await db
+        .insert(teamOfDecadeMembersTable)
+        .values([
+          { tenantId: T1, boardId: fx[T1]!.todBoardId, name: "m", playerId: M },
+          { tenantId: t2, boardId: fx[t2]!.todBoardId, name: "m", playerId: M },
+        ])
+        .returning();
+      const roles = await db
+        .insert(clubRolesTable)
+        .values(
+          [T1, t2].map((tenantId) => ({
+            tenantId,
+            season: 2011,
+            role: `U8 Role merge ${STAMP}`,
+            name: "m",
+            playerId: M,
+            published: true,
+          })),
+        )
+        .returning();
+      const [cent] = await db
+        .insert(centuriesTable)
+        .values({ tenantId: T1, grade: "A Grade", batsman: "m", score: "101", playerId: M })
+        .returning();
+
+      // Honour overrides: on board X both players already have one (collision,
+      // the keeper's wins); on board Y only the merged-away player (moves).
+      const hbX = `u8-merge-x-${STAMP}`;
+      const hbY = `u8-merge-y-${STAMP}`;
+      await db.insert(honourBoardOverridesTable).values([
+        { tenantId: T1, boardKey: hbX, playerId: M, note: "dup" },
+        { tenantId: T1, boardKey: hbX, playerId: K, note: "keeper" },
+        { tenantId: T1, boardKey: hbY, playerId: M, note: "moves" },
+        { tenantId: t2, boardKey: hbX, playerId: M, note: "tenant two" },
+      ]);
+
+      // Photo tags: photo P1 tags both (collision), P2 only the merged-away player.
+      const photos = await db
+        .insert(clubPhotosTable)
+        .values(
+          [1, 2].map((n) => ({
+            tenantId: T1,
+            objectPath: `/objects/u8-merge-${STAMP}-${n}.jpg`,
+            thumbPath: `/objects/u8-merge-${STAMP}-${n}-t.jpg`,
+            width: 10,
+            height: 10,
+          })),
+        )
+        .returning();
+      const [p1, p2] = photos;
+      await db.insert(clubPhotoPlayersTable).values([
+        { tenantId: T1, photoId: p1!.id, playerId: M },
+        { tenantId: T1, photoId: p1!.id, playerId: K },
+        { tenantId: T1, photoId: p2!.id, playerId: M },
+      ]);
+
+      // Both players have a default gallery photo; the keeper's stays the default.
+      await db.insert(playerImagesTable).values([
+        { tenantId: T1, playerId: M, imageUrl: "https://example.test/m.jpg", isDefault: true },
+        { tenantId: T1, playerId: K, imageUrl: "https://example.test/k.jpg", isDefault: true },
+      ]);
+
+      // A Halls Head voted award with a ballot picking the merged-away player.
+      const [cfg1] = await db
+        .insert(awardVotingConfigTable)
+        .values({ awardId: fx[T1]!.awardId, season: 2011, grades: ["A Grade"] })
+        .returning();
+      const [cap1] = await db
+        .insert(captainsTable)
+        .values({
+          tenantId: T1,
+          username: `u8_captain_t1_${STAMP}`,
+          displayName: "U8 Captain T1",
+          passwordHash: "x",
+        })
+        .returning();
+      const [ballot1] = await db
+        .insert(awardBallotsTable)
+        .values({
+          configId: cfg1!.id,
+          captainId: cap1!.id,
+          grade: "A Grade",
+          round: 1,
+          pick1PlayerId: M,
+          pick2PlayerId: K,
+          pick3PlayerId: native.A,
+        })
+        .returning();
+
+      await request(app)
+        .post(`/api/players/${M}/merge`)
+        .set(asTenant(T1))
+        .set("Cookie", cookie1)
+        .send({ keeperId: K })
+        .expect(200);
+
+      const byId = <T extends { id: number; tenantId: number; playerId: number | null }>(
+        rows: T[],
+      ) => Object.fromEntries(rows.map((r) => [r.tenantId, r.playerId]));
+
+      const winnerRows = await db
+        .select()
+        .from(awardWinnersTable)
+        .where(
+          inArray(
+            awardWinnersTable.id,
+            winners.map((w) => w.id),
+          ),
+        );
+      expect(byId(winnerRows)).toEqual({ [T1]: K, [t2]: M });
+
+      const todRows = await db
+        .select()
+        .from(teamOfDecadeMembersTable)
+        .where(
+          inArray(
+            teamOfDecadeMembersTable.id,
+            tods.map((t) => t.id),
+          ),
+        );
+      expect(byId(todRows)).toEqual({ [T1]: K, [t2]: M });
+
+      const roleRows = await db
+        .select()
+        .from(clubRolesTable)
+        .where(
+          inArray(
+            clubRolesTable.id,
+            roles.map((r) => r.id),
+          ),
+        );
+      expect(byId(roleRows)).toEqual({ [T1]: K, [t2]: M });
+
+      const [centRow] = await db
+        .select()
+        .from(centuriesTable)
+        .where(eq(centuriesTable.id, cent!.id));
+      expect(centRow?.playerId).toBe(K);
+      await db.delete(centuriesTable).where(eq(centuriesTable.id, cent!.id));
+
+      const overrides = await db
+        .select()
+        .from(honourBoardOverridesTable)
+        .where(inArray(honourBoardOverridesTable.boardKey, [hbX, hbY]));
+      expect(
+        overrides.map((o) => `${o.tenantId}|${o.boardKey}|${o.playerId}|${o.note}`).sort(),
+      ).toEqual(
+        [
+          `${T1}|${hbX}|${K}|keeper`,
+          `${T1}|${hbY}|${K}|moves`,
+          `${t2}|${hbX}|${M}|tenant two`,
+        ].sort(),
+      );
+
+      const tags = await db
+        .select()
+        .from(clubPhotoPlayersTable)
+        .where(
+          inArray(
+            clubPhotoPlayersTable.photoId,
+            photos.map((p) => p.id),
+          ),
+        );
+      expect(tags.map((t) => `${t.photoId}|${t.playerId}`).sort()).toEqual(
+        [`${p1!.id}|${K}`, `${p2!.id}|${K}`].sort(),
+      );
+
+      const images = await db
+        .select()
+        .from(playerImagesTable)
+        .where(inArray(playerImagesTable.playerId, [M, K]));
+      expect(images.map((i) => `${i.playerId}|${i.imageUrl}|${i.isDefault}`).sort()).toEqual([
+        `${K}|https://example.test/k.jpg|true`,
+        `${K}|https://example.test/m.jpg|false`,
+      ]);
+
+      const [ballotRow] = await db
+        .select()
+        .from(awardBallotsTable)
+        .where(eq(awardBallotsTable.id, ballot1!.id));
+      expect(ballotRow?.pick1PlayerId).toBe(K);
+      // Tenant 2's ballot on other ints is untouched.
+      const [t2Ballot] = await db
+        .select()
+        .from(awardBallotsTable)
+        .where(eq(awardBallotsTable.id, ballotId));
+      expect(t2Ballot?.pick1PlayerId).toBe(native.A);
     });
   });
 

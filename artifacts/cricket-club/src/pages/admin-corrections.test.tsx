@@ -47,7 +47,7 @@ const DETAIL: ClubCorrectionMatchDetail = {
         { field: "catches", value: 1, correction: { id: 5, previousValue: 1, newValue: 2 } },
       ],
     },
-    { participantId: "priv-guid", displayName: null, isPrivate: true, figures: [] },
+    { participantId: "priv-guid", displayName: "Pat Private", isPrivate: true, figures: [] },
   ],
 };
 
@@ -161,8 +161,9 @@ describe("admin corrections", () => {
     fireEvent.change(await screen.findByLabelText(/player/i), {
       target: { value: "ann-guid" },
     });
-    // A private player is listed without a name.
-    expect(screen.getByRole("option", { name: /private player/i })).toBeTruthy();
+    // The admin sees a private player's real name, marked private.
+    expect(screen.getByRole("option", { name: "Pat Private (private)" })).toBeTruthy();
+    expect(screen.queryByRole("option", { name: /^private player$/i })).toBeNull();
     fireEvent.change(screen.getByLabelText(/figure/i), { target: { value: "runs" } });
     expect(screen.getByTestId("current-value").textContent).toContain("40");
 
@@ -231,6 +232,42 @@ describe("admin corrections", () => {
       (screen.getByRole("button", { name: /save correction/i }) as HTMLButtonElement).disabled,
     ).toBe(true);
     expect(writes).toEqual([]);
+  });
+
+  it("lists a private player's correction under their real name with a private badge", async () => {
+    setupApi({
+      "/club-corrections": [
+        correction({ id: 9, displayName: "Pat Private", isPrivate: true, participantId: "p" }),
+      ],
+    });
+    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    const card = await screen.findByTestId("correction-9");
+    expect(within(card).getByText("Pat Private")).toBeTruthy();
+    expect(within(card).getByText("Private")).toBeTruthy();
+    expect(within(card).queryByText("Private player")).toBeNull();
+  });
+
+  it("tells a club still on its own stats that corrections won't show publicly yet", async () => {
+    setupApi({
+      "/club-corrections/status": { appliedToPublicPages: false },
+      "/club-corrections": [],
+    });
+    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    const notice = await screen.findByTestId("corrections-native-notice");
+    expect(notice.textContent).toMatch(/saved/i);
+    expect(notice.textContent).toMatch(/switches to association data/i);
+    // Saving isn't blocked: the New correction tab is still there.
+    expect(screen.getByRole("tab", { name: /new correction/i })).toBeTruthy();
+  });
+
+  it("shows no such notice for a club on association data", async () => {
+    setupApi({
+      "/club-corrections/status": { appliedToPublicPages: true },
+      "/club-corrections": [],
+    });
+    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    expect(await screen.findByText(/no corrections/i)).toBeTruthy();
+    expect(screen.queryByTestId("corrections-native-notice")).toBeNull();
   });
 
   it("shows an empty state when the club has no corrections", async () => {
