@@ -387,3 +387,23 @@ export function landscapeSummary<I extends SetInput>(input: I, opts: CardSetOpti
   if (slides.length <= 1) return slides[0]?.input ?? input;
   return { ...input, setRole: "cover", setPage: null };
 }
+
+/**
+ * The grade tile text: "A Grade" → "A", "Female A Grade" → "FA",
+ * "Under 15" → "U15", "T20" → "T20".
+ */
+export function gradeTile(grade: string): string {
+  const words = grade
+    .replace(/\bgrade\b/gi, "")
+    .replace(/\bcricket\b/gi, "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (words.length === 0) return grade.trim().slice(0, 3).toUpperCase();
+  if (words.length === 1) return words[0]!.slice(0, 3).toUpperCase();
+  return words
+    .map((w) => (/\d/.test(w) ? w.replace(/[^0-9]/g, "") : (w[0] ?? "")))
+    .join("")
+    .slice(0, 4)
+    .toUpperCase();
+}

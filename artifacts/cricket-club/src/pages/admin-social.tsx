@@ -21,6 +21,7 @@ import {
 } from "@/components/admin-social";
 import { AutomationCard } from "@/components/social-queue/automation-card";
 import { AutoPostCard } from "@/components/social-queue/auto-post-card";
+import { RoundSchedulesCard } from "@/components/social-queue/round-schedules-card";
 
 /**
  * Social Media Studio "Cards" tab: which cards draft themselves and auto-post
@@ -70,6 +71,7 @@ export default function AdminSocial() {
       ) : bundle.data ? (
         <>
           <AutomationCard config={bundle.data.settings.familyConfig} />
+          <RoundSchedulesCard settings={bundle.data.settings} />
           <AutoPostCard settings={bundle.data.settings} />
           <SettingsCard settings={bundle.data.settings} onSaved={invalidate} />
           <ThemesCard themes={themesQ.data ?? []} onChanged={invalidateThemes} />

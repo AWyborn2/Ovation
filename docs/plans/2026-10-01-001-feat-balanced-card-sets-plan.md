@@ -179,11 +179,28 @@ U1 → U2 → U3 → U4 → U5. U1 to U3 are web-only and need no server change.
 - Create-page prefill: "This round's published team lists".
 - **Tests:** published-only, tenant-scoped prefill; junior teams in their own section; each team slide is identical to that team's single card.
 
-### U5. Round engines + club settings
+### U5. Round engines + club settings (built)
 
-- `social_settings` gains `gameDayMode` and `teamListMode` (`"perFixture" | "perRound"`, default `"perFixture"`). This is a nullable column migration, so it needs Ash's yes before prod.
-- Engines for round game day and round team lists, deduped per round and section. Switching a mode does not re-draft past rounds.
-- **Tests:** dedupe; the per-fixture engines don't run while a club is per-round (and vice versa); juniors separate; tenant isolation.
+- `social_settings.round_schedules` (nullable jsonb, migration `0023_round_schedules`) holds one schedule per round card: `{ mode, day, hour }`, with day 0 = Sunday and the hour in club (Perth) time. The settings API returns every card's schedule, filling in defaults, and merges saves per card. Null keeps the old behaviour: game day and team lists per match, no weekend wrap.
+- Admins set it under **Social → Cards → Round cards**:
+  - game day: each match, whole round or off;
+  - team lists: each team, whole round or off;
+  - weekend wrap: whole round or off.
+    A whole-round card asks for a day and time.
+- Engines (`lib/engines/round-sets.ts`) run in the hourly sweep. At the chosen time they draft that week's round: one draft per round and section (seniors and juniors kept apart). Each draft refreshes as fixtures or selections change, until the round's first ball. Only the week after the chosen time is drafted, so switching a card on never back-fills past rounds.
+  - The weekend wrap reads central results, so it is for central-data clubs only and runs on the scheduled sweep only.
+  - A card set to whole round or off turns its per-match engine off.
+  - The family switches (Match day, Round-up) still gate everything.
+- **Tests:**
+  - schedule maths (Perth time, exactly-on-time, a minute early);
+  - nothing drafted before the chosen time;
+  - one draft per round, run twice;
+  - seniors and juniors apart; next week left out;
+  - no per-match cards while a card is on a round schedule;
+  - team lists: published only, fill-ins excluded;
+  - no refresh after the round starts;
+  - settings API defaults, merge and validation;
+  - the Round cards settings UI.
 
 ---
 

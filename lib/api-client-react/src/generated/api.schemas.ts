@@ -4022,6 +4022,44 @@ export const PackColourMode = {
  */
 export interface PackColourModes {[key: string]: PackColourMode}
 
+/**
+ * "perFixture" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). "perRound" drafts the whole round as one balanced set at `day` / `hour`. "off" drafts nothing. The weekend wrap is "off" or "perRound" only.
+ */
+export type RoundScheduleMode = typeof RoundScheduleMode[keyof typeof RoundScheduleMode];
+
+
+export const RoundScheduleMode = {
+  off: 'off',
+  perFixture: 'perFixture',
+  perRound: 'perRound',
+} as const;
+
+export interface RoundSchedule {
+  /** "perFixture" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). "perRound" drafts the whole round as one balanced set at `day` / `hour`. "off" drafts nothing. The weekend wrap is "off" or "perRound" only. */
+  mode: RoundScheduleMode;
+  /**
+     * Day of the week the round set is drafted (0 = Sunday), club time.
+     * @minimum 0
+     * @maximum 6
+     */
+  day: number;
+  /**
+     * Hour of the day the round set is drafted, club time (Perth).
+     * @minimum 0
+     * @maximum 23
+     */
+  hour: number;
+}
+
+/**
+ * When the round cards draft themselves (balanced card sets). Always complete in a response: a card never saved shows its default.
+ */
+export interface RoundSchedules {
+  gameDay: RoundSchedule;
+  teamLists: RoundSchedule;
+  weekendWrap: RoundSchedule;
+}
+
 export interface SocialSettings {
   engineOnDemand: boolean;
   engineMilestone: boolean;
@@ -4063,6 +4101,7 @@ export interface SocialSettings {
   notificationEmail?: string | null;
   familyConfig?: SocialFamilyConfig;
   packColourModes?: PackColourModes;
+  roundSchedules?: RoundSchedules;
 }
 
 export interface Notification {
@@ -4313,6 +4352,8 @@ export type DraftSweepResponseResultsItem = {
   achievements?: number;
   matchDay: number;
   teamLists: number;
+  /** Round sets (game day, team lists, weekend wrap) drafted on the club's schedule. */
+  roundSets?: number;
   /** Drafts moved to ready because their auto-post deadline passed. */
   promoted?: number;
 };
@@ -4344,6 +4385,12 @@ export interface SocialFamilyConfigUpdate {
 export type SocialSettingsUpdateMatchSummaryGradeConfig = {[key: string]: {
   enabled: boolean;
 }};
+
+export interface RoundSchedulesUpdate {
+  gameDay?: RoundSchedule;
+  teamLists?: RoundSchedule;
+  weekendWrap?: RoundSchedule;
+}
 
 export interface SocialSettingsUpdate {
   engineOnDemand?: boolean;
@@ -4381,6 +4428,8 @@ export interface SocialSettingsUpdate {
   notificationEmail?: string | null;
   /** Merged into the stored map: only the packs sent change, the others keep their mode. */
   packColourModes?: PackColourModes;
+  /** Merged per card: only the cards sent change, the others keep their schedule. */
+  roundSchedules?: RoundSchedulesUpdate;
 }
 
 /**

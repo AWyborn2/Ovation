@@ -5,6 +5,7 @@ import {
   socialSettingsTable,
   milestoneBoardSettingsTable,
   captionTemplatesTable,
+  type RoundSchedulesRow,
 } from "@workspace/db";
 import {
   UpdateSocialSettingsBody,
@@ -16,6 +17,12 @@ import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { loadActiveSponsors } from "../lib/active-sponsors";
 import { getTenantBrand } from "../lib/tenant-brand";
+import {
+  ROUND_CARDS,
+  invalidRoundSchedule,
+  mergeRoundSchedules,
+  resolveRoundSchedules,
+} from "../lib/round-schedules";
 import { getTenantId } from "../middlewares/tenant-context";
 import { getOrCreateSettings } from "../lib/settings";
 import { invalidateMilestonesCache } from "../lib/milestones-cache";
@@ -68,7 +75,11 @@ router.get("/social-settings", async (req, res): Promise<void> => {
   res.json({
     // The effective family switches — derived from the engine flags until a
     // tenant first saves them.
-    settings: { ...settings, familyConfig: resolveFamilyConfig(settings) },
+    settings: {
+      ...settings,
+      familyConfig: resolveFamilyConfig(settings),
+      roundSchedules: resolveRoundSchedules(settings.roundSchedules),
+    },
     captionTemplates: captionTemplates.map((t) => ({
       engine: t.engine,
       platform: t.platform,
@@ -109,24 +120,48 @@ router.patch(
       }
       packColourModes = merged;
     }
+    // Round schedules merge per card, like the pack colour modes.
+    let roundSchedules: RoundSchedulesRow | undefined;
+    if (parsed.data.roundSchedules) {
+      const patchSchedules = parsed.data.roundSchedules as RoundSchedulesRow;
+      for (const card of ROUND_CARDS) {
+        const s = patchSchedules[card];
+        const problem = s ? invalidRoundSchedule(card, s) : null;
+        if (problem) {
+          res.status(400).json({ error: problem });
+          return;
+        }
+      }
+      roundSchedules = mergeRoundSchedules(current.roundSchedules, patchSchedules);
+    }
     // Turning auto-post off first stores every draft that already reads as
     // ready, so none quietly returns to review (KTD4, AE5).
     if (current.autoPostEnabled && parsed.data.autoPostEnabled === false) {
       await persistDueDrafts(tenantId);
     }
     // Family switches and the legacy engine flags are kept in step both ways.
-    const { familyConfig: _submitted, packColourModes: _modes, ...patch } = parsed.data;
+    const {
+      familyConfig: _submitted,
+      packColourModes: _modes,
+      roundSchedules: _schedules,
+      ...patch
+    } = parsed.data;
     const [row] = await db
       .update(socialSettingsTable)
       .set({
         ...patch,
         ...syncFamilySettings(current, parsed.data),
         ...(packColourModes ? { packColourModes } : {}),
+        ...(roundSchedules ? { roundSchedules } : {}),
         updatedAt: new Date(),
       })
       .where(eq(socialSettingsTable.tenantId, tenantId))
       .returning();
-    res.json({ ...row, familyConfig: resolveFamilyConfig(row) });
+    res.json({
+      ...row,
+      familyConfig: resolveFamilyConfig(row),
+      roundSchedules: resolveRoundSchedules(row.roundSchedules),
+    });
   },
 );
 

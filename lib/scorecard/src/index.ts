@@ -54,6 +54,7 @@ export {
   SET_CAPS,
   densityFor,
   evenSizes,
+  gradeTile,
   groupOfGrade,
   isSetKind,
   landscapeSummary,

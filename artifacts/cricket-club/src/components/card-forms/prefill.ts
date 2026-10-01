@@ -29,7 +29,7 @@ import type {
   TeamList as TeamListDto,
   TeamListPlayer as TeamListPlayerDto,
 } from "@workspace/api-client-react";
-import { isJuniorGradeLabel } from "@workspace/scorecard";
+import { gradeTile, isJuniorGradeLabel } from "@workspace/scorecard";
 import type { CardFormState } from "./logic";
 
 // --------------------------------------------------------------------------
@@ -219,25 +219,7 @@ export function groupFixturesByRound(fixtures: readonly Fixture[]): FixtureRound
   );
 }
 
-/**
- * The grade tile text: "A Grade" → "A", "Female A Grade" → "FA",
- * "Under 15" → "U15", "T20" → "T20".
- */
-export function gradeTile(grade: string): string {
-  const words = grade
-    .replace(/\bgrade\b/gi, "")
-    .replace(/\bcricket\b/gi, "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  if (words.length === 0) return grade.trim().slice(0, 3).toUpperCase();
-  if (words.length === 1) return words[0].slice(0, 3).toUpperCase();
-  return words
-    .map((w) => (/\d/.test(w) ? w.replace(/[^0-9]/g, "") : w[0]))
-    .join("")
-    .slice(0, 4)
-    .toUpperCase();
-}
+export { gradeTile };
 
 /** "SATURDAY 14 FEB". */
 function formatRoundDate(iso: string | null | undefined): string {
