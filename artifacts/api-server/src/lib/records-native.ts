@@ -62,7 +62,9 @@ async function loadSeasonRows(filter: RecordsFilter) {
     .orderBy(pgss.season, pgss.id);
 }
 
-type SeasonRow = Awaited<ReturnType<typeof loadSeasonRows>>[number];
+/** One `player_grade_season_stats` row with its player's name, as the records read it. */
+export type NativeRecordSeasonRow = Awaited<ReturnType<typeof loadSeasonRows>>[number];
+type SeasonRow = NativeRecordSeasonRow;
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -70,8 +72,16 @@ type CountingKey = "games" | "runs" | "wickets" | "catches" | "fifties" | "hundr
 
 /** The club records (`ClubRecords` shape) over a grade and/or season span. */
 export async function nativeFilteredRecords(filter: RecordsFilter) {
-  const rows = await loadSeasonRows(filter);
+  return recordsFromSeasonRows(await loadSeasonRows(filter));
+}
 
+/**
+ * The record holders over a set of season rows (already filtered, fill-ins
+ * excluded, ordered by season with the baseline last). Pure, so the cut-over
+ * preview (scripts/src/hh-cutover-preview.ts, U13) derives the native holders
+ * with this exact code from rows it read in its own READ ONLY transaction.
+ */
+export function recordsFromSeasonRows(rows: readonly NativeRecordSeasonRow[]) {
   const holder = (key: CountingKey) => {
     const totals = new Map<number, { row: SeasonRow; value: number; grades: Set<string> }>();
     for (const r of rows) {
