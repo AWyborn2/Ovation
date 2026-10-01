@@ -4416,6 +4416,37 @@ export interface PlayhqIngestResponse {
   warnings: string[];
 }
 
+export type PlayhqDuePlansResponsePlansItemPlanName = typeof PlayhqDuePlansResponsePlansItemPlanName[keyof typeof PlayhqDuePlansResponsePlansItemPlanName];
+
+
+export const PlayhqDuePlansResponsePlansItemPlanName = {
+  weekly: 'weekly',
+  preweekend: 'preweekend',
+  matchmorn: 'matchmorn',
+  matchday: 'matchday',
+  dayafter: 'dayafter',
+  catchup: 'catchup',
+} as const;
+
+/**
+ * Pass verbatim to the harness's __ov.start(plan).
+ */
+export type PlayhqDuePlansResponsePlansItemPlan = { [key: string]: unknown };
+
+export type PlayhqDuePlansResponsePlansItem = {
+  orgId: string;
+  planName: PlayhqDuePlansResponsePlansItemPlanName;
+  /** The schedule slot this run serves. */
+  slot: string;
+  /** Pass verbatim to the harness's __ov.start(plan). */
+  plan: PlayhqDuePlansResponsePlansItemPlan;
+};
+
+export interface PlayhqDuePlansResponse {
+  now: string;
+  plans: PlayhqDuePlansResponsePlansItem[];
+}
+
 export type SocialFamilySettingUpdateGrades = {[key: string]: boolean};
 
 export interface SocialFamilySettingUpdate {

@@ -6814,6 +6814,21 @@ export const IngestPlayhqDumpResponse = zod.object({
 
 
 /**
+ * Machine-to-machine only (same `x-sync-secret` as the ingest endpoint; 401 otherwise, 503 when the ingest database is not configured). Returns, for every PlayHQ organisation linked to an active tenant, each plan whose latest slot (Perth time) has passed with no successful run of that plan since. The runner executes each plan in a play.cricket.com.au page and posts the dump to /internal/playhq/ingest with the plan name, which marks it done.
+ * @summary Harness plans due now, for the scheduled sync runner
+ */
+export const ListDuePlayhqPlansResponse = zod.object({
+  "now": zod.coerce.date(),
+  "plans": zod.array(zod.object({
+  "orgId": zod.string(),
+  "planName": zod.enum(['weekly', 'preweekend', 'matchmorn', 'matchday', 'dayafter', 'catchup']),
+  "slot": zod.coerce.date().describe('The schedule slot this run serves.'),
+  "plan": zod.record(zod.string(), zod.unknown()).describe('Pass verbatim to the harness\'s __ov.start(plan).')
+}))
+})
+
+
+/**
  * @summary List the club's photo library, newest first (admin)
  */
 export const ListClubPhotosQueryParams = zod.object({

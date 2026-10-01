@@ -11,7 +11,7 @@ import path from "node:path";
 import { gzipSync } from "node:zlib";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
-import { and, eq } from "drizzle-orm";
+import { and, eq, like } from "drizzle-orm";
 import app from "../app";
 import { db, tenantsTable, fixturesTable, socialDraftsTable } from "@workspace/db";
 import { closePlayhqIngestPool } from "@workspace/db/playhq-ingest";
@@ -372,5 +372,79 @@ describe("POST /api/internal/playhq/ingest — load, project, sweep", () => {
     ]);
     expect(run.rows[0].status).toBe("partial");
     expect(run.rows[0].errors).toEqual([{ path: "/scores/matches/x", error: "HTTP 500" }]);
+  });
+});
+
+describe("GET /api/internal/playhq/plans — what the runner should collect", () => {
+  const ORG2 = randomUUID(); // linked, never synced
+  const ORG3 = randomUUID(); // linked, but its tenant is suspended
+  const extra: number[] = [];
+
+  beforeAll(async () => {
+    process.env.PLAYHQ_INGEST_DATABASE_URL = ingestUrl;
+    await closePlayhqIngestPool();
+    // Leftovers from an interrupted run would collide on the unique central_club_id.
+    await db.delete(tenantsTable).where(like(tenantsTable.slug, "playhq-plans-%"));
+    for (const [orgId, suspended, clubId] of [
+      [ORG2, false, 9903],
+      [ORG3, true, 9904],
+    ] as const) {
+      const [t] = await db
+        .insert(tenantsTable)
+        .values({
+          slug: `playhq-plans-${randomUUID().slice(0, 8)}`,
+          centralClubId: clubId,
+          name: "PlayHQ Plans Test Club",
+          plan: "pro",
+          playhqOrgId: orgId,
+          suspendedAt: suspended ? new Date() : null,
+        })
+        .returning();
+      extra.push(t.id);
+    }
+  });
+
+  afterAll(async () => {
+    for (const id of extra) await db.delete(tenantsTable).where(eq(tenantsTable.id, id));
+  });
+
+  const getPlans = () =>
+    request(app).get("/api/internal/playhq/plans").set("x-sync-secret", SECRET);
+
+  it("401s without the sync secret", async () => {
+    const res = await request(app).get("/api/internal/playhq/plans");
+    expect(res.status).toBe(401);
+  });
+
+  it("lists the weekly plan for a linked org that has never synced", async () => {
+    const res = await getPlans();
+    expect(res.status).toBe(200);
+    const weekly = res.body.plans.find(
+      (p: { orgId: string; planName: string }) => p.orgId === ORG2 && p.planName === "weekly",
+    );
+    expect(weekly).toMatchObject({
+      plan: { orgId: ORG2, seasons: "current", scorecards: "none" },
+    });
+    expect(Date.parse(weekly.slot)).toBeLessThanOrEqual(Date.parse(res.body.now));
+  });
+
+  it("does not list weekly for an org whose weekly run has loaded since the slot", async () => {
+    // The ingest tests above loaded `weekly` runs for ORG moments ago.
+    const res = await getPlans();
+    const mine = res.body.plans.filter((p: { orgId: string }) => p.orgId === ORG);
+    expect(mine.map((p: { planName: string }) => p.planName)).not.toContain("weekly");
+  });
+
+  it("skips organisations whose only tenant is suspended", async () => {
+    const res = await getPlans();
+    expect(res.body.plans.some((p: { orgId: string }) => p.orgId === ORG3)).toBe(false);
+  });
+
+  it("503s when the ingest database is not configured", async () => {
+    delete process.env.PLAYHQ_INGEST_DATABASE_URL;
+    await closePlayhqIngestPool();
+    const res = await getPlans();
+    expect(res.status).toBe(503);
+    process.env.PLAYHQ_INGEST_DATABASE_URL = ingestUrl;
   });
 });

@@ -248,6 +248,7 @@ import type {
   PlayerSeasonStat,
   PlayerUpdate,
   PlayersVsClub,
+  PlayhqDuePlansResponse,
   PlayhqIngestRequest,
   PlayhqIngestResponse,
   PlayhqLadder,
@@ -15460,6 +15461,84 @@ export const useIngestPlayhqDump = <TError = ErrorType<void>,
       > => {
       return useMutation(getIngestPlayhqDumpMutationOptions(options));
     }
+
+export const getListDuePlayhqPlansUrl = () => {
+
+
+
+
+  return `/api/internal/playhq/plans`
+}
+
+/**
+ * Machine-to-machine only (same `x-sync-secret` as the ingest endpoint; 401 otherwise, 503 when the ingest database is not configured). Returns, for every PlayHQ organisation linked to an active tenant, each plan whose latest slot (Perth time) has passed with no successful run of that plan since. The runner executes each plan in a play.cricket.com.au page and posts the dump to /internal/playhq/ingest with the plan name, which marks it done.
+ * @summary Harness plans due now, for the scheduled sync runner
+ */
+export const listDuePlayhqPlans = async ( options?: RequestInit): Promise<PlayhqDuePlansResponse> => {
+
+  return customFetch<PlayhqDuePlansResponse>(getListDuePlayhqPlansUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDuePlayhqPlansQueryKey = () => {
+    return [
+    `/api/internal/playhq/plans`
+    ] as const;
+    }
+
+
+export const getListDuePlayhqPlansQueryOptions = <TData = Awaited<ReturnType<typeof listDuePlayhqPlans>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDuePlayhqPlans>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDuePlayhqPlansQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDuePlayhqPlans>>> = ({ signal }) => listDuePlayhqPlans({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDuePlayhqPlans>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDuePlayhqPlansQueryResult = NonNullable<Awaited<ReturnType<typeof listDuePlayhqPlans>>>
+export type ListDuePlayhqPlansQueryError = ErrorType<void>
+
+
+/**
+ * @summary Harness plans due now, for the scheduled sync runner
+ */
+
+export function useListDuePlayhqPlans<TData = Awaited<ReturnType<typeof listDuePlayhqPlans>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDuePlayhqPlans>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDuePlayhqPlansQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListClubPhotosUrl = (params?: ListClubPhotosParams,) => {
   const normalizedParams = new URLSearchParams();

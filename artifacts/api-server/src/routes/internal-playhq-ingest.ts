@@ -1,13 +1,21 @@
 import { timingSafeEqual } from "node:crypto";
-import express, { Router, type IRouter, type Request } from "express";
+import express, {
+  Router,
+  type IRouter,
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import { IngestPlayhqDumpBody } from "@workspace/api-zod";
 import { IngestNotConfiguredError, type Dump } from "@workspace/db/playhq-ingest";
-import { ingestPlayhqDump } from "../lib/playhq-ingest";
+import { ingestPlayhqDump, listDuePlans } from "../lib/playhq-ingest";
 import { env } from "../config";
 
 /**
- * `POST /api/internal/playhq/ingest` — where every PlayHQ collector (the scheduled headless
- * runner, a hand-run upload, later the public-API collector) hands over a harness dump.
+ * The scheduled PlayHQ sync's two machine-to-machine endpoints:
+ *   - `GET  /api/internal/playhq/plans`  — which harness plans are due now (the runner asks hourly);
+ *   - `POST /api/internal/playhq/ingest` — where every collector (the scheduled headless runner,
+ *     a hand-run upload, later the public-API collector) hands over a harness dump.
  *
  * Mounted BEFORE the tenant-context middleware and the global 100kb JSON parser (app.ts):
  * tenants come from the dump's organisations, the only credential is the shared sync
@@ -27,15 +35,35 @@ function secretMatches(req: Request): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+function requireSyncSecret(req: Request, res: Response, next: NextFunction): void {
+  if (secretMatches(req)) next();
+  else res.status(401).json({ error: "unauthorized" });
+}
+
+function sendUnavailable(req: Request, res: Response, err: unknown): boolean {
+  if (!(err instanceof IngestNotConfiguredError)) return false;
+  req.log.error({ err }, "playhq sync unavailable");
+  res.status(503).json({ error: err.message });
+  return true;
+}
+
+/** `GET /api/internal/playhq/plans` — what the hourly runner should collect right now. */
+router.get("/plans", requireSyncSecret, async (req, res): Promise<void> => {
+  try {
+    res.json(await listDuePlans(new Date()));
+  } catch (err) {
+    if (sendUnavailable(req, res, err)) return;
+    req.log.error({ err }, "playhq due plans failed");
+    res.status(500).json({ error: "due plans failed" });
+  }
+});
+
 /** Decompressed-JSON ceiling for one dump (a match day of scorecards runs to megabytes). */
 const DUMP_LIMIT = "50mb";
 
 router.post(
   "/ingest",
-  (req, res, next) => {
-    if (secretMatches(req)) next();
-    else res.status(401).json({ error: "unauthorized" });
-  },
+  requireSyncSecret,
   express.json({ limit: DUMP_LIMIT }),
   async (req, res): Promise<void> => {
     const parsed = IngestPlayhqDumpBody.safeParse(req.body ?? {});
@@ -51,11 +79,7 @@ router.post(
       const result = await ingestPlayhqDump({ ...parsed.data, dump }, req.log);
       res.json(result);
     } catch (err) {
-      if (err instanceof IngestNotConfiguredError) {
-        req.log.error({ err }, "playhq ingest unavailable");
-        res.status(503).json({ error: err.message });
-        return;
-      }
+      if (sendUnavailable(req, res, err)) return;
       req.log.error({ err }, "playhq ingest failed");
       res.status(500).json({ error: "ingest failed" });
     }

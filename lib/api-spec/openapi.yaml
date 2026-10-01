@@ -4428,6 +4428,30 @@ paths:
         "503":
           description: Ingest database not configured, or its role is not scoped to playhq
 
+  /internal/playhq/plans:
+    get:
+      operationId: listDuePlayhqPlans
+      tags: [fixtures]
+      summary: Harness plans due now, for the scheduled sync runner
+      description: >-
+        Machine-to-machine only (same `x-sync-secret` as the ingest endpoint; 401 otherwise,
+        503 when the ingest database is not configured). Returns, for every PlayHQ
+        organisation linked to an active tenant, each plan whose latest slot (Perth time)
+        has passed with no successful run of that plan since. The runner executes each plan
+        in a play.cricket.com.au page and posts the dump to /internal/playhq/ingest with the
+        plan name, which marks it done.
+      responses:
+        "200":
+          description: Plans due now (possibly none)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayhqDuePlansResponse"
+        "401":
+          description: Missing or wrong sync secret
+        "503":
+          description: Ingest database not configured, or its role is not scoped to playhq
+
   /club-photos:
     get:
       operationId: listClubPhotos
@@ -13141,6 +13165,33 @@ components:
           type: array
           items:
             type: string
+
+    PlayhqDuePlansResponse:
+      type: object
+      required: [now, plans]
+      properties:
+        now:
+          type: string
+          format: date-time
+        plans:
+          type: array
+          items:
+            type: object
+            required: [orgId, planName, slot, plan]
+            properties:
+              orgId:
+                type: string
+              planName:
+                type: string
+                enum: [weekly, preweekend, matchmorn, matchday, dayafter, catchup]
+              slot:
+                type: string
+                format: date-time
+                description: "The schedule slot this run serves."
+              plan:
+                type: object
+                additionalProperties: true
+                description: "Pass verbatim to the harness's __ov.start(plan)."
 
     SocialFamilySetting:
       type: object
