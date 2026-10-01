@@ -67,7 +67,12 @@ const EXTRA_FIELDS: Record<string, PackTemplateField> = {
   photo: photoField("photo", "Frame photo", "Club photo"),
   clubHashtag: textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
   resultWord: textField("resultWord", "Result headline", "WIN"),
+  setMarker: textField("setMarker", "Set page marker", ""),
+  rowScale: textField("rowScale", "Set row size", "1"),
 };
+
+/** A set's row unit: card cqmin scaled by the set's density (`--rs`, from `{{rowScale}}`). */
+const r = (n: number) => `calc(${n}cqmin * var(--rs,1))`;
 
 function fieldUsed(field: PackTemplateField, html: string): boolean {
   if (field.type === "text") return html.includes(`{{${field.key}}}`);
@@ -90,6 +95,8 @@ interface DesignSpec {
    * design's own field list and repeats.
    */
   own?: { fields: PackTemplateField[]; repeats?: PackTemplateRepeat[] };
+  /** A balanced card set's cover for this kind. */
+  role?: "cover";
 }
 
 function referenceFor(kind: string, preset?: string) {
@@ -134,6 +141,7 @@ function design(spec: DesignSpec): PackDesignEntry {
     designKey: spec.designKey,
     kind: spec.kind,
     ...(spec.categoryPreset ? { categoryPreset: spec.categoryPreset } : {}),
+    ...(spec.role ? { role: spec.role } : {}),
     template,
   };
 }
@@ -301,7 +309,7 @@ const teamList = design({
   build: (f) =>
     card(
       f,
-      "TEAM LIST",
+      "TEAM LIST{{setMarker}}",
       col(
         eyebrow(u, "{{gradeRound}} · {{competitionLine}}") +
           display(u, `THE <span style="color:${C.pt}">XI</span>`, 12, ";margin-top:1cqmin") +
@@ -488,10 +496,10 @@ const fiveFor = design({
 
 function wrapRow(lost: boolean): string {
   return (
-    `<div${lost ? ' data-repeat-variant="lost"' : ""} style="display:flex;align-items:center;gap:1.8cqmin;padding:1cqmin 1.6cqmin 1cqmin 1cqmin;margin-top:.8cqmin;background:${C.panel}${lost ? ";opacity:.8" : ""}">` +
-    `<div style="flex:none;width:6cqmin;height:6cqmin;display:flex;flex-direction:column;align-items:center;justify-content:center;background:${lost ? C.s : C.p};color:${lost ? C.chalk : C.onp}"><div style="font-family:${CK_COND};font-weight:900;font-size:3.2cqmin;line-height:1">{{row.gradeLabel}}</div><div style="font-family:${CK_MONO};font-size:.9cqmin;letter-spacing:.1em">{{row.gradeSub}}</div></div>` +
-    `<div style="flex:1;min-width:0"><div style="font-family:${CK_COND};font-weight:800;font-size:3cqmin;line-height:1.05;text-transform:uppercase">{{row.resultLine}}</div><div style="font-family:${CK_SANS};font-size:1.8cqmin;line-height:1.3;margin-top:.4cqmin;color:${C.chalk2}">{{row.performers}}</div></div>` +
-    `<div style="flex:none;font-family:${CK_COND};font-weight:900;font-size:3cqmin;line-height:1;color:${lost ? C.chalk2 : C.pt}">{{row.outcome}}</div>` +
+    `<div${lost ? ' data-repeat-variant="lost"' : ""} style="display:flex;align-items:center;gap:${r(1.8)};padding:${r(1)} ${r(1.6)} ${r(1)} ${r(1)};margin-top:${r(0.8)};background:${C.panel}${lost ? ";opacity:.8" : ""}">` +
+    `<div style="flex:none;width:${r(6)};height:${r(6)};display:flex;flex-direction:column;align-items:center;justify-content:center;background:${lost ? C.s : C.p};color:${lost ? C.chalk : C.onp}"><div style="font-family:${CK_COND};font-weight:900;font-size:${r(3.2)};line-height:1">{{row.gradeLabel}}</div><div style="font-family:${CK_MONO};font-size:${r(0.9)};letter-spacing:.1em">{{row.gradeSub}}</div></div>` +
+    `<div style="flex:1;min-width:0"><div style="font-family:${CK_COND};font-weight:800;font-size:${r(3)};line-height:1.05;text-transform:uppercase">{{row.resultLine}}</div><div style="font-family:${CK_SANS};font-size:${r(1.8)};line-height:1.3;margin-top:${r(0.4)};color:${C.chalk2}">{{row.performers}}</div></div>` +
+    `<div style="flex:none;font-family:${CK_COND};font-weight:900;font-size:${r(3)};line-height:1;color:${lost ? C.chalk2 : C.pt}">{{row.outcome}}</div>` +
     `</div>`
   );
 }
@@ -503,11 +511,11 @@ const weekendWrap = design({
   build: (f) =>
     card(
       f,
-      "ROUND WRAP",
+      "ROUND WRAP{{setMarker}}",
       col(
         eyebrow(u, "{{roundLabel}} · {{dateRange}}") +
           twoLineTitle(u, "WEEKEND", "WRAP", f === "portrait" ? 10 : 12) +
-          `<div data-repeat="matches" data-repeat-max="${f === "landscape" ? 4 : 5}" style="width:100%;margin-top:1.6cqmin">${wrapRow(false)}${wrapRow(true)}</div>`,
+          `<div data-repeat="matches" data-repeat-max="${f === "landscape" ? 4 : 5}" style="--rs:{{rowScale}};width:100%;margin-top:1.6cqmin">${wrapRow(false)}${wrapRow(true)}</div>`,
       ),
       { hashtag: "clubHashtag", sponsors: "name", off: true },
       "photo",
@@ -646,12 +654,12 @@ const roundFixtures = design({
   build: (f) =>
     card(
       f,
-      "{{roundLabel}}",
+      "{{roundLabel}}{{setMarker}}",
       col(
         eyebrow(u, "{{date}} · {{roundLabel}}") +
           twoLineTitle(u, "GAME", "DAY", f === "portrait" ? 12 : 16) +
-          `<div data-repeat="fixtures" data-repeat-max="${f === "landscape" ? 4 : 5}" style="width:100%;margin-top:1.8cqmin">` +
-          gradeRow(u, {
+          `<div data-repeat="fixtures" data-repeat-max="${f === "landscape" ? 4 : 5}" style="--rs:{{rowScale}};width:100%;margin-top:1.8cqmin">` +
+          gradeRow(r, {
             grade: "{{row.grade}}",
             opponent: "v {{row.opponent}}",
             venue: "{{row.venue}}",
@@ -749,6 +757,72 @@ const juniorHighlights = design({
     ),
 });
 
+// ---------------------------------------------------------------------------
+// Balanced card set covers (plan 2026-10-01-001)
+// ---------------------------------------------------------------------------
+
+const COVER_FIELDS: PackTemplateField[] = [
+  textField("roundLabel", "Round", "ROUND 15"),
+  textField("coverDate", "Date", "SATURDAY 14 FEB"),
+  textField("coverCount", "Headline number", "8"),
+  textField("coverLabel", "Headline label", "TEAMS IN ACTION"),
+  textField("coverList", "Summary line", "A · B · C · D"),
+  photoField("photo", "Cover photo", "Club photo"),
+];
+
+function coverDesign(
+  kind: string,
+  designKey: string,
+  name: string,
+  title: [string, string],
+  swipe: string,
+): PackDesignEntry {
+  return design({
+    kind,
+    designKey,
+    name,
+    role: "cover",
+    own: { fields: COVER_FIELDS },
+    build: (f) =>
+      card(
+        f,
+        "{{roundLabel}}",
+        col(
+          eyebrow(u, `{{coverDate}} · ${swipe}`) +
+            twoLineTitle(u, title[0], title[1], f === "portrait" ? 12 : f === "story" ? 15 : 14) +
+            `<div style="display:flex;align-items:flex-end;gap:2.2cqmin;margin-top:2.2cqmin">` +
+            display(u, "{{coverCount}}", heroSize(f, 22, 18), `;line-height:.8;color:${C.pt}`) +
+            `<div style="display:flex;flex-direction:column;gap:1cqmin;padding-bottom:1.2cqmin">${tricolourDash(u)}${display(u, "{{coverLabel}}", 4.6, ";line-height:.95", 800)}</div>` +
+            `</div>` +
+            meta(u, "{{coverList}}", ";margin-top:2cqmin"),
+        ),
+        NAME_FOOTER,
+      ),
+  });
+}
+
+const gameDayCover = coverDesign(
+  "roundFixtures",
+  "game-day-cover",
+  "Game Day — Cover",
+  ["GAME", "DAY"],
+  "SWIPE FOR EVERY GRADE",
+);
+const weekendWrapCover = coverDesign(
+  "weekendWrap",
+  "weekend-wrap-cover",
+  "Weekend Wrap — Cover",
+  ["ROUND", "RESULTS"],
+  "SWIPE FOR EVERY RESULT",
+);
+const teamListsCover = coverDesign(
+  "teamListRound",
+  "team-lists-cover",
+  "Round Team Lists — Cover",
+  ["SELECTED", "SIDES"],
+  "SWIPE FOR YOUR TEAM",
+);
+
 /** Every Club Kit design, in registry order. */
 export const CLUB_KIT_DESIGNS: PackDesignEntry[] = [
   matchResult,
@@ -775,4 +849,7 @@ export const CLUB_KIT_DESIGNS: PackDesignEntry[] = [
   roundFixtures,
   tradingCard,
   juniorHighlights,
+  gameDayCover,
+  weekendWrapCover,
+  teamListsCover,
 ];

@@ -1,4 +1,6 @@
 import type { PackManifest } from "../types";
+import { FOIL_LOOK } from "./fragments";
+import { TEAM_LISTS_COVER, WEEKEND_WRAP_COVER, skeletonCover } from "../cover";
 import { matchResult } from "./match-result";
 import { matchDay } from "./match-day";
 import { countdown } from "./countdown";
@@ -84,5 +86,9 @@ export const GOLD_FOIL_PACK: PackManifest = {
       categoryPreset: "Wickets",
       template: clubLeaderboardWickets,
     },
+    skeletonCover(FOIL_LOOK, WEEKEND_WRAP_COVER),
+    skeletonCover(FOIL_LOOK, TEAM_LISTS_COVER),
+    // Kind literal for the server coverage parity test.
+    // kind: "teamListRound"
   ],
 };

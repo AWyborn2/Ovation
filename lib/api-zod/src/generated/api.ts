@@ -3909,7 +3909,7 @@ export const ListSponsorsResponseItem = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })
@@ -3925,7 +3925,7 @@ export const CreateSponsorBody = zod.object({
   "link": zod.string().optional(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights'])).optional(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).optional(),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional()
 })
@@ -3944,7 +3944,7 @@ export const UpdateSponsorBody = zod.object({
   "link": zod.string().optional(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights'])).optional(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).optional(),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional()
 })
@@ -3956,7 +3956,7 @@ export const UpdateSponsorResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })
@@ -5125,6 +5125,26 @@ export const DeleteCardSetParams = zod.object({
 /**
  * @summary Get social card settings (engines, sizes, sponsors, captions)
  */
+export const getSocialSettingsResponseSettingsRoundSchedulesGameDayDayMin = 0;
+export const getSocialSettingsResponseSettingsRoundSchedulesGameDayDayMax = 6;
+
+export const getSocialSettingsResponseSettingsRoundSchedulesGameDayHourMin = 0;
+export const getSocialSettingsResponseSettingsRoundSchedulesGameDayHourMax = 23;
+
+export const getSocialSettingsResponseSettingsRoundSchedulesTeamListsDayMin = 0;
+export const getSocialSettingsResponseSettingsRoundSchedulesTeamListsDayMax = 6;
+
+export const getSocialSettingsResponseSettingsRoundSchedulesTeamListsHourMin = 0;
+export const getSocialSettingsResponseSettingsRoundSchedulesTeamListsHourMax = 23;
+
+export const getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapDayMin = 0;
+export const getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapDayMax = 6;
+
+export const getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapHourMin = 0;
+export const getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapHourMax = 23;
+
+
+
 export const GetSocialSettingsResponse = zod.object({
   "settings": zod.object({
   "engineOnDemand": zod.boolean(),
@@ -5167,7 +5187,24 @@ export const GetSocialSettingsResponse = zod.object({
   "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
 })
 }).optional().describe('Effective per-family automation switches. Derived from the engine flags until first saved.'),
-  "packColourModes": zod.record(zod.string(), zod.enum(['club', 'pack']).describe('How a design pack is coloured for this club. \"club\" (Club colours) — the club\'s background colour becomes the card stage and panel and its primary colour the accent, beating the card theme\'s colours. \"pack\" (Pack\'s own look) — the pack renders with its own palette, theme first.')).optional().describe('Colour mode per design pack id (e.g. \"sunset-v1\"). A pack absent from the map is \"club\".')
+  "packColourModes": zod.record(zod.string(), zod.enum(['club', 'pack']).describe('How a design pack is coloured for this club. \"club\" (Club colours) — the club\'s background colour becomes the card stage and panel and its primary colour the accent, beating the card theme\'s colours. \"pack\" (Pack\'s own look) — the pack renders with its own palette, theme first.')).optional().describe('Colour mode per design pack id (e.g. \"sunset-v1\"). A pack absent from the map is \"club\".'),
+  "roundSchedules": zod.object({
+  "gameDay": zod.object({
+  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "day": zod.number().min(getSocialSettingsResponseSettingsRoundSchedulesGameDayDayMin).max(getSocialSettingsResponseSettingsRoundSchedulesGameDayDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
+  "hour": zod.number().min(getSocialSettingsResponseSettingsRoundSchedulesGameDayHourMin).max(getSocialSettingsResponseSettingsRoundSchedulesGameDayHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
+}),
+  "teamLists": zod.object({
+  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "day": zod.number().min(getSocialSettingsResponseSettingsRoundSchedulesTeamListsDayMin).max(getSocialSettingsResponseSettingsRoundSchedulesTeamListsDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
+  "hour": zod.number().min(getSocialSettingsResponseSettingsRoundSchedulesTeamListsHourMin).max(getSocialSettingsResponseSettingsRoundSchedulesTeamListsHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
+}),
+  "weekendWrap": zod.object({
+  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "day": zod.number().min(getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapDayMin).max(getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
+  "hour": zod.number().min(getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapHourMin).max(getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
+})
+}).optional().describe('When the round cards draft themselves (balanced card sets). Always complete in a response: a card never saved shows its default.')
 }),
   "captionTemplates": zod.array(zod.object({
   "engine": zod.string(),
@@ -5181,7 +5218,7 @@ export const GetSocialSettingsResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })),
@@ -5202,6 +5239,24 @@ export const GetSocialSettingsResponse = zod.object({
  * @summary Update social card settings
  */
 export const updateSocialSettingsBodyAutoPostWindowHoursMax = 168;
+
+export const updateSocialSettingsBodyRoundSchedulesOneGameDayDayMin = 0;
+export const updateSocialSettingsBodyRoundSchedulesOneGameDayDayMax = 6;
+
+export const updateSocialSettingsBodyRoundSchedulesOneGameDayHourMin = 0;
+export const updateSocialSettingsBodyRoundSchedulesOneGameDayHourMax = 23;
+
+export const updateSocialSettingsBodyRoundSchedulesOneTeamListsDayMin = 0;
+export const updateSocialSettingsBodyRoundSchedulesOneTeamListsDayMax = 6;
+
+export const updateSocialSettingsBodyRoundSchedulesOneTeamListsHourMin = 0;
+export const updateSocialSettingsBodyRoundSchedulesOneTeamListsHourMax = 23;
+
+export const updateSocialSettingsBodyRoundSchedulesOneWeekendWrapDayMin = 0;
+export const updateSocialSettingsBodyRoundSchedulesOneWeekendWrapDayMax = 6;
+
+export const updateSocialSettingsBodyRoundSchedulesOneWeekendWrapHourMin = 0;
+export const updateSocialSettingsBodyRoundSchedulesOneWeekendWrapHourMax = 23;
 
 
 
@@ -5245,8 +5300,45 @@ export const UpdateSocialSettingsBody = zod.object({
   "autoPostEnabled": zod.boolean().optional(),
   "autoPostWindowHours": zod.number().min(1).max(updateSocialSettingsBodyAutoPostWindowHoursMax).optional(),
   "notificationEmail": zod.string().nullish(),
-  "packColourModes": zod.record(zod.string(), zod.enum(['club', 'pack']).describe('How a design pack is coloured for this club. \"club\" (Club colours) — the club\'s background colour becomes the card stage and panel and its primary colour the accent, beating the card theme\'s colours. \"pack\" (Pack\'s own look) — the pack renders with its own palette, theme first.')).describe('Colour mode per design pack id (e.g. \"sunset-v1\"). A pack absent from the map is \"club\".').optional().describe('Merged into the stored map: only the packs sent change, the others keep their mode.')
+  "packColourModes": zod.record(zod.string(), zod.enum(['club', 'pack']).describe('How a design pack is coloured for this club. \"club\" (Club colours) — the club\'s background colour becomes the card stage and panel and its primary colour the accent, beating the card theme\'s colours. \"pack\" (Pack\'s own look) — the pack renders with its own palette, theme first.')).describe('Colour mode per design pack id (e.g. \"sunset-v1\"). A pack absent from the map is \"club\".').optional().describe('Merged into the stored map: only the packs sent change, the others keep their mode.'),
+  "roundSchedules": zod.object({
+  "gameDay": zod.object({
+  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "day": zod.number().min(updateSocialSettingsBodyRoundSchedulesOneGameDayDayMin).max(updateSocialSettingsBodyRoundSchedulesOneGameDayDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
+  "hour": zod.number().min(updateSocialSettingsBodyRoundSchedulesOneGameDayHourMin).max(updateSocialSettingsBodyRoundSchedulesOneGameDayHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
+}).optional(),
+  "teamLists": zod.object({
+  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "day": zod.number().min(updateSocialSettingsBodyRoundSchedulesOneTeamListsDayMin).max(updateSocialSettingsBodyRoundSchedulesOneTeamListsDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
+  "hour": zod.number().min(updateSocialSettingsBodyRoundSchedulesOneTeamListsHourMin).max(updateSocialSettingsBodyRoundSchedulesOneTeamListsHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
+}).optional(),
+  "weekendWrap": zod.object({
+  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "day": zod.number().min(updateSocialSettingsBodyRoundSchedulesOneWeekendWrapDayMin).max(updateSocialSettingsBodyRoundSchedulesOneWeekendWrapDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
+  "hour": zod.number().min(updateSocialSettingsBodyRoundSchedulesOneWeekendWrapHourMin).max(updateSocialSettingsBodyRoundSchedulesOneWeekendWrapHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
+}).optional()
+}).optional().describe('Merged per card: only the cards sent change, the others keep their schedule.')
 })
+
+export const updateSocialSettingsResponseRoundSchedulesGameDayDayMin = 0;
+export const updateSocialSettingsResponseRoundSchedulesGameDayDayMax = 6;
+
+export const updateSocialSettingsResponseRoundSchedulesGameDayHourMin = 0;
+export const updateSocialSettingsResponseRoundSchedulesGameDayHourMax = 23;
+
+export const updateSocialSettingsResponseRoundSchedulesTeamListsDayMin = 0;
+export const updateSocialSettingsResponseRoundSchedulesTeamListsDayMax = 6;
+
+export const updateSocialSettingsResponseRoundSchedulesTeamListsHourMin = 0;
+export const updateSocialSettingsResponseRoundSchedulesTeamListsHourMax = 23;
+
+export const updateSocialSettingsResponseRoundSchedulesWeekendWrapDayMin = 0;
+export const updateSocialSettingsResponseRoundSchedulesWeekendWrapDayMax = 6;
+
+export const updateSocialSettingsResponseRoundSchedulesWeekendWrapHourMin = 0;
+export const updateSocialSettingsResponseRoundSchedulesWeekendWrapHourMax = 23;
+
+
 
 export const UpdateSocialSettingsResponse = zod.object({
   "engineOnDemand": zod.boolean(),
@@ -5289,7 +5381,24 @@ export const UpdateSocialSettingsResponse = zod.object({
   "grades": zod.record(zod.string(), zod.boolean()).describe('Per-grade overrides. A grade absent here uses the default: seniors on, juniors off.')
 })
 }).optional().describe('Effective per-family automation switches. Derived from the engine flags until first saved.'),
-  "packColourModes": zod.record(zod.string(), zod.enum(['club', 'pack']).describe('How a design pack is coloured for this club. \"club\" (Club colours) — the club\'s background colour becomes the card stage and panel and its primary colour the accent, beating the card theme\'s colours. \"pack\" (Pack\'s own look) — the pack renders with its own palette, theme first.')).optional().describe('Colour mode per design pack id (e.g. \"sunset-v1\"). A pack absent from the map is \"club\".')
+  "packColourModes": zod.record(zod.string(), zod.enum(['club', 'pack']).describe('How a design pack is coloured for this club. \"club\" (Club colours) — the club\'s background colour becomes the card stage and panel and its primary colour the accent, beating the card theme\'s colours. \"pack\" (Pack\'s own look) — the pack renders with its own palette, theme first.')).optional().describe('Colour mode per design pack id (e.g. \"sunset-v1\"). A pack absent from the map is \"club\".'),
+  "roundSchedules": zod.object({
+  "gameDay": zod.object({
+  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "day": zod.number().min(updateSocialSettingsResponseRoundSchedulesGameDayDayMin).max(updateSocialSettingsResponseRoundSchedulesGameDayDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
+  "hour": zod.number().min(updateSocialSettingsResponseRoundSchedulesGameDayHourMin).max(updateSocialSettingsResponseRoundSchedulesGameDayHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
+}),
+  "teamLists": zod.object({
+  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "day": zod.number().min(updateSocialSettingsResponseRoundSchedulesTeamListsDayMin).max(updateSocialSettingsResponseRoundSchedulesTeamListsDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
+  "hour": zod.number().min(updateSocialSettingsResponseRoundSchedulesTeamListsHourMin).max(updateSocialSettingsResponseRoundSchedulesTeamListsHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
+}),
+  "weekendWrap": zod.object({
+  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "day": zod.number().min(updateSocialSettingsResponseRoundSchedulesWeekendWrapDayMin).max(updateSocialSettingsResponseRoundSchedulesWeekendWrapDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
+  "hour": zod.number().min(updateSocialSettingsResponseRoundSchedulesWeekendWrapHourMin).max(updateSocialSettingsResponseRoundSchedulesWeekendWrapHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
+})
+}).optional().describe('When the round cards draft themselves (balanced card sets). Always complete in a response: a card never saved shows its default.')
 })
 
 
@@ -5968,7 +6077,7 @@ export const GetHonourDisplayResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
@@ -6238,7 +6347,7 @@ export const GetKioskDisplayResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
@@ -6752,6 +6861,7 @@ export const RunDraftSweepResponse = zod.object({
   "achievements": zod.number().optional().describe('Century \/ five-for \/ debut \/ milestone cards drafted from central matches.'),
   "matchDay": zod.number(),
   "teamLists": zod.number(),
+  "roundSets": zod.number().optional().describe('Round sets (game day, team lists, weekend wrap) drafted on the club\'s schedule.'),
   "promoted": zod.number().optional().describe('Drafts moved to ready because their auto-post deadline passed.')
 }))
 })
@@ -7184,7 +7294,9 @@ export const CreatePostPackParams = zod.object({
 export const CreatePostPackResponse = zod.object({
   "images": zod.array(zod.object({
   "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
-  "url": zod.string()
+  "url": zod.string(),
+  "page": zod.number().optional().describe('Slide position in a balanced card set (1 = cover or first card); absent for a single card.'),
+  "of": zod.number().optional().describe('Number of slides in the set; absent for a single card.')
 })),
   "caption": zod.string(),
   "zipUrl": zod.string()

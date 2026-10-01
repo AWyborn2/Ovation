@@ -1,4 +1,6 @@
 import type { PackManifest } from "../types";
+import { BD_LOOK } from "./fragments";
+import { TEAM_LISTS_COVER, WEEKEND_WRAP_COVER, skeletonCover } from "../cover";
 import { bigMoment } from "./big-moment";
 import { century } from "./century";
 import { clubLeaderboardRuns } from "./club-leaderboard-runs";
@@ -71,5 +73,9 @@ export const BROADCAST_DARK_PACK: PackManifest = {
       categoryPreset: "Wickets",
       template: clubLeaderboardWickets,
     },
+    skeletonCover(BD_LOOK, WEEKEND_WRAP_COVER),
+    skeletonCover(BD_LOOK, TEAM_LISTS_COVER),
+    // Kind literal for the server coverage parity test.
+    // kind: "teamListRound"
   ],
 };

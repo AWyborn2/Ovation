@@ -30,4 +30,5 @@ export const CardKind = {
   roundFixtures: 'roundFixtures',
   tradingCard: 'tradingCard',
   juniorHighlights: 'juniorHighlights',
+  teamListRound: 'teamListRound',
 } as const;

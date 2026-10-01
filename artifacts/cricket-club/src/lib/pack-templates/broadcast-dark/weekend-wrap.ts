@@ -44,7 +44,7 @@ function build(fmt: BdFormat): string {
     bdDisplay("WEEKEND<br>WRAP", 12, ";line-height:.88");
   const rows = `<div data-repeat="matches" data-repeat-max="${fmt === "landscape" ? 4 : 5}">${row("won")}${row("lost")}</div>`;
   return bdCard({
-    chip: bdChip("WEEKEND WRAP"),
+    chip: bdChip("WEEKEND WRAP{{setMarker}}"),
     body: bdSplit(fmt, head, rows),
     footer: bdFooterPresented("supported by", { offLeft: "hashtagsExtra" }),
   });
@@ -57,6 +57,7 @@ export const weekendWrap: PackCardTemplate = {
   sponsorVariants: ["on", "off"],
   fields: [
     ...clubHeaderFields(),
+    textField("setMarker", 'Set page marker (e.g. " · 2/3")', ""),
     textField("roundLabel", "Round label", "ROUND 3"),
     textField("dateRange", "Date range", "8–9 NOVEMBER"),
     repeatField("matches", "Per-grade result rows", "4 grade results"),

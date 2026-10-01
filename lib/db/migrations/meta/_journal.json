@@ -162,6 +162,13 @@
       "when": 1790743703959,
       "tag": "0022_club_history_curated_rows",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790837581984,
+      "tag": "0023_round_schedules",
+      "breakpoints": true
     }
   ]
 }

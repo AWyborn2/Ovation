@@ -111,9 +111,10 @@ describe("design-packs registry", () => {
     _resetEnsuredTenants();
   });
 
-  // The 17 card kinds Pack A ("broadcast-dark-v1") covers. `newCap` used to sit
+  // The 18 card kinds Pack A ("broadcast-dark-v1") covers. `newCap` used to sit
   // between premiership and century; the kind was retired from the catalogue in
   // favour of `debut` (a superset of its fields), so no pack declares it.
+  // `teamListRound` (balanced card sets) posts as a cover + one teamList each.
   const ALL_KINDS = [
     "matchSummary",
     "player",
@@ -132,6 +133,7 @@ describe("design-packs registry", () => {
     "newSigning",
     "countdown",
     "clubLeaderboard",
+    "teamListRound",
   ];
 
   // --- getPackById ----------------------------------------------------------
@@ -154,9 +156,9 @@ describe("design-packs registry", () => {
 
   // --- PACKS static shape ---------------------------------------------------
 
-  it("broadcast-dark-v1 covers all 17 card kinds", () => {
+  it("broadcast-dark-v1 covers all 18 card kinds", () => {
     const pack = PACKS.find((p) => p.id === "broadcast-dark-v1")!;
-    expect(pack.cardKinds).toHaveLength(17);
+    expect(pack.cardKinds).toHaveLength(18);
     expect(new Set(pack.cardKinds)).toEqual(new Set(ALL_KINDS));
   });
 
@@ -265,7 +267,7 @@ describe("design-packs registry", () => {
     }
   });
 
-  it("gives Broadcast Dark full coverage of all 17 kinds", async () => {
+  it("gives Broadcast Dark full coverage of all 18 kinds", async () => {
     await ensurePackTemplates(1);
 
     for (const row of insertedRows.filter((r) => r.packId === "broadcast-dark-v1")) {

@@ -1,0 +1,1 @@
+ALTER TABLE "social_settings" ADD COLUMN "round_schedules" jsonb;

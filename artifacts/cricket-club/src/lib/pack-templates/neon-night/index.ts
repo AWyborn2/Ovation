@@ -1,4 +1,6 @@
 import type { PackManifest } from "../types";
+import { NEON_LOOK } from "./fragments";
+import { TEAM_LISTS_COVER, WEEKEND_WRAP_COVER, skeletonCover } from "../cover";
 import { matchResult } from "./match-result";
 import { record } from "./record";
 import { gradeLeaderRuns } from "./grade-leader-runs";
@@ -77,5 +79,9 @@ export const NEON_NIGHT_PACK: PackManifest = {
     { designKey: "century", kind: "century", template: century },
     { designKey: "five-for", kind: "fiveFor", template: fiveFor },
     { designKey: "big-moment", kind: "bigMoment", template: bigMoment },
+    skeletonCover(NEON_LOOK, WEEKEND_WRAP_COVER),
+    skeletonCover(NEON_LOOK, TEAM_LISTS_COVER),
+    // Kind literal for the server coverage parity test.
+    // kind: "teamListRound"
   ],
 };

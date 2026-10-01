@@ -277,6 +277,41 @@ const SAMPLES: { [K in ShareCardInput["kind"]]: Extract<ShareCardInput, { kind: 
       { label: "Average", value: "29.8" },
     ],
   },
+  teamListRound: {
+    kind: "teamListRound",
+    roundLabel: "ROUND 15",
+    date: "SATURDAY 14 FEB",
+    teams: (
+      [
+        ["A Grade", "Baldivis"],
+        ["B Grade", "Rockingham"],
+        ["C Grade", "Pinjarra"],
+      ] as const
+    ).map(([grade, opp]) => ({
+      grade,
+      gradeRound: `${grade.toUpperCase()} · ROUND 15`,
+      competitionLine: "ONE DAY",
+      venueDateTime: `v ${opp} · Sat 14 Dec · 1:00 PM`,
+      players: [
+        "Burrage",
+        "Rudge",
+        "Manuel",
+        "Whitfield",
+        "Currie",
+        "Talbot",
+        "Osborne",
+        "Grimshaw",
+        "Pardoe",
+        "Keeley",
+        "Stanton",
+        "Miles",
+      ].map((surname, i) => ({
+        order: i + 1,
+        surname,
+        ...(i === 0 ? { role: "C" as const } : i === 4 ? { role: "WK" as const } : {}),
+      })),
+    })),
+  },
   juniorHighlights: {
     kind: "juniorHighlights",
     grade: "UNDER 13",

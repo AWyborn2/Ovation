@@ -369,6 +369,16 @@ export const cardSetsTable = pgTable(
 
 export type CardSetRow = typeof cardSetsTable.$inferSelect;
 
+/** One round card's drafting schedule; day 0 = Sunday, hour 0–23 in club time. */
+export type RoundScheduleRow = {
+  mode: "off" | "perFixture" | "perRound";
+  day: number;
+  hour: number;
+};
+export type RoundSchedulesRow = Partial<
+  Record<"gameDay" | "teamLists" | "weekendWrap", RoundScheduleRow>
+>;
+
 // One row per tenant (unique on tenantId; PK stays a surrogate id). A tenant's
 // row is created on first access (see `ensureSettings` in social-cards.ts),
 // seeded with these schema defaults — never copied from another tenant's saved
@@ -432,6 +442,12 @@ export const socialSettingsTable = pgTable(
       .$type<Record<string, "club" | "pack">>()
       .notNull()
       .default({}),
+    // When the round cards draft themselves (balanced card sets, plan
+    // 2026-10-01-001 U5): game day and team lists per match (the default) or
+    // as one round set at a club-chosen day and hour; the weekend wrap at a
+    // club-chosen day and hour. Null = never saved; the API applies defaults
+    // that match the per-match behaviour from before (see lib/round-schedules).
+    roundSchedules: jsonb("round_schedules").$type<RoundSchedulesRow>(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

@@ -87,6 +87,11 @@ export interface PackDesignEntry {
    * "Catches" | "Dismissals" leaderboards).
    */
   categoryPreset?: "Runs" | "Wickets" | "Catches" | "Dismissals";
+  /**
+   * `"cover"`: the design is the COVER of a balanced card set for its kind
+   * (rendered for an input with `setRole: "cover"`), not its everyday card.
+   */
+  role?: "cover";
   template: PackCardTemplate;
 }
 

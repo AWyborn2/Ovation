@@ -200,7 +200,7 @@ export function teamListFormats(look: PackLook): PackTemplateFormats {
     `<span style="font-family:${SK_COND};font-weight:700;font-size:2.4cqmin;flex:none;color:${K.accText}">({{row.role}})</span>` +
     `</div>`;
   const html = kitCard(look, {
-    chip: kitChip("TEAM LIST"),
+    chip: kitChip("TEAM LIST{{setMarker}}"),
     tag: "{{gradeRound}}",
     photo: "squadPhoto",
     body: kColumn(
@@ -268,7 +268,7 @@ export function weekendWrapFormats(
       kNum("WEEKEND<br>WRAP", 12, ";line-height:.88");
     const rows = `<div data-repeat="matches" data-repeat-max="${fmt === "landscape" ? 4 : 5}">${wrapRow("won")}${wrapRow("lost")}</div>`;
     return kitCard(look, {
-      chip: kitChip("WEEKEND WRAP"),
+      chip: kitChip("WEEKEND WRAP{{setMarker}}"),
       body: kSplit(look, fmt, head, rows),
       footer: kFooterPresented("supported by", ft),
       deco: { word: "WRAP", script: "The weekend" },

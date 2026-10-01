@@ -168,6 +168,60 @@ describe("POST /social-drafts/:id/post-pack", () => {
     expect(JSON.stringify(input)).toContain("Private Player");
   });
 
+  it("a long round posts as a balanced set: cover + even slides, juniors apart, per-slide edits", async () => {
+    const grades = ["A", "B", "C", "D", "FA", "FB", "T20", "V", "U17", "U15", "U13"];
+    const d = await draft({
+      engine: "roundFixtures",
+      photoUrl: "/api/storage/objects/team.jpg",
+      packId: "club-kit-v1",
+      cardInput: {
+        kind: "roundFixtures",
+        roundLabel: "ROUND 15",
+        date: "SAT 14 FEB",
+        fixtures: grades.map((grade) => ({
+          grade,
+          opponent: "Opp",
+          venue: "Oval",
+          startTime: "1:00 PM",
+        })),
+      },
+      adjustments: {
+        fields: { headline: "Root" },
+        slides: { "detail:junior:U17": { fields: { headline: "Juniors" } } },
+      },
+    });
+    renders.length = 0;
+    const res = await post(d.id);
+    expect(res.status).toBe(200);
+    // square + story, each: cover + 4 + 4 seniors + 3 juniors.
+    const square = res.body.images.filter((i: { size: string }) => i.size === "square");
+    expect(square.map((i: { page: number; of: number }) => `${i.page}/${i.of}`)).toEqual([
+      "1/4",
+      "2/4",
+      "3/4",
+      "4/4",
+    ]);
+    const squareRenders = renders.filter((r) => r.options.size === "square");
+    const rows = squareRenders.map((r) => (r.input.fixtures as unknown[]).length);
+    expect(rows).toEqual([11, 4, 4, 3]);
+    expect(squareRenders[0].input.setRole).toBe("cover");
+    // The junior slide: juniors palette, no photo, its own edits.
+    const junior = squareRenders[3];
+    expect(junior.options.junior).toBe(true);
+    expect((junior.options.data as { photoUrl: string | null }).photoUrl).toBeNull();
+    expect(junior.options.adjustments).toEqual({ fields: { headline: "Juniors" } });
+    // Unedited slides carry no edits; seniors keep the photo.
+    expect(squareRenders[1].options.adjustments).toBeNull();
+    expect((squareRenders[1].options.data as { photoUrl: string }).photoUrl).toBe(
+      "/api/storage/objects/team.jpg",
+    );
+
+    const zip = await JSZip.loadAsync(
+      objects.get(String(res.body.zipUrl).replace("/api/storage", ""))!,
+    );
+    expect(Object.keys(zip.files)).toContain("roundFixtures-square-4of4.png");
+  });
+
   it("another tenant's draft is 404", async () => {
     const foreign = await draft({}, otherTenantId);
     expect((await post(foreign.id)).status).toBe(404);

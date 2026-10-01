@@ -9,6 +9,7 @@ import {
 } from "@workspace/db";
 import { familyAllows, resolveFamilyConfig } from "../social-families";
 import { upsertDraftByKey } from "../draft-upsert";
+import { resolveRoundSchedules } from "../round-schedules";
 import { formatFixtureDate, formatFixtureTime } from "./match-day";
 
 /**
@@ -68,6 +69,9 @@ export async function generateTeamListDrafts(
     .where(eq(socialSettingsTable.tenantId, tenantId));
   const families = resolveFamilyConfig(settings ?? null);
   if (!families.matchday.enabled) return result;
+  // A club drafting this card per round (or not at all) gets no per-match cards.
+  if (resolveRoundSchedules(settings?.roundSchedules).teamLists.mode !== "perFixture")
+    return result;
 
   const rows = await db
     .select({ fixture: fixturesTable, players: teamListsTable.players })

@@ -4,6 +4,7 @@
  * self-contained card html string.
  */
 
+import { isSetKind, planCardSet } from "../card-sets/plan";
 import { getPackManifest } from "../pack-templates/registry";
 import type { ShareCardInput, CardSize } from "../share-card";
 import type { CardThemeLike } from "./tokens";
@@ -147,6 +148,21 @@ function applyClubSwaps(html: string, packId: string | null | undefined): string
  * pack has no design for the input's kind — packs need not cover every kind, so
  * check {@link packSupportsKind} with the same `packId` before routing here.
  */
+/**
+ * A set input that was never planned (a queue thumbnail, an animated preview)
+ * renders as its post's first slide, so a long round never overflows one card.
+ * Planned slides carry `density` / `setRole` / `setPage` and pass through.
+ */
+function firstSlideOf(input: ShareCardInput): ShareCardInput {
+  if (!isSetKind(input.kind)) return input;
+  const planned = input as { density?: unknown; setRole?: unknown; setPage?: unknown };
+  if (planned.density || planned.setRole || planned.setPage) return input;
+  const slides = planCardSet(input);
+  const first = slides[0]?.input;
+  if (!first || (slides.length === 1 && first.kind === input.kind)) return input;
+  return first;
+}
+
 export function renderPackCard(
   input: ShareCardInput,
   size: CardSize,
@@ -160,6 +176,7 @@ export function renderPackCard(
   opts: { animate?: boolean } = {},
 ): string {
   const adj = isEmptyAdjustments(adjustments) ? null : adjustments;
+  input = firstSlideOf(input);
   // Junior highlights are always a junior card (juniors palette).
   if (input.kind === "juniorHighlights") junior = true;
   // Club colours vs the pack's own look: drives the stage tint weight and any
