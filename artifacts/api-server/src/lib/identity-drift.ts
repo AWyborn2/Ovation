@@ -276,7 +276,9 @@ async function loadCuratedRefs(
       })
       .from(awardWinnersTable)
       .innerJoin(awardsTable, eq(awardsTable.id, awardWinnersTable.awardId))
-      .where(and(eq(awardWinnersTable.tenantId, tenantId), inArray(awardWinnersTable.playerId, ids))),
+      .where(
+        and(eq(awardWinnersTable.tenantId, tenantId), inArray(awardWinnersTable.playerId, ids)),
+      ),
   );
   // Ballots are tenant-scoped through their award.
   const ballots = await reader
@@ -501,9 +503,7 @@ export async function loadIdentityDrift(
   if (present.size === 0) return { items: [], checked, centralEmpty: true };
 
   const missingSet = new Set(missing);
-  const playerIds = crosswalk
-    .filter((r) => missingSet.has(r.participantId))
-    .map((r) => r.playerId);
+  const playerIds = crosswalk.filter((r) => missingSet.has(r.participantId)).map((r) => r.playerId);
   const mergeTargets = curation
     .filter((c) => missingSet.has(c.participantId) && isCentralGuid(c.mergedIntoParticipantId))
     .map((c) => c.mergedIntoParticipantId!);
@@ -523,7 +523,9 @@ export async function loadIdentityDrift(
         inArray(clubCorrectionsTable.participantId, missing),
       ),
     );
-  const centralNames = await central.centralPlayerNames([...new Set([...missing, ...mergeTargets])]);
+  const centralNames = await central.centralPlayerNames([
+    ...new Set([...missing, ...mergeTargets]),
+  ]);
 
   return {
     items: computeIdentityDrift({

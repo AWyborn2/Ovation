@@ -235,7 +235,13 @@ describe("check-identity-drift CLI rules", () => {
 
   it("summarises counts per tenant and overall", () => {
     const clean = result({ tenantId: 2, slug: "mandurah", centralClubId: 7, items: [] });
-    const empty = result({ tenantId: 3, slug: "new", centralClubId: 9, items: [], centralEmpty: true });
+    const empty = result({
+      tenantId: 3,
+      slug: "new",
+      centralClubId: 9,
+      items: [],
+      centralEmpty: true,
+    });
     const summary = summariseDrift([result(), clean, empty]);
     expect(summary.totals).toEqual({
       tenantsChecked: 3,
