@@ -4362,6 +4362,133 @@ export interface DraftSweepResponse {
   results: DraftSweepResponseResultsItem[];
 }
 
+/**
+ * Collector outcome. partial = collected with errors; failed = gave up (whatever was collected is still loaded).
+ */
+export type PlayhqIngestRequestStatus = typeof PlayhqIngestRequestStatus[keyof typeof PlayhqIngestRequestStatus];
+
+
+export const PlayhqIngestRequestStatus = {
+  ok: 'ok',
+  partial: 'partial',
+  failed: 'failed',
+} as const;
+
+export type PlayhqIngestRequestErrorsItem = { [key: string]: unknown };
+
+export type PlayhqHarnessDumpRecordsItem = {
+  key?: string;
+  kind: string;
+  id: string;
+  fetchedAt?: string;
+  [key: string]: unknown;
+ };
+
+/**
+ * The harness export: __ov.dump() (gunzipped __ov.exportInfo/export chunks).
+ */
+export interface PlayhqHarnessDump {
+  version: string;
+  exportedAt: string;
+  origin?: string;
+  records: PlayhqHarnessDumpRecordsItem[];
+}
+
+export interface PlayhqIngestRequest {
+  /**
+     * Which collector produced the dump: gha-headless, manual, public-api, …
+     * @minLength 1
+     * @maxLength 40
+     * @pattern ^[a-z0-9][a-z0-9_-]*$
+     */
+  collector: string;
+  /**
+     * The scheduled plan this run served (weekly, matchday, …).
+     * @maxLength 40
+     */
+  planName?: string;
+  /** Collector outcome. partial = collected with errors; failed = gave up (whatever was collected is still loaded). */
+  status?: PlayhqIngestRequestStatus;
+  /**
+     * The collector's own error list (harness __ov.status().errors).
+     * @maxItems 200
+     */
+  errors?: PlayhqIngestRequestErrorsItem[];
+  /** @minimum 0 */
+  durationMs?: number;
+  /**
+     * Label stored as scrape_runs.source_file (defaults to collector + exportedAt).
+     * @maxLength 200
+     */
+  sourceName?: string;
+  dump: PlayhqHarnessDump;
+}
+
+export type PlayhqIngestResponseStatus = typeof PlayhqIngestResponseStatus[keyof typeof PlayhqIngestResponseStatus];
+
+
+export const PlayhqIngestResponseStatus = {
+  ok: 'ok',
+  partial: 'partial',
+  failed: 'failed',
+} as const;
+
+/**
+ * Rows upserted per playhq table.
+ */
+export type PlayhqIngestResponseCounts = {[key: string]: number};
+
+export type PlayhqIngestResponseTenantsItem = {
+  tenantId: number;
+  slug: string;
+  matches: number;
+  inserted: number;
+  updated: number;
+  swept: boolean;
+};
+
+export interface PlayhqIngestResponse {
+  status: PlayhqIngestResponseStatus;
+  runIds: number[];
+  /** Rows upserted per playhq table. */
+  counts: PlayhqIngestResponseCounts;
+  fixtureChanges: number;
+  juniorGradesDropped: number;
+  tenants: PlayhqIngestResponseTenantsItem[];
+  warnings: string[];
+}
+
+export type PlayhqDuePlansResponsePlansItemPlanName = typeof PlayhqDuePlansResponsePlansItemPlanName[keyof typeof PlayhqDuePlansResponsePlansItemPlanName];
+
+
+export const PlayhqDuePlansResponsePlansItemPlanName = {
+  weekly: 'weekly',
+  preweekend: 'preweekend',
+  matchmorn: 'matchmorn',
+  matchday: 'matchday',
+  dayafter: 'dayafter',
+  catchup: 'catchup',
+} as const;
+
+/**
+ * Pass verbatim to the harness's __ov.start(plan).
+ */
+export type PlayhqDuePlansResponsePlansItemPlan = { [key: string]: unknown };
+
+export type PlayhqDuePlansResponsePlansItem = {
+  orgId: string;
+  planName: PlayhqDuePlansResponsePlansItemPlanName;
+  /** The schedule slot this run serves. */
+  slot: string;
+  /** Pass verbatim to the harness's __ov.start(plan). */
+  plan: PlayhqDuePlansResponsePlansItemPlan;
+};
+
+export interface PlayhqDuePlansResponse {
+  now: string;
+  plans: PlayhqDuePlansResponsePlansItem[];
+}
+
 export type SocialFamilySettingUpdateGrades = {[key: string]: boolean};
 
 export interface SocialFamilySettingUpdate {

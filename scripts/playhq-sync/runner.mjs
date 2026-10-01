@@ -1,0 +1,177 @@
+// PlayHQ scheduled-sync runner (docs/plans/2026-10-01-001-feat-playhq-scheduled-sync-plan.md,
+// U6). Run hourly by .github/workflows/playhq-sync.yml.
+//
+//   1. GET  {OVATION_API_URL}/internal/playhq/plans          → the plans due now (may be none)
+//   2. for each: open play.cricket.com.au in headless Chromium, inject the harness verbatim,
+//      __ov.start(plan), poll until done (or the per-plan timeout), take __ov.dump()
+//   3. POST {OVATION_API_URL}/internal/playhq/ingest (gzip)  → loads, projects, sweeps
+//
+// The runner is deliberately dumb: the server decides what is due, and a plan is marked done
+// only by its ingest landing, so a crashed or skipped hour heals on the next one. It holds no
+// database credential — just the sync secret.
+//
+// Plain ESM with no workspace imports, so the workflow can run it with only `puppeteer-core`
+// installed. Env: OVATION_API_URL (e.g. https://<app>/api), PLAYHQ_SYNC_SECRET, CHROME_PATH,
+// HARNESS_PATH; optional PLAN_TIMEOUT_MS, ONLY_ORG, ONLY_PLAN.
+
+import { readFile } from "node:fs/promises";
+import { gzipSync } from "node:zlib";
+
+export const SITE = "https://play.cricket.com.au/";
+export const COLLECTOR = "gha-headless";
+
+/** Collector status for a finished (or abandoned) harness run. */
+export function runStatus(status, timedOut) {
+  if (!status || status.phase === "error") return "failed";
+  if (timedOut || status.errorCount > 0 || status.stats?.failed > 0) return "partial";
+  return "ok";
+}
+
+/** The ingest request body for one plan's dump. */
+export function ingestBody(due, status, timedOut, durationMs, dump) {
+  return {
+    collector: COLLECTOR,
+    planName: due.planName,
+    status: runStatus(status, timedOut),
+    errors: (status?.errors ?? []).slice(0, 200).map((e) => ({ ...e })),
+    durationMs: Math.max(0, Math.round(durationMs)),
+    sourceName: `${COLLECTOR} ${due.planName} ${due.orgId} ${due.slot}`,
+    dump,
+  };
+}
+
+async function api(fetchImpl, base, secret, path, init = {}) {
+  const res = await fetchImpl(`${base.replace(/\/+$/, "")}${path}`, {
+    ...init,
+    headers: { "x-sync-secret": secret, ...(init.headers ?? {}) },
+  });
+  const text = await res.text();
+  let body;
+  try {
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = { raw: text.slice(0, 300) };
+  }
+  if (!res.ok)
+    throw new Error(`${init.method ?? "GET"} ${path} → HTTP ${res.status} ${text.slice(0, 300)}`);
+  return body;
+}
+
+/** Run one plan in a fresh page; returns { status, timedOut, durationMs, dump }. */
+export async function collect(browser, harness, plan, { timeoutMs, pollMs = 2000, sleep }) {
+  const page = await browser.newPage();
+  try {
+    await page.goto(SITE, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await page.evaluate(harness);
+    const t0 = Date.now();
+    await page.evaluate(async (p) => {
+      await window.__ov.clear();
+      return window.__ov.start(p);
+    }, plan);
+    let status;
+    let timedOut = false;
+    for (;;) {
+      await sleep(pollMs);
+      status = await page.evaluate(() => window.__ov.status());
+      if (status.phase === "done" || status.phase === "error" || status.finishedAt) break;
+      if (Date.now() - t0 > timeoutMs) {
+        timedOut = true;
+        break;
+      }
+    }
+    const dump = await page.evaluate(() => window.__ov.dump());
+    return { status, timedOut, durationMs: Date.now() - t0, dump };
+  } finally {
+    await page.close().catch(() => {});
+  }
+}
+
+/**
+ * The whole run. Dependencies are injected so it can be tested without a browser or server.
+ * Returns { due, uploaded, failures }; the caller exits non-zero on any failure.
+ */
+export async function run({
+  env,
+  fetchImpl = fetch,
+  launch,
+  readHarness = (p) => readFile(p, "utf8"),
+  sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+  log = (...a) => console.log(...a),
+}) {
+  const base = env.OVATION_API_URL;
+  const secret = env.PLAYHQ_SYNC_SECRET;
+  if (!base || !secret) throw new Error("OVATION_API_URL and PLAYHQ_SYNC_SECRET are required");
+
+  const { plans } = await api(fetchImpl, base, secret, "/internal/playhq/plans");
+  const due = plans.filter(
+    (p) =>
+      (!env.ONLY_ORG || p.orgId === env.ONLY_ORG) &&
+      (!env.ONLY_PLAN || p.planName === env.ONLY_PLAN),
+  );
+  log(
+    `${due.length} plan(s) due${plans.length !== due.length ? ` (${plans.length} before filters)` : ""}`,
+  );
+  const result = { due: due.length, uploaded: [], failures: [] };
+  if (due.length === 0) return result;
+
+  const harness = await readHarness(env.HARNESS_PATH);
+  const browser = await launch();
+  try {
+    for (const d of due) {
+      const label = `${d.planName} ${d.orgId}`;
+      try {
+        const c = await collect(browser, harness, d.plan, {
+          timeoutMs: Number(env.PLAN_TIMEOUT_MS) || 20 * 60_000,
+          sleep,
+        });
+        const body = ingestBody(d, c.status, c.timedOut, c.durationMs, c.dump);
+        log(
+          `${label}: ${body.status}, ${c.dump?.records?.length ?? 0} records, ${c.durationMs} ms`,
+        );
+        const res = await api(fetchImpl, base, secret, "/internal/playhq/ingest", {
+          method: "POST",
+          headers: { "content-type": "application/json", "content-encoding": "gzip" },
+          body: gzipSync(Buffer.from(JSON.stringify(body))),
+        });
+        log(
+          `${label}: ingested → ${res.status}, ${res.fixtureChanges} fixture change(s), ${res.tenants?.length ?? 0} tenant(s)`,
+        );
+        for (const w of res.warnings ?? []) log(`${label}: warning: ${w}`);
+        result.uploaded.push({ ...d, status: body.status, ingest: res.status });
+        if (body.status === "failed") result.failures.push(`${label}: harness failed`);
+      } catch (err) {
+        log(`${label}: FAILED ${err?.message ?? err}`);
+        result.failures.push(`${label}: ${err?.message ?? err}`);
+      }
+    }
+  } finally {
+    await browser.close().catch(() => {});
+  }
+  return result;
+}
+
+// CLI entry (the workflow). puppeteer-core is resolved from the working directory, where the
+// workflow installed it, so the repo needs no extra dependency.
+const { pathToFileURL } = await import("node:url");
+const isMain = !!process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMain) {
+  const { createRequire } = await import("node:module");
+  const path = await import("node:path");
+  const require = createRequire(path.join(process.cwd(), "noop.js"));
+  const puppeteer = require("puppeteer-core");
+  const launch = () =>
+    puppeteer.launch({
+      executablePath: process.env.CHROME_PATH,
+      headless: true,
+      args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    });
+  run({ env: process.env, launch })
+    .then((r) => {
+      console.log(JSON.stringify(r, null, 2));
+      if (r.failures.length) process.exitCode = 1;
+    })
+    .catch((err) => {
+      console.error(err?.stack ?? err);
+      process.exitCode = 1;
+    });
+}

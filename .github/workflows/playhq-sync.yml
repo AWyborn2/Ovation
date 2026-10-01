@@ -1,0 +1,75 @@
+name: PlayHQ sync
+
+# The unattended collector for PlayHQ scheduled sync
+# (docs/plans/2026-10-01-001-feat-playhq-scheduled-sync-plan.md, U6).
+#
+# Every hour it asks the API which harness plans are due (GET /api/internal/playhq/plans),
+# runs each in headless Chromium on play.cricket.com.au with the scraper skill's harness,
+# and posts the dump to POST /api/internal/playhq/ingest. The server owns the calendar and
+# marks a plan done only when its ingest lands, so a missed or failed hour heals itself.
+#
+# DORMANT until switched on: the job runs only when the repository variable
+# PLAYHQ_SYNC_ENABLED is "true". Before that, set (Settings → Secrets and variables → Actions):
+#   variables: PLAYHQ_SYNC_ENABLED=true, OVATION_API_URL=https://<app>/api
+#   secrets:   PLAYHQ_SYNC_SECRET (same value as the API's PLAYHQ_SYNC_SECRET)
+# The API side must be provisioned first (PLAYHQ_INGEST_DATABASE_URL + the playhq_ingest role).
+#
+# Data governance: this is scraping on cloud infrastructure, inside the pilot / non-commercial
+# framing in CLAUDE.md. The PlayHQ public API collector (plan M5) replaces it for fixtures,
+# results and ladders once the key is issued.
+on:
+  schedule:
+    # Hourly, off the hour (cron at :00 is GitHub's busiest minute and runs late).
+    - cron: "7 * * * *"
+  workflow_dispatch:
+    inputs:
+      only_plan:
+        description: "Run only this plan name if it is due (weekly, preweekend, matchmorn, matchday, dayafter, catchup)"
+        required: false
+      only_org:
+        description: "Run only this PlayHQ organisation GUID"
+        required: false
+
+permissions:
+  contents: read
+
+# One run at a time; an hour that overlaps a long match-day run waits rather than racing it.
+concurrency:
+  group: playhq-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Collect due PlayHQ plans
+    if: vars.PLAYHQ_SYNC_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/playhq-sync
+            .claude/skills/playcricket-stats-scraper/harness.js
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install puppeteer-core outside the workspace
+        run: |
+          mkdir -p "$RUNNER_TEMP/sync"
+          cd "$RUNNER_TEMP/sync"
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund puppeteer-core@25
+
+      - name: Run due plans
+        working-directory: ${{ runner.temp }}/sync
+        env:
+          OVATION_API_URL: ${{ vars.OVATION_API_URL }}
+          PLAYHQ_SYNC_SECRET: ${{ secrets.PLAYHQ_SYNC_SECRET }}
+          CHROME_PATH: /usr/bin/google-chrome
+          HARNESS_PATH: ${{ github.workspace }}/.claude/skills/playcricket-stats-scraper/harness.js
+          ONLY_PLAN: ${{ inputs.only_plan }}
+          ONLY_ORG: ${{ inputs.only_org }}
+        run: node "$GITHUB_WORKSPACE/scripts/playhq-sync/runner.mjs"

@@ -120,6 +120,22 @@ object storage, never git).
 
 ### 4. Load
 
+**Preferred: upload through the API** (no database credential needed). Once the API's
+scheduled sync is provisioned (`PLAYHQ_INGEST_DATABASE_URL` + `PLAYHQ_SYNC_SECRET`), send the
+dump to the same ingest endpoint the hourly runner uses. It loads `playhq.*` on the
+playhq-scoped role, drops junior grades, projects fixtures for every linked tenant and runs
+their draft sweep, all in one call:
+
+```bash
+OVATION_API_URL=https://<app>/api PLAYHQ_SYNC_SECRET=… \
+  pnpm --filter @workspace/scripts run playhq-upload -- --file=<dump>.json [--plan=matchday]
+```
+
+`--plan=<name>` marks that scheduled plan done for the dump's organisation. Use the direct
+loader below for a local or dev database, or when the API isn't provisioned.
+
+**Direct load (ops / local databases):**
+
 ```bash
 cd scripts && ./node_modules/.bin/tsx ./src/playhq-load.ts --file=<dump>.json --dry-run
 ```
@@ -181,16 +197,22 @@ Say what was collected (grades, matches by status, scorecards, balls), what chan
 
 ## Recurring cadence
 
-Nothing schedules itself — the harness needs a browser, so a cloud routine cannot run it. Run
-on request, or ask in the desktop app:
+Scheduled sync runs this harness unattended: `.github/workflows/playhq-sync.yml` fires hourly,
+asks the API which plans are due (`GET /api/internal/playhq/plans`: weekly Monday fixture
+check, Thursday/Friday pre-weekend pass, match-day morning, hourly during matches, the day after,
+and a catch-up for scorecards still pending), runs each in headless Chromium, and posts the dumps
+to `POST /api/internal/playhq/ingest`. The calendar lives in
+`lib/db/src/playhq-ingest/cadence.ts`; the plan doc is
+`docs/plans/2026-10-01-001-feat-playhq-scheduled-sync-plan.md`. The workflow is dormant until
+the repository variable `PLAYHQ_SYNC_ENABLED` is `true`.
 
-- **Weekly fixture check:** plan 1 above → load → `--report=8`. New rows are new fixtures;
-  `fixture_changes` lists moved starts, venue swaps and status flips.
-- **After each match day:** plan 2 with `since` = that Saturday. Same-day scorecards can be
-  `PENDING` until entered; a `resume:true` re-run a day later fills the gaps.
+Run by hand when you need to:
+
+- **Something now, outside the schedule:** plan 1 or 2 above, then `playhq-upload` (step 4).
+  `--plan=<name>` stops the runner repeating it this slot.
 - **Full-history enrichment for a club:** `seasons:'all'` with `balls:'completed'` is one call
   per match (Halls Head: 27 seasons; a grade-season of balls is ~40 MB raw, ~3 MB exported).
-  Confirm the scope with the user first and run it season by season.
+  Confirm the scope with the user first and run it season by season. It is never scheduled.
 
 ## Gotchas (all hit this session)
 

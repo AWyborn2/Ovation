@@ -42,7 +42,8 @@
     "legacy:fix-a-grade-cap-duplicates": "tsx ./legacy/fix-a-grade-cap-duplicates.ts",
     "playhq-load": "tsx ./src/playhq-load.ts",
     "playhq-project-fixtures": "tsx ./src/playhq-project-fixtures.ts",
-    "test": "vitest run"
+    "playhq-upload": "tsx ./src/playhq-upload.ts",
+    "test": "vitest run && node --test playhq-sync/runner.test.mjs"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",

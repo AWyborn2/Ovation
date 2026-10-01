@@ -6868,6 +6868,77 @@ export const RunDraftSweepResponse = zod.object({
 
 
 /**
+ * Machine-to-machine only. Requires the `x-sync-secret` header to equal the server's PLAYHQ_SYNC_SECRET; answers 401 otherwise (including when no secret is configured), and 503 when PLAYHQ_INGEST_DATABASE_URL is unset or its role can write outside schema `playhq`. Loads the dump into `playhq.*` (junior and pathway grades are dropped), records a `playhq.scrape_runs` row, projects fixtures for every tenant linked to an organisation in the dump, and runs the fixtures draft sweep for the tenants it touched. Accepts `Content-Encoding: gzip`; the body limit applies to the decompressed JSON.
+ * @summary Load a PlayHQ harness dump (scheduled sync / manual upload)
+ */
+export const ingestPlayhqDumpBodyCollectorMax = 40;
+
+
+export const ingestPlayhqDumpBodyCollectorRegExp = new RegExp('^[a-z0-9][a-z0-9_-]\*$');
+export const ingestPlayhqDumpBodyPlanNameMax = 40;
+
+export const ingestPlayhqDumpBodyErrorsMax = 200;
+
+export const ingestPlayhqDumpBodyDurationMsMin = 0;
+
+export const ingestPlayhqDumpBodySourceNameMax = 200;
+
+
+
+export const IngestPlayhqDumpBody = zod.object({
+  "collector": zod.string().min(1).max(ingestPlayhqDumpBodyCollectorMax).regex(ingestPlayhqDumpBodyCollectorRegExp).describe('Which collector produced the dump: gha-headless, manual, public-api, …'),
+  "planName": zod.string().max(ingestPlayhqDumpBodyPlanNameMax).optional().describe('The scheduled plan this run served (weekly, matchday, …).'),
+  "status": zod.enum(['ok', 'partial', 'failed']).optional().describe('Collector outcome. partial = collected with errors; failed = gave up (whatever was collected is still loaded).'),
+  "errors": zod.array(zod.record(zod.string(), zod.unknown())).max(ingestPlayhqDumpBodyErrorsMax).optional().describe('The collector\'s own error list (harness __ov.status().errors).'),
+  "durationMs": zod.number().min(ingestPlayhqDumpBodyDurationMsMin).optional(),
+  "sourceName": zod.string().max(ingestPlayhqDumpBodySourceNameMax).optional().describe('Label stored as scrape_runs.source_file (defaults to collector + exportedAt).'),
+  "dump": zod.object({
+  "version": zod.string(),
+  "exportedAt": zod.string(),
+  "origin": zod.string().optional(),
+  "records": zod.array(zod.object({
+  "key": zod.string().optional(),
+  "kind": zod.string(),
+  "id": zod.string(),
+  "fetchedAt": zod.string().optional()
+}))
+}).describe('The harness export: __ov.dump() (gunzipped __ov.exportInfo\/export chunks).')
+})
+
+export const IngestPlayhqDumpResponse = zod.object({
+  "status": zod.enum(['ok', 'partial', 'failed']),
+  "runIds": zod.array(zod.number()),
+  "counts": zod.record(zod.string(), zod.number()).describe('Rows upserted per playhq table.'),
+  "fixtureChanges": zod.number(),
+  "juniorGradesDropped": zod.number(),
+  "tenants": zod.array(zod.object({
+  "tenantId": zod.number(),
+  "slug": zod.string(),
+  "matches": zod.number(),
+  "inserted": zod.number(),
+  "updated": zod.number(),
+  "swept": zod.boolean()
+})),
+  "warnings": zod.array(zod.string())
+})
+
+
+/**
+ * Machine-to-machine only (same `x-sync-secret` as the ingest endpoint; 401 otherwise, 503 when the ingest database is not configured). Returns, for every PlayHQ organisation linked to an active tenant, each plan whose latest slot (Perth time) has passed with no successful run of that plan since. The runner executes each plan in a play.cricket.com.au page and posts the dump to /internal/playhq/ingest with the plan name, which marks it done.
+ * @summary Harness plans due now, for the scheduled sync runner
+ */
+export const ListDuePlayhqPlansResponse = zod.object({
+  "now": zod.coerce.date(),
+  "plans": zod.array(zod.object({
+  "orgId": zod.string(),
+  "planName": zod.enum(['weekly', 'preweekend', 'matchmorn', 'matchday', 'dayafter', 'catchup']),
+  "slot": zod.coerce.date().describe('The schedule slot this run serves.'),
+  "plan": zod.record(zod.string(), zod.unknown()).describe('Pass verbatim to the harness\'s __ov.start(plan).')
+}))
+})
+
+
+/**
  * @summary List the club's photo library, newest first (admin)
  */
 export const ListClubPhotosQueryParams = zod.object({

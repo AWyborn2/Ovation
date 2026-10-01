@@ -77,6 +77,15 @@ export const env = {
   /** Shared secret for POST /api/internal/draft-sweep; unset = endpoint closed. */
   SOCIAL_SWEEP_SECRET: () => optional("SOCIAL_SWEEP_SECRET"),
 
+  // ── PlayHQ scheduled sync ────────────────────────────────────────────────
+  /** Shared secret for POST /api/internal/playhq/ingest; unset = endpoint closed. */
+  PLAYHQ_SYNC_SECRET: () => optional("PLAYHQ_SYNC_SECRET"),
+  /**
+   * The playhq-scoped write role (scripts/sql/playhq-ingest-role.sql). Read by
+   * @workspace/db/playhq-ingest's pool; declared here so it is listed with the rest.
+   */
+  PLAYHQ_INGEST_DATABASE_URL: () => optional("PLAYHQ_INGEST_DATABASE_URL"),
+
   // ── Email (Resend) ───────────────────────────────────────────────────────
   /** Resend API key; unset = email off (notifications stay in-app). */
   RESEND_API_KEY: () => optional("RESEND_API_KEY"),

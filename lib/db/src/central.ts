@@ -10,7 +10,8 @@ const { Pool } = pg;
 /**
  * Everything reachable through the central connection: the `central.*` PCA
  * mirror plus the `playhq.*` landing schema (same Postgres, same read-only
- * role; written only by scripts/src/playhq-load.ts, never by the app).
+ * role). This handle never writes either; `playhq.*` is written only through
+ * the separate playhq-scoped pool in `./playhq-ingest/pool.ts`.
  */
 const centralSchema = { ...centralTables, ...playhqTables };
 

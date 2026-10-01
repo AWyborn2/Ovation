@@ -3,11 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
   JUNIOR_RE,
   diffFixture,
+  dropJuniorGrades,
   oversToBalls,
   rowsFromDump,
   upsertSql,
   type Dump,
-} from "./playhq-load";
+  type LoadRows,
+} from "./load";
 
 // Shapes below mirror what play.cricket.com.au returned on 22 Sep 2026 (see
 // .claude/skills/playcricket-stats-scraper/references/endpoints.md).
@@ -553,5 +555,100 @@ describe("JUNIOR_RE", () => {
       "Men's Premier T20's",
     ])
       expect(JUNIOR_RE.test(s), s).toBe(false);
+  });
+});
+
+describe("dropJuniorGrades", () => {
+  const empty = (): LoadRows => ({
+    organisations: [],
+    seasons: [],
+    grades: [],
+    teams: [],
+    matches: [],
+    ladders: [],
+    players: [],
+    player_grade_stats: [],
+    scorecards: [],
+    match_innings: [],
+    match_batting: [],
+    match_bowling: [],
+    match_fielding: [],
+    fall_of_wickets: [],
+    balls: [],
+    runs: [{ org_id: "org" }],
+  });
+  const rows = (): LoadRows => ({
+    ...empty(),
+    grades: [
+      { id: "gs", name: "A Grade", is_junior: false },
+      { id: "gj", name: "Year 8 Boys", is_junior: true },
+    ],
+    teams: [
+      { id: "ts", grade_id: "gs" },
+      { id: "tj", grade_id: "gj" },
+      { id: "tx", grade_id: null },
+    ],
+    matches: [
+      { id: "ms", grade_id: "gs" },
+      { id: "mj", grade_id: "gj" },
+      { id: "mk", grade_id: "gk" },
+    ],
+    ladders: [{ grade_id: "gs" }, { grade_id: "gj" }],
+    player_grade_stats: [
+      { grade_id: "gs", participant_id: "senior" },
+      { grade_id: "gj", participant_id: "both" },
+      { grade_id: "gs", participant_id: "both" },
+      { grade_id: "gj", participant_id: "kid" },
+    ],
+    players: [{ participant_id: "senior" }, { participant_id: "both" }, { participant_id: "kid" }],
+    scorecards: [
+      { match_id: "ms", grade_id: "gs" },
+      { match_id: "mj", grade_id: "gj" },
+    ],
+    match_innings: [
+      { innings_id: "is", match_id: "ms" },
+      { innings_id: "ij", match_id: "mj" },
+    ],
+    match_batting: [{ innings_id: "is" }, { innings_id: "ij" }],
+    match_bowling: [{ innings_id: "ij" }],
+    match_fielding: [{ innings_id: "ij" }],
+    fall_of_wickets: [{ innings_id: "is" }, { innings_id: "ij" }],
+    balls: [{ match_id: "ms" }, { match_id: "mj" }],
+  });
+
+  it("drops a junior grade and everything hanging off it", () => {
+    const { rows: out, droppedGradeIds } = dropJuniorGrades(rows());
+    expect(droppedGradeIds).toEqual(["gj"]);
+    expect(out.grades.map((g) => g.id)).toEqual(["gs"]);
+    expect(out.teams.map((t) => t.id)).toEqual(["ts", "tx"]);
+    expect(out.matches.map((m) => m.id)).toEqual(["ms", "mk"]);
+    expect(out.ladders).toEqual([{ grade_id: "gs" }]);
+    expect(out.scorecards.map((r) => r.match_id)).toEqual(["ms"]);
+    expect(out.match_innings.map((r) => r.innings_id)).toEqual(["is"]);
+    expect(out.match_batting).toEqual([{ innings_id: "is" }]);
+    expect(out.match_bowling).toEqual([]);
+    expect(out.match_fielding).toEqual([]);
+    expect(out.fall_of_wickets).toEqual([{ innings_id: "is" }]);
+    expect(out.balls).toEqual([{ match_id: "ms" }]);
+    expect(out.runs).toEqual([{ org_id: "org" }]);
+  });
+
+  it("keeps a player who also plays senior grades; drops a junior-only one", () => {
+    const { rows: out } = dropJuniorGrades(rows());
+    expect(out.players.map((p) => p.participant_id)).toEqual(["senior", "both"]);
+    expect(out.player_grade_stats.every((r) => r.grade_id === "gs")).toBe(true);
+  });
+
+  it("also drops grades already known to be junior that this dump has no grade record for", () => {
+    const { rows: out, droppedGradeIds } = dropJuniorGrades(rows(), ["gk"]);
+    expect(droppedGradeIds.sort()).toEqual(["gj", "gk"]);
+    expect(out.matches.map((m) => m.id)).toEqual(["ms"]);
+  });
+
+  it("returns the rows untouched when nothing is junior", () => {
+    const input = { ...empty(), matches: [{ id: "ms", grade_id: "gs" }] };
+    const { rows: out, droppedGradeIds } = dropJuniorGrades(input);
+    expect(out).toBe(input);
+    expect(droppedGradeIds).toEqual([]);
   });
 });

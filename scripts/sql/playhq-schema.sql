@@ -10,9 +10,12 @@
 --
 -- Provenance / governance: this is scraped public-site data under the pilot-only,
 -- non-commercial framing in CLAUDE.md ("Data governance"). It is a landing zone, not the app's
--- read path — nothing in `artifacts/` reads `playhq.*`; projection into `central.*` (which the
--- app does read) is a separate, reviewed step. Lives in the same Postgres as `central` and
--- `wa` (CENTRAL_DATABASE_URL), written only by build/ops tooling — never by the app.
+-- read path for stats — the app reads only fixtures, results and ladders from here; projection
+-- into `central.*` (which the stats read) is a separate, reviewed step. Lives in the same
+-- Postgres as `central` and `wa` (CENTRAL_DATABASE_URL). Written only by the shared loader in
+-- `@workspace/db/playhq-ingest`: the playhq-load CLI, and the API's scheduled-ingest endpoint
+-- through the `playhq_ingest` role (scripts/sql/playhq-ingest-role.sql), which cannot write
+-- `central` or `wa`. The app's central read handle never writes here.
 create schema if not exists playhq;
 
 create table if not exists playhq.scrape_runs (
@@ -25,6 +28,21 @@ create table if not exists playhq.scrape_runs (
   counts        jsonb,
   notes         text
 );
+-- Scheduled-sync run metadata (docs/plans/2026-10-01-001-feat-playhq-scheduled-sync-plan.md, U1).
+-- Added in place so re-running this file upgrades an existing schema.
+alter table playhq.scrape_runs add column if not exists collector       text;
+alter table playhq.scrape_runs add column if not exists plan_name       text;
+alter table playhq.scrape_runs add column if not exists harness_version text;
+alter table playhq.scrape_runs add column if not exists status          text not null default 'ok';
+alter table playhq.scrape_runs add column if not exists errors          jsonb;
+alter table playhq.scrape_runs add column if not exists duration_ms     integer;
+do $$ begin
+  alter table playhq.scrape_runs add constraint playhq_scrape_runs_status_chk
+    check (status in ('ok', 'partial', 'failed'));
+exception when duplicate_object then null;
+end $$;
+create index if not exists playhq_scrape_runs_org_plan_idx
+  on playhq.scrape_runs (org_id, plan_name, loaded_at desc);
 
 create table if not exists playhq.organisations (
   id          uuid primary key,
