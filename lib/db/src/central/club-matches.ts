@@ -567,6 +567,12 @@ export interface CentralOppositionLine {
 
 export interface CentralMatchScorecard {
   summary: CentralMatchSummary;
+  /** The match's PlayHQ id — what a club correction is keyed on (KTD7). */
+  playhqMatchId: string | null;
+  /** App grade, or null for a junior / pathway / unmapped label. */
+  appGrade: string | null;
+  /** Season start year, or null when the season text doesn't parse. */
+  seasonStartYear: number | null;
   battedFirst: boolean;
   lines: CentralScorecardLine[];
   oppositionLines: CentralOppositionLine[];
@@ -810,5 +816,13 @@ async function centralMatchScorecardImpl(
       : null,
   };
 
-  return { summary, battedFirst, lines: clubLines, oppositionLines };
+  return {
+    summary,
+    playhqMatchId: m.playhqMatchId,
+    appGrade: grade,
+    seasonStartYear: season,
+    battedFirst,
+    lines: clubLines,
+    oppositionLines,
+  };
 }

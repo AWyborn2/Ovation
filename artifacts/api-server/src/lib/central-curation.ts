@@ -103,9 +103,19 @@ export function findMergeProblem(
   return "too-deep";
 }
 
-/** Load and resolve the curation overlay for a tenant (empty when none set). */
-export async function resolveCuration(tenantId: number): Promise<CurationOverlay> {
-  const rows = await db
+/** Anything that can run the tenant-DB select below: `db`, or a transaction. */
+export type CurationReader = Pick<typeof db, "select">;
+
+/**
+ * Load and resolve the curation overlay for a tenant (empty when none set).
+ * `reader` defaults to the app pool; the read-only cut-over preview passes its
+ * READ ONLY transaction so it runs this exact read (hybrid stats plan U13).
+ */
+export async function resolveCuration(
+  tenantId: number,
+  reader: CurationReader = db,
+): Promise<CurationOverlay> {
+  const rows = await reader
     .select({
       participantId: playerCurationTable.participantId,
       overrideDisplayName: playerCurationTable.overrideDisplayName,

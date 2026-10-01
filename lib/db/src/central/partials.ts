@@ -47,6 +47,8 @@ export interface CentralPartialFigures {
   runs: number;
   /** Balls faced over played innings; null when none recorded. */
   ballsFaced: number | null;
+  /** Runs from the innings WITH a ball count (the strike-rate numerator); null when none. */
+  runsOffBallsFaced: number | null;
   fours: number;
   sixes: number;
   fifties: number;
@@ -57,6 +59,10 @@ export interface CentralPartialFigures {
   bowlLines: number;
   /** Balls bowled from ball-notation overs; null when none recorded. */
   ballsBowled: number | null;
+  /** Runs conceded in the spells WITH recorded balls (the economy numerator); null when none. */
+  runsOffBallsBowled: number | null;
+  /** Wickets in those same spells (the bowling strike-rate denominator); null when none. */
+  wicketsOffBallsBowled: number | null;
   /** Maidens; null when none recorded. */
   maidens: number | null;
   runsConceded: number;
@@ -95,6 +101,7 @@ export function emptyPartialFigures(): CentralPartialFigures {
     notOuts: 0,
     runs: 0,
     ballsFaced: null,
+    runsOffBallsFaced: null,
     fours: 0,
     sixes: 0,
     fifties: 0,
@@ -103,6 +110,8 @@ export function emptyPartialFigures(): CentralPartialFigures {
     highScoreNotOut: false,
     bowlLines: 0,
     ballsBowled: null,
+    runsOffBallsBowled: null,
+    wicketsOffBallsBowled: null,
     maidens: null,
     runsConceded: 0,
     wickets: 0,
@@ -145,6 +154,7 @@ export function mergePartialFigures<T extends CentralPartialFigures>(
   into.notOuts += add.notOuts;
   into.runs += add.runs;
   into.ballsFaced = addKnown(into.ballsFaced, add.ballsFaced);
+  into.runsOffBallsFaced = addKnown(into.runsOffBallsFaced, add.runsOffBallsFaced);
   into.fours += add.fours;
   into.sixes += add.sixes;
   into.fifties += add.fifties;
@@ -164,6 +174,8 @@ export function mergePartialFigures<T extends CentralPartialFigures>(
   }
   into.bowlLines += add.bowlLines;
   into.ballsBowled = addKnown(into.ballsBowled, add.ballsBowled);
+  into.runsOffBallsBowled = addKnown(into.runsOffBallsBowled, add.runsOffBallsBowled);
+  into.wicketsOffBallsBowled = addKnown(into.wicketsOffBallsBowled, add.wicketsOffBallsBowled);
   into.maidens = addKnown(into.maidens, add.maidens);
   into.runsConceded += add.runsConceded;
   into.wickets += add.wickets;
@@ -250,6 +262,7 @@ async function centralPlayerPartialsImpl(
         (count(*) filter (where kind <> 'dnb' and runs >= 50 and runs < 100))::int as fifties,
         max(case when kind <> 'dnb' then runs * 2 + (kind = 'notout')::int end) as "hsEnc",
         (sum(balls) filter (where kind <> 'dnb'))::int as "ballsFaced",
+        (sum(runs) filter (where kind <> 'dnb' and balls > 0))::int as "runsOffBallsFaced",
         coalesce(sum(fours) filter (where kind <> 'dnb'), 0)::int as fours,
         coalesce(sum(sixes) filter (where kind <> 'dnb'), 0)::int as sixes
       from i
@@ -287,6 +300,8 @@ async function centralPlayerPartialsImpl(
         sum(runs)::int as "runsConceded",
         sum(maidens)::int as maidens,
         sum(balls)::int as "ballsBowled",
+        (sum(runs) filter (where balls > 0))::int as "runsOffBallsBowled",
+        (sum(wickets) filter (where balls > 0))::int as "wicketsOffBallsBowled",
         sum(wides)::int as wides,
         sum(no_balls)::int as "noBalls",
         (count(*) filter (where wickets >= 5))::int as "fiveWickets",
@@ -382,6 +397,7 @@ async function centralPlayerPartialsImpl(
       notOuts: num(r.notOuts),
       runs: num(r.runs),
       ballsFaced: numOrNull(r.ballsFaced),
+      runsOffBallsFaced: numOrNull(r.runsOffBallsFaced),
       fours: num(r.fours),
       sixes: num(r.sixes),
       fifties: num(r.fifties),
@@ -401,6 +417,8 @@ async function centralPlayerPartialsImpl(
       runsConceded: num(r.runsConceded),
       maidens: numOrNull(r.maidens),
       ballsBowled: numOrNull(r.ballsBowled),
+      runsOffBallsBowled: numOrNull(r.runsOffBallsBowled),
+      wicketsOffBallsBowled: numOrNull(r.wicketsOffBallsBowled),
       wides: num(r.wides),
       noBalls: num(r.noBalls),
       fiveWickets: num(r.fiveWickets),
@@ -472,6 +490,10 @@ export interface CentralParticipantMatchLine {
   /** App grade (senior only). */
   grade: string;
   season: number | null;
+  /** The opposition's central club id (head-to-head); null / absent when unknown. */
+  opponentClubId?: number | null;
+  /** Central "YYYY-MM-DD" (record progression); null / absent when unknown. */
+  matchDate?: string | null;
   batting: CentralLineBatting[];
   bowling: CentralLineBowling[];
   catches: number;
@@ -623,10 +645,18 @@ async function centralParticipantMatchLinesImpl(
     .select({
       matchId: centralMatchesTable.matchId,
       playhqMatchId: centralMatchesTable.playhqMatchId,
+      matchDate: centralMatchesTable.matchDate,
+      homeClubId: centralMatchesTable.homeClubId,
+      awayClubId: centralMatchesTable.awayClubId,
     })
     .from(centralMatchesTable)
     .where(inList(centralMatchesTable.matchId, touched));
-  const phqOf = new Map(phq.map((m) => [m.matchId, m.playhqMatchId]));
-  for (const l of lines.values()) l.playhqMatchId = phqOf.get(l.matchId) ?? null;
+  const phqOf = new Map(phq.map((m) => [m.matchId, m]));
+  for (const l of lines.values()) {
+    const m = phqOf.get(l.matchId);
+    l.playhqMatchId = m?.playhqMatchId ?? null;
+    l.matchDate = m?.matchDate ?? null;
+    l.opponentClubId = !m ? null : m.homeClubId === clubId ? m.awayClubId : m.homeClubId;
+  }
   return [...lines.values()];
 }

@@ -38,6 +38,7 @@ import {
   clubRecordLeaders,
   clubRecords,
   EMPTY_OVERLAY_DATA,
+  loadClubOverlay,
   loadClubOverlayData,
   overlayIsActive,
   resetClubOverlayTableProbe,
@@ -46,6 +47,7 @@ import {
   type ClubOverlayData,
   type OverlayCorrection,
   type OverlayHistoryRow,
+  type OverlayReader,
 } from "./club-overlay";
 
 // ── Fixture builders ─────────────────────────────────────────────────────────
@@ -455,6 +457,37 @@ describe("games, juniors, fill-ins and privacy", () => {
     expect(clubPlayerDetail(stats, G)?.stats[0]?.games).toBe(5);
   });
 
+  it("R7: a batter's seasons with no batting line still count on the grade leaderboard", () => {
+    // 2010: batted twice. 2011: bowled once, no batting line. 2012: team sheet only.
+    const stats = apply({
+      buckets: [
+        batted(G, "A Grade", 2010, 2, 40),
+        partial(G, "A Grade", 2011, { games: 1, bowlLines: 1, wickets: 2, runsConceded: 9 }),
+        partial(G, "A Grade", 2012, { games: 1 }),
+        // Never batted in the grade: not on the BATTING leaderboard at all.
+        partial(H, "A Grade", 2011, { games: 3, bowlLines: 3, wickets: 7, runsConceded: 40 }),
+      ],
+    });
+    const board = clubGradeLeaderboard(stats, "A Grade");
+    expect(board.map((r) => [r.playerId, r.games, r.runs])).toEqual([[1, 4, 40]]);
+    // The same games the career shows.
+    expect(careerOf(stats, G)?.games).toBe(4);
+    // A single season still lists only who batted in it.
+    expect(clubGradeLeaderboard(stats, "A Grade", { seasonStartYear: 2011 })).toEqual([]);
+  });
+
+  it("a history match's not out carries to its high score", () => {
+    const stats = apply({
+      buckets: [],
+      data: {
+        boundaries: AE1_BOUNDARIES,
+        history: [history(1, "A Grade", 1999, { grain: "match", runs: 100, notOuts: 1 })],
+      },
+    });
+    expect(clubRecords(stats).highestScore).toMatchObject({ participantId: G, value: "100*" });
+    expect(clubPlayerSeasons(stats, G)[0]).toMatchObject({ highScore: "100*", hundreds: 1 });
+  });
+
   it("R8: junior grades are excluded from both sources", () => {
     const stats = apply({
       buckets: [batted(G, "A Grade", 2010, 1, 10), batted(G, "Under 15", 2010, 5, 500)],
@@ -636,5 +669,29 @@ describe("loadClubOverlayData before migration 0021", () => {
       rejectingChain(Object.assign(new Error("boom"), { code: "57014" })),
     );
     await expect(loadClubOverlayData(7)).rejects.toThrow("boom");
+  });
+});
+
+// ── A caller-supplied reader (the read-only cut-over preview, U13) ───────────
+
+describe("loadClubOverlay with a supplied reader", () => {
+  beforeEach(() => {
+    dbSelect.mockReset();
+    resetClubOverlayTableProbe();
+  });
+
+  it("runs every tenant-DB select through the reader and never touches the app pool", async () => {
+    const readerSelect = vi.fn(() => {
+      const chain = { from: () => chain, where: () => Promise.resolve([]) };
+      return chain;
+    });
+    const overlay = await loadClubOverlay(1, {
+      select: readerSelect,
+    } as unknown as OverlayReader);
+    // Crosswalk, curation, boundaries, history rows and corrections.
+    expect(readerSelect).toHaveBeenCalledTimes(5);
+    expect(dbSelect).not.toHaveBeenCalled();
+    expect(overlay.active).toBe(false);
+    expect(overlay.data).toEqual(EMPTY_OVERLAY_DATA);
   });
 });

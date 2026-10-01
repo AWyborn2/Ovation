@@ -23,6 +23,12 @@ import { getOrCreateSettings } from "../lib/settings";
 import { logger } from "../lib/logger";
 import { withMilestonesCache } from "../lib/milestones-cache";
 import { parseMatchDate, partitionMatchDates } from "../lib/match-date";
+import {
+  centralMilestoneTiers,
+  nativeCareerCrossings,
+  nativeMilestoneTiers,
+  type CrossingLine,
+} from "../lib/milestone-crossings";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 
 const router: IRouter = Router();
@@ -56,10 +62,6 @@ async function optionalSection<T>(
     return fallback;
   }
 }
-
-const DEFAULT_GAMES_TIERS = [100, 150, 200, 250, 300];
-const DEFAULT_RUNS_TIERS = [1000, 2000, 3000, 5000, 7500, 10000];
-const DEFAULT_WICKETS_TIERS = [100, 150, 200, 300];
 
 const SIG_HAT_TRICK = 900;
 const SIG_CENTURY = 400;
@@ -122,17 +124,11 @@ export async function buildMilestones(
 
   const settings = await getOrCreateSettings(milestoneBoardSettingsTable, tenantId);
   const recencyWeeks = settings?.recencyWeeks ?? 4;
-  const gamesTiers = (settings?.gamesTiers?.length ? settings.gamesTiers : DEFAULT_GAMES_TIERS)
-    .slice()
-    .sort((a, b) => a - b);
-  const runsTiers = (settings?.runsTiers?.length ? settings.runsTiers : DEFAULT_RUNS_TIERS)
-    .slice()
-    .sort((a, b) => a - b);
-  const wicketsTiers = (
-    settings?.wicketsTiers?.length ? settings.wicketsTiers : DEFAULT_WICKETS_TIERS
-  )
-    .slice()
-    .sort((a, b) => a - b);
+  const {
+    games: gamesTiers,
+    runs: runsTiers,
+    wickets: wicketsTiers,
+  } = nativeMilestoneTiers(settings);
 
   // Load-bearing: every item on the board resolves through matchById.
   const matches = await db
@@ -358,11 +354,7 @@ async function buildCentralMilestones(
   const { centralMilestones } = await import("@workspace/db/central-queries");
   const { tenantId, clubId } = source;
   const settings = await getOrCreateSettings(milestoneBoardSettingsTable, tenantId);
-  const tiers = {
-    games: settings?.gamesTiers ?? DEFAULT_GAMES_TIERS,
-    runs: settings?.runsTiers ?? DEFAULT_RUNS_TIERS,
-    wickets: settings?.wicketsTiers ?? DEFAULT_WICKETS_TIERS,
-  };
+  const tiers = centralMilestoneTiers(settings);
   // Confirmed merges fold into the keeper, so a merged player's combined career
   // crosses each tier once.
   // The club overlay (U10): with a boundary, club history or corrections the
@@ -595,12 +587,7 @@ async function appendDebuts(
 function appendCareerCrossings(
   items: MilestoneItem[],
   ctx: {
-    lines: {
-      matchId: number;
-      playerId: number;
-      runs: number | null;
-      wickets: number | null;
-    }[];
+    lines: CrossingLine[];
     matchById: Map<
       number,
       {
@@ -620,80 +607,30 @@ function appendCareerCrossings(
     wicketsTiers: number[];
   },
 ): void {
-  const { lines, matchById, careerById, nameFor, inWindow, gamesTiers, runsTiers, wicketsTiers } =
-    ctx;
-
-  type WindowLine = {
-    matchId: number;
-    matchDate: string;
-    games: number;
-    runs: number;
-    wickets: number;
-  };
-  const byPlayer = new Map<number, WindowLine[]>();
-  for (const l of lines) {
-    const m = matchById.get(l.matchId);
-    const iso = m ? parseMatchDate(m.matchDate) : null;
-    if (!m || !iso) continue;
-    const arr = byPlayer.get(l.playerId) ?? [];
-    arr.push({
-      matchId: l.matchId,
-      matchDate: iso,
-      games: 1,
-      runs: l.runs ?? 0,
-      wickets: l.wickets ?? 0,
+  const { matchById, nameFor, inWindow } = ctx;
+  // The walk itself is shared with the cut-over preview (lib/milestone-crossings).
+  for (const c of nativeCareerCrossings(ctx)) {
+    const m = matchById.get(c.matchId)!;
+    items.push({
+      id: `career|${c.boardKey}|${c.tier}|${c.playerId}`,
+      kind: "career",
+      playerId: c.playerId,
+      playerName: nameFor(c.playerId),
+      grade: m.grade,
+      matchId: m.id,
+      matchDate: m.matchDate,
+      season: m.season,
+      round: m.round,
+      opponent: m.opponent,
+      boardKey: c.boardKey,
+      tierIndex: c.tierIndex,
+      label: `${c.tier} career ${c.boardKey}`,
+      detail: `Reached ${c.tier} ${c.boardKey} (now ${c.value})`,
+      value: c.value,
+      threshold: c.tier,
+      significance: SIG_CAREER_BASE + c.tierIndex * SIG_CAREER_STEP,
+      recent: inWindow(m.matchDate),
     });
-    byPlayer.set(l.playerId, arr);
-  }
-
-  const stats = [
-    { key: "games" as const, tiers: gamesTiers, label: "games" },
-    { key: "runs" as const, tiers: runsTiers, label: "runs" },
-    { key: "wickets" as const, tiers: wicketsTiers, label: "wickets" },
-  ];
-
-  for (const [playerId, windowLines] of byPlayer) {
-    const career = careerById.get(playerId);
-    if (!career) continue;
-    windowLines.sort((a, b) =>
-      a.matchDate === b.matchDate ? a.matchId - b.matchId : a.matchDate < b.matchDate ? -1 : 1,
-    );
-
-    for (const stat of stats) {
-      const windowTotal = windowLines.reduce((sum, w) => sum + w[stat.key], 0);
-      const before = career[stat.key] - windowTotal;
-      let running = before;
-      for (const w of windowLines) {
-        const prev = running;
-        running += w[stat.key];
-        for (let i = 0; i < stat.tiers.length; i++) {
-          const tier = stat.tiers[i];
-          if (prev < tier && running >= tier) {
-            const m = matchById.get(w.matchId)!;
-            items.push({
-              id: `career|${stat.key}|${tier}|${playerId}`,
-              kind: "career",
-              playerId,
-              playerName: nameFor(playerId),
-              grade: m.grade,
-              matchId: m.id,
-              matchDate: m.matchDate,
-              season: m.season,
-              round: m.round,
-              opponent: m.opponent,
-              boardKey: stat.key,
-              tierIndex: i,
-              label: `${tier} career ${stat.label}`,
-              detail: `Reached ${tier} ${stat.label} (now ${running})`,
-              value: running,
-              threshold: tier,
-              significance: SIG_CAREER_BASE + i * SIG_CAREER_STEP,
-              recent: inWindow(m.matchDate),
-            });
-          }
-        }
-      }
-    }
   }
 }
 

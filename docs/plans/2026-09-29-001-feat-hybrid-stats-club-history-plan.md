@@ -654,6 +654,14 @@ flowchart TB
 
 **Verification:** For every existing central tenant, careers are unchanged before any history, boundary or correction is added (real-data consistency check).
 
+**Follow-up (remaining surfaces, Oct 2026):** The overlay is also wired into the player match log, the match scorecard and match list, the dashboard and club totals, grade summaries, grade distribution, head-to-head, the centuries and five-wicket lists, record progression and player-detail fielding (`artifacts/api-server/src/lib/club-overlay-surfaces.ts`). The Social Studio drafting paths stay off the club layer (KTD8), pinned by `club-overlay-drafting-guard.test.ts`. Rule decisions taken there:
+
+- **Games (R7).** Any appearance is a game on every read: team sheet, batting or bowling. The grade leaderboard now counts a match a batter only bowled in, on both the plain central read and the overlay.
+- **Catches.** One classifier (`classifyFieldingKind`) on every read. The records card, record leaders, grade summaries and dashboard top fielder no longer carry their own regex. The catches rule itself (R6, U15) is still Ash's to choose.
+- **Two-innings corrections.** The corrections journal is keyed on (PlayHQ match, participant, field) and stores the match figure, so a correction can't name an innings. Its delta lands on the first played innings (first spell). Match and career totals are exact; naming an innings needs an `innings` column and a wider unique key (a migration).
+- **Grade card games.** With a club layer, a grade's `games` is its total appearances (the app's own `grade_summaries` meaning), because club history holds player figures, not a count of club matches. The plain central read still reports distinct matches.
+- **Curated honours.** With a boundary, the tenant's curated centuries and five-wicket rows dated before the grade's boundary are listed with central's (KTD4). Rows with no season, or in a grade with no boundary, are left out.
+
 ### U11. Concierge history import
 
 **Goal:** The platform admin imports a club's pre-digital history, with validation, preview, span-player linking and undo.
