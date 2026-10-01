@@ -5641,6 +5641,60 @@ export interface ClubCorrection {
   match: ClubCorrectionMatch | null;
 }
 
+/**
+ * keeper — a player in their own right for the club; merged_away — a duplicate record merged into another player
+ */
+export type ClubIdentityDriftItemKind = typeof ClubIdentityDriftItemKind[keyof typeof ClubIdentityDriftItemKind];
+
+
+export const ClubIdentityDriftItemKind = {
+  keeper: 'keeper',
+  merged_away: 'merged_away',
+} as const;
+
+export type ClubIdentityDriftItemMergeStatus = typeof ClubIdentityDriftItemMergeStatus[keyof typeof ClubIdentityDriftItemMergeStatus] | null;
+
+
+export const ClubIdentityDriftItemMergeStatus = {
+  suggested: 'suggested',
+  confirmed: 'confirmed',
+} as const;
+
+export type ClubIdentityDriftItemCuratedRowsItem = {
+  /** The table the row lives in, e.g. `award_winners` */
+  table: string;
+  rowId: number;
+  label: string;
+};
+
+export type ClubIdentityDriftItemCorrectionsItem = {
+  id: number;
+  playhqMatchId: string;
+  field: ClubCorrectionField;
+};
+
+export interface ClubIdentityDriftItem {
+  /** The PlayHQ participant GUID the club still names */
+  participantId: string;
+  /** keeper — a player in their own right for the club; merged_away — a duplicate record merged into another player */
+  kind: ClubIdentityDriftItemKind;
+  /** The club's player id for this GUID, when it has one */
+  playerId: number | null;
+  /** The club's own name for the player, else the association's, else the name on a dependent row. Admin-only, so a private player's real name is shown. */
+  displayName: string | null;
+  /** True when the association still has this player record, just with no line for this club; false when the record is gone */
+  stillInCentral: boolean;
+  mergedIntoParticipantId: string | null;
+  mergedIntoDisplayName: string | null;
+  mergeStatus: ClubIdentityDriftItemMergeStatus;
+  /** Duplicate GUIDs merged into this one */
+  mergedFrom: string[];
+  /** The club's own rows that still point at this player */
+  curatedRows: ClubIdentityDriftItemCuratedRowsItem[];
+  /** Corrections in force on this GUID's match lines */
+  corrections: ClubIdentityDriftItemCorrectionsItem[];
+}
+
 export type DuplicateReviewBodyAction = typeof DuplicateReviewBodyAction[keyof typeof DuplicateReviewBodyAction];
 
 

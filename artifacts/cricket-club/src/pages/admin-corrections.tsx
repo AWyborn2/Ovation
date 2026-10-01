@@ -7,11 +7,13 @@ import {
   useGetClubCorrectionMatch,
   useGetClubCorrectionsStatus,
   useListClubCorrections,
+  useListClubIdentityDrift,
   useRemoveClubCorrection,
   useSearchClubCorrectionMatches,
   type ClubCorrection,
   type ClubCorrectionField,
   type ClubCorrectionMatch,
+  type ClubIdentityDriftItem,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +34,11 @@ import { AlertTriangle, Info } from "lucide-react";
  * number. The correction shows everywhere on the club's site; the
  * association's data never changes. If the association later changes that
  * figure itself, the correction stops applying and is listed as not applied.
+ *
+ * Beside them, "Broken links" (U17) lists players the club still links to whose
+ * association record has gone (usually after the association's data was
+ * re-loaded), with the club's own rows that depend on each. Read-only, and
+ * hidden when every link is intact.
  */
 type TabKey = "list" | "new";
 
@@ -179,7 +186,10 @@ export default function AdminCorrections() {
       />
 
       {tab === "list" ? (
-        <CorrectionList query={list} />
+        <>
+          <CorrectionList query={list} />
+          <BrokenLinks />
+        </>
       ) : (
         <NewCorrection
           onSaved={() => {
@@ -316,6 +326,114 @@ function CorrectionList({ query }: { query: ListQuery }) {
         ))}
       </ul>
     </div>
+  );
+}
+
+/** What a club row that still points at a broken link is, in the club's words. */
+const DEPENDENT_LABEL: Record<string, string> = {
+  award_winners: "Award",
+  award_ballots: "Award vote",
+  cap_register: "Cap",
+  player_images: "Profile photo",
+  club_photo_players: "Photo tag",
+  team_of_decade_members: "Team of the decade",
+  life_members: "Life member",
+  premiership_players: "Premiership team",
+  club_roles: "Club role",
+  honour_board_overrides: "Honour board",
+  centuries: "Century",
+  five_wicket_hauls: "Five-wicket haul",
+  club_history_rows: "Club history",
+};
+
+function brokenLinkReason(i: ClubIdentityDriftItem): string {
+  return i.stillInCentral
+    ? "The association still has this player, but with no matches for this club."
+    : "The association no longer has this player's record.";
+}
+
+/**
+ * Players the club still links to whose association record has gone (U17).
+ * Read-only, and rendered only when there is something to show: a clean check,
+ * a check still loading and a check that failed all show nothing, so this
+ * never gets in the way of the corrections themselves.
+ */
+function BrokenLinks() {
+  const drift = useListClubIdentityDrift();
+  const items = drift.data ?? [];
+  if (items.length === 0) return null;
+  return (
+    <section
+      data-testid="broken-links"
+      aria-labelledby="broken-links-heading"
+      className="space-y-3 border-t border-border pt-5"
+    >
+      <h2 id="broken-links-heading" className="text-lg font-semibold">
+        {`Broken links (${items.length})`}
+      </h2>
+      <p className="max-w-[75ch] text-sm text-muted-foreground">
+        The club links these players to a record in the association&rsquo;s data that is no longer
+        there. This usually follows a re-load of the association&rsquo;s data. Nothing has been
+        deleted: the club&rsquo;s own records listed under each player still point at the old link
+        and need re-linking to the player&rsquo;s current record.
+      </p>
+      <ul className="space-y-3" aria-label="Broken links">
+        {items.map((i) => {
+          const dependents = i.curatedRows.length + i.corrections.length;
+          return (
+            <li
+              key={i.participantId}
+              data-testid={`broken-link-${i.participantId}`}
+              className="rounded-lg border border-border bg-card p-4"
+            >
+              <div className="flex flex-wrap items-start gap-3">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <span className="text-base font-semibold">
+                    {i.displayName ?? "Unknown player"}
+                  </span>
+                  <p className="text-sm">{brokenLinkReason(i)}</p>
+                  {i.kind === "merged_away" && (
+                    <p className="text-sm text-muted-foreground">
+                      {`A duplicate record merged into ${i.mergedIntoDisplayName ?? i.mergedIntoParticipantId ?? "another player"}${i.mergeStatus === "suggested" ? " (suggested, not confirmed)" : ""}.`}
+                    </p>
+                  )}
+                  {i.mergedFrom.length > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      {`${i.mergedFrom.length} duplicate ${i.mergedFrom.length === 1 ? "record is" : "records are"} merged into this player.`}
+                    </p>
+                  )}
+                </div>
+                <StatusPill tone="attention">Link broken</StatusPill>
+              </div>
+              {dependents === 0 ? (
+                <p className="mt-3 border-t border-border pt-3 text-sm text-muted-foreground">
+                  Nothing else depends on this link.
+                </p>
+              ) : (
+                <div className="mt-3 border-t border-border pt-3">
+                  <p className="text-sm font-medium">Still pointing at this player</p>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-5 text-sm">
+                    {i.curatedRows.map((r) => (
+                      <li key={`${r.table}-${r.rowId}-${r.label}`}>
+                        {`${DEPENDENT_LABEL[r.table] ?? r.table}: ${r.label}`}
+                      </li>
+                    ))}
+                    {i.corrections.map((c) => (
+                      <li key={`correction-${c.id}`}>
+                        {`Correction: ${FIELD_LABEL[c.field]} (PlayHQ match ${c.playhqMatchId})`}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <p className="mt-3 break-all text-xs text-muted-foreground">
+                {`Association ID ${i.participantId}${i.playerId != null ? ` · Club player #${i.playerId}` : ""}`}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 

@@ -89,6 +89,7 @@ import type {
   ClubCorrectionMatch,
   ClubCorrectionMatchDetail,
   ClubCorrectionsStatus,
+  ClubIdentityDriftItem,
   ClubPhoto,
   ClubRecords,
   ClubRole,
@@ -18486,6 +18487,84 @@ export function useGetClubCorrectionMatch<TData = Awaited<ReturnType<typeof getC
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetClubCorrectionMatchQueryOptions(matchId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListClubIdentityDriftUrl = () => {
+
+
+
+
+  return `/api/club-identity-drift`
+}
+
+/**
+ * Read-only. The club links association players by their PlayHQ participant GUID (its player list, renames and duplicate merges). When the association data is re-loaded a GUID can disappear or change; this lists every stored GUID that no longer has any line for the club, with the club's own rows (awards, caps, photos, team of the decade, life members, premierships, club roles, honour-board overrides, records, club history) and the corrections that still depend on it. Empty when every link is intact, and while the association data has no players for the club at all (mid-reload). Club-local pre-digital players are never listed. The same check as the `check-identity-drift` script.
+ * @summary The club's player links the association data no longer has (admin)
+ */
+export const listClubIdentityDrift = async ( options?: RequestInit): Promise<ClubIdentityDriftItem[]> => {
+
+  return customFetch<ClubIdentityDriftItem[]>(getListClubIdentityDriftUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClubIdentityDriftQueryKey = () => {
+    return [
+    `/api/club-identity-drift`
+    ] as const;
+    }
+
+
+export const getListClubIdentityDriftQueryOptions = <TData = Awaited<ReturnType<typeof listClubIdentityDrift>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubIdentityDrift>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClubIdentityDriftQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClubIdentityDrift>>> = ({ signal }) => listClubIdentityDrift({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClubIdentityDrift>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClubIdentityDriftQueryResult = NonNullable<Awaited<ReturnType<typeof listClubIdentityDrift>>>
+export type ListClubIdentityDriftQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club's player links the association data no longer has (admin)
+ */
+
+export function useListClubIdentityDrift<TData = Awaited<ReturnType<typeof listClubIdentityDrift>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubIdentityDrift>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClubIdentityDriftQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

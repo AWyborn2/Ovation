@@ -7958,6 +7958,34 @@ export const GetClubCorrectionMatchResponse = zod.object({
 
 
 /**
+ * Read-only. The club links association players by their PlayHQ participant GUID (its player list, renames and duplicate merges). When the association data is re-loaded a GUID can disappear or change; this lists every stored GUID that no longer has any line for the club, with the club's own rows (awards, caps, photos, team of the decade, life members, premierships, club roles, honour-board overrides, records, club history) and the corrections that still depend on it. Empty when every link is intact, and while the association data has no players for the club at all (mid-reload). Club-local pre-digital players are never listed. The same check as the `check-identity-drift` script.
+ * @summary The club's player links the association data no longer has (admin)
+ */
+export const ListClubIdentityDriftResponseItem = zod.object({
+  "participantId": zod.string().describe('The PlayHQ participant GUID the club still names'),
+  "kind": zod.enum(['keeper', 'merged_away']).describe('keeper — a player in their own right for the club; merged_away — a duplicate record merged into another player'),
+  "playerId": zod.number().nullable().describe('The club\'s player id for this GUID, when it has one'),
+  "displayName": zod.string().nullable().describe('The club\'s own name for the player, else the association\'s, else the name on a dependent row. Admin-only, so a private player\'s real name is shown.'),
+  "stillInCentral": zod.boolean().describe('True when the association still has this player record, just with no line for this club; false when the record is gone'),
+  "mergedIntoParticipantId": zod.string().nullable(),
+  "mergedIntoDisplayName": zod.string().nullable(),
+  "mergeStatus": zod.enum(['suggested', 'confirmed']).nullable(),
+  "mergedFrom": zod.array(zod.string()).describe('Duplicate GUIDs merged into this one'),
+  "curatedRows": zod.array(zod.object({
+  "table": zod.string().describe('The table the row lives in, e.g. `award_winners`'),
+  "rowId": zod.number(),
+  "label": zod.string()
+})).describe('The club\'s own rows that still point at this player'),
+  "corrections": zod.array(zod.object({
+  "id": zod.number(),
+  "playhqMatchId": zod.string(),
+  "field": zod.enum(['runs', 'balls_faced', 'fours', 'sixes', 'not_out', 'balls_bowled', 'maidens', 'runs_conceded', 'wickets', 'wides', 'no_balls', 'catches', 'stumpings', 'run_outs']).describe('A correctable figure. Integers only: bowling is corrected in balls (not overs) and not_out as 0 or 1.')
+})).describe('Corrections in force on this GUID\'s match lines')
+})
+export const ListClubIdentityDriftResponse = zod.array(ListClubIdentityDriftResponseItem)
+
+
+/**
  * @summary Start an upgrade checkout for the current tenant (inert while billing is disabled)
  */
 export const CreateBillingCheckoutBody = zod.object({

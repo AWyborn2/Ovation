@@ -5438,6 +5438,37 @@ paths:
         "503":
           description: The corrections store isn't in this database yet (migration 0021)
 
+  /club-identity-drift:
+    get:
+      operationId: listClubIdentityDrift
+      tags: [players]
+      summary: The club's player links the association data no longer has (admin)
+      description: >-
+        Read-only. The club links association players by their PlayHQ
+        participant GUID (its player list, renames and duplicate merges). When
+        the association data is re-loaded a GUID can disappear or change;
+        this lists every stored GUID that no longer has any line for the
+        club, with the club's own rows (awards, caps, photos, team of the
+        decade, life members, premierships, club roles, honour-board
+        overrides, records, club history) and the corrections that still
+        depend on it. Empty when every link is intact, and while the
+        association data has no players for the club at all (mid-reload).
+        Club-local pre-digital players are never listed. The same check as
+        the `check-identity-drift` script.
+      responses:
+        "200":
+          description: The club's broken links, most-depended-on first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClubIdentityDriftItem"
+        "409":
+          description: The club has no association data
+        "503":
+          description: The corrections store isn't in this database yet (migration 0021)
+
   /billing/checkout:
     post:
       operationId: createBillingCheckout
@@ -14936,6 +14967,81 @@ components:
         match:
           allOf: [{ $ref: "#/components/schemas/ClubCorrectionMatch" }]
           nullable: true
+
+    ClubIdentityDriftItem:
+      type: object
+      required:
+        [
+          participantId,
+          kind,
+          playerId,
+          displayName,
+          stillInCentral,
+          mergedIntoParticipantId,
+          mergedIntoDisplayName,
+          mergeStatus,
+          mergedFrom,
+          curatedRows,
+          corrections,
+        ]
+      properties:
+        participantId:
+          type: string
+          description: The PlayHQ participant GUID the club still names
+        kind:
+          type: string
+          enum: [keeper, merged_away]
+          description: >-
+            keeper — a player in their own right for the club; merged_away —
+            a duplicate record merged into another player
+        playerId:
+          type: integer
+          nullable: true
+          description: The club's player id for this GUID, when it has one
+        displayName:
+          type: string
+          nullable: true
+          description: >-
+            The club's own name for the player, else the association's, else
+            the name on a dependent row. Admin-only, so a private player's
+            real name is shown.
+        stillInCentral:
+          type: boolean
+          description: >-
+            True when the association still has this player record, just with
+            no line for this club; false when the record is gone
+        mergedIntoParticipantId: { type: string, nullable: true }
+        mergedIntoDisplayName: { type: string, nullable: true }
+        mergeStatus:
+          type: string
+          nullable: true
+          enum: [suggested, confirmed]
+        mergedFrom:
+          type: array
+          items: { type: string }
+          description: Duplicate GUIDs merged into this one
+        curatedRows:
+          type: array
+          description: The club's own rows that still point at this player
+          items:
+            type: object
+            required: [table, rowId, label]
+            properties:
+              table:
+                type: string
+                description: The table the row lives in, e.g. `award_winners`
+              rowId: { type: integer }
+              label: { type: string }
+        corrections:
+          type: array
+          description: Corrections in force on this GUID's match lines
+          items:
+            type: object
+            required: [id, playhqMatchId, field]
+            properties:
+              id: { type: integer }
+              playhqMatchId: { type: string }
+              field: { $ref: "#/components/schemas/ClubCorrectionField" }
 
     DuplicateReviewBody:
       type: object
