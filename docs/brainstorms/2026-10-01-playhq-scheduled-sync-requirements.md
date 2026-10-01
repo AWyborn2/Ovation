@@ -164,9 +164,16 @@ frequency.
     last refreshed 3 days ago").
   - Choosing the delivery channel (in-app only, or email too) is a planning question.
 
+### Follow-up (1 Oct)
+
+- D3 confirmed: **pre-fill**, provided we can show that lineups actually get published. The plan
+  measures publish rate per grade before switching pre-fill on.
+- Lineups generally start being published a day or two before the match. Lineup capture
+  therefore runs in the Thu/Fri pass and on match-day morning.
+- Implementation plan: `docs/plans/2026-10-01-001-feat-playhq-scheduled-sync-plan.md`.
+
 ## Remaining open items
 
-- Confirm D3 means **pre-fill** (not "show alongside").
 - Lineup-endpoint spike (does PlayHQ expose a pre-match lineup, and when does it fill?).
 - Option B spike result decides the unattended collector.
 - Alert delivery channel for R10.
