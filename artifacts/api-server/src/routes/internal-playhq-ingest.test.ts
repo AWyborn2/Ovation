@@ -8,6 +8,8 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import type { Server } from "node:http";
+import type { AddressInfo } from "node:net";
 import { gzipSync } from "node:zlib";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
@@ -446,5 +448,112 @@ describe("GET /api/internal/playhq/plans — what the runner should collect", ()
     const res = await getPlans();
     expect(res.status).toBe(503);
     process.env.PLAYHQ_INGEST_DATABASE_URL = ingestUrl;
+  });
+});
+
+describe("scheduled runner → plans → ingest (round trip)", () => {
+  // The real runner (scripts/playhq-sync/runner.mjs) against the real app over HTTP; only the
+  // browser is faked, returning a harness dump. Proves the runner's request shapes (secret
+  // header, gzip body, collector/planName fields) are what the endpoints accept.
+  const ORG4 = randomUUID();
+  let server: Server;
+  let base: string;
+  let tenant4: number;
+
+  beforeAll(async () => {
+    process.env.PLAYHQ_INGEST_DATABASE_URL = ingestUrl;
+    await closePlayhqIngestPool();
+    await db.delete(tenantsTable).where(like(tenantsTable.slug, "playhq-runner-%"));
+    const [t] = await db
+      .insert(tenantsTable)
+      .values({
+        slug: `playhq-runner-${randomUUID().slice(0, 8)}`,
+        centralClubId: 9905,
+        name: "PlayHQ Runner Test Club",
+        plan: "pro",
+        playhqOrgId: ORG4,
+      })
+      .returning();
+    tenant4 = t.id;
+    await new Promise<void>((resolve) => {
+      server = app.listen(0, "127.0.0.1", () => resolve());
+    });
+    const addr = server.address() as AddressInfo;
+    base = `http://127.0.0.1:${addr.port}/api`;
+  });
+
+  afterAll(async () => {
+    await new Promise((r) => server.close(r));
+    await admin.query(`delete from playhq.scrape_runs where org_id = $1`, [ORG4]);
+    await db.delete(tenantsTable).where(eq(tenantsTable.id, tenant4));
+  });
+
+  it("collects the due weekly plan for a new org and marks it done", async () => {
+    const runnerPath = path.resolve(__dirname, "../../../../scripts/playhq-sync/runner.mjs");
+    const { run } = (await import(runnerPath as string)) as {
+      run: (o: Record<string, unknown>) => Promise<{
+        due: number;
+        uploaded: { orgId: string; planName: string; ingest: string }[];
+        failures: string[];
+      }>;
+    };
+    const at = new Date().toISOString();
+    const page = {
+      goto: async () => {},
+      close: async () => {},
+      evaluate: async (fn: unknown) => {
+        const src = String(fn);
+        if (src.includes("__ov.status"))
+          return { phase: "done", finishedAt: at, errorCount: 0, errors: [], stats: { failed: 0 } };
+        if (src.includes("__ov.dump"))
+          return {
+            version: "2.0.0",
+            exportedAt: at,
+            records: [
+              {
+                key: "plan|1",
+                kind: "plan",
+                id: at,
+                meta: {},
+                fetchedAt: at,
+                data: { orgId: ORG4 },
+              },
+            ],
+          };
+        return undefined;
+      },
+    };
+    const result = await run({
+      env: {
+        OVATION_API_URL: base,
+        PLAYHQ_SYNC_SECRET: SECRET,
+        HARNESS_PATH: "unused",
+        ONLY_ORG: ORG4,
+      },
+      launch: async () => ({ newPage: async () => page, close: async () => {} }),
+      readHarness: async () => "",
+      sleep: async () => {},
+      log: () => {},
+    });
+    expect(result.failures).toEqual([]);
+    expect(result.uploaded).toEqual([
+      expect.objectContaining({ orgId: ORG4, planName: "weekly", ingest: "ok" }),
+    ]);
+
+    const runs = await admin.query(
+      `select collector, plan_name, status from playhq.scrape_runs where org_id = $1`,
+      [ORG4],
+    );
+    expect(runs.rows).toEqual([{ collector: "gha-headless", plan_name: "weekly", status: "ok" }]);
+
+    // Marked done: the next tick has nothing for this org.
+    const again = await run({
+      env: { OVATION_API_URL: base, PLAYHQ_SYNC_SECRET: SECRET, ONLY_ORG: ORG4 },
+      launch: async () => {
+        throw new Error("should not launch");
+      },
+      log: () => {},
+    });
+    expect(again.due).toBe(0);
   });
 });

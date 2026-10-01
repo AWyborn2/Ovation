@@ -49,6 +49,18 @@ retries, with both the headless and a desktop user agent. That counts as day 1; 
 days out). The guessed `/lineups`, `/players` and `/teams` paths don't exist. The 8–10 Oct
 re-runs will show when the list fills.
 
+**U5–U7: built, on PR #261.**
+
+- U5: `GET /api/internal/playhq/plans` serves `duePlans` (`lib/db/src/playhq-ingest/cadence.ts`).
+  It plans each linked organisation of a non-suspended tenant; per-association dedupe is
+  deferred.
+- U6: `scripts/playhq-sync/runner.mjs` and `.github/workflows/playhq-sync.yml`, hourly at :07.
+  The workflow is dormant until the repo variable `PLAYHQ_SYNC_ENABLED` is `true`.
+  `puppeteer-core` is installed by the workflow, so no workspace dependency is added. The runner
+  posts each plan's full `__ov.dump()` gzipped, rather than export chunks.
+- U7: `playhq-upload` sends a hand-collected dump to the same ingest endpoint; the skill
+  documents it.
+
 **U1–U3: built, on PR #261.** Deviations from the units below:
 
 - The loader lives in `lib/db/src/playhq-ingest/` (export `@workspace/db/playhq-ingest`), not a
@@ -70,6 +82,10 @@ re-runs will show when the list fills.
    `alter role playhq_ingest with password '…'`.
 3. In Replit secrets, set `PLAYHQ_INGEST_DATABASE_URL` (user `playhq_ingest.<ref>`, session
    pooler) and `PLAYHQ_SYNC_SECRET`.
+4. In GitHub (Settings → Secrets and variables → Actions):
+   - secret `PLAYHQ_SYNC_SECRET` (the same value);
+   - variable `OVATION_API_URL` (`https://<app>/api`);
+   - variable `PLAYHQ_SYNC_ENABLED=true`, once 1–3 are live.
 
 ---
 
