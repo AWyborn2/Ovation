@@ -38,6 +38,7 @@ import {
   clubRecordLeaders,
   clubRecords,
   EMPTY_OVERLAY_DATA,
+  loadClubOverlay,
   loadClubOverlayData,
   overlayIsActive,
   resetClubOverlayTableProbe,
@@ -46,6 +47,7 @@ import {
   type ClubOverlayData,
   type OverlayCorrection,
   type OverlayHistoryRow,
+  type OverlayReader,
 } from "./club-overlay";
 
 // ── Fixture builders ─────────────────────────────────────────────────────────
@@ -636,5 +638,29 @@ describe("loadClubOverlayData before migration 0021", () => {
       rejectingChain(Object.assign(new Error("boom"), { code: "57014" })),
     );
     await expect(loadClubOverlayData(7)).rejects.toThrow("boom");
+  });
+});
+
+// ── A caller-supplied reader (the read-only cut-over preview, U13) ───────────
+
+describe("loadClubOverlay with a supplied reader", () => {
+  beforeEach(() => {
+    dbSelect.mockReset();
+    resetClubOverlayTableProbe();
+  });
+
+  it("runs every tenant-DB select through the reader and never touches the app pool", async () => {
+    const readerSelect = vi.fn(() => {
+      const chain = { from: () => chain, where: () => Promise.resolve([]) };
+      return chain;
+    });
+    const overlay = await loadClubOverlay(1, {
+      select: readerSelect,
+    } as unknown as OverlayReader);
+    // Crosswalk, curation, boundaries, history rows and corrections.
+    expect(readerSelect).toHaveBeenCalledTimes(5);
+    expect(dbSelect).not.toHaveBeenCalled();
+    expect(overlay.active).toBe(false);
+    expect(overlay.data).toEqual(EMPTY_OVERLAY_DATA);
   });
 });

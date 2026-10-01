@@ -65,6 +65,8 @@ export interface CentralMatch {
   playhqMatchId: string | null;
   season: string | null;
   grade: string | null;
+  /** Central match date text; only the cut-over preview reads it. */
+  matchDate?: string | null;
 }
 
 export interface CentralBattingRow {
