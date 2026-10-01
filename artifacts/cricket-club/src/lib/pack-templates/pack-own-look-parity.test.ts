@@ -69,8 +69,17 @@ function digest(packId: string, scenario: Scenario, mode: "club" | "pack"): stri
   const tokens = resolveCardTokens({ theme: s.theme, junior: s.junior, data, packId });
   const hash = createHash("sha256");
   const manifest = listPackManifests().find((m) => m.packId === packId)!;
+  // Set covers and the round team-list kind arrived after these digests were
+  // captured; they have no "before" to match, and every other design is
+  // unchanged by them.
   for (const entry of manifest.designs) {
-    const input = sampleCardInput(entry.kind as ShareCardInput["kind"]);
+    if (entry.role === "cover" || entry.kind === "teamListRound") continue;
+    // Rendered as one card, as before sets: an unplanned long or mixed round
+    // now renders as its set's first slide, which is planning, not the look.
+    const input = {
+      ...sampleCardInput(entry.kind as ShareCardInput["kind"]),
+      density: "standard",
+    } as ShareCardInput;
     for (const size of SIZES) {
       hash.update(renderPackCard(input, size, true, tokens, s.junior, data, packId));
     }

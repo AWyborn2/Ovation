@@ -3,7 +3,7 @@ import type { SocialSettingsRow } from "@workspace/db";
 /**
  * Card families (Social Studio automation, R1/R2).
  *
- * Every one of the 20 card types belongs to one of four families. Admins
+ * Every one of the 21 card types belongs to one of four families. Admins
  * switch automation on or off per family and, within a family, per grade.
  * Ad-hoc types (player, record, new signing…) still carry a family so the
  * queue can filter them, but no engine auto-drafts them.
@@ -32,6 +32,7 @@ export const CARD_KIND_FAMILY = {
   roundFixtures: "matchday",
   tradingCard: "achievements",
   juniorHighlights: "roundup",
+  teamListRound: "matchday",
 } as const satisfies Record<string, SocialFamily>;
 
 export type CardKind = keyof typeof CARD_KIND_FAMILY;

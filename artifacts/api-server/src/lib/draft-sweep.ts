@@ -12,6 +12,11 @@ import {
 import { generateMatchSummaryDrafts, type MatchSummarySource } from "./match-summary-drafter";
 import { generateMatchDayDrafts } from "./engines/match-day";
 import { generateTeamListDrafts } from "./engines/team-list";
+import {
+  generateRoundGameDayDrafts,
+  generateRoundTeamListDrafts,
+  generateWeekendWrapDrafts,
+} from "./engines/round-sets";
 import { ensureSettings } from "./social-cards-helpers";
 import { familyAllows, resolveFamilyConfig } from "./social-families";
 import { generateRoundUpDrafts } from "./roundup";
@@ -54,6 +59,8 @@ export type SweepSummary = {
   achievements: number;
   matchDay: number;
   teamLists: number;
+  /** Round sets drafted on the club's schedule (game day, team lists, weekend wrap). */
+  roundSets: number;
   /** Drafts moved to ready because their auto-post deadline passed. */
   promoted: number;
 };
@@ -78,6 +85,7 @@ export async function runDraftSweep(
     achievements: 0,
     matchDay: 0,
     teamLists: 0,
+    roundSets: 0,
     promoted: 0,
   };
 
@@ -113,6 +121,18 @@ export async function runDraftSweep(
     summary.teamLists = (await generateTeamListDrafts(tenantId, now)).drafted;
   } catch (err) {
     logger.error({ err, tenantId }, "team-list drafts failed");
+  }
+
+  // Round sets on the club's schedule. The weekend wrap reads results, so it
+  // only runs on the scheduled sweep, not on a fixtures refresh.
+  const roundEngines = [generateRoundGameDayDrafts, generateRoundTeamListDrafts];
+  if (scope.kind === "scheduled") roundEngines.push(generateWeekendWrapDrafts);
+  for (const engine of roundEngines) {
+    try {
+      summary.roundSets += (await engine(tenantId, now)).drafted;
+    } catch (err) {
+      logger.error({ err, tenantId, engine: engine.name }, "round set drafts failed");
+    }
   }
 
   try {

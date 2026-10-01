@@ -45,6 +45,8 @@ export type CardRender = {
   data: PackCardData | null;
   packId: string | null;
   adjustments: CardAdjustments | null;
+  /** A junior card (a junior slide of a balanced set). */
+  junior?: boolean;
 };
 
 /** The harness options for the card (the same props the canvas renders with). */
@@ -52,7 +54,7 @@ export function harnessOptions(card: CardRender) {
   return {
     size: card.size,
     sponsorsOn: true,
-    junior: false,
+    junior: card.junior ?? false,
     theme: card.theme,
     data: card.data,
     packId: card.packId,

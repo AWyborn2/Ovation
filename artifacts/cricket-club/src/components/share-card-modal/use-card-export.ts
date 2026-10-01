@@ -16,6 +16,7 @@ import {
 } from "@/lib/share-card";
 import { renderShareCardVideo, renderShareCardGif } from "@/lib/share-card-animation";
 import type { PackCardData } from "@/lib/pack-render";
+import { isJuniorSlide, slidesForSize } from "@/lib/card-sets/plan";
 import { PLATFORMS, type Props } from "./constants";
 import type { useCaptions } from "./use-captions";
 
@@ -79,11 +80,33 @@ export function useCardExport({
     packId,
   });
 
-  // Render one pack size to a PNG blob via the server harness.
-  const renderPackStill = (size: CardSize): Promise<Blob> =>
-    stillMutation.mutateAsync({
-      data: { input: input!, options: stillOptions(size) },
-    }) as Promise<Blob>;
+  /**
+   * Every slide a pack card exports as at `size` (a balanced card set posts
+   * as a cover + detail slides; most cards are one slide). Junior slides use
+   * the juniors palette and never carry a photo.
+   */
+  const renderPackSlides = async (
+    size: CardSize,
+  ): Promise<Array<{ blob: Blob; suffix: string }>> => {
+    const slides = slidesForSize(input!, size);
+    const out: Array<{ blob: Blob; suffix: string }> = [];
+    for (const slide of slides) {
+      const j = isJuniorSlide(slide, isJunior);
+      const base = stillOptions(size);
+      const blob = (await stillMutation.mutateAsync({
+        data: {
+          input: slide.input,
+          options: {
+            ...base,
+            junior: j,
+            data: j ? { ...base.data, photoUrl: null } : base.data,
+          },
+        },
+      })) as Blob;
+      out.push({ blob, suffix: slide.of > 1 ? `-${slide.page}of${slide.of}` : "" });
+    }
+    return out;
+  };
 
   const [zipping, setZipping] = useState(false);
   const [approving, setApproving] = useState(false);
@@ -99,10 +122,21 @@ export function useCardExport({
     setDownloading(true);
     try {
       // Pack cards render server-side (PNG); BYO templates use the client canvas.
-      const blob = isPackCard
-        ? await renderPackStill(size)
-        : await renderShareCard(input, buildOpts(size, photoTransform));
-      downloadBlob(blob, `${cardBaseFilename(input, bundle?.brand)}-${SIZES[size].code}.png`);
+      const name = `${cardBaseFilename(input, bundle?.brand)}-${SIZES[size].code}`;
+      if (isPackCard) {
+        const slides = await renderPackSlides(size);
+        if (slides.length > 1) {
+          // A card set downloads as one zip of numbered slides.
+          const zip = new JSZip();
+          for (const s of slides) zip.file(`${name}${s.suffix}.png`, s.blob);
+          downloadBlob(await zip.generateAsync({ type: "blob" }), `${name}-slides.zip`);
+        } else {
+          downloadBlob(slides[0].blob, `${name}.png`);
+        }
+      } else {
+        const blob = await renderShareCard(input, buildOpts(size, photoTransform));
+        downloadBlob(blob, `${name}.png`);
+      }
     } catch (e) {
       console.error("Card download failed", e);
       setExportError(e instanceof Error ? e.message : "Download failed");
@@ -125,10 +159,14 @@ export function useCardExport({
       for (const size of enabledSizes) {
         try {
           // Pack cards render server-side (PNG); BYO templates use the canvas.
-          const blob = isPackCard
-            ? await renderPackStill(size)
-            : await renderShareCard(input, buildOpts(size, photoTransform));
-          zip.file(`${base}-${SIZES[size].code}.png`, blob);
+          if (isPackCard) {
+            for (const s of await renderPackSlides(size)) {
+              zip.file(`${base}-${SIZES[size].code}${s.suffix}.png`, s.blob);
+            }
+          } else {
+            const blob = await renderShareCard(input, buildOpts(size, photoTransform));
+            zip.file(`${base}-${SIZES[size].code}.png`, blob);
+          }
         } catch (e) {
           console.error(`Card PNG export failed for size ${size}`, e);
           skipped.push(`${SIZES[size].label} PNG`);

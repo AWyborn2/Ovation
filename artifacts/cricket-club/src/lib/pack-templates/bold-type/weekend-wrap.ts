@@ -14,6 +14,7 @@ export const weekendWrap: PackCardTemplate = {
   sponsorVariants: ["on", "off"],
   fields: [
     ...clubHeaderFields(),
+    textField("setMarker", 'Set page marker (e.g. " · 2/3")', ""),
     textField("roundLabel", "Round label", "ROUND 3"),
     textField("dateRange", "Date range", "8–9 NOVEMBER"),
     repeatField("matches", "Per-grade result rows", "4 grade results"),

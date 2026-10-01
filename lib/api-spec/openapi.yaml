@@ -11838,7 +11838,7 @@ components:
       # roundFixtures / tradingCard / juniorHighlights are the Club Kit card
       # types (game day across all grades, a collectable player card, junior
       # highlights).
-      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard, roundFixtures, tradingCard, juniorHighlights]
+      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard, roundFixtures, tradingCard, juniorHighlights, teamListRound]
 
     Sponsor:
       type: object
@@ -12631,6 +12631,8 @@ components:
           $ref: "#/components/schemas/SocialFamilyConfig"
         packColourModes:
           $ref: "#/components/schemas/PackColourModes"
+        roundSchedules:
+          $ref: "#/components/schemas/RoundSchedules"
 
     Notification:
       type: object
@@ -12997,6 +12999,9 @@ components:
                 type: integer
               teamLists:
                 type: integer
+              roundSets:
+                type: integer
+                description: "Round sets (game day, team lists, weekend wrap) drafted on the club's schedule."
               promoted:
                 type: integer
                 description: "Drafts moved to ready because their auto-post deadline passed."
@@ -13114,6 +13119,60 @@ components:
           description: >-
             Merged into the stored map: only the packs sent change, the others
             keep their mode.
+        roundSchedules:
+          allOf:
+            - $ref: "#/components/schemas/RoundSchedulesUpdate"
+          description: >-
+            Merged per card: only the cards sent change, the others keep their
+            schedule.
+
+    RoundSchedule:
+      type: object
+      required: [mode, day, hour]
+      properties:
+        mode:
+          type: string
+          enum: [off, perFixture, perRound]
+          description: >-
+            "perFixture" drafts one card per match ahead of it (game day two
+            days out, team lists once the XI is published). "perRound" drafts
+            the whole round as one balanced set at `day` / `hour`. "off" drafts
+            nothing. The weekend wrap is "off" or "perRound" only.
+        day:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: "Day of the week the round set is drafted (0 = Sunday), club time."
+        hour:
+          type: integer
+          minimum: 0
+          maximum: 23
+          description: "Hour of the day the round set is drafted, club time (Perth)."
+
+    RoundSchedules:
+      type: object
+      description: >-
+        When the round cards draft themselves (balanced card sets). Always
+        complete in a response: a card never saved shows its default.
+      required: [gameDay, teamLists, weekendWrap]
+      properties:
+        gameDay:
+          $ref: "#/components/schemas/RoundSchedule"
+        teamLists:
+          $ref: "#/components/schemas/RoundSchedule"
+        weekendWrap:
+          $ref: "#/components/schemas/RoundSchedule"
+
+    RoundSchedulesUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        gameDay:
+          $ref: "#/components/schemas/RoundSchedule"
+        teamLists:
+          $ref: "#/components/schemas/RoundSchedule"
+        weekendWrap:
+          $ref: "#/components/schemas/RoundSchedule"
 
     PackColourMode:
       type: string
@@ -14918,6 +14977,12 @@ components:
                 enum: [square, portrait, story, landscape]
               url:
                 type: string
+              page:
+                type: integer
+                description: "Slide position in a balanced card set (1 = cover or first card); absent for a single card."
+              of:
+                type: integer
+                description: "Number of slides in the set; absent for a single card."
         caption:
           type: string
         zipUrl:

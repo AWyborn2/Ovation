@@ -95,7 +95,37 @@ export type CardAdjustments = {
   images?: Record<string, string>;
   /** Keep the sponsor strip on the card: its slots can't be hidden while on. */
   sponsorLock?: boolean;
+  /**
+   * Balanced card sets (plan 2026-10-01-001): the set's options (cover,
+   * grouping), stored on the card's root adjustments only.
+   */
+  set?: { cover?: boolean; grouping?: "auto" | "none" };
+  /** Per-slide edits for a set, by slide key (`cover`, `detail:<section>:<row>`). */
+  slides?: Record<string, CardAdjustments>;
 };
+
+/**
+ * A slide's own adjustments. The single card of a non-set input uses the
+ * root; every slide of a set has its own (unedited slides get none).
+ */
+export function slideAdjustments(
+  root: CardAdjustments | null | undefined,
+  key: string,
+): CardAdjustments | null {
+  if (!root) return null;
+  if (key === "single") return root;
+  return root.slides?.[key] ?? null;
+}
+
+/** The root adjustments with one slide's adjustments replaced. */
+export function withSlideAdjustments(
+  root: CardAdjustments,
+  key: string,
+  next: CardAdjustments,
+): CardAdjustments {
+  if (key === "single") return { ...next, set: root.set, slides: root.slides };
+  return { ...root, slides: { ...root.slides, [key]: next } };
+}
 
 /** Sponsor strip slot keys (`sponsor1`…). */
 export const isSponsorSlot = (key: string) => /^sponsor[0-9]+$/.test(key);

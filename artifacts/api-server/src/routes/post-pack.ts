@@ -1,3 +1,9 @@
+import {
+  landscapeSummary,
+  planCardSet,
+  type CardSetOptions,
+  type SetInput,
+} from "@workspace/scorecard";
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
 import JSZip from "jszip";
@@ -112,28 +118,81 @@ router.post(
     const origin = harnessOriginFromHeaders(req.headers);
     const store = photoStore();
     try {
-      const rendered: Array<{ size: CardSize; png: Buffer; url: string }> = [];
+      // A list card that outgrows one card posts as a balanced set (cover +
+      // detail slides); every other card is a single slide. Landscape stays a
+      // single summary card.
+      const rootAdj = (draft.adjustments ?? null) as {
+        set?: CardSetOptions;
+        slides?: Record<string, unknown>;
+      } | null;
+      const setOptions = (rootAdj?.set ?? {}) as CardSetOptions;
+      // The editor's edits: the card's own for a single card (and the
+      // landscape summary), each slide's own for a set.
+      const adjustmentsFor = (key: string) =>
+        key === "single" ? rootAdj : (rootAdj?.slides?.[key] ?? null);
+      const rendered: Array<{
+        size: CardSize;
+        png: Buffer;
+        url: string;
+        page?: number;
+        of?: number;
+      }> = [];
       for (const size of sizes) {
-        const { buffer } = await serialised(() =>
-          renderer(
-            input,
-            { size, sponsorsOn, junior, theme: null, data, packId: draft.packId ?? null },
-            origin,
-          ),
-        );
-        const path = await store.write(buffer, "image/png");
-        rendered.push({ size, png: buffer, url: objectUrl(path) });
+        const slides =
+          size === "landscape"
+            ? [
+                {
+                  key: "single",
+                  input: landscapeSummary(input as SetInput, setOptions),
+                  page: 1,
+                  of: 1,
+                },
+              ]
+            : planCardSet(input as SetInput, setOptions);
+        for (const slide of slides) {
+          const slideJunior = junior || (slide.input as SetInput).junior === true;
+          const slideData = slideJunior ? { ...data, photoUrl: null } : data;
+          const { buffer } = await serialised(() =>
+            renderer(
+              slide.input,
+              {
+                size,
+                sponsorsOn,
+                junior: slideJunior,
+                theme: null,
+                data: slideData,
+                packId: draft.packId ?? null,
+                adjustments: adjustmentsFor(slide.key),
+              },
+              origin,
+            ),
+          );
+          const path = await store.write(buffer, "image/png");
+          rendered.push({
+            size,
+            png: buffer,
+            url: objectUrl(path),
+            ...(slide.of > 1 ? { page: slide.page, of: slide.of } : {}),
+          });
+        }
       }
 
       const caption = draft.caption ?? "";
       const zip = new JSZip();
-      for (const r of rendered) zip.file(`${kind}-${r.size}.png`, r.png);
+      for (const r of rendered) {
+        const n = r.of ? `-${r.page}of${r.of}` : "";
+        zip.file(`${kind}-${r.size}${n}.png`, r.png);
+      }
       zip.file("caption.txt", caption);
       const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
       const zipPath = await store.write(zipBuffer, "application/zip");
 
       res.json({
-        images: rendered.map((r) => ({ size: r.size, url: r.url })),
+        images: rendered.map((r) => ({
+          size: r.size,
+          url: r.url,
+          ...(r.of ? { page: r.page, of: r.of } : {}),
+        })),
         caption,
         zipUrl: objectUrl(zipPath),
       });

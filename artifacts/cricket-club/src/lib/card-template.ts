@@ -200,6 +200,10 @@ export const CARD_FIELD_CATALOG: Record<CardKind, TemplateFieldDef[]> = {
     { key: "grade", label: "Grade", type: "text" },
     { key: "roundLabel", label: "Round", type: "text" },
   ],
+  teamListRound: [
+    { key: "roundLabel", label: "Round", type: "text" },
+    { key: "date", label: "Date", type: "text" },
+  ],
 };
 
 // All bindable fields for a kind, common fields first.
@@ -644,6 +648,10 @@ export const resolveTextField = (
     }
     case "juniorHighlights": {
       const map: Record<string, string> = { grade: input.grade, roundLabel: input.roundLabel };
+      return map[key] ?? "";
+    }
+    case "teamListRound": {
+      const map: Record<string, string> = { roundLabel: input.roundLabel, date: input.date };
       return map[key] ?? "";
     }
   }

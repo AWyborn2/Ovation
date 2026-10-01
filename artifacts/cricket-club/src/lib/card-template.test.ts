@@ -42,6 +42,9 @@ const NEW_KINDS = [
 /** The Club Kit card types (game day, trading card, junior highlights). */
 const CLUB_KIT_KINDS = ["roundFixtures", "tradingCard", "juniorHighlights"] as const;
 
+/** Balanced card sets: a round of team lists as one post. */
+const SET_KINDS = ["teamListRound"] as const;
+
 const EXISTING_KINDS = [
   "milestone",
   "player",
@@ -55,9 +58,9 @@ const EXISTING_KINDS = [
 ] as const;
 
 describe("card kind coverage", () => {
-  it("CARD_KINDS covers all 20 kinds", () => {
-    expect(CARD_KINDS).toHaveLength(20);
-    for (const kind of [...EXISTING_KINDS, ...NEW_KINDS, ...CLUB_KIT_KINDS]) {
+  it("CARD_KINDS covers all 21 kinds", () => {
+    expect(CARD_KINDS).toHaveLength(21);
+    for (const kind of [...EXISTING_KINDS, ...NEW_KINDS, ...CLUB_KIT_KINDS, ...SET_KINDS]) {
       expect(CARD_KINDS).toContain(kind);
     }
   });

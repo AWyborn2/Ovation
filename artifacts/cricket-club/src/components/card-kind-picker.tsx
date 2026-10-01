@@ -29,6 +29,7 @@ export const CARD_KIND_OPTIONS: { value: CardKind; label: string }[] = [
   { value: "roundFixtures", label: "Game Day" },
   { value: "tradingCard", label: "Trading Card" },
   { value: "juniorHighlights", label: "Junior Highlights" },
+  { value: "teamListRound", label: "Round Team Lists" },
 ];
 
 // Chip picker for the card types a sponsor or template applies to.

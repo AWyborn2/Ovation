@@ -324,6 +324,10 @@ export function bindInput(input: ShareCardInput): BoundInput {
       if (input.photoUrl) images["cardPhoto"] = input.photoUrl;
       break;
     }
+    case "teamListRound": {
+      set(values, "roundLabel", input.roundLabel);
+      break;
+    }
     case "juniorHighlights": {
       set(values, "grade", input.grade);
       set(values, "roundLabel", input.roundLabel);
@@ -335,7 +339,69 @@ export function bindInput(input: ShareCardInput): BoundInput {
     }
   }
 
+  bindSetValues(input, values);
   return { values, images, rows };
+}
+
+/** Row-size multipliers for a set's density tiers (Club Kit rows read `--rs`). */
+export const DENSITY_SCALE = { spotlight: 1.35, standard: 1, compact: 0.72 } as const;
+
+/** "A · B · C" from a list of labels (empty entries dropped). */
+const dotList = (items: Array<string | null | undefined>) =>
+  items
+    .map((i) => (i ?? "").trim())
+    .filter(Boolean)
+    .join(" · ");
+
+/**
+ * Balanced card set values (plan 2026-10-01-001): the page marker on a
+ * detail slide, its row size, and the cover's headline number and summary.
+ * A card outside a set binds `setMarker` to "" so its output is unchanged.
+ */
+function bindSetValues(input: ShareCardInput, values: Record<string, string>): void {
+  const set = input as { setPage?: string | null; density?: keyof typeof DENSITY_SCALE };
+  values["setMarker"] = set.setPage ? ` · ${set.setPage}` : "";
+  values["rowScale"] = String(DENSITY_SCALE[set.density ?? "standard"] ?? 1);
+  switch (input.kind) {
+    case "roundFixtures": {
+      const n = input.fixtures?.length ?? 0;
+      values["coverDate"] = input.date ?? "";
+      values["coverCount"] = String(n);
+      values["coverLabel"] = n === 1 ? "TEAM IN ACTION" : "TEAMS IN ACTION";
+      values["coverList"] = dotList((input.fixtures ?? []).map((f) => f.grade));
+      break;
+    }
+    case "weekendWrap": {
+      const ms = input.matches ?? [];
+      const won = ms.filter((m) => m.outcome === "won");
+      const lost = ms.filter((m) => m.outcome === "lost");
+      const drawn = ms.filter((m) => m.outcome === "draw");
+      const grade = (m: { gradeLabel: string }) => (m.gradeLabel ?? "").replace(/\s*grade\b/i, "");
+      values["coverDate"] = input.dateRange ?? "";
+      values["coverCount"] = [
+        won.length,
+        lost.length,
+        ...(drawn.length ? [drawn.length] : []),
+      ].join("–");
+      values["coverLabel"] = drawn.length ? "WON–LOST–DRAWN" : "WON–LOST";
+      values["coverList"] = [
+        won.length ? `Wins: ${dotList(won.map(grade))}` : "",
+        lost.length ? `Losses: ${dotList(lost.map(grade))}` : "",
+        drawn.length ? `Draws: ${dotList(drawn.map(grade))}` : "",
+      ]
+        .filter(Boolean)
+        .join("  |  ");
+      break;
+    }
+    case "teamListRound": {
+      const n = input.teams?.length ?? 0;
+      values["coverDate"] = input.date ?? "";
+      values["coverCount"] = String(n);
+      values["coverLabel"] = n === 1 ? "TEAM NAMED" : "TEAMS NAMED";
+      values["coverList"] = dotList((input.teams ?? []).map((t) => t.grade));
+      break;
+    }
+  }
 }
 
 /** "Riley Thompson" → "Riley T." — a junior's name as a card may print it. */
