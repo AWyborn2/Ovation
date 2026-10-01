@@ -69,6 +69,23 @@ describe("vsClubSeniorMatchIds", () => {
       ]),
     ).toEqual([1, 3]);
   });
+
+  it("with a club's history boundaries, drops matches before each grade's first central season", () => {
+    const matches = [
+      { matchId: 1, grade: "A Grade", season: "2002/03" }, // before the club default
+      { matchId: 2, grade: "A Grade", season: "2003/04" },
+      { matchId: 3, grade: "B Grade", season: "2003/04" }, // before B Grade's override
+      { matchId: 4, grade: "B Grade", season: "2004/05" },
+    ];
+    const boundaries = [
+      { grade: null, startSeason: 2003 },
+      { grade: "B Grade", startSeason: 2004 },
+    ];
+    expect(vsClubSeniorMatchIds(matches, boundaries)).toEqual([2, 4]);
+    // No boundary (absent or empty) is exactly the original filter.
+    expect(vsClubSeniorMatchIds(matches)).toEqual([1, 2, 3, 4]);
+    expect(vsClubSeniorMatchIds(matches, [])).toEqual([1, 2, 3, 4]);
+  });
 });
 
 describe("aggregateVsClubLines", () => {
@@ -195,6 +212,26 @@ describe("centralVsClub", () => {
   it("returns [] when the clubs never met in a senior grade", async () => {
     queuedSelects.push([{ matchId: 7, grade: "Under 14", season: "2022/23" }]);
     expect(await centralVsClub({ clubId: 1, opponentClubId: 5 })).toEqual([]);
+  });
+
+  it("a tenant's boundaries are part of the read (and its cache key)", async () => {
+    const meetings = [{ matchId: 1, grade: "A Grade", season: "2002/03" }];
+    const boundaries = [{ grade: null, startSeason: 2003 }];
+    // Every meeting is before the boundary: nothing to read.
+    queuedSelects.push(meetings);
+    expect(await centralVsClub({ clubId: 1, opponentClubId: 6, boundaries })).toEqual([]);
+    // A tenant on the same club with NO boundary must not be served that
+    // cached empty answer: it reads the meetings again and gets its row.
+    queuedSelects.push(
+      meetings,
+      [{ matchId: 1, participantId: "g1", runs: 30, dismissal: "bowled", dismissalType: "bowled" }],
+      [],
+      [],
+      [],
+      [{ participantId: "g1", displayName: "A Batter", isPrivate: 0 }],
+    );
+    const rows = await centralVsClub({ clubId: 1, opponentClubId: 6 });
+    expect(rows).toEqual([expect.objectContaining({ participantId: "g1", runs: 30, matches: 1 })]);
   });
 });
 
