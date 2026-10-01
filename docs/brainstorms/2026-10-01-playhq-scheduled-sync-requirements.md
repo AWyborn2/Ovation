@@ -1,6 +1,6 @@
 # PlayHQ scheduled sync — brainstorm / requirements
 
-Date: 2026-10-01 · Status: draft for decision · Next step: `/ce-plan` once the open questions are answered
+Date: 2026-10-01 · Status: decisions recorded (see "Decisions") · Next step: implementation plan
 
 ## Problem
 
@@ -61,7 +61,8 @@ Whatever runs the browser should only **collect**, then hand the dump to one ser
 | D   | **Admin "Refresh from PlayHQ" bookmarklet** clicked on play.cricket.com.au, which POSTs to ingest                                                | No (on demand)          | Low                                                          | The site's CSP `connect-src` may block it; needs a spike                           | Same as today                                            |
 | E   | **Partner API** for deep scorecards                                                                                                              | Yes                     | High; external dependency                                    | Long lead time                                                                     | Sanctioned                                               |
 
-**Recommendation:** build ingest first, then work on two tracks at once.
+**Original recommendation** (replaced by "Recommendation, revised for unattended" below):
+build ingest first, then work on two tracks at once.
 
 1. **Now:** Option A, running on the calendar below. It works today, adds no new infra, and needs
    no new scraping surface. This is the pilot bridge.
@@ -124,14 +125,48 @@ Full-history and ball-by-ball backfills (they stay manual and confirmed run-by-r
 `playhq.*` into `central.*` (it stays "a separate, reviewed step"); Stripe/plan gating of sync
 frequency.
 
-## Open questions for Ash
+## Decisions (Ash, 1 Oct 2026)
 
-1. **Unattended, or is "while my PC is on" fine for the pilot?** If it's fine, Option A ships this
-   week. If not, the Option B spike comes first.
-2. **Appetite to apply for the PlayHQ public API key now?** It's the governance-clean route for
-   fixtures, results and ladders.
-3. **Team lists:** should a PlayHQ lineup pre-fill the admin team list, or only show "selected on
-   PlayHQ" next to it?
-4. **Who gets alerted on failure:** you only, or each tenant's admins?
-5. **Stale doc:** `docs/playcricket-ingestion.md` (May) still says "No-go, stay on CSV" and
-   conflicts with the scraper skill. Should we update it as part of this work?
+| #   | Question                           | Answer                                                      | Consequence                                                                                                                            |
+| --- | ---------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Unattended or "while my PC is on"? | **Unattended**                                              | The Option B spike is the critical path; Option A is only a manual fallback (see below)                                                |
+| D2  | Apply for the public API key now?  | **Yes**                                                     | Ash applies (see `docs/playcricket-ingestion.md` § "If we ever revisit"); C replaces B for fixtures/results/ladders when the key lands |
+| D3  | PlayHQ lineup and team lists       | **Pre-fill** (read from "yes" to the first option; confirm) | Becomes R9                                                                                                                             |
+| D4  | Who gets failure alerts?           | **Both** Ash (super-admin) and the tenant's admins          | Becomes R10                                                                                                                            |
+| D5  | Fix the stale ingestion doc?       | **Yes**                                                     | Done in this PR: `docs/playcricket-ingestion.md` + the `replit.md` pointer                                                             |
+
+### Recommendation, revised for "unattended"
+
+1. **Build the ingest endpoint first.** Every path below needs it.
+2. **Spike Option B straight away (≤1 day).** Run headless Chromium on a GitHub Actions runner:
+   load `play.cricket.com.au`, `page.evaluate(harness)` for one small plan, then POST to ingest.
+   - **Pass:** the cron workflow becomes the unattended collector for the pilot.
+   - **Fail (bot gate or refused origin):** try one more host (the Replit Scheduled Deployment
+     already planned for the draft sweep). If that fails too, unattended has to wait for C, and A
+     covers the gap.
+3. **Option C as soon as the key arrives.** It becomes the primary collector for fixtures,
+   results and ladders (server-side, no browser). `/v2/games/{id}/summary` has per-game
+   appearances, which may also be the lineup source for R9. Scraping shrinks to deep-scorecard
+   enrichment.
+4. **Option A is no longer scheduled.** It stays as a manual "run it now" fallback and posts to
+   the same ingest endpoint.
+
+### Added requirements
+
+- R9. **PlayHQ lineup pre-fills the team list.** When PlayHQ publishes a lineup for a fixture
+  that has no admin team list, create one marked `source='playhq'`. Admins can edit it. Once an
+  admin has edited or created a team list, sync never touches it again. A later PlayHQ lineup
+  change only updates a team list that is still untouched. Depends on the lineup-endpoint spike
+  above.
+- R10. **Alerts go to two audiences.**
+  - Ash (super-admin): every failure, plus last-success per org in the platform-admin console.
+  - Each affected tenant's admins: a notice in their admin area, phrased for the club ("Fixtures
+    last refreshed 3 days ago").
+  - Choosing the delivery channel (in-app only, or email too) is a planning question.
+
+## Remaining open items
+
+- Confirm D3 means **pre-fill** (not "show alongside").
+- Lineup-endpoint spike (does PlayHQ expose a pre-match lineup, and when does it fill?).
+- Option B spike result decides the unattended collector.
+- Alert delivery channel for R10.

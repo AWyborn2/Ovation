@@ -1,8 +1,24 @@
 # PlayCricket ingestion — spike findings & recommendation
 
 **Date:** 2026-05-27
-**Status:** **No-go for now. Stay on CSV.**
+**Status:** **Superseded (1 Oct 2026).** This spike's "stay on CSV" conclusion no longer holds; it
+is kept as history and for the PlayHQ public API notes, which are still accurate.
 **Author:** Spike investigation (task #26)
+
+> **Current state (Oct 2026)**
+>
+> - PlayHQ data is collected by the in-page harness in
+>   `.claude/skills/playcricket-stats-scraper/`. It runs in a play.cricket.com.au tab because the
+>   proxy API refuses server-side calls. The data lands in the `playhq.*` schema through
+>   `scripts/src/playhq-load.ts`, and `playhq-project-fixtures` projects it into
+>   `public.fixtures`. This drives fixtures, results and ladders in the app.
+> - Scheduled, unattended sync is being planned in
+>   `docs/brainstorms/2026-10-01-playhq-scheduled-sync-requirements.md`. Ash has decided to apply
+>   for a PlayHQ public API key (option 2 below, step 1 of "If we ever revisit"). Once the key is
+>   issued, it becomes the sanctioned collector for fixtures, results and ladders.
+> - Grade-season stats CSV imports still exist. "One ingestion method per (grade, season)" still
+>   applies.
+> - Data governance: do not commercialise on scraped data (see `CLAUDE.md`).
 
 ## TL;DR
 
