@@ -13,6 +13,7 @@ import {
   awardsTable,
   awardWinnersTable,
   juniorParticipantsTable,
+  type Player,
 } from "@workspace/db";
 import {
   CreatePlayerBody,
@@ -66,6 +67,68 @@ const router: IRouter = Router();
  * auth first (so anonymous is still a 401), then the native-stats fence.
  */
 const nativeAdmin = [requireAdmin, requireNativeStatsTenant] as const;
+
+/**
+ * The player page of a cap-only player once the club reads central (see
+ * lib/cap-only-players.ts): the same response the native read gives for that
+ * row today — the native name and flags, the club's own premiership and award
+ * links, and no stats at all.
+ */
+async function capOnlyPlayerPage(tenantId: number, player: Player) {
+  const [premRows, awardRows, libraryPhotoUrl] = await Promise.all([
+    db
+      .select({
+        id: premiershipsTable.id,
+        year: premiershipsTable.year,
+        grade: premiershipsTable.grade,
+        competition: premiershipsTable.competition,
+        venue: premiershipsTable.venue,
+        matchDate: premiershipsTable.matchDate,
+        result: premiershipsTable.result,
+        mom: premiershipsTable.mom,
+        isCaptain: premiershipPlayersTable.isCaptain,
+      })
+      .from(premiershipPlayersTable)
+      .innerJoin(premiershipsTable, eq(premiershipsTable.id, premiershipPlayersTable.premiershipId))
+      .where(
+        and(
+          eq(premiershipsTable.tenantId, tenantId),
+          eq(premiershipPlayersTable.playerId, player.id),
+        ),
+      )
+      .orderBy(desc(premiershipsTable.year), asc(premiershipsTable.grade)),
+    db
+      .select({
+        key: awardsTable.key,
+        title: awardsTable.title,
+        season: awardWinnersTable.season,
+      })
+      .from(awardWinnersTable)
+      .innerJoin(awardsTable, eq(awardsTable.id, awardWinnersTable.awardId))
+      .where(
+        and(
+          eq(awardWinnersTable.tenantId, tenantId),
+          eq(awardsTable.tenantId, tenantId),
+          eq(awardWinnersTable.playerId, player.id),
+          eq(awardWinnersTable.published, true),
+          eq(awardsTable.published, true),
+        ),
+      )
+      .orderBy(asc(awardsTable.displayOrder), desc(awardWinnersTable.season)),
+    taggedPlayerPhotoUrl(tenantId, player.id),
+  ]);
+  return {
+    ...player,
+    libraryPhotoUrl,
+    premiershipsWon: premRows.length,
+    premiershipsCaptained: premRows.filter((r) => r.isCaptain).length,
+    debutSeason: null,
+    seasonsPlayed: null,
+    stats: [],
+    premierships: premRows,
+    awards: awardRows,
+  };
+}
 
 router.get("/players", async (req, res): Promise<void> => {
   const query = ListPlayersQueryParams.safeParse(req.query);
@@ -290,6 +353,13 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     // A history-only player (no crosswalk row) resolves to its overlay key.
     const keeper = overlayKeyForPlayerId(overlay, params.data.id);
     if (keeper === null) {
+      // A cap-only player (a cap number, no stats) is still a player: the cap
+      // register links here. Same page as before cut-over, with no career.
+      const capOnly = identity.capOnly.get(params.data.id);
+      if (capOnly) {
+        res.json(await capOnlyPlayerPage(tenantId, capOnly));
+        return;
+      }
       res.status(404).json({ error: "Player not found" });
       return;
     }
@@ -497,6 +567,14 @@ router.get("/players/:id/seasons", async (req, res): Promise<void> => {
     const { centralPlayerSeasons } = await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
     const overlay = await loadClubOverlay(tenantId);
+    if (
+      overlayKeyForPlayerId(overlay, params.data.id) === null &&
+      overlay.identity.capOnly.has(params.data.id)
+    ) {
+      // A cap-only player has no seasons — the empty list the native read gives.
+      res.json([]);
+      return;
+    }
     if (overlay.active) {
       // Club overlay (U10): pre-boundary seasons from club history, the
       // boundary season on from central, corrections applied.
@@ -635,6 +713,14 @@ router.get("/players/:id/matches", async (req, res): Promise<void> => {
       await import("@workspace/db/central-queries");
     const tenantId = getTenantId(req);
     const overlay = await loadClubOverlay(tenantId);
+    if (
+      overlayKeyForPlayerId(overlay, params.data.id) === null &&
+      overlay.identity.capOnly.has(params.data.id)
+    ) {
+      // A cap-only player has no matches — the empty list the native read gives.
+      res.json([]);
+      return;
+    }
     let log: OverlayMatchLogRow[];
     if (overlay.active) {
       // Club overlay: central matches from the boundary on with the club's

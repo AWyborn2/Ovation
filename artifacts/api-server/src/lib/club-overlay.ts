@@ -8,6 +8,7 @@ import {
   playerIdMapTable,
   type ClubHistoryGrain,
   type CorrectableField,
+  type Player,
   type PlayerGradeStat,
 } from "@workspace/db";
 import type {
@@ -28,6 +29,7 @@ import type {
   MilestoneTiers,
 } from "@workspace/db/central-queries";
 import { resolveCuration, type CurationOverlay } from "./central-curation";
+import { isCapOnlyRow, loadCapOnlyPlayers } from "./cap-only-players";
 
 /**
  * The per-tenant club overlay for central reads (hybrid stats plan U6 identity
@@ -72,12 +74,24 @@ export interface ClubIdentity {
   guidForPlayerId(playerId: number): string | null;
   /** The group's display name: the keeper's curated name, else `fallback`. */
   nameFor(guid: string, fallback: string | null): string | null;
+  /**
+   * The tenant's cap-only players by id (lib/cap-only-players.ts): native rows
+   * with a cap number and no stats. They are valid players for curated links
+   * and the player page, and have NO GUID, crosswalk row or overlay key — so
+   * no stat derivation, leaderboard, directory or count can include them.
+   * Empty for every tenant but the one that owns the native players table.
+   */
+  capOnly: ReadonlyMap<number, Player>;
 }
 
-/** Build the identity slice from a tenant's crosswalk rows and curation. Pure. */
+/**
+ * Build the identity slice from a tenant's crosswalk rows and curation, plus
+ * its cap-only native players (tenant 1 only). Pure.
+ */
 export function buildClubIdentity(
   crosswalk: readonly { participantId: string; playerId: number }[],
   curation: CurationOverlay,
+  capOnlyPlayers: readonly Player[] = [],
 ): ClubIdentity {
   const merges = curation.canonicalByGuid;
   const canonicalOf = (guid: string) => merges.get(guid) ?? guid;
@@ -114,7 +128,14 @@ export function buildClubIdentity(
     for (const g of members) intByGuid.set(g, id);
   }
 
+  // Cap-only players: an id the crosswalk owns is a crosswalk player instead.
+  const capOnly = new Map<number, Player>();
+  for (const p of capOnlyPlayers) {
+    if (isCapOnlyRow(p) && !guidByRawInt.has(p.id)) capOnly.set(p.id, p);
+  }
+
   return {
+    capOnly,
     merges,
     nameByGuid: curation.nameByGuid,
     intByGuid,
@@ -152,7 +173,7 @@ export async function loadClubIdentity(
   tenantId: number,
   reader: OverlayReader = db,
 ): Promise<ClubIdentity> {
-  const [crosswalk, curation] = await Promise.all([
+  const [crosswalk, curation, capOnly] = await Promise.all([
     reader
       .select({
         participantId: playerIdMapTable.participantId,
@@ -161,8 +182,9 @@ export async function loadClubIdentity(
       .from(playerIdMapTable)
       .where(eq(playerIdMapTable.tenantId, tenantId)),
     resolveCuration(tenantId, reader),
+    loadCapOnlyPlayers(tenantId, reader),
   ]);
-  return buildClubIdentity(crosswalk, curation);
+  return buildClubIdentity(crosswalk, curation, capOnly);
 }
 
 // ===========================================================================

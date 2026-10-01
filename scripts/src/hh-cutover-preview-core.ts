@@ -1425,6 +1425,8 @@ export interface CuratedResolutionRow extends CuratedRef {
   resolvesTo: number | null;
   blocking: boolean;
   detail: string;
+  /** The link points at a cap-only player (a cap number, no stats): same player, no career. */
+  capOnly: boolean;
 }
 
 /**
@@ -1433,6 +1435,11 @@ export interface CuratedResolutionRow extends CuratedRef {
  * crosswalk (merges folded), and the player's page exists only when the hybrid
  * read has a public career for them. Anything but "same" must be zero to cut
  * over — except links that are already dangling today.
+ *
+ * A cap-only native player (a cap number and no stats, ids 95001+) is never in
+ * the crosswalk, but the live identity recognises it (`ClubIdentity.capOnly`):
+ * its page still exists, with the native name and no career, so the link is
+ * "same". Any other id in the fill-in range is still missing.
  */
 export function resolveCurated(
   refs: readonly CuratedRef[],
@@ -1440,6 +1447,8 @@ export function resolveCurated(
     nativePlayerExists: (playerId: number) => boolean;
     presentedId: (playerId: number) => number | null;
     hybridVisibility: (playerId: number) => "ok" | "private" | "no_career";
+    /** The live identity knows this id as a cap-only player. */
+    capOnly?: (playerId: number) => boolean;
   },
 ): CuratedResolutionRow[] {
   return refs.map((ref): CuratedResolutionRow => {
@@ -1455,8 +1464,15 @@ export function resolveCurated(
       resolvesTo,
       blocking: status === "different" || status === "missing",
       detail,
+      capOnly: false,
     });
     if (presented === null) {
+      if (ctx.capOnly?.(id)) {
+        return {
+          ...row("same", id, "cap-only player: same player page, with no stats"),
+          capOnly: true,
+        };
+      }
       if (!ctx.nativePlayerExists(id)) {
         return row("unresolved_before", null, "no such native player today either");
       }
@@ -1464,7 +1480,7 @@ export function resolveCurated(
         "missing",
         null,
         isFillIn(id)
-          ? "no crosswalk row: a fill-in / cap-only id (>= 90000) is never in the hybrid read"
+          ? "no crosswalk row: a fill-in id (>= 90000) that isn't a cap-only player is never in the hybrid read"
           : "no crosswalk row for this player id",
       );
     }

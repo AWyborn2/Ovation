@@ -441,8 +441,11 @@ export function buildReport(input: ReportInput): Report {
     presentedId: identity.presentedId,
     hybridVisibility: (playerId) =>
       privatePlayerIds.has(playerId) ? "private" : hybridIds.has(playerId) ? "ok" : "no_career",
+    // The live identity's own rule (ClubIdentity.capOnly), not a copy of it.
+    capOnly: (playerId) => id.capOnly.has(playerId),
   });
   const curatedBlocking = curatedRows.filter((r) => r.blocking);
+  const curatedCapOnly = curatedRows.filter((r) => r.capOnly).length;
 
   // Catches samples (R6).
   const samples = pickCatchesSamples(careers.commonMatches, 10);
@@ -894,6 +897,8 @@ export function buildReport(input: ReportInput): Report {
       different: curatedRows.filter((r) => r.status === "different").length,
       missing: curatedRows.filter((r) => r.status === "missing").length,
       unresolvedToday: curatedRows.filter((r) => r.status === "unresolved_before").length,
+      // Links to cap-only players (a cap number, no stats): counted as "same".
+      capOnlyPlayers: curatedCapOnly,
       byTable: curatedByTable,
     },
     catchesSamples: samples.players.map((p) => ({ ...p, name: nameOf(p.playerId) })),
@@ -946,7 +951,9 @@ export function buildReport(input: ReportInput): Report {
   );
   log(
     `Curated links: ${curatedRows.length} checked, ${curatedBlocking.length} would resolve to a different or missing player ` +
-      `(${curatedBlocking.length === 0 ? "OK to cut over" : "MUST be zero to cut over"}).`,
+      `(${curatedBlocking.length === 0 ? "OK to cut over" : "MUST be zero to cut over"}). ` +
+      `${curatedCapOnly} cap-only player link${curatedCapOnly === 1 ? "" : "s"} ` +
+      "(a cap number, no stats) resolve to the same player.",
   );
   log(
     `Catches samples: ${samples.players.length} players, ${samples.rows.length} match rows (catches-samples.csv).`,

@@ -688,10 +688,25 @@ describe("loadClubOverlay with a supplied reader", () => {
     const overlay = await loadClubOverlay(1, {
       select: readerSelect,
     } as unknown as OverlayReader);
-    // Crosswalk, curation, boundaries, history rows and corrections.
-    expect(readerSelect).toHaveBeenCalledTimes(5);
+    // Crosswalk, curation, tenant 1's cap-only native players, boundaries,
+    // history rows and corrections.
+    expect(readerSelect).toHaveBeenCalledTimes(6);
     expect(dbSelect).not.toHaveBeenCalled();
     expect(overlay.active).toBe(false);
     expect(overlay.data).toEqual(EMPTY_OVERLAY_DATA);
+  });
+
+  it("never reads the native players table for any tenant but tenant 1", async () => {
+    const readerSelect = vi.fn(() => {
+      const chain = { from: () => chain, where: () => Promise.resolve([]) };
+      return chain;
+    });
+    const overlay = await loadClubOverlay(2, {
+      select: readerSelect,
+    } as unknown as OverlayReader);
+    // Crosswalk, curation, boundaries, history rows and corrections — no native read.
+    expect(readerSelect).toHaveBeenCalledTimes(5);
+    expect(dbSelect).not.toHaveBeenCalled();
+    expect(overlay.identity.capOnly.size).toBe(0);
   });
 });

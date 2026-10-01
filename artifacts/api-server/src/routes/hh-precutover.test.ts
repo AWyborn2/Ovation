@@ -130,7 +130,7 @@ describe.skipIf(!isLocalDb)("Halls Head pre-cut-over: cap-only players", () => {
   let admin2Id = 0;
   let cookie = "";
   let cookie2 = "";
-  let prevTenant: { centralClubId: number | null; readsFromCentral: boolean };
+  let prevTenant: { centralClubId: number; readsFromCentral: boolean };
   let prevTtl: string | undefined;
   const capNumber = 900_000 + (STAMP % 90_000);
 
@@ -148,7 +148,7 @@ describe.skipIf(!isLocalDb)("Halls Head pre-cut-over: cap-only players", () => {
   /** What the site shows today for the cap-only player (tenant 1 reading native). */
   const today: { player?: unknown; seasons?: unknown; matches?: unknown } = {};
 
-  async function setTenant1(centralClubId: number | null, readsFromCentral: boolean) {
+  async function setTenant1(centralClubId: number, readsFromCentral: boolean): Promise<void> {
     await db
       .update(tenantsTable)
       .set({ centralClubId, readsFromCentral })
