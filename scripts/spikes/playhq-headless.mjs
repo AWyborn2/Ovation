@@ -89,14 +89,11 @@ async function main() {
     report.exportInfo = await page.evaluate(() => window.__ov.exportInfo());
 
     // 4. Opportunistic S2 probe on up to 3 upcoming matches.
-    // Only the first path is documented; the rest are guesses, and a 404 is an answer too.
+    // 1 Oct run: the match payload carries `teams[].players` (empty 9 days out), and the guessed
+    // /lineups, /players and /teams paths do not exist. So watch that array fill as match day
+    // nears; `teamPlayers` reports per-team counts plus the first entry's shape.
     report.lineupProbe = await page.evaluate(async (orgId) => {
-      const paths = (id) => [
-        `/scores/matches/${id}`,
-        `/scores/matches/${id}/lineups`,
-        `/scores/matches/${id}/players`,
-        `/scores/matches/${id}/teams`,
-      ];
+      const paths = (id) => [`/scores/matches/${id}`];
       const recs = await window.__ov.all();
       const now = Date.now();
       const upcoming = [];
@@ -157,6 +154,12 @@ async function main() {
             path: p.replace(m.id, ":id"),
             error: data && data.__error,
             ...(data && !data.__error ? shape(data) : {}),
+            teamPlayers: (data?.teams || []).map((t) => ({
+              team: t.displayName,
+              isHome: t.isHome,
+              players: Array.isArray(t.players) ? t.players.length : null,
+              first: Array.isArray(t.players) ? t.players[0] : undefined,
+            })),
           });
         }
         out.matches.push({ ...m, probes });
