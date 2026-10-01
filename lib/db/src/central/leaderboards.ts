@@ -97,6 +97,7 @@ async function centralGradeLeaderboardImpl(
 ): Promise<PlayerGradeStat[]> {
   const batPid = canonicalPidSql(centralMatchBattingTable.participantId, opts.merges);
   const rosterPid = canonicalPidSql(centralMatchRostersTable.participantId, opts.merges);
+  const bowlPid = canonicalPidSql(centralMatchBowlingTable.participantId, opts.merges);
   // 1. Central matches involving this club, narrowed to the requested app grade
   //    (and optionally a single season). Grade mapping is per-label, so resolve
   //    it in JS rather than SQL.
@@ -125,8 +126,11 @@ async function centralGradeLeaderboardImpl(
   //                that score was not out (ties prefer the not-out, exactly
   //                like the old runs===highScore && notout promotion);
   //      - `games` counts distinct matches from batting lines (DNB included)
-  //                unioned with roster lines, restricted to players who have a
-  //                batting line — the same Set union the JS built;
+  //                unioned with roster AND bowling lines, restricted to players
+  //                who have a batting line. R7: anyone on the team sheet
+  //                played, so a match the player only bowled in (no batting
+  //                line, no roster row) is a game here exactly as it is in
+  //                the careers, the season rows and the club overlay;
   //      - names + privacy left-join central.players (was a 2nd round trip).
   // Fielding dismissals (catches/stumpings/run-outs) run in parallel with the
   // batting aggregate — they're keyed on the same (club, match) index and only
@@ -167,6 +171,12 @@ async function centralGradeLeaderboardImpl(
         where ${centralMatchRostersTable.clubId} = ${clubId}
           and ${inList(centralMatchRostersTable.matchId, matchIds)}
           and ${rosterPid} in (select participant_id from bat)
+        union
+        select ${bowlPid}, ${centralMatchBowlingTable.matchId}
+        from ${centralMatchBowlingTable}
+        where ${centralMatchBowlingTable.clubId} = ${clubId}
+          and ${inList(centralMatchBowlingTable.matchId, matchIds)}
+          and ${bowlPid} in (select participant_id from bat)
       ) apps
       group by participant_id
     )

@@ -34,9 +34,10 @@ import {
   buildClubStats,
   clubRecords,
   clubTopLeaders,
-  loadClubIdentity,
+  loadActiveClubOverlay,
   loadClubOverlay,
 } from "../lib/club-overlay";
+import { clubDashboard, clubGradeSummaries, clubTotals } from "../lib/club-overlay-surfaces";
 import { getOrCreateSettings } from "../lib/settings";
 import { overlayNativeOpponents, overlayCentralOpponents } from "../lib/club-brand";
 import {
@@ -61,7 +62,14 @@ router.get("/grades", async (req, res): Promise<void> => {
   const source = await dataSource(req);
   if (source.kind === "central") {
     const { centralGradeSummaries } = await import("@workspace/db/central-queries");
-    const summaries = await centralGradeSummaries(source.clubId);
+    const tenantId = getTenantId(req);
+    const overlay = await loadActiveClubOverlay(tenantId);
+    // Club overlay: with a boundary, history or corrections the grade cards
+    // are built from the overlaid stats (so they add up to the careers);
+    // otherwise the original central read.
+    const summaries = overlay
+      ? clubGradeSummaries(await buildClubStats(overlay, tenantId, source.clubId))
+      : await centralGradeSummaries(source.clubId);
     res.json(summaries.map((s, i) => ({ id: i + 1, ...s })));
     return;
   }
@@ -144,9 +152,15 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const source = await dataSource(req);
   if (source.kind === "central") {
     const { centralDashboard } = await import("@workspace/db/central-queries");
-    const identity = await loadClubIdentity(getTenantId(req));
-    const dash = await centralDashboard(source.clubId, identity.merges);
-    const intByGuid = identity.intByGuid;
+    const tenantId = getTenantId(req);
+    const overlay = await loadClubOverlay(tenantId);
+    // Club overlay: totals, top performers and grade cards from the overlaid
+    // stats when the tenant has a club layer; otherwise the original read.
+    const stats = overlay.active ? await buildClubStats(overlay, tenantId, source.clubId) : null;
+    const dash = stats
+      ? clubDashboard(stats)
+      : await centralDashboard(source.clubId, overlay.identity.merges);
+    const intByGuid = stats ? stats.intByGuid : overlay.identity.intByGuid;
     const splitName = (dn: string | null) => {
       const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
       if (parts.length === 0) return { givenName: "", surname: "" };
@@ -235,12 +249,17 @@ router.get("/overview", async (req, res): Promise<void> => {
   if (source.kind === "central") {
     const central = await import("@workspace/db/central-queries");
     const clubId = source.clubId;
-    const identity = await loadClubIdentity(getTenantId(req));
+    const tenantId = getTenantId(req);
+    const overlay = await loadClubOverlay(tenantId);
+    const identity = overlay.identity;
+    // Club overlay: club totals and the season leaders from the overlaid stats
+    // when the tenant has a club layer; otherwise the original central reads.
+    const stats = overlay.active ? await buildClubStats(overlay, tenantId, clubId) : null;
     const [totals, seasons] = await Promise.all([
-      central.centralClubTotals(clubId, undefined, identity.merges),
+      stats ? clubTotals(stats) : central.centralClubTotals(clubId, undefined, identity.merges),
       central.centralClubSeasons(clubId),
     ]);
-    const intByGuid = identity.intByGuid;
+    const intByGuid = stats ? stats.intByGuid : identity.intByGuid;
     const latestSeason = seasons[0] ?? null;
 
     let recentMatches: Awaited<ReturnType<typeof central.centralClubMatches>> = [];
@@ -275,9 +294,20 @@ router.get("/overview", async (req, res): Promise<void> => {
         ...splitName(l.displayName),
         value: l.value,
       });
+      const span = { fromSeason: latestSeason, toSeason: latestSeason };
       const [runs, wkts] = await Promise.all([
-        central.centralSeasonLeaders(clubId, latestSeason, "runs", undefined, identity.merges),
-        central.centralSeasonLeaders(clubId, latestSeason, "wickets", undefined, identity.merges),
+        stats
+          ? clubTopLeaders(stats, "runs", span)
+          : central.centralSeasonLeaders(clubId, latestSeason, "runs", undefined, identity.merges),
+        stats
+          ? clubTopLeaders(stats, "wickets", span)
+          : central.centralSeasonLeaders(
+              clubId,
+              latestSeason,
+              "wickets",
+              undefined,
+              identity.merges,
+            ),
       ]);
       topRunScorers = runs.map(toLeader);
       topWicketTakers = wkts.map(toLeader);

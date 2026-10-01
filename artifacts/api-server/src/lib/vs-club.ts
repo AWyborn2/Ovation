@@ -3,8 +3,10 @@ import type { z } from "zod";
 import { db, matchesTable, matchPlayerLinesTable, playersTable } from "@workspace/db";
 import { FILL_IN_THRESHOLD, oversToBalls } from "@workspace/scorecard";
 import type { GetPlayersVsClubResponse } from "@workspace/api-zod";
+import type { CentralVsClubRow } from "@workspace/db/central-queries";
 import type { DataSource } from "./tenant";
-import { loadClubIdentity } from "./club-overlay";
+import { loadClubOverlay, resolveClubCorrections } from "./club-overlay";
+import { overlayVsClubRows } from "./club-overlay-surfaces";
 import type { ResolvedOpponent } from "./opponent-club";
 
 /**
@@ -220,18 +222,45 @@ export async function loadCentralVsClubRows(
   opponentClubId: number,
 ): Promise<VsClubRawRow[]> {
   const { centralVsClub, splitDisplayName } = await import("@workspace/db/central-queries");
-  const identity = await loadClubIdentity(source.tenantId);
-  const rows = await centralVsClub({
-    clubId: source.clubId,
-    opponentClubId,
-    merges: identity.merges,
-  });
+  const overlay = await loadClubOverlay(source.tenantId);
+  const identity = overlay.identity;
+  let rows: CentralVsClubRow[];
+  if (overlay.active) {
+    // Club overlay: matches before the grade's boundary are not central's to
+    // supply (the boundary is part of the read's cache key), and a corrected
+    // player's figures are recomputed from their corrected lines.
+    const [central, resolved] = await Promise.all([
+      centralVsClub({
+        clubId: source.clubId,
+        opponentClubId,
+        merges: identity.merges,
+        boundaries: overlay.data.boundaries,
+      }),
+      resolveClubCorrections(overlay, source.tenantId, source.clubId),
+    ]);
+    rows = overlayVsClubRows({
+      rows: central,
+      corrected: resolved.lines,
+      lines: resolved.groupLines,
+      opponentClubId,
+      identity,
+      boundaries: overlay.data.boundaries,
+    });
+  } else {
+    rows = await centralVsClub({
+      clubId: source.clubId,
+      opponentClubId,
+      merges: identity.merges,
+    });
+  }
   const { intByGuid, nameByGuid } = identity;
 
   const out: VsClubRawRow[] = [];
   for (const r of rows) {
     const playerId = intByGuid.get(r.participantId);
     if (!playerId) continue;
+    // Fill-ins never count once the club layer is on (R8).
+    if (overlay.active && playerId >= FILL_IN_THRESHOLD) continue;
     const { participantId, displayName, ...figures } = r;
     out.push({
       playerId,

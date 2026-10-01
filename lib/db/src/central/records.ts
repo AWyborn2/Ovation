@@ -279,7 +279,9 @@ async function centralClubRecordsImpl(
   }
   for (const f of fielding) {
     if (!f.participantId) continue;
-    if (/catch|caught|^c$|^c\b/i.test(f.kind ?? "")) get(f.participantId).catches += Number(f.n);
+    // ONE catch rule everywhere (classifyFieldingKind): a keeper's stumping or
+    // a run-out is never a catch, on this card or anywhere else.
+    if (classifyFieldingKind(f.kind) === "catch") get(f.participantId).catches += Number(f.n);
   }
 
   // Every participant the club ever fielded — bind as one array parameter.
@@ -343,6 +345,8 @@ async function centralClubRecordsImpl(
 export interface CentralCentury {
   participantId: string;
   displayName: string | null;
+  /** The central match it was scored in (the club overlay matches corrections on it). */
+  matchId: number;
   grade: string;
   score: string;
   season: string;
@@ -351,6 +355,8 @@ export interface CentralCentury {
 export interface CentralFiveWicketHaul {
   participantId: string;
   displayName: string | null;
+  /** The central match it was taken in (the club overlay matches corrections on it). */
+  matchId: number;
   grade: string;
   figures: string;
   season: string;
@@ -416,6 +422,7 @@ async function centralCenturiesImpl(
     rows.push({
       participantId: b.participantId as string,
       displayName: p?.displayName ?? null,
+      matchId: b.matchId,
       grade: meta.grade,
       score: `${b.runs ?? 0}${notOut ? "*" : ""}`,
       season: seasonLabelFromStartYear(meta.season),
@@ -956,6 +963,7 @@ async function centralFiveWicketHaulsImpl(
     rows.push({
       participantId: b.participantId as string,
       displayName: p?.displayName ?? null,
+      matchId: b.matchId,
       grade: meta.grade,
       figures: `${b.wickets ?? 0}/${b.runs ?? 0}`,
       season: seasonLabelFromStartYear(meta.season),
@@ -1111,8 +1119,9 @@ async function centralRecordLeadersImpl(
   }
   for (const f of fielding) {
     if (!f.participantId || f.matchId === null || !scoped.has(f.matchId)) continue;
-    // Same catch test as the all-time records card, so leader #1 matches it.
-    if (/catch|caught|^c$|^c\b/i.test(f.kind ?? "")) add(f.participantId, 1);
+    // Same catch test as the all-time records card (and every other read), so
+    // leader #1 matches it.
+    if (classifyFieldingKind(f.kind) === "catch") add(f.participantId, 1);
   }
   for (const [pid, g] of games) values.set(pid, g.size);
 

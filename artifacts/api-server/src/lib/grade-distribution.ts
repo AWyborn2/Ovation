@@ -4,7 +4,8 @@ import { db } from "@workspace/db";
 import { FILL_IN_THRESHOLD, ballsToOvers } from "@workspace/scorecard";
 import type { GetGradeDistributionResponse } from "@workspace/api-zod";
 import type { DataSource } from "./tenant";
-import { loadClubIdentity } from "./club-overlay";
+import { buildClubStats, loadClubOverlay } from "./club-overlay";
+import { clubDistributionRows } from "./club-overlay-surfaces";
 
 /**
  * Grade distribution (stats analytics KTD4): every qualifying club player's
@@ -328,14 +329,24 @@ export async function loadCentralDistributionRows(
 ): Promise<DistributionRawRow[]> {
   const { centralGradeDistribution, splitDisplayName } =
     await import("@workspace/db/central-queries");
-  const identity = await loadClubIdentity(source.tenantId);
-  const rows = await centralGradeDistribution(grade, {
-    clubId: source.clubId,
-    fromSeason: o.fromSeason,
-    toSeason: o.toSeason,
-    merges: identity.merges,
-  });
-  const { intByGuid, nameByGuid } = identity;
+  const overlay = await loadClubOverlay(source.tenantId);
+  const identity = overlay.identity;
+  const { nameByGuid } = identity;
+  // Club overlay: with a boundary, club history or corrections the aggregates
+  // come from the overlaid stats (history before the boundary, corrected
+  // central from it on); otherwise the original central read.
+  const stats = overlay.active
+    ? await buildClubStats(overlay, source.tenantId, source.clubId)
+    : null;
+  const rows = stats
+    ? clubDistributionRows(stats, grade, { fromSeason: o.fromSeason, toSeason: o.toSeason })
+    : await centralGradeDistribution(grade, {
+        clubId: source.clubId,
+        fromSeason: o.fromSeason,
+        toSeason: o.toSeason,
+        merges: identity.merges,
+      });
+  const intByGuid = stats ? stats.intByGuid : identity.intByGuid;
 
   const out: DistributionRawRow[] = [];
   for (const r of rows) {

@@ -47,9 +47,12 @@ import {
   clubCareers,
   clubPlayerDetail,
   clubPlayerSeasons,
+  FILL_IN_ID_FLOOR,
   loadClubOverlay,
   overlayKeyForPlayerId,
+  resolveClubCorrections,
 } from "../lib/club-overlay";
+import { overlayMatchLog, type OverlayMatchLogRow } from "../lib/club-overlay-surfaces";
 import { classifyDismissal } from "../lib/dismissal-parse";
 import { oversToBalls } from "@workspace/scorecard";
 import { resolveOpponentClub } from "../lib/opponent-club";
@@ -628,13 +631,50 @@ router.get("/players/:id/matches", async (req, res): Promise<void> => {
 
   const source = await dataSource(req);
   if (source.kind === "central") {
-    const { centralPlayerMatchLog } = await import("@workspace/db/central-queries");
-    const group = await centralPlayerGroupFor(req, params.data.id);
-    if (!group) {
-      res.status(404).json({ error: "Player not found" });
-      return;
+    const { centralPlayerMatchLog, isPrivateGroup, isSeniorAppGrade } =
+      await import("@workspace/db/central-queries");
+    const tenantId = getTenantId(req);
+    const overlay = await loadClubOverlay(tenantId);
+    let log: OverlayMatchLogRow[];
+    if (overlay.active) {
+      // Club overlay: central matches from the boundary on with the club's
+      // corrections applied, plus its own match-grain history before it. A
+      // history-only player (no crosswalk row) resolves to its overlay key.
+      const key = overlayKeyForPlayerId(overlay, params.data.id);
+      if (key === null) {
+        res.status(404).json({ error: "Player not found" });
+        return;
+      }
+      const identity = overlay.identity;
+      // Club-local keys (`club:<uuid>`, `player:<id>`) have no central lines.
+      const guids = identity.membersOf(key).filter((g) => !/^(club|player):/.test(g));
+      const presentedId = identity.intByGuid.get(key) ?? params.data.id;
+      if (presentedId >= FILL_IN_ID_FLOOR || (guids.length > 0 && (await isPrivateGroup(guids)))) {
+        // Fill-ins never count; a private player has no public breakdown.
+        res.json([]);
+        return;
+      }
+      const [rows, resolved] = await Promise.all([
+        guids.length > 0 ? centralPlayerMatchLog(source.clubId, guids) : [],
+        resolveClubCorrections(overlay, tenantId, source.clubId),
+      ]);
+      log = overlayMatchLog({
+        rows,
+        corrected: resolved.lines,
+        playerKey: key,
+        identity,
+        boundaries: overlay.data.boundaries,
+        history: overlay.data.history,
+        isSeniorGrade: isSeniorAppGrade,
+      });
+    } else {
+      const keeper = overlay.identity.guidForPlayerId(params.data.id);
+      if (keeper === null) {
+        res.status(404).json({ error: "Player not found" });
+        return;
+      }
+      log = await centralPlayerMatchLog(source.clubId, overlay.identity.membersOf(keeper));
     }
-    const log = await centralPlayerMatchLog(source.clubId, group);
     res.json(
       log.map(({ inningsLines, ...row }) => ({
         ...row,
