@@ -66,63 +66,74 @@ export async function readNative(): Promise<NativeData> {
   try {
     await client.query("BEGIN TRANSACTION READ ONLY");
     await client.query("SET LOCAL statement_timeout = '300s'");
-    const ro = drizzle(client);
-    const [players, matches, lines, pgss] = [
-      await ro
-        .select({
-          id: playersTable.id,
-          givenName: playersTable.givenName,
-          surname: playersTable.surname,
-          isCapOnly: playersTable.isCapOnly,
-        })
-        .from(playersTable),
-      await ro
-        .select({
-          id: matchesTable.id,
-          sourceKey: matchesTable.sourceKey,
-          season: matchesTable.season,
-          grade: matchesTable.grade,
-          abandoned: matchesTable.abandoned,
-        })
-        .from(matchesTable),
-      await ro
-        .select({
-          matchId: matchPlayerLinesTable.matchId,
-          playerId: matchPlayerLinesTable.playerId,
-          batted: matchPlayerLinesTable.batted,
-          battingPos: matchPlayerLinesTable.battingPos,
-          runs: matchPlayerLinesTable.runs,
-          balls: matchPlayerLinesTable.balls,
-          notOut: matchPlayerLinesTable.notOut,
-          bowled: matchPlayerLinesTable.bowled,
-          overs: matchPlayerLinesTable.overs,
-          maidens: matchPlayerLinesTable.maidens,
-          runsConceded: matchPlayerLinesTable.runsConceded,
-          wickets: matchPlayerLinesTable.wickets,
-          catches: matchPlayerLinesTable.catches,
-          stumpings: matchPlayerLinesTable.stumpings,
-          runOuts: matchPlayerLinesTable.runOuts,
-        })
-        .from(matchPlayerLinesTable),
-      await ro
-        .select({
-          playerId: playerGradeSeasonStatsTable.playerId,
-          grade: playerGradeSeasonStatsTable.grade,
-          season: playerGradeSeasonStatsTable.season,
-          games: playerGradeSeasonStatsTable.games,
-          innings: playerGradeSeasonStatsTable.innings,
-          runs: playerGradeSeasonStatsTable.runs,
-          wickets: playerGradeSeasonStatsTable.wickets,
-          catches: playerGradeSeasonStatsTable.catches,
-        })
-        .from(playerGradeSeasonStatsTable),
-    ];
-    return { players, matches, lines, pgss };
+    return await readNativeIn(drizzle(client));
   } finally {
     // Nothing was written (the transaction is READ ONLY) — roll back regardless.
     await client.query("ROLLBACK").catch(() => undefined);
     client.release();
   }
+}
+
+/**
+ * The native reads themselves, through a caller-owned reader — a script that
+ * already holds a READ ONLY transaction (hh-cutover-preview.ts) reads the same
+ * rows inside it.
+ */
+/** A SELECT-only handle on the native database (a READ ONLY transaction). */
+export type NativeReader = Pick<ReturnType<typeof drizzle>, "select">;
+
+export async function readNativeIn(ro: NativeReader): Promise<NativeData> {
+  const [players, matches, lines, pgss] = [
+    await ro
+      .select({
+        id: playersTable.id,
+        givenName: playersTable.givenName,
+        surname: playersTable.surname,
+        isCapOnly: playersTable.isCapOnly,
+      })
+      .from(playersTable),
+    await ro
+      .select({
+        id: matchesTable.id,
+        sourceKey: matchesTable.sourceKey,
+        season: matchesTable.season,
+        grade: matchesTable.grade,
+        abandoned: matchesTable.abandoned,
+      })
+      .from(matchesTable),
+    await ro
+      .select({
+        matchId: matchPlayerLinesTable.matchId,
+        playerId: matchPlayerLinesTable.playerId,
+        batted: matchPlayerLinesTable.batted,
+        battingPos: matchPlayerLinesTable.battingPos,
+        runs: matchPlayerLinesTable.runs,
+        balls: matchPlayerLinesTable.balls,
+        notOut: matchPlayerLinesTable.notOut,
+        bowled: matchPlayerLinesTable.bowled,
+        overs: matchPlayerLinesTable.overs,
+        maidens: matchPlayerLinesTable.maidens,
+        runsConceded: matchPlayerLinesTable.runsConceded,
+        wickets: matchPlayerLinesTable.wickets,
+        catches: matchPlayerLinesTable.catches,
+        stumpings: matchPlayerLinesTable.stumpings,
+        runOuts: matchPlayerLinesTable.runOuts,
+      })
+      .from(matchPlayerLinesTable),
+    await ro
+      .select({
+        playerId: playerGradeSeasonStatsTable.playerId,
+        grade: playerGradeSeasonStatsTable.grade,
+        season: playerGradeSeasonStatsTable.season,
+        games: playerGradeSeasonStatsTable.games,
+        innings: playerGradeSeasonStatsTable.innings,
+        runs: playerGradeSeasonStatsTable.runs,
+        wickets: playerGradeSeasonStatsTable.wickets,
+        catches: playerGradeSeasonStatsTable.catches,
+      })
+      .from(playerGradeSeasonStatsTable),
+  ];
+  return { players, matches, lines, pgss };
 }
 
 // ---------------------------------------------------------------------------
@@ -136,6 +147,7 @@ export async function readCentral() {
       playhqMatchId: centralMatchesTable.playhqMatchId,
       season: centralMatchesTable.season,
       grade: centralMatchesTable.grade,
+      matchDate: centralMatchesTable.matchDate,
     })
     .from(centralMatchesTable)
     .where(clubInvolvedWhere(CLUB));

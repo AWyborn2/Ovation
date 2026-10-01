@@ -139,17 +139,28 @@ export function buildClubIdentity(
   };
 }
 
+/**
+ * Anything that can run the overlay's tenant-DB selects: the app pool (`db`,
+ * the default everywhere in the API) or a transaction. The cut-over preview
+ * (scripts/src/hh-cutover-preview.ts, U13) passes its READ ONLY transaction so
+ * it loads the overlay through this exact code path.
+ */
+export type OverlayReader = Pick<typeof db, "select">;
+
 /** Load the identity slice of a tenant's club overlay (crosswalk + confirmed merges). */
-export async function loadClubIdentity(tenantId: number): Promise<ClubIdentity> {
+export async function loadClubIdentity(
+  tenantId: number,
+  reader: OverlayReader = db,
+): Promise<ClubIdentity> {
   const [crosswalk, curation] = await Promise.all([
-    db
+    reader
       .select({
         participantId: playerIdMapTable.participantId,
         playerId: playerIdMapTable.playerId,
       })
       .from(playerIdMapTable)
       .where(eq(playerIdMapTable.tenantId, tenantId)),
-    resolveCuration(tenantId),
+    resolveCuration(tenantId, reader),
   ]);
   return buildClubIdentity(crosswalk, curation);
 }
@@ -1284,18 +1295,21 @@ export function resetClubOverlayTableProbe(): void {
  * empty (today's numbers) while migration 0021 isn't applied: the first
  * undefined_table is remembered for a minute so requests don't keep probing.
  */
-export async function loadClubOverlayData(tenantId: number): Promise<ClubOverlayData> {
+export async function loadClubOverlayData(
+  tenantId: number,
+  reader: OverlayReader = db,
+): Promise<ClubOverlayData> {
   if (Date.now() < tablesMissingUntil) return EMPTY_OVERLAY_DATA;
   try {
     const [boundaries, history, corrections] = await Promise.all([
-      db
+      reader
         .select({
           grade: clubHistoryBoundariesTable.grade,
           startSeason: clubHistoryBoundariesTable.startSeason,
         })
         .from(clubHistoryBoundariesTable)
         .where(eq(clubHistoryBoundariesTable.tenantId, tenantId)),
-      db
+      reader
         .select({
           playerId: clubHistoryRowsTable.playerId,
           grade: clubHistoryRowsTable.grade,
@@ -1325,7 +1339,7 @@ export async function loadClubOverlayData(tenantId: number): Promise<ClubOverlay
         })
         .from(clubHistoryRowsTable)
         .where(eq(clubHistoryRowsTable.tenantId, tenantId)),
-      db
+      reader
         .select({
           id: clubCorrectionsTable.id,
           playhqMatchId: clubCorrectionsTable.playhqMatchId,
@@ -1348,10 +1362,13 @@ export async function loadClubOverlayData(tenantId: number): Promise<ClubOverlay
 }
 
 /** Load a tenant's whole club overlay (identity + club layer), once per request. */
-export async function loadClubOverlay(tenantId: number): Promise<ClubOverlay> {
+export async function loadClubOverlay(
+  tenantId: number,
+  reader: OverlayReader = db,
+): Promise<ClubOverlay> {
   const [identity, data] = await Promise.all([
-    loadClubIdentity(tenantId),
-    loadClubOverlayData(tenantId),
+    loadClubIdentity(tenantId, reader),
+    loadClubOverlayData(tenantId, reader),
   ]);
   return { identity, data, active: overlayIsActive(data) };
 }
