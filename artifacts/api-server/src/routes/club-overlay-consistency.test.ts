@@ -91,7 +91,7 @@ describe.skipIf(!hasDbs)("club overlay consistency: existing central tenants unc
     expect(problems.slice(0, 20)).toEqual([]);
   }, 600_000);
 
-  it("the overlay leaderboard matches today's runs and innings for every senior grade", async () => {
+  it("the overlay leaderboard matches today's games, batting and fielding for every senior grade", async () => {
     const problems: string[] = [];
     for (const t of tenants) {
       const overlay = await loadClubOverlay(t.id);
@@ -122,8 +122,23 @@ describe.skipIf(!hasDbs)("club overlay consistency: existing central tenants unc
         for (const r of today) {
           if (r.playerId >= 90000) continue;
           const m = mine.get(`${r.playerId}|${r.givenName}|${r.surname}`);
-          const want = [r.innings, r.notOuts, r.runs, r.highScore, r.fifties, r.hundreds];
-          const got = m ? [m.innings, m.notOuts, m.runs, m.highScore, m.fifties, m.hundreds] : null;
+          // Games and fielding too: both paths count a game for any appearance
+          // (R7: team sheet ∪ batting ∪ bowling) and classify fielding with
+          // the one classifier, so they must agree line for line.
+          const figures = (x: typeof r) => [
+            x.games,
+            x.innings,
+            x.notOuts,
+            x.runs,
+            x.highScore,
+            x.fifties,
+            x.hundreds,
+            x.catches,
+            x.stumpings,
+            x.runOuts,
+          ];
+          const want = figures(r);
+          const got = m ? figures(m) : null;
           if (JSON.stringify(want) !== JSON.stringify(got)) {
             problems.push(
               `${t.slug} ${grade} ${r.playerId}: ${JSON.stringify(want)} vs ${JSON.stringify(got)}`,

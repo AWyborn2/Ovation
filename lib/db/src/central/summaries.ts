@@ -11,7 +11,7 @@ import { cacheKey, withCentralCache } from "./cache";
 import { getClubMatchRows, seniorMatchRows, type CentralClubMatchRow } from "./club-matches";
 import { appGradeFromCentral, classifyCentralGrade, parseSeasonStartYear } from "./grades";
 import { centralPlayerCareers } from "./players";
-import { battingInningsKindSql } from "./scoring";
+import { battingInningsKindSql, classifyFieldingKind } from "./scoring";
 import { inList } from "./where";
 import { canonicalizeLines, canonicalPidSql, mergesCacheArg, type CentralMerges } from "./merges";
 
@@ -454,11 +454,12 @@ async function centralGradeSummariesImpl(
     const grade = gradeOf.get(f.matchId);
     if (!grade) continue;
     const a = grp(grade);
-    const kind = (f.kind ?? "").toLowerCase();
+    // ONE fielding classifier everywhere (classifyFieldingKind).
+    const cls = classifyFieldingKind(f.kind);
     const n = Number(f.n);
-    if (/stump/.test(kind)) a.stumpings += n;
-    else if (/run\s*out/.test(kind)) a.runOuts += n;
-    else if (/catch|caught|^c$/.test(kind)) a.catches += n;
+    if (cls === "stumping") a.stumpings += n;
+    else if (cls === "runOut") a.runOuts += n;
+    else if (cls === "catch") a.catches += n;
   }
 
   return [...byGrade.entries()]
@@ -533,8 +534,9 @@ async function centralDashboardImpl(
   const catchesByPid = new Map<string, number>();
   for (const f of canonicalizeLines(fielding, merges)) {
     if (!f.participantId) continue;
-    const kind = (f.kind ?? "").toLowerCase();
-    if (/catch|caught|^c$/.test(kind) && !/run\s*out|stump/.test(kind)) {
+    // The top fielder is the most-catches holder: the same classifier as the
+    // records card, the leaders list and every player page.
+    if (classifyFieldingKind(f.kind) === "catch") {
       catchesByPid.set(f.participantId, (catchesByPid.get(f.participantId) ?? 0) + 1);
     }
   }

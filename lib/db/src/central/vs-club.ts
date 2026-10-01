@@ -94,14 +94,39 @@ export interface VsClubAppearance {
  * (junior, pathway, charity) or a season that doesn't parse is excluded —
  * exactly the match-log rule.
  */
-export function vsClubSeniorMatchIds(matches: readonly CentralVsClubMatch[]): number[] {
+export function vsClubSeniorMatchIds(
+  matches: readonly CentralVsClubMatch[],
+  /**
+   * The club's history boundaries (club overlay): a match in a (grade, season)
+   * before its grade's boundary is not central's to supply, so it is dropped.
+   * Absent or empty = every senior match, exactly as before.
+   */
+  boundaries?: readonly CentralSeasonBoundary[],
+): number[] {
   const ids: number[] = [];
   for (const m of matches) {
-    if (!appGradeFromCentral(m.grade)) continue;
-    if (parseSeasonStartYear(m.season) === null) continue;
+    const grade = appGradeFromCentral(m.grade);
+    if (!grade) continue;
+    const season = parseSeasonStartYear(m.season);
+    if (season === null) continue;
+    if (boundaries?.length) {
+      // The grade's own boundary, else the club default (the same rule as
+      // `boundaryFor` in the club history schema).
+      const start =
+        boundaries.find((b) => b.grade === grade)?.startSeason ??
+        boundaries.find((b) => b.grade === null)?.startSeason ??
+        null;
+      if (start !== null && season < start) continue;
+    }
     ids.push(m.matchId);
   }
   return ids;
+}
+
+/** A club's first central season: `grade` null is the club default (KTD5). */
+export interface CentralSeasonBoundary {
+  grade: string | null;
+  startSeason: number;
 }
 
 /**
@@ -222,12 +247,24 @@ export async function centralVsClub(opts: {
   opponentClubId: number;
   /** The tenant's confirmed merges: a merged pair is one row under the keeper. */
   merges?: CentralMerges;
+  /**
+   * The tenant's history boundaries (club overlay, KTD5): matches before a
+   * grade's boundary are left out. A per-tenant input, so it is part of the
+   * cache key; absent or empty keeps the original key and read.
+   */
+  boundaries?: readonly CentralSeasonBoundary[];
 }): Promise<CentralVsClubRow[]> {
   const { clubId, opponentClubId, merges } = opts;
   if (clubId === opponentClubId) return [];
-  return withCentralCache(
-    cacheKey("centralVsClub", [clubId, opponentClubId, mergesCacheArg(merges)]),
-    () => centralVsClubImpl(clubId, opponentClubId, merges),
+  const boundaries = opts.boundaries?.length
+    ? [...opts.boundaries].sort(
+        (a, b) => (a.grade ?? "").localeCompare(b.grade ?? "") || a.startSeason - b.startSeason,
+      )
+    : undefined;
+  const key = [clubId, opponentClubId, mergesCacheArg(merges)] as unknown[];
+  if (boundaries) key.push(boundaries);
+  return withCentralCache(cacheKey("centralVsClub", key), () =>
+    centralVsClubImpl(clubId, opponentClubId, merges, boundaries),
   );
 }
 
@@ -235,8 +272,9 @@ async function centralVsClubImpl(
   clubId: number,
   opponentClubId: number,
   merges?: CentralMerges,
+  boundaries?: readonly CentralSeasonBoundary[],
 ): Promise<CentralVsClubRow[]> {
-  const matchIds = vsClubSeniorMatchIds(await matchesBetween(clubId, opponentClubId));
+  const matchIds = vsClubSeniorMatchIds(await matchesBetween(clubId, opponentClubId), boundaries);
   if (matchIds.length === 0) return [];
 
   const b = centralMatchBattingTable;

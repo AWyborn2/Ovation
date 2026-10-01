@@ -201,10 +201,16 @@ export interface OverlayBoundary {
 
 /** A club history row as the overlay reads it (figures nullable, like the store). */
 export interface OverlayHistoryRow {
+  /** The stored row's id (a history match's stable key in the match log). */
+  id?: number;
   playerId: number;
   grade: string;
   season: number | null;
   grain: ClubHistoryGrain;
+  /** Match descriptor (match grain only): ISO date, opposition text, round text. */
+  matchDate?: string | null;
+  opponent?: string | null;
+  round?: string | null;
   games: number | null;
   innings: number | null;
   notOuts: number | null;
@@ -297,6 +303,8 @@ export interface ClubStats {
   intByGuid: Map<string, number>;
   corrections: { applied: number; stale: StaleCorrection[] };
   matchDeltas: MatchDeltas;
+  /** The corrected lines themselves, for the per-match surfaces. */
+  correctedLines: CorrectedLine[];
 }
 
 const HISTORY_PREFIX = "player:";
@@ -362,6 +370,15 @@ export function lineFieldValue(line: CentralParticipantMatchLine, field: Correct
  * innings / first spell (a match's figure is what a correction names; for a
  * two-innings match the first innings carries the change). A figure on a line
  * central doesn't have creates it. Pure — never mutates the (cached) input.
+ *
+ * Two-innings matches (decided deliberately, U10 follow-up): the corrections
+ * journal is keyed on (PlayHQ match, participant, field) and records the
+ * MATCH figure — it has no innings column, and its one-active-correction
+ * unique index is on exactly that key — so a correction cannot name an
+ * innings. The whole delta therefore lands on the first played innings (first
+ * spell), which keeps every match and career total exact; only the split
+ * between a player's two innings is first-innings-weighted. Naming an innings
+ * needs an `innings` column and a wider unique key (a migration).
  */
 export function correctLine(
   line: CentralParticipantMatchLine,
@@ -458,6 +475,7 @@ export function figuresOfLines(
     notOuts: 0,
     runs: 0,
     ballsFaced: null as number | null,
+    runsOffBallsFaced: null as number | null,
     fours: 0,
     sixes: 0,
     fifties: 0,
@@ -465,6 +483,8 @@ export function figuresOfLines(
     highScore: null as number | null,
     highScoreNotOut: false,
     ballsBowled: null as number | null,
+    runsOffBallsBowled: null as number | null,
+    wicketsOffBallsBowled: null as number | null,
     maidens: null as number | null,
     runsConceded: 0,
     wickets: 0,
@@ -484,6 +504,9 @@ export function figuresOfLines(
       f.runs += b.runs;
       if (b.kind === "notout") f.notOuts += 1;
       if (b.balls !== null) f.ballsFaced = (f.ballsFaced ?? 0) + b.balls;
+      if (b.balls !== null && b.balls > 0) {
+        f.runsOffBallsFaced = (f.runsOffBallsFaced ?? 0) + b.runs;
+      }
       f.fours += b.fours;
       f.sixes += b.sixes;
       if (b.runs >= 100) f.hundreds += 1;
@@ -496,6 +519,10 @@ export function figuresOfLines(
     }
     for (const b of l.bowling) {
       if (b.balls !== null) f.ballsBowled = (f.ballsBowled ?? 0) + b.balls;
+      if (b.balls !== null && b.balls > 0) {
+        f.runsOffBallsBowled = (f.runsOffBallsBowled ?? 0) + b.runs;
+        f.wicketsOffBallsBowled = (f.wicketsOffBallsBowled ?? 0) + b.wickets;
+      }
       if (b.maidens !== null) f.maidens = (f.maidens ?? 0) + b.maidens;
       f.runsConceded += b.runs;
       f.wickets += b.wickets;
@@ -535,7 +562,14 @@ const ADDITIVE = [
   "stumpings",
   "runOuts",
 ] as const;
-const ADDITIVE_NULLABLE = ["ballsFaced", "ballsBowled", "maidens"] as const;
+const ADDITIVE_NULLABLE = [
+  "ballsFaced",
+  "runsOffBallsFaced",
+  "ballsBowled",
+  "runsOffBallsBowled",
+  "wicketsOffBallsBowled",
+  "maidens",
+] as const;
 
 /** The per-bucket change a set of corrections makes (additive deltas + the new bests). */
 export interface BucketAdjustment {
@@ -551,6 +585,18 @@ export interface ResolvedCorrections {
   stale: StaleCorrection[];
   adjustments: BucketAdjustment[];
   matchDeltas: MatchDeltas;
+  /**
+   * Every corrected line, as central has it (`before`) and with its applied
+   * corrections (`after`) — what the per-match surfaces (match log, scorecard,
+   * centuries, head-to-head, record progression) display.
+   */
+  lines: CorrectedLine[];
+}
+
+/** One participant's line in one match, before and after the club's corrections. */
+export interface CorrectedLine {
+  before: CentralParticipantMatchLine;
+  after: CentralParticipantMatchLine;
 }
 
 const bucketKeyOf = (pid: string, grade: string, season: number | null) =>
@@ -574,6 +620,7 @@ export function resolveCorrections(
     stale: [],
     adjustments: [],
     matchDeltas: new Map(),
+    lines: [],
   };
   if (corrections.length === 0) return result;
 
@@ -631,6 +678,7 @@ export function resolveCorrections(
   // Per-match deltas for the milestone walk.
   for (const [k, after] of corrected) {
     const before = byMatch.get(k)!;
+    result.lines.push({ before, after });
     const pid = opts.canonicalOf(before.participantId);
     const b = figuresOfLines([before]);
     const a = figuresOfLines([after]);
@@ -680,14 +728,19 @@ function historyFigures(r: OverlayHistoryRow): CentralPartialFigures {
     notOuts: r.notOuts ?? (match && r.highScoreNotOut ? 1 : 0),
     runs,
     ballsFaced: r.ballsFaced,
+    // A history row's balls and runs are the same innings, so they pair up.
+    runsOffBallsFaced: r.ballsFaced !== null && r.ballsFaced > 0 ? runs : null,
     fours: r.fours ?? 0,
     sixes: r.sixes ?? 0,
     fifties: r.fifties ?? (match && batted && runs >= 50 && runs < 100 ? 1 : 0),
     hundreds: r.hundreds ?? (match && batted && runs >= 100 ? 1 : 0),
     highScore: r.highScore ?? (match && batted ? runs : null),
-    highScoreNotOut: r.highScoreNotOut ?? false,
+    // A match row is one innings, so a not out IS the high score's not out.
+    highScoreNotOut: r.highScoreNotOut ?? (match && (r.notOuts ?? 0) > 0),
     bowlLines: bowled ? 1 : 0,
     ballsBowled: r.ballsBowled,
+    runsOffBallsBowled: r.ballsBowled !== null && r.ballsBowled > 0 ? (r.runsConceded ?? 0) : null,
+    wicketsOffBallsBowled: r.ballsBowled !== null && r.ballsBowled > 0 ? wickets : null,
     maidens: r.maidens,
     runsConceded: r.runsConceded ?? 0,
     wickets,
@@ -828,6 +881,7 @@ export function applyClubOverlay(input: ApplyClubOverlayInput): ClubStats {
     intByGuid,
     corrections: { applied: resolved.applied, stale: resolved.stale },
     matchDeltas: resolved.matchDeltas,
+    correctedLines: resolved.lines,
   };
 }
 
@@ -839,6 +893,7 @@ function zeroFigures(): CentralPartialFigures {
     notOuts: 0,
     runs: 0,
     ballsFaced: null,
+    runsOffBallsFaced: null,
     fours: 0,
     sixes: 0,
     fifties: 0,
@@ -847,6 +902,8 @@ function zeroFigures(): CentralPartialFigures {
     highScoreNotOut: false,
     bowlLines: 0,
     ballsBowled: null,
+    runsOffBallsBowled: null,
+    wicketsOffBallsBowled: null,
     maidens: null,
     runsConceded: 0,
     wickets: 0,
@@ -940,9 +997,13 @@ export function clubPlayerDetail(
             ? `${f.bestBowlingWickets}/${f.bestBowlingRuns ?? 0}`
             : null,
         fiveWickets: f.fiveWickets,
-        catches: null,
-        stumpings: null,
-        runOuts: null,
+        // Fielding from both sources: central's classified fielding rows from
+        // the boundary on, the club's own history before it (the plain
+        // central detail has no fielding at all, which left a history-only
+        // career's catches blank).
+        catches: f.catches,
+        stumpings: f.stumpings,
+        runOuts: f.runOuts,
       };
     })
     .sort((x, y) => x.grade.localeCompare(y.grade));
@@ -1025,12 +1086,16 @@ export function clubGradeLeaderboard(
   const scoped = stats.buckets.filter(
     (b) =>
       b.grade === grade &&
-      b.batLines > 0 &&
       (opts.seasonStartYear === undefined || (!b.careerGrain && b.season === opts.seasonStartYear)),
   );
   const rows: PlayerGradeStat[] = [];
   for (const [pid, bs] of groupBy(scoped, (b) => b.participantId)) {
     const f = sumBuckets(bs);
+    // A BATTING leaderboard: only players with a batting line in scope. Their
+    // games, though, are every appearance in scope (R7) — a season they only
+    // bowled in or only made the team sheet still counts, exactly as it does
+    // in their career and on the plain central leaderboard.
+    if (f.batLines === 0) continue;
     const p = stats.players.get(pid);
     const isPrivate = p?.isPrivate === true;
     const name = isPrivate
@@ -1297,10 +1362,14 @@ export async function loadClubOverlayData(tenantId: number): Promise<ClubOverlay
         .where(eq(clubHistoryBoundariesTable.tenantId, tenantId)),
       db
         .select({
+          id: clubHistoryRowsTable.id,
           playerId: clubHistoryRowsTable.playerId,
           grade: clubHistoryRowsTable.grade,
           season: clubHistoryRowsTable.season,
           grain: clubHistoryRowsTable.grain,
+          matchDate: clubHistoryRowsTable.matchDate,
+          opponent: clubHistoryRowsTable.opponent,
+          round: clubHistoryRowsTable.round,
           games: clubHistoryRowsTable.games,
           innings: clubHistoryRowsTable.innings,
           notOuts: clubHistoryRowsTable.notOuts,
@@ -1356,6 +1425,17 @@ export async function loadClubOverlay(tenantId: number): Promise<ClubOverlay> {
   return { identity, data, active: overlayIsActive(data) };
 }
 
+/**
+ * The overlay only when the tenant HAS a club layer, else null — for handlers
+ * that need no player identity on their original read (the grade cards), so a
+ * tenant with no club layer pays for the club-layer probe and nothing more.
+ */
+export async function loadActiveClubOverlay(tenantId: number): Promise<ClubOverlay | null> {
+  const data = await loadClubOverlayData(tenantId);
+  if (!overlayIsActive(data)) return null;
+  return { identity: await loadClubIdentity(tenantId), data, active: true };
+}
+
 /** Every GUID in the merge groups of the corrected participants. */
 function correctedGroupMembers(overlay: ClubOverlay): string[] {
   const out = new Set<string>();
@@ -1384,6 +1464,33 @@ async function reportStale(tenantId: number, stale: readonly StaleCorrection[]):
     },
     "club overlay: skipped stale corrections",
   );
+}
+
+/**
+ * The tenant's corrections checked against central — for the per-match
+ * surfaces that need only the corrected lines, not the whole club's partials.
+ * No active correction = no central read at all.
+ */
+export async function resolveClubCorrections(
+  overlay: ClubOverlay,
+  tenantId: number,
+  clubId: number,
+): Promise<ResolvedCorrections & { groupLines: CentralParticipantMatchLine[] }> {
+  const members = correctedGroupMembers(overlay);
+  const opts = {
+    canonicalOf: overlay.identity.canonicalOf,
+    boundaries: overlay.data.boundaries,
+  };
+  if (members.length === 0) {
+    return { ...resolveCorrections(overlay.data.corrections, [], opts), groupLines: [] };
+  }
+  const central = await import("@workspace/db/central-queries");
+  // Every senior club-match line of the corrected players' merge groups (the
+  // same cached read `buildClubStats` uses).
+  const groupLines = await central.centralParticipantMatchLines(clubId, members);
+  const resolved = resolveCorrections(overlay.data.corrections, groupLines, opts);
+  await reportStale(tenantId, resolved.stale);
+  return { ...resolved, groupLines };
 }
 
 /**

@@ -21,6 +21,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { dataSource } from "../lib/tenant";
+import { beforeBoundary, loadClubOverlayData } from "../lib/club-overlay";
 import { loadMatchDetail, loadMatchDetailForRequest } from "../lib/match-detail";
 import { opponentClubColumns, toOpponentClub, notEmptyFixture } from "../lib/grades-helpers";
 import { getOrCreateSettings } from "../lib/settings";
@@ -66,12 +67,23 @@ router.get("/matches", async (req, res): Promise<void> => {
   const source = await dataSource(req);
   if (source.kind === "central") {
     const { centralClubMatches } = await import("@workspace/db/central-queries");
-    const rows = await centralClubMatches(source.clubId, {
-      grade: grade || undefined,
-      season,
-      limit,
-      offset: off,
-    });
+    // Club overlay: a club with a history boundary doesn't serve the central
+    // matches before it (its own history supplies those seasons — KTD5), so
+    // the list is filtered BEFORE paging. No boundary = the original paged read.
+    const { boundaries } = await loadClubOverlayData(source.tenantId);
+    let rows;
+    if (boundaries.length > 0) {
+      const all = await centralClubMatches(source.clubId, { grade: grade || undefined, season });
+      const kept = all.filter((m) => !beforeBoundary(boundaries, m.grade, m.season));
+      rows = kept.slice(off, limit === undefined ? undefined : off + limit);
+    } else {
+      rows = await centralClubMatches(source.clubId, {
+        grade: grade || undefined,
+        season,
+        limit,
+        offset: off,
+      });
+    }
     // central.clubs has no logo; overlay any opponent that is itself a tenant
     // with an uploaded brand (keyed by its central club id) so its crest shows.
     const overlays = await getOpponentBrandsByCentralClubId(

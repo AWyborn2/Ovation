@@ -9,8 +9,16 @@ import {
   playersTable,
   clubsTable,
 } from "@workspace/db";
+import type { CentralMatchScorecard } from "@workspace/db/central-queries";
 import { getTenantBrand } from "./tenant-brand";
-import { loadClubIdentity } from "./club-overlay";
+import {
+  beforeBoundary,
+  loadClubIdentity,
+  loadClubOverlay,
+  resolveClubCorrections,
+  type ClubIdentity,
+} from "./club-overlay";
+import { overlayScorecardLines } from "./club-overlay-surfaces";
 import { dataSource, type DataSource } from "./tenant";
 import {
   getOpponentBrandsByAppClubId,
@@ -177,14 +185,55 @@ export async function loadCentralMatchDetail(
   source: { tenantId: number; clubId: number },
   matchId: number,
 ) {
-  const { centralMatchScorecard, mergedPrivateKeepers } =
-    await import("@workspace/db/central-queries");
+  const { centralMatchScorecard } = await import("@workspace/db/central-queries");
+  const card = await centralMatchScorecard(source.clubId, matchId);
+  if (!card) return null;
+  return centralMatchDetailDto(source.tenantId, card, await loadClubIdentity(source.tenantId));
+}
+
+/**
+ * The PUBLIC match page's central detail, with the tenant's club overlay
+ * applied (hybrid stats plan U10 follow-up): the club's corrections show on
+ * the corrected lines, and a match in a season before the grade's boundary is
+ * not served from central at all (club history supplies that season — KTD5).
+ * A tenant with no club layer gets exactly {@link loadCentralMatchDetail}.
+ *
+ * Deliberately a separate entry point: the Social Studio drafters call
+ * `loadCentralMatchDetail` and must never see the club layer (KTD8).
+ */
+export async function loadCentralMatchDetailWithOverlay(
+  source: { tenantId: number; clubId: number },
+  matchId: number,
+) {
   const { tenantId, clubId } = source;
+  const overlay = await loadClubOverlay(tenantId);
+  const { centralMatchScorecard } = await import("@workspace/db/central-queries");
   const card = await centralMatchScorecard(clubId, matchId);
   if (!card) return null;
+  if (!overlay.active) return centralMatchDetailDto(tenantId, card, overlay.identity);
+  if (
+    card.appGrade !== null &&
+    beforeBoundary(overlay.data.boundaries, card.appGrade, card.seasonStartYear)
+  ) {
+    return null;
+  }
+  const resolved = await resolveClubCorrections(overlay, tenantId, clubId);
+  return centralMatchDetailDto(
+    tenantId,
+    { ...card, lines: overlayScorecardLines(card.lines, resolved.lines, matchId) },
+    overlay.identity,
+  );
+}
+
+/** Shape a central scorecard as the match-detail DTO for one tenant. */
+async function centralMatchDetailDto(
+  tenantId: number,
+  card: CentralMatchScorecard,
+  identity: ClubIdentity,
+) {
+  const { mergedPrivateKeepers } = await import("@workspace/db/central-queries");
   // A merged-away GUID links to its keeper, and a line is masked when anyone in
   // its merged group is private (confirmed merges, KTD2).
-  const identity = await loadClubIdentity(tenantId);
   const intByGuid = identity.intByGuid;
   const privateKeepers = await mergedPrivateKeepers(identity.merges);
   const isPrivateLine = (l: { isPrivate: boolean; participantId: string | null }) =>
@@ -271,7 +320,7 @@ export async function loadCentralMatchDetail(
  */
 export async function loadMatchDetailForSource(source: DataSource, matchId: number) {
   if (source.kind === "central") {
-    return loadCentralMatchDetail(source, matchId);
+    return loadCentralMatchDetailWithOverlay(source, matchId);
   }
   return loadMatchDetail(matchId, source.tenantId);
 }

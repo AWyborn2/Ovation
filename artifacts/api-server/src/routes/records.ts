@@ -4,12 +4,11 @@ import { db, awardsTable, awardWinnersTable, clubRolesTable } from "@workspace/d
 import { GetRecordLeadersQueryParams, GetRecordProgressionQueryParams } from "@workspace/api-zod";
 import { dataSource, shouldReadCentral } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
+import { buildClubStats, clubRecordLeaders, loadClubOverlay } from "../lib/club-overlay";
 import {
-  buildClubStats,
-  clubRecordLeaders,
-  loadClubIdentity,
-  loadClubOverlay,
-} from "../lib/club-overlay";
+  loadCorrectedMatchLines,
+  overlayProgressionCandidates,
+} from "../lib/club-overlay-surfaces";
 import {
   formatRecordValue,
   rankLeaders,
@@ -257,8 +256,39 @@ router.get("/records/progression", async (req, res): Promise<void> => {
 
   if (source.kind === "central") {
     const { centralRecordProgressionRows } = await import("@workspace/db/central-queries");
-    const { merges, intByGuid } = await loadClubIdentity(source.tenantId);
+    const overlay = await loadClubOverlay(source.tenantId);
+    const { merges } = overlay.identity;
     const rows = await centralRecordProgressionRows(source.clubId, kind, grade, merges);
+    if (overlay.active) {
+      // Club overlay: central matches from the boundary on (a corrected match
+      // is re-judged), then the club's own history before it — so the series
+      // ends at the same value the record card shows.
+      const stats = await buildClubStats(overlay, source.tenantId, source.clubId);
+      const { dated, undated } = overlayProgressionCandidates({
+        kind,
+        grade,
+        rows,
+        correctedMatches: await loadCorrectedMatchLines(source.clubId, kind, stats.correctedLines),
+        stats,
+        identity: overlay.identity,
+        boundaries: overlay.data.boundaries,
+      });
+      res.json({
+        kind,
+        points: walkProgression(kind, dated, undated).map((p) => ({
+          playerId: stats.intByGuid.get(p.player.participantId) ?? 0,
+          ...splitDisplayName(p.player.displayName),
+          grade: p.grade,
+          season: p.season,
+          matchId: p.matchId,
+          matchDate: p.matchDate,
+          value: formatRecordValue(kind, p.value),
+          dated: p.dated,
+        })),
+      });
+      return;
+    }
+    const { intByGuid } = overlay.identity;
     const points = walkProgression(
       kind,
       rows.map((r) => ({
