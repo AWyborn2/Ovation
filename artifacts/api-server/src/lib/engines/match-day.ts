@@ -2,6 +2,7 @@ import { and, eq, gt, lte } from "drizzle-orm";
 import { db, fixturesTable, socialSettingsTable, type FixtureRow } from "@workspace/db";
 import { familyAllows, resolveFamilyConfig } from "../social-families";
 import { upsertDraftByKey } from "../draft-upsert";
+import { resolveRoundSchedules } from "../round-schedules";
 
 /** How far ahead of the first ball a match-day card is drafted. */
 export const MATCH_DAY_LEAD_MS = 48 * 60 * 60 * 1000;
@@ -72,6 +73,8 @@ export async function generateMatchDayDrafts(
     .where(eq(socialSettingsTable.tenantId, tenantId));
   const families = resolveFamilyConfig(settings ?? null);
   if (!families.matchday.enabled) return result;
+  // A club drafting this card per round (or not at all) gets no per-match cards.
+  if (resolveRoundSchedules(settings?.roundSchedules).gameDay.mode !== "perFixture") return result;
 
   const fixtures = await db
     .select()

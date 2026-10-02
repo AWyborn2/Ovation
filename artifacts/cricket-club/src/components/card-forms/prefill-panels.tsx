@@ -7,7 +7,9 @@
  */
 
 import { useMemo, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import {
+  getFixtureTeamList,
   useListMatches,
   useGetMatch,
   getGetMatchQueryKey,
@@ -45,6 +47,7 @@ import {
   fixtureToTeamListMeta,
   fixtureRoundLabel,
   fixtureRoundToState,
+  fixtureRoundTeamsToState,
   groupFixturesByRound,
   ROUND_FIXTURES_CAP,
   teamListPlayersToState,
@@ -73,6 +76,7 @@ export function PrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
   if (source === "match") return <MatchPrefillPanel kind={kind} onApply={onApply} />;
   if (source === "fixture") return <FixturePrefillPanel kind={kind} onApply={onApply} />;
   if (source === "round") return <RoundPrefillPanel onApply={onApply} />;
+  if (source === "teamlists") return <RoundTeamListsPrefillPanel onApply={onApply} />;
   if (source === "milestone") return <MilestonePrefillPanel onApply={onApply} />;
   if (source === "premiership") return <PremiershipPrefillPanel onApply={onApply} />;
   if (source === "stats") {
@@ -292,12 +296,12 @@ function RoundPrefillPanel({ onApply }: { onApply: Apply }) {
   );
   const [key, setKey] = useState<string>("");
   const selected = rounds.find((r) => r.key === key) ?? rounds[0] ?? null;
-  const over = selected ? selected.fixtures.length - ROUND_FIXTURES_CAP : 0;
+  const slides = selected ? Math.ceil(selected.fixtures.length / ROUND_FIXTURES_CAP) : 0;
 
   return (
     <PrefillCard
       title="Prefill from this round's fixtures"
-      hint={`Every grade playing that round, earliest start first (up to ${ROUND_FIXTURES_CAP}).`}
+      hint="Every grade playing that round, earliest start first."
     >
       <SelectField
         label="Round"
@@ -314,15 +318,78 @@ function RoundPrefillPanel({ onApply }: { onApply: Apply }) {
           </option>
         ))}
       </SelectField>
-      {over > 0 && (
+      {slides > 1 && (
         <p className="text-xs text-muted-foreground">
-          {over} more grade{over === 1 ? "" : "s"} than the card holds: the latest start
-          {over === 1 ? " is" : "s are"} left off. Edit the rows to choose.
+          {selected!.fixtures.length} grades: this posts as a set of even cards (no card more than
+          one grade fuller than another), with a cover.
         </p>
       )}
       <ApplyButton
         onClick={() => selected && onApply(fixtureRoundToState(selected))}
         disabled={!selected}
+      />
+    </PrefillCard>
+  );
+}
+
+/**
+ * Round team lists (teamListRound): pick an upcoming round and every grade's
+ * published XI fills the card, one team per slide. Unpublished lists stay
+ * off the card until the team is published.
+ */
+function RoundTeamListsPrefillPanel({ onApply }: { onApply: Apply }) {
+  const params = useMemo(() => ({ upcomingOnly: true }), []);
+  const fixturesQ = useListFixtures(params);
+  const rounds = useMemo(
+    () => groupFixturesByRound((fixturesQ.data ?? []) as Fixture[]),
+    [fixturesQ.data],
+  );
+  const [key, setKey] = useState<string>("");
+  const selected = rounds.find((r) => r.key === key) ?? rounds[0] ?? null;
+  const fixtures = selected?.fixtures ?? [];
+  const listsQ = useQueries({
+    queries: fixtures.map((f) => ({
+      queryKey: getGetFixtureTeamListQueryKey(f.id),
+      queryFn: () => getFixtureTeamList(f.id),
+    })),
+  });
+  const loading = listsQ.some((q) => q.isLoading);
+  const lists = new Map(fixtures.map((f, i) => [f.id, listsQ[i]?.data ?? null]));
+  const state = selected && !loading ? fixtureRoundTeamsToState(selected, lists) : null;
+  const named = state?.teams.length ?? 0;
+  const missing = fixtures.length - named;
+
+  return (
+    <PrefillCard
+      title="Prefill from this round's published team lists"
+      hint="Each grade with a published team list gets its own slide, after a cover."
+    >
+      <SelectField
+        label="Round"
+        value={selected?.key ?? ""}
+        disabled={rounds.length === 0}
+        onChange={setKey}
+      >
+        {rounds.length === 0 && (
+          <option value="">{fixturesQ.isLoading ? "Loading…" : "No upcoming fixtures"}</option>
+        )}
+        {rounds.map((r) => (
+          <option key={r.key} value={r.key}>
+            {fixtureRoundLabel(r)}
+          </option>
+        ))}
+      </SelectField>
+      {state && missing > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {named === 0
+            ? "No team lists for this round are published yet."
+            : `${missing} grade${missing === 1 ? " has" : "s have"} no published team list yet and ${missing === 1 ? "is" : "are"} left off.`}
+        </p>
+      )}
+      <ApplyButton
+        onClick={() => state && named > 0 && onApply(state)}
+        disabled={!state || named === 0}
+        loading={loading}
       />
     </PrefillCard>
   );

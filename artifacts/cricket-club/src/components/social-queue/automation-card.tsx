@@ -15,7 +15,8 @@ const FAMILY_HELP: Record<Family, string> = {
   results: "A card for every match result. Junior grades stay off unless you add them below.",
   achievements: "Centuries, five-fors, debuts, caps and career milestones.",
   roundup: "Grade leaders and the weekend wrap after each round.",
-  matchday: "Match-day cards two days out, and team lists once the XI is published.",
+  matchday:
+    "Game day and team list cards. Choose per match or whole round under Round cards below.",
 };
 
 /**

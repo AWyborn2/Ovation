@@ -74,6 +74,8 @@ export const headlineFor = (input: ShareCardInput): string => {
       return "Trading Card";
     case "juniorHighlights":
       return `${input.grade} • Juniors`;
+    case "teamListRound":
+      return `${input.roundLabel} • Team Lists`;
   }
 };
 

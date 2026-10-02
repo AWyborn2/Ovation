@@ -31,7 +31,7 @@ const row =
   `</div>`;
 
 const html = bdCard({
-  chip: bdChip("TEAM LIST"),
+  chip: bdChip("TEAM LIST{{setMarker}}"),
   tag: "{{gradeRound}}",
   photo: "squadPhoto",
   body: bdColumn(
@@ -50,6 +50,7 @@ export const teamList: PackCardTemplate = {
   sponsorVariants: ["on", "off"],
   fields: [
     ...clubHeaderFields(),
+    textField("setMarker", 'Set page marker (e.g. " · 2/3")', ""),
     textField("gradeRound", "Grade + round", "A GRADE · RD 3"),
     textField("competitionLine", "Competition line", "PREMIER T20 · ROUND 3 · vs MARINERS"),
     textField("venueDateTime", "Venue / date / time", "RUSHTON PARK · SAT 8 NOV · 12:30 PM"),

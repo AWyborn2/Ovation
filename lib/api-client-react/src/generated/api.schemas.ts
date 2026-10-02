@@ -3310,6 +3310,7 @@ export const CardKind = {
   roundFixtures: 'roundFixtures',
   tradingCard: 'tradingCard',
   juniorHighlights: 'juniorHighlights',
+  teamListRound: 'teamListRound',
 } as const;
 
 export interface Sponsor {
@@ -4021,6 +4022,44 @@ export const PackColourMode = {
  */
 export interface PackColourModes {[key: string]: PackColourMode}
 
+/**
+ * "perFixture" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). "perRound" drafts the whole round as one balanced set at `day` / `hour`. "off" drafts nothing. The weekend wrap is "off" or "perRound" only.
+ */
+export type RoundScheduleMode = typeof RoundScheduleMode[keyof typeof RoundScheduleMode];
+
+
+export const RoundScheduleMode = {
+  off: 'off',
+  perFixture: 'perFixture',
+  perRound: 'perRound',
+} as const;
+
+export interface RoundSchedule {
+  /** "perFixture" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). "perRound" drafts the whole round as one balanced set at `day` / `hour`. "off" drafts nothing. The weekend wrap is "off" or "perRound" only. */
+  mode: RoundScheduleMode;
+  /**
+     * Day of the week the round set is drafted (0 = Sunday), club time.
+     * @minimum 0
+     * @maximum 6
+     */
+  day: number;
+  /**
+     * Hour of the day the round set is drafted, club time (Perth).
+     * @minimum 0
+     * @maximum 23
+     */
+  hour: number;
+}
+
+/**
+ * When the round cards draft themselves (balanced card sets). Always complete in a response: a card never saved shows its default.
+ */
+export interface RoundSchedules {
+  gameDay: RoundSchedule;
+  teamLists: RoundSchedule;
+  weekendWrap: RoundSchedule;
+}
+
 export interface SocialSettings {
   engineOnDemand: boolean;
   engineMilestone: boolean;
@@ -4062,6 +4101,7 @@ export interface SocialSettings {
   notificationEmail?: string | null;
   familyConfig?: SocialFamilyConfig;
   packColourModes?: PackColourModes;
+  roundSchedules?: RoundSchedules;
 }
 
 export interface Notification {
@@ -4312,12 +4352,141 @@ export type DraftSweepResponseResultsItem = {
   achievements?: number;
   matchDay: number;
   teamLists: number;
+  /** Round sets (game day, team lists, weekend wrap) drafted on the club's schedule. */
+  roundSets?: number;
   /** Drafts moved to ready because their auto-post deadline passed. */
   promoted?: number;
 };
 
 export interface DraftSweepResponse {
   results: DraftSweepResponseResultsItem[];
+}
+
+/**
+ * Collector outcome. partial = collected with errors; failed = gave up (whatever was collected is still loaded).
+ */
+export type PlayhqIngestRequestStatus = typeof PlayhqIngestRequestStatus[keyof typeof PlayhqIngestRequestStatus];
+
+
+export const PlayhqIngestRequestStatus = {
+  ok: 'ok',
+  partial: 'partial',
+  failed: 'failed',
+} as const;
+
+export type PlayhqIngestRequestErrorsItem = { [key: string]: unknown };
+
+export type PlayhqHarnessDumpRecordsItem = {
+  key?: string;
+  kind: string;
+  id: string;
+  fetchedAt?: string;
+  [key: string]: unknown;
+ };
+
+/**
+ * The harness export: __ov.dump() (gunzipped __ov.exportInfo/export chunks).
+ */
+export interface PlayhqHarnessDump {
+  version: string;
+  exportedAt: string;
+  origin?: string;
+  records: PlayhqHarnessDumpRecordsItem[];
+}
+
+export interface PlayhqIngestRequest {
+  /**
+     * Which collector produced the dump: gha-headless, manual, public-api, …
+     * @minLength 1
+     * @maxLength 40
+     * @pattern ^[a-z0-9][a-z0-9_-]*$
+     */
+  collector: string;
+  /**
+     * The scheduled plan this run served (weekly, matchday, …).
+     * @maxLength 40
+     */
+  planName?: string;
+  /** Collector outcome. partial = collected with errors; failed = gave up (whatever was collected is still loaded). */
+  status?: PlayhqIngestRequestStatus;
+  /**
+     * The collector's own error list (harness __ov.status().errors).
+     * @maxItems 200
+     */
+  errors?: PlayhqIngestRequestErrorsItem[];
+  /** @minimum 0 */
+  durationMs?: number;
+  /**
+     * Label stored as scrape_runs.source_file (defaults to collector + exportedAt).
+     * @maxLength 200
+     */
+  sourceName?: string;
+  dump: PlayhqHarnessDump;
+}
+
+export type PlayhqIngestResponseStatus = typeof PlayhqIngestResponseStatus[keyof typeof PlayhqIngestResponseStatus];
+
+
+export const PlayhqIngestResponseStatus = {
+  ok: 'ok',
+  partial: 'partial',
+  failed: 'failed',
+} as const;
+
+/**
+ * Rows upserted per playhq table.
+ */
+export type PlayhqIngestResponseCounts = {[key: string]: number};
+
+export type PlayhqIngestResponseTenantsItem = {
+  tenantId: number;
+  slug: string;
+  matches: number;
+  inserted: number;
+  updated: number;
+  swept: boolean;
+};
+
+export interface PlayhqIngestResponse {
+  status: PlayhqIngestResponseStatus;
+  runIds: number[];
+  /** Rows upserted per playhq table. */
+  counts: PlayhqIngestResponseCounts;
+  fixtureChanges: number;
+  juniorGradesDropped: number;
+  tenants: PlayhqIngestResponseTenantsItem[];
+  warnings: string[];
+}
+
+export type PlayhqDuePlansResponsePlansItemPlanName = typeof PlayhqDuePlansResponsePlansItemPlanName[keyof typeof PlayhqDuePlansResponsePlansItemPlanName];
+
+
+export const PlayhqDuePlansResponsePlansItemPlanName = {
+  weekly: 'weekly',
+  preweekend: 'preweekend',
+  matchmorn: 'matchmorn',
+  matchday: 'matchday',
+  dayafter: 'dayafter',
+  catchup: 'catchup',
+} as const;
+
+/**
+ * Pass verbatim to the harness's __ov.start(plan).
+ */
+export type PlayhqDuePlansResponsePlansItemPlan = { [key: string]: unknown };
+
+export type PlayhqDuePlansResponsePlansItem = {
+  orgId: string;
+  planName: PlayhqDuePlansResponsePlansItemPlanName;
+  /** The schedule slot this run serves. */
+  slot: string;
+  /** Pass verbatim to the harness's __ov.start(plan). */
+  plan: PlayhqDuePlansResponsePlansItemPlan;
+};
+
+export interface PlayhqDuePlansResponse {
+  now: string;
+  plans: PlayhqDuePlansResponsePlansItem[];
 }
 
 export type SocialFamilySettingUpdateGrades = {[key: string]: boolean};
@@ -4343,6 +4512,12 @@ export interface SocialFamilyConfigUpdate {
 export type SocialSettingsUpdateMatchSummaryGradeConfig = {[key: string]: {
   enabled: boolean;
 }};
+
+export interface RoundSchedulesUpdate {
+  gameDay?: RoundSchedule;
+  teamLists?: RoundSchedule;
+  weekendWrap?: RoundSchedule;
+}
 
 export interface SocialSettingsUpdate {
   engineOnDemand?: boolean;
@@ -4380,6 +4555,8 @@ export interface SocialSettingsUpdate {
   notificationEmail?: string | null;
   /** Merged into the stored map: only the packs sent change, the others keep their mode. */
   packColourModes?: PackColourModes;
+  /** Merged per card: only the cards sent change, the others keep their schedule. */
+  roundSchedules?: RoundSchedulesUpdate;
 }
 
 /**
@@ -5591,6 +5768,60 @@ export interface ClubCorrection {
   match: ClubCorrectionMatch | null;
 }
 
+/**
+ * keeper — a player in their own right for the club; merged_away — a duplicate record merged into another player
+ */
+export type ClubIdentityDriftItemKind = typeof ClubIdentityDriftItemKind[keyof typeof ClubIdentityDriftItemKind];
+
+
+export const ClubIdentityDriftItemKind = {
+  keeper: 'keeper',
+  merged_away: 'merged_away',
+} as const;
+
+export type ClubIdentityDriftItemMergeStatus = typeof ClubIdentityDriftItemMergeStatus[keyof typeof ClubIdentityDriftItemMergeStatus] | null;
+
+
+export const ClubIdentityDriftItemMergeStatus = {
+  suggested: 'suggested',
+  confirmed: 'confirmed',
+} as const;
+
+export type ClubIdentityDriftItemCuratedRowsItem = {
+  /** The table the row lives in, e.g. `award_winners` */
+  table: string;
+  rowId: number;
+  label: string;
+};
+
+export type ClubIdentityDriftItemCorrectionsItem = {
+  id: number;
+  playhqMatchId: string;
+  field: ClubCorrectionField;
+};
+
+export interface ClubIdentityDriftItem {
+  /** The PlayHQ participant GUID the club still names */
+  participantId: string;
+  /** keeper — a player in their own right for the club; merged_away — a duplicate record merged into another player */
+  kind: ClubIdentityDriftItemKind;
+  /** The club's player id for this GUID, when it has one */
+  playerId: number | null;
+  /** The club's own name for the player, else the association's, else the name on a dependent row. Admin-only, so a private player's real name is shown. */
+  displayName: string | null;
+  /** True when the association still has this player record, just with no line for this club; false when the record is gone */
+  stillInCentral: boolean;
+  mergedIntoParticipantId: string | null;
+  mergedIntoDisplayName: string | null;
+  mergeStatus: ClubIdentityDriftItemMergeStatus;
+  /** Duplicate GUIDs merged into this one */
+  mergedFrom: string[];
+  /** The club's own rows that still point at this player */
+  curatedRows: ClubIdentityDriftItemCuratedRowsItem[];
+  /** Corrections in force on this GUID's match lines */
+  corrections: ClubIdentityDriftItemCorrectionsItem[];
+}
+
 export type DuplicateReviewBodyAction = typeof DuplicateReviewBodyAction[keyof typeof DuplicateReviewBodyAction];
 
 
@@ -5637,6 +5868,10 @@ export const PostPackImagesItemSize = {
 export type PostPackImagesItem = {
   size: PostPackImagesItemSize;
   url: string;
+  /** Slide position in a balanced card set (1 = cover or first card); absent for a single card. */
+  page?: number;
+  /** Number of slides in the set; absent for a single card. */
+  of?: number;
 };
 
 export interface PostPack {

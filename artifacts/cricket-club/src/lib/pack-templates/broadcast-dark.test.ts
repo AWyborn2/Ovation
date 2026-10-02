@@ -41,9 +41,10 @@ function fieldAppearsInHtml(field: PackTemplateField, html: string): boolean {
 }
 
 describe("broadcast-dark pack manifest", () => {
-  it("has packId broadcast-dark-v1 and exactly 19 designs", () => {
+  it("has packId broadcast-dark-v1 and exactly 21 designs (19 cards + 2 set covers)", () => {
     expect(BROADCAST_DARK_PACK.packId).toBe("broadcast-dark-v1");
-    expect(designs).toHaveLength(19);
+    expect(designs).toHaveLength(21);
+    expect(designs.filter((d) => d.role === "cover")).toHaveLength(2);
   });
 
   it("has unique design keys", () => {
@@ -51,9 +52,9 @@ describe("broadcast-dark pack manifest", () => {
     expect(new Set(keys).size).toBe(designs.length);
   });
 
-  it("maps 19 designs onto exactly 17 distinct kinds", () => {
+  it("maps its designs onto exactly 18 distinct kinds (17 + the round team lists)", () => {
     const kinds = new Set(designs.map((d) => d.kind));
-    expect(kinds.size).toBe(17);
+    expect(kinds.size).toBe(18);
   });
 
   it("no longer carries the retired newCap kind", () => {

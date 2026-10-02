@@ -15,6 +15,8 @@ export type DraftSweepResponseResultsItem = {
   achievements?: number;
   matchDay: number;
   teamLists: number;
+  /** Round sets (game day, team lists, weekend wrap) drafted on the club's schedule. */
+  roundSets?: number;
   /** Drafts moved to ready because their auto-post deadline passed. */
   promoted?: number;
 };

@@ -151,6 +151,8 @@ export const cardBaseFilename = (input: ShareCardInput, brand?: ClubBrand | null
       return `${clubSlug}-${jr}gameday-${slugify(input.roundLabel)}`;
     case "tradingCard":
       return `${clubSlug}-tradingcard-${slugify(input.playerName)}`;
+    case "teamListRound":
+      return `${clubSlug}-teamlists-${slugify(input.roundLabel)}`;
     case "juniorHighlights":
       return `${clubSlug}-juniors-${slugify(input.grade)}-${slugify(input.roundLabel)}`;
   }

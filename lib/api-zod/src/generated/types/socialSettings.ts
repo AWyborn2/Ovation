@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PackColourModes } from './packColourModes';
+import type { RoundSchedules } from './roundSchedules';
 import type { SocialFamilyConfig } from './socialFamilyConfig';
 import type { SocialSettingsMatchSummaryGradeConfig } from './socialSettingsMatchSummaryGradeConfig';
 
@@ -50,4 +51,5 @@ export interface SocialSettings {
   notificationEmail?: string | null;
   familyConfig?: SocialFamilyConfig;
   packColourModes?: PackColourModes;
+  roundSchedules?: RoundSchedules;
 }

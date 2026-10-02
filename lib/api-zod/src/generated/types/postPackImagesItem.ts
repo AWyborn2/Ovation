@@ -10,4 +10,8 @@ import type { PostPackImagesItemSize } from './postPackImagesItemSize';
 export type PostPackImagesItem = {
   size: PostPackImagesItemSize;
   url: string;
+  /** Slide position in a balanced card set (1 = cover or first card); absent for a single card. */
+  page?: number;
+  /** Number of slides in the set; absent for a single card. */
+  of?: number;
 };

@@ -89,6 +89,7 @@ import type {
   ClubCorrectionMatch,
   ClubCorrectionMatchDetail,
   ClubCorrectionsStatus,
+  ClubIdentityDriftItem,
   ClubPhoto,
   ClubRecords,
   ClubRole,
@@ -248,6 +249,9 @@ import type {
   PlayerSeasonStat,
   PlayerUpdate,
   PlayersVsClub,
+  PlayhqDuePlansResponse,
+  PlayhqIngestRequest,
+  PlayhqIngestResponse,
   PlayhqLadder,
   PointsConfigInput,
   PointsConfigUpdate,
@@ -15387,6 +15391,156 @@ export const useRunDraftSweep = <TError = ErrorType<void>,
       return useMutation(getRunDraftSweepMutationOptions(options));
     }
 
+export const getIngestPlayhqDumpUrl = () => {
+
+
+
+
+  return `/api/internal/playhq/ingest`
+}
+
+/**
+ * Machine-to-machine only. Requires the `x-sync-secret` header to equal the server's PLAYHQ_SYNC_SECRET; answers 401 otherwise (including when no secret is configured), and 503 when PLAYHQ_INGEST_DATABASE_URL is unset or its role can write outside schema `playhq`. Loads the dump into `playhq.*` (junior and pathway grades are dropped), records a `playhq.scrape_runs` row, projects fixtures for every tenant linked to an organisation in the dump, and runs the fixtures draft sweep for the tenants it touched. Accepts `Content-Encoding: gzip`; the body limit applies to the decompressed JSON.
+ * @summary Load a PlayHQ harness dump (scheduled sync / manual upload)
+ */
+export const ingestPlayhqDump = async (playhqIngestRequest: PlayhqIngestRequest, options?: RequestInit): Promise<PlayhqIngestResponse> => {
+
+  return customFetch<PlayhqIngestResponse>(getIngestPlayhqDumpUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      playhqIngestRequest,)
+  }
+);}
+
+
+
+
+export const getIngestPlayhqDumpMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestPlayhqDump>>, TError,{data: BodyType<PlayhqIngestRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof ingestPlayhqDump>>, TError,{data: BodyType<PlayhqIngestRequest>}, TContext> => {
+
+const mutationKey = ['ingestPlayhqDump'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof ingestPlayhqDump>>, {data: BodyType<PlayhqIngestRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  ingestPlayhqDump(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type IngestPlayhqDumpMutationResult = NonNullable<Awaited<ReturnType<typeof ingestPlayhqDump>>>
+    export type IngestPlayhqDumpMutationBody = BodyType<PlayhqIngestRequest>
+    export type IngestPlayhqDumpMutationError = ErrorType<void>
+
+    /**
+ * @summary Load a PlayHQ harness dump (scheduled sync / manual upload)
+ */
+export const useIngestPlayhqDump = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof ingestPlayhqDump>>, TError,{data: BodyType<PlayhqIngestRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof ingestPlayhqDump>>,
+        TError,
+        {data: BodyType<PlayhqIngestRequest>},
+        TContext
+      > => {
+      return useMutation(getIngestPlayhqDumpMutationOptions(options));
+    }
+
+export const getListDuePlayhqPlansUrl = () => {
+
+
+
+
+  return `/api/internal/playhq/plans`
+}
+
+/**
+ * Machine-to-machine only (same `x-sync-secret` as the ingest endpoint; 401 otherwise, 503 when the ingest database is not configured). Returns, for every PlayHQ organisation linked to an active tenant, each plan whose latest slot (Perth time) has passed with no successful run of that plan since. The runner executes each plan in a play.cricket.com.au page and posts the dump to /internal/playhq/ingest with the plan name, which marks it done.
+ * @summary Harness plans due now, for the scheduled sync runner
+ */
+export const listDuePlayhqPlans = async ( options?: RequestInit): Promise<PlayhqDuePlansResponse> => {
+
+  return customFetch<PlayhqDuePlansResponse>(getListDuePlayhqPlansUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDuePlayhqPlansQueryKey = () => {
+    return [
+    `/api/internal/playhq/plans`
+    ] as const;
+    }
+
+
+export const getListDuePlayhqPlansQueryOptions = <TData = Awaited<ReturnType<typeof listDuePlayhqPlans>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDuePlayhqPlans>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDuePlayhqPlansQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDuePlayhqPlans>>> = ({ signal }) => listDuePlayhqPlans({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDuePlayhqPlans>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDuePlayhqPlansQueryResult = NonNullable<Awaited<ReturnType<typeof listDuePlayhqPlans>>>
+export type ListDuePlayhqPlansQueryError = ErrorType<void>
+
+
+/**
+ * @summary Harness plans due now, for the scheduled sync runner
+ */
+
+export function useListDuePlayhqPlans<TData = Awaited<ReturnType<typeof listDuePlayhqPlans>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDuePlayhqPlans>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDuePlayhqPlansQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getListClubPhotosUrl = (params?: ListClubPhotosParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -18486,6 +18640,84 @@ export function useGetClubCorrectionMatch<TData = Awaited<ReturnType<typeof getC
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetClubCorrectionMatchQueryOptions(matchId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListClubIdentityDriftUrl = () => {
+
+
+
+
+  return `/api/club-identity-drift`
+}
+
+/**
+ * Read-only. The club links association players by their PlayHQ participant GUID (its player list, renames and duplicate merges). When the association data is re-loaded a GUID can disappear or change; this lists every stored GUID that no longer has any line for the club, with the club's own rows (awards, caps, photos, team of the decade, life members, premierships, club roles, honour-board overrides, records, club history) and the corrections that still depend on it. Empty when every link is intact, and while the association data has no players for the club at all (mid-reload). Club-local pre-digital players are never listed. The same check as the `check-identity-drift` script.
+ * @summary The club's player links the association data no longer has (admin)
+ */
+export const listClubIdentityDrift = async ( options?: RequestInit): Promise<ClubIdentityDriftItem[]> => {
+
+  return customFetch<ClubIdentityDriftItem[]>(getListClubIdentityDriftUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListClubIdentityDriftQueryKey = () => {
+    return [
+    `/api/club-identity-drift`
+    ] as const;
+    }
+
+
+export const getListClubIdentityDriftQueryOptions = <TData = Awaited<ReturnType<typeof listClubIdentityDrift>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubIdentityDrift>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListClubIdentityDriftQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listClubIdentityDrift>>> = ({ signal }) => listClubIdentityDrift({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listClubIdentityDrift>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListClubIdentityDriftQueryResult = NonNullable<Awaited<ReturnType<typeof listClubIdentityDrift>>>
+export type ListClubIdentityDriftQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club's player links the association data no longer has (admin)
+ */
+
+export function useListClubIdentityDrift<TData = Awaited<ReturnType<typeof listClubIdentityDrift>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listClubIdentityDrift>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListClubIdentityDriftQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

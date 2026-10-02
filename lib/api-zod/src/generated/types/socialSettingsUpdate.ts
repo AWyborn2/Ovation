@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PackColourModes } from './packColourModes';
+import type { RoundSchedulesUpdate } from './roundSchedulesUpdate';
 import type { SocialFamilyConfigUpdate } from './socialFamilyConfigUpdate';
 import type { SocialSettingsUpdateMatchSummaryGradeConfig } from './socialSettingsUpdateMatchSummaryGradeConfig';
 
@@ -45,4 +46,6 @@ export interface SocialSettingsUpdate {
   notificationEmail?: string | null;
   /** Merged into the stored map: only the packs sent change, the others keep their mode. */
   packColourModes?: PackColourModes;
+  /** Merged per card: only the cards sent change, the others keep their schedule. */
+  roundSchedules?: RoundSchedulesUpdate;
 }

@@ -116,8 +116,16 @@ export function resolveTemplate(
   input: ShareCardInput,
   packId?: string | null,
 ): PackCardTemplate | null {
-  const designs = designsByKind(packId).get(input.kind);
-  if (!designs || designs.length === 0) return null;
+  const all = designsByKind(packId).get(input.kind);
+  if (!all || all.length === 0) return null;
+  // A set's cover renders the kind's cover design (none → no cover); every
+  // other card renders an everyday design, or the cover when that is all the
+  // kind has (a round of team lists IS its cover).
+  const wantsCover = (input as { setRole?: string }).setRole === "cover";
+  const everyday = all.filter((d) => d.role !== "cover");
+  const covers = all.filter((d) => d.role === "cover");
+  const designs = wantsCover ? covers : everyday.length ? everyday : covers;
+  if (designs.length === 0) return null;
   if (designs.length === 1) return designs[0].template;
   // gradeLeader / clubLeaderboard: the design whose preset matches the
   // category exactly, else Runs vs Wickets (a pack without a Catches or

@@ -14,6 +14,7 @@ import type { CardKind } from "@/lib/share-card";
 import type {
   LadderRow,
   TeamListPlayer,
+  RoundTeam,
   WeekendWrapMatch,
   ClubLeaderboardLeader,
   ClubLeaderboardCategory,
@@ -25,9 +26,10 @@ import type {
   Fixture,
   MilestoneItem,
   Premiership,
+  TeamList as TeamListDto,
   TeamListPlayer as TeamListPlayerDto,
 } from "@workspace/api-client-react";
-import { isJuniorGradeLabel } from "@workspace/scorecard";
+import { gradeTile, isJuniorGradeLabel } from "@workspace/scorecard";
 import type { CardFormState } from "./logic";
 
 // --------------------------------------------------------------------------
@@ -158,7 +160,10 @@ export function fixtureToCountdownState(fixture: Fixture): CardFormState {
 // Round-derived (roundFixtures — game day, every grade this round)
 // --------------------------------------------------------------------------
 
-/** Most grades a game-day card lists (the Club Kit layout's cap). */
+/**
+ * Most grades one game-day card lists. A round with more posts as a balanced
+ * card set (plan 2026-10-01-001), so the prefill keeps every grade.
+ */
 export const ROUND_FIXTURES_CAP = 5;
 
 /** One round's fixtures, seniors and juniors kept apart (juniors isolation). */
@@ -214,25 +219,7 @@ export function groupFixturesByRound(fixtures: readonly Fixture[]): FixtureRound
   );
 }
 
-/**
- * The grade tile text: "A Grade" → "A", "Female A Grade" → "FA",
- * "Under 15" → "U15", "T20" → "T20".
- */
-export function gradeTile(grade: string): string {
-  const words = grade
-    .replace(/\bgrade\b/gi, "")
-    .replace(/\bcricket\b/gi, "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-  if (words.length === 0) return grade.trim().slice(0, 3).toUpperCase();
-  if (words.length === 1) return words[0].slice(0, 3).toUpperCase();
-  return words
-    .map((w) => (/\d/.test(w) ? w.replace(/[^0-9]/g, "") : w[0]))
-    .join("")
-    .slice(0, 4)
-    .toUpperCase();
-}
+export { gradeTile };
 
 /** "SATURDAY 14 FEB". */
 function formatRoundDate(iso: string | null | undefined): string {
@@ -244,13 +231,13 @@ function formatRoundDate(iso: string | null | undefined): string {
     .toUpperCase();
 }
 
-/** A round's fixtures → the game-day card's fields (up to {@link ROUND_FIXTURES_CAP} grades). */
+/** A round's fixtures → the game-day card's fields (every grade; a long round becomes a set). */
 export function fixtureRoundToState(round: FixtureRound): CardFormState {
   const first = round.fixtures[0];
   return {
     roundLabel: round.roundLabel,
     date: formatRoundDate(first?.startAt),
-    fixtures: round.fixtures.slice(0, ROUND_FIXTURES_CAP).map((f) => ({
+    fixtures: round.fixtures.map((f) => ({
       grade: gradeTile(f.grade),
       opponent: f.opponentName,
       venue: f.venue || (f.isHome ? "Home" : "Away"),
@@ -300,6 +287,33 @@ export function teamListPlayersToState(players: TeamListPlayerDto[]): {
       role: p.role,
     }));
   return { players: rows };
+}
+
+/**
+ * A round's PUBLISHED team lists → the round team-lists card (`teamListRound`):
+ * one team per fixture whose XI is saved and published, in start order. Each
+ * team carries exactly what that fixture's single team-list card would, so a
+ * set's team slide matches the card posted on its own. Unpublished or missing
+ * lists are left out; fill-ins are excluded as on every card.
+ */
+export function fixtureRoundTeamsToState(
+  round: FixtureRound,
+  lists: ReadonlyMap<number, TeamListDto | null | undefined>,
+): { roundLabel: string; date: string; teams: RoundTeam[] } {
+  const teams: RoundTeam[] = [];
+  for (const f of round.fixtures) {
+    const list = lists.get(f.id);
+    if (!list || !list.isPublished) continue;
+    const { players } = teamListPlayersToState(list.players);
+    if (players.length === 0) continue;
+    const meta = fixtureToTeamListMeta(f) as Omit<RoundTeam, "grade" | "players">;
+    teams.push({ grade: f.grade, ...meta, players });
+  }
+  return {
+    roundLabel: round.roundLabel,
+    date: formatRoundDate(round.fixtures[0]?.startAt),
+    teams,
+  };
 }
 
 // --------------------------------------------------------------------------

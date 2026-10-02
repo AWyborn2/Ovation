@@ -1,3 +1,4 @@
+import { planCardSet, type CardSetOptions } from "@/lib/card-sets/plan";
 import { useMemo, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import {
@@ -31,6 +32,7 @@ import {
   STATUS_ORDER,
   draftGrade,
   draftHeading,
+  draftInput,
   draftSource,
   draftStatus,
   draftSubline,
@@ -46,6 +48,14 @@ import { cn } from "@/lib/utils";
  * The Studio queue (Social Studio U8): drafts by state, filtered by family and
  * grade, each opening a drawer with its caption, photo, history and actions.
  */
+/** How many slides a draft posts as (a big round is a balanced card set). */
+function slideCount(d: SocialDraft): number {
+  const input = draftInput(d);
+  if (!input) return 1;
+  const opts = (d.adjustments as { set?: CardSetOptions } | null | undefined)?.set ?? {};
+  return planCardSet(input, opts).length;
+}
+
 export default function AdminSocialQueue() {
   const qc = useQueryClient();
   const draftsQ = useListSocialDrafts(undefined, {
@@ -124,7 +134,14 @@ export default function AdminSocialQueue() {
             </div>
           )}
           <div className="min-w-0">
-            <p className="truncate font-medium text-foreground">{draftHeading(d)}</p>
+            <p className="truncate font-medium text-foreground">
+              {draftHeading(d)}
+              {slideCount(d) > 1 && (
+                <span className="ml-2 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                  {slideCount(d)} slides
+                </span>
+              )}
+            </p>
             <p className="truncate text-xs text-muted-foreground">{draftSubline(d)}</p>
           </div>
         </div>

@@ -6,6 +6,8 @@ import { Switch } from "@/components/ui/switch";
 import { Image as ImageIcon } from "lucide-react";
 import { ShareCardModal } from "@/components/share-card-modal";
 import { PackCard } from "@/components/pack-card";
+import { CardSetStrip } from "@/components/card-sets/card-set-strip";
+import { slidesForSize } from "@/lib/card-sets/plan";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import { CreateHero } from "@/components/social-studio/create-hero";
 import { EditorStarters } from "@/components/social-studio/editor-starters";
@@ -222,8 +224,9 @@ export default function AdminSocialCreate() {
                 </div>
               </div>
 
-              <div className="mx-auto w-full max-w-[380px] rounded-lg overflow-hidden border">
-                <PackCard
+              {slidesForSize(input, size).length > 1 ? (
+                // A big round posts as a balanced card set: cover + detail slides.
+                <CardSetStrip
                   input={input}
                   size={size}
                   sponsorsOn={sponsorsOn}
@@ -231,8 +234,21 @@ export default function AdminSocialCreate() {
                   theme={previewTheme}
                   data={packData}
                   packId={previewPackId}
+                  slideWidth={size === "story" ? 170 : 210}
                 />
-              </div>
+              ) : (
+                <div className="mx-auto w-full max-w-[380px] rounded-lg overflow-hidden border">
+                  <PackCard
+                    input={input}
+                    size={size}
+                    sponsorsOn={sponsorsOn}
+                    junior={isJunior}
+                    theme={previewTheme}
+                    data={packData}
+                    packId={previewPackId}
+                  />
+                </div>
+              )}
 
               <Button className="w-full" onClick={() => setModalOpen(true)}>
                 <ImageIcon className="h-4 w-4 mr-2" />

@@ -56,6 +56,7 @@ export const KIND_BLURB: Record<CardKind, string> = {
   roundFixtures: "Every grade playing this round (Club Kit)",
   tradingCard: "Collectable player cards (Club Kit)",
   juniorHighlights: "Junior stars of the round (Club Kit)",
+  teamListRound: "Every team named this round, as one post",
 };
 
 /**
@@ -99,6 +100,7 @@ const KIND_KEYWORDS: Record<CardKind, string[]> = {
   roundFixtures: ["game day", "all grades", "fixtures", "this round", "round preview"],
   tradingCard: ["trading card", "collectable", "player card", "footy card"],
   juniorHighlights: ["juniors", "junior highlights", "kids", "juniors shine"],
+  teamListRound: ["team lists", "all teams", "selections", "round teams", "sides named"],
 };
 
 /**

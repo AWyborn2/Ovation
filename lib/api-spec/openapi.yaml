@@ -4392,6 +4392,66 @@ paths:
         "404":
           description: Tenant not found
 
+  /internal/playhq/ingest:
+    post:
+      operationId: ingestPlayhqDump
+      tags: [fixtures]
+      summary: Load a PlayHQ harness dump (scheduled sync / manual upload)
+      description: >-
+        Machine-to-machine only. Requires the `x-sync-secret` header to equal the
+        server's PLAYHQ_SYNC_SECRET; answers 401 otherwise (including when no secret is
+        configured), and 503 when PLAYHQ_INGEST_DATABASE_URL is unset or its role can
+        write outside schema `playhq`. Loads the dump into `playhq.*` (junior and pathway
+        grades are dropped), records a `playhq.scrape_runs` row, projects fixtures for
+        every tenant linked to an organisation in the dump, and runs the fixtures draft
+        sweep for the tenants it touched. Accepts `Content-Encoding: gzip`; the body
+        limit applies to the decompressed JSON.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlayhqIngestRequest"
+      responses:
+        "200":
+          description: Loaded (status `partial` when projection or a sweep failed after the load committed)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayhqIngestResponse"
+        "400":
+          description: Invalid body or not a harness dump
+        "401":
+          description: Missing or wrong sync secret
+        "413":
+          description: Body too large
+        "503":
+          description: Ingest database not configured, or its role is not scoped to playhq
+
+  /internal/playhq/plans:
+    get:
+      operationId: listDuePlayhqPlans
+      tags: [fixtures]
+      summary: Harness plans due now, for the scheduled sync runner
+      description: >-
+        Machine-to-machine only (same `x-sync-secret` as the ingest endpoint; 401 otherwise,
+        503 when the ingest database is not configured). Returns, for every PlayHQ
+        organisation linked to an active tenant, each plan whose latest slot (Perth time)
+        has passed with no successful run of that plan since. The runner executes each plan
+        in a play.cricket.com.au page and posts the dump to /internal/playhq/ingest with the
+        plan name, which marks it done.
+      responses:
+        "200":
+          description: Plans due now (possibly none)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayhqDuePlansResponse"
+        "401":
+          description: Missing or wrong sync secret
+        "503":
+          description: Ingest database not configured, or its role is not scoped to playhq
+
   /club-photos:
     get:
       operationId: listClubPhotos
@@ -5435,6 +5495,37 @@ paths:
           description: Not one of the club's senior matches
         "409":
           description: The club has no association data to correct
+        "503":
+          description: The corrections store isn't in this database yet (migration 0021)
+
+  /club-identity-drift:
+    get:
+      operationId: listClubIdentityDrift
+      tags: [players]
+      summary: The club's player links the association data no longer has (admin)
+      description: >-
+        Read-only. The club links association players by their PlayHQ
+        participant GUID (its player list, renames and duplicate merges). When
+        the association data is re-loaded a GUID can disappear or change;
+        this lists every stored GUID that no longer has any line for the
+        club, with the club's own rows (awards, caps, photos, team of the
+        decade, life members, premierships, club roles, honour-board
+        overrides, records, club history) and the corrections that still
+        depend on it. Empty when every link is intact, and while the
+        association data has no players for the club at all (mid-reload).
+        Club-local pre-digital players are never listed. The same check as
+        the `check-identity-drift` script.
+      responses:
+        "200":
+          description: The club's broken links, most-depended-on first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClubIdentityDriftItem"
+        "409":
+          description: The club has no association data
         "503":
           description: The corrections store isn't in this database yet (migration 0021)
 
@@ -11838,7 +11929,7 @@ components:
       # roundFixtures / tradingCard / juniorHighlights are the Club Kit card
       # types (game day across all grades, a collectable player card, junior
       # highlights).
-      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard, roundFixtures, tradingCard, juniorHighlights]
+      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard, roundFixtures, tradingCard, juniorHighlights, teamListRound]
 
     Sponsor:
       type: object
@@ -12631,6 +12722,8 @@ components:
           $ref: "#/components/schemas/SocialFamilyConfig"
         packColourModes:
           $ref: "#/components/schemas/PackColourModes"
+        roundSchedules:
+          $ref: "#/components/schemas/RoundSchedules"
 
     Notification:
       type: object
@@ -12997,9 +13090,144 @@ components:
                 type: integer
               teamLists:
                 type: integer
+              roundSets:
+                type: integer
+                description: "Round sets (game day, team lists, weekend wrap) drafted on the club's schedule."
               promoted:
                 type: integer
                 description: "Drafts moved to ready because their auto-post deadline passed."
+
+    PlayhqIngestRequest:
+      type: object
+      required: [collector, dump]
+      properties:
+        collector:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: "^[a-z0-9][a-z0-9_-]*$"
+          description: "Which collector produced the dump: gha-headless, manual, public-api, …"
+        planName:
+          type: string
+          maxLength: 40
+          description: "The scheduled plan this run served (weekly, matchday, …)."
+        status:
+          type: string
+          enum: [ok, partial, failed]
+          description: "Collector outcome. partial = collected with errors; failed = gave up (whatever was collected is still loaded)."
+        errors:
+          type: array
+          maxItems: 200
+          items:
+            type: object
+            additionalProperties: true
+          description: "The collector's own error list (harness __ov.status().errors)."
+        durationMs:
+          type: integer
+          minimum: 0
+        sourceName:
+          type: string
+          maxLength: 200
+          description: "Label stored as scrape_runs.source_file (defaults to collector + exportedAt)."
+        dump:
+          $ref: "#/components/schemas/PlayhqHarnessDump"
+
+    PlayhqHarnessDump:
+      type: object
+      description: "The harness export: __ov.dump() (gunzipped __ov.exportInfo/export chunks)."
+      required: [version, exportedAt, records]
+      properties:
+        version:
+          type: string
+        exportedAt:
+          type: string
+        origin:
+          type: string
+        records:
+          type: array
+          items:
+            type: object
+            required: [kind, id]
+            additionalProperties: true
+            properties:
+              key:
+                type: string
+              kind:
+                type: string
+              id:
+                type: string
+              fetchedAt:
+                type: string
+
+    PlayhqIngestResponse:
+      type: object
+      required: [status, runIds, counts, fixtureChanges, juniorGradesDropped, tenants, warnings]
+      properties:
+        status:
+          type: string
+          enum: [ok, partial, failed]
+        runIds:
+          type: array
+          items:
+            type: integer
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: "Rows upserted per playhq table."
+        fixtureChanges:
+          type: integer
+        juniorGradesDropped:
+          type: integer
+        tenants:
+          type: array
+          items:
+            type: object
+            required: [tenantId, slug, matches, inserted, updated, swept]
+            properties:
+              tenantId:
+                type: integer
+              slug:
+                type: string
+              matches:
+                type: integer
+              inserted:
+                type: integer
+              updated:
+                type: integer
+              swept:
+                type: boolean
+        warnings:
+          type: array
+          items:
+            type: string
+
+    PlayhqDuePlansResponse:
+      type: object
+      required: [now, plans]
+      properties:
+        now:
+          type: string
+          format: date-time
+        plans:
+          type: array
+          items:
+            type: object
+            required: [orgId, planName, slot, plan]
+            properties:
+              orgId:
+                type: string
+              planName:
+                type: string
+                enum: [weekly, preweekend, matchmorn, matchday, dayafter, catchup]
+              slot:
+                type: string
+                format: date-time
+                description: "The schedule slot this run serves."
+              plan:
+                type: object
+                additionalProperties: true
+                description: "Pass verbatim to the harness's __ov.start(plan)."
 
     SocialFamilySetting:
       type: object
@@ -13114,6 +13342,60 @@ components:
           description: >-
             Merged into the stored map: only the packs sent change, the others
             keep their mode.
+        roundSchedules:
+          allOf:
+            - $ref: "#/components/schemas/RoundSchedulesUpdate"
+          description: >-
+            Merged per card: only the cards sent change, the others keep their
+            schedule.
+
+    RoundSchedule:
+      type: object
+      required: [mode, day, hour]
+      properties:
+        mode:
+          type: string
+          enum: [off, perFixture, perRound]
+          description: >-
+            "perFixture" drafts one card per match ahead of it (game day two
+            days out, team lists once the XI is published). "perRound" drafts
+            the whole round as one balanced set at `day` / `hour`. "off" drafts
+            nothing. The weekend wrap is "off" or "perRound" only.
+        day:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: "Day of the week the round set is drafted (0 = Sunday), club time."
+        hour:
+          type: integer
+          minimum: 0
+          maximum: 23
+          description: "Hour of the day the round set is drafted, club time (Perth)."
+
+    RoundSchedules:
+      type: object
+      description: >-
+        When the round cards draft themselves (balanced card sets). Always
+        complete in a response: a card never saved shows its default.
+      required: [gameDay, teamLists, weekendWrap]
+      properties:
+        gameDay:
+          $ref: "#/components/schemas/RoundSchedule"
+        teamLists:
+          $ref: "#/components/schemas/RoundSchedule"
+        weekendWrap:
+          $ref: "#/components/schemas/RoundSchedule"
+
+    RoundSchedulesUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        gameDay:
+          $ref: "#/components/schemas/RoundSchedule"
+        teamLists:
+          $ref: "#/components/schemas/RoundSchedule"
+        weekendWrap:
+          $ref: "#/components/schemas/RoundSchedule"
 
     PackColourMode:
       type: string
@@ -14878,6 +15160,81 @@ components:
           allOf: [{ $ref: "#/components/schemas/ClubCorrectionMatch" }]
           nullable: true
 
+    ClubIdentityDriftItem:
+      type: object
+      required:
+        [
+          participantId,
+          kind,
+          playerId,
+          displayName,
+          stillInCentral,
+          mergedIntoParticipantId,
+          mergedIntoDisplayName,
+          mergeStatus,
+          mergedFrom,
+          curatedRows,
+          corrections,
+        ]
+      properties:
+        participantId:
+          type: string
+          description: The PlayHQ participant GUID the club still names
+        kind:
+          type: string
+          enum: [keeper, merged_away]
+          description: >-
+            keeper — a player in their own right for the club; merged_away —
+            a duplicate record merged into another player
+        playerId:
+          type: integer
+          nullable: true
+          description: The club's player id for this GUID, when it has one
+        displayName:
+          type: string
+          nullable: true
+          description: >-
+            The club's own name for the player, else the association's, else
+            the name on a dependent row. Admin-only, so a private player's
+            real name is shown.
+        stillInCentral:
+          type: boolean
+          description: >-
+            True when the association still has this player record, just with
+            no line for this club; false when the record is gone
+        mergedIntoParticipantId: { type: string, nullable: true }
+        mergedIntoDisplayName: { type: string, nullable: true }
+        mergeStatus:
+          type: string
+          nullable: true
+          enum: [suggested, confirmed]
+        mergedFrom:
+          type: array
+          items: { type: string }
+          description: Duplicate GUIDs merged into this one
+        curatedRows:
+          type: array
+          description: The club's own rows that still point at this player
+          items:
+            type: object
+            required: [table, rowId, label]
+            properties:
+              table:
+                type: string
+                description: The table the row lives in, e.g. `award_winners`
+              rowId: { type: integer }
+              label: { type: string }
+        corrections:
+          type: array
+          description: Corrections in force on this GUID's match lines
+          items:
+            type: object
+            required: [id, playhqMatchId, field]
+            properties:
+              id: { type: integer }
+              playhqMatchId: { type: string }
+              field: { $ref: "#/components/schemas/ClubCorrectionField" }
+
     DuplicateReviewBody:
       type: object
       required: [action]
@@ -14918,6 +15275,12 @@ components:
                 enum: [square, portrait, story, landscape]
               url:
                 type: string
+              page:
+                type: integer
+                description: "Slide position in a balanced card set (1 = cover or first card); absent for a single card."
+              of:
+                type: integer
+                description: "Number of slides in the set; absent for a single card."
         caption:
           type: string
         zipUrl:

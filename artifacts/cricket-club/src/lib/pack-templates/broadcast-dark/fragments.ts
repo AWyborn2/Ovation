@@ -1,3 +1,4 @@
+import type { PackLook } from "../skeleton-kit";
 import type { PackTemplateFormats } from "../types";
 import {
   SK_COND,
@@ -78,6 +79,16 @@ const BD_VARS = [
   `--sk-accent-text:${ACC}`,
   "--sk-sponsor-bg:rgba(255,255,255,.92)",
 ].join(";");
+
+/**
+ * Broadcast Dark as a skeleton-kit look, for the shared set covers
+ * (`../cover.ts`): its stage, accent chip, slashes and right-hand photo.
+ */
+export const BD_LOOK: PackLook = {
+  vars: BD_VARS,
+  layers: (photo) => (photo ? bdPhoto(photo) : "") + BD_SLASHES,
+  column: { photo: "100cqmin", wide: "124cqmin" },
+};
 
 /** The two accent slashes, top-right (card cqmin). */
 export const BD_SLASHES =

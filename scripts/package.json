@@ -24,6 +24,7 @@
     "compare-central-leaderboard": "tsx ./src/compare-central-leaderboard.ts",
     "hh-crosswalk": "tsx ./src/hh-central-crosswalk.ts",
     "hh-cutover-preview": "tsx ./src/hh-cutover-preview.ts",
+    "check-identity-drift": "tsx ./src/check-identity-drift.ts",
     "repair-hh-opponents": "tsx ./src/repair-hh-opponents.ts",
     "persist-hh-crosswalk": "tsx ./src/persist-hh-crosswalk.ts",
     "seed-hh-club-layer": "tsx ./src/seed-hh-club-layer.ts",
@@ -41,7 +42,8 @@
     "legacy:fix-a-grade-cap-duplicates": "tsx ./legacy/fix-a-grade-cap-duplicates.ts",
     "playhq-load": "tsx ./src/playhq-load.ts",
     "playhq-project-fixtures": "tsx ./src/playhq-project-fixtures.ts",
-    "test": "vitest run"
+    "playhq-upload": "tsx ./src/playhq-upload.ts",
+    "test": "vitest run && node --test playhq-sync/runner.test.mjs"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
