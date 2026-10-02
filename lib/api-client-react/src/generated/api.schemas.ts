@@ -1991,6 +1991,13 @@ export interface AdminTenant {
      * @nullable
      */
   suspendedAt?: string | null;
+  /**
+     * The tenant's linked PlayHQ organisation GUID, or null when not linked.
+     * @nullable
+     */
+  playhqOrgId?: string | null;
+  /** Whether scheduled PlayHQ sync runs for this tenant. */
+  playhqSyncEnabled?: boolean;
   /** True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults). */
   brandingComplete: boolean;
 }
@@ -2235,12 +2242,14 @@ export const UpdateTenantBodyPlan = {
 } as const;
 
 /**
- * Partial update of a tenant's plan and/or custom domain.
+ * Partial update of a tenant's plan, custom domain and/or PlayHQ sync switch.
  */
 export interface UpdateTenantBody {
   plan?: UpdateTenantBodyPlan;
   /** @nullable */
   customDomain?: string | null;
+  /** Scheduled PlayHQ sync for this tenant. When false the hourly runner plans nothing for its organisation and ingest does not project its fixtures. */
+  playhqSyncEnabled?: boolean;
 }
 
 export type ProvisionTenantBodyPlan = typeof ProvisionTenantBodyPlan[keyof typeof ProvisionTenantBodyPlan];
@@ -4487,6 +4496,98 @@ export type PlayhqDuePlansResponsePlansItem = {
 export interface PlayhqDuePlansResponse {
   now: string;
   plans: PlayhqDuePlansResponsePlansItem[];
+}
+
+export type PlayhqWatchdogResponseOpenedItemKind = typeof PlayhqWatchdogResponseOpenedItemKind[keyof typeof PlayhqWatchdogResponseOpenedItemKind];
+
+
+export const PlayhqWatchdogResponseOpenedItemKind = {
+  overdue: 'overdue',
+  failed: 'failed',
+} as const;
+
+export type PlayhqWatchdogResponseOpenedItem = {
+  orgId: string;
+  kind: PlayhqWatchdogResponseOpenedItemKind;
+  tenants: number[];
+};
+
+export type PlayhqWatchdogResponseResolvedItem = {
+  orgId: string;
+  tenants: number[];
+};
+
+export interface PlayhqWatchdogResponse {
+  checked: number;
+  opened: PlayhqWatchdogResponseOpenedItem[];
+  resolved: PlayhqWatchdogResponseResolvedItem[];
+  /** Incidents still open after this run. */
+  open: number;
+}
+
+export type PlatformPlayhqSyncOrgsItemState = typeof PlatformPlayhqSyncOrgsItemState[keyof typeof PlatformPlayhqSyncOrgsItemState];
+
+
+export const PlatformPlayhqSyncOrgsItemState = {
+  ok: 'ok',
+  overdue: 'overdue',
+  failed: 'failed',
+} as const;
+
+export type PlatformPlayhqSyncOrgsItemTenantsItem = {
+  id: number;
+  slug: string;
+  name: string;
+};
+
+export type PlatformPlayhqSyncOrgsItemDueItem = {
+  planName: string;
+  slot: string;
+  waitingMs: number;
+};
+
+export type PlatformPlayhqSyncOrgsItemOpenIncident = {
+  kind: string;
+  openedAt: string;
+} | null;
+
+export type PlatformPlayhqSyncOrgsItem = {
+  orgId: string;
+  state: PlatformPlayhqSyncOrgsItemState;
+  reasons: string[];
+  tenants: PlatformPlayhqSyncOrgsItemTenantsItem[];
+  /** @nullable */
+  lastRunAt?: string | null;
+  /** @nullable */
+  lastRunStatus?: string | null;
+  /** @nullable */
+  lastRunPlan?: string | null;
+  /** @nullable */
+  lastRunCollector?: string | null;
+  /** @nullable */
+  lastSuccessAt?: string | null;
+  due: PlatformPlayhqSyncOrgsItemDueItem[];
+  openIncident?: PlatformPlayhqSyncOrgsItemOpenIncident;
+};
+
+export interface PlatformPlayhqSync {
+  now: string;
+  orgs: PlatformPlayhqSyncOrgsItem[];
+}
+
+export interface TenantPlayhqSyncStatus {
+  /** The club is linked to a PlayHQ organisation. */
+  linked: boolean;
+  syncEnabled: boolean;
+  /**
+     * When fixtures/results last loaded from PlayHQ (ISO), or null.
+     * @nullable
+     */
+  lastRefreshedAt?: string | null;
+  /** An incident is open for this club's organisation. */
+  stale: boolean;
+  /** @nullable */
+  staleSince?: string | null;
 }
 
 export type SocialFamilySettingUpdateGrades = {[key: string]: boolean};

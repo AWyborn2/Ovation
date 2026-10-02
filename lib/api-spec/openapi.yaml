@@ -4452,6 +4452,62 @@ paths:
         "503":
           description: Ingest database not configured, or its role is not scoped to playhq
 
+  /internal/playhq/watchdog:
+    post:
+      operationId: runPlayhqSyncWatchdog
+      tags: [fixtures]
+      summary: Check PlayHQ sync health and raise / resolve incidents
+      description: >-
+        Machine-to-machine only (same `x-sync-secret` as the other /internal/playhq routes;
+        401 otherwise, 503 when the ingest database is not configured). Assesses every synced
+        organisation; opens an incident (platform email + tenant notifications) when one turns
+        overdue or failed, and resolves it (recovery email, notifications marked read) when it
+        is healthy again. Idempotent within an incident. The hourly runner calls it after
+        each run.
+      responses:
+        "200":
+          description: Watchdog outcome
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayhqWatchdogResponse"
+        "401":
+          description: Missing or wrong sync secret
+        "503":
+          description: Ingest database not configured, or its role is not scoped to playhq
+
+  /platform/admin/playhq-sync:
+    get:
+      operationId: getPlatformPlayhqSync
+      tags: [platformAdmin]
+      summary: PlayHQ scheduled-sync health for every synced organisation
+      responses:
+        "200":
+          description: Per-organisation sync health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformPlayhqSync"
+        "401":
+          description: Not a platform admin
+        "503":
+          description: Ingest database not configured
+
+  /admin/playhq-sync/status:
+    get:
+      operationId: getTenantPlayhqSyncStatus
+      tags: [fixtures]
+      summary: This club's PlayHQ sync status (last refresh, stale or not)
+      responses:
+        "200":
+          description: Sync status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantPlayhqSyncStatus"
+        "401":
+          description: Not signed in as a club admin
+
   /club-photos:
     get:
       operationId: listClubPhotos
@@ -9757,6 +9813,12 @@ components:
         suspendedAt:
           type: ["string", "null"]
           description: ISO-8601 instant the tenant was suspended, or null when active.
+        playhqOrgId:
+          type: ["string", "null"]
+          description: The tenant's linked PlayHQ organisation GUID, or null when not linked.
+        playhqSyncEnabled:
+          type: boolean
+          description: Whether scheduled PlayHQ sync runs for this tenant.
         brandingComplete:
           type: boolean
           description: >-
@@ -10133,13 +10195,18 @@ components:
 
     UpdateTenantBody:
       type: object
-      description: Partial update of a tenant's plan and/or custom domain.
+      description: Partial update of a tenant's plan, custom domain and/or PlayHQ sync switch.
       properties:
         plan:
           type: string
           enum: [free, club, pro]
         customDomain:
           type: ["string", "null"]
+        playhqSyncEnabled:
+          type: boolean
+          description: >-
+            Scheduled PlayHQ sync for this tenant. When false the hourly runner plans
+            nothing for its organisation and ingest does not project its fixtures.
 
     ProvisionTenantBody:
       type: object
@@ -13228,6 +13295,127 @@ components:
                 type: object
                 additionalProperties: true
                 description: "Pass verbatim to the harness's __ov.start(plan)."
+
+    PlayhqWatchdogResponse:
+      type: object
+      required: [checked, opened, resolved, open]
+      properties:
+        checked:
+          type: integer
+        opened:
+          type: array
+          items:
+            type: object
+            required: [orgId, kind, tenants]
+            properties:
+              orgId:
+                type: string
+              kind:
+                type: string
+                enum: [overdue, failed]
+              tenants:
+                type: array
+                items:
+                  type: integer
+        resolved:
+          type: array
+          items:
+            type: object
+            required: [orgId, tenants]
+            properties:
+              orgId:
+                type: string
+              tenants:
+                type: array
+                items:
+                  type: integer
+        open:
+          type: integer
+          description: Incidents still open after this run.
+
+    PlatformPlayhqSync:
+      type: object
+      required: [now, orgs]
+      properties:
+        now:
+          type: string
+        orgs:
+          type: array
+          items:
+            type: object
+            required: [orgId, state, reasons, tenants, due]
+            properties:
+              orgId:
+                type: string
+              state:
+                type: string
+                enum: [ok, overdue, failed]
+              reasons:
+                type: array
+                items:
+                  type: string
+              tenants:
+                type: array
+                items:
+                  type: object
+                  required: [id, slug, name]
+                  properties:
+                    id:
+                      type: integer
+                    slug:
+                      type: string
+                    name:
+                      type: string
+              lastRunAt:
+                type: ["string", "null"]
+              lastRunStatus:
+                type: ["string", "null"]
+              lastRunPlan:
+                type: ["string", "null"]
+              lastRunCollector:
+                type: ["string", "null"]
+              lastSuccessAt:
+                type: ["string", "null"]
+              due:
+                type: array
+                items:
+                  type: object
+                  required: [planName, slot, waitingMs]
+                  properties:
+                    planName:
+                      type: string
+                    slot:
+                      type: string
+                    waitingMs:
+                      type: integer
+              openIncident:
+                oneOf:
+                  - type: object
+                    required: [kind, openedAt]
+                    properties:
+                      kind:
+                        type: string
+                      openedAt:
+                        type: string
+                  - type: "null"
+
+    TenantPlayhqSyncStatus:
+      type: object
+      required: [linked, syncEnabled, stale]
+      properties:
+        linked:
+          type: boolean
+          description: The club is linked to a PlayHQ organisation.
+        syncEnabled:
+          type: boolean
+        lastRefreshedAt:
+          type: ["string", "null"]
+          description: When fixtures/results last loaded from PlayHQ (ISO), or null.
+        stale:
+          type: boolean
+          description: An incident is open for this club's organisation.
+        staleSince:
+          type: ["string", "null"]
 
     SocialFamilySetting:
       type: object

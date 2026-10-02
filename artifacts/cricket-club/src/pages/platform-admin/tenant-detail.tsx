@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { StatusPill } from "@/components/ui/stat-badge";
 import { useConfirm } from "@/components/confirm-dialog";
 import { BrandingCard } from "./branding-card";
@@ -171,8 +172,69 @@ export default function TenantDetail() {
 
         <BrandingCard key={tenant.id} tenantId={id} tenant={tenant} />
         <HistoryImportLinkCard tenantId={id} />
+        <PlayhqSyncCard
+          tenantId={id}
+          orgId={tenant.playhqOrgId ?? null}
+          enabled={tenant.playhqSyncEnabled ?? false}
+        />
       </div>
     </div>
+  );
+}
+
+/**
+ * Scheduled PlayHQ sync switch (sync plan U4). Off = the hourly runner plans nothing for
+ * this club's PlayHQ organisation and ingest doesn't project its fixtures.
+ */
+function PlayhqSyncCard({
+  tenantId,
+  orgId,
+  enabled,
+}: {
+  tenantId: number;
+  orgId: string | null;
+  enabled: boolean;
+}) {
+  const qc = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  const update = useUpdateAdminTenant({
+    mutation: {
+      onSuccess: () => {
+        setError(null);
+        qc.invalidateQueries({ queryKey: getGetAdminTenantQueryKey(tenantId) });
+        qc.invalidateQueries({ queryKey: getListAllTenantsQueryKey() });
+      },
+      onError: () => setError("Couldn't change the sync setting."),
+    },
+  });
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>PlayHQ sync</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          {orgId ? (
+            <>
+              Linked to PlayHQ organisation <span className="font-mono text-xs">{orgId}</span>. When
+              on, fixtures, results and ladders refresh automatically on the match calendar.
+            </>
+          ) : (
+            "Not linked to a PlayHQ organisation, so there is nothing to sync yet."
+          )}
+        </p>
+        <div className="flex items-center gap-3">
+          <Switch
+            id="playhq-sync"
+            checked={enabled}
+            disabled={!orgId || update.isPending}
+            onCheckedChange={(v) => update.mutate({ id: tenantId, data: { playhqSyncEnabled: v } })}
+          />
+          <Label htmlFor="playhq-sync">Scheduled sync {enabled ? "on" : "off"}</Label>
+        </div>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </CardContent>
+    </Card>
   );
 }
 

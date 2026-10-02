@@ -9,11 +9,13 @@ import express, {
 import { IngestPlayhqDumpBody } from "@workspace/api-zod";
 import { IngestNotConfiguredError, type Dump } from "@workspace/db/playhq-ingest";
 import { ingestPlayhqDump, listDuePlans } from "../lib/playhq-ingest";
+import { runWatchdog } from "../lib/playhq-health";
 import { env } from "../config";
 
 /**
- * The scheduled PlayHQ sync's two machine-to-machine endpoints:
- *   - `GET  /api/internal/playhq/plans`  — which harness plans are due now (the runner asks hourly);
+ * The scheduled PlayHQ sync's machine-to-machine endpoints:
+ *   - `GET  /api/internal/playhq/plans`    — which harness plans are due now (the runner asks hourly);
+ *   - `POST /api/internal/playhq/watchdog` — health check that opens / resolves incidents;
  *   - `POST /api/internal/playhq/ingest` — where every collector (the scheduled headless runner,
  *     a hand-run upload, later the public-API collector) hands over a harness dump.
  *
@@ -55,6 +57,20 @@ router.get("/plans", requireSyncSecret, async (req, res): Promise<void> => {
     if (sendUnavailable(req, res, err)) return;
     req.log.error({ err }, "playhq due plans failed");
     res.status(500).json({ error: "due plans failed" });
+  }
+});
+
+/**
+ * `POST /api/internal/playhq/watchdog` — assess sync health and open / resolve incidents
+ * (U8/U9). The runner calls it after every run; it is idempotent within an incident.
+ */
+router.post("/watchdog", requireSyncSecret, async (req, res): Promise<void> => {
+  try {
+    res.json(await runWatchdog(new Date(), req.log));
+  } catch (err) {
+    if (sendUnavailable(req, res, err)) return;
+    req.log.error({ err }, "playhq watchdog failed");
+    res.status(500).json({ error: "watchdog failed" });
   }
 });
 

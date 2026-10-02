@@ -48,6 +48,8 @@ import { loginRateLimiter } from "../middlewares/rate-limit";
 import { hasEntitlement, planFromString } from "../lib/entitlements";
 import { listAvailableClubs } from "../lib/available-clubs";
 import { isEmail, slugTaken } from "../lib/signup-validation";
+import { platformSyncOverview } from "../lib/playhq-health";
+import { IngestNotConfiguredError } from "@workspace/db/playhq-ingest";
 
 const router: IRouter = Router();
 
@@ -280,8 +282,11 @@ router.patch(
       return;
     }
 
-    const updates: Partial<Pick<TenantRow, "plan" | "customDomain">> = {};
+    const updates: Partial<Pick<TenantRow, "plan" | "customDomain" | "playhqSyncEnabled">> = {};
     if (parsed.data.plan !== undefined) updates.plan = parsed.data.plan;
+    // Scheduled PlayHQ sync switch (U4). Not plan-gated: sync is platform-operated.
+    if (parsed.data.playhqSyncEnabled !== undefined)
+      updates.playhqSyncEnabled = parsed.data.playhqSyncEnabled;
 
     // Custom domain is plan-gated (always enforced, independent of the
     // dormant BILLING_ENABLED flag — see entitlements.ts). Evaluate the
@@ -344,6 +349,20 @@ router.patch(
     await respondWithAdminTenant(res, row);
   },
 );
+
+/** PlayHQ scheduled-sync health for every synced organisation (sync plan U8). */
+router.get("/platform/admin/playhq-sync", requirePlatformAdmin, async (req, res): Promise<void> => {
+  try {
+    res.json(await platformSyncOverview(new Date()));
+  } catch (err) {
+    if (err instanceof IngestNotConfiguredError) {
+      res.status(503).json({ error: err.message });
+      return;
+    }
+    req.log.error({ err }, "playhq sync overview failed");
+    res.status(500).json({ error: "sync overview failed" });
+  }
+});
 
 /**
  * Archive a tenant: blocks its admin access (enforced in requireAdmin/login,

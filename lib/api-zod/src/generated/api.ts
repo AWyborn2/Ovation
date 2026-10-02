@@ -6939,6 +6939,69 @@ export const ListDuePlayhqPlansResponse = zod.object({
 
 
 /**
+ * Machine-to-machine only (same `x-sync-secret` as the other /internal/playhq routes; 401 otherwise, 503 when the ingest database is not configured). Assesses every synced organisation; opens an incident (platform email + tenant notifications) when one turns overdue or failed, and resolves it (recovery email, notifications marked read) when it is healthy again. Idempotent within an incident. The hourly runner calls it after each run.
+ * @summary Check PlayHQ sync health and raise / resolve incidents
+ */
+export const RunPlayhqSyncWatchdogResponse = zod.object({
+  "checked": zod.number(),
+  "opened": zod.array(zod.object({
+  "orgId": zod.string(),
+  "kind": zod.enum(['overdue', 'failed']),
+  "tenants": zod.array(zod.number())
+})),
+  "resolved": zod.array(zod.object({
+  "orgId": zod.string(),
+  "tenants": zod.array(zod.number())
+})),
+  "open": zod.number().describe('Incidents still open after this run.')
+})
+
+
+/**
+ * @summary PlayHQ scheduled-sync health for every synced organisation
+ */
+export const GetPlatformPlayhqSyncResponse = zod.object({
+  "now": zod.string(),
+  "orgs": zod.array(zod.object({
+  "orgId": zod.string(),
+  "state": zod.enum(['ok', 'overdue', 'failed']),
+  "reasons": zod.array(zod.string()),
+  "tenants": zod.array(zod.object({
+  "id": zod.number(),
+  "slug": zod.string(),
+  "name": zod.string()
+})),
+  "lastRunAt": zod.string().nullish(),
+  "lastRunStatus": zod.string().nullish(),
+  "lastRunPlan": zod.string().nullish(),
+  "lastRunCollector": zod.string().nullish(),
+  "lastSuccessAt": zod.string().nullish(),
+  "due": zod.array(zod.object({
+  "planName": zod.string(),
+  "slot": zod.string(),
+  "waitingMs": zod.number()
+})),
+  "openIncident": zod.union([zod.object({
+  "kind": zod.string(),
+  "openedAt": zod.string()
+}),zod.null()]).optional()
+}))
+})
+
+
+/**
+ * @summary This club's PlayHQ sync status (last refresh, stale or not)
+ */
+export const GetTenantPlayhqSyncStatusResponse = zod.object({
+  "linked": zod.boolean().describe('The club is linked to a PlayHQ organisation.'),
+  "syncEnabled": zod.boolean(),
+  "lastRefreshedAt": zod.string().nullish().describe('When fixtures\/results last loaded from PlayHQ (ISO), or null.'),
+  "stale": zod.boolean().describe('An incident is open for this club\'s organisation.'),
+  "staleSince": zod.string().nullish()
+})
+
+
+/**
  * @summary List the club's photo library, newest first (admin)
  */
 export const ListClubPhotosQueryParams = zod.object({
@@ -9288,6 +9351,8 @@ export const ListAllTenantsResponseItem = zod.object({
 }).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('The tenant\'s Broadcast imagery, surfaced so the concierge editor can show and edit the saved hero and explore photos.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
+  "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
+  "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 export const ListAllTenantsResponse = zod.array(ListAllTenantsResponseItem)
@@ -9364,6 +9429,8 @@ export const GetAdminTenantResponse = zod.object({
 }).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('The tenant\'s Broadcast imagery, surfaced so the concierge editor can show and edit the saved hero and explore photos.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
+  "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
+  "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.'),
   "admins": zod.array(zod.object({
@@ -9383,8 +9450,9 @@ export const UpdateAdminTenantParams = zod.object({
 
 export const UpdateAdminTenantBody = zod.object({
   "plan": zod.enum(['free', 'club', 'pro']).optional(),
-  "customDomain": zod.string().nullish()
-}).describe('Partial update of a tenant\'s plan and\/or custom domain.')
+  "customDomain": zod.string().nullish(),
+  "playhqSyncEnabled": zod.boolean().optional().describe('Scheduled PlayHQ sync for this tenant. When false the hourly runner plans nothing for its organisation and ingest does not project its fixtures.')
+}).describe('Partial update of a tenant\'s plan, custom domain and\/or PlayHQ sync switch.')
 
 export const updateAdminTenantResponseHeroImagesOneHomeMax = 2048;
 
@@ -9432,6 +9500,8 @@ export const UpdateAdminTenantResponse = zod.object({
 }).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('The tenant\'s Broadcast imagery, surfaced so the concierge editor can show and edit the saved hero and explore photos.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
+  "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
+  "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 
@@ -9532,6 +9602,8 @@ export const UpdateAdminTenantBrandResponse = zod.object({
 }).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('The tenant\'s Broadcast imagery, surfaced so the concierge editor can show and edit the saved hero and explore photos.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
+  "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
+  "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.'),
   "admins": zod.array(zod.object({
@@ -9595,6 +9667,8 @@ export const ArchiveAdminTenantResponse = zod.object({
 }).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('The tenant\'s Broadcast imagery, surfaced so the concierge editor can show and edit the saved hero and explore photos.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
+  "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
+  "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 
@@ -9652,6 +9726,8 @@ export const RestoreAdminTenantResponse = zod.object({
 }).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('The tenant\'s Broadcast imagery, surfaced so the concierge editor can show and edit the saved hero and explore photos.'),
   "lastActiveAt": zod.string().nullish().describe('ISO-8601 instant a club admin last acted on this tenant, or null if never active (the onboarding-stall signal). Throttled server-side.'),
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
+  "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
+  "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 

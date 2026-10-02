@@ -120,6 +120,36 @@ describe("platform-admin tenant management", () => {
     expect(row.plan).toBe("club");
   });
 
+  it("switches a tenant's scheduled PlayHQ sync on and off (any plan)", async () => {
+    const on = await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", platformCookie)
+      .send({ playhqSyncEnabled: true })
+      .expect(200);
+    expect(on.body.playhqSyncEnabled).toBe(true);
+    expect(on.body).toHaveProperty("playhqOrgId");
+
+    const off = await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", platformCookie)
+      .send({ playhqSyncEnabled: false })
+      .expect(200);
+    expect(off.body.playhqSyncEnabled).toBe(false);
+    const [row] = await db
+      .select({ v: tenantsTable.playhqSyncEnabled })
+      .from(tenantsTable)
+      .where(eq(tenantsTable.id, throwawayTenantId));
+    expect(row.v).toBe(false);
+  });
+
+  it("refuses the sync switch to a club-admin session", async () => {
+    await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", clubAdminCookie)
+      .send({ playhqSyncEnabled: true })
+      .expect(401);
+  });
+
   it("rejects setting a custom domain on a non-Pro tenant, even with BILLING_ENABLED unset (402)", async () => {
     // Tenant is "club" tier from the previous test — club doesn't include
     // customDomain, and this gate stays enforced regardless of the dormant flag.

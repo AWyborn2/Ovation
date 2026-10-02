@@ -100,6 +100,11 @@ export const tenantsTable = pgTable(
     // Fixtures & Results page and the fixtures projection filter on it. Null =
     // not linked; those surfaces render "not linked" rather than guessing.
     playhqOrgId: text("playhq_org_id"),
+    // Scheduled PlayHQ sync for this tenant (docs/plans/2026-10-01-001-feat-playhq-
+    // scheduled-sync-plan.md, U4): when false, the hourly runner plans nothing for its
+    // organisation and ingest does not project its fixtures. A platform-admin switch;
+    // migration 0024 turned it on once for tenants already linked to an organisation.
+    playhqSyncEnabled: boolean("playhq_sync_enabled").notNull().default(false),
     // Broadcast imagery: tenant-uploaded hero and explore-card photos, keyed by
     // slot (`home`, `juniors`, `honours`, `explore.{honours,players,premierships}`),
     // each an `/api/storage/...` path or null. Null column = no imagery; heroes
