@@ -280,8 +280,11 @@ router.patch(
       return;
     }
 
-    const updates: Partial<Pick<TenantRow, "plan" | "customDomain">> = {};
+    const updates: Partial<Pick<TenantRow, "plan" | "customDomain" | "playhqSyncEnabled">> = {};
     if (parsed.data.plan !== undefined) updates.plan = parsed.data.plan;
+    // Scheduled PlayHQ sync switch (U4). Not plan-gated: sync is platform-operated.
+    if (parsed.data.playhqSyncEnabled !== undefined)
+      updates.playhqSyncEnabled = parsed.data.playhqSyncEnabled;
 
     // Custom domain is plan-gated (always enforced, independent of the
     // dormant BILLING_ENABLED flag — see entitlements.ts). Evaluate the

@@ -132,6 +132,11 @@ export interface ProjectionOpts {
    */
   orgIds?: string[];
   /**
+   * Only tenants whose scheduled sync switch (`playhq_sync_enabled`) is on. The ingest
+   * endpoint sets it; the hand-run CLI projects every linked tenant as before.
+   */
+  syncEnabledOnly?: boolean;
+  /**
    * Reader for `playhq.*`. Absent → a client is opened on CENTRAL_DATABASE_URL (CLI
    * behaviour); the ingest endpoint passes its own `playhq`-scoped pool.
    */
@@ -219,6 +224,7 @@ export async function projectFixtures(opts: ProjectionOpts = {}): Promise<Projec
 
   const tenantConds = [isNotNull(tenantsTable.playhqOrgId)];
   if (opts.tenantId) tenantConds.push(eq(tenantsTable.id, opts.tenantId));
+  if (opts.syncEnabledOnly) tenantConds.push(eq(tenantsTable.playhqSyncEnabled, true));
   if (opts.orgIds) {
     const wanted = [...new Set(opts.orgIds.map((o) => o.toLowerCase()))];
     if (wanted.length === 0) {

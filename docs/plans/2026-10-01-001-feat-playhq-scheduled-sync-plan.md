@@ -69,8 +69,11 @@ re-runs will show when the list fills.
 - There are no chunked uploads yet (KTD6). The S1 weekly plan exports 69 KB gzipped, so a single
   request with a 50 MB decompressed limit and `Content-Encoding: gzip` covers every planned plan.
   Add chunking if a dump outgrows it.
-- U4 (`playhq_sync_enabled`) isn't built. Until it is, ingest projects every tenant linked to an
-  organisation in the dump, exactly as the CLI does.
+- U4 is built (migration `0024_tenant_playhq_sync`, approved by Ash to apply to prod). The
+  column defaults to off, but the migration switches it on once for tenants already linked to an
+  organisation. Platform admins toggle it on the tenant detail page. The due-plans endpoint
+  and ingest projection skip tenants that are off; the hand-run CLI still projects every
+  linked tenant.
 - The junior filter (R3) applies on the endpoint path only. The hand-run CLI keeps its old
   behaviour; the harness already drops juniors by default.
 

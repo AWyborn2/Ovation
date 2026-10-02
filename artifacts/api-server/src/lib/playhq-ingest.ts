@@ -1,4 +1,4 @@
-import { and, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { db, tenantsTable } from "@workspace/db";
 import {
   assertIngestScope,
@@ -126,6 +126,7 @@ export async function ingestPlayhqDump(
   try {
     summaries = await projectFixtures({
       orgIds,
+      syncEnabledOnly: true,
       central: reader,
       log: (line) => log.info({ orgIds: orgIds.length }, `playhq projection: ${line}`),
     });
@@ -178,7 +179,8 @@ export async function ingestPlayhqDump(
 }
 
 /**
- * The plans due now for every PlayHQ organisation linked to an active tenant (U5). Reads
+ * The plans due now for every PlayHQ organisation linked to an active tenant with sync
+ * switched on (U5, U4). Reads
  * `playhq.*` through the ingest pool: sync is either fully configured or answers 503.
  */
 export async function listDuePlans(now: Date): Promise<DuePlansResponse> {
@@ -187,7 +189,13 @@ export async function listDuePlans(now: Date): Promise<DuePlansResponse> {
   const linked = await db
     .selectDistinct({ orgId: tenantsTable.playhqOrgId })
     .from(tenantsTable)
-    .where(and(isNotNull(tenantsTable.playhqOrgId), isNull(tenantsTable.suspendedAt)));
+    .where(
+      and(
+        isNotNull(tenantsTable.playhqOrgId),
+        isNull(tenantsTable.suspendedAt),
+        eq(tenantsTable.playhqSyncEnabled, true),
+      ),
+    );
   const orgIds = linked.map((t) => t.orgId!.toLowerCase());
   const { matches, lastRuns } = await loadCadenceInputs(pool as unknown as Queryable, orgIds);
   return {

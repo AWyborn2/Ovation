@@ -8,10 +8,12 @@
 import type { UpdateTenantBodyPlan } from './updateTenantBodyPlan';
 
 /**
- * Partial update of a tenant's plan and/or custom domain.
+ * Partial update of a tenant's plan, custom domain and/or PlayHQ sync switch.
  */
 export interface UpdateTenantBody {
   plan?: UpdateTenantBodyPlan;
   /** @nullable */
   customDomain?: string | null;
+  /** Scheduled PlayHQ sync for this tenant. When false the hourly runner plans nothing for its organisation and ingest does not project its fixtures. */
+  playhqSyncEnabled?: boolean;
 }

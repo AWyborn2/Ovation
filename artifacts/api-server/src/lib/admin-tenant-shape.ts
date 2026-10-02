@@ -30,6 +30,8 @@ export function toAdminTenant(t: TenantRow, centralClubName: string | null, admi
     heroImages: t.heroImages ?? null,
     lastActiveAt: t.lastActiveAt instanceof Date ? t.lastActiveAt.toISOString() : t.lastActiveAt,
     suspendedAt: t.suspendedAt instanceof Date ? t.suspendedAt.toISOString() : t.suspendedAt,
+    playhqOrgId: t.playhqOrgId,
+    playhqSyncEnabled: t.playhqSyncEnabled,
     // Branding is "complete" when the tenant set its own logo AND background colour
     // (explicit branding, not defaults / clubs-register fallback). Derived, not
     // stored, so it can't drift from the underlying columns.

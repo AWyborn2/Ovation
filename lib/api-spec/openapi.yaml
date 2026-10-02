@@ -9757,6 +9757,12 @@ components:
         suspendedAt:
           type: ["string", "null"]
           description: ISO-8601 instant the tenant was suspended, or null when active.
+        playhqOrgId:
+          type: ["string", "null"]
+          description: The tenant's linked PlayHQ organisation GUID, or null when not linked.
+        playhqSyncEnabled:
+          type: boolean
+          description: Whether scheduled PlayHQ sync runs for this tenant.
         brandingComplete:
           type: boolean
           description: >-
@@ -10133,13 +10139,18 @@ components:
 
     UpdateTenantBody:
       type: object
-      description: Partial update of a tenant's plan and/or custom domain.
+      description: Partial update of a tenant's plan, custom domain and/or PlayHQ sync switch.
       properties:
         plan:
           type: string
           enum: [free, club, pro]
         customDomain:
           type: ["string", "null"]
+        playhqSyncEnabled:
+          type: boolean
+          description: >-
+            Scheduled PlayHQ sync for this tenant. When false the hourly runner plans
+            nothing for its organisation and ingest does not project its fixtures.
 
     ProvisionTenantBody:
       type: object

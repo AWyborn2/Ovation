@@ -62,6 +62,13 @@ export interface AdminTenant {
      * @nullable
      */
   suspendedAt?: string | null;
+  /**
+     * The tenant's linked PlayHQ organisation GUID, or null when not linked.
+     * @nullable
+     */
+  playhqOrgId?: string | null;
+  /** Whether scheduled PlayHQ sync runs for this tenant. */
+  playhqSyncEnabled?: boolean;
   /** True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults). */
   brandingComplete: boolean;
 }
