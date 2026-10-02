@@ -23,6 +23,12 @@ vitest lives in `artifacts/api-server` (config `vitest.config.ts`, scripts
   `beforeAll` — it's read at call time, so import order doesn't matter.
 
 ## Gotcha
+- Run focused tests with `pnpm --filter @workspace/api-server exec vitest run <files>`
+  (and the equivalent web package command), not `run test -- <files>`.
+  **Why:** The extra standalone `--` was forwarded to Vitest and the requested
+  file filters were ignored, unexpectedly running the broad DB-backed suite.
+  **How to apply:** Check the configured database target and suite isolation
+  before running tests; use the direct `exec` command whenever scope matters.
 - Per-package `pnpm --filter @workspace/api-server typecheck` fails with stale
   "no exported member" errors from `@workspace/db` / `@workspace/api-zod` unless
   the composite libs are built first. Run root `pnpm run typecheck` (it does
