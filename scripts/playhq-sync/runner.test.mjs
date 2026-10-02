@@ -24,7 +24,11 @@ function fakeServer(
   const calls = [];
   const fetchImpl = async (url, init = {}) => {
     calls.push({ url, init });
-    const body = url.endsWith("/plans") ? { now: "x", plans } : ingestReply;
+    const body = url.endsWith("/plans")
+      ? { now: "x", plans }
+      : url.endsWith("/watchdog")
+        ? WATCHDOG_OK
+        : ingestReply;
     return { ok: true, status: 200, text: async () => JSON.stringify(body) };
   };
   return { calls, fetchImpl };
@@ -55,6 +59,7 @@ function fakeBrowser(statuses, records = [{ kind: "plan", id: "p" }]) {
 }
 
 const sleep = async () => {};
+const WATCHDOG_OK = { checked: 1, opened: [], resolved: [], open: 0 };
 const done = { phase: "done", finishedAt: "t", errorCount: 0, errors: [], stats: { failed: 0 } };
 
 test("runStatus: ok, partial on errors or timeout, failed on a harness error", () => {
@@ -88,8 +93,11 @@ test("no plans due: never launches a browser", async () => {
   });
   assert.equal(r.due, 0);
   assert.equal(launched, false);
-  assert.equal(calls.length, 1);
+  // plans, then the health check — the watchdog runs even when nothing is due.
+  assert.equal(calls.length, 2);
   assert.equal(calls[0].url, "https://ovation.test/api/internal/playhq/plans");
+  assert.equal(calls[1].url, "https://ovation.test/api/internal/playhq/watchdog");
+  assert.equal(calls[1].init.method, "POST");
   assert.equal(calls[0].init.headers["x-sync-secret"], "s3cret");
 });
 
@@ -144,6 +152,8 @@ test("a failed upload is reported and the remaining plans still run", async () =
         status: 200,
         text: async () => JSON.stringify({ plans: [DUE, { ...DUE, planName: "matchday" }] }),
       };
+    if (url.endsWith("/watchdog"))
+      return { ok: true, status: 200, text: async () => JSON.stringify(WATCHDOG_OK) };
     n++;
     return n === 1
       ? { ok: false, status: 503, text: async () => '{"error":"not configured"}' }
@@ -185,4 +195,14 @@ test("ONLY_PLAN / ONLY_ORG narrow a manual run", async () => {
 
 test("refuses to run without the API URL or secret", async () => {
   await assert.rejects(run({ env: {}, launch: async () => ({}) }), /OVATION_API_URL/);
+});
+
+test("a failing health check fails the run (so GitHub's own failure email fires too)", async () => {
+  const fetchImpl = async (url) =>
+    url.endsWith("/plans")
+      ? { ok: true, status: 200, text: async () => JSON.stringify({ plans: [] }) }
+      : { ok: false, status: 503, text: async () => '{"error":"not configured"}' };
+  const r = await run({ env: ENV, fetchImpl, launch: async () => ({}), log: () => {} });
+  assert.equal(r.failures.length, 1);
+  assert.match(r.failures[0], /^watchdog: .*HTTP 503/);
 });

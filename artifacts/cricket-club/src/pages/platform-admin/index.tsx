@@ -6,6 +6,7 @@ import HistoryImportPage from "./history-import";
 import ProvisionTenant from "./provision";
 import PlatformBrand from "./platform-brand";
 import ProvisioningExclusions from "./provisioning-exclusions";
+import PlayhqSyncPage from "./playhq-sync";
 
 /**
  * The platform-admin (super-admin) console, mounted on the apex host inside
@@ -20,6 +21,7 @@ export function PlatformAdminRoutes() {
         <Route path="/platform-admin/brand" component={PlatformBrand} />
         <Route path="/platform-admin/provision" component={ProvisionTenant} />
         <Route path="/platform-admin/provisioning-exclusions" component={ProvisioningExclusions} />
+        <Route path="/platform-admin/playhq-sync" component={PlayhqSyncPage} />
         <Route path="/platform-admin/tenants/:id/history-import" component={HistoryImportPage} />
         <Route path="/platform-admin/tenants/:id" component={TenantDetail} />
       </Switch>
