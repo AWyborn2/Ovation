@@ -4498,6 +4498,98 @@ export interface PlayhqDuePlansResponse {
   plans: PlayhqDuePlansResponsePlansItem[];
 }
 
+export type PlayhqWatchdogResponseOpenedItemKind = typeof PlayhqWatchdogResponseOpenedItemKind[keyof typeof PlayhqWatchdogResponseOpenedItemKind];
+
+
+export const PlayhqWatchdogResponseOpenedItemKind = {
+  overdue: 'overdue',
+  failed: 'failed',
+} as const;
+
+export type PlayhqWatchdogResponseOpenedItem = {
+  orgId: string;
+  kind: PlayhqWatchdogResponseOpenedItemKind;
+  tenants: number[];
+};
+
+export type PlayhqWatchdogResponseResolvedItem = {
+  orgId: string;
+  tenants: number[];
+};
+
+export interface PlayhqWatchdogResponse {
+  checked: number;
+  opened: PlayhqWatchdogResponseOpenedItem[];
+  resolved: PlayhqWatchdogResponseResolvedItem[];
+  /** Incidents still open after this run. */
+  open: number;
+}
+
+export type PlatformPlayhqSyncOrgsItemState = typeof PlatformPlayhqSyncOrgsItemState[keyof typeof PlatformPlayhqSyncOrgsItemState];
+
+
+export const PlatformPlayhqSyncOrgsItemState = {
+  ok: 'ok',
+  overdue: 'overdue',
+  failed: 'failed',
+} as const;
+
+export type PlatformPlayhqSyncOrgsItemTenantsItem = {
+  id: number;
+  slug: string;
+  name: string;
+};
+
+export type PlatformPlayhqSyncOrgsItemDueItem = {
+  planName: string;
+  slot: string;
+  waitingMs: number;
+};
+
+export type PlatformPlayhqSyncOrgsItemOpenIncident = {
+  kind: string;
+  openedAt: string;
+} | null;
+
+export type PlatformPlayhqSyncOrgsItem = {
+  orgId: string;
+  state: PlatformPlayhqSyncOrgsItemState;
+  reasons: string[];
+  tenants: PlatformPlayhqSyncOrgsItemTenantsItem[];
+  /** @nullable */
+  lastRunAt?: string | null;
+  /** @nullable */
+  lastRunStatus?: string | null;
+  /** @nullable */
+  lastRunPlan?: string | null;
+  /** @nullable */
+  lastRunCollector?: string | null;
+  /** @nullable */
+  lastSuccessAt?: string | null;
+  due: PlatformPlayhqSyncOrgsItemDueItem[];
+  openIncident?: PlatformPlayhqSyncOrgsItemOpenIncident;
+};
+
+export interface PlatformPlayhqSync {
+  now: string;
+  orgs: PlatformPlayhqSyncOrgsItem[];
+}
+
+export interface TenantPlayhqSyncStatus {
+  /** The club is linked to a PlayHQ organisation. */
+  linked: boolean;
+  syncEnabled: boolean;
+  /**
+     * When fixtures/results last loaded from PlayHQ (ISO), or null.
+     * @nullable
+     */
+  lastRefreshedAt?: string | null;
+  /** An incident is open for this club's organisation. */
+  stale: boolean;
+  /** @nullable */
+  staleSince?: string | null;
+}
+
 export type SocialFamilySettingUpdateGrades = {[key: string]: boolean};
 
 export interface SocialFamilySettingUpdate {

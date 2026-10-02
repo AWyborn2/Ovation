@@ -12,6 +12,7 @@ import {
   useGetSocialSettings,
   useUpdateSocialSettings,
   getGetSocialSettingsQueryKey,
+  useGetTenantPlayhqSyncStatus,
 } from "@workspace/api-client-react";
 import type { Fixture, TeamListPlayer } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,6 +73,30 @@ function formatStart(iso: string): string {
   });
 }
 
+/**
+ * "Last refreshed from PlayHQ" for clubs on scheduled sync, and a warning while the
+ * watchdog has an incident open for the club's organisation (sync plan U9). Renders nothing
+ * for clubs that aren't linked or synced.
+ */
+function PlayhqSyncLine() {
+  const { data } = useGetTenantPlayhqSyncStatus();
+  if (!data?.linked || !data.syncEnabled) return null;
+  const last = data.lastRefreshedAt
+    ? new Date(data.lastRefreshedAt).toLocaleString("en-AU", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : "not yet";
+  if (data.stale)
+    return (
+      <div className="mt-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
+        PlayHQ fixtures aren&rsquo;t updating right now (last refreshed {last}). Ovation has been
+        alerted; there&rsquo;s nothing you need to do.
+      </div>
+    );
+  return <p className="mt-1 text-xs text-muted-foreground">Last refreshed from PlayHQ: {last}</p>;
+}
+
 export default function AdminFixtures() {
   const queryClient = useQueryClient();
   const confirm = useConfirm();
@@ -129,6 +154,7 @@ export default function AdminFixtures() {
             Upcoming fixtures and team lists. These feed the Match Day, Team List and Countdown
             social cards.
           </p>
+          <PlayhqSyncLine />
         </div>
         <Button onClick={() => setShowNew((v) => !v)} variant={showNew ? "outline" : "default"}>
           {showNew ? "Close form" : "New fixture"}

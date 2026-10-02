@@ -111,9 +111,42 @@ export async function run({
   log(
     `${due.length} plan(s) due${plans.length !== due.length ? ` (${plans.length} before filters)` : ""}`,
   );
-  const result = { due: due.length, uploaded: [], failures: [] };
-  if (due.length === 0) return result;
+  const result = { due: due.length, uploaded: [], failures: [], watchdog: null };
+  if (due.length > 0)
+    await collectAll(due, result, {
+      env,
+      base,
+      secret,
+      fetchImpl,
+      launch,
+      readHarness,
+      sleep,
+      log,
+    });
 
+  // Health check after every run, including runs with nothing due: the server opens or
+  // resolves incidents (alert emails, club notices). A watchdog error fails the job too, so
+  // GitHub's own failure email is a second line of alerting.
+  try {
+    result.watchdog = await api(fetchImpl, base, secret, "/internal/playhq/watchdog", {
+      method: "POST",
+    });
+    const w = result.watchdog;
+    log(
+      `watchdog: ${w.checked} org(s) checked, ${w.opened.length} opened, ${w.resolved.length} resolved, ${w.open} open`,
+    );
+  } catch (err) {
+    log(`watchdog: FAILED ${err?.message ?? err}`);
+    result.failures.push(`watchdog: ${err?.message ?? err}`);
+  }
+  return result;
+}
+
+async function collectAll(
+  due,
+  result,
+  { env, base, secret, fetchImpl, launch, readHarness, sleep, log },
+) {
   const harness = await readHarness(env.HARNESS_PATH);
   const browser = await launch();
   try {
@@ -147,7 +180,6 @@ export async function run({
   } finally {
     await browser.close().catch(() => {});
   }
-  return result;
 }
 
 // CLI entry (the workflow). puppeteer-core is resolved from the working directory, where the

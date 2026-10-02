@@ -49,6 +49,28 @@ retries, with both the headless and a desktop user agent. That counts as day 1; 
 days out). The guessed `/lineups`, `/players` and `/teams` paths don't exist. The 8–10 Oct
 re-runs will show when the list fills.
 
+**M3 (U8, U9): built.**
+
+- Health is a pure `assessHealth` (`lib/db/src/playhq-ingest/health.ts`):
+  - _overdue_: a due plan has waited over 26 h (weekly) or 3 h (match-calendar plans);
+  - _failed_: the latest run failed outright;
+  - _ok_: otherwise.
+- Incidents are app-DB rows (`playhq_sync_incidents`, migration 0025), with at most one open
+  per organisation.
+- `POST /internal/playhq/watchdog` opens or resolves incidents:
+  - one email to `PLATFORM_ALERT_EMAIL` (falls back to `PLATFORM_ADMIN_EMAIL`) on open, and one
+    on recovery;
+  - on open, one in-app notification per affected tenant, emailed to the club's existing Social
+    Studio notification address when set;
+  - on recovery, those notifications are marked read.
+- **Deviation:** the runner calls the watchdog after every run, rather than a separate Replit
+  Scheduled Deployment. If the workflow stops entirely, GitHub's own failure emails and the
+  platform page are the backstop. A Replit Scheduled Deployment hitting the watchdog can be
+  added later for full independence.
+- Platform console: "PlayHQ sync" page. Admin fixtures page: "Last refreshed from PlayHQ" plus
+  a warning banner while an incident is open.
+- No separate per-tenant email opt-in: the Social Studio notification address serves.
+
 **U5–U7: built, on PR #261.**
 
 - U5: `GET /api/internal/playhq/plans` serves `duePlans` (`lib/db/src/playhq-ingest/cadence.ts`).

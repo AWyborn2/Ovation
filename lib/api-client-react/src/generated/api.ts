@@ -236,6 +236,7 @@ import type {
   PlatformAdmin,
   PlatformBrand,
   PlatformLoginBody,
+  PlatformPlayhqSync,
   Player,
   PlayerCuration,
   PlayerCurationBody,
@@ -253,6 +254,7 @@ import type {
   PlayhqIngestRequest,
   PlayhqIngestResponse,
   PlayhqLadder,
+  PlayhqWatchdogResponse,
   PointsConfigInput,
   PointsConfigUpdate,
   PointsLeaderboard,
@@ -307,6 +309,7 @@ import type {
   TeamOfDecadeMemberUpdate,
   TenantBrand,
   TenantPlan,
+  TenantPlayhqSyncStatus,
   TourContent,
   TourContentUpdate,
   TrackedLink,
@@ -15529,6 +15532,231 @@ export function useListDuePlayhqPlans<TData = Awaited<ReturnType<typeof listDueP
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListDuePlayhqPlansQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRunPlayhqSyncWatchdogUrl = () => {
+
+
+
+
+  return `/api/internal/playhq/watchdog`
+}
+
+/**
+ * Machine-to-machine only (same `x-sync-secret` as the other /internal/playhq routes; 401 otherwise, 503 when the ingest database is not configured). Assesses every synced organisation; opens an incident (platform email + tenant notifications) when one turns overdue or failed, and resolves it (recovery email, notifications marked read) when it is healthy again. Idempotent within an incident. The hourly runner calls it after each run.
+ * @summary Check PlayHQ sync health and raise / resolve incidents
+ */
+export const runPlayhqSyncWatchdog = async ( options?: RequestInit): Promise<PlayhqWatchdogResponse> => {
+
+  return customFetch<PlayhqWatchdogResponse>(getRunPlayhqSyncWatchdogUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRunPlayhqSyncWatchdogMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runPlayhqSyncWatchdog>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runPlayhqSyncWatchdog>>, TError,void, TContext> => {
+
+const mutationKey = ['runPlayhqSyncWatchdog'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runPlayhqSyncWatchdog>>, void> = () => {
+
+
+          return  runPlayhqSyncWatchdog(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunPlayhqSyncWatchdogMutationResult = NonNullable<Awaited<ReturnType<typeof runPlayhqSyncWatchdog>>>
+
+    export type RunPlayhqSyncWatchdogMutationError = ErrorType<void>
+
+    /**
+ * @summary Check PlayHQ sync health and raise / resolve incidents
+ */
+export const useRunPlayhqSyncWatchdog = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runPlayhqSyncWatchdog>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runPlayhqSyncWatchdog>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRunPlayhqSyncWatchdogMutationOptions(options));
+    }
+
+export const getGetPlatformPlayhqSyncUrl = () => {
+
+
+
+
+  return `/api/platform/admin/playhq-sync`
+}
+
+/**
+ * @summary PlayHQ scheduled-sync health for every synced organisation
+ */
+export const getPlatformPlayhqSync = async ( options?: RequestInit): Promise<PlatformPlayhqSync> => {
+
+  return customFetch<PlatformPlayhqSync>(getGetPlatformPlayhqSyncUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlatformPlayhqSyncQueryKey = () => {
+    return [
+    `/api/platform/admin/playhq-sync`
+    ] as const;
+    }
+
+
+export const getGetPlatformPlayhqSyncQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformPlayhqSync>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformPlayhqSync>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlatformPlayhqSyncQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformPlayhqSync>>> = ({ signal }) => getPlatformPlayhqSync({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformPlayhqSync>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlatformPlayhqSyncQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformPlayhqSync>>>
+export type GetPlatformPlayhqSyncQueryError = ErrorType<void>
+
+
+/**
+ * @summary PlayHQ scheduled-sync health for every synced organisation
+ */
+
+export function useGetPlatformPlayhqSync<TData = Awaited<ReturnType<typeof getPlatformPlayhqSync>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformPlayhqSync>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlatformPlayhqSyncQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetTenantPlayhqSyncStatusUrl = () => {
+
+
+
+
+  return `/api/admin/playhq-sync/status`
+}
+
+/**
+ * @summary This club's PlayHQ sync status (last refresh, stale or not)
+ */
+export const getTenantPlayhqSyncStatus = async ( options?: RequestInit): Promise<TenantPlayhqSyncStatus> => {
+
+  return customFetch<TenantPlayhqSyncStatus>(getGetTenantPlayhqSyncStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTenantPlayhqSyncStatusQueryKey = () => {
+    return [
+    `/api/admin/playhq-sync/status`
+    ] as const;
+    }
+
+
+export const getGetTenantPlayhqSyncStatusQueryOptions = <TData = Awaited<ReturnType<typeof getTenantPlayhqSyncStatus>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTenantPlayhqSyncStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTenantPlayhqSyncStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTenantPlayhqSyncStatus>>> = ({ signal }) => getTenantPlayhqSyncStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTenantPlayhqSyncStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTenantPlayhqSyncStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getTenantPlayhqSyncStatus>>>
+export type GetTenantPlayhqSyncStatusQueryError = ErrorType<void>
+
+
+/**
+ * @summary This club's PlayHQ sync status (last refresh, stale or not)
+ */
+
+export function useGetTenantPlayhqSyncStatus<TData = Awaited<ReturnType<typeof getTenantPlayhqSyncStatus>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTenantPlayhqSyncStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTenantPlayhqSyncStatusQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

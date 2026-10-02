@@ -176,6 +176,13 @@
       "when": 1790902797743,
       "tag": "0024_tenant_playhq_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790903712844,
+      "tag": "0025_playhq_sync_incidents",
+      "breakpoints": true
     }
   ]
 }

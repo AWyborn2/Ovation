@@ -15,7 +15,13 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { and, eq, like } from "drizzle-orm";
 import app from "../app";
-import { db, tenantsTable, fixturesTable, socialDraftsTable } from "@workspace/db";
+import {
+  db,
+  tenantsTable,
+  fixturesTable,
+  notificationsTable,
+  socialDraftsTable,
+} from "@workspace/db";
 import { closePlayhqIngestPool } from "@workspace/db/playhq-ingest";
 
 const SQL_DIR = path.resolve(__dirname, "../../../../scripts/sql");
@@ -166,6 +172,9 @@ afterAll(async () => {
   await closePlayhqIngestPool();
   await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId));
   await db.delete(fixturesTable).where(eq(fixturesTable.tenantId, tenantId));
+  // The runner round trip runs the watchdog, which may notify a test tenant.
+  await db.delete(notificationsTable).where(eq(notificationsTable.tenantId, tenantId));
+  await admin.query(`delete from playhq_sync_incidents where org_id = $1`, [ORG]);
   await db.delete(tenantsTable).where(eq(tenantsTable.id, tenantId));
   const matches = [SENIOR_MATCH, JUNIOR_MATCH];
   await admin.query(`delete from playhq.fixture_changes where match_id = any($1::uuid[])`, [
@@ -514,6 +523,8 @@ describe("scheduled runner → plans → ingest (round trip)", () => {
   afterAll(async () => {
     await new Promise((r) => server.close(r));
     await admin.query(`delete from playhq.scrape_runs where org_id = $1`, [ORG4]);
+    await admin.query(`delete from playhq_sync_incidents where org_id = $1`, [ORG4]);
+    await db.delete(notificationsTable).where(eq(notificationsTable.tenantId, tenant4));
     await db.delete(tenantsTable).where(eq(tenantsTable.id, tenant4));
   });
 

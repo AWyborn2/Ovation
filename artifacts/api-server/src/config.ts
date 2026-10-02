@@ -85,6 +85,8 @@ export const env = {
    * @workspace/db/playhq-ingest's pool; declared here so it is listed with the rest.
    */
   PLAYHQ_INGEST_DATABASE_URL: () => optional("PLAYHQ_INGEST_DATABASE_URL"),
+  /** Where PlayHQ sync incident alerts go; falls back to PLATFORM_ADMIN_EMAIL. */
+  PLATFORM_ALERT_EMAIL: () => optional("PLATFORM_ALERT_EMAIL"),
 
   // ── Email (Resend) ───────────────────────────────────────────────────────
   /** Resend API key; unset = email off (notifications stay in-app). */
