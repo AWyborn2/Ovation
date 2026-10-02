@@ -66,3 +66,4 @@
 - [Honour display grids & themes](honour-display-grids-themes.md) — admin TV boards: opt-in season-grid layout, per-board styling, skins/colour/font overrides; gridCatalog drives column pickers.
 - [Replit pnpm publish bootstrap](replit-pnpm-publish.md) — don't exact-pin pnpm in packageManager here; Replit's bootstrap can recursively self-install and abort before app compilation.
 - [Club Kit pack + Studio element library](studio-elements.md) — club-kit-v1 is card-cqmin with per-format markup and `--ck-*` rootVars (club-only colour mode); Studio `element` layers reuse the same parts via a unit fn; props escaped; junior names masked.
+- [Development host smoke tests](development-host-smoke-tests.md) — public dev host and loopback can select different platform/club modes; confirm the mode before browser tests.

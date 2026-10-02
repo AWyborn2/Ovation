@@ -9,6 +9,12 @@ Keep the Supabase app live while rehearsing the data copy into Replit developmen
 
 **How to apply:** A rehearsal is not permission to switch app connections, change secrets, publish, or modify production. Require explicit authorization for a later cutover.
 
+During development database activation and migrations, do not connect to Supabase, including for read-only verification; leave secrets and deployment settings unchanged and do not publish.
+
+**Why:** The user repeatedly excluded these actions from the authorized development cutover.
+
+**How to apply:** Confirm development connection targets before executing commands. Treat any production work or external-source verification as a separate request requiring authorization.
+
 Shell `PG*` credentials and application connection URLs can reach different database servers. Verify the target explicitly rather than assuming plain `psql` reaches the app's current database.
 
 **Why:** During this transition, the workspace's shell credentials reached the built-in Replit development server while the application URLs still reached Supabase. Do not assume those targets remain unchanged.
