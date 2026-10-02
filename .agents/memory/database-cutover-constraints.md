@@ -11,6 +11,12 @@ Keep the Supabase app live while rehearsing the data copy into Replit developmen
 
 Shell `PG*` credentials and application connection URLs can reach different database servers. Verify the target explicitly rather than assuming plain `psql` reaches the app's current database.
 
-**Why:** This workspace's shell credentials reach the built-in Replit development server while the application URLs reach Supabase.
+**Why:** During this transition, the workspace's shell credentials reached the built-in Replit development server while the application URLs still reached Supabase. Do not assume those targets remain unchanged.
 
 **How to apply:** Keep source reads and destination writes on separately scoped client connections; specify the destination database explicitly.
+
+The raw `wa` schema is staging data the app does not read; its absence from the development copy is intentional. WA application data is already incorporated into `central`, alongside PCA data.
+
+**Why:** The user explicitly confirmed this distinction when approving the development database name swap.
+
+**How to apply:** Verify the application data in `central`; do not treat the missing raw staging schema as a failed copy or recreate it just to satisfy a schema checklist.
