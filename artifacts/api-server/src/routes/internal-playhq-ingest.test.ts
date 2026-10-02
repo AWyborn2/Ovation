@@ -154,6 +154,7 @@ beforeAll(async () => {
       name: "PlayHQ Ingest Test Club",
       plan: "pro",
       playhqOrgId: ORG,
+      playhqSyncEnabled: true,
     })
     .returning();
   tenantId = tenant.id;
@@ -311,6 +312,25 @@ describe("POST /api/internal/playhq/ingest — load, project, sweep", () => {
     expect(n).toHaveLength(1);
   });
 
+  it("does not project fixtures for a tenant with scheduled sync switched off", async () => {
+    await db
+      .update(tenantsTable)
+      .set({ playhqSyncEnabled: false })
+      .where(eq(tenantsTable.id, tenantId));
+    try {
+      const res = await post({ collector: "manual", dump: dump(START) });
+      expect(res.status).toBe(200);
+      expect(res.body.tenants).toEqual([]);
+      // The load itself still lands (playhq.* is association data, not the tenant's).
+      expect(res.body.runIds).toHaveLength(1);
+    } finally {
+      await db
+        .update(tenantsTable)
+        .set({ playhqSyncEnabled: true })
+        .where(eq(tenantsTable.id, tenantId));
+    }
+  });
+
   it("records a moved start, refreshes the fixture, and keeps the admin's notes", async () => {
     await db
       .update(fixturesTable)
@@ -380,6 +400,7 @@ describe("POST /api/internal/playhq/ingest — load, project, sweep", () => {
 describe("GET /api/internal/playhq/plans — what the runner should collect", () => {
   const ORG2 = randomUUID(); // linked, never synced
   const ORG3 = randomUUID(); // linked, but its tenant is suspended
+  const ORG5 = randomUUID(); // linked and active, but scheduled sync switched off (U4)
   const extra: number[] = [];
 
   beforeAll(async () => {
@@ -387,9 +408,10 @@ describe("GET /api/internal/playhq/plans — what the runner should collect", ()
     await closePlayhqIngestPool();
     // Leftovers from an interrupted run would collide on the unique central_club_id.
     await db.delete(tenantsTable).where(like(tenantsTable.slug, "playhq-plans-%"));
-    for (const [orgId, suspended, clubId] of [
-      [ORG2, false, 9903],
-      [ORG3, true, 9904],
+    for (const [orgId, suspended, clubId, syncOn] of [
+      [ORG2, false, 9903, true],
+      [ORG3, true, 9904, true],
+      [ORG5, false, 9906, false],
     ] as const) {
       const [t] = await db
         .insert(tenantsTable)
@@ -399,6 +421,7 @@ describe("GET /api/internal/playhq/plans — what the runner should collect", ()
           name: "PlayHQ Plans Test Club",
           plan: "pro",
           playhqOrgId: orgId,
+          playhqSyncEnabled: syncOn,
           suspendedAt: suspended ? new Date() : null,
         })
         .returning();
@@ -437,6 +460,11 @@ describe("GET /api/internal/playhq/plans — what the runner should collect", ()
     expect(mine.map((p: { planName: string }) => p.planName)).not.toContain("weekly");
   });
 
+  it("skips organisations whose tenant has scheduled sync switched off", async () => {
+    const res = await getPlans();
+    expect(res.body.plans.some((p: { orgId: string }) => p.orgId === ORG5)).toBe(false);
+  });
+
   it("skips organisations whose only tenant is suspended", async () => {
     const res = await getPlans();
     expect(res.body.plans.some((p: { orgId: string }) => p.orgId === ORG3)).toBe(false);
@@ -472,6 +500,7 @@ describe("scheduled runner → plans → ingest (round trip)", () => {
         name: "PlayHQ Runner Test Club",
         plan: "pro",
         playhqOrgId: ORG4,
+        playhqSyncEnabled: true,
       })
       .returning();
     tenant4 = t.id;
