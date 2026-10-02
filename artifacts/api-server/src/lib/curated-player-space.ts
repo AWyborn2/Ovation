@@ -1,6 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db, playersTable, playerIdMapTable } from "@workspace/db";
 import { NATIVE_STATS_TENANT_ID, tenantIsCentral } from "./tenant";
+import { loadCapOnlyPlayers } from "./cap-only-players";
 
 /**
  * The per-tenant player id space for curated content (hybrid stats plan U8,
@@ -17,7 +18,9 @@ import { NATIVE_STATS_TENANT_ID, tenantIsCentral } from "./tenant";
  *     existing native `players.id`, so every Halls Head link keeps its value.
  *     While it still reads native it may ALSO link a native id that has no
  *     crosswalk row (a player the crosswalk never matched); once it reads
- *     central, only crosswalk ids.
+ *     central, only crosswalk ids — plus its cap-only native players (a cap
+ *     number and no stats, ids 95001+; see ./cap-only-players.ts), which are
+ *     never in the crosswalk but must keep resolving from the cap register.
  *
  * Central tenants' crosswalk ids start at 1 and overlap native Halls Head ids,
  * so an unchecked write could point another club's award at a Halls Head
@@ -76,6 +79,11 @@ export async function playersOutsideTenantSpace(
       .from(playersTable)
       .where(inArray(playersTable.id, rest));
     for (const r of nativeRows) known.add(r.id);
+  } else if (rest.length > 0) {
+    // Halls Head after cut-over: its cap-only native players (a cap number, no
+    // stats) stay linkable, so the cap register keeps resolving. Nothing for
+    // any other tenant — the loader returns only tenant 1's rows.
+    for (const p of await loadCapOnlyPlayers(tenantId, db, rest)) known.add(p.id);
   }
   return ids.filter((id) => !known.has(id));
 }

@@ -1029,6 +1029,7 @@ describe("resolveCurated", () => {
     presentedId: (id: number) => (id === 1 ? 1 : id === 2 ? 1 : id === 5 ? 5 : id === 6 ? 6 : null),
     hybridVisibility: (id: number) =>
       id === 5 ? ("private" as const) : id === 6 ? ("no_career" as const) : ("ok" as const),
+    capOnly: (id: number) => id === 95001,
   };
   const ref = (playerId: number) => ({
     table: "award_winners",
@@ -1039,7 +1040,7 @@ describe("resolveCurated", () => {
   });
 
   it("classifies each curated link after cut-over", () => {
-    const rows = resolveCurated([1, 2, 3, 5, 6, 404, 95001].map(ref), ctx);
+    const rows = resolveCurated([1, 2, 3, 5, 6, 404, 90001].map(ref), ctx);
     expect(rows.map((r) => [r.playerId, r.status, r.resolvesTo])).toEqual([
       [1, "same", 1],
       [2, "different", 1],
@@ -1047,10 +1048,24 @@ describe("resolveCurated", () => {
       [5, "missing", null],
       [6, "missing", null],
       [404, "unresolved_before", null],
-      [95001, "missing", null],
+      [90001, "missing", null],
     ]);
     expect(rows.filter((r) => r.blocking)).toHaveLength(5);
-    expect(rows.find((r) => r.playerId === 95001)!.detail).toMatch(/cap-only|fill-in/);
+    expect(rows.find((r) => r.playerId === 90001)!.detail).toMatch(/fill-in/);
+  });
+
+  it("a cap-only player (a cap number, no stats) resolves to the same player", () => {
+    const [row] = resolveCurated([{ ...ref(95001), table: "cap_register" }], ctx);
+    expect(row).toMatchObject({
+      status: "same",
+      resolvesTo: 95001,
+      blocking: false,
+      capOnly: true,
+    });
+    expect(row!.detail).toMatch(/cap-only/);
+    // Any other id in that range is still missing.
+    const [other] = resolveCurated([ref(95002)], ctx);
+    expect(other).toMatchObject({ status: "missing", blocking: true });
   });
 });
 

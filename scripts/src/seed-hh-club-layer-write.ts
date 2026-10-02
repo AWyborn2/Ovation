@@ -9,7 +9,9 @@
  *   1. the tenant's boundaries (replaced as a set, like the admin route);
  *   2. decision crosswalk rows (a review player mapped to its native id);
  *   3. pinned synthetic players, through the shared minting helper;
- *   4. one history batch with its rows and coverage, through the U11 library.
+ *   4. one history batch with its rows and coverage, through the U11 library;
+ *   5. one SUPPLEMENT batch (hand-entered seasons at or after the boundary),
+ *      through the library's explicit supplement path — rows only, no coverage.
  * Never writes corrections, drafts, native stats tables or central.
  */
 import { eq } from "drizzle-orm";
@@ -19,11 +21,19 @@ import {
   playerIdMapTable,
   type Db,
 } from "@workspace/db";
+import { isSeniorAppGrade } from "@workspace/db/central-queries";
 import {
   insertHistoryBatch,
   insertHistoryRows,
+  insertSupplementRows,
 } from "../../artifacts/api-server/src/lib/history-import";
-import { SEED_LABEL, SEED_SOURCE, type SeedPlan } from "./seed-hh-club-layer-core";
+import {
+  SEED_LABEL,
+  SEED_SOURCE,
+  SUPPLEMENT_LABEL,
+  SUPPLEMENT_SOURCE,
+  type SeedPlan,
+} from "./seed-hh-club-layer-core";
 
 export const SEED_CREATED_BY = "script:seed-hh-club-layer";
 
@@ -33,6 +43,8 @@ export interface SeedWriteResult {
   pinned: number;
   batchId: number | null;
   historyRows: number;
+  supplementBatchId: number | null;
+  supplementRows: number;
 }
 
 /** The note on the seed batch: the review decisions it was committed with. */
@@ -94,11 +106,35 @@ export async function writeSeedPlan(
     });
     historyRows = (await insertHistoryRows(tx, tenantId, batchId, plan.history.rows)).rows;
   }
+  // The supplement batch: hand-entered seasons at or after the boundary, kept
+  // as club history. A second batch on purpose — its source is what the
+  // overlay reads, and it can be undone on its own. No coverage rows.
+  let supplementBatchId: number | null = null;
+  let supplementRows = 0;
+  if (plan.supplement.write) {
+    supplementBatchId = await insertHistoryBatch(tx, {
+      tenantId,
+      source: SUPPLEMENT_SOURCE,
+      label: SUPPLEMENT_LABEL,
+      note:
+        "Native season totals at or after the boundary with no native scorecard lines and no " +
+        "central lines for that player, grade and season (owner decision, 1 Oct 2026).",
+      createdBy: SEED_CREATED_BY,
+    });
+    supplementRows = (
+      await insertSupplementRows(tx, tenantId, supplementBatchId, plan.supplement.rows, {
+        boundaries: plan.boundaries.desired,
+        isSeniorGrade: isSeniorAppGrade,
+      })
+    ).rows;
+  }
   return {
     boundariesReplaced: plan.boundaries.changed,
     mapRows: plan.identity.decisionMapInserts.length,
     pinned: pinned.length,
     batchId,
     historyRows,
+    supplementBatchId,
+    supplementRows,
   };
 }

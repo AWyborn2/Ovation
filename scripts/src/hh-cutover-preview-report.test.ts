@@ -486,3 +486,78 @@ describe("buildReport — the whole preview through the real club overlay", () =
     expect(text).toMatch(/#1\s+Alan Able\s+games \+2 innings \+2 runs \+125 catches \+1/);
   });
 });
+
+describe("buildReport — cap-only players (a cap number, no stats)", () => {
+  const input = fixture();
+  input.native.players.push({ id: 95001, givenName: "Colin", surname: "Capper", isCapOnly: true });
+  input.native.players.push({ id: 90001, givenName: "Fill", surname: "In", isCapOnly: false });
+  input.curated.push(
+    {
+      table: "cap_register",
+      rowId: 20,
+      column: "player_id",
+      playerId: 95001,
+      label: "male cap #7 Colin Capper",
+    },
+    {
+      table: "cap_register",
+      rowId: 21,
+      column: "player_id",
+      playerId: 90001,
+      label: "male cap #8 Fill In",
+    },
+  );
+  input.overlay = {
+    ...input.overlay,
+    // The API's own identity, now carrying tenant 1's cap-only native players.
+    identity: buildClubIdentity(
+      [
+        { participantId: GA, playerId: 1 },
+        { participantId: GB, playerId: 2 },
+      ],
+      { nameByGuid: new Map(), canonicalByGuid: new Map() },
+      [
+        {
+          id: 95001,
+          surname: "Capper",
+          givenName: "Colin",
+          gradesPlayed: null,
+          totalGames: null,
+          totalRuns: null,
+          totalWickets: null,
+          deceased: false,
+          imageUrl: null,
+          cardRole: null,
+          cardRating: null,
+          isFillIn: false,
+          isCapOnly: true,
+        },
+      ],
+    ),
+  };
+  const report = buildReport(input);
+
+  it("a cap that points at a cap-only player resolves to the same player", () => {
+    const listed = rows(report.files["curated-resolution.csv"]!).map((r) => [
+      r.table,
+      r.player_id,
+      r.status,
+    ]);
+    // Only the links that do NOT resolve are listed: Cara's award and the fill-in's cap.
+    expect(listed).toEqual([
+      ["award_winners", "3", "missing"],
+      ["cap_register", "90001", "missing"],
+    ]);
+    expect(report.summary.curated).toMatchObject({
+      links: 4,
+      blocking: 2,
+      capOnlyPlayers: 1,
+      byTable: { cap_register: { same: 1, missing: 1 } },
+    });
+    expect(report.lines.join("\n")).toMatch(/1 cap-only player link/);
+  });
+
+  it("the cap-only player has no career on either side", () => {
+    expect(report.files["careers-diff.csv"]).not.toContain("95001");
+  });
+});

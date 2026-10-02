@@ -1397,6 +1397,7 @@ export async function insertHistoryRows(
   tenantId: number,
   batchId: number,
   prepared: readonly PreparedHistoryRow[],
+  opts: { coverage?: boolean } = {},
 ): Promise<{ rows: number; coverage: Array<{ grade: string; season: number | null }> }> {
   const rows: InsertClubHistoryRow[] = prepared.map((r) => ({
     tenantId,
@@ -1433,13 +1434,92 @@ export async function insertHistoryRows(
   for (let i = 0; i < rows.length; i += 500) {
     await tx.insert(clubHistoryRowsTable).values(rows.slice(i, i + 500));
   }
-  const coverage = coverageOf(prepared.map((r) => ({ grade: r.grade, season: r.season })));
+  const coverage =
+    opts.coverage === false
+      ? []
+      : coverageOf(prepared.map((r) => ({ grade: r.grade, season: r.season })));
   if (coverage.length > 0) {
     await tx
       .insert(clubHistoryBatchCoverageTable)
       .values(coverage.map((c) => ({ tenantId, batchId, ...c })));
   }
   return { rows: rows.length, coverage };
+}
+
+// ── Supplement seasons (the explicit path past the boundary check) ─────────
+
+/**
+ * What is wrong with a set of SUPPLEMENT rows (hand-entered seasons kept at or
+ * after the boundary — see `CLUB_HISTORY_SUPPLEMENT_SOURCE`). Empty = fine.
+ *
+ * The ordinary import refuses every row at or after the boundary
+ * (`checkBoundaries`), and that stays. A supplement is the deliberate
+ * exception, so its own rules are narrow: season grain only, a senior grade, a
+ * real player id (never a fill-in / cap-only id), a season AT OR AFTER the
+ * grade's boundary (a season before it is ordinary history and belongs in an
+ * ordinary batch), and one row per (player, grade, season). Whether central
+ * has the player's season is decided on READ by the club overlay, which
+ * ignores and reports a supplement central supplies — so a supplement can
+ * never double count, even if central gains the season later.
+ */
+export function supplementRowProblems(
+  rows: readonly PreparedHistoryRow[],
+  ctx: {
+    boundaries: ReadonlyArray<{ grade: string | null; startSeason: number }>;
+    isSeniorGrade: (grade: string) => boolean;
+  },
+): string[] {
+  const problems: string[] = [];
+  const seen = new Set<string>();
+  for (const r of rows) {
+    const at = `player ${r.playerId}, ${r.grade}, ${r.season === null ? "no season" : seasonLabel(r.season)}`;
+    if (r.grain !== "season" || r.season === null) {
+      problems.push(`${at}: a supplement row must be a season row.`);
+      continue;
+    }
+    if (!Number.isInteger(r.playerId) || r.playerId <= 0 || r.playerId >= MINT_ID_CEILING) {
+      problems.push(`${at}: not a real player id (fill-in / cap-only ids never carry stats).`);
+    }
+    if (!ctx.isSeniorGrade(r.grade)) problems.push(`${at}: not a senior grade.`);
+    const b = boundaryFor(ctx.boundaries, r.grade);
+    if (b !== null && r.season < b) {
+      problems.push(
+        `${at}: before the ${r.grade} boundary (${seasonLabel(b)}) — that is ordinary club ` +
+          "history, not a supplement.",
+      );
+    }
+    const key = `${r.playerId}|${r.grade}|${r.season}`;
+    if (seen.has(key)) problems.push(`${at}: listed twice.`);
+    seen.add(key);
+  }
+  return problems;
+}
+
+/**
+ * Write a SUPPLEMENT batch's rows inside the caller's transaction. The batch
+ * itself must have been inserted with `source: CLUB_HISTORY_SUPPLEMENT_SOURCE`
+ * — that is what the overlay reads. No coverage rows are written: a supplement
+ * claims one player's season, not the whole (grade, season), so it must never
+ * block a later import for other players. Throws (400) and writes nothing when
+ * a row breaks the supplement rules. Undo is {@link undoHistoryBatch}.
+ */
+export async function insertSupplementRows(
+  tx: Inserter,
+  tenantId: number,
+  batchId: number,
+  prepared: readonly PreparedHistoryRow[],
+  ctx: Parameters<typeof supplementRowProblems>[1],
+): Promise<{ rows: number }> {
+  const problems = supplementRowProblems(prepared, ctx);
+  if (problems.length > 0) {
+    throw new HistoryImportError(
+      400,
+      `Supplement rows refused: ${problems.slice(0, 5).join(" ")}` +
+        `${problems.length > 5 ? ` (+${problems.length - 5} more)` : ""}`,
+    );
+  }
+  const { rows } = await insertHistoryRows(tx, tenantId, batchId, prepared, { coverage: false });
+  return { rows };
 }
 
 // ── Errors ─────────────────────────────────────────────────────────────────
