@@ -17,7 +17,7 @@
 - [Dating debuts from matches](debut-dating-from-matches.md) — earliest match ≠ debut; only date a first cap when player has 0 prior grade games (NULL baseline counts as prior), else a whole XI mis-dates as debutants.
 - [Award 3-2-1 voting & captain role](award-voting-321.md) — captain auth under /captain-auth/* (separate cookie), actions under /captain/*; tally visibility + autoHide rule; voting query hooks take positional id, mutations take {id,data}.
 - [api-server testing setup](api-server-testing.md) — vitest runs against the live dev DB (clean up uniquely-suffixed rows); supertest + forged HMAC cookies; build libs before per-package typecheck.
-- [Read-only migration ledger checks](db-ledger-inspection.md) — if SQL callback rejects the DB URL and root lacks `pg`, query through the `@workspace/db` package context.
+- [Read-only migration ledger checks](db-ledger-inspection.md) — use the db package for pg queries; accept only proven LF/CRLF hash equivalents, never rewrite ledger history.
 - [Database transition constraints](database-cutover-constraints.md) — fresh dev snapshot before publish-data seed; preserve old dev and confirm shell/app targets; Supabase access needs explicit authorization.
 - [Share-card photo crop coupling](share-card-photo-crop.md) — feature-photo focal/zoom is size-independent; the CSS reposition control must mirror the canvas cover math or preview/crop diverge.
 - [Backfill peel vs add](backfill-peel-add.md) — previous-season imports reconcile vs the season=NULL baseline; peel keeps career invariant (stores deltas for reversal), add is additive; suppress social, never mint caps.

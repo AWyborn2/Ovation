@@ -23,33 +23,67 @@ id = "Dukf2k821c9IAwOKLRP3H"
 uri = "file://exports/players.xlsx"
 type = "table"
 title = "Player IDs (Excel)"
+logical_id = "fb623563-aebc-4b6e-8cef-ca70d38a9ecf"
 
 [[outputs]]
 id = "aVNiBuBUxzx1rXjMuhK6q"
 uri = "file://exports/players.csv"
 type = "table"
 title = "Player IDs (CSV)"
+logical_id = "be9ec098-370f-41d8-acab-d2d37bd59d33"
 
 [[outputs]]
 id = "WGoM0jt-KHN4f6PYPo3Bb"
 uri = "file://exports/premierships.csv"
 type = "table"
 title = "Premiership Board — Teams & Results (CSV)"
+logical_id = "e87aa458-1af4-401d-b3a1-47ea96bb47c3"
 
 [[outputs]]
 id = "eEYEFBi9n0QK_-nJO2Vpw"
 uri = "file://attached_assets/generated_audio/music_sports_hype_loop.mp3"
 type = "audio"
 title = "sports hype loop"
+logical_id = "ace5fc65-6599-4546-8dbf-88379cc20a27"
 
 [[outputs]]
 id = "3IzrfRc-0Bwp55WVLuYxV"
 uri = "file://attached_assets/generated_audio/music_epic_triumph_loop.mp3"
 type = "audio"
 title = "epic triumph loop"
+logical_id = "447edbe0-0cd9-46c4-bbf0-a0182d51c851"
 
 [[outputs]]
 id = "7hxAOdDf01VsZTsZLryGI"
 uri = "file://attached_assets/generated_audio/music_chill_groove_loop.mp3"
 type = "audio"
 title = "chill groove loop"
+logical_id = "03452699-3e20-4d0a-aa07-2d5f59a1bce9"
+
+[[outputs]]
+id = "yB9GqilK9hXpKSgap0ltW"
+uri = "file://.local/production-cutover/reports/source-baseline.csv"
+type = "table"
+title = "Supabase baseline — all 115 tables"
+description = "Read-only SELECT row counts for public, central, playhq and drizzle. No row data or credentials included."
+logical_id = "7f38b0e2-3e68-4176-9024-4c9e85369ea9"
+content_hash = "sha256:6f7099b0867a00e1b788c8b84047f5ed6f0673e4db6186e6198d3f3cb7603f6c"
+size = 3186
+mtime_ms = 1790991772805
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/7f38b0e2-3e68-4176-9024-4c9e85369ea9/e569fccc-34c3-4491-9236-70a743a55bb8"
+storage_version_token = "1790991882322614"
+content_type = "text/csv"
+
+[[outputs]]
+id = "vW3V20HIve-AQRZTIgMuR"
+uri = "file://.local/production-cutover/reports/phase-b-54hl59fn/count-comparison.csv"
+type = "table"
+title = "Phase B table-count comparison"
+description = "All 115 source/restored counts, with active post-migration counts and the expected new incident table."
+logical_id = "15bec11d-7ebb-431c-8655-68a9e76ce3f2"
+content_hash = "sha256:96cab39408aa44dbc1f8b4dedf8a1196bfa4ace182c334ce4f9ad9e39ee68863"
+size = 4815
+mtime_ms = 1790992788333
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/15bec11d-7ebb-431c-8655-68a9e76ce3f2/4bc9833f-f8d5-4a54-94bf-e7d8bd20f341"
+storage_version_token = "1790992878214448"
+content_type = "text/csv"
