@@ -45,7 +45,7 @@ export function newSyntheticParticipantKey(): string {
 }
 
 /** First key of the two-key advisory lock that serialises a tenant's mints. */
-const MINT_LOCK_KEY = 7_311_901;
+export const MINT_LOCK_KEY = 7_311_901;
 
 /** Anything that can run tenant-DB reads (the shared `db` or a transaction). */
 type Reader = Pick<Db, "select">;
