@@ -129,6 +129,7 @@ import type {
   GetGradeLeaderboardParams,
   GetJuniorSeasonTopPerformersParams,
   GetKioskDisplayParams,
+  GetPlatformPlayerPrivacyParams,
   GetPlayersVsClubParams,
   GetRecordLeadersParams,
   GetRecordProgressionParams,
@@ -247,6 +248,8 @@ import type {
   PlayerListResponse,
   PlayerMatchLine,
   PlayerMergeRequest,
+  PlayerPrivacyList,
+  PlayerPrivacyOverride,
   PlayerSeasonStat,
   PlayerUpdate,
   PlayersVsClub,
@@ -281,6 +284,7 @@ import type {
   SeasonTopPerformers,
   SeniorOverview,
   SetJuniorSeniorLinkBody,
+  SetPlayerPrivacyBody,
   SignupBody,
   SignupResult,
   SlugAvailability,
@@ -23379,6 +23383,232 @@ export const useDeleteProvisioningExclusion = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteProvisioningExclusionMutationOptions(options));
+    }
+
+export const getGetPlatformPlayerPrivacyUrl = (params?: GetPlatformPlayerPrivacyParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/platform/admin/player-privacy?${stringifiedParams}` : `/api/platform/admin/player-privacy`
+}
+
+/**
+ * @summary Every player privacy override, plus a central player search (by name or PlayHQ participant GUID) for setting new ones. Private players' names are shown here — this is platform-admin only.
+ */
+export const getPlatformPlayerPrivacy = async (params?: GetPlatformPlayerPrivacyParams, options?: RequestInit): Promise<PlayerPrivacyList> => {
+
+  return customFetch<PlayerPrivacyList>(getGetPlatformPlayerPrivacyUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlatformPlayerPrivacyQueryKey = (params?: GetPlatformPlayerPrivacyParams,) => {
+    return [
+    `/api/platform/admin/player-privacy`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPlatformPlayerPrivacyQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformPlayerPrivacy>>, TError = ErrorType<void>>(params?: GetPlatformPlayerPrivacyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformPlayerPrivacy>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlatformPlayerPrivacyQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformPlayerPrivacy>>> = ({ signal }) => getPlatformPlayerPrivacy(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformPlayerPrivacy>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlatformPlayerPrivacyQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformPlayerPrivacy>>>
+export type GetPlatformPlayerPrivacyQueryError = ErrorType<void>
+
+
+/**
+ * @summary Every player privacy override, plus a central player search (by name or PlayHQ participant GUID) for setting new ones. Private players' names are shown here — this is platform-admin only.
+ */
+
+export function useGetPlatformPlayerPrivacy<TData = Awaited<ReturnType<typeof getPlatformPlayerPrivacy>>, TError = ErrorType<void>>(
+ params?: GetPlatformPlayerPrivacyParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformPlayerPrivacy>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlatformPlayerPrivacyQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSetPlayerPrivacyOverrideUrl = (participantId: string,) => {
+
+
+
+
+  return `/api/platform/admin/player-privacy/${participantId}`
+}
+
+/**
+ * @summary Set or clear a central player's privacy (D4 override). Applied to the central stats straight away when the projector is configured, otherwise on the next PlayHQ sync that touches the player.
+ */
+export const setPlayerPrivacyOverride = async (participantId: string,
+    setPlayerPrivacyBody: SetPlayerPrivacyBody, options?: RequestInit): Promise<PlayerPrivacyOverride> => {
+
+  return customFetch<PlayerPrivacyOverride>(getSetPlayerPrivacyOverrideUrl(participantId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setPlayerPrivacyBody,)
+  }
+);}
+
+
+
+
+export const getSetPlayerPrivacyOverrideMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPlayerPrivacyOverride>>, TError,{participantId: string;data: BodyType<SetPlayerPrivacyBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setPlayerPrivacyOverride>>, TError,{participantId: string;data: BodyType<SetPlayerPrivacyBody>}, TContext> => {
+
+const mutationKey = ['setPlayerPrivacyOverride'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setPlayerPrivacyOverride>>, {participantId: string;data: BodyType<SetPlayerPrivacyBody>}> = (props) => {
+          const {participantId,data} = props ?? {};
+
+          return  setPlayerPrivacyOverride(participantId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetPlayerPrivacyOverrideMutationResult = NonNullable<Awaited<ReturnType<typeof setPlayerPrivacyOverride>>>
+    export type SetPlayerPrivacyOverrideMutationBody = BodyType<SetPlayerPrivacyBody>
+    export type SetPlayerPrivacyOverrideMutationError = ErrorType<void>
+
+    /**
+ * @summary Set or clear a central player's privacy (D4 override). Applied to the central stats straight away when the projector is configured, otherwise on the next PlayHQ sync that touches the player.
+ */
+export const useSetPlayerPrivacyOverride = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPlayerPrivacyOverride>>, TError,{participantId: string;data: BodyType<SetPlayerPrivacyBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setPlayerPrivacyOverride>>,
+        TError,
+        {participantId: string;data: BodyType<SetPlayerPrivacyBody>},
+        TContext
+      > => {
+      return useMutation(getSetPlayerPrivacyOverrideMutationOptions(options));
+    }
+
+export const getDeletePlayerPrivacyOverrideUrl = (participantId: string,) => {
+
+
+
+
+  return `/api/platform/admin/player-privacy/${participantId}`
+}
+
+/**
+ * @summary Remove an override. The player's central flag stays as it is now; the projector simply stops enforcing it.
+ */
+export const deletePlayerPrivacyOverride = async (participantId: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePlayerPrivacyOverrideUrl(participantId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeletePlayerPrivacyOverrideMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePlayerPrivacyOverride>>, TError,{participantId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePlayerPrivacyOverride>>, TError,{participantId: string}, TContext> => {
+
+const mutationKey = ['deletePlayerPrivacyOverride'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePlayerPrivacyOverride>>, {participantId: string}> = (props) => {
+          const {participantId} = props ?? {};
+
+          return  deletePlayerPrivacyOverride(participantId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePlayerPrivacyOverrideMutationResult = NonNullable<Awaited<ReturnType<typeof deletePlayerPrivacyOverride>>>
+
+    export type DeletePlayerPrivacyOverrideMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove an override. The player's central flag stays as it is now; the projector simply stops enforcing it.
+ */
+export const useDeletePlayerPrivacyOverride = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePlayerPrivacyOverride>>, TError,{participantId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePlayerPrivacyOverride>>,
+        TError,
+        {participantId: string},
+        TContext
+      > => {
+      return useMutation(getDeletePlayerPrivacyOverrideMutationOptions(options));
     }
 
 export const getGetPlatformBrandUrl = () => {

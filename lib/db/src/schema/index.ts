@@ -46,3 +46,4 @@ export * from "./playhq_sync_incidents";
 export * from "./card_photo_rules";
 export * from "./club_history";
 export * from "./club_corrections";
+export * from "./player_privacy_overrides";
