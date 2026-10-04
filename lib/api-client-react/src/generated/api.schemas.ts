@@ -4456,6 +4456,26 @@ export type PlayhqIngestResponseTenantsItem = {
   swept: boolean;
 };
 
+export type PlayhqIngestResponseCentralProjectionMode = typeof PlayhqIngestResponseCentralProjectionMode[keyof typeof PlayhqIngestResponseCentralProjectionMode];
+
+
+export const PlayhqIngestResponseCentralProjectionMode = {
+  dry: 'dry',
+  on: 'on',
+} as const;
+
+/**
+ * The PlayHQ → central stats projection run after the load (CENTRAL_PROJECTION=dry|on). Absent when projection is off.
+ */
+export type PlayhqIngestResponseCentralProjection = {
+  mode: PlayhqIngestResponseCentralProjectionMode;
+  considered: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  playersInserted: number;
+};
+
 export interface PlayhqIngestResponse {
   status: PlayhqIngestResponseStatus;
   runIds: number[];
@@ -4465,6 +4485,42 @@ export interface PlayhqIngestResponse {
   juniorGradesDropped: number;
   tenants: PlayhqIngestResponseTenantsItem[];
   warnings: string[];
+  /** The PlayHQ → central stats projection run after the load (CENTRAL_PROJECTION=dry|on). Absent when projection is off. */
+  centralProjection?: PlayhqIngestResponseCentralProjection;
+}
+
+export interface PlayerPrivacyOverride {
+  participantId: string;
+  isPrivate: boolean;
+  reason: string | null;
+  setAt: string;
+  displayName: string | null;
+  /** True when central.players already carries this flag (applied now, or by an earlier sync); false when it waits for the next sync. */
+  applied: boolean;
+}
+
+export interface PlayerPrivacyPlayer {
+  participantId: string;
+  displayName: string | null;
+  isPrivate: boolean;
+  currentClubId: number | null;
+  lastSeason: string | null;
+  matches: number | null;
+  /** The override's isPrivate, or null when there is none. */
+  override: boolean | null;
+}
+
+export interface PlayerPrivacyList {
+  overrides: PlayerPrivacyOverride[];
+  players: PlayerPrivacyPlayer[];
+  /** Whether overrides apply immediately (central projector configured). */
+  projectorConfigured: boolean;
+}
+
+export interface SetPlayerPrivacyBody {
+  isPrivate: boolean;
+  /** @maxLength 500 */
+  reason?: string | null;
 }
 
 export type PlayhqDuePlansResponsePlansItemPlanName = typeof PlayhqDuePlansResponsePlansItemPlanName[keyof typeof PlayhqDuePlansResponsePlansItemPlanName];
@@ -7749,6 +7805,10 @@ ageGroup?: string;
 
 export type CheckSlugAvailableParams = {
 slug: string;
+};
+
+export type GetPlatformPlayerPrivacyParams = {
+q?: string;
 };
 
 export type GetSocialLadderPrefillParams = {

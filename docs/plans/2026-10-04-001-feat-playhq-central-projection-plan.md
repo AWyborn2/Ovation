@@ -33,6 +33,39 @@ execution: code
   - Ash rejects D1, the central writer role;
   - a projected grade can't be classified by `classifyCentralGrade`.
 
+## Status (4 Oct 2026)
+
+**P0–P5 built and merged** (#269). **P8 built** (privacy override, migration 0026). P0–P5: converter, DDL, writer role and pool, projector, CLI, ingest hook
+(behind `CENTRAL_PROJECTION`, default `off`). P6 rollout, P7 Halls Head cut-over and P8 privacy
+override follow.
+
+**P0 golden diff (dev DB, 6 builder-loaded 2025/26 A Grade matches, incl. finals):**
+
+- **Exact parity** on every match row column and every batting, bowling, roster and
+  fall-of-wickets row (all six matches).
+- Builder conventions discovered and encoded:
+  - home is the lower central club id;
+  - scores read `runs/wickets`;
+  - `innings` is PlayHQ's `inningsOrder`;
+  - caught-and-bowled is detected from the text (PlayHQ types it "Caught");
+  - did-not-bat rows exist with type "other";
+  - FOW `wicket` is null;
+  - `match_date` is the Perth date.
+- **Deliberate differences:**
+  - `fielding`: built from PlayHQ's per-player counts. The builder parsed dismissal text and
+    lost catches (e.g. 4 of 10 in one match) and merged two-fielder run-outs into one row.
+    Projected matches are therefore more complete than builder ones.
+  - `match_batting.fielder`: the builder blanked some names PlayHQ gives. No read uses this
+    column.
+  - Player names: only new players get a name (full name, surname first). Existing names are
+    never touched.
+- **Data profile findings:**
+  - 12 duplicated `playhq_match_id` values in central, so the unique index is skipped with a
+    warning, and the projector refuses ambiguous ids.
+  - Central max ids: `match_id` 130001; child tables ≤ 4.19M. The projector's sequences start
+    at 1,000,001 and 10,000,000.
+  - Builder grades equal PlayHQ grade names.
+
 ## Product Contract
 
 ### Requirements

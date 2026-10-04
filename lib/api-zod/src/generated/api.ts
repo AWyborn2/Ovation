@@ -6919,7 +6919,15 @@ export const IngestPlayhqDumpResponse = zod.object({
   "updated": zod.number(),
   "swept": zod.boolean()
 })),
-  "warnings": zod.array(zod.string())
+  "warnings": zod.array(zod.string()),
+  "centralProjection": zod.object({
+  "mode": zod.enum(['dry', 'on']),
+  "considered": zod.number(),
+  "created": zod.number(),
+  "updated": zod.number(),
+  "skipped": zod.number(),
+  "playersInserted": zod.number()
+}).optional().describe('The PlayHQ → central stats projection run after the load (CENTRAL_PROJECTION=dry|on). Absent when projection is off.')
 })
 
 
@@ -9774,6 +9782,69 @@ export const CreateProvisioningExclusionBody = zod.object({
  */
 export const DeleteProvisioningExclusionParams = zod.object({
   "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Every player privacy override, plus a central player search (by name or PlayHQ participant GUID) for setting new ones. Private players' names are shown here — this is platform-admin only.
+ */
+export const GetPlatformPlayerPrivacyQueryParams = zod.object({
+  "q": zod.coerce.string().optional()
+})
+
+export const GetPlatformPlayerPrivacyResponse = zod.object({
+  "overrides": zod.array(zod.object({
+  "participantId": zod.string(),
+  "isPrivate": zod.boolean(),
+  "reason": zod.string().nullable(),
+  "setAt": zod.coerce.date(),
+  "displayName": zod.string().nullable(),
+  "applied": zod.boolean().describe('True when central.players already carries this flag (applied now, or by an earlier sync); false when it waits for the next sync.')
+})),
+  "players": zod.array(zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "currentClubId": zod.number().nullable(),
+  "lastSeason": zod.string().nullable(),
+  "matches": zod.number().nullable(),
+  "override": zod.boolean().nullable().describe('The override\'s isPrivate, or null when there is none.')
+})),
+  "projectorConfigured": zod.boolean().describe('Whether overrides apply immediately (central projector configured).')
+})
+
+
+/**
+ * @summary Set or clear a central player's privacy (D4 override). Applied to the central stats straight away when the projector is configured, otherwise on the next PlayHQ sync that touches the player.
+ */
+export const SetPlayerPrivacyOverrideParams = zod.object({
+  "participantId": zod.coerce.string()
+})
+
+export const setPlayerPrivacyOverrideBodyReasonMax = 500;
+
+
+
+export const SetPlayerPrivacyOverrideBody = zod.object({
+  "isPrivate": zod.boolean(),
+  "reason": zod.string().max(setPlayerPrivacyOverrideBodyReasonMax).nullish()
+})
+
+export const SetPlayerPrivacyOverrideResponse = zod.object({
+  "participantId": zod.string(),
+  "isPrivate": zod.boolean(),
+  "reason": zod.string().nullable(),
+  "setAt": zod.coerce.date(),
+  "displayName": zod.string().nullable(),
+  "applied": zod.boolean().describe('True when central.players already carries this flag (applied now, or by an earlier sync); false when it waits for the next sync.')
+})
+
+
+/**
+ * @summary Remove an override. The player's central flag stays as it is now; the projector simply stops enforcing it.
+ */
+export const DeletePlayerPrivacyOverrideParams = zod.object({
+  "participantId": zod.coerce.string()
 })
 
 

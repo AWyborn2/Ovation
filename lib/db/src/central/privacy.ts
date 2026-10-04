@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { desc, eq, ilike } from "drizzle-orm";
 import { centralDb, centralPlayersTable } from "../central";
 import { foldPlayerNames, hasMerges, mergeGroupMembers, type CentralMerges } from "./merges";
 import { inList } from "./where";
@@ -125,4 +125,47 @@ export async function mergedPrivateKeepers(merges?: CentralMerges | null): Promi
     if (keeper && isPrivateRow(r)) out.add(keeper);
   }
   return out;
+}
+
+/** One row of the platform privacy screen's player search (P8). */
+export interface CentralPlayerPrivacyRow {
+  participantId: string;
+  displayName: string | null;
+  isPrivate: boolean;
+  currentClubId: number | null;
+  lastSeason: string | null;
+  matches: number | null;
+}
+
+/**
+ * Platform-admin player search for the privacy override screen
+ * (docs/plans/2026-10-04-001-feat-playhq-central-projection-plan.md, P8): by participant GUID,
+ * or case-insensitively by display name. Uncached — the screen shows the flag just written.
+ * Unlike every public read, it returns private players' names: only a platform admin sees it.
+ */
+export async function centralPlayersForPrivacy(
+  query: string,
+  limit = 25,
+): Promise<CentralPlayerPrivacyRow[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(q);
+  const rows = await centralDb
+    .select({
+      participantId: centralPlayersTable.participantId,
+      displayName: centralPlayersTable.displayName,
+      isPrivate: centralPlayersTable.isPrivate,
+      currentClubId: centralPlayersTable.currentClubId,
+      lastSeason: centralPlayersTable.lastSeason,
+      matches: centralPlayersTable.matches,
+    })
+    .from(centralPlayersTable)
+    .where(
+      isGuid
+        ? eq(centralPlayersTable.participantId, q.toLowerCase())
+        : ilike(centralPlayersTable.displayName, `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`),
+    )
+    .orderBy(desc(centralPlayersTable.matches))
+    .limit(Math.min(Math.max(limit, 1), 100));
+  return rows.map((r) => ({ ...r, isPrivate: isPrivateRow(r) }));
 }

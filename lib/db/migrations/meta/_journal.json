@@ -183,6 +183,13 @@
       "when": 1790903712844,
       "tag": "0025_playhq_sync_incidents",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791090669001,
+      "tag": "0026_player_privacy_overrides",
+      "breakpoints": true
     }
   ]
 }

@@ -1052,6 +1052,17 @@ describe("resolveCurated", () => {
     expect(rows.filter((r) => r.blocking)).toHaveLength(5);
     expect(rows.find((r) => r.playerId === 95001)!.detail).toMatch(/cap-only|fill-in/);
   });
+
+  it("a cap-only player keeps its profile, so its links don't block the cut-over", () => {
+    const rows = resolveCurated([95001, 95002].map(ref), {
+      ...ctx,
+      capOnly: (id: number) => id === 95001,
+    });
+    expect(rows.map((r) => [r.playerId, r.status, r.blocking])).toEqual([
+      [95001, "same", false],
+      [95002, "missing", true],
+    ]);
+  });
 });
 
 describe("pickCatchesSamples (R6)", () => {
