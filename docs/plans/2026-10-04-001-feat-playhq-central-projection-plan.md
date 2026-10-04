@@ -102,6 +102,7 @@ Out of scope:
   - (c) a later native projection.
 
   **Recommendation: (a)**, as a separate small PR after P6.
+
 - **D3, abandoned and forfeited matches:** project them as result rows with no player lines,
   matching how the builder stored them? **Recommendation: yes**, for parity.
 - **D4, privacy default:** PlayHQ hides private players' names. Proposal:
@@ -130,6 +131,7 @@ Out of scope:
   This makes amendments exact (R4). The source is `playhq.scorecards.raw`, the full payload,
   rather than the per-row `playhq.match_*` tables. Those are upsert-only and can hold stale rows
   after an amendment (loader finding).
+
 - **KTD5: club resolution.** P1 adds `central.club_playhq_orgs (club_id, playhq_org_id)`.
   - It is seeded automatically from history: wherever `central.matches.playhq_match_id` joins
     `playhq.matches`, the home and away org GUIDs pair with `home_club_id` / `away_club_id`.
@@ -169,6 +171,7 @@ Out of scope:
 
 Project a sample of 2025/26 matches that the builder already loaded (`playhq_match_id` known)
 into a scratch schema. Diff them row by row against `central.*`:
+
 - match fields;
 - per-player runs, balls, 4s, 6s and dismissal type;
 - bowling figures;
@@ -193,6 +196,7 @@ case by case. This proves R2 before anything writes to real central.
   - the `central_projector` role grants.
 
   CI applies it in the central-schema job.
+
 - **P2: writer pool and scope check.**
   - `getCentralProjectorPool()` and `assertProjectorScope()`.
   - Tests that a role with extra grants is refused.
@@ -232,12 +236,12 @@ case by case. This proves R2 before anything writes to real central.
 
 ## Risks
 
-| Risk | Mitigation |
-|---|---|
-| Projected rows differ subtly from builder rows (careers, records shift) | P0 golden diff to parity before any write; `dry` mode on prod first |
-| Duplicate matches if `playhq_match_id` is missing on some builder rows | P1 duplicate audit; skip-and-warn on an ambiguous match |
-| Unmapped grade or club silently excluded | Refuse with a named warning (KTD5/6); unmapped list on the sync page |
-| Amendments leave stale lines | Replace per match from `scorecards.raw` (KTD4) |
-| Writer role over-privileged | Table-level grants plus a boot-time scope check (P2) |
-| Governance: scraped scorecards feed the stats archive | Pilot, non-commercial framing (CLAUDE.md); swap to the sanctioned API when available |
-| Hourly cron unreliable on GitHub (observed every ~4 h) | Results land within a few hours, which is acceptable for stats; a separate follow-up covers a reliable trigger |
+| Risk                                                                    | Mitigation                                                                                                     |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Projected rows differ subtly from builder rows (careers, records shift) | P0 golden diff to parity before any write; `dry` mode on prod first                                            |
+| Duplicate matches if `playhq_match_id` is missing on some builder rows  | P1 duplicate audit; skip-and-warn on an ambiguous match                                                        |
+| Unmapped grade or club silently excluded                                | Refuse with a named warning (KTD5/6); unmapped list on the sync page                                           |
+| Amendments leave stale lines                                            | Replace per match from `scorecards.raw` (KTD4)                                                                 |
+| Writer role over-privileged                                             | Table-level grants plus a boot-time scope check (P2)                                                           |
+| Governance: scraped scorecards feed the stats archive                   | Pilot, non-commercial framing (CLAUDE.md); swap to the sanctioned API when available                           |
+| Hourly cron unreliable on GitHub (observed every ~4 h)                  | Results land within a few hours, which is acceptable for stats; a separate follow-up covers a reliable trigger |
