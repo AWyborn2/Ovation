@@ -67,3 +67,4 @@
 - [Replit pnpm publish bootstrap](replit-pnpm-publish.md) — don't exact-pin pnpm in packageManager here; Replit's bootstrap can recursively self-install and abort before app compilation.
 - [Club Kit pack + Studio element library](studio-elements.md) — club-kit-v1 is card-cqmin with per-format markup and `--ck-*` rootVars (club-only colour mode); Studio `element` layers reuse the same parts via a unit fn; props escaped; junior names masked.
 - [Development host smoke tests](development-host-smoke-tests.md) — public dev host and loopback can select different platform/club modes; confirm the mode before browser tests.
+- [Pending Git merges and checkpoints](pending-git-merges.md) — a no-commit pull can still become a merge commit through automatic checkpointing; stop on divergence when Git commits are forbidden.
