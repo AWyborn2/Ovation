@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { tallyFielding } from "../central/scoring";
 import {
   ProjectionSkip,
   centralDismissalType,
@@ -192,5 +193,39 @@ describe("scorecardToCentral", () => {
       [1, "p2", "catch"],
       [1, "p2", "run out"],
     ]);
+  });
+  it("R6 (PlayHQ scorecard catches): the reads count exactly the catches PlayHQ credits", () => {
+    // Ash chose PlayHQ scorecard catches on 4 Oct 2026 (hybrid stats plan U15). A keeper's
+    // catches are catches; stumpings and run-outs never are.
+    const raw = {
+      id: "m1",
+      innings: [
+        {
+          inningsOrder: 1,
+          battingTeamId: "tB",
+          fielding: [
+            { participantId: "wk", catches: 1, wicketKeeperCatches: 2, stumpings: 1 },
+            { participantId: "f", totalCatches: 3, runOuts: 1 },
+          ],
+        },
+      ],
+    };
+    const p = scorecardToCentral(
+      row(),
+      raw,
+      ctx(
+        new Map([
+          ["org-a", 1],
+          ["org-b", 2],
+        ]),
+      ),
+    );
+    const tally = tallyFielding(
+      p.fielding.map((f) => ({ participantId: f.participant_id, kind: f.kind })),
+    );
+    expect(Object.fromEntries(tally)).toEqual({
+      wk: { catches: 3, stumpings: 1, runOuts: 0 },
+      f: { catches: 3, stumpings: 0, runOuts: 1 },
+    });
   });
 });

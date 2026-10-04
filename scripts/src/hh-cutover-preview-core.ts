@@ -76,7 +76,8 @@ export const REASON_LABEL: Record<ReasonCode, string> = {
     "extra central match (central has a match for the player that native doesn't)",
   games_rule: "games rule (rostered appearance with no batting or bowling line — KTD6)",
   ladies_t20: "Ladies T20 (counted as Female B Grade)",
-  catches_rule: "catches rule (catches differ on a match both sides have — R6)",
+  catches_rule:
+    "catches rule (PlayHQ scorecard catches differ from the native count on a match both sides have — R6)",
   merge: "merge (a split identity folded into its keeper)",
   correction: "correction (a club correction changes the central figure)",
   baseline_overlap: "baseline overlap (history also covers a season central supplies — R20)",
