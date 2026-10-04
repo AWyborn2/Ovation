@@ -85,3 +85,6 @@ attached_assets/*.zip
 !.env.example
 # Mobile static build output
 artifacts/cricket-mobile/static-build/
+
+# Local PlayHQ → central projection audit exports (participant data)
+/exports/p0-central-projection/
