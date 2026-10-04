@@ -29,7 +29,11 @@
  *
  * Plus, for U13: career baselines that look like they overlap central seasons.
  */
-import { boundaryFor, isSyntheticParticipantKey } from "@workspace/db";
+import {
+  boundaryFor,
+  CLUB_HISTORY_SUPPLEMENT_SOURCE,
+  isSyntheticParticipantKey,
+} from "@workspace/db";
 import {
   historyFigureProblems,
   parseBestBowling,
@@ -399,6 +403,310 @@ export function planHistoryRows(input: {
     warnings,
     mergedDuplicates,
   };
+}
+
+// ── 2b. Supplement seasons (hand-entered, at or after the boundary) ─────────
+
+/** `club_history_batches.source` of the supplement batch (what the overlay reads). */
+export const SUPPLEMENT_SOURCE = CLUB_HISTORY_SUPPLEMENT_SOURCE;
+export const SUPPLEMENT_LABEL = "Halls Head hand-entered seasons";
+
+/** What the supplement step needs beyond the main seed's input. */
+export interface SupplementSeedInput {
+  /** Native scorecard lines (any player; fill-ins are ignored). */
+  lines: ReadonlyArray<Pick<NativeLine, "matchId" | "playerId">>;
+  nativeMatches: ReadonlyMap<number, { season: number; grade: string; abandoned: boolean }>;
+  /**
+   * The player's whole merge group as the LIVE identity sees it: its central
+   * GUIDs (crosswalk + confirmed merges, synthetic keys left out) and every
+   * tenant player id the group owns.
+   */
+  groupOf: (playerId: number) => { guids: readonly string[]; playerIds: readonly number[] };
+  /**
+   * GUID → senior grade → seasons where central has ANY row for the
+   * participant with the club (batting, bowling, team sheet or fielding) —
+   * exactly what gives the overlay a central bucket.
+   */
+  centralSeasons: ReadonlyMap<string, ReadonlyMap<string, ReadonlySet<number>>>;
+  /** Supplement batches already in the store. */
+  existingBatches: ReadonlyArray<{ id: number; label: string; source: string }>;
+  /** `${playerId}|${grade}|${season}` of the rows those batches hold. */
+  existingRowKeys: ReadonlySet<string>;
+}
+
+export interface SupplementPlan {
+  /** Every hand-entered season that qualifies today, whether or not it is already seeded. */
+  rows: PreparedHistoryRow[];
+  /** Per `${playerId}|${grade}|${season}`: what a reviewer should know about the row. */
+  details: Map<string, { centralOtherGrades: string[] }>;
+  skipped: {
+    fillIn: number;
+    nonSeniorGrade: number;
+    beforeBoundary: number;
+    empty: number;
+    /** The player has native scorecard lines in that grade and season. */
+    nativeLines: number;
+    /** Central has the player in that grade and season. */
+    centralLines: number;
+    /** Players whose crosswalk row this same run still has to write. */
+    identityPending: number[];
+    /** Players with no tenant player id at all (blocks the commit). */
+    noTenantId: number[];
+  };
+  warnings: HistoryWarning[];
+  existing: Array<{ id: number; label: string; source: string }>;
+  /** Against the seeded batch: qualifying rows it lacks, and rows it holds that no longer qualify. */
+  drift: { notSeeded: string[]; noLongerQualifies: string[] };
+  /** True when a supplement batch would be written (none exists and there are rows). */
+  write: boolean;
+}
+
+export const supplementKey = (r: { playerId: number; grade: string; season: number | null }) =>
+  `${r.playerId}|${r.grade}|${r.season ?? ""}`;
+
+const emptySupplementPlan = (): SupplementPlan => ({
+  rows: [],
+  details: new Map(),
+  skipped: {
+    fillIn: 0,
+    nonSeniorGrade: 0,
+    beforeBoundary: 0,
+    empty: 0,
+    nativeLines: 0,
+    centralLines: 0,
+    identityPending: [],
+    noTenantId: [],
+  },
+  warnings: [],
+  existing: [],
+  drift: { notSeeded: [], noLongerQualifies: [] },
+  write: false,
+});
+
+/** True when a season total holds nothing at all (every count 0 / unknown, no bests). */
+const isZeroSeason = (f: HistoryFigures): boolean =>
+  COUNT_FIELDS.every((k) => (f[k] ?? 0) === 0) &&
+  (f.highScore ?? 0) === 0 &&
+  (f.bestBowlingWickets ?? 0) === 0;
+
+/**
+ * Hand-entered seasons to keep as club history (owner decision, 1 Oct 2026).
+ *
+ * A native season total (`player_grade_season_stats`) AT OR AFTER its grade's
+ * boundary normally never loads — central supplies those seasons. But some
+ * exist only as a typed-in total: the player has NO native scorecard lines and
+ * NO central lines (through the crosswalk and confirmed merges) in that grade
+ * and season, e.g. Dan Howell, B Grade 2013/14–2016/17. Cut-over would
+ * silently drop them, so they are planned as SUPPLEMENT rows in a second
+ * history batch. Nothing is created where native lines or central lines exist.
+ *
+ * The overlay applies the same test on read (a supplement counts only where
+ * the player has no central bucket), so a supplement can never double count.
+ */
+export function planSupplementSeasons(
+  input: {
+    pgss: readonly NativeStatRow[];
+    boundaries: readonly Boundary[];
+    seniorGrade: GradeNormaliser;
+    /** The player id is (or will be, after this run's writes) a tenant player id. */
+    inTenantSpace: (playerId: number) => boolean;
+    /** Players whose crosswalk row this run still has to write: their GUIDs aren't known yet. */
+    identityPending: ReadonlySet<number>;
+  } & SupplementSeedInput,
+): SupplementPlan {
+  const plan = emptySupplementPlan();
+  plan.existing = input.existingBatches.filter((b) => b.source === SUPPLEMENT_SOURCE);
+
+  // (player, senior grade, season) the player has a counted native line in.
+  const nativeLineKeys = new Set<string>();
+  for (const l of input.lines) {
+    if (isFillIn(l.playerId)) continue;
+    const m = input.nativeMatches.get(l.matchId);
+    if (!m || m.abandoned) continue; // an abandoned match never counts natively
+    const grade = input.seniorGrade(m.grade);
+    if (grade) nativeLineKeys.add(`${l.playerId}|${grade}|${m.season}`);
+  }
+
+  const groups = new Map<
+    string,
+    { playerId: number; grade: string; season: number; f: HistoryFigures; n: number }
+  >();
+  for (const r of input.pgss) {
+    if (r.season === null) continue; // a career baseline: U12's history
+    if (isFillIn(r.playerId)) {
+      plan.skipped.fillIn += 1;
+      continue;
+    }
+    const grade = input.seniorGrade(r.grade);
+    if (!grade) {
+      plan.skipped.nonSeniorGrade += 1;
+      continue;
+    }
+    const b = boundaryFor(input.boundaries, grade);
+    if (b !== null && r.season < b) {
+      plan.skipped.beforeBoundary += 1; // ordinary history (the main batch)
+      continue;
+    }
+    const season = r.season;
+    const f = toFigures(r, (message) =>
+      plan.warnings.push({ playerId: r.playerId, grade, season, message }),
+    );
+    const key = `${r.playerId}|${grade}|${season}`;
+    const g = groups.get(key);
+    if (g) {
+      g.f = mergeFigures(g.f, f);
+      g.n += 1;
+    } else groups.set(key, { playerId: r.playerId, grade, season, f, n: 1 });
+  }
+
+  const pending = new Set<number>();
+  const noTenantId = new Set<number>();
+  for (const [key, g] of groups) {
+    if (!hasFigures(g.f) || isZeroSeason(g.f)) {
+      plan.skipped.empty += 1;
+      continue;
+    }
+    const group = input.groupOf(g.playerId);
+    const ids = new Set([g.playerId, ...group.playerIds]);
+    if ([...ids].some((id) => nativeLineKeys.has(`${id}|${g.grade}|${g.season}`))) {
+      plan.skipped.nativeLines += 1;
+      continue;
+    }
+    if (input.identityPending.has(g.playerId)) {
+      pending.add(g.playerId);
+      continue;
+    }
+    if (!input.inTenantSpace(g.playerId)) {
+      noTenantId.add(g.playerId);
+      continue;
+    }
+    const centralGrades = new Set<string>();
+    for (const guid of group.guids) {
+      for (const [grade, seasons] of input.centralSeasons.get(guid) ?? []) {
+        if (seasons.has(g.season)) centralGrades.add(grade);
+      }
+    }
+    if (centralGrades.has(g.grade)) {
+      plan.skipped.centralLines += 1;
+      continue;
+    }
+    if (g.n > 1) {
+      plan.warnings.push({
+        playerId: g.playerId,
+        grade: g.grade,
+        season: g.season,
+        message: `${g.n} native rows for this season were summed into one.`,
+      });
+    }
+    for (const message of historyFigureProblems("season", g.f)) {
+      plan.warnings.push({ playerId: g.playerId, grade: g.grade, season: g.season, message });
+    }
+    plan.rows.push({
+      ...g.f,
+      playerId: g.playerId,
+      grade: g.grade,
+      grain: "season",
+      season: g.season,
+    });
+    plan.details.set(key, { centralOtherGrades: [...centralGrades].sort() });
+  }
+  plan.rows.sort(
+    (a, b) =>
+      a.playerId - b.playerId ||
+      a.grade.localeCompare(b.grade) ||
+      (a.season ?? 0) - (b.season ?? 0),
+  );
+  plan.skipped.identityPending = [...pending].sort((a, b) => a - b);
+  plan.skipped.noTenantId = [...noTenantId].sort((a, b) => a - b);
+
+  if (plan.existing.length > 0) {
+    const planned = new Set(plan.rows.map(supplementKey));
+    plan.drift = {
+      notSeeded: [...planned].filter((k) => !input.existingRowKeys.has(k)).sort(),
+      noLongerQualifies: [...input.existingRowKeys].filter((k) => !planned.has(k)).sort(),
+    };
+  }
+  plan.write = plan.existing.length === 0 && plan.rows.length > 0;
+  return plan;
+}
+
+const highScoreText = (r: HistoryFigures): string =>
+  r.highScore === null ? "" : `${r.highScore}${r.highScoreNotOut ? "*" : ""}`;
+const bestBowlingText = (r: HistoryFigures): string =>
+  r.bestBowlingWickets === null ? "" : `${r.bestBowlingWickets}/${r.bestBowlingRuns ?? 0}`;
+
+/** supplement-seasons.csv: every hand-entered season kept, with its figures. */
+export function supplementCsv(plan: SupplementPlan, nameOf: (playerId: number) => string): string {
+  const seeded = plan.existing.map((b) => `#${b.id}`).join(", ");
+  const notSeeded = new Set(plan.drift.notSeeded);
+  const header = [
+    "player_id",
+    "name",
+    "grade",
+    "season",
+    "games",
+    "innings",
+    "not_outs",
+    "runs",
+    "high_score",
+    "fifties",
+    "hundreds",
+    "wickets",
+    "runs_conceded",
+    "best_bowling",
+    "five_wickets",
+    "catches",
+    "stumpings",
+    "run_outs",
+    "central_other_grades_same_season",
+    "status",
+  ];
+  const rows: unknown[][] = plan.rows.map((r) => {
+    const key = supplementKey(r);
+    const status =
+      plan.existing.length === 0
+        ? "to seed"
+        : notSeeded.has(key)
+          ? `NOT in seeded batch ${seeded}`
+          : `seeded (batch ${seeded})`;
+    return [
+      r.playerId,
+      nameOf(r.playerId),
+      r.grade,
+      r.season === null ? "" : seasonLabel(r.season),
+      r.games ?? "",
+      r.innings ?? "",
+      r.notOuts ?? "",
+      r.runs ?? "",
+      highScoreText(r),
+      r.fifties ?? "",
+      r.hundreds ?? "",
+      r.wickets ?? "",
+      r.runsConceded ?? "",
+      bestBowlingText(r),
+      r.fiveWickets ?? "",
+      r.catches ?? "",
+      r.stumpings ?? "",
+      r.runOuts ?? "",
+      (plan.details.get(key)?.centralOtherGrades ?? []).join(" | "),
+      status,
+    ];
+  });
+  // Rows the seeded batch holds that no longer qualify (lines have appeared
+  // since): the overlay already ignores them where central has the season.
+  for (const key of plan.drift.noLongerQualifies) {
+    const [playerId, grade, season] = key.split("|") as [string, string, string];
+    const row: unknown[] = [
+      Number(playerId),
+      nameOf(Number(playerId)),
+      grade,
+      seasonLabel(Number(season)),
+    ];
+    while (row.length < header.length - 1) row.push("");
+    row.push(`seeded (batch ${seeded}) but no longer qualifies: lines now exist`);
+    rows.push(row);
+  }
+  return [header, ...rows].map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";
 }
 
 // ── 4/5. Identity: review decisions and pinned players ──────────────────────
@@ -963,6 +1271,8 @@ export interface SeedPlanInput {
     /** Migrations 0021 / 0022 aren't applied: the store can't be read or written. */
     storeMissing: boolean;
   };
+  /** The supplement step's inputs; without them no supplement is planned. */
+  supplement?: SupplementSeedInput;
 }
 
 export interface SeedPlan {
@@ -977,6 +1287,8 @@ export interface SeedPlan {
     existing: Array<{ id: number; label: string; source: string }>;
     write: boolean;
   };
+  /** Hand-entered seasons kept as a SECOND batch (source "supplement"). */
+  supplement: SupplementPlan;
   identity: IdentityPlan;
   blockers: string[];
 }
@@ -1055,6 +1367,29 @@ export function planSeed(input: SeedPlanInput): SeedPlan {
     );
   }
 
+  // The supplement step: hand-entered seasons at or after the boundary, under
+  // the SAME boundaries the main batch is planned with.
+  const supplement = input.supplement
+    ? planSupplementSeasons({
+        pgss: input.pgss,
+        boundaries: desired,
+        seniorGrade: input.seniorGrade,
+        inTenantSpace: (id) => idsInSpace.has(id),
+        identityPending: new Set([
+          ...input.pendingKeeperIds,
+          ...identity.decisionMapInserts.map((r) => r.nativePlayerId),
+        ]),
+        ...input.supplement,
+      })
+    : emptySupplementPlan();
+  if (supplement.skipped.noTenantId.length > 0) {
+    const ids = supplement.skipped.noTenantId;
+    blockers.push(
+      `${ids.length} player(s) with a hand-entered season would have no tenant player id ` +
+        `(no crosswalk row, no pin): ${ids.slice(0, 20).join(", ")}${ids.length > 20 ? " …" : ""}.`,
+    );
+  }
+
   return {
     boundaries: { desired, current, changed, table },
     history,
@@ -1062,6 +1397,7 @@ export function planSeed(input: SeedPlanInput): SeedPlan {
       existing: existingBatches,
       write: existingBatches.length === 0 && history.rows.length > 0,
     },
+    supplement,
     identity,
     blockers,
   };
@@ -1074,6 +1410,7 @@ export function seedWriteSet(plan: SeedPlan): string {
     maps: plan.identity.decisionMapInserts.map((r) => `${r.participantId}=${r.playerId}`).sort(),
     pins: plan.identity.pins.map((p) => p.playerId).sort((a, b) => a - b),
     batchRows: plan.batch.write ? plan.history.rows.length : 0,
+    supplement: plan.supplement.write ? plan.supplement.rows.map(supplementKey) : [],
   });
 }
 

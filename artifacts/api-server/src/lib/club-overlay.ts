@@ -3,11 +3,14 @@ import {
   db,
   boundaryFor,
   clubCorrectionsTable,
+  clubHistoryBatchesTable,
   clubHistoryBoundariesTable,
+  CLUB_HISTORY_SUPPLEMENT_SOURCE,
   clubHistoryRowsTable,
   playerIdMapTable,
   type ClubHistoryGrain,
   type CorrectableField,
+  type Player,
   type PlayerGradeStat,
 } from "@workspace/db";
 import type {
@@ -15,6 +18,7 @@ import type {
   CentralLineBatting,
   CentralLineBowling,
   CentralMilestone,
+  CentralMilestoneInputs,
   CentralParticipantMatchLine,
   CentralPartialFigures,
   CentralPartials,
@@ -28,6 +32,7 @@ import type {
   MilestoneTiers,
 } from "@workspace/db/central-queries";
 import { resolveCuration, type CurationOverlay } from "./central-curation";
+import { isCapOnlyRow, loadCapOnlyPlayers } from "./cap-only-players";
 
 /**
  * The per-tenant club overlay for central reads (hybrid stats plan U6 identity
@@ -72,12 +77,24 @@ export interface ClubIdentity {
   guidForPlayerId(playerId: number): string | null;
   /** The group's display name: the keeper's curated name, else `fallback`. */
   nameFor(guid: string, fallback: string | null): string | null;
+  /**
+   * The tenant's cap-only players by id (lib/cap-only-players.ts): native rows
+   * with a cap number and no stats. They are valid players for curated links
+   * and the player page, and have NO GUID, crosswalk row or overlay key — so
+   * no stat derivation, leaderboard, directory or count can include them.
+   * Empty for every tenant but the one that owns the native players table.
+   */
+  capOnly: ReadonlyMap<number, Player>;
 }
 
-/** Build the identity slice from a tenant's crosswalk rows and curation. Pure. */
+/**
+ * Build the identity slice from a tenant's crosswalk rows and curation, plus
+ * its cap-only native players (tenant 1 only). Pure.
+ */
 export function buildClubIdentity(
   crosswalk: readonly { participantId: string; playerId: number }[],
   curation: CurationOverlay,
+  capOnlyPlayers: readonly Player[] = [],
 ): ClubIdentity {
   const merges = curation.canonicalByGuid;
   const canonicalOf = (guid: string) => merges.get(guid) ?? guid;
@@ -114,7 +131,14 @@ export function buildClubIdentity(
     for (const g of members) intByGuid.set(g, id);
   }
 
+  // Cap-only players: an id the crosswalk owns is a crosswalk player instead.
+  const capOnly = new Map<number, Player>();
+  for (const p of capOnlyPlayers) {
+    if (isCapOnlyRow(p) && !guidByRawInt.has(p.id)) capOnly.set(p.id, p);
+  }
+
   return {
+    capOnly,
     merges,
     nameByGuid: curation.nameByGuid,
     intByGuid,
@@ -152,7 +176,7 @@ export async function loadClubIdentity(
   tenantId: number,
   reader: OverlayReader = db,
 ): Promise<ClubIdentity> {
-  const [crosswalk, curation] = await Promise.all([
+  const [crosswalk, curation, capOnly] = await Promise.all([
     reader
       .select({
         participantId: playerIdMapTable.participantId,
@@ -161,8 +185,9 @@ export async function loadClubIdentity(
       .from(playerIdMapTable)
       .where(eq(playerIdMapTable.tenantId, tenantId)),
     resolveCuration(tenantId, reader),
+    loadCapOnlyPlayers(tenantId, reader),
   ]);
-  return buildClubIdentity(crosswalk, curation);
+  return buildClubIdentity(crosswalk, curation, capOnly);
 }
 
 // ===========================================================================
@@ -243,6 +268,25 @@ export interface OverlayHistoryRow {
   catches: number | null;
   stumpings: number | null;
   runOuts: number | null;
+  /**
+   * The row belongs to a SUPPLEMENT batch (`club_history_batches.source` =
+   * `CLUB_HISTORY_SUPPLEMENT_SOURCE`): a hand-entered season the club keeps as
+   * history even though it is at or after the grade's boundary. A supplement
+   * season counts only when the player has no central bucket for that same
+   * grade and season; otherwise it is ignored and reported, never counted
+   * twice. Only season-grain rows can be supplements.
+   */
+  supplement?: boolean;
+}
+
+/** A supplement season the overlay left out because central supplies it. */
+export interface IgnoredSupplement {
+  playerId: number;
+  /** The key the row's player presents under (keeper GUID or `player:<id>`). */
+  participantId: string;
+  grade: string;
+  season: number;
+  reason: "central_has_season";
 }
 
 /** An ACTIVE correction (removed ones are never loaded). */
@@ -316,6 +360,34 @@ export interface ClubStats {
   matchDeltas: MatchDeltas;
   /** The corrected lines themselves, for the per-match surfaces. */
   correctedLines: CorrectedLine[];
+  /**
+   * Supplement seasons (hand-entered, at or after the boundary): how many rows
+   * counted, and the ones left out because central has that grade and season.
+   */
+  supplements: { used: number; ignored: IgnoredSupplement[] };
+}
+
+/**
+ * How a history row counts for a club (the ONE rule every surface uses):
+ *   - "history": career grain, or a season before the grade's boundary;
+ *   - "supplement": a supplement batch's SEASON row at or after the boundary
+ *     (or with no boundary at all) — counts only where the player has no
+ *     central bucket for that grade and season;
+ *   - null: central supplies that season, so the row never counts.
+ * Fill-ins / cap-only ids and non-senior grades never count.
+ */
+export function historyRowSource(
+  r: OverlayHistoryRow,
+  boundaries: readonly OverlayBoundary[],
+  isSeniorGrade: (grade: string) => boolean,
+): "history" | "supplement" | null {
+  if (r.playerId <= 0 || r.playerId >= FILL_IN_ID_FLOOR) return null;
+  if (!isSeniorGrade(r.grade)) return null;
+  if (r.grain === "career") return "history";
+  if (r.season === null) return null;
+  const b = boundaryFor(boundaries, r.grade);
+  if (b !== null && r.season < b) return "history";
+  return r.supplement === true && r.grain === "season" ? "supplement" : null;
 }
 
 const HISTORY_PREFIX = "player:";
@@ -851,19 +923,34 @@ export function applyClubOverlay(input: ApplyClubOverlayInput): ClubStats {
     players.set(p.participantId, { displayName: p.displayName, isPrivate: p.isPrivate });
   }
 
-  // 6–7: history rows before the boundary, keyed to the player's keeper.
+  // 6–7: history rows before the boundary, keyed to the player's keeper —
+  // plus SUPPLEMENT seasons (hand-entered, at or after the boundary), each
+  // only where the player has no central bucket for that grade and season.
   const history = new Map<string, ClubStatsBucket>();
+  const supplements: ClubStats["supplements"] = { used: 0, ignored: [] };
   for (const r of data.history) {
-    if (r.playerId <= 0 || r.playerId >= FILL_IN_ID_FLOOR) continue;
-    if (!isSeniorGrade(r.grade)) continue;
+    // Season-grained history only where central does NOT supply the season.
+    const rowSource = historyRowSource(r, data.boundaries, isSeniorGrade);
+    if (rowSource === null) continue;
     const careerGrain = r.grain === "career";
-    if (!careerGrain) {
-      // Season-grained history only where central does NOT supply the season.
-      const b = boundaryFor(data.boundaries, r.grade);
-      if (b === null || r.season === null || r.season >= b) continue;
-    }
     const guid = identity.guidForPlayerId(r.playerId);
     const pid = guid ?? historyKey(r.playerId);
+    if (rowSource === "supplement") {
+      if (fillIn(pid)) continue;
+      // `central` holds every bucket central supplies for the keeper (a
+      // roster-only appearance included), merges already folded.
+      if (central.has(bucketKeyOf(pid, r.grade, r.season))) {
+        supplements.ignored.push({
+          playerId: r.playerId,
+          participantId: pid,
+          grade: r.grade,
+          season: r.season as number,
+          reason: "central_has_season",
+        });
+        continue;
+      }
+      supplements.used += 1;
+    }
     if (guid === null) intByGuid.set(pid, r.playerId);
     if (fillIn(pid)) continue;
     const season = careerGrain ? null : r.season;
@@ -893,6 +980,7 @@ export function applyClubOverlay(input: ApplyClubOverlayInput): ClubStats {
     corrections: { applied: resolved.applied, stale: resolved.stale },
     matchDeltas: resolved.matchDeltas,
     correctedLines: resolved.lines,
+    supplements,
   };
 }
 
@@ -1297,25 +1385,48 @@ export function clubRecords(
  * The milestone walk's overlay: drop pre-boundary central matches, seed each
  * keeper with its pre-boundary history totals, apply corrected per-match
  * deltas, and leave fill-ins out. Pure.
+ *
+ * SUPPLEMENT seasons (hand-entered, at or after the boundary) are carried in
+ * the same base totals — they have no match to cross at — and, exactly as in
+ * the careers, only where the keeper has no central match in that grade and
+ * season. That test needs the walk's own `inputs`; without them no supplement
+ * is carried (nothing is guessed).
  */
 export function clubMilestoneOverlay(
   overlay: ClubOverlay,
   resolved: Pick<ResolvedCorrections, "matchDeltas">,
   isSeniorGrade: (grade: string) => boolean,
+  inputs?: Pick<CentralMilestoneInputs, "metaOf" | "careers">,
 ): MilestoneOverlay {
   const { identity, data } = overlay;
   const baseTotals = new Map<
     string,
     { games: number; runs: number; wickets: number; dismissals: number }
   >();
-  for (const r of data.history) {
-    if (r.playerId <= 0 || r.playerId >= FILL_IN_ID_FLOOR || !isSeniorGrade(r.grade)) continue;
-    if (r.grain !== "career") {
-      const b = boundaryFor(data.boundaries, r.grade);
-      if (b === null || r.season === null || r.season >= b) continue;
+  /** `${grade}\u0000${season}` of every central match the keeper appears in. */
+  const centralSeasons = new Map<string, Set<string>>();
+  const centralHas = (guid: string, grade: string, season: number | null): boolean => {
+    let seen = centralSeasons.get(guid);
+    if (!seen) {
+      seen = new Set();
+      const c = inputs?.careers.get(guid);
+      const matchIds = c
+        ? [...c.matches, ...c.runsByMatch.keys(), ...c.wktsByMatch.keys(), ...c.dismByMatch.keys()]
+        : [];
+      for (const matchId of matchIds) {
+        const m = inputs?.metaOf.get(matchId);
+        if (m?.grade) seen.add(`${m.grade}\u0000${m.season ?? ""}`);
+      }
+      centralSeasons.set(guid, seen);
     }
+    return seen.has(`${grade}\u0000${season ?? ""}`);
+  };
+  for (const r of data.history) {
+    const rowSource = historyRowSource(r, data.boundaries, isSeniorGrade);
+    if (rowSource === null) continue;
     const guid = identity.guidForPlayerId(r.playerId);
     if (guid === null) continue; // history-only: no central match to cross at
+    if (rowSource === "supplement" && (!inputs || centralHas(guid, r.grade, r.season))) continue;
     const f = historyFigures(r);
     const t = baseTotals.get(guid) ?? { games: 0, runs: 0, wickets: 0, dismissals: 0 };
     t.games += f.games;
@@ -1366,7 +1477,7 @@ export async function loadClubOverlayData(
 ): Promise<ClubOverlayData> {
   if (Date.now() < tablesMissingUntil) return EMPTY_OVERLAY_DATA;
   try {
-    const [boundaries, history, corrections] = await Promise.all([
+    const [boundaries, rows, supplementBatches, corrections] = await Promise.all([
       reader
         .select({
           grade: clubHistoryBoundariesTable.grade,
@@ -1377,6 +1488,7 @@ export async function loadClubOverlayData(
       reader
         .select({
           id: clubHistoryRowsTable.id,
+          batchId: clubHistoryRowsTable.batchId,
           playerId: clubHistoryRowsTable.playerId,
           grade: clubHistoryRowsTable.grade,
           season: clubHistoryRowsTable.season,
@@ -1408,6 +1520,17 @@ export async function loadClubOverlayData(
         })
         .from(clubHistoryRowsTable)
         .where(eq(clubHistoryRowsTable.tenantId, tenantId)),
+      // Supplement batches (hand-entered seasons kept at or after the
+      // boundary) are marked by their batch source — no schema change.
+      reader
+        .select({ id: clubHistoryBatchesTable.id })
+        .from(clubHistoryBatchesTable)
+        .where(
+          and(
+            eq(clubHistoryBatchesTable.tenantId, tenantId),
+            eq(clubHistoryBatchesTable.source, CLUB_HISTORY_SUPPLEMENT_SOURCE),
+          ),
+        ),
       reader
         .select({
           id: clubCorrectionsTable.id,
@@ -1422,6 +1545,10 @@ export async function loadClubOverlayData(
           and(eq(clubCorrectionsTable.tenantId, tenantId), isNull(clubCorrectionsTable.removedAt)),
         ),
     ]);
+    const supplementIds = new Set(supplementBatches.map((b) => b.id));
+    const history: OverlayHistoryRow[] = rows.map(({ batchId, ...r }) =>
+      supplementIds.has(batchId) ? { ...r, supplement: true } : r,
+    );
     return { boundaries, history, corrections };
   } catch (err) {
     if (!isUndefinedTable(err)) throw err;
@@ -1483,6 +1610,32 @@ async function reportStale(tenantId: number, stale: readonly StaleCorrection[]):
   );
 }
 
+/** Ignored supplement seasons already logged by this process (logged once each). */
+const reportedSupplements = new Set<string>();
+
+/**
+ * Report supplement seasons the overlay left out because central now supplies
+ * that player's grade and season. Each is logged once per process, not once
+ * per request: an ignored supplement stays ignored until someone removes it.
+ */
+async function reportIgnoredSupplements(
+  tenantId: number,
+  ignored: readonly IgnoredSupplement[],
+): Promise<void> {
+  const fresh = ignored.filter((s) => {
+    const key = `${tenantId}|${s.playerId}|${s.grade}|${s.season}`;
+    if (reportedSupplements.has(key)) return false;
+    reportedSupplements.add(key);
+    return true;
+  });
+  if (fresh.length === 0) return;
+  const { logger } = await import("./logger");
+  logger.warn(
+    { tenantId, ignored: fresh },
+    "club overlay: supplement seasons ignored (central supplies that player's grade and season)",
+  );
+}
+
 /**
  * The tenant's corrections checked against central — for the per-match
  * surfaces that need only the corrected lines, not the whole club's partials.
@@ -1534,6 +1687,7 @@ export async function buildClubStats(
     isSeniorGrade: central.isSeniorAppGrade,
   });
   await reportStale(tenantId, stats.corrections.stale);
+  await reportIgnoredSupplements(tenantId, stats.supplements.ignored);
   return stats;
 }
 
@@ -1562,7 +1716,7 @@ export async function overlayMilestones(
   return central.walkCentralMilestones(
     inputs,
     tiers,
-    clubMilestoneOverlay(overlay, resolved, central.isSeniorAppGrade),
+    clubMilestoneOverlay(overlay, resolved, central.isSeniorAppGrade, inputs),
   );
 }
 

@@ -18,6 +18,16 @@
  *   6. a review list of players whose runs or wickets differ from central —
  *      review only, NO corrections are created;
  *   plus a list of career baselines that may overlap central seasons (U13).
+ *   7. HAND-ENTERED SEASONS (owner decision, 1 Oct 2026): a native season total
+ *      AT OR AFTER its grade's boundary with NO native scorecard lines and NO
+ *      central lines for that player (crosswalk + confirmed merges) in that
+ *      grade and season is kept as club history — a SECOND batch, source
+ *      "supplement", label "Halls Head hand-entered seasons". The overlay
+ *      counts such a season only while the player has no central bucket for
+ *      it, so it can never double count. Every one is listed in
+ *      supplement-seasons.csv. Idempotent: once the supplement batch exists a
+ *      re-run writes nothing and reports any drift. Undo it on its own with
+ *      --undo=<its batch id>.
  *
  *   # preview (default — writes nothing to any database; report files only)
  *   pnpm --filter @workspace/scripts run seed-hh-club-layer -- --tenant=1
@@ -38,11 +48,13 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { drizzle } from "drizzle-orm/node-postgres";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   baselineAdjustmentsTable,
   clubHistoryBatchesTable,
   clubHistoryBoundariesTable,
+  clubHistoryRowsTable,
+  type MergeStatus,
   closeDb,
   db,
   getPool,
@@ -63,6 +75,8 @@ import {
   undoHistoryBatch,
   withHistoryStore,
 } from "../../artifacts/api-server/src/lib/history-import";
+import { buildCurationOverlay } from "../../artifacts/api-server/src/lib/central-curation";
+import { buildClubIdentity } from "../../artifacts/api-server/src/lib/club-overlay";
 import { linkNativeToCentral, matchesByParticipant, toCsv } from "./hh-central-crosswalk-core";
 import {
   HALLS_HEAD_TENANT_ID,
@@ -74,6 +88,10 @@ import { planPersistence } from "./persist-hh-crosswalk-core";
 import { writeSeedPlan } from "./seed-hh-club-layer-write";
 import {
   SEED_SOURCE,
+  SUPPLEMENT_LABEL,
+  SUPPLEMENT_SOURCE,
+  supplementCsv,
+  supplementKey,
   decisionsCsv,
   flagBaselineOverlaps,
   parseDecisionsCsv,
@@ -98,7 +116,7 @@ const USAGE = `seed-hh-club-layer — seed Halls Head's club layer (boundary, hi
   --tenant=1          required (Halls Head only)
   --decisions=<csv>   Ash's decisions for U4's review players (start from decisions-needed.csv)
   --commit            write in one transaction (default: preview, writes nothing)
-  --undo=<batchId>    undo the seeded history batch (U11 batch undo)
+  --undo=<batchId>    undo a batch this seed wrote: the history batch or the supplement batch
   --out=<dir>         parent directory for the timestamped report folder (default: OS temp dir)`;
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -168,6 +186,9 @@ interface TenantState {
   }>;
   boundaries: Array<{ grade: string | null; startSeason: number }>;
   seedBatches: Array<{ id: number; label: string; source: string }>;
+  /** Supplement batches (hand-entered seasons) and the rows they hold. */
+  supplementBatches: Array<{ id: number; label: string; source: string }>;
+  supplementRowKeys: Set<string>;
   storeMissing: boolean;
 }
 
@@ -201,7 +222,7 @@ async function readTenantState(
       })
       .from(clubHistoryBoundariesTable)
       .where(eq(clubHistoryBoundariesTable.tenantId, tenantId));
-    const seedBatches = await reader
+    const batches = await reader
       .select({
         id: clubHistoryBatchesTable.id,
         label: clubHistoryBatchesTable.label,
@@ -211,13 +232,50 @@ async function readTenantState(
       .where(
         and(
           eq(clubHistoryBatchesTable.tenantId, tenantId),
-          eq(clubHistoryBatchesTable.source, SEED_SOURCE),
+          inArray(clubHistoryBatchesTable.source, [SEED_SOURCE, SUPPLEMENT_SOURCE]),
         ),
       );
-    return { map, curation, boundaries, seedBatches, storeMissing: false };
+    const seedBatches = batches.filter((b) => b.source === SEED_SOURCE);
+    const supplementBatches = batches.filter((b) => b.source === SUPPLEMENT_SOURCE);
+    const supplementRows =
+      supplementBatches.length === 0
+        ? []
+        : await reader
+            .select({
+              playerId: clubHistoryRowsTable.playerId,
+              grade: clubHistoryRowsTable.grade,
+              season: clubHistoryRowsTable.season,
+            })
+            .from(clubHistoryRowsTable)
+            .where(
+              and(
+                eq(clubHistoryRowsTable.tenantId, tenantId),
+                inArray(
+                  clubHistoryRowsTable.batchId,
+                  supplementBatches.map((b) => b.id),
+                ),
+              ),
+            );
+    return {
+      map,
+      curation,
+      boundaries,
+      seedBatches,
+      supplementBatches,
+      supplementRowKeys: new Set(supplementRows.map(supplementKey)),
+      storeMissing: false,
+    };
   } catch (err) {
     if (tolerateMissingStore && isUndefinedTable(err)) {
-      return { map, curation, boundaries: [], seedBatches: [], storeMissing: true };
+      return {
+        map,
+        curation,
+        boundaries: [],
+        seedBatches: [],
+        supplementBatches: [],
+        supplementRowKeys: new Set(),
+        storeMissing: true,
+      };
     }
     throw err;
   }
@@ -235,7 +293,7 @@ async function runUndo(tenantId: number, batchId: number, commit: boolean): Prom
     console.error(`No history batch #${batchId} for tenant ${tenantId}.`);
     process.exit(2);
   }
-  if (batch.source !== SEED_SOURCE) {
+  if (batch.source !== SEED_SOURCE && batch.source !== SUPPLEMENT_SOURCE) {
     console.error(
       `Batch #${batchId} came from "${batch.source}", not this seed — undo it from the ` +
         "platform admin history page instead.",
@@ -350,6 +408,25 @@ async function main(): Promise<void> {
     coverageMap.set(key, c);
   }
 
+  // Central presence per GUID, senior grade and season: ANY row for the
+  // participant with the club (batting, bowling, team sheet or fielding) —
+  // exactly what gives the club overlay a central bucket.
+  const centralPresence = new Map<string, Map<string, Set<number>>>();
+  for (const [mid, apps] of appIndex.byMatch) {
+    const m = matchById.get(mid);
+    const grade = m?.grade ? seniorGrade(m.grade) : null;
+    const season = parseSeasonStartYear(m?.season ?? null);
+    if (!grade || season === null) continue;
+    for (const pid of apps.keys()) {
+      const byGrade = centralPresence.get(pid) ?? new Map<string, Set<number>>();
+      const set = byGrade.get(grade) ?? new Set<number>();
+      set.add(season);
+      byGrade.set(grade, set);
+      centralPresence.set(pid, byGrade);
+    }
+  }
+  const nativeMatchById = new Map(native.matches.map((m) => [m.id, m]));
+
   const buildInput = (state: TenantState): SeedPlanInput => {
     const persist = planPersistence({
       links: playerLinks,
@@ -358,7 +435,36 @@ async function main(): Promise<void> {
       existingMap: state.map,
       existingCuration: state.curation,
     });
+    // The LIVE identity rules (crosswalk + confirmed merges, chains collapsed)
+    // — the same code the club overlay folds players with.
+    const identity = buildClubIdentity(
+      state.map,
+      buildCurationOverlay(
+        state.curation.map((c) => ({
+          participantId: c.participantId,
+          overrideDisplayName: null,
+          mergedIntoParticipantId: c.mergedIntoParticipantId,
+          mergeStatus: c.mergeStatus as MergeStatus | null,
+        })),
+      ),
+    );
+    const groupOf = (playerId: number) => {
+      const keeper = identity.guidForPlayerId(playerId);
+      if (keeper === null) return { guids: [], playerIds: [playerId] };
+      return {
+        guids: identity.membersOf(keeper).filter((g) => !isSyntheticParticipantKey(g)),
+        playerIds: identity.intsOf(keeper),
+      };
+    };
     return {
+      supplement: {
+        lines: native.lines,
+        nativeMatches: nativeMatchById,
+        groupOf,
+        centralSeasons: centralPresence,
+        existingBatches: state.supplementBatches,
+        existingRowKeys: state.supplementRowKeys,
+      },
       coverage: [...coverageMap.values()],
       pgss: seedNative.pgss,
       seniorGrade,
@@ -594,6 +700,9 @@ async function main(): Promise<void> {
       overlaps.map((o) => [o.playerId, nameOf(o.playerId), o.grade, o.flag, seasonList(o.seasons)]),
     ),
   );
+  // Every hand-entered season kept as club history (the supplement batch).
+  write("supplement-seasons.csv", supplementCsv(plan.supplement, nameOf));
+  const sup = plan.supplement;
   const pinReasons: Record<string, number> = {};
   for (const p of plan.identity.pins) pinReasons[p.reason] = (pinReasons[p.reason] ?? 0) + 1;
   const summary = {
@@ -615,6 +724,23 @@ async function main(): Promise<void> {
       mergedDuplicates: plan.history.mergedDuplicates,
       existingSeedBatches: plan.batch.existing,
       willWriteBatch: plan.batch.write,
+    },
+    // Hand-entered seasons at or after the boundary, kept as a second batch.
+    supplement: {
+      label: SUPPLEMENT_LABEL,
+      source: SUPPLEMENT_SOURCE,
+      rows: sup.rows.length,
+      players: new Set(sup.rows.map((r) => r.playerId)).size,
+      runs: sup.rows.reduce((t, r) => t + (r.runs ?? 0), 0),
+      wickets: sup.rows.reduce((t, r) => t + (r.wickets ?? 0), 0),
+      rowsWithCentralInAnotherGradeThatSeason: [...sup.details.values()].filter(
+        (d) => d.centralOtherGrades.length > 0,
+      ).length,
+      skipped: sup.skipped,
+      warnings: sup.warnings.length,
+      existingSupplementBatches: sup.existing,
+      drift: sup.drift,
+      willWriteBatch: sup.write,
     },
     decisions: {
       needed: plan.identity.decisionsNeeded.length,
@@ -656,6 +782,7 @@ async function main(): Promise<void> {
   // ---- Commit: one transaction, re-planned against locked current rows -----
   let committed: SeedPlan;
   let batchId: number | null = null;
+  let supplementBatchId: number | null = null;
   try {
     committed = await withHistoryStore(() =>
       db.transaction(async (tx: Tx) => {
@@ -667,7 +794,9 @@ async function main(): Promise<void> {
         if (txPlan.blockers.length > 0 || seedWriteSet(txPlan) !== seedWriteSet(plan)) {
           throw new Error("rows changed since the preview — aborting, nothing written. Re-run.");
         }
-        batchId = (await writeSeedPlan(tx, tenantId, txPlan)).batchId;
+        const written = await writeSeedPlan(tx, tenantId, txPlan);
+        batchId = written.batchId;
+        supplementBatchId = written.supplementBatchId;
         return txPlan;
       }),
     );
@@ -680,6 +809,13 @@ async function main(): Promise<void> {
     committedAt: new Date().toISOString(),
     tenantId,
     historyBatchId: batchId,
+    supplementBatchId,
+    supplementRows: committed.supplement.write ? committed.supplement.rows.length : 0,
+    undoSupplement:
+      supplementBatchId === null
+        ? null
+        : `Run this script with --tenant=1 --undo=${supplementBatchId} --commit: the hand-entered ` +
+          "seasons stop counting, exactly as before the supplement was seeded.",
     previousBoundaries: committed.boundaries.changed ? committed.boundaries.current : null,
     boundariesWritten: committed.boundaries.changed ? committed.boundaries.desired : null,
     playerIdMapInserted: committed.identity.decisionMapInserts.map((r) => ({
@@ -698,7 +834,8 @@ async function main(): Promise<void> {
     `\nCOMMITTED: boundaries ${committed.boundaries.changed ? "replaced" : "unchanged"}, ` +
       `${committed.identity.decisionMapInserts.length} decision crosswalk row(s), ` +
       `${committed.identity.pins.length} pinned player(s), ` +
-      `${committed.batch.write ? `batch #${batchId} with ${committed.history.rows.length} history row(s)` : "no history batch (already seeded)"}. ` +
+      `${committed.batch.write ? `batch #${batchId} with ${committed.history.rows.length} history row(s)` : "no history batch (already seeded)"}, ` +
+      `${committed.supplement.write ? `supplement batch #${supplementBatchId} with ${committed.supplement.rows.length} hand-entered season(s)` : "no supplement batch (none to write, or already seeded)"}. ` +
       `Reversal record: ${path.join(outDir, "reversal.json")}`,
   );
 }
@@ -774,6 +911,47 @@ function printPreview(
     console.log(`  ${id} ${nameOf(id)}: native − central = ${runs} runs, ${wkts} wickets`);
   }
   console.log(`\nCareer baselines that may overlap central seasons (for U13): ${overlapCount}.`);
+
+  const sup = plan.supplement;
+  const supRuns = sup.rows.reduce((t, r) => t + (r.runs ?? 0), 0);
+  const supWkts = sup.rows.reduce((t, r) => t + (r.wickets ?? 0), 0);
+  console.log(
+    `\nHand-entered seasons kept as club history ("${SUPPLEMENT_LABEL}", a second batch): ` +
+      `${sup.rows.length} season row(s) for ${new Set(sup.rows.map((r) => r.playerId)).size} ` +
+      `player(s), ${supRuns} runs and ${supWkts} wickets. See supplement-seasons.csv.`,
+  );
+  console.log(
+    `  Not supplements: ${sup.skipped.nativeLines} with native scorecard lines, ` +
+      `${sup.skipped.centralLines} with central lines, ${sup.skipped.empty} empty, ` +
+      `${sup.skipped.beforeBoundary} before the boundary (ordinary history). ` +
+      `Warnings: ${sup.warnings.length}.`,
+  );
+  const otherGrade = [...sup.details.values()].filter((d) => d.centralOtherGrades.length > 0);
+  if (otherGrade.length > 0) {
+    console.log(
+      `  REVIEW: ${otherGrade.length} row(s) where central has the player in ANOTHER grade that ` +
+        "season (column central_other_grades_same_season) — check they are not the same games.",
+    );
+  }
+  if (sup.skipped.identityPending.length > 0) {
+    console.log(
+      `  Waiting for this run's crosswalk rows (re-run after commit): players ` +
+        `${sup.skipped.identityPending.join(", ")}.`,
+    );
+  }
+  if (sup.existing.length > 0) {
+    const ids = sup.existing.map((b) => `#${b.id}`).join(", ");
+    console.log(`  Already seeded: supplement batch ${ids} — no new batch.`);
+    if (sup.drift.notSeeded.length > 0 || sup.drift.noLongerQualifies.length > 0) {
+      console.log(
+        `  DRIFT against batch ${ids}: ${sup.drift.notSeeded.length} qualifying season(s) not in ` +
+          `it, ${sup.drift.noLongerQualifies.length} in it that no longer qualify. To re-seed: ` +
+          `--undo=<batchId> --commit, then run again.`,
+      );
+    }
+  } else if (sup.write) {
+    console.log("  Will write ONE supplement batch on --commit.");
+  }
   if (plan.blockers.length > 0) {
     console.log("\nBLOCKERS (commit refused until resolved):");
     for (const b of plan.blockers) console.log(`  - ${b}`);
