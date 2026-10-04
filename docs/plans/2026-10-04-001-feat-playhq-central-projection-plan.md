@@ -4,7 +4,7 @@ type: feat
 date: 2026-10-04
 topic: playhq-central-projection
 artifact_contract: ce-unified-plan/v1
-artifact_readiness: draft — awaiting Ash's decisions D1–D4
+artifact_readiness: implementation-ready (decisions D1–D4 settled 4 Oct 2026)
 product_contract_source: Ash, 4 Oct 2026 — "a key and important feature of the app to continuously update players stats, adding new players to the database after each match or sync"
 execution: code
 ---
@@ -69,7 +69,8 @@ execution: code
 - **A3:** A debutant with a new `participant_id` gets a player page after the sync, with one match.
 - **A4:** A U16 match is never in central.
 - **A5:** An abandoned match with no scorecard appears as a result row with
-  `status = 'ABANDONED'` and no player lines, if D3 is "yes".
+  `status = 'ABANDONED'` and no player lines. A match abandoned part-way through, with a
+  scorecard, also gets its player lines (D3).
 
 ### Scope boundaries
 
@@ -82,7 +83,18 @@ Out of scope:
 - Halls Head's native tables (see D2);
 - the public-API collector (sync plan M5).
 
-## Decisions needed from Ash
+## Decisions (Ash, 4 Oct 2026)
+
+- **D1 — approved.** A dedicated `central_projector` writer role, as proposed below.
+- **D2 — switch.** Halls Head is cut over to central reads (P7).
+- **D3 — yes, with a caveat.** Abandoned and forfeited matches are projected as result rows. If a
+  match was abandoned part-way through and has scorecard stats, those stats are projected in full,
+  like a completed match.
+- **D4 — yes, plus an admin override.** Withheld names are inserted private, and a flag is never
+  lowered automatically. A platform-admin override (P8) can set or clear privacy per participant,
+  and the projector honours it.
+
+### Original proposals
 
 - **D1, the central writer role (required):** CLAUDE.md and AGENTS.md say central is read-only
   from the app. This feature has to write it.
@@ -223,7 +235,14 @@ case by case. This proves R2 before anything writes to real central.
   2. `on`.
   3. Backfill 2026/27 to date with the CLI.
   4. Verify A1–A4 on the live site.
-- **P7 (after D2a): Halls Head cut-over to central reads.** This is a separate PR.
+- **P7: Halls Head cut-over to central reads (D2).** This is a separate PR. It is gated on the
+  consistency suites passing for Halls Head (native vs central parity).
+- **P8: privacy override (D4).**
+  - A platform-admin table `player_privacy_overrides` (`participant_id`, `is_private`, `reason`,
+    `set_by`, `set_at`), which is cross-tenant because central players are shared.
+  - A platform-admin UI on the player page.
+  - The projector applies overrides when it writes `central.players.is_private`, so an override
+    takes effect on the next sync, or immediately through a one-off re-apply.
 
 ## Ash to provision
 
