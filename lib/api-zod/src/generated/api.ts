@@ -6919,7 +6919,15 @@ export const IngestPlayhqDumpResponse = zod.object({
   "updated": zod.number(),
   "swept": zod.boolean()
 })),
-  "warnings": zod.array(zod.string())
+  "warnings": zod.array(zod.string()),
+  "centralProjection": zod.object({
+  "mode": zod.enum(['dry', 'on']),
+  "considered": zod.number(),
+  "created": zod.number(),
+  "updated": zod.number(),
+  "skipped": zod.number(),
+  "playersInserted": zod.number()
+}).optional().describe('The PlayHQ → central stats projection run after the load (CENTRAL_PROJECTION=dry|on). Absent when projection is off.')
 })
 
 

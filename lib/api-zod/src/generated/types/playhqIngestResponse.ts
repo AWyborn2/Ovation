@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { PlayhqIngestResponseCentralProjection } from './playhqIngestResponseCentralProjection';
 import type { PlayhqIngestResponseCounts } from './playhqIngestResponseCounts';
 import type { PlayhqIngestResponseStatus } from './playhqIngestResponseStatus';
 import type { PlayhqIngestResponseTenantsItem } from './playhqIngestResponseTenantsItem';
@@ -18,4 +19,6 @@ export interface PlayhqIngestResponse {
   juniorGradesDropped: number;
   tenants: PlayhqIngestResponseTenantsItem[];
   warnings: string[];
+  /** The PlayHQ → central stats projection run after the load (CENTRAL_PROJECTION=dry|on). Absent when projection is off. */
+  centralProjection?: PlayhqIngestResponseCentralProjection;
 }
