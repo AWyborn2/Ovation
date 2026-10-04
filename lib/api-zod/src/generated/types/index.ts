@@ -462,6 +462,8 @@ export * from './playhqIngestRequest';
 export * from './playhqIngestRequestErrorsItem';
 export * from './playhqIngestRequestStatus';
 export * from './playhqIngestResponse';
+export * from './playhqIngestResponseCentralProjection';
+export * from './playhqIngestResponseCentralProjectionMode';
 export * from './playhqIngestResponseCounts';
 export * from './playhqIngestResponseStatus';
 export * from './playhqIngestResponseTenantsItem';

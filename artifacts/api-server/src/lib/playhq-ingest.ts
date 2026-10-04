@@ -1,7 +1,12 @@
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { db, tenantsTable } from "@workspace/db";
 import {
+  PROJECTABLE_STATUSES,
   assertIngestScope,
+  assertProjectorScope,
+  centralProjectorConfigured,
+  getCentralProjectorPool,
+  projectToCentral,
   duePlans,
   loadCadenceInputs,
   type DuePlan,
@@ -18,6 +23,8 @@ import {
 import type { z } from "zod";
 import type { IngestPlayhqDumpResponse } from "@workspace/api-zod";
 import { runDraftSweep } from "./draft-sweep";
+import { clearMilestonesCache } from "./milestones-cache";
+import { env } from "../config";
 
 type Logger = Parameters<typeof runDraftSweep>[2];
 type PlayhqIngestResponse = z.infer<typeof IngestPlayhqDumpResponse>;
@@ -156,6 +163,8 @@ export async function ingestPlayhqDump(
     });
   }
 
+  const centralProjection = await projectDumpToCentral(rows, warnings, log);
+
   let status = meta.status ?? "ok";
   if (warnings.length && status === "ok") status = "partial";
   if (warnings.length && loaded.runIds.length)
@@ -175,7 +184,71 @@ export async function ingestPlayhqDump(
     juniorGradesDropped: droppedGradeIds.length,
     tenants,
     warnings,
+    ...(centralProjection ? { centralProjection } : {}),
   };
+}
+
+/**
+ * Copy the dump's finished matches into the central stats tables
+ * (docs/plans/2026-10-04-001-feat-playhq-central-projection-plan.md, P5): every match whose
+ * scorecard arrived in this dump, plus abandoned / cancelled / forfeited matches (result rows,
+ * D3). Behind CENTRAL_PROJECTION (off | dry | on). Like the fixtures projection, a failure
+ * becomes a warning and never undoes the load; the next sync retries it.
+ */
+export async function projectDumpToCentral(
+  rows: LoadRows,
+  warnings: string[],
+  log: Logger,
+): Promise<PlayhqIngestResponse["centralProjection"]> {
+  const mode = env.CENTRAL_PROJECTION();
+  if (mode === "off") return undefined;
+  if (!centralProjectorConfigured()) {
+    warnings.push(`CENTRAL_PROJECTION=${mode} but CENTRAL_PROJECTOR_DATABASE_URL is not set`);
+    return undefined;
+  }
+  const resultOnly = new Set<string>(PROJECTABLE_STATUSES.filter((s) => s !== "COMPLETED"));
+  const matchIds = [
+    ...new Set([
+      ...rows.scorecards.map((s) => String(s.match_id)),
+      ...rows.matches
+        .filter((m) => typeof m.status === "string" && resultOnly.has(m.status))
+        .map((m) => String(m.id)),
+    ]),
+  ];
+  if (!matchIds.length)
+    return { mode, considered: 0, created: 0, updated: 0, skipped: 0, playersInserted: 0 };
+  try {
+    const pool = getCentralProjectorPool();
+    await assertProjectorScope(pool);
+    const s = await projectToCentral(pool, {
+      matchIds,
+      dryRun: mode === "dry",
+      log: (line) => log.info(`central projection: ${line}`),
+    });
+    for (const k of s.skipped) {
+      log.warn({ playhqMatchId: k.playhqMatchId }, `central projection skipped: ${k.reason}`);
+      if (k.reason.startsWith("error:"))
+        warnings.push(`central projection failed for PlayHQ match ${k.playhqMatchId}: ${k.reason}`);
+    }
+    if (!s.dryRun && s.created + s.updated > 0) {
+      // New results must show now, not after the read caches' TTL.
+      const { clearCentralQueriesCache } = await import("@workspace/db/central-queries");
+      clearCentralQueriesCache();
+      clearMilestonesCache();
+    }
+    return {
+      mode,
+      considered: s.considered,
+      created: s.created,
+      updated: s.updated,
+      skipped: s.skipped.length,
+      playersInserted: s.playersInserted,
+    };
+  } catch (err) {
+    log.error({ err }, "playhq ingest: central projection failed");
+    warnings.push(`central projection failed: ${err instanceof Error ? err.message : err}`);
+    return undefined;
+  }
 }
 
 /**

@@ -4456,6 +4456,26 @@ export type PlayhqIngestResponseTenantsItem = {
   swept: boolean;
 };
 
+export type PlayhqIngestResponseCentralProjectionMode = typeof PlayhqIngestResponseCentralProjectionMode[keyof typeof PlayhqIngestResponseCentralProjectionMode];
+
+
+export const PlayhqIngestResponseCentralProjectionMode = {
+  dry: 'dry',
+  on: 'on',
+} as const;
+
+/**
+ * The PlayHQ → central stats projection run after the load (CENTRAL_PROJECTION=dry|on). Absent when projection is off.
+ */
+export type PlayhqIngestResponseCentralProjection = {
+  mode: PlayhqIngestResponseCentralProjectionMode;
+  considered: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  playersInserted: number;
+};
+
 export interface PlayhqIngestResponse {
   status: PlayhqIngestResponseStatus;
   runIds: number[];
@@ -4465,6 +4485,8 @@ export interface PlayhqIngestResponse {
   juniorGradesDropped: number;
   tenants: PlayhqIngestResponseTenantsItem[];
   warnings: string[];
+  /** The PlayHQ → central stats projection run after the load (CENTRAL_PROJECTION=dry|on). Absent when projection is off. */
+  centralProjection?: PlayhqIngestResponseCentralProjection;
 }
 
 export type PlayhqDuePlansResponsePlansItemPlanName = typeof PlayhqDuePlansResponsePlansItemPlanName[keyof typeof PlayhqDuePlansResponsePlansItemPlanName];

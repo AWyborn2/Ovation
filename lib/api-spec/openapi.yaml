@@ -13268,6 +13268,26 @@ components:
           type: array
           items:
             type: string
+        centralProjection:
+          type: object
+          description: >-
+            The PlayHQ → central stats projection run after the load
+            (CENTRAL_PROJECTION=dry|on). Absent when projection is off.
+          required: [mode, considered, created, updated, skipped, playersInserted]
+          properties:
+            mode:
+              type: string
+              enum: [dry, on]
+            considered:
+              type: integer
+            created:
+              type: integer
+            updated:
+              type: integer
+            skipped:
+              type: integer
+            playersInserted:
+              type: integer
 
     PlayhqDuePlansResponse:
       type: object

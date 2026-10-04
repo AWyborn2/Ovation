@@ -85,6 +85,19 @@ export const env = {
    * @workspace/db/playhq-ingest's pool; declared here so it is listed with the rest.
    */
   PLAYHQ_INGEST_DATABASE_URL: () => optional("PLAYHQ_INGEST_DATABASE_URL"),
+  /**
+   * PlayHQ → central stats projection after each ingest: off (default), dry (compute and log,
+   * write nothing) or on (docs/plans/2026-10-04-001-feat-playhq-central-projection-plan.md).
+   */
+  CENTRAL_PROJECTION: (): "off" | "dry" | "on" => {
+    const v = optional("CENTRAL_PROJECTION");
+    return v === "dry" || v === "on" ? v : "off";
+  },
+  /**
+   * The central_projector write role (scripts/sql/central-projector.sql). Read by
+   * @workspace/db/playhq-ingest's projector pool; declared here so it is listed with the rest.
+   */
+  CENTRAL_PROJECTOR_DATABASE_URL: () => optional("CENTRAL_PROJECTOR_DATABASE_URL"),
   /** Where PlayHQ sync incident alerts go; falls back to PLATFORM_ADMIN_EMAIL. */
   PLATFORM_ALERT_EMAIL: () => optional("PLATFORM_ALERT_EMAIL"),
 
@@ -138,6 +151,7 @@ const BootSchema = z
     PLATFORM_HOSTS: z.string().optional(),
     PLATFORM_BASE_DOMAIN: z.string().optional(),
     PROXY_SHARED_SECRET: z.string().min(16, "must be at least 16 characters").optional(),
+    CENTRAL_PROJECTION: z.enum(["off", "dry", "on"]).optional(),
   })
   .superRefine((cfg, ctx) => {
     if (cfg.NODE_ENV === "production" && !cfg.SESSION_SECRET) {

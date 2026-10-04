@@ -114,7 +114,11 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
   `platform-admin-*.test.ts`) — extend them whenever you touch a read path.
 - **Central DB is READ-ONLY from the app.** Never write to it. The proxy blocks
   insert/update/delete/transaction/$client; point `CENTRAL_DATABASE_URL` at a
-  SELECT-only role (plan.md §2.6).
+  SELECT-only role (plan.md §2.6). The ONE sanctioned writer is the PlayHQ → central
+  projector (`lib/db/src/playhq-ingest/central-project.ts`), on its own
+  `central_projector` role and pool (`CENTRAL_PROJECTOR_DATABASE_URL`), which may write only
+  the match, line and player tables and refuses to run if it can write anything else
+  (docs/plans/2026-10-04-001-feat-playhq-central-projection-plan.md, D1).
 - **Stats reads fail closed.** Only tenant #1 may read the native stats tables; any
   other tenant is served from central or gets a 409, and `CENTRAL_READS=0` makes
   central tenants 503 rather than falling back to Halls Head's data.
