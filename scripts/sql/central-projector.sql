@@ -156,6 +156,14 @@ grant select, insert, update, delete on
 grant usage, select on central.projected_match_id_seq, central.projected_line_id_seq
   to central_projector;
 grant execute on function central.playhq_grade_key(text) to central_projector;
+-- Each tenant's PlayHQ organisation → central club (the pair its sync runs on) fills the org
+-- crosswalk where history has no vote. Only those two columns are readable.
+do $$ begin
+  if to_regclass('public.tenants') is not null then
+    grant usage on schema public to central_projector;
+    grant select (playhq_org_id, central_club_id) on public.tenants to central_projector;
+  end if;
+end $$;
 -- Platform-admin privacy overrides (migration 0026) are read, never written, by the projector.
 do $$ begin
   if to_regclass('public.player_privacy_overrides') is not null then

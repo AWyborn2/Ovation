@@ -110,11 +110,31 @@ async function loadCandidates(c: Queryable, o: ProjectOptions): Promise<Candidat
   return rows;
 }
 
+/**
+ * PlayHQ organisation → central club. The crosswalk (`central.club_playhq_orgs`) is seeded from
+ * history, which a database whose PlayHQ landing tables only hold the current season doesn't have;
+ * each tenant's own settings (`tenants.playhq_org_id` → `central_club_id`, the pair its sync runs
+ * on) fill the gap and win over a history vote. A projector role without the column grant (an
+ * older central-projector.sql) still works from the crosswalk alone.
+ */
 async function loadOrgToClub(c: Queryable): Promise<Map<string, number>> {
   const { rows } = await c.query<{ playhq_org_id: string; club_id: number }>(
     `select lower(playhq_org_id) as playhq_org_id, club_id from central.club_playhq_orgs`,
   );
-  return new Map(rows.map((r) => [r.playhq_org_id, r.club_id]));
+  const map = new Map(rows.map((r) => [r.playhq_org_id, r.club_id]));
+  try {
+    const tenants = await c.query<{ playhq_org_id: string; club_id: number }>(
+      `select lower(playhq_org_id::text) as playhq_org_id, central_club_id as club_id
+         from public.tenants
+        where playhq_org_id is not null and central_club_id is not null`,
+    );
+    for (const r of tenants.rows) map.set(r.playhq_org_id, r.club_id);
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    // 42501: no column grant yet; 42P01: no tenants table (a bare central database).
+    if (code !== "42501" && code !== "42P01") throw err;
+  }
+  return map;
 }
 
 async function loadFullNames(c: Queryable, ids: string[]): Promise<Map<string, string>> {
