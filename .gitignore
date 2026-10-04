@@ -86,5 +86,6 @@ attached_assets/*.zip
 # Mobile static build output
 artifacts/cricket-mobile/static-build/
 
-# Local PlayHQ → central projection audit exports (participant data)
-/exports/p0-central-projection/
+# Local/generated exports (including participant-level audit data).
+# Existing tracked source files under exports/ remain tracked.
+/exports/
