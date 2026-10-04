@@ -1433,12 +1433,16 @@ export interface CuratedResolutionRow extends CuratedRef {
  * is a native `players.id`; after cut-over it resolves only through the
  * crosswalk (merges folded), and the player's page exists only when the hybrid
  * read has a public career for them. Anything but "same" must be zero to cut
- * over — except links that are already dangling today.
+ * over — except links that are already dangling today. A cap-only native player
+ * (no stats in either read) keeps its stats-free profile after cut-over, so its
+ * links resolve to the same page.
  */
 export function resolveCurated(
   refs: readonly CuratedRef[],
   ctx: {
     nativePlayerExists: (playerId: number) => boolean;
+    /** A native `players.is_cap_only` row: profile-only in both reads. */
+    capOnly?: (playerId: number) => boolean;
     presentedId: (playerId: number) => number | null;
     hybridVisibility: (playerId: number) => "ok" | "private" | "no_career";
   },
@@ -1460,6 +1464,9 @@ export function resolveCurated(
     if (presented === null) {
       if (!ctx.nativePlayerExists(id)) {
         return row("unresolved_before", null, "no such native player today either");
+      }
+      if (ctx.capOnly?.(id)) {
+        return row("same", id, "cap-only player: keeps its stats-free profile");
       }
       return row(
         "missing",
