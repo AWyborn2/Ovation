@@ -435,9 +435,11 @@ export function buildReport(input: ReportInput): Report {
 
   // Curated links.
   const nativeIds = new Set(native.players.map((p) => p.id));
+  const capOnlyIds = new Set(native.players.filter((p) => p.isCapOnly).map((p) => p.id));
   const hybridIds = new Set(hybridBuckets.map((b) => b.playerId));
   const curatedRows = resolveCurated(input.curated, {
     nativePlayerExists: (playerId) => nativeIds.has(playerId),
+    capOnly: (playerId) => capOnlyIds.has(playerId),
     presentedId: identity.presentedId,
     hybridVisibility: (playerId) =>
       privatePlayerIds.has(playerId) ? "private" : hybridIds.has(playerId) ? "ok" : "no_career",

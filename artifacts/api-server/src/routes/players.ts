@@ -268,6 +268,72 @@ router.get("/players/vs-club", async (req, res): Promise<void> => {
   res.json(await loadVsClub(source, opponent, minInnings ?? DEFAULT_VS_CLUB_MIN_INNINGS));
 });
 
+/**
+ * The profile of a tenant's cap-only native player (`players.is_cap_only`): a
+ * name on the cap register with no stats in any source. Only Halls Head has
+ * native players; any other tenant, or any id that isn't cap-only, gets null.
+ */
+async function capOnlyPlayerDetail(tenantId: number, playerId: number) {
+  if (tenantId !== NATIVE_STATS_TENANT_ID) return null;
+  const [row] = await db
+    .select()
+    .from(playersTable)
+    .where(and(eq(playersTable.id, playerId), eq(playersTable.isCapOnly, true)));
+  if (!row) return null;
+  const [premRows, awardRows] = await Promise.all([
+    db
+      .select({
+        id: premiershipsTable.id,
+        year: premiershipsTable.year,
+        grade: premiershipsTable.grade,
+        competition: premiershipsTable.competition,
+        venue: premiershipsTable.venue,
+        matchDate: premiershipsTable.matchDate,
+        result: premiershipsTable.result,
+        mom: premiershipsTable.mom,
+        isCaptain: premiershipPlayersTable.isCaptain,
+      })
+      .from(premiershipPlayersTable)
+      .innerJoin(premiershipsTable, eq(premiershipsTable.id, premiershipPlayersTable.premiershipId))
+      .where(
+        and(
+          eq(premiershipsTable.tenantId, tenantId),
+          eq(premiershipPlayersTable.playerId, playerId),
+        ),
+      )
+      .orderBy(desc(premiershipsTable.year), asc(premiershipsTable.grade)),
+    db
+      .select({
+        key: awardsTable.key,
+        title: awardsTable.title,
+        season: awardWinnersTable.season,
+      })
+      .from(awardWinnersTable)
+      .innerJoin(awardsTable, eq(awardsTable.id, awardWinnersTable.awardId))
+      .where(
+        and(
+          eq(awardWinnersTable.tenantId, tenantId),
+          eq(awardsTable.tenantId, tenantId),
+          eq(awardWinnersTable.playerId, playerId),
+          eq(awardWinnersTable.published, true),
+          eq(awardsTable.published, true),
+        ),
+      )
+      .orderBy(asc(awardsTable.displayOrder), desc(awardWinnersTable.season)),
+  ]);
+  return {
+    ...row,
+    libraryPhotoUrl: await taggedPlayerPhotoUrl(tenantId, playerId),
+    premiershipsWon: premRows.length,
+    premiershipsCaptained: premRows.filter((p) => p.isCaptain).length,
+    debutSeason: null,
+    seasonsPlayed: null,
+    stats: [],
+    premierships: premRows,
+    awards: awardRows,
+  };
+}
+
 router.get("/players/:id", async (req, res): Promise<void> => {
   const params = GetPlayerParams.safeParse(req.params);
   if (!params.success) {
@@ -290,6 +356,14 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     // A history-only player (no crosswalk row) resolves to its overlay key.
     const keeper = overlayKeyForPlayerId(overlay, params.data.id);
     if (keeper === null) {
+      // A Halls Head cap-only player (capped before the digital era, no stats
+      // anywhere) keeps the stats-free profile the native read gives it, so the
+      // cap register's links still open after the cut-over.
+      const capOnly = await capOnlyPlayerDetail(tenantId, params.data.id);
+      if (capOnly) {
+        res.json(capOnly);
+        return;
+      }
       res.status(404).json({ error: "Player not found" });
       return;
     }

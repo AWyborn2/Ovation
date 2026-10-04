@@ -15,7 +15,7 @@ execution: code
 
 - **Objective:** Make the central database the primary source of match stats for every season it covers, with a per-club layer that adds pre-digital history, confirmed player identities, fill-ins and reviewable corrections; move Halls Head onto it first; ship four standalone fixes ahead of it.
 - **Product authority:** Ash (owner). This Product Contract governs; the Planning Contract governs how. Production data writes, prod migrations and the Halls Head cut-over each need Ash's explicit yes, given per action.
-- **Open blockers:** None for planning. The catches rule (R6) must be decided before the Halls Head cut-over (U14), not before building.
+- **Open blockers:** None. The catches rule (R6) was decided on 4 Oct 2026: PlayHQ scorecard catches (see U15).
 - **Stop conditions:** Stop and ask when a unit would write to the central database, change a Halls Head curated row's player link, publish the app, or apply a prod migration or data script without Ash's yes. Stop when a verification shows a career moving that the preview did not list.
 - **Execution profile:** Phased. Phase A units (U1–U5) ship as independent PRs. Phases B–D follow the dependency graph in the Delivery sequence. Each PR is merged when CI is clean; prod scripts run dry-run first via the Replit agent.
 - **Product Contract preservation:** changed R12, R19 — clarified that the boundary is the first season central supplies (matching AE1) and added the catches rule as a preview reason code. Deferred-to-Planning questions resolved in place by KTDs.
@@ -81,6 +81,7 @@ flowchart TB
 **Stats rules**
 
 - R6. Catches follow one rule for every club, chosen by Ash after reviewing 10 sample players whose counts differ, shown against their scorecards. Halls Head keeps its current catches until the rule is chosen.
+  - **Decided 4 Oct 2026: PlayHQ scorecard catches.** A player's catches are the catches PlayHQ's scorecard credits to them (`central.fielding` rows classified `catch` by `classifyFieldingKind`, wicket-keeper catches included; stumpings and run-outs are counted separately).
 - R7. A game counts for every player named on the team sheet, whether or not they batted, bowled or fielded.
 - R8. Senior-only careers, fill-in exclusion and juniors isolation hold for every read, including club history and corrections.
 
@@ -657,7 +658,7 @@ flowchart TB
 **Follow-up (remaining surfaces, Oct 2026):** The overlay is also wired into the player match log, the match scorecard and match list, the dashboard and club totals, grade summaries, grade distribution, head-to-head, the centuries and five-wicket lists, record progression and player-detail fielding (`artifacts/api-server/src/lib/club-overlay-surfaces.ts`). The Social Studio drafting paths stay off the club layer (KTD8), pinned by `club-overlay-drafting-guard.test.ts`. Rule decisions taken there:
 
 - **Games (R7).** Any appearance is a game on every read: team sheet, batting or bowling. The grade leaderboard now counts a match a batter only bowled in, on both the plain central read and the overlay.
-- **Catches.** One classifier (`classifyFieldingKind`) on every read. The records card, record leaders, grade summaries and dashboard top fielder no longer carry their own regex. The catches rule itself (R6, U15) is still Ash's to choose.
+- **Catches.** One classifier (`classifyFieldingKind`) on every read. The records card, record leaders, grade summaries and dashboard top fielder no longer carry their own regex. The catches rule itself (R6, U15) was chosen on 4 Oct 2026: PlayHQ scorecard catches.
 - **Two-innings corrections.** The corrections journal is keyed on (PlayHQ match, participant, field) and stores the match figure, so a correction can't name an innings. Its delta lands on the first played innings (first spell). Match and career totals are exact; naming an innings needs an `innings` column and a wider unique key (a migration).
 - **Grade card games.** With a club layer, a grade's `games` is its total appearances (the app's own `grade_summaries` meaning), because club history holds player figures, not a count of club matches. The plain central read still reports distinct matches.
 - **Curated honours.** With a boundary, the tenant's curated centuries and five-wicket rows dated before the grade's boundary are listed with central's (KTD4). Rows with no season, or in a grade with no boundary, are left out.
@@ -836,6 +837,12 @@ flowchart TB
 - The sweep dry-run drafts nothing historical.
 
 **Verification:** The consistency check shows only catches changing, and the U13 approval preview is re-run with the "catches rule" reason code.
+
+**Status (4 Oct 2026): done — Ash chose "PlayHQ catches".**
+
+- **Evidence.** The first U13 run (dev, `exports/hh-cutover-preview-2026-10-04T05-48-21-239Z`) listed 633 differing matches for the 10 sample players, 2003/04–2025/26, every grade. In every one the native app held no fielding at all for the player and PlayHQ's scorecard credited catches; never the reverse, and never two different non-zero counts. The native count was missing catches, not counting them differently.
+- **No read change.** Every central read already counts catches this way (one classifier, U10 follow-up), and the PlayHQ projector writes `catch` / `stumping` / `run out` rows from PlayHQ's own fielding counts. So no central tenant's totals change, and no sweep watermark needs advancing (KTD8). Halls Head's figures change only at the cut-over (U14), which initialises its watermark.
+- **Pinned** by `lib/db/src/central/catch-classifier.test.ts` (R6) and the projector's transform tests.
 
 ### U16. Corrections admin API and screen
 
