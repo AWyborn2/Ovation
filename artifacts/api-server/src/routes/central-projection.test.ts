@@ -442,6 +442,19 @@ describe("projectToCentral", () => {
     expect(r).toEqual({ display_name: "Curated Name", is_private: 1 });
   });
 
+  it("still projects when the role can't read the privacy overrides yet", async () => {
+    // Production order: the SQL can run before the republish that creates (and lets it grant)
+    // player_privacy_overrides. A failed read would abort every match's transaction.
+    await admin.query(`revoke select on public.player_privacy_overrides from central_projector`);
+    try {
+      const s = await projectToCentral(projector, { matchIds: [MATCH] });
+      expect(s.skipped).toEqual([]);
+      expect(s.created + s.updated).toBe(1);
+    } finally {
+      await admin.query(`grant select on public.player_privacy_overrides to central_projector`);
+    }
+  });
+
   it("a sync applies platform privacy overrides (P8)", async () => {
     await admin.query(
       `insert into player_privacy_overrides (participant_id, is_private) values ($1, true)

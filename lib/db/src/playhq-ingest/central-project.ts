@@ -351,6 +351,13 @@ export async function applyPrivacyOverrides(
   participantIds?: string[],
 ): Promise<number> {
   if (participantIds && !participantIds.length) return 0;
+  // Before migration 0026 (or the role's grant on it) there are no overrides to apply; checked
+  // up front because a failed statement would abort the caller's per-match transaction.
+  const ready = await c.query<{ ok: boolean }>(
+    `select case when to_regclass('public.player_privacy_overrides') is null then false
+                 else has_table_privilege('public.player_privacy_overrides', 'select') end as ok`,
+  );
+  if (!ready.rows[0]?.ok) return 0;
   const r = await c.query(
     `update central.players p
         set is_private = case when o.is_private then 1 else 0 end
