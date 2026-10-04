@@ -28,6 +28,7 @@ const admin = {
 // Two clubs known to central (high ids, clear of the CI fixture), one unknown.
 const CLUB_A = 9911; // lower id → "home" by the builder convention
 const CLUB_B = 9912;
+const CLUB_X = 9913; // known only from a tenant's settings
 const ORG_A = randomUUID();
 const ORG_B = randomUUID();
 const ORG_X = randomUUID(); // not in central
@@ -441,6 +442,19 @@ describe("projectToCentral", () => {
     expect(r).toEqual({ display_name: "Curated Name", is_private: 1 });
   });
 
+  it("still projects when the role can't read the privacy overrides yet", async () => {
+    // Production order: the SQL can run before the republish that creates (and lets it grant)
+    // player_privacy_overrides. A failed read would abort every match's transaction.
+    await admin.query(`revoke select on public.player_privacy_overrides from central_projector`);
+    try {
+      const s = await projectToCentral(projector, { matchIds: [MATCH] });
+      expect(s.skipped).toEqual([]);
+      expect(s.created + s.updated).toBe(1);
+    } finally {
+      await admin.query(`grant select on public.player_privacy_overrides to central_projector`);
+    }
+  });
+
   it("a sync applies platform privacy overrides (P8)", async () => {
     await admin.query(
       `insert into player_privacy_overrides (participant_id, is_private) values ($1, true)
@@ -484,6 +498,31 @@ describe("projectToCentral", () => {
       [[JUNIOR_MATCH, UNKNOWN_MATCH]],
     );
     expect(n.rows[0].n).toBe(0);
+  });
+
+  it("a tenant's own PlayHQ organisation resolves its club with no history", async () => {
+    // Production's PlayHQ tables start this season, so the history-seeded crosswalk can be
+    // empty for a club; the tenant settings the sync runs on fill it.
+    await admin.query(
+      `insert into tenants (slug, name, plan, central_club_id, playhq_org_id)
+       values ($1, 'Org Fallback Club', 'pilot', $2, $3)`,
+      [`org-fallback-${ORG_X.slice(0, 8)}`, CLUB_X, ORG_X],
+    );
+    try {
+      const s = await projectToCentral(projector, { matchIds: [UNKNOWN_MATCH] });
+      expect(s.skipped).toEqual([]);
+      expect(s.created).toBe(1);
+      const m = (
+        await admin.query(
+          `select home_club_id, away_club_id from central.matches where playhq_match_id = $1`,
+          [UNKNOWN_MATCH],
+        )
+      ).rows[0];
+      // Club X resolves; the other side has no club anywhere, so it is the unresolved away side.
+      expect(m).toEqual({ home_club_id: CLUB_X, away_club_id: null });
+    } finally {
+      await admin.query(`delete from tenants where playhq_org_id = $1`, [ORG_X]);
+    }
   });
 
   it("backfills a season and skips nothing it can project", async () => {
