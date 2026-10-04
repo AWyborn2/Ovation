@@ -7014,6 +7014,83 @@ paths:
         "404":
           description: No such exclusion.
 
+  /platform/admin/player-privacy:
+    get:
+      operationId: getPlatformPlayerPrivacy
+      tags: [platformAdmin]
+      summary: >-
+        Every player privacy override, plus a central player search (by name or
+        PlayHQ participant GUID) for setting new ones. Private players' names are
+        shown here — this is platform-admin only.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Overrides and search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerPrivacyList"
+        "401":
+          description: Not authenticated.
+
+  /platform/admin/player-privacy/{participantId}:
+    put:
+      operationId: setPlayerPrivacyOverride
+      tags: [platformAdmin]
+      summary: >-
+        Set or clear a central player's privacy (D4 override). Applied to the
+        central stats straight away when the projector is configured, otherwise
+        on the next PlayHQ sync that touches the player.
+      parameters:
+        - name: participantId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetPlayerPrivacyBody"
+      responses:
+        "200":
+          description: Override saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerPrivacyOverride"
+        "400":
+          description: Invalid body or participant id.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No central player with that participant id.
+    delete:
+      operationId: deletePlayerPrivacyOverride
+      tags: [platformAdmin]
+      summary: >-
+        Remove an override. The player's central flag stays as it is now; the
+        projector simply stops enforcing it.
+      parameters:
+        - name: participantId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Removed.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such override.
+
   /platform/admin/platform-brand:
     get:
       operationId: getPlatformBrand
@@ -13288,6 +13365,81 @@ components:
               type: integer
             playersInserted:
               type: integer
+
+    PlayerPrivacyOverride:
+      type: object
+      required: [participantId, isPrivate, reason, setAt, displayName, applied]
+      properties:
+        participantId:
+          type: string
+        isPrivate:
+          type: boolean
+        reason:
+          type: string
+          nullable: true
+        setAt:
+          type: string
+          format: date-time
+        displayName:
+          type: string
+          nullable: true
+        applied:
+          type: boolean
+          description: >-
+            True when central.players already carries this flag (applied now,
+            or by an earlier sync); false when it waits for the next sync.
+
+    PlayerPrivacyPlayer:
+      type: object
+      required: [participantId, displayName, isPrivate, currentClubId, lastSeason, matches, override]
+      properties:
+        participantId:
+          type: string
+        displayName:
+          type: string
+          nullable: true
+        isPrivate:
+          type: boolean
+        currentClubId:
+          type: integer
+          nullable: true
+        lastSeason:
+          type: string
+          nullable: true
+        matches:
+          type: integer
+          nullable: true
+        override:
+          type: boolean
+          nullable: true
+          description: The override's isPrivate, or null when there is none.
+
+    PlayerPrivacyList:
+      type: object
+      required: [overrides, players, projectorConfigured]
+      properties:
+        overrides:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerPrivacyOverride"
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerPrivacyPlayer"
+        projectorConfigured:
+          type: boolean
+          description: Whether overrides apply immediately (central projector configured).
+
+    SetPlayerPrivacyBody:
+      type: object
+      required: [isPrivate]
+      properties:
+        isPrivate:
+          type: boolean
+        reason:
+          type: string
+          maxLength: 500
+          nullable: true
 
     PlayhqDuePlansResponse:
       type: object

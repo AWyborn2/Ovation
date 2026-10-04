@@ -35,7 +35,7 @@ execution: code
 
 ## Status (4 Oct 2026)
 
-**P0–P5 built** (one PR): converter, DDL, writer role and pool, projector, CLI, ingest hook
+**P0–P5 built and merged** (#269). **P8 built** (privacy override, migration 0026). P0–P5: converter, DDL, writer role and pool, projector, CLI, ingest hook
 (behind `CENTRAL_PROJECTION`, default `off`). P6 rollout, P7 Halls Head cut-over and P8 privacy
 override follow.
 

@@ -156,6 +156,13 @@ grant select, insert, update, delete on
 grant usage, select on central.projected_match_id_seq, central.projected_line_id_seq
   to central_projector;
 grant execute on function central.playhq_grade_key(text) to central_projector;
+-- Platform-admin privacy overrides (migration 0026) are read, never written, by the projector.
+do $$ begin
+  if to_regclass('public.player_privacy_overrides') is not null then
+    grant usage on schema public to central_projector;
+    grant select on public.player_privacy_overrides to central_projector;
+  end if;
+end $$;
 
 -- Defensive: nothing else is writable (a broad grant made earlier is undone here).
 revoke insert, update, delete, truncate on

@@ -441,6 +441,24 @@ describe("projectToCentral", () => {
     expect(r).toEqual({ display_name: "Curated Name", is_private: 1 });
   });
 
+  it("a sync applies platform privacy overrides (P8)", async () => {
+    await admin.query(
+      `insert into player_privacy_overrides (participant_id, is_private) values ($1, true)
+       on conflict (participant_id) do update set is_private = true`,
+      [P[4]],
+    );
+    try {
+      await projectToCentral(projector, { matchIds: [MATCH] });
+      const r = await admin.query(
+        `select is_private from central.players where participant_id = $1`,
+        [P[4]],
+      );
+      expect(r.rows[0].is_private).toBe(1);
+    } finally {
+      await admin.query(`delete from player_privacy_overrides where participant_id = $1`, [P[4]]);
+    }
+  });
+
   it("projects an abandoned match as a result row with no lines (D3)", async () => {
     const s = await projectToCentral(projector, { matchIds: [ABANDONED] });
     expect(s).toMatchObject({ created: 1, skipped: [] });

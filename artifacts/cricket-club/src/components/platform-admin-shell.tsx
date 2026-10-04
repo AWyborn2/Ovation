@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Building2, EyeOff, LogOut, Palette, PlusCircle, RefreshCw } from "lucide-react";
+import { Building2, EyeOff, LogOut, Palette, PlusCircle, RefreshCw, ShieldOff } from "lucide-react";
 import {
   usePlatformAdminLogin,
   usePlatformAdminLogout,
@@ -73,6 +73,7 @@ function PlatformAdminLayout({ admin, children }: { admin: PlatformAdmin; childr
     { href: "/platform-admin/provision", label: "Provision a club", icon: PlusCircle },
     { href: "/platform-admin/provisioning-exclusions", label: "Exclusions", icon: EyeOff },
     { href: "/platform-admin/playhq-sync", label: "PlayHQ sync", icon: RefreshCw },
+    { href: "/platform-admin/player-privacy", label: "Player privacy", icon: ShieldOff },
     { href: "/platform-admin/brand", label: "Platform brand", icon: Palette },
   ];
 

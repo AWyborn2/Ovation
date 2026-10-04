@@ -322,6 +322,28 @@ async function refreshPlayers(c: pg.PoolClient, ids: string[]): Promise<void> {
 }
 
 /**
+ * Apply platform-admin privacy overrides (`public.player_privacy_overrides`, D4/P8) to
+ * `central.players.is_private` — for the given participants, or every override when omitted.
+ * An override is the only thing that lowers the flag. Returns the number of players changed.
+ */
+export async function applyPrivacyOverrides(
+  c: Pick<pg.Pool, "query">,
+  participantIds?: string[],
+): Promise<number> {
+  if (participantIds && !participantIds.length) return 0;
+  const r = await c.query(
+    `update central.players p
+        set is_private = case when o.is_private then 1 else 0 end
+       from public.player_privacy_overrides o
+      where o.participant_id = p.participant_id
+        and p.is_private is distinct from (case when o.is_private then 1 else 0 end)
+        ${participantIds ? "and p.participant_id = any($1::text[])" : ""}`,
+    participantIds ? [participantIds] : [],
+  );
+  return r.rowCount ?? 0;
+}
+
+/**
  * Project PlayHQ matches into central. `pool` must be the central_projector pool (scope already
  * asserted by the caller). Each match is its own transaction: one failure never blocks the rest.
  */
@@ -384,9 +406,11 @@ export async function projectToCentral(
       await client.query("begin");
       const { matchId, created } = await writeMatch(client, projection);
       const inserted = await insertPlayers(client, projection);
-      await refreshPlayers(client, [
+      const touched = [
         ...new Set(projection.rosters.map((r) => r.participant_id).filter((x): x is string => !!x)),
-      ]);
+      ];
+      await refreshPlayers(client, touched);
+      await applyPrivacyOverrides(client, touched);
       if (opts.dryRun) await client.query("rollback");
       else await client.query("commit");
       summary.matchIds.push(matchId);
