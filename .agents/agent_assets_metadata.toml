@@ -241,3 +241,17 @@ mtime_ms = 1791177241531
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/6b6e4e63-9cca-43a8-bb3c-44c8275b90e0/1d9cb0b6-1db5-4c02-bc21-e51fca8cca27"
 storage_version_token = "1791177257171349"
 content_type = "text/csv"
+
+[[outputs]]
+id = "Sa9GRRfBGickPp6800789"
+uri = "file://scripts/exports/caps-diag/catchup-preview.txt"
+type = "text"
+title = "Cap catch-up preview"
+description = "Full preview output from development heliumdb. No caps issued; no --commit used."
+logical_id = "743cd70b-219a-4ae7-b769-a20ff4090b34"
+content_hash = "sha256:460caaeb1d034aea7607d03be773de7198fd12a42f107f59d8d54022e917c2d4"
+size = 2017
+mtime_ms = 1791178107685
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/743cd70b-219a-4ae7-b769-a20ff4090b34/a482d376-6e3e-41bd-9dec-1234e2931f33"
+storage_version_token = "1791178116820385"
+content_type = "text/plain"

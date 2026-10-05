@@ -1,0 +1,36 @@
+
+> @workspace/scripts@0.0.0 sync-debut-caps /home/runner/workspace/scripts
+> tsx ./src/sync-debut-caps.ts -- --tenant=1
+
+MODE: PREVIEW (nothing is written)
+
+A Grade (male)
+  newest capped debut: 2024-11-23
+  would issue cap #241: Ben Higton (player #280, debut 2025-10-11, 19 game(s))
+  would issue cap #242: Mitchell Caine (player #224, debut 2025-10-11, 11 game(s))
+  would issue cap #243: Lucius Hysen (player #316, debut 2025-11-01, 1 game(s))
+  would issue cap #244: Jeffrey Petrie (player #233, debut 2025-11-01, 3 game(s))
+  would issue cap #245: Luca Doyle (player #264, debut 2025-11-01, 16 game(s))
+  would issue cap #246: Oscar Smith (player #267, debut 2026-01-31, 1 game(s))
+  would issue cap #247: Hudson Malingre (player #133, debut 2026-01-31, 1 game(s))
+  older uncapped players (debut before the newest cap — cap by hand if they earned one):
+    Shane Goldsmid (player #137, debut 2003-11-15, 1 game(s))
+    Mark Chaplehow (player #698, debut 2004-01-10, 2 game(s))
+    Mark Chapplehow (player #9012, debut 2004-10-17, 44 game(s))
+    Shannon Spitty (player #9020, debut 2004-10-17, 2 game(s))
+    Ashton Lloyd (player #710, debut 2004-10-17, 1 game(s))
+    Glen Cruickshank (player #37, debut 2006-01-07, 1 game(s))
+    Craig Lines (player #67, debut 2016-12-04, 1 game(s))
+    Samuel Evans (player #248, debut 2017-02-05, 2 game(s))
+    Damian Billing (player #55, debut 2020-11-21, 1 game(s))
+
+Female A Grade (female)
+  newest capped debut: 2025-10-18
+  would issue cap #25: Brooke Hutton (player #9002, debut 2025-11-01, 1 game(s))
+  would issue cap #26: Ashley Day (player #9007, debut 2025-11-01, 3 game(s))
+  would issue cap #27: Emma-Lee Hammond (player #9001, debut 2025-11-08, 1 game(s))
+  would issue cap #28: Aimee Latham (player #524, debut 2025-11-29, 9 game(s))
+  would issue cap #29: Kim Nicholson (player #232, debut 2026-01-17, 3 game(s))
+  would issue cap #30: Olivia McCusker (player #9004, debut 2026-01-17, 2 game(s))
+
+Preview only. Re-run with --commit to issue these caps.
