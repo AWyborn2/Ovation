@@ -242,3 +242,34 @@ test("manual catch-up rejects a bad organisation id or date", () => {
   assert.throws(() => manualPlan("rmdcc", "2026-10-03"), /GUID/);
   assert.throws(() => manualPlan("2dd0a9a1-86d8-eb11-a7ad-2818780da0cc", "3 Oct"), /date/);
 });
+
+test("logs the stats-copy summary and grouped skip reasons from the ingest reply", async () => {
+  const lines = [];
+  const server = fakeServer([DUE], {
+    status: "ok",
+    fixtureChanges: 0,
+    tenants: [],
+    warnings: [],
+    centralProjection: {
+      mode: "on",
+      considered: 6,
+      created: 4,
+      updated: 2,
+      skipped: 33,
+      skipReasons: { "neither side maps": 33 },
+      playersInserted: 5,
+    },
+  });
+  const browser = fakeBrowser([{ phase: "done", finishedAt: "t" }]);
+  const r = await run({
+    env: ENV,
+    fetchImpl: server.fetchImpl,
+    launch: browser.launch,
+    readHarness: async () => "/* harness */",
+    sleep: async () => {},
+    log: (l) => lines.push(l),
+  });
+  assert.deepEqual(r.failures, []);
+  assert.ok(lines.some((l) => l.includes("4 created, 2 updated, 33 skipped, 5 new players")));
+  assert.ok(lines.some((l) => l.includes("skipped 33 × neither side maps")));
+});

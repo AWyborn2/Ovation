@@ -6926,6 +6926,7 @@ export const IngestPlayhqDumpResponse = zod.object({
   "created": zod.number(),
   "updated": zod.number(),
   "skipped": zod.number(),
+  "skipReasons": zod.record(zod.string(), zod.number()).optional().describe('Skipped matches counted by reason, with match and organisation ids blanked out so like reasons group together.'),
   "playersInserted": zod.number()
 }).optional().describe('The PlayHQ → central stats projection run after the load (CENTRAL_PROJECTION=dry|on). Absent when projection is off.')
 })

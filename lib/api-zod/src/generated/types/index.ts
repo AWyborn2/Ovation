@@ -468,6 +468,7 @@ export * from './playhqIngestRequestStatus';
 export * from './playhqIngestResponse';
 export * from './playhqIngestResponseCentralProjection';
 export * from './playhqIngestResponseCentralProjectionMode';
+export * from './playhqIngestResponseCentralProjectionSkipReasons';
 export * from './playhqIngestResponseCounts';
 export * from './playhqIngestResponseStatus';
 export * from './playhqIngestResponseTenantsItem';
