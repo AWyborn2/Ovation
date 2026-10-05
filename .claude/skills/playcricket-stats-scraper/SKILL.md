@@ -15,8 +15,8 @@ Paths are relative to the Ovation repo root. Three parts, all verified live on 2
   (DDL in `scripts/sql/playhq-schema.sql`), records fixture changes, prints a report.
 
 Endpoint shapes: `references/endpoints.md`. Tables and how they join to `central.*`:
-`references/data-model.md`. Governance: scraped public-site data, pilot-only and non-commercial
-(CLAUDE.md "Data governance") — keep it behind this adapter, never commercialise on it.
+`references/data-model.md`. Sourcing: publicly available site data
+(CLAUDE.md "Data sourcing") — keep it behind this adapter.
 
 ## Prerequisites
 

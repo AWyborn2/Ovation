@@ -61,4 +61,4 @@ pnpm monorepo — React + Vite + Tailwind web, Expo mobile, Express + Drizzle + 
 
 ## Status & caveat
 
-Pilot / non-commercial phase. The stats core is mid-migration to the central-read model, self-serve onboarding and admin auth are live, and billing/entitlements are built but dormant. Deep scorecard data is currently sourced for the pilot only — commercial launch depends on securing partner/licence access (PlayHQ partner / Fixtura), so framing stays pilot/non-commercial until then.
+Pilot phase. The stats core is mid-migration to the central-read model, self-serve onboarding and admin auth are live, and billing/entitlements are built but dormant. Stats come from publicly available PlayHQ data, and clubs own their own data — Ovation is the utility that merges each club's pre-digital and digital history and keeps it current.

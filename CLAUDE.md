@@ -170,10 +170,18 @@ associations as additional central datasets — STARTED (WA Premier Cricket proj
 - `@workspace/scorecard` stays the single view-model for web + mobile.
 - Curated club content is the moat — tenant-scope it, never replace it with central data.
 
-## Data governance (hard constraint)
+## Data sourcing (decided Oct 2026)
 
-Deep scorecards were scraped for the pilot. Keep the ingest behind a clean adapter boundary
-(scrape → PlayHQ public API for fixtures/results/ladders → partner API for deep scorecards).
-**Do not commercialise on scraped data**; pilot/non-commercial framing until partner or licence
-access is secured (PlayHQ partner application / Fixtura). Review cricket.com.au Third-Party
-Application T&Cs before launch.
+Scorecards, fixtures, results and ladders come from publicly available data on
+play.cricket.com.au (PlayHQ). Clubs own their own data: when a club signs up, Ovation is the
+utility that merges its pre-digital history (scorebooks, spreadsheets, honour boards) with its
+digital-era record and keeps it current. The licensing hold is lifted: commercial use is no
+longer blocked on a PlayHQ partner / Fixtura agreement.
+
+Engineering rules that still hold:
+
+- Keep ingest behind the adapter boundary (`playhq-ingest` loader; scrape, PlayHQ public API
+  and partner API are interchangeable collectors). Record the collector on `scrape_runs`.
+- Respect player privacy: `is_private` players stay hidden, and juniors stay isolated.
+- Before launch, re-read the cricket.com.au / PlayHQ terms of use and confirm automated
+  collection is acceptable; the central DB also holds players of clubs that have not signed up.

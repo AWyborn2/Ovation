@@ -50,9 +50,8 @@ separate schema, written only by the loader — the app never reads or writes it
    season table in `playhq.ladders` is what `centralLadder()` in `summaries.ts` says it wants.
 4. **Ball-by-ball in the app.** Greenfield; `playhq.balls` is the source when a feature needs it.
 
-## Governance
+## Sourcing
 
-Scraped from the public site under the pilot-only, non-commercial framing in `CLAUDE.md`
-("Data governance"). Keep ingest behind this adapter boundary: the harness + loader are the
+Collected from the public site (`CLAUDE.md` "Data sourcing"). Keep ingest behind this adapter boundary: the harness + loader are the
 only things that know the proxy exists, so swapping to the PlayHQ public/partner API
 (`docs/playcricket-ingestion.md`) later means replacing `harness.js`, not the schema.

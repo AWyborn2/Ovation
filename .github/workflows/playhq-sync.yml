@@ -14,9 +14,9 @@ name: PlayHQ sync
 #   secrets:   PLAYHQ_SYNC_SECRET (same value as the API's PLAYHQ_SYNC_SECRET)
 # The API side must be provisioned first (PLAYHQ_INGEST_DATABASE_URL + the playhq_ingest role).
 #
-# Data governance: this is scraping on cloud infrastructure, inside the pilot / non-commercial
-# framing in CLAUDE.md. The PlayHQ public API collector (plan M5) replaces it for fixtures,
-# results and ladders once the key is issued.
+# Data sourcing: publicly available play.cricket.com.au data (CLAUDE.md "Data sourcing"). The
+# PlayHQ public API collector (plan M5) can replace it for fixtures, results and ladders once
+# the key is issued.
 on:
   schedule:
     # Hourly, off the hour (cron at :00 is GitHub's busiest minute and runs late).
