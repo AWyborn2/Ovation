@@ -340,9 +340,10 @@ const central = (over: Partial<PeelFigures> = {}): PeelFigures => ({
   ...over,
 });
 
-describe("planHistoryRows: career baseline peel of central-only seasons (R20)", () => {
+describe("planHistoryRows: career baseline peel of what only central records (R20)", () => {
   // Sam Hardman (dev, 4 Oct 2026): his B Grade lives only in a career baseline
-  // (6 games, 85 runs), all of it 2017/18, a season native never ingested.
+  // (6 games, 85 runs), all of it 2017/18. Native holds other 2017/18 B Grade
+  // scorecards, but none of his.
   const hardman = stat({
     playerId: 473,
     grade: "B Grade",
@@ -360,7 +361,7 @@ describe("planHistoryRows: career baseline peel of central-only seasons (R20)", 
   });
   const centralOnly = (
     figures: Array<[string, string, PeelFigures]>,
-    nativeMatchSeasons: string[] = [],
+    native: Array<[number, string, PeelFigures]> = [],
   ): CentralOnlyInput => {
     const byGuid = new Map<string, Map<string, PeelFigures>>();
     for (const [guid, key, f] of figures) {
@@ -368,8 +369,14 @@ describe("planHistoryRows: career baseline peel of central-only seasons (R20)", 
       m.set(key, f);
       byGuid.set(guid, m);
     }
+    const nativeFigures = new Map<number, Map<string, PeelFigures>>();
+    for (const [id, key, f] of native) {
+      const m = nativeFigures.get(id) ?? new Map<string, PeelFigures>();
+      m.set(key, f);
+      nativeFigures.set(id, m);
+    }
     return {
-      nativeMatchSeasons: new Set(nativeMatchSeasons),
+      nativeFigures,
       guidsByPlayer: new Map([
         [473, ["g-473"]],
         [32, ["g-32a", "g-32b"]],
@@ -419,27 +426,81 @@ describe("planHistoryRows: career baseline peel of central-only seasons (R20)", 
     expect(plan.peels[0]!.peeled).toMatchObject({ games: 8, runs: 160, wickets: 3 });
   });
 
-  it("never peels a season native ingested itself, one before the boundary, or another grade", () => {
+  it("peels only what central has beyond the player's own native records, season by season", () => {
     const plan = planHistoryRows({
       pgss: [
         hardman,
-        // Someone's 2018/19 B Grade season snapshot: native ingested that season.
-        stat({ playerId: 99, grade: "B Grade", season: 2018 }),
+        // His own 2018/19 B Grade season snapshot covers part of that season.
+        stat({ playerId: 473, grade: "B Grade", season: 2018, games: 1, innings: 1, runs: 10 }),
+        // Another player's snapshot for 2016/17 says nothing about Hardman.
+        stat({ playerId: 99, grade: "B Grade", season: 2016 }),
       ],
       boundaries: BOUNDARIES,
       seniorGrade,
       centralOnly: centralOnly(
         [
-          ["g-473", "B Grade|2017", central({ games: 1, runs: 10 })], // native scorecards
-          ["g-473", "B Grade|2018", central({ games: 1, runs: 10 })], // native snapshot
+          ["g-473", "B Grade|2016", central({ games: 1, runs: 5 })], // no native record: peeled
+          ["g-473", "B Grade|2017", central({ games: 2, runs: 30 })], // native lines: 2 games, 25 runs
+          ["g-473", "B Grade|2018", central({ games: 2, runs: 20 })], // snapshot: 1 game, 10 runs
           ["g-473", "B Grade|2003", central({ games: 1, runs: 10 })], // before B's 2004 boundary
           ["g-473", "A Grade|2019", central({ games: 1, runs: 10 })], // another grade
         ],
-        ["B Grade|2017"],
+        [[473, "B Grade|2017", central({ games: 2, runs: 25 })]],
+      ),
+    });
+    expect(plan.peels).toEqual([
+      expect.objectContaining({
+        seasons: [2016, 2017, 2018],
+        peeled: expect.objectContaining({ games: 2, runs: 20 }),
+      }),
+    ]);
+    expect(plan.rows.find((r) => r.playerId === 473 && r.grain === "career")).toMatchObject({
+      games: 4,
+      runs: 65,
+    });
+  });
+
+  it("nothing to peel when native already holds everything central has", () => {
+    const plan = planHistoryRows({
+      pgss: [hardman],
+      boundaries: BOUNDARIES,
+      seniorGrade,
+      centralOnly: centralOnly(
+        [["g-473", "B Grade|2017", central({ games: 2, runs: 30 })]],
+        [[473, "B Grade|2017", central({ games: 2, runs: 31 })]],
       ),
     });
     expect(plan.peels).toEqual([]);
-    expect(plan.rows.find((r) => r.playerId === 473)).toMatchObject({ games: 6, runs: 85 });
+    expect(plan.rows[0]).toMatchObject({ games: 6, runs: 85 });
+  });
+
+  it("a baseline with only a high score or best bowling is never dropped by an empty peel", () => {
+    const plan = planHistoryRows({
+      pgss: [
+        stat({
+          playerId: 473,
+          grade: "B Grade",
+          games: null,
+          innings: null,
+          notOuts: null,
+          runs: null,
+          fifties: null,
+          hundreds: null,
+          wickets: null,
+          runsConceded: null,
+          fiveWickets: null,
+          catches: null,
+          stumpings: null,
+          runOuts: null,
+          highScore: "40",
+        }),
+      ],
+      boundaries: BOUNDARIES,
+      seniorGrade,
+      centralOnly: centralOnly([["g-473", "B Grade|2017", central({ games: 3, runs: 90 })]]),
+    });
+    expect(plan.peels).toEqual([]);
+    expect(plan.rows).toHaveLength(1);
   });
 
   it("without central figures, baselines load unpeeled (as before)", () => {
@@ -860,7 +921,7 @@ describe("planSeed", () => {
     const plan = planSeed(
       input({
         centralOnly: {
-          nativeMatchSeasons: new Set(),
+          nativeFigures: new Map(),
           guidsByPlayer: new Map([[1, ["g-1"]]]),
           figures: new Map([["g-1", new Map([["A Grade|2017", central({ games: 4, runs: 60 })]])]]),
         },
