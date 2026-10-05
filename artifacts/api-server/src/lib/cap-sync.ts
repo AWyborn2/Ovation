@@ -308,6 +308,8 @@ export async function syncCapsFromStats(
       inStats: true,
       gamesAGrade: games,
       autoCreated: true,
+      // Awaits an admin's confirmation before it shows on the public register.
+      status: "pending",
       playerId,
     });
     createdCaps.push({ capNumber: nextCapNumber, playerId, name });

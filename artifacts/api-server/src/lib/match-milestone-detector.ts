@@ -1,5 +1,5 @@
 import { db, playersTable, milestoneEventsTable, capRegisterTable } from "@workspace/db";
-import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, ne } from "drizzle-orm";
 import { GRADE_TO_CAP_CATEGORY } from "./cap-sync";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import {
@@ -199,6 +199,7 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
           eq(capRegisterTable.tenantId, tenantId),
           eq(capRegisterTable.category, capCategory),
           isNotNull(capRegisterTable.playerId),
+          ne(capRegisterTable.status, "declined"),
         ),
       );
     const capByPlayerId = new Map<number, number>();

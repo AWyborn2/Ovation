@@ -190,6 +190,13 @@
       "when": 1791090669001,
       "tag": "0026_player_privacy_overrides",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1791178367843,
+      "tag": "0027_cap_status",
+      "breakpoints": true
     }
   ]
 }

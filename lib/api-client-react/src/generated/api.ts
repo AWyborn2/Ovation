@@ -54,7 +54,10 @@ import type {
   CapEntry,
   CapEntryInput,
   CapEntryUpdate,
+  CapIdsBody,
   CapRecomputeSummary,
+  CapReorderBody,
+  CapReviewResult,
   Captain,
   CaptainInput,
   CaptainLoginRequest,
@@ -4047,6 +4050,377 @@ export const useRecomputeCaps = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getRecomputeCapsMutationOptions(options));
+    }
+
+export const getListCapReviewUrl = () => {
+
+
+
+
+  return `/api/caps/review`
+}
+
+/**
+ * Caps issued automatically (an A Grade / Female A Grade debut from an
+import, the bulk match load or the PlayHQ sync) start "pending" and are
+hidden from the public register until an admin confirms them. Declined
+caps are listed too, so an admin can restore one. Admin only.
+
+ * @summary Caps awaiting an admin's confirmation, and declined caps
+ */
+export const listCapReview = async ( options?: RequestInit): Promise<CapEntry[]> => {
+
+  return customFetch<CapEntry[]>(getListCapReviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListCapReviewQueryKey = () => {
+    return [
+    `/api/caps/review`
+    ] as const;
+    }
+
+
+export const getListCapReviewQueryOptions = <TData = Awaited<ReturnType<typeof listCapReview>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCapReview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListCapReviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listCapReview>>> = ({ signal }) => listCapReview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listCapReview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListCapReviewQueryResult = NonNullable<Awaited<ReturnType<typeof listCapReview>>>
+export type ListCapReviewQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Caps awaiting an admin's confirmation, and declined caps
+ */
+
+export function useListCapReview<TData = Awaited<ReturnType<typeof listCapReview>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listCapReview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListCapReviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getConfirmCapsUrl = () => {
+
+
+
+
+  return `/api/caps/review/confirm`
+}
+
+/**
+ * @summary Confirm pending caps onto the public register
+ */
+export const confirmCaps = async (capIdsBody: CapIdsBody, options?: RequestInit): Promise<CapReviewResult> => {
+
+  return customFetch<CapReviewResult>(getConfirmCapsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      capIdsBody,)
+  }
+);}
+
+
+
+
+export const getConfirmCapsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmCaps>>, TError,{data: BodyType<CapIdsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmCaps>>, TError,{data: BodyType<CapIdsBody>}, TContext> => {
+
+const mutationKey = ['confirmCaps'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmCaps>>, {data: BodyType<CapIdsBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmCaps(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmCapsMutationResult = NonNullable<Awaited<ReturnType<typeof confirmCaps>>>
+    export type ConfirmCapsMutationBody = BodyType<CapIdsBody>
+    export type ConfirmCapsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Confirm pending caps onto the public register
+ */
+export const useConfirmCaps = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmCaps>>, TError,{data: BodyType<CapIdsBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmCaps>>,
+        TError,
+        {data: BodyType<CapIdsBody>},
+        TContext
+      > => {
+      return useMutation(getConfirmCapsMutationOptions(options));
+    }
+
+export const getReorderPendingCapsUrl = () => {
+
+
+
+
+  return `/api/caps/review/reorder`
+}
+
+/**
+ * `ids` must be every pending cap in the category. They are numbered in
+that order straight after the list's highest confirmed cap. Admin only.
+
+ * @summary Renumber a list's pending caps in a chosen order
+ */
+export const reorderPendingCaps = async (capReorderBody: CapReorderBody, options?: RequestInit): Promise<CapEntry[]> => {
+
+  return customFetch<CapEntry[]>(getReorderPendingCapsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      capReorderBody,)
+  }
+);}
+
+
+
+
+export const getReorderPendingCapsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderPendingCaps>>, TError,{data: BodyType<CapReorderBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reorderPendingCaps>>, TError,{data: BodyType<CapReorderBody>}, TContext> => {
+
+const mutationKey = ['reorderPendingCaps'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reorderPendingCaps>>, {data: BodyType<CapReorderBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  reorderPendingCaps(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReorderPendingCapsMutationResult = NonNullable<Awaited<ReturnType<typeof reorderPendingCaps>>>
+    export type ReorderPendingCapsMutationBody = BodyType<CapReorderBody>
+    export type ReorderPendingCapsMutationError = ErrorType<void>
+
+    /**
+ * @summary Renumber a list's pending caps in a chosen order
+ */
+export const useReorderPendingCaps = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reorderPendingCaps>>, TError,{data: BodyType<CapReorderBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reorderPendingCaps>>,
+        TError,
+        {data: BodyType<CapReorderBody>},
+        TContext
+      > => {
+      return useMutation(getReorderPendingCapsMutationOptions(options));
+    }
+
+export const getDeclineCapUrl = (id: number,) => {
+
+
+
+
+  return `/api/caps/${id}/decline`
+}
+
+/**
+ * Takes the cap off the list (the remaining pending caps close the gap)
+and keeps a record so the player isn't capped again automatically.
+Admin only.
+
+ * @summary Decline a pending cap
+ */
+export const declineCap = async (id: number, options?: RequestInit): Promise<CapEntry> => {
+
+  return customFetch<CapEntry>(getDeclineCapUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDeclineCapMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof declineCap>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof declineCap>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['declineCap'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof declineCap>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  declineCap(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeclineCapMutationResult = NonNullable<Awaited<ReturnType<typeof declineCap>>>
+
+    export type DeclineCapMutationError = ErrorType<void>
+
+    /**
+ * @summary Decline a pending cap
+ */
+export const useDeclineCap = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof declineCap>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof declineCap>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeclineCapMutationOptions(options));
+    }
+
+export const getRestoreCapUrl = (id: number,) => {
+
+
+
+
+  return `/api/caps/${id}/restore`
+}
+
+/**
+ * @summary Restore a declined cap as pending, with the next number
+ */
+export const restoreCap = async (id: number, options?: RequestInit): Promise<CapEntry> => {
+
+  return customFetch<CapEntry>(getRestoreCapUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRestoreCapMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreCap>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof restoreCap>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['restoreCap'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof restoreCap>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  restoreCap(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RestoreCapMutationResult = NonNullable<Awaited<ReturnType<typeof restoreCap>>>
+
+    export type RestoreCapMutationError = ErrorType<void>
+
+    /**
+ * @summary Restore a declined cap as pending, with the next number
+ */
+export const useRestoreCap = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof restoreCap>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof restoreCap>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRestoreCapMutationOptions(options));
     }
 
 export const getUpdateCapUrl = (id: number,) => {

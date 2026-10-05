@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
 import {
   db,
   capRegisterTable,
@@ -7,7 +7,16 @@ import {
   matchPlayerLinesTable,
   playerGradeSeasonStatsTable,
 } from "@workspace/db";
-import { CreateCapBody, UpdateCapBody, UpdateCapParams, DeleteCapParams } from "@workspace/api-zod";
+import {
+  ConfirmCapsBody,
+  CreateCapBody,
+  DeclineCapParams,
+  DeleteCapParams,
+  ReorderPendingCapsBody,
+  RestoreCapParams,
+  UpdateCapBody,
+  UpdateCapParams,
+} from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
@@ -16,11 +25,18 @@ import { CAP_CATEGORY_TO_GRADE, recomputeCapsFromStats } from "../lib/cap-sync";
 
 const router: IRouter = Router();
 
+// The public register is confirmed caps only: an automatically issued cap
+// waits for an admin (GET /caps/review) before it shows here.
 router.get("/caps", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(capRegisterTable)
-    .where(eq(capRegisterTable.tenantId, getTenantId(req)))
+    .where(
+      and(
+        eq(capRegisterTable.tenantId, getTenantId(req)),
+        eq(capRegisterTable.status, "confirmed"),
+      ),
+    )
     .orderBy(asc(capRegisterTable.capNumber));
   res.json(rows);
 });
@@ -43,7 +59,13 @@ router.get("/caps/debutants", async (req, res): Promise<void> => {
       playerId: capRegisterTable.playerId,
     })
     .from(capRegisterTable)
-    .where(and(eq(capRegisterTable.tenantId, tenantId), isNotNull(capRegisterTable.playerId)));
+    .where(
+      and(
+        eq(capRegisterTable.tenantId, tenantId),
+        isNotNull(capRegisterTable.playerId),
+        eq(capRegisterTable.status, "confirmed"),
+      ),
+    );
 
   // Debut dates come from the NATIVE match history, which holds only Halls
   // Head's players. Another club's cap ids are its own crosswalk ids (U8), so
@@ -203,6 +225,233 @@ router.post(
       }
       res.status(500).json({ error: msg });
     }
+  },
+);
+
+// ── Cap confirmation (Ash, 5 Oct 2026) ─────────────────────────────────────
+// Caps issued automatically start "pending". An admin confirms them onto the
+// public register, renumbers them if they were issued in the wrong order, or
+// declines one (kept as "declined", numbered -id, so the player is never capped
+// again automatically; restorable).
+
+type CapTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Number `orderedIds` (pending caps of one category) straight after the
+ * category's highest confirmed cap. Moved through temporary negative numbers
+ * first, so the per-tenant unique cap number never trips mid-way.
+ */
+async function renumberPending(
+  tx: CapTx,
+  tenantId: number,
+  category: string,
+  orderedIds: readonly number[],
+): Promise<void> {
+  if (orderedIds.length === 0) return;
+  const [top] = await tx
+    .select({ max: sql<number | null>`max(${capRegisterTable.capNumber})` })
+    .from(capRegisterTable)
+    .where(
+      and(
+        eq(capRegisterTable.tenantId, tenantId),
+        eq(capRegisterTable.category, category),
+        ne(capRegisterTable.status, "pending"),
+      ),
+    );
+  const base = Math.max(0, Number(top?.max ?? 0));
+  const own = (id: number) =>
+    and(eq(capRegisterTable.tenantId, tenantId), eq(capRegisterTable.id, id));
+  for (const id of orderedIds) {
+    await tx
+      .update(capRegisterTable)
+      .set({ capNumber: -1_000_000 - id })
+      .where(own(id));
+  }
+  for (const [i, id] of orderedIds.entries()) {
+    await tx
+      .update(capRegisterTable)
+      .set({ capNumber: base + 1 + i })
+      .where(own(id));
+  }
+}
+
+async function pendingCaps(reader: Pick<typeof db, "select">, tenantId: number, category: string) {
+  return reader
+    .select()
+    .from(capRegisterTable)
+    .where(
+      and(
+        eq(capRegisterTable.tenantId, tenantId),
+        eq(capRegisterTable.category, category),
+        eq(capRegisterTable.status, "pending"),
+      ),
+    )
+    .orderBy(asc(capRegisterTable.capNumber));
+}
+
+router.get("/caps/review", requireAdmin, async (req, res): Promise<void> => {
+  const rows = await db
+    .select()
+    .from(capRegisterTable)
+    .where(
+      and(
+        eq(capRegisterTable.tenantId, getTenantId(req)),
+        inArray(capRegisterTable.status, ["pending", "declined"]),
+      ),
+    )
+    .orderBy(asc(capRegisterTable.category), asc(capRegisterTable.capNumber));
+  // Pending (positive numbers) first, then declined.
+  res.json([
+    ...rows.filter((r) => r.status === "pending"),
+    ...rows.filter((r) => r.status !== "pending"),
+  ]);
+});
+
+router.post(
+  "/caps/review/confirm",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const body = ConfirmCapsBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    if (body.data.ids.length === 0) {
+      res.json({ updated: 0 });
+      return;
+    }
+    const rows = await db
+      .update(capRegisterTable)
+      .set({ status: "confirmed" })
+      .where(
+        and(
+          eq(capRegisterTable.tenantId, getTenantId(req)),
+          eq(capRegisterTable.status, "pending"),
+          inArray(capRegisterTable.id, body.data.ids),
+        ),
+      )
+      .returning({ id: capRegisterTable.id });
+    res.json({ updated: rows.length });
+  },
+);
+
+router.post(
+  "/caps/review/reorder",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const body = ReorderPendingCapsBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const { category, ids } = body.data;
+    const result = await db.transaction(async (tx) => {
+      const current = await pendingCaps(tx, tenantId, category);
+      const want = new Set(ids);
+      if (
+        want.size !== ids.length ||
+        current.length !== ids.length ||
+        current.some((c) => !want.has(c.id))
+      ) {
+        return null;
+      }
+      await renumberPending(tx, tenantId, category, ids);
+      return pendingCaps(tx, tenantId, category);
+    });
+    if (!result) {
+      res.status(400).json({ error: "List every pending cap in this category exactly once." });
+      return;
+    }
+    res.json(result);
+  },
+);
+
+router.post(
+  "/caps/:id/decline",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const params = DeclineCapParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const row = await db.transaction(async (tx) => {
+      const [declined] = await tx
+        .update(capRegisterTable)
+        .set({ status: "declined", capNumber: -params.data.id })
+        .where(
+          and(
+            eq(capRegisterTable.tenantId, tenantId),
+            eq(capRegisterTable.id, params.data.id),
+            eq(capRegisterTable.status, "pending"),
+          ),
+        )
+        .returning();
+      if (!declined) return null;
+      // The remaining pending caps close the gap, in their current order.
+      const rest = await pendingCaps(tx, tenantId, declined.category);
+      await renumberPending(
+        tx,
+        tenantId,
+        declined.category,
+        rest.map((c) => c.id),
+      );
+      return declined;
+    });
+    if (!row) {
+      res.status(404).json({ error: "No pending cap with this id" });
+      return;
+    }
+    res.json(row);
+  },
+);
+
+router.post(
+  "/caps/:id/restore",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const params = RestoreCapParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const row = await db.transaction(async (tx) => {
+      const [cap] = await tx
+        .select()
+        .from(capRegisterTable)
+        .where(
+          and(
+            eq(capRegisterTable.tenantId, tenantId),
+            eq(capRegisterTable.id, params.data.id),
+            eq(capRegisterTable.status, "declined"),
+          ),
+        );
+      if (!cap) return null;
+      const [top] = await tx
+        .select({ max: sql<number | null>`max(${capRegisterTable.capNumber})` })
+        .from(capRegisterTable)
+        .where(
+          and(eq(capRegisterTable.tenantId, tenantId), eq(capRegisterTable.category, cap.category)),
+        );
+      const [restored] = await tx
+        .update(capRegisterTable)
+        .set({ status: "pending", capNumber: Math.max(0, Number(top?.max ?? 0)) + 1 })
+        .where(eq(capRegisterTable.id, cap.id))
+        .returning();
+      return restored ?? null;
+    });
+    if (!row) {
+      res.status(404).json({ error: "No declined cap with this id" });
+      return;
+    }
+    res.json(row);
   },
 );
 
