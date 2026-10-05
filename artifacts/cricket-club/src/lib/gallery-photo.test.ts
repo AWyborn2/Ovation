@@ -14,6 +14,7 @@ const photo = (over: Partial<ClubPhoto>): ClubPhoto => ({
   createdAt: "2026-09-01",
   playerIds: [],
   photoTypes: [],
+  matchFormat: null,
   ...over,
 });
 

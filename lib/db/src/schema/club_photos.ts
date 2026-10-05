@@ -23,6 +23,7 @@ export const CLUB_PHOTO_TYPES = [
   "fielding",
   "team",
   "celebrating",
+  "premiership",
   "batting_milestone",
   "bowling_milestone",
 ] as const;
@@ -30,6 +31,16 @@ export const CLUB_PHOTO_TYPES = [
 /** `ARRAY['batting', …]::text[]` for the check constraints. */
 export const clubPhotoTypesSqlArray = sql.raw(
   `ARRAY[${CLUB_PHOTO_TYPES.map((t) => `'${t}'`).join(", ")}]::text[]`,
+);
+
+/**
+ * The match format a library photo can be tagged with (one per photo, or
+ * none). Mirrors `MATCH_FORMATS` in `@workspace/scorecard`.
+ */
+export const CLUB_PHOTO_MATCH_FORMATS = ["one_day", "t20", "two_day"] as const;
+
+const clubPhotoMatchFormatsSqlArray = sql.raw(
+  `ARRAY[${CLUB_PHOTO_MATCH_FORMATS.map((t) => `'${t}'`).join(", ")}]::text[]`,
 );
 
 /**
@@ -64,6 +75,9 @@ export const clubPhotosTable = pgTable(
     // Photo type tags (CLUB_PHOTO_TYPES); a card prefers photos of the types
     // its card type asks for, then falls back to any photo.
     photoTypes: text("photo_types").array().notNull().default([]),
+    // The match format (CLUB_PHOTO_MATCH_FORMATS): a separate tag from the
+    // photo type; a card from a format prefers photos of that format.
+    matchFormat: text("match_format"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
@@ -71,6 +85,10 @@ export const clubPhotosTable = pgTable(
     chkPhotoTypes: check(
       "club_photos_photo_types_check",
       sql`"photo_types" <@ ${clubPhotoTypesSqlArray}`,
+    ),
+    chkMatchFormat: check(
+      "club_photos_match_format_check",
+      sql`"match_format" IS NULL OR "match_format" = ANY (${clubPhotoMatchFormatsSqlArray})`,
     ),
   }),
 );

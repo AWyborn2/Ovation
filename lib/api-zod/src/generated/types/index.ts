@@ -170,6 +170,7 @@ export * from './clubIdentityDriftItemCuratedRowsItem';
 export * from './clubIdentityDriftItemKind';
 export * from './clubIdentityDriftItemMergeStatus';
 export * from './clubPhoto';
+export * from './clubPhotoMatchFormat';
 export * from './clubPhotoType';
 export * from './clubRecords';
 export * from './clubRole';

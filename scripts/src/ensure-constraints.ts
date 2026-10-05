@@ -171,16 +171,22 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     name: "card_photo_rules_mode_check",
     sql: `"mode" IN ('player', 'random', 'fixed')`,
   },
-  // Photo type tags (migration 0016).
+  // Photo type tags (migration 0016; premiership added in 0027).
   {
     table: "club_photos",
     name: "club_photos_photo_types_check",
-    sql: `"photo_types" <@ ARRAY['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']::text[]`,
+    sql: `"photo_types" <@ ARRAY['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']::text[]`,
   },
   {
     table: "card_photo_rules",
     name: "card_photo_rules_photo_type_check",
-    sql: `"photo_type" IS NULL OR "photo_type" = ANY (ARRAY['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']::text[])`,
+    sql: `"photo_type" IS NULL OR "photo_type" = ANY (ARRAY['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']::text[])`,
+  },
+  // Photo match format tag (migration 0027).
+  {
+    table: "club_photos",
+    name: "club_photos_match_format_check",
+    sql: `"match_format" IS NULL OR "match_format" = ANY (ARRAY['one_day', 't20', 'two_day']::text[])`,
   },
   // Club history store and corrections journal (migration 0021, U9).
   {

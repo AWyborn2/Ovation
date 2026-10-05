@@ -7,7 +7,13 @@ import {
   playerIdMapTable,
   type ClubPhotoRow,
 } from "@workspace/db";
-import { PHOTO_TYPES, isFillInPlayerId, type PhotoType } from "@workspace/scorecard";
+import {
+  PHOTO_TYPES,
+  isFillInPlayerId,
+  isMatchFormat,
+  type MatchFormat,
+  type PhotoType,
+} from "@workspace/scorecard";
 import { tenantIsCentral } from "./tenant";
 import { objectUrl } from "./photo-store";
 
@@ -56,6 +62,7 @@ export type PhotoDto = {
   createdAt: string;
   playerIds: number[];
   photoTypes: PhotoType[];
+  matchFormat: MatchFormat | null;
   sourcePhotoId: number | null;
 };
 
@@ -87,6 +94,7 @@ export async function presentPhotos(tenantId: number, rows: ClubPhotoRow[]): Pro
     playerIds: (byPhoto.get(r.id) ?? []).sort((a, b) => a - b),
     // In the canonical order, whatever order they were tagged in.
     photoTypes: PHOTO_TYPES.filter((t) => r.photoTypes.includes(t)),
+    matchFormat: isMatchFormat(r.matchFormat) ? r.matchFormat : null,
     sourcePhotoId: r.sourcePhotoId ?? null,
   }));
 }

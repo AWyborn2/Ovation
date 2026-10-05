@@ -1,8 +1,9 @@
 /**
  * Social Studio — the photo library as folders: a folder per senior grade plus
  * Club-wide, type sub-folders plus Unsorted, the folder in the URL, uploads
- * filed into the open folder, "Move to…", player tagging inside a folder, and
- * a bulk upload where one failed file doesn't stop the rest.
+ * filed into the open folder, "Move to…", player tagging inside a folder, the
+ * match format tag and filter, and a bulk upload where one failed file doesn't
+ * stop the rest.
  */
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { readFileSync } from "node:fs";
@@ -29,7 +30,12 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const photo = (id: number, grade: string | null = null, photoTypes: string[] = []) => ({
+const photo = (
+  id: number,
+  grade: string | null = null,
+  photoTypes: string[] = [],
+  matchFormat: string | null = null,
+) => ({
   id,
   url: `/api/storage/objects/library/${id}`,
   thumbUrl: `/api/storage/objects/library/${id}-t`,
@@ -41,6 +47,7 @@ const photo = (id: number, grade: string | null = null, photoTypes: string[] = [
   createdAt: "2026-09-20T10:00:00Z",
   playerIds: [],
   photoTypes,
+  matchFormat,
 });
 
 type Req = { method: string; url: string; body: unknown };
@@ -131,6 +138,7 @@ describe("folder browser", () => {
       "Fielding, 0 photos",
       "Team, 0 photos",
       "Celebrating, 0 photos",
+      "Premiership, 0 photos",
       "Batting milestone, 0 photos",
       "Bowling milestone, 0 photos",
       "Unsorted, 1 photo",
@@ -250,6 +258,43 @@ describe("uploading into a folder", () => {
       photoType: "fielding",
     });
   });
+
+  it("tags new uploads with the chosen match format", async () => {
+    const requests = stubLibrary();
+    renderWithHistory(
+      <AdminPhotoLibrary />,
+      "/admin/social/library?grade=A%20Grade&type=premiership",
+    );
+    await screen.findByTestId("upload-target");
+    vi.stubGlobal(
+      "XMLHttpRequest",
+      class {
+        status = 200;
+        upload = {};
+        onload: (() => void) | null = null;
+        open() {}
+        setRequestHeader() {}
+        send() {
+          this.onload?.();
+        }
+      },
+    );
+    fireEvent.change(screen.getByLabelText("Match format for new photos"), {
+      target: { value: "one_day" },
+    });
+    fireEvent.change(screen.getByTestId("library-file-input"), {
+      target: { files: [new File(["x"], "a.jpg", { type: "image/jpeg" })] },
+    });
+    await waitFor(() => {
+      const ingest = requests.find((r) => r.url.includes("/club-photos/ingest"));
+      expect(ingest?.body).toEqual({
+        objectPaths: ["/objects/uploads/a"],
+        grade: "A Grade",
+        photoType: "premiership",
+        matchFormat: "one_day",
+      });
+    });
+  });
 });
 
 describe("selection inside a folder", () => {
@@ -303,6 +348,49 @@ describe("selection inside a folder", () => {
       const tag = requests.find((r) => r.method === "POST" && r.url.includes("/club-photos/tags"));
       expect(tag?.body).toEqual({ photoIds: [1], season: 2025 });
     });
+  });
+
+  it("tags a match format on the selected photos, and can clear it", async () => {
+    const requests = stubLibrary();
+    renderWithHistory(<AdminPhotoLibrary />, "/admin/social/library?grade=A%20Grade&type=batting");
+    fireEvent.click(await screen.findByRole("button", { name: "Photo 1" }));
+    fireEvent.change(screen.getByLabelText("Match format"), { target: { value: "t20" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply tags" }));
+    await waitFor(() => {
+      const tag = requests.find((r) => r.method === "POST" && r.url.includes("/club-photos/tags"));
+      expect(tag?.body).toEqual({ photoIds: [1], matchFormat: "t20" });
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Photo 2" }));
+    fireEvent.change(screen.getByLabelText("Match format"), { target: { value: "none" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply tags" }));
+    await waitFor(() => {
+      const tags = requests.filter((r) => r.url.includes("/club-photos/tags"));
+      expect(tags.at(-1)?.body).toEqual({ photoIds: [2], matchFormat: null });
+    });
+  });
+
+  it("filters a folder by match format and labels each photo's format", async () => {
+    stubLibrary([
+      photo(1, "A Grade", ["premiership"], "t20"),
+      photo(2, "A Grade", ["premiership"], "two_day"),
+      photo(3, "A Grade", ["premiership"]),
+    ]);
+    renderWithHistory(
+      <AdminPhotoLibrary />,
+      "/admin/social/library?grade=A%20Grade&type=premiership",
+    );
+    const grid = await screen.findByRole("list", { name: "Library photos" });
+    expect(within(grid).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(grid).getByRole("button", { name: "Photo 1" }).textContent).toContain("T20");
+
+    const formats = screen.getByRole("group", { name: "Filter by match format" });
+    fireEvent.click(within(formats).getByRole("button", { name: "Two Day" }));
+    expect(within(grid).getAllByRole("listitem")).toHaveLength(1);
+    expect(within(grid).getByRole("button", { name: "Photo 2" })).toBeTruthy();
+
+    fireEvent.click(within(formats).getByRole("button", { name: "One Day" }));
+    expect(screen.getByText("No photos of this format")).toBeTruthy();
   });
 
   it("carries no raw hex colours", () => {

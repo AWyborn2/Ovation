@@ -1,6 +1,7 @@
 import {
   fetchGoogleDriveFiles,
   ingestClubPhotos,
+  type ClubPhotoMatchFormat,
   type ClubPhotoType,
   type FetchGoogleDriveFilesResponse,
   type IngestClubPhotosResponse,
@@ -23,9 +24,15 @@ export const INGEST_BATCH = 50;
 
 /**
  * Where uploaded photos are filed: the library folder they were uploaded into
- * (a grade and/or photo type). Omitted = Club-wide / Unsorted.
+ * (a grade and/or photo type), plus an optional match format tag. Omitted =
+ * Club-wide / Unsorted, no format.
  */
-export type UploadTarget = { grade?: string; season?: number; photoType?: ClubPhotoType };
+export type UploadTarget = {
+  grade?: string;
+  season?: number;
+  photoType?: ClubPhotoType;
+  matchFormat?: ClubPhotoMatchFormat;
+};
 
 type IngestBody = { objectPaths: string[] } & UploadTarget;
 type Ingest = (body: IngestBody) => Promise<IngestClubPhotosResponse>;
@@ -134,6 +141,7 @@ async function ingestInBatches(
         grade: opts.grade || undefined,
         season: opts.season,
         ...(opts.photoType ? { photoType: opts.photoType } : {}),
+        ...(opts.matchFormat ? { matchFormat: opts.matchFormat } : {}),
       });
       for (const r of res.results) {
         const match = chunk.find((c) => c.objectPath === r.objectPath);
