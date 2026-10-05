@@ -28,6 +28,11 @@ export type Props = {
    */
   photoUrl?: string | null;
   /**
+   * A queued draft's own pack (the one its post pack renders in), ahead of the
+   * club's pack for the kind. A layout picked in the modal still wins.
+   */
+  packId?: string | null;
+  /**
    * When provided, the modal becomes an approval surface: it shows an
    * "Approve & download" button that renders the full card + caption bundle,
    * downloads the zip, then runs this callback (used by the social queue to

@@ -64,6 +64,7 @@ export function ShareCardModal({
   playerId,
   matchId,
   photoUrl,
+  packId: packIdProp,
   onApprove,
   approveLabel = "Approve & download",
 }: Props) {
@@ -89,7 +90,7 @@ export function ShareCardModal({
   const style = useThemeStyle({ open, isJunior });
   const { themes, selectedThemeId, selectedTheme, effectiveTheme } = style;
 
-  const layout = useLayoutTemplate({ open, input, isJunior });
+  const layout = useLayoutTemplate({ open, input, isJunior, draftPackId: packIdProp });
   const {
     applicableTemplates,
     layoutId,

@@ -358,6 +358,7 @@ export default function AdminSocialQueue() {
         // The draft's own photo (as the drawer shows it and the post pack
         // renders it), plus the player's gallery to swap in.
         photoUrl={preview?.photoUrl ?? null}
+        packId={preview?.packId ?? null}
         playerId={playerIdFromAppPath(preview?.appPath)}
         onApprove={
           preview && draftStatus(preview) === "ready"

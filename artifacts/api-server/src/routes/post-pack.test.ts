@@ -16,6 +16,7 @@ import {
   socialDraftsTable,
   socialSettingsTable,
   captionTemplatesTable,
+  cardTemplatesTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { setPhotoStore, type PhotoStore } from "../lib/photo-store";
@@ -89,6 +90,7 @@ afterAll(async () => {
     .delete(socialDraftsTable)
     .where(inArray(socialDraftsTable.tenantId, [tenantId, otherTenantId]));
   await db.delete(captionTemplatesTable).where(eq(captionTemplatesTable.tenantId, tenantId));
+  await db.delete(cardTemplatesTable).where(eq(cardTemplatesTable.tenantId, tenantId));
   await db.delete(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId));
   await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
   await db.delete(tenantsTable).where(inArray(tenantsTable.id, [tenantId, otherTenantId]));
@@ -116,6 +118,46 @@ const post = (id: number) =>
     .set("x-tenant-id", String(tenantId));
 
 describe("POST /social-drafts/:id/post-pack", () => {
+  it("renders a draft with no pack of its own in the club's pack for the kind, as the preview does", async () => {
+    await db.insert(cardTemplatesTable).values({
+      tenantId,
+      name: "Club Kit",
+      source: "pack",
+      packId: "club-kit-v1",
+      cardKinds: [],
+      isActive: true,
+      isDefault: true,
+    });
+    await db
+      .update(socialSettingsTable)
+      .set({ packColourModes: { "sunset-v1": "pack", "club-kit-v1": "club" } })
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+    try {
+      const d = await draft({ packId: null });
+      renders.length = 0;
+      expect((await post(d.id)).status).toBe(200);
+      expect(renders.length).toBeGreaterThan(0);
+      for (const r of renders) {
+        expect(r.options.packId).toBe("club-kit-v1");
+        // Only "pack's own look" choices ride along (as the Studio passes them).
+        expect((r.options.data as Record<string, unknown>).packColourModes).toEqual({
+          "sunset-v1": "pack",
+        });
+      }
+      // A draft's own pack still wins.
+      const own = await draft({ packId: "sunset-v1" });
+      renders.length = 0;
+      expect((await post(own.id)).status).toBe(200);
+      expect(renders.every((r) => r.options.packId === "sunset-v1")).toBe(true);
+    } finally {
+      await db.delete(cardTemplatesTable).where(eq(cardTemplatesTable.tenantId, tenantId));
+      await db
+        .update(socialSettingsTable)
+        .set({ packColourModes: {} })
+        .where(eq(socialSettingsTable.tenantId, tenantId));
+    }
+  });
+
   it("returns an image per enabled format, the caption, and a zip of both plus caption.txt", async () => {
     const d = await draft({
       caption: "Sam 104* #PackClub",
