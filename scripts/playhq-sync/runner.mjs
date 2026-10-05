@@ -207,11 +207,11 @@ async function collectAll(
         const p = res.centralProjection;
         if (p) {
           log(
-            `${label}: stats copy${p.dryRun ? " (dry run)" : ""} → ${p.created} created, ${p.updated} updated, ` +
-              `${p.skipped?.length ?? 0} skipped, ${p.playersInserted} new players`,
+            `${label}: stats copy (${p.mode}) → ${p.created} created, ${p.updated} updated, ` +
+              `${p.skipped} skipped, ${p.playersInserted} new players`,
           );
-          for (const k of p.skipped ?? [])
-            log(`${label}: stats copy skipped ${k.playhqMatchId}: ${k.reason}`);
+          for (const [reason, n] of Object.entries(p.skipReasons ?? {}))
+            log(`${label}: stats copy skipped ${n} × ${reason}`);
         }
         result.uploaded.push({ ...d, status: body.status, ingest: res.status });
         if (body.status === "failed") result.failures.push(`${label}: harness failed`);

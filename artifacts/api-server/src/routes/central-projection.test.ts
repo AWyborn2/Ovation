@@ -525,6 +525,46 @@ describe("projectToCentral", () => {
     }
   });
 
+  it("an opponent known only by name resolves to its central club", async () => {
+    // RMDCC's WA Premier opponents: in central under the builder's spelling, never in the
+    // org crosswalk or a tenant's settings. Without a club the scorecard showed one team.
+    const ORG_N = randomUUID();
+    const CLUB_N = 9915;
+    const NAMED = randomUUID();
+    await admin.query(`insert into central.clubs (club_id, name) values ($1, 'Testnamed Rovers')`, [
+      CLUB_N,
+    ]);
+    await admin.query(
+      `insert into playhq.organisations (id, name) values ($1, 'Testnamed Rovers Cricket Club')`,
+      [ORG_N],
+    );
+    await admin.query(
+      `insert into playhq.matches (id, grade_id, status, match_type, round_name, start_at, venue_name,
+          surface_name, result_text, home_team_id, away_team_id, home_team_name, away_team_name,
+          home_org_id, away_org_id, home_score, away_score, raw)
+       values ($1, $2, 'COMPLETED', 'One Day', 'Round 2', '2026-10-10T02:30:00Z', 'Rec Reserve',
+          'Rec Reserve - Oval 1', 'Club A won', $3, $4, 'Club A A Grade', 'Rovers A Grade', $5, $6,
+          '1-98', '97', '{}')`,
+      [NAMED, GRADE, TEAM_A, randomUUID(), ORG_A, ORG_N],
+    );
+    try {
+      const s = await projectToCentral(projector, { matchIds: [NAMED] });
+      expect(s.skipped).toEqual([]);
+      const m = (
+        await admin.query(
+          `select home_club_id, away_club_id from central.matches where playhq_match_id = $1`,
+          [NAMED],
+        )
+      ).rows[0];
+      expect(m).toEqual({ home_club_id: CLUB_A, away_club_id: CLUB_N });
+    } finally {
+      await admin.query(`delete from central.matches where playhq_match_id = $1`, [NAMED]);
+      await admin.query(`delete from playhq.matches where id = $1`, [NAMED]);
+      await admin.query(`delete from playhq.organisations where id = $1`, [ORG_N]);
+      await admin.query(`delete from central.clubs where club_id = $1`, [CLUB_N]);
+    }
+  });
+
   it("backfills a season and skips nothing it can project", async () => {
     const s = await projectToCentral(projector, { season: SEASON, orgId: ORG_A });
     expect(s.considered).toBe(2); // MATCH + ABANDONED; the junior grade is excluded

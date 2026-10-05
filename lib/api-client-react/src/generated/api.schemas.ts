@@ -4465,6 +4465,11 @@ export const PlayhqIngestResponseCentralProjectionMode = {
 } as const;
 
 /**
+ * Skipped matches counted by reason, with match and organisation ids blanked out so like reasons group together.
+ */
+export type PlayhqIngestResponseCentralProjectionSkipReasons = {[key: string]: number};
+
+/**
  * The PlayHQ → central stats projection run after the load (CENTRAL_PROJECTION=dry|on). Absent when projection is off.
  */
 export type PlayhqIngestResponseCentralProjection = {
@@ -4473,6 +4478,8 @@ export type PlayhqIngestResponseCentralProjection = {
   created: number;
   updated: number;
   skipped: number;
+  /** Skipped matches counted by reason, with match and organisation ids blanked out so like reasons group together. */
+  skipReasons?: PlayhqIngestResponseCentralProjectionSkipReasons;
   playersInserted: number;
 };
 

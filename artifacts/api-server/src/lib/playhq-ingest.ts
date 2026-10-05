@@ -195,6 +195,16 @@ export async function ingestPlayhqDump(
  * D3). Behind CENTRAL_PROJECTION (off | dry | on). Like the fixtures projection, a failure
  * becomes a warning and never undoes the load; the next sync retries it.
  */
+/** Skip reasons counted, with ids blanked so like reasons group (e.g. "… maps to no club"). */
+export function countSkipReasons(reasons: string[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const r of reasons) {
+    const key = r.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "…");
+    out[key] = (out[key] ?? 0) + 1;
+  }
+  return out;
+}
+
 export async function projectDumpToCentral(
   rows: LoadRows,
   warnings: string[],
@@ -242,6 +252,7 @@ export async function projectDumpToCentral(
       created: s.created,
       updated: s.updated,
       skipped: s.skipped.length,
+      skipReasons: countSkipReasons(s.skipped.map((k) => k.reason)),
       playersInserted: s.playersInserted,
     };
   } catch (err) {
