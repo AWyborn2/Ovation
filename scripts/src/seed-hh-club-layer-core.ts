@@ -15,6 +15,12 @@
  *      their grade's boundary become season rows; rows at or after it are
  *      skipped (central supplies them). Player ids are the native
  *      `players.id`s, which ARE tenant 1's ids (KTD3).
+ *      A career baseline also holds the seasons native never ingested itself
+ *      (no season row, no scorecards — e.g. a 2017/18 B Grade season kept only
+ *      in the hand-kept master); central supplies those too, so they are
+ *      peeled out of the baseline first, exactly as the native match load
+ *      peels its own match seasons (per figure, floored at zero). A baseline
+ *      the peel empties is dropped.
  *   3. Fill-ins (id >= 90000) never produce history rows, and are never pinned.
  *   4. U4's review players (AMBIGUOUS, WEAK_ONLY …) each end as a crosswalk row
  *      to their native id or a recorded decision to leave them unmapped — from
@@ -53,7 +59,8 @@ export const HH_TENANT_ID = 1;
 export const DEFAULT_BOUNDARY_SEASON = 2003;
 /** `club_history_batches.source` of this seed (the schema's documented example). */
 export const SEED_SOURCE = "hh-native-seed";
-export const SEED_LABEL = "Halls Head native history (career baselines + pre-boundary seasons)";
+export const SEED_LABEL =
+  "Halls Head native history (career baselines net of central seasons + pre-boundary seasons)";
 
 type Boundary = { grade: string | null; startSeason: number };
 type GradeNormaliser = (raw: string) => string | null;
@@ -219,7 +226,11 @@ export interface HistoryPlan {
     nonSeniorGrade: Array<{ grade: string; rows: number }>;
     empty: number;
     atOrAfterBoundary: number;
+    /** Career baselines the central-season peel emptied. */
+    peeledAway: number;
   };
+  /** Career baselines that held central-only seasons, and what was peeled out. */
+  peels: CareerPeel[];
   warnings: HistoryWarning[];
   /** (player, grade, season) groups that had more than one native row (summed). */
   mergedDuplicates: number;
@@ -239,6 +250,41 @@ const COUNT_FIELDS = [
   "stumpings",
   "runOuts",
 ] as const;
+
+type CountField = (typeof COUNT_FIELDS)[number];
+/** Count figures, every field present (a central season's, or a peel). */
+export type PeelFigures = Record<CountField, number>;
+
+export const zeroPeelFigures = (): PeelFigures =>
+  Object.fromEntries(COUNT_FIELDS.map((k) => [k, 0])) as PeelFigures;
+
+/**
+ * What central supplies that native never ingested itself, for the career
+ * baseline peel. Grades are senior app grades; keys are `${grade}|${season}`.
+ */
+export interface CentralOnlyInput {
+  /** (grade, season)s native holds scorecards for (season snapshot rows are added from pgss). */
+  nativeMatchSeasons: ReadonlySet<string>;
+  /** Native player id → the PlayHQ GUIDs it reads as after cut-over. */
+  guidsByPlayer: ReadonlyMap<number, readonly string[]>;
+  /** GUID → (grade, season) → that GUID's central figures for the club. */
+  figures: ReadonlyMap<string, ReadonlyMap<string, PeelFigures>>;
+}
+
+export interface CareerPeel {
+  playerId: number;
+  grade: string;
+  /** The central-only seasons the player has central figures in. */
+  seasons: number[];
+  /** The baseline before the peel (summed native rows). */
+  baseline: PeelFigures;
+  /** What central supplies in those seasons. */
+  central: PeelFigures;
+  /** What came out of the baseline: per figure, the lesser of the two. */
+  peeled: PeelFigures;
+  /** The peel emptied the baseline, so no career row is written. */
+  dropped: boolean;
+}
 
 const addNullable = (a: number | null, b: number | null): number | null =>
   a === null ? b : b === null ? a : a + b;
@@ -307,13 +353,18 @@ export function planHistoryRows(input: {
   pgss: readonly NativeStatRow[];
   boundaries: readonly Boundary[];
   seniorGrade: GradeNormaliser;
+  /** Omitted: no peel (career baselines load as they are). */
+  centralOnly?: CentralOnlyInput;
 }): HistoryPlan {
   const skipped: HistoryPlan["skipped"] = {
     fillIn: 0,
     nonSeniorGrade: [],
     empty: 0,
     atOrAfterBoundary: 0,
+    peeledAway: 0,
   };
+  const peels: CareerPeel[] = [];
+  const peelFor = centralOnlyPeeler(input);
   const nonSenior = new Map<string, number>();
   const counts = new Map<string, GradeCounts>();
   const countsFor = (grade: string): GradeCounts => {
@@ -376,6 +427,19 @@ export function planHistoryRows(input: {
       skipped.empty += 1;
       continue;
     }
+    if (grain === "career" && peelFor) {
+      const peel = peelFor(g.playerId, g.grade, g.f);
+      if (peel) {
+        peels.push(peel);
+        if (peel.dropped) {
+          skipped.peeledAway += 1;
+          continue;
+        }
+        for (const k of COUNT_FIELDS) {
+          if (peel.peeled[k] > 0) g.f[k] = (g.f[k] ?? 0) - peel.peeled[k] || null;
+        }
+      }
+    }
     for (const message of historyFigureProblems(grain, g.f)) {
       warnings.push({ playerId: g.playerId, grade: g.grade, season: g.season, message });
     }
@@ -392,12 +456,70 @@ export function planHistoryRows(input: {
   skipped.nonSeniorGrade = [...nonSenior]
     .map(([grade, n]) => ({ grade, rows: n }))
     .sort((a, b) => a.grade.localeCompare(b.grade));
+  peels.sort((a, b) => a.playerId - b.playerId || a.grade.localeCompare(b.grade));
   return {
     rows,
     perGrade: [...counts.values()].sort((a, b) => a.grade.localeCompare(b.grade)),
     skipped,
+    peels,
     warnings,
     mergedDuplicates,
+  };
+}
+
+/**
+ * The career baseline peel (see the header): for a (player, grade) baseline,
+ * the central figures of the player's GUIDs in that grade's seasons at or after
+ * its boundary that native never ingested itself — no season snapshot and no
+ * scorecards for ANYONE in that (grade, season), so the season can only live in
+ * a baseline. Per figure the peel is the lesser of baseline and central, as the
+ * native match load's peel (scripts/sql/matches-etl.sql step 8). Null when the
+ * player has no such season.
+ */
+function centralOnlyPeeler(input: {
+  pgss: readonly NativeStatRow[];
+  boundaries: readonly Boundary[];
+  seniorGrade: GradeNormaliser;
+  centralOnly?: CentralOnlyInput;
+}): ((playerId: number, grade: string, f: HistoryFigures) => CareerPeel | null) | null {
+  const co = input.centralOnly;
+  if (!co) return null;
+  const nativeLoaded = new Set(co.nativeMatchSeasons);
+  for (const r of input.pgss) {
+    if (r.season === null) continue;
+    const grade = input.seniorGrade(r.grade);
+    if (grade) nativeLoaded.add(`${grade}|${r.season}`);
+  }
+  return (playerId, grade, f) => {
+    const b = boundaryFor(input.boundaries, grade);
+    if (b === null) return null;
+    const central = zeroPeelFigures();
+    const seasons = new Set<number>();
+    for (const guid of co.guidsByPlayer.get(playerId) ?? []) {
+      for (const [key, cf] of co.figures.get(guid) ?? []) {
+        const bar = key.lastIndexOf("|");
+        const season = Number(key.slice(bar + 1));
+        if (key.slice(0, bar) !== grade || season < b || nativeLoaded.has(key)) continue;
+        seasons.add(season);
+        for (const k of COUNT_FIELDS) central[k] += cf[k];
+      }
+    }
+    if (seasons.size === 0) return null;
+    const baseline = zeroPeelFigures();
+    const peeled = zeroPeelFigures();
+    for (const k of COUNT_FIELDS) {
+      baseline[k] = f[k] ?? 0;
+      peeled[k] = Math.max(0, Math.min(baseline[k], central[k]));
+    }
+    return {
+      playerId,
+      grade,
+      seasons: [...seasons].sort((x, y) => x - y),
+      baseline,
+      central,
+      peeled,
+      dropped: COUNT_FIELDS.every((k) => baseline[k] - peeled[k] <= 0),
+    };
   };
 }
 
@@ -955,6 +1077,8 @@ export interface SeedPlanInput {
   pendingKeeperIds: readonly number[];
   privateByGuid: ReadonlyMap<string, boolean>;
   decisions: ReadonlyMap<number, SeedDecision>;
+  /** For the career baseline peel; omitted, baselines load unpeeled. */
+  centralOnly?: CentralOnlyInput;
   existing: {
     map: readonly ExistingMapRow[];
     mergedAway: ReadonlySet<string>;
@@ -997,6 +1121,7 @@ export function planSeed(input: SeedPlanInput): SeedPlan {
     pgss: input.pgss,
     boundaries: desired,
     seniorGrade: input.seniorGrade,
+    centralOnly: input.centralOnly,
   });
   const historyPlayerIds = new Set(history.rows.map((r) => r.playerId));
   const identity = planIdentity({
@@ -1032,6 +1157,15 @@ export function planSeed(input: SeedPlanInput): SeedPlan {
     );
   }
   blockers.push(...identity.errors);
+  const stale = existingBatches.filter((b) => b.label !== SEED_LABEL);
+  if (stale.length > 0) {
+    const ids = stale.map((b) => `#${b.id}`).join(", ");
+    blockers.push(
+      `Seed batch ${ids} was loaded by an earlier version of this seed (career baselines not ` +
+        `net of central seasons, so they double count them): undo batch ${ids} first ` +
+        `(--undo=<id> --commit), then re-seed.`,
+    );
+  }
   if (existingBatches.length > 0 && changed) {
     const ids = existingBatches.map((b) => `#${b.id}`).join(", ");
     blockers.push(
@@ -1074,6 +1208,11 @@ export function seedWriteSet(plan: SeedPlan): string {
     maps: plan.identity.decisionMapInserts.map((r) => `${r.participantId}=${r.playerId}`).sort(),
     pins: plan.identity.pins.map((p) => p.playerId).sort((a, b) => a - b),
     batchRows: plan.batch.write ? plan.history.rows.length : 0,
+    peels: plan.batch.write
+      ? plan.history.peels.map(
+          (p) => `${p.playerId}|${p.grade}|${COUNT_FIELDS.map((k) => p.peeled[k]).join(",")}`,
+        )
+      : [],
   });
 }
 

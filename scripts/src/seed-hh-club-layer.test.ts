@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   DEFAULT_BOUNDARY_SEASON,
+  SEED_LABEL,
   SEED_SOURCE,
   decisionsCsv,
   deriveBoundaries,
@@ -15,7 +16,10 @@ import {
   planMatchDifferences,
   planSeed,
   seedWriteSet,
+  zeroPeelFigures,
+  type CentralOnlyInput,
   type NativeStatRow,
+  type PeelFigures,
   type SeedDecision,
   type SeedPlanInput,
 } from "./seed-hh-club-layer-core";
@@ -329,6 +333,121 @@ describe("planHistoryRows (R11, KTD4, KTD5)", () => {
 });
 
 // ── Identity ─────────────────────────────────────────────────────────────────
+
+/** Central figures for one (GUID, grade, season). */
+const central = (over: Partial<PeelFigures> = {}): PeelFigures => ({
+  ...zeroPeelFigures(),
+  ...over,
+});
+
+describe("planHistoryRows: career baseline peel of central-only seasons (R20)", () => {
+  // Sam Hardman (dev, 4 Oct 2026): his B Grade lives only in a career baseline
+  // (6 games, 85 runs), all of it 2017/18, a season native never ingested.
+  const hardman = stat({
+    playerId: 473,
+    grade: "B Grade",
+    season: null,
+    games: 6,
+    innings: 6,
+    notOuts: 1,
+    runs: 85,
+    highScore: "32",
+    fifties: 0,
+    wickets: 0,
+    runsConceded: 0,
+    bestBowling: null,
+    catches: 2,
+  });
+  const centralOnly = (
+    figures: Array<[string, string, PeelFigures]>,
+    nativeMatchSeasons: string[] = [],
+  ): CentralOnlyInput => {
+    const byGuid = new Map<string, Map<string, PeelFigures>>();
+    for (const [guid, key, f] of figures) {
+      const m = byGuid.get(guid) ?? new Map<string, PeelFigures>();
+      m.set(key, f);
+      byGuid.set(guid, m);
+    }
+    return {
+      nativeMatchSeasons: new Set(nativeMatchSeasons),
+      guidsByPlayer: new Map([
+        [473, ["g-473"]],
+        [32, ["g-32a", "g-32b"]],
+      ]),
+      figures: byGuid,
+    };
+  };
+
+  it("a baseline wholly made of a season central supplies is dropped, not loaded twice", () => {
+    const plan = planHistoryRows({
+      pgss: [hardman],
+      boundaries: BOUNDARIES,
+      seniorGrade,
+      centralOnly: centralOnly([
+        [
+          "g-473",
+          "B Grade|2017",
+          central({ games: 6, innings: 6, notOuts: 1, runs: 85, catches: 2 }),
+        ],
+      ]),
+    });
+    expect(plan.rows).toEqual([]);
+    expect(plan.skipped.peeledAway).toBe(1);
+    expect(plan.peels).toEqual([
+      expect.objectContaining({ playerId: 473, grade: "B Grade", seasons: [2017], dropped: true }),
+    ]);
+  });
+
+  it("keeps what is left, per figure and floored at zero, over every GUID of the player", () => {
+    const plan = planHistoryRows({
+      pgss: [
+        stat({ playerId: 32, grade: "B Grade", games: 14, innings: 13, runs: 339, wickets: 3 }),
+      ],
+      boundaries: BOUNDARIES,
+      seniorGrade,
+      centralOnly: centralOnly([
+        ["g-32a", "B Grade|2015", central({ games: 5, innings: 5, runs: 120, wickets: 4 })],
+        ["g-32b", "B Grade|2016", central({ games: 3, innings: 3, runs: 40 })],
+      ]),
+    });
+    expect(plan.rows).toHaveLength(1);
+    // Wickets: central has 4, the baseline 3 → floored at zero (null, like the native peel).
+    expect(plan.rows[0]).toMatchObject({ games: 6, innings: 5, runs: 179, wickets: null });
+    // High score and best bowling stay: the hybrid read takes the max with central's anyway.
+    expect(plan.rows[0]).toMatchObject({ highScore: 80, bestBowlingWickets: 3 });
+    expect(plan.peels[0]).toMatchObject({ seasons: [2015, 2016], dropped: false });
+    expect(plan.peels[0]!.peeled).toMatchObject({ games: 8, runs: 160, wickets: 3 });
+  });
+
+  it("never peels a season native ingested itself, one before the boundary, or another grade", () => {
+    const plan = planHistoryRows({
+      pgss: [
+        hardman,
+        // Someone's 2018/19 B Grade season snapshot: native ingested that season.
+        stat({ playerId: 99, grade: "B Grade", season: 2018 }),
+      ],
+      boundaries: BOUNDARIES,
+      seniorGrade,
+      centralOnly: centralOnly(
+        [
+          ["g-473", "B Grade|2017", central({ games: 1, runs: 10 })], // native scorecards
+          ["g-473", "B Grade|2018", central({ games: 1, runs: 10 })], // native snapshot
+          ["g-473", "B Grade|2003", central({ games: 1, runs: 10 })], // before B's 2004 boundary
+          ["g-473", "A Grade|2019", central({ games: 1, runs: 10 })], // another grade
+        ],
+        ["B Grade|2017"],
+      ),
+    });
+    expect(plan.peels).toEqual([]);
+    expect(plan.rows.find((r) => r.playerId === 473)).toMatchObject({ games: 6, runs: 85 });
+  });
+
+  it("without central figures, baselines load unpeeled (as before)", () => {
+    const plan = planHistoryRows({ pgss: [hardman], boundaries: BOUNDARIES, seniorGrade });
+    expect(plan.rows[0]).toMatchObject({ games: 6, runs: 85 });
+    expect(plan.peels).toEqual([]);
+  });
+});
 
 describe("planIdentity (R4, R11, KTD2, KTD3)", () => {
   const players = [
@@ -700,7 +819,7 @@ describe("planSeed", () => {
           ],
           mergedAway: new Set(),
           boundaries: first.boundaries.desired,
-          seedBatches: [{ id: 9, label: "x", source: SEED_SOURCE }],
+          seedBatches: [{ id: 9, label: SEED_LABEL, source: SEED_SOURCE }],
           storeMissing: false,
         },
       }),
@@ -708,14 +827,48 @@ describe("planSeed", () => {
     expect(again.blockers).toEqual([]);
     expect(again.boundaries.changed).toBe(false);
     expect(again.batch.write).toBe(false);
-    expect(again.batch.existing).toEqual([{ id: 9, label: "x", source: SEED_SOURCE }]);
+    expect(again.batch.existing).toEqual([{ id: 9, label: SEED_LABEL, source: SEED_SOURCE }]);
     expect(again.identity.pins).toEqual([]);
     expect(JSON.parse(seedWriteSet(again))).toEqual({
       boundaries: null,
       maps: [],
       pins: [],
       batchRows: 0,
+      peels: [],
     });
+  });
+
+  it("asks for a re-seed over a batch an earlier version loaded (baselines not peeled)", () => {
+    const plan = planSeed(
+      input({
+        existing: {
+          map: [
+            { participantId: "g-1", playerId: 1 },
+            { participantId: "club:abc", playerId: 4 },
+          ],
+          mergedAway: new Set(),
+          boundaries: planSeed(input()).boundaries.desired,
+          seedBatches: [{ id: 9, label: "old label", source: SEED_SOURCE }],
+          storeMissing: false,
+        },
+      }),
+    );
+    expect(plan.blockers.join("\n")).toMatch(/earlier version of this seed.*undo batch #9/s);
+  });
+
+  it("peels the central-only seasons out of the career baselines it writes", () => {
+    const plan = planSeed(
+      input({
+        centralOnly: {
+          nativeMatchSeasons: new Set(),
+          guidsByPlayer: new Map([[1, ["g-1"]]]),
+          figures: new Map([["g-1", new Map([["A Grade|2017", central({ games: 4, runs: 60 })]])]]),
+        },
+      }),
+    );
+    const career = plan.history.rows.find((r) => r.playerId === 1 && r.grain === "career");
+    expect(career).toMatchObject({ games: 6, runs: 190 });
+    expect(JSON.parse(seedWriteSet(plan)).peels).toEqual(["1|A Grade|4,0,0,60,0,0,0,0,0,0,0,0"]);
   });
 
   it("blocks commit while decisions are open, keepers are unpersisted, or the store is missing", () => {
@@ -752,7 +905,7 @@ describe("planSeed", () => {
           ],
           mergedAway: new Set(),
           boundaries: [{ grade: null, startSeason: 2005 }],
-          seedBatches: [{ id: 9, label: "x", source: SEED_SOURCE }],
+          seedBatches: [{ id: 9, label: SEED_LABEL, source: SEED_SOURCE }],
           storeMissing: false,
         },
       }),
@@ -836,7 +989,7 @@ describe("planSeed", () => {
           ],
           mergedAway: new Set(),
           boundaries: first.boundaries.desired,
-          seedBatches: [{ id: 77, label: "x", source: SEED_SOURCE }],
+          seedBatches: [{ id: 77, label: SEED_LABEL, source: SEED_SOURCE }],
           storeMissing: false,
         },
       }),
