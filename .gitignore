@@ -89,3 +89,5 @@ artifacts/cricket-mobile/static-build/
 # Local/generated exports (including participant-level audit data).
 # Existing tracked source files under exports/ remain tracked.
 /exports/
+# Report folders the ops scripts write when run from scripts/ (cut-over previews, cap checks).
+/scripts/exports/

@@ -9,3 +9,4 @@ docs/product-review/
 lib/api-spec/openapi.yaml
 lib/db/migrations/
 docs/design-handoffs/
+scripts/exports/
