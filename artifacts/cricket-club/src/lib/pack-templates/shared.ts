@@ -181,8 +181,8 @@ export function skeletonFooter(left: string, right: string): string {
   );
 }
 
-/** "SUPPORTED BY" + the three sponsor logo tiles (sponsors-on only). */
-export function skeletonSponsorLogos(): string {
+/** "SUPPORTED BY" (or `label`) + the three sponsor logo tiles (sponsors-on only). */
+export function skeletonSponsorLogos(label = "SUPPORTED BY"): string {
   const tiles = [1, 2, 3]
     .map(
       (n) =>
@@ -190,7 +190,21 @@ export function skeletonSponsorLogos(): string {
     )
     .join("");
   return sponsorsOn(
-    `<div style="display:flex;align-items:center;gap:1.4cqmin;flex:none"><span style="font-family:${SK_MONO};font-weight:500;font-size:1.5cqmin;letter-spacing:.18em;white-space:nowrap;color:var(--sk-muted,rgba(255,255,255,.6))">SUPPORTED BY</span>${tiles}</div>`,
+    `<div data-sponsor-strip="1" style="display:flex;align-items:center;gap:1.4cqmin;flex:none"><span style="font-family:${SK_MONO};font-weight:500;font-size:1.5cqmin;letter-spacing:.18em;white-space:nowrap;color:var(--sk-muted,rgba(255,255,255,.6))">${label}</span>${tiles}</div>`,
+  );
+}
+
+/**
+ * The sponsor logo strip labelled with the design's verb ("PRESENTED BY",
+ * "STATS BY"); the "<verb> <sponsor>" text line only as a fallback, when the
+ * club has no sponsor logos (`limitSponsorTiles` keeps exactly one of the two).
+ * Sponsors-on only.
+ */
+export function sponsorLogosOrName(verb: string): string {
+  const label = verb.replace(/\s*·\s*$/, "").toUpperCase();
+  return (
+    skeletonSponsorLogos(label) +
+    sponsorsOn(`<div data-sponsor-fallback="1">${skeletonPresentedBy(verb)}</div>`)
   );
 }
 

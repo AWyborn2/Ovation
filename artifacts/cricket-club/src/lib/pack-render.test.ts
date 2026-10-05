@@ -459,13 +459,45 @@ describe("renderPackCard with tenant data (PackCardData)", () => {
     }
   });
 
-  it("(A7) keeps a NEUTRAL sample presented-by sponsor on a no-data render", () => {
-    // The line must still render (so the layout is representative), but with a
-    // placeholder rather than Halls Head's actual sponsor.
+  it("(A7) shows placeholder sponsor logo tiles on a no-data render", () => {
+    // A sample preview shows the sponsor strip (so the layout is
+    // representative) with placeholder tiles, never a real sponsor.
     const html = renderPackCard(sampleCardInput("century"), "story", true, TOKENS, false);
-    expect(html).toContain("presented by");
-    expect(html).toContain("Your Sponsor");
+    expect(html).toContain("PRESENTED BY");
+    expect(html).toContain("pack-slot-placeholder");
+    expect(html).not.toContain("Your Sponsor");
     expect(html).not.toContain("eSA Sport");
+  });
+
+  it("shows sponsor LOGOS, not the sponsor's name, when the club has logos", () => {
+    const data: PackCardData = {
+      presentingSponsorName: "Acme Motors",
+      sponsors: [
+        { name: "Acme Motors", logoUrl: "/objects/sponsors/acme.png" },
+        { name: "Peel Ford", logoUrl: "/objects/sponsors/ford.png" },
+      ],
+    };
+    for (const kind of ["century", "countdown", "matchDay"] as ShareCardInput["kind"][]) {
+      for (const packId of [null, "club-kit-v1", "sunset-v1"]) {
+        const html = renderPackCard(
+          sampleCardInput(kind),
+          "story",
+          true,
+          TOKENS,
+          false,
+          data,
+          packId,
+        );
+        const ctx = `${kind}/${packId}`;
+        expect(html, ctx).toContain("acme.png");
+        expect(html, ctx).toContain("ford.png");
+        // Two logos, no empty third tile, and the name isn't printed as text.
+        expect(html, ctx).not.toContain(
+          'pack-slot-placeholder" style="width:100%;height:100%;background:rgba(255,255,255,.12)',
+        );
+        expect(html, ctx).not.toContain("Acme Motors");
+      }
+    }
   });
 });
 

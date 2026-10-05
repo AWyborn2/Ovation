@@ -9,8 +9,8 @@ import {
   skeletonFooterTag,
   skeletonHashtag,
   skeletonHeader,
-  skeletonPresentedBy,
   skeletonSponsorLogos,
+  sponsorLogosOrName,
   slot,
   sponsorsOff,
   sponsorsOn,
@@ -230,9 +230,9 @@ export function bdHashtags(onKey: string, offKey = onKey): string {
   return sponsorsOn(skeletonHashtag(onKey)) + sponsorsOff(skeletonHashtag(offKey));
 }
 
-/** Presented-by line left, hashtag right (sponsors-on only designs). */
+/** Sponsor logos (name only without logos) left, hashtag right (sponsors-on only designs). */
 export function bdFooterOn(verb: string, hashtagKey = "clubHashtag"): string {
-  return skeletonFooter(sponsorsOn(skeletonPresentedBy(verb)), skeletonHashtag(hashtagKey));
+  return skeletonFooter(sponsorLogosOrName(verb), skeletonHashtag(hashtagKey));
 }
 
 /**
@@ -244,8 +244,7 @@ export function bdFooterPresented(
   opts: { onHashtag?: string; offHashtag?: string; offLeft?: string } = {},
 ): string {
   const left =
-    sponsorsOn(skeletonPresentedBy(verb)) +
-    (opts.offLeft ? sponsorsOff(skeletonFooterTag(opts.offLeft)) : "");
+    sponsorLogosOrName(verb) + (opts.offLeft ? sponsorsOff(skeletonFooterTag(opts.offLeft)) : "");
   return skeletonFooter(
     left,
     bdHashtags(opts.onHashtag ?? "clubHashtag", opts.offHashtag ?? "hashtags"),
@@ -254,7 +253,6 @@ export function bdFooterPresented(
 
 /** Sponsor logo strip (+ optional presented-by line) left, hashtag right. */
 export function bdFooterLogos(presentedVerb?: string): string {
-  const left =
-    skeletonSponsorLogos() + (presentedVerb ? sponsorsOn(skeletonPresentedBy(presentedVerb)) : "");
+  const left = presentedVerb ? sponsorLogosOrName(presentedVerb) : skeletonSponsorLogos();
   return skeletonFooter(left, bdHashtags("hashtags"));
 }
