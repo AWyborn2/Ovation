@@ -29,6 +29,12 @@ on:
       only_org:
         description: "Run only this PlayHQ organisation GUID"
         required: false
+      manual_org:
+        description: "Manual catch-up: fetch this PlayHQ organisation GUID now, whatever is due (with manual_since)"
+        required: false
+      manual_since:
+        description: "Manual catch-up: fetch scorecards since this date (YYYY-MM-DD)"
+        required: false
 
 permissions:
   contents: read
@@ -72,4 +78,6 @@ jobs:
           HARNESS_PATH: ${{ github.workspace }}/.claude/skills/playcricket-stats-scraper/harness.js
           ONLY_PLAN: ${{ inputs.only_plan }}
           ONLY_ORG: ${{ inputs.only_org }}
+          MANUAL_ORG: ${{ inputs.manual_org }}
+          MANUAL_SINCE: ${{ inputs.manual_since }}
         run: node "$GITHUB_WORKSPACE/scripts/playhq-sync/runner.mjs"
