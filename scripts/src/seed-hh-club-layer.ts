@@ -396,33 +396,6 @@ async function main(): Promise<void> {
     if (!key || !b.participantId || (b.wickets ?? 0) < 5) continue;
     figuresFor(b.participantId, key).fiveWickets += 1;
   }
-  // Each player's native scorecard lines per (grade, season), for the same peel.
-  const nativeFigures = new Map<number, Map<string, PeelFigures>>();
-  const nativeMatchById = new Map(native.matches.map((m) => [m.id, m]));
-  for (const l of native.lines) {
-    const m = nativeMatchById.get(l.matchId);
-    const grade = m && !m.abandoned ? seniorGrade(m.grade) : null;
-    if (!m || !grade) continue;
-    const byKey = nativeFigures.get(l.playerId) ?? new Map<string, PeelFigures>();
-    nativeFigures.set(l.playerId, byKey);
-    const key = `${grade}|${m.season}`;
-    const f = byKey.get(key) ?? zeroPeelFigures();
-    byKey.set(key, f);
-    const runs = l.batted ? (l.runs ?? 0) : 0;
-    const wickets = l.bowled ? (l.wickets ?? 0) : 0;
-    f.games += 1;
-    f.innings += l.batted ? 1 : 0;
-    f.notOuts += l.batted && l.notOut ? 1 : 0;
-    f.runs += runs;
-    f.fifties += runs >= 50 && runs < 100 ? 1 : 0;
-    f.hundreds += runs >= 100 ? 1 : 0;
-    f.wickets += wickets;
-    f.runsConceded += l.bowled ? (l.runsConceded ?? 0) : 0;
-    f.fiveWickets += wickets >= 5 ? 1 : 0;
-    f.catches += l.catches;
-    f.stumpings += l.stumpings;
-    f.runOuts += l.runOuts;
-  }
   /** The GUIDs each native player reads as after cut-over (crosswalk, decisions, merges). */
   const peelGuids = (state: TenantState): Map<number, string[]> => {
     const out = new Map<number, string[]>();
@@ -469,7 +442,6 @@ async function main(): Promise<void> {
       privateByGuid,
       decisions,
       centralOnly: {
-        nativeFigures,
         guidsByPlayer: peelGuids(state),
         figures: centralFigures,
       },
