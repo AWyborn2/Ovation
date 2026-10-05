@@ -342,8 +342,8 @@ const central = (over: Partial<PeelFigures> = {}): PeelFigures => ({
 
 describe("planHistoryRows: career baseline peel of what only central records (R20)", () => {
   // Sam Hardman (dev, 4 Oct 2026): his B Grade lives only in a career baseline
-  // (6 games, 85 runs), all of it 2017/18. Native holds other 2017/18 B Grade
-  // scorecards, but none of his.
+  // (6 games, 85 runs), all of it 2017/18. Native holds his 2017/18 scorecard
+  // lines, but a native career counts snapshots only, and he has no season row.
   const hardman = stat({
     playerId: 473,
     grade: "B Grade",
@@ -359,24 +359,14 @@ describe("planHistoryRows: career baseline peel of what only central records (R2
     bestBowling: null,
     catches: 2,
   });
-  const centralOnly = (
-    figures: Array<[string, string, PeelFigures]>,
-    native: Array<[number, string, PeelFigures]> = [],
-  ): CentralOnlyInput => {
+  const centralOnly = (figures: Array<[string, string, PeelFigures]>): CentralOnlyInput => {
     const byGuid = new Map<string, Map<string, PeelFigures>>();
     for (const [guid, key, f] of figures) {
       const m = byGuid.get(guid) ?? new Map<string, PeelFigures>();
       m.set(key, f);
       byGuid.set(guid, m);
     }
-    const nativeFigures = new Map<number, Map<string, PeelFigures>>();
-    for (const [id, key, f] of native) {
-      const m = nativeFigures.get(id) ?? new Map<string, PeelFigures>();
-      m.set(key, f);
-      nativeFigures.set(id, m);
-    }
     return {
-      nativeFigures,
       guidsByPlayer: new Map([
         [473, ["g-473"]],
         [32, ["g-32a", "g-32b"]],
@@ -426,52 +416,64 @@ describe("planHistoryRows: career baseline peel of what only central records (R2
     expect(plan.peels[0]!.peeled).toMatchObject({ games: 8, runs: 160, wickets: 3 });
   });
 
-  it("peels only what central has beyond the player's own native records, season by season", () => {
+  it("peels only what central has beyond the player's own season rows, season by season", () => {
     const plan = planHistoryRows({
       pgss: [
         hardman,
-        // His own 2018/19 B Grade season snapshot covers part of that season.
+        // His own 2018/19 B Grade season row covers part of that season.
         stat({ playerId: 473, grade: "B Grade", season: 2018, games: 1, innings: 1, runs: 10 }),
-        // Another player's snapshot for 2016/17 says nothing about Hardman.
+        // Another player's season row says nothing about Hardman.
         stat({ playerId: 99, grade: "B Grade", season: 2016 }),
       ],
       boundaries: BOUNDARIES,
       seniorGrade,
-      centralOnly: centralOnly(
-        [
-          ["g-473", "B Grade|2016", central({ games: 1, runs: 5 })], // no native record: peeled
-          ["g-473", "B Grade|2017", central({ games: 2, runs: 30 })], // native lines: 2 games, 25 runs
-          ["g-473", "B Grade|2018", central({ games: 2, runs: 20 })], // snapshot: 1 game, 10 runs
-          ["g-473", "B Grade|2003", central({ games: 1, runs: 10 })], // before B's 2004 boundary
-          ["g-473", "A Grade|2019", central({ games: 1, runs: 10 })], // another grade
-        ],
-        [[473, "B Grade|2017", central({ games: 2, runs: 25 })]],
-      ),
+      centralOnly: centralOnly([
+        ["g-473", "B Grade|2016", central({ games: 1, runs: 5 })], // no season row: peeled
+        ["g-473", "B Grade|2018", central({ games: 2, runs: 20 })], // row: 1 game, 10 runs
+        ["g-473", "B Grade|2003", central({ games: 1, runs: 10 })], // before B's 2004 boundary
+        ["g-473", "A Grade|2019", central({ games: 1, runs: 10 })], // another grade
+      ]),
     });
     expect(plan.peels).toEqual([
       expect.objectContaining({
-        seasons: [2016, 2017, 2018],
-        peeled: expect.objectContaining({ games: 2, runs: 20 }),
+        seasons: [2016, 2018],
+        peeled: expect.objectContaining({ games: 2, runs: 15 }),
       }),
     ]);
     expect(plan.rows.find((r) => r.playerId === 473 && r.grain === "career")).toMatchObject({
       games: 4,
-      runs: 65,
+      runs: 70,
     });
   });
 
-  it("nothing to peel when native already holds everything central has", () => {
+  it("nothing to peel when the player's season rows already hold everything central has", () => {
     const plan = planHistoryRows({
-      pgss: [hardman],
+      pgss: [
+        hardman,
+        stat({ playerId: 473, grade: "B Grade", season: 2017, games: 2, runs: 31, catches: 0 }),
+      ],
       boundaries: BOUNDARIES,
       seniorGrade,
-      centralOnly: centralOnly(
-        [["g-473", "B Grade|2017", central({ games: 2, runs: 30 })]],
-        [[473, "B Grade|2017", central({ games: 2, runs: 31 })]],
-      ),
+      centralOnly: centralOnly([["g-473", "B Grade|2017", central({ games: 2, runs: 30 })]]),
     });
     expect(plan.peels).toEqual([]);
-    expect(plan.rows[0]).toMatchObject({ games: 6, runs: 85 });
+    expect(plan.rows.find((r) => r.grain === "career")).toMatchObject({ games: 6, runs: 85 });
+  });
+
+  it("match-era fielding (season rows carry none) comes out of the baseline", () => {
+    const plan = planHistoryRows({
+      pgss: [
+        stat({ playerId: 473, grade: "B Grade", games: 3, catches: 10 }),
+        stat({ playerId: 473, grade: "B Grade", season: 2017, games: 2, runs: 30, catches: 0 }),
+      ],
+      boundaries: BOUNDARIES,
+      seniorGrade,
+      centralOnly: centralOnly([
+        ["g-473", "B Grade|2017", central({ games: 2, runs: 30, catches: 4 })],
+      ]),
+    });
+    expect(plan.peels[0]!.peeled).toMatchObject({ games: 0, runs: 0, catches: 4 });
+    expect(plan.rows.find((r) => r.grain === "career")).toMatchObject({ games: 3, catches: 6 });
   });
 
   it("a baseline with only a high score or best bowling is never dropped by an empty peel", () => {
@@ -921,7 +923,6 @@ describe("planSeed", () => {
     const plan = planSeed(
       input({
         centralOnly: {
-          nativeFigures: new Map(),
           guidsByPlayer: new Map([[1, ["g-1"]]]),
           figures: new Map([["g-1", new Map([["A Grade|2017", central({ games: 4, runs: 60 })]])]]),
         },
