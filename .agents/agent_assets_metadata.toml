@@ -171,3 +171,59 @@ mtime_ms = 1791175357003
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/90024782-4fc3-45e6-8cc2-2ee3cbcc1630/38b5186f-f974-4f18-beb7-572bdb128bec"
 storage_version_token = "1791175364091788"
 content_type = "text/csv"
+
+[[outputs]]
+id = "GelFEH_avv-4xGTZRfIQ1"
+uri = "file://scripts/exports/caps-diag/caps-1.csv"
+type = "table"
+title = "caps-1.csv"
+description = "Development-only read-only diagnostic; 2 data rows plus header."
+logical_id = "da9abeb5-45a0-4b31-b597-54b385f5dada"
+content_hash = "sha256:d47e9a2c94bc057a2b3b97e57ee5f0883fa8a8f56d14ef2c823f4a1d55d33cb3"
+size = 96
+mtime_ms = 1791176342283
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/da9abeb5-45a0-4b31-b597-54b385f5dada/909c4e61-f8f6-40a3-8f59-cfc9f89a66e3"
+storage_version_token = "1791176347526935"
+content_type = "text/csv"
+
+[[outputs]]
+id = "Bb972tXHzLuzx4XXOXQ_x"
+uri = "file://scripts/exports/caps-diag/caps-2.csv"
+type = "table"
+title = "caps-2.csv"
+description = "Development-only read-only diagnostic; 15 data rows plus header."
+logical_id = "e5e03993-6fa5-4cc5-a0c6-c27dd46f2383"
+content_hash = "sha256:509665b842265eb77aa276125abf626634e663f8e93f222db395956607e5482f"
+size = 418
+mtime_ms = 1791176342543
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/e5e03993-6fa5-4cc5-a0c6-c27dd46f2383/4ddf52a9-1936-435c-b65a-580d41dc5407"
+storage_version_token = "1791176348294604"
+content_type = "text/csv"
+
+[[outputs]]
+id = "uDkUeW6xbv72QX6mwL4yK"
+uri = "file://scripts/exports/caps-diag/caps-3.csv"
+type = "table"
+title = "caps-3.csv"
+description = "Development-only read-only diagnostic; 4 data rows plus header."
+logical_id = "e921d58d-4a71-44b8-8802-ff5d0e44f3ae"
+content_hash = "sha256:dc56fdb7f64c07599b88e8050f1013d51bfe8187db7519205f290eb222fb4af3"
+size = 476
+mtime_ms = 1791176342547
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/e921d58d-4a71-44b8-8802-ff5d0e44f3ae/c412b15c-b133-415f-8f34-64e34466bd0d"
+storage_version_token = "1791176348930783"
+content_type = "text/csv"
+
+[[outputs]]
+id = "_kL_GyUdMT0SWcuJN7sUJ"
+uri = "file://scripts/exports/caps-diag/caps-4.csv"
+type = "table"
+title = "caps-4.csv"
+description = "Development-only read-only diagnostic; 16 data rows plus header."
+logical_id = "2bd4a1fc-c1aa-43f2-a927-25cecaecf688"
+content_hash = "sha256:52a188b3ae588262d2dfb16a45cc86147d43ae4c510baac5b58722f3ecc83a64"
+size = 444
+mtime_ms = 1791176342547
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/2bd4a1fc-c1aa-43f2-a927-25cecaecf688/5cedffa6-26b0-4104-92da-4ac43fbe439a"
+storage_version_token = "1791176349540021"
+content_type = "text/csv"
