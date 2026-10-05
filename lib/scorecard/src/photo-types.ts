@@ -9,6 +9,7 @@ export const PHOTO_TYPES = [
   "fielding",
   "team",
   "celebrating",
+  "premiership",
   "batting_milestone",
   "bowling_milestone",
 ] as const;
@@ -21,6 +22,7 @@ export const PHOTO_TYPE_LABELS: Record<PhotoType, string> = {
   fielding: "Fielding",
   team: "Team",
   celebrating: "Celebrating",
+  premiership: "Premiership",
   batting_milestone: "Batting milestone",
   bowling_milestone: "Bowling milestone",
 };
@@ -33,6 +35,7 @@ const BATTING_MILESTONE: readonly PhotoType[] = ["batting_milestone", "batting"]
 const BOWLING_MILESTONE: readonly PhotoType[] = ["bowling_milestone", "bowling"];
 const TEAM: readonly PhotoType[] = ["team", "celebrating"];
 const CELEBRATING_FIRST: readonly PhotoType[] = ["celebrating", "team"];
+const PREMIERSHIP: readonly PhotoType[] = ["premiership", "team", "celebrating"];
 
 /** A stat label ("Runs", "Wickets", "Dismissals", …) → the tag that pictures it. */
 function statPhotoType(label: unknown): PhotoType | null {
@@ -54,7 +57,8 @@ function statPhotoType(label: unknown): PhotoType | null {
  *     anything else → celebrating, team
  *   - gradeLeader / clubLeaderboard → by `category`: runs → batting,
  *     wickets → bowling, catches/dismissals → fielding
- *   - matchSummary, premiership, teamList, weekendWrap, ladder → team, celebrating
+ *   - premiership → premiership, team, celebrating
+ *   - matchSummary, teamList, weekendWrap, ladder → team, celebrating
  *   - bigMoment → celebrating
  *   - debut, player, record, newSigning, matchDay, countdown → no preference
  *     (a debut or signing is about the person, a record or player card can be
@@ -77,8 +81,9 @@ export function preferredPhotoTypes(cardInput: Record<string, unknown>): readonl
       const stat = statPhotoType(cardInput.category);
       return stat ? [stat] : [];
     }
-    case "matchSummary":
     case "premiership":
+      return PREMIERSHIP;
+    case "matchSummary":
     case "teamList":
     case "weekendWrap":
     case "ladder":
@@ -88,4 +93,41 @@ export function preferredPhotoTypes(cardInput: Record<string, unknown>): readonl
     default:
       return [];
   }
+}
+
+/**
+ * The match format a library photo can be tagged with, alongside its photo
+ * type (a photo has one type, its folder; the format is a separate tag).
+ */
+export const MATCH_FORMATS = ["one_day", "t20", "two_day"] as const;
+
+export type MatchFormat = (typeof MATCH_FORMATS)[number];
+
+export const MATCH_FORMAT_LABELS: Record<MatchFormat, string> = {
+  one_day: "One Day",
+  t20: "T20",
+  two_day: "Two Day",
+};
+
+export function isMatchFormat(value: unknown): value is MatchFormat {
+  return typeof value === "string" && (MATCH_FORMATS as readonly string[]).includes(value);
+}
+
+/** The match format named in a label ("D Grade T20", "Two Day Cup", …), or null. */
+export function matchFormatFromLabel(label: unknown): MatchFormat | null {
+  const s = typeof label === "string" ? label.toLowerCase() : "";
+  if (/\bt20\b|twenty ?20/.test(s)) return "t20";
+  if (/\b(one|1)[\s-]?day\b/.test(s)) return "one_day";
+  if (/\b(two|2)[\s-]?day\b/.test(s)) return "two_day";
+  return null;
+}
+
+/**
+ * The match format a card prefers its photo to be from: an explicit
+ * `matchFormat` on the card, else one named in its competition or grade
+ * (a "T20" premiership prefers T20 photos). Null = no preference.
+ */
+export function preferredMatchFormat(cardInput: Record<string, unknown>): MatchFormat | null {
+  if (isMatchFormat(cardInput.matchFormat)) return cardInput.matchFormat;
+  return matchFormatFromLabel(cardInput.competition) ?? matchFormatFromLabel(cardInput.grade);
 }

@@ -4,8 +4,9 @@
  * falling back to the old order when nothing matches. Covers the pick (player
  * step, grade step, random rules narrowed by a rule's photo type), bulk
  * tagging and the type filter, validation, tenant isolation, and re-picking
- * open auto drafts when a photo's types change. Real-DB integration test
- * (needs DATABASE_URL).
+ * open auto drafts when a photo's types change; plus the premiership type and
+ * the match format tag (a T20 premiership prefers T20 photos). Real-DB
+ * integration test (needs DATABASE_URL).
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
@@ -32,6 +33,8 @@ const GRADE = `Types Grade ${STAMP}`;
 const PLAIN = `Plain Grade ${STAMP}`;
 /** A grade for the random-rule pool. */
 const POOL = `Pool Grade ${STAMP}`;
+/** A grade with premiership photos of different match formats. */
+const PREM = `Prem Grade ${STAMP}`;
 
 let tenantId: number;
 let otherTenantId: number;
@@ -51,6 +54,7 @@ async function libraryPhoto(
     playerId?: number;
     takenAt: string;
     types?: string[];
+    matchFormat?: string;
   },
 ): Promise<number> {
   const tid = opts.tenant ?? tenantId;
@@ -65,6 +69,7 @@ async function libraryPhoto(
       grade: opts.grade === undefined ? GRADE : opts.grade,
       takenAt: new Date(opts.takenAt),
       photoTypes: opts.types ?? [],
+      matchFormat: opts.matchFormat ?? null,
     })
     .returning();
   if (opts.playerId != null) {
@@ -174,6 +179,22 @@ beforeAll(async () => {
     });
   }
 
+  // PREM grade: an older T20 premiership shot, a newer Two Day one, and a
+  // newest plain team shot.
+  await libraryPhoto("prem-t20", {
+    grade: PREM,
+    takenAt: "2025-03-01",
+    types: ["premiership"],
+    matchFormat: "t20",
+  });
+  await libraryPhoto("prem-twoday", {
+    grade: PREM,
+    takenAt: "2025-03-08",
+    types: ["premiership"],
+    matchFormat: "two_day",
+  });
+  await libraryPhoto("prem-team", { grade: PREM, takenAt: "2025-03-15", types: ["team"] });
+
   await libraryPhoto("elsewhere", {
     tenant: otherTenantId,
     takenAt: "2025-01-01",
@@ -272,6 +293,23 @@ describe("card types steer the automatic pick", () => {
     expect(await fillMissingDraftPhotos(tenantId)).toBeGreaterThanOrEqual(1);
     expect((await reload(d.id)).photoUrl).toBe(urlOf("batter-milestone"));
     await db.delete(socialDraftsTable).where(eq(socialDraftsTable.id, d.id));
+  });
+
+  it("a premiership prefers premiership photos, then its match format", async () => {
+    const card = (competition?: string) =>
+      enrichDraft({
+        tenantId,
+        engine: "recap",
+        cardInput: { kind: "premiership", grade: PREM, year: 2024, competition },
+        appPath: "/premierships",
+      });
+    // T20: the older T20 premiership shot beats the newer Two Day one.
+    expect((await card("T20 Final")).photoUrl).toBe(urlOf("prem-t20"));
+    expect((await card("Two Day Final")).photoUrl).toBe(urlOf("prem-twoday"));
+    // No format: the newest premiership shot, still over the newer team shot.
+    expect((await card()).photoUrl).toBe(urlOf("prem-twoday"));
+    // A format nobody is tagged with falls back to the type order.
+    expect((await card("One Day Final")).photoUrl).toBe(urlOf("prem-twoday"));
   });
 
   it("a junior card still gets no photo", async () => {
@@ -402,6 +440,44 @@ describe("bulk type tagging", () => {
       removeTypes: ["celebrating"],
     });
     for (const p of cleared.body) expect(p.photoTypes).toEqual([]);
+  });
+
+  it("sets and clears a match format, and accepts the premiership type", async () => {
+    const ids = [photos.pool0, photos.pool2];
+    const set = await api("post", "/club-photos/tags").send({
+      photoIds: ids,
+      matchFormat: "one_day",
+      addTypes: ["premiership"],
+    });
+    expect(set.status).toBe(200);
+    for (const p of set.body) {
+      expect(p.matchFormat).toBe("one_day");
+      expect(p.photoTypes).toEqual(["premiership"]);
+    }
+    // Omitting the format leaves it alone.
+    const kept = await api("post", "/club-photos/tags").send({ photoIds: ids, season: 2024 });
+    for (const p of kept.body) expect(p.matchFormat).toBe("one_day");
+
+    const cleared = await api("post", "/club-photos/tags").send({
+      photoIds: ids,
+      matchFormat: null,
+      addTypes: ["bowling"],
+    });
+    for (const p of cleared.body) {
+      expect(p.matchFormat).toBeNull();
+      expect(p.photoTypes).toEqual(["bowling"]);
+    }
+
+    const bad = await api("post", "/club-photos/tags").send({
+      photoIds: ids,
+      matchFormat: "test_match",
+    });
+    expect(bad.status).toBe(400);
+    const foreign = await api("post", "/club-photos/tags", "other").send({
+      photoIds: ids,
+      matchFormat: "t20",
+    });
+    expect(foreign.status).toBe(404);
   });
 
   it("rejects adding more than one type at once", async () => {

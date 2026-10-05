@@ -13,6 +13,7 @@ import {
   useGetGoogleDriveConfig,
   getGetGoogleDriveConfigQueryKey,
   type ClubPhoto,
+  type ClubPhotoMatchFormat,
 } from "@workspace/api-client-react";
 import { Check, ChevronRight, Folder, HardDrive, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,7 @@ import {
 import { pickDrivePhotos } from "@/components/social-queue/google-drive-picker";
 import { CardPhotoRules } from "@/components/social-queue/card-photo-rules";
 import { sortGradesBySeniority } from "@/components/grade-badge";
-import { isJuniorGradeLabel } from "@workspace/scorecard";
+import { MATCH_FORMATS, MATCH_FORMAT_LABELS, isJuniorGradeLabel } from "@workspace/scorecard";
 import {
   CLUB_WIDE,
   CLUB_WIDE_LABEL,
@@ -54,6 +55,10 @@ import { cn } from "@/lib/utils";
 type Upload = { name: string; state: UploadState };
 
 const selectClass = "h-9 rounded-lg border border-input bg-background px-3 text-sm";
+
+/** The match format picker in the tag panel: leave as is, clear, or set. */
+type TagFormat = "" | "none" | ClubPhotoMatchFormat;
+type FormatFilter = "all" | ClubPhotoMatchFormat;
 
 /** One folder tile: a keyboard-reachable button with its photo count. */
 function FolderTile({
@@ -124,18 +129,26 @@ export default function AdminPhotoLibrary() {
   }, [seniorGrades, photos, folder.grade]);
   const counts = useMemo(() => folderCounts(photos), [photos]);
 
-  const shown = useMemo(
+  const [formatFilter, setFormatFilter] = useState<FormatFilter>("all");
+  const inFolder = useMemo(
     () =>
       folder.grade && folder.type
         ? photos.filter((p) => gradeFolderOf(p) === folder.grade && typeFolderOf(p) === folder.type)
         : [],
     [photos, folder.grade, folder.type],
   );
+  const shown = useMemo(
+    () =>
+      formatFilter === "all" ? inFolder : inFolder.filter((p) => p.matchFormat === formatFilter),
+    [inFolder, formatFilter],
+  );
 
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [dragging, setDragging] = useState(false);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [season, setSeason] = useState("");
+  const [tagFormat, setTagFormat] = useState<TagFormat>("");
+  const [uploadFormat, setUploadFormat] = useState<"" | ClubPhotoMatchFormat>("");
   const [playerSearch, setPlayerSearch] = useState("");
   const [playerIds, setPlayerIds] = useState<Set<number>>(new Set());
   const [tagError, setTagError] = useState<string | null>(null);
@@ -154,6 +167,7 @@ export default function AdminPhotoLibrary() {
   useEffect(() => {
     setSelected(new Set());
     setMoving(null);
+    setFormatFilter("all");
   }, [folder.grade, folder.type]);
 
   const refresh = () => qc.invalidateQueries({ queryKey: getListClubPhotosQueryKey() });
@@ -163,6 +177,7 @@ export default function AdminPhotoLibrary() {
         refresh();
         setSelected(new Set());
         setPlayerIds(new Set());
+        setTagFormat("");
         setTagError(null);
       },
       onError: () =>
@@ -206,6 +221,7 @@ export default function AdminPhotoLibrary() {
     return {
       ...(t.grade ? { grade: t.grade } : {}),
       ...(t.photoType ? { photoType: t.photoType } : {}),
+      ...(uploadFormat ? { matchFormat: uploadFormat } : {}),
     };
   };
 
@@ -273,6 +289,7 @@ export default function AdminPhotoLibrary() {
         photoIds: Array.from(selected),
         ...(seasonNum && Number.isInteger(seasonNum) ? { season: seasonNum } : {}),
         ...(playerIds.size ? { addPlayerIds: Array.from(playerIds) } : {}),
+        ...(tagFormat ? { matchFormat: tagFormat === "none" ? null : tagFormat } : {}),
       },
     });
   };
@@ -393,6 +410,27 @@ export default function AdminPhotoLibrary() {
         </div>
       )}
 
+      {!juniorFolder && (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <label htmlFor="upload-format" className="text-muted-foreground">
+            Match format for new photos
+          </label>
+          <select
+            id="upload-format"
+            value={uploadFormat}
+            onChange={(e) => setUploadFormat(e.target.value as "" | ClubPhotoMatchFormat)}
+            className={selectClass}
+          >
+            <option value="">None</option>
+            {MATCH_FORMATS.map((f) => (
+              <option key={f} value={f}>
+                {MATCH_FORMAT_LABELS[f]}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {driveQ.data && !juniorFolder && (
         <div className="flex flex-wrap items-center gap-3">
           <Button
@@ -445,7 +483,7 @@ export default function AdminPhotoLibrary() {
       {selected.size > 0 && (
         <SettingsCard
           title={`${selected.size} selected`}
-          description="Tag the players in these photos, or move them to another folder."
+          description="Tag the players, season and match format, or move them to another folder."
         >
           <SettingsRow label="Players" helper="Senior players only" htmlFor="tag-players">
             <div className="w-64 space-y-2">
@@ -483,6 +521,22 @@ export default function AdminPhotoLibrary() {
               onChange={(e) => setSeason(e.target.value)}
               className="h-9 w-28"
             />
+          </SettingsRow>
+          <SettingsRow label="Match format" helper="One Day, T20 or Two Day" htmlFor="tag-format">
+            <select
+              id="tag-format"
+              value={tagFormat}
+              onChange={(e) => setTagFormat(e.target.value as TagFormat)}
+              className={selectClass}
+            >
+              <option value="">Leave as is</option>
+              {MATCH_FORMATS.map((f) => (
+                <option key={f} value={f}>
+                  {MATCH_FORMAT_LABELS[f]}
+                </option>
+              ))}
+              <option value="none">No format</option>
+            </select>
           </SettingsRow>
           {moving && (
             <SettingsRow label="Move to" helper="A photo sits in one folder: its team and type.">
@@ -623,11 +677,34 @@ export default function AdminPhotoLibrary() {
           <h2 id="library-folder" className="text-base font-semibold text-foreground">
             {folderLabel(folder.grade, folder.type)}
           </h2>
+          {inFolder.length > 0 && (
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by match format">
+              {(["all", ...MATCH_FORMATS] as const).map((f) => (
+                <Button
+                  key={f}
+                  type="button"
+                  size="sm"
+                  variant={formatFilter === f ? "default" : "outline"}
+                  aria-pressed={formatFilter === f}
+                  onClick={() => setFormatFilter(f)}
+                >
+                  {f === "all" ? "All formats" : MATCH_FORMAT_LABELS[f]}
+                </Button>
+              ))}
+            </div>
+          )}
           {shown.length === 0 ? (
-            <EmptyState
-              title="No photos in this folder"
-              message="Upload photos here, or move photos in from another folder."
-            />
+            inFolder.length > 0 ? (
+              <EmptyState
+                title="No photos of this format"
+                message="Tag photos with a match format from the selection panel."
+              />
+            ) : (
+              <EmptyState
+                title="No photos in this folder"
+                message="Upload photos here, or move photos in from another folder."
+              />
+            )
           ) : (
             <ul
               className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5"
@@ -661,10 +738,15 @@ export default function AdminPhotoLibrary() {
                           .filter(Boolean)
                           .join(" · ")}
                       </span>
-                      <span className="block px-2 pb-1">
+                      <span className="flex flex-wrap gap-1 px-2 pb-1">
                         <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
                           {folderLabel(gradeFolderOf(p), typeFolderOf(p))}
                         </span>
+                        {p.matchFormat && (
+                          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">
+                            {MATCH_FORMAT_LABELS[p.matchFormat]}
+                          </span>
+                        )}
                       </span>
                     </button>
                     {!isJuniorGradeLabel(p.grade) && (
