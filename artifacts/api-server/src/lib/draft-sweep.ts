@@ -29,6 +29,7 @@ import { loadAutoPost, persistDueDrafts } from "./effective-draft-state";
 import { notifyDraftsReady } from "./draft-notifications";
 import { fillMissingDraftPhotos } from "./draft-enrich";
 import { draftCentralAchievements } from "./central-achievements";
+import { syncDebutCaps } from "./debut-caps";
 
 type Logger = PostCommitLogger & {
   info: (obj: unknown, msg?: string) => void;
@@ -67,6 +68,8 @@ export type SweepSummary = {
   roundSets: number;
   /** Drafts moved to ready because their auto-post deadline passed. */
   promoted: number;
+  /** A Grade / Female A Grade debut caps issued (debut-caps.ts). */
+  debutCaps?: number;
 };
 
 /** Most central matches drafted in one sweep. */
@@ -105,6 +108,27 @@ export async function runDraftSweep(
   }
 
   const now = scope.now ?? new Date();
+  // Debut caps first, so a debut card drafted below can carry the new number.
+  // Only recent debuts mint here; older ones wait for the catch-up script.
+  if (scope.kind === "scheduled") {
+    try {
+      const caps = await syncDebutCaps(tenantId, {
+        since: perthDay(new Date(now.getTime() - CENTRAL_RECENT_MS)),
+        commit: true,
+      });
+      summary.debutCaps = caps.minted;
+      for (const p of caps.plans) {
+        if (p.toMint.length) {
+          logger.info({ tenantId, category: p.category, caps: p.toMint }, "debut caps issued");
+        }
+        if (p.held && p.awaitingCatchUp.length) {
+          logger.warn({ tenantId, category: p.category, held: p.held }, "debut caps held");
+        }
+      }
+    } catch (err) {
+      logger.error({ err, tenantId }, "debut caps failed");
+    }
+  }
   if (scope.kind === "scheduled" && (await tenantIsCentral(tenantId))) {
     try {
       const central = await sweepCentralMatches(tenantId, now, logger);
