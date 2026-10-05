@@ -91,7 +91,9 @@ export function footer(f: CkFooter): string {
   // <div>, so `dropEmptyPresentedBy` removes the whole line when it is empty.
   const strip =
     f.sponsors === "logos"
-      ? `<div style="display:flex;align-items:center;gap:1.2cqmin;min-width:0">${supportedBy(cq, f.label)}${sponsorLogos()}</div>`
+      ? // Logos; the presenting sponsor's name only when the club has no logos.
+        `<div data-sponsor-strip="1" style="display:flex;align-items:center;gap:1.2cqmin;min-width:0">${supportedBy(cq, f.label)}${sponsorLogos()}</div>` +
+        `<div data-sponsor-fallback="1"><div style="display:flex;align-items:center;gap:1.4cqmin;min-width:0">${supportedBy(cq, f.label)} <span data-sponsor-name="1" style="font-family:${CK_SANS};font-weight:700;font-size:2cqmin;white-space:nowrap;color:${C.chalk}">{{sponsorPresentedBy}}</span></div></div>`
       : `<div style="display:flex;align-items:center;gap:1.4cqmin;min-width:0">${supportedBy(cq, f.label)} <span data-sponsor-name="1" style="font-family:${CK_SANS};font-weight:700;font-size:2cqmin;white-space:nowrap;color:${C.chalk}">{{sponsorPresentedBy}}</span></div>`;
   return (
     `<div data-ck-footer="1" style="flex:none;position:relative;display:flex;flex-direction:column;gap:1.8cqmin">` +
