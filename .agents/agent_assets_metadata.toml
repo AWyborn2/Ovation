@@ -87,3 +87,59 @@ mtime_ms = 1790992788333
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/15bec11d-7ebb-431c-8655-68a9e76ce3f2/4bc9833f-f8d5-4a54-94bf-e7d8bd20f341"
 storage_version_token = "1790992878214448"
 content_type = "text/csv"
+
+[[outputs]]
+id = "ZasrZppQl-pZJOx2ZvCvI"
+uri = "file://exports/club-names/playhq-orgs.csv"
+type = "table"
+title = "playhq-orgs.csv"
+description = "43 organisations; CSV with header row."
+logical_id = "a85cfbe1-3709-4d0b-82ce-4e3e74a575e1"
+content_hash = "sha256:c026e436d34fc434b0c86a35c5114bdb78c67d0b0841f9f33f48a4681cffba00"
+size = 3192
+mtime_ms = 1791162784733
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/a85cfbe1-3709-4d0b-82ce-4e3e74a575e1/bef17dae-afa5-450f-94c7-85962379c066"
+storage_version_token = "1791162793724695"
+content_type = "text/csv"
+
+[[outputs]]
+id = "tRqMteO4uM8wwSvMmJ42b"
+uri = "file://exports/club-names/central-clubs.csv"
+type = "table"
+title = "central-clubs.csv"
+description = "43 central clubs; CSV with header row."
+logical_id = "4c4e6962-c65f-4dfd-b2e6-4a4a58bf1cae"
+content_hash = "sha256:bbbc1576cdd5d72ea5c53c9a716163c2ee90a8d1cd09448139a7c67669636de8"
+size = 1911
+mtime_ms = 1791162784809
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/4c4e6962-c65f-4dfd-b2e6-4a4a58bf1cae/a4363186-1596-4ddb-acc9-5e41aa15e3eb"
+storage_version_token = "1791162794375888"
+content_type = "text/csv"
+
+[[outputs]]
+id = "9xv_7Tp6bUvfZW_4XuF82"
+uri = "file://exports/club-names/club-name-history.csv"
+type = "table"
+title = "club-name-history.csv"
+description = "6 club name history records; CSV with header row."
+logical_id = "1bad44bf-62ca-4b5d-a921-bd20d9ce795d"
+content_hash = "sha256:12d1b120c610cb3b394468328efbb6113ac2aa5ea42b593734b759bdfb626610"
+size = 293
+mtime_ms = 1791162784885
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/1bad44bf-62ca-4b5d-a921-bd20d9ce795d/84495c2f-cd9d-47ee-b26b-29402ef8c3d7"
+storage_version_token = "1791162795004550"
+content_type = "text/csv"
+
+[[outputs]]
+id = "yF-JkxfinNyeEk1TFXVwp"
+uri = "file://exports/club-names/club-playhq-orgs.csv"
+type = "table"
+title = "club-playhq-orgs.csv"
+description = "10 organisation mappings; CSV with header row."
+logical_id = "f5ca1ea9-9223-4ff9-ad27-36a36ba37383"
+content_hash = "sha256:8bf343cac6527197a514777f15342291087f1972de7e9192b72f198465df7a58"
+size = 532
+mtime_ms = 1791162784961
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/f5ca1ea9-9223-4ff9-ad27-36a36ba37383/8e311018-c657-4358-8888-aa8a588f2a79"
+storage_version_token = "1791162795946642"
+content_type = "text/csv"
