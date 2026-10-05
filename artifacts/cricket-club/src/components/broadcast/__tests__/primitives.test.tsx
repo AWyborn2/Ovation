@@ -8,6 +8,7 @@ import {
   LeaderRow,
   PageHero,
   ResultsTicker,
+  TICKER_SECONDS_PER_ITEM,
   UnderlineTabs,
   initialsOf,
   resultCode,
@@ -44,7 +45,15 @@ describe("ResultsTicker (Broadcast AE6)", () => {
     const hidden = track.querySelectorAll('button[aria-hidden="true"]');
     expect(hidden).toHaveLength(4);
     hidden.forEach((b) => expect(b.getAttribute("tabindex")).toBe("-1"));
-    expect((track as HTMLElement).style.animation).toContain("20s");
+    expect((track as HTMLElement).style.animation).toContain(`${4 * TICKER_SECONDS_PER_ITEM}s`);
+  });
+
+  it("shows the full score line for both sides, untruncated", () => {
+    withRouter(<ResultsTicker items={ITEMS} />);
+    const first = screen.getByTestId("ticker-track").querySelector("button")!;
+    expect(first.textContent).toContain("HHCC 0/200");
+    expect(first.textContent).toContain("MAN 150");
+    expect(first.querySelector(".truncate")).toBeNull();
   });
 
   it("renders a single static scrollable row under reduced motion", () => {
