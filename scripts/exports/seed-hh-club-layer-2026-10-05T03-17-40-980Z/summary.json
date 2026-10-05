@@ -1,0 +1,200 @@
+{
+  "generatedAt": "2026-10-05T03:17:40.991Z",
+  "mode": "preview",
+  "tenantId": 1,
+  "centralClubId": 1,
+  "storeMissing": false,
+  "boundaries": {
+    "desired": [
+      {
+        "grade": null,
+        "startSeason": 2003
+      },
+      {
+        "grade": "B Grade",
+        "startSeason": 2004
+      },
+      {
+        "grade": "C Grade",
+        "startSeason": 2004
+      },
+      {
+        "grade": "Colts",
+        "startSeason": 2023
+      },
+      {
+        "grade": "D Grade",
+        "startSeason": 2005
+      },
+      {
+        "grade": "E Grade",
+        "startSeason": 2009
+      },
+      {
+        "grade": "F Grade",
+        "startSeason": 2013
+      },
+      {
+        "grade": "Female A Grade",
+        "startSeason": 2023
+      },
+      {
+        "grade": "Female B Grade",
+        "startSeason": 2019
+      },
+      {
+        "grade": "PPL",
+        "startSeason": 2013
+      }
+    ],
+    "current": [
+      {
+        "grade": null,
+        "startSeason": 2003
+      },
+      {
+        "grade": "B Grade",
+        "startSeason": 2004
+      },
+      {
+        "grade": "C Grade",
+        "startSeason": 2004
+      },
+      {
+        "grade": "Colts",
+        "startSeason": 2023
+      },
+      {
+        "grade": "D Grade",
+        "startSeason": 2005
+      },
+      {
+        "grade": "E Grade",
+        "startSeason": 2009
+      },
+      {
+        "grade": "F Grade",
+        "startSeason": 2013
+      },
+      {
+        "grade": "Female A Grade",
+        "startSeason": 2023
+      },
+      {
+        "grade": "Female B Grade",
+        "startSeason": 2019
+      },
+      {
+        "grade": "PPL",
+        "startSeason": 2013
+      }
+    ],
+    "changed": false
+  },
+  "history": {
+    "perGrade": [
+      {
+        "grade": "A Grade",
+        "careerRows": 125,
+        "seasonRows": 0,
+        "skippedAtOrAfterBoundary": 563
+      },
+      {
+        "grade": "B Grade",
+        "careerRows": 222,
+        "seasonRows": 0,
+        "skippedAtOrAfterBoundary": 755
+      },
+      {
+        "grade": "C Grade",
+        "careerRows": 135,
+        "seasonRows": 0,
+        "skippedAtOrAfterBoundary": 545
+      },
+      {
+        "grade": "Colts",
+        "careerRows": 17,
+        "seasonRows": 0,
+        "skippedAtOrAfterBoundary": 60
+      },
+      {
+        "grade": "D Grade",
+        "careerRows": 180,
+        "seasonRows": 0,
+        "skippedAtOrAfterBoundary": 779
+      },
+      {
+        "grade": "E Grade",
+        "careerRows": 159,
+        "seasonRows": 0,
+        "skippedAtOrAfterBoundary": 548
+      },
+      {
+        "grade": "F Grade",
+        "careerRows": 129,
+        "seasonRows": 0,
+        "skippedAtOrAfterBoundary": 398
+      },
+      {
+        "grade": "Female A Grade",
+        "careerRows": 26,
+        "seasonRows": 0,
+        "skippedAtOrAfterBoundary": 53
+      },
+      {
+        "grade": "Female B Grade",
+        "careerRows": 0,
+        "seasonRows": 0,
+        "skippedAtOrAfterBoundary": 62
+      },
+      {
+        "grade": "PPL",
+        "careerRows": 23,
+        "seasonRows": 0,
+        "skippedAtOrAfterBoundary": 113
+      }
+    ],
+    "totalRows": 1016,
+    "skipped": {
+      "fillIn": 1,
+      "nonSeniorGrade": [],
+      "empty": 153,
+      "atOrAfterBoundary": 3876,
+      "peeledAway": 245
+    },
+    "warnings": 102,
+    "mergedDuplicates": 2,
+    "careerPeels": 559,
+    "existingSeedBatches": [
+      {
+        "id": 1,
+        "label": "Halls Head native history (career baselines + pre-boundary seasons)",
+        "source": "hh-native-seed"
+      }
+    ],
+    "willWriteBatch": false
+  },
+  "decisions": {
+    "needed": 9,
+    "undecided": [],
+    "mapInserts": 0,
+    "mapUnchanged": 9
+  },
+  "pins": {
+    "toWrite": 0,
+    "unchanged": 87,
+    "byReason": {}
+  },
+  "review": {
+    "playersRunsDiffer": 34,
+    "playersWicketsDiffer": 18,
+    "seasonRows": 59,
+    "matchLines": 0,
+    "correctionsCreated": 0
+  },
+  "baselineOverlapsForU13": 1385,
+  "blockers": [
+    "Seed batch #1 was loaded by an earlier version of this seed (career baselines not net of central seasons, so they double count them): undo batch #1 first (--undo=<id> --commit), then re-seed."
+  ],
+  "outputDir": "exports/seed-hh-club-layer-2026-10-05T03-17-40-980Z"
+}
