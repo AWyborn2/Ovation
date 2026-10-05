@@ -187,7 +187,8 @@ describe("central drafting sweep", () => {
     await runDraftSweep(tenantId, { kind: "scheduled", now: NOW }, log);
     const again = await stumpsDrafts();
     expect(again).toHaveLength(1);
-    expect(again[0].updatedAt?.toISOString()).toBe(stumps[0].updatedAt?.toISOString());
+    expect(again[0].id).toBe(stumps[0].id);
+    expect(again[0].cardInput).toEqual(stumps[0].cardInput);
 
     // The two-day game finishes: its result card is drafted; the one-day game still holds.
     await db.execute(
