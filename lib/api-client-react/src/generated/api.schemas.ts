@@ -4181,7 +4181,7 @@ export interface NotificationList {
 }
 
 /**
- * A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.
+ * A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.
  */
 export type ClubPhotoType = typeof ClubPhotoType[keyof typeof ClubPhotoType];
 
@@ -4192,8 +4192,21 @@ export const ClubPhotoType = {
   fielding: 'fielding',
   team: 'team',
   celebrating: 'celebrating',
+  premiership: 'premiership',
   batting_milestone: 'batting_milestone',
   bowling_milestone: 'bowling_milestone',
+} as const;
+
+/**
+ * The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.
+ */
+export type ClubPhotoMatchFormat = typeof ClubPhotoMatchFormat[keyof typeof ClubPhotoMatchFormat];
+
+
+export const ClubPhotoMatchFormat = {
+  one_day: 'one_day',
+  t20: 't20',
+  two_day: 'two_day',
 } as const;
 
 export interface ClubPhoto {
@@ -4211,6 +4224,8 @@ export interface ClubPhoto {
   createdAt: string;
   playerIds: number[];
   photoTypes: ClubPhotoType[];
+  /** The match format tag, or null when untagged. */
+  matchFormat: ClubPhotoMatchFormat | null;
   /**
      * For a derived image (a background-removed cut-out), the library photo it was made from.
      * @nullable
@@ -4251,6 +4266,8 @@ export interface IngestClubPhotosRequest {
   playerIds?: number[];
   /** File every photo in the batch under this photo type (uploading into a library folder). */
   photoType?: ClubPhotoType;
+  /** Tag every photo in the batch with this match format. */
+  matchFormat?: ClubPhotoMatchFormat;
 }
 
 export interface GoogleDriveConfig {
@@ -4315,6 +4332,8 @@ export interface TagClubPhotosRequest {
   addTypes?: ClubPhotoType[];
   /** Photo types to remove from every photo. */
   removeTypes?: ClubPhotoType[];
+  /** Set (or with null, clear) the match format on every photo. Omit to leave unchanged. */
+  matchFormat?: ClubPhotoMatchFormat | null;
 }
 
 export interface MoveClubPhotosRequest {

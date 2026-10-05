@@ -124,7 +124,7 @@ router.post("/club-photos/ingest", requireAdmin, async (req, res): Promise<void>
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { objectPaths, season, grade, photoType, playerIds = [] } = parsed.data;
+  const { objectPaths, season, grade, photoType, matchFormat, playerIds = [] } = parsed.data;
   if (objectPaths.length > MAX_INGEST_BATCH) {
     res.status(400).json({ error: `At most ${MAX_INGEST_BATCH} photos per batch.` });
     return;
@@ -161,6 +161,7 @@ router.post("/club-photos/ingest", requireAdmin, async (req, res): Promise<void>
               grade: grade ?? null,
               // Uploading into a library folder files the photo under its type.
               photoTypes: photoType ? [photoType] : [],
+              matchFormat: matchFormat ?? null,
               takenAt: image.takenAt,
             })
             .returning();
@@ -196,7 +197,7 @@ router.post("/club-photos/ingest", requireAdmin, async (req, res): Promise<void>
   // open auto drafts prefer, the same as a move.
   if (rows.length > 0) {
     await fillMissingDraftPhotos(tenantId);
-    if (photoType || grade) await repickTypedDraftPhotos(tenantId);
+    if (photoType || grade || matchFormat) await repickTypedDraftPhotos(tenantId);
   }
   res.json({
     results: results.map((r) =>
@@ -267,6 +268,7 @@ router.post("/club-photos/tags", requireAdmin, async (req, res): Promise<void> =
     removePlayerIds = [],
     addTypes = [],
     removeTypes = [],
+    matchFormat,
   } = parsed.data;
   if (addTypes.some((t) => removeTypes.includes(t))) {
     res.status(400).json({ error: "A photo type can't be added and removed at once." });
@@ -289,14 +291,21 @@ router.post("/club-photos/tags", requireAdmin, async (req, res): Promise<void> =
   }
 
   const before = await db
-    .select({ id: clubPhotosTable.id, photoTypes: clubPhotosTable.photoTypes })
+    .select({
+      id: clubPhotosTable.id,
+      photoTypes: clubPhotosTable.photoTypes,
+      matchFormat: clubPhotosTable.matchFormat,
+    })
     .from(clubPhotosTable)
     .where(and(eq(clubPhotosTable.tenantId, tenantId), inArray(clubPhotosTable.id, owned)));
 
   await db.transaction(async (tx) => {
-    const patch: Partial<Pick<ClubPhotoRow, "season" | "grade">> & { photoTypes?: SQL } = {};
+    const patch: Partial<Pick<ClubPhotoRow, "season" | "grade" | "matchFormat">> & {
+      photoTypes?: SQL;
+    } = {};
     if (season !== undefined) patch.season = season;
     if (grade !== undefined) patch.grade = grade;
+    if (matchFormat !== undefined) patch.matchFormat = matchFormat;
     if (addTypes.length > 0) {
       // One type per photo: the added type replaces whatever was there.
       patch.photoTypes = textArray(addTypes.slice(0, 1));
@@ -332,11 +341,12 @@ router.post("/club-photos/tags", requireAdmin, async (req, res): Promise<void> =
     .from(clubPhotosTable)
     .where(and(eq(clubPhotosTable.tenantId, tenantId), inArray(clubPhotosTable.id, owned)));
   // A photo newly tagged with a player or grade can fill drafts that had none;
-  // a change of photo types can change which photo open drafts prefer.
-  const typesBefore = new Map(before.map((b) => [b.id, [...b.photoTypes].sort().join(",")]));
-  const typesChanged = rows.some(
-    (r) => typesBefore.get(r.id) !== [...r.photoTypes].sort().join(","),
-  );
+  // a change of photo types or match format can change which photo open drafts
+  // prefer.
+  const preference = (r: { photoTypes: string[]; matchFormat: string | null }) =>
+    `${[...r.photoTypes].sort().join(",")}|${r.matchFormat ?? ""}`;
+  const typesBefore = new Map(before.map((b) => [b.id, preference(b)]));
+  const typesChanged = rows.some((r) => typesBefore.get(r.id) !== preference(r));
   await fillMissingDraftPhotos(tenantId);
   if (typesChanged) await repickTypedDraftPhotos(tenantId);
   res.json(await presentPhotos(tenantId, rows));

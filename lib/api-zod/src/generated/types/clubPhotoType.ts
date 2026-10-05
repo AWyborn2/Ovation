@@ -7,7 +7,7 @@
  */
 
 /**
- * A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.
+ * A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.
  */
 export type ClubPhotoType = typeof ClubPhotoType[keyof typeof ClubPhotoType];
 
@@ -18,6 +18,7 @@ export const ClubPhotoType = {
   fielding: 'fielding',
   team: 'team',
   celebrating: 'celebrating',
+  premiership: 'premiership',
   batting_milestone: 'batting_milestone',
   bowling_milestone: 'bowling_milestone',
 } as const;

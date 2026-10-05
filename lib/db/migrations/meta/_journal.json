@@ -194,8 +194,15 @@
     {
       "idx": 27,
       "version": "7",
-      "when": 1791178367843,
-      "tag": "0027_cap_status",
+      "when": 1791175844027,
+      "tag": "0027_photo_premiership_match_format",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1791179860806,
+      "tag": "0028_cap_status",
       "breakpoints": true
     }
   ]
