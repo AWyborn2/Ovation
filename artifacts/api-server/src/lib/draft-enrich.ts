@@ -9,6 +9,7 @@ import {
   clubPhotoPlayersTable,
   playerImagesTable,
   cardPhotoRulesTable,
+  teamListsTable,
   type SocialDraftRow,
 } from "@workspace/db";
 import {
@@ -285,6 +286,72 @@ async function playerPhoto(
 }
 
 /**
+ * The selected player a team list card features (Ash, 5 Oct 2026): one of the
+ * XI, chosen per draft by its seed (rendezvous hashing, so a change to the
+ * selection moves the pick only when the featured player is the one left
+ * out). Players with a tagged library photo come first; with none, players
+ * with a headshot. Fill-ins and unlinked names never feature. Null when no
+ * selected player has a photo.
+ */
+export async function teamListPhotoPlayer(
+  tenantId: number,
+  playerIds: readonly (number | null | undefined)[],
+  seed: string | null,
+): Promise<number | null> {
+  const ids = [
+    ...new Set(
+      playerIds.filter((id): id is number => id != null && id > 0 && !isFillInPlayerId(id)),
+    ),
+  ];
+  if (ids.length === 0) return null;
+  const tagged = await db
+    .selectDistinct({ id: clubPhotoPlayersTable.playerId })
+    .from(clubPhotoPlayersTable)
+    .innerJoin(clubPhotosTable, eq(clubPhotosTable.id, clubPhotoPlayersTable.photoId))
+    .where(
+      and(
+        eq(clubPhotoPlayersTable.tenantId, tenantId),
+        eq(clubPhotosTable.tenantId, tenantId),
+        inArray(clubPhotoPlayersTable.playerId, ids),
+      ),
+    );
+  let pool = tagged.map((r) => r.id);
+  if (pool.length === 0) {
+    const headshots = await db
+      .selectDistinct({ id: playerImagesTable.playerId })
+      .from(playerImagesTable)
+      .where(
+        and(
+          eq(playerImagesTable.tenantId, tenantId),
+          inArray(playerImagesTable.playerId, ids),
+          eq(playerImagesTable.isDefault, true),
+        ),
+      );
+    pool = headshots.map((r) => r.id);
+  }
+  if (pool.length === 0) return null;
+  // Selection order breaks ties when there is no seed.
+  const rows = ids.filter((id) => pool.includes(id)).map((id) => ({ id }));
+  return seededPick(rows, seed).id;
+}
+
+/** A team list draft's featured player, read back from its fixture's XI. */
+async function teamListDraftPlayer(tenantId: number, d: SocialDraftRow): Promise<number | null> {
+  const fixtureId = Number(/^teamlist:(\d+)$/.exec(d.sourceKey ?? "")?.[1]);
+  if (!Number.isInteger(fixtureId)) return null;
+  const [row] = await db
+    .select({ players: teamListsTable.players })
+    .from(teamListsTable)
+    .where(and(eq(teamListsTable.tenantId, tenantId), eq(teamListsTable.fixtureId, fixtureId)));
+  if (!row) return null;
+  return teamListPhotoPlayer(
+    tenantId,
+    row.players.map((p) => p.playerId),
+    d.sourceKey,
+  );
+}
+
+/**
  * A photo of the grade, chosen per draft by its seed (see {@link seededPick}).
  * A rule's `ruleType` narrows the pool to photos with that type tag (the whole
  * grade when none have it); within the pool, photos of the card's preferred
@@ -489,10 +556,11 @@ export async function pickDraftPhoto(
 }
 
 /** What an existing draft's photo pick needs, read back from the stored row. */
-function draftPickOptions(tenantId: number, d: SocialDraftRow): PhotoPickOptions {
+async function draftPickOptions(tenantId: number, d: SocialDraftRow): Promise<PhotoPickOptions> {
   const input = (d.cardInput ?? {}) as Record<string, unknown>;
   const kind = typeof input.kind === "string" ? input.kind : null;
-  const playerId = playerIdFromAppPath(d.appPath);
+  const playerId =
+    kind === "teamList" ? await teamListDraftPlayer(tenantId, d) : playerIdFromAppPath(d.appPath);
   return {
     playerId,
     grade: draftPhotoGrade(input),
@@ -537,7 +605,7 @@ export async function fillMissingDraftPhotos(tenantId: number): Promise<number> 
     );
   let filled = 0;
   for (const d of open) {
-    const photo = await pickDraftPhoto(tenantId, draftPickOptions(tenantId, d));
+    const photo = await pickDraftPhoto(tenantId, await draftPickOptions(tenantId, d));
     if (!photo) continue;
     const updated = await db
       .update(socialDraftsTable)
@@ -597,7 +665,7 @@ async function repickAutoDraftPhotos(
   const open = limit != null ? await query.limit(limit) : await query;
   let changed = 0;
   for (const d of open) {
-    const opts = draftPickOptions(tenantId, d);
+    const opts = await draftPickOptions(tenantId, d);
     if (opts.junior || (scope && opts.grade !== scope.grade)) continue;
     const photo = await pickDraftPhoto(tenantId, opts);
     const next = { photoUrl: photo?.url ?? null, photoSource: photo?.source ?? null };
