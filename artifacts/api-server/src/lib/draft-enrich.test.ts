@@ -16,8 +16,9 @@ import {
   cardTemplatesTable,
   socialSettingsTable,
   socialDraftsTable,
+  cardPhotoRulesTable,
 } from "@workspace/db";
-import { enrichDraft, pickDraftPhoto } from "./draft-enrich";
+import { enrichDraft, isGrandFinalWin, photoRuleKinds, pickDraftPhoto } from "./draft-enrich";
 import { upsertDraftByKey } from "./draft-upsert";
 
 const STAMP = Date.now();
@@ -91,6 +92,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  await db.delete(cardPhotoRulesTable).where(eq(cardPhotoRulesTable.tenantId, tenantId));
   await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId));
   await db.delete(cardTemplatesTable).where(eq(cardTemplatesTable.tenantId, tenantId));
   await db.delete(clubPhotosTable).where(eq(clubPhotosTable.tenantId, tenantId));
@@ -241,5 +243,57 @@ describe("refresh keeps what an admin chose", () => {
     expect(kept.action).toBe("refreshed");
     expect(kept.draft.photoUrl).toBe("/api/storage/objects/chosen");
     expect(kept.draft.caption).toBe("hand written");
+  });
+});
+
+describe("Grand Final wins take the premiership photo rule first", () => {
+  const card = (matchTitle: string, resultWinner: string) => ({
+    kind: "matchSummary",
+    matchTitle,
+    resultWinner,
+    result: "Won",
+  });
+
+  it("detects a Grand Final win from the match title and winner", () => {
+    expect(isGrandFinalWin(card("D Grade • Grand Final", "club"))).toBe(true);
+    expect(isGrandFinalWin(card("D Grade • Grand Final", "opposition"))).toBe(false);
+    expect(isGrandFinalWin(card("D Grade • Semi Final", "club"))).toBe(false);
+    expect(photoRuleKinds(card("D Grade • Grand Final", "club"))).toEqual([
+      "premiership",
+      "matchSummary",
+    ]);
+    expect(photoRuleKinds(card("D Grade • Round 4", "club"))).toEqual(["matchSummary"]);
+  });
+
+  it("a GF win uses the premiership rule's photo; other results the match result rule", async () => {
+    const [prem, result] = await db
+      .insert(clubPhotosTable)
+      .values(
+        ["prem", "result"].map((name) => ({
+          tenantId,
+          objectPath: `/objects/library/${name}-${STAMP}`,
+          thumbPath: `/objects/library/${name}-${STAMP}-thumb`,
+          width: 100,
+          height: 100,
+          grade: "D Grade",
+        })),
+      )
+      .returning();
+    await db.insert(cardPhotoRulesTable).values([
+      { tenantId, grade: "D Grade", cardKind: "premiership", mode: "fixed", photoId: prem.id },
+      { tenantId, grade: "D Grade", cardKind: "matchSummary", mode: "fixed", photoId: result.id },
+    ]);
+    const pick = (input: Record<string, unknown>) =>
+      enrichDraft({ tenantId, engine: "matchSummary", cardInput: input, appPath: "/matches/1" });
+
+    expect((await pick(card("D Grade • Grand Final", "club"))).photoUrl).toBe(
+      `/api/storage/objects/library/prem-${STAMP}`,
+    );
+    expect((await pick(card("D Grade • Grand Final", "opposition"))).photoUrl).toBe(
+      `/api/storage/objects/library/result-${STAMP}`,
+    );
+    expect((await pick(card("D Grade • Round 4", "club"))).photoUrl).toBe(
+      `/api/storage/objects/library/result-${STAMP}`,
+    );
   });
 });

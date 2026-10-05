@@ -16,6 +16,7 @@ export function PhotoControls({
   activeSize: CardSize;
 }) {
   const {
+    isMatchCard,
     galleryPhotos,
     photoSource,
     galleryUrl,
@@ -46,23 +47,31 @@ export function PhotoControls({
         onChange={handlePhotoUpload}
       />
       {galleryPhotos.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div
+          className={`flex flex-wrap gap-1.5 ${isMatchCard ? "max-h-40 overflow-y-auto" : ""}`}
+          aria-label={isMatchCard ? "Club photos" : undefined}
+        >
           {galleryPhotos.map((p) => {
             const selected = photoSource === "gallery" && galleryUrl === p.url;
             return (
               <button
                 key={p.url}
                 type="button"
-                title={p.isDefault ? "Default photo" : undefined}
+                title={p.isDefault ? (isMatchCard ? "Club's pick" : "Default photo") : undefined}
                 className={`relative h-12 w-12 overflow-hidden rounded border-2 ${
                   selected ? "border-primary" : "border-muted"
                 }`}
                 onClick={() => selectGalleryPhoto(p.url)}
               >
-                <img src={p.url} alt="" className="h-full w-full object-cover" />
+                <img
+                  src={p.thumbUrl ?? p.url}
+                  alt=""
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
                 {p.isDefault && (
                   <span className="absolute bottom-0 left-0 right-0 bg-primary/80 text-center text-[8px] font-semibold leading-tight text-primary-foreground">
-                    Default
+                    {isMatchCard ? "Club pick" : "Default"}
                   </span>
                 )}
               </button>
@@ -98,7 +107,16 @@ export function PhotoControls({
         </Button>
       </div>
 
-      {effectivePhotoUrl && (
+      {effectivePhotoUrl && isMatchCard && (
+        <PhotoReposition
+          src={effectivePhotoUrl}
+          aspect={{ w: SIZES[activeSize].w, h: SIZES[activeSize].h }}
+          value={photoTransform}
+          onChange={setPhotoTransform}
+        />
+      )}
+
+      {effectivePhotoUrl && !isMatchCard && (
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Placement</Label>
           <div className="flex gap-1.5">
@@ -134,16 +152,18 @@ export function PhotoControls({
         </div>
       )}
 
-      <div className="flex items-center justify-between pt-0.5">
-        <Label htmlFor="save-profile-toggle" className="text-xs text-muted-foreground">
-          Save uploads to player profile
-        </Label>
-        <Switch
-          id="save-profile-toggle"
-          checked={saveToProfile}
-          onCheckedChange={setSaveToProfile}
-        />
-      </div>
+      {!isMatchCard && (
+        <div className="flex items-center justify-between pt-0.5">
+          <Label htmlFor="save-profile-toggle" className="text-xs text-muted-foreground">
+            Save uploads to player profile
+          </Label>
+          <Switch
+            id="save-profile-toggle"
+            checked={saveToProfile}
+            onCheckedChange={setSaveToProfile}
+          />
+        </div>
+      )}
 
       {photoError && <p className="text-xs text-destructive">{photoError}</p>}
     </div>

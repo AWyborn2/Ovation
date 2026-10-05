@@ -5,6 +5,13 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+export interface MatchCardPhoto {
+  /** The photo's URL, or null when none suits the card. */
+  url: string | null;
+  /** How it was picked (e.g. "auto:rule-fixed", "auto:library-grade"). */
+  source: string | null;
+}
+
 export type CardVideoJobInputInput = { [key: string]: unknown };
 
 export type CardVideoJobInputOptions = { [key: string]: unknown };

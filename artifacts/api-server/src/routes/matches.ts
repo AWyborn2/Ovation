@@ -12,6 +12,7 @@ import {
 import {
   ListMatchesQueryParams,
   GetMatchParams,
+  GetMatchCardPhotoParams,
   UpdateMatchRoundParams,
   UpdateMatchRoundBody,
   SetMatchHatTrickParams,
@@ -25,6 +26,7 @@ import { beforeBoundary, loadClubOverlayData } from "../lib/club-overlay";
 import { loadMatchDetail, loadMatchDetailForRequest } from "../lib/match-detail";
 import { opponentClubColumns, toOpponentClub, notEmptyFixture } from "../lib/grades-helpers";
 import { getOrCreateSettings } from "../lib/settings";
+import { matchCardPhoto } from "../lib/match-card-photo";
 import {
   getOpponentBrandsByAppClubId,
   getOpponentBrandsByCentralClubId,
@@ -214,6 +216,22 @@ router.get("/matches/:id", async (req, res): Promise<void> => {
   }
 
   res.json(detail);
+});
+
+// The library photo for the match page's Share window — the same pick the
+// social queue makes for this match's result draft (public: the card itself is).
+router.get("/matches/:id/card-photo", async (req, res): Promise<void> => {
+  const params = GetMatchCardPhotoParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const photo = await matchCardPhoto(await dataSource(req), params.data.id);
+  if (!photo) {
+    res.status(404).json({ error: "Match not found" });
+    return;
+  }
+  res.json(photo);
 });
 
 router.patch("/matches/:id", requireAdmin, async (req, res): Promise<void> => {

@@ -186,7 +186,7 @@ export function skeletonSponsorLogos(): string {
   const tiles = [1, 2, 3]
     .map(
       (n) =>
-        `<div style="width:10cqmin;height:4.4cqmin;flex:none;border-radius:.6cqmin;overflow:hidden;background:var(--sk-sponsor-bg,rgba(255,255,255,.92))">${slot(`sponsor${n}`, "sponsor", "rounded", 6)}</div>`,
+        `<div data-sponsor-tile="${n}" style="width:10cqmin;height:4.4cqmin;flex:none;border-radius:.6cqmin;overflow:hidden;background:var(--sk-sponsor-bg,rgba(255,255,255,.92))">${slot(`sponsor${n}`, "sponsor", "rounded", 6)}</div>`,
     )
     .join("");
   return sponsorsOn(

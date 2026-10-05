@@ -299,6 +299,12 @@ export type PhotoPickOptions = {
   junior: boolean;
   /** The card kind, to look up the club's photo rule for (grade, kind). */
   kind?: string | null;
+  /**
+   * The rule kinds to try, in order, in place of `kind` alone — a Grand Final
+   * win tries the grade's premiership rule before its match result rule (see
+   * {@link photoRuleKinds}). Omitted = `[kind]`.
+   */
+  ruleKinds?: readonly string[];
   /** Stable per-draft seed for a random rule (the draft's source key or id). */
   seed?: string | null;
   /** The card's featured player for a "player" rule; defaults to `playerId`. */
@@ -312,9 +318,49 @@ export type PhotoPickOptions = {
 
 type PhotoPick = { url: string; source: PhotoSource };
 
-/** Apply the club's photo rule for (grade, kind); null = no rule, or it found nothing. */
+/** A match title stage that is a grand final ("A Grade • Grand Final"). */
+const GRAND_FINAL = /\bgrand[\s-]*final\b|\bGF\b/i;
+
+/**
+ * Whether a match result card is the club's Grand Final win — the card then
+ * takes the grade's premiership photo rule in preference to its match result
+ * rule.
+ */
+export function isGrandFinalWin(cardInput: Record<string, unknown>): boolean {
+  return (
+    cardInput.kind === "matchSummary" &&
+    cardInput.resultWinner === "club" &&
+    typeof cardInput.matchTitle === "string" &&
+    GRAND_FINAL.test(cardInput.matchTitle)
+  );
+}
+
+/** The photo rule kinds a card tries, most preferred first. */
+export function photoRuleKinds(cardInput: Record<string, unknown>): string[] {
+  const kind = typeof cardInput.kind === "string" ? cardInput.kind : "";
+  if (!kind) return [];
+  return isGrandFinalWin(cardInput) ? ["premiership", kind] : [kind];
+}
+
+/**
+ * Apply the club's photo rules for the card's grade, trying each rule kind in
+ * order (`ruleKinds`, else `kind`); null = no rule, or none found a photo.
+ */
 async function pickByRule(tenantId: number, opts: PhotoPickOptions): Promise<PhotoPick | null> {
-  if (!opts.kind || !opts.grade) return null;
+  const kinds = opts.ruleKinds ?? (opts.kind ? [opts.kind] : []);
+  for (const kind of kinds) {
+    const pick = await pickByRuleKind(tenantId, opts, kind);
+    if (pick) return pick;
+  }
+  return null;
+}
+
+async function pickByRuleKind(
+  tenantId: number,
+  opts: PhotoPickOptions,
+  kind: string,
+): Promise<PhotoPick | null> {
+  if (!opts.grade) return null;
   const [rule] = await db
     .select()
     .from(cardPhotoRulesTable)
@@ -322,7 +368,7 @@ async function pickByRule(tenantId: number, opts: PhotoPickOptions): Promise<Pho
       and(
         eq(cardPhotoRulesTable.tenantId, tenantId),
         eq(cardPhotoRulesTable.grade, opts.grade),
-        eq(cardPhotoRulesTable.cardKind, opts.kind),
+        eq(cardPhotoRulesTable.cardKind, kind),
       ),
     );
   if (!rule) return null;
@@ -410,6 +456,7 @@ function draftPickOptions(tenantId: number, d: SocialDraftRow): PhotoPickOptions
     grade: draftPhotoGrade(input),
     junior: d.sourceMatchIsJunior || input.junior === true,
     kind,
+    ruleKinds: photoRuleKinds(input),
     // Drafts are created with their source key as the seed (enrichDraft).
     seed: d.sourceKey ?? `draft:${d.id}`,
     photoTypes: preferredPhotoTypes(input),
@@ -539,7 +586,10 @@ export async function repickRuleDraftPhotos(
   kinds: readonly string[],
 ): Promise<number> {
   if (kinds.length === 0) return 0;
-  return repickAutoDraftPhotos(tenantId, { grade, kinds });
+  // A Grand Final win's match result card takes the premiership rule first,
+  // so a premiership rule change re-picks match result drafts too.
+  const scoped = kinds.includes("premiership") ? [...new Set([...kinds, "matchSummary"])] : kinds;
+  return repickAutoDraftPhotos(tenantId, { grade, kinds: scoped });
 }
 
 /**
@@ -564,6 +614,7 @@ export async function enrichDraft(input: EnrichInput): Promise<DraftEnrichment> 
       grade,
       junior,
       kind,
+      ruleKinds: photoRuleKinds(input.cardInput),
       seed: input.seed ?? null,
       featuredPlayerId: input.featuredPlayerId !== undefined ? input.featuredPlayerId : playerId,
       photoTypes: preferredPhotoTypes(input.cardInput),
