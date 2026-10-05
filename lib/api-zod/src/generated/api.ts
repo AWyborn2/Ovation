@@ -424,6 +424,25 @@ export const ListMatchesResponse = zod.array(ListMatchesResponseItem)
 
 
 /**
+ * The photo a match's result card uses, picked the same way as the social
+queue's match result drafts: the club's card photo rule for the grade
+(a Grand Final win tries the premiership rule first), then the club's
+top performer, then a photo of the grade. `url` is null when the club
+has no suitable photo.
+
+ * @summary The club library photo for a match's result card
+ */
+export const GetMatchCardPhotoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetMatchCardPhotoResponse = zod.object({
+  "url": zod.string().nullable().describe('The photo\'s URL, or null when none suits the card.'),
+  "source": zod.string().nullable().describe('How it was picked (e.g. \"auto:rule-fixed\", \"auto:library-grade\").')
+})
+
+
+/**
  * @summary Get a single match with its full scorecard
  */
 export const GetMatchParams = zod.object({

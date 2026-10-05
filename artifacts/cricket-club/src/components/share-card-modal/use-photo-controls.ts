@@ -7,7 +7,12 @@ import {
   useListPlayerImages,
   useAddPlayerImage,
   getListPlayerImagesQueryKey,
+  useGetMatchCardPhoto,
+  getGetMatchCardPhotoQueryKey,
+  useListClubPhotos,
+  getListClubPhotosQueryKey,
 } from "@workspace/api-client-react";
+import { useCurrentAdmin } from "@/lib/admin-auth";
 import {
   DEFAULT_PHOTO_TRANSFORM,
   type ShareCardInput,
@@ -17,29 +22,54 @@ import {
 
 type PhotoSource = "gallery" | "uploaded" | "none";
 
+/** Library photos offered to an admin on a match card (match grade first). */
+const LIBRARY_PICKER_LIMIT = 60;
+
+/** A selectable photo in the control: a player's gallery or the club library. */
+export type GalleryPhoto = { url: string; thumbUrl?: string; isDefault: boolean };
+
 // Owns the whole photo control: gallery loading, upload + save-to-profile,
 // placement, focal-point/zoom transform (with a debounced render transform), and
 // resetting all of it when the modal opens or the chosen photo changes.
 export function usePhotoControls({
   open,
   playerId,
+  matchId,
   input,
 }: {
   open: boolean;
   playerId?: number | null;
+  /**
+   * The match a result card is about. Its photo comes from the club library,
+   * picked like the social queue's result draft (the club's photo rules — a
+   * Grand Final win tries the premiership rule first — then a grade photo);
+   * admins can swap in any library photo.
+   */
+  matchId?: number | null;
   input: ShareCardInput | null;
 }) {
-  // Photo control state. We only surface it when the tile is about a player.
-  const showPhotoControls = playerId != null;
+  // Photo control state. We surface it when the tile is about a player or a match.
+  const isMatchCard = matchId != null && playerId == null;
+  const showPhotoControls = playerId != null || isMatchCard;
+  const isAdmin = !!useCurrentAdmin().data;
   const queryClient = useQueryClient();
   const addPlayerImage = useAddPlayerImage();
   const playerQ = useGetPlayer(playerId ?? 0, {
-    query: { enabled: open && showPhotoControls, queryKey: getGetPlayerQueryKey(playerId ?? 0) },
+    query: { enabled: open && playerId != null, queryKey: getGetPlayerQueryKey(playerId ?? 0) },
+  });
+  const matchPhotoQ = useGetMatchCardPhoto(matchId ?? 0, {
+    query: {
+      enabled: open && isMatchCard,
+      queryKey: getGetMatchCardPhotoQueryKey(matchId ?? 0),
+    },
+  });
+  const libraryQ = useListClubPhotos(undefined, {
+    query: { enabled: open && isMatchCard && isAdmin, queryKey: getListClubPhotosQueryKey() },
   });
   // The player's saved profile photo (when present) is the default, falling back
   // to whatever photo the input was built with.
   const profilePhotoUrl: string | null =
-    (showPhotoControls ? (playerQ.data?.imageUrl ?? null) : null) ??
+    (playerId != null ? (playerQ.data?.imageUrl ?? null) : null) ??
     (input && "photoUrl" in input ? (input.photoUrl ?? null) : null);
 
   // The player's photo gallery. Each image is selectable; the default image is
@@ -47,17 +77,29 @@ export function usePhotoControls({
   // empty (e.g. older players whose image_url predates the gallery).
   const galleryQ = useListPlayerImages(playerId ?? 0, {
     query: {
-      enabled: open && showPhotoControls,
+      enabled: open && playerId != null,
       queryKey: getListPlayerImagesQueryKey(playerId ?? 0),
     },
   });
-  const galleryPhotos: { url: string; isDefault: boolean }[] = useMemo(() => {
+  const matchGrade = matchCardGrade(input);
+  const galleryPhotos: GalleryPhoto[] = useMemo(() => {
+    if (isMatchCard) {
+      const picked = matchPhotoQ.data?.url ?? null;
+      const out: GalleryPhoto[] = picked ? [{ url: picked, isDefault: true }] : [];
+      const library = [...(libraryQ.data ?? [])].sort(
+        (a, b) => Number(b.grade === matchGrade) - Number(a.grade === matchGrade),
+      );
+      for (const p of library.slice(0, LIBRARY_PICKER_LIMIT)) {
+        if (p.url !== picked) out.push({ url: p.url, thumbUrl: p.thumbUrl, isDefault: false });
+      }
+      return out;
+    }
     const rows = galleryQ.data ?? [];
     if (rows.length > 0) {
       return rows.map((r) => ({ url: r.imageUrl, isDefault: r.isDefault }));
     }
     return profilePhotoUrl ? [{ url: profilePhotoUrl, isDefault: true }] : [];
-  }, [galleryQ.data, profilePhotoUrl]);
+  }, [isMatchCard, matchPhotoQ.data, libraryQ.data, matchGrade, galleryQ.data, profilePhotoUrl]);
   const defaultGalleryUrl: string | null =
     galleryPhotos.find((p) => p.isDefault)?.url ?? galleryPhotos[0]?.url ?? null;
 
@@ -84,14 +126,15 @@ export function usePhotoControls({
       setPhotoSource("none");
       setGalleryUrl(null);
       setUploadedUrl(null);
-      setPhotoPlacement("headshot");
+      // A match photo fills the card's photo area; a player's starts as a headshot.
+      setPhotoPlacement(isMatchCard ? "feature" : "headshot");
       setPhotoTransform(DEFAULT_PHOTO_TRANSFORM);
       setRenderTransform(DEFAULT_PHOTO_TRANSFORM);
       setSaveToProfile(true);
       setPhotoTouched(false);
       setPhotoError(null);
     }
-  }, [open]);
+  }, [open, isMatchCard]);
 
   // Once the gallery is known (it loads async), default to the player's default
   // image — unless the club has already interacted with the photo control.
@@ -167,6 +210,7 @@ export function usePhotoControls({
 
   return {
     showPhotoControls,
+    isMatchCard,
     galleryPhotos,
     photoSource,
     galleryUrl,
@@ -189,3 +233,9 @@ export function usePhotoControls({
 }
 
 export type PhotoControlsState = ReturnType<typeof usePhotoControls>;
+
+/** A match result card's grade: the part of its title before " • ". */
+function matchCardGrade(input: ShareCardInput | null): string | null {
+  if (!input || input.kind !== "matchSummary") return null;
+  return input.matchTitle.split(" • ")[0]?.trim() || null;
+}

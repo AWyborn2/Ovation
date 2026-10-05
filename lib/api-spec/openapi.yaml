@@ -454,6 +454,32 @@ paths:
                 items:
                   $ref: "#/components/schemas/MatchSummary"
 
+  /matches/{id}/card-photo:
+    get:
+      operationId: getMatchCardPhoto
+      tags: [matches]
+      summary: The club library photo for a match's result card
+      description: |
+        The photo a match's result card uses, picked the same way as the social
+        queue's match result drafts: the club's card photo rule for the grade
+        (a Grand Final win tries the premiership rule first), then the club's
+        top performer, then a photo of the grade. `url` is null when the club
+        has no suitable photo.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The picked photo, or null
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchCardPhoto"
+        "404":
+          description: Not found
   /matches/{id}:
     get:
       operationId: getMatch
@@ -7496,6 +7522,18 @@ paths:
 
 components:
   schemas:
+    MatchCardPhoto:
+      type: object
+      required: [url, source]
+      properties:
+        url:
+          type: string
+          nullable: true
+          description: The photo's URL, or null when none suits the card.
+        source:
+          type: string
+          nullable: true
+          description: How it was picked (e.g. "auto:rule-fixed", "auto:library-grade").
     CardVideoJobInput:
       type: object
       required: [input, options]

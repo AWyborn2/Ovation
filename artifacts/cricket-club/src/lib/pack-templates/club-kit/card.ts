@@ -81,7 +81,7 @@ function sponsorLogos(): string {
   return [1, 2, 3]
     .map(
       (n) =>
-        `<div style="width:9cqmin;height:4cqmin;flex:none;overflow:hidden;background:rgba(255,255,255,.92)">${slot(`sponsor${n}`, "sponsor", "rect")}</div>`,
+        `<div data-sponsor-tile="${n}" style="width:9cqmin;height:4cqmin;flex:none;overflow:hidden;background:rgba(255,255,255,.92)">${slot(`sponsor${n}`, "sponsor", "rect")}</div>`,
     )
     .join("");
 }

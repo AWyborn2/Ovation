@@ -7,6 +7,7 @@
 import { isSetKind, planCardSet } from "../card-sets/plan";
 import { getPackManifest } from "../pack-templates/registry";
 import type { ShareCardInput, CardSize } from "../share-card";
+import { maxSponsorLogos } from "../share-card/sponsor-limit";
 import type { CardThemeLike } from "./tokens";
 import type { PackCardData, PackColourMode, PackTokens } from "./types";
 import { fieldDefaults, hasLandscapeFormat, resolveTemplate, selectFormatHtml } from "./templates";
@@ -38,6 +39,7 @@ import {
   dropEmptyPresentedBy,
   expandRepeats,
   initialsOf,
+  limitSponsorTiles,
   resolveSlots,
   selectSponsorVariant,
   substituteFields,
@@ -251,6 +253,7 @@ export function renderPackCard(
   // is substituted, so card text can never be rewritten by them.
   if (mode === "club") html = applyClubSwaps(html, packId);
   html = selectSponsorVariant(html, sponsorsOn);
+  html = limitSponsorTiles(html, maxSponsorLogos(input.kind));
   html = expandRepeats(html, bound.rows, template);
   // Before slots resolve: an optional block whose image never arrived is removed
   // outright rather than rendering an empty framed placeholder.

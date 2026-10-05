@@ -34,6 +34,27 @@ interface DivBounds {
   end: number;
 }
 
+/**
+ * Remove sponsor logo tiles (`data-sponsor-tile="n"`) numbered above `max`, so
+ * a card kind limited to one sponsor shows one tile rather than empty ones.
+ * Always strips the markers, so unlimited cards render exactly as before.
+ */
+export function limitSponsorTiles(html: string, max: number | undefined): string {
+  let out = html;
+  if (max !== undefined) {
+    const re = /<div[^>]*?\sdata-sponsor-tile="(\d+)"/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(out))) {
+      if (Number(m[1]) > max) {
+        out = out.slice(0, m.index) + out.slice(divBounds(out, m.index).end);
+        re.lastIndex = m.index;
+      }
+    }
+  }
+  // The marker is for this pass only; the card's markup stays as it was.
+  return out.replace(/ data-sponsor-tile="\d+"/g, "");
+}
+
 /** Given `openIdx` at a `<div`, return the bounds of its balanced content. */
 export function divBounds(html: string, openIdx: number): DivBounds {
   const contentStart = html.indexOf(">", openIdx) + 1;
