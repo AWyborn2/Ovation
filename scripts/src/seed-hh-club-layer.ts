@@ -83,8 +83,10 @@ import {
   planSeed,
   seasonList,
   seedWriteSet,
+  zeroPeelFigures,
   type CentralBattingCoverage,
   type NativeStatRow,
+  type PeelFigures,
   type SeedDecision,
   type SeedPlan,
   type SeedPlanInput,
@@ -350,6 +352,82 @@ async function main(): Promise<void> {
     coverageMap.set(key, c);
   }
 
+  // Central figures per (GUID, grade, season), for the career baseline peel.
+  const centralFigures = new Map<string, Map<string, PeelFigures>>();
+  const gradeSeasonOf = (matchId: number | null): string | null => {
+    const m = matchId == null ? undefined : matchById.get(matchId);
+    const grade = m?.grade ? seniorGrade(m.grade) : null;
+    const season = parseSeasonStartYear(m?.season ?? null);
+    return grade && season !== null ? `${grade}|${season}` : null;
+  };
+  const figuresFor = (guid: string, key: string): PeelFigures => {
+    const byKey = centralFigures.get(guid) ?? new Map<string, PeelFigures>();
+    centralFigures.set(guid, byKey);
+    let f = byKey.get(key);
+    if (!f) byKey.set(key, (f = zeroPeelFigures()));
+    return f;
+  };
+  for (const [mid, apps] of appIndex.byMatch) {
+    const key = gradeSeasonOf(mid);
+    if (!key) continue;
+    for (const [guid, a] of apps) {
+      const f = figuresFor(guid, key);
+      f.games += a.countsAsGame ? 1 : 0;
+      f.innings += a.innings;
+      f.notOuts += a.notOuts;
+      f.runs += a.runs;
+      f.wickets += a.wickets;
+      f.runsConceded += a.runsConceded;
+      f.catches += a.catches;
+      f.stumpings += a.stumpings;
+      f.runOuts += a.runOuts;
+    }
+  }
+  // Fifties, hundreds and five-wicket hauls are per innings: from the raw rows.
+  for (const b of central.batting) {
+    const key = gradeSeasonOf(b.matchId);
+    if (!key || !b.participantId) continue;
+    const runs = b.runs ?? 0;
+    if (runs >= 100) figuresFor(b.participantId, key).hundreds += 1;
+    else if (runs >= 50) figuresFor(b.participantId, key).fifties += 1;
+  }
+  for (const b of central.bowling) {
+    const key = gradeSeasonOf(b.matchId);
+    if (!key || !b.participantId || (b.wickets ?? 0) < 5) continue;
+    figuresFor(b.participantId, key).fiveWickets += 1;
+  }
+  const nativeMatchSeasons = new Set<string>();
+  for (const m of native.matches) {
+    const grade = seniorGrade(m.grade);
+    if (grade) nativeMatchSeasons.add(`${grade}|${m.season}`);
+  }
+  /** The GUIDs each native player reads as after cut-over (crosswalk, decisions, merges). */
+  const peelGuids = (state: TenantState): Map<number, string[]> => {
+    const out = new Map<number, string[]>();
+    const keeper = new Map<string, number>();
+    const add = (playerId: number, guid: string) => {
+      const arr = out.get(playerId) ?? [];
+      if (!arr.includes(guid)) arr.push(guid);
+      out.set(playerId, arr);
+    };
+    for (const r of state.map) {
+      if (isSyntheticParticipantKey(r.participantId)) continue;
+      add(r.playerId, r.participantId);
+      keeper.set(r.participantId, r.playerId);
+    }
+    for (const [playerId, d] of decisions) {
+      if (d.kind !== "map") continue;
+      add(playerId, d.participantId);
+      keeper.set(d.participantId, playerId);
+    }
+    for (const c of state.curation) {
+      if (!c.mergedIntoParticipantId || c.mergeStatus !== "confirmed") continue;
+      const owner = keeper.get(c.mergedIntoParticipantId);
+      if (owner !== undefined) add(owner, c.participantId);
+    }
+    return out;
+  };
+
   const buildInput = (state: TenantState): SeedPlanInput => {
     const persist = planPersistence({
       links: playerLinks,
@@ -368,6 +446,11 @@ async function main(): Promise<void> {
       pendingKeeperIds: persist.mapInserts.map((r) => r.nativePlayerId),
       privateByGuid,
       decisions,
+      centralOnly: {
+        nativeMatchSeasons,
+        guidsByPlayer: peelGuids(state),
+        figures: centralFigures,
+      },
       existing: {
         map: state.map,
         mergedAway: new Set(
@@ -594,6 +677,28 @@ async function main(): Promise<void> {
       overlaps.map((o) => [o.playerId, nameOf(o.playerId), o.grade, o.flag, seasonList(o.seasons)]),
     ),
   );
+  const peelCols = ["games", "innings", "runs", "wickets", "catches"] as const;
+  write(
+    "career-peels.csv",
+    toCsv(
+      [
+        "player_id",
+        "name",
+        "grade",
+        "central_only_seasons",
+        ...peelCols.flatMap((k) => [`baseline_${k}`, `central_${k}`, `peeled_${k}`]),
+        "dropped",
+      ],
+      plan.history.peels.map((p) => [
+        p.playerId,
+        nameOf(p.playerId),
+        p.grade,
+        seasonList(p.seasons),
+        ...peelCols.flatMap((k) => [p.baseline[k], p.central[k], p.peeled[k]]),
+        p.dropped ? "yes" : "",
+      ]),
+    ),
+  );
   const pinReasons: Record<string, number> = {};
   for (const p of plan.identity.pins) pinReasons[p.reason] = (pinReasons[p.reason] ?? 0) + 1;
   const summary = {
@@ -613,6 +718,7 @@ async function main(): Promise<void> {
       skipped: plan.history.skipped,
       warnings: plan.history.warnings.length,
       mergedDuplicates: plan.history.mergedDuplicates,
+      careerPeels: plan.history.peels.length,
       existingSeedBatches: plan.batch.existing,
       willWriteBatch: plan.batch.write,
     },
@@ -733,9 +839,14 @@ function printPreview(
   const s = plan.history.skipped;
   console.log(
     `Total history rows: ${plan.history.rows.length}. Skipped: ${s.fillIn} fill-in row(s), ` +
-      `${s.empty} empty, ${s.atOrAfterBoundary} at/after boundary, non-senior grades ` +
+      `${s.empty} empty, ${s.atOrAfterBoundary} at/after boundary, ` +
+      `${s.peeledAway} emptied by the central-season peel, non-senior grades ` +
       `${JSON.stringify(s.nonSeniorGrade)}. Warnings: ${plan.history.warnings.length}. ` +
       `Summed duplicates: ${plan.history.mergedDuplicates}.`,
+  );
+  console.log(
+    `Career baselines peeled of central-only seasons: ${plan.history.peels.length} ` +
+      `(career-peels.csv).`,
   );
   if (plan.batch.existing.length > 0) {
     console.log(
