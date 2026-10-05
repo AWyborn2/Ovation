@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { gunzipSync } from "node:zlib";
-import { COLLECTOR, ingestBody, run, runStatus } from "./runner.mjs";
+import { COLLECTOR, ingestBody, manualPlan, run, runStatus } from "./runner.mjs";
 
 const ENV = {
   OVATION_API_URL: "https://ovation.test/api/",
@@ -205,4 +205,71 @@ test("a failing health check fails the run (so GitHub's own failure email fires 
   const r = await run({ env: ENV, fetchImpl, launch: async () => ({}), log: () => {} });
   assert.equal(r.failures.length, 1);
   assert.match(r.failures[0], /^watchdog: .*HTTP 503/);
+});
+
+test("manual catch-up: one catchup plan with scorecards since the date, no /plans call", async () => {
+  const org = "2DD0A9A1-86D8-EB11-A7AD-2818780DA0CC";
+  const server = fakeServer([DUE]);
+  const browser = fakeBrowser([{ phase: "done", finishedAt: "t" }]);
+  const r = await run({
+    env: { ...ENV, MANUAL_ORG: org, MANUAL_SINCE: "2026-10-03" },
+    fetchImpl: server.fetchImpl,
+    launch: browser.launch,
+    readHarness: async () => "/* harness */",
+    sleep: async () => {},
+    log: () => {},
+  });
+  assert.equal(r.due, 1);
+  assert.equal(
+    server.calls.some((c) => c.url.endsWith("/plans")),
+    false,
+  );
+  const started = browser.seen.evaluated.find((e) => e.startsWith("start "));
+  assert.deepEqual(JSON.parse(started.slice(6)), {
+    orgId: org.toLowerCase(),
+    seasons: "current",
+    kinds: ["matches", "ladder"],
+    balls: "none",
+    scorecards: "since",
+    since: "2026-10-03",
+    resume: true,
+  });
+  const ingest = server.calls.find((c) => c.url.endsWith("/ingest"));
+  assert.equal(JSON.parse(gunzipSync(ingest.init.body)).planName, "catchup");
+});
+
+test("manual catch-up rejects a bad organisation id or date", () => {
+  assert.throws(() => manualPlan("rmdcc", "2026-10-03"), /GUID/);
+  assert.throws(() => manualPlan("2dd0a9a1-86d8-eb11-a7ad-2818780da0cc", "3 Oct"), /date/);
+});
+
+test("logs the stats-copy summary and grouped skip reasons from the ingest reply", async () => {
+  const lines = [];
+  const server = fakeServer([DUE], {
+    status: "ok",
+    fixtureChanges: 0,
+    tenants: [],
+    warnings: [],
+    centralProjection: {
+      mode: "on",
+      considered: 6,
+      created: 4,
+      updated: 2,
+      skipped: 33,
+      skipReasons: { "neither side maps": 33 },
+      playersInserted: 5,
+    },
+  });
+  const browser = fakeBrowser([{ phase: "done", finishedAt: "t" }]);
+  const r = await run({
+    env: ENV,
+    fetchImpl: server.fetchImpl,
+    launch: browser.launch,
+    readHarness: async () => "/* harness */",
+    sleep: async () => {},
+    log: (l) => lines.push(l),
+  });
+  assert.deepEqual(r.failures, []);
+  assert.ok(lines.some((l) => l.includes("4 created, 2 updated, 33 skipped, 5 new players")));
+  assert.ok(lines.some((l) => l.includes("skipped 33 × neither side maps")));
 });

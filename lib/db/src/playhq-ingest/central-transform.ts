@@ -325,6 +325,21 @@ export function surnameFirst(full: string | null | undefined): string | null {
 
 // ── The transform ───────────────────────────────────────────────────────────────────────────
 
+/** PlayHQ statuses that end a match (PROJECTABLE_STATUSES in central-project.ts). */
+const FINAL_STATUSES = new Set(["COMPLETED", "ABANDONED", "CANCELLED", "FORFEIT", "FORFEITED"]);
+
+/** Central's status for a started match that isn't over — e.g. a two-day game between days. */
+export const IN_PROGRESS = "IN_PROGRESS";
+
+/**
+ * A projected match's central status: PlayHQ's own when it is final, otherwise IN_PROGRESS
+ * (whatever PlayHQ calls it — PENDING, LIVE …: it has a scorecard, so it has started).
+ */
+export function centralStatus(status: string | null | undefined): string {
+  const s = (status ?? "").toUpperCase();
+  return FINAL_STATUSES.has(s) ? s : IN_PROGRESS;
+}
+
 /**
  * Build the central rows for one PlayHQ match. `raw` may be null for a match with no scorecard
  * (abandoned or forfeited before a ball): the match row is still produced, with no lines.
@@ -388,7 +403,7 @@ export function scorecardToCentral(
     match_date: perthDate(m.start_at),
     venue: m.venue_name,
     venue_oval: m.surface_name,
-    status: raw?.status ?? m.status,
+    status: centralStatus(raw?.status ?? m.status),
     home_club_id: home.club,
     away_club_id: away.club,
     home_team: home.name,
@@ -397,7 +412,10 @@ export function scorecardToCentral(
     away_score: centralScore(summaryScore(away.teamId) ?? away.score),
     toss_winner_club_id: clubWhere((t) => t.wonToss),
     winner_club_id: clubWhere((t) => t.isWinner),
-    result_text: raw?.matchSummary?.resultText ?? m.result_text,
+    result_text:
+      raw?.matchSummary?.resultText ??
+      m.result_text ??
+      (centralStatus(raw?.status ?? m.status) === IN_PROGRESS ? "In progress" : null),
   };
 
   const out: CentralProjection = {

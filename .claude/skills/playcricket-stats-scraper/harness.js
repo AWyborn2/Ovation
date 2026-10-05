@@ -259,15 +259,35 @@
       .sort();
     return ds.length ? ds[ds.length - 1] : null;
   }
-  function selectMatches(list, mode, since) {
+  function firstStart(m) {
+    const ds = (m.matchSchedule || [])
+      .map((x) => x.startDateTime)
+      .filter(Boolean)
+      .sort();
+    return ds.length ? ds[0] : null;
+  }
+  const isCompleted = (m) => m.status === "COMPLETED" || m.statusId === 3;
+  // In progress: not finished, not a fixture, and its first day has begun — e.g. a two-day
+  // game between its days. Its scorecard so far is wanted ("since" mode) so the app can show
+  // the progress and count it; the finished scorecard replaces it on a later run.
+  function inProgress(m, nowIso) {
+    if (isCompleted(m) || m.status === "UPCOMING" || m.statusId === 0) return false;
+    const first = firstStart(m);
+    return !!first && first <= nowIso;
+  }
+  function selectMatches(list, mode, since, nowIso = new Date().toISOString()) {
     if (mode === "none") return [];
     return list.filter((m) => {
       if (mode === "all") return true;
-      if (m.status !== "COMPLETED" && m.statusId !== 3) return false;
-      if (mode === "since") return since && (latestStart(m) || "") >= since;
-      return true; // 'completed'
+      if (mode === "since")
+        return (
+          (isCompleted(m) || inProgress(m, nowIso)) && since && (latestStart(m) || "") >= since
+        );
+      return isCompleted(m); // 'completed'
     });
   }
+  ov._selectMatches = selectMatches;
+  ov._inProgress = inProgress;
   async function pool(items, n, fn) {
     let i = 0;
     const workers = Array.from({ length: Math.max(1, n) }, async () => {
@@ -331,7 +351,13 @@
           for (const m of selectMatches(data.matches, plan.balls, plan.since))
             matchWork.push({ kind: "balls", matchId: m.id, gradeId: g.gradeId });
           for (const m of selectMatches(data.matches, plan.scorecards, plan.since))
-            matchWork.push({ kind: "scorecard", matchId: m.id, gradeId: g.gradeId });
+            matchWork.push({
+              kind: "scorecard",
+              matchId: m.id,
+              gradeId: g.gradeId,
+              // An in-progress scorecard is never final: fetch it again even on a resume.
+              refresh: !isCompleted(m),
+            });
         }
         st.done++;
       }
@@ -342,7 +368,7 @@
     await pool(matchWork, ov.opts.concurrency, async (w) => {
       const key = `${w.kind}:${w.matchId}`;
       st.current = key;
-      if (have.has(key)) {
+      if (have.has(key) && !w.refresh) {
         st.done++;
         return;
       }

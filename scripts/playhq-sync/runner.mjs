@@ -13,6 +13,10 @@
 // Plain ESM with no workspace imports, so the workflow can run it with only `puppeteer-core`
 // installed. Env: OVATION_API_URL (e.g. https://<app>/api), PLAYHQ_SYNC_SECRET, CHROME_PATH,
 // HARNESS_PATH; optional PLAN_TIMEOUT_MS, ONLY_ORG, ONLY_PLAN.
+//
+// Manual catch-up: with MANUAL_ORG (a PlayHQ organisation GUID) and MANUAL_SINCE (YYYY-MM-DD),
+// the runner skips the due list and runs one catch-up for that organisation — its matches,
+// ladder and every scorecard since that date — e.g. to re-fetch a weekend a failed sync missed.
 
 import { readFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
@@ -37,6 +41,34 @@ export function ingestBody(due, status, timedOut, durationMs, dump) {
     durationMs: Math.max(0, Math.round(durationMs)),
     sourceName: `${COLLECTOR} ${due.planName} ${due.orgId} ${due.slot}`,
     dump,
+  };
+}
+
+const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The one plan a manual catch-up runs (the same shape the server's catchup plan has). */
+export function manualPlan(orgId, since, now = new Date()) {
+  const org = String(orgId ?? "")
+    .trim()
+    .toLowerCase();
+  const day = String(since ?? "").trim();
+  if (!GUID_RE.test(org))
+    throw new Error(`MANUAL_ORG must be a PlayHQ organisation GUID, got "${orgId}"`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || Number.isNaN(Date.parse(day)))
+    throw new Error(`MANUAL_SINCE must be a date like 2026-10-03, got "${since}"`);
+  return {
+    orgId: org,
+    planName: "catchup",
+    slot: now.toISOString(),
+    plan: {
+      orgId: org,
+      seasons: "current",
+      kinds: ["matches", "ladder"],
+      balls: "none",
+      scorecards: "since",
+      since: day,
+      resume: true,
+    },
   };
 }
 
@@ -102,7 +134,9 @@ export async function run({
   const secret = env.PLAYHQ_SYNC_SECRET;
   if (!base || !secret) throw new Error("OVATION_API_URL and PLAYHQ_SYNC_SECRET are required");
 
-  const { plans } = await api(fetchImpl, base, secret, "/internal/playhq/plans");
+  const { plans } = env.MANUAL_ORG
+    ? { plans: [manualPlan(env.MANUAL_ORG, env.MANUAL_SINCE)] }
+    : await api(fetchImpl, base, secret, "/internal/playhq/plans");
   const due = plans.filter(
     (p) =>
       (!env.ONLY_ORG || p.orgId === env.ONLY_ORG) &&
@@ -170,6 +204,15 @@ async function collectAll(
           `${label}: ingested → ${res.status}, ${res.fixtureChanges} fixture change(s), ${res.tenants?.length ?? 0} tenant(s)`,
         );
         for (const w of res.warnings ?? []) log(`${label}: warning: ${w}`);
+        const p = res.centralProjection;
+        if (p) {
+          log(
+            `${label}: stats copy (${p.mode}) → ${p.created} created, ${p.updated} updated, ` +
+              `${p.skipped} skipped, ${p.playersInserted} new players`,
+          );
+          for (const [reason, n] of Object.entries(p.skipReasons ?? {}))
+            log(`${label}: stats copy skipped ${n} × ${reason}`);
+        }
         result.uploaded.push({ ...d, status: body.status, ingest: res.status });
         if (body.status === "failed") result.failures.push(`${label}: harness failed`);
       } catch (err) {

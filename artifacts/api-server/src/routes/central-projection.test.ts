@@ -525,6 +525,115 @@ describe("projectToCentral", () => {
     }
   });
 
+  it("an opponent known only by name resolves to its central club", async () => {
+    // RMDCC's WA Premier opponents: in central under the builder's spelling, never in the
+    // org crosswalk or a tenant's settings. Without a club the scorecard showed one team.
+    const ORG_N = randomUUID();
+    const CLUB_N = 9915;
+    const NAMED = randomUUID();
+    await admin.query(`insert into central.clubs (club_id, name) values ($1, 'Testnamed Rovers')`, [
+      CLUB_N,
+    ]);
+    await admin.query(
+      `insert into playhq.organisations (id, name) values ($1, 'Testnamed Rovers Cricket Club')`,
+      [ORG_N],
+    );
+    await admin.query(
+      `insert into playhq.matches (id, grade_id, status, match_type, round_name, start_at, venue_name,
+          surface_name, result_text, home_team_id, away_team_id, home_team_name, away_team_name,
+          home_org_id, away_org_id, home_score, away_score, raw)
+       values ($1, $2, 'COMPLETED', 'One Day', 'Round 2', '2026-10-10T02:30:00Z', 'Rec Reserve',
+          'Rec Reserve - Oval 1', 'Club A won', $3, $4, 'Club A A Grade', 'Rovers A Grade', $5, $6,
+          '1-98', '97', '{}')`,
+      [NAMED, GRADE, TEAM_A, randomUUID(), ORG_A, ORG_N],
+    );
+    try {
+      const s = await projectToCentral(projector, { matchIds: [NAMED] });
+      expect(s.skipped).toEqual([]);
+      const m = (
+        await admin.query(
+          `select home_club_id, away_club_id from central.matches where playhq_match_id = $1`,
+          [NAMED],
+        )
+      ).rows[0];
+      expect(m).toEqual({ home_club_id: CLUB_A, away_club_id: CLUB_N });
+    } finally {
+      await admin.query(`delete from central.matches where playhq_match_id = $1`, [NAMED]);
+      await admin.query(`delete from playhq.matches where id = $1`, [NAMED]);
+      await admin.query(`delete from playhq.organisations where id = $1`, [ORG_N]);
+      await admin.query(`delete from central.clubs where club_id = $1`, [CLUB_N]);
+    }
+  });
+
+  it("a two-day game in progress is projected IN_PROGRESS, then completed in place", async () => {
+    const TWO_DAY = randomUUID();
+    const NOT_STARTED = randomUUID();
+    const insert = (id: string, status: string) =>
+      admin.query(
+        `insert into playhq.matches (id, grade_id, status, match_type, round_name, start_at, venue_name,
+            surface_name, result_text, home_team_id, away_team_id, home_team_name, away_team_name,
+            home_org_id, away_org_id, home_score, away_score, raw)
+         values ($1, $2, $3, 'Two Day', 'Round 3', '2026-10-17T02:30:00Z', 'Rec Reserve',
+            'Rec Reserve - Oval 1', null, $4, $5, 'Club B A Grade', 'Club A A Grade', $6, $7,
+            '97', '1-98', '{}')`,
+        [id, GRADE, status, TEAM_B, TEAM_A, ORG_B, ORG_A],
+      );
+    await insert(TWO_DAY, "IN_PROGRESS");
+    await insert(NOT_STARTED, "PENDING"); // no scorecard: never a candidate
+    await admin.query(
+      `insert into playhq.scorecards (match_id, grade_id, status, raw, fetched_at)
+       values ($1, $2, 'IN_PROGRESS', $3, now())`,
+      [
+        TWO_DAY,
+        GRADE,
+        JSON.stringify({ ...scorecard(), status: "IN_PROGRESS", matchSummary: undefined }),
+      ],
+    );
+    const row = async () =>
+      (
+        await admin.query(
+          `select match_id, status, result_text from central.matches where playhq_match_id = $1`,
+          [TWO_DAY],
+        )
+      ).rows[0];
+    try {
+      const day1 = await projectToCentral(projector, { matchIds: [TWO_DAY, NOT_STARTED] });
+      expect(day1.considered).toBe(1);
+      expect(day1.created).toBe(1);
+      const first = await row();
+      expect(first).toMatchObject({ status: "IN_PROGRESS", result_text: "In progress" });
+      // Its lines count straight away (career stats while in progress, Ash 5 Oct 2026).
+      expect((await lines("match_batting", first.match_id)).length).toBeGreaterThan(0);
+
+      await admin.query(`update playhq.matches set status = 'COMPLETED' where id = $1`, [TWO_DAY]);
+      await admin.query(
+        `update playhq.scorecards set status = 'COMPLETED', raw = $2 where match_id = $1`,
+        [TWO_DAY, JSON.stringify(scorecard())],
+      );
+      const day2 = await projectToCentral(projector, { matchIds: [TWO_DAY] });
+      expect(day2.updated).toBe(1);
+      const final = await row();
+      expect(final.match_id).toBe(first.match_id);
+      expect(final.status).toBe("COMPLETED");
+    } finally {
+      const cm = await row();
+      if (cm)
+        for (const t of [
+          "match_batting",
+          "match_bowling",
+          "match_rosters",
+          "fall_of_wickets",
+          "fielding",
+        ])
+          await admin.query(`delete from central.${t} where match_id = $1`, [cm.match_id]);
+      await admin.query(`delete from central.matches where playhq_match_id = $1`, [TWO_DAY]);
+      await admin.query(`delete from playhq.scorecards where match_id = $1`, [TWO_DAY]);
+      await admin.query(`delete from playhq.matches where id = any($1::uuid[])`, [
+        [TWO_DAY, NOT_STARTED],
+      ]);
+    }
+  });
+
   it("backfills a season and skips nothing it can project", async () => {
     const s = await projectToCentral(projector, { season: SEASON, orgId: ORG_A });
     expect(s.considered).toBe(2); // MATCH + ABANDONED; the junior grade is excluded

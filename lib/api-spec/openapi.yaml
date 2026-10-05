@@ -13363,6 +13363,13 @@ components:
               type: integer
             skipped:
               type: integer
+            skipReasons:
+              type: object
+              description: >-
+                Skipped matches counted by reason, with match and organisation ids blanked
+                out so like reasons group together.
+              additionalProperties:
+                type: integer
             playersInserted:
               type: integer
 

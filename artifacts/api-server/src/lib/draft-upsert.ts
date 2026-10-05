@@ -262,6 +262,8 @@ export const draftKeys = {
   matchSummary: (matchId: number, junior: boolean) =>
     `matchSummary:${junior ? "junior" : "senior"}:${matchId}`,
   centralMatchSummary: (centralMatchId: number) => `matchSummary:central:${centralMatchId}`,
+  /** The "Stumps, Day 1" card of a two-day game in progress (one per match). */
+  centralStumps: (centralMatchId: number) => `stumps:central:${centralMatchId}:day1`,
   careerMilestone: (playerId: PlayerKeyRef, boardKey: string, tierIndex: number) =>
     `milestone:${playerId}:${boardKey}:${tierIndex}`,
   matchFeat: (

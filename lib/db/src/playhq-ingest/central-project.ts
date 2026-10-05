@@ -1,5 +1,6 @@
 import type pg from "pg";
 import { classifyCentralGrade } from "../central/grades";
+import { matchOrgsToClubs } from "./club-names";
 import {
   ProjectionSkip,
   scorecardToCentral,
@@ -74,7 +75,13 @@ export function isWithheldName(name: string | null | undefined): boolean {
 }
 
 async function loadCandidates(c: Queryable, o: ProjectOptions): Promise<CandidateRow[]> {
-  const where: string[] = ["g.is_junior = false", "m.status = any($1::text[])"];
+  // Finished matches, plus any with a scorecard: the scraper fetches one only once a match has
+  // started, so an unfinished match with a scorecard is in progress (a two-day game between its
+  // days) and is projected as IN_PROGRESS, then re-projected as it goes on (D2 follow-up).
+  const where: string[] = [
+    "g.is_junior = false",
+    "(m.status = any($1::text[]) or s.match_id is not null)",
+  ];
   const params: unknown[] = [[...PROJECTABLE_STATUSES]];
   if (o.matchIds) {
     params.push(o.matchIds);
@@ -115,7 +122,8 @@ async function loadCandidates(c: Queryable, o: ProjectOptions): Promise<Candidat
  * history, which a database whose PlayHQ landing tables only hold the current season doesn't have;
  * each tenant's own settings (`tenants.playhq_org_id` → `central_club_id`, the pair its sync runs
  * on) fill the gap and win over a history vote. A projector role without the column grant (an
- * older central-projector.sql) still works from the crosswalk alone.
+ * older central-projector.sql) still works from the crosswalk alone. Organisations still unmapped
+ * — a tenant's opposition — resolve by unambiguous name match (club-names.ts).
  */
 async function loadOrgToClub(c: Queryable): Promise<Map<string, number>> {
   const { rows } = await c.query<{ playhq_org_id: string; club_id: number }>(
@@ -133,6 +141,24 @@ async function loadOrgToClub(c: Queryable): Promise<Map<string, number>> {
     const code = (err as { code?: string }).code;
     // 42501: no column grant yet; 42P01: no tenants table (a bare central database).
     if (code !== "42501" && code !== "42P01") throw err;
+  }
+  // Last, by name, for any organisation still unmapped (a tenant's opposition): see club-names.ts.
+  const orgs = await c.query<{ org_id: string; name: string | null }>(
+    `select lower(id::text) as org_id, name from playhq.organisations`,
+  );
+  const unmapped = orgs.rows.filter((o) => !map.has(o.org_id));
+  if (unmapped.length) {
+    const clubs = await c.query<{ club_id: number; name: string | null; active: boolean }>(
+      `select club_id, name, active_to is null as active from central.clubs
+        union all
+       select h.club_id, h.name, c.active_to is null
+         from central.club_name_history h join central.clubs c on c.club_id = h.club_id`,
+    );
+    const byName = matchOrgsToClubs(
+      unmapped.map((o) => ({ orgId: o.org_id, name: o.name })),
+      clubs.rows.map((r) => ({ clubId: r.club_id, name: r.name, active: r.active })),
+    );
+    for (const [org, club] of byName) map.set(org, club);
   }
   return map;
 }
