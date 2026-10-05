@@ -48,7 +48,7 @@ import {
  * (field-key parity, `pack-lint.test.ts`): a design declares exactly the
  * reference fields its markup uses, plus the few Club Kit extras allowlisted
  * there (`clubMonogram`, a frame `photo` on kinds whose reference has none,
- * `clubHashtag` for the hashtag block, `resultWord` for the WIN / LOSS
+ * `clubHashtag` for the hashtag block, `resultWord` for the WIN / RESULT
  * headline).
  */
 
@@ -69,6 +69,12 @@ const EXTRA_FIELDS: Record<string, PackTemplateField> = {
   resultWord: textField("resultWord", "Result headline", "WIN"),
   setMarker: textField("setMarker", "Set page marker", ""),
   rowScale: textField("rowScale", "Set row size", "1"),
+  // Match result score bars: the logo stands in for the name (bound empty
+  // when there's a logo), and the logo badge shows only when there is one.
+  "club.barName": textField("club.barName", "Club name on score bar", ""),
+  "opposition.barName": textField("opposition.barName", "Opposition name on score bar", ""),
+  "club.logoDisplay": textField("club.logoDisplay", "Club logo shown", "flex"),
+  "opposition.logoDisplay": textField("opposition.logoDisplay", "Opposition logo shown", "flex"),
 };
 
 /** A set's row unit: card cqmin scaled by the set's density (`--rs`, from `{{rowScale}}`). */
@@ -177,24 +183,31 @@ const matchResult = design({
   build: (f) =>
     card(
       f,
-      "RESULT",
+      "SCORECARD",
       col(
         eyebrow(u, "{{matchTitle}}") +
-          display(
-            u,
-            "{{resultWord}}",
-            f === "landscape" ? 20 : 24,
-            `;line-height:.8;color:${C.pt};margin-top:1cqmin`,
-          ) +
+          // WIN / RESULT / DRAW / NO RESULT: sized to the word so a longer
+          // one shrinks rather than running off the card.
+          `<div data-fit="${f === "square" ? 4 : 6}" style="font-family:${CK_COND};font-weight:900;font-size:calc(${u(f === "landscape" ? 20 : 24)} * var(--fit,1));line-height:.8;text-transform:uppercase;white-space:nowrap;overflow:hidden;color:${C.pt};margin-top:1cqmin">{{resultWord}}</div>` +
           `<div style="width:100%;margin-top:2.4cqmin">` +
           scoreBars(
             u,
-            { name: "{{club.name}}", score: "{{club.score}}", overs: "{{club.oversLabel}}" },
             {
-              name: "{{opposition.name}}",
+              name: "{{club.barName}}",
+              score: "{{club.score}}",
+              overs: "{{club.oversLabel}}",
+              logo: "club",
+            },
+            {
+              name: "{{opposition.barName}}",
               score: "{{opposition.score}}",
               overs: "{{opposition.oversLabel}}",
+              logo: "opposition",
             },
+            // Square leaves the narrowest column beside the slash: each bar
+            // stacks, so the name gets the bar's full width.
+            f === "square" ? 15 : f === "landscape" ? 12 : 16,
+            f === "square",
           ) +
           `</div>` +
           `<div style="font-family:${CK_COND};font-weight:700;font-size:4.2cqmin;line-height:1.05;text-transform:uppercase;margin-top:2.4cqmin">{{result}}</div>` +

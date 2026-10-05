@@ -2375,6 +2375,11 @@ export interface MatchDetail {
      * @nullable
      */
   clubBattedFirst?: boolean | null;
+  /**
+     * The recorded winner, when the data has one: true when the tenant club won, false when the opposition won, null when unknown or there was no winner. Central result text names the winning side ("Claremont-Nedlands - 1s won by 106 runs"), so the result line alone can't say who won.
+     * @nullable
+     */
+  clubWon?: boolean | null;
   lines: MatchScorecardLine[];
   oppositionLines?: MatchOppositionLine[];
   /** Player IDs flagged by an admin as taking a hat-trick in this match. */

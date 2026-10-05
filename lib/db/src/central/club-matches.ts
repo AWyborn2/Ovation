@@ -582,6 +582,12 @@ export interface CentralMatchScorecard {
   /** Season start year, or null when the season text doesn't parse. */
   seasonStartYear: number | null;
   battedFirst: boolean;
+  /**
+   * Did the club win? From central's recorded winner, not the result text
+   * (which names the winning side, e.g. "Claremont-Nedlands - 1s won by 106
+   * runs"). Null when central records no winner (draw, tie, no result).
+   */
+  clubWon: boolean | null;
   lines: CentralScorecardLine[];
   oppositionLines: CentralOppositionLine[];
 }
@@ -830,6 +836,7 @@ async function centralMatchScorecardImpl(
     appGrade: grade,
     seasonStartYear: season,
     battedFirst,
+    clubWon: m.winnerClubId == null ? null : m.winnerClubId === clubId,
     lines: clubLines,
     oppositionLines,
   };

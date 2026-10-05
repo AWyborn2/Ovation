@@ -18,6 +18,28 @@ import { buildScorecard } from "./mapping";
 // ---------------------------------------------------------------------------
 
 describe("deriveWinner", () => {
+  const teams = {
+    club: ["Rockingham-Mandurah"],
+    opposition: ["Claremont-Nedlands"],
+  };
+
+  it("reads a central result line that names the winning side", () => {
+    expect(deriveWinner("Claremont-Nedlands - 1s won by 106 runs", teams)).toBe("opposition");
+    expect(deriveWinner("Rockingham-Mandurah - 1s won by 5 wickets", teams)).toBe("club");
+    expect(deriveWinner("Claremont-Nedlands def. Rockingham-Mandurah", teams)).toBe("opposition");
+  });
+
+  it("still reads a club-side result line without a team name", () => {
+    expect(deriveWinner("Won by 5 wickets", teams)).toBe("club");
+    expect(deriveWinner("Def. Claremont by 26 runs", teams)).toBe("club");
+    expect(deriveWinner("Lost to Claremont-Nedlands by 3 wkts", teams)).toBe("opposition");
+  });
+
+  it("treats ties and no results as no winner", () => {
+    expect(deriveWinner("Match tied", teams)).toBe("draw");
+    expect(deriveWinner("No result", teams)).toBe("draw");
+  });
+
   it('returns "club" for result text containing "won"', () => {
     expect(deriveWinner("Won by 5 wickets")).toBe("club");
   });
@@ -330,6 +352,15 @@ describe("matchToSummaryInput: primary path", () => {
     expect(input.venue).toBe("Doddi Oval");
     expect(input.result).toBe("Won by 30 runs");
     expect(input.resultWinner).toBe("club");
+
+    // Central result lines name the winning side: never read "won" as the club's.
+    const named = { ...match, result: "Mandurah - 1s won by 30 runs" };
+    expect(matchToSummaryInput(named).resultWinner).toBe("opposition");
+    // The recorded winner beats the text either way.
+    expect(matchToSummaryInput({ ...named, clubWon: true }).resultWinner).toBe("club");
+    expect(
+      matchToSummaryInput({ ...match, result: "Won by 30 runs", clubWon: false }).resultWinner,
+    ).toBe("opposition");
 
     // Club team identity
     expect(input.club.name).toBe("Halls Head");

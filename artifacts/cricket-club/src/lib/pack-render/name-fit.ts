@@ -68,7 +68,8 @@ export function fitNames(html: string): string {
     /<(div|span)([^>]*?)\sdata-fit="(\d+)"([^>]*)>([^<]*)<\/\1>/g,
     (all, tag: string, before: string, cap: string, after: string, text: string) => {
       const plain = text.replace(/&(?:#\d+|#x[0-9a-f]+|[a-z]+);/gi, "_").trim();
-      const { scale, lines } = fitFor(textLength(text), Number(cap), plain.split(/\s+/));
+      // Hyphenated names ("ROCKINGHAM-MANDURAH") can break after the hyphen.
+      const { scale, lines } = fitFor(textLength(text), Number(cap), plain.split(/\s+|(?<=-)/));
       if (scale === 1 && lines === 1) return all;
       let attrs = `${before}${after}`;
       attrs = attrs.replace(/style="/, `style="--fit:${scale.toFixed(3)};`);

@@ -493,6 +493,7 @@ export const GetMatchResponse = zod.object({
 }).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('Tenant-uploaded Broadcast imagery. Null = none (heroes render a brand-colour gradient).')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
+  "clubWon": zod.boolean().nullish().describe('The recorded winner, when the data has one: true when the tenant club won, false when the opposition won, null when unknown or there was no winner. Central result text names the winning side (\"Claremont-Nedlands - 1s won by 106 runs\"), so the result line alone can\'t say who won.'),
   "lines": zod.array(zod.object({
   "id": zod.number(),
   "playerId": zod.number(),
@@ -625,6 +626,7 @@ export const UpdateMatchRoundResponse = zod.object({
 }).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('Tenant-uploaded Broadcast imagery. Null = none (heroes render a brand-colour gradient).')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
+  "clubWon": zod.boolean().nullish().describe('The recorded winner, when the data has one: true when the tenant club won, false when the opposition won, null when unknown or there was no winner. Central result text names the winning side (\"Claremont-Nedlands - 1s won by 106 runs\"), so the result line alone can\'t say who won.'),
   "lines": zod.array(zod.object({
   "id": zod.number(),
   "playerId": zod.number(),
@@ -753,6 +755,7 @@ export const SetMatchHatTrickResponse = zod.object({
 }).describe('Broadcast imagery slots, each a storage URL (e.g. \/api\/storage\/objects\/...) or null when unset.'),zod.null()]).optional().describe('Tenant-uploaded Broadcast imagery. Null = none (heroes render a brand-colour gradient).')
 }).describe('A tenant\'s brand (logo + colours), resolved per-request from the tenants register (joined to its clubs record where set), falling back to the platform default brand. Drives the web\/mobile theme and document title.'),zod.null()]).optional().describe('The tenant club\'s own branding (logo + colours), or null when unavailable; the scorecard falls back to its built-in defaults.'),
   "clubBattedFirst": zod.boolean().nullish().describe('True when the tenant club batted first, false when they batted second, null when unknown. Drives the true batting order of the two innings on the scorecard.'),
+  "clubWon": zod.boolean().nullish().describe('The recorded winner, when the data has one: true when the tenant club won, false when the opposition won, null when unknown or there was no winner. Central result text names the winning side (\"Claremont-Nedlands - 1s won by 106 runs\"), so the result line alone can\'t say who won.'),
   "lines": zod.array(zod.object({
   "id": zod.number(),
   "playerId": zod.number(),
