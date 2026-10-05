@@ -229,3 +229,14 @@ describe("scorecardToCentral", () => {
     });
   });
 });
+
+describe("centralStatus", () => {
+  it("keeps a final PlayHQ status and calls anything else in progress", async () => {
+    const { centralStatus, IN_PROGRESS } = await import("./central-transform");
+    expect(centralStatus("COMPLETED")).toBe("COMPLETED");
+    expect(centralStatus("abandoned")).toBe("ABANDONED");
+    expect(centralStatus("PENDING")).toBe(IN_PROGRESS);
+    expect(centralStatus("IN_PROGRESS")).toBe(IN_PROGRESS);
+    expect(centralStatus(null)).toBe(IN_PROGRESS);
+  });
+});

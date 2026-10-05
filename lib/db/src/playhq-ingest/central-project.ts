@@ -75,7 +75,13 @@ export function isWithheldName(name: string | null | undefined): boolean {
 }
 
 async function loadCandidates(c: Queryable, o: ProjectOptions): Promise<CandidateRow[]> {
-  const where: string[] = ["g.is_junior = false", "m.status = any($1::text[])"];
+  // Finished matches, plus any with a scorecard: the scraper fetches one only once a match has
+  // started, so an unfinished match with a scorecard is in progress (a two-day game between its
+  // days) and is projected as IN_PROGRESS, then re-projected as it goes on (D2 follow-up).
+  const where: string[] = [
+    "g.is_junior = false",
+    "(m.status = any($1::text[]) or s.match_id is not null)",
+  ];
   const params: unknown[] = [[...PROJECTABLE_STATUSES]];
   if (o.matchIds) {
     params.push(o.matchIds);

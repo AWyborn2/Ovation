@@ -35,13 +35,18 @@ const log = { error: () => {}, warn: () => {}, info: () => {} };
 let tenantId: number;
 let lineId = LINE_BASE;
 
-async function centralMatch(id: number, opts: { grade?: string; date?: string } = {}) {
+async function centralMatch(
+  id: number,
+  opts: { grade?: string; date?: string; status?: string; compType?: string | null } = {},
+) {
   await db.execute(sql`
     insert into central.matches (match_id, playhq_match_id, season, grade, grade_id, comp_type, round,
       match_date, venue, status, home_club_id, away_club_id, home_team, away_team, home_score,
       away_score, toss_winner_club_id, winner_club_id, result_text)
-    values (${id}, ${`sweep-${id}`}, '2026/27', ${opts.grade ?? "A Grade"}, 'grade-a', 'One Day', '4',
-      ${opts.date ?? "2026-11-15"}, 'Sweep Oval', 'Completed', ${CLUB}, ${OPP}, 'Sweep CC', 'Rivals CC',
+    values (${id}, ${`sweep-${id}`}, '2026/27', ${opts.grade ?? "A Grade"}, 'grade-a',
+      ${opts.compType === undefined ? "One Day" : opts.compType}, '4',
+      ${opts.date ?? "2026-11-15"}, 'Sweep Oval', ${opts.status ?? "Completed"}, ${CLUB}, ${OPP},
+      'Sweep CC', 'Rivals CC',
       '7/210', '10/150', ${CLUB}, ${CLUB}, 'Sweep CC won')
   `);
   await db.execute(sql`
@@ -153,6 +158,54 @@ describe("central drafting sweep", () => {
     await runDraftSweep(tenantId, { kind: "scheduled", now: NOW }, log);
     expect(await centralDrafts()).toHaveLength(1);
     expect(await watermark()).toBe(BASE + 5);
+  });
+
+  it("two-day games: a Stumps card while in progress, the result once completed", async () => {
+    const stumpsDrafts = () =>
+      db
+        .select()
+        .from(socialDraftsTable)
+        .where(
+          and(
+            eq(socialDraftsTable.tenantId, tenantId),
+            like(socialDraftsTable.sourceKey, "stumps:central:%"),
+          ),
+        );
+    // Day 1 of a two-day game (multi-day: no comp type) and a one-day game awaiting its result.
+    await centralMatch(BASE + 6, { status: "IN_PROGRESS", compType: null });
+    await centralMatch(BASE + 7, { status: "IN_PROGRESS", compType: "One Day" });
+    const day1 = await runDraftSweep(tenantId, { kind: "scheduled", now: NOW }, log);
+    expect(day1.matchSummaries).toBe(0);
+    const stumps = await stumpsDrafts();
+    expect(stumps.map((d) => d.sourceKey)).toEqual([draftKeys.centralStumps(BASE + 6)]);
+    expect((stumps[0].cardInput as { result: string }).result).toBe("Stumps, Day 1");
+    // Held before the earliest match still in progress, so its result is drafted later.
+    expect(await watermark()).toBe(BASE + 5);
+
+    // Day 2 under way: the Stumps card is never refreshed or repeated.
+    await db.execute(sql`update central.match_batting set runs = 140 where match_id = ${BASE + 6}`);
+    await runDraftSweep(tenantId, { kind: "scheduled", now: NOW }, log);
+    const again = await stumpsDrafts();
+    expect(again).toHaveLength(1);
+    expect(again[0].updatedAt?.toISOString()).toBe(stumps[0].updatedAt?.toISOString());
+
+    // The two-day game finishes: its result card is drafted; the one-day game still holds.
+    await db.execute(
+      sql`update central.matches set status = 'COMPLETED' where match_id = ${BASE + 6}`,
+    );
+    const done = await runDraftSweep(tenantId, { kind: "scheduled", now: NOW }, log);
+    expect(done.matchSummaries).toBe(1);
+    expect((await centralDrafts()).map((d) => d.sourceKey)).toContain(
+      draftKeys.centralMatchSummary(BASE + 6),
+    );
+    expect(await watermark()).toBe(BASE + 6);
+
+    await db.execute(
+      sql`update central.matches set status = 'COMPLETED' where match_id = ${BASE + 7}`,
+    );
+    await runDraftSweep(tenantId, { kind: "scheduled", now: NOW }, log);
+    expect(await watermark()).toBe(BASE + 7);
+    expect(await stumpsDrafts()).toHaveLength(1); // a one-day game never gets a Stumps card
   });
 
   it("records the sweep time for sweep health", async () => {

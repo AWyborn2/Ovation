@@ -9,7 +9,11 @@ import {
   type Logger as PostCommitLogger,
 } from "./post-commit-social";
 
-import { generateMatchSummaryDrafts, type MatchSummarySource } from "./match-summary-drafter";
+import {
+  generateCentralStumpsDrafts,
+  generateMatchSummaryDrafts,
+  type MatchSummarySource,
+} from "./match-summary-drafter";
 import { generateMatchDayDrafts } from "./engines/match-day";
 import { generateTeamListDrafts } from "./engines/team-list";
 import {
@@ -161,6 +165,11 @@ export async function runDraftSweep(
   return summary;
 }
 
+/** The Perth calendar date (YYYY-MM-DD) of an instant — central match dates are Perth dates. */
+function perthDay(t: Date): string {
+  return new Date(t.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
 /**
  * Draft match summaries and achievement cards for a central-data club's matches
  * past its watermark, then advance the watermark. The first sweep only records
@@ -200,9 +209,30 @@ export async function sweepCentralMatches(
     );
   }
 
+  // A match in progress (a two-day game between its days) counts in stats but isn't over: no
+  // result card, achievements or round-up yet. A multi-day one gets its "Stumps, Day 1" card
+  // once day 1 is behind us. It holds the watermark (below), so the sweep that sees it
+  // completed drafts its result as new.
+  const live = recent.filter((m) => m.status === "IN_PROGRESS");
+  const done = recent.filter((m) => m.status !== "IN_PROGRESS");
+  const today = perthDay(now);
+  const stumpsDue = live.filter(
+    (m) => m.compType !== "One Day" && m.compType !== "T20" && !!m.matchDate && m.matchDate < today,
+  );
+  if (stumpsDue.length) {
+    const stumps = await generateCentralStumpsDrafts(
+      tenantId,
+      clubId,
+      stumpsDue.map((m) => m.matchId),
+      now,
+    );
+    if (stumps.errors.length)
+      logger.warn({ tenantId, errors: stumps.errors }, "central stumps drafts had errors");
+  }
+
   const result = await generateMatchSummaryDrafts(
     tenantId,
-    recent.map((m) => m.matchId),
+    done.map((m) => m.matchId),
     { kind: "central", clubId, seenAt: now },
   );
   if (result.errors.length > 0) {
@@ -216,15 +246,19 @@ export async function sweepCentralMatches(
       await draftCentralAchievements(
         tenantId,
         clubId,
-        recent.map((m) => m.matchId),
+        done.map((m) => m.matchId),
         now,
       )
     ).drafted;
   } catch (err) {
     logger.error({ err, tenantId }, "central achievement drafts failed");
   }
-  await draftCentralRoundUps(tenantId, settings, recent, logger);
-  await setWatermark(tenantId, lastSeenId);
+  await draftCentralRoundUps(tenantId, settings, done, logger);
+  // Never past a recent match still in progress: re-reading from it is harmless (drafting is
+  // keyed, unchanged cards are no-ops) and drafts its result when it completes. Matches outside
+  // the recent window never hold it, so one that is never finished can't stall the sweep.
+  const hold = live.length ? Math.min(...live.map((m) => m.matchId)) - 1 : null;
+  await setWatermark(tenantId, hold ?? lastSeenId);
   return { seen: matches.length, drafted: result.drafted, achievements };
 }
 
