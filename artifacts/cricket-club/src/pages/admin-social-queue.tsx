@@ -48,6 +48,15 @@ import { cn } from "@/lib/utils";
  * The Studio queue (Social Studio U8): drafts by state, filtered by family and
  * grade, each opening a drawer with its caption, photo, history and actions.
  */
+/**
+ * `/players/42` → 42: most player cards link to the player's page (the same
+ * rule the server uses to pick a draft's photo).
+ */
+function playerIdFromAppPath(appPath?: string | null): number | null {
+  const m = appPath ? /^\/players\/(\d+)(?:[/?#]|$)/.exec(appPath) : null;
+  return m ? Number(m[1]) : null;
+}
+
 /** How many slides a draft posts as (a big round is a balanced card set). */
 function slideCount(d: SocialDraft): number {
   const input = draftInput(d);
@@ -346,6 +355,10 @@ export default function AdminSocialQueue() {
         engine={(preview?.engine as EngineKey) ?? "ondemand"}
         appPath={preview?.appPath ?? undefined}
         trackedSlug={preview?.trackedSlug ?? null}
+        // The draft's own photo (as the drawer shows it and the post pack
+        // renders it), plus the player's gallery to swap in.
+        photoUrl={preview?.photoUrl ?? null}
+        playerId={playerIdFromAppPath(preview?.appPath)}
         onApprove={
           preview && draftStatus(preview) === "ready"
             ? async () => {

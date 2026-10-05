@@ -36,6 +36,7 @@ export function usePhotoControls({
   playerId,
   matchId,
   input,
+  draftPhotoUrl,
 }: {
   open: boolean;
   playerId?: number | null;
@@ -47,10 +48,20 @@ export function usePhotoControls({
    */
   matchId?: number | null;
   input: ShareCardInput | null;
+  /**
+   * A queued draft's own photo (the one the queue picked, or swapped in from
+   * the library). It is the default photo, ahead of the player's profile
+   * photo, so the preview matches the draft and its post pack.
+   */
+  draftPhotoUrl?: string | null;
 }) {
-  // Photo control state. We surface it when the tile is about a player or a match.
+  // Junior cards never carry a photo (KTD15).
+  const junior = !!input && "junior" in input && (input as { junior?: boolean }).junior === true;
+  const draftPhoto = junior ? null : (draftPhotoUrl ?? null);
+  // Photo control state. We surface it when the tile is about a player or a
+  // match, or already has a draft photo.
   const isMatchCard = matchId != null && playerId == null;
-  const showPhotoControls = playerId != null || isMatchCard;
+  const showPhotoControls = playerId != null || isMatchCard || draftPhoto != null;
   const isAdmin = !!useCurrentAdmin().data;
   const queryClient = useQueryClient();
   const addPlayerImage = useAddPlayerImage();
@@ -69,6 +80,7 @@ export function usePhotoControls({
   // The player's saved profile photo (when present) is the default, falling back
   // to whatever photo the input was built with.
   const profilePhotoUrl: string | null =
+    draftPhoto ??
     (playerId != null ? (playerQ.data?.imageUrl ?? null) : null) ??
     (input && "photoUrl" in input ? (input.photoUrl ?? null) : null);
 
@@ -96,10 +108,25 @@ export function usePhotoControls({
     }
     const rows = galleryQ.data ?? [];
     if (rows.length > 0) {
-      return rows.map((r) => ({ url: r.imageUrl, isDefault: r.isDefault }));
+      const gallery = rows.map((r) => ({ url: r.imageUrl, isDefault: r.isDefault }));
+      if (!draftPhoto) return gallery;
+      // The draft's photo leads and is the default; the player's gallery
+      // stays on offer behind it.
+      return [
+        { url: draftPhoto, isDefault: true },
+        ...gallery.filter((g) => g.url !== draftPhoto).map((g) => ({ ...g, isDefault: false })),
+      ];
     }
     return profilePhotoUrl ? [{ url: profilePhotoUrl, isDefault: true }] : [];
-  }, [isMatchCard, matchPhotoQ.data, libraryQ.data, matchGrade, galleryQ.data, profilePhotoUrl]);
+  }, [
+    isMatchCard,
+    matchPhotoQ.data,
+    libraryQ.data,
+    matchGrade,
+    galleryQ.data,
+    profilePhotoUrl,
+    draftPhoto,
+  ]);
   const defaultGalleryUrl: string | null =
     galleryPhotos.find((p) => p.isDefault)?.url ?? galleryPhotos[0]?.url ?? null;
 
