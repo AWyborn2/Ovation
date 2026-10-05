@@ -95,10 +95,52 @@ export function topBowlers(bowlers: ScorecardBowler[], excludeName?: string): Ma
 }
 
 /** Winner from the club-perspective result text, defaulting to a draw. */
-export function deriveWinner(result: string | null | undefined): "club" | "opposition" | "draw" {
+/** Lower-case words of a team name, for matching it inside a result line. */
+function nameWords(name: string | null | undefined): string[] {
+  return (name ?? "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 3 && !/^(cricket|club|inc|the|district|grade|1s|2s|3s|4s)$/.test(w));
+}
+
+/** How many of a team's name words appear in `text`. */
+function nameHits(text: string, names: readonly (string | null | undefined)[]): number {
+  const words = new Set(names.flatMap(nameWords));
+  let hits = 0;
+  for (const w of words) if (new RegExp(`\\b${w}\\b`).test(text)) hits++;
+  return hits;
+}
+
+export interface WinnerTeams {
+  club?: readonly (string | null | undefined)[];
+  opposition?: readonly (string | null | undefined)[];
+}
+
+/**
+ * Who won, from a result line. A club's own result line is written from its
+ * side ("Won by 5 wickets", "Lost to Rockingham"); a central (PlayHQ) result
+ * line names the winning side ("Claremont-Nedlands - 1s won by 106 runs").
+ * With `teams`, the side named before "won" / "def." / "beat" is the winner;
+ * without a name there, the line is read from the club's side.
+ */
+export function deriveWinner(
+  result: string | null | undefined,
+  teams: WinnerTeams = {},
+): "club" | "opposition" | "draw" {
   const r = (result ?? "").toLowerCase();
-  if (/\bwon\b|\bwin\b|\bvictor/.test(r)) return "club";
-  if (/\blost\b|\bloss\b|\bdefeat/.test(r)) return "opposition";
+  if (/\btie[d]?\b|no result|abandon/.test(r)) return "draw";
+  const verb = /\b(won|win|wins|def(?:eated|\.)?|beat|beats)\b/.exec(r);
+  if (verb) {
+    const subject = r.slice(0, verb.index);
+    const club = nameHits(subject, teams.club ?? []);
+    const opp = nameHits(subject, teams.opposition ?? []);
+    if (opp > club) return "opposition";
+    if (club > opp) return "club";
+  }
+  // "Defeated by X" is a loss; "Def. X" / "Defeated X" / "Beat X" a win.
+  if (/\bdefeated by\b|\bdefeat\b/.test(r)) return "opposition";
+  if (/\bwon\b|\bwin\b|\bvictor|\bdef(?:\.|eated\b)|\bbeat\b/.test(r)) return "club";
+  if (/\blost\b|\bloss\b/.test(r)) return "opposition";
   return "draw";
 }
 
@@ -173,7 +215,18 @@ export function matchToSummaryInput(match: MatchDetail): MatchSummaryInput {
     date: match.matchDate ? formatMatchDate(match.matchDate) : null,
     venue: match.venue ?? null,
     result: match.abandoned ? "Match abandoned" : (match.result ?? "Result unavailable"),
-    resultWinner: match.abandoned ? "draw" : deriveWinner(match.result),
+    // The recorded winner when the data has one (central); otherwise read
+    // the result line, which may name the winning side.
+    resultWinner: match.abandoned
+      ? "draw"
+      : match.clubWon === true
+        ? "club"
+        : match.clubWon === false
+          ? "opposition"
+          : deriveWinner(match.result, {
+              club: [clubTeam.name, clubTeam.shortName],
+              opposition: [oppTeam.name, oppTeam.shortName, match.opponent],
+            }),
     club: toTeam(clubTeam),
     opposition: toTeam(oppTeam),
     innings,
@@ -282,7 +335,12 @@ export function juniorMatchToSummaryInput(
     date: match.matchDate ? fmtJuniorDate(match.matchDate) : null,
     venue: match.venue ?? null,
     result: match.hhResult ?? match.status ?? "Result unavailable",
-    resultWinner: isNoResult ? "draw" : deriveWinner(match.hhResult),
+    resultWinner: isNoResult
+      ? "draw"
+      : deriveWinner(match.hhResult, {
+          club: [clubTeam.name, clubTeam.shortName],
+          opposition: [oppTeam.name, oppTeam.shortName],
+        }),
     club: clubTeam,
     opposition: oppTeam,
     innings,

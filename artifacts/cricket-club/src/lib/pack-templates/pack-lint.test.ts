@@ -64,9 +64,17 @@ const EXTRA_KEY_ALLOWLIST: Record<string, readonly string[]> = {
   // Club Kit: every card shows a monogram disc in place of a missing crest
   // (`clubMonogram`, filled from the club's initials at render time).
   "club-kit-v1/*": ["clubMonogram", "rowScale"],
-  // Club Kit's match result: the one-word WIN / LOSS headline (bound from
-  // `resultWinner` by bindInput) and the hashtag block.
-  "club-kit-v1/matchSummary": ["clubHashtag", "resultWord"],
+  // Club Kit's match result: the one-word WIN / RESULT headline (bound from
+  // `resultWinner` by bindInput), the hashtag block, and the score bars'
+  // logo-or-name values.
+  "club-kit-v1/matchSummary": [
+    "clubHashtag",
+    "resultWord",
+    "club.barName",
+    "opposition.barName",
+    "club.logoDisplay",
+    "opposition.logoDisplay",
+  ],
   // Club Kit gives these kinds the jumper-trim photo frame; Broadcast Dark's
   // designs have no photo. The slot takes the tenant's selected photo.
   "club-kit-v1/clubLeaderboard": ["photo"],

@@ -58,6 +58,12 @@ export function bindInput(input: ShareCardInput): BoundInput {
       set(values, "opposition.name", cardTeamName(input.opposition.name));
       if (input.club.logoUrl) images["club.logo"] = input.club.logoUrl;
       if (input.opposition.logoUrl) images["opposition.logo"] = input.opposition.logoUrl;
+      // Score bars that lead with the club's logo (Club Kit) show the name only
+      // when there's no logo to stand in for it.
+      set(values, "club.barName", input.club.logoUrl ? "" : input.club.name);
+      set(values, "opposition.barName", input.opposition.logoUrl ? "" : input.opposition.name);
+      set(values, "club.logoDisplay", input.club.logoUrl ? "flex" : "none");
+      set(values, "opposition.logoDisplay", input.opposition.logoUrl ? "flex" : "none");
       const clubInn = input.innings.find((i) => i.teamKey === "club");
       const oppInn = input.innings.find((i) => i.teamKey === "opposition");
       if (clubInn) {
@@ -74,7 +80,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
         set(values, "resultVerb", "MATCH DRAWN");
         set(values, "resultVerbShort", "DRAW");
       }
-      // One-word headline (Club Kit): WIN / LOSS / DRAW, or TIE / NO RESULT
+      // One-word headline (Club Kit): WIN / RESULT (a loss) / DRAW, or TIE / NO RESULT
       // when the result line says so. The club always keeps the top bar.
       set(values, "resultWord", resultWord(input.resultWinner, input.result));
       break;
@@ -499,10 +505,14 @@ export function leaderTitle(category: string): [string, string] {
   return ["LEADING", "RUN-SCORER"];
 }
 
-/** The one-word result headline for a match summary. */
+/**
+ * The one-word result headline for a match summary. A loss reads "RESULT"
+ * rather than shouting "LOSS" on the club's own channel; the result line
+ * under it says who won.
+ */
 export function resultWord(winner: "club" | "opposition" | "draw", result: string): string {
   if (/no result|abandon/i.test(result)) return "NO RESULT";
   if (/\btie[d]?\b/i.test(result)) return "TIE";
   if (winner === "draw") return "DRAW";
-  return winner === "club" ? "WIN" : "LOSS";
+  return winner === "club" ? "WIN" : "RESULT";
 }

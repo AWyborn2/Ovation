@@ -13,8 +13,11 @@ export interface TickerItem {
   href: string;
 }
 
-/** Seconds of scroll per unique result (8 results → 40s loop). */
-export const TICKER_SECONDS_PER_ITEM = 5;
+/**
+ * Seconds of scroll per unique result (8 results → 56s loop). Items size to
+ * their full score line (~400px+), so this keeps the strip at a readable pace.
+ */
+export const TICKER_SECONDS_PER_ITEM = 7;
 
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(
@@ -49,14 +52,13 @@ export function ResultsTicker({ items, className }: { items: TickerItem[]; class
       onClick={() => navigate(it.href)}
       aria-hidden={copy === 1 ? true : undefined}
       tabIndex={copy === 1 ? -1 : undefined}
-      className="flex w-[300px] flex-none items-center gap-3 border-r border-white/10 px-4 py-3 text-left transition-colors hover:bg-white/5"
+      className="flex flex-none items-center gap-3 whitespace-nowrap border-r border-white/10 px-5 py-3 text-left transition-colors hover:bg-white/5"
     >
       <span className="font-serif text-[13px] font-bold text-[hsl(var(--primary))]">
         {it.grade}
       </span>
-      <span className="min-w-0 flex-1 truncate font-serif text-[19px] font-semibold uppercase tabular-nums">
-        {it.line}
-      </span>
+      {/* Full score line for both sides — sized to content, never truncated. */}
+      <span className="font-serif text-[19px] font-semibold uppercase tabular-nums">{it.line}</span>
       <ResultPill result={it.result} onPhoto />
     </button>
   );

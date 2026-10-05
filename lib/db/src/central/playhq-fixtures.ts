@@ -330,3 +330,53 @@ export async function playhqGradeLadder(
     };
   });
 }
+
+/** One side of a PlayHQ match: its organisation and that organisation's logo. */
+export interface PlayhqMatchSide {
+  orgId: string | null;
+  name: string | null;
+  logoUrl: string | null;
+}
+
+/**
+ * Both sides of one PlayHQ match with their organisations' logos — the same
+ * logos the fixtures page shows. Central clubs carry no logo, so a central
+ * scorecard (and the cards made from it) takes the opposition's crest from
+ * here, via the match's `playhq_match_id`. Null when the match isn't loaded.
+ */
+export async function playhqMatchSides(
+  playhqMatchId: string,
+): Promise<{ home: PlayhqMatchSide; away: PlayhqMatchSide } | null> {
+  return withCentralCache(cacheKey("playhqMatchSides", [playhqMatchId]), async () => {
+    const m = playhqMatchesTable;
+    const [row] = await centralDb
+      .select({
+        homeOrgId: m.homeOrgId,
+        homeTeamName: m.homeTeamName,
+        awayOrgId: m.awayOrgId,
+        awayTeamName: m.awayTeamName,
+      })
+      .from(m)
+      .where(eq(m.id, playhqMatchId));
+    if (!row) return null;
+    const ids = [row.homeOrgId, row.awayOrgId].filter((id): id is string => !!id);
+    const logos = new Map<string, { name: string | null; logoUrl: string | null }>();
+    if (ids.length) {
+      const o = playhqOrganisationsTable;
+      const orgRows = await centralDb
+        .select({ id: o.id, name: o.name, logoUrl: o.logoUrl })
+        .from(o)
+        .where(inList(o.id, ids));
+      for (const r of orgRows) logos.set(r.id, { name: r.name, logoUrl: r.logoUrl });
+    }
+    const side = (orgId: string | null, teamName: string | null): PlayhqMatchSide => ({
+      orgId,
+      name: (orgId ? logos.get(orgId)?.name : null) ?? teamName,
+      logoUrl: (orgId ? logos.get(orgId)?.logoUrl : null) ?? null,
+    });
+    return {
+      home: side(row.homeOrgId, row.homeTeamName),
+      away: side(row.awayOrgId, row.awayTeamName),
+    };
+  });
+}

@@ -285,6 +285,9 @@ export function renderPackCard(
 }
 
 /** The editable text fields a design exposes, in template order (editor Content panel). */
+/** Bound layout switches, not text an admin edits (a set's row size, a logo badge's visibility). */
+const LAYOUT_ONLY_FIELD = /^rowScale$|(?:^|\.)logoDisplay$/;
+
 export function packTextFields(
   input: ShareCardInput,
   packId?: string | null,
@@ -293,7 +296,7 @@ export function packTextFields(
   const template = resolveTemplate(input, packId);
   if (!template) return [];
   return template.fields
-    .filter((f) => f.type === "text")
+    .filter((f) => f.type === "text" && !LAYOUT_ONLY_FIELD.test(f.key))
     .map((f) => ({ key: f.key, label: f.label }));
 }
 
