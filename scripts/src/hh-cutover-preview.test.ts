@@ -669,6 +669,29 @@ describe("diffCareers — baseline overlap (R20, AE6)", () => {
     expect(o.doubleCounted).toMatchObject({ games: 2, innings: 2, runs: 120 });
   });
 
+  it("a seed that peeled the season out of the baseline: no change, nothing counted twice", () => {
+    const i = ae6();
+    // The seed took 2003/04 (2 games, 120 runs) out of the career baseline.
+    i.hybridBuckets[0] = { ...i.hybridBuckets[0]!, games: 18, innings: 17, runs: 380 };
+    const d = diffCareers(i);
+    // The career no longer changes at all.
+    expect(d.grades).toEqual([]);
+    expect(d.players).toEqual([]);
+    const o = only(d.overlaps);
+    expect(o.peeled).toMatchObject({ games: 2, innings: 2, runs: 120 });
+    expect(o.doubleCounted).toMatchObject({ games: 0, innings: 0, runs: 0 });
+  });
+
+  it("a baseline the peel emptied (no career history row): no change either", () => {
+    const i = ae6();
+    i.nativeSeasons = [season(1, null, { games: 2, innings: 2, runs: 120 }), i.nativeSeasons[1]!];
+    i.nativeGrades = [career(1, { games: 7, innings: 7, runs: 240 })];
+    i.hybridBuckets = i.hybridBuckets.slice(1);
+    const d = diffCareers(i);
+    expect(d.grades).toEqual([]);
+    expect(only(d.overlaps).doubleCounted).toMatchObject({ games: 0, runs: 0 });
+  });
+
   it("caps the double count at what the baseline holds", () => {
     const i = ae6();
     i.nativeSeasons = [season(1, null, { games: 1, innings: 1, runs: 30 }), i.nativeSeasons[1]!];

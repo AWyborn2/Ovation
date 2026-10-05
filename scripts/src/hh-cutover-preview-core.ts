@@ -63,6 +63,7 @@ export const REASON_CODES = [
   "merge",
   "correction",
   "baseline_overlap",
+  "baseline_peel",
   "unlinked_identity",
   "native_only_match",
   "figures_differ",
@@ -81,6 +82,8 @@ export const REASON_LABEL: Record<ReasonCode, string> = {
   merge: "merge (a split identity folded into its keeper)",
   correction: "correction (a club correction changes the central figure)",
   baseline_overlap: "baseline overlap (history also covers a season central supplies — R20)",
+  baseline_peel:
+    "baseline peel (the seed took the seasons central supplies out of the career baseline — R20)",
   unlinked_identity: "unlinked identity (the player's central lines sit under another GUID)",
   native_only_match: "native-only match (central doesn't have it, so it is lost)",
   figures_differ: "figures differ (same match, different runs / wickets / innings — R21 review)",
@@ -736,12 +739,36 @@ export function diffCareers(input: CareersInput): CareersDiff {
         add(s.grade, d.games === 0 ? "catches_rule" : rest, { catches: d.catches });
       }
 
-      // 4. Baseline overlaps (R20).
+      // 4. Baseline overlaps (R20). The seed peels central-only seasons out of
+      // each career baseline, so the career-grain history row can hold less than
+      // the native baseline: that difference is the peel actually applied.
+      const careerHistory = new Map<string, Figures>();
+      for (const b of bucketsByPlayer.get(P) ?? []) {
+        if (b.source !== "history" || !b.careerGrain) continue;
+        let h = careerHistory.get(b.grade);
+        if (!h) careerHistory.set(b.grade, (h = zeroFigures()));
+        addInto(h, b);
+      }
+      const peelApplied = new Map<string, Figures>();
+      for (const grade of new Set(
+        [P, ...mergedIds].flatMap((id) =>
+          (seasonsByPlayer.get(id) ?? []).filter((r) => r.season === null).map((r) => r.grade),
+        ),
+      )) {
+        const baseline = baselineOf(grade);
+        const held = careerHistory.get(grade) ?? zeroFigures();
+        const peel = zeroFigures();
+        for (const k of STAT_KEYS) peel[k] = Math.max(0, baseline[k] - held[k]);
+        if (isZero(peel)) continue;
+        peelApplied.set(grade, peel);
+        add(grade, "baseline_peel", peel, -1);
+      }
       for (const [grade, o] of overlapSeasons) {
         const baseline = baselineOf(grade);
+        const peeled = peelApplied.get(grade) ?? zeroFigures();
         const doubleCounted = zeroFigures();
         for (const k of STAT_KEYS) {
-          doubleCounted[k] = Math.max(0, Math.min(baseline[k], o.central[k]));
+          doubleCounted[k] = Math.max(0, Math.min(baseline[k], o.central[k]) - peeled[k]);
         }
         out.overlaps.push({
           playerId: P,
@@ -751,7 +778,7 @@ export function diffCareers(input: CareersInput): CareersDiff {
           seasons: [...o.seasons].sort((a, b) => a - b),
           baseline,
           central: o.central,
-          peeled: zeroFigures(),
+          peeled,
           doubleCounted,
         });
       }
