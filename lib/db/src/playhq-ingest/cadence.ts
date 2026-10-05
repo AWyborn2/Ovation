@@ -23,6 +23,8 @@ export interface HarnessPlan {
   kinds: string[];
   balls: "none";
   scorecards: "none" | "since";
+  /** "upcoming": also fetch each upcoming match for the sides clubs have named (Team List). */
+  lineups?: "none" | "upcoming";
   since?: string;
   resume?: boolean;
 }
@@ -86,10 +88,19 @@ export function harnessPlan(orgId: string, name: PlanName, since?: string): Harn
         kinds: ["matches", "ladder", "gradeTeams", "rounds"],
         balls: "none",
         scorecards: "none",
+        lineups: "upcoming",
       };
     case "preweekend":
     case "matchmorn":
-      return { orgId, seasons: "current", kinds: ["matches"], balls: "none", scorecards: "none" };
+      // Sides are usually named Thursday–Saturday morning: pick them up for the Team List card.
+      return {
+        orgId,
+        seasons: "current",
+        kinds: ["matches"],
+        balls: "none",
+        scorecards: "none",
+        lineups: "upcoming",
+      };
     case "matchday":
       return {
         orgId,
@@ -107,6 +118,7 @@ export function harnessPlan(orgId: string, name: PlanName, since?: string): Harn
         kinds: ["matches", "ladder"],
         balls: "none",
         scorecards: "since",
+        lineups: "upcoming",
         since,
         resume: true,
       };

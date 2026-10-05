@@ -575,6 +575,7 @@ describe("dropJuniorGrades", () => {
     match_fielding: [],
     fall_of_wickets: [],
     balls: [],
+    match_lineups: [],
     runs: [{ org_id: "org" }],
   });
   const rows = (): LoadRows => ({

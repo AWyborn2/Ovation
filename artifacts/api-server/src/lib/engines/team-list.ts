@@ -9,6 +9,7 @@ import {
 } from "@workspace/db";
 import { familyAllows, resolveFamilyConfig } from "../social-families";
 import { upsertDraftByKey } from "../draft-upsert";
+import { teamListPhotoPlayer } from "../draft-enrich";
 import { resolveRoundSchedules } from "../round-schedules";
 import { formatFixtureDate, formatFixtureTime } from "./match-day";
 
@@ -92,13 +93,22 @@ export async function generateTeamListDrafts(
       result.skipped++;
       continue;
     }
+    const sourceKey = teamListKey(fixture.id);
+    // The card's photo: one of the selected players, picked at random per
+    // fixture, from the photo library (or their headshot).
+    const featured = await teamListPhotoPlayer(
+      tenantId,
+      players.map((p) => p.playerId),
+      sourceKey,
+    );
     const { action } = await upsertDraftByKey({
       tenantId,
       engine: "teamlist",
       family: "matchday",
-      sourceKey: teamListKey(fixture.id),
+      sourceKey,
       cardInput: teamListToCardInput(fixture, players),
       appPath: "/fixtures",
+      playerId: featured,
       sourceImportedAt: now,
     });
     if (action === "inserted") result.drafted++;

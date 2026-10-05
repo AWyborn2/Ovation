@@ -14,6 +14,7 @@ import {
   getPlayhqIngestPool,
   loadRows,
   projectFixtures,
+  projectTeamLists,
   rowsFromDump,
   type Dump,
   type LoadRows,
@@ -142,10 +143,26 @@ export async function ingestPlayhqDump(
     warnings.push(`fixtures projection failed: ${err instanceof Error ? err.message : err}`);
   }
 
+  // The sides clubs named in PlayHQ become their fixtures' team lists (never an admin's).
+  const teamListsWritten = new Map<number, number>();
+  if (rows.match_lineups.length)
+    try {
+      const lists = await projectTeamLists({
+        orgIds,
+        syncEnabledOnly: true,
+        central: reader,
+        log: (line) => log.info(`playhq team lists: ${line}`),
+      });
+      for (const l of lists) teamListsWritten.set(l.tenantId, l.written);
+    } catch (err) {
+      log.error({ err }, "playhq ingest: team list projection failed");
+      warnings.push(`team list projection failed: ${err instanceof Error ? err.message : err}`);
+    }
+
   const tenants: PlayhqIngestResponse["tenants"] = [];
   for (const s of summaries) {
     let swept = false;
-    if (s.inserted + s.updated > 0)
+    if (s.inserted + s.updated + (teamListsWritten.get(s.tenantId) ?? 0) > 0)
       try {
         await runDraftSweep(s.tenantId, { kind: "fixtures" }, log);
         swept = true;

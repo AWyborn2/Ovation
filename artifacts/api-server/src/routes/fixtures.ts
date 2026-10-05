@@ -207,11 +207,14 @@ router.put(
         fixtureId: fixture.id,
         players,
         isPublished: body.data.isPublished ?? false,
+        source: "admin",
       })
       .onConflictDoUpdate({
         target: [teamListsTable.tenantId, teamListsTable.fixtureId],
         set: {
           players,
+          // An admin's save makes the list theirs: the PlayHQ sync stops updating it.
+          source: "admin",
           ...(body.data.isPublished !== undefined ? { isPublished: body.data.isPublished } : {}),
         },
       })

@@ -180,6 +180,8 @@
       organisationId: orgId,
     });
   ov.balls = (matchId) => ov.api(`/scores/matches/${matchId}/balls`);
+  // The match without its scorecard: carries teams[].players, the side each club has named.
+  ov.lineup = (matchId) => ov.api(`/scores/matches/${matchId}`);
 
   const GRADE_KINDS = {
     matches: ov.matches,
@@ -286,7 +288,21 @@
       return isCompleted(m); // 'completed'
     });
   }
+  // The org's matches that have not started and start within `days` (named sides live on
+  // the match itself, not the grade listing). `teamIds` are the org's teams in the grade.
+  function upcomingFor(list, teamIds, days, nowMs = Date.now()) {
+    const ours = new Set(teamIds || []);
+    const until = nowMs + (days || 8) * 24 * 3600 * 1000;
+    return list.filter((m) => {
+      if (isCompleted(m)) return false;
+      const first = firstStart(m);
+      const t = first ? Date.parse(first) : NaN;
+      if (!(t > nowMs && t <= until)) return false;
+      return ours.size === 0 || (m.teams || []).some((tm) => ours.has(tm.id));
+    });
+  }
   ov._selectMatches = selectMatches;
+  ov._upcomingFor = upcomingFor;
   ov._inProgress = inProgress;
   async function pool(items, n, fn) {
     let i = 0;
@@ -308,6 +324,10 @@
         kinds: ["matches", "ladder", "batting", "bowling", "fielding"],
         balls: "none",
         scorecards: "none",
+        // "upcoming": each of the org's matches starting within `lineupDays` is fetched on
+        // its own, for the sides the clubs have named (teams[].players) — the Team List card.
+        lineups: "none",
+        lineupDays: 8,
         since: null,
         resume: true,
       },
@@ -358,6 +378,10 @@
               // An in-progress scorecard is never final: fetch it again even on a resume.
               refresh: !isCompleted(m),
             });
+          if (plan.lineups === "upcoming")
+            for (const m of upcomingFor(data.matches, g.teamIds, plan.lineupDays))
+              // A side can be named or changed any time before the toss: always re-fetch.
+              matchWork.push({ kind: "lineup", matchId: m.id, gradeId: g.gradeId, refresh: true });
         }
         st.done++;
       }
@@ -373,7 +397,11 @@
         return;
       }
       const data =
-        w.kind === "balls" ? await ov.balls(w.matchId) : await ov.scorecard(w.matchId, plan.orgId);
+        w.kind === "balls"
+          ? await ov.balls(w.matchId)
+          : w.kind === "lineup"
+            ? await ov.lineup(w.matchId)
+            : await ov.scorecard(w.matchId, plan.orgId);
       if (data && !data.__error) await ov.put(w.kind, w.matchId, data, { gradeId: w.gradeId });
       st.done++;
     });

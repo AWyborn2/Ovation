@@ -51,3 +51,16 @@ test("'completed' (history scrapes) is unchanged: finished matches only", () => 
   assert.deepEqual(ids("completed"), ["done", "old"]);
   assert.deepEqual(ids("none"), []);
 });
+
+test("lineups: the org's matches that haven't started and start within the window", () => {
+  const nowMs = Date.parse(NOW);
+  const list = [
+    { ...match("ours", "UPCOMING", "2026-10-10T02:30:00Z"), teams: [{ id: "t1" }, { id: "x" }] },
+    { ...match("theirs", "UPCOMING", "2026-10-10T02:30:00Z"), teams: [{ id: "y" }, { id: "x" }] },
+    { ...match("far", "UPCOMING", "2026-10-20T02:30:00Z"), teams: [{ id: "t1" }] },
+    { ...match("begun", "IN_PROGRESS", "2026-10-04T02:30:00Z"), teams: [{ id: "t1" }] },
+    { ...match("over", "COMPLETED", "2026-10-03T02:30:00Z"), teams: [{ id: "t1" }] },
+  ];
+  const got = Array.from(ov._upcomingFor(list, ["t1"], 8, nowMs), (m) => m.id);
+  assert.deepEqual(got, ["ours"]);
+});

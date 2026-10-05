@@ -55,6 +55,7 @@ describe("duePlans — weekly", () => {
       kinds: ["matches", "ladder", "gradeTeams", "rounds"],
       balls: "none",
       scorecards: "none",
+      lineups: "upcoming",
     });
   });
 });

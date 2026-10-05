@@ -89,6 +89,8 @@ export interface LoadRows {
   match_fielding: Row[];
   fall_of_wickets: Row[];
   balls: Row[];
+  /** Each upcoming match's named sides (one row per match and team, players as jsonb). */
+  match_lineups: Row[];
   runs: Row[];
 }
 
@@ -108,6 +110,7 @@ export function rowsFromDump(dump: Dump, sourceFile: string): LoadRows {
   const fielding: Row[] = [];
   const fow: Row[] = [];
   const balls: Row[] = [];
+  const lineups = new Map<string, Row>();
   const runs: Row[] = [];
 
   const org = (o: unknown) => {
@@ -510,6 +513,28 @@ export function rowsFromDump(dump: Dump, sourceFile: string): LoadRows {
         }
         break;
       }
+      case "lineup": {
+        // An upcoming match's own record: each team's named side (empty until named).
+        const d = obj(r.data);
+        const matchId = str(d.id) ?? r.id;
+        const gid = str(obj(d.grade).id) ?? gradeId;
+        for (const t of arr(d.teams)) {
+          const teamId = team(t, gid);
+          if (!teamId) continue;
+          lineups.set(`${matchId}|${teamId}`, {
+            match_id: matchId,
+            team_id: teamId,
+            players: arr(t.players).map((p) => ({
+              participantId: str(p.participantId),
+              name: str(p.name),
+              shortName: str(p.shortName),
+              roles: arr(p.roles).map((x) => String(x)),
+            })),
+            fetched_at: iso(r.fetchedAt) ?? new Date().toISOString(),
+          });
+        }
+        break;
+      }
       default:
         break; // plan (handled above), rounds (informational only)
     }
@@ -531,6 +556,7 @@ export function rowsFromDump(dump: Dump, sourceFile: string): LoadRows {
     match_fielding: fielding,
     fall_of_wickets: fow,
     balls,
+    match_lineups: [...lineups.values()],
     runs,
   };
 }
@@ -576,7 +602,15 @@ export function diffFixture(existing: Row, incoming: Row): Row[] {
 // SQL helpers
 // ---------------------------------------------------------------------------
 
-const JSONB_COLUMNS = new Set(["raw", "plan", "counts", "batting", "bowling", "fielding"]);
+const JSONB_COLUMNS = new Set([
+  "raw",
+  "plan",
+  "counts",
+  "batting",
+  "bowling",
+  "fielding",
+  "players",
+]);
 
 export function upsertSql(
   table: string,
@@ -630,7 +664,7 @@ async function upsert(
   return rows.length;
 }
 
-const TABLE_KEYS: Record<keyof Omit<LoadRows, "runs">, string[]> = {
+const TABLE_KEYS: Record<keyof Omit<LoadRows, "runs" | "match_lineups">, string[]> = {
   organisations: ["id"],
   seasons: ["id"],
   grades: ["id"],
@@ -695,6 +729,16 @@ export async function loadRows(
   }
   if (rows.matches.length)
     await c.query(`update playhq.matches set updated_at = now() where id = any($1::uuid[])`, [ids]);
+  // Named sides replace the stored row whole. Skipped (not failed) until the table exists, so
+  // a database without it keeps syncing everything else.
+  if (rows.match_lineups.length) {
+    const exists = await c.query<{ ok: boolean }>(
+      `select to_regclass('playhq.match_lineups') is not null as ok`,
+    );
+    counts.match_lineups = exists.rows[0]?.ok
+      ? await upsert(c, "playhq.match_lineups", ["match_id", "team_id"], rows.match_lineups)
+      : 0;
+  }
   counts.fixture_changes = await upsert(c, "playhq.fixture_changes", [], changes);
   const runIds: number[] = [];
   for (const run of rows.runs) {
@@ -779,6 +823,7 @@ export function dropJuniorGrades(
       match_fielding: rows.match_fielding.filter(keepInnings),
       fall_of_wickets: rows.fall_of_wickets.filter(keepInnings),
       balls: rows.balls.filter(keepMatch),
+      match_lineups: rows.match_lineups.filter(keepMatch),
     },
     droppedGradeIds: [...junior],
   };

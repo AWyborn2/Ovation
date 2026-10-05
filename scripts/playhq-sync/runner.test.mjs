@@ -231,6 +231,7 @@ test("manual catch-up: one catchup plan with scorecards since the date, no /plan
     kinds: ["matches", "ladder"],
     balls: "none",
     scorecards: "since",
+    lineups: "upcoming",
     since: "2026-10-03",
     resume: true,
   });

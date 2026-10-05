@@ -16,7 +16,8 @@
 //
 // Manual catch-up: with MANUAL_ORG (a PlayHQ organisation GUID) and MANUAL_SINCE (YYYY-MM-DD),
 // the runner skips the due list and runs one catch-up for that organisation — its matches,
-// ladder and every scorecard since that date — e.g. to re-fetch a weekend a failed sync missed.
+// ladder, every scorecard since that date and the sides named for its upcoming matches — e.g.
+// to re-fetch a weekend a failed sync missed.
 
 import { readFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
@@ -66,6 +67,7 @@ export function manualPlan(orgId, since, now = new Date()) {
       kinds: ["matches", "ladder"],
       balls: "none",
       scorecards: "since",
+      lineups: "upcoming",
       since: day,
       resume: true,
     },

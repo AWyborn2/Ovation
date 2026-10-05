@@ -1,0 +1,1 @@
+ALTER TABLE "team_lists" ADD COLUMN IF NOT EXISTS "source" text DEFAULT 'admin' NOT NULL;
