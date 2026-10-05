@@ -1,0 +1,708 @@
+{
+  "generatedAt": "2026-10-05T05:13:49.152Z",
+  "readOnly": true,
+  "tenantId": 1,
+  "centralClubId": 1,
+  "tenantReadsFromCentral": false,
+  "warnings": [],
+  "overlay": {
+    "active": true,
+    "boundaries": [
+      {
+        "grade": null,
+        "startSeason": 2003
+      },
+      {
+        "grade": "B Grade",
+        "startSeason": 2004
+      },
+      {
+        "grade": "C Grade",
+        "startSeason": 2004
+      },
+      {
+        "grade": "Colts",
+        "startSeason": 2023
+      },
+      {
+        "grade": "D Grade",
+        "startSeason": 2005
+      },
+      {
+        "grade": "E Grade",
+        "startSeason": 2009
+      },
+      {
+        "grade": "F Grade",
+        "startSeason": 2013
+      },
+      {
+        "grade": "Female A Grade",
+        "startSeason": 2023
+      },
+      {
+        "grade": "Female B Grade",
+        "startSeason": 2019
+      },
+      {
+        "grade": "PPL",
+        "startSeason": 2013
+      }
+    ],
+    "historyRows": 978,
+    "corrections": 0,
+    "correctionsApplied": 0,
+    "correctionsStale": [],
+    "mappedGuids": 802,
+    "confirmedMerges": 80
+  },
+  "native": {
+    "players": 756,
+    "matches": 2091,
+    "seniorLines": 23202,
+    "matchesLinkedToCentral": 2089,
+    "matchesNotLinkedToCentral": 1,
+    "matchesExcludedJuniorGrade": 1,
+    "playersWhoseDirectoryTotalsDifferFromTheirGradeCareers": 0
+  },
+  "hybrid": {
+    "players": 712,
+    "buckets": 5073,
+    "privatePlayersHiddenAfterCutover": 0,
+    "centralParticipantsWithNoPlayerId": 20
+  },
+  "careers": {
+    "playersCompared": 712,
+    "playersChanged": 405,
+    "playerGradesChanged": 791,
+    "playersByReason": {
+      "extra_central_match": 35,
+      "games_rule": 281,
+      "ladies_t20": 15,
+      "catches_rule": 325,
+      "baseline_overlap": 58,
+      "baseline_peel": 244,
+      "unlinked_identity": 3,
+      "figures_differ": 9,
+      "grade_reclassified": 6,
+      "unexplained": 23
+    },
+    "playerGradesByReason": {
+      "extra_central_match": 33,
+      "games_rule": 453,
+      "ladies_t20": 15,
+      "catches_rule": 548,
+      "baseline_overlap": 52,
+      "baseline_peel": 318,
+      "unlinked_identity": 3,
+      "figures_differ": 9,
+      "grade_reclassified": 83,
+      "unexplained": 24
+    },
+    "top25": [
+      {
+        "playerId": 47,
+        "name": "Dan Howell",
+        "delta": {
+          "games": -51,
+          "innings": -52,
+          "runs": -895,
+          "wickets": -23,
+          "catches": 2
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_peel",
+          "unexplained"
+        ]
+      },
+      {
+        "playerId": 9041,
+        "name": "Jason Sparrow",
+        "delta": {
+          "games": 13,
+          "innings": 4,
+          "runs": 4,
+          "wickets": 20,
+          "catches": 5
+        },
+        "reasons": [
+          "extra_central_match",
+          "games_rule"
+        ]
+      },
+      {
+        "playerId": 9029,
+        "name": "Toby Bairstow",
+        "delta": {
+          "games": 7,
+          "innings": 7,
+          "runs": 179,
+          "wickets": 0,
+          "catches": 0
+        },
+        "reasons": [
+          "extra_central_match"
+        ]
+      },
+      {
+        "playerId": 69,
+        "name": "Hugo Young",
+        "delta": {
+          "games": 4,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 39
+        },
+        "reasons": [
+          "extra_central_match",
+          "games_rule",
+          "catches_rule",
+          "baseline_overlap",
+          "baseline_peel",
+          "unexplained"
+        ]
+      },
+      {
+        "playerId": 9030,
+        "name": "Nathan Dovey",
+        "delta": {
+          "games": 5,
+          "innings": 5,
+          "runs": 149,
+          "wickets": 0,
+          "catches": 5
+        },
+        "reasons": [
+          "extra_central_match"
+        ]
+      },
+      {
+        "playerId": 145,
+        "name": "Ben Kissell",
+        "delta": {
+          "games": 21,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 0
+        },
+        "reasons": [
+          "games_rule"
+        ]
+      },
+      {
+        "playerId": 46,
+        "name": "Josh Petersen",
+        "delta": {
+          "games": 15,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 11
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_overlap",
+          "baseline_peel",
+          "grade_reclassified"
+        ]
+      },
+      {
+        "playerId": 9028,
+        "name": "Nick Rostin",
+        "delta": {
+          "games": 7,
+          "innings": 2,
+          "runs": 4,
+          "wickets": 6,
+          "catches": 0
+        },
+        "reasons": [
+          "extra_central_match"
+        ]
+      },
+      {
+        "playerId": 25,
+        "name": "Cameron Hill",
+        "delta": {
+          "games": 3,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 32
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_peel"
+        ]
+      },
+      {
+        "playerId": 64,
+        "name": "Matthew Gordon",
+        "delta": {
+          "games": 17,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 3
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_peel",
+          "grade_reclassified"
+        ]
+      },
+      {
+        "playerId": 58,
+        "name": "Alec Smith",
+        "delta": {
+          "games": 7,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 22
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_peel"
+        ]
+      },
+      {
+        "playerId": 123,
+        "name": "Mitchell Felton",
+        "delta": {
+          "games": 14,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 8
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_overlap",
+          "baseline_peel"
+        ]
+      },
+      {
+        "playerId": 109,
+        "name": "Adam Gray",
+        "delta": {
+          "games": 2,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 31
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_peel"
+        ]
+      },
+      {
+        "playerId": 20,
+        "name": "James Woods",
+        "delta": {
+          "games": 4,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 26
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_peel"
+        ]
+      },
+      {
+        "playerId": 7,
+        "name": "Matthew Lloyd",
+        "delta": {
+          "games": 4,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 25
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_overlap",
+          "baseline_peel"
+        ]
+      },
+      {
+        "playerId": 18,
+        "name": "Jason Young",
+        "delta": {
+          "games": 11,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 10
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_overlap",
+          "baseline_peel"
+        ]
+      },
+      {
+        "playerId": 49,
+        "name": "Peter Knight",
+        "delta": {
+          "games": 6,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 19
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_peel"
+        ]
+      },
+      {
+        "playerId": 9,
+        "name": "Grant Matthews",
+        "delta": {
+          "games": 8,
+          "innings": -1,
+          "runs": -5,
+          "wickets": -2,
+          "catches": 5
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_overlap",
+          "baseline_peel"
+        ]
+      },
+      {
+        "playerId": 24,
+        "name": "Simon King",
+        "delta": {
+          "games": 5,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 20
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_overlap",
+          "baseline_peel"
+        ]
+      },
+      {
+        "playerId": 30,
+        "name": "Scott Martin",
+        "delta": {
+          "games": 12,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 6
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_overlap",
+          "baseline_peel",
+          "grade_reclassified"
+        ]
+      },
+      {
+        "playerId": 36,
+        "name": "Jake Wyllie",
+        "delta": {
+          "games": 10,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 10
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_overlap",
+          "baseline_peel"
+        ]
+      },
+      {
+        "playerId": 43,
+        "name": "Jack Manuel",
+        "delta": {
+          "games": 14,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 2
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_overlap",
+          "baseline_peel"
+        ]
+      },
+      {
+        "playerId": 151,
+        "name": "Joe Lovell",
+        "delta": {
+          "games": 6,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 17
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule"
+        ]
+      },
+      {
+        "playerId": 110,
+        "name": "Mason Austin",
+        "delta": {
+          "games": 9,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 10
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule"
+        ]
+      },
+      {
+        "playerId": 23,
+        "name": "Jarod Little",
+        "delta": {
+          "games": 8,
+          "innings": 0,
+          "runs": 0,
+          "wickets": 0,
+          "catches": 11
+        },
+        "reasons": [
+          "games_rule",
+          "catches_rule",
+          "baseline_overlap",
+          "baseline_peel"
+        ]
+      }
+    ]
+  },
+  "reasonCodes": {
+    "extra_central_match": "extra central match (central has a match for the player that native doesn't)",
+    "games_rule": "games rule (rostered appearance with no batting or bowling line — KTD6)",
+    "ladies_t20": "Ladies T20 (counted as Female B Grade)",
+    "catches_rule": "catches rule (PlayHQ scorecard catches differ from the native count on a match both sides have — R6)",
+    "merge": "merge (a split identity folded into its keeper)",
+    "correction": "correction (a club correction changes the central figure)",
+    "baseline_overlap": "baseline overlap (history also covers a season central supplies — R20)",
+    "baseline_peel": "baseline peel (the seed took the seasons central supplies out of the career baseline — R20)",
+    "unlinked_identity": "unlinked identity (the player's central lines sit under another GUID)",
+    "native_only_match": "native-only match (central doesn't have it, so it is lost)",
+    "figures_differ": "figures differ (same match, different runs / wickets / innings — R21 review)",
+    "grade_reclassified": "grade reclassified (central files the match under another grade)",
+    "unexplained": "unexplained"
+  },
+  "records": {
+    "scopes": 11,
+    "recordsPerScope": 8,
+    "changed": 22,
+    "holdersChanged": 11
+  },
+  "milestones": {
+    "tiers": {
+      "games": [
+        100,
+        150,
+        200,
+        250,
+        300,
+        350,
+        400
+      ],
+      "runs": [
+        1000,
+        2000,
+        3000,
+        5000,
+        7500,
+        10000
+      ],
+      "wickets": [
+        100,
+        150,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800
+      ]
+    },
+    "appears": 17,
+    "disappears": 2,
+    "moves": 162,
+    "newDismissalsLadderCrossings": 237
+  },
+  "debutOrder": {
+    "caps": 264,
+    "listed": 94,
+    "movedEarlier": 12,
+    "movedLater": 3,
+    "orderDiffers": 87,
+    "capNumbersChanged": 0
+  },
+  "baselineOverlaps": {
+    "rows": 1369,
+    "players": 534,
+    "byKind": {
+      "PEELED_CENTRAL_SEASONS": 1293,
+      "UNCOVERED_CENTRAL_SEASONS": 76
+    },
+    "doubleCounted": {
+      "games": 0,
+      "innings": 0,
+      "runs": 0,
+      "wickets": 0,
+      "catches": 0
+    }
+  },
+  "unlinkedIdentities": {
+    "rows": 20,
+    "nativePlayersAffected": 3,
+    "centralGuidsWithNoNativeMatch": 17
+  },
+  "curated": {
+    "links": 1992,
+    "blocking": 0,
+    "different": 0,
+    "missing": 0,
+    "unresolvedToday": 0,
+    "byTable": {
+      "award_winners": {
+        "same": 212
+      },
+      "cap_register": {
+        "same": 264
+      },
+      "club_photo_players": {
+        "same": 51
+      },
+      "player_images": {
+        "same": 4
+      },
+      "life_members": {
+        "same": 13
+      },
+      "team_of_decade_members": {
+        "same": 24
+      },
+      "premiership_players": {
+        "same": 630
+      },
+      "club_roles": {
+        "same": 325
+      },
+      "centuries": {
+        "same": 184
+      },
+      "five_wicket_hauls": {
+        "same": 285
+      }
+    }
+  },
+  "catchesSamples": [
+    {
+      "playerId": 23,
+      "matchesDiffering": 106,
+      "absoluteDifference": 160,
+      "netDifference": 160,
+      "name": "Jarod Little"
+    },
+    {
+      "playerId": 20,
+      "matchesDiffering": 78,
+      "absoluteDifference": 108,
+      "netDifference": 108,
+      "name": "James Woods"
+    },
+    {
+      "playerId": 46,
+      "matchesDiffering": 67,
+      "absoluteDifference": 105,
+      "netDifference": 105,
+      "name": "Josh Petersen"
+    },
+    {
+      "playerId": 1,
+      "matchesDiffering": 68,
+      "absoluteDifference": 77,
+      "netDifference": 77,
+      "name": "Chris Phelps"
+    },
+    {
+      "playerId": 34,
+      "matchesDiffering": 47,
+      "absoluteDifference": 76,
+      "netDifference": 76,
+      "name": "Richard Woods"
+    },
+    {
+      "playerId": 7,
+      "matchesDiffering": 58,
+      "absoluteDifference": 75,
+      "netDifference": 75,
+      "name": "Matthew Lloyd"
+    },
+    {
+      "playerId": 25,
+      "matchesDiffering": 50,
+      "absoluteDifference": 75,
+      "netDifference": 75,
+      "name": "Cameron Hill"
+    },
+    {
+      "playerId": 43,
+      "matchesDiffering": 50,
+      "absoluteDifference": 66,
+      "netDifference": 66,
+      "name": "Jack Manuel"
+    },
+    {
+      "playerId": 44,
+      "matchesDiffering": 52,
+      "absoluteDifference": 66,
+      "netDifference": 66,
+      "name": "Josh Rudge"
+    },
+    {
+      "playerId": 4,
+      "matchesDiffering": 57,
+      "absoluteDifference": 64,
+      "netDifference": 64,
+      "name": "Matthew Guyton"
+    }
+  ],
+  "outputDir": "exports/hh-cutover-preview-2026-10-05T05-13-47-127Z"
+}

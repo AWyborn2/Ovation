@@ -27,6 +27,12 @@ Shell `PG*` credentials and application connection URLs can reach different data
 
 **How to apply:** Keep source reads and destination writes on separately scoped client connections; specify the destination database explicitly.
 
+The managed development host can proxy PostgreSQL to a backend socket: backend `inet_server_addr()`/`inet_server_port()` may be NULL, and advertised socket directories need not exist in the workspace.
+
+**Why:** Development diagnostics succeeded through the managed client host while direct connections to the backend's advertised socket failed.
+
+**How to apply:** Reuse the verified client's managed host for development-only report processes; do not substitute backend socket paths or assume only loopback hosts are local development.
+
 The raw `wa` schema is staging data the app does not read; its absence from the development copy is intentional. WA application data is already incorporated into `central`, alongside PCA data.
 
 **Why:** The user explicitly confirmed this distinction when approving the development database name swap.

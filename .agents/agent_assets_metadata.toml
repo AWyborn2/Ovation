@@ -227,3 +227,17 @@ mtime_ms = 1791176342547
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/2bd4a1fc-c1aa-43f2-a927-25cecaecf688/5cedffa6-26b0-4104-92da-4ac43fbe439a"
 storage_version_token = "1791176349540021"
 content_type = "text/csv"
+
+[[outputs]]
+id = "HVttoK9Zn1NY5WeaJBqJK"
+uri = "file://scripts/exports/hh-cutover-preview-2026-10-05T05-13-47-127Z/unexplained-all-grade.csv"
+type = "table"
+title = "Unexplained whole-career differences"
+description = "23 data rows plus original header; reasons include unexplained and grade is ALL."
+logical_id = "6b6e4e63-9cca-43a8-bb3c-44c8275b90e0"
+content_hash = "sha256:c01767f3dda3f7ce9ba1bdb7b6230e503e963c124f74cb2382f238e4e42de901"
+size = 7750
+mtime_ms = 1791177241531
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/6b6e4e63-9cca-43a8-bb3c-44c8275b90e0/1d9cb0b6-1db5-4c02-bc21-e51fca8cca27"
+storage_version_token = "1791177257171349"
+content_type = "text/csv"
