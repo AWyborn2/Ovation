@@ -81,6 +81,10 @@ export interface CentralNewMatch {
   grade: string;
   season: number | null;
   matchDate: string | null;
+  /** Central status: COMPLETED / ABANDONED / … or IN_PROGRESS (a two-day game between days). */
+  status: string | null;
+  /** "One Day" / "T20", or null for a multi-day game. */
+  compType: string | null;
 }
 
 /**
@@ -101,6 +105,8 @@ export async function centralClubMatchesAfter(
       grade: centralMatchesTable.grade,
       season: centralMatchesTable.season,
       matchDate: centralMatchesTable.matchDate,
+      status: centralMatchesTable.status,
+      compType: centralMatchesTable.compType,
     })
     .from(centralMatchesTable)
     .where(and(clubInvolvedWhere(clubId), sql`${centralMatchesTable.matchId} > ${afterMatchId}`))
@@ -117,6 +123,8 @@ export async function centralClubMatchesAfter(
       grade,
       season: parseSeasonStartYear(r.season),
       matchDate: r.matchDate,
+      status: r.status,
+      compType: r.compType,
     });
   }
   return { matches: out, lastSeenId };

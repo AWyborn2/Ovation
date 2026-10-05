@@ -29,7 +29,12 @@ import { familyAllows, resolveFamilyConfig } from "./social-families";
 import { loadMatchDetail, loadCentralMatchDetail } from "./match-detail";
 import { overlayNativeOpponents } from "./club-brand";
 import { getPrivateIds, splitScores, MASK_NAME } from "./junior-helpers";
-import { draftKeys, upsertDraftByKey, type DraftUpsertResult } from "./draft-upsert";
+import {
+  draftKeys,
+  findDraftByKey,
+  upsertDraftByKey,
+  type DraftUpsertResult,
+} from "./draft-upsert";
 import { topPerformerPlayerId } from "./match-top-performer";
 
 // ---------------------------------------------------------------------------
@@ -391,6 +396,62 @@ export async function generateMatchSummaryDrafts(
     }
   }
 
+  return result;
+}
+
+/**
+ * "Stumps, Day 1" cards for a central-data club's two-day games in progress (Ash, 5 Oct 2026).
+ * The match result card with the day-1 scores and a "Stumps, Day 1" headline, drafted once — the
+ * first sweep after day 1 — and never refreshed, so day-2 play can't rewrite it. The result card
+ * follows when the match is completed. Gated like result cards (results family + grade).
+ */
+export async function generateCentralStumpsDrafts(
+  tenantId: number,
+  clubId: number,
+  matchIds: number[],
+  seenAt: Date,
+): Promise<DraftResult> {
+  const result: DraftResult = { drafted: 0, skipped: 0, errors: [] };
+  if (matchIds.length === 0) return result;
+  const settings = await loadSocialSettings(tenantId);
+  if (!resolveFamilyConfig(settings).results.enabled) {
+    result.skipped = matchIds.length;
+    return result;
+  }
+  for (const matchId of matchIds) {
+    try {
+      const sourceKey = draftKeys.centralStumps(matchId);
+      if (await findDraftByKey(tenantId, sourceKey)) {
+        result.skipped++;
+        continue;
+      }
+      const detail = await loadCentralMatchDetail({ tenantId, clubId }, matchId);
+      if (!detail || !shouldDraftGrade(settings, detail.grade, false)) {
+        result.skipped++;
+        continue;
+      }
+      const cardInput = {
+        ...matchToSummaryInput(detail as unknown as MatchDetail),
+        result: "Stumps, Day 1",
+        resultWinner: "draw" as const,
+      };
+      await upsertDraftByKey({
+        tenantId,
+        engine: "matchSummary",
+        family: "results",
+        sourceKey,
+        cardInput: cardInput as Record<string, unknown>,
+        appPath: `/matches/${matchId}`,
+        sourceKind: "matchSummary",
+        sourceImportedAt: seenAt,
+        grade: detail.grade,
+        featuredPlayerId: topPerformerPlayerId(detail.lines),
+      });
+      result.drafted++;
+    } catch (err) {
+      result.errors.push(err instanceof Error ? err.message : String(err));
+    }
+  }
   return result;
 }
 
