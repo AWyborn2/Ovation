@@ -1,0 +1,171 @@
+{
+  "committedAt": "2026-10-05T04:20:57.206Z",
+  "tenantId": 1,
+  "historyBatchId": 7,
+  "previousBoundaries": null,
+  "boundariesWritten": null,
+  "playerIdMapInserted": [],
+  "pinnedPlayers": [
+    {
+      "playerId": 157,
+      "displayName": "Adam Dalman",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 217,
+      "displayName": "Dan Krepivin",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 243,
+      "displayName": "Wayne Allan",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 265,
+      "displayName": "Craig Woods",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 273,
+      "displayName": "Don Tregenza",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 299,
+      "displayName": "Ron Woods",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 309,
+      "displayName": "Gordon Summors",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 332,
+      "displayName": "Gary Catterall",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 342,
+      "displayName": "Brad Perry",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 351,
+      "displayName": "Simon Guy",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 360,
+      "displayName": "Terry Aldridge",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 391,
+      "displayName": "Steve Rowe",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 393,
+      "displayName": "Koraan Kapoor",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 397,
+      "displayName": "Scott Hardy",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 417,
+      "displayName": "Dean Lockyer",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 422,
+      "displayName": "Paul Westcott",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 425,
+      "displayName": "Jeremy Needs",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 439,
+      "displayName": "Jason Dodd",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 440,
+      "displayName": "Chris Taylor",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 442,
+      "displayName": "Darren Magee",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 443,
+      "displayName": "David Haas",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 452,
+      "displayName": "Wayde Hall",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 455,
+      "displayName": "Glenn Doust",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 484,
+      "displayName": "Caiden Sturgess",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 520,
+      "displayName": "Kiren Mellacheruvu",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 538,
+      "displayName": "Mathew Reilly",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 561,
+      "displayName": "Shawn Pretorious",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 578,
+      "displayName": "Matthew Piggot",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 9003,
+      "displayName": "Anthony Johnson",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 9005,
+      "displayName": "Derek Pike",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 9006,
+      "displayName": "Mujaho Thompson",
+      "reason": "BASELINE_ONLY"
+    },
+    {
+      "playerId": 9008,
+      "displayName": "Ryan Dean",
+      "reason": "BASELINE_ONLY"
+    }
+  ],
+  "undo": "History: run this script with --tenant=1 --undo=7 --commit (U11 batch undo; also removes pinned players nothing else references). Boundaries: restore previousBoundaries via the platform admin history page. Decision crosswalk rows: DELETE FROM player_id_map WHERE tenant_id = 1 AND participant_id IN (…playerIdMapInserted)."
+}

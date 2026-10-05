@@ -1,0 +1,23 @@
+scope,record,change,native_player_id,native_holder,native_value,hybrid_player_id,hybrid_holder,hybrid_value,reasons
+all,mostGames,value,1,Chris Phelps,406,1,Chris Phelps,407,games_rule; catches_rule; baseline_peel
+all,bestBowling,holder,247,Joe Phillips,10/22,272,Angus Beattie,8/11,extra_central_match; catches_rule; baseline_peel; unexplained
+Colts,mostCatches,value,322,Angus Moseley,8,322,Angus Moseley,12,extra_central_match; catches_rule; baseline_peel; figures_differ; unexplained
+Colts,bestBowling,value,247,Joe Phillips,10/22,247,Joe Phillips,6/7,extra_central_match; catches_rule; baseline_peel; unexplained
+D Grade,mostGames,value,20,James Woods,187,20,James Woods,190,games_rule; catches_rule; baseline_peel
+D Grade,mostCatches,value,20,James Woods,79,20,James Woods,101,games_rule; catches_rule; baseline_peel
+E Grade,mostGames,value,24,Simon King,107,24,Simon King,109,games_rule; catches_rule; baseline_peel
+E Grade,mostCatches,holder,15,Ashley Wyborn,33,122,Mark Cruickshank,33,games_rule; catches_rule; baseline_peel
+E Grade,mostHundreds,holder,18,Jason Young,2,104,Dave Somers,2,games_rule; catches_rule; baseline_peel
+F Grade,mostGames,value,5,Colin Birdsall,86,5,Colin Birdsall,96,games_rule
+F Grade,mostCatches,holder,206,Luke Ash,27,235,Mason Head,27,catches_rule; baseline_peel
+Female A Grade,mostGames,value,214,Jessica Bradley,41,214,Jessica Bradley,42,games_rule; catches_rule; baseline_peel
+Female A Grade,mostCatches,holder,214,Jessica Bradley,4,237,Eve Powell,12,games_rule; catches_rule; baseline_peel
+Female B Grade,mostGames,value,171,Natasha Bradley,47,171,Natasha Bradley,49,ladies_t20
+Female B Grade,mostCatches,holder,,,,262,Rosie Marino,4,catches_rule
+PPL,mostGames,holder,44,Josh Rudge,23,30,Scott Martin,28,games_rule; catches_rule; baseline_peel; grade_reclassified
+PPL,mostRuns,value,43,Jack Manuel,564,43,Jack Manuel,636,games_rule; catches_rule; baseline_peel; grade_reclassified
+PPL,mostWickets,holder,271,Aaron Burrage,27,30,Scott Martin,33,games_rule; catches_rule; baseline_peel; grade_reclassified
+PPL,mostCatches,holder,159,Jake Pattison,4,30,Scott Martin,6,games_rule; catches_rule; baseline_peel; grade_reclassified
+PPL,mostFifties,value,43,Jack Manuel,5,43,Jack Manuel,6,games_rule; catches_rule; baseline_peel; grade_reclassified
+PPL,mostHundreds,holder,81,Timothy Miles,1,271,Aaron Burrage,1,games_rule; catches_rule; baseline_peel
+PPL,bestBowling,holder,370,Bradley Scott,4/8,93,Ashley Jeffrey,4/6,games_rule; grade_reclassified
