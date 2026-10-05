@@ -25,9 +25,13 @@ export function slot(
   type: "photo" | "logo" | "sponsor",
   shape: "rect" | "rounded" | "circle" = "rect",
   radius?: number,
+  /** Default `object-position` for a photo (e.g. "50% 22%" to keep heads in a
+   * wide crop); a user-set focal point still wins. */
+  focus?: string,
 ): string {
   const r = radius != null ? ` data-radius="${radius}"` : "";
-  return `<div data-slot="${key}" data-slot-type="${type}" data-shape="${shape}"${r} style="width:100%;height:100%"></div>`;
+  const fo = focus ? ` data-focus="${focus}"` : "";
+  return `<div data-slot="${key}" data-slot-type="${type}" data-shape="${shape}"${r}${fo} style="width:100%;height:100%"></div>`;
 }
 
 /** Tenant club logo slot (bundle: `fit="contain" shape="rect"`). */
@@ -140,6 +144,31 @@ export function skeletonCard(parts: SkeletonParts): string {
     parts.footer +
     `</div></div>`
   );
+}
+
+/**
+ * Body content anchored for a card with a photo: centred on square and
+ * landscape (the body box is wider than tall), but pushed to the bottom
+ * (`end`) or top (`start`) of a taller-than-wide box — portrait and story —
+ * so the copy stops sitting over the middle of the photo and the photo gets
+ * the free run of the rest. Without a bound photo it stays centred.
+ *
+ * One markup serves every shared format, so the switch is CSS: the trailing
+ * spacer's `max-height` is the body box's width minus its height (container
+ * units of the body), scaled up — ample when the box is wide, zero once it
+ * is tall.
+ */
+export function anchoredBody(
+  photo: string | undefined,
+  body: string,
+  anchor: "start" | "end" = "end",
+): string {
+  if (!photo) return body;
+  const grow = `<div style="flex:1 1 0;min-height:0"></div>`;
+  const wideOnly =
+    `<div data-drop-if-empty="${photo}" style="flex:1 1 0;min-height:0;max-height:clamp(0px,calc((100cqw - 100cqh) * 50),100cqh)"></div>` +
+    `<div data-drop-if-image="${photo}" style="flex:1 1 0;min-height:0"></div>`;
+  return anchor === "end" ? grow + body + wideOnly : wideOnly + body + grow;
 }
 
 /** Kind chip (top-right). Colours come from `--sk-chip-*`. */

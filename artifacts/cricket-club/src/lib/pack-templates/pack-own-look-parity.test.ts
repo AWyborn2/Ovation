@@ -18,29 +18,31 @@ import type { CardSize, ShareCardInput } from "../share-card";
  * Regenerate ONLY for an intentional change to a pack's own look. Last
  * regenerated for sponsor footers: logos (or the presenting sponsor's name
  * only when there are none), never the name as text beside logos. Last
- * regenerated when match result cards went to a single sponsor tile.
+ * regenerated when match result cards went to a single sponsor tile. Last
+ * regenerated when tall cards anchored their copy clear of the photo (Bold
+ * Type's wedge grows on story; Sunset's glass hugs the copy).
  */
 const BEFORE: Record<string, string> = {
-  "broadcast-dark-v1/themed": "9d5306cdb50c60f094230fc78bd6dab2e6e7ae48ed7efe8e9c09715994327438",
-  "broadcast-dark-v1/junior": "286f5bbe99f172a81aae4cfa068012c9b8087bc1209c17b075072b16caf86cc7",
-  "broadcast-dark-v1/brandOnly": "a5a53be358e60c3ccc36fc59a372720b9692fb093b5b3e2cd49320ac296903be",
-  "broadcast-dark-v1/brandless": "824926c5f7bc61e433b6e177766acef989710c400ef96db62134d2780f7fad42",
-  "gold-foil-v1/themed": "9346b3d050550198a17cbd501323ba4555780659996ce4fca09a9356d701530a",
-  "gold-foil-v1/junior": "ae20b7f4416ea48b709dacc4187ccb8b76f90f4b09c2ef5f121d6b6c167b145e",
-  "gold-foil-v1/brandOnly": "48211f6fa1f96d43277dea8e06553c5bbc4666ab5abb8ab226245d0a90e58c3c",
-  "gold-foil-v1/brandless": "a2f58eef6b1ee572d132c009397d46b90649e56d8501cdb95a79dee1fa3d639b",
-  "bold-type-v1/themed": "c227bd4f703e9141c8d5d65d372cae47a74a2b342156660e3b5b7dd797de1a84",
-  "bold-type-v1/junior": "adde9395a3f756947ea8b44cd2fdc6fced7f36a4b7f142102d0564d873941a00",
-  "bold-type-v1/brandOnly": "346a7cfd9637da5dbff47100e695a55b5c9513c7f5db0b06c17501e71b318544",
-  "bold-type-v1/brandless": "5f65cd1dab31878582fa406ffc73bfd7c186f9ce5549e123bab65b2e229b506c",
-  "neon-night-v1/themed": "362335d92852003079cb77e37f20a450866ec93f10bd1069c55bbc7986b44f2e",
-  "neon-night-v1/junior": "fdf911c5d166e13ff3ef77cf5a822e8d9d3020ef049bcfe00c40c300720232f0",
-  "neon-night-v1/brandOnly": "425ad7f91bac0241761842d8905fa41ff26866c533892b1dd2b3ac47013f3acf",
-  "neon-night-v1/brandless": "06df27ab849170b3ecbe1cf4e9ebf4464a666307efe2705d78d24aa960b69522",
-  "sunset-v1/themed": "2d978c237530b0d44a9866d996f92f15df20bd8ea94c92e462b482c417968a2d",
-  "sunset-v1/junior": "3b98ebd9d140fff16ee1036336f38d3ffad533df35d126adb58c106fc0d6bd24",
-  "sunset-v1/brandOnly": "e83515debed11a0d63a4ba0eebead5719f81d82d966db2c5942212949f640798",
-  "sunset-v1/brandless": "2004d3de4883f03726cb5a1d7c2c31775972a4e4fb00cf1f8953681d5f0ac54f",
+  "broadcast-dark-v1/themed": "94a804c63184d98fdd51d6a6dc572dab88df817b83d8e5d917f4c976160d65c1",
+  "broadcast-dark-v1/junior": "d23cbac2a6cc71289c1a6a4ae1479bf03a9c114c4a8667b7aa6a2d246e99ad66",
+  "broadcast-dark-v1/brandOnly": "1514e83de447fbd75af4fc8633a08970c0bc9c9ff3502fc3fb39f98e674bdd37",
+  "broadcast-dark-v1/brandless": "08bd161835d7e2921bf101ac9995a1841723c071a5426f65f5f197aac71a6c13",
+  "gold-foil-v1/themed": "42a175cc34a8b67d6dde93b92d5f45c29bdc6e2938f01375380ec2c61cdfc5ac",
+  "gold-foil-v1/junior": "489b85aeec8919379186023e74ccbe3d6f6aa65ad9705bee701ca093ea7153ae",
+  "gold-foil-v1/brandOnly": "78dc65029c8745f5f125591e0078aceb2452efd247df3121bc49bd3321feac2c",
+  "gold-foil-v1/brandless": "6c083e8f3f9b3ba43ecae8250836ebce3560c777e96dc0342cedcd5c000a41b2",
+  "bold-type-v1/themed": "dc62fb501731637c74703925b7b36b69737ad54a37ba59afb0566753dead0803",
+  "bold-type-v1/junior": "bf0f1cbb26cba2c5cd40bc4312c770bd2cec16e2bb4f4b8d7340d659cc32e32f",
+  "bold-type-v1/brandOnly": "d99fd64a480ed3c39eb19b683fc23d5db27aa683c17a7c345cab0f86d01aab9c",
+  "bold-type-v1/brandless": "6b6e5219c96e2e0142c62f2e7c68c8874eb65b01ce1b04354ebbd68a3ac7f802",
+  "neon-night-v1/themed": "e237893a65a777f9a4b2b8dd7d4e25be8b857530767728671a31f38736a93355",
+  "neon-night-v1/junior": "71ed6720a4c8268721fa7a46d3afdafaeae8a3ef7728c0cd6b0d8e2ba37e3615",
+  "neon-night-v1/brandOnly": "f5f73d11206c1a4ddb50b543f3cae92ec5cc71a11c2d0a1d46068bee4b2c9c85",
+  "neon-night-v1/brandless": "8841a6fd3e7512408df404cf8e753a16360811941c05adf9c06d248317e52b19",
+  "sunset-v1/themed": "f41849f7d60f9724aa14ca858a4e8dfe9294c1ff74785c0dcaff800faf9d4863",
+  "sunset-v1/junior": "5e4e4592c39f3c5e551817ccac04b89232b76a1a75cc918d613de331b4bc3a87",
+  "sunset-v1/brandOnly": "5a21f2b4a5e5437e3e6797f51d1891bb04cb6092567366cea274eca7a6079b4e",
+  "sunset-v1/brandless": "689b3ac4d9af744e4663b6fb2fd1f5e125f6d0fb58d3fcb1e2c7b74fc1974867",
 };
 
 const SIZES: CardSize[] = ["square", "portrait", "story", "landscape"];

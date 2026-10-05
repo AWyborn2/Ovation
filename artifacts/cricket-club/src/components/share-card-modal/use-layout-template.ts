@@ -26,10 +26,13 @@ export function useLayoutTemplate({
   open,
   input,
   isJunior,
+  draftPackId,
 }: {
   open: boolean;
   input: Props["input"];
   isJunior: boolean;
+  /** A queued draft's own pack, which its post pack renders in. */
+  draftPackId?: string | null;
 }) {
   // --- Per-slot image overrides (B1) -----------------------------------------
   // A generic slot-key → url map letting an admin repoint ANY image slot the
@@ -98,8 +101,9 @@ export function useLayoutTemplate({
   const isPackTemplate = selectedTemplate?.source === "pack";
   const bgTemplate = isLayerTemplate || isPackTemplate ? null : selectedTemplate;
   /**
-   * The pack supplying the design: an explicitly selected pack row's, else the
-   * tenant's per-kind choice, else the renderer's default.
+   * The pack supplying the design: an explicitly selected pack row's, else a
+   * queued draft's own pack, else the tenant's per-kind choice, else the
+   * renderer's default (the same order the editor and the post pack use).
    *
    * The middle case is load-bearing. Pack rows are excluded from the layout
    * pre-selection above (they are not a BYO layout choice), so on the built-in
@@ -111,7 +115,8 @@ export function useLayoutTemplate({
   const packId = isPackTemplate
     ? (selectedTemplate?.packId ?? null)
     : selectedTemplate === null && input
-      ? resolvePackIdForKind(templatesQ.data as CardTemplate[] | undefined, input.kind)
+      ? (draftPackId ??
+        resolvePackIdForKind(templatesQ.data as CardTemplate[] | undefined, input.kind))
       : null;
   // Image slots (photo/logo) the resolved pack's design for this kind exposes.
   // Declared after `packId` because packs differ in which slots they offer.

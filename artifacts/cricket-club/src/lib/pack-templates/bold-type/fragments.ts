@@ -72,7 +72,7 @@ const VARS = [
 function wedge(key: string): string {
   const clip = "clip-path:polygon(18% 0,100% 0,100% 100%,0 100%)";
   return (
-    `<div data-drop-if-empty="${key}" style="position:absolute;right:-6cqmin;bottom:-6cqmin;width:52%;height:min(52%,56cqmin);${clip};background:${SLATE};isolation:isolate;pointer-events:none">` +
+    `<div data-drop-if-empty="${key}" style="position:absolute;right:-6cqmin;bottom:-6cqmin;width:calc(52% + max(0px,100cqh - 130cqw) * .35);height:calc(min(52%,56cqmin) + max(0px,100cqh - 130cqw));${clip};background:${SLATE};isolation:isolate;pointer-events:none">` +
     `<div style="position:absolute;inset:0;filter:grayscale(1) contrast(1.15);mix-blend-mode:screen;opacity:.85">` +
     `<div style="position:absolute;inset:0">${slot(key, "photo")}</div>` +
     `</div></div>`
@@ -97,4 +97,8 @@ export const BOLD_LOOK: PackLook = {
   layers,
   // Beside the wedge the column keeps to the left ~58% of the body.
   column: { photo: "58%", wide: "124cqmin" },
+  // On story the wedge grows up from the bottom (taller and wider by the
+  // card's height past 1.3× its width; portrait keeps the square's wedge),
+  // and on tall cards the copy takes the top.
+  tallAnchor: "start",
 };

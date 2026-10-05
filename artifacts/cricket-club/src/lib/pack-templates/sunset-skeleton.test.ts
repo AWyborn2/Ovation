@@ -3,6 +3,9 @@ import { SUNSET_PACK } from "./sunset";
 import { describeSkeletonPack, PURPLE } from "./skeleton-contract";
 import { renderPackCard } from "../pack-render";
 import { sampleCardInput } from "../sample-card-inputs";
+import { buildPackData } from "../pack-card-data";
+import { BROADCAST_DARK_PACK } from "./broadcast-dark";
+import { BOLD_TYPE_PACK } from "./bold-type";
 
 /**
  * U13 — Sunset on the shared card skeleton: the common skeleton contract, plus
@@ -36,5 +39,39 @@ describe("Sunset details (U13)", () => {
     expect(render("matchSummary")).toContain(">Full time</div>");
     expect(render("matchDay")).toContain(">Game day</div>");
     expect(render("teamList")).toContain(">Selected</div>");
+  });
+});
+
+describe("Tall cards keep the copy clear of the photo", () => {
+  const withPhoto = (packId: string, kind: Parameters<typeof sampleCardInput>[0] = "player") => {
+    const data = buildPackData({ photoUrl: "https://cdn.example/p.jpg" });
+    return renderPackCard(sampleCardInput(kind), "story", true, PURPLE, false, data, packId);
+  };
+  const SPACER = "max-height:clamp(0px,calc((100cqw - 100cqh) * 50),100cqh)";
+
+  it("anchors the copy with a spacer that collapses on a tall body", () => {
+    for (const packId of [SUNSET_PACK.packId, BROADCAST_DARK_PACK.packId, BOLD_TYPE_PACK.packId]) {
+      expect(withPhoto(packId), packId).toContain(SPACER);
+    }
+  });
+
+  it("stays centred without a photo", () => {
+    const html = renderPackCard(
+      sampleCardInput("player"),
+      "story",
+      true,
+      PURPLE,
+      false,
+      null,
+      SUNSET_PACK.packId,
+    );
+    expect(html).not.toContain(SPACER);
+  });
+
+  it("hugs the copy with Sunset's glass instead of glazing the whole body", () => {
+    const html = withPhoto(SUNSET_PACK.packId);
+    const body = html.slice(html.indexOf('data-skeleton-body="1"'));
+    expect(body.slice(0, body.indexOf(">"))).not.toContain("backdrop-filter");
+    expect(html).toContain("margin:-12cqmin -5cqmin -5cqmin");
   });
 });

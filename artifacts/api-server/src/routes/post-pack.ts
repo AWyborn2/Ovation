@@ -16,6 +16,7 @@ import { getTenantBrand } from "../lib/tenant-brand";
 import { loadActiveSponsors } from "../lib/active-sponsors";
 import { harnessOriginFromHeaders, renderCardStill } from "../lib/card-video-renderer";
 import { objectUrl, photoStore } from "../lib/photo-store";
+import { resolveDraftPack } from "../lib/draft-enrich";
 
 /**
  * `POST /social-drafts/:id/post-pack` — everything needed to share one card
@@ -75,11 +76,23 @@ router.post(
     const input = (draft.cardInput ?? {}) as Record<string, unknown>;
     const kind = typeof input.kind === "string" ? input.kind : "card";
     const junior = draft.sourceMatchIsJunior || input.junior === true;
-    const [settings, brand, sponsors] = await Promise.all([
+    const [settings, brand, sponsors, clubPack] = await Promise.all([
       ensureSettings(tenantId),
       getTenantBrand(tenantId),
       loadActiveSponsors(tenantId, req.log),
+      // The pack the club has set for this card type: the Studio preview and
+      // editor fall back to it when the draft carries no pack of its own, so
+      // the post pack must too (not the renderer's default pack).
+      draft.packId ? Promise.resolve(null) : resolveDraftPack(tenantId, kind),
     ]);
+    const packId = draft.packId ?? clubPack;
+    // "Pack's own look" choices, as the Studio preview passes them; any other
+    // pack renders in club colours.
+    const modes = Object.fromEntries(
+      Object.entries((settings.packColourModes ?? {}) as Record<string, string>).filter(
+        ([, mode]) => mode === "pack",
+      ),
+    );
     const sizes: CardSize[] = [
       ...(settings.sizeSquare ? (["square"] as const) : []),
       ...(settings.sizePortrait ? (["portrait"] as const) : []),
@@ -115,6 +128,7 @@ router.post(
       // Junior cards never carry a photo (KTD15).
       photoUrl: junior ? null : draft.photoUrl,
       photoPlacement: "contained",
+      ...(Object.keys(modes).length ? { packColourModes: modes } : {}),
     };
 
     const origin = harnessOriginFromHeaders(req.headers);
@@ -163,7 +177,7 @@ router.post(
                 junior: slideJunior,
                 theme: null,
                 data: slideData,
-                packId: draft.packId ?? null,
+                packId,
                 adjustments: adjustmentsFor(slide.key),
               },
               origin,

@@ -100,22 +100,36 @@ function layers(photo: string | undefined): string {
  * panel's padding comes out of the space body content auto-fits to. The top
  * padding leaves room for the script word.
  */
-const GLASS =
+/**
+ * The body box keeps its width and padding (its cqmin, which sizes the copy,
+ * is unchanged) but no longer paints the glass: the panel hugs the copy
+ * instead, reaching back over that padding with negative margins, so on a
+ * tall card the photo above the copy reads sharp rather than blurred.
+ */
+const GLASS_BOX =
   ";position:relative;align-self:flex-start;width:82%;box-sizing:border-box;" +
-  "padding:8.6cqmin 3.4cqmin 3.4cqmin;background:rgba(255,255,255,.12);" +
-  "border:.15cqmin solid rgba(255,255,255,.3);border-radius:3cqmin;" +
-  "backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)";
+  "padding:8.6cqmin 3.4cqmin 3.4cqmin";
+
+/** The glass panel around the copy (body cqmin). */
+function glassPanel(inner: string): string {
+  return (
+    `<div style="position:relative;flex:none;margin:-12cqmin -5cqmin -5cqmin;padding:12cqmin 5cqmin 5cqmin;` +
+    `background:rgba(255,255,255,.12);border:.15cqmin solid rgba(255,255,255,.3);border-radius:4.4cqmin;` +
+    `backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)">${inner}</div>`
+  );
+}
 
 /** Kaushan Script word in the panel's top padding (body cqmin). */
 function scriptWord(deco: CardDeco): string {
-  return `<div style="position:absolute;left:4.4cqmin;top:1.6cqmin;font-family:'Kaushan Script',cursive;font-size:6.4cqmin;line-height:1;white-space:nowrap;color:${GLOW_TEXT};text-shadow:0 .4cqmin 1.6cqmin rgba(0,0,0,.35)">${deco.script}</div>`;
+  return `<div style="position:absolute;left:5cqmin;top:2.2cqmin;font-family:'Kaushan Script',cursive;font-size:6.4cqmin;line-height:1;white-space:nowrap;color:${GLOW_TEXT};text-shadow:0 .4cqmin 1.6cqmin rgba(0,0,0,.35)">${deco.script}</div>`;
 }
 
 export const SUNSET_LOOK: PackLook = {
   vars: VARS,
   layers,
-  bodyStyle: () => GLASS,
+  bodyStyle: () => GLASS_BOX,
   bodyPrefix: scriptWord,
+  wrapBody: glassPanel,
   // Content sits inside the glass panel, full photo behind: always wide.
   column: { photo: "124cqmin", wide: "124cqmin" },
 };

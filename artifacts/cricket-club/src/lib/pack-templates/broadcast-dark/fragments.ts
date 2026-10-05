@@ -2,6 +2,7 @@ import type { PackLook } from "../skeleton-kit";
 import type { PackTemplateFormats } from "../types";
 import {
   SK_COND,
+  anchoredBody,
   SK_MONO,
   skeletonCard,
   skeletonChip,
@@ -133,7 +134,7 @@ export function bdCard(parts: BdCardParts): string {
     vars: BD_VARS,
     layers: (parts.photo ? bdPhoto(parts.photo) : "") + BD_SLASHES,
     header: skeletonHeader(parts.chip, parts.tag),
-    body: parts.body,
+    body: anchoredBody(parts.photo, parts.body),
     footer: parts.footer,
     // Over a photo the body type gets a soft shadow for legibility.
     bodyStyle: parts.photo ? ";text-shadow:0 .3cqmin 1.6cqmin rgba(0,0,0,.45)" : "",
