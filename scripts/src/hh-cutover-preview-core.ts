@@ -387,18 +387,14 @@ export function diffCareers(input: CareersInput): CareersDiff {
     s.add(l.playerId);
   }
   const seasonsByPlayer = new Map<number, NativeSeasonStat[]>();
-  /** (grade, season) native ingested as its own season, for anyone. */
-  const nativeLoaded = new Set<string>();
   for (const r of input.nativeSeasons) {
     if (!real(r.playerId)) continue;
     push(seasonsByPlayer, r.playerId, r);
-    if (r.season !== null) nativeLoaded.add(gs(r.grade, r.season));
   }
   /** (grade, season) native holds scorecards for. */
   const nativeHasMatches = new Set<string>();
   for (const m of input.nativeMatches) {
     nativeHasMatches.add(gs(m.grade, m.season));
-    nativeLoaded.add(gs(m.grade, m.season));
   }
   const nativeGradesByPlayer = new Map<number, NativeGradeCareer[]>();
   for (const r of input.nativeGrades)
@@ -552,6 +548,21 @@ export function diffCareers(input: CareersInput): CareersDiff {
         return p;
       };
 
+      /**
+       * A native career is its snapshots only (scorecard lines never count), so
+       * a (grade, season) without the player's own season row lives in their
+       * career baseline, if anywhere.
+       */
+      const ownSeasons = new Set(
+        [P, ...mergedIds].flatMap((id) =>
+          (seasonsByPlayer.get(id) ?? [])
+            .filter((r) => r.season !== null)
+            .map((r) => gs(r.grade, r.season)),
+        ),
+      );
+      const inBaselineOnly = (grade: string, season: number | null): boolean =>
+        season !== null && !ownSeasons.has(gs(grade, season)) && !isZero(baselineOf(grade));
+
       // 1. Native scorecard lines, each against the central side of its match.
       for (const l of linesByPlayer.get(P) ?? []) {
         const m = nativeMatchById.get(l.matchId);
@@ -594,7 +605,12 @@ export function diffCareers(input: CareersInput): CareersDiff {
               centralStumpings: sum((a) => a.stumpings),
               centralRunOuts: sum((a) => a.runOuts),
             });
-            if (cm.grade === m.grade) {
+            if (cm.grade === m.grade && inBaselineOnly(m.grade, m.season)) {
+              // The line isn't in the native career; the baseline holds the
+              // game, and central adds it again (the seed's peel nets it off).
+              add(cm.grade, "baseline_overlap", cf);
+              accumulate(overlapSeasons, cm.grade, cm.season, cf);
+            } else if (cm.grade === m.grade) {
               const net = minus(cf, lf);
               add(m.grade, "figures_differ", { games: net.games, innings: net.innings });
               add(m.grade, corr.runs !== 0 ? "correction" : "figures_differ", { runs: net.runs });
@@ -694,11 +710,7 @@ export function diffCareers(input: CareersInput): CareersDiff {
             if (rosterOnly(app)) pool.rosterOnly += 1;
           } else if (cm.ladiesT20) {
             add(grade, "ladies_t20", cf);
-          } else if (
-            cm.season !== null &&
-            !isZero(baselineOf(grade)) &&
-            !nativeLoaded.has(gs(grade, cm.season))
-          ) {
+          } else if (inBaselineOnly(grade, cm.season)) {
             add(grade, "baseline_overlap", cf);
             accumulate(overlapSeasons, grade, cm.season, cf);
           } else if (!app.countsAsGame || rosterOnly(app)) {

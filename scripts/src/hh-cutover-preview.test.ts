@@ -692,6 +692,29 @@ describe("diffCareers — baseline overlap (R20, AE6)", () => {
     expect(only(d.overlaps).doubleCounted).toMatchObject({ games: 0, runs: 0 });
   });
 
+  it("a line with no season row is the baseline's game: the peel makes it no change", () => {
+    // Sam Hardman's shape: native holds his scorecard line, but his career is
+    // the baseline (no season row); the seed peeled the game out of it.
+    const d = diffCareers(
+      input({
+        nativeGrades: [career(1, { games: 1, innings: 1, runs: 24 })],
+        nativeSeasons: [season(1, null, { games: 1, innings: 1, runs: 24 })],
+        nativeMatches: [nMatch(1)],
+        nativeLines: [line({ matchId: 1, playerId: 1, runs: 24 })],
+        linkByNativeMatch: new Map([[1, 101]]),
+        centralMatches: [cMatch(101)],
+        appearances: apps([101, [app(G1, { runs: 24 })]]),
+        hybridBuckets: [bucket(1, { games: 1, innings: 1, runs: 24 })],
+      }),
+    );
+    expect(d.grades).toEqual([]);
+    expect(only(d.overlaps)).toMatchObject({
+      kind: "UNCOVERED_CENTRAL_SEASONS",
+      seasons: [2010],
+      doubleCounted: { games: 0, runs: 0 },
+    });
+  });
+
   it("caps the double count at what the baseline holds", () => {
     const i = ae6();
     i.nativeSeasons = [season(1, null, { games: 1, innings: 1, runs: 30 }), i.nativeSeasons[1]!];
@@ -701,10 +724,10 @@ describe("diffCareers — baseline overlap (R20, AE6)", () => {
     expect(o.doubleCounted).toMatchObject({ games: 1, innings: 1, runs: 30 });
   });
 
-  it("is an extra central match, not an overlap, when native loaded that season", () => {
+  it("another player's season row says nothing about this player's baseline", () => {
     const i = ae6();
-    // Another player has a native A Grade 2003/04 season row: native ingested
-    // the season, so this player's baseline does not hold it.
+    // Someone else has a native A Grade 2003/04 season row; this player has
+    // none, so the season still lives in their baseline (Sam Hardman, dev).
     i.nativeSeasons = [...i.nativeSeasons, season(7, 2003, { games: 3 })];
     i.nativeGrades = [...i.nativeGrades, career(7, { games: 3 })];
     i.hybridBuckets = [
@@ -712,8 +735,16 @@ describe("diffCareers — baseline overlap (R20, AE6)", () => {
       bucket(7, { source: "history", season: 2003, games: 3 }),
     ];
     const d = diffCareers(i);
+    expect(only(d.overlaps)).toMatchObject({ playerId: 1, seasons: [2003] });
+    expect(d.grades.find((g) => g.playerId === 1)!.reasons).toEqual(["baseline_overlap"]);
+  });
+
+  it("is an extra central match when the player has their own row for that season", () => {
+    const i = ae6();
+    i.nativeSeasons = [...i.nativeSeasons, season(1, 2003, { games: 0 })];
+    const d = diffCareers(i);
     expect(d.overlaps).toEqual([]);
-    expect(d.grades.find((g) => g.playerId === 1)!.reasons).toEqual(["extra_central_match"]);
+    expect(only(d.grades).reasons).toEqual(["extra_central_match"]);
   });
 
   it("is not an overlap without a baseline", () => {
