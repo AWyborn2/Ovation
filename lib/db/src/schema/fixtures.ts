@@ -80,6 +80,10 @@ export const teamListsTable = pgTable(
       .references(() => fixturesTable.id, { onDelete: "cascade" }),
     players: jsonb("players").$type<TeamListPlayer[]>().notNull().default([]),
     isPublished: boolean("is_published").notNull().default(false),
+    // Who wrote the XI: "admin" (the fixtures admin) or "playhq" (the team the
+    // club selected in PlayHQ, copied by the scheduled sync). The sync only
+    // ever replaces its own lists — an admin's list is never overwritten.
+    source: text("source").notNull().default("admin"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

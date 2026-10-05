@@ -35,11 +35,6 @@ on:
       manual_since:
         description: "Manual catch-up: fetch scorecards since this date (YYYY-MM-DD)"
         required: false
-      probe_lineups:
-        description: "Read-only probe: print how PlayHQ exposes selected teams for upcoming matches (writes nothing)"
-        type: boolean
-        required: false
-        default: false
 
 permissions:
   contents: read
@@ -52,7 +47,7 @@ concurrency:
 jobs:
   sync:
     name: Collect due PlayHQ plans
-    if: vars.PLAYHQ_SYNC_ENABLED == 'true' && !inputs.probe_lineups
+    if: vars.PLAYHQ_SYNC_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -86,35 +81,3 @@ jobs:
           MANUAL_ORG: ${{ inputs.manual_org }}
           MANUAL_SINCE: ${{ inputs.manual_since }}
         run: node "$GITHUB_WORKSPACE/scripts/playhq-sync/runner.mjs"
-
-  probe:
-    name: Probe PlayHQ team lineups (read-only)
-    if: inputs.probe_lineups
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          sparse-checkout: |
-            scripts/playhq-sync
-            .claude/skills/playcricket-stats-scraper/harness.js
-          sparse-checkout-cone-mode: false
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install puppeteer-core outside the workspace
-        run: |
-          mkdir -p "$RUNNER_TEMP/sync"
-          cd "$RUNNER_TEMP/sync"
-          npm init -y >/dev/null
-          npm install --no-audit --no-fund puppeteer-core@25
-
-      - name: Probe
-        working-directory: ${{ runner.temp }}/sync
-        env:
-          CHROME_PATH: /usr/bin/google-chrome
-          HARNESS_PATH: ${{ github.workspace }}/.claude/skills/playcricket-stats-scraper/harness.js
-          PROBE_ORG: ${{ inputs.only_org }}
-        run: node "$GITHUB_WORKSPACE/scripts/playhq-sync/probe-lineups.mjs"

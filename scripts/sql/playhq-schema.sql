@@ -290,6 +290,19 @@ create table if not exists playhq.match_fielding (
   primary key (innings_id, participant_id)
 );
 
+-- The side each club names for an upcoming match, as PlayHQ publishes it on the match
+-- (`GET /scores/matches/{id}` → `teams[].players`: participantId, name, shortName, roles[]),
+-- in PlayHQ's order. One row per (match, team), replaced whole on every fetch so a dropped
+-- player disappears without a delete. Feeds the app's Team List card (team_lists, source
+-- "playhq"). Empty until the club names its side.
+create table if not exists playhq.match_lineups (
+  match_id    uuid not null,
+  team_id     uuid not null,
+  players     jsonb not null default '[]'::jsonb,
+  fetched_at  timestamptz not null,
+  primary key (match_id, team_id)
+);
+
 create table if not exists playhq.fall_of_wickets (
   innings_id      uuid not null,
   wicket          integer not null,

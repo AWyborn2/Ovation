@@ -170,6 +170,24 @@ innings`. Without the modifier the same call returns everything except `innings`
 `oversBowled` is cricket notation (43.3 = 43 overs 3 balls). `strikeRate`/`economy` are strings.
 Toss / batted-first / winner live only in `matchSummary.teams[]`.
 
+### Named sides on an upcoming match — `GET /scores/matches/{matchId}` (no modifier)
+
+Verified 5 Oct 2026 (Halls Head F Grade, 10 Oct). Once a club names its side in PlayHQ, the
+match's own record carries it; the grade listing (`/scores/grades/{id}/matches`) does not.
+
+```json
+"teams":[{"id":"<team guid>","displayName":"…","name":"F Grade","owningOrganisation":{…},
+          "players":[{"participantId":"…","name":"<full name>","shortName":"J Smith","roles":["Captain"]}, …],
+          "nonPlayingMembers":[]}, {…}]
+```
+
+`players` is `[]` until the side is named (12 entries seen: the XI plus a twelfth). Order is
+PlayHQ's. `roles` is empty for most players. The harness fetches these with
+`plan.lineups: "upcoming"` (record kind `lineup`), the loader keeps them in
+`playhq.match_lineups`, and the app copies the club's own side into its Team List.
+`/scores/matches/{id}/lineups|teams|players|squads` do not exist, and the
+`IncludeLineups`-style response modifiers add nothing.
+
 ### `GET /scores/matches/{matchId}/balls` — ball-by-ball
 
 436 KB / 546 deliveries for a completed one-day match (gzips ~12:1, so an export of many matches
