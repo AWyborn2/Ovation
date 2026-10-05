@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import type { MatchSummary } from "@workspace/api-client-react";
-import Home, { latestMatch, shortMatchDate, tickerItems } from "@/pages/home";
+import Home, { latestMatch, roundLabel, shortMatchDate, tickerItems } from "@/pages/home";
 import { renderAt } from "@/test/render";
 import { installApiMock } from "@/test/mock-api";
 
@@ -73,6 +73,13 @@ describe("home helpers", () => {
     expect(
       tickerItems([match({ abandoned: true, clubScore: "1" }), match({ id: 2 })], "HHCC"),
     ).toEqual([]);
+  });
+
+  it("roundLabel follows the latest-dated match, showing the finals stage", () => {
+    expect(roundLabel(match({ round: 14 }))).toBe("Round 14");
+    expect(roundLabel(match({ round: null, stage: "Grand Final" }))).toBe("Grand Final");
+    expect(roundLabel(match({ round: null, stage: null }))).toBeNull();
+    expect(roundLabel(null)).toBeNull();
   });
 
   it("latestMatch picks the newest date, then the highest id", () => {

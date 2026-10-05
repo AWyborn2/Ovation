@@ -64,6 +64,17 @@ export function latestMatch(matches: MatchSummary[]): MatchSummary | null {
   );
 }
 
+/**
+ * Hero label for where the season is at: the latest-dated match's round, or
+ * its finals stage ("Grand Final") — never the highest round number, which
+ * would stay on the last home-and-away round all through finals.
+ */
+export function roundLabel(latest: MatchSummary | null): string | null {
+  if (!latest) return null;
+  if (latest.round != null) return `Round ${latest.round}`;
+  return latest.stage?.trim() || null;
+}
+
 /** Ticker items: each senior grade's most recent result (by match date). */
 export function tickerItems(matches: MatchSummary[], clubShort: string): TickerItem[] {
   return sortGradesBySeniority(new Set(matches.map((m) => m.grade))).flatMap((grade) =>
@@ -266,13 +277,9 @@ export default function Home() {
 
   const recent = data?.recentMatches ?? [];
   const latest = latestMatch(recent);
-  const round = recent.reduce<number | null>(
-    (acc, m) => (m.round != null && (acc == null || m.round > acc) ? m.round : acc),
-    null,
-  );
   const liveLabel = [
     data?.latestSeasonLabel ? `${data.latestSeasonLabel} season` : null,
-    round != null ? `Round ${round}` : null,
+    roundLabel(latest),
   ]
     .filter(Boolean)
     .join(" · ");

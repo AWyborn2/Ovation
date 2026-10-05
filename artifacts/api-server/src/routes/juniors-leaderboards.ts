@@ -25,6 +25,7 @@ import {
 } from "@workspace/api-zod";
 import { isCentralTenant } from "../lib/tenant";
 import { overlayNativeOpponents } from "../lib/club-brand";
+import { latestByDate } from "../lib/latest-per-grade";
 import {
   battingLeaders,
   bestBowlingFigures,
@@ -93,20 +94,19 @@ router.get("/juniors/overview", async (req, res): Promise<void> => {
   let topWicketTakers: Awaited<ReturnType<typeof bowlingLeaders>> = [];
 
   if (latestSeason !== null) {
-    // Every match in the latest season, newest-first; keep the first per age group.
+    // Each age group's latest match by match date (the app-wide "latest
+    // results" rule); newest import (id desc) breaks ties and orders undated rows.
     const seasonRows = await db
       .select({ match: juniorMatchesTable, ...opponentClubColumns })
       .from(juniorMatchesTable)
       .leftJoin(clubsTable, eq(clubsTable.id, juniorMatchesTable.opponentClubId))
       .where(eq(juniorMatchesTable.season, latestSeason))
       .orderBy(desc(juniorMatchesTable.id));
-    const seenAge = new Set<string>();
-    const recentRows = seasonRows.filter((r) => {
-      const key = r.match.ageGroup ?? "";
-      if (seenAge.has(key)) return false;
-      seenAge.add(key);
-      return true;
-    });
+    const recentRows = latestByDate(
+      seasonRows,
+      (r) => r.match.ageGroup ?? "",
+      (r) => r.match.matchDate,
+    );
     // Overlay uploaded brands for opponent clubs that are themselves tenants.
     const recentOpps = await overlayNativeOpponents(recentRows.map(toOpponentClub));
     recentMatches = recentRows.map((r, i) => toMatchSummary(r.match, recentOpps[i]));

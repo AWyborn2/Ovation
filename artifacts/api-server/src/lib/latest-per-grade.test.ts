@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { latestPerGradeByDate } from "./latest-per-grade";
+import { latestByDate, latestPerGradeByDate, matchDateSortKey } from "./latest-per-grade";
 
 const m = (id: number, grade: string, matchDate: string | null) => ({ id, grade, matchDate });
 
@@ -30,5 +30,32 @@ describe("latestPerGradeByDate", () => {
         m(2, "A Grade", "2026-01-10"),
       ]).map((x) => x.id),
     ).toEqual([1]);
+  });
+});
+
+describe("matchDateSortKey", () => {
+  it("reads ISO and the native free-text date form", () => {
+    expect(matchDateSortKey("2026-03-07")).toBe("2026-03-07");
+    expect(matchDateSortKey("12:20 PM, Saturday, 14 Mar 2026")).toBe("2026-03-14");
+    expect(matchDateSortKey("Saturday, 7 March 2026")).toBe("2026-03-07");
+    expect(matchDateSortKey("TBC")).toBe("");
+    expect(matchDateSortKey(null)).toBe("");
+  });
+});
+
+describe("latestByDate", () => {
+  it("groups by any key and compares mixed date formats chronologically", () => {
+    const rows = [
+      { id: 9, age: "U13", date: "1:00 PM, Saturday, 7 Feb 2026" },
+      { id: 8, age: "U13", date: "2026-02-14" },
+      { id: 7, age: "U15", date: null },
+    ];
+    expect(
+      latestByDate(
+        rows,
+        (r) => r.age,
+        (r) => r.date,
+      ).map((r) => r.id),
+    ).toEqual([8, 7]);
   });
 });
