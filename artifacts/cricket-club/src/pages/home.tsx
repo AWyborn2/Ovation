@@ -64,7 +64,7 @@ export function latestMatch(matches: MatchSummary[]): MatchSummary | null {
   );
 }
 
-/** Ticker items: one per latest-round result across the senior grades. */
+/** Ticker items: each senior grade's most recent result (by match date). */
 export function tickerItems(matches: MatchSummary[], clubShort: string): TickerItem[] {
   return sortGradesBySeniority(new Set(matches.map((m) => m.grade))).flatMap((grade) =>
     matches

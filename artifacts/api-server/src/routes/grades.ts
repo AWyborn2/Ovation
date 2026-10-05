@@ -40,6 +40,7 @@ import {
 import { clubDashboard, clubGradeSummaries, clubTotals } from "../lib/club-overlay-surfaces";
 import { getOrCreateSettings } from "../lib/settings";
 import { overlayNativeOpponents, overlayCentralOpponents } from "../lib/club-brand";
+import { latestPerGradeByDate } from "../lib/latest-per-grade";
 import {
   opponentClubColumns,
   notEmptyFixture,
@@ -269,12 +270,7 @@ router.get("/overview", async (req, res): Promise<void> => {
 
     if (latestSeason !== null) {
       const seasonMatches = await central.centralClubMatches(clubId, { season: latestSeason });
-      const seen = new Set<string>();
-      recentMatches = seasonMatches.filter((m) => {
-        if (seen.has(m.grade)) return false;
-        seen.add(m.grade);
-        return true;
-      });
+      recentMatches = latestPerGradeByDate(seasonMatches);
       // Show an opponent's own uploaded brand (crest/colours) where that club is
       // a tenant — central.clubs has no logo, so this is its source.
       const overlaid = await overlayCentralOpponents(recentMatches.map((m) => m.opponentClub));
