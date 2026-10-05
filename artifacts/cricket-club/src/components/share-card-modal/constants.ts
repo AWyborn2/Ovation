@@ -23,6 +23,11 @@ export type Props = {
    */
   matchId?: number | null;
   /**
+   * A queued draft's own photo: the default photo for the card (ahead of the
+   * player's profile photo), so the preview matches the draft's post pack.
+   */
+  photoUrl?: string | null;
+  /**
    * When provided, the modal becomes an approval surface: it shows an
    * "Approve & download" button that renders the full card + caption bundle,
    * downloads the zip, then runs this callback (used by the social queue to

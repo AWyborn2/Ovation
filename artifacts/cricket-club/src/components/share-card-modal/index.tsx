@@ -63,6 +63,7 @@ export function ShareCardModal({
   trackedSlug,
   playerId,
   matchId,
+  photoUrl,
   onApprove,
   approveLabel = "Approve & download",
 }: Props) {
@@ -71,7 +72,13 @@ export function ShareCardModal({
   });
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
 
-  const photo = usePhotoControls({ open, playerId, matchId, input });
+  const photo = usePhotoControls({
+    open,
+    playerId,
+    matchId,
+    input,
+    draftPhotoUrl: photoUrl,
+  });
   const { showPhotoControls, photoPlacement, photoTransform, renderTransform, effectivePhotoUrl } =
     photo;
 
