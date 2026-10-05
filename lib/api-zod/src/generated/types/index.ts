@@ -369,6 +369,7 @@ export * from './listStatsParams';
 export * from './listStatsSortBy';
 export * from './listStatsSortOrder';
 export * from './loginRequest';
+export * from './matchCardPhoto';
 export * from './matchDetail';
 export * from './matchDisplaySettings';
 export * from './matchDisplaySettingsDefaultSeasonMode';

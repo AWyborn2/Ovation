@@ -18,6 +18,11 @@ export type Props = {
    */
   playerId?: number | null;
   /**
+   * The match a result card is about. Gives the card the club library photo the
+   * social queue would pick for it, and lets admins swap in another library photo.
+   */
+  matchId?: number | null;
+  /**
    * When provided, the modal becomes an approval surface: it shows an
    * "Approve & download" button that renders the full card + caption bundle,
    * downloads the zip, then runs this callback (used by the social queue to

@@ -355,6 +355,7 @@ export default function MatchDetail() {
           engine="ondemand"
           appPath={`/matches/${matchId}`}
           playerId={null}
+          matchId={matchId}
         />
       </div>
     </Container>

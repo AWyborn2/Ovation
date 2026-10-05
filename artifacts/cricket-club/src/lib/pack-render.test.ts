@@ -35,6 +35,9 @@ const TOKENS: PackTokens = {
 
 const hasUnresolved = (html: string) => /\{\{/.test(html);
 
+/** Sponsor logo tiles in a skeleton pack card (each has the sponsor tile background). */
+const sponsorTiles = (html: string) => html.match(/background:var\(--sk-sponsor-bg,/g)?.length ?? 0;
+
 /** The `--ink:` declaration the root wrapper emits, whatever its form. */
 const inkDecl = (html: string): string =>
   /--ink:((?:[^;"]|\([^)]*\))*)/.exec(html)?.[1]?.trim() ?? "";
@@ -290,10 +293,21 @@ describe("renderPackCard with tenant data (PackCardData)", () => {
     expect(html).toContain('src="https://cdn.example.com/logo.png"');
     // clubName header uses the tenant name (not the "HALLS HEAD" sample).
     expect(html).toContain(">Test<"); // "Cricket Club" is dropped: the tagline says it
-    // First three sponsor logos fill sponsor1..3.
+    // A match result carries one sponsor: the first logo, in a single tile.
     expect(html).toContain('src="https://cdn.example.com/spon-a.png"');
-    expect(html).toContain('src="https://cdn.example.com/spon-b.png"');
-    expect(html).toContain('src="https://cdn.example.com/spon-c.png"');
+    expect(html).not.toContain("spon-b.png");
+    expect(sponsorTiles(html)).toBe(1);
+  });
+
+  it("(a) other cards fill all three sponsor tiles; premiership cards one", () => {
+    const team = renderPackCard(sampleCardInput("teamList"), "story", true, TOKENS, false, DATA);
+    for (const s of ["spon-a", "spon-b", "spon-c"]) {
+      expect(team).toContain(`src="https://cdn.example.com/${s}.png"`);
+    }
+    expect(sponsorTiles(team)).toBe(3);
+    const prem = renderPackCard(sampleCardInput("premiership"), "story", true, TOKENS, false, DATA);
+    expect(prem).not.toContain("spon-b.png");
+    expect(sponsorTiles(prem)).toBeLessThanOrEqual(1);
   });
 
   it("(a) uses the tenant hashtag in the sponsors-off footer", () => {

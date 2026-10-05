@@ -15,29 +15,30 @@ import type { CardSize, ShareCardInput } from "../share-card";
  * through the shared `resolveCardTokens` with the pack switched to "pack"; a
  * changed digest means the pack's own look drifted.
  *
- * Regenerate ONLY for an intentional change to a pack's own look.
+ * Regenerate ONLY for an intentional change to a pack's own look. Last
+ * regenerated when match result cards went to a single sponsor tile.
  */
 const BEFORE: Record<string, string> = {
-  "broadcast-dark-v1/themed": "4501ff33f2696c40b01f406ebdad5a3a4ccca2ac474c05327c686c5dcb6f8fdb",
-  "broadcast-dark-v1/junior": "987e3e4bf15afe155a436d8aea6afb7fee3fff1ca1bcb79b486a7cf570b032df",
-  "broadcast-dark-v1/brandOnly": "d735ad2d86f40d7360a5f266f3d466b425d8f128703ae9cb91cef64a539ccce2",
-  "broadcast-dark-v1/brandless": "2205b95fc6def82317546971dedd7f0ee8b9fa55c3cb1c374044ad93594f40c3",
-  "gold-foil-v1/themed": "a6592a9615aac6b1343f05a20461281c0a00ea72dbbb020d0000d2edd7895007",
-  "gold-foil-v1/junior": "4679048ce6ee090643a0f3bae4fb7b8fc2386d31b4f1e564d30e4fabf6cd9ad1",
-  "gold-foil-v1/brandOnly": "0dba1070d4e38adbb520cc9fa4ca4a787b357ff44e49abb640f0c1302400794e",
-  "gold-foil-v1/brandless": "960b83267ddfc43c6bde328f585967e5ddaab66cd2417123def6afa90bc6c2a2",
-  "bold-type-v1/themed": "8e209c4526c66a6813b18ad2ad260ce151c08fc8852cf92cc4e922d2953d7afb",
-  "bold-type-v1/junior": "7a5a23ffed1984c66f199a62b7e0346022a1172a603a39486edd63df52c1969c",
-  "bold-type-v1/brandOnly": "fe7a97fd5c80a4de7cfcfcfa848e4dff866a568f03356c16562b8ee19271da48",
-  "bold-type-v1/brandless": "92211fd536e1cde66b967cc3b36b35e23a787284a38f7b53872d1212d3e1c75d",
-  "neon-night-v1/themed": "120c6bc22aa9d3923de042a5a586e282b92ab5830032d18f7f1d6d897be20957",
-  "neon-night-v1/junior": "f3768d174e119776d3d43c622018839840267d58bee0aab3f5568b364ea2b112",
-  "neon-night-v1/brandOnly": "f94e5856cf85059dac555c39fd282909ea175386091d2e68887e69e4802bd155",
-  "neon-night-v1/brandless": "fcd06dc060d276e7df70401944397b30847a94af4741a472ef43f9c2c1800206",
-  "sunset-v1/themed": "d4b592ca220bc443d601332c81d1011536d48babd84a46d3b0e05d1e23d8b918",
-  "sunset-v1/junior": "febb31f2a6e744392d5b6b242557e6bc1516ed224a4a0bbedf283f399ab91db3",
-  "sunset-v1/brandOnly": "1914bd514b9188da55225acfed8ecc026573f6d4ac489dcb88dd06cb49edbbd1",
-  "sunset-v1/brandless": "f7e7bcce498e1423de2c9952799d8931bc61f11be99993a694d57e717d88c83b",
+  "broadcast-dark-v1/themed": "d8b2251477f83a077b7b73e9458486ad4586246421676d44a86c12e3b518941d",
+  "broadcast-dark-v1/junior": "d55fdfc627d072b4df9e63348fc22649875986de33ed7f0f12cd83a335fc9bf2",
+  "broadcast-dark-v1/brandOnly": "7e6bd15d69e8d7a9fe93da9a1de3f3a23b808af232c78c93bf6c70dbdaea35f3",
+  "broadcast-dark-v1/brandless": "a77105e3b480b607d2fe3e53a9046b18fdcefcfec9eede7411c9e9fd3603a1e9",
+  "gold-foil-v1/themed": "62d9a3b9f3a439db7ea3581ff812d9feddf2caaa046442878d820a3434bf9d30",
+  "gold-foil-v1/junior": "c689cf83b1b60ae65aae35f6f64944999f7765a534397925ed5e212725acccf5",
+  "gold-foil-v1/brandOnly": "4589a78b6061a3639087be696db9c53876cdaa2af2c410fe737b16462e768c8f",
+  "gold-foil-v1/brandless": "a0740eba424b62039ad4cd6c5dffbe9d3822e3fadce7dbf9cd88046fbee33abe",
+  "bold-type-v1/themed": "37e57120085bea45bfb1f58542812976674c06cebc16a125d3d76a4aae8f8fd7",
+  "bold-type-v1/junior": "ea34bcd00c6746ac32296183264aa818b02bfd223bf016c754fd0fbf0ff1e58b",
+  "bold-type-v1/brandOnly": "bb1a83bfd0fac5ad9ce6388c4f4c14de066321bb1183f02534a3b95adfaecaca",
+  "bold-type-v1/brandless": "d56834f7276b0935310c68a8b5adff6a820cea45d9b864f24490b3e036fef267",
+  "neon-night-v1/themed": "3f76307572530341c1c026276f51d0c14c5a1883999b8ebdcaf4a9bd68e2b9f0",
+  "neon-night-v1/junior": "247c38f866c4d561c994de63ced6918762b9db2c187fe8cb35bfe9b44b700d86",
+  "neon-night-v1/brandOnly": "8c5b613c45eb4c2cfe34bccbdfe663606713de2ea3042535b50ed783e184ea56",
+  "neon-night-v1/brandless": "aede65f514e90337c4f93436fcf547326eb1572849af0939d785d7c3a0cc2dff",
+  "sunset-v1/themed": "3dd74ef30394b1b47050ed547db7935ac3e157dec97c3b4f10f9b8e4c03f1187",
+  "sunset-v1/junior": "58496f117d0e46abeeadb836492eebe203141de9bd5a069bf211a4229da2851f",
+  "sunset-v1/brandOnly": "bb453fc460c9487aa2ed8954f206399d6d8bf1e39d72b86ec06cde159a8579ac",
+  "sunset-v1/brandless": "7849b22555b0f88d4693aca65b8d3cbed4fdb63a6f4b904941d3aaad812f4ed5",
 };
 
 const SIZES: CardSize[] = ["square", "portrait", "story", "landscape"];

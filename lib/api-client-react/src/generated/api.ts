@@ -207,6 +207,7 @@ import type {
   ListSocialDraftsParams,
   ListStatsParams,
   LoginRequest,
+  MatchCardPhoto,
   MatchDetail,
   MatchDisplaySettings,
   MatchDisplaySettingsUpdate,
@@ -1499,6 +1500,89 @@ export function useListMatches<TData = Awaited<ReturnType<typeof listMatches>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListMatchesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetMatchCardPhotoUrl = (id: number,) => {
+
+
+
+
+  return `/api/matches/${id}/card-photo`
+}
+
+/**
+ * The photo a match's result card uses, picked the same way as the social
+queue's match result drafts: the club's card photo rule for the grade
+(a Grand Final win tries the premiership rule first), then the club's
+top performer, then a photo of the grade. `url` is null when the club
+has no suitable photo.
+
+ * @summary The club library photo for a match's result card
+ */
+export const getMatchCardPhoto = async (id: number, options?: RequestInit): Promise<MatchCardPhoto> => {
+
+  return customFetch<MatchCardPhoto>(getGetMatchCardPhotoUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMatchCardPhotoQueryKey = (id: number,) => {
+    return [
+    `/api/matches/${id}/card-photo`
+    ] as const;
+    }
+
+
+export const getGetMatchCardPhotoQueryOptions = <TData = Awaited<ReturnType<typeof getMatchCardPhoto>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMatchCardPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMatchCardPhotoQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMatchCardPhoto>>> = ({ signal }) => getMatchCardPhoto(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMatchCardPhoto>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMatchCardPhotoQueryResult = NonNullable<Awaited<ReturnType<typeof getMatchCardPhoto>>>
+export type GetMatchCardPhotoQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club library photo for a match's result card
+ */
+
+export function useGetMatchCardPhoto<TData = Awaited<ReturnType<typeof getMatchCardPhoto>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMatchCardPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMatchCardPhotoQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

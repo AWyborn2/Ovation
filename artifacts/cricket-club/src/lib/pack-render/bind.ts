@@ -3,6 +3,7 @@
  * repeat rows and image urls, plus the tenant-data overlay (`applyPackData`).
  */
 
+import { maxSponsorLogos } from "../share-card/sponsor-limit";
 import type {
   ShareCardInput,
   MatchSummaryInnings,
@@ -433,7 +434,7 @@ export function juniorDisplayName(name: string): string {
  * `renderPackCard` calls in tests. A source-level guard
  * (`pack-card-mounts.test.ts`) keeps it that way.
  */
-export function applyPackData(bound: BoundInput, data: PackCardData, _kind: string): void {
+export function applyPackData(bound: BoundInput, data: PackCardData, kind: string): void {
   const { values, images } = bound;
 
   // A1 — tenant logo → top-left clubLogo slot (storyHeader / sharedHeader).
@@ -460,8 +461,9 @@ export function applyPackData(bound: BoundInput, data: PackCardData, _kind: stri
   // (central.matches grade/competition) once cards carry that on PackCardData.
   values["hashtagsExtra"] = "";
 
-  // A3 — active sponsors → sponsor1..3 slots (already kind-filtered upstream).
-  (data.sponsors ?? []).slice(0, 3).forEach((s, idx) => {
+  // A3 — active sponsors → sponsor1..3 slots (already kind-filtered upstream),
+  // capped at the kind's logo limit (one on match result / premiership cards).
+  (data.sponsors ?? []).slice(0, Math.min(3, maxSponsorLogos(kind) ?? 3)).forEach((s, idx) => {
     if (s.logoUrl) images[`sponsor${idx + 1}`] = s.logoUrl;
   });
 
