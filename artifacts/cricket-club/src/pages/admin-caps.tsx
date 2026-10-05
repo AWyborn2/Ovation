@@ -7,6 +7,13 @@ import {
   useDeleteCap,
   useRecomputeCaps,
   getListCapsQueryKey,
+  useListCapReview,
+  getListCapReviewQueryKey,
+  useConfirmCaps,
+  useReorderPendingCaps,
+  useDeclineCap,
+  useRestoreCap,
+  useCatchUpDebutCaps,
   useListPlayers,
   getListPlayersQueryKey,
 } from "@workspace/api-client-react";
@@ -19,7 +26,7 @@ import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeah
 import { TableSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { DataTable, EditDrawer, StatusPill, type DataTableColumn } from "@/components/admin-ui";
-import { Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus } from "lucide-react";
 
 export default function AdminCaps() {
   const queryClient = useQueryClient();
@@ -29,14 +36,17 @@ export default function AdminCaps() {
   const updateCap = useUpdateCap();
   const deleteCap = useDeleteCap();
   const recomputeCaps = useRecomputeCaps();
+  const catchUp = useCatchUpDebutCaps();
   const [category, setCategory] = useState<CapCategory>("male");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const { data: review } = useListCapReview();
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: getListCapsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getListCapReviewQueryKey() });
   };
 
   const onRecompute = () => {
@@ -55,15 +65,46 @@ export default function AdminCaps() {
     });
   };
 
+  const onCatchUp = () => {
+    setError(null);
+    setNotice(null);
+    catchUp.mutate(undefined, {
+      onSuccess: (res) => {
+        invalidate();
+        const parts = [
+          res.issued > 0
+            ? `Issued ${res.issued} cap${res.issued === 1 ? "" : "s"} awaiting your confirmation.`
+            : "No missed debutants found.",
+        ];
+        if (res.olderUncapped > 0) {
+          parts.push(
+            `${res.olderUncapped} older uncapped player${res.olderUncapped === 1 ? "" : "s"} can be capped by hand.`,
+          );
+        }
+        parts.push(...res.held);
+        setNotice(parts.join(" "));
+      },
+      onError: onMutationError,
+    });
+  };
+
   const inCategory = useMemo(
     () => (caps ?? []).filter((c) => (c.category ?? "male") === category),
     [caps, category],
   );
 
+  const reviewInCategory = useMemo(
+    () => (review ?? []).filter((c) => (c.category ?? "male") === category),
+    [review, category],
+  );
+
+  // Pending caps hold numbers too, so a hand-added cap goes after them.
   const nextCapNumber = useMemo(() => {
-    if (inCategory.length === 0) return 1;
-    return Math.max(...inCategory.map((c) => c.capNumber)) + 1;
-  }, [inCategory]);
+    const numbers = [...inCategory, ...reviewInCategory]
+      .map((c) => c.capNumber)
+      .filter((n) => n > 0);
+    return numbers.length === 0 ? 1 : Math.max(...numbers) + 1;
+  }, [inCategory, reviewInCategory]);
 
   const onMutationError = (e: unknown) => {
     const msg = handleAdminMutationError(e);
@@ -176,10 +217,25 @@ export default function AdminCaps() {
         >
           {recomputeCaps.isPending ? "Refreshing…" : "Refresh from stats"}
         </Button>
+        <Button
+          variant="outline"
+          onClick={onCatchUp}
+          disabled={catchUp.isPending}
+          title="Issue caps (awaiting your confirmation) to A Grade debutants who were never capped"
+        >
+          {catchUp.isPending ? "Checking…" : "Check for missed debutants"}
+        </Button>
       </div>
 
       {notice && <p className="text-sm text-[var(--win-fg)]">{notice}</p>}
       {error && <p className="text-sm text-destructive">{error}</p>}
+
+      <PendingCapsPanel
+        caps={reviewInCategory}
+        category={category}
+        onChanged={invalidate}
+        onError={onMutationError}
+      />
 
       {isError ? (
         <QueryError onRetry={() => refetch()} />
@@ -297,6 +353,183 @@ export default function AdminCaps() {
         )}
       </EditDrawer>
     </div>
+  );
+}
+
+/**
+ * Caps issued automatically (an A Grade debut from an import, the bulk match
+ * load or the PlayHQ sync) wait here, off the public register, until an admin
+ * confirms them. Reorder them if they were issued in the wrong order, or
+ * decline one (it won't be issued again automatically; restore undoes it).
+ */
+function PendingCapsPanel({
+  caps,
+  category,
+  onChanged,
+  onError,
+}: {
+  caps: CapEntry[];
+  category: CapCategory;
+  onChanged: () => void;
+  onError: (e: unknown) => void;
+}) {
+  const confirmCaps = useConfirmCaps();
+  const reorder = useReorderPendingCaps();
+  const decline = useDeclineCap();
+  const restore = useRestoreCap();
+  const pending = useMemo(
+    () => caps.filter((c) => c.status === "pending").sort((a, b) => a.capNumber - b.capNumber),
+    [caps],
+  );
+  const declined = caps.filter((c) => c.status === "declined");
+  const [order, setOrder] = useState<number[] | null>(null);
+  const ids = order ?? pending.map((c) => c.id);
+  const byId = new Map(pending.map((c) => [c.id, c]));
+  const rows = ids.map((id) => byId.get(id)).filter((c): c is CapEntry => c != null);
+  const firstNumber = pending.length ? Math.min(...pending.map((c) => c.capNumber)) : 0;
+  const reordered = order != null && order.some((id, i) => id !== pending[i]?.id);
+  const busy = confirmCaps.isPending || reorder.isPending || decline.isPending || restore.isPending;
+
+  if (pending.length === 0 && declined.length === 0) return null;
+
+  const move = (i: number, by: number) => {
+    const next = [...ids];
+    const j = i + by;
+    if (j < 0 || j >= next.length) return;
+    [next[i], next[j]] = [next[j]!, next[i]!];
+    setOrder(next);
+  };
+  const done = () => {
+    setOrder(null);
+    onChanged();
+  };
+
+  return (
+    <section
+      aria-label="Caps awaiting confirmation"
+      className="space-y-3 rounded-lg border-2 border-amber-500/50 bg-amber-500/5 p-4"
+    >
+      {pending.length > 0 && (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="m-0 text-base font-semibold">
+              {pending.length} cap{pending.length === 1 ? "" : "s"} awaiting confirmation
+            </h3>
+            <span className="text-sm text-muted-foreground">
+              Issued automatically for new A Grade debuts. They show on the public register once
+              confirmed.
+            </span>
+          </div>
+          <ol className="m-0 list-none space-y-1 p-0">
+            {rows.map((c, i) => (
+              <li
+                key={c.id}
+                className="flex items-center gap-2 rounded border bg-background px-3 py-2"
+              >
+                <span className="w-14 font-bold tabular-nums">#{firstNumber + i}</span>
+                <span className="flex-1 font-semibold">{c.name}</span>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  aria-label={`Move ${c.name} up`}
+                  disabled={busy || i === 0}
+                  onClick={() => move(i, -1)}
+                >
+                  <ArrowUp className="h-4 w-4" aria-hidden />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  aria-label={`Move ${c.name} down`}
+                  disabled={busy || i === rows.length - 1}
+                  onClick={() => move(i, 1)}
+                >
+                  <ArrowDown className="h-4 w-4" aria-hidden />
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy || reordered}
+                  onClick={() =>
+                    confirmCaps.mutate({ data: { ids: [c.id] } }, { onSuccess: done, onError })
+                  }
+                >
+                  Confirm
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive"
+                  disabled={busy || reordered}
+                  onClick={() => decline.mutate({ id: c.id }, { onSuccess: done, onError })}
+                >
+                  Decline
+                </Button>
+              </li>
+            ))}
+          </ol>
+          <div className="flex flex-wrap gap-2">
+            {reordered ? (
+              <>
+                <Button
+                  type="button"
+                  disabled={busy}
+                  onClick={() =>
+                    reorder.mutate({ data: { category, ids } }, { onSuccess: done, onError })
+                  }
+                >
+                  {reorder.isPending ? "Saving…" : "Save new order"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setOrder(null)}>
+                  Undo changes
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                disabled={busy}
+                onClick={() =>
+                  confirmCaps.mutate(
+                    { data: { ids: pending.map((c) => c.id) } },
+                    { onSuccess: done, onError },
+                  )
+                }
+              >
+                {confirmCaps.isPending ? "Confirming…" : `Confirm all ${pending.length}`}
+              </Button>
+            )}
+          </div>
+        </>
+      )}
+      {declined.length > 0 && (
+        <details>
+          <summary className="cursor-pointer text-sm text-muted-foreground">
+            {declined.length} declined cap{declined.length === 1 ? "" : "s"} (not issued again
+            automatically)
+          </summary>
+          <ul className="mt-2 list-none space-y-1 p-0">
+            {declined.map((c) => (
+              <li key={c.id} className="flex items-center gap-2 text-sm">
+                <span className="flex-1">{c.name}</span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => restore.mutate({ id: c.id }, { onSuccess: done, onError })}
+                >
+                  Restore
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </section>
   );
 }
 

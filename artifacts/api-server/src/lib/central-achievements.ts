@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, eq, isNotNull, ne } from "drizzle-orm";
 import { db, capRegisterTable, socialDraftsTable, socialSettingsTable } from "@workspace/db";
 import type { CentralAchievement } from "@workspace/db/central-queries";
 import { GRADE_TO_CAP_CATEGORY } from "./cap-sync";
@@ -236,6 +236,12 @@ async function loadCaps(tenantId: number): Promise<Map<string, number>> {
       capNumber: capRegisterTable.capNumber,
     })
     .from(capRegisterTable)
-    .where(and(eq(capRegisterTable.tenantId, tenantId), isNotNull(capRegisterTable.playerId)));
+    .where(
+      and(
+        eq(capRegisterTable.tenantId, tenantId),
+        isNotNull(capRegisterTable.playerId),
+        ne(capRegisterTable.status, "declined"),
+      ),
+    );
   return new Map(rows.map((r) => [`${r.category}|${r.playerId}`, r.capNumber]));
 }

@@ -503,7 +503,13 @@ async function appendDebuts(
       playerId: capRegisterTable.playerId,
     })
     .from(capRegisterTable)
-    .where(and(eq(capRegisterTable.tenantId, tenantId), isNotNull(capRegisterTable.playerId)));
+    .where(
+      and(
+        eq(capRegisterTable.tenantId, tenantId),
+        isNotNull(capRegisterTable.playerId),
+        eq(capRegisterTable.status, "confirmed"),
+      ),
+    );
 
   const capLines = await db
     .select({

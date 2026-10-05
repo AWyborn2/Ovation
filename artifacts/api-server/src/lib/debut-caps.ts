@@ -24,6 +24,9 @@ const NATIVE_TENANT_ID = 1;
  * the club reads (central for a PlayHQ club, the native tables for Halls Head
  * until its cut-over).
  *
+ * Caps are issued "pending": a club admin confirms, reorders or declines them
+ * (routes/caps.ts) before they show on the public register.
+ *
  * Who is minted (planDebutCaps, pure):
  *   - The club must have a register in the category, linked to players (at
  *     least one cap with a player). Otherwise nothing: a club that never kept
@@ -136,7 +139,7 @@ export function planDebutCaps(input: {
     plan.awaitingCatchUp.sort(byDebut);
     return plan;
   }
-  let next = Math.max(...input.caps.map((c) => c.capNumber)) + 1;
+  let next = Math.max(0, ...input.caps.map((c) => c.capNumber)) + 1;
   plan.toMint = due.map((d) => ({
     capNumber: next++,
     playerId: d.playerId,
@@ -328,6 +331,8 @@ export async function syncDebutCaps(
           inStats: true,
           gamesAGrade: c.games,
           autoCreated: true,
+          // Awaits an admin's confirmation before it shows on the public register.
+          status: "pending",
           playerId: c.playerId,
         });
       }

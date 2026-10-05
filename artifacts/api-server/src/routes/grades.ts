@@ -83,7 +83,11 @@ router.get("/grades", async (req, res): Promise<void> => {
     .select({ value: count() })
     .from(capRegisterTable)
     .where(
-      and(eq(capRegisterTable.tenantId, getTenantId(req)), eq(capRegisterTable.category, "male")),
+      and(
+        eq(capRegisterTable.tenantId, getTenantId(req)),
+        eq(capRegisterTable.category, "male"),
+        eq(capRegisterTable.status, "confirmed"),
+      ),
     );
   res.json(
     grades

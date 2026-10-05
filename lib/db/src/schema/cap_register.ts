@@ -41,6 +41,11 @@ export const capRegisterTable = pgTable(
     // the native players table (hybrid stats plan U8, KTD3). Writes are checked
     // by assertPlayerInTenantSpace (api-server/src/lib/curated-player-space.ts).
     playerId: integer("player_id"),
+    // "confirmed" (on the public register), "pending" (issued automatically —
+    // debut-caps / cap-sync — awaiting an admin's confirmation, hidden from the
+    // public list) or "declined" (an admin turned it down; kept so the player
+    // isn't capped again automatically, numbered -id to stay off the sequence).
+    status: text("status").notNull().default("confirmed"),
   },
   (t) => ({
     idxTenant: index("cap_register_tenant_idx").on(t.tenantId),
