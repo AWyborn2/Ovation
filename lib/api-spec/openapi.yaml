@@ -1358,6 +1358,135 @@ paths:
               schema:
                 $ref: "#/components/schemas/CapRecomputeSummary"
 
+  /caps/review:
+    get:
+      operationId: listCapReview
+      tags: [caps]
+      summary: Caps awaiting an admin's confirmation, and declined caps
+      description: |
+        Caps issued automatically (an A Grade / Female A Grade debut from an
+        import, the bulk match load or the PlayHQ sync) start "pending" and are
+        hidden from the public register until an admin confirms them. Declined
+        caps are listed too, so an admin can restore one. Admin only.
+      responses:
+        "200":
+          description: Pending and declined caps, pending first in cap-number order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CapEntry"
+
+  /caps/review/confirm:
+    post:
+      operationId: confirmCaps
+      tags: [caps]
+      summary: Confirm pending caps onto the public register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CapIdsBody"
+      responses:
+        "200":
+          description: Caps confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapReviewResult"
+
+  /caps/review/catch-up:
+    post:
+      operationId: catchUpDebutCaps
+      tags: [caps]
+      summary: Issue pending caps for every missed A Grade debutant
+      description: |
+        Looks through the club's A Grade and Female A Grade debuts (from the
+        stats it reads) and issues a pending cap to every debutant on or after
+        the newest capped debut who has none, in debut order. Older uncapped
+        players are counted, never capped automatically. Admin only.
+      responses:
+        "200":
+          description: What was issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapCatchUpResult"
+
+  /caps/review/reorder:
+    post:
+      operationId: reorderPendingCaps
+      tags: [caps]
+      summary: Renumber a list's pending caps in a chosen order
+      description: |
+        `ids` must be every pending cap in the category. They are numbered in
+        that order straight after the list's highest confirmed cap. Admin only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CapReorderBody"
+      responses:
+        "200":
+          description: The category's pending caps after renumbering
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CapEntry"
+        "400":
+          description: The ids aren't exactly the category's pending caps
+
+  /caps/{id}/decline:
+    post:
+      operationId: declineCap
+      tags: [caps]
+      summary: Decline a pending cap
+      description: |
+        Takes the cap off the list (the remaining pending caps close the gap)
+        and keeps a record so the player isn't capped again automatically.
+        Admin only.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The declined cap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapEntry"
+        "404":
+          description: No pending cap with this id
+
+  /caps/{id}/restore:
+    post:
+      operationId: restoreCap
+      tags: [caps]
+      summary: Restore a declined cap as pending, with the next number
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The restored (pending) cap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapEntry"
+        "404":
+          description: No declined cap with this id
+
   /caps/{id}:
     patch:
       operationId: updateCap
@@ -10736,10 +10865,63 @@ components:
         updated:
           type: integer
 
+    CapStatus:
+      type: string
+      enum: [confirmed, pending, declined]
+      description: |
+        confirmed — on the public register; pending — issued automatically,
+        awaiting an admin's confirmation; declined — turned down by an admin
+        (kept so the player isn't capped again automatically).
+
+    CapIdsBody:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+
+    CapReorderBody:
+      type: object
+      required: [category, ids]
+      properties:
+        category:
+          $ref: "#/components/schemas/CapCategory"
+        ids:
+          type: array
+          items:
+            type: integer
+
+    CapCatchUpResult:
+      type: object
+      required: [issued, olderUncapped, held]
+      properties:
+        issued:
+          type: integer
+          description: Pending caps issued.
+        olderUncapped:
+          type: integer
+          description: Uncapped players whose debut predates the newest cap (cap them by hand).
+        held:
+          type: array
+          description: Why a list was skipped (no register, not linked, too many at once).
+          items:
+            type: string
+
+    CapReviewResult:
+      type: object
+      required: [updated]
+      properties:
+        updated:
+          type: integer
+
     CapEntry:
       type: object
-      required: [id, capNumber, category, name, deceased, inStats, gamesAGrade]
+      required: [id, capNumber, category, name, deceased, inStats, gamesAGrade, status]
       properties:
+        status:
+          $ref: "#/components/schemas/CapStatus"
         id:
           type: integer
         capNumber:

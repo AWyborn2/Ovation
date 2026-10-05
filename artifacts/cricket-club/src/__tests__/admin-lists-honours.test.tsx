@@ -151,6 +151,69 @@ describe("Caps", () => {
     await waitFor(() => expect(requests.some((r) => r.method === "DELETE")).toBe(true));
   });
 
+  it("lists caps awaiting confirmation; reorders, confirms and declines them", async () => {
+    const pending = (id: number, capNumber: number, name: string) => ({
+      id,
+      capNumber,
+      name,
+      deceased: false,
+      playerId: id,
+      gamesAGrade: 3,
+      inStats: true,
+      category: "male",
+      status: "pending",
+    });
+    const REVIEW = [pending(11, 3, "Al Second"), pending(12, 4, "Bea First")];
+    const requests = stubApi([
+      { match: /\/api\/caps$/, reply: () => CAPS },
+      { match: /\/api\/caps\/review$/, reply: () => REVIEW },
+      { method: "POST", match: /\/api\/caps\/review\/reorder$/, reply: () => REVIEW },
+      { method: "POST", match: /\/api\/caps\/review\/confirm$/, reply: () => ({ updated: 2 }) },
+      { method: "POST", match: /\/api\/caps\/11\/decline$/, reply: () => REVIEW[0] },
+    ]);
+    renderAt(<AdminCaps />, "/admin/honours/caps");
+    const panel = await screen.findByRole("region", { name: "Caps awaiting confirmation" });
+    expect(within(panel).getByText("2 caps awaiting confirmation")).toBeTruthy();
+
+    // Bea debuted first: move her up and save the new order.
+    fireEvent.click(within(panel).getByRole("button", { name: "Move Bea First up" }));
+    fireEvent.click(within(panel).getByRole("button", { name: "Save new order" }));
+    await waitFor(() => {
+      const r = requests.find((q) => q.url.endsWith("/api/caps/review/reorder"));
+      expect(r?.body).toEqual({ category: "male", ids: [12, 11] });
+    });
+
+    fireEvent.click(await within(panel).findByRole("button", { name: "Confirm all 2" }));
+    await waitFor(() => {
+      const r = requests.find((q) => q.url.endsWith("/api/caps/review/confirm"));
+      expect(r?.body).toEqual({ ids: [11, 12] });
+    });
+
+    fireEvent.click(within(panel).getAllByRole("button", { name: "Decline" })[0]!);
+    await waitFor(() =>
+      expect(
+        requests.some((q) => q.method === "POST" && q.url.endsWith("/api/caps/11/decline")),
+      ).toBe(true),
+    );
+  });
+
+  it("checks for missed debutants and reports what it issued", async () => {
+    const requests = stubApi([
+      { match: /\/api\/caps$/, reply: () => CAPS },
+      {
+        method: "POST",
+        match: /\/api\/caps\/review\/catch-up$/,
+        reply: () => ({ issued: 7, olderUncapped: 2, held: [] }),
+      },
+    ]);
+    renderAt(<AdminCaps />, "/admin/honours/caps");
+    fireEvent.click(await screen.findByRole("button", { name: "Check for missed debutants" }));
+    expect(
+      await screen.findByText(/Issued 7 caps awaiting your confirmation\. 2 older uncapped/),
+    ).toBeTruthy();
+    expect(requests.some((r) => r.method === "POST" && r.url.endsWith("/catch-up"))).toBe(true);
+  });
+
   it("shows the empty state with no caps", async () => {
     stubApi([{ match: /\/api\/caps$/, reply: () => [] }]);
     renderAt(<AdminCaps />, "/admin/honours/caps");

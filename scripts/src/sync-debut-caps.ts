@@ -41,7 +41,7 @@ function printPlan(p: DebutCapPlan, commit: boolean): void {
   if (p.frontier) console.log(`  newest capped debut: ${p.frontier}`);
   for (const c of p.toMint) {
     console.log(
-      `  ${commit ? "issued" : "would issue"} cap #${c.capNumber}: ${c.name} ` +
+      `  ${commit ? "issued (awaiting confirmation)" : "would issue"} cap #${c.capNumber}: ${c.name} ` +
         `(player #${c.playerId}, debut ${c.debutDate ?? "?"}, ${c.games} game(s))`,
     );
   }
