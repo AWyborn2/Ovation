@@ -254,6 +254,7 @@ async function centralMatchDetailDto(
   return {
     ...summary,
     clubBattedFirst: card.battedFirst,
+    clubWon: card.clubWon,
     club: await getTenantBrand(tenantId),
     lines: card.lines.map((l, i) => {
       const masked = isPrivateLine(l);

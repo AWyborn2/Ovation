@@ -145,13 +145,34 @@ describe("Club Kit designs", () => {
 
   it("headlines the result in one word, the club on the top bar", () => {
     expect(resultWord("club", "Won by 5 wickets")).toBe("WIN");
-    expect(resultWord("opposition", "Lost by 12 runs")).toBe("LOSS");
+    expect(resultWord("opposition", "Lost by 12 runs")).toBe("RESULT");
     expect(resultWord("draw", "Match drawn")).toBe("DRAW");
     expect(resultWord("draw", "Match tied")).toBe("TIE");
     expect(resultWord("opposition", "No result — rain")).toBe("NO RESULT");
     const html = render(sampleCardInput("matchSummary"), "square");
     expect(html).toMatch(/>WIN<\/div>/);
     expect(html.indexOf("Sample Club")).toBeLessThan(html.indexOf("Rival Club"));
+  });
+
+  it("leads each score bar with the club's logo, the name only when there's no logo", () => {
+    const base = sampleCardInput("matchSummary") as Extract<
+      ShareCardInput,
+      { kind: "matchSummary" }
+    >;
+    const input = {
+      ...base,
+      club: { ...base.club, name: "Rockingham-Mandurah", logoUrl: "https://cdn.example/rm.png" },
+      opposition: { ...base.opposition, name: "Subiaco-Floreat", logoUrl: null },
+    };
+    for (const size of ["square", "portrait", "story", "landscape"] as const) {
+      const html = render(input, size);
+      expect(html, size).toContain("rm.png");
+      expect(html, size).toContain("display:none");
+      // The opposition (no logo) is named; the club's name sits only in the header.
+      expect(html, size).toMatch(/>Subiaco-Floreat<\/div>/);
+      expect(html, size).not.toMatch(/>Rockingham-Mandurah<\/div>/);
+      expect(html, size).not.toMatch(/\{\{/);
+    }
   });
 
   it("serves Runs, Wickets, Catches and Dismissals leaderboards", () => {

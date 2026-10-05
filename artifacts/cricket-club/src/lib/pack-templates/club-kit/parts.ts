@@ -196,22 +196,54 @@ export function meta(u: Unit, text: string, extra = ""): string {
   return `<div style="font-family:${CK_SANS};font-size:${u(2.2)};line-height:1.4;font-weight:500;color:${C.chalk2}${extra}">${text}</div>`;
 }
 
-/** A match-result score bar. `home` = the club's own bar (primary block). */
+/**
+ * A match-result score bar: the side's logo, its name, score and overs.
+ * `home` = the club's own bar (primary block). With `logo` (the side's
+ * value prefix, e.g. "club") the bar leads with `<prefix>.logo`, shown only
+ * when `<prefix>.logoDisplay` binds "flex"; bind a name that is empty when the
+ * logo is there, so the logo stands in for it and the name shows without one.
+ */
 export function scoreBar(
   u: Unit,
   name: string,
   score: string,
   overs: string,
   home: boolean,
+  /**
+   * Characters the name holds at full size. A longer name shrinks to fit and,
+   * past that, wraps onto a second line (`fitNames`) rather than being cut off.
+   */
+  fit = 16,
+  /** Name over score and overs, beside the logo (narrow columns). */
+  stacked = false,
+  logo?: string,
 ): string {
   const box = home
     ? `background:${C.p};color:${C.onp}`
     : `background:${C.panel};color:${C.chalk2};border-left:${u(1.2)} solid ${C.s}`;
+  const logoSize = stacked ? 9 : 10;
+  const logoEl = logo
+    ? `<div style="display:{{${logo}.logoDisplay}};flex:none;width:${u(logoSize)};height:${u(logoSize)};border-radius:${u(1)};overflow:hidden;background:#fff;padding:${u(0.6)};box-sizing:border-box"><div data-slot="${logo}.logo" data-slot-type="logo" data-shape="rect" data-fit="contain" style="width:100%;height:100%"></div></div>`
+    : "";
+  const nameEl = `<div data-fit="${fit}" style="${stacked ? "width:100%" : "flex:1"};min-width:0;font-family:${CK_COND};font-weight:800;font-size:calc(${u(4.2)} * var(--fit,1));line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>`;
+  const scoreEl = `<div style="flex:none;font-family:${CK_COND};font-weight:900;font-size:${u(6)};line-height:.9">${score}</div>`;
+  const oversEl = `<div style="flex:none;font-family:${CK_MONO};font-weight:500;font-size:${u(1.6)};opacity:.75;white-space:nowrap">${overs}</div>`;
+  if (stacked) {
+    return (
+      `<div style="display:flex;align-items:center;gap:${u(1.6)};padding:${u(1.4)} ${u(2.4)};${box};min-width:0">` +
+      logoEl +
+      `<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:${u(0.6)}">` +
+      nameEl +
+      `<div style="display:flex;align-items:baseline;gap:${u(1.6)}">${scoreEl}${oversEl}</div>` +
+      `</div></div>`
+    );
+  }
   return (
-    `<div style="display:flex;align-items:baseline;gap:${u(1.6)};padding:${u(1.6)} ${u(2.4)};${box};min-width:0">` +
-    `<div style="flex:1;min-width:0;font-family:${CK_COND};font-weight:800;font-size:${u(4.2)};line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div>` +
-    `<div style="flex:none;font-family:${CK_COND};font-weight:900;font-size:${u(6)};line-height:.9">${score}</div>` +
-    `<div style="flex:none;font-family:${CK_MONO};font-weight:500;font-size:${u(1.6)};opacity:.75;white-space:nowrap">${overs}</div>` +
+    `<div style="display:flex;align-items:center;gap:${u(1.6)};padding:${u(1.6)} ${u(2.4)};${box};min-width:0">` +
+    logoEl +
+    nameEl +
+    scoreEl +
+    oversEl +
     `</div>`
   );
 }
@@ -219,13 +251,15 @@ export function scoreBar(
 /** Home + opposition score bars. */
 export function scoreBars(
   u: Unit,
-  home: { name: string; score: string; overs: string },
-  away: { name: string; score: string; overs: string },
+  home: { name: string; score: string; overs: string; logo?: string },
+  away: { name: string; score: string; overs: string; logo?: string },
+  fit?: number,
+  stacked = false,
 ): string {
   return (
     `<div style="display:flex;flex-direction:column;gap:${u(0.8)};width:100%">` +
-    scoreBar(u, home.name, home.score, home.overs, true) +
-    scoreBar(u, away.name, away.score, away.overs, false) +
+    scoreBar(u, home.name, home.score, home.overs, true, fit, stacked, home.logo) +
+    scoreBar(u, away.name, away.score, away.overs, false, fit, stacked, away.logo) +
     `</div>`
   );
 }
