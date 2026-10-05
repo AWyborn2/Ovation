@@ -15,13 +15,14 @@
  *      their grade's boundary become season rows; rows at or after it are
  *      skipped (central supplies them). Player ids are the native
  *      `players.id`s, which ARE tenant 1's ids (KTD3).
- *      A career baseline also holds whatever the hand-kept master counted that
- *      native has no record of (e.g. Sam Hardman's six 2017/18 B Grade games:
- *      native holds other 2017/18 B Grade scorecards, but none of his). Central
- *      supplies those seasons, so the player's central figures beyond native's
- *      own records for them are peeled out of the baseline first, as the
- *      native match load peels its own match seasons (per figure, floored at
- *      zero). A baseline the peel empties is dropped.
+ *      A native career is its snapshots only (baseline + season rows; scorecard
+ *      lines never count), so a baseline also holds whatever the hand-kept
+ *      master counted in seasons the player has no season row for (e.g. Sam
+ *      Hardman's six 2017/18 B Grade games), and match-era fielding (season
+ *      rows carry none). Central supplies those seasons, so the player's
+ *      central figures beyond their own season rows are peeled out of the
+ *      baseline first, as the native match load peels its own match seasons
+ *      (per figure, floored at zero). A baseline the peel empties is dropped.
  *   3. Fill-ins (id >= 90000) never produce history rows, and are never pinned.
  *   4. U4's review players (AMBIGUOUS, WEAK_ONLY …) each end as a crosswalk row
  *      to their native id or a recorded decision to leave them unmapped — from
@@ -260,15 +261,11 @@ export const zeroPeelFigures = (): PeelFigures =>
   Object.fromEntries(COUNT_FIELDS.map((k) => [k, 0])) as PeelFigures;
 
 /**
- * Each player's figures on both sides, per season, for the career baseline
- * peel. Grades are senior app grades; keys are `${grade}|${season}`.
+ * Each player's central figures per season, for the career baseline peel
+ * (native's side is the player's season snapshot rows, from pgss). Grades are
+ * senior app grades; keys are `${grade}|${season}`.
  */
 export interface CentralOnlyInput {
-  /**
-   * Native player id → (grade, season) → the player's native scorecard lines
-   * (abandoned matches excluded). Season snapshot rows are added from pgss.
-   */
-  nativeFigures: ReadonlyMap<number, ReadonlyMap<string, PeelFigures>>;
   /** Native player id → the PlayHQ GUIDs it reads as after cut-over. */
   guidsByPlayer: ReadonlyMap<number, readonly string[]>;
   /** GUID → (grade, season) → that GUID's central figures for the club. */
@@ -474,9 +471,9 @@ export function planHistoryRows(input: {
 /**
  * The career baseline peel (see the header): for a (player, grade) baseline,
  * season by season at or after the grade's boundary, what the player's GUIDs
- * have in central beyond the player's own native records there (scorecard
- * lines and season snapshots), per figure and floored at zero. That excess can
- * only have lived in the baseline. The peel is the lesser of baseline and
+ * have in central beyond the player's own season snapshot rows there, per
+ * figure and floored at zero. A native career is snapshots only, so that
+ * excess is either in the baseline or not in the native career at all. The peel is the lesser of baseline and
  * excess, as the native match load's peel (scripts/sql/matches-etl.sql step 8).
  * Null when nothing would be peeled.
  */
@@ -518,12 +515,10 @@ function centralOnlyPeeler(input: {
     const excess = zeroPeelFigures();
     const seasons: number[] = [];
     for (const [season, cf] of centralBySeason) {
-      const key = `${grade}|${season}`;
-      const lines = co.nativeFigures.get(playerId)?.get(key);
-      const snap = snapshots.get(playerId)?.get(key);
+      const snap = snapshots.get(playerId)?.get(`${grade}|${season}`);
       let more = false;
       for (const k of COUNT_FIELDS) {
-        const e = cf[k] - (lines?.[k] ?? 0) - (snap?.[k] ?? 0);
+        const e = cf[k] - (snap?.[k] ?? 0);
         if (e > 0) {
           excess[k] += e;
           more = true;
