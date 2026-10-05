@@ -253,7 +253,12 @@ export function renderPackCard(
   // is substituted, so card text can never be rewritten by them.
   if (mode === "club") html = applyClubSwaps(html, packId);
   html = selectSponsorVariant(html, sponsorsOn);
-  html = limitSponsorTiles(html, maxSponsorLogos(input.kind));
+  // A data-bearing render shows only the sponsors that have a logo: no empty
+  // tiles, and with no logos at all the strip gives way to the presenting
+  // sponsor's name. Sample previews (no data) keep their placeholder tiles.
+  const kindCap = maxSponsorLogos(input.kind);
+  const logoCount = [1, 2, 3].filter((n) => bound.images[`sponsor${n}`]).length;
+  html = limitSponsorTiles(html, data ? Math.min(kindCap ?? 3, logoCount) : kindCap);
   html = expandRepeats(html, bound.rows, template);
   // Before slots resolve: an optional block whose image never arrived is removed
   // outright rather than rendering an empty framed placeholder.

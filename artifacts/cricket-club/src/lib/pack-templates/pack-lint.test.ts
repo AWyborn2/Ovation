@@ -63,7 +63,7 @@ const EXTRA_KEY_ALLOWLIST: Record<string, readonly string[]> = {
   "sunset-v1/matchSummary": ["photo", "clubHashtag"],
   // Club Kit: every card shows a monogram disc in place of a missing crest
   // (`clubMonogram`, filled from the club's initials at render time).
-  "club-kit-v1/*": ["clubMonogram", "rowScale"],
+  "club-kit-v1/*": ["clubMonogram", "rowScale", "sponsorPresentedBy"],
   // Club Kit's match result: the one-word WIN / RESULT headline (bound from
   // `resultWinner` by bindInput), the hashtag block, and the score bars'
   // logo-or-name values.

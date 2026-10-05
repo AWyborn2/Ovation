@@ -105,6 +105,8 @@ router.post(
       sponsors: sponsorsOn
         ? sponsors
             .filter((s) => sponsorApplies(s.cardKinds, kind))
+            // The presenting (headline) sponsor's logo leads the strip.
+            .sort((a, b) => Number(!!b.isPresenting) - Number(!!a.isPresenting))
             .map((s) => ({ name: s.name, logoUrl: s.logoUrl }))
         : [],
       presentingSponsorName: sponsorsOn
