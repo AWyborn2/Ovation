@@ -7039,7 +7039,7 @@ export const ListClubPhotosQueryParams = zod.object({
   "playerId": zod.coerce.number().optional(),
   "grade": zod.coerce.string().optional(),
   "season": zod.coerce.number().optional(),
-  "type": zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).optional().describe('Only photos tagged with this photo type.'),
+  "type": zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).optional().describe('Only photos tagged with this photo type.'),
   "ungraded": zod.coerce.boolean().optional().describe('When true, only photos with no grade (the Club-wide folder). Can\'t be combined with grade.'),
   "untyped": zod.coerce.boolean().optional().describe('When true, only photos with no photo type (a folder\'s Unsorted sub-folder). Can\'t be combined with type.')
 })
@@ -7055,7 +7055,8 @@ export const ListClubPhotosResponseItem = zod.object({
   "takenAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date(),
   "playerIds": zod.array(zod.number()),
-  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.')),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
   "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 })
 export const ListClubPhotosResponse = zod.array(ListClubPhotosResponseItem)
@@ -7073,7 +7074,8 @@ export const IngestClubPhotosBody = zod.object({
   "season": zod.number().optional(),
   "grade": zod.string().optional(),
   "playerIds": zod.array(zod.number()).optional().describe('Senior players to tag on every photo in the batch.'),
-  "photoType": zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).optional().describe('File every photo in the batch under this photo type (uploading into a library folder).')
+  "photoType": zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).optional().describe('File every photo in the batch under this photo type (uploading into a library folder).'),
+  "matchFormat": zod.enum(['one_day', 't20', 'two_day']).optional().describe('Tag every photo in the batch with this match format.')
 })
 
 export const IngestClubPhotosResponse = zod.object({
@@ -7091,7 +7093,8 @@ export const IngestClubPhotosResponse = zod.object({
   "takenAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date(),
   "playerIds": zod.array(zod.number()),
-  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.')),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
   "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 }).optional(),
   "error": zod.string().optional()
@@ -7147,8 +7150,9 @@ export const TagClubPhotosBody = zod.object({
   "grade": zod.string().nullish().describe('Set (or with null, clear) the grade on every photo. Omit to leave unchanged.'),
   "addPlayerIds": zod.array(zod.number()).optional(),
   "removePlayerIds": zod.array(zod.number()).optional(),
-  "addTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.')).optional().describe('At most one photo type: a photo has one type (its library folder), so adding a type replaces the photo\'s current type. More than one is a 400.'),
-  "removeTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.')).optional().describe('Photo types to remove from every photo.')
+  "addTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')).optional().describe('At most one photo type: a photo has one type (its library folder), so adding a type replaces the photo\'s current type. More than one is a 400.'),
+  "removeTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')).optional().describe('Photo types to remove from every photo.'),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).optional().describe('Set (or with null, clear) the match format on every photo. Omit to leave unchanged.')
 })
 
 export const TagClubPhotosResponseItem = zod.object({
@@ -7162,7 +7166,8 @@ export const TagClubPhotosResponseItem = zod.object({
   "takenAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date(),
   "playerIds": zod.array(zod.number()),
-  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.')),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
   "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 })
 export const TagClubPhotosResponse = zod.array(TagClubPhotosResponseItem)
@@ -7178,7 +7183,7 @@ export const TagClubPhotosResponse = zod.array(TagClubPhotosResponseItem)
 export const MoveClubPhotosBody = zod.object({
   "photoIds": zod.array(zod.number()).min(1),
   "grade": zod.string().nullable().describe('The senior grade folder, or null for Club-wide (no grade).'),
-  "photoType": zod.union([zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.'),zod.null()]).describe('The photo type sub-folder, or null for Unsorted (no type).')
+  "photoType": zod.union([zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.'),zod.null()]).describe('The photo type sub-folder, or null for Unsorted (no type).')
 })
 
 export const MoveClubPhotosResponseItem = zod.object({
@@ -7192,7 +7197,8 @@ export const MoveClubPhotosResponseItem = zod.object({
   "takenAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date(),
   "playerIds": zod.array(zod.number()),
-  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.')),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
   "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 })
 export const MoveClubPhotosResponse = zod.array(MoveClubPhotosResponseItem)
@@ -7224,7 +7230,7 @@ export const ListCardPhotoRulesResponseItem = zod.object({
   "mode": zod.enum(['player', 'random', 'fixed']).describe('player = the card\'s featured player (a match summary features the club\'s top run-scorer), falling back to a random grade photo; random = a photo of the grade, stable per draft; fixed = one library photo.'),
   "photoId": zod.number().nullable().describe('The fixed photo; null for other modes, or when a fixed photo was removed from the library.'),
   "photoThumbUrl": zod.string().nullable(),
-  "photoType": zod.union([zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.'),zod.null()]).describe('Random and player rules: only photos with this type tag (falling back to any grade photo when none match).'),
+  "photoType": zod.union([zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.'),zod.null()]).describe('Random and player rules: only photos with this type tag (falling back to any grade photo when none match).'),
   "updatedAt": zod.coerce.date()
 })
 export const ListCardPhotoRulesResponse = zod.array(ListCardPhotoRulesResponseItem)
@@ -7247,7 +7253,7 @@ export const SaveCardPhotoRulesBody = zod.object({
   "cardKinds": zod.array(zod.string().min(1).max(saveCardPhotoRulesBodyCardKindsItemMax)).min(1).max(saveCardPhotoRulesBodyCardKindsMax),
   "mode": zod.enum(['player', 'random', 'fixed']).describe('player = the card\'s featured player (a match summary features the club\'s top run-scorer), falling back to a random grade photo; random = a photo of the grade, stable per draft; fixed = one library photo.'),
   "photoId": zod.number().nullish().describe('Required for a fixed rule; ignored otherwise.'),
-  "photoType": zod.union([zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.'),zod.null()]).optional().describe('Random and player rules: narrow the pool to photos with this type tag. Ignored for a fixed rule.')
+  "photoType": zod.union([zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.'),zod.null()]).optional().describe('Random and player rules: narrow the pool to photos with this type tag. Ignored for a fixed rule.')
 })
 
 export const SaveCardPhotoRulesResponseItem = zod.object({
@@ -7257,7 +7263,7 @@ export const SaveCardPhotoRulesResponseItem = zod.object({
   "mode": zod.enum(['player', 'random', 'fixed']).describe('player = the card\'s featured player (a match summary features the club\'s top run-scorer), falling back to a random grade photo; random = a photo of the grade, stable per draft; fixed = one library photo.'),
   "photoId": zod.number().nullable().describe('The fixed photo; null for other modes, or when a fixed photo was removed from the library.'),
   "photoThumbUrl": zod.string().nullable(),
-  "photoType": zod.union([zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.'),zod.null()]).describe('Random and player rules: only photos with this type tag (falling back to any grade photo when none match).'),
+  "photoType": zod.union([zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.'),zod.null()]).describe('Random and player rules: only photos with this type tag (falling back to any grade photo when none match).'),
   "updatedAt": zod.coerce.date()
 })
 export const SaveCardPhotoRulesResponse = zod.array(SaveCardPhotoRulesResponseItem)
@@ -7300,7 +7306,8 @@ export const RemovePhotoBackgroundResponse = zod.object({
   "takenAt": zod.coerce.date().nullable(),
   "createdAt": zod.coerce.date(),
   "playerIds": zod.array(zod.number()),
-  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting), falling back to any photo.')),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
   "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 })
 

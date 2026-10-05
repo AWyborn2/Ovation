@@ -160,6 +160,7 @@ export async function cutOutLibraryPhoto(tenantId: number, photoId: number): Pro
         grade: source.grade,
         takenAt: source.takenAt,
         photoTypes: source.photoTypes,
+        matchFormat: source.matchFormat,
         sourcePhotoId: source.id,
       })
       .returning();

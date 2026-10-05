@@ -12949,16 +12949,47 @@ components:
 
     ClubPhotoType:
       type: string
-      enum: [batting, bowling, fielding, team, celebrating, batting_milestone, bowling_milestone]
+      enum:
+        [
+          batting,
+          bowling,
+          fielding,
+          team,
+          celebrating,
+          premiership,
+          batting_milestone,
+          bowling_milestone,
+        ]
       description: >-
         A photo type tag. Each card type prefers certain types when its photo is
-        picked automatically (a century prefers batting milestone, then batting),
-        falling back to any photo.
+        picked automatically (a century prefers batting milestone, then batting;
+        a premiership prefers premiership, then team), falling back to any photo.
+
+    ClubPhotoMatchFormat:
+      type: string
+      enum: [one_day, t20, two_day]
+      description: >-
+        The match format a library photo is from (One Day, T20, Two Day). A
+        separate tag from the photo type: a card from a format (a T20
+        premiership) prefers photos of that format.
 
     ClubPhoto:
       type: object
       required:
-        [id, url, thumbUrl, width, height, season, grade, takenAt, createdAt, playerIds, photoTypes]
+        [
+          id,
+          url,
+          thumbUrl,
+          width,
+          height,
+          season,
+          grade,
+          takenAt,
+          createdAt,
+          playerIds,
+          photoTypes,
+          matchFormat,
+        ]
       properties:
         id:
           type: integer
@@ -12988,6 +13019,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ClubPhotoType"
+        matchFormat:
+          description: "The match format tag, or null when untagged."
+          oneOf:
+            - $ref: "#/components/schemas/ClubPhotoMatchFormat"
+            - type: "null"
         sourcePhotoId:
           type: ["integer", "null"]
           description: "For a derived image (a background-removed cut-out), the library photo it was made from."
@@ -13050,6 +13086,9 @@ components:
         photoType:
           $ref: "#/components/schemas/ClubPhotoType"
           description: "File every photo in the batch under this photo type (uploading into a library folder)."
+        matchFormat:
+          $ref: "#/components/schemas/ClubPhotoMatchFormat"
+          description: "Tag every photo in the batch with this match format."
 
     GoogleDriveConfig:
       type: object
@@ -13154,6 +13193,11 @@ components:
           items:
             $ref: "#/components/schemas/ClubPhotoType"
           description: "Photo types to remove from every photo."
+        matchFormat:
+          description: "Set (or with null, clear) the match format on every photo. Omit to leave unchanged."
+          oneOf:
+            - $ref: "#/components/schemas/ClubPhotoMatchFormat"
+            - type: "null"
 
     MoveClubPhotosRequest:
       type: object

@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { ClubPhotoMatchFormat } from './clubPhotoMatchFormat';
 import type { ClubPhotoType } from './clubPhotoType';
 
 export interface IngestClubPhotosRequest {
@@ -19,4 +20,6 @@ export interface IngestClubPhotosRequest {
   playerIds?: number[];
   /** File every photo in the batch under this photo type (uploading into a library folder). */
   photoType?: ClubPhotoType;
+  /** Tag every photo in the batch with this match format. */
+  matchFormat?: ClubPhotoMatchFormat;
 }
