@@ -364,7 +364,13 @@ export function resolveSlots(
     const contain = type === "sponsor" || /data-fit="contain"/.test(rest);
     const fit = contain ? "contain" : "cover";
     if (url) {
-      const pos = type === "photo" ? photoPositionStyle(photoTransform) : "";
+      const focus = /data-focus="([0-9.]+% [0-9.]+%)"/.exec(rest)?.[1];
+      const pos =
+        type === "photo"
+          ? // A moved focal point wins; an untouched (centred) one keeps the
+            // slot's default focus.
+            photoPositionStyle(photoTransform) || (focus ? `;object-position:${focus}` : "")
+          : "";
       const zoom = type === "photo" && honourZoom ? (photoTransform?.zoom ?? 1) : 1;
       if (zoom > 1 && photoTransform) {
         const fx = Math.round(Math.max(0, Math.min(1, photoTransform.focalX)) * 100);

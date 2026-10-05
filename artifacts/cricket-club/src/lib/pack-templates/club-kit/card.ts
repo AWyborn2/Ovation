@@ -37,10 +37,39 @@ export const isTall = (f: CkFormat): boolean => f === "portrait" || f === "story
 /** Kinds whose portrait layout is list-heavy (shorter photo frame). */
 export type FrameDepth = "list" | "hero";
 
-/** The top frame's height per tall format (handoff §3 table). */
+/**
+ * The top frame's minimum height per tall format (handoff §3 table). The frame
+ * grows past this down to the body copy, so a short body (a spotlight, a
+ * milestone) gets a tall photo rather than an empty band above the copy.
+ */
 export function topFrameHeight(f: CkFormat, depth: FrameDepth): string {
   if (f === "story") return "46cqh";
   return depth === "list" ? "24cqh" : "31cqh";
+}
+
+/**
+ * Card padding + header height + the header→body gap (`skeletonCard`), in
+ * card cqmin: how far the body's top sits below the card's top edge.
+ */
+const BODY_TOP = 6 + 10 + 3;
+/** Clear space between the frame's lowest (left) corner and the body copy. */
+const FRAME_CLEAR = 5;
+/** Rise of the frame's sloped edge, left to right. */
+const FRAME_SLOPE = "11cqmin";
+
+/**
+ * The tall formats' top frame, laid out in the body's flow: a flexing spacer
+ * above the copy holds the frame, which reaches up to the card's top edge
+ * and out to its sides, and down to just above the copy (never shorter than
+ * the format's minimum, which a long body overlaps, as before).
+ */
+function fluidTopFrame(f: CkFormat, depth: FrameDepth, photo: string): string {
+  return (
+    `<div data-ck-frame-space="1" style="flex:1 1 0;min-height:0;position:relative">` +
+    `<div style="position:absolute;left:-6cqmin;width:100cqw;top:-${BODY_TOP}cqmin;bottom:${FRAME_CLEAR}cqmin;min-height:${topFrameHeight(f, depth)}">` +
+    topFrame(cq, "100%", photo, FRAME_SLOPE) +
+    `</div></div>`
+  );
 }
 
 /** Crest in the header: the club logo, or the monogram disc when there is none. */
@@ -55,7 +84,8 @@ export function headerCrest(): string {
 
 function header(chip: string): string {
   return (
-    `<div style="flex:none;position:relative;display:flex;align-items:center;justify-content:space-between;gap:2cqmin">` +
+    // Above the tall formats' frame, which sits later in the flow.
+    `<div style="flex:none;position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:2cqmin">` +
     `<div style="display:flex;align-items:center;gap:2cqmin;min-width:0">${headerCrest()}${clubLockup(cq, "{{clubName}}", "{{clubTagline}}")}</div>` +
     kindChip(cq, chip) +
     `</div>`
@@ -103,9 +133,13 @@ export function footer(f: CkFooter): string {
   );
 }
 
-/** The design's photo inside the frame (dropped when no photo is bound). */
+/**
+ * The design's photo inside the frame (dropped when no photo is bound). Both
+ * frames crop a player shot far wider than it was taken, so it favours the
+ * top of the photo (heads, not torsos) until the user sets a focal point.
+ */
 function framePhoto(key: string): string {
-  return treatedPhoto(key, "inset:0", slot(key, "photo"));
+  return treatedPhoto(key, "inset:0", slot(key, "photo", "rect", undefined, "50% 22%"));
 }
 
 export interface CkCardParts {
@@ -125,15 +159,13 @@ export function ckCard(parts: CkCardParts): string {
   const { format } = parts;
   const tall = isTall(format);
   const photo = parts.photo ? framePhoto(parts.photo) : "";
-  const frame = parts.photo
-    ? tall
-      ? topFrame(cq, topFrameHeight(format, parts.depth ?? "hero"), photo)
-      : sideFrame(cq, photo)
-    : "";
+  const sideFrameHtml = parts.photo && !tall ? sideFrame(cq, photo) : "";
+  const topFrameHtml =
+    parts.photo && tall ? fluidTopFrame(format, parts.depth ?? "hero", photo) : "";
   const layers =
     background() +
     `<div data-drop-if-empty="clubLogo" style="position:absolute;inset:0;pointer-events:none">${watermark(cq, CLUB_LOGO_SLOT)}</div>` +
-    frame;
+    sideFrameHtml;
   const maxW = !tall && parts.photo && !parts.wide ? "52%" : "100%";
   const bodyStyle =
     `;container-type:normal;justify-content:${tall ? "flex-end" : "center"}` +
@@ -142,7 +174,11 @@ export function ckCard(parts: CkCardParts): string {
     vars: `color:${C.chalk}`,
     layers,
     header: header(parts.chip),
-    body: parts.body,
+    // The copy stays above the frame where a long body overlaps it.
+    body: topFrameHtml
+      ? topFrameHtml +
+        `<div style="position:relative;z-index:1;display:flex;flex-direction:column;min-height:0;min-width:0;width:100%">${parts.body}</div>`
+      : parts.body,
     footer: footer(parts.footer),
     bodyStyle,
   });

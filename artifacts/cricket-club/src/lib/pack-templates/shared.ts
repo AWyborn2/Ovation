@@ -25,9 +25,13 @@ export function slot(
   type: "photo" | "logo" | "sponsor",
   shape: "rect" | "rounded" | "circle" = "rect",
   radius?: number,
+  /** Default `object-position` for a photo (e.g. "50% 22%" to keep heads in a
+   * wide crop); a user-set focal point still wins. */
+  focus?: string,
 ): string {
   const r = radius != null ? ` data-radius="${radius}"` : "";
-  return `<div data-slot="${key}" data-slot-type="${type}" data-shape="${shape}"${r} style="width:100%;height:100%"></div>`;
+  const fo = focus ? ` data-focus="${focus}"` : "";
+  return `<div data-slot="${key}" data-slot-type="${type}" data-shape="${shape}"${r}${fo} style="width:100%;height:100%"></div>`;
 }
 
 /** Tenant club logo slot (bundle: `fit="contain" shape="rect"`). */

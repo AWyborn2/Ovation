@@ -85,14 +85,18 @@ export function sideFrame(u: Unit, photo: string, left = "54cqw", width = "46cqw
  * `46cqh`), with a sloped bottom edge that rises to the right and the trim
  * along it. Top and bottom fades keep the header and body legible.
  */
-export function topFrame(u: Unit, h: string, photo: string): string {
+export function topFrame(u: Unit, h: string, photo: string, slope?: string): string {
+  // How far the right end of the edge sits above the left: a share of the
+  // height by default, or a fixed `slope` (a frame whose height flexes keeps
+  // the same angle at any height).
+  const rise = slope ?? `calc(${h} * .22)`;
   const bands = TRIM.map(
     ([d, c]) =>
-      `<div style="position:absolute;left:0;top:0;width:100cqw;height:calc(${h} + ${u(d)});background:${c};clip-path:polygon(0 0,100% 0,100% calc(${h} * .78 + ${u(d)}),0 100%)"></div>`,
+      `<div style="position:absolute;left:0;top:0;width:100cqw;height:calc(${h} + ${u(d)});background:${c};clip-path:polygon(0 0,100% 0,100% calc(100% - ${rise}),0 100%)"></div>`,
   ).join("");
   return (
     bands +
-    `<div data-ck-frame="top" style="position:absolute;left:0;top:0;width:100cqw;height:${h};overflow:hidden;clip-path:polygon(0 0,100% 0,100% 78%,0 100%);background:linear-gradient(160deg,${C.base2},${C.s})">` +
+    `<div data-ck-frame="top" style="position:absolute;left:0;top:0;width:100cqw;height:${h};overflow:hidden;clip-path:polygon(0 0,100% 0,100% calc(100% - ${rise}),0 100%);background:linear-gradient(160deg,${C.base2},${C.s})">` +
     photo +
     `<div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(0deg,${C.base55} 0%,transparent 40%),linear-gradient(180deg,${C.base70} 0%,transparent 30%)"></div>` +
     `</div>`
