@@ -143,3 +143,31 @@ mtime_ms = 1791162784961
 storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/f5ca1ea9-9223-4ff9-ad27-36a36ba37383/8e311018-c657-4358-8888-aa8a588f2a79"
 storage_version_token = "1791162795946642"
 content_type = "text/csv"
+
+[[outputs]]
+id = "p7YmKFByIlpUKkv1zgEvQ"
+uri = "file://scripts/exports/hh-cutover-preview-2026-10-05T04-20-59-147Z/unexplained.csv"
+type = "table"
+title = "unexplained.csv"
+description = "102 data rows plus header; all 29 columns retained."
+logical_id = "36ce2885-b05d-4e39-bbfc-d54a5c5e9be3"
+content_hash = "sha256:3de5d4803d5648b5d8ece3db0602f65c5c1e847263b93916f0ab39b9a18d9906"
+size = 30532
+mtime_ms = 1791175357001
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/36ce2885-b05d-4e39-bbfc-d54a5c5e9be3/d8b16157-9333-4371-a107-302f0c3103e4"
+storage_version_token = "1791175363338485"
+content_type = "text/csv"
+
+[[outputs]]
+id = "HZ8sUm9borpGGaxuxykGu"
+uri = "file://scripts/exports/hh-cutover-preview-2026-10-05T04-20-59-147Z/unexplained-all-grade.csv"
+type = "table"
+title = "unexplained-all-grade.csv"
+description = "53 whole-career rows (grade ALL) plus header; all 29 columns retained."
+logical_id = "90024782-4fc3-45e6-8cc2-2ee3cbcc1630"
+content_hash = "sha256:b21ddbd68e238512c240ec3043c8bb250510b09a9f88351860eb73b1478969f4"
+size = 17262
+mtime_ms = 1791175357003
+storage_uri = "gcs://replit-rams-assets-kirk/rams/assets/repl:ab07d06e-3769-4b63-9c13-67c124a4e90b/90024782-4fc3-45e6-8cc2-2ee3cbcc1630/38b5186f-f974-4f18-beb7-572bdb128bec"
+storage_version_token = "1791175364091788"
+content_type = "text/csv"
