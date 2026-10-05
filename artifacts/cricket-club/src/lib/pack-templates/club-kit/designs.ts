@@ -385,20 +385,26 @@ const playerSpotlight = design({
   kind: "player",
   designKey: "player-spotlight",
   name: "Player Spotlight",
-  build: (f) =>
-    card(
+  build: (f) => {
+    // The body is short, so it scales up to fill the room each format leaves
+    // it: the story's copy band under the photo and the landscape's tall
+    // left column carry bigger type than the square.
+    const k = { square: 1, portrait: 1.15, story: 1.3, landscape: 1.45 }[f];
+    const ku = (n: number) => u(+(n * k).toFixed(2));
+    return card(
       f,
       "SPOTLIGHT",
       col(
-        eyebrow(u, "PLAYER SPOTLIGHT · {{season}}") +
-          display(u, "{{playerName}}", 9, ";line-height:.9;margin-top:1.2cqmin") +
-          `<div style="display:flex;gap:.8cqmin;width:100%;margin-top:2.4cqmin">` +
-          [1, 2, 3].map((n) => statCell(u, `{{stat${n}Value}}`, `{{stat${n}Label}}`)).join("") +
+        eyebrow(ku, "PLAYER SPOTLIGHT · {{season}}") +
+          display(ku, "{{playerName}}", 9, `;line-height:.9;margin-top:${ku(1.2)}`) +
+          `<div style="display:flex;gap:.8cqmin;width:100%;margin-top:${ku(2.4)}">` +
+          [1, 2, 3].map((n) => statCell(ku, `{{stat${n}Value}}`, `{{stat${n}Label}}`)).join("") +
           `</div>` +
-          meta(u, "{{headline}}", ";margin-top:2cqmin"),
+          meta(ku, "{{headline}}", `;margin-top:${ku(2)}`),
       ),
       NAME_FOOTER,
-    ),
+    );
+  },
 });
 
 const record = design({

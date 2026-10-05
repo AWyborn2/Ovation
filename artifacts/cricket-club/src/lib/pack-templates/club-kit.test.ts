@@ -128,7 +128,11 @@ describe("Club Kit designs", () => {
     expect(render(input as ShareCardInput, "portrait")).toContain('data-ck-frame="top"');
     const story = render(input as ShareCardInput, "story");
     expect(story).toContain('data-ck-frame="top"');
-    expect(story).toContain("height:46cqh");
+    // The frame grows down to the copy, never shorter than the story minimum.
+    expect(story).toContain('data-ck-frame-space="1"');
+    expect(story).toContain("min-height:46cqh");
+    // Frame photos favour the top of the shot until a focal point is set.
+    expect(story).toContain("object-position:50% 22%");
     expect(story).toContain('<img src="https://cdn.example/p.jpg"');
   });
 
