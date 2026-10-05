@@ -2494,7 +2494,45 @@ export interface CapRecomputeSummary {
   categories: CapRecomputeCategory[];
 }
 
+/**
+ * confirmed — on the public register; pending — issued automatically,
+awaiting an admin's confirmation; declined — turned down by an admin
+(kept so the player isn't capped again automatically).
+
+ */
+export type CapStatus = typeof CapStatus[keyof typeof CapStatus];
+
+
+export const CapStatus = {
+  confirmed: 'confirmed',
+  pending: 'pending',
+  declined: 'declined',
+} as const;
+
+export interface CapIdsBody {
+  ids: number[];
+}
+
+export interface CapReorderBody {
+  category: CapCategory;
+  ids: number[];
+}
+
+export interface CapCatchUpResult {
+  /** Pending caps issued. */
+  issued: number;
+  /** Uncapped players whose debut predates the newest cap (cap them by hand). */
+  olderUncapped: number;
+  /** Why a list was skipped (no register, not linked, too many at once). */
+  held: string[];
+}
+
+export interface CapReviewResult {
+  updated: number;
+}
+
 export interface CapEntry {
+  status: CapStatus;
   id: number;
   capNumber: number;
   category: CapCategory;

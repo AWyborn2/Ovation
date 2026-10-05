@@ -9,8 +9,8 @@ import {
   skeletonFooterTag,
   skeletonHashtag,
   skeletonHeader,
-  skeletonPresentedBy,
   skeletonSponsorLogos,
+  sponsorLogosOrName,
   sponsorsOff,
   sponsorsOn,
 } from "./shared";
@@ -246,16 +246,18 @@ export function kHashtags(on: string, off = on): string {
   return sponsorsOn(skeletonHashtag(on)) + sponsorsOff(skeletonHashtag(off));
 }
 
-/** Presented-by line left (sponsors-on only designs), hashtag right. */
+/**
+ * Sponsor logos left under the design's verb ("PRESENTED BY", "PROUDLY
+ * SUPPORTED BY"), hashtag right. Logos, never the sponsor's name as text.
+ */
 export function kFooterOn(verb: string, hashtagKey = "clubHashtag"): string {
-  return skeletonFooter(sponsorsOn(skeletonPresentedBy(verb)), skeletonHashtag(hashtagKey));
+  return skeletonFooter(sponsorLogosOrName(verb), skeletonHashtag(hashtagKey));
 }
 
-/** Presented-by line left (or a secondary tag with sponsors off), hashtags right. */
+/** Sponsor logos left (or a secondary tag with sponsors off), hashtags right. */
 export function kFooterPresented(verb: string, keys: FooterKeys): string {
   const left =
-    sponsorsOn(skeletonPresentedBy(verb)) +
-    (keys.offLeft ? sponsorsOff(skeletonFooterTag(keys.offLeft)) : "");
+    sponsorLogosOrName(verb) + (keys.offLeft ? sponsorsOff(skeletonFooterTag(keys.offLeft)) : "");
   return skeletonFooter(left, kHashtags(keys.on, keys.off));
 }
 

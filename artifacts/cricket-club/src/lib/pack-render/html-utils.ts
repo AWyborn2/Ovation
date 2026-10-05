@@ -36,8 +36,12 @@ interface DivBounds {
 
 /**
  * Remove sponsor logo tiles (`data-sponsor-tile="n"`) numbered above `max`, so
- * a card kind limited to one sponsor shows one tile rather than empty ones.
- * Always strips the markers, so unlimited cards render exactly as before.
+ * a card kind limited to one sponsor, or a club with fewer sponsor logos than
+ * tiles, shows only real logos rather than empty boxes. A sponsor strip
+ * (`data-sponsor-strip`) left with no tiles is removed with its label, so a
+ * card never says "Supported by" and shows nothing; a sponsor-name fallback
+ * (`data-sponsor-fallback`) shows only when no strip survives. Always strips
+ * the markers.
  */
 export function limitSponsorTiles(html: string, max: number | undefined): string {
   let out = html;
@@ -50,9 +54,29 @@ export function limitSponsorTiles(html: string, max: number | undefined): string
         re.lastIndex = m.index;
       }
     }
+    const strip = /<div[^>]*?\sdata-sponsor-strip="1"/g;
+    while ((m = strip.exec(out))) {
+      const b = divBounds(out, m.index);
+      if (!out.slice(b.contentStart, b.contentEnd).includes("data-sponsor-tile=")) {
+        out = out.slice(0, m.index) + out.slice(b.end);
+        strip.lastIndex = m.index;
+      }
+    }
   }
-  // The marker is for this pass only; the card's markup stays as it was.
-  return out.replace(/ data-sponsor-tile="\d+"/g, "");
+  // Logos win: the name fallback goes whenever a strip is still showing.
+  if (/\sdata-sponsor-strip="1"/.test(out)) {
+    const fb = /<div data-sponsor-fallback="1">/g;
+    let f: RegExpExecArray | null;
+    while ((f = fb.exec(out))) {
+      out = out.slice(0, f.index) + out.slice(divBounds(out, f.index).end);
+      fb.lastIndex = f.index;
+    }
+  }
+  // The markers are for this pass only.
+  return out
+    .replace(/ data-sponsor-tile="\d+"/g, "")
+    .replace(/ data-sponsor-strip="1"/g, "")
+    .replace(/<div data-sponsor-fallback="1">/g, "<div>");
 }
 
 /** Given `openIdx` at a `<div`, return the bounds of its balanced content. */

@@ -6,8 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CapCategory } from './capCategory';
+import type { CapStatus } from './capStatus';
 
 export interface CapEntry {
+  status: CapStatus;
   id: number;
   capNumber: number;
   category: CapCategory;

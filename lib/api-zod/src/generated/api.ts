@@ -1925,6 +1925,7 @@ export const GetRecordProgressionResponse = zod.object({
  * @summary List all A Grade cap register entries
  */
 export const ListCapsResponseItem = zod.object({
+  "status": zod.enum(['confirmed', 'pending', 'declined']).describe('confirmed — on the public register; pending — issued automatically,\nawaiting an admin\'s confirmation; declined — turned down by an admin\n(kept so the player isn\'t capped again automatically).\n'),
   "id": zod.number(),
   "capNumber": zod.number(),
   "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
@@ -1992,6 +1993,124 @@ export const RecomputeCapsResponse = zod.object({
 
 
 /**
+ * Caps issued automatically (an A Grade / Female A Grade debut from an
+import, the bulk match load or the PlayHQ sync) start "pending" and are
+hidden from the public register until an admin confirms them. Declined
+caps are listed too, so an admin can restore one. Admin only.
+
+ * @summary Caps awaiting an admin's confirmation, and declined caps
+ */
+export const ListCapReviewResponseItem = zod.object({
+  "status": zod.enum(['confirmed', 'pending', 'declined']).describe('confirmed — on the public register; pending — issued automatically,\nawaiting an admin\'s confirmation; declined — turned down by an admin\n(kept so the player isn\'t capped again automatically).\n'),
+  "id": zod.number(),
+  "capNumber": zod.number(),
+  "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
+  "name": zod.string(),
+  "deceased": zod.boolean(),
+  "inStats": zod.boolean(),
+  "gamesAGrade": zod.number(),
+  "playerId": zod.number().nullish()
+})
+export const ListCapReviewResponse = zod.array(ListCapReviewResponseItem)
+
+
+/**
+ * @summary Confirm pending caps onto the public register
+ */
+export const ConfirmCapsBody = zod.object({
+  "ids": zod.array(zod.number())
+})
+
+export const ConfirmCapsResponse = zod.object({
+  "updated": zod.number()
+})
+
+
+/**
+ * Looks through the club's A Grade and Female A Grade debuts (from the
+stats it reads) and issues a pending cap to every debutant on or after
+the newest capped debut who has none, in debut order. Older uncapped
+players are counted, never capped automatically. Admin only.
+
+ * @summary Issue pending caps for every missed A Grade debutant
+ */
+export const CatchUpDebutCapsResponse = zod.object({
+  "issued": zod.number().describe('Pending caps issued.'),
+  "olderUncapped": zod.number().describe('Uncapped players whose debut predates the newest cap (cap them by hand).'),
+  "held": zod.array(zod.string()).describe('Why a list was skipped (no register, not linked, too many at once).')
+})
+
+
+/**
+ * `ids` must be every pending cap in the category. They are numbered in
+that order straight after the list's highest confirmed cap. Admin only.
+
+ * @summary Renumber a list's pending caps in a chosen order
+ */
+export const ReorderPendingCapsBody = zod.object({
+  "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
+  "ids": zod.array(zod.number())
+})
+
+export const ReorderPendingCapsResponseItem = zod.object({
+  "status": zod.enum(['confirmed', 'pending', 'declined']).describe('confirmed — on the public register; pending — issued automatically,\nawaiting an admin\'s confirmation; declined — turned down by an admin\n(kept so the player isn\'t capped again automatically).\n'),
+  "id": zod.number(),
+  "capNumber": zod.number(),
+  "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
+  "name": zod.string(),
+  "deceased": zod.boolean(),
+  "inStats": zod.boolean(),
+  "gamesAGrade": zod.number(),
+  "playerId": zod.number().nullish()
+})
+export const ReorderPendingCapsResponse = zod.array(ReorderPendingCapsResponseItem)
+
+
+/**
+ * Takes the cap off the list (the remaining pending caps close the gap)
+and keeps a record so the player isn't capped again automatically.
+Admin only.
+
+ * @summary Decline a pending cap
+ */
+export const DeclineCapParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeclineCapResponse = zod.object({
+  "status": zod.enum(['confirmed', 'pending', 'declined']).describe('confirmed — on the public register; pending — issued automatically,\nawaiting an admin\'s confirmation; declined — turned down by an admin\n(kept so the player isn\'t capped again automatically).\n'),
+  "id": zod.number(),
+  "capNumber": zod.number(),
+  "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
+  "name": zod.string(),
+  "deceased": zod.boolean(),
+  "inStats": zod.boolean(),
+  "gamesAGrade": zod.number(),
+  "playerId": zod.number().nullish()
+})
+
+
+/**
+ * @summary Restore a declined cap as pending, with the next number
+ */
+export const RestoreCapParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RestoreCapResponse = zod.object({
+  "status": zod.enum(['confirmed', 'pending', 'declined']).describe('confirmed — on the public register; pending — issued automatically,\nawaiting an admin\'s confirmation; declined — turned down by an admin\n(kept so the player isn\'t capped again automatically).\n'),
+  "id": zod.number(),
+  "capNumber": zod.number(),
+  "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),
+  "name": zod.string(),
+  "deceased": zod.boolean(),
+  "inStats": zod.boolean(),
+  "gamesAGrade": zod.number(),
+  "playerId": zod.number().nullish()
+})
+
+
+/**
  * @summary Update a cap register entry
  */
 export const UpdateCapParams = zod.object({
@@ -2009,6 +2128,7 @@ export const UpdateCapBody = zod.object({
 })
 
 export const UpdateCapResponse = zod.object({
+  "status": zod.enum(['confirmed', 'pending', 'declined']).describe('confirmed — on the public register; pending — issued automatically,\nawaiting an admin\'s confirmation; declined — turned down by an admin\n(kept so the player isn\'t capped again automatically).\n'),
   "id": zod.number(),
   "capNumber": zod.number(),
   "category": zod.enum(['male', 'female']).describe('Which A Grade cap list this entry belongs to.'),

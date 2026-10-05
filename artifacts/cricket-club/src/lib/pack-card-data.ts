@@ -190,8 +190,10 @@ export function kindSponsors(
   enabled: boolean,
 ): Array<{ name: string; logoUrl: string }> {
   if (!enabled || !bundle?.activeSponsors) return [];
+  // The presenting (headline) sponsor's logo leads the strip.
   return bundle.activeSponsors
     .filter((sp) => sponsorAppliesToKind(sp.cardKinds, kind))
+    .sort((a, b) => Number(!!b.isPresenting) - Number(!!a.isPresenting))
     .map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl }));
 }
 

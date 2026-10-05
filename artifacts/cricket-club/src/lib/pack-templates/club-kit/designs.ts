@@ -69,6 +69,8 @@ const EXTRA_FIELDS: Record<string, PackTemplateField> = {
   resultWord: textField("resultWord", "Result headline", "WIN"),
   setMarker: textField("setMarker", "Set page marker", ""),
   rowScale: textField("rowScale", "Set row size", "1"),
+  // The footer's sponsor-name fallback (shown only when there are no logos).
+  sponsorPresentedBy: textField("sponsorPresentedBy", "Presented-by sponsor", "Your Sponsor"),
   // Match result score bars: the logo stands in for the name (bound empty
   // when there's a logo), and the logo badge shows only when there is one.
   "club.barName": textField("club.barName", "Club name on score bar", ""),
@@ -152,7 +154,7 @@ function design(spec: DesignSpec): PackDesignEntry {
   };
 }
 
-const NAME_FOOTER: CkFooter = { hashtag: "clubHashtag", sponsors: "name" };
+const NAME_FOOTER: CkFooter = { hashtag: "clubHashtag", sponsors: "logos" };
 const LOGO_FOOTER: CkFooter = { hashtag: "hashtags", sponsors: "logos", off: true };
 
 /** Hero number size by format (milestone-style numerals, handoff §4). */
@@ -281,7 +283,7 @@ function leadersDesign(
             display(u, "{{title}}", 10, `;line-height:.88;margin-top:1cqmin`) +
             `<div data-repeat="leaders" data-repeat-max="${max}" style="width:100%;margin-top:1.6cqmin">${rows}</div>`,
         ),
-        { hashtag: "clubHashtag", sponsors: "name", off: true },
+        { hashtag: "clubHashtag", sponsors: "logos", off: true },
         "photo",
         "list",
       );
@@ -370,7 +372,7 @@ const premiership = design({
           }) +
           `</div>`,
       ),
-      { hashtag: "hashtags", sponsors: "name", label: "SEASON SUPPORTED BY" },
+      { hashtag: "hashtags", sponsors: "logos", label: "SEASON SUPPORTED BY" },
       "teamPhoto",
     ),
 });
@@ -424,7 +426,7 @@ const record = design({
           ) +
           `<div style="display:flex;align-items:center;gap:2cqmin;margin-top:1.6cqmin">${tricolourDash(u)}${display(u, "{{playerName}}", 7, "", 900)}</div>`,
       ),
-      { hashtag: "clubHashtag", sponsors: "name", off: true },
+      { hashtag: "clubHashtag", sponsors: "logos", off: true },
     ),
 });
 
@@ -450,7 +452,7 @@ function gradeLeaderDesign(preset: "Runs" | "Wickets") {
             `<div style="display:flex;align-items:center;gap:2cqmin;margin-top:1.4cqmin">${tricolourDash(u)}${display(u, "{{category}}", 5, "", 800)}</div>` +
             display(u, "{{playerName}}", 8, ";line-height:.9;margin-top:2cqmin"),
         ),
-        { hashtag: "clubHashtag", sponsors: "name", off: true },
+        { hashtag: "clubHashtag", sponsors: "logos", off: true },
       ),
   });
 }
@@ -469,7 +471,7 @@ const debut = design({
           meta(u, "Round {{round}} · vs {{opponent}} — {{tributeLine}}", ";margin-top:1.6cqmin") +
           `<div style="font-family:${CK_COND};font-weight:900;font-size:4cqmin;line-height:1;padding:.8cqmin 1.8cqmin;margin-top:2.2cqmin;background:${C.p};color:${C.onp}">CAP {{capNumber}}</div>`,
       ),
-      { hashtag: "clubHashtag", sponsors: "name", off: true },
+      { hashtag: "clubHashtag", sponsors: "logos", off: true },
     ),
 });
 
@@ -490,7 +492,7 @@ const century = design({
           display(u, "{{playerName}}", 9, ";line-height:.9;margin-top:2.2cqmin") +
           eyebrow(u, MATCH_LINE, C.chalk2, ";margin-top:1.4cqmin"),
       ),
-      { hashtag: "clubHashtag", sponsors: "name", off: true },
+      { hashtag: "clubHashtag", sponsors: "logos", off: true },
     ),
 });
 
@@ -509,7 +511,7 @@ const fiveFor = design({
           display(u, "{{playerName}}", 9, ";line-height:.9;margin-top:2.2cqmin") +
           eyebrow(u, MATCH_LINE, C.chalk2, ";margin-top:1.4cqmin"),
       ),
-      { hashtag: "clubHashtag", sponsors: "name", off: true },
+      { hashtag: "clubHashtag", sponsors: "logos", off: true },
     ),
 });
 
@@ -536,7 +538,7 @@ const weekendWrap = design({
           twoLineTitle(u, "WEEKEND", "WRAP", f === "portrait" ? 10 : 12) +
           `<div data-repeat="matches" data-repeat-max="${f === "landscape" ? 4 : 5}" style="--rs:{{rowScale}};width:100%;margin-top:1.6cqmin">${wrapRow(false)}${wrapRow(true)}</div>`,
       ),
-      { hashtag: "clubHashtag", sponsors: "name", off: true },
+      { hashtag: "clubHashtag", sponsors: "logos", off: true },
       "photo",
       "list",
     ),
@@ -568,7 +570,7 @@ const ladder = design({
           `<div style="width:100%;margin-top:1.4cqmin"><div style="display:flex;gap:1cqmin;padding:0 1.6cqmin;font-family:${CK_MONO};font-size:1.4cqmin;letter-spacing:.14em;color:${C.chalk2}"><span style="flex:none;width:4cqmin">#</span><span style="flex:1">TEAM</span><span style="flex:none;width:5.4cqmin;text-align:center">P</span><span style="flex:none;width:5.4cqmin;text-align:center">W</span><span style="flex:none;width:5.4cqmin;text-align:center">L</span><span style="flex:none;width:6cqmin;text-align:right">PTS</span></div>` +
           `<div data-repeat="rows" data-repeat-max="${f === "landscape" ? 5 : f === "story" ? 10 : 8}">${ladderRowHtml(true)}${ladderRowHtml(false)}</div></div>`,
       ),
-      { hashtag: "clubHashtag", sponsors: "name", off: true },
+      { hashtag: "clubHashtag", sponsors: "logos", off: true },
       "photo",
       "list",
     ),
@@ -598,7 +600,7 @@ const bigMoment = design({
           `<div style="display:inline-block;font-family:${CK_COND};font-weight:800;font-size:2.6cqmin;padding:.6cqmin 1.4cqmin;margin-top:1.2cqmin;background:${C.p};color:${C.onp}">{{equation}}</div>` +
           `</div></div>`,
       ),
-      { hashtag: "clubHashtag", sponsors: "name", off: true },
+      { hashtag: "clubHashtag", sponsors: "logos", off: true },
     ),
 });
 
@@ -639,7 +641,7 @@ const countdown = design({
           display(u, "{{dateVenue}}", 4.2, ";margin-top:1.6cqmin", 800) +
           meta(u, "{{fixtureLine}}", ";margin-top:.6cqmin"),
       ),
-      { hashtag: "clubHashtag", sponsors: "name", off: true },
+      { hashtag: "clubHashtag", sponsors: "logos", off: true },
     ),
 });
 
