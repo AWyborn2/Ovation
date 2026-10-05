@@ -50,48 +50,54 @@ async function main() {
   const browser = await puppeteer.launch({
     executablePath: process.env.CHROME_PATH,
     headless: true,
+    protocolTimeout: 600_000,
     args: ["--no-sandbox"],
   });
   try {
     const page = await browser.newPage();
     await page.goto(SITE, { waitUntil: "domcontentloaded", timeout: 60_000 });
     await page.evaluate(harness);
-    const found = await page.evaluate(async (org) => {
-      const ov = window.__ov;
-      const grades = await ov.discover(org, { seasons: "current" });
-      const now = Date.now();
-      const horizon = now + 10 * 24 * 3600 * 1000;
-      const upcoming = [];
-      for (const g of grades) {
-        const res = await ov.matches(g.gradeId);
-        for (const m of (res && res.matches) || []) {
-          const start = (m.matchSchedule || [])
-            .map((x) => x.startDateTime)
-            .filter(Boolean)
-            .sort()[0];
-          const t = start ? Date.parse(start) : NaN;
-          const ours = (m.teams || []).some((tm) => g.teamIds.includes(tm.id));
-          if (ours && t >= now - 12 * 3600 * 1000 && t <= horizon)
-            upcoming.push({ id: m.id, start, grade: g.gradeName, status: m.status, list: m });
-        }
+    // Fail fast on candidate paths that do not exist.
+    await page.evaluate(() => {
+      window.__ov.opts.retries = 0;
+    });
+    const ev = (fn, ...args) => page.evaluate(fn, ...args);
+    const grades = await ev((org) => window.__ov.discover(org, { seasons: "current" }), ORG);
+    console.log(`discovered ${grades.length} senior grade(s)`);
+    const now = Date.now();
+    const horizon = now + 10 * 24 * 3600 * 1000;
+    const upcoming = [];
+    for (const g of grades) {
+      const res = await ev((id) => window.__ov.matches(id), g.gradeId);
+      for (const m of (res && res.matches) || []) {
+        const start = (m.matchSchedule || [])
+          .map((x) => x.startDateTime)
+          .filter(Boolean)
+          .sort()[0];
+        const t = start ? Date.parse(start) : NaN;
+        const ours = (m.teams || []).some((tm) => g.teamIds.includes(tm.id));
+        if (ours && t >= now - 12 * 3600 * 1000 && t <= horizon)
+          upcoming.push({ id: m.id, start, grade: g.gradeName, status: m.status, list: m });
       }
-      upcoming.sort((a, b) => a.start.localeCompare(b.start));
-      const probes = [];
-      for (const u of upcoming.slice(0, 6)) {
-        const r = { id: u.id, start: u.start, grade: u.grade, status: u.status, listEntry: u.list };
-        r.plain = await ov.api(`/scores/matches/${u.id}`);
-        r.scorecard = await ov.api(`/scores/matches/${u.id}`, {
-          responseModifier: "IncludeScorecard",
-          organisationId: org,
-        });
-        for (const p of ["lineups", "teams", "players", "squads", "rosters"])
-          r[`path:${p}`] = await ov.api(`/scores/matches/${u.id}/${p}`);
-        for (const m of ["IncludeLineups", "IncludeTeamLineups", "IncludePlayers"])
-          r[`modifier:${m}`] = await ov.api(`/scores/matches/${u.id}`, { responseModifier: m });
-        probes.push(r);
-      }
-      return { gradeCount: grades.length, upcoming: upcoming.length, probes };
-    }, ORG);
+    }
+    upcoming.sort((a, b) => a.start.localeCompare(b.start));
+    const probes = [];
+    for (const u of upcoming.slice(0, 6)) {
+      const r = { id: u.id, start: u.start, grade: u.grade, status: u.status, listEntry: u.list };
+      const call = (path, params) => ev((a, b) => window.__ov.api(a, b), path, params ?? undefined);
+      r.plain = await call(`/scores/matches/${u.id}`);
+      r.scorecard = await call(`/scores/matches/${u.id}`, {
+        responseModifier: "IncludeScorecard",
+        organisationId: ORG,
+      });
+      for (const p of ["lineups", "teams", "players", "squads"])
+        r[`path:${p}`] = await call(`/scores/matches/${u.id}/${p}`);
+      for (const m of ["IncludeLineups", "IncludeTeamLineups", "IncludePlayers"])
+        r[`modifier:${m}`] = await call(`/scores/matches/${u.id}`, { responseModifier: m });
+      probes.push(r);
+      console.log(`probed ${u.id}`);
+    }
+    const found = { gradeCount: grades.length, upcoming: upcoming.length, probes };
 
     console.log(
       `org ${ORG}: ${found.gradeCount} senior grade(s), ${found.upcoming} match(es) in window`,
