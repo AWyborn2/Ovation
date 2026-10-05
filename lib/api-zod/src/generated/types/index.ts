@@ -68,6 +68,7 @@ export * from './boardGridCell';
 export * from './boardGridEntry';
 export * from './boardGridRow';
 export * from './boardSquadMember';
+export * from './capCatchUpResult';
 export * from './capCategory';
 export * from './capEntry';
 export * from './capEntryInput';

@@ -51,6 +51,7 @@ import type {
   BatchImportPreview,
   BatchRevalidateInput,
   BatchRevalidatePreview,
+  CapCatchUpResult,
   CapEntry,
   CapEntryInput,
   CapEntryUpdate,
@@ -4203,6 +4204,81 @@ export const useConfirmCaps = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getConfirmCapsMutationOptions(options));
+    }
+
+export const getCatchUpDebutCapsUrl = () => {
+
+
+
+
+  return `/api/caps/review/catch-up`
+}
+
+/**
+ * Looks through the club's A Grade and Female A Grade debuts (from the
+stats it reads) and issues a pending cap to every debutant on or after
+the newest capped debut who has none, in debut order. Older uncapped
+players are counted, never capped automatically. Admin only.
+
+ * @summary Issue pending caps for every missed A Grade debutant
+ */
+export const catchUpDebutCaps = async ( options?: RequestInit): Promise<CapCatchUpResult> => {
+
+  return customFetch<CapCatchUpResult>(getCatchUpDebutCapsUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCatchUpDebutCapsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof catchUpDebutCaps>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof catchUpDebutCaps>>, TError,void, TContext> => {
+
+const mutationKey = ['catchUpDebutCaps'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof catchUpDebutCaps>>, void> = () => {
+
+
+          return  catchUpDebutCaps(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CatchUpDebutCapsMutationResult = NonNullable<Awaited<ReturnType<typeof catchUpDebutCaps>>>
+
+    export type CatchUpDebutCapsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Issue pending caps for every missed A Grade debutant
+ */
+export const useCatchUpDebutCaps = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof catchUpDebutCaps>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof catchUpDebutCaps>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCatchUpDebutCapsMutationOptions(options));
     }
 
 export const getReorderPendingCapsUrl = () => {

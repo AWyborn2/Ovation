@@ -13,6 +13,7 @@ import {
   useReorderPendingCaps,
   useDeclineCap,
   useRestoreCap,
+  useCatchUpDebutCaps,
   useListPlayers,
   getListPlayersQueryKey,
 } from "@workspace/api-client-react";
@@ -35,6 +36,7 @@ export default function AdminCaps() {
   const updateCap = useUpdateCap();
   const deleteCap = useDeleteCap();
   const recomputeCaps = useRecomputeCaps();
+  const catchUp = useCatchUpDebutCaps();
   const [category, setCategory] = useState<CapCategory>("male");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
@@ -58,6 +60,29 @@ export default function AdminCaps() {
             ? `Refreshed ${res.updated} cap${res.updated === 1 ? "" : "s"} from stats.`
             : "All caps already up to date with stats.",
         );
+      },
+      onError: onMutationError,
+    });
+  };
+
+  const onCatchUp = () => {
+    setError(null);
+    setNotice(null);
+    catchUp.mutate(undefined, {
+      onSuccess: (res) => {
+        invalidate();
+        const parts = [
+          res.issued > 0
+            ? `Issued ${res.issued} cap${res.issued === 1 ? "" : "s"} awaiting your confirmation.`
+            : "No missed debutants found.",
+        ];
+        if (res.olderUncapped > 0) {
+          parts.push(
+            `${res.olderUncapped} older uncapped player${res.olderUncapped === 1 ? "" : "s"} can be capped by hand.`,
+          );
+        }
+        parts.push(...res.held);
+        setNotice(parts.join(" "));
       },
       onError: onMutationError,
     });
@@ -191,6 +216,14 @@ export default function AdminCaps() {
           title="Refresh every linked cap's games and on-record status from the current stats"
         >
           {recomputeCaps.isPending ? "Refreshing…" : "Refresh from stats"}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={onCatchUp}
+          disabled={catchUp.isPending}
+          title="Issue caps (awaiting your confirmation) to A Grade debutants who were never capped"
+        >
+          {catchUp.isPending ? "Checking…" : "Check for missed debutants"}
         </Button>
       </div>
 

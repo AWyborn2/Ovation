@@ -2027,6 +2027,21 @@ export const ConfirmCapsResponse = zod.object({
 
 
 /**
+ * Looks through the club's A Grade and Female A Grade debuts (from the
+stats it reads) and issues a pending cap to every debutant on or after
+the newest capped debut who has none, in debut order. Older uncapped
+players are counted, never capped automatically. Admin only.
+
+ * @summary Issue pending caps for every missed A Grade debutant
+ */
+export const CatchUpDebutCapsResponse = zod.object({
+  "issued": zod.number().describe('Pending caps issued.'),
+  "olderUncapped": zod.number().describe('Uncapped players whose debut predates the newest cap (cap them by hand).'),
+  "held": zod.array(zod.string()).describe('Why a list was skipped (no register, not linked, too many at once).')
+})
+
+
+/**
  * `ids` must be every pending cap in the category. They are numbered in
 that order straight after the list's highest confirmed cap. Admin only.
 

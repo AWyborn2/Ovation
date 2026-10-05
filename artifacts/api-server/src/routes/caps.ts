@@ -22,6 +22,7 @@ import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { assertPlayerInTenantSpace, curatedIdsAreNative } from "../lib/curated-player-space";
 import { CAP_CATEGORY_TO_GRADE, recomputeCapsFromStats } from "../lib/cap-sync";
+import { syncDebutCaps } from "../lib/debut-caps";
 
 const router: IRouter = Router();
 
@@ -333,6 +334,24 @@ router.post(
       )
       .returning({ id: capRegisterTable.id });
     res.json({ updated: rows.length });
+  },
+);
+
+// Catch-up for debutants the hourly sweep's window has passed (e.g. a season
+// loaded in bulk): every cap it issues is pending, so the admin still confirms.
+router.post(
+  "/caps/review/catch-up",
+  requireAdmin,
+  requireEntitlement("curation"),
+  async (req, res): Promise<void> => {
+    const { plans, minted } = await syncDebutCaps(getTenantId(req), { since: null, commit: true });
+    res.json({
+      issued: minted,
+      olderUncapped: plans.reduce((n, p) => n + p.olderUncapped.length, 0),
+      held: plans.flatMap((p) =>
+        p.held && !/no cap register/.test(p.held) ? [`${p.grade}: ${p.held}`] : [],
+      ),
+    });
   },
 );
 

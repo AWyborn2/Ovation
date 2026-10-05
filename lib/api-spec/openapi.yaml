@@ -1397,6 +1397,24 @@ paths:
               schema:
                 $ref: "#/components/schemas/CapReviewResult"
 
+  /caps/review/catch-up:
+    post:
+      operationId: catchUpDebutCaps
+      tags: [caps]
+      summary: Issue pending caps for every missed A Grade debutant
+      description: |
+        Looks through the club's A Grade and Female A Grade debuts (from the
+        stats it reads) and issues a pending cap to every debutant on or after
+        the newest capped debut who has none, in debut order. Older uncapped
+        players are counted, never capped automatically. Admin only.
+      responses:
+        "200":
+          description: What was issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapCatchUpResult"
+
   /caps/review/reorder:
     post:
       operationId: reorderPendingCaps
@@ -10874,6 +10892,22 @@ components:
           type: array
           items:
             type: integer
+
+    CapCatchUpResult:
+      type: object
+      required: [issued, olderUncapped, held]
+      properties:
+        issued:
+          type: integer
+          description: Pending caps issued.
+        olderUncapped:
+          type: integer
+          description: Uncapped players whose debut predates the newest cap (cap them by hand).
+        held:
+          type: array
+          description: Why a list was skipped (no register, not linked, too many at once).
+          items:
+            type: string
 
     CapReviewResult:
       type: object

@@ -197,6 +197,23 @@ describe("Caps", () => {
     );
   });
 
+  it("checks for missed debutants and reports what it issued", async () => {
+    const requests = stubApi([
+      { match: /\/api\/caps$/, reply: () => CAPS },
+      {
+        method: "POST",
+        match: /\/api\/caps\/review\/catch-up$/,
+        reply: () => ({ issued: 7, olderUncapped: 2, held: [] }),
+      },
+    ]);
+    renderAt(<AdminCaps />, "/admin/honours/caps");
+    fireEvent.click(await screen.findByRole("button", { name: "Check for missed debutants" }));
+    expect(
+      await screen.findByText(/Issued 7 caps awaiting your confirmation\. 2 older uncapped/),
+    ).toBeTruthy();
+    expect(requests.some((r) => r.method === "POST" && r.url.endsWith("/catch-up"))).toBe(true);
+  });
+
   it("shows the empty state with no caps", async () => {
     stubApi([{ match: /\/api\/caps$/, reply: () => [] }]);
     renderAt(<AdminCaps />, "/admin/honours/caps");

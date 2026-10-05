@@ -2518,6 +2518,15 @@ export interface CapReorderBody {
   ids: number[];
 }
 
+export interface CapCatchUpResult {
+  /** Pending caps issued. */
+  issued: number;
+  /** Uncapped players whose debut predates the newest cap (cap them by hand). */
+  olderUncapped: number;
+  /** Why a list was skipped (no register, not linked, too many at once). */
+  held: string[];
+}
+
 export interface CapReviewResult {
   updated: number;
 }

@@ -125,6 +125,16 @@ describe("cap confirmation", () => {
     await as(request(app).post(`/api/caps/${ids["Al Second"]}/decline`)).expect(200);
   });
 
+  it("catch-up is admin-only and reports a club with no debut data", async () => {
+    await request(app)
+      .post("/api/caps/review/catch-up")
+      .set("x-tenant-id", String(tenantId))
+      .expect(401);
+    // This club's central club has no matches: nothing to issue.
+    const res = await as(request(app).post("/api/caps/review/catch-up")).expect(200);
+    expect(res.body.issued).toBe(0);
+  });
+
   it("confirm puts pending caps on the public register", async () => {
     const res = await as(request(app).post("/api/caps/review/confirm"))
       .send({ ids: [ids["Bea First"], ids["Al Second"]] })
