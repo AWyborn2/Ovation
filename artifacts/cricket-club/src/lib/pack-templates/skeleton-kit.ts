@@ -1,6 +1,7 @@
 import type { PackTemplateFormats } from "./types";
 import {
   SK_COND,
+  anchoredBody,
   SK_MONO,
   skeletonCard,
   skeletonChip,
@@ -102,6 +103,14 @@ export interface PackLook {
   bodyStyle?(photo: string | undefined): string;
   /** Markup placed before the body content (e.g. Sunset's script word). */
   bodyPrefix?(deco: CardDeco): string;
+  /** Wraps the body content (e.g. Sunset's glass panel hugging the copy). */
+  wrapBody?(inner: string, deco: CardDeco): string;
+  /**
+   * Where the copy sits on portrait / story over a photo (see
+   * `anchoredBody`): `end` (default) leaves the photo the top of the card,
+   * `start` the bottom (Bold Type's wedge).
+   */
+  tallAnchor?: "start" | "end";
   /** CSS `max-width` for the content column: beside a photo, and without one. */
   column: { photo: string; wide: string };
 }
@@ -123,7 +132,14 @@ export function kitCard(look: PackLook, parts: KitCardParts): string {
     vars: look.vars,
     layers: look.layers(parts.photo, parts.deco),
     header: skeletonHeader(parts.chip, parts.tag),
-    body: (look.bodyPrefix?.(parts.deco) ?? "") + parts.body,
+    body: anchoredBody(
+      parts.photo,
+      (look.wrapBody ?? ((x: string) => x))(
+        (look.bodyPrefix?.(parts.deco) ?? "") + parts.body,
+        parts.deco,
+      ),
+      look.tallAnchor,
+    ),
     footer: parts.footer,
     bodyStyle: look.bodyStyle?.(parts.photo) ?? "",
   });

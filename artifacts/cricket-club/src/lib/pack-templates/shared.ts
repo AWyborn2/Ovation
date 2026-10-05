@@ -146,6 +146,31 @@ export function skeletonCard(parts: SkeletonParts): string {
   );
 }
 
+/**
+ * Body content anchored for a card with a photo: centred on square and
+ * landscape (the body box is wider than tall), but pushed to the bottom
+ * (`end`) or top (`start`) of a taller-than-wide box — portrait and story —
+ * so the copy stops sitting over the middle of the photo and the photo gets
+ * the free run of the rest. Without a bound photo it stays centred.
+ *
+ * One markup serves every shared format, so the switch is CSS: the trailing
+ * spacer's `max-height` is the body box's width minus its height (container
+ * units of the body), scaled up — ample when the box is wide, zero once it
+ * is tall.
+ */
+export function anchoredBody(
+  photo: string | undefined,
+  body: string,
+  anchor: "start" | "end" = "end",
+): string {
+  if (!photo) return body;
+  const grow = `<div style="flex:1 1 0;min-height:0"></div>`;
+  const wideOnly =
+    `<div data-drop-if-empty="${photo}" style="flex:1 1 0;min-height:0;max-height:clamp(0px,calc((100cqw - 100cqh) * 50),100cqh)"></div>` +
+    `<div data-drop-if-image="${photo}" style="flex:1 1 0;min-height:0"></div>`;
+  return anchor === "end" ? grow + body + wideOnly : wideOnly + body + grow;
+}
+
 /** Kind chip (top-right). Colours come from `--sk-chip-*`. */
 export function skeletonChip(label: string): string {
   return `<div style="font-family:${SK_COND};font-weight:800;font-size:2.4cqmin;line-height:1;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;padding:1cqmin 2cqmin;background:var(--sk-chip-bg,rgba(255,255,255,.14));color:var(--sk-chip-ink,inherit);border:var(--sk-chip-border,0);border-radius:var(--sk-chip-radius,.6cqmin);box-shadow:var(--sk-chip-glow,none)">${label}</div>`;
