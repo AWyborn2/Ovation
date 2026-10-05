@@ -14,10 +14,10 @@ export interface TickerItem {
 }
 
 /**
- * Seconds of scroll per unique result (8 results → 56s loop). Items size to
+ * Seconds of scroll per unique result (8 results → 80s loop). Items size to
  * their full score line (~400px+), so this keeps the strip at a readable pace.
  */
-export const TICKER_SECONDS_PER_ITEM = 7;
+export const TICKER_SECONDS_PER_ITEM = 10;
 
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(
