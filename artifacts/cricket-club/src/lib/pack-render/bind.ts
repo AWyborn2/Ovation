@@ -419,6 +419,13 @@ export function juniorDisplayName(name: string): string {
   return `${parts[0]} ${last[0]?.toUpperCase() ?? ""}.`;
 }
 
+/** The design slot that holds a kind's main photo, where it is not `photo`. */
+export const KIND_PHOTO_SLOT: Readonly<Record<string, string>> = {
+  teamList: "squadPhoto",
+  premiership: "teamPhoto",
+  tradingCard: "cardPhoto",
+};
+
 /**
  * Overlay per-render tenant data (logo, name, hashtags, sponsors, uploaded
  * photo) onto an already-bound input. Applied uniformly across every card kind
@@ -482,7 +489,14 @@ export function applyPackData(bound: BoundInput, data: PackCardData, kind: strin
   // `potm.name` / `potm.figures` / `potm.detail` are not on `ShareCardInput` and
   // nothing ever populated them, so the panel published a fabricated player as
   // though it were that week's result.
-  if (data.photoUrl) images["photo"] = data.photoUrl;
+  if (data.photoUrl) {
+    images["photo"] = data.photoUrl;
+    // Kinds whose designs name their photo slot otherwise: without this the
+    // chosen photo (a queue draft's pick, or one picked in the share dialog)
+    // never reached a Team List, Premiership or Trading Card design.
+    const slot = KIND_PHOTO_SLOT[kind];
+    if (slot) images[slot] = data.photoUrl;
+  }
 
   // B1 — generic per-slot image overrides. Applied LAST so an admin's explicit
   // per-slot upload wins over both the bound input image and every overlay above

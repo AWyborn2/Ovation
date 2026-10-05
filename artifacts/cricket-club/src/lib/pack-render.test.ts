@@ -856,6 +856,28 @@ describe("optional image blocks (data-drop-if-empty)", () => {
   });
 });
 
+describe("renderPackCard chosen photo on kinds with their own photo slot", () => {
+  // A queue draft's photo (e.g. the Team List card's selected player) reaches the
+  // design through `data.photoUrl`; designs whose photo slot is not `photo`
+  // must still show it.
+  const PHOTO = "https://cdn.example.com/chosen.jpg";
+  // Trading cards exist only in the Club Kit pack.
+  const cases = [
+    ["teamList", "broadcast-dark-v1"],
+    ["teamList", "club-kit-v1"],
+    ["premiership", "broadcast-dark-v1"],
+    ["tradingCard", "club-kit-v1"],
+  ] as const;
+  for (const [kind, packId] of cases) {
+    it(`${kind} (${packId}) shows the chosen photo`, () => {
+      const render = (data?: { photoUrl: string }) =>
+        renderPackCard(sampleCardInput(kind), "square", true, TOKENS, false, data, packId);
+      expect(render()).not.toContain(PHOTO);
+      expect(render({ photoUrl: PHOTO })).toContain(PHOTO);
+    });
+  }
+});
+
 describe("renderPackCard per-slot image overrides (B1)", () => {
   const BOUND = "https://cdn.example.com/bound.jpg";
   const OVERRIDE = "https://cdn.example.com/override.jpg";
