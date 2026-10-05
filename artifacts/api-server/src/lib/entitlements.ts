@@ -3,7 +3,7 @@
  * use. Built now but DORMANT: until BILLING_ENABLED=true (the pilot default is
  * off), every plan resolves to the full feature set, so all pilot tenants are
  * fully featured for free. Flipping the flag enforces the tiers with no code
- * change. Per governance, monetisation stays off until data licensing lands.
+ * change.
  */
 import { env } from "../config";
 

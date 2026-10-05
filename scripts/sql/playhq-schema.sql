@@ -8,8 +8,8 @@
 -- matches. `raw` columns keep the verbatim payload so a column we did not model can be
 -- backfilled later without re-scraping.
 --
--- Provenance / governance: this is scraped public-site data under the pilot-only,
--- non-commercial framing in CLAUDE.md ("Data governance"). It is a landing zone, not the app's
+-- Provenance: publicly available play.cricket.com.au data (CLAUDE.md "Data sourcing").
+-- It is a landing zone, not the app's
 -- read path for stats — the app reads only fixtures, results and ladders from here; projection
 -- into `central.*` (which the stats read) is a separate, reviewed step. Lives in the same
 -- Postgres as `central` and `wa` (CENTRAL_DATABASE_URL). Written only by the shared loader in

@@ -99,5 +99,5 @@ See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the merge workflow and branch pro
 - **Juniors isolation**, **fill-in exclusion** (`player_id >= 90000`), and the other
   gotchas in `replit.md` and `AGENTS.md`.
 - **Curated club content is the moat** — tenant-scope it; never replace it with central data.
-- **Data governance**: pilot/non-commercial framing until partner/licence access; don't
-  commercialise on scraped data. (Details in `CLAUDE.md`.)
+- **Data sourcing**: publicly available PlayHQ data; clubs own their data. Keep ingest behind
+  the adapter boundary and respect `is_private`. (Details in `CLAUDE.md`.)

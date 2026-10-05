@@ -7,8 +7,7 @@ import { env } from "../config";
  * Billing adapter boundary — built but INERT. No money moves during the pilot:
  * the only provider is a stub (checkout is disabled, webhooks are ignored) until
  * BILLING_ENABLED=true AND a real provider (Stripe SDK / Replit stripe-replit-sync)
- * is wired behind this same interface. Per governance, monetisation stays off until
- * data licensing lands. The webhook → setTenantPlan path is the one real effect,
+ * is wired behind this same interface. The webhook → setTenantPlan path is the one real effect,
  * and it only runs once enforcement is enabled.
  */
 

@@ -18,7 +18,8 @@ is kept as history and for the PlayHQ public API notes, which are still accurate
 >   issued, it becomes the sanctioned collector for fixtures, results and ladders.
 > - Grade-season stats CSV imports still exist. "One ingestion method per (grade, season)" still
 >   applies.
-> - Data governance: do not commercialise on scraped data (see `CLAUDE.md`).
+> - Data sourcing: publicly available data, clubs own their data; keep the adapter boundary and
+>   respect `is_private` (see `CLAUDE.md` "Data sourcing").
 
 ## TL;DR
 

@@ -97,8 +97,8 @@ sites route through the guard.
 juniors dump defines `junior_participants(display_name, is_private, …)` with 693 named
 children, six flagged private. `.git` is 193 MB, mostly these.
 
-**Why it matters.** Privacy obligation under the data-governance constraint in
-`CLAUDE.md`, plus clone time and CI checkout cost.
+**Why it matters.** Privacy obligation (`is_private` players, juniors) under
+`CLAUDE.md` "Data sourcing", plus clone time and CI checkout cost.
 
 **Fix.**
 

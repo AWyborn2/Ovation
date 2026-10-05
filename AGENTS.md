@@ -122,9 +122,9 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
 - **Stats reads fail closed.** Only tenant #1 may read the native stats tables; any
   other tenant is served from central or gets a 409, and `CENTRAL_READS=0` makes
   central tenants 503 rather than falling back to Halls Head's data.
-- **Data governance:** deep scorecards were scraped for the pilot. Keep ingest behind
-  a clean adapter boundary. Do NOT commercialise on scraped data; pilot/non-commercial
-  framing until partner/licence access (PlayHQ partner / Fixtura) is secured.
+- **Data sourcing:** stats come from publicly available PlayHQ data; clubs own their data and
+  Ovation merges pre- and post-digital history. The licensing hold is lifted (Oct 2026). Keep
+  ingest behind the adapter boundary and respect `is_private` (see CLAUDE.md "Data sourcing").
 
 ## Known gaps / watch-outs
 
