@@ -15,12 +15,13 @@
  *      their grade's boundary become season rows; rows at or after it are
  *      skipped (central supplies them). Player ids are the native
  *      `players.id`s, which ARE tenant 1's ids (KTD3).
- *      A career baseline also holds the seasons native never ingested itself
- *      (no season row, no scorecards — e.g. a 2017/18 B Grade season kept only
- *      in the hand-kept master); central supplies those too, so they are
- *      peeled out of the baseline first, exactly as the native match load
- *      peels its own match seasons (per figure, floored at zero). A baseline
- *      the peel empties is dropped.
+ *      A career baseline also holds whatever the hand-kept master counted that
+ *      native has no record of (e.g. Sam Hardman's six 2017/18 B Grade games:
+ *      native holds other 2017/18 B Grade scorecards, but none of his). Central
+ *      supplies those seasons, so the player's central figures beyond native's
+ *      own records for them are peeled out of the baseline first, as the
+ *      native match load peels its own match seasons (per figure, floored at
+ *      zero). A baseline the peel empties is dropped.
  *   3. Fill-ins (id >= 90000) never produce history rows, and are never pinned.
  *   4. U4's review players (AMBIGUOUS, WEAK_ONLY …) each end as a crosswalk row
  *      to their native id or a recorded decision to leave them unmapped — from
@@ -259,12 +260,15 @@ export const zeroPeelFigures = (): PeelFigures =>
   Object.fromEntries(COUNT_FIELDS.map((k) => [k, 0])) as PeelFigures;
 
 /**
- * What central supplies that native never ingested itself, for the career
- * baseline peel. Grades are senior app grades; keys are `${grade}|${season}`.
+ * Each player's figures on both sides, per season, for the career baseline
+ * peel. Grades are senior app grades; keys are `${grade}|${season}`.
  */
 export interface CentralOnlyInput {
-  /** (grade, season)s native holds scorecards for (season snapshot rows are added from pgss). */
-  nativeMatchSeasons: ReadonlySet<string>;
+  /**
+   * Native player id → (grade, season) → the player's native scorecard lines
+   * (abandoned matches excluded). Season snapshot rows are added from pgss.
+   */
+  nativeFigures: ReadonlyMap<number, ReadonlyMap<string, PeelFigures>>;
   /** Native player id → the PlayHQ GUIDs it reads as after cut-over. */
   guidsByPlayer: ReadonlyMap<number, readonly string[]>;
   /** GUID → (grade, season) → that GUID's central figures for the club. */
@@ -274,11 +278,11 @@ export interface CentralOnlyInput {
 export interface CareerPeel {
   playerId: number;
   grade: string;
-  /** The central-only seasons the player has central figures in. */
+  /** The seasons (at or after the boundary) where central has more than native. */
   seasons: number[];
   /** The baseline before the peel (summed native rows). */
   baseline: PeelFigures;
-  /** What central supplies in those seasons. */
+  /** What central has beyond native's own records in those seasons, per figure. */
   central: PeelFigures;
   /** What came out of the baseline: per figure, the lesser of the two. */
   peeled: PeelFigures;
@@ -469,12 +473,12 @@ export function planHistoryRows(input: {
 
 /**
  * The career baseline peel (see the header): for a (player, grade) baseline,
- * the central figures of the player's GUIDs in that grade's seasons at or after
- * its boundary that native never ingested itself — no season snapshot and no
- * scorecards for ANYONE in that (grade, season), so the season can only live in
- * a baseline. Per figure the peel is the lesser of baseline and central, as the
- * native match load's peel (scripts/sql/matches-etl.sql step 8). Null when the
- * player has no such season.
+ * season by season at or after the grade's boundary, what the player's GUIDs
+ * have in central beyond the player's own native records there (scorecard
+ * lines and season snapshots), per figure and floored at zero. That excess can
+ * only have lived in the baseline. The peel is the lesser of baseline and
+ * excess, as the native match load's peel (scripts/sql/matches-etl.sql step 8).
+ * Null when nothing would be peeled.
  */
 function centralOnlyPeeler(input: {
   pgss: readonly NativeStatRow[];
@@ -484,39 +488,62 @@ function centralOnlyPeeler(input: {
 }): ((playerId: number, grade: string, f: HistoryFigures) => CareerPeel | null) | null {
   const co = input.centralOnly;
   if (!co) return null;
-  const nativeLoaded = new Set(co.nativeMatchSeasons);
+  /** Native snapshot seasons: player → (grade, season) → figures. */
+  const snapshots = new Map<number, Map<string, PeelFigures>>();
   for (const r of input.pgss) {
     if (r.season === null) continue;
     const grade = input.seniorGrade(r.grade);
-    if (grade) nativeLoaded.add(`${grade}|${r.season}`);
+    if (!grade) continue;
+    const byKey = snapshots.get(r.playerId) ?? new Map<string, PeelFigures>();
+    snapshots.set(r.playerId, byKey);
+    const key = `${grade}|${r.season}`;
+    const sf = byKey.get(key) ?? zeroPeelFigures();
+    for (const k of COUNT_FIELDS) sf[k] += r[k] ?? 0;
+    byKey.set(key, sf);
   }
   return (playerId, grade, f) => {
     const b = boundaryFor(input.boundaries, grade);
     if (b === null) return null;
-    const central = zeroPeelFigures();
-    const seasons = new Set<number>();
+    const centralBySeason = new Map<number, PeelFigures>();
     for (const guid of co.guidsByPlayer.get(playerId) ?? []) {
       for (const [key, cf] of co.figures.get(guid) ?? []) {
         const bar = key.lastIndexOf("|");
         const season = Number(key.slice(bar + 1));
-        if (key.slice(0, bar) !== grade || season < b || nativeLoaded.has(key)) continue;
-        seasons.add(season);
-        for (const k of COUNT_FIELDS) central[k] += cf[k];
+        if (key.slice(0, bar) !== grade || season < b) continue;
+        const sum = centralBySeason.get(season) ?? zeroPeelFigures();
+        for (const k of COUNT_FIELDS) sum[k] += cf[k];
+        centralBySeason.set(season, sum);
       }
     }
-    if (seasons.size === 0) return null;
+    const excess = zeroPeelFigures();
+    const seasons: number[] = [];
+    for (const [season, cf] of centralBySeason) {
+      const key = `${grade}|${season}`;
+      const lines = co.nativeFigures.get(playerId)?.get(key);
+      const snap = snapshots.get(playerId)?.get(key);
+      let more = false;
+      for (const k of COUNT_FIELDS) {
+        const e = cf[k] - (lines?.[k] ?? 0) - (snap?.[k] ?? 0);
+        if (e > 0) {
+          excess[k] += e;
+          more = true;
+        }
+      }
+      if (more) seasons.push(season);
+    }
     const baseline = zeroPeelFigures();
     const peeled = zeroPeelFigures();
     for (const k of COUNT_FIELDS) {
       baseline[k] = f[k] ?? 0;
-      peeled[k] = Math.max(0, Math.min(baseline[k], central[k]));
+      peeled[k] = Math.max(0, Math.min(baseline[k], excess[k]));
     }
+    if (COUNT_FIELDS.every((k) => peeled[k] === 0)) return null;
     return {
       playerId,
       grade,
-      seasons: [...seasons].sort((x, y) => x - y),
+      seasons: seasons.sort((x, y) => x - y),
       baseline,
-      central,
+      central: excess,
       peeled,
       dropped: COUNT_FIELDS.every((k) => baseline[k] - peeled[k] <= 0),
     };
