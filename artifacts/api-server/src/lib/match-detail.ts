@@ -19,7 +19,7 @@ import {
   type ClubIdentity,
 } from "./club-overlay";
 import { overlayScorecardLines } from "./club-overlay-surfaces";
-import { dataSource, type DataSource } from "./tenant";
+import { dataSource, getTenantPlayhqOrgId, type DataSource } from "./tenant";
 import {
   getOpponentBrandsByAppClubId,
   getOpponentBrandsByCentralClubId,
@@ -225,6 +225,30 @@ export async function loadCentralMatchDetailWithOverlay(
   );
 }
 
+/**
+ * The opposition's PlayHQ organisation logo for a match: the side that isn't
+ * the tenant's own PlayHQ organisation. Null when the tenant has no PlayHQ
+ * organisation, the match isn't loaded, or the side has no logo. Never fails
+ * the scorecard.
+ */
+export async function playhqOpponentLogo(
+  tenantId: number,
+  playhqMatchId: string,
+): Promise<string | null> {
+  try {
+    const orgId = await getTenantPlayhqOrgId(tenantId);
+    if (!orgId) return null;
+    const { playhqMatchSides } = await import("@workspace/db/central-queries");
+    const sides = await playhqMatchSides(playhqMatchId);
+    if (!sides) return null;
+    if (sides.home.orgId === orgId) return sides.away.logoUrl;
+    if (sides.away.orgId === orgId) return sides.home.logoUrl;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /** Shape a central scorecard as the match-detail DTO for one tenant. */
 async function centralMatchDetailDto(
   tenantId: number,
@@ -250,6 +274,13 @@ async function centralMatchDetailDto(
       summary.opponentClub,
       overlays.get(summary.opponentClub.id),
     );
+    // Central clubs carry no crest. A club that hasn't uploaded one gets the
+    // PlayHQ organisation logo the fixtures page shows, via the match's
+    // PlayHQ id.
+    if (!summary.opponentClub.logoUrl && card.playhqMatchId) {
+      const logo = await playhqOpponentLogo(tenantId, card.playhqMatchId);
+      if (logo) summary.opponentClub = { ...summary.opponentClub, logoUrl: logo, logoUrl128: logo };
+    }
   }
   return {
     ...summary,
