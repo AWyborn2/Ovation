@@ -5310,6 +5310,8 @@ export const GetSocialSettingsResponse = zod.object({
   "lastSweepAt": zod.coerce.date().nullish().describe('When the scheduled drafting sweep last completed for this club (read-only).'),
   "autoPostEnabled": zod.boolean().optional().describe('When on, auto-drafts still awaiting review at their deadline become ready.'),
   "autoPostWindowHours": zod.number().optional().describe('Hours after a draft\'s own import before it becomes ready.'),
+  "autoPublishEnabled": zod.boolean().optional().describe('With auto-post on and Meta connected: fresh drafts publish to Facebook and Instagram at their deadline instead of only becoming ready.'),
+  "autoPublishFreshnessHours": zod.number().optional().describe('Only drafts first imported within this many hours auto-publish; older ones become ready.'),
   "notificationEmail": zod.string().nullish().describe('Where draft notifications are emailed. Null = in-app only.'),
   "familyConfig": zod.object({
   "results": zod.object({
@@ -5382,6 +5384,8 @@ export const GetSocialSettingsResponse = zod.object({
  */
 export const updateSocialSettingsBodyAutoPostWindowHoursMax = 168;
 
+export const updateSocialSettingsBodyAutoPublishFreshnessHoursMax = 336;
+
 export const updateSocialSettingsBodyRoundSchedulesOneGameDayDayMin = 0;
 export const updateSocialSettingsBodyRoundSchedulesOneGameDayDayMax = 6;
 
@@ -5441,6 +5445,8 @@ export const UpdateSocialSettingsBody = zod.object({
 }).optional().describe('Partial family switches; omitted families and grades keep their current values.'),
   "autoPostEnabled": zod.boolean().optional(),
   "autoPostWindowHours": zod.number().min(1).max(updateSocialSettingsBodyAutoPostWindowHoursMax).optional(),
+  "autoPublishEnabled": zod.boolean().optional(),
+  "autoPublishFreshnessHours": zod.number().min(1).max(updateSocialSettingsBodyAutoPublishFreshnessHoursMax).optional(),
   "notificationEmail": zod.string().nullish(),
   "packColourModes": zod.record(zod.string(), zod.enum(['club', 'pack']).describe('How a design pack is coloured for this club. \"club\" (Club colours) — the club\'s background colour becomes the card stage and panel and its primary colour the accent, beating the card theme\'s colours. \"pack\" (Pack\'s own look) — the pack renders with its own palette, theme first.')).describe('Colour mode per design pack id (e.g. \"sunset-v1\"). A pack absent from the map is \"club\".').optional().describe('Merged into the stored map: only the packs sent change, the others keep their mode.'),
   "roundSchedules": zod.object({
@@ -5504,6 +5510,8 @@ export const UpdateSocialSettingsResponse = zod.object({
   "lastSweepAt": zod.coerce.date().nullish().describe('When the scheduled drafting sweep last completed for this club (read-only).'),
   "autoPostEnabled": zod.boolean().optional().describe('When on, auto-drafts still awaiting review at their deadline become ready.'),
   "autoPostWindowHours": zod.number().optional().describe('Hours after a draft\'s own import before it becomes ready.'),
+  "autoPublishEnabled": zod.boolean().optional().describe('With auto-post on and Meta connected: fresh drafts publish to Facebook and Instagram at their deadline instead of only becoming ready.'),
+  "autoPublishFreshnessHours": zod.number().optional().describe('Only drafts first imported within this many hours auto-publish; older ones become ready.'),
   "notificationEmail": zod.string().nullish().describe('Where draft notifications are emailed. Null = in-app only.'),
   "familyConfig": zod.object({
   "results": zod.object({

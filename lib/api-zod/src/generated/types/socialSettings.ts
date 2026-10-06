@@ -44,6 +44,10 @@ export interface SocialSettings {
   autoPostEnabled?: boolean;
   /** Hours after a draft's own import before it becomes ready. */
   autoPostWindowHours?: number;
+  /** With auto-post on and Meta connected: fresh drafts publish to Facebook and Instagram at their deadline instead of only becoming ready. */
+  autoPublishEnabled?: boolean;
+  /** Only drafts first imported within this many hours auto-publish; older ones become ready. */
+  autoPublishFreshnessHours?: number;
   /**
      * Where draft notifications are emailed. Null = in-app only.
      * @nullable

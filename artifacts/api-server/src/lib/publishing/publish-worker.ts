@@ -353,7 +353,7 @@ async function needsReconnect(tenantId: number, reason: string, log: Logger): Pr
 export async function notifyReconnectNeeded(
   tenantId: number,
   reason: string,
-  log: Logger,
+  log: { warn: (obj: unknown, msg?: string) => void },
 ): Promise<void> {
   await notifyClub(
     tenantId,
