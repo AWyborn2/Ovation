@@ -237,28 +237,32 @@ function perthDay(t: Date): string {
 
 /**
  * Draft match summaries and achievement cards for a central-data club's matches
- * past its watermark, then advance the watermark. The first sweep only records
- * the club's newest match, so switching drafting on never floods the queue with
- * history.
+ * past its watermark, then advance the watermark. The first sweep starts the
+ * watermark just before the club's earliest match in the recent window, so it
+ * drafts the last few weeks' results but never floods the queue with history.
  */
 export async function sweepCentralMatches(
   tenantId: number,
   now: Date,
   logger: Logger,
 ): Promise<{ seen: number; drafted: number; achievements: number }> {
-  const { centralClubMaxMatchId, centralClubMatchesAfter } =
+  const { centralClubSweepStart, centralClubMatchesAfter } =
     await import("@workspace/db/central-queries");
   const settings = await ensureSettings(tenantId);
   const clubId = await getTenantCentralClubId(tenantId);
 
-  if (settings.centralSweepWatermark == null) {
-    await setWatermark(tenantId, await centralClubMaxMatchId(clubId));
-    return { seen: 0, drafted: 0, achievements: 0 };
+  let watermark = settings.centralSweepWatermark;
+  if (watermark == null) {
+    watermark = await centralClubSweepStart(
+      clubId,
+      perthDay(new Date(now.getTime() - CENTRAL_RECENT_MS)),
+    );
+    await setWatermark(tenantId, watermark);
   }
 
   const { matches, lastSeenId } = await centralClubMatchesAfter(
     clubId,
-    settings.centralSweepWatermark,
+    watermark,
     CENTRAL_SWEEP_LIMIT,
   );
   if (lastSeenId == null) return { seen: 0, drafted: 0, achievements: 0 };

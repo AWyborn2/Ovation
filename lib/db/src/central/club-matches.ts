@@ -74,6 +74,19 @@ export async function centralClubMaxMatchId(clubId: number): Promise<number> {
   return Number(row?.max ?? 0);
 }
 
+/**
+ * Where a club's first drafting sweep starts: just before its earliest match dated on or
+ * after `sinceDay` (YYYY-MM-DD), so the recent window is drafted and older history is not.
+ * With no match that recent, its newest match id (or 0), like `centralClubMaxMatchId`.
+ */
+export async function centralClubSweepStart(clubId: number, sinceDay: string): Promise<number> {
+  const [row] = await centralDb
+    .select({ min: sql<number | null>`min(${centralMatchesTable.matchId})` })
+    .from(centralMatchesTable)
+    .where(and(clubInvolvedWhere(clubId), sql`${centralMatchesTable.matchDate} >= ${sinceDay}`));
+  return row?.min != null ? Number(row.min) - 1 : centralClubMaxMatchId(clubId);
+}
+
 /** One central match past the sweep watermark, with its app grade resolved. */
 export interface CentralNewMatch {
   matchId: number;

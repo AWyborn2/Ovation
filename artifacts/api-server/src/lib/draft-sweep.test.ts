@@ -209,6 +209,19 @@ describe("central drafting sweep", () => {
     expect(await stumpsDrafts()).toHaveLength(1); // a one-day game never gets a Stumps card
   });
 
+  it("a first sweep (no watermark) drafts the recent window, not the history", async () => {
+    await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId));
+    await db
+      .update(socialSettingsTable)
+      .set({ centralSweepWatermark: null })
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+    await runDraftSweep(tenantId, { kind: "scheduled", now: NOW }, log);
+    const keys = (await centralDrafts()).map((d) => d.sourceKey);
+    expect(keys).toContain(draftKeys.centralMatchSummary(BASE + 3));
+    expect(keys).not.toContain(draftKeys.centralMatchSummary(BASE + 2));
+    expect(await watermark()).toBe(BASE + 7);
+  });
+
   it("records the sweep time for sweep health", async () => {
     const [s] = await db
       .select()

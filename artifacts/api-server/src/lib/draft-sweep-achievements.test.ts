@@ -43,6 +43,7 @@ const h = vi.hoisted(() => {
     draftCentralAchievements: vi.fn(async () => ({ drafted: 3, skipped: 0 })),
     centralClubMatchesAfter: vi.fn(),
     centralClubMatches: vi.fn(),
+    centralClubSweepStart: vi.fn(async () => 100),
   };
 });
 
@@ -52,7 +53,7 @@ vi.mock("@workspace/db", () => ({
   socialSettingsTable: { tenantId: {} },
 }));
 vi.mock("@workspace/db/central-queries", () => ({
-  centralClubMaxMatchId: async () => 100,
+  centralClubSweepStart: h.centralClubSweepStart,
   centralClubMatchesAfter: h.centralClubMatchesAfter,
   centralClubMatches: h.centralClubMatches,
 }));
@@ -121,10 +122,14 @@ describe("scheduled sweep: central-data club", () => {
     expect(log.error).toHaveBeenCalledWith(expect.anything(), "central achievement drafts failed");
   });
 
-  it("the first sweep only records the watermark", async () => {
+  it("the first sweep starts at the recent window and drafts it", async () => {
     h.settings.centralSweepWatermark = null;
     await runDraftSweep(7, { kind: "scheduled", now: NOW }, log);
-    expect(h.draftCentralAchievements).not.toHaveBeenCalled();
+    // 21 days before 20 Nov (Perth).
+    expect(h.centralClubSweepStart).toHaveBeenCalledWith(77, "2026-10-30");
+    expect(h.centralClubMatchesAfter).toHaveBeenCalledWith(77, 100, expect.any(Number));
+    expect(h.draftCentralAchievements).toHaveBeenCalledWith(7, 77, [101], NOW);
+    expect(h.updates).toContainEqual({ centralSweepWatermark: 103 });
   });
 });
 
