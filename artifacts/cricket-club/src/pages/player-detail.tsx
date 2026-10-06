@@ -341,6 +341,10 @@ export default function PlayerDetail() {
             photo={player.imageUrl ?? player.libraryPhotoUrl ?? null}
             clubPhoto={clubPhoto}
             capNumber={capEntry?.capNumber ?? null}
+            // Season shirt numbers: only present when the club numbers shirts
+            // (the API omits them otherwise), kept apart from the cap pill.
+            shirtNumber={player.shirtNumber ?? null}
+            shirtNumbers={player.shirtNumbers ?? []}
             meta={meta || null}
             chips={chips}
             rangeLabel={rangeLabel}

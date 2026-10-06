@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { AttrChip, GlassPill, PageHero, initialsOf } from "@/components/broadcast";
 import type { Discipline } from "@/lib/use-stats-view";
+import { seasonLabel } from "@/lib/season-label";
 import { fmt1, fmt2, formatFigures, formatHighScore, type SeasonTotals } from "./season-stats";
 
 export interface HeroStat {
@@ -35,13 +36,24 @@ export function heroStats(t: SeasonTotals, d: Discipline): HeroStat[] {
   ];
 }
 
+/** A season's shirt number, as `PlayerDetail.shirtNumbers` carries it. */
+export interface HeroShirtNumber {
+  season: number;
+  number: string;
+}
+
+/** Most seasons the past-numbers line lists, so it stays a single short line. */
+const SHIRT_HISTORY_MAX = 6;
+
 const show = (v: string | number | null) =>
   v == null || v === "" ? "–" : typeof v === "number" ? v.toLocaleString("en-AU") : v;
 
 /**
  * Profile hero: photo (player's own, else the club's action shot, else the
  * brand gradient with initials) fading into the dark panel, cap pill, meta
- * line, name, trait chips and the range-aware stat strip. Brand values come
+ * line, name (with the season shirt number beside it when the club numbers
+ * shirts, separate from the cap pill), trait chips and the range-aware stat
+ * strip. Brand values come
  * from the tenant via `PageHero` / theme tokens, never literals (R7).
  */
 export function ProfileHero({
@@ -49,6 +61,8 @@ export function ProfileHero({
   photo,
   clubPhoto,
   capNumber,
+  shirtNumber = null,
+  shirtNumbers = [],
   meta,
   chips,
   rangeLabel,
@@ -60,6 +74,10 @@ export function ProfileHero({
   photo: string | null;
   clubPhoto: string | null;
   capNumber: number | null;
+  /** Current season's shirt number; absent/null shows nothing (R15). */
+  shirtNumber?: string | null;
+  /** Numbered seasons, newest first; listed only when more than one. */
+  shirtNumbers?: HeroShirtNumber[];
   meta: string | null;
   chips: string[];
   rangeLabel: string;
@@ -70,6 +88,13 @@ export function ProfileHero({
 }) {
   const image = photo ?? clubPhoto;
   const [first, ...rest] = fullName.split(" ");
+  const shirtHistory =
+    shirtNumbers.length > 1
+      ? shirtNumbers
+          .slice(0, SHIRT_HISTORY_MAX)
+          .map((s) => `${seasonLabel(s.season)} #${s.number}`)
+          .join(" · ")
+      : null;
   return (
     <div className="relative" data-testid="profile-hero">
       <PageHero
@@ -96,16 +121,35 @@ export function ProfileHero({
             </span>
           )}
         </div>
-        <h1 className="max-w-[12ch] font-serif text-[clamp(56px,8vw,112px)] font-extrabold uppercase leading-[.88] text-white">
-          {first}
-          {rest.length > 0 && (
-            <>
-              {" "}
-              <br />
-              {rest.join(" ")}
-            </>
+        <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
+          <h1 className="max-w-[12ch] font-serif text-[clamp(56px,8vw,112px)] font-extrabold uppercase leading-[.88] text-white">
+            {first}
+            {rest.length > 0 && (
+              <>
+                {" "}
+                <br />
+                {rest.join(" ")}
+              </>
+            )}
+          </h1>
+          {shirtNumber && (
+            <div
+              data-testid="hero-shirt-number"
+              aria-label={`Shirt number ${shirtNumber}`}
+              className="mb-1 rounded-[14px] border-2 border-white/70 bg-black/40 px-3 pb-1 pt-1.5 font-serif text-[clamp(36px,4.6vw,64px)] font-extrabold leading-none tabular-nums text-white"
+            >
+              #{shirtNumber}
+            </div>
           )}
-        </h1>
+        </div>
+        {shirtHistory && (
+          <div
+            data-testid="hero-shirt-history"
+            className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-white/70"
+          >
+            {shirtHistory}
+          </div>
+        )}
         {chips.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {chips.map((c) => (
