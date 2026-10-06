@@ -21,6 +21,7 @@ import {
 } from "@/components/admin-social";
 import { AutomationCard } from "@/components/social-queue/automation-card";
 import { AutoPostCard } from "@/components/social-queue/auto-post-card";
+import { MetaConnectionCard } from "@/components/social-queue/meta-connection-card";
 import { RoundSchedulesCard } from "@/components/social-queue/round-schedules-card";
 
 /**
@@ -72,6 +73,7 @@ export default function AdminSocial() {
         <>
           <AutomationCard config={bundle.data.settings.familyConfig} />
           <RoundSchedulesCard settings={bundle.data.settings} />
+          <MetaConnectionCard />
           <AutoPostCard settings={bundle.data.settings} />
           <SettingsCard settings={bundle.data.settings} onSaved={invalidate} />
           <ThemesCard themes={themesQ.data ?? []} onChanged={invalidateThemes} />

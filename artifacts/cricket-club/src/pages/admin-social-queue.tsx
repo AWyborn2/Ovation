@@ -35,6 +35,9 @@ import {
   STATUS_ORDER,
   draftGrade,
   draftHeading,
+  PUBLICATION_LABEL,
+  PUBLICATION_TONE,
+  publicationLabel,
   draftInput,
   draftSource,
   draftStatus,
@@ -206,6 +209,13 @@ export default function AdminSocialQueue() {
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground">{draftSource(d)}</span>
           {d.staleSince && <StatusPill tone="danger">Data changed</StatusPill>}
+          {(d.publications ?? [])
+            .filter((p) => p.status !== "cancelled")
+            .map((p) => (
+              <StatusPill key={p.id} tone={PUBLICATION_TONE[p.status]}>
+                {publicationLabel(p)}: {PUBLICATION_LABEL[p.status]}
+              </StatusPill>
+            ))}
         </div>
       ),
     },
