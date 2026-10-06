@@ -209,9 +209,9 @@ The brainstorm's planning questions are resolved in the Planning Contract: SMS p
 ### Key Technical Decisions
 
 - KTD1. **A club squad register separate from `players`.** New tenant-scoped `squad_members` rows hold imported participants: identity, section (senior/junior), active flag, grade hint and contacts. `players` has no `tenant_id` and is Halls Head's stats register, so contacts never go there. A member optionally links to an app player id (via `player_id_map`) for team-list `playerId`s; unlinked members still work because team-list entries allow a name without a `playerId`.
-- KTD2. **One register for seniors and juniors, distinguished by `section`.** The juniors isolation invariant governs *stats* (`junior_*` tables, `/api/juniors/*`). Availability and selection write no stats, so one register keeps the Hub, scheduler and messaging single-path. Section comes from the export's `Age Group`/`Grade`; contact routing comes from age (R5). Nothing in this feature reads or writes `junior_*` tables or senior stats.
+- KTD2. **One register for seniors and juniors, distinguished by `section`.** The juniors isolation invariant governs _stats_ (`junior_*` tables, `/api/juniors/*`). Availability and selection write no stats, so one register keeps the Hub, scheduler and messaging single-path. Section comes from the export's `Age Group`/`Grade`; contact routing comes from age (R5). Nothing in this feature reads or writes `junior_*` tables or senior stats.
 - KTD3. **SMS through a Twilio adapter that mirrors the email adapter.** Add `artifacts/api-server/src/lib/integrations/sms.ts`: a REST call, off when credentials are missing, one retry, and a test transport seam like `setEmailTransport`. STOP is handled by Twilio's built-in opt-out; a send to an opted-out number fails with Twilio error 21610, which marks that contact opted out so later rounds go email-only for it (R13). No inbound webhook. This only works with a two-way-capable Australian number (directly or in a Messaging Service pool) with Advanced Opt-Out on; alphanumeric sender IDs are one-way and are not used. The adapter and its callers log member id, recipient slot and result kind only — never a number or email — and pass Twilio error text through a redact helper modelled on `redact()` in `artifacts/api-server/src/lib/publishing/meta-client.ts`.
-- KTD4. **The schedule runs inside the hourly scheduled sweep.** Add an isolated try/catch step to the `scope.kind === "scheduled"` block of `runDraftSweep` (`artifacts/api-server/src/lib/draft-sweep.ts`). Each tick computes the club's due slots (send, reminder, cut-off) in Perth time, mirroring the "slot ≤ now and not yet run" idempotency in `lib/db/src/playhq-ingest/cadence.ts`. A step is claimed atomically *before* any message goes out (a conditional update that sets the step's started-at only when it is null), so an overlapping "Run now" or a retry after a crash never re-sends the round. Delivery is tracked per recipient: sends are paced below provider rate limits, and each later tick before cut-off re-attempts only recipients whose last delivery failed and who haven't answered. A missed hour heals on the next tick. Admins also get "Run now" actions per step, using the same claim.
+- KTD4. **The schedule runs inside the hourly scheduled sweep.** Add an isolated try/catch step to the `scope.kind === "scheduled"` block of `runDraftSweep` (`artifacts/api-server/src/lib/draft-sweep.ts`). Each tick computes the club's due slots (send, reminder, cut-off) in Perth time, mirroring the "slot ≤ now and not yet run" idempotency in `lib/db/src/playhq-ingest/cadence.ts`. A step is claimed atomically _before_ any message goes out (a conditional update that sets the step's started-at only when it is null), so an overlapping "Run now" or a retry after a crash never re-sends the round. Delivery is tracked per recipient: sends are paced below provider rate limits, and each later tick before cut-off re-attempts only recipients whose last delivery failed and who haven't answered. A missed hour heals on the next tick. Admins also get "Run now" actions per step, using the same claim.
 - KTD5. **Per-recipient, per-round random tokens, stored hashed, minted per message.** Reuse `generateResetToken` / `hashResetToken` (`artifacts/api-server/src/lib/auth.ts`). Because only hashes are stored, every outbound message (request, reminder, selected, deselected) mints a fresh token for its recipient; a recipient may hold several live tokens for the same round, all valid until the day after the round's last fixture. A request row is created on demand when a member without one is selected. A forwarded link exposes only that member's answers for that round; contact details on the page are masked (e.g. `04xx xxx 678`, `j***@gmail.com`). Changing a contact sends a change notice to the previous mobile and email, flags the contact for admins, and revokes the recipient's other live tokens. The token path segment is redacted in the request logger (`artifacts/api-server/src/app.ts` pino-http `req` serializer). Token endpoints are rate-limited.
 - KTD6. **Selection state lives in its own table and publishes into `team_lists` on finalise.** One `selections` row per fixture holds slots, captain, keeper, state (`draft`/`final`) and a version. Finalising upserts the fixture's `team_lists` row with `source: "selection"` and `is_published: true`. The PlayHQ projector already skips any source other than `"playhq"`, which protects the list before the match; U8 relaxes that only for played fixtures (R34). When a selected player withdraws, their entry is removed from the published list immediately and the rest stays published; re-opening a side leaves the published list as last finalised until the next finalise. Every reader and writer of `team_lists.source` is audited for the new value, and the documented values in `lib/db/src/schema/fixtures.ts` gain `selection`.
 - KTD7. **Seeding and matching rules.** A grade's draft seeds from the `team_lists` row of that grade's most recent fixture before the round. Each entry matches a member by linked `playerId` first, then by normalised display name (preferred or first name plus last name). An unmatched entry leaves a gap "was <name> · not on register". On import, a member links to an app player when `player_id_map.participantId` equals the export's `Profile ID`, else by a unique normalised-name match in the club's team-list history. Fill-in ids (`>= 90000`) are never linked (R7).
@@ -285,19 +285,19 @@ flowchart LR
 
 ## Implementation Units
 
-| U-ID | Title | Key files | Depends on |
-|---|---|---|---|
-| U1 | Schema and migration | `lib/db/src/schema/availability.ts`, `lib/db/migrations/0031_*.sql` | — |
-| U2 | SMS adapter and member messaging | `api-server/src/lib/integrations/sms.ts`, `api-server/src/lib/availability-messaging.ts` | U1 |
-| U3 | Squad import and register API | `api-server/src/routes/squad.ts`, `api-server/src/lib/squad-import.ts` | U1 |
-| U4 | Settings and round scheduler | `api-server/src/routes/availability-settings.ts`, `api-server/src/lib/availability-schedule.ts` | U1, U2, U6 |
-| U5 | Player response API | `api-server/src/routes/availability-respond.ts` | U1, U4 |
-| U6 | Draft builder at cut-off | `api-server/src/lib/selection-drafts.ts` | U1 |
-| U7 | Selection board API, finalise, notifications | `api-server/src/routes/selection.ts`, `api-server/src/middlewares/require-admin-or-captain.ts` | U2, U6 |
-| U8 | PlayHQ wins after the match | `lib/db/src/playhq-ingest/team-lists.ts` | U7 |
-| U9 | Selection Hub web page | `cricket-club/src/pages/selection-hub.tsx` | U7 |
-| U10 | Admin availability and squad page | `cricket-club/src/pages/admin-availability.tsx` | U3, U4 |
-| U11 | Player availability page | `cricket-club/src/pages/availability-respond.tsx` | U5 |
+| U-ID | Title                                        | Key files                                                                                       | Depends on |
+| ---- | -------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------- |
+| U1   | Schema and migration                         | `lib/db/src/schema/availability.ts`, `lib/db/migrations/0031_*.sql`                             | —          |
+| U2   | SMS adapter and member messaging             | `api-server/src/lib/integrations/sms.ts`, `api-server/src/lib/availability-messaging.ts`        | U1         |
+| U3   | Squad import and register API                | `api-server/src/routes/squad.ts`, `api-server/src/lib/squad-import.ts`                          | U1         |
+| U4   | Settings and round scheduler                 | `api-server/src/routes/availability-settings.ts`, `api-server/src/lib/availability-schedule.ts` | U1, U2, U6 |
+| U5   | Player response API                          | `api-server/src/routes/availability-respond.ts`                                                 | U1, U4     |
+| U6   | Draft builder at cut-off                     | `api-server/src/lib/selection-drafts.ts`                                                        | U1         |
+| U7   | Selection board API, finalise, notifications | `api-server/src/routes/selection.ts`, `api-server/src/middlewares/require-admin-or-captain.ts`  | U2, U6     |
+| U8   | PlayHQ wins after the match                  | `lib/db/src/playhq-ingest/team-lists.ts`                                                        | U7         |
+| U9   | Selection Hub web page                       | `cricket-club/src/pages/selection-hub.tsx`                                                      | U7         |
+| U10  | Admin availability and squad page            | `cricket-club/src/pages/admin-availability.tsx`                                                 | U3, U4     |
+| U11  | Player availability page                     | `cricket-club/src/pages/availability-respond.tsx`                                               | U5         |
 
 `api-server/` and `cricket-club/` above are short for `artifacts/api-server/` and `artifacts/cricket-club/`. Every API-bearing unit adds its paths and schemas to `lib/api-spec/openapi.yaml` first and regenerates with `pnpm --filter @workspace/api-spec run codegen`; generated files are never hand-edited.
 
@@ -310,12 +310,14 @@ flowchart LR
 **Dependencies:** None.
 
 **Files:**
+
 - `lib/db/src/schema/availability.ts` (new); `lib/db/src/schema/index.ts` (export)
 - `lib/db/migrations/0031_availability_selection.sql` and `lib/db/migrations/meta/*` (generated)
 - `artifacts/api-server/src/lib/tenant-purge.test-helpers.ts` (purge the new tables if they don't cascade from tenants)
 - `lib/db/src/schema/fixtures.ts` (document `selection` as a `team_lists.source` value)
 
 **Approach:**
+
 - `squad_members`: tenant, PlayHQ profile id (unique per tenant when present), names, date of birth, section, active, grade hint, private flag, linked app player id, account-holder name/mobile/email, guardian 1 and 2 name/mobile/email, and an SMS opt-out flag per contact slot.
 - `availability_settings`: one row per tenant: `enabled` (default false), SMS on/off, Perth day and time for send, reminder, cut-off and finalise-by (display only), and the selection rule.
 - `availability_rounds`: tenant, weekend Saturday date, started-at and completed-at for send, reminder and cut-off (the started-at columns are the atomic claim, KTD4); unique on (tenant, weekend).
@@ -330,6 +332,7 @@ flowchart LR
 **Patterns to follow:** `lib/db/src/schema/fixtures.ts` (invariant comments, unique indexes), `lib/db/src/schema/captains.ts`, migration `lib/db/migrations/0030_social_publishing.sql`.
 
 **Test scenarios:**
+
 - The migration applies on a fresh database and is a no-op when re-applied.
 - A second selection for the same fixture violates the unique index.
 - A second response for the same (round, member, date) violates the unique index.
@@ -346,11 +349,13 @@ flowchart LR
 **Dependencies:** U1.
 
 **Files:**
+
 - `artifacts/api-server/src/lib/integrations/sms.ts` (new) and `sms.test.ts`
 - `artifacts/api-server/src/lib/availability-messaging.ts` (new) and `availability-messaging.test.ts`
 - `artifacts/api-server/src/config.ts` (optional `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`, `TWILIO_MESSAGING_SERVICE_SID`)
 
 **Approach:**
+
 - `sendSms({to, body})` mirrors `sendEmail` and returns sent, disabled, failed or opted_out; Twilio error 21610 maps to opted_out. Numbers normalise to E.164 with an Australian default.
 - `recipientsFor(member)`: account holder for adults; guardians 1 and 2 for members under 18 at send time. Recipients without mobile or email are skipped and counted.
 - `messageMember(member, kind, context)` builds `request`, `reminder`, `selected`, `deselected` text and sends SMS (when the club has SMS on and the contact hasn't opted out) plus email. Every SMS ends with "Reply STOP to opt out." Each message mints a fresh token for its recipient (KTD5).
@@ -360,6 +365,7 @@ flowchart LR
 **Patterns to follow:** `artifacts/api-server/src/lib/integrations/email.ts`; `artifacts/api-server/src/lib/draft-notifications.ts`.
 
 **Test scenarios:**
+
 - Adult with mobile and email, SMS on → one SMS to the account-holder mobile and one email.
 - Member aged 15 with two guardians → both guardians get SMS and email; the account holder gets nothing (Covers AE6).
 - Club SMS off → email only, SMS transport never called (R14).
@@ -380,21 +386,24 @@ flowchart LR
 **Dependencies:** U1.
 
 **Files:**
+
 - `artifacts/api-server/src/lib/squad-import.ts` (new) and `squad-import.test.ts`
 - `artifacts/api-server/src/routes/squad.ts` (new) and `squad.test.ts`; `artifacts/api-server/src/routes/index.ts`
 - `lib/api-spec/openapi.yaml` (regenerates `lib/api-zod`, `lib/api-client-react`)
 
 **Approach:**
+
 - `POST /squad/import` (admin, multipart via `artifacts/api-server/src/lib/import-upload.ts`) parses with `csv-parse/sync`. Only the R2 whitelist is read, by header name; every other column is dropped before anything is stored or logged (R3).
 - Rows need `Role` = player, an active `Status` and the current `Season`. Rows whose `Host Organisation ID` differs from the file's majority are rejected and counted.
 - Upsert by (tenant, profile id). The response reports created, updated and skipped counts with reasons. Members absent from a later file are not deleted. A re-import never overrides an admin's manual inactive flag.
 - Section is junior when `Age Group` or `Grade` names an under-age group, else senior.
 - Link to app players per KTD7; never link fill-in ids.
-- `GET /squad` lists members with contact *presence* flags (has mobile, has email, opted out), not values. `GET /squad/:id` returns full contacts to admins. `PATCH /squad/:id` edits active, section, grade hint, linked player and contacts. `DELETE /squad/:id` removes a member on a guardian's request: contacts and date of birth are hard-deleted, and history keeps only the name.
+- `GET /squad` lists members with contact _presence_ flags (has mobile, has email, opted out), not values. `GET /squad/:id` returns full contacts to admins. `PATCH /squad/:id` edits active, section, grade hint, linked player and contacts. `DELETE /squad/:id` removes a member on a guardian's request: contacts and date of birth are hard-deleted, and history keeps only the name.
 
 **Patterns to follow:** `artifacts/api-server/src/routes/imports-csv.ts`; `artifacts/api-server/src/lib/playcricket-csv.ts`.
 
 **Test scenarios:**
+
 - The export header row plus one filled row imports one member; `Disability`, `WWC Number` and `Emergency Contact Mobile Number` values appear nowhere in the stored row (R3).
 - Re-importing the same file creates 0 and updates every row; a changed mobile number updates (R1).
 - `Role` = Coach and `Status` = Cancelled rows are skipped with reasons (R4).
@@ -416,6 +425,7 @@ flowchart LR
 **Files:** `artifacts/api-server/src/lib/selection-drafts.ts` (new) and `selection-drafts.test.ts`
 
 **Approach:**
+
 - For each fixture in the round window without a selection:
   1. Find the grade's most recent earlier fixture with a `team_lists` row.
   2. Map its entries to members per KTD7.
@@ -428,6 +438,7 @@ flowchart LR
 **Execution note:** Implement test-first; these seeding rules carry R16–R18.
 
 **Test scenarios:**
+
 - Last A Grade list of 11 with 8 Yes, 1 No, 1 Maybe, 1 no reply → 8 filled and 3 gaps labelled no / maybe / no reply in their original positions (Covers AE1).
 - Last captain answered Yes → carried; keeper answered No → unset (R37).
 - An entry with `playerId` 90012 → gap "not on register".
@@ -447,6 +458,7 @@ flowchart LR
 **Dependencies:** U1, U2, U6.
 
 **Files:**
+
 - `artifacts/api-server/src/routes/availability-settings.ts` (new) and `availability-settings.test.ts`
 - `artifacts/api-server/src/lib/availability-schedule.ts` (new) and `availability-schedule.test.ts`
 - `artifacts/api-server/src/lib/draft-sweep.ts` (new scheduled step)
@@ -454,6 +466,7 @@ flowchart LR
 - `lib/api-spec/openapi.yaml`
 
 **Approach:**
+
 - `GET/PUT /availability/settings` (admin): enabled, SMS on/off, send/reminder/cut-off day and time, selection rule. Cut-off must fall after send.
 - `runAvailabilitySchedule(tenantId, now)`:
   1. Pick the round for the weekend after the send slot and create it if missing.
@@ -469,6 +482,7 @@ flowchart LR
 **Patterns to follow:** `duePlans` in `lib/db/src/playhq-ingest/cadence.ts`; step isolation in `runDraftSweep`.
 
 **Test scenarios:**
+
 - Settings Mon 18:00 / Wed 18:00 / Thu 18:00 Perth: at Mon 17:59 nothing is due; at Mon 18:05 send runs; at Mon 19:05 send doesn't repeat.
 - Club enabled on Thursday after cut-off time → send and cut-off both run, in that order.
 - Disabled club → no round, no messages (KTD11).
@@ -491,10 +505,12 @@ flowchart LR
 **Dependencies:** U1, U4.
 
 **Files:**
+
 - `artifacts/api-server/src/routes/availability-respond.ts` (new) and `availability-respond.test.ts`
 - `artifacts/api-server/src/routes/index.ts`; `lib/api-spec/openapi.yaml`
 
 **Approach:**
+
 - `GET /availability/respond/:token` returns:
   - the club name and the member's first name;
   - the dates to answer, with current answers;
@@ -514,6 +530,7 @@ flowchart LR
 **Patterns to follow:** kiosk-token checks in `artifacts/api-server/src/routes/honour-display.ts`; hashed tokens in `artifacts/api-server/src/lib/auth.ts`.
 
 **Test scenarios:**
+
 - A valid token returns the section's dates and no other member's data.
 - Guardian 1 answers Yes, then guardian 2 answers No → stored answer is No (Covers AE6).
 - PATCH contact with guardian 2's token changes only guardian 2's mobile, sends a change notice to the old mobile and email, and revokes guardian 2's other tokens (R6).
@@ -535,23 +552,25 @@ flowchart LR
 **Dependencies:** U2, U6.
 
 **Files:**
+
 - `artifacts/api-server/src/middlewares/require-admin-or-captain.ts` (new)
 - `artifacts/api-server/src/routes/selection.ts` (new), `selection.test.ts`, `selection-isolation.test.ts`
 - `artifacts/api-server/src/routes/index.ts`; `lib/api-spec/openapi.yaml`
 
 **Approach:**
+
 - `GET /selection/board?section=senior|junior` returns:
   - the round summary (stage times; response counts by status, R20);
   - selections with fixture details, slots, roles, state, version and the caller's `canEdit`;
   - the pool of active unplaced members, grouped by status, each with last grade, note, junior/private tags and replied-at.
-  The response never includes contact values.
+    The response never includes contact values.
 - `PUT /selection/board` accepts `[{selectionId, version, slots, captainId, keeperId}]`. It applies everything in one transaction or returns 403/409/400. It checks:
   - edit rights and not final;
   - matching versions;
   - no member twice in the round;
   - captain and keeper inside their side;
   - at most 11 slots.
-  It then clears roles whose holders left the side (R38), bumps versions, and writes one `selection_events` row per change with the actor (R29).
+    It then clears roles whose holders left the side (R38), bumps versions, and writes one `selection_events` row per change with the actor (R29).
 - `POST /selection/:id/finalise`:
   - checks edit rights and sets state final;
   - upserts `team_lists` (`source: "selection"`, published) with `TeamListPlayer` entries: playerId when linked, display name, role `C`, `WK` or `C/WK`;
@@ -564,6 +583,7 @@ flowchart LR
 **Patterns to follow:** team-list PUT validation in `artifacts/api-server/src/routes/fixtures.ts`; `artifacts/api-server/src/middlewares/require-captain.ts`; `artifacts/api-server/src/routes/captains-isolation.test.ts`.
 
 **Test scenarios:**
+
 - A PUT whose slots hold more than 11 entries, or the same member in two places, → 400 and nothing written. (AE2's refusal message is client-side; see U9.)
 - Moving a member from a C Grade slot into an open A Grade slot in one PUT updates both selections atomically (Covers AE3).
 - A member who said No can be placed and is reported flagged (Covers AE4).
@@ -596,6 +616,7 @@ flowchart LR
 **Approach:** The projector today only loads fixtures starting in the future, so widening the skip check alone does nothing. Add a second, bounded pass in `projectTeamLists` over fixtures that started in the last 7 days, whose team list has source `selection`, and whose PlayHQ match is completed. Replace those rows from the PlayHQ lineup, writing `source: "playhq"` in the conflict update and widening the race guard to `source = 'playhq' OR (source = 'selection' AND fixture started)`. The future-fixture pass is unchanged and `admin` rows stay protected. Next week's draft then seeds from the PlayHQ side through U6.
 
 **Test scenarios:**
+
 - The second pass selects a fixture that started yesterday with a `selection` list (the query itself is exercised, not just the skip check).
 - Selection list for a fixture that started yesterday + a completed PlayHQ match side → replaced, source `playhq`.
 - Selection list for tomorrow's fixture → kept.
@@ -612,11 +633,13 @@ flowchart LR
 **Dependencies:** U7.
 
 **Files:**
+
 - `artifacts/cricket-club/src/pages/selection-hub.tsx` (new)
 - `artifacts/cricket-club/src/components/selection/` (team card, player chip, pool, move dialog, `use-pointer-drag` hook, pure `apply-move` module) with tests beside them
 - `artifacts/cricket-club/src/App.tsx` (admin route `/admin/selection` and a captain route) and the admin nav (`artifacts/cricket-club/src/pages/admin-groups.tsx` or the shell nav)
 
 **Approach:**
+
 - Layout follows the prototype (https://claude.ai/artifact/DXeQ2bSyrobW8pVyiivmL7) using the app's tokens and `@/components/ui/*`:
   - header with stages and the response bar;
   - Seniors/Juniors switch;
@@ -631,6 +654,7 @@ flowchart LR
 **Patterns to follow:** `artifacts/cricket-club/src/pages/admin-fixtures.tsx` (generated hooks, invalidation, `handleAdminMutationError`); `artifacts/cricket-club/src/pages/captain.tsx`.
 
 **Test scenarios:**
+
 - `apply-move` covers four cases (the last is AE2's refusal, with the message "<Grade> already has 11. Drop onto a player to swap them out."):
   - pool → open slot fills it;
   - team → filled slot swaps the two;
@@ -642,6 +666,7 @@ flowchart LR
 - Keyboard: Enter on a chip opens the dialog; choosing a destination and submitting moves the player.
 
 **Verification:** `pnpm --filter @workspace/cricket-club test` passes. Check in the browser against the dev server:
+
 - drag on desktop;
 - grip-drag and tap-to-move at phone width;
 - finalise publishes the fixture's team list.
@@ -657,6 +682,7 @@ flowchart LR
 **Files:** `artifacts/cricket-club/src/pages/admin-availability.tsx` (new) and test; admin route and nav in `artifacts/cricket-club/src/App.tsx` / `artifacts/cricket-club/src/pages/admin-groups.tsx`.
 
 **Approach:** Three sections:
+
 - **Settings:** enabled switch, SMS switch, three day/time pickers, selection-rule radio with plain descriptions.
 - **Squad:** CSV upload with the import summary, then a table: name, section, grade hint, active toggle, contact-presence badges including "SMS opted out", linked player. Full contacts appear only in the edit drawer.
 - **This round:** stage status with confirm-guarded "Run now" buttons.
@@ -664,6 +690,7 @@ flowchart LR
 **Patterns to follow:** `artifacts/cricket-club/src/pages/admin-fixtures.tsx` and the existing admin import page.
 
 **Test scenarios:**
+
 - Saving cut-off before send shows the server's validation message.
 - The import summary shows created, updated and skipped counts with reasons.
 - The squad table renders no contact values outside the edit drawer.
@@ -681,6 +708,7 @@ flowchart LR
 **Files:** `artifacts/cricket-club/src/pages/availability-respond.tsx` (new) and test; public route `/availability/:token` in `artifacts/cricket-club/src/App.tsx`, declared before the admin gate.
 
 **Approach:** A mobile-first single column in club branding:
+
 - one row per date with Yes / No / Maybe and a note;
 - an away-dates list with add and remove;
 - "Your contact details" showing only the recipient's own mobile and email;
@@ -690,6 +718,7 @@ flowchart LR
 **Patterns to follow:** the public `/tv/:token` page and `artifacts/cricket-club/src/pages/admin-reset.tsx`.
 
 **Test scenarios:**
+
 - One answer row renders per date from the API; tapping Yes saves and shows "Saved".
 - A selected player sees match details; confirming "Can't make it" calls withdraw and shows the withdrawn state.
 - A 404 from the API shows the expired-link message.
