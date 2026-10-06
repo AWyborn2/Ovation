@@ -232,3 +232,8 @@ Deep scorecards were scraped for the pilot. Keep the ingest behind a clean adapt
 **Do not commercialise on scraped data**; pilot/non-commercial framing until partner or licence
 access is secured (PlayHQ partner application / Fixtura). Review cricket.com.au Third-Party
 Application T&Cs before launch.
+
+Exception (decision of 6 Oct 2026): a club publishing its own results to its own Facebook Page /
+Instagram account through Social Studio's Meta publishing is **not** treated as commercialising
+scraped data. The licence work above still stands for association-level or resale uses.
+Runbook: `docs/runbooks/meta-publishing.md`.

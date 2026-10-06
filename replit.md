@@ -12,6 +12,7 @@ A full-stack cricket club statistics portal for Halls Head Cricket Club (est. 19
 - `pnpm --filter @workspace/db run generate` — write a migration for a schema change (commit it); `run migrate` applies `lib/db/migrations` (CI + post-merge). `run push` is for local experiments only
 - Required env: `DATABASE_URL` — Postgres connection string (tenant app DB)
 - `CENTRAL_DATABASE_URL` — read-only Postgres connection string for the central PCA database (schema `central`); used by `lib/db/src/central.ts`. Separate from `DATABASE_URL`; never written to by the app.
+- Meta publishing (off unless `META_PUBLISHING_ENABLED=1`): `META_APP_ID`, `META_APP_SECRET`, `META_LOGIN_CONFIG_ID`, `SOCIAL_TOKEN_KEY`, `SOCIAL_PUBLIC_ORIGIN`, `SOCIAL_PUBLISH_SECRET`, plus `RENDER_HARNESS_ORIGIN`. A cron-job.org job POSTs `/api/internal/publish-sweep` every 5 minutes. See `docs/runbooks/meta-publishing.md`.
 
 ## Stack
 

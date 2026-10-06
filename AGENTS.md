@@ -102,6 +102,9 @@ In short:
   every hourly run calls `/api/internal/playhq/sweep` (scheduled sweep for every club).
 - **Social Studio automation is live:** result, achievement, round-up and match-day cards
   (incl. Team Lists from PlayHQ selections) draft into the review queue.
+- **Meta publishing is built but switched off** (`META_PUBLISHING_ENABLED`): clubs connect a
+  Facebook Page + Instagram account and drafts publish on a schedule or automatically at the
+  auto-post deadline. Waits on Meta App Review; runbook `docs/runbooks/meta-publishing.md`.
 - **Billing and entitlements are built but switched off** (Phase 2c/2d); onboarding,
   tenant-scoped admin auth and the platform-admin console are live.
 
@@ -209,6 +212,10 @@ In short:
   `scripts/sql/playhq-schema.sql` (+ `playhq-ingest-role.sql`, `central-projector.sql`)
 - Social drafting: `api-server/src/lib/draft-sweep.ts` (entry), `lib/engines/*` (per card
   kind), `lib/draft-enrich.ts` (pack, caption and photo pick)
+- Meta publishing: `api-server/src/lib/publishing/` (destination boundary + Meta adapter,
+  publish worker, auto-publish, connection health, media prep), routes
+  `social-connections.ts`, `social-publications.ts`, `meta-callbacks.ts`,
+  `internal-publish-sweep.ts`; token encryption `lib/secret-box.ts`
 - Caps: `routes/caps.ts` (register + confirmation queue), `lib/debut-caps.ts` (automatic
   A Grade debut caps), `lib/cap-sync.ts`
 - App entry: `api-server/src/app.ts` (middleware wiring) → `index.ts`
