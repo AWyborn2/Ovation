@@ -299,6 +299,24 @@ function planSet(input: SetInput, opts: CardSetOptions): PlannedSlide[] {
       break;
     }
     case "weekendWrap": {
+      // A round-results carousel (Ash, 6 Oct 2026): the wrap's cover, then each match's own
+      // result card, in the wrap's order. Without `results` it is the list-style wrap.
+      const results = Array.isArray(input.results) ? (input.results as SetInput[]) : [];
+      if (results.length > 0) {
+        cap = 1;
+        const rows = (input.matches as MatchRow[] | undefined) ?? [];
+        details = results.map((r, i) => {
+          // Keyed by the matching wrap row's grade (results and matches share an order).
+          const grade = rows[i]?.gradeLabel ?? String(i);
+          return {
+            section: "senior",
+            firstKey: grade,
+            count: 1,
+            build: (page) => ({ ...r, setPage: page }),
+          };
+        });
+        break;
+      }
       cap = SET_CAPS.weekendWrap;
       const parts = balanced(
         (input.matches as MatchRow[]) ?? [],

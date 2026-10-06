@@ -254,6 +254,12 @@ export type ShareCardInput =
       roundLabel: string;
       dateRange: string;
       matches: WeekendWrapMatch[];
+      /**
+       * Round-results carousel: each match's own result card (`matchSummary`), in the same
+       * order as `matches`. Present, the wrap posts as its cover then one result card per
+       * match; absent, as the list-style wrap.
+       */
+      results?: ShareCardInput[];
       /** JUNIOR card: forces the junior brown palette + junior labels. */
       junior?: boolean;
     } & SetSlideFields)

@@ -10,8 +10,10 @@ import type { RoundScheduleRow, RoundSchedulesRow } from "@workspace/db";
  *  - team lists:   one card per published XI ("perFixture", the default), the
  *                  round's published XIs as one set at a chosen day and hour,
  *                  or off;
- *  - weekend wrap: the round's results as one set at a chosen day and hour,
- *                  or off (the default).
+ *  - match results ("weekendWrap"): each match's own result card ("perFixture", or "off",
+ *                  the default), the round's results as one carousel at a chosen day and
+ *                  hour, the cover then each match's result card ("perRound"; the
+ *                  per-match cards stop), or "both".
  *
  * Times are club time. Tenants carry no timezone yet and every pilot club is
  * in Western Australia, so club time is Perth time, as for fixture times.
@@ -51,10 +53,20 @@ export function resolveRoundSchedules(saved: RoundSchedulesRow | null | undefine
 
 /** Why a submitted schedule can't be saved, or null when it's fine. */
 export function invalidRoundSchedule(card: RoundCard, s: RoundSchedule): string | null {
-  if (card === "weekendWrap" && s.mode === "perFixture") {
-    return "The weekend wrap drafts once a round, not per match.";
+  if (card !== "weekendWrap" && s.mode === "both") {
+    return "Only match results can draft both per match and per round.";
   }
   return null;
+}
+
+/** Match results: the round carousel is drafted ("perRound" or "both"). */
+export function roundResultsCarouselOn(mode: RoundSchedule["mode"]): boolean {
+  return mode === "perRound" || mode === "both";
+}
+
+/** Match results: each match gets its own result card (everything but carousel-only). */
+export function matchResultCardsOn(mode: RoundSchedule["mode"]): boolean {
+  return mode !== "perRound";
 }
 
 /** Saved schedules with `patch` merged in per card (the others keep theirs). */

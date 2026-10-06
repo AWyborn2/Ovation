@@ -217,7 +217,7 @@ describe("round schedule settings", () => {
     });
   });
 
-  it("saves one card without touching the others, and rejects a per-match wrap", async () => {
+  it("saves one card without touching the others, and rejects both-ways game day", async () => {
     const ok = await api()
       .patch("/api/social-settings")
       .set("Cookie", cookie)
@@ -231,7 +231,7 @@ describe("round schedule settings", () => {
       .patch("/api/social-settings")
       .set("Cookie", cookie)
       .set("x-tenant-id", String(tenantId))
-      .send({ roundSchedules: { weekendWrap: { mode: "perFixture", day: 1, hour: 8 } } });
+      .send({ roundSchedules: { gameDay: { mode: "both", day: 1, hour: 8 } } });
     expect(bad.status).toBe(400);
 
     const outOfRange = await api()

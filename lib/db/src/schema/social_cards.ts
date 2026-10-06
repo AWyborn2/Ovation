@@ -371,7 +371,8 @@ export type CardSetRow = typeof cardSetsTable.$inferSelect;
 
 /** One round card's drafting schedule; day 0 = Sunday, hour 0–23 in club time. */
 export type RoundScheduleRow = {
-  mode: "off" | "perFixture" | "perRound";
+  /** "both" (match results only): the round carousel and each match's own card. */
+  mode: "off" | "perFixture" | "perRound" | "both";
   day: number;
   hour: number;
 };

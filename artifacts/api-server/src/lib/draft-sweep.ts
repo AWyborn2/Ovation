@@ -33,6 +33,7 @@ import { checkConnectionHealth } from "./publishing/connection-health";
 import { fillMissingDraftPhotos } from "./draft-enrich";
 import { draftCentralAchievements } from "./central-achievements";
 import { syncDebutCaps } from "./debut-caps";
+import { matchResultCardsOn, resolveRoundSchedules } from "./round-schedules";
 
 type Logger = PostCommitLogger & {
   info: (obj: unknown, msg?: string) => void;
@@ -322,11 +323,18 @@ export async function sweepCentralMatches(
       logger.warn({ tenantId, errors: stumps.errors }, "central stumps drafts had errors");
   }
 
-  const result = await generateMatchSummaryDrafts(
-    tenantId,
-    done.map((m) => m.matchId),
-    { kind: "central", clubId, seenAt: now },
+  // A club posting its results as a round carousel only ("perRound") gets no per-match
+  // result cards; the carousel engine drafts the round instead.
+  const perMatch = matchResultCardsOn(
+    resolveRoundSchedules(settings.roundSchedules).weekendWrap.mode,
   );
+  const result = perMatch
+    ? await generateMatchSummaryDrafts(
+        tenantId,
+        done.map((m) => m.matchId),
+        { kind: "central", clubId, seenAt: now },
+      )
+    : { drafted: 0, skipped: done.length, errors: [] as string[] };
   if (result.errors.length > 0) {
     logger.warn({ tenantId, errors: result.errors }, "central match summary drafts had errors");
   }

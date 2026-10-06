@@ -30,6 +30,16 @@ export function hourLabel(hour: number): string {
 
 /** What a schedule does, in a sentence, for the row's helper. */
 export function describeSchedule(card: Card, s: RoundSchedule): string {
+  if (card === "weekendWrap") {
+    const when = `${DAYS[s.day]} at ${hourLabel(s.hour)}`;
+    if (s.mode === "perRound") {
+      return `Last round's results as one carousel (a cover, then each match's result card), every ${when}. No separate per-match result cards.`;
+    }
+    if (s.mode === "both") {
+      return `Each match's own result card, plus last round's results as one carousel every ${when}.`;
+    }
+    return "Each match gets its own result card once it's finished.";
+  }
   if (s.mode === "off") return "Not drafted automatically.";
   if (s.mode === "perFixture") {
     return card === "gameDay"
@@ -63,10 +73,11 @@ const CARDS: { card: Card; label: string; modes: { value: Mode; label: string }[
   },
   {
     card: "weekendWrap",
-    label: "Weekend wrap",
+    label: "Match results",
     modes: [
+      { value: "perFixture", label: "Each match" },
       { value: "perRound", label: "Whole round" },
-      { value: "off", label: "Off" },
+      { value: "both", label: "Both" },
     ],
   },
 ];
@@ -82,8 +93,8 @@ const selectClass =
 
 /**
  * When the round cards draft themselves (balanced card sets U5): game day and
- * team lists per match or as one round set at a chosen day and time, and the
- * weekend wrap at a chosen day and time. A round set posts as a cover plus
+ * team lists per match or as one round set at a chosen day and time, and match
+ * results per match, as one round carousel at a chosen day and time, or both. A round set posts as a cover plus
  * even cards. Times are club time (Perth).
  */
 export function RoundSchedulesCard({ settings }: { settings: SocialSettings | undefined }) {
@@ -114,11 +125,16 @@ export function RoundSchedulesCard({ settings }: { settings: SocialSettings | un
     <div id="round-schedules" className="scroll-mt-20 space-y-3">
       <SettingsCard
         title="Round cards"
-        description="When game day, team lists and the weekend wrap draft themselves. A whole round posts as a cover plus even cards, never 6 on one and 1 on another. Times are Perth time."
+        description="When game day, team lists and match results draft themselves. A whole round posts as a cover plus even cards, never 6 on one and 1 on another; a round of results posts as a cover then each match's result card. Times are Perth time."
       >
         {CARDS.map(({ card, label, modes }) => {
-          const s = form[card];
-          const familyOn = card === "weekendWrap" ? roundupOn : matchdayOn;
+          // Match results "off" (the old wrap default) is each match's own card.
+          const s =
+            card === "weekendWrap" && form[card].mode === "off"
+              ? { ...form[card], mode: "perFixture" as Mode }
+              : form[card];
+          const carousel = card === "weekendWrap" && s.mode !== "perFixture";
+          const familyOn = card === "weekendWrap" ? !carousel || roundupOn : matchdayOn;
           const helper = familyOn
             ? describeSchedule(card, s)
             : `Switch on ${card === "weekendWrap" ? "Round-up" : "Match day"} in Automation above first.`;
@@ -139,7 +155,7 @@ export function RoundSchedulesCard({ settings }: { settings: SocialSettings | un
                     </option>
                   ))}
                 </select>
-                {s.mode === "perRound" && (
+                {(s.mode === "perRound" || s.mode === "both") && (
                   <>
                     <select
                       className={selectClass}
