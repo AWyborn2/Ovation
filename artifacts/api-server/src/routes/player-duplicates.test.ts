@@ -437,6 +437,8 @@ describe.skipIf(!isLocalDb)("duplicate-player suggestions and review", () => {
         .set("Cookie", cookieT1)
         .expect(200);
       expect(res.body.matches[0].performers).toBe("Chris Phelps 60");
+      // The recorded winner decides the outcome, not the result sentence ("Dup Test CC won").
+      expect(res.body.matches[0].outcome).toBe("WON");
     });
 
     it("a confirmed pair can't be rejected or reopened (only undone)", async () => {
