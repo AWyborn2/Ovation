@@ -24,6 +24,7 @@ import {
   type PhotoPlacement,
   type PhotoTransform,
 } from "./share-card";
+import { sponsorsForCard } from "./share-card/sponsor-limit";
 
 /**
  * Structural brand shape accepted by the builder.
@@ -168,6 +169,7 @@ export interface PackSettingsSource {
     name: string;
     logoUrl: string;
     cardKinds?: string[] | null;
+    grades?: string[] | null;
     isPresenting?: boolean | null;
   }> | null;
 }
@@ -188,13 +190,21 @@ export function kindSponsors(
   bundle: PackSettingsSource | null | undefined,
   kind: CardKind,
   enabled: boolean,
+  /** The card's grade: a team list carries its team's own sponsor. */
+  grade?: string | null,
 ): Array<{ name: string; logoUrl: string }> {
   if (!enabled || !bundle?.activeSponsors) return [];
   // The presenting (headline) sponsor's logo leads the strip.
-  return bundle.activeSponsors
-    .filter((sp) => sponsorAppliesToKind(sp.cardKinds, kind))
-    .sort((a, b) => Number(!!b.isPresenting) - Number(!!a.isPresenting))
-    .map((sp) => ({ name: sp.name, logoUrl: sp.logoUrl }));
+  return sponsorsForCard(bundle.activeSponsors, kind, grade, sponsorAppliesToKind).map((sp) => ({
+    name: sp.name,
+    logoUrl: sp.logoUrl,
+  }));
+}
+
+/** The grade a card is for, when it carries one (team lists). */
+export function cardGrade(input: { kind: string }): string | null {
+  const g = (input as { grade?: unknown }).grade;
+  return typeof g === "string" && g ? g : null;
 }
 
 /**

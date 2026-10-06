@@ -183,3 +183,90 @@ export async function centralGradeDebuts(
     isPrivate: names.get(d.participantId)?.isPrivate ?? false,
   }));
 }
+
+/**
+ * Which of `participantIds` have already played a senior game for the club
+ * (a roster, batting or bowling line in any senior grade), optionally only
+ * counting matches before `before` (YYYY-MM-DD). Everyone else in the list is
+ * a club debutant — the team list's automatic DEBUT badge. Junior and pathway
+ * grades never count. Merged GUIDs fold onto their keeper, so pass keepers.
+ * Uncached: a team list is checked against the latest results.
+ */
+export async function centralClubSeniorPlayers(
+  clubId: number,
+  participantIds: readonly string[],
+  opts: { before?: string | null; merges?: CentralMerges | null } = {},
+): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (participantIds.length === 0) return out;
+  // Every GUID that folds onto a requested keeper counts for that keeper.
+  const ids = new Set(participantIds);
+  for (const [from, to] of opts.merges ?? []) {
+    if (ids.has(to)) ids.add(from);
+  }
+  const wanted = [...ids];
+  const [batting, bowling, rosters] = await Promise.all([
+    centralDb
+      .select({
+        participantId: centralMatchBattingTable.participantId,
+        matchId: centralMatchBattingTable.matchId,
+      })
+      .from(centralMatchBattingTable)
+      .where(
+        and(
+          eq(centralMatchBattingTable.clubId, clubId),
+          inList(centralMatchBattingTable.participantId, wanted),
+        ),
+      ),
+    centralDb
+      .select({
+        participantId: centralMatchBowlingTable.participantId,
+        matchId: centralMatchBowlingTable.matchId,
+      })
+      .from(centralMatchBowlingTable)
+      .where(
+        and(
+          eq(centralMatchBowlingTable.clubId, clubId),
+          inList(centralMatchBowlingTable.participantId, wanted),
+        ),
+      ),
+    centralDb
+      .select({
+        participantId: centralMatchRostersTable.participantId,
+        matchId: centralMatchRostersTable.matchId,
+      })
+      .from(centralMatchRostersTable)
+      .where(
+        and(
+          eq(centralMatchRostersTable.clubId, clubId),
+          inList(centralMatchRostersTable.participantId, wanted),
+        ),
+      ),
+  ]);
+  const lines = canonicalizeLines(
+    [...batting, ...bowling, ...rosters].map((l) => ({ ...l, batOrder: null })),
+    opts.merges,
+  );
+  const matchIds = [
+    ...new Set(lines.map((l) => l.matchId).filter((id): id is number => id != null)),
+  ];
+  if (matchIds.length === 0) return out;
+  const matches = await centralDb
+    .select({
+      matchId: centralMatchesTable.matchId,
+      grade: centralMatchesTable.grade,
+      matchDate: centralMatchesTable.matchDate,
+    })
+    .from(centralMatchesTable)
+    .where(inList(centralMatchesTable.matchId, matchIds));
+  const senior = new Set(
+    matches
+      .filter((m) => appGradeFromCentral(m.grade) !== null)
+      .filter((m) => !opts.before || !m.matchDate || m.matchDate < opts.before)
+      .map((m) => m.matchId),
+  );
+  for (const l of lines) {
+    if (l.participantId && l.matchId != null && senior.has(l.matchId)) out.add(l.participantId);
+  }
+  return out;
+}

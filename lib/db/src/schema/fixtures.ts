@@ -65,8 +65,16 @@ export type TeamListPlayer = {
   order: number;
   playerId?: number;
   displayName: string;
-  role?: "C" | "WK" | "C/WK";
+  role?: TeamListRole;
+  /**
+   * Debut badge override: true / false set by an admin; absent = automatic
+   * (no previous senior game for the club, from the match records).
+   */
+  debut?: boolean;
 };
+
+/** Captain, vice-captain and wicket-keeper roles on a team list. */
+export type TeamListRole = "C" | "VC" | "WK" | "C/WK" | "VC/WK";
 
 // The published XI for a fixture — exactly one per fixture (unique on
 // tenantId+fixtureId; the PUT route upserts). Deleting a fixture cascades.
@@ -80,9 +88,11 @@ export const teamListsTable = pgTable(
       .references(() => fixturesTable.id, { onDelete: "cascade" }),
     players: jsonb("players").$type<TeamListPlayer[]>().notNull().default([]),
     isPublished: boolean("is_published").notNull().default(false),
-    // Who wrote the XI: "admin" (the fixtures admin) or "playhq" (the team the
-    // club selected in PlayHQ, copied by the scheduled sync). The sync only
-    // ever replaces its own lists — an admin's list is never overwritten.
+    // Who wrote the XI: "admin" (the fixtures admin), "playhq" (the team the
+    // club selected in PlayHQ, copied by the scheduled sync) or "selection"
+    // (a side finalised in the Selection Hub — see `selections` in
+    // availability.ts). The sync only ever replaces its own lists — an admin's
+    // or a finalised selection's list is never overwritten before the match.
     source: text("source").notNull().default("admin"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

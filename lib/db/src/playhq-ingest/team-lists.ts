@@ -9,10 +9,24 @@
  * the tenant's register through `player_id_map`, and upserts the XI as published.
  * A list an admin entered or edited (source = "admin") is never touched; an unchanged
  * selection writes nothing.
+ *
+ * A side finalised in the Selection Hub (source = "selection") stands until the match is
+ * played. After that PlayHQ's record of who played replaces it (Ash 6 Oct 2026): a
+ * second pass takes the tenant's fixtures that started in the last `PLAYED_LOOKBACK_DAYS`
+ * with a selection list and a COMPLETED PlayHQ match, and copies the club's side from the
+ * match's scorecard (`playhq.scorecards.raw` `teams[].players`, the lineup's shape, fetched
+ * after play) or, when no scorecard side is loaded, the last lineup named before it.
+ * `match_lineups` alone would not do: the harness fetches lineups for upcoming matches only.
+ * Abandoned, cancelled and forfeited matches keep the selection, as does a match PlayHQ
+ * holds no side for.
  */
 import { and, eq, gt, inArray, isNotNull, lte, sql } from "drizzle-orm";
 import type { Queryable } from "./load";
 import type { TeamListPlayer } from "../schema/fixtures";
+// Types only: the module itself is imported lazily inside `projectTeamLists`.
+import type * as DbModuleNs from "../index";
+
+type DbModule = typeof DbModuleNs;
 
 // ---------------------------------------------------------------------------
 // Pure mapping (unit-tested)
@@ -107,6 +121,9 @@ export function sameTeamList(a: readonly TeamListPlayer[], b: readonly TeamListP
 /** How far ahead a selection is copied (matches the Team List card's own lead time). */
 export const TEAM_LIST_LOOKAHEAD_DAYS = 8;
 
+/** How far back a played fixture's Selection Hub list is replaced by PlayHQ's side. */
+export const PLAYED_LOOKBACK_DAYS = 7;
+
 export interface TeamListProjectionOpts {
   /** Tenants linked to these PlayHQ organisations (compared case-insensitively). */
   orgIds?: string[];
@@ -123,8 +140,138 @@ export interface TeamListProjectionSummary {
   /** Fixtures with a PlayHQ selection for the club's side. */
   selections: number;
   written: number;
-  /** Selections not copied because an admin owns that fixture's list. */
+  /** Selections not copied because an admin or the Selection Hub owns that fixture's list. */
   keptAdmin: number;
+  /** Played fixtures whose Selection Hub list was replaced by PlayHQ's side. */
+  replacedSelection: number;
+}
+
+type Db = DbModule["db"];
+type Tables = Pick<DbModule, "fixturesTable" | "teamListsTable" | "playerIdMapTable">;
+
+/** The tenant's register id for each PlayHQ participant on these sides (lower-cased GUID). */
+async function registerIds(
+  db: Db,
+  { playerIdMapTable }: Tables,
+  tenantId: number,
+  sides: Iterable<LineupEntry[]>,
+): Promise<Map<string, number>> {
+  const guids = [
+    ...new Set(
+      [...sides]
+        .flat()
+        .map((e) => e.participantId?.toLowerCase())
+        .filter((g): g is string => !!g),
+    ),
+  ];
+  const playerIdOf = new Map<string, number>();
+  if (guids.length) {
+    const mapped = await db
+      .select({ guid: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
+      .from(playerIdMapTable)
+      .where(
+        and(
+          eq(playerIdMapTable.tenantId, tenantId),
+          inArray(sql<string>`lower(${playerIdMapTable.participantId})`, guids),
+        ),
+      );
+    for (const m of mapped) playerIdOf.set(m.guid.toLowerCase(), m.playerId);
+  }
+  return playerIdOf;
+}
+
+/**
+ * After the match: replace each recent, played fixture's Selection Hub list with the
+ * side PlayHQ recorded for the club. Returns how many lists were replaced.
+ */
+async function replacePlayedSelections(
+  db: Db,
+  tables: Tables,
+  central: Queryable,
+  tenantId: number,
+  orgId: string,
+  now: Date,
+): Promise<number> {
+  const { fixturesTable, teamListsTable } = tables;
+  const played = await db
+    .select({ id: fixturesTable.id, matchId: fixturesTable.playhqMatchId })
+    .from(fixturesTable)
+    .innerJoin(
+      teamListsTable,
+      and(
+        eq(teamListsTable.tenantId, fixturesTable.tenantId),
+        eq(teamListsTable.fixtureId, fixturesTable.id),
+      ),
+    )
+    .where(
+      and(
+        eq(fixturesTable.tenantId, tenantId),
+        isNotNull(fixturesTable.playhqMatchId),
+        eq(teamListsTable.source, "selection"),
+        lte(fixturesTable.startAt, now),
+        gt(
+          fixturesTable.startAt,
+          new Date(now.getTime() - PLAYED_LOOKBACK_DAYS * 24 * 3600 * 1000),
+        ),
+      ),
+    );
+  if (played.length === 0) return 0;
+
+  // The club's side of each COMPLETED match (statusId 3, as the harness reads it): the
+  // scorecard's, else the last lineup named before the match.
+  const sides = await central.query<{ match_id: string; players: unknown }>(
+    `select m.id::text as match_id,
+            coalesce(nullif(sc.players, '[]'::jsonb), l.players) as players
+       from playhq.matches m
+       cross join lateral (values (m.home_team_id, m.home_org_id),
+                                  (m.away_team_id, m.away_org_id)) side(team_id, org_id)
+       left join playhq.scorecards s on s.match_id = m.id
+       left join lateral (
+         select t->'players' as players
+           from jsonb_array_elements(
+                  case when jsonb_typeof(s.raw->'teams') = 'array'
+                       then s.raw->'teams' else '[]'::jsonb end) t
+          where lower(t->>'id') = side.team_id::text
+          limit 1) sc on true
+       left join playhq.match_lineups l on l.match_id = m.id and l.team_id = side.team_id
+      where m.id = any($1::uuid[])
+        and side.org_id = $2
+        and (upper(coalesce(m.status, '')) = 'COMPLETED' or m.status_id = 3
+          or upper(coalesce(s.status, '')) = 'COMPLETED')`,
+    [played.map((f) => f.matchId), orgId],
+  );
+  const byMatch = new Map<string, LineupEntry[]>();
+  for (const r of sides.rows) {
+    const entries = lineupEntries(r.players);
+    if (entries.length) byMatch.set(r.match_id.toLowerCase(), entries);
+  }
+  if (byMatch.size === 0) return 0;
+  const playerIdOf = await registerIds(db, tables, tenantId, byMatch.values());
+
+  let replaced = 0;
+  for (const f of played) {
+    const entries = f.matchId ? byMatch.get(f.matchId.toLowerCase()) : undefined;
+    if (!entries?.length) continue;
+    const players = lineupToTeamList(entries, playerIdOf);
+    if (players.length === 0) continue;
+    const rows = await db
+      .update(teamListsTable)
+      .set({ players, isPublished: true, source: "playhq" })
+      .where(
+        and(
+          eq(teamListsTable.tenantId, tenantId),
+          eq(teamListsTable.fixtureId, f.id),
+          // Race guard: never over an admin's list saved since the read above, and over a
+          // selection only once its fixture has started.
+          sql`(${teamListsTable.source} = 'playhq' or (${teamListsTable.source} = 'selection'
+            and exists (select 1 from ${fixturesTable} where ${fixturesTable.id} = ${teamListsTable.fixtureId}
+              and ${fixturesTable.startAt} <= ${now})))`,
+        ),
+      )
+      .returning({ id: teamListsTable.id });
+    replaced += rows.length;
+  }
+  return replaced;
 }
 
 export async function projectTeamLists(
@@ -134,6 +281,7 @@ export async function projectTeamLists(
   const now = opts.now ?? new Date();
   const { db, tenantsTable, fixturesTable, teamListsTable, playerIdMapTable } =
     await import("../index");
+  const tables: Tables = { fixturesTable, teamListsTable, playerIdMapTable };
 
   const conds = [isNotNull(tenantsTable.playhqOrgId)];
   if (opts.tenantId) conds.push(eq(tenantsTable.id, opts.tenantId));
@@ -151,6 +299,19 @@ export async function projectTeamLists(
   const summaries: TeamListProjectionSummary[] = [];
   for (const t of tenants) {
     const orgId = (t.orgId ?? "").toLowerCase();
+    // Best-effort: a failure here (a bad jsonb row, a non-UUID match id) is
+    // logged and must not stop this tenant's future-fixture projection.
+    let replacedSelection = 0;
+    try {
+      replacedSelection = await replacePlayedSelections(db, tables, opts.central, t.id, orgId, now);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      log(`tenant ${t.id}: played-selection replacement failed, skipped: ${message}`);
+    }
+    if (replacedSelection)
+      log(
+        `tenant ${t.id}: ${replacedSelection} played fixture(s): Selection Hub list replaced by PlayHQ's side`,
+      );
     const fixtures = await db
       .select({ id: fixturesTable.id, matchId: fixturesTable.playhqMatchId })
       .from(fixturesTable)
@@ -170,6 +331,7 @@ export async function projectTeamLists(
       selections: 0,
       written: 0,
       keptAdmin: 0,
+      replacedSelection,
     };
     summaries.push(summary);
     if (fixtures.length === 0) continue;
@@ -191,27 +353,7 @@ export async function projectTeamLists(
     }
     if (byMatch.size === 0) continue;
 
-    const guids = [
-      ...new Set(
-        [...byMatch.values()]
-          .flat()
-          .map((e) => e.participantId?.toLowerCase())
-          .filter((g): g is string => !!g),
-      ),
-    ];
-    const playerIdOf = new Map<string, number>();
-    if (guids.length) {
-      const mapped = await db
-        .select({ guid: playerIdMapTable.participantId, playerId: playerIdMapTable.playerId })
-        .from(playerIdMapTable)
-        .where(
-          and(
-            eq(playerIdMapTable.tenantId, t.id),
-            inArray(sql<string>`lower(${playerIdMapTable.participantId})`, guids),
-          ),
-        );
-      for (const m of mapped) playerIdOf.set(m.guid.toLowerCase(), m.playerId);
-    }
+    const playerIdOf = await registerIds(db, tables, t.id, byMatch.values());
 
     const existing = await db
       .select()

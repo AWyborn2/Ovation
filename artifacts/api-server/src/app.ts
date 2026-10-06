@@ -41,6 +41,16 @@ function buildAllowedOrigins(): Set<string> {
 
 const allowedOrigins = buildAllowedOrigins();
 
+/**
+ * The request path as logged: the query string dropped, and the personal-link
+ * token after `/availability/respond/` replaced with `[token]` — the token is
+ * the player page's only credential, so it never reaches a log line.
+ * Case-insensitive, like Express routing.
+ */
+export function logUrl(url: string | undefined): string | undefined {
+  return url?.split("?")[0].replace(/(\/availability\/respond\/)[^/]+/gi, "$1[token]");
+}
+
 app.use(
   pinoHttp({
     logger,
@@ -49,7 +59,7 @@ app.use(
         return {
           id: req.id,
           method: req.method,
-          url: req.url?.split("?")[0],
+          url: logUrl(req.url),
         };
       },
       res(res) {

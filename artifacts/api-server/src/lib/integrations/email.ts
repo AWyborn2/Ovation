@@ -2,15 +2,18 @@ import { env } from "../../config";
 
 /**
  * Transactional email through Resend (Social Studio KTD5/KTD14). Off when
- * RESEND_API_KEY or EMAIL_FROM is missing. Best-effort: one retry, then the
- * failure is reported to the caller, which logs it — email never blocks the
- * state change it describes.
+ * RESEND_API_KEY or EMAIL_FROM is missing. Best-effort: each request bounded
+ * by {@link EMAIL_TIMEOUT_MS}, one retry, then the failure is reported to the
+ * caller, which logs it — email never blocks the state change it describes.
  */
 export type EmailMessage = { to: string; subject: string; text: string };
 export type EmailResult =
   { sent: true } | { sent: false; reason: "disabled" | "failed"; error?: string };
 
 export type EmailTransport = (message: EmailMessage) => Promise<void>;
+
+/** How long one Resend request may take before it is abandoned. */
+export const EMAIL_TIMEOUT_MS = 10_000;
 
 const resendTransport: EmailTransport = async (message) => {
   const res = await fetch("https://api.resend.com/emails", {
@@ -25,6 +28,7 @@ const resendTransport: EmailTransport = async (message) => {
       subject: message.subject,
       text: message.text,
     }),
+    signal: AbortSignal.timeout(EMAIL_TIMEOUT_MS),
   });
   if (!res.ok) throw new Error(`Resend responded ${res.status}`);
 };

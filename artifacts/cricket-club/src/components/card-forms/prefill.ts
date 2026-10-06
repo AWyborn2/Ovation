@@ -29,7 +29,7 @@ import type {
   TeamList as TeamListDto,
   TeamListPlayer as TeamListPlayerDto,
 } from "@workspace/api-client-react";
-import { gradeTile, isJuniorGradeLabel } from "@workspace/scorecard";
+import { gradeTile, groupOfGrade, isJuniorGradeLabel } from "@workspace/scorecard";
 import type { CardFormState } from "./logic";
 
 // --------------------------------------------------------------------------
@@ -175,6 +175,8 @@ export interface FixtureRound {
   /** The weekend's Saturday (local date, YYYY-MM-DD). */
   weekend: string;
   junior: boolean;
+  /** Team lists only: whose teams these are (men's and women's post apart). */
+  audience?: RoundAudience;
   /** Earliest start first. */
   fixtures: Fixture[];
 }
@@ -194,7 +196,11 @@ function weekendOf(d: Date): string {
  * never share a group, so a game-day card never blends them. Rounds come
  * back in date order.
  */
-export function groupFixturesByRound(fixtures: readonly Fixture[]): FixtureRound[] {
+export function groupFixturesByRound(
+  fixtures: readonly Fixture[],
+  /** Team lists: men's and women's teams apart too (each posts as its own set). */
+  opts: { byAudience?: boolean } = {},
+): FixtureRound[] {
   const groups = new Map<string, FixtureRound>();
   for (const f of fixtures) {
     const d = parseDate(f.startAt);
@@ -202,10 +208,12 @@ export function groupFixturesByRound(fixtures: readonly Fixture[]): FixtureRound
     const weekend = weekendOf(d);
     const roundLabel = roundLabelOf(f);
     const junior = isJuniorGradeLabel(f.grade);
-    const key = `${weekend}|${roundLabel}|${junior ? "junior" : "senior"}`;
+    const audience = opts.byAudience ? audienceOfGrade(f.grade) : undefined;
+    const section = junior ? "junior" : audience === "women" ? "women" : "senior";
+    const key = `${weekend}|${roundLabel}|${section}`;
     let g = groups.get(key);
     if (!g) {
-      g = { key, roundLabel, weekend, junior, fixtures: [] };
+      g = { key, roundLabel, weekend, junior, ...(audience ? { audience } : {}), fixtures: [] };
       groups.set(key, g);
     }
     g.fixtures.push(f);
@@ -213,11 +221,24 @@ export function groupFixturesByRound(fixtures: readonly Fixture[]): FixtureRound
   const start = (f: Fixture) => parseDate(f.startAt)?.getTime() ?? 0;
   const out = [...groups.values()];
   for (const g of out) g.fixtures.sort((a, b) => start(a) - start(b) || a.id - b.id);
-  return out.sort(
-    (a, b) =>
-      start(a.fixtures[0]) - start(b.fixtures[0]) || (a.junior ? 1 : 0) - (b.junior ? 1 : 0),
-  );
+  const rank = (g: FixtureRound) => (g.junior ? 2 : g.audience === "women" ? 1 : 0);
+  return out.sort((a, b) => start(a.fixtures[0]) - start(b.fixtures[0]) || rank(a) - rank(b));
 }
+
+export type RoundAudience = "men" | "women" | "junior";
+
+/** Whose team a grade is: women's and girls' grades apart, everything else senior is men's. */
+export function audienceOfGrade(grade: string): RoundAudience {
+  const g = groupOfGrade(grade);
+  return g === "junior" ? "junior" : g === "women" ? "women" : "men";
+}
+
+/** The cover's word for an audience ("MEN'S TEAMS NAMED"). */
+export const AUDIENCE_LABEL: Record<RoundAudience, string> = {
+  men: "MEN'S",
+  women: "WOMEN'S",
+  junior: "JUNIOR",
+};
 
 export { gradeTile };
 
@@ -253,7 +274,15 @@ export function fixtureRoundLabel(round: FixtureRound): string {
   return [
     round.roundLabel || "Round",
     formatFixtureDate(round.fixtures[0]?.startAt),
-    `${n} grade${n === 1 ? "" : "s"}${round.junior ? " (juniors)" : ""}`,
+    `${n} grade${n === 1 ? "" : "s"}${
+      round.junior
+        ? " (juniors)"
+        : round.audience === "women"
+          ? " (women's)"
+          : round.audience === "men"
+            ? " (men's)"
+            : ""
+    }`,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -269,6 +298,13 @@ export function fixtureToTeamListMeta(fixture: Fixture): CardFormState {
     gradeRound: [fixture.grade.toUpperCase(), round].filter(Boolean).join(" — "),
     competitionLine: fixture.grade,
     venueDateTime: [venue, date, time].filter(Boolean).join(" • "),
+    // The team's grade (its own sponsor) and the match in parts (Starting XI).
+    grade: fixture.grade,
+    roundLabel: round,
+    opponent: fixture.opponentName,
+    venue,
+    date,
+    startTime: time,
   };
 }
 
@@ -276,16 +312,25 @@ export function fixtureToTeamListMeta(fixture: Fixture): CardFormState {
  * Map a stored team list's players into the card's row shape, excluding fill-in
  * players (`playerId >= 90000`) which never appear on published cards.
  */
-export function teamListPlayersToState(players: TeamListPlayerDto[]): {
+export function teamListPlayersToState(
+  players: TeamListPlayerDto[],
+  /** Players the match records say are debuting; an admin's `debut` wins. */
+  autoDebutIds: readonly number[] = [],
+): {
   players: TeamListPlayer[];
 } {
+  const auto = new Set(autoDebutIds);
   const rows: TeamListPlayer[] = players
     .filter((p) => p.playerId == null || p.playerId < 90000)
-    .map((p) => ({
-      order: p.order,
-      surname: surnameOf(p.displayName),
-      role: p.role,
-    }));
+    .map((p) => {
+      const debut = p.debut ?? (p.playerId != null && auto.has(p.playerId));
+      return {
+        order: p.order,
+        surname: surnameOf(p.displayName),
+        role: p.role,
+        ...(debut ? { debut: true } : {}),
+      };
+    });
   return { players: rows };
 }
 
@@ -299,19 +344,20 @@ export function teamListPlayersToState(players: TeamListPlayerDto[]): {
 export function fixtureRoundTeamsToState(
   round: FixtureRound,
   lists: ReadonlyMap<number, TeamListDto | null | undefined>,
-): { roundLabel: string; date: string; teams: RoundTeam[] } {
+): { roundLabel: string; date: string; teams: RoundTeam[]; audience?: string } {
   const teams: RoundTeam[] = [];
   for (const f of round.fixtures) {
     const list = lists.get(f.id);
     if (!list || !list.isPublished) continue;
-    const { players } = teamListPlayersToState(list.players);
+    const { players } = teamListPlayersToState(list.players, list.debutPlayerIds ?? []);
     if (players.length === 0) continue;
     const meta = fixtureToTeamListMeta(f) as Omit<RoundTeam, "grade" | "players">;
-    teams.push({ grade: f.grade, ...meta, players });
+    teams.push({ ...meta, grade: f.grade, players });
   }
   return {
     roundLabel: round.roundLabel,
     date: formatRoundDate(round.fixtures[0]?.startAt),
+    ...(round.audience ? { audience: AUDIENCE_LABEL[round.audience] } : {}),
     teams,
   };
 }

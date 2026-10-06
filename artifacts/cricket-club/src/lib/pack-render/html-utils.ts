@@ -432,6 +432,11 @@ export function cleanupEmptyRoles(html: string): string {
   return html.replace(/\s*<span[^>]*>\(\)<\/span>/g, "");
 }
 
+/** Drop a badge chip (`data-badge`) whose value came out empty (no role, not debuting). */
+export function cleanupEmptyBadges(html: string): string {
+  return html.replace(/<span data-badge="1"[^>]*>\s*<\/span>/g, "");
+}
+
 /**
  * Remove the whole "presented by <sponsor>" line when the presenting sponsor is
  * empty, so no orphan prose ("presented by", "proudly supported by", …) is left

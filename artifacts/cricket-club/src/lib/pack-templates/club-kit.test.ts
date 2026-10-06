@@ -179,6 +179,32 @@ describe("Club Kit designs", () => {
     }
   });
 
+  it("the Starting XI is picked by name, badges only where they apply, one sponsor logo", () => {
+    const base = sampleCardInput("teamList") as Extract<ShareCardInput, { kind: "teamList" }>;
+    expect(resolveTemplate(base, ID)?.designKey).toBe("team-list");
+    const input = { ...base, design: "starting-xi" as const };
+    expect(resolveTemplate(input, ID)?.designKey).toBe("starting-xi");
+    const data = buildPackData({
+      brand: HALLS,
+      sponsors: [
+        { name: "One", logoUrl: "https://cdn.example/one.png" },
+        { name: "Two", logoUrl: "https://cdn.example/two.png" },
+      ],
+    });
+    const tokens = resolveCardTokens({ theme: null, junior: false, data, packId: ID });
+    const html = renderPackCard(input, "portrait", true, tokens, false, data, ID);
+    expect(html).toContain("STARTING");
+    expect(html).toContain("vs Sample Rivals");
+    // C and WK on their rows, DEBUT on Talbot's, no empty chips elsewhere.
+    expect(html.match(/data-badge="1"/g)).toHaveLength(3);
+    expect(html).toContain(">DEBUT</span>");
+    // A team list carries one sponsor: the team's own (or the presenting one).
+    expect(html).toContain("one.png");
+    expect(html).not.toContain("two.png");
+    // A pack without a Starting XI keeps its usual team list.
+    expect(resolveTemplate(input, "broadcast-dark-v1")?.designKey).toBe("team-list");
+  });
+
   it("serves Runs, Wickets, Catches and Dismissals leaderboards", () => {
     const base = sampleCardInput("clubLeaderboard") as Extract<
       ShareCardInput,

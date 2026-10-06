@@ -27,6 +27,10 @@ export const sponsorsTable = pgTable(
     // Which social card types this sponsor's logo may appear on. Empty = all cards.
     // Values match ShareCardInput["kind"]: milestone | player | record | gradeLeader | premiership | debut | century | fiveFor.
     cardKinds: text("card_kinds").array().notNull().default([]),
+    // Sponsor per team: the grades whose team-list cards carry this sponsor as
+    // their one logo (fixture grade labels, e.g. "A Grade"). Empty = no team of
+    // its own; it shows wherever its card kinds allow, as before.
+    grades: text("grades").array().notNull().default([]),
     // The tenant's designated PRESENTING (primary) sponsor. At most one row per
     // tenant may be true (enforced by the partial unique index below + the route
     // transaction that unsets any prior presenting sponsor). Its NAME fills the

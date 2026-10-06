@@ -33,6 +33,7 @@ import {
   type CardAdjustments,
 } from "./adjustments";
 import {
+  cleanupEmptyBadges,
   cleanupEmptyRoles,
   dropEmptyCapNumber,
   dropEmptyImageBlocks,
@@ -280,6 +281,7 @@ export function renderPackCard(
   // Long club and team names shrink to fit, then wrap, instead of "…".
   html = fitNames(html);
   html = cleanupEmptyRoles(html);
+  html = cleanupEmptyBadges(html);
 
   const layers = renderFreeLayers(adj, size, opts, withMonogram(values), {
     tokens,

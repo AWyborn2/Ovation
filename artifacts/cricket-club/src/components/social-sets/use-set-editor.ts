@@ -33,6 +33,7 @@ import {
   buildPackData,
   tenantHashtag,
   kindSponsors,
+  cardGrade,
   presentingSponsorName,
 } from "@/lib/pack-card-data";
 import { slideRendersViaPack } from "@/lib/carousel-slide-render";
@@ -127,7 +128,7 @@ export function useSetEditor(id: number) {
 
   // Active sponsors filtered to the slide's kind (same predicate the modal uses).
   const slideSponsors = (slide: WorkingSlide): { name: string; logoUrl: string }[] =>
-    kindSponsors(bundle, slide.input.kind, sponsorsOn);
+    kindSponsors(bundle, slide.input.kind, sponsorsOn, cardGrade(slide.input));
 
   // The tenant's designated presenting (primary) sponsor NAME → the pack cards'
   // "presented by <sponsor>" line. NOT kind-filtered (headline sponsor shown on
