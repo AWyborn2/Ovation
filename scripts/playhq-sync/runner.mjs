@@ -5,6 +5,8 @@
 //   2. for each: open play.cricket.com.au in headless Chromium, inject the harness verbatim,
 //      __ov.start(plan), poll until done (or the per-plan timeout), take __ov.dump()
 //   3. POST {OVATION_API_URL}/internal/playhq/ingest (gzip)  → loads, projects, sweeps
+//   4. POST {OVATION_API_URL}/internal/playhq/sweep          → scheduled drafting sweep, every club
+//   5. POST {OVATION_API_URL}/internal/playhq/watchdog       → sync health, alerts
 //
 // The runner is deliberately dumb: the server decides what is due, and a plan is marked done
 // only by its ingest landing, so a crashed or skipped hour heals on the next one. It holds no
@@ -147,7 +149,7 @@ export async function run({
   log(
     `${due.length} plan(s) due${plans.length !== due.length ? ` (${plans.length} before filters)` : ""}`,
   );
-  const result = { due: due.length, uploaded: [], failures: [], watchdog: null };
+  const result = { due: due.length, uploaded: [], failures: [], sweep: null, watchdog: null };
   if (due.length > 0)
     await collectAll(due, result, {
       env,
@@ -159,6 +161,25 @@ export async function run({
       sleep,
       log,
     });
+
+  // The scheduled drafting sweep for every club, after the ingests so this hour's results
+  // are already in central: result, achievement and round-up cards, debut caps, match-day
+  // timing and auto-post promotion. A failure fails the job, like the watchdog's.
+  try {
+    const { results } = await api(fetchImpl, base, secret, "/internal/playhq/sweep", {
+      method: "POST",
+    });
+    const sum = (k) => results.reduce((n, r) => n + (r[k] ?? 0), 0);
+    const failed = results.filter((r) => !r.ok).map((r) => r.tenantId);
+    result.sweep = { clubs: results.length, failed };
+    log(
+      `sweep: ${results.length} club(s), ${sum("matchSummaries")} result card(s), ${sum("achievements")} achievement card(s), ${sum("promoted")} promoted${failed.length ? `, FAILED for tenant(s) ${failed.join(", ")}` : ""}`,
+    );
+    if (failed.length) result.failures.push(`sweep failed for tenant(s) ${failed.join(", ")}`);
+  } catch (err) {
+    log(`sweep: FAILED ${err?.message ?? err}`);
+    result.failures.push(`sweep: ${err?.message ?? err}`);
+  }
 
   // Health check after every run, including runs with nothing due: the server opens or
   // resolves incidents (alert emails, club notices). A watchdog error fails the job too, so

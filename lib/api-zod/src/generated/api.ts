@@ -7109,6 +7109,25 @@ export const RunPlayhqSyncWatchdogResponse = zod.object({
 
 
 /**
+ * Machine-to-machine only (same `x-sync-secret` as the other /internal/playhq routes; 401 otherwise). The same sweep as /internal/draft-sweep with scope `scheduled`, over every active tenant: result, achievement and round-up cards from central matches, debut caps, match-day timing and auto-post promotion. The hourly runner calls it after its ingests, so the matches they copied into central are drafted in the same hour. Keyed drafting makes a repeat harmless.
+ * @summary Run the scheduled drafting sweep for every active club (hourly runner)
+ */
+export const RunPlayhqScheduledSweepResponse = zod.object({
+  "results": zod.array(zod.object({
+  "tenantId": zod.number(),
+  "ok": zod.boolean(),
+  "centralMatches": zod.number(),
+  "matchSummaries": zod.number(),
+  "achievements": zod.number().optional().describe('Century \/ five-for \/ debut \/ milestone cards drafted from central matches.'),
+  "matchDay": zod.number(),
+  "teamLists": zod.number(),
+  "roundSets": zod.number().optional().describe('Round sets (game day, team lists, weekend wrap) drafted on the club\'s schedule.'),
+  "promoted": zod.number().optional().describe('Drafts moved to ready because their auto-post deadline passed.')
+}))
+})
+
+
+/**
  * @summary PlayHQ scheduled-sync health for every synced organisation
  */
 export const GetPlatformPlayhqSyncResponse = zod.object({
