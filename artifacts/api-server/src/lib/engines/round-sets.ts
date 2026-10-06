@@ -8,6 +8,7 @@ import {
   type SocialSettingsRow,
 } from "@workspace/db";
 import { gradeTile, isJuniorGradeLabel } from "@workspace/scorecard";
+import { inClubGradeOrder } from "../club-grade-order";
 import { familyAllows, resolveFamilyConfig } from "../social-families";
 import { upsertDraftByKey } from "../draft-upsert";
 import { loadClubIdentity } from "../club-overlay";
@@ -276,7 +277,7 @@ export async function generateWeekendWrapDrafts(
       kind: "weekendWrap",
       roundLabel: wrap.roundLabel.toUpperCase(),
       dateRange: wrap.dateRange,
-      matches: wrap.matches.map((m) => ({
+      matches: (await inClubGradeOrder(tenantId, wrap.matches)).map((m) => ({
         gradeLabel: m.gradeLabel,
         resultLine: m.resultLine,
         performers: m.performers,
