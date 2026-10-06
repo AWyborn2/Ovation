@@ -226,4 +226,22 @@ describe("buildDraftSlots", () => {
       gap: { name: "Ava Hill", reason: "not_on_register" },
     });
   });
+
+  it("leaves a member already placed in another side of the round as an open slot", () => {
+    const placed = new Set([1, 50]);
+    const draft = buildDraftSlots({
+      lastList: LAST,
+      members: MEMBERS,
+      responses: answers(allYes()),
+      fixtureDate: DATE,
+      placed,
+    });
+    expect(draft.slots[0]).toEqual({
+      memberId: null,
+      gap: { name: LAST[0].displayName, reason: "picked_elsewhere" },
+    });
+    expect(draft.slots[1]).toEqual({ memberId: 2 });
+    // The shared set now holds this side's members too, for the next fixture.
+    expect([...placed].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 50]);
+  });
 });

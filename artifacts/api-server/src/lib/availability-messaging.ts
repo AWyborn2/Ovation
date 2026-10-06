@@ -20,31 +20,32 @@ import {
   isGsm7,
   gsm7Length,
 } from "./integrations/sms";
-import { getTenantBrand } from "./tenant-brand";
+import { getTenantBrand, type TenantBrand } from "./tenant-brand";
 import {
   availabilityLink,
   defaultTokenExpiry,
   loadTenantForLinks,
   mintRequestToken,
 } from "./availability-tokens";
+import { isUnder18OnDate, memberFirstName, perthDate } from "./availability-grades";
+import { CLUB_TIME_ZONE } from "./round-schedules";
 import { logger as defaultLogger } from "./logger";
 
 /**
- * Member and staff messaging for the availability round and the Selection Hub
- * (plan 2026-10-06-002 U2).
+ * Member and staff messaging for the availability round and the Selection Hub.
  *
- * A member is reached through the right contacts (R5): the account holder for
+ * A member is reached through the right contacts: the account holder for
  * adults, Parent/Guardian 1 and 2 for members under 18 on the day of sending.
- * Each recipient gets an SMS (when the club has SMS on, R14, and that contact
- * hasn't replied STOP, R13) plus an email. Every message that carries a link
- * mints a fresh token for its recipient (KTD5) and records the last delivery
+ * Each recipient gets an SMS (when the club has SMS on and that contact
+ * hasn't replied STOP) plus an email. Every message that carries a link
+ * mints a fresh token for its recipient and records the last delivery
  * result per channel on the recipient's `availability_requests` row, which the
- * scheduler reads to re-attempt only failed recipients (KTD4).
+ * scheduler reads to re-attempt only failed recipients.
  *
  * Best-effort throughout: transport failures are reported in the returned
  * results and logged, never thrown, so messaging never blocks the state change
  * that triggered it. Logs carry tenant id, member id, recipient slot, channel
- * and result kind only — never a number, an address or a token (KTD3).
+ * and result kind only — never a number, an address or a token.
  */
 
 type Logger = { warn: (obj: unknown, msg?: string) => void };
@@ -108,29 +109,12 @@ const LINKED_KINDS: ReadonlySet<MessageKind> = new Set([
 const STOP_LINE = "Reply STOP to opt out.";
 const SMS_LIMIT = 160;
 
-const PERTH = "Australia/Perth";
-
-/** Today's date in Perth as YYYY-MM-DD. */
-function perthDate(now: Date): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: PERTH,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now);
-}
-
 /**
  * True when a member born on `dateOfBirth` (YYYY-MM-DD) is under 18 on Perth's
  * date at `now`. A missing or malformed date of birth counts as an adult.
  */
 export function isUnder18(dateOfBirth: string | null | undefined, now: Date): boolean {
-  const dob = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateOfBirth ?? "");
-  if (!dob) return false;
-  const [y, m, d] = perthDate(now).split("-").map(Number);
-  let age = y - Number(dob[1]);
-  if (m < Number(dob[2]) || (m === Number(dob[2]) && d < Number(dob[3]))) age--;
-  return age < 18;
+  return isUnder18OnDate(dateOfBirth, perthDate(now)) ?? false;
 }
 
 function slotContact(member: SquadMemberRow, slot: RecipientSlot): Recipient {
@@ -162,7 +146,7 @@ function slotContact(member: SquadMemberRow, slot: RecipientSlot): Recipient {
   }
 }
 
-/** The slots a member should be reached through at `now` (R5), contacts or not. */
+/** The slots a member should be reached through at `now`, contacts or not. */
 export function intendedSlotsFor(member: SquadMemberRow, now: Date): RecipientSlot[] {
   return isUnder18(member.dateOfBirth, now) ? ["guardian1", "guardian2"] : ["account"];
 }
@@ -170,7 +154,7 @@ export function intendedSlotsFor(member: SquadMemberRow, now: Date): RecipientSl
 const hasValue = (v: string | null | undefined) => !!v && v.trim() !== "";
 
 /**
- * Who to message for a member (R5): the account holder for adults, both
+ * Who to message for a member: the account holder for adults, both
  * guardians for under-18s. Slots with neither a mobile nor an email are left
  * out (see {@link intendedSlotsFor} to count them).
  */
@@ -189,7 +173,7 @@ const OPT_OUT_COLUMN = {
 /** "Sat 11 Oct 1:30pm" in Perth time, GSM-safe (no narrow no-break spaces). */
 export function formatMatchTime(startAt: Date): string {
   const parts = new Intl.DateTimeFormat("en-AU", {
-    timeZone: PERTH,
+    timeZone: CLUB_TIME_ZONE,
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -338,6 +322,17 @@ export function buildMessage(input: TextInput): {
   }
 }
 
+/**
+ * Lookups shared by one loop's `messageMember` calls (one tenant, one round),
+ * filled by the first call that needs each: the round's weekend, the tenant's
+ * link host and the brand. Start each loop with a fresh `{}`.
+ */
+export type MessageBatch = {
+  round?: { weekendDate: string };
+  tenantForLinks?: Awaited<ReturnType<typeof loadTenantForLinks>>;
+  brand?: TenantBrand;
+};
+
 /** Find or create the recipient's request row for the round (unique per round, member, slot). */
 async function ensureRequest(
   tenantId: number,
@@ -367,7 +362,7 @@ async function ensureRequest(
 }
 
 /**
- * Message one member's recipients (R5, R9, R13, R14). Never throws for a
+ * Message one member's recipients. Never throws for a
  * transport failure; returns one result per recipient plus the slots skipped
  * for having no contact. Throws only on a programming error (a linked kind
  * without a round, or a round of another tenant).
@@ -386,12 +381,15 @@ export async function messageMember(
      */
     slots?: readonly RecipientSlot[];
     now?: Date;
+    /** Shared lookups for a loop over members of one round; see {@link MessageBatch}. */
+    batch?: MessageBatch;
   },
   logger: Logger = defaultLogger,
 ): Promise<MessageMemberResult> {
   const { tenantId, kind } = args;
   const context = args.context ?? {};
   const now = args.now ?? new Date();
+  const batch = args.batch ?? {};
 
   // Re-read the member so opt-out flags set by an earlier message are honoured
   // even when the caller holds a stale row; another tenant's member is a no-op.
@@ -426,24 +424,30 @@ export async function messageMember(
   let tenantForLinks: Awaited<ReturnType<typeof loadTenantForLinks>> = null;
   if (linked) {
     if (context.roundId == null) throw new Error(`${kind} message needs context.roundId`);
-    const [round] = await db
-      .select({ weekendDate: availabilityRoundsTable.weekendDate })
-      .from(availabilityRoundsTable)
-      .where(
-        and(
-          eq(availabilityRoundsTable.id, context.roundId),
-          eq(availabilityRoundsTable.tenantId, tenantId),
-        ),
-      );
-    if (!round) throw new Error("availability round not found for this tenant");
-    expiresAt = context.expiresAt ?? defaultTokenExpiry(round.weekendDate);
-    tenantForLinks = await loadTenantForLinks(tenantId);
+    if (!batch.round) {
+      const [round] = await db
+        .select({ weekendDate: availabilityRoundsTable.weekendDate })
+        .from(availabilityRoundsTable)
+        .where(
+          and(
+            eq(availabilityRoundsTable.id, context.roundId),
+            eq(availabilityRoundsTable.tenantId, tenantId),
+          ),
+        );
+      if (!round) throw new Error("availability round not found for this tenant");
+      batch.round = round;
+    }
+    expiresAt = context.expiresAt ?? defaultTokenExpiry(batch.round.weekendDate);
+    if (batch.tenantForLinks === undefined)
+      batch.tenantForLinks = await loadTenantForLinks(tenantId);
+    tenantForLinks = batch.tenantForLinks;
   }
 
-  const brand = await getTenantBrand(tenantId);
+  batch.brand ??= await getTenantBrand(tenantId);
+  const brand = batch.brand;
   const clubName = brand.name;
   const clubShort = brand.shortName?.trim() || brand.name;
-  const player = member.preferredName?.trim() || member.firstName;
+  const player = memberFirstName(member);
   const sendSmsForClub = args.smsEnabled && smsEnabled();
 
   const results: RecipientResult[] = [];
@@ -555,7 +559,7 @@ export type StaffNoticeKind =
   "selection_drafts_ready" | "selection_slot_reopened" | "selection_contact_changed";
 
 /**
- * Tell the club's captains and admins (R19, R33, KTD5): the in-app
+ * Tell the club's captains and admins: the in-app
  * notification row is authoritative and written first; the email to the club's
  * notification address is a best-effort echo, as in `draft-notifications.ts`.
  */

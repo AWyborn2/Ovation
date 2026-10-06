@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, asc, eq, gte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, isNull, lte, or, sql } from "drizzle-orm";
 import {
   db,
   availabilityAwayTable,
@@ -30,15 +30,14 @@ import {
 } from "../lib/availability-tokens";
 import { messageMember, notifyStaff } from "../lib/availability-messaging";
 import { datesForMember, loadAvailabilitySettings } from "../lib/availability-schedule";
-import { memberDisplayName, perthDate } from "../lib/availability-grades";
-import { withdrawFromSelection } from "../lib/selection-board";
+import { memberDisplayName, memberFirstName, perthDate } from "../lib/availability-grades";
+import { SelectionError, withdrawFromSelection } from "../lib/selection-board";
 import { normaliseAuMobile } from "../lib/integrations/sms";
 import { normaliseEmail, normaliseMobile } from "../lib/squad-import";
 import { getTenantBrand } from "../lib/tenant-brand";
 
 /**
- * The player availability page's API (plan 2026-10-06-002 U5; R6, R10–R12,
- * R15, R31, R33; KTD5, KTD12; F3).
+ * The player availability page's API.
  *
  * Public: the personal link's token is the only credential. It resolves to one
  * request — one recipient slot of one member in one round — on the request's
@@ -50,7 +49,7 @@ import { getTenantBrand } from "../lib/tenant-brand";
  * or a contact value.
  *
  * Answers change freely until the member's side for that date is final; after
- * that only "can't make it" (withdraw) is allowed (R12, R33).
+ * that only "can't make it" (withdraw) is allowed.
  */
 const router: IRouter = Router();
 
@@ -59,6 +58,9 @@ const BASE = "/availability/respond/:token";
 /** Away periods may run at most this long, and a member may hold this many. */
 const MAX_AWAY_DAYS = 120;
 const MAX_AWAY_PERIODS = 20;
+
+/** A member's contact may change from a link once in this long. */
+export const CONTACT_CHANGE_GAP_MS = 12 * 60 * 60 * 1000;
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -134,7 +136,7 @@ async function resolve(req: Request, res: Response): Promise<ResolvedAvailabilit
 
 type MemberSide = { selection: SelectionRow; fixture: FixtureRow; date: string };
 
-/** The round's sides holding this member (at most one per date, KTD8), with their Perth dates. */
+/** The round's sides holding this member (at most one per date), with their Perth dates. */
 async function memberSides(
   tenantId: number,
   roundId: number,
@@ -167,7 +169,7 @@ async function askedDates(found: ResolvedAvailabilityToken, sides: MemberSide[])
   return [...new Set([...dates, ...sides.map((s) => s.date)])].sort();
 }
 
-/** Did the member withdraw from a side of this round (R33)? */
+/** Did the member withdraw from a side of this round? */
 async function hasWithdrawn(tenantId: number, roundId: number, memberId: number) {
   const [row] = await db
     .select({ id: selectionEventsTable.id })
@@ -193,7 +195,7 @@ function roleIn(side: SelectionRow, memberId: number): "C" | "WK" | "C/WK" | nul
   return c && wk ? "C/WK" : c ? "C" : wk ? "WK" : null;
 }
 
-/** The page for a resolved token (R6, R10–R12, R15; KTD5, KTD12). */
+/** The page for a resolved token. */
 async function buildPage(found: ResolvedAvailabilityToken, now: Date = new Date()) {
   const { member, request, round } = found;
   const tenantId = member.tenantId;
@@ -240,7 +242,7 @@ async function buildPage(found: ResolvedAvailabilityToken, now: Date = new Date(
     clubShortName: brand.shortName?.trim() || null,
     logoUrl: brand.logoUrl ?? null,
     primaryColour: brand.primaryColour ?? null,
-    firstName: member.preferredName?.trim() || member.firstName,
+    firstName: memberFirstName(member),
     displayName: memberDisplayName(member),
     recipientSlot: request.recipientSlot,
     self: request.recipientSlot === "account",
@@ -256,7 +258,7 @@ async function buildPage(found: ResolvedAvailabilityToken, now: Date = new Date(
       };
     }),
     away,
-    // This recipient's own contact only, masked (R6, KTD5).
+    // This recipient's own contact only, masked.
     contact: { mobile: maskMobile(member[cols.mobile]), email: maskEmail(member[cols.email]) },
     selection: final
       ? {
@@ -275,7 +277,7 @@ async function buildPage(found: ResolvedAvailabilityToken, now: Date = new Date(
   };
 }
 
-/** Record answers for a member (latest wins, R12; late after cut-off, R15). */
+/** Record answers for a member (latest wins; late after cut-off). */
 async function upsertAnswers(
   found: ResolvedAvailabilityToken,
   answers: { date: string; status: AvailabilityStatus; note?: string | null }[],
@@ -398,7 +400,7 @@ router.post(`${BASE}/away`, availabilityLinkRateLimiter, async (req, res): Promi
     .insert(availabilityAwayTable)
     .values({ tenantId, memberId: member.id, fromDate, toDate });
 
-  // This round's dates the period covers are answered No (R11), except a date
+  // This round's dates the period covers are answered No, except a date
   // the member's side is already final on — that takes "can't make it".
   const sides = await memberSides(tenantId, round.id, member.id);
   const finalDates = new Set(sides.filter((s) => s.selection.state === "final").map((s) => s.date));
@@ -490,11 +492,26 @@ router.patch(`${BASE}/contact`, availabilityLinkRateLimiter, async (req, res): P
 
   const now = new Date();
   const scoped = and(eq(squadMembersTable.id, member.id), eq(squadMembersTable.tenantId, tenantId));
-  // Only this recipient slot's own fields change (R6), and the admins see a flag (KTD5).
-  await db
+  // Only this recipient slot's own fields change, and the admins see a flag. One
+  // change per member every 12 hours (any slot), checked in the update itself so
+  // two changes at once can't both pass.
+  const changed = await db
     .update(squadMembersTable)
     .set({ ...set, contactChangeFlag: true, contactChangedAt: now, updatedAt: now })
-    .where(scoped);
+    .where(
+      and(
+        scoped,
+        or(
+          isNull(squadMembersTable.contactChangedAt),
+          lte(squadMembersTable.contactChangedAt, new Date(now.getTime() - CONTACT_CHANGE_GAP_MS)),
+        ),
+      ),
+    )
+    .returning({ id: squadMembersTable.id });
+  if (changed.length === 0) {
+    res.status(429).json({ error: "too_many_changes" });
+    return;
+  }
 
   // Tell the previous contact. Sent before the opt-out is cleared, so an old
   // number that replied STOP is still respected; a 21610 on it then can't
@@ -518,7 +535,7 @@ router.patch(`${BASE}/contact`, availabilityLinkRateLimiter, async (req, res): P
       .set({ [cols.optOut]: false, updatedAt: now })
       .where(scoped);
   }
-  // Links sent to the old contact stop working; this one keeps working (KTD5).
+  // Links sent to the old contact stop working; this one keeps working.
   const revoked = await revokeOtherTokens({
     tenantId,
     requestId: request.id,
@@ -559,13 +576,23 @@ router.post(`${BASE}/withdraw`, availabilityLinkRateLimiter, async (req, res): P
     return;
   }
   const now = new Date();
-  const out = await withdrawFromSelection(
-    tenantId,
-    member.id,
-    round.id,
-    { kind: "player", id: member.id, name: memberDisplayName(member) },
-    { now, logger: req.log ?? undefined },
-  );
+  let out: Awaited<ReturnType<typeof withdrawFromSelection>>;
+  try {
+    out = await withdrawFromSelection(
+      tenantId,
+      member.id,
+      round.id,
+      { kind: "player", id: member.id, name: memberDisplayName(member) },
+      { now, logger: req.log ?? undefined },
+    );
+  } catch (err) {
+    // The match has started: the side is fixed now.
+    if (err instanceof SelectionError && err.status === 409) {
+      res.status(409).json({ error: "match_started" });
+      return;
+    }
+    throw err;
+  }
   // They can't make it, so the Hub shows them unavailable for those dates.
   await upsertAnswers(
     found,

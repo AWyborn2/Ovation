@@ -43,10 +43,11 @@ import {
 } from "@/components/ui/sheet";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
+import { plural } from "@/lib/plural";
 import { useConfirm } from "@/components/confirm-dialog";
 
 /**
- * Admin → Availability (plan 2026-10-06-002 U10; R1–R4, R6, R8, R14, KTD9, KTD11): the
+ * Admin → Availability: the
  * club's weekly availability schedule, the squad register imported from PlayHQ, and the
  * current round's progress with "Run now" steps. The squad list carries contact
  * *presence* only; contact values are fetched and shown inside the edit drawer alone.
@@ -549,6 +550,12 @@ function ImportSummary({ result }: { result: SquadImportResult }) {
           </div>
         ))}
       </dl>
+      {result.contactsKept > 0 && (
+        <p className="text-sm" data-testid="import-contacts-kept">
+          Kept the contact details {plural(result.contactsKept, "member")} changed from their own
+          link. Check them in the register and clear the flag to take the file's details next time.
+        </p>
+      )}
       {result.skippedByReason.length > 0 && (
         <div>
           <p className="text-sm font-medium">Why rows were skipped</p>

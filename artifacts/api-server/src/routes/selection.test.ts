@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import request from "supertest";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import app from "../app";
 import {
   db,
@@ -105,6 +105,15 @@ describe("Selection Hub API", () => {
 
   const loadSel = async (id: number) =>
     (await db.select().from(selectionsTable).where(eq(selectionsTable.id, id)))[0];
+  /** The finalise body: the side's version as it stands now. */
+  const ver = async (id: number) => ({ version: (await loadSel(id)).version });
+  const teamListOf = async (fixtureId: number) =>
+    (
+      await db
+        .select()
+        .from(teamListsTable)
+        .where(and(eq(teamListsTable.tenantId, tenantA), eq(teamListsTable.fixtureId, fixtureId)))
+    )[0];
 
   /** A change for a side as it stands now, with `edit` applied to its member ids. */
   const changeFor = async (
@@ -465,9 +474,13 @@ describe("Selection Hub API", () => {
     await setRule("admins_only");
     const own = await changeFor(sel.B, (ids) => [m[28], ...ids.slice(1)]);
     expect((await put(asCaptain, [own])).status).toBe(403);
-    expect((await asCaptain(request(app).post(`/api/selection/${sel.B}/finalise`))).status).toBe(
-      403,
-    );
+    expect(
+      (
+        await asCaptain(request(app).post(`/api/selection/${sel.B}/finalise`)).send(
+          await ver(sel.B),
+        )
+      ).status,
+    ).toBe(403);
     expect((await board(asCaptain)).actor.canRemind).toBe(false);
   });
 
@@ -509,8 +522,10 @@ describe("Selection Hub API", () => {
   it("finalise publishes the side, messages each selected member once, and allows no captain (R31, R39)", async () => {
     const noCaptain = await changeFor(sel.A, (ids) => ids, { captain: null });
     expect((await put(asAdmin, [noCaptain])).status).toBe(200);
-    const res = await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`)).expect(200);
-    expect(res.body.messaged).toEqual({ selected: 10, deselected: 0 });
+    const res = await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+      .send(await ver(sel.A))
+      .expect(200);
+    expect(res.body.messaged).toEqual({ selected: 10, deselected: 0, failed: 0 });
     expect(res.body.selection.state).toBe("final");
     expect(res.body.selection.canEdit).toBe(false);
 
@@ -532,7 +547,10 @@ describe("Selection Hub API", () => {
     expect(sms.filter((s) => s.body.includes("selected"))).toHaveLength(10);
 
     // Locked: a second finalise and a save are both refused.
-    expect((await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))).status).toBe(409);
+    expect(
+      (await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`)).send(await ver(sel.A)))
+        .status,
+    ).toBe(409);
     const edit = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[28]]);
     expect((await put(asAdmin, [edit])).status).toBe(409);
   });
@@ -540,7 +558,9 @@ describe("Selection Hub API", () => {
   it("the same member as captain and keeper publishes C/WK (AE9)", async () => {
     const both = await changeFor(sel.A, (ids) => ids, { captain: m[2], keeper: m[2] });
     expect((await put(asAdmin, [both])).status).toBe(200);
-    await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`)).expect(200);
+    await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+      .send(await ver(sel.A))
+      .expect(200);
     const [list] = await db
       .select()
       .from(teamListsTable)
@@ -551,7 +571,9 @@ describe("Selection Hub API", () => {
   });
 
   it("re-open, swap one player, re-finalise → only the added and dropped players are messaged (R32)", async () => {
-    await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`)).expect(200);
+    await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+      .send(await ver(sel.A))
+      .expect(200);
     const published = (
       await db
         .select()
@@ -575,8 +597,10 @@ describe("Selection Hub API", () => {
 
     const swap = await changeFor(sel.A, (ids) => [...ids.slice(0, 9), m[28], null]);
     expect((await put(asAdmin, [swap])).status).toBe(200);
-    const res = await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`)).expect(200);
-    expect(res.body.messaged).toEqual({ selected: 1, deselected: 1 });
+    const res = await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+      .send(await ver(sel.A))
+      .expect(200);
+    expect(res.body.messaged).toEqual({ selected: 1, deselected: 1, failed: 0 });
     expect(email.map((e) => e.to).sort()).toEqual([EMAIL(10), EMAIL(28)].sort());
     expect(emailsTo(10)[0].text).toMatch(/no longer in it/);
     expect(emailsTo(28)[0].text).toMatch(/selected/);
@@ -613,7 +637,9 @@ describe("Selection Hub API", () => {
   });
 
   it("the fixtures team-list PUT refuses a list finalised in the Hub (409)", async () => {
-    await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`)).expect(200);
+    await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+      .send(await ver(sel.A))
+      .expect(200);
     const res = await asAdmin(request(app).put(`/api/fixtures/${fixture.A}/team-list`)).send({
       players: [{ order: 1, displayName: "Someone Else" }],
       isPublished: true,
@@ -648,7 +674,9 @@ describe("Selection Hub API", () => {
   });
 
   it("a withdrawal re-opens the slot, keeps the rest published and alerts staff; the replacement is told (AE7)", async () => {
-    await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`)).expect(200);
+    await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+      .send(await ver(sel.A))
+      .expect(200);
     email = [];
 
     const out = await withdrawFromSelection(tenantA, m[2], roundId, {
@@ -702,8 +730,189 @@ describe("Selection Hub API", () => {
 
     const fill = await changeFor(sel.A, (ids) => [ids[0], m[28], ...ids.slice(2)]);
     expect((await put(asAdmin, [fill])).status).toBe(200);
-    const res = await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`)).expect(200);
-    expect(res.body.messaged).toEqual({ selected: 1, deselected: 0 });
+    const res = await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+      .send(await ver(sel.A))
+      .expect(200);
+    expect(res.body.messaged).toEqual({ selected: 1, deselected: 0, failed: 0 });
     expect(email.map((e) => e.to)).toEqual([EMAIL(28)]);
+  });
+
+  it("a duplicate already in the round doesn't block saving another grade, and a save can't add one", async () => {
+    // An older draft left m28 in both A and B Grade.
+    for (const id of [sel.A, sel.B]) {
+      const row = await loadSel(id);
+      await db
+        .update(selectionsTable)
+        .set({ slots: row.slots.map((s, i) => (i === 10 ? { memberId: m[28] } : s)) })
+        .where(eq(selectionsTable.id, id));
+    }
+    const c = await changeFor(sel.C, (ids) => [...ids.slice(0, 6), m[29], ...ids.slice(7)]);
+    expect((await put(asAdmin, [c])).status).toBe(200);
+    // Adding m28 to a third side is still refused.
+    const c2 = await changeFor(sel.C, (ids) => [...ids.slice(0, 7), m[28], ...ids.slice(8)]);
+    expect((await put(asAdmin, [c2])).status).toBe(400);
+    // Taking m28 out of A Grade resolves it.
+    const a = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), null]);
+    expect((await put(asAdmin, [a])).status).toBe(200);
+  });
+
+  it("a save with one valid and one stale side → 409, the valid side unchanged and nothing logged", async () => {
+    const a = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[28]]);
+    const c = { ...(await changeFor(sel.C, (ids) => ids)), version: 99 };
+    expect((await put(asAdmin, [a, c])).status).toBe(409);
+    const rowA = await loadSel(sel.A);
+    expect(rowA.version).toBe(1);
+    expect(rowA.slots[10].memberId).toBeNull();
+    const events = await db
+      .select()
+      .from(selectionEventsTable)
+      .where(eq(selectionEventsTable.tenantId, tenantA));
+    expect(events).toHaveLength(0);
+  });
+
+  it("finalise needs the side's current version", async () => {
+    await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+      .send({})
+      .expect(400);
+    const stale = await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+      .send({ version: 99 })
+      .expect(409);
+    expect(stale.body.error).toMatch(/changed/);
+    expect((await loadSel(sel.A)).state).toBe("draft");
+    expect(email).toHaveLength(0);
+  });
+
+  it("two concurrent finalises → one 200, one 409, and each member is messaged once", async () => {
+    const body = await ver(sel.A);
+    const [r1, r2] = await Promise.all([
+      asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`)).send(body),
+      asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`)).send(body),
+    ]);
+    expect([r1.status, r2.status].sort()).toEqual([200, 409]);
+    for (let i = 1; i <= 10; i++) expect(emailsTo(i)).toHaveLength(1);
+    const finals = await db
+      .select()
+      .from(selectionEventsTable)
+      .where(
+        and(
+          eq(selectionEventsTable.selectionId, sel.A),
+          eq(selectionEventsTable.action, "finalise"),
+        ),
+      );
+    expect(finals).toHaveLength(1);
+  });
+
+  it("a private member is published as Private Player, with no player id, and can still withdraw", async () => {
+    await db
+      .update(squadMembersTable)
+      .set({ isPrivate: true })
+      .where(inArray(squadMembersTable.id, [m[1], m[4]]));
+    try {
+      await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+        .send(await ver(sel.A))
+        .expect(200);
+      const list = await teamListOf(fixture.A);
+      expect(list.players[0]).toEqual({ order: 1, displayName: "Private Player", role: "C" });
+      expect(list.players[3]).toEqual({ order: 4, displayName: "Private Player" });
+      expect(JSON.stringify(list.players)).not.toMatch(/P1 Member|P4 Member|501/);
+
+      await withdrawFromSelection(tenantA, m[4], roundId, { kind: "player", id: null, name: null });
+      const after = await teamListOf(fixture.A);
+      expect(after.players).toHaveLength(9);
+      expect(after.players.filter((p) => p.displayName === "Private Player")).toEqual([
+        { order: 1, displayName: "Private Player", role: "C" },
+      ]);
+    } finally {
+      await db
+        .update(squadMembersTable)
+        .set({ isPrivate: false })
+        .where(inArray(squadMembersTable.id, [m[1], m[4]]));
+    }
+  });
+
+  it("finalise, re-open and withdraw are refused once the match has started", async () => {
+    await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+      .send(await ver(sel.A))
+      .expect(200);
+    const [fxA] = await db.select().from(fixturesTable).where(eq(fixturesTable.id, fixture.A));
+    const [fxB] = await db.select().from(fixturesTable).where(eq(fixturesTable.id, fixture.B));
+    const past = new Date(Date.now() - 3_600_000);
+    await db
+      .update(fixturesTable)
+      .set({ startAt: past })
+      .where(inArray(fixturesTable.id, [fixture.A, fixture.B]));
+    try {
+      const reopen = await asAdmin(request(app).post(`/api/selection/${sel.A}/reopen`)).expect(409);
+      expect(reopen.body.error).toMatch(/started/);
+      await expect(
+        withdrawFromSelection(tenantA, m[2], roundId, { kind: "player", id: null, name: null }),
+      ).rejects.toMatchObject({ status: 409 });
+      expect((await loadSel(sel.A)).state).toBe("final");
+      const fin = await asAdmin(request(app).post(`/api/selection/${sel.B}/finalise`))
+        .send(await ver(sel.B))
+        .expect(409);
+      expect(fin.body.error).toMatch(/started/);
+      expect((await loadSel(sel.B)).state).toBe("draft");
+    } finally {
+      await db
+        .update(fixturesTable)
+        .set({ startAt: fxA.startAt })
+        .where(eq(fixturesTable.id, fixture.A));
+      await db
+        .update(fixturesTable)
+        .set({ startAt: fxB.startAt })
+        .where(eq(fixturesTable.id, fixture.B));
+    }
+  });
+
+  it("finalise never replaces a team list PlayHQ supplied", async () => {
+    await db.insert(teamListsTable).values({
+      tenantId: tenantA,
+      fixtureId: fixture.B,
+      players: [{ order: 1, displayName: "PlayHQ Pick" }],
+      isPublished: true,
+      source: "playhq",
+    });
+    await asAdmin(request(app).post(`/api/selection/${sel.B}/finalise`))
+      .send(await ver(sel.B))
+      .expect(200);
+    const list = await teamListOf(fixture.B);
+    expect(list.source).toBe("playhq");
+    expect(list.players).toEqual([{ order: 1, displayName: "PlayHQ Pick" }]);
+  });
+
+  it("a member every delivery failed for is counted, left un-notified and messaged on the next finalise", async () => {
+    const down = MOBILE(4).replace(/\s/g, "").slice(1);
+    setEmailTransport(async (msg) => {
+      if (msg.to === EMAIL(4)) throw new Error("mail down");
+      email.push(msg);
+    });
+    setSmsTransport(async (msg) => {
+      if (msg.to.endsWith(down)) throw new Error("sms down");
+      sms.push(msg);
+    });
+    try {
+      const res = await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+        .send(await ver(sel.A))
+        .expect(200);
+      expect(res.body.messaged).toEqual({ selected: 9, deselected: 0, failed: 1 });
+      const row = await loadSel(sel.A);
+      expect(row.notifiedMemberIds).not.toContain(m[4]);
+      expect(row.notifiedMemberIds).toHaveLength(9);
+    } finally {
+      setSmsTransport(async (msg) => {
+        sms.push(msg);
+      });
+      setEmailTransport(async (msg) => {
+        email.push(msg);
+      });
+    }
+    email = [];
+    await asAdmin(request(app).post(`/api/selection/${sel.A}/reopen`)).expect(200);
+    const again = await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+      .send(await ver(sel.A))
+      .expect(200);
+    expect(again.body.messaged).toEqual({ selected: 1, deselected: 0, failed: 0 });
+    expect(email.map((e) => e.to)).toEqual([EMAIL(4)]);
   });
 });

@@ -133,7 +133,7 @@ export async function runDraftSweep(
     } catch (err) {
       logger.error({ err, tenantId }, "debut caps failed");
     }
-    // Player availability (plan 2026-10-06-002 U4): send, remind and cut-off on
+    // Player availability: send, remind and cut-off on
     // the club's schedule. A no-op unless the club has switched it on.
     try {
       const avail = await runAvailabilitySchedule(tenantId, now, { logger });

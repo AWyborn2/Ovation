@@ -192,7 +192,7 @@ router.put(
       return;
     }
     // A side finalised in the Selection Hub is changed there (re-open, edit,
-    // re-finalise), so the Hub's side and the published list never diverge (KTD6).
+    // re-finalise), so the Hub's side and the published list never diverge.
     const [existing] = await db
       .select({ source: teamListsTable.source })
       .from(teamListsTable)

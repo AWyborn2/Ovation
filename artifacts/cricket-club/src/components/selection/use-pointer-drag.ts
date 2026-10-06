@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type PointerEvent, type RefOb
 import type { DropTarget } from "./apply-move";
 
 /**
- * Pointer-events drag and drop for the Selection Hub (plan U9, KTD10) — no
+ * Pointer-events drag and drop for the Selection Hub — no
  * DnD dependency, and it works for mouse, pen and touch. Ported from the
  * approved prototype:
  *

@@ -110,16 +110,80 @@ describe("sendSms", () => {
     expect(sent).toEqual([{ to: "+61412345678", body: "hello" }]);
   });
 
-  it("retries once, then reports a redacted failure", async () => {
+  it("retries a 5xx once, then reports a redacted failure", async () => {
     let calls = 0;
     setSmsTransport(async (m) => {
       calls++;
-      throw new SmsTransportError(`The 'To' number ${m.to} is not a valid phone number.`, 21211);
+      throw new SmsTransportError(`Twilio responded 503 sending to ${m.to}`, undefined, 503);
     });
     const result = await sendSms({ to: "0412345678", body: "x" });
     expect(calls).toBe(2);
     expect(result).toMatchObject({ sent: false, reason: "failed" });
     expect(JSON.stringify(result)).not.toContain("412345678");
+  });
+
+  it("retries a 429, but not another 4xx or a Twilio error code", async () => {
+    let calls = 0;
+    setSmsTransport(async () => {
+      calls++;
+      throw new SmsTransportError("Twilio responded 429: Too Many Requests", 20429, 429);
+    });
+    await sendSms({ to: "0412345678", body: "x" });
+    expect(calls).toBe(2);
+
+    calls = 0;
+    setSmsTransport(async (m) => {
+      calls++;
+      throw new SmsTransportError(`The 'To' number ${m.to} is not a valid phone number.`, 21211);
+    });
+    const invalid = await sendSms({ to: "0412345678", body: "x" });
+    expect(calls).toBe(1);
+    expect(invalid).toMatchObject({ sent: false, reason: "failed" });
+    expect(JSON.stringify(invalid)).not.toContain("412345678");
+
+    calls = 0;
+    setSmsTransport(async () => {
+      calls++;
+      throw new SmsTransportError("Twilio responded 401", undefined, 401);
+    });
+    await sendSms({ to: "0412345678", body: "x" });
+    expect(calls).toBe(1);
+  });
+
+  it("gives up on a hung Twilio request after a timeout and retries it once", async () => {
+    clearTwilioEnv();
+    process.env.TWILIO_ACCOUNT_SID = "ACtest123";
+    process.env.TWILIO_AUTH_TOKEN = "authtoken-secret";
+    process.env.TWILIO_FROM = "+61400000000";
+    const signals: AbortSignal[] = [];
+    const fetchSpy = vi.fn(async (_url: string, init: RequestInit) => {
+      signals.push(init.signal!);
+      throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+    const result = await sendSms({ to: "0412345678", body: "x" });
+    expect(result).toMatchObject({ sent: false, reason: "failed" });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(signals.every((s) => s instanceof AbortSignal)).toBe(true);
+  });
+
+  it("does not retry a 400 from Twilio", async () => {
+    clearTwilioEnv();
+    process.env.TWILIO_ACCOUNT_SID = "ACtest123";
+    process.env.TWILIO_AUTH_TOKEN = "authtoken-secret";
+    process.env.TWILIO_FROM = "+61400000000";
+    const fetchSpy = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ code: 21211, message: "Invalid 'To' Phone Number" }), {
+          status: 400,
+        }),
+    );
+    vi.stubGlobal("fetch", fetchSpy);
+    await expect(sendSms({ to: "0412345678", body: "x" })).resolves.toMatchObject({
+      sent: false,
+      reason: "failed",
+    });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
   it("succeeds on the retry after one transient failure", async () => {

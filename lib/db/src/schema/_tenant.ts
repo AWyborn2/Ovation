@@ -101,6 +101,14 @@ import { tenantsTable } from "./tenants";
  *   tenant_id themselves so no read has to join through the batch.
  *   club_history_curated_rows (U11 / migration 0022) — which curated rows a
  *   history batch created; directly tenant-scoped the same way.
+ *
+ * APPLIED (player availability and Selection Hub, migration 0031):
+ *   squad_members, availability_settings, availability_rounds,
+ *   availability_requests, availability_tokens, availability_responses,
+ *   availability_away, selections, selection_events — directly tenant-scoped
+ *   from day one (every read filters, every write sets it from request
+ *   context), even where a parent (round, request, selection) also reaches
+ *   the tenant, so no read has to join through the parent.
  * ───────────────────────────────────────────────────────────────────────────
  */
 export const tenantIdColumn = () =>

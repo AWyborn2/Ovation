@@ -168,6 +168,11 @@ function stubApi(board: SelectionBoard, onPut?: (req: Req) => { status: number; 
         const r = onPut ? onPut(req) : { status: 200, body: board };
         status = r.status;
         payload = r.body;
+      } else if (url.includes("/finalise") && method === "POST") {
+        payload = {
+          selection: board.selections[0],
+          messaged: { selected: 9, deselected: 0, failed: 1 },
+        };
       }
       return new Response(JSON.stringify(payload), {
         status,
@@ -264,6 +269,25 @@ describe("final and read-only cards", () => {
     expect(within(a).getByRole("button", { name: "Finalise and notify" })).toBeTruthy();
     fireEvent.click(within(a).getByRole("button", { name: "Keep editing" }));
     expect(within(a).getByRole("button", { name: "Finalise A Grade" })).toBeTruthy();
+  });
+
+  it("finalise sends the side's version and reports anyone who couldn't be reached", async () => {
+    const requests = stubApi(makeBoard());
+    renderHub();
+    const a = await screen.findByTestId("side-1");
+    fireEvent.click(within(a).getByRole("button", { name: "Finalise A Grade" }));
+    fireEvent.click(within(a).getByRole("button", { name: "Finalise and notify" }));
+    await waitFor(() =>
+      expect(requests.some((r) => r.method === "POST" && r.url.includes("/finalise"))).toBe(true),
+    );
+    const post = requests.find((r) => r.method === "POST" && r.url.includes("/finalise"))!;
+    expect(post.url).toContain("/api/selection/1/finalise");
+    expect(post.body).toEqual({ version: 4 });
+    await waitFor(() =>
+      expect(screen.getByTestId("hub-announcer").textContent).toMatch(
+        /9 players notified. 1 couldn't be reached/,
+      ),
+    );
   });
 
   it("shows the round header and response breakdown", async () => {

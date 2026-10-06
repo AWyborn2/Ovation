@@ -20,11 +20,13 @@ import {
   planSquadImport,
   SquadImportError,
 } from "../lib/squad-import";
+import { isUnder18OnDate, perthDate } from "../lib/availability-grades";
+import { revokeMemberTokens } from "../lib/availability-tokens";
 
 /**
- * The club's squad register for player availability (plan 2026-10-06-002 U3;
- * R1–R4, R6, R7). Admin only. Contact details are admin-only too: the list
- * reports which contacts exist, never their values (R6), and nothing here logs
+ * The club's squad register for player availability. Admin only. Contact
+ * details are admin-only too: the list
+ * reports which contacts exist, never their values, and nothing here logs
  * a contact or any cell of the uploaded file.
  */
 const router: IRouter = Router();
@@ -53,19 +55,6 @@ const SLOTS = [
   },
 ] as const;
 
-/** Today's date in Perth, YYYY-MM-DD. */
-function perthToday(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Australia/Perth" }).format(new Date());
-}
-
-/** Under 18 on Perth's today, from an ISO date of birth; null when unknown (R5). */
-export function isUnder18(dateOfBirth: string | null, today = perthToday()): boolean | null {
-  if (!dateOfBirth) return null;
-  const [y, m, d] = dateOfBirth.split("-").map(Number);
-  const eighteenth = `${String(y + 18).padStart(4, "0")}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-  return today < eighteenth;
-}
-
 function serializeBase(r: SquadMemberRow) {
   return {
     id: r.id,
@@ -76,7 +65,7 @@ function serializeBase(r: SquadMemberRow) {
     section: r.section,
     active: r.active,
     activeSetByAdmin: r.activeSetByAdmin,
-    under18: isUnder18(r.dateOfBirth),
+    under18: isUnder18OnDate(r.dateOfBirth, perthDate(new Date())),
     gradeHint: r.gradeHint,
     teamName: r.teamName,
     ageGroup: r.ageGroup,
@@ -149,6 +138,7 @@ router.post(
         created: result.created,
         updated: result.updated,
         deactivated: result.deactivated,
+        contactsKept: result.contactsKept,
         skipped: result.skipped.length,
       },
       "squad import",
@@ -245,12 +235,23 @@ router.patch("/squad/:id", requireAdmin, async (req, res): Promise<void> => {
   }
 
   const [row] = await db.update(squadMembersTable).set(set).where(scoped).returning();
+  // Links already sent to a changed mobile or email stop working.
+  const changedSlots = SLOTS.filter(
+    (s) => row[s.mobile] !== prev[s.mobile] || row[s.email] !== prev[s.email],
+  ).map((s) => s.key);
+  if (changedSlots.length > 0) {
+    const revoked = await revokeMemberTokens({ tenantId, memberId: row.id, slots: changedSlots });
+    req.log?.info(
+      { tenantId, memberId: row.id, slots: changedSlots, revoked },
+      "squad contact edit",
+    );
+  }
   res.json(serializeDetail(row));
 });
 
 // A player's or guardian's removal request: contacts and date of birth are
 // hard-deleted, the row keeps only the name so past selections and logs still
-// read correctly, and it is set inactive by the admin — so it is never asked
+// read correctly, its live availability links are revoked, and it is set inactive by the admin — so it is never asked
 // again and later imports (which skip contacts for admin-held inactive members)
 // don't restore the details. The row itself stays: it may be referenced by
 // selections and requests, and keeping it is simpler than proving it isn't.
@@ -264,6 +265,7 @@ router.delete(
       res.status(400).json({ error: params.error.message });
       return;
     }
+    const tenantId = getTenantId(req);
     const [row] = await db
       .update(squadMembersTable)
       .set({
@@ -284,16 +286,15 @@ router.delete(
         updatedAt: new Date(),
       })
       .where(
-        and(
-          eq(squadMembersTable.id, params.data.id),
-          eq(squadMembersTable.tenantId, getTenantId(req)),
-        ),
+        and(eq(squadMembersTable.id, params.data.id), eq(squadMembersTable.tenantId, tenantId)),
       )
       .returning({ id: squadMembersTable.id });
     if (!row) {
       res.status(404).json({ error: "Squad member not found" });
       return;
     }
+    // Every link already sent to them stops working.
+    await revokeMemberTokens({ tenantId, memberId: row.id });
     res.status(204).end();
   },
 );

@@ -3,6 +3,7 @@ import type { SelectionSide } from "@workspace/api-client-react";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { plural } from "@/lib/plural";
 import { SIDE_SIZE, sideEditable, sideLabel } from "./apply-move";
 import { GAP_REASON, perthDateTime } from "./labels";
 import { PlayerChip, type ChipRole } from "./player-chip";
@@ -11,12 +12,13 @@ export function roleOf(side: SelectionSide, memberId: number | null): ChipRole {
   if (memberId == null) return null;
   const c = side.captainMemberId === memberId;
   const k = side.keeperMemberId === memberId;
-  return c && k ? "C/WK" : c ? "C" : k ? "WK" : null;
+  if (c && k) return "C/WK";
+  if (c) return "C";
+  if (k) return "WK";
+  return null;
 }
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
-
-/** The finalise confirmation's "Heads up" list (R30, R39). */
+/** The finalise confirmation's "Heads up" list. */
 export function finaliseHeadsUp(side: SelectionSide): string[] {
   const w = side.warnings;
   const bits: string[] = [];
@@ -32,7 +34,7 @@ const selectClass =
   "block min-h-9 w-full min-w-0 rounded-md border border-input bg-background px-2 py-1 text-[13px] font-medium normal-case tracking-normal text-foreground";
 
 /**
- * One grade's side (R21, R27, R30, R32, R35–R39): fixture, filled count,
+ * One grade's side: fixture, filled count,
  * Draft/Final state, warnings, captain and keeper pickers, the 11 slots (each
  * a drop zone), and the finalise / re-open footer.
  */

@@ -172,6 +172,7 @@ describe("Selection Hub tenant isolation", () => {
         .post(`/api/selection/${selA}/${action}`)
         .set("Cookie", adminB)
         .set("x-tenant-id", String(tenantB))
+        .send({ version: 1 })
         .expect(404);
     }
     const [row] = await db.select().from(selectionsTable).where(eq(selectionsTable.id, selA));

@@ -4,7 +4,14 @@ import type {
   SelectionMemberStatus,
 } from "@workspace/api-client-react";
 
-/** Availability as glyph, words and colour (R22): never colour alone. */
+/** A captain / keeper role in words. */
+export const ROLE_LABEL: Record<"C" | "WK" | "C/WK", string> = {
+  C: "Captain",
+  WK: "Wicketkeeper",
+  "C/WK": "Captain and wicketkeeper",
+};
+
+/** Availability as glyph, words and colour: never colour alone. */
 export const STATUS: Record<
   SelectionMemberStatus,
   { glyph: string; label: string; mark: string; bar: string }
@@ -37,13 +44,14 @@ export const STATUS: Record<
 
 export const STATUS_ORDER: SelectionMemberStatus[] = ["yes", "maybe", "no", "none"];
 
-/** The reason half of an open slot's "was <name> · <reason>" (R17). */
+/** The reason half of an open slot's "was <name> · <reason>". */
 export const GAP_REASON: Record<SelectionGapReason, string> = {
   no: "unavailable",
   maybe: "said Maybe",
   no_reply: "no reply",
   not_on_register: "not on register",
   withdrew: "can't make it",
+  picked_elsewhere: "picked in another side",
 };
 
 const PERTH = "Australia/Perth";
@@ -93,7 +101,7 @@ const names = (v: unknown): string[] =>
         .filter((n): n is string => typeof n === "string")
     : [];
 
-/** One change-log line for a board event (R29). */
+/** One change-log line for a board event. */
 export function eventText(e: SelectionEvent): string {
   const d = (e.detail ?? {}) as Record<string, unknown>;
   const g = e.grade || "A side";

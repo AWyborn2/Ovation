@@ -196,6 +196,7 @@ describe("admin availability", () => {
       updated: 30,
       deactivated: 2,
       linked: 5,
+      contactsKept: 1,
       skipped: [
         { line: 4, name: "Pat Coach", reason: "not_a_player" },
         { line: 9, name: "Lee Old", reason: "inactive_status" },
@@ -224,6 +225,7 @@ describe("admin availability", () => {
     expect(count("Updated")).toBe("30");
     expect(count("Stood down")).toBe("2");
     expect(count("Skipped")).toBe("3");
+    expect(s.getByTestId("import-contacts-kept").textContent).toMatch(/1 member changed/);
     expect(s.getByText("Registration not active: 2")).toBeTruthy();
     expect(s.getByText("Not registered as a player: 1")).toBeTruthy();
     expect(s.getByText(/Line 4: Pat Coach/)).toBeTruthy();

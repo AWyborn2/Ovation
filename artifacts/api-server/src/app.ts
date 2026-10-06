@@ -44,8 +44,8 @@ const allowedOrigins = buildAllowedOrigins();
 /**
  * The request path as logged: the query string dropped, and the personal-link
  * token after `/availability/respond/` replaced with `[token]` — the token is
- * the player page's only credential, so it never reaches a log line (plan
- * 2026-10-06-002 KTD5). Case-insensitive, like Express routing.
+ * the player page's only credential, so it never reaches a log line.
+ * Case-insensitive, like Express routing.
  */
 export function logUrl(url: string | undefined): string | undefined {
   return url?.split("?")[0].replace(/(\/availability\/respond\/)[^/]+/gi, "$1[token]");

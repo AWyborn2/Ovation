@@ -11,7 +11,11 @@ import {
   playerIdMapTable,
   fixturesTable,
   teamListsTable,
+  availabilityRoundsTable,
+  availabilityRequestsTable,
+  availabilityTokensTable,
 } from "@workspace/db";
+import { mintRequestToken } from "../lib/availability-tokens";
 import {
   SESSION_COOKIE,
   CAPTAIN_SESSION_COOKIE,
@@ -252,6 +256,110 @@ describe("squad register API", () => {
     expect(res.body).toMatchObject({ created: 0, updated: 5, linked: 0 });
     const m = await memberByProfile(tenantA, ADULT["Profile ID"]);
     expect(m.accountHolderMobile).toBe("0400999888");
+  });
+
+  it("a re-import keeps contacts a player changed from their link until an admin clears the flag", async () => {
+    // The file as last imported (ADULT's mobile changed in the test above).
+    const file = buildParticipantCsv(
+      FILE_ROWS.map((r) =>
+        r === ADULT ? { ...ADULT, "Account Holder Mobile": "0400 999 888" } : r,
+      ),
+    );
+    const m = await memberByProfile(tenantA, BY_NAME["Profile ID"]);
+    await db
+      .update(squadMembersTable)
+      .set({
+        contactChangeFlag: true,
+        accountHolderMobile: "0499111222",
+        accountHolderEmail: "sam.new@example.test",
+      })
+      .where(eq(squadMembersTable.id, m.id));
+    const res = await upload(cookieA, tenantA, file).expect(200);
+    expect(res.body).toMatchObject({ created: 0, updated: 5, contactsKept: 1 });
+    const kept = await memberByProfile(tenantA, BY_NAME["Profile ID"]);
+    expect(kept).toMatchObject({
+      accountHolderMobile: "0499111222",
+      accountHolderEmail: "sam.new@example.test",
+      contactChangeFlag: true,
+      dateOfBirth: "1994-01-01",
+    });
+
+    await db
+      .update(squadMembersTable)
+      .set({ contactChangeFlag: false })
+      .where(eq(squadMembersTable.id, m.id));
+    const again = await upload(cookieA, tenantA, file).expect(200);
+    expect(again.body.contactsKept).toBe(0);
+    expect((await memberByProfile(tenantA, BY_NAME["Profile ID"])).accountHolderMobile).not.toBe(
+      "0499111222",
+    );
+  });
+
+  it("PATCH revokes the live links of a slot whose contact changed; DELETE revokes them all", async () => {
+    const [member] = await db
+      .insert(squadMembersTable)
+      .values({
+        tenantId: tenantA,
+        firstName: "Toby",
+        lastName: "Tokens",
+        accountHolderMobile: "0400111999",
+        accountHolderEmail: "toby@example.test",
+        guardian1Name: "Tess Tokens",
+        guardian1Email: "tess@example.test",
+      })
+      .returning();
+    const [round] = await db
+      .insert(availabilityRoundsTable)
+      .values({ tenantId: tenantA, weekendDate: "2026-10-17" })
+      .returning();
+    const requests = await db
+      .insert(availabilityRequestsTable)
+      .values([
+        { tenantId: tenantA, roundId: round.id, memberId: member.id, recipientSlot: "account" },
+        { tenantId: tenantA, roundId: round.id, memberId: member.id, recipientSlot: "guardian1" },
+      ])
+      .returning();
+    const expiresAt = new Date(Date.now() + 86_400_000);
+    const [account, guardian] = await Promise.all(
+      requests.map((r) => mintRequestToken({ tenantId: tenantA, requestId: r.id, expiresAt })),
+    );
+    const revokedAt = async (tokenId: number) =>
+      (
+        await db
+          .select({ revokedAt: availabilityTokensTable.revokedAt })
+          .from(availabilityTokensTable)
+          .where(eq(availabilityTokensTable.id, tokenId))
+      )[0].revokedAt;
+    const patch = (body: object) =>
+      request(app)
+        .patch(`/api/squad/${member.id}`)
+        .set("Cookie", cookieA)
+        .set("x-tenant-id", String(tenantA))
+        .send(body)
+        .expect(200);
+    try {
+      // The same email again (normalised) and a grade hint change nothing.
+      await patch({ gradeHint: "B Grade", account: { email: " Toby@Example.test " } });
+      expect(await revokedAt(account.tokenId)).toBeNull();
+
+      await patch({ account: { mobile: "0400 111 888" } });
+      expect(await revokedAt(account.tokenId)).not.toBeNull();
+      expect(await revokedAt(guardian.tokenId)).toBeNull();
+
+      await request(app)
+        .delete(`/api/squad/${member.id}`)
+        .set("Cookie", cookieA)
+        .set("x-tenant-id", String(tenantA))
+        .expect(204);
+      expect(await revokedAt(guardian.tokenId)).not.toBeNull();
+    } finally {
+      await db.delete(availabilityTokensTable).where(eq(availabilityTokensTable.tenantId, tenantA));
+      await db
+        .delete(availabilityRequestsTable)
+        .where(eq(availabilityRequestsTable.tenantId, tenantA));
+      await db.delete(availabilityRoundsTable).where(eq(availabilityRoundsTable.id, round.id));
+      await db.delete(squadMembersTable).where(eq(squadMembersTable.id, member.id));
+    }
   });
 
   it("lists members with contact presence flags, never values (R6)", async () => {

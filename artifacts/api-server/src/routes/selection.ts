@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Response } from "express";
 import {
+  FinaliseSelectionBody,
   FinaliseSelectionParams,
   GetSelectionBoardQueryParams,
   ReopenSelectionParams,
@@ -20,7 +21,7 @@ import {
 import { loadAvailabilitySettings, runReminder } from "../lib/availability-schedule";
 
 /**
- * The Selection Hub API (plan 2026-10-06-002 U7; R19–R39, KTD8, KTD9): the
+ * The Selection Hub API: the
  * section board, versioned whole-side saves, finalise and re-open, and the
  * no-reply reminder. Admins and captains only; edit rights follow the club's
  * selection rule (see `lib/selection-board.ts`). Payloads never carry a contact
@@ -77,10 +78,15 @@ router.post("/selection/:id/finalise", requireAdminOrCaptain, async (req, res): 
     res.status(400).json({ error: "Invalid side id" });
     return;
   }
+  const body = FinaliseSelectionBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Send the side's version to finalise it." });
+    return;
+  }
   const tenantId = getTenantId(req);
   const actor = selectionActorOf(req);
   try {
-    const result = await finaliseSelection(tenantId, actor, params.data.id, {
+    const result = await finaliseSelection(tenantId, actor, params.data.id, body.data.version, {
       req,
       logger: req.log,
     });
@@ -139,7 +145,7 @@ router.post(
       res.status(409).json({ error: "The requests for this round haven't gone out yet." });
       return;
     }
-    // U4's reminder, throttled per recipient to once every 12 hours (R28).
+    // The scheduler's reminder, throttled per recipient to once every 12 hours.
     const result = await runReminder(tenantId, round, settings?.smsEnabled ?? true, now, {
       manual: true,
       section: body.data.section,

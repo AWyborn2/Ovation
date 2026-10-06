@@ -33,6 +33,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { seasonLabel } from "@/lib/match-summary";
+import { plural } from "@/lib/plural";
 import { useClubGrades } from "@/hooks/use-club-grades";
 
 /** Most matches one "Draft past matches" run drafts (the API's cap). */
@@ -52,10 +53,6 @@ function useClubSeasons(grade: string, enabled = true): number[] {
     for (const m of (q.data ?? []) as MatchSummary[]) set.add(m.season);
     return [...set].sort((a, b) => b - a);
   }, [q.data]);
-}
-
-function plural(n: number, one: string, many = `${one}s`): string {
-  return `${n} ${n === 1 ? one : many}`;
 }
 
 export function GenerateFromDataCard({ onDrafted }: { onDrafted: () => void }) {

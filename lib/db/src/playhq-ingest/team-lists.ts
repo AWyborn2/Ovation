@@ -11,7 +11,7 @@
  * selection writes nothing.
  *
  * A side finalised in the Selection Hub (source = "selection") stands until the match is
- * played. After that PlayHQ's record of who played replaces it (R34, Ash 6 Oct 2026): a
+ * played. After that PlayHQ's record of who played replaces it (Ash 6 Oct 2026): a
  * second pass takes the tenant's fixtures that started in the last `PLAYED_LOOKBACK_DAYS`
  * with a selection list and a COMPLETED PlayHQ match, and copies the club's side from the
  * match's scorecard (`playhq.scorecards.raw` `teams[].players`, the lineup's shape, fetched
@@ -121,7 +121,7 @@ export function sameTeamList(a: readonly TeamListPlayer[], b: readonly TeamListP
 /** How far ahead a selection is copied (matches the Team List card's own lead time). */
 export const TEAM_LIST_LOOKAHEAD_DAYS = 8;
 
-/** How far back a played fixture's Selection Hub list is replaced by PlayHQ's side (R34). */
+/** How far back a played fixture's Selection Hub list is replaced by PlayHQ's side. */
 export const PLAYED_LOOKBACK_DAYS = 7;
 
 export interface TeamListProjectionOpts {
@@ -142,7 +142,7 @@ export interface TeamListProjectionSummary {
   written: number;
   /** Selections not copied because an admin or the Selection Hub owns that fixture's list. */
   keptAdmin: number;
-  /** Played fixtures whose Selection Hub list was replaced by PlayHQ's side (R34). */
+  /** Played fixtures whose Selection Hub list was replaced by PlayHQ's side. */
   replacedSelection: number;
 }
 
@@ -181,7 +181,7 @@ async function registerIds(
 }
 
 /**
- * After the match (R34): replace each recent, played fixture's Selection Hub list with the
+ * After the match: replace each recent, played fixture's Selection Hub list with the
  * side PlayHQ recorded for the club. Returns how many lists were replaced.
  */
 async function replacePlayedSelections(
@@ -299,14 +299,15 @@ export async function projectTeamLists(
   const summaries: TeamListProjectionSummary[] = [];
   for (const t of tenants) {
     const orgId = (t.orgId ?? "").toLowerCase();
-    const replacedSelection = await replacePlayedSelections(
-      db,
-      tables,
-      opts.central,
-      t.id,
-      orgId,
-      now,
-    );
+    // Best-effort: a failure here (a bad jsonb row, a non-UUID match id) is
+    // logged and must not stop this tenant's future-fixture projection.
+    let replacedSelection = 0;
+    try {
+      replacedSelection = await replacePlayedSelections(db, tables, opts.central, t.id, orgId, now);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      log(`tenant ${t.id}: played-selection replacement failed, skipped: ${message}`);
+    }
     if (replacedSelection)
       log(
         `tenant ${t.id}: ${replacedSelection} played fixture(s): Selection Hub list replaced by PlayHQ's side`,

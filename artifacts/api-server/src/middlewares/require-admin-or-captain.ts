@@ -3,7 +3,7 @@ import { resolveAdmin } from "./require-admin";
 import { getCaptainGrades, resolveCaptain } from "./require-captain";
 
 /**
- * Who is acting in the Selection Hub (plan 2026-10-06-002 KTD9): a club admin,
+ * Who is acting in the Selection Hub: a club admin,
  * or a captain with the grades they captain. Both resolve only on their own
  * tenant's host (`resolveAdmin` / `resolveCaptain`), so a session minted for
  * another club is rejected here.

@@ -15,4 +15,5 @@ export const SelectionGapReason = {
   no_reply: 'no_reply',
   not_on_register: 'not_on_register',
   withdrew: 'withdrew',
+  picked_elsewhere: 'picked_elsewhere',
 } as const;

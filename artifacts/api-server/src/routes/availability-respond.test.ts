@@ -439,6 +439,26 @@ describe("availability respond API", () => {
     await asA(request(app).get(path(g2))).expect(200);
     await asA(request(app).get(path(g1))).expect(200);
 
+    // A second change within 12 hours — from any of the member's links — is refused.
+    sms = [];
+    email = [];
+    const tooSoon = await asA(request(app).patch(path(g1, "/contact")))
+      .send({ email: `gail.new.${STAMP}@example.test` })
+      .expect(429);
+    expect(tooSoon.body).toEqual({ error: "too_many_changes" });
+    const [held] = await db
+      .select()
+      .from(squadMembersTable)
+      .where(eq(squadMembersTable.id, junior));
+    expect(held.guardian1Email).toBe(G1_EMAIL);
+    expect(sms).toHaveLength(0);
+    expect(email).toHaveLength(0);
+    // 13 hours later it goes through.
+    await db
+      .update(squadMembersTable)
+      .set({ contactChangedAt: new Date(Date.now() - 13 * 3_600_000) })
+      .where(eq(squadMembersTable.id, junior));
+
     // An email change notifies the previous mobile (now the new one) and email.
     sms = [];
     email = [];
@@ -638,5 +658,50 @@ describe("availability respond API", () => {
       await db.select().from(availabilityAwayTable).where(eq(availabilityAwayTable.id, awayId)),
     ).toHaveLength(0);
     await db.delete(fixturesTable).where(eq(fixturesTable.id, nextFixture.id));
+  });
+
+  it("a link for a member no longer active is a bare 404", async () => {
+    const token = await tokenFor(other, "account");
+    await asA(request(app).get(path(token))).expect(200);
+    await db
+      .update(squadMembersTable)
+      .set({ active: false })
+      .where(eq(squadMembersTable.id, other));
+    try {
+      await asA(request(app).get(path(token))).expect(404);
+      await asA(request(app).put(path(token)))
+        .send({ answers: [{ date: sat, status: "yes" }] })
+        .expect(404);
+    } finally {
+      await db
+        .update(squadMembersTable)
+        .set({ active: true })
+        .where(eq(squadMembersTable.id, other));
+    }
+  });
+
+  it("withdraw once the match has started → 409 match_started and the side is unchanged", async () => {
+    const selectionId = await finalSide();
+    const token = await tokenFor(selected, "account");
+    const [fx] = await db.select().from(fixturesTable).where(eq(fixturesTable.id, fixtureA));
+    await db
+      .update(fixturesTable)
+      .set({ startAt: new Date(Date.now() - 3_600_000) })
+      .where(eq(fixturesTable.id, fixtureA));
+    try {
+      const res = await asA(request(app).post(path(token, "/withdraw"))).expect(409);
+      expect(res.body).toEqual({ error: "match_started" });
+      const [side] = await db
+        .select()
+        .from(selectionsTable)
+        .where(eq(selectionsTable.id, selectionId));
+      expect(side.state).toBe("final");
+      expect(side.slots[0]).toEqual({ memberId: selected });
+    } finally {
+      await db
+        .update(fixturesTable)
+        .set({ startAt: fx.startAt })
+        .where(eq(fixturesTable.id, fixtureA));
+    }
   });
 });

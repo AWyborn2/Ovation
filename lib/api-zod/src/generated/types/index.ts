@@ -579,6 +579,7 @@ export * from './selectionBoardSave';
 export * from './selectionChange';
 export * from './selectionEvent';
 export * from './selectionEventDetail';
+export * from './selectionFinaliseBody';
 export * from './selectionFinaliseResult';
 export * from './selectionFinaliseResultMessaged';
 export * from './selectionFixture';

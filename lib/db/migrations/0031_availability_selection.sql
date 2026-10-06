@@ -37,10 +37,13 @@ CREATE TABLE IF NOT EXISTS "availability_requests" (
 	"email_result" text,
 	"email_at" timestamp with time zone,
 	"last_manual_reminder_at" timestamp with time zone,
+	"retry_count" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "availability_requests_slot_check" CHECK ("recipient_slot" IN ('account', 'guardian1', 'guardian2'))
 );
 --> statement-breakpoint
+-- For a database that applied 0031 before retry_count joined the table above.
+ALTER TABLE "availability_requests" ADD COLUMN IF NOT EXISTS "retry_count" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "availability_responses" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"tenant_id" integer DEFAULT 1 NOT NULL,

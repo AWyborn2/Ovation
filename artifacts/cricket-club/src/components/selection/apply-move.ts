@@ -7,8 +7,8 @@ import type {
 } from "@workspace/api-client-react";
 
 /**
- * The Selection Hub's move rules (plan 2026-10-06-002 U9; R24–R27, R35–R38,
- * KTD8). Pure: given the board and one action it returns the next board and
+ * The Selection Hub's move rules. Pure: given the board and one action it
+ * returns the next board and
  * the sides the action touched, or a refusal with the message to show. The
  * page applies the result optimistically and saves the touched sides in one
  * `PUT /selection/board`; the server re-checks every rule.
@@ -49,7 +49,7 @@ export type MoveResult = {
   touched: number[];
   /** What happened, for the live region and the toast. */
   log: string[];
-  /** A pick of a player who said No or Maybe, or hasn't replied (R26). */
+  /** A pick of a player who said No or Maybe, or hasn't replied. */
   warning: string | null;
 };
 
@@ -83,7 +83,7 @@ function memberOf(state: BoardState, memberId: number): SelectionMember | null {
 const nameOf = (state: BoardState, memberId: number) =>
   memberOf(state, memberId)?.displayName ?? `Player #${memberId}`;
 
-/** The card's counts and warnings (R21), recomputed from its slots and roles. */
+/** The card's counts and warnings, recomputed from its slots and roles. */
 export function sideWarnings(side: SelectionSide): SelectionWarnings {
   const picked = side.slots.filter((s) => s.memberId != null);
   const status = (s: SelectionSlot) => s.member?.status ?? "none";
@@ -287,7 +287,7 @@ export function applyMove(state: BoardState, action: BoardAction): MoveResult | 
     if (from.kind === "pool" || from.sideId !== target.sideId) warning = pickWarning(moving);
   }
 
-  // A role belongs to the side: a captain or keeper who leaves it loses it (R38).
+  // A role belongs to the side: a captain or keeper who leaves it loses it.
   const touched = [...slotsOf.keys()];
   const selections = state.selections.map((side) => {
     const nextSlots = slotsOf.get(side.id);
@@ -313,7 +313,7 @@ export function applyMove(state: BoardState, action: BoardAction): MoveResult | 
   return { ok: true, state: { selections, pool }, touched, log, warning };
 }
 
-/** The `PUT /selection/board` changes for the touched sides (KTD8). */
+/** The `PUT /selection/board` changes for the touched sides. */
 export function toChanges(state: BoardState, touched: readonly number[]): SelectionChange[] {
   return state.selections
     .filter((s) => touched.includes(s.id))

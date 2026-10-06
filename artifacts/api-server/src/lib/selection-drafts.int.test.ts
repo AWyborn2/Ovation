@@ -234,6 +234,65 @@ describe("buildRoundDrafts", () => {
     expect(after.slots).toEqual(before.slots.slice().reverse());
   });
 
+  it("places a member on two grades' last lists once, in the earlier fixture, and never beside an existing side", async () => {
+    const weekend = "2026-10-31";
+    const [r] = await db
+      .insert(availabilityRoundsTable)
+      .values({ tenantId, weekendDate: weekend })
+      .returning();
+    const [ava, gus, ian, kai] = ["Ava Hill", "Gus Ives", "Ian Kerr", "Kai Long"].map((n) =>
+      memberIds.get(n)!,
+    );
+    await db.insert(availabilityResponsesTable).values(
+      [ava, gus, ian, kai].map((memberId) => ({
+        tenantId,
+        roundId: r.id,
+        memberId,
+        date: weekend,
+        status: "yes" as const,
+      })),
+    );
+    // E and F Grade both listed Ava last time; G Grade's side already exists with Ian.
+    const eLast = await fixture(tenantId, "E Grade", "2026-10-24T02:00:00Z");
+    const fLast = await fixture(tenantId, "F Grade", "2026-10-24T02:00:00Z");
+    await teamList(eLast, [
+      { order: 1, displayName: "Ava Hill" },
+      { order: 2, displayName: "Ian Kerr" },
+    ]);
+    await teamList(fLast, [
+      { order: 1, displayName: "Gus Ives" },
+      { order: 2, displayName: "Ava Hill" },
+      { order: 3, displayName: "Kai Long" },
+    ]);
+    // F starts first, so it keeps Ava; E (later) leaves her slot open.
+    const f = await fixture(tenantId, "F Grade", "2026-10-31T01:00:00Z");
+    const e = await fixture(tenantId, "E Grade", "2026-10-31T04:30:00Z");
+    const g = await fixture(tenantId, "G Grade", "2026-10-31T03:00:00Z");
+    await db.insert(selectionsTable).values({
+      tenantId,
+      roundId: r.id,
+      fixtureId: g,
+      slots: [{ memberId: ian }, ...Array.from({ length: 10 }, () => ({ memberId: null }))],
+    });
+
+    const summary = await buildRoundDrafts(tenantId, r.id, NOW);
+    expect(summary).toMatchObject({ created: 2, skipped: 1 });
+    expect((await selectionFor(f)).slots.slice(0, 3)).toEqual([
+      { memberId: gus },
+      { memberId: ava },
+      { memberId: kai },
+    ]);
+    expect((await selectionFor(e)).slots.slice(0, 2)).toEqual([
+      { memberId: null, gap: { name: "Ava Hill", reason: "picked_elsewhere" } },
+      { memberId: null, gap: { name: "Ian Kerr", reason: "picked_elsewhere" } },
+    ]);
+    const all = await db.select().from(selectionsTable).where(eq(selectionsTable.roundId, r.id));
+    const ids = all.flatMap((s) =>
+      s.slots.flatMap((x) => (x.memberId != null ? [x.memberId] : [])),
+    );
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it("does nothing for another tenant's round", async () => {
     await expect(buildRoundDrafts(otherTenantId, roundId, NOW)).resolves.toMatchObject({
       created: 0,

@@ -20,6 +20,8 @@ export interface SquadImportResult {
   deactivated: number;
   /** Members newly linked to a club player record */
   linked: number;
+  /** Members whose contacts were kept because a player or guardian changed them from their link and an admin hasn't cleared the flag yet */
+  contactsKept: number;
   skipped: SquadImportSkip[];
   skippedByReason: SquadImportResultSkippedByReasonItem[];
 }

@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ROLE_LABEL } from "@/components/selection/labels";
 import { cn } from "@/lib/utils";
 
 const PERTH = "Australia/Perth";
@@ -28,13 +29,7 @@ const STATUS_OPTIONS: { value: AvailabilityStatus; label: string; pressed: strin
   { value: "maybe", label: "Maybe", pressed: "bg-amber-500 border-amber-500 text-white" },
 ];
 
-const ROLE_LABELS: Record<string, string> = {
-  C: "Captain",
-  WK: "Wicketkeeper",
-  "C/WK": "Captain and wicketkeeper",
-};
-
-// Server error codes (U5) → what the player is told.
+// Server error codes → what the player is told.
 const ERROR_TEXT: Record<string, string> = {
   selection_final: 'Your side for this day is final. Use "Can\'t make it" below instead.',
   date_not_asked: "This day isn't one you're being asked about.",
@@ -45,13 +40,17 @@ const ERROR_TEXT: Record<string, string> = {
   invalid_mobile: "Enter an Australian mobile number, like 0412 345 678.",
   invalid_email: "Enter a valid email address.",
   not_selected: "You're no longer in a side this round.",
+  match_started: "Your match has started, so the side can't change now. Contact your captain.",
+  too_many_changes:
+    "Your contact details were changed in the last 12 hours. Try again later, or ask the club to update them.",
 };
 
 function errorText(e: unknown, fallback: string): string {
   const data = (e as { data?: unknown })?.data;
   const code = data && typeof data === "object" ? (data as { error?: unknown }).error : undefined;
+  if (typeof code === "string" && ERROR_TEXT[code]) return ERROR_TEXT[code];
   if ((e as { status?: number })?.status === 429) return "Too many tries. Wait a minute and retry.";
-  return (typeof code === "string" && ERROR_TEXT[code]) || fallback;
+  return fallback;
 }
 
 /** "Saturday 11 October" for a Perth YYYY-MM-DD date. */
@@ -269,7 +268,7 @@ function MatchDetails({
         {match.role ? (
           <>
             <dt className="text-muted-foreground">Role</dt>
-            <dd className="font-medium">{ROLE_LABELS[match.role] ?? match.role}</dd>
+            <dd className="font-medium">{ROLE_LABEL[match.role] ?? match.role}</dd>
           </>
         ) : null}
       </dl>
@@ -599,7 +598,7 @@ function Shell({ page, children }: { page?: AvailabilityResponsePage; children: 
 /**
  * Public page a player or guardian opens from their availability message
  * (`/availability/:token`). No login: the token in the path is the credential,
- * scoped to one recipient of one member for one round (KTD5). Every write
+ * scoped to one recipient of one member for one round. Every write
  * returns the whole page, which replaces the cached copy.
  */
 export default function AvailabilityRespond() {

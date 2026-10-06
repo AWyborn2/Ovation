@@ -65,8 +65,8 @@ function Heading({
 }
 
 /**
- * Players not in any side (R23): Available, Maybe, No reply (with the remind
- * action, R28) and Unavailable (collapsed). The search filters every group.
+ * Players not in any side: Available, Maybe, No reply (with the remind
+ * action) and Unavailable (collapsed). The search filters every group.
  * Each group is a drop zone, so dragging a side player here takes them out.
  */
 export function PlayerPool({

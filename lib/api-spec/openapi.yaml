@@ -2328,13 +2328,23 @@ paths:
         "selection") and messages each newly selected member (or their
         guardians) with the match details and a "can't make it" link. On a
         re-finalise, members dropped since the last finalise are told too. A
-        side may be finalised without a captain or keeper.
+        side may be finalised without a captain or keeper. The body carries the
+        side's version as loaded, so a side changed since can't be published
+        unseen. A member every delivery failed for is not marked notified, so
+        the next finalise tries them again. A private member is published as
+        "Private Player". Refused once the match has started.
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelectionFinaliseBody"
       responses:
         "200":
           description: Finalised
@@ -2342,6 +2352,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SelectionFinaliseResult"
+        "400":
+          description: No version in the body
         "401":
           description: Not signed in as this club's admin or captain
         "403":
@@ -2349,7 +2361,7 @@ paths:
         "404":
           description: Side not found
         "409":
-          description: Already finalised
+          description: Already finalised, changed since the caller loaded it, or the match has started
 
   /selection/{id}/reopen:
     post:
@@ -2358,7 +2370,8 @@ paths:
       summary: Re-open a finalised side for changes (admin or captain)
       description: |
         Returns the side to draft and logs it. The published team list stays as
-        last finalised until the side is finalised again.
+        last finalised until the side is finalised again. Refused once the match
+        has started.
       parameters:
         - name: id
           in: path
@@ -2379,7 +2392,7 @@ paths:
         "404":
           description: Side not found
         "409":
-          description: The side is not finalised
+          description: The side is not finalised, or the match has started
 
   /selection/rounds/current/remind:
     post:
@@ -2561,7 +2574,9 @@ paths:
         notice goes to the previous mobile and email, the change is flagged for
         the club's admins, and every other live link of this recipient for the
         round stops working (this one keeps working). A new mobile clears that
-        contact's SMS opt-out. The contact is returned masked.
+        contact's SMS opt-out. The contact is returned masked. One change per
+        member every 12 hours; another within that time is refused with
+        `{"error": "too_many_changes"}`.
       requestBody:
         required: true
         content:
@@ -2580,7 +2595,7 @@ paths:
         "404":
           description: Unknown, expired or revoked link
         "429":
-          description: Too many requests
+          description: Too many requests, or a contact change within 12 hours of the last (too_many_changes)
 
   /availability/respond/{token}/withdraw:
     parameters:
@@ -2611,7 +2626,7 @@ paths:
         "404":
           description: Unknown, expired or revoked link
         "409":
-          description: The member isn't in a side this round
+          description: The member isn't in a side this round (not_selected), or the match has started (match_started)
         "429":
           description: Too many requests
 
@@ -12370,7 +12385,7 @@ components:
 
     SquadImportResult:
       type: object
-      required: [season, created, updated, deactivated, linked, skipped, skippedByReason]
+      required: [season, created, updated, deactivated, linked, contactsKept, skipped, skippedByReason]
       properties:
         season:
           type: ["string", "null"]
@@ -12385,6 +12400,9 @@ components:
         linked:
           type: integer
           description: Members newly linked to a club player record
+        contactsKept:
+          type: integer
+          description: Members whose contacts were kept because a player or guardian changed them from their link and an admin hasn't cleared the flag yet
         skipped:
           type: array
           items:
@@ -12613,7 +12631,7 @@ components:
 
     SelectionGapReason:
       type: string
-      enum: [no, maybe, no_reply, not_on_register, withdrew]
+      enum: [no, maybe, no_reply, not_on_register, withdrew, picked_elsewhere]
 
     SelectionGap:
       type: object
@@ -12898,6 +12916,14 @@ components:
           items:
             $ref: "#/components/schemas/SelectionChange"
 
+    SelectionFinaliseBody:
+      type: object
+      required: [version]
+      properties:
+        version:
+          type: integer
+          description: The side's version as the caller loaded it
+
     SelectionFinaliseResult:
       type: object
       required: [selection, messaged]
@@ -12906,7 +12932,7 @@ components:
           $ref: "#/components/schemas/SelectionSide"
         messaged:
           type: object
-          required: [selected, deselected]
+          required: [selected, deselected, failed]
           properties:
             selected:
               type: integer
@@ -12914,6 +12940,9 @@ components:
             deselected:
               type: integer
               description: Members dropped since the last finalise who were told
+            failed:
+              type: integer
+              description: Members every delivery failed for; the next finalise tries them again
 
     SelectionRemindBody:
       type: object

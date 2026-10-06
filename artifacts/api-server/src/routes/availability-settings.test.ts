@@ -181,6 +181,27 @@ describe("availability settings API", () => {
     expect(bad.status).toBe(400);
   });
 
+  it("PUT with a Saturday or Sunday send day → 400, and nothing is saved", async () => {
+    for (const sendDow of [6, 0]) {
+      const res = await as(cookieA, tenantA).put("/api/availability/settings", {
+        ...VALID,
+        sendDow,
+        sendTime: "08:00",
+        reminderDow: 6,
+        reminderTime: "09:00",
+        cutoffDow: 6,
+        cutoffTime: "10:00",
+        finaliseDow: 6,
+        finaliseTime: "11:00",
+      });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("The send day must be before the weekend (Monday to Friday).");
+    }
+    const saved = await as(cookieA, tenantA).get("/api/availability/settings");
+    expect(saved.body.sendDow).not.toBe(6);
+    expect(saved.body.sendDow).not.toBe(0);
+  });
+
   it("Run now refuses while the club is switched off", async () => {
     const res = await as(cookieA, tenantA).post("/api/availability/rounds/current/send");
     expect(res.status).toBe(400);

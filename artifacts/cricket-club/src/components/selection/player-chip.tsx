@@ -3,9 +3,9 @@ import type { SelectionMember } from "@workspace/api-client-react";
 import { MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { gradeCode } from "@/lib/grade-code";
-import { STATUS } from "./labels";
+import { ROLE_LABEL, STATUS } from "./labels";
 
-/** The availability mark: a glyph on the status colour (R22). */
+/** The availability mark: a glyph on the status colour. */
 export function StatusMark({
   status,
   className,
@@ -46,10 +46,10 @@ function Grip() {
 export type ChipRole = "C" | "WK" | "C/WK" | null;
 
 /**
- * A player on the board (R22): availability mark, name, captain/keeper badge,
+ * A player on the board: availability mark, name, captain/keeper badge,
  * junior tag, the grade they last played when it differs from where they sit,
  * and a note marker. A picked player who said No, Maybe or hasn't replied is
- * flagged (R26). Clicking or pressing Enter opens their details (R25); a
+ * flagged. Clicking or pressing Enter opens their details; a
  * draggable chip starts a drag from anywhere with a mouse, or from the grip
  * on touch.
  */
@@ -74,8 +74,7 @@ export function PlayerChip({
   const s = STATUS[member.status];
   const picked = inSide != null;
   const showFrom = member.lastGrade && (!picked || member.lastGrade !== inSide);
-  const roleTitle =
-    role === "C/WK" ? "Captain and wicketkeeper" : role === "C" ? "Captain" : "Wicketkeeper";
+  const roleTitle = role ? ROLE_LABEL[role] : "";
   return (
     <button
       type="button"

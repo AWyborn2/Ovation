@@ -14,7 +14,7 @@ import { StatusMark } from "./player-chip";
 type Option = { value: string; label: string; disabled: boolean };
 
 /**
- * Move-to destinations for a player (R25, R27): the pool when they're in a
+ * Move-to destinations for a player: the pool when they're in a
  * side, then every other side the caller can edit. Finalised and full sides
  * are listed but disabled; sides the caller can't edit are left out.
  */
@@ -55,9 +55,9 @@ function lockedReason(state: BoardState, memberId: number): string | null {
 }
 
 /**
- * The tap / keyboard alternative to dragging (R25): a player's availability,
+ * The tap / keyboard alternative to dragging: a player's availability,
  * note and last grade, "Move to" and, in a side the caller can edit, "Make
- * captain" / "Make keeper" and their remove actions (R36). Never shows a
+ * captain" / "Make keeper" and their remove actions. Never shows a
  * contact value.
  */
 export function MoveDialog({

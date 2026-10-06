@@ -11,4 +11,6 @@ export type SelectionFinaliseResultMessaged = {
   selected: number;
   /** Members dropped since the last finalise who were told */
   deselected: number;
+  /** Members every delivery failed for; the next finalise tries them again */
+  failed: number;
 };

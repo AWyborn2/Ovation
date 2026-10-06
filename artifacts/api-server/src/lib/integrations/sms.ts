@@ -1,15 +1,16 @@
 import { env } from "../../config";
 
 /**
- * SMS through Twilio's Messages REST API (plan 2026-10-06-002 KTD3), mirroring
- * the email adapter: off when the credentials or a sender are missing, one
- * retry, then the failure goes back to the caller — SMS never blocks the state
- * change it describes.
+ * SMS through Twilio's Messages REST API, mirroring
+ * the email adapter: off when the credentials or a sender are missing, each
+ * request bounded by {@link SMS_TIMEOUT_MS}, one retry for a failure that may
+ * be transient (a network error, a timeout, a 429 or a 5xx), then the failure
+ * goes back to the caller — SMS never blocks the state change it describes.
  *
  * STOP is Twilio's built-in opt-out (Advanced Opt-Out on a two-way Australian
  * number or Messaging Service pool). A send to a number that replied STOP
  * fails with error 21610, reported here as `opted_out` so the caller can flag
- * that contact and go email-only for it (R13). There is no inbound webhook.
+ * that contact and go email-only for it. There is no inbound webhook.
  *
  * Results and errors never carry a number, an address or a credential: any
  * error text is passed through {@link redactContact} before it leaves here.
@@ -23,11 +24,18 @@ export type SmsTransport = (message: SmsMessage) => Promise<void>;
 /** Twilio error 21610: the recipient replied STOP to this sender. */
 export const TWILIO_OPTED_OUT = 21610;
 
-/** A transport failure carrying Twilio's numeric error code when it gave one. */
+/** How long one Twilio request may take before it is abandoned. */
+export const SMS_TIMEOUT_MS = 10_000;
+
+/**
+ * A transport failure carrying Twilio's numeric error code and the HTTP status
+ * when it gave them.
+ */
 export class SmsTransportError extends Error {
   constructor(
     message: string,
     readonly code?: number,
+    readonly status?: number,
   ) {
     super(message);
     this.name = "SmsTransportError";
@@ -51,6 +59,7 @@ const twilioTransport: SmsTransport = async (message) => {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: form.toString(),
+      signal: AbortSignal.timeout(SMS_TIMEOUT_MS),
     },
   );
   if (res.ok) return;
@@ -62,7 +71,7 @@ const twilioTransport: SmsTransport = async (message) => {
   }
   const code = typeof body?.code === "number" ? body.code : undefined;
   const detail = typeof body?.message === "string" ? `: ${body.message}` : "";
-  throw new SmsTransportError(`Twilio responded ${res.status}${detail}`, code);
+  throw new SmsTransportError(`Twilio responded ${res.status}${detail}`, code, res.status);
 };
 
 let override: SmsTransport | null = null;
@@ -147,6 +156,17 @@ function errorCode(err: unknown): number | undefined {
   return typeof code === "number" ? code : undefined;
 }
 
+/**
+ * True when trying again might work: a network error or timeout (anything that
+ * isn't Twilio's answer), a 429 or a 5xx. Another 4xx, or a Twilio error code
+ * without a status, would only fail the same way.
+ */
+function retryable(err: unknown): boolean {
+  if (!(err instanceof SmsTransportError)) return true;
+  if (err.status != null) return err.status === 429 || err.status >= 500;
+  return err.code == null;
+}
+
 export async function sendSms(message: SmsMessage): Promise<SmsResult> {
   if (!smsEnabled()) return { sent: false, reason: "disabled" };
   const to = normaliseAuMobile(message.to);
@@ -162,6 +182,7 @@ export async function sendSms(message: SmsMessage): Promise<SmsResult> {
       // An opt-out is final: retrying would only fail the same way.
       if (errorCode(err) === TWILIO_OPTED_OUT) return { sent: false, reason: "opted_out" };
       lastError = err;
+      if (!retryable(err)) break;
     }
   }
   const text = lastError instanceof Error ? lastError.message : String(lastError);

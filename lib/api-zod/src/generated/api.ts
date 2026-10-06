@@ -2645,6 +2645,7 @@ export const ImportSquadResponse = zod.object({
   "updated": zod.number(),
   "deactivated": zod.number().describe('Existing members stood down because their registration is no longer active'),
   "linked": zod.number().describe('Members newly linked to a club player record'),
+  "contactsKept": zod.number().describe('Members whose contacts were kept because a player or guardian changed them from their link and an admin hasn\'t cleared the flag yet'),
   "skipped": zod.array(zod.object({
   "line": zod.number().describe('Line in the uploaded file (the header is line 1)'),
   "name": zod.string(),
@@ -3030,7 +3031,7 @@ export const GetSelectionBoardResponse = zod.object({
   "memberId": zod.number().nullable(),
   "gap": zod.union([zod.object({
   "name": zod.string().min(1),
-  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew'])
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew', 'picked_elsewhere'])
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
@@ -3108,7 +3109,7 @@ export const SaveSelectionBoardBody = zod.object({
   "memberId": zod.number().nullable(),
   "gap": zod.union([zod.object({
   "name": zod.string().min(1),
-  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew'])
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew', 'picked_elsewhere'])
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]).optional()
 })).describe('The side\'s 11 slots, in order'),
   "captainMemberId": zod.number().nullable(),
@@ -3166,7 +3167,7 @@ export const SaveSelectionBoardResponse = zod.object({
   "memberId": zod.number().nullable(),
   "gap": zod.union([zod.object({
   "name": zod.string().min(1),
-  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew'])
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew', 'picked_elsewhere'])
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
@@ -3225,12 +3226,20 @@ export const SaveSelectionBoardResponse = zod.object({
 "selection") and messages each newly selected member (or their
 guardians) with the match details and a "can't make it" link. On a
 re-finalise, members dropped since the last finalise are told too. A
-side may be finalised without a captain or keeper.
+side may be finalised without a captain or keeper. The body carries the
+side's version as loaded, so a side changed since can't be published
+unseen. A member every delivery failed for is not marked notified, so
+the next finalise tries them again. A private member is published as
+"Private Player". Refused once the match has started.
 
  * @summary Finalise a side and publish it as the fixture's team list (admin or captain)
  */
 export const FinaliseSelectionParams = zod.object({
   "id": zod.coerce.number()
+})
+
+export const FinaliseSelectionBody = zod.object({
+  "version": zod.number().describe('The side\'s version as the caller loaded it')
 })
 
 
@@ -3256,7 +3265,7 @@ export const FinaliseSelectionResponse = zod.object({
   "memberId": zod.number().nullable(),
   "gap": zod.union([zod.object({
   "name": zod.string().min(1),
-  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew'])
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew', 'picked_elsewhere'])
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
@@ -3288,14 +3297,16 @@ export const FinaliseSelectionResponse = zod.object({
 }),
   "messaged": zod.object({
   "selected": zod.number().describe('Newly selected members messaged'),
-  "deselected": zod.number().describe('Members dropped since the last finalise who were told')
+  "deselected": zod.number().describe('Members dropped since the last finalise who were told'),
+  "failed": zod.number().describe('Members every delivery failed for; the next finalise tries them again')
 })
 })
 
 
 /**
  * Returns the side to draft and logs it. The published team list stays as
-last finalised until the side is finalised again.
+last finalised until the side is finalised again. Refused once the match
+has started.
 
  * @summary Re-open a finalised side for changes (admin or captain)
  */
@@ -3325,7 +3336,7 @@ export const ReopenSelectionResponse = zod.object({
   "memberId": zod.number().nullable(),
   "gap": zod.union([zod.object({
   "name": zod.string().min(1),
-  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew'])
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew', 'picked_elsewhere'])
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
@@ -3593,7 +3604,9 @@ export const RemoveAvailabilityAwayResponse = zod.object({
 notice goes to the previous mobile and email, the change is flagged for
 the club's admins, and every other live link of this recipient for the
 round stops working (this one keeps working). A new mobile clears that
-contact's SMS opt-out. The contact is returned masked.
+contact's SMS opt-out. The contact is returned masked. One change per
+member every 12 hours; another within that time is refused with
+`{"error": "too_many_changes"}`.
 
  * @summary Correct this recipient's own mobile or email
  */

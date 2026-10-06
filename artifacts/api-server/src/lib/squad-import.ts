@@ -12,25 +12,25 @@ import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { norm } from "./name-match";
 
 /**
- * PlayHQ participant export → the club's squad register (plan 2026-10-06-002
- * U3, R1–R4, R7; KTD1, KTD7).
+ * PlayHQ participant export → the club's squad register.
  *
  * The export carries ~70 columns, most of them sensitive (Indigenous status,
  * country of birth, disability, WWC, addresses, school, emergency contacts…).
- * Only the R2 whitelist is ever read: the parser picks those columns by header
+ * Only a whitelist of columns is ever read: the parser picks those columns by
+ * header
  * name and drops every other cell before a row object exists, so a discarded
- * value can never be stored, logged or echoed (R3). Parse errors are reported
+ * value can never be stored, logged or echoed. Parse errors are reported
  * by line number only — csv-parse's own messages can quote cell text.
  *
- * Eligibility (R4): `Role` names a player, `Status` is active, the row is in
+ * Eligibility: `Role` names a player, `Status` is active, the row is in
  * the file's current season (its most common `Season`) and its `Host
  * Organisation ID` is the file's most common one. Everything else is skipped
- * with a reason code. A member is upserted by (tenant, Profile ID) (R1);
+ * with a reason code. A member is upserted by (tenant, Profile ID);
  * members missing from a later file are left alone, and a re-import never
  * overrides an admin's hand-set active flag.
  */
 
-/** The R2 whitelist — the only export columns ever read. */
+/** The column whitelist — the only export columns ever read. */
 export const SQUAD_IMPORT_COLUMNS = [
   "Profile ID",
   "First Name",
@@ -149,7 +149,7 @@ export function parseSquadCsv(content: string): ParsedSquadCsv {
   return { rows };
 }
 
-/** Junior when an age group or grade names an under-age group (KTD2). */
+/** Junior when an age group or grade names an under-age group. */
 export function isJuniorLabel(s: string): boolean {
   return /\bunder\b|\bu\s?-?\s?\d{1,2}(?!\d)|junior/i.test(s);
 }
@@ -311,7 +311,7 @@ export function planSquadImport(parsed: ParsedSquadCsv): SquadImportPlan {
   return { season, members, skipped, inactiveProfileIds: [...inactive] };
 }
 
-/** Normalised full-name keys a member can be recognised by in team lists (KTD7). */
+/** Normalised full-name keys a member can be recognised by in team lists. */
 export function memberNameKeys(m: {
   firstName: string;
   lastName: string;
@@ -323,9 +323,9 @@ export function memberNameKeys(m: {
 }
 
 /**
- * Link candidates for KTD7: the tenant's `player_id_map` rows for these
+ * Link candidates: the tenant's `player_id_map` rows for these
  * profile ids, and the unambiguous name → playerId pairs in its team-list
- * history. Fill-in ids (>= FILL_IN_THRESHOLD) are never candidates (R7).
+ * history. Fill-in ids (>= FILL_IN_THRESHOLD) are never candidates.
  */
 async function loadLinkSources(
   tenantId: number,
@@ -380,6 +380,8 @@ export type SquadImportResult = {
   deactivated: number;
   /** Members newly linked to an app player this import. */
   linked: number;
+  /** Members whose contacts were kept: changed from their link, flag not yet cleared. */
+  contactsKept: number;
   skipped: SquadSkip[];
   skippedByReason: Array<{ reason: SquadSkipReason; count: number }>;
 };
@@ -394,8 +396,11 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * - A member an admin has set inactive (including one removed on a guardian's
  *   request, see `DELETE /squad/:id`) keeps its name only: the import does not
  *   write contacts or date of birth back onto it.
+ * - A member whose player or guardian changed a contact from their link
+ *   (`contactChangeFlag`, until an admin clears it) keeps every contact: the
+ *   file may still hold the old details. Counted as `contactsKept`.
  * - A changed mobile clears that contact's SMS opt-out: it is a new number.
- * - Linking (KTD7) only fills an empty `linked_player_id`, so an admin's link
+ * - Linking only fills an empty `linked_player_id`, so an admin's link
  *   is never replaced, and never reuses a player already linked to another
  *   member of the tenant.
  */
@@ -416,6 +421,7 @@ export async function applySquadImport(
   let updated = 0;
   let deactivated = 0;
   let linked = 0;
+  let contactsKept = 0;
 
   await db.transaction(async (tx: Tx) => {
     const lookupIds = [...profileIds, ...plan.inactiveProfileIds];
@@ -507,7 +513,10 @@ export async function applySquadImport(
 
       const heldByAdmin = prev.activeSetByAdmin && !prev.active;
       const set: Partial<typeof squadMembersTable.$inferInsert> = { ...identity, updatedAt: now };
-      if (!heldByAdmin) {
+      if (!heldByAdmin && prev.contactChangeFlag) {
+        set.dateOfBirth = contacts.dateOfBirth;
+        contactsKept++;
+      } else if (!heldByAdmin) {
         Object.assign(set, contacts);
         if (contacts.accountHolderMobile !== prev.accountHolderMobile) {
           set.accountSmsOptOut = false;
@@ -549,6 +558,7 @@ export async function applySquadImport(
     updated,
     deactivated,
     linked,
+    contactsKept,
     skipped: plan.skipped,
     skippedByReason: [...reasonCounts].map(([reason, count]) => ({ reason, count })),
   };

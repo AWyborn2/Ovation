@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import { and, asc, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, ne, sql } from "drizzle-orm";
 import {
   db,
   availabilityResponsesTable,
@@ -26,7 +26,6 @@ import {
   normaliseName,
   perthDate,
   roundWindow,
-  type GradeList,
 } from "./availability-grades";
 import {
   DEFAULT_SCHEDULE,
@@ -37,38 +36,40 @@ import {
   roundSlots,
   roundWeekendFor,
 } from "./availability-schedule";
-import { isUnder18, messageMember, notifyStaff } from "./availability-messaging";
+import { isUnder18, messageMember, notifyStaff, type MessageBatch } from "./availability-messaging";
 import { SIDE_SIZE, loadResponses } from "./selection-drafts";
 import type { SelectionActor } from "../middlewares/require-admin-or-captain";
 import { logger as defaultLogger } from "./logger";
 
 /**
- * The Selection Hub's board (plan 2026-10-06-002 U7; R19–R39, KTD6, KTD8,
- * KTD9; F2, F3).
+ * The Selection Hub's board.
  *
  * - `buildBoard` reads one section's view of the current round: the round
  *   header and counts, each side with its slots, roles and the caller's edit
  *   right, the pool of unplaced active members and the latest changes. Member
  *   summaries are built from explicitly listed non-contact columns, so no
- *   mobile or email can reach a captain (R6).
+ *   mobile or email can reach a captain.
  * - `saveBoard` applies whole-side changes in one transaction with the round's
- *   sides locked (KTD8): rights, the final lock, versions, 11 slots and "no
- *   member twice in the round" are all checked before anything is written; a
- *   captain or keeper no longer in their side is cleared and logged (R38).
+ *   sides locked: rights, the final lock, versions, 11 slots and "no
+ *   member twice in the round" (for the members the save places) are all
+ *   checked before anything is written; a captain or keeper no longer in their
+ *   side is cleared and logged.
  * - `finaliseSelection` publishes a side as the fixture's team list (source
- *   "selection", KTD6) and messages only the members the change affects (R31,
- *   R32); `reopenSelection` returns it to draft and leaves the list alone.
- * - `withdrawFromSelection` is a selected player's "can't make it" (R33).
+ *   "selection"; a private member as "Private Player") and messages only the
+ *   members the change affects; `reopenSelection` returns it to draft and
+ *   leaves the list alone.
+ * - `withdrawFromSelection` is a selected player's "can't make it".
+ * - Finalise, re-open and withdraw are refused once the match has started.
  *
- * Edit rights come from the club's selection rule (KTD9): admins edit any
+ * Edit rights come from the club's selection rule: admins edit any
  * side; captains edit their own grades, every grade, or none.
  */
 
 type Logger = { warn: (obj: unknown, msg?: string) => void };
 
-/** Who a `selection_events` row names (R29). */
+/** Who a `selection_events` row names. */
 export type EventActor = {
-  kind: "admin" | "captain" | "player" | "system";
+  kind: SelectionActor["kind"] | "player" | "system";
   id: number | null;
   name: string | null;
 };
@@ -84,7 +85,7 @@ export class SelectionError extends Error {
   }
 }
 
-// --- Edit rights (KTD9) ---
+// --- Edit rights ---
 
 /**
  * A grade label for comparison: lower case, spaces collapsed, and a trailing
@@ -124,7 +125,7 @@ export function selectionRight(
   };
 }
 
-/** May this actor remind non-responders (R28)? Anyone with an edit right somewhere. */
+/** May this actor remind non-responders? Anyone with an edit right somewhere. */
 export function canRemind(actor: SelectionActor, rule: SelectionRule): boolean {
   if (actor.kind === "admin") return true;
   if (rule === "admins_only") return false;
@@ -195,7 +196,7 @@ export type BoardSide = {
 export type Board = {
   section: SquadSection;
   actor: {
-    kind: "admin" | "captain";
+    kind: SelectionActor["kind"];
     name: string;
     selectionRule: SelectionRule;
     canRemind: boolean;
@@ -227,7 +228,7 @@ export type Board = {
   }[];
 };
 
-/** The member columns the board reads — deliberately no contact column (R6). */
+/** The member columns the board reads — deliberately no contact column. */
 const MEMBER_COLUMNS = {
   id: squadMembersTable.id,
   firstName: squadMembersTable.firstName,
@@ -281,7 +282,7 @@ export async function loadCurrentRound(
 }
 
 /**
- * One section's board for the current round (R20–R23, R27). With no round yet,
+ * One section's board for the current round. With no round yet,
  * the board has no header or sides and the whole active section is the pool.
  */
 export async function buildBoard(
@@ -293,55 +294,93 @@ export async function buildBoard(
   const { rule, weekendDate, slots: stepSlots, round } = await currentRound(tenantId, now);
   const window = roundWindow(weekendDate);
 
-  const members: BoardMemberRow[] = await db
-    .select(MEMBER_COLUMNS)
-    .from(squadMembersTable)
-    .where(eq(squadMembersTable.tenantId, tenantId));
+  // Independent reads, run together. `sides` is every side of the round (any
+  // section), so a member placed anywhere is out of the pool; `statusByDate` is
+  // each member's status per Perth date (away periods count as No) and
+  // `replies` the reply details — a row the system recorded (away) is not a
+  // reply; `windowFixtures`, `grades` and `lists` give each member's last grade
+  // and the dates they were asked about.
+  const [members, sides, statusByDate, replies, windowFixtures, grades, lists] = await Promise.all([
+    db
+      .select(MEMBER_COLUMNS)
+      .from(squadMembersTable)
+      .where(eq(squadMembersTable.tenantId, tenantId)),
+    round
+      ? db
+          .select({ selection: selectionsTable, fixture: fixturesTable })
+          .from(selectionsTable)
+          .innerJoin(
+            fixturesTable,
+            and(
+              eq(fixturesTable.id, selectionsTable.fixtureId),
+              eq(fixturesTable.tenantId, selectionsTable.tenantId),
+            ),
+          )
+          .where(and(eq(selectionsTable.tenantId, tenantId), eq(selectionsTable.roundId, round.id)))
+          .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id))
+      : [],
+    round
+      ? loadResponses(tenantId, round.id, window.from, window.to)
+      : new Map<number, ReadonlyMap<string, AvailabilityStatus>>(),
+    round
+      ? db
+          .select({
+            memberId: availabilityResponsesTable.memberId,
+            note: availabilityResponsesTable.note,
+            respondedAt: availabilityResponsesTable.respondedAt,
+            respondedBySlot: availabilityResponsesTable.respondedBySlot,
+            late: availabilityResponsesTable.late,
+          })
+          .from(availabilityResponsesTable)
+          .where(
+            and(
+              eq(availabilityResponsesTable.tenantId, tenantId),
+              eq(availabilityResponsesTable.roundId, round.id),
+            ),
+          )
+          .orderBy(asc(availabilityResponsesTable.respondedAt))
+      : [],
+    db
+      .select({ grade: fixturesTable.grade, startAt: fixturesTable.startAt })
+      .from(fixturesTable)
+      .where(
+        and(
+          eq(fixturesTable.tenantId, tenantId),
+          gte(fixturesTable.startAt, window.from),
+          lt(fixturesTable.startAt, window.to),
+        ),
+      ),
+    db
+      .selectDistinct({ grade: fixturesTable.grade })
+      .from(fixturesTable)
+      .where(eq(fixturesTable.tenantId, tenantId)),
+    db
+      .select({
+        grade: fixturesTable.grade,
+        startAt: fixturesTable.startAt,
+        players: teamListsTable.players,
+      })
+      .from(teamListsTable)
+      .innerJoin(
+        fixturesTable,
+        and(
+          eq(fixturesTable.id, teamListsTable.fixtureId),
+          eq(fixturesTable.tenantId, teamListsTable.tenantId),
+        ),
+      )
+      .where(
+        and(
+          eq(teamListsTable.tenantId, tenantId),
+          lt(fixturesTable.startAt, window.from),
+          sql`jsonb_array_length(${teamListsTable.players}) > 0`,
+        ),
+      ),
+  ]);
   const byId = new Map(members.map((m) => [m.id, m]));
-
-  // Every side of the round (any section), so a member placed anywhere is out of the pool.
-  const sides = round
-    ? await db
-        .select({ selection: selectionsTable, fixture: fixturesTable })
-        .from(selectionsTable)
-        .innerJoin(
-          fixturesTable,
-          and(
-            eq(fixturesTable.id, selectionsTable.fixtureId),
-            eq(fixturesTable.tenantId, selectionsTable.tenantId),
-          ),
-        )
-        .where(and(eq(selectionsTable.tenantId, tenantId), eq(selectionsTable.roundId, round.id)))
-        .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id))
-    : [];
   const placed = new Set<number>();
   for (const s of sides) {
     for (const slot of s.selection.slots) if (slot.memberId != null) placed.add(slot.memberId);
   }
-
-  // Answers: status per Perth date (away periods count as No), plus the reply
-  // details — a row the system recorded (away) is not a reply.
-  const statusByDate = round
-    ? await loadResponses(tenantId, round.id, window.from, window.to)
-    : new Map<number, ReadonlyMap<string, AvailabilityStatus>>();
-  const replies = round
-    ? await db
-        .select({
-          memberId: availabilityResponsesTable.memberId,
-          note: availabilityResponsesTable.note,
-          respondedAt: availabilityResponsesTable.respondedAt,
-          respondedBySlot: availabilityResponsesTable.respondedBySlot,
-          late: availabilityResponsesTable.late,
-        })
-        .from(availabilityResponsesTable)
-        .where(
-          and(
-            eq(availabilityResponsesTable.tenantId, tenantId),
-            eq(availabilityResponsesTable.roundId, round.id),
-          ),
-        )
-        .orderBy(asc(availabilityResponsesTable.respondedAt))
-    : [];
   const replyOf = new Map<number, { note: string | null; at: Date | null; late: boolean }>();
   for (const r of replies) {
     const prev = replyOf.get(r.memberId) ?? { note: null, at: null, late: false };
@@ -352,42 +391,6 @@ export async function buildBoard(
     });
   }
 
-  // Last grade (KTD12) and the dates each member was asked about.
-  const windowFixtures = await db
-    .select({ grade: fixturesTable.grade, startAt: fixturesTable.startAt })
-    .from(fixturesTable)
-    .where(
-      and(
-        eq(fixturesTable.tenantId, tenantId),
-        gte(fixturesTable.startAt, window.from),
-        lt(fixturesTable.startAt, window.to),
-      ),
-    );
-  const grades = await db
-    .selectDistinct({ grade: fixturesTable.grade })
-    .from(fixturesTable)
-    .where(eq(fixturesTable.tenantId, tenantId));
-  const lists: GradeList[] = await db
-    .select({
-      grade: fixturesTable.grade,
-      startAt: fixturesTable.startAt,
-      players: teamListsTable.players,
-    })
-    .from(teamListsTable)
-    .innerJoin(
-      fixturesTable,
-      and(
-        eq(fixturesTable.id, teamListsTable.fixtureId),
-        eq(fixturesTable.tenantId, teamListsTable.tenantId),
-      ),
-    )
-    .where(
-      and(
-        eq(teamListsTable.tenantId, tenantId),
-        lt(fixturesTable.startAt, window.from),
-        sql`jsonb_array_length(${teamListsTable.players}) > 0`,
-      ),
-    );
   const lastGrade = memberGrades(
     members,
     lists,
@@ -532,7 +535,7 @@ export async function buildBoard(
   };
 }
 
-// --- Board save (KTD8) ---
+// --- Board save ---
 
 export type SideChange = {
   selectionId: number;
@@ -578,7 +581,7 @@ const memberIdsOf = (slots: readonly { memberId: number | null }[]) =>
   slots.flatMap((s) => (s.memberId != null ? [s.memberId] : []));
 
 /**
- * Apply whole-side changes atomically (KTD8). Throws `SelectionError` (and
+ * Apply whole-side changes atomically. Throws `SelectionError` (and
  * writes nothing) for: a side not found (404); a side — or a member taken from
  * a side — the actor may not edit (403); a finalised side or a stale version
  * (409); not 11 slots, a member twice in the round, an unknown member or a
@@ -669,7 +672,7 @@ export async function saveBoard(
         if (!before.has(id) && !m.active) {
           throw new SelectionError(400, `${nameOf(id)} isn't an active squad member.`);
         }
-        // Taking a member from a side the save doesn't change (R27).
+        // Taking a member from a side the save doesn't change.
         const holder = holderOf.get(id);
         if (holder && holder.selection.id !== c.selectionId && !changing.has(holder.selection.id)) {
           const right = selectionRight(actor, rule, holder.fixture.grade);
@@ -683,18 +686,23 @@ export async function saveBoard(
       }
     }
 
-    // No member twice in the round once every change is applied.
-    const after = new Map<number, readonly { memberId: number | null }[]>(
-      sides.map((s) => [s.selection.id, s.selection.slots]),
-    );
-    for (const c of changes) after.set(c.selectionId, c.slots);
-    const seen = new Set<number>();
-    for (const slots of after.values()) {
-      for (const id of memberIdsOf(slots)) {
-        if (seen.has(id)) {
-          throw new SelectionError(400, `${nameOf(id)} can only be picked once in a round.`);
-        }
-        seen.add(id);
+    // No member twice in the round: refuse a save that places anyone more often
+    // than before. A duplicate already in the round (an older draft) can't then
+    // block saving an unrelated side.
+    const placements = (bySide: ReadonlyMap<number, readonly { memberId: number | null }[]>) => {
+      const count = new Map<number, number>();
+      for (const slots of bySide.values()) {
+        for (const id of memberIdsOf(slots)) count.set(id, (count.get(id) ?? 0) + 1);
+      }
+      return count;
+    };
+    const beforeSlots = new Map(sides.map((s) => [s.selection.id, s.selection.slots]));
+    const afterSlots = new Map<number, readonly { memberId: number | null }[]>(beforeSlots);
+    for (const c of changes) afterSlots.set(c.selectionId, c.slots);
+    const was = placements(beforeSlots);
+    for (const [id, n] of placements(afterSlots)) {
+      if (n > 1 && n > (was.get(id) ?? 0)) {
+        throw new SelectionError(400, `${nameOf(id)} can only be picked once in a round.`);
       }
     }
 
@@ -708,7 +716,7 @@ export async function saveBoard(
             : { memberId: null },
       );
       const inSide = new Set(memberIdsOf(slots));
-      // A captain or keeper must be in their own side; otherwise the role clears (R38).
+      // A captain or keeper must be in their own side; otherwise the role clears.
       const rolesCleared: { role: "captain" | "keeper"; memberId: number; name: string }[] = [];
       let captain = c.captainMemberId;
       let keeper = c.keeperMemberId;
@@ -776,7 +784,7 @@ export async function saveBoard(
   });
 }
 
-// --- Finalise and re-open (R30–R32, R39) ---
+// --- Finalise and re-open ---
 
 /** Lock one side of the tenant with its fixture, or throw 404. */
 async function lockSide(tx: Tx, tenantId: number, selectionId: number): Promise<LockedSide> {
@@ -794,7 +802,24 @@ async function lockSide(tx: Tx, tenantId: number, selectionId: number): Promise<
   return { selection, fixture };
 }
 
-/** The team-list role for a member of the side (R35). */
+/** A side is fixed once its match has started: PlayHQ's record of who played takes over. */
+function refuseIfStarted(fixture: FixtureRow, now: Date, action: string): void {
+  if (fixture.startAt.getTime() <= now.getTime()) {
+    throw new SelectionError(
+      409,
+      `${fixture.grade} v ${fixture.opponentName} has started, so the side can't be ${action}.`,
+    );
+  }
+}
+
+/** The name a team list shows: a private member is "Private Player", as on central. */
+export const PRIVATE_PLAYER = "Private Player";
+
+function publishedName(m: BoardMemberRow): string {
+  return m.isPrivate ? PRIVATE_PLAYER : memberDisplayName(m);
+}
+
+/** The team-list role for a member of the side. */
 function roleOf(
   memberId: number,
   side: Pick<SelectionRow, "captainMemberId" | "keeperMemberId">,
@@ -806,20 +831,24 @@ function roleOf(
 
 export type FinaliseResult = {
   section: SquadSection;
-  messaged: { selected: number; deselected: number };
+  messaged: { selected: number; deselected: number; failed: number };
 };
 
 /**
- * Finalise a side (R31, R32, R39): lock it, publish its XI as the fixture's
- * team list (source "selection", published), then message the members newly
- * selected since the last finalise and — on a re-finalise — those dropped.
- * The notified set is stored in the same transaction, so a concurrent second
- * finalise can't message anyone twice. Messaging is best-effort.
+ * Finalise a side at the version the caller loaded: lock it, publish its XI as
+ * the fixture's team list (source "selection", published; a list PlayHQ
+ * supplied is left alone), then message the members newly selected since the
+ * last finalise and — on a re-finalise — those dropped. The notified set is
+ * stored in the same transaction, so a concurrent second finalise can't
+ * message anyone twice. Messaging is best-effort: a member every delivery
+ * failed for is counted and taken back out of the notified set (a failed
+ * "dropped" message is put back in), so the next finalise tries them again.
  */
 export async function finaliseSelection(
   tenantId: number,
   actor: SelectionActor,
   selectionId: number,
+  version: number,
   opts: { now?: Date; req?: Request; logger?: Logger } = {},
 ): Promise<FinaliseResult> {
   const now = opts.now ?? new Date();
@@ -834,6 +863,13 @@ export async function finaliseSelection(
     }
     if (selection.state === "final")
       throw new SelectionError(409, `${fixture.grade} is already final.`);
+    if (selection.version !== version) {
+      throw new SelectionError(
+        409,
+        `${fixture.grade} was changed by someone else. Reload to see the latest side.`,
+      );
+    }
+    refuseIfStarted(fixture, now, "finalised");
 
     const picked = memberIdsOf(selection.slots);
     const members =
@@ -853,11 +889,11 @@ export async function finaliseSelection(
       const role = roleOf(id, selection);
       players.push({
         order: players.length + 1,
-        // Fill-in ids never reach a team list (R7).
-        ...(m.linkedPlayerId != null && m.linkedPlayerId < FILL_IN_THRESHOLD
+        // Fill-in ids never reach a team list, nor does a private member's id.
+        ...(!m.isPrivate && m.linkedPlayerId != null && m.linkedPlayerId < FILL_IN_THRESHOLD
           ? { playerId: m.linkedPlayerId }
           : {}),
-        displayName: memberDisplayName(m),
+        displayName: publishedName(m),
         ...(role ? { role } : {}),
       });
     }
@@ -867,6 +903,8 @@ export async function finaliseSelection(
       .onConflictDoUpdate({
         target: [teamListsTable.tenantId, teamListsTable.fixtureId],
         set: { players, isPublished: true, source: "selection" },
+        // PlayHQ's list for the fixture is never replaced.
+        setWhere: ne(teamListsTable.source, "playhq"),
       });
 
     const notified = new Set(selection.notifiedMemberIds);
@@ -921,36 +959,89 @@ export async function finaliseSelection(
     startAt: fixture.startAt,
     venue: fixture.venue,
   };
-  const messaged = { selected: 0, deselected: 0 };
+  const logger = opts.logger ?? defaultLogger;
+  const messaged = { selected: 0, deselected: 0, failed: 0 };
+  const failed = { selected: [] as number[], deselected: [] as number[] };
+  const batch: MessageBatch = {};
   const send = async (id: number, kind: "selected" | "deselected") => {
     const member = rowOf.get(id);
     if (!member) return;
-    const out = await messageMember(
-      {
-        tenantId,
-        member,
-        kind,
-        context: {
-          roundId: selection.roundId,
-          fixture: matchFixture,
-          role: kind === "selected" ? (roleOf(id, selection) ?? null) : null,
-          req: opts.req,
+    let ok: boolean;
+    try {
+      const out = await messageMember(
+        {
+          tenantId,
+          member,
+          kind,
+          context: {
+            roundId: selection.roundId,
+            fixture: matchFixture,
+            role: kind === "selected" ? (roleOf(id, selection) ?? null) : null,
+            req: opts.req,
+          },
+          smsEnabled: settings?.smsEnabled ?? true,
+          now,
+          batch,
         },
-        smsEnabled: settings?.smsEnabled ?? true,
-        now,
-      },
-      opts.logger ?? defaultLogger,
-    );
-    if (out.results.length > 0) messaged[kind]++;
+        logger,
+      );
+      if (out.results.length === 0) return;
+      // Failed entirely: nothing went out and a channel failed (not merely off or opted out).
+      ok =
+        out.results.some((r) => r.sms === "sent" || r.email === "sent") ||
+        !out.results.some((r) => r.sms === "failed" || r.email === "failed");
+    } catch (err) {
+      // Ids and the error's type only: a message could carry a contact.
+      logger.warn(
+        {
+          tenantId,
+          selectionId: selection.id,
+          memberId: id,
+          error: err instanceof Error ? err.name : typeof err,
+        },
+        "selection message failed",
+      );
+      ok = false;
+    }
+    if (ok) messaged[kind]++;
+    else {
+      messaged.failed++;
+      failed[kind].push(id);
+    }
   };
   for (const id of plan.toSelect) await send(id, "selected");
   for (const id of plan.toDeselect) await send(id, "deselected");
+
+  if (failed.selected.length > 0 || failed.deselected.length > 0) {
+    try {
+      await db.transaction(async (tx) => {
+        const [row] = await tx
+          .select({ notifiedMemberIds: selectionsTable.notifiedMemberIds })
+          .from(selectionsTable)
+          .where(and(eq(selectionsTable.id, selection.id), eq(selectionsTable.tenantId, tenantId)))
+          .for("update");
+        if (!row) return;
+        const unsent = new Set(failed.selected);
+        const notified = row.notifiedMemberIds.filter((id) => !unsent.has(id));
+        for (const id of failed.deselected) if (!notified.includes(id)) notified.push(id);
+        await tx
+          .update(selectionsTable)
+          .set({ notifiedMemberIds: notified })
+          .where(and(eq(selectionsTable.id, selection.id), eq(selectionsTable.tenantId, tenantId)));
+      });
+    } catch (err) {
+      logger.warn(
+        { err, tenantId, selectionId: selection.id },
+        "selection notified set not updated",
+      );
+    }
+  }
   return { section: fixtureSection(fixture.grade), messaged };
 }
 
 /**
- * Re-open a finalised side (R32): back to draft and logged. The published team
- * list stays as last finalised until the next finalise (KTD6).
+ * Re-open a finalised side: back to draft and logged. The published team
+ * list stays as last finalised until the next finalise.
  */
 export async function reopenSelection(
   tenantId: number,
@@ -968,6 +1059,7 @@ export async function reopenSelection(
     if (selection.state !== "final") {
       throw new SelectionError(409, `${fixture.grade} isn't finalised.`);
     }
+    refuseIfStarted(fixture, now, "re-opened");
     await tx
       .update(selectionsTable)
       .set({ state: "draft", version: selection.version + 1, updatedAt: now })
@@ -986,16 +1078,17 @@ export async function reopenSelection(
   });
 }
 
-// --- "Can't make it" (R33, F3) ---
+// --- "Can't make it" ---
 
 /**
- * A selected player withdraws (R33): in every side of the round holding them,
+ * A selected player withdraws: in every side of the round holding them,
  * their slot becomes a gap "was <name> · withdrew", any captain or keeper role
- * they held clears (R38), a finalised side returns to draft, and their entry is
- * removed from the fixture's published Hub list (the rest stays published,
- * KTD6). They leave the side's notified set, so a re-finalise doesn't also send
- * them a "no longer selected" message. Captains and admins are alerted.
- * Returns the sides changed; none when the member isn't placed.
+ * they held clears, a finalised side returns to draft, and their entry is
+ * removed from the fixture's published Hub list (the rest stays
+ * published). They leave the side's notified set, so a re-finalise doesn't
+ * also send them a "no longer selected" message. Captains and admins are alerted.
+ * Returns the sides changed; none when the member isn't placed. Throws a 409
+ * `SelectionError` (and changes nothing) once a side holding them has started.
  */
 export async function withdrawFromSelection(
   tenantId: number,
@@ -1013,11 +1106,13 @@ export async function withdrawFromSelection(
   const name = memberDisplayName(member);
 
   const changed = await db.transaction(async (tx) => {
-    const sides = await lockRound(tx, tenantId, roundId);
+    const sides = (await lockRound(tx, tenantId, roundId)).filter((s) =>
+      s.selection.slots.some((slot) => slot.memberId === memberId),
+    );
+    for (const { fixture } of sides) refuseIfStarted(fixture, now, "changed");
     const out: LockedSide[] = [];
     for (const side of sides) {
       const { selection, fixture } = side;
-      if (!selection.slots.some((s) => s.memberId === memberId)) continue;
       const slots: SelectionSlot[] = selection.slots.map((s) =>
         s.memberId === memberId ? { memberId: null, gap: { name, reason: "withdrew" } } : s,
       );
@@ -1054,12 +1149,25 @@ export async function withdrawFromSelection(
           member.linkedPlayerId != null && member.linkedPlayerId < FILL_IN_THRESHOLD
             ? member.linkedPlayerId
             : null;
-        const key = normaliseName(name);
+        // A private member is listed without an id as "Private Player": drop one
+        // such entry, preferring the one with the role they held.
+        const key = normaliseName(member.isPrivate ? PRIVATE_PLAYER : name);
+        const role = roleOf(memberId, selection);
+        const privateAt = member.isPrivate
+          ? (() => {
+              const at = list.players
+                .map((p, i) => [p, i] as const)
+                .filter(([p]) => p.playerId == null && normaliseName(p.displayName) === key);
+              return (at.find(([p]) => p.role === role) ?? at[0])?.[1] ?? -1;
+            })()
+          : -1;
         const players = list.players
-          .filter((p) =>
-            linked != null && p.playerId != null
-              ? p.playerId !== linked
-              : normaliseName(p.displayName) !== key,
+          .filter((p, i) =>
+            member.isPrivate
+              ? i !== privateAt
+              : linked != null && p.playerId != null
+                ? p.playerId !== linked
+                : normaliseName(p.displayName) !== key,
           )
           .map((p, i) => ({ ...p, order: i + 1 }));
         if (players.length !== list.players.length) {

@@ -186,6 +186,22 @@ describe("AvailabilityRespond (U11)", () => {
     expect(await screen.findByText("Away dates can't be in the past.")).toBeTruthy();
   });
 
+  it("a second contact change within 12 hours shows a friendly message", async () => {
+    installFetch(({ method }) =>
+      method === "PATCH"
+        ? { status: 429, body: { error: "too_many_changes" } }
+        : { status: 200, body: basePage() },
+    );
+    renderPage();
+    await screen.findByRole("heading", { name: "Hi Sam" });
+    fireEvent.click(screen.getByRole("button", { name: "Edit details" }));
+    fireEvent.change(screen.getByLabelText("New email"), { target: { value: "sam@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save details" }));
+    expect(
+      await screen.findByText(/Your contact details were changed in the last 12 hours/),
+    ).toBeTruthy();
+  });
+
   it("a 404 shows the expired-link message", async () => {
     installFetch(() => ({ status: 404, body: { error: "not_found" } }));
     renderPage();

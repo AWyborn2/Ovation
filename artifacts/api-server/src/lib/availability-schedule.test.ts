@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { and, eq } from "drizzle-orm";
 import {
   db,
@@ -17,9 +17,11 @@ import {
 import { setEmailTransport, type EmailMessage } from "./integrations/email";
 import { setSmsTransport, type SmsMessage } from "./integrations/sms";
 import { purgeTestTenants } from "./tenant-purge.test-helpers";
+import type * as Messaging from "./availability-messaging";
 import {
   DEFAULT_SCHEDULE,
   claimStep,
+  ensureRound,
   datesForGrade,
   datesForMember,
   deliveryFailed,
@@ -44,7 +46,36 @@ import {
 // Mon 18:00 send, Wed 18:00 reminder, Thu 18:00 cut-off, Fri 20:00 finalise-by.
 const S: ScheduleSettings = DEFAULT_SCHEDULE;
 const perth = (local: string) => new Date(`${local}+08:00`);
-const NONE = { sendStartedAt: null, reminderStartedAt: null, cutoffStartedAt: null };
+// Crash simulation: when `failOnCall` is set, that call to messageMember (counted
+// across the file) throws, as a DB error or a process dying mid-send would.
+const fault = vi.hoisted(() => ({ failOnCall: 0, calls: 0 }));
+vi.mock("./availability-messaging", async (importOriginal) => {
+  const actual = await importOriginal<typeof Messaging>();
+  return {
+    ...actual,
+    messageMember: async (...args: Parameters<typeof actual.messageMember>) => {
+      fault.calls++;
+      if (fault.failOnCall > 0 && fault.calls === fault.failOnCall) {
+        throw new Error("simulated crash mid-send");
+      }
+      return actual.messageMember(...args);
+    },
+  };
+});
+
+const NONE = {
+  sendStartedAt: null,
+  sendCompletedAt: null,
+  reminderStartedAt: null,
+  reminderCompletedAt: null,
+  cutoffStartedAt: null,
+  cutoffCompletedAt: null,
+};
+/** A round whose `step` was claimed at `local` and finished then too. */
+const ran = (step: "send" | "reminder" | "cutoff", local: string) => ({
+  [`${step}StartedAt`]: perth(local),
+  [`${step}CompletedAt`]: perth(local),
+});
 
 describe("roundWeekendFor / roundSlots", () => {
   it("defaults to Mon / Wed / Thu / Fri", () => {
@@ -55,6 +86,7 @@ describe("roundWeekendFor / roundSlots", () => {
     expect(roundWeekendFor(S, perth("2026-10-12T00:30:00"))).toBe("2026-10-17"); // Mon
     expect(roundWeekendFor(S, perth("2026-10-15T19:00:00"))).toBe("2026-10-17"); // Thu
     expect(roundWeekendFor(S, perth("2026-10-17T09:00:00"))).toBe("2026-10-17"); // Sat
+    expect(roundWeekendFor(S, perth("2026-10-18T15:00:00"))).toBe("2026-10-17"); // match Sunday
     expect(roundWeekendFor(S, perth("2026-10-18T23:59:00"))).toBe("2026-10-17"); // Sun
     expect(roundWeekendFor(S, perth("2026-10-19T00:00:00"))).toBe("2026-10-24"); // next Mon
     // A Sunday send asks about the Saturday six days later.
@@ -76,23 +108,23 @@ describe("dueSteps (fixed clock)", () => {
   it("Mon 17:59 nothing; Mon 18:05 send; Mon 19:05 send doesn't repeat", () => {
     expect(dueSteps(S, perth("2026-10-12T17:59:00"), null)).toEqual([]);
     expect(dueSteps(S, perth("2026-10-12T18:05:00"), null)).toEqual(["send"]);
-    const sent = { ...NONE, sendStartedAt: perth("2026-10-12T18:05:00") };
+    const sent = { ...NONE, ...ran("send", "2026-10-12T18:05:00") };
     expect(dueSteps(S, perth("2026-10-12T19:05:00"), sent)).toEqual([]);
   });
 
   it("reminder after its slot, then cut-off after its slot, each once", () => {
-    const sent = { ...NONE, sendStartedAt: perth("2026-10-12T18:05:00") };
+    const sent = { ...NONE, ...ran("send", "2026-10-12T18:05:00") };
     expect(dueSteps(S, perth("2026-10-14T17:00:00"), sent)).toEqual([]);
     expect(dueSteps(S, perth("2026-10-14T18:01:00"), sent)).toEqual(["reminder"]);
-    const reminded = { ...sent, reminderStartedAt: perth("2026-10-14T18:01:00") };
+    const reminded = { ...sent, ...ran("reminder", "2026-10-14T18:01:00") };
     expect(dueSteps(S, perth("2026-10-14T19:01:00"), reminded)).toEqual([]);
     expect(dueSteps(S, perth("2026-10-15T18:01:00"), reminded)).toEqual(["cutoff"]);
-    const cut = { ...reminded, cutoffStartedAt: perth("2026-10-15T18:01:00") };
+    const cut = { ...reminded, ...ran("cutoff", "2026-10-15T18:01:00") };
     expect(dueSteps(S, perth("2026-10-16T09:00:00"), cut)).toEqual([]);
   });
 
   it("a missed reminder is skipped once cut-off is due", () => {
-    const sent = { ...NONE, sendStartedAt: perth("2026-10-12T18:05:00") };
+    const sent = { ...NONE, ...ran("send", "2026-10-12T18:05:00") };
     expect(dueSteps(S, perth("2026-10-15T18:30:00"), sent)).toEqual(["cutoff"]);
   });
 
@@ -102,7 +134,7 @@ describe("dueSteps (fixed clock)", () => {
 
   it("enabled after the reminder slot → send now, no reminder (it was sent after its slot)", () => {
     expect(dueSteps(S, perth("2026-10-14T19:00:00"), null)).toEqual(["send"]);
-    const late = { ...NONE, sendStartedAt: perth("2026-10-14T19:00:00") };
+    const late = { ...NONE, ...ran("send", "2026-10-14T19:00:00") };
     expect(dueSteps(S, perth("2026-10-14T20:00:00"), late)).toEqual([]);
   });
 
@@ -110,8 +142,21 @@ describe("dueSteps (fixed clock)", () => {
     expect(dueSteps(S, perth("2026-10-17T08:00:00"), null)).toEqual([]);
     expect(dueSteps(S, perth("2026-10-18T20:00:00"), null)).toEqual([]);
     // A round already asked still drafts on a late tick before the weekend ends.
-    const sent = { ...NONE, sendStartedAt: perth("2026-10-12T18:05:00") };
+    const sent = { ...NONE, ...ran("send", "2026-10-12T18:05:00") };
     expect(dueSteps(S, perth("2026-10-17T08:00:00"), sent)).toEqual(["cutoff"]);
+  });
+
+  it("a claim that never finished is due again once it is 30 minutes old", () => {
+    // Send claimed at 18:05 and never completed (a crash mid-send).
+    const crashed = { ...NONE, sendStartedAt: perth("2026-10-12T18:05:00") };
+    expect(dueSteps(S, perth("2026-10-12T18:20:00"), crashed)).toEqual([]);
+    expect(dueSteps(S, perth("2026-10-12T18:36:00"), crashed)).toEqual(["send"]);
+    const sent = { ...NONE, ...ran("send", "2026-10-12T18:05:00") };
+    const reminding = { ...sent, reminderStartedAt: perth("2026-10-14T18:05:00") };
+    expect(dueSteps(S, perth("2026-10-14T18:30:00"), reminding)).toEqual([]);
+    expect(dueSteps(S, perth("2026-10-14T19:05:00"), reminding)).toEqual(["reminder"]);
+    const cutting = { ...sent, cutoffStartedAt: perth("2026-10-15T18:05:00") };
+    expect(dueSteps(S, perth("2026-10-15T19:05:00"), cutting)).toEqual(["cutoff"]);
   });
 });
 
@@ -134,6 +179,27 @@ describe("validateSchedule", () => {
     expect(validateSchedule({ ...S, cutoffDow: 0, finaliseDow: 0 })).toMatch(/Saturday/);
     expect(validateSchedule({ ...S, sendTime: "24:00" })).toMatch(/time/i);
     expect(validateSchedule({ ...S, sendDow: 7 })).toMatch(/day/i);
+  });
+
+  it("rejects a send on the weekend: Saturday never sends, Sunday moves the round mid-weekend", () => {
+    const message = "The send day must be before the weekend (Monday to Friday).";
+    expect(validateSchedule({ ...S, sendDow: 6, reminderDow: 6, cutoffDow: 6 })).toBe(message);
+    expect(validateSchedule({ ...S, sendDow: 0 })).toBe(message);
+    // Friday is the latest send day, and every weekday holds the round through Sunday.
+    expect(
+      validateSchedule({
+        ...S,
+        sendDow: 5,
+        sendTime: "08:00",
+        reminderDow: 5,
+        reminderTime: "12:00",
+        cutoffDow: 5,
+        cutoffTime: "18:00",
+      }),
+    ).toBeNull();
+    for (const sendDow of [1, 2, 3, 4, 5]) {
+      expect(roundWeekendFor({ sendDow }, perth("2026-10-18T15:00:00"))).toBe("2026-10-17");
+    }
   });
 });
 
@@ -175,6 +241,9 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
   let tenantOff: number;
   let tenantRace: number;
   let tenantLate: number;
+  let tenantCrash: number;
+  let tenantStale: number;
+  let tenantCap: number;
   let adult: SquadMemberRow;
   let flakyAdult: SquadMemberRow;
   let awayAdult: SquadMemberRow;
@@ -185,6 +254,8 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
   let email: EmailMessage[] = [];
   let flaky = true;
   const FLAKY_EMAIL = "flaky.adult@example.com";
+  const DEAD_EMAIL = "dead.mailbox@example.com";
+  let deadAttempts = 0;
   const clear = () => {
     sms = [];
     email = [];
@@ -259,6 +330,10 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
     });
     setEmailTransport(async (m) => {
       if (flaky && m.to === FLAKY_EMAIL) throw new Error("mailbox unavailable");
+      if (m.to === DEAD_EMAIL) {
+        deadAttempts++;
+        throw new Error("mailbox unavailable");
+      }
       email.push(m);
     });
 
@@ -266,6 +341,9 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
     tenantOff = await newTenant("off", false);
     tenantRace = await newTenant("race", true);
     tenantLate = await newTenant("late", true);
+    tenantCrash = await newTenant("crash", true);
+    tenantStale = await newTenant("stale", true);
+    tenantCap = await newTenant("cap", true);
 
     adult = await newMember(tenantA, {
       firstName: "Alex",
@@ -301,6 +379,10 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
     await newMember(tenantOff, { accountHolderEmail: "off@example.com" });
     await newMember(tenantRace, { firstName: "Rae", accountHolderEmail: "rae@example.com" });
     await newMember(tenantLate, { firstName: "Lee", accountHolderEmail: "lee@example.com" });
+    await newMember(tenantCrash, { firstName: "Cam", accountHolderEmail: "cam@example.com" });
+    await newMember(tenantCrash, { firstName: "Cody", accountHolderEmail: "cody@example.com" });
+    await newMember(tenantStale, { firstName: "Sam", accountHolderEmail: "sam@example.com" });
+    await newMember(tenantCap, { firstName: "Dee", accountHolderEmail: DEAD_EMAIL });
     // Away from Friday to Monday: the whole round weekend (R11).
     await db.insert(availabilityAwayTable).values({
       tenantId: tenantA,
@@ -314,7 +396,15 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
     setSmsTransport(null);
     setEmailTransport(null);
     setSendPaceMs(250);
-    await purgeTestTenants([tenantA, tenantOff, tenantRace, tenantLate]);
+    await purgeTestTenants([
+      tenantA,
+      tenantOff,
+      tenantRace,
+      tenantLate,
+      tenantCrash,
+      tenantStale,
+      tenantCap,
+    ]);
   });
 
   it("a disabled club gets no round and no messages (KTD11)", async () => {
@@ -444,6 +534,103 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
     expect(email.map((m) => m.to)).toEqual(["rae@example.com"]);
     const round = (await roundOf(tenantRace))!;
     expect(await claimStep(tenantRace, round.id, "send", perth("2026-10-12T18:10:00"))).toBe(false);
+  });
+
+  it("two concurrent ticks run the reminder exactly once, then the cut-off exactly once", async () => {
+    clear();
+    const [a, b] = await Promise.all([
+      tick(tenantRace, "2026-10-14T18:05:00"),
+      tick(tenantRace, "2026-10-14T18:05:00"),
+    ]);
+    expect([...a.ran, ...b.ran]).toEqual(["reminder"]);
+    expect(email.map((m) => m.to)).toEqual(["rae@example.com"]);
+
+    clear();
+    const [c, d] = await Promise.all([
+      tick(tenantRace, "2026-10-15T18:05:00"),
+      tick(tenantRace, "2026-10-15T18:05:00"),
+    ]);
+    expect([...c.ran, ...d.ran]).toEqual(["cutoff"]);
+    expect(
+      await db.select().from(selectionsTable).where(eq(selectionsTable.tenantId, tenantRace)),
+    ).toHaveLength(2);
+    const notes = await db
+      .select()
+      .from(notificationsTable)
+      .where(
+        and(
+          eq(notificationsTable.tenantId, tenantRace),
+          eq(notificationsTable.kind, "selection_drafts_ready"),
+        ),
+      );
+    expect(notes).toHaveLength(1);
+  });
+
+  it("a send that throws partway releases its claim; the next tick finishes it without re-sending", async () => {
+    clear();
+    // The second member's message blows up after the first was delivered.
+    fault.calls = 0;
+    fault.failOnCall = 2;
+    const first = await tick(tenantCrash, "2026-10-12T18:05:00");
+    fault.failOnCall = 0;
+    expect(first.ran).toEqual([]);
+    expect(email).toHaveLength(1);
+    const delivered = email[0].to;
+    const released = (await roundOf(tenantCrash))!;
+    expect(released.sendStartedAt).toBeNull();
+    expect(released.sendCompletedAt).toBeNull();
+
+    clear();
+    const second = await tick(tenantCrash, "2026-10-12T19:05:00");
+    expect(second.ran).toEqual(["send"]);
+    // Only the member the crash skipped; the one already delivered isn't sent again.
+    expect(email).toHaveLength(1);
+    expect([delivered, email[0].to].sort()).toEqual(["cam@example.com", "cody@example.com"]);
+    expect((await roundOf(tenantCrash))!.sendCompletedAt).not.toBeNull();
+  });
+
+  it("a claim abandoned by a crash (30+ minutes, never finished) is resumed", async () => {
+    clear();
+    const round = await ensureRound(tenantStale, "2026-10-17");
+    await db
+      .update(availabilityRoundsTable)
+      .set({ sendStartedAt: perth("2026-10-12T18:05:00") })
+      .where(eq(availabilityRoundsTable.id, round.id));
+    // Still within 30 minutes: another worker may be mid-send.
+    expect((await tick(tenantStale, "2026-10-12T18:20:00")).ran).toEqual([]);
+    expect(email).toEqual([]);
+    const resumed = await tick(tenantStale, "2026-10-12T18:36:00");
+    expect(resumed.ran).toEqual(["send"]);
+    expect(email.map((m) => m.to)).toEqual(["sam@example.com"]);
+
+    // The same rule lets "Run now" re-claim a stale step, once.
+    await db
+      .update(availabilityRoundsTable)
+      .set({ reminderStartedAt: perth("2026-10-14T18:00:00") })
+      .where(eq(availabilityRoundsTable.id, round.id));
+    const at = perth("2026-10-14T18:31:00");
+    expect(await claimStep(tenantStale, round.id, "reminder", at)).toBe(true);
+    expect(await claimStep(tenantStale, round.id, "reminder", at)).toBe(false);
+  });
+
+  it("a delivery that keeps failing is retried at most 3 times", async () => {
+    clear();
+    deadAttempts = 0;
+    expect((await tick(tenantCap, "2026-10-12T18:05:00")).ran).toEqual(["send"]);
+    const afterSend = deadAttempts;
+    expect(afterSend).toBeGreaterThan(0);
+    const retried: number[] = [];
+    for (const hour of ["19", "20", "21", "22", "23"]) {
+      retried.push((await tick(tenantCap, `2026-10-12T${hour}:05:00`)).retried);
+    }
+    expect(retried).toEqual([1, 1, 1, 0, 0]);
+    expect(deadAttempts).toBe(afterSend * 4);
+    const [req] = await db
+      .select()
+      .from(availabilityRequestsTable)
+      .where(eq(availabilityRequestsTable.tenantId, tenantCap));
+    expect(req.retryCount).toBe(3);
+    expect(req.emailResult).toBe("failed");
   });
 
   it("a club enabled on Thursday after cut-off sends, then drafts, in that order", async () => {

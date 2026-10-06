@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, lt, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, lte, or, sql } from "drizzle-orm";
 import {
   db,
   availabilityAwayTable,
@@ -23,20 +23,23 @@ import {
 } from "./availability-grades";
 
 /**
- * Draft sides at cut-off (plan 2026-10-06-002 U6: R16–R18, R37, KTD7).
+ * Draft sides at cut-off.
  *
  * Every fixture in the round's Friday–Sunday window gets one draft `selections`
  * row, seeded from the team list of that grade's most recent fixture before the
  * round. Each listed player who answered Yes for the fixture's date keeps their
  * slot; everyone else leaves an open slot labelled "was <name> · <reason>" (no,
- * maybe, no reply, not on register) in the same position (R17). Nobody else is
- * placed: a Yes player who was not in the last side waits in the pool (R18),
+ * maybe, no reply, not on register) in the same position. Nobody else is
+ * placed: a Yes player who was not in the last side waits in the pool,
  * and nobody moves between grades on their own. Last game's captain and keeper
- * carry over only while still in the side (R37).
+ * carry over only while still in the side.
  *
- * A grade with two fixtures in the weekend seeds the first (by start) and
- * starts the second empty, so nobody is placed twice. An existing selection is
- * never overwritten, so re-running the cut-off is a no-op.
+ * Nobody is placed twice in a round: fixtures are drafted in start order with
+ * one round-wide set of placed members, seeded from the round's existing
+ * sides, so a player on two grades' last lists goes to the earlier fixture and
+ * the later one keeps an open slot. A grade with two fixtures in the weekend
+ * seeds the first and starts the second empty. An existing selection is never
+ * overwritten, so re-running the cut-off is a no-op.
  */
 
 /** Every side has 11 slots. */
@@ -55,17 +58,21 @@ const emptySlots = (): SelectionSlot[] =>
   Array.from({ length: SIDE_SIZE }, () => ({ memberId: null }));
 
 /**
- * The draft for one fixture from its grade's last list (pure). `members` is the
- * whole register: an entry that matches an inactive member — or nobody, or a
- * fill-in id — is a gap "not on register".
+ * The draft for one fixture from its grade's last list (pure apart from
+ * `placed`). `members` is the whole register: an entry that matches an
+ * inactive member — or nobody, or a fill-in id — is a gap "not on register".
+ * `placed` is the round's members already in a side: such an entry leaves a
+ * plain open slot, and the members this draft places are added to it.
  */
 export function buildDraftSlots(input: {
   lastList: readonly TeamListPlayer[] | null;
   members: readonly MemberIdentity[];
   responses: ResponsesByMember;
   fixtureDate: string;
+  placed?: Set<number>;
 }): DraftSide {
   const { lastList, members, responses, fixtureDate } = input;
+  const elsewhere = input.placed ?? new Set<number>();
   const slots = emptySlots();
   let captainMemberId: number | null = null;
   let keeperMemberId: number | null = null;
@@ -82,12 +89,18 @@ export function buildDraftSlots(input: {
       slots[i] = { memberId: null, gap: { name, reason: "not_on_register" } };
       return;
     }
+    // Already in another side of the round: leave the slot open so a player is placed once.
+    if (elsewhere.has(m.id)) {
+      slots[i] = { memberId: null, gap: { name, reason: "picked_elsewhere" } };
+      return;
+    }
     const status = responses.get(m.id)?.get(fixtureDate);
     if (status !== "yes") {
       slots[i] = { memberId: null, gap: { name, reason: status ?? "no_reply" } };
       return;
     }
     placed.add(m.id);
+    elsewhere.add(m.id);
     slots[i] = { memberId: m.id };
     if (entry.role === "C" || entry.role === "C/WK") captainMemberId ??= m.id;
     if (entry.role === "WK" || entry.role === "C/WK") keeperMemberId ??= m.id;
@@ -101,7 +114,7 @@ export type RoundDraftSummary = {
   created: number;
   /** Fixtures in the window that already had a selection. */
   skipped: number;
-  /** Ids of the selections created, for the "drafts ready" notice (R19). */
+  /** Ids of the selections created, for the "drafts ready" notice. */
   selectionIds: number[];
 };
 
@@ -138,24 +151,33 @@ export async function buildRoundDrafts(
     .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id));
   if (fixtures.length === 0) return summary;
 
-  const existing = new Set(
-    (
-      await db
-        .select({ fixtureId: selectionsTable.fixtureId })
-        .from(selectionsTable)
-        .where(
-          and(
-            eq(selectionsTable.tenantId, tenantId),
-            inArray(
-              selectionsTable.fixtureId,
-              fixtures.map((f) => f.id),
-            ),
+  // Sides already drafted: their fixtures are skipped and their members are
+  // placed, along with anyone in another side of this round.
+  const existingRows = await db
+    .select({
+      fixtureId: selectionsTable.fixtureId,
+      slots: selectionsTable.slots,
+    })
+    .from(selectionsTable)
+    .where(
+      and(
+        eq(selectionsTable.tenantId, tenantId),
+        or(
+          eq(selectionsTable.roundId, roundId),
+          inArray(
+            selectionsTable.fixtureId,
+            fixtures.map((f) => f.id),
           ),
-        )
-    ).map((r) => r.fixtureId),
-  );
+        ),
+      ),
+    );
+  const existing = new Set(existingRows.map((r) => r.fixtureId));
+  const placed = new Set<number>();
+  for (const r of existingRows) {
+    for (const s of r.slots) if (s.memberId != null) placed.add(s.memberId);
+  }
 
-  // Each grade's most recent non-empty team list from before the round (KTD7).
+  // Each grade's most recent non-empty team list from before the round.
   const grades = [...new Set(fixtures.map((f) => f.grade))];
   const lastLists = await db
     .selectDistinctOn([fixturesTable.grade], {
@@ -212,6 +234,7 @@ export async function buildRoundDrafts(
       members,
       responses,
       fixtureDate: perthDate(f.startAt),
+      placed,
     });
 
     const created = await db.transaction(async (tx) => {
@@ -257,7 +280,7 @@ export async function buildRoundDrafts(
 
 /**
  * The round's answers by member and Perth date. A date inside one of the
- * member's away periods (R11) with no explicit answer counts as No.
+ * member's away periods with no explicit answer counts as No.
  */
 export async function loadResponses(
   tenantId: number,

@@ -420,6 +420,26 @@ describe("after the match: PlayHQ's side replaces a Selection Hub list", () => {
     await admin.query(`delete from playhq.matches where id = any($1::uuid[])`, [allIds()]);
   });
 
+  it("a failing replacement pass is logged and skipped; the projection still runs", async () => {
+    // The played-sides query (the only one reading scorecards) blows up.
+    const central = {
+      query: (text: string, params?: unknown[]) =>
+        text.includes("playhq.scorecards")
+          ? Promise.reject(new Error("invalid input syntax for type uuid"))
+          : admin.query(text, params),
+    } as unknown as typeof admin;
+    const lines: string[] = [];
+    const [summary] = await projectTeamLists({
+      tenantId,
+      central,
+      now: NOW,
+      log: (line) => lines.push(line),
+    });
+    expect(summary).toMatchObject({ tenantId, replacedSelection: 0 });
+    expect(lines.some((l) => /played-selection replacement failed/.test(l))).toBe(true);
+    expect((await listOf(ids.played)).source).toBe("selection");
+  });
+
   it("replaces only finished, recent selection lists with PlayHQ's side, as source playhq", async () => {
     const [summary] = await projectTeamLists({ tenantId, central: admin, now: NOW, log: () => {} });
     expect(summary.replacedSelection).toBe(2);

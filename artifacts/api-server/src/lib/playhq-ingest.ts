@@ -145,7 +145,7 @@ export async function ingestPlayhqDump(
 
   // The sides clubs named in PlayHQ become their fixtures' team lists (never an admin's).
   // A dump with scorecards also runs it: after play, PlayHQ's side replaces a Selection Hub
-  // list (R34), and the match-day plan fetches scorecards but no lineups.
+  // list, and the match-day plan fetches scorecards but no lineups.
   const teamListsWritten = new Map<number, number>();
   if (rows.match_lineups.length || rows.scorecards.length)
     try {

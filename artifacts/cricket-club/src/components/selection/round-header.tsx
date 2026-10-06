@@ -25,7 +25,7 @@ const RULE_TEXT: Record<AvailabilitySelectionRule, { admin: string; captain: str
 };
 
 /**
- * The round header (R20): the four stages with their Perth times, the club's
+ * The round header: the four stages with their Perth times, the club's
  * selection rule as it applies to the viewer, and the section's response rate
  * with its Yes / Maybe / No / No-reply breakdown.
  */
@@ -141,7 +141,7 @@ export function RoundHeader({
   );
 }
 
-/** "Changes this round" (R29): the board's events, newest first. */
+/** "Changes this round": the board's events, newest first. */
 export function ChangeLog({ events }: { events: SelectionEvent[] }) {
   return (
     <section

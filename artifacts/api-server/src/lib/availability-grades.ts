@@ -6,10 +6,10 @@ import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 /**
  * Shared rules for player availability and the Selection Hub (plan
  * 2026-10-06-002): which section a fixture belongs to and which grade a squad
- * member plays in (KTD12), how a team-list entry is matched to a member (KTD7),
+ * member plays in, how a team-list entry is matched to a member,
  * and the Perth calendar arithmetic of a round. Pure — no DB access — so the
- * scheduler (U4), the response API (U5), the draft builder (U6) and the board
- * (U7) all apply the same rules.
+ * scheduler, the response API, the draft builder and the board
+ * all apply the same rules.
  */
 
 /** The member fields these rules read. */
@@ -21,10 +21,10 @@ export type MemberIdentity = Pick<
 /** A team-list entry as the matcher sees it. */
 export type ListEntry = Pick<TeamListPlayer, "playerId" | "displayName">;
 
-/** A past team list with its fixture's grade and start, for KTD12. */
+/** A past team list with its fixture's grade and start, for `memberGrades`. */
 export type GradeList = { grade: string; startAt: Date; players: ListEntry[] };
 
-/** A fixture is senior when its grade is a senior app grade, else junior (KTD12). */
+/** A fixture is senior when its grade is a senior app grade, else junior. */
 export function fixtureSection(grade: string | null | undefined): SquadSection {
   return isSeniorAppGrade(grade) ? "senior" : "junior";
 }
@@ -39,6 +39,11 @@ export function normaliseName(name: string | null | undefined): string {
     .replace(/[^a-z0-9 ]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/** The name a member goes by: preferred name, else first name. */
+export function memberFirstName(m: Pick<MemberIdentity, "firstName" | "preferredName">): string {
+  return m.preferredName?.trim() || m.firstName;
 }
 
 /** "Preferred (or first) Last". */
@@ -59,9 +64,9 @@ function memberNameKeys(m: MemberIdentity): string[] {
 }
 
 /**
- * Matches team-list entries to members (KTD7): by linked `playerId` first, then
+ * Matches team-list entries to members: by linked `playerId` first, then
  * by normalised display name (preferred or first name plus last name). A
- * fill-in id (>= 90000) never matches (R7). A name match skips members linked
+ * fill-in id (>= 90000) never matches. A name match skips members linked
  * to a different player, and an ambiguous name prefers the one active member;
  * still ambiguous, it stays unmatched rather than guess.
  */
@@ -96,7 +101,7 @@ export function buildMemberMatcher<M extends MemberIdentity>(
 }
 
 /**
- * Each member's grade (KTD12): the grade of the most recent team list they
+ * Each member's grade: the grade of the most recent team list they
  * appear in, else their imported grade hint when it matches one of the club's
  * fixture grades, else null (asked about every date in their section).
  */
@@ -123,7 +128,7 @@ export function memberGrades<M extends MemberIdentity>(
   return out;
 }
 
-/** One member's grade (KTD12); see `memberGrades` for the bulk form. */
+/** One member's grade; see `memberGrades` for the bulk form. */
 export function memberGradeFor(
   member: MemberIdentity,
   lists: readonly GradeList[],
@@ -148,6 +153,21 @@ export function perthDate(at: Date): string {
 export function perthDow(at: Date | string): number {
   if (typeof at === "string") return new Date(`${at}T00:00:00Z`).getUTCDay();
   return new Date(at.getTime() + AWST_MS).getUTCDay();
+}
+
+/**
+ * Under 18 on the Perth date `today` (YYYY-MM-DD), from a YYYY-MM-DD date of
+ * birth: true until the 18th birthday. Null when the date of birth is missing
+ * or malformed.
+ */
+export function isUnder18OnDate(
+  dateOfBirth: string | null | undefined,
+  today: string,
+): boolean | null {
+  if (!dateOfBirth || !/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)) return null;
+  const [y, m, d] = dateOfBirth.split("-").map(Number);
+  const eighteenth = `${String(y + 18).padStart(4, "0")}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  return today < eighteenth;
 }
 
 /** The instant a Perth calendar date begins (16:00Z the day before). */

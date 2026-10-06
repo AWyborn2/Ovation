@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import {
   db,
   availabilityAwayTable,
@@ -24,21 +24,20 @@ import {
   perthDayStart,
   perthDow,
   roundWindow,
-  type GradeList,
   type MemberIdentity,
 } from "./availability-grades";
 import {
   messageMember,
   notifyStaff,
   recipientsFor,
+  type MessageBatch,
   type MessageKind,
 } from "./availability-messaging";
 import { buildRoundDrafts } from "./selection-drafts";
 import { logger as defaultLogger } from "./logger";
 
 /**
- * The weekly availability round (plan 2026-10-06-002 U4; R8, R9, R11, R13–R15,
- * R19; KTD4, KTD11, KTD12; F1).
+ * The weekly availability round.
  *
  * Each club sets a send, reminder, cut-off and finalise-by day and time in
  * Perth. A round belongs to a weekend (its Saturday): the first Saturday on or
@@ -49,11 +48,16 @@ import { logger as defaultLogger } from "./logger";
  *
  * `runAvailabilitySchedule` runs inside the hourly scheduled sweep. A step is
  * claimed atomically before any message goes out (a conditional update that
- * sets its `*_started_at` only while NULL), so an overlapping "Run now", a
- * second worker or a retry after a crash never re-sends it. Every tick before
- * cut-off also re-attempts recipients whose last delivery failed and who
- * haven't answered; once delivered they are left alone. Clubs with the switch
- * off are skipped entirely: no round, no messages (KTD11).
+ * sets its `*_started_at` only while NULL), so an overlapping "Run now" or a
+ * second worker never runs it twice. A step that throws releases its claim,
+ * and a claim left unfinished for {@link STALE_CLAIM_MS} (a process that died
+ * mid-step) can be claimed again; both resume safely, because the send skips
+ * recipients it already reached, the reminder skips recipients messaged since
+ * its slot and the cut-off only creates missing sides. Every tick before
+ * cut-off also re-attempts, up to {@link MAX_DELIVERY_RETRIES} times,
+ * recipients whose last delivery failed and who haven't answered; once
+ * delivered they are left alone. Clubs with the switch off are skipped
+ * entirely: no round, no messages.
  *
  * Logs carry tenant, round and member ids and counts only — never a contact.
  */
@@ -94,8 +98,29 @@ export const DEFAULT_SCHEDULE: ScheduleSettings = {
 /** A round's step claims, as `dueSteps` reads them; null = no round yet. */
 export type RoundProgress = Pick<
   AvailabilityRoundRow,
-  "sendStartedAt" | "reminderStartedAt" | "cutoffStartedAt"
+  | "sendStartedAt"
+  | "sendCompletedAt"
+  | "reminderStartedAt"
+  | "reminderCompletedAt"
+  | "cutoffStartedAt"
+  | "cutoffCompletedAt"
 >;
+
+/**
+ * A claim unfinished after this long belongs to a step that died (a restart
+ * mid-send); the next tick or "Run now" may claim it again. Far above a send's
+ * real length (a few minutes for a big club).
+ */
+export const STALE_CLAIM_MS = 30 * 60 * 1000;
+
+/** Failed deliveries are re-attempted at most this many times per recipient. */
+export const MAX_DELIVERY_RETRIES = 3;
+
+/** True while a step's claim stands: finished, or started under 30 minutes ago. */
+function claimHeld(started: Date | null, completed: Date | null, now: Date): boolean {
+  if (started == null) return false;
+  return completed != null || now.getTime() - started.getTime() < STALE_CLAIM_MS;
+}
 
 const SATURDAY = 6;
 const MINUTE_MS = 60_000;
@@ -119,9 +144,10 @@ function stepOffset(s: ScheduleSettings, dow: number, time: string): number {
 }
 
 /**
- * Why a schedule is invalid, or null when it is fine. Steps are ordered within
- * the week that starts on the send day: send < reminder < cut-off ≤
- * finalise-by, and cut-off no later than that week's Saturday.
+ * Why a schedule is invalid, or null when it is fine. The send is Monday to
+ * Friday, and steps are ordered within the week that starts on the send day:
+ * send < reminder < cut-off ≤ finalise-by, and cut-off no later than that
+ * week's Saturday. A weekday send keeps a round current through its Sunday.
  */
 export function validateSchedule(s: ScheduleSettings): string | null {
   const days: [string, number][] = [
@@ -134,6 +160,11 @@ export function validateSchedule(s: ScheduleSettings): string | null {
     if (!Number.isInteger(dow) || dow < 0 || dow > 6) {
       return `The ${name} day must be 0 (Sunday) to 6 (Saturday).`;
     }
+  }
+  // A Saturday send is never due (the weekend has begun), and a Sunday send
+  // starts the next round on the round's own match Sunday.
+  if (s.sendDow === 0 || s.sendDow === SATURDAY) {
+    return "The send day must be before the weekend (Monday to Friday).";
   }
   const times: [string, string][] = [
     ["send", s.sendTime],
@@ -184,7 +215,8 @@ export function roundSlots(
 
 /**
  * The steps due at `now` for the current round, in run order (pure). A step is
- * due when its slot has passed and it hasn't been claimed, and:
+ * due when its slot has passed and its claim doesn't stand (never claimed, or
+ * abandoned unfinished for {@link STALE_CLAIM_MS}), and:
  * - send: not once the weekend has begun (too late to ask);
  * - reminder: only when the send went out before the reminder slot, and not
  *   once the cut-off is due (a club enabled late gets send then cut-off);
@@ -203,20 +235,22 @@ export function dueSteps(
 
   const out: ScheduleStep[] = [];
   const sendStarted = round?.sendStartedAt ?? null;
+  const held = (step: ScheduleStep) =>
+    claimHeld(round?.[STARTED_KEY[step]] ?? null, round?.[COMPLETED[step]] ?? null, now);
   const sendDue =
-    sendStarted == null && slots.send.getTime() <= t && t < perthDayStart(weekend).getTime();
+    !held("send") && slots.send.getTime() <= t && t < perthDayStart(weekend).getTime();
   if (sendDue) out.push("send");
   if (
     sendStarted != null &&
     sendStarted.getTime() < slots.reminder.getTime() &&
-    round?.reminderStartedAt == null &&
+    !held("reminder") &&
     round?.cutoffStartedAt == null &&
     slots.reminder.getTime() <= t &&
     t < slots.cutoff.getTime()
   ) {
     out.push("reminder");
   }
-  if ((sendStarted != null || sendDue) && round?.cutoffStartedAt == null) {
+  if ((sendStarted != null || sendDue) && !held("cutoff")) {
     if (slots.cutoff.getTime() <= t) out.push("cutoff");
   }
   return out;
@@ -241,7 +275,7 @@ export function deliveryFailed(
 export type WindowFixture = { grade: string; startAt: Date };
 
 /**
- * The Perth dates a member is asked about (KTD12, pure): each date in the
+ * The Perth dates a member is asked about (pure): each date in the
  * round on which their grade has a fixture; with no known grade, or a grade
  * without a fixture that weekend, every date with a fixture in their section.
  */
@@ -260,7 +294,7 @@ export function datesForGrade(
 type DatedMember = MemberIdentity & Pick<SquadMemberRow, "section">;
 
 /**
- * The dates each member is asked about in the round of `weekendDate` (KTD12):
+ * The dates each member is asked about in the round of `weekendDate`:
  * the club's fixtures in the round's window, and each member's grade from the
  * team lists before it (else their grade hint).
  */
@@ -286,31 +320,33 @@ export async function loadRoundDates(
     for (const m of members) out.set(m.id, []);
     return out;
   }
-  const grades = await db
-    .selectDistinct({ grade: fixturesTable.grade })
-    .from(fixturesTable)
-    .where(eq(fixturesTable.tenantId, tenantId));
-  const lists: GradeList[] = await db
-    .select({
-      grade: fixturesTable.grade,
-      startAt: fixturesTable.startAt,
-      players: teamListsTable.players,
-    })
-    .from(teamListsTable)
-    .innerJoin(
-      fixturesTable,
-      and(
-        eq(fixturesTable.id, teamListsTable.fixtureId),
-        eq(fixturesTable.tenantId, teamListsTable.tenantId),
+  const [grades, lists] = await Promise.all([
+    db
+      .selectDistinct({ grade: fixturesTable.grade })
+      .from(fixturesTable)
+      .where(eq(fixturesTable.tenantId, tenantId)),
+    db
+      .select({
+        grade: fixturesTable.grade,
+        startAt: fixturesTable.startAt,
+        players: teamListsTable.players,
+      })
+      .from(teamListsTable)
+      .innerJoin(
+        fixturesTable,
+        and(
+          eq(fixturesTable.id, teamListsTable.fixtureId),
+          eq(fixturesTable.tenantId, teamListsTable.tenantId),
+        ),
+      )
+      .where(
+        and(
+          eq(teamListsTable.tenantId, tenantId),
+          lt(fixturesTable.startAt, window.from),
+          sql`jsonb_array_length(${teamListsTable.players}) > 0`,
+        ),
       ),
-    )
-    .where(
-      and(
-        eq(teamListsTable.tenantId, tenantId),
-        lt(fixturesTable.startAt, window.from),
-        sql`jsonb_array_length(${teamListsTable.players}) > 0`,
-      ),
-    );
+  ]);
   const byMember = memberGrades(
     members,
     lists,
@@ -322,7 +358,7 @@ export async function loadRoundDates(
   return out;
 }
 
-/** The dates one member is asked about in a round (KTD12), for the player page (U5). */
+/** The dates one member is asked about in a round, for the player page. */
 export async function datesForMember(
   tenantId: number,
   round: Pick<AvailabilityRoundRow, "weekendDate">,
@@ -343,7 +379,7 @@ export function setSendPaceMs(ms: number): void {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Manual reminders go at most once per recipient per 12 hours (R28). */
+/** Manual reminders go at most once per recipient per 12 hours. */
 export const MANUAL_REMINDER_GAP_MS = 12 * 60 * 60 * 1000;
 
 export type StepOptions = {
@@ -352,15 +388,20 @@ export type StepOptions = {
   manual?: boolean;
   /** Overrides the module's pace between members. */
   paceMs?: number;
-  /** Reminder only: remind members of this section alone (the Selection Hub's switch, R28). */
+  /** Reminder only: remind members of this section alone (the Selection Hub's switch). */
   section?: SquadSection;
+  /**
+   * Reminder only: skip recipients messaged at or after this instant (the
+   * reminder slot), so a reminder resumed after a failure doesn't repeat.
+   */
+  remindedSince?: Date;
 };
 
 export type StepResult = {
   step: ScheduleStep;
   /** Members messaged (any recipient attempted). */
   messaged: number;
-  /** Members recorded unavailable from an away period, not messaged (R11). */
+  /** Members recorded unavailable from an away period, not messaged. */
   away: number;
   /** Members with no fixture to be asked about this round. */
   noFixture: number;
@@ -426,8 +467,9 @@ export async function findRound(
 }
 
 /**
- * Claim a step for a round: set its `*_started_at` only while it is NULL. True
- * for exactly one caller, however many race (KTD4).
+ * Claim a step for a round: set its `*_started_at` only while it is NULL, or
+ * while it is a stale claim (unfinished and older than {@link STALE_CLAIM_MS}).
+ * True for exactly one caller, however many race.
  */
 export async function claimStep(
   tenantId: number,
@@ -442,11 +484,40 @@ export async function claimStep(
       and(
         eq(availabilityRoundsTable.id, roundId),
         eq(availabilityRoundsTable.tenantId, tenantId),
-        isNull(availabilityRoundsTable[STARTED_KEY[step]]),
+        or(
+          isNull(availabilityRoundsTable[STARTED_KEY[step]]),
+          and(
+            isNull(availabilityRoundsTable[COMPLETED[step]]),
+            lt(
+              availabilityRoundsTable[STARTED_KEY[step]],
+              new Date(now.getTime() - STALE_CLAIM_MS),
+            ),
+          ),
+        ),
       ),
     )
     .returning({ id: availabilityRoundsTable.id });
   return rows.length === 1;
+}
+
+/** Give back a claim taken at `claimedAt` whose step failed, so the next tick retries it. */
+async function releaseStep(
+  tenantId: number,
+  roundId: number,
+  step: ScheduleStep,
+  claimedAt: Date,
+): Promise<void> {
+  await db
+    .update(availabilityRoundsTable)
+    .set({ [STARTED_KEY[step]]: null })
+    .where(
+      and(
+        eq(availabilityRoundsTable.id, roundId),
+        eq(availabilityRoundsTable.tenantId, tenantId),
+        eq(availabilityRoundsTable[STARTED_KEY[step]], claimedAt),
+        isNull(availabilityRoundsTable[COMPLETED[step]]),
+      ),
+    );
 }
 
 async function completeStep(
@@ -494,10 +565,12 @@ const emptyResult = (step: ScheduleStep): StepResult => ({
 });
 
 /**
- * Send (R9, R11): every active member with a fixture to be asked about gets a
- * request through their recipients (R5). A member whose away periods cover
+ * Send: every active member with a fixture to be asked about gets a
+ * request through their recipients. A member whose away periods cover
  * every date they'd be asked about gets No recorded for those dates instead,
- * and no message. Paced between members.
+ * and no message. Paced between members. Resumable: a recipient that already
+ * has a request row this round was attempted by an earlier run and is left to
+ * the retry pass, so a re-run never sends twice.
  */
 async function runSend(
   tenantId: number,
@@ -526,6 +599,26 @@ async function runSend(
       ),
     );
 
+  const awayOf = new Map<number, typeof away>();
+  for (const a of away) awayOf.set(a.memberId, [...(awayOf.get(a.memberId) ?? []), a]);
+  const attempted = new Map<number, Set<RecipientSlot>>();
+  const earlier = await db
+    .select({
+      memberId: availabilityRequestsTable.memberId,
+      slot: availabilityRequestsTable.recipientSlot,
+    })
+    .from(availabilityRequestsTable)
+    .where(
+      and(
+        eq(availabilityRequestsTable.tenantId, tenantId),
+        eq(availabilityRequestsTable.roundId, round.id),
+      ),
+    );
+  for (const r of earlier) {
+    attempted.set(r.memberId, (attempted.get(r.memberId) ?? new Set()).add(r.slot));
+  }
+
+  const batch: MessageBatch = {};
   let first = true;
   for (const m of members) {
     const asked = dates.get(m.id) ?? [];
@@ -533,7 +626,7 @@ async function runSend(
       result.noFixture++;
       continue;
     }
-    const periods = away.filter((a) => a.memberId === m.id);
+    const periods = awayOf.get(m.id) ?? [];
     const allAway = asked.every((d) => periods.some((a) => a.fromDate <= d && d <= a.toDate));
     if (allAway) {
       // An explicit answer (none yet, normally) is never overwritten.
@@ -553,6 +646,14 @@ async function runSend(
       result.away++;
       continue;
     }
+    // On a resumed send, only the recipients the earlier run never reached.
+    const done = attempted.get(m.id);
+    const slots = done
+      ? recipientsFor(m, now)
+          .map((r) => r.slot)
+          .filter((slot) => !done.has(slot))
+      : undefined;
+    if (slots && slots.length === 0) continue;
     if (!first && pace > 0) await sleep(pace);
     first = false;
     const sent = await messageMember(
@@ -562,7 +663,9 @@ async function runSend(
         kind: "request",
         context: { roundId: round.id },
         smsEnabled: smsOn,
+        slots,
         now,
+        batch,
       },
       opts.logger,
     );
@@ -572,7 +675,7 @@ async function runSend(
 }
 
 /**
- * Reminder (R8, R28): members asked this round who haven't answered for any
+ * Reminder: members asked this round who haven't answered for any
  * date. A recipient reminded by hand in the last 12 hours is skipped; a manual
  * run stamps each recipient's last manual reminder time.
  */
@@ -616,16 +719,22 @@ export async function runReminder(
     );
 
   const since = now.getTime() - MANUAL_REMINDER_GAP_MS;
+  const remindedSince = opts.remindedSince?.getTime() ?? null;
+  const lastAttempt = (r: AvailabilityRequestRow | undefined) =>
+    Math.max(r?.smsAt?.getTime() ?? 0, r?.emailAt?.getTime() ?? 0);
+  const batch: MessageBatch = {};
   let first = true;
   for (const m of members) {
     const asked = bySlot.get(m.id)!;
     // Current recipients (contacts may have changed since the send), minus any
-    // reminded by hand within the last 12 hours.
+    // reminded by hand within the last 12 hours, and (resuming) any already
+    // messaged since the reminder slot.
     const slots = recipientsFor(m, now)
       .map((r) => r.slot)
       .filter((slot) => {
         const last = asked.get(slot)?.lastManualReminderAt;
-        return !last || last.getTime() <= since;
+        if (last && last.getTime() > since) return false;
+        return remindedSince == null || lastAttempt(asked.get(slot)) < remindedSince;
       });
     if (slots.length === 0) {
       result.throttled++;
@@ -642,6 +751,7 @@ export async function runReminder(
         smsEnabled: smsOn,
         slots,
         now,
+        batch,
       },
       opts.logger,
     );
@@ -662,7 +772,7 @@ export async function runReminder(
   return result;
 }
 
-/** Cut-off (R16–R19): build the draft sides, then tell captains and admins. */
+/** Cut-off: build the draft sides, then tell captains and admins. */
 async function runCutoff(
   tenantId: number,
   round: AvailabilityRoundRow,
@@ -695,7 +805,9 @@ async function runCutoff(
 
 /**
  * Run one step for a round: claim it (false → someone else has, nothing runs),
- * do the work, then stamp completion. Shared by the scheduler and "Run now".
+ * do the work, then stamp completion. If the work throws, the claim is given
+ * back and the error rethrown, so the next tick runs the step again (each step
+ * is safe to resume). Shared by the scheduler and "Run now".
  */
 export async function runStep(
   tenantId: number,
@@ -707,19 +819,27 @@ export async function runStep(
 ): Promise<StepResult | null> {
   if (!(await claimStep(tenantId, round.id, step, now))) return null;
   let result: StepResult;
-  if (step === "send") result = await runSend(tenantId, round, settings.smsEnabled, now, opts);
-  else if (step === "reminder") {
-    result = await runReminder(tenantId, round, settings.smsEnabled, now, opts);
-  } else result = await runCutoff(tenantId, round, now, opts);
+  try {
+    if (step === "send") result = await runSend(tenantId, round, settings.smsEnabled, now, opts);
+    else if (step === "reminder") {
+      result = await runReminder(tenantId, round, settings.smsEnabled, now, opts);
+    } else result = await runCutoff(tenantId, round, now, opts);
+  } catch (err) {
+    // If the release fails too, the claim goes stale and is re-claimed later.
+    await releaseStep(tenantId, round.id, step, now).catch(() => {});
+    throw err;
+  }
   await completeStep(tenantId, round.id, step, now);
   return result;
 }
 
 /**
  * Re-attempt recipients whose last delivery failed and whose member hasn't
- * answered (KTD4). Runs every tick between send and cut-off; a recipient
- * delivered on any channel is never retried. Retries the step's own message:
- * a request, or a reminder once the reminder has gone.
+ * answered. Runs every tick between send and cut-off, at most
+ * {@link MAX_DELIVERY_RETRIES} times per recipient (a bounced address isn't
+ * hammered all week); a recipient delivered on any channel is never retried.
+ * Retries the step's own message: a request, or a reminder once the reminder
+ * has gone.
  */
 export async function retryFailedDeliveries(
   tenantId: number,
@@ -731,22 +851,28 @@ export async function retryFailedDeliveries(
   // Only once the send has finished, so a send still running elsewhere (whose
   // recipients have no result yet) is never doubled.
   if (round.sendCompletedAt == null || round.cutoffStartedAt != null) return 0;
-  const requests = await db
+  const { smsResult: sms, emailResult: email } = availabilityRequestsTable;
+  const failed = await db
     .select()
     .from(availabilityRequestsTable)
     .where(
       and(
         eq(availabilityRequestsTable.tenantId, tenantId),
         eq(availabilityRequestsTable.roundId, round.id),
+        // `deliveryFailed` in SQL: nothing sent, and both unset or one failed.
+        sql`coalesce(${sms}, '') <> 'sent' and coalesce(${email}, '') <> 'sent'`,
+        sql`((${sms} is null and ${email} is null) or ${sms} = 'failed' or ${email} = 'failed')`,
+        lt(availabilityRequestsTable.retryCount, MAX_DELIVERY_RETRIES),
       ),
     );
-  const failed = requests.filter(deliveryFailed);
   if (failed.length === 0) return 0;
   const answered = await answeredMembers(tenantId, round.id);
   const bySlot = new Map<number, RecipientSlot[]>();
+  const retrying: number[] = [];
   for (const r of failed) {
     if (answered.has(r.memberId)) continue;
     bySlot.set(r.memberId, [...(bySlot.get(r.memberId) ?? []), r.recipientSlot]);
+    retrying.push(r.id);
   }
   if (bySlot.size === 0) return 0;
   const members = await db
@@ -759,8 +885,19 @@ export async function retryFailedDeliveries(
         inArray(squadMembersTable.id, [...bySlot.keys()]),
       ),
     );
+  // Counted before sending, so an attempt that dies midway still counts.
+  await db
+    .update(availabilityRequestsTable)
+    .set({ retryCount: sql`${availabilityRequestsTable.retryCount} + 1` })
+    .where(
+      and(
+        eq(availabilityRequestsTable.tenantId, tenantId),
+        inArray(availabilityRequestsTable.id, retrying),
+      ),
+    );
   const kind: MessageKind = round.reminderStartedAt != null ? "reminder" : "request";
   const pace = opts.paceMs ?? sendPaceMs;
+  const batch: MessageBatch = {};
   let retried = 0;
   for (const m of members) {
     if (retried > 0 && pace > 0) await sleep(pace);
@@ -773,6 +910,7 @@ export async function retryFailedDeliveries(
         smsEnabled: smsOn,
         slots: bySlot.get(m.id),
         now,
+        batch,
       },
       opts.logger,
     );
@@ -793,7 +931,7 @@ export type ScheduleSummary = {
 };
 
 /**
- * One scheduler tick for a club (KTD4): skip unless enabled (KTD11); retry
+ * One scheduler tick for a club: skip unless enabled; retry
  * failed deliveries; then claim and run each due step in order. Each step is
  * isolated, so one failing never blocks the next.
  */
@@ -834,9 +972,14 @@ export async function runAvailabilitySchedule(
   if (steps.length === 0) return summary;
   round ??= await ensureRound(tenantId, weekendDate);
   summary.roundId = round.id;
+  const remindedSince = roundSlots(settings, weekendDate).reminder;
   for (const step of steps) {
     try {
-      const result = await runStep(tenantId, round, step, settings, now, { ...opts, logger });
+      const result = await runStep(tenantId, round, step, settings, now, {
+        ...opts,
+        logger,
+        remindedSince,
+      });
       if (!result) continue;
       summary.ran.push(step);
       summary.results.push(result);
@@ -855,13 +998,13 @@ export type RoundCounts = {
   maybe: number;
   no: number;
   none: number;
-  /** Members with an answer given after the cut-off (R15). */
+  /** Members with an answer given after the cut-off. */
   late: number;
   total: number;
 };
 
 /**
- * Response breakdown for a round (R20), one status per member asked: Yes when
+ * Response breakdown for a round, one status per member asked: Yes when
  * they said Yes for any date, else Maybe, else No; None when they haven't
  * answered. Members asked = those with a request plus those recorded away.
  */

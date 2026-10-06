@@ -2935,6 +2935,8 @@ export interface SquadImportResult {
   deactivated: number;
   /** Members newly linked to a club player record */
   linked: number;
+  /** Members whose contacts were kept because a player or guardian changed them from their link and an admin hasn't cleared the flag yet */
+  contactsKept: number;
   skipped: SquadImportSkip[];
   skippedByReason: SquadImportResultSkippedByReasonItem[];
 }
@@ -3107,6 +3109,7 @@ export const SelectionGapReason = {
   no_reply: 'no_reply',
   not_on_register: 'not_on_register',
   withdrew: 'withdrew',
+  picked_elsewhere: 'picked_elsewhere',
 } as const;
 
 /**
@@ -3270,11 +3273,18 @@ export interface SelectionBoardSave {
   changes: SelectionChange[];
 }
 
+export interface SelectionFinaliseBody {
+  /** The side's version as the caller loaded it */
+  version: number;
+}
+
 export type SelectionFinaliseResultMessaged = {
   /** Newly selected members messaged */
   selected: number;
   /** Members dropped since the last finalise who were told */
   deselected: number;
+  /** Members every delivery failed for; the next finalise tries them again */
+  failed: number;
 };
 
 export interface SelectionFinaliseResult {

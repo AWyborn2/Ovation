@@ -41,11 +41,11 @@ function errorText(e: unknown): string {
 const boardState = (b: SelectionBoard): BoardState => ({ selections: b.selections, pool: b.pool });
 
 /**
- * The Selection Hub (plan 2026-10-06-002 U9; R20–R30, R32, R35–R39): the
+ * The Selection Hub: the
  * round header and response bar, a Seniors / Juniors switch, a card per
  * drafted side, the grouped player pool and the change log. Drags and the
  * Move dialog compute the next board with `applyMove`, show it at once and
- * save the touched sides in one versioned `PUT /selection/board` (KTD8); a
+ * save the touched sides in one versioned `PUT /selection/board`; a
  * refused save (403/409/400) reverts, says why and reloads the board. Edit
  * rights come from the server (`canEdit` / `canFinalise`).
  */
@@ -144,12 +144,14 @@ export default function SelectionHub() {
 
   const doFinalise = (sideId: number) => {
     const side = view?.selections.find((s) => s.id === sideId);
+    if (!side) return;
     finalise.mutate(
-      { id: sideId },
+      // The version as shown: a side changed since is refused, not published unseen.
+      { id: sideId, data: { version: side.version } },
       {
         onSuccess: (r) => {
           const n = r.messaged.selected;
-          const label = side ? sideLabel(side) : "The side";
+          const label = sideLabel(side);
           const msg = `${label} finalised and published. ${n} ${
             section === "junior"
               ? n === 1
@@ -158,7 +160,11 @@ export default function SelectionHub() {
               : n === 1
                 ? "player"
                 : "players"
-          } notified${r.messaged.deselected ? `, ${r.messaged.deselected} told they're out` : ""}.`;
+          } notified${r.messaged.deselected ? `, ${r.messaged.deselected} told they're out` : ""}.${
+            r.messaged.failed
+              ? ` ${r.messaged.failed} couldn't be reached; finalise again later to retry.`
+              : ""
+          }`;
           say(msg);
           toast({ description: msg });
           void refetch();

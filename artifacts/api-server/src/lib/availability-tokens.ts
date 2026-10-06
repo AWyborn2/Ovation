@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import { and, eq, gt, isNull, ne } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, ne } from "drizzle-orm";
 import {
   db,
   tenantsTable,
@@ -10,14 +10,16 @@ import {
   type AvailabilityRequestRow,
   type AvailabilityRoundRow,
   type AvailabilityTokenRow,
+  type RecipientSlot,
   type SquadMemberRow,
   type TenantRow,
 } from "@workspace/db";
 import { generateResetToken, hashResetToken } from "./auth";
 import { tenantUrl } from "./tenant-url";
+import { addDays, perthDayStart } from "./availability-grades";
 
 /**
- * Personal-link tokens for the availability round (plan 2026-10-06-002 KTD5).
+ * Personal-link tokens for the availability round.
  *
  * Only the SHA-256 hash is stored, so every outbound message mints a fresh
  * token for its recipient; a request may hold several live tokens, all valid
@@ -51,8 +53,7 @@ export function availabilityLink(
  * round's last fixture". `weekendDate` is the round's Saturday (YYYY-MM-DD).
  */
 export function defaultTokenExpiry(weekendDate: string): Date {
-  const saturday = new Date(`${weekendDate}T00:00:00+08:00`);
-  return new Date(saturday.getTime() + 3 * 24 * 60 * 60 * 1000);
+  return perthDayStart(addDays(weekendDate, 3));
 }
 
 /** Mint a token for a request row; returns the raw token (shown once) and its row id. */
@@ -83,8 +84,8 @@ export type ResolvedAvailabilityToken = {
 
 /**
  * Look a raw token up for one tenant. Null when it is unknown, belongs to
- * another tenant, has expired or was revoked — callers answer 404 without
- * saying which.
+ * another tenant, has expired or was revoked, or its member is no longer
+ * active — callers answer 404 without saying which.
  */
 export async function resolveAvailabilityToken(
   tenantId: number,
@@ -114,6 +115,8 @@ export async function resolveAvailabilityToken(
         eq(availabilityTokensTable.tokenHash, hashResetToken(rawToken)),
         eq(availabilityTokensTable.tenantId, tenantId),
         eq(availabilityRequestsTable.tenantId, tenantId),
+        eq(squadMembersTable.tenantId, tenantId),
+        eq(squadMembersTable.active, true),
         isNull(availabilityTokensTable.revokedAt),
         gt(availabilityTokensTable.expiresAt, now),
       ),
@@ -123,7 +126,7 @@ export async function resolveAvailabilityToken(
 
 /**
  * Revoke a request's live tokens except `keepTokenId` (the one in use) — run
- * after a contact change so links sent to the old contact stop working (KTD5).
+ * after a contact change so links sent to the old contact stop working.
  * Returns how many were revoked.
  */
 export async function revokeOtherTokens(args: {
@@ -142,6 +145,42 @@ export async function revokeOtherTokens(args: {
     .update(availabilityTokensTable)
     .set({ revokedAt: args.now ?? new Date() })
     .where(and(...conds))
+    .returning({ id: availabilityTokensTable.id });
+  return rows.length;
+}
+
+/**
+ * Revoke every live token of a member — all recipient slots, or only `slots`
+ * — in every round: run when an admin removes the member or changes a slot's
+ * contact, so links already sent stop working. Returns how many were revoked.
+ */
+export async function revokeMemberTokens(args: {
+  tenantId: number;
+  memberId: number;
+  slots?: readonly RecipientSlot[];
+  now?: Date;
+}): Promise<number> {
+  if (args.slots && args.slots.length === 0) return 0;
+  const requests = db
+    .select({ id: availabilityRequestsTable.id })
+    .from(availabilityRequestsTable)
+    .where(
+      and(
+        eq(availabilityRequestsTable.tenantId, args.tenantId),
+        eq(availabilityRequestsTable.memberId, args.memberId),
+        ...(args.slots ? [inArray(availabilityRequestsTable.recipientSlot, [...args.slots])] : []),
+      ),
+    );
+  const rows = await db
+    .update(availabilityTokensTable)
+    .set({ revokedAt: args.now ?? new Date() })
+    .where(
+      and(
+        eq(availabilityTokensTable.tenantId, args.tenantId),
+        inArray(availabilityTokensTable.requestId, requests),
+        isNull(availabilityTokensTable.revokedAt),
+      ),
+    )
     .returning({ id: availabilityTokensTable.id });
   return rows.length;
 }

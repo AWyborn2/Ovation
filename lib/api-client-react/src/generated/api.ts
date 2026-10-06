@@ -309,6 +309,7 @@ import type {
   SeasonTopPerformers,
   SelectionBoard,
   SelectionBoardSave,
+  SelectionFinaliseBody,
   SelectionFinaliseResult,
   SelectionRemindBody,
   SelectionSide,
@@ -7458,18 +7459,24 @@ export const getFinaliseSelectionUrl = (id: number,) => {
 "selection") and messages each newly selected member (or their
 guardians) with the match details and a "can't make it" link. On a
 re-finalise, members dropped since the last finalise are told too. A
-side may be finalised without a captain or keeper.
+side may be finalised without a captain or keeper. The body carries the
+side's version as loaded, so a side changed since can't be published
+unseen. A member every delivery failed for is not marked notified, so
+the next finalise tries them again. A private member is published as
+"Private Player". Refused once the match has started.
 
  * @summary Finalise a side and publish it as the fixture's team list (admin or captain)
  */
-export const finaliseSelection = async (id: number, options?: RequestInit): Promise<SelectionFinaliseResult> => {
+export const finaliseSelection = async (id: number,
+    selectionFinaliseBody: SelectionFinaliseBody, options?: RequestInit): Promise<SelectionFinaliseResult> => {
 
   return customFetch<SelectionFinaliseResult>(getFinaliseSelectionUrl(id),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      selectionFinaliseBody,)
   }
 );}
 
@@ -7477,8 +7484,8 @@ export const finaliseSelection = async (id: number, options?: RequestInit): Prom
 
 
 export const getFinaliseSelectionMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finaliseSelection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof finaliseSelection>>, TError,{id: number}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finaliseSelection>>, TError,{id: number;data: BodyType<SelectionFinaliseBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof finaliseSelection>>, TError,{id: number;data: BodyType<SelectionFinaliseBody>}, TContext> => {
 
 const mutationKey = ['finaliseSelection'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -7490,10 +7497,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof finaliseSelection>>, {id: number}> = (props) => {
-          const {id} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof finaliseSelection>>, {id: number;data: BodyType<SelectionFinaliseBody>}> = (props) => {
+          const {id,data} = props ?? {};
 
-          return  finaliseSelection(id,requestOptions)
+          return  finaliseSelection(id,data,requestOptions)
         }
 
 
@@ -7504,18 +7511,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type FinaliseSelectionMutationResult = NonNullable<Awaited<ReturnType<typeof finaliseSelection>>>
-
+    export type FinaliseSelectionMutationBody = BodyType<SelectionFinaliseBody>
     export type FinaliseSelectionMutationError = ErrorType<void>
 
     /**
  * @summary Finalise a side and publish it as the fixture's team list (admin or captain)
  */
 export const useFinaliseSelection = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finaliseSelection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finaliseSelection>>, TError,{id: number;data: BodyType<SelectionFinaliseBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof finaliseSelection>>,
         TError,
-        {id: number},
+        {id: number;data: BodyType<SelectionFinaliseBody>},
         TContext
       > => {
       return useMutation(getFinaliseSelectionMutationOptions(options));
@@ -7531,7 +7538,8 @@ export const getReopenSelectionUrl = (id: number,) => {
 
 /**
  * Returns the side to draft and logs it. The published team list stays as
-last finalised until the side is finalised again.
+last finalised until the side is finalised again. Refused once the match
+has started.
 
  * @summary Re-open a finalised side for changes (admin or captain)
  */
@@ -7991,7 +7999,9 @@ export const getUpdateAvailabilityContactUrl = (token: string,) => {
 notice goes to the previous mobile and email, the change is flagged for
 the club's admins, and every other live link of this recipient for the
 round stops working (this one keeps working). A new mobile clears that
-contact's SMS opt-out. The contact is returned masked.
+contact's SMS opt-out. The contact is returned masked. One change per
+member every 12 hours; another within that time is refused with
+`{"error": "too_many_changes"}`.
 
  * @summary Correct this recipient's own mobile or email
  */

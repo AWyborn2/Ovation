@@ -19,8 +19,8 @@ import {
 } from "../lib/availability-schedule";
 
 /**
- * The club's weekly availability round (plan 2026-10-06-002 U4; R8, R28, KTD4,
- * KTD11): the schedule, the current round's progress and counts, and admin
+ * The club's weekly availability round: the schedule, the current round's
+ * progress and counts, and admin
  * "Run now" steps that go through the scheduler's own claim. Admin only.
  * Logs carry ids and counts only — never a contact.
  */

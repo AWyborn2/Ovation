@@ -151,8 +151,8 @@ export const adminWriteRateLimiter = rateLimit({
 });
 
 /**
- * Throttle the player availability page's token endpoints (plan 2026-10-06-002
- * KTD5). The link is the only credential, so an unthrottled endpoint would let
+ * Throttle the player availability page's token endpoints. The
+ * link is the only credential, so an unthrottled endpoint would let
  * one client guess tokens as fast as the server answers. Keyed by IP (there is
  * no session); successes count too, since every request resolves a token. A
  * real player opens the page and saves a few answers, well under this.
