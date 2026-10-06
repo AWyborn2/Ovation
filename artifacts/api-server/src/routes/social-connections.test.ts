@@ -99,11 +99,11 @@ beforeAll(async () => {
   process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-meta-connect";
   const [a] = await db
     .insert(tenantsTable)
-    .values({ slug: `meta-a-${STAMP}`, centralClubId: 9931, name: "Meta A", plan: "pro" })
+    .values({ slug: `meta-a-${STAMP}`, centralClubId: 98401, name: "Meta A", plan: "pro" })
     .returning();
   const [b] = await db
     .insert(tenantsTable)
-    .values({ slug: `meta-b-${STAMP}`, centralClubId: 9932, name: "Meta B", plan: "pro" })
+    .values({ slug: `meta-b-${STAMP}`, centralClubId: 98402, name: "Meta B", plan: "pro" })
     .returning();
   tenantA = a.id;
   tenantB = b.id;

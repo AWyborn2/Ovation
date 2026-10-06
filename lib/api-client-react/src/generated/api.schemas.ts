@@ -6351,6 +6351,16 @@ export interface SocialDraft {
   needsAttention?: boolean;
 }
 
+export interface PublishSweepSummary {
+  /** True when publishing is off or another run was already going. */
+  skipped?: boolean;
+  claimed: number;
+  published: number;
+  failed: number;
+  held: number;
+  waiting: number;
+}
+
 export type SchedulePublicationsRequestPlatformsItem = typeof SchedulePublicationsRequestPlatformsItem[keyof typeof SchedulePublicationsRequestPlatformsItem];
 
 

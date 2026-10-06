@@ -71,7 +71,7 @@ async function draft(
 beforeAll(async () => {
   const [t] = await db
     .insert(tenantsTable)
-    .values({ slug: `media-${STAMP}`, centralClubId: 9941, name: "Media Club", plan: "pro" })
+    .values({ slug: `media-${STAMP}`, centralClubId: 98403, name: "Media Club", plan: "pro" })
     .returning();
   tenantId = t.id;
   await db.insert(socialSettingsTable).values({ tenantId, sizePortrait: true, sizeStory: true });
