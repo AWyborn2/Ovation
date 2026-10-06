@@ -1,4 +1,4 @@
-import type { SocialDraft } from "@workspace/api-client-react";
+import type { SocialDraft, SocialPublication } from "@workspace/api-client-react";
 import type { StatusTone } from "@/components/admin-ui";
 import type { ShareCardInput } from "@/lib/share-card";
 
@@ -101,4 +101,60 @@ export function relativeTime(iso: string | null | undefined, now: Date = new Dat
   if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
   const days = Math.round(hours / 24);
   return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+/** A draft's Facebook / Instagram post states (Meta publishing U10). */
+export type PublicationStatus = SocialPublication["status"];
+
+export const PUBLICATION_LABEL: Record<PublicationStatus, string> = {
+  scheduled: "Scheduled",
+  held: "Waiting for reconnect",
+  publishing: "Publishing",
+  published: "Published",
+  failed: "Failed",
+  cancelled: "Cancelled",
+};
+
+export const PUBLICATION_TONE: Record<PublicationStatus, StatusTone> = {
+  scheduled: "info",
+  held: "attention",
+  publishing: "info",
+  published: "success",
+  failed: "danger",
+  cancelled: "neutral",
+};
+
+const PLATFORM_LABEL = { facebook: "Facebook", instagram: "Instagram" } as const;
+
+/** "Instagram story", "Facebook" — the platform, plus the post type when it isn't the feed. */
+export function publicationLabel(p: Pick<SocialPublication, "platform" | "postType">): string {
+  const platform = PLATFORM_LABEL[p.platform];
+  return p.postType === "story" ? `${platform} story` : platform;
+}
+
+/** `at` as club-local "YYYY-MM-DDTHH:mm", the value a datetime-local input takes. */
+export function clubTimeInputValue(at: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Australia/Perth",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(at);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
+
+/** A publication time in club time, e.g. "Sat 11 Oct, 7:00 pm". */
+export function clubTimeLabel(iso: string): string {
+  return new Intl.DateTimeFormat("en-AU", {
+    timeZone: "Australia/Perth",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(iso));
 }

@@ -102,6 +102,9 @@ describe("AutoPostCard", () => {
         autoPostEnabled: true,
         autoPostWindowHours: 6,
         notificationEmail: "studio@club.example",
+        // Auto-publish (Meta publishing) saves with the card; off until Meta is connected.
+        autoPublishEnabled: false,
+        autoPublishFreshnessHours: 24,
       });
     });
   });
