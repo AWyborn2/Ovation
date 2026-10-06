@@ -44,6 +44,15 @@ A placeholder player, identified by an id at or above the fill-in floor, standin
 
 A per-tenant, app-side overlay that corrects how a central player appears on a club's site — renaming the "Initial Surname" to a real name, or merging duplicate GUIDs into one player. Applied on read; never alters the central database.
 
+### Shirt number
+
+The playing number a club issues a player for one season, shown on team lists, player social assets and the profile. It can repeat across players and seasons, and is distinct from the cap number, which is a permanent A Grade heritage sequence.
+_Avoid:_ cap number, squad number
+
+### Season squad register
+
+A tenant's per-season list of people and their shirt numbers, built from a club spreadsheet, a PlayHQ registration export and synced lineups. An entry stays held — admin-only — until a lineup links it to a player who has played.
+
 ## Branding and onboarding
 
 ### Concierge onboarding
