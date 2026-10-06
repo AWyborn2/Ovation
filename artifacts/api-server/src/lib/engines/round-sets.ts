@@ -7,7 +7,9 @@ import {
   type FixtureRow,
   type SocialSettingsRow,
 } from "@workspace/db";
-import { gradeTile, isJuniorGradeLabel } from "@workspace/scorecard";
+import type { MatchDetail } from "@workspace/api-zod";
+import { gradeTile, isJuniorGradeLabel, matchToSummaryInput } from "@workspace/scorecard";
+import { loadCentralMatchDetail } from "../match-detail";
 import { inClubGradeOrder } from "../club-grade-order";
 import { familyAllows, resolveFamilyConfig } from "../social-families";
 import { upsertDraftByKey } from "../draft-upsert";
@@ -18,6 +20,7 @@ import {
   ROUND_WINDOW_MS,
   lastScheduledAt,
   resolveRoundSchedules,
+  roundResultsCarouselOn,
 } from "../round-schedules";
 import { formatFixtureTime } from "./match-day";
 import { teamListToCardInput } from "./team-list";
@@ -233,10 +236,11 @@ function seasonOf(d: Date): number {
 }
 
 /**
- * The weekend wrap as one round set, at the club's chosen day and hour: the
- * latest round the club played in the week before that moment. Central-data
- * clubs only (the wrap reads central results); seniors only, as central data
- * holds no junior grades.
+ * The round's match results as one carousel, at the club's chosen day and hour: the
+ * latest round the club played in the week before that moment, as the weekend wrap
+ * (its cover) followed by each match's own result card, in the club's grade order.
+ * Drafted when match results are "perRound" or "both". Central-data clubs only (the
+ * wrap reads central results); seniors only, as central data holds no junior grades.
  */
 export async function generateWeekendWrapDrafts(
   tenantId: number,
@@ -246,7 +250,7 @@ export async function generateWeekendWrapDrafts(
   const settings = await loadSettings(tenantId);
   const families = resolveFamilyConfig(settings);
   const schedule = resolveRoundSchedules(settings?.roundSchedules).weekendWrap;
-  if (!families.roundup.enabled || schedule.mode !== "perRound") return result;
+  if (!families.roundup.enabled || !roundResultsCarouselOn(schedule.mode)) return result;
   if (!(await tenantIsCentral(tenantId))) return result;
 
   const anchor = lastScheduledAt(now, schedule);
@@ -268,6 +272,23 @@ export async function generateWeekendWrapDrafts(
   const wrap = await centralWeekendWrap(clubId, season, round, merges);
   if (wrap.matches.length === 0) return result;
 
+  // The round as a carousel (Ash, 6 Oct 2026): the wrap is its cover, then each match's own
+  // result card in the same grade order. A match whose scorecard can't be read keeps its row
+  // on the cover but gets no slide.
+  const ordered = await inClubGradeOrder(tenantId, wrap.matches);
+  const rows: typeof ordered = [];
+  const results: Record<string, unknown>[] = [];
+  for (const m of ordered) {
+    const detail = await loadCentralMatchDetail({ tenantId, clubId }, m.matchId);
+    if (detail) {
+      rows.push(m);
+      results.push(
+        matchToSummaryInput(detail as unknown as MatchDetail) as Record<string, unknown>,
+      );
+    }
+  }
+  const listed = [...rows, ...ordered.filter((m) => !rows.includes(m))];
+
   const { action } = await upsertDraftByKey({
     tenantId,
     engine: "weekendwrap-round",
@@ -277,12 +298,13 @@ export async function generateWeekendWrapDrafts(
       kind: "weekendWrap",
       roundLabel: wrap.roundLabel.toUpperCase(),
       dateRange: wrap.dateRange,
-      matches: (await inClubGradeOrder(tenantId, wrap.matches)).map((m) => ({
+      matches: listed.map((m) => ({
         gradeLabel: m.gradeLabel,
         resultLine: m.resultLine,
         performers: m.performers,
         outcome: WRAP_OUTCOME[m.outcome] ?? "draw",
       })),
+      results,
     },
     appPath: "/fixtures",
     sourceImportedAt: now,

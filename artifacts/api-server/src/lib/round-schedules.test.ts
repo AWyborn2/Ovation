@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ROUND_SCHEDULES,
   invalidRoundSchedule,
+  matchResultCardsOn,
+  roundResultsCarouselOn,
   lastScheduledAt,
   mergeRoundSchedules,
   resolveRoundSchedules,
@@ -29,11 +31,24 @@ describe("round schedules", () => {
     expect(s.teamLists).toEqual(DEFAULT_ROUND_SCHEDULES.teamLists);
   });
 
-  it("the weekend wrap can't be drafted per match", () => {
-    expect(invalidRoundSchedule("weekendWrap", { mode: "perFixture", day: 0, hour: 19 })).toMatch(
-      /once a round/,
+  it("only match results may draft both per match and per round", () => {
+    expect(invalidRoundSchedule("weekendWrap", { mode: "both", day: 0, hour: 19 })).toBeNull();
+    expect(
+      invalidRoundSchedule("weekendWrap", { mode: "perFixture", day: 0, hour: 19 }),
+    ).toBeNull();
+    expect(invalidRoundSchedule("gameDay", { mode: "both", day: 0, hour: 19 })).toMatch(
+      /Only match results/,
     );
     expect(invalidRoundSchedule("gameDay", { mode: "perFixture", day: 0, hour: 19 })).toBeNull();
+  });
+
+  it("match results: carousel for whole round or both, per-match cards unless whole round only", () => {
+    expect(
+      ["off", "perFixture", "perRound", "both"].map((m) => roundResultsCarouselOn(m as never)),
+    ).toEqual([false, false, true, true]);
+    expect(
+      ["off", "perFixture", "perRound", "both"].map((m) => matchResultCardsOn(m as never)),
+    ).toEqual([true, true, false, true]);
   });
 
   it("finds the most recent chosen day and hour in Perth time", () => {

@@ -180,6 +180,27 @@ describe("planCardSet", () => {
     ).toEqual([4, 3]);
   });
 
+  it("posts a round-results wrap as its cover plus each match's own result card", () => {
+    const base = sampleCardInput("weekendWrap") as Extract<ShareCardInput, { kind: "weekendWrap" }>;
+    const result = sampleCardInput("matchSummary");
+    const results = base.matches.map(() => result);
+    const slides = planCardSet({ ...base, results });
+    expect(slides.map((s) => s.role)).toEqual([
+      "cover",
+      ...base.matches.map(() => "detail" as const),
+    ]);
+    expect(slides[0].input).toMatchObject({ kind: "weekendWrap", setRole: "cover" });
+    expect(slides.slice(1).every((s) => s.input.kind === "matchSummary")).toBe(true);
+    expect(slides[1]).toMatchObject({ key: `detail:senior:${base.matches[0].gradeLabel}` });
+    expect(slides[1].input).toMatchObject({ setPage: `2/${slides.length}` });
+    // One match: just its result card.
+    expect(
+      planCardSet({ ...base, matches: base.matches.slice(0, 1), results: [result] }).map(
+        (s) => s.input.kind,
+      ),
+    ).toEqual(["matchSummary"]);
+  });
+
   it("posts a round of team lists as a cover plus one team card each, juniors last", () => {
     const base = sampleCardInput("teamListRound") as Extract<
       ShareCardInput,

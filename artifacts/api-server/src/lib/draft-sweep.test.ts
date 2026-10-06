@@ -229,6 +229,40 @@ describe("central drafting sweep", () => {
       .where(eq(socialSettingsTable.tenantId, tenantId));
     expect(s.lastSweepAt).not.toBeNull();
   });
+
+  it("match results as a whole round: one carousel in grade order, no per-match cards", async () => {
+    await db
+      .update(socialSettingsTable)
+      .set({
+        engineRoundUp: true,
+        roundSchedules: { weekendWrap: { mode: "perRound", day: 0, hour: 19 } },
+      })
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+    // Round 4 already has A Grade games; add a B Grade one the same weekend.
+    await centralMatch(BASE + 8, { grade: "B Grade" });
+    await runDraftSweep(tenantId, { kind: "scheduled", now: NOW }, log);
+
+    expect((await centralDrafts()).map((d) => d.sourceKey)).not.toContain(
+      draftKeys.centralMatchSummary(BASE + 8),
+    );
+    const [wrap] = await db
+      .select()
+      .from(socialDraftsTable)
+      .where(
+        and(
+          eq(socialDraftsTable.tenantId, tenantId),
+          like(socialDraftsTable.sourceKey, "weekendwrap-round:%"),
+        ),
+      );
+    const input = wrap.cardInput as {
+      kind: string;
+      matches: { gradeLabel: string }[];
+      results: { kind: string }[];
+    };
+    expect(input.kind).toBe("weekendWrap");
+    expect(input.matches.map((m) => m.gradeLabel)).toEqual(["A Grade", "B Grade"]);
+    expect(input.results.map((r) => r.kind)).toEqual(["matchSummary", "matchSummary"]);
+  });
 });
 
 describe("POST /api/internal/draft-sweep", () => {

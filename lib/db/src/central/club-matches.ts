@@ -382,6 +382,8 @@ function formatWrapDate(ymd: string | null): { label: string; sort: string } | n
 
 /** One grade's line in the Weekend Wrap card (A6). */
 export interface CentralWeekendWrapMatch {
+  /** Central match id (for the match's own result card in a round-results carousel). */
+  matchId: number;
   gradeLabel: string;
   resultLine: string;
   performers: string;
@@ -540,6 +542,7 @@ async function centralWeekendWrapImpl(
     }
 
     return {
+      matchId: m.id,
       gradeLabel: m.grade,
       resultLine,
       performers: parts.join(", "),
