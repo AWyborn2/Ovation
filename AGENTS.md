@@ -98,7 +98,8 @@ In short:
   `central.*` filtered by club, tenant #1 may still read the native tables. Check
   `tenants.reads_from_central` rather than assuming which side a tenant is on.
 - **PlayHQ sync is live:** GitHub Actions headless collector → `/api/internal/playhq/ingest`
-  → `playhq.*` → fixtures, team lists, `central.*` projection and the draft sweep.
+  → `playhq.*` → fixtures, team lists, `central.*` projection and the draft sweep; then
+  every hourly run calls `/api/internal/playhq/sweep` (scheduled sweep for every club).
 - **Social Studio automation is live:** result, achievement, round-up and match-day cards
   (incl. Team Lists from PlayHQ selections) draft into the review queue.
 - **Billing and entitlements are built but switched off** (Phase 2c/2d); onboarding,

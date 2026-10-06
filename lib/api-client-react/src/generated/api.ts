@@ -16153,6 +16153,77 @@ export const useRunPlayhqSyncWatchdog = <TError = ErrorType<void>,
       return useMutation(getRunPlayhqSyncWatchdogMutationOptions(options));
     }
 
+export const getRunPlayhqScheduledSweepUrl = () => {
+
+
+
+
+  return `/api/internal/playhq/sweep`
+}
+
+/**
+ * Machine-to-machine only (same `x-sync-secret` as the other /internal/playhq routes; 401 otherwise). The same sweep as /internal/draft-sweep with scope `scheduled`, over every active tenant: result, achievement and round-up cards from central matches, debut caps, match-day timing and auto-post promotion. The hourly runner calls it after its ingests, so the matches they copied into central are drafted in the same hour. Keyed drafting makes a repeat harmless.
+ * @summary Run the scheduled drafting sweep for every active club (hourly runner)
+ */
+export const runPlayhqScheduledSweep = async ( options?: RequestInit): Promise<DraftSweepResponse> => {
+
+  return customFetch<DraftSweepResponse>(getRunPlayhqScheduledSweepUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRunPlayhqScheduledSweepMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runPlayhqScheduledSweep>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runPlayhqScheduledSweep>>, TError,void, TContext> => {
+
+const mutationKey = ['runPlayhqScheduledSweep'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runPlayhqScheduledSweep>>, void> = () => {
+
+
+          return  runPlayhqScheduledSweep(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunPlayhqScheduledSweepMutationResult = NonNullable<Awaited<ReturnType<typeof runPlayhqScheduledSweep>>>
+
+    export type RunPlayhqScheduledSweepMutationError = ErrorType<void>
+
+    /**
+ * @summary Run the scheduled drafting sweep for every active club (hourly runner)
+ */
+export const useRunPlayhqScheduledSweep = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runPlayhqScheduledSweep>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runPlayhqScheduledSweep>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRunPlayhqScheduledSweepMutationOptions(options));
+    }
+
 export const getGetPlatformPlayhqSyncUrl = () => {
 
 

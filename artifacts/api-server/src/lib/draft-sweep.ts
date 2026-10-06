@@ -1,5 +1,5 @@
-import { and, desc, eq } from "drizzle-orm";
-import { db, matchesTable, socialSettingsTable } from "@workspace/db";
+import { and, desc, eq, isNull } from "drizzle-orm";
+import { db, matchesTable, socialSettingsTable, tenantsTable } from "@workspace/db";
 import { notEmptyFixture } from "./grades-helpers";
 import {
   runPostCommitSocial,
@@ -187,6 +187,47 @@ export async function runDraftSweep(
       .where(eq(socialSettingsTable.tenantId, tenantId));
   }
   return summary;
+}
+
+export type TenantSweepResult = { tenantId: number; ok: boolean } & SweepSummary;
+
+/**
+ * Sweep one tenant, or every active (not suspended) tenant when `tenantId` is null. A
+ * tenant whose sweep throws is logged and reported `ok: false`; the rest still run. Shared
+ * by `POST /internal/draft-sweep` and the PlayHQ runner's hourly `POST /internal/playhq/sweep`.
+ * `null` when the one tenant asked for does not exist.
+ */
+export async function sweepTenants(
+  tenantId: number | null,
+  scope: "scheduled" | "fixtures",
+  logger: Logger,
+): Promise<TenantSweepResult[] | null> {
+  const tenants = await db
+    .select({ id: tenantsTable.id })
+    .from(tenantsTable)
+    .where(tenantId != null ? eq(tenantsTable.id, tenantId) : isNull(tenantsTable.suspendedAt));
+  if (tenantId != null && tenants.length === 0) return null;
+  const results: TenantSweepResult[] = [];
+  for (const t of tenants) {
+    try {
+      const summary = await runDraftSweep(t.id, { kind: scope }, logger);
+      results.push({ tenantId: t.id, ok: true, ...summary });
+    } catch (err) {
+      logger.error({ err, tenantId: t.id }, "draft sweep failed");
+      results.push({
+        tenantId: t.id,
+        ok: false,
+        centralMatches: 0,
+        matchSummaries: 0,
+        achievements: 0,
+        matchDay: 0,
+        teamLists: 0,
+        roundSets: 0,
+        promoted: 0,
+      });
+    }
+  }
+  return results;
 }
 
 /** The Perth calendar date (YYYY-MM-DD) of an instant — central match dates are Perth dates. */

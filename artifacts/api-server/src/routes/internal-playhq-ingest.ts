@@ -10,12 +10,14 @@ import { IngestPlayhqDumpBody } from "@workspace/api-zod";
 import { IngestNotConfiguredError, type Dump } from "@workspace/db/playhq-ingest";
 import { ingestPlayhqDump, listDuePlans } from "../lib/playhq-ingest";
 import { runWatchdog } from "../lib/playhq-health";
+import { sweepTenants } from "../lib/draft-sweep";
 import { env } from "../config";
 
 /**
  * The scheduled PlayHQ sync's machine-to-machine endpoints:
  *   - `GET  /api/internal/playhq/plans`    — which harness plans are due now (the runner asks hourly);
  *   - `POST /api/internal/playhq/watchdog` — health check that opens / resolves incidents;
+ *   - `POST /api/internal/playhq/sweep` — the scheduled drafting sweep for every active club;
  *   - `POST /api/internal/playhq/ingest` — where every collector (the scheduled headless runner,
  *     a hand-run upload, later the public-API collector) hands over a harness dump.
  *
@@ -71,6 +73,22 @@ router.post("/watchdog", requireSyncSecret, async (req, res): Promise<void> => {
     if (sendUnavailable(req, res, err)) return;
     req.log.error({ err }, "playhq watchdog failed");
     res.status(500).json({ error: "watchdog failed" });
+  }
+});
+
+/**
+ * `POST /api/internal/playhq/sweep` — the scheduled drafting sweep for every active club:
+ * result, achievement and round-up cards from central matches, debut caps, match-day
+ * timing and auto-post promotion. The runner calls it each hour after its ingests, so new
+ * results are already in central when it runs. Same as `POST /internal/draft-sweep` with
+ * scope `scheduled`, behind the sync secret, so the hourly runner needs no second secret.
+ */
+router.post("/sweep", requireSyncSecret, async (req, res): Promise<void> => {
+  try {
+    res.json({ results: (await sweepTenants(null, "scheduled", req.log)) ?? [] });
+  } catch (err) {
+    req.log.error({ err }, "playhq scheduled sweep failed");
+    res.status(500).json({ error: "sweep failed" });
   }
 });
 

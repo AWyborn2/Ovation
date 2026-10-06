@@ -4631,6 +4631,28 @@ paths:
         "503":
           description: Ingest database not configured, or its role is not scoped to playhq
 
+  /internal/playhq/sweep:
+    post:
+      operationId: runPlayhqScheduledSweep
+      tags: [fixtures]
+      summary: Run the scheduled drafting sweep for every active club (hourly runner)
+      description: >-
+        Machine-to-machine only (same `x-sync-secret` as the other /internal/playhq routes;
+        401 otherwise). The same sweep as /internal/draft-sweep with scope `scheduled`, over
+        every active tenant: result, achievement and round-up cards from central matches,
+        debut caps, match-day timing and auto-post promotion. The hourly runner calls it
+        after its ingests, so the matches they copied into central are drafted in the same
+        hour. Keyed drafting makes a repeat harmless.
+      responses:
+        "200":
+          description: Sweep results per tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftSweepResponse"
+        "401":
+          description: Missing or wrong sync secret
+
   /platform/admin/playhq-sync:
     get:
       operationId: getPlatformPlayhqSync

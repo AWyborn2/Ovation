@@ -1,9 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { Router, type IRouter, type Request } from "express";
-import { eq, isNull } from "drizzle-orm";
-import { db, tenantsTable } from "@workspace/db";
 import { RunDraftSweepBody } from "@workspace/api-zod";
-import { runDraftSweep } from "../lib/draft-sweep";
+import { sweepTenants } from "../lib/draft-sweep";
 import { env } from "../config";
 
 /**
@@ -38,34 +36,10 @@ router.post("/draft-sweep", async (req, res): Promise<void> => {
   }
   const { tenantId, scope = "scheduled" } = parsed.data;
 
-  const tenants = await db
-    .select({ id: tenantsTable.id })
-    .from(tenantsTable)
-    .where(tenantId != null ? eq(tenantsTable.id, tenantId) : isNull(tenantsTable.suspendedAt));
-  if (tenantId != null && tenants.length === 0) {
+  const results = await sweepTenants(tenantId ?? null, scope, req.log);
+  if (!results) {
     res.status(404).json({ error: "tenant not found" });
     return;
-  }
-
-  const results = [];
-  for (const t of tenants) {
-    try {
-      const summary = await runDraftSweep(t.id, { kind: scope }, req.log);
-      results.push({ tenantId: t.id, ok: true, ...summary });
-    } catch (err) {
-      req.log.error({ err, tenantId: t.id }, "draft sweep failed");
-      results.push({
-        tenantId: t.id,
-        ok: false,
-        centralMatches: 0,
-        matchSummaries: 0,
-        achievements: 0,
-        matchDay: 0,
-        teamLists: 0,
-        roundSets: 0,
-        promoted: 0,
-      });
-    }
   }
   res.json({ results });
 });

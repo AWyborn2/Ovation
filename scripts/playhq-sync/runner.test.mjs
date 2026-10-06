@@ -28,7 +28,9 @@ function fakeServer(
       ? { now: "x", plans }
       : url.endsWith("/watchdog")
         ? WATCHDOG_OK
-        : ingestReply;
+        : url.endsWith("/sweep")
+          ? SWEEP_OK
+          : ingestReply;
     return { ok: true, status: 200, text: async () => JSON.stringify(body) };
   };
   return { calls, fetchImpl };
@@ -60,6 +62,12 @@ function fakeBrowser(statuses, records = [{ kind: "plan", id: "p" }]) {
 
 const sleep = async () => {};
 const WATCHDOG_OK = { checked: 1, opened: [], resolved: [], open: 0 };
+const SWEEP_OK = {
+  results: [
+    { tenantId: 1, ok: true, matchSummaries: 0, achievements: 0, promoted: 0 },
+    { tenantId: 2, ok: true, matchSummaries: 0, achievements: 0, promoted: 0 },
+  ],
+};
 const done = { phase: "done", finishedAt: "t", errorCount: 0, errors: [], stats: { failed: 0 } };
 
 test("runStatus: ok, partial on errors or timeout, failed on a harness error", () => {
@@ -93,11 +101,14 @@ test("no plans due: never launches a browser", async () => {
   });
   assert.equal(r.due, 0);
   assert.equal(launched, false);
-  // plans, then the health check — the watchdog runs even when nothing is due.
-  assert.equal(calls.length, 2);
+  // plans, then the drafting sweep and the health check — both run even when nothing is due.
+  assert.equal(calls.length, 3);
   assert.equal(calls[0].url, "https://ovation.test/api/internal/playhq/plans");
-  assert.equal(calls[1].url, "https://ovation.test/api/internal/playhq/watchdog");
+  assert.equal(calls[1].url, "https://ovation.test/api/internal/playhq/sweep");
   assert.equal(calls[1].init.method, "POST");
+  assert.equal(calls[2].url, "https://ovation.test/api/internal/playhq/watchdog");
+  assert.equal(calls[2].init.method, "POST");
+  assert.deepEqual(r.sweep, { clubs: 2, failed: [] });
   assert.equal(calls[0].init.headers["x-sync-secret"], "s3cret");
 });
 
@@ -154,6 +165,8 @@ test("a failed upload is reported and the remaining plans still run", async () =
       };
     if (url.endsWith("/watchdog"))
       return { ok: true, status: 200, text: async () => JSON.stringify(WATCHDOG_OK) };
+    if (url.endsWith("/sweep"))
+      return { ok: true, status: 200, text: async () => JSON.stringify(SWEEP_OK) };
     n++;
     return n === 1
       ? { ok: false, status: 503, text: async () => '{"error":"not configured"}' }
@@ -201,10 +214,45 @@ test("a failing health check fails the run (so GitHub's own failure email fires 
   const fetchImpl = async (url) =>
     url.endsWith("/plans")
       ? { ok: true, status: 200, text: async () => JSON.stringify({ plans: [] }) }
-      : { ok: false, status: 503, text: async () => '{"error":"not configured"}' };
+      : url.endsWith("/sweep")
+        ? { ok: true, status: 200, text: async () => JSON.stringify(SWEEP_OK) }
+        : { ok: false, status: 503, text: async () => '{"error":"not configured"}' };
   const r = await run({ env: ENV, fetchImpl, launch: async () => ({}), log: () => {} });
   assert.equal(r.failures.length, 1);
   assert.match(r.failures[0], /^watchdog: .*HTTP 503/);
+});
+
+test("the drafting sweep runs before the health check, and a failed sweep fails the run", async () => {
+  const order = [];
+  const fetchImpl = async (url) => {
+    order.push(url.split("/").pop());
+    if (url.endsWith("/plans"))
+      return { ok: true, status: 200, text: async () => JSON.stringify({ plans: [] }) };
+    if (url.endsWith("/sweep"))
+      return {
+        ok: true,
+        status: 200,
+        text: async () =>
+          JSON.stringify({
+            results: [
+              { tenantId: 1, ok: true, matchSummaries: 2, achievements: 1, promoted: 0 },
+              { tenantId: 113, ok: false, matchSummaries: 0, achievements: 0, promoted: 0 },
+            ],
+          }),
+      };
+    return { ok: true, status: 200, text: async () => JSON.stringify(WATCHDOG_OK) };
+  };
+  const lines = [];
+  const r = await run({
+    env: ENV,
+    fetchImpl,
+    launch: async () => ({}),
+    log: (l) => lines.push(l),
+  });
+  assert.deepEqual(order, ["plans", "sweep", "watchdog"]);
+  assert.deepEqual(r.sweep, { clubs: 2, failed: [113] });
+  assert.deepEqual(r.failures, ["sweep failed for tenant(s) 113"]);
+  assert.ok(lines.some((l) => l.startsWith("sweep: 2 club(s), 2 result card(s), 1 achievement")));
 });
 
 test("manual catch-up: one catchup plan with scorecards since the date, no /plans call", async () => {
