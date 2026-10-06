@@ -62,6 +62,11 @@ const AdminSettingsGroup = lazyNamed(() => import("@/pages/admin-groups"), "Admi
 const AdminPeopleGroup = lazyNamed(() => import("@/pages/admin-groups"), "AdminPeopleGroup");
 const AdminHonoursGroup = lazyNamed(() => import("@/pages/admin-groups"), "AdminHonoursGroup");
 const CaptainPage = lazy(() => import("@/pages/captain"));
+const SelectionHub = lazy(() => import("@/pages/selection-hub"));
+const CaptainSelectionHub = lazyNamed(() => import("@/pages/selection-hub"), "CaptainSelectionHub");
+const AdminAvailability = lazy(() => import("@/pages/admin-availability"));
+// The personal availability link a player or parent opens from their SMS/email.
+const AvailabilityRespond = lazy(() => import("@/pages/availability-respond"));
 const CardRenderHarness = lazy(() => import("@/pages/card-render-harness"));
 const HonoursDisplay = lazy(() => import("@/pages/honours-display"));
 const HonoursKiosk = lazy(() => import("@/pages/honours-kiosk"));
@@ -132,6 +137,8 @@ function AdminRoutes() {
             <Route path="/admin" component={AdminHub} />
             <Route path="/admin/users" component={AdminUsers} />
             <Route path="/admin/import" component={AdminImport} />
+            <Route path="/admin/selection" component={SelectionHub} />
+            <Route path="/admin/availability" component={AdminAvailability} />
 
             {/* Trading cards moved from Settings into Social Media Studio; keep
                 the old Settings URL working (must precede the settings group). */}
@@ -207,6 +214,16 @@ function AdminRoutes() {
         </RouteSuspense>
       </AdminShell>
     </>
+  );
+}
+
+function CaptainSelectionRoutes() {
+  return (
+    <Layout>
+      <RouteSuspense>
+        <CaptainSelectionHub />
+      </RouteSuspense>
+    </Layout>
   );
 }
 
@@ -301,6 +318,9 @@ export function Router() {
             unauthenticated club admin can set their password from the emailed/handed
             link without hitting the sign-in wall. */}
         <Route path="/admin/reset" component={AdminReset} />
+        {/* A player's or parent's personal availability link: no login, the
+            token in the path is the credential (validated server-side). */}
+        <Route path="/availability/:token" component={AvailabilityRespond} />
         {/* The Studio editor is its own full-screen app, outside the admin shell. */}
         <Route path="/admin/social/editor/:id">
           <AdminShell bare>
@@ -309,6 +329,7 @@ export function Router() {
         </Route>
         <Route path="/admin/*" component={AdminRoutes} />
         <Route path="/admin" component={AdminRoutes} />
+        <Route path="/captain/selection" component={CaptainSelectionRoutes} />
         <Route path="/captain" component={CaptainRoutes} />
         <Route component={PublicRoutes} />
       </Switch>

@@ -1,4 +1,6 @@
 import {
+  CalendarCheck,
+  ClipboardList,
   Image,
   LayoutGrid,
   Settings,
@@ -11,7 +13,7 @@ import {
 import type { Feature } from "@/lib/entitlements";
 
 /**
- * The admin's information architecture (Social Studio U20): seven groups, the
+ * The admin's information architecture (Social Studio U20): the groups, the
  * tabs inside each, and where they live. One source for the sidebar, the
  * group pages' tab bars, the breadcrumb and jump-to, so they never disagree.
  * The first tab of a group lives at the group's own path.
@@ -38,6 +40,22 @@ export type AdminNavGroup = {
 
 export const ADMIN_NAV: AdminNavGroup[] = [
   { key: "hub", label: "Hub", href: "/admin", icon: LayoutGrid, tabs: [] },
+  {
+    key: "selection",
+    label: "Selection Hub",
+    href: "/admin/selection",
+    icon: ClipboardList,
+    description: "This round's drafted sides: pick, swap, name captains and finalise.",
+    tabs: [],
+  },
+  {
+    key: "availability",
+    label: "Availability",
+    href: "/admin/availability",
+    icon: CalendarCheck,
+    description: "The weekly availability round, its schedule, and the squad register.",
+    tabs: [],
+  },
   {
     key: "social",
     label: "Social Media Studio",
