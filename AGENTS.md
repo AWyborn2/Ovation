@@ -88,16 +88,21 @@ now reading shared stats from a central association DB filtered per tenant.**
 
 ## Current state (reality, not the roadmap doc)
 
-⚠️ **`CLAUDE.md` says "Phase 0". The code is past that.** Git history shows committed:
-Phase 2b self-serve onboarding + tenant-scoped admin auth, Phase 2c plan entitlements
-(_dormant_), Phase 2d Stripe billing adapter (_built, inert_), Phase 2e super-admin
-console. The central-DB integration that CLAUDE.md lists as a future Phase 0 step
-already exists: `lib/db/src/central.ts`, `lib/db/src/central-queries.ts`,
-`lib/db/src/provision.ts`, and a `shouldReadCentral` feature flag in
-`api-server/src/lib/tenant.ts`. Halls Head literals are down to ~48 files (from 77).
+`CLAUDE.md`'s **STATUS** section is kept current (last refreshed 6 Oct 2026); read it first.
+In short:
 
-So: **billing and entitlements are live in the server but switched off; stats reads
-are mid-migration from local tables to central-DB-filtered-by-club_id behind a flag.**
+- **Data:** everything (`public`, `central`, `playhq`) is on Replit-managed Postgres, dev and
+  production. The old Supabase project is retired and read-only. Production schema changes
+  are run by hand in Replit's Production SQL runner before republishing.
+- **Stats:** reads are funnelled through `dataSource(req)`; central tenants read
+  `central.*` filtered by club, tenant #1 may still read the native tables. Check
+  `tenants.reads_from_central` rather than assuming which side a tenant is on.
+- **PlayHQ sync is live:** GitHub Actions headless collector → `/api/internal/playhq/ingest`
+  → `playhq.*` → fixtures, team lists, `central.*` projection and the draft sweep.
+- **Social Studio automation is live:** result, achievement, round-up and match-day cards
+  (incl. Team Lists from PlayHQ selections) draft into the review queue.
+- **Billing and entitlements are built but switched off** (Phase 2c/2d); onboarding,
+  tenant-scoped admin auth and the platform-admin console are live.
 
 ## Hard constraints — do not break
 
@@ -149,6 +154,13 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
 - **Dual-read boundary (local vs central DB)** is the highest-risk area for _silent_
   data disagreement. Funnel all central reads through `central-queries.ts`; guard with
   consistency tests (`*-consistency.test.ts` already exist — extend per flipped read).
+- **GitHub's scheduler is not hourly.** `playhq-sync.yml` asks for `7 * * * *`, but GitHub
+  started it only ~4 times a day in Oct 2026 (20 scheduled runs in 5 days). The server's
+  calendar heals on the next run, but match-week plans (3 h grace) go overdue in between and
+  the watchdog alerts. Reliable hourly runs need an external trigger that calls the
+  workflow's `workflow_dispatch` (decision pending).
+- **Production does not migrate on publish.** Each new migration's SQL is run by hand in the
+  Production SQL runner first; `playhq.*` tables come from `scripts/sql/playhq-schema.sql`.
 - **Roadmap docs lag the code** — reconcile before relying on them for sequencing.
 
 ## Where things live (quick index)
@@ -187,4 +199,14 @@ are mid-migration from local tables to central-DB-filtered-by-club_id behind a f
 - Billing (inert): `api-server/src/routes/billing.ts`, `lib/billing.ts`,
   `lib/entitlements.ts`
 - Player identity crosswalk (app int id ↔ PlayHQ GUID): `schema/player_id_map.ts`
+- PlayHQ sync: workflow `.github/workflows/playhq-sync.yml` + runner
+  `scripts/playhq-sync/runner.mjs`; collector harness
+  `.claude/skills/playcricket-stats-scraper/harness.js` (endpoint notes in its
+  `references/`); ingest `api-server/src/lib/playhq-ingest.ts`; loader, cadence, health,
+  fixtures/team-list/central projections in `lib/db/src/playhq-ingest/`; landing schema
+  `scripts/sql/playhq-schema.sql` (+ `playhq-ingest-role.sql`, `central-projector.sql`)
+- Social drafting: `api-server/src/lib/draft-sweep.ts` (entry), `lib/engines/*` (per card
+  kind), `lib/draft-enrich.ts` (pack, caption and photo pick)
+- Caps: `routes/caps.ts` (register + confirmation queue), `lib/debut-caps.ts` (automatic
+  A Grade debut caps), `lib/cap-sync.ts`
 - App entry: `api-server/src/app.ts` (middleware wiring) → `index.ts`

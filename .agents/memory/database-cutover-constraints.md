@@ -74,3 +74,8 @@ backend reported non-TLS while the libpq client connection verified TLS.
 
 **How to apply:** Verify session settings after connection and verify TLS using
 the actual client transport; preserve both fail-closed guards.
+**Outcome (6 Oct 2026):** the cut-over is done. Development and production both run on
+Replit-managed Postgres with `public`, `central` and `playhq`; the Supabase project is retired
+and read-only (never write to it). Ash confirmed every connection variable points at the
+intended database. Production schema changes are run by hand in the Production SQL runner
+before republishing — publishing does not migrate production.
