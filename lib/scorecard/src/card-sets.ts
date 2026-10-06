@@ -194,6 +194,8 @@ type TeamRow = {
   venueDateTime: string;
   players: unknown[];
   squadPhotoUrl?: string | null;
+  /** "shirt" when the club numbers its players: rows then print shirt numbers. */
+  numbering?: "shirt";
 };
 
 export interface PlannedSlide<I extends SetInput = SetInput> {
@@ -248,6 +250,7 @@ function teamCard(team: TeamRow, junior: boolean): SetInput {
     venueDateTime: team.venueDateTime,
     players: team.players,
     ...(team.squadPhotoUrl ? { squadPhotoUrl: team.squadPhotoUrl } : {}),
+    ...(team.numbering ? { numbering: team.numbering } : {}),
     ...(junior ? { junior: true } : {}),
   };
 }
