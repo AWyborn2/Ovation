@@ -11,7 +11,8 @@ export const notificationsTable = pgTable(
   {
     id: serial("id").primaryKey(),
     tenantId: tenantIdColumn(),
-    kind: text("kind").notNull(), // "drafts_ready"
+    // "drafts_ready" | "published" | "publish_failed" | "reconnect_needed"
+    kind: text("kind").notNull(),
     title: text("title").notNull(),
     body: text("body").notNull().default(""),
     // Where the notification leads, e.g. the queue filtered to the batch.
