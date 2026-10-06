@@ -5244,6 +5244,112 @@ paths:
         "409":
           description: The draft is dismissed
 
+  /social-drafts/{id}/publications:
+    post:
+      operationId: scheduleDraftPublications
+      tags: [socialPublishing]
+      summary: Schedule a ready draft to Facebook and/or Instagram (or publish now)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SchedulePublicationsRequest"
+      responses:
+        "200":
+          description: The publications now open for the draft
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SocialPublication"
+        "400":
+          description: Invalid body or a time in the past
+        "404":
+          description: Not found
+        "409":
+          description: The draft isn't ready, Meta isn't connected, or that post already exists
+
+  /social-publications/{id}/reschedule:
+    post:
+      operationId: rescheduleSocialPublication
+      tags: [socialPublishing]
+      summary: Move a scheduled post to a new time
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReschedulePublicationRequest"
+      responses:
+        "200":
+          description: Rescheduled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialPublication"
+        "400":
+          description: Invalid time
+        "404":
+          description: Not found
+        "409":
+          description: Only a scheduled post can be moved
+
+  /social-publications/{id}/cancel:
+    post:
+      operationId: cancelSocialPublication
+      tags: [socialPublishing]
+      summary: Cancel a scheduled or held post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialPublication"
+        "404":
+          description: Not found
+        "409":
+          description: Already publishing or finished
+
+  /social-publications/{id}/retry:
+    post:
+      operationId: retrySocialPublication
+      tags: [socialPublishing]
+      summary: Try a failed post again now
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Scheduled again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialPublication"
+        "404":
+          description: Not found
+        "409":
+          description: Only a failed post can be retried, and Meta must be connected
+
   /social-drafts/{id}/post-pack:
     post:
       operationId: createPostPack
@@ -16248,6 +16354,54 @@ components:
           type: ["string", "null"]
           format: date-time
           description: "Set when a posted draft's source data changed after it was shared"
+        publications:
+          type: array
+          description: Its Facebook / Instagram posts, newest attempt per platform and post type.
+          items:
+            $ref: "#/components/schemas/SocialPublication"
+        needsAttention:
+          type: boolean
+          description: A post failed for good and nothing else is pending for it.
+
+    SocialPublication:
+      type: object
+      required: [id, draftId, platform, postType, status, origin, scheduledFor, attempts]
+      properties:
+        id: { type: integer }
+        draftId: { type: integer }
+        platform: { type: string, enum: [facebook, instagram] }
+        postType: { type: string, enum: [feed, story] }
+        status:
+          type: string
+          enum: [scheduled, held, publishing, published, failed, cancelled]
+        origin: { type: string, enum: [manual, auto] }
+        scheduledFor: { type: string, format: date-time }
+        attempts: { type: integer }
+        lastError: { type: ["string", "null"] }
+        publishedAt: { type: ["string", "null"], format: date-time }
+
+    SchedulePublicationsRequest:
+      type: object
+      properties:
+        platforms:
+          type: array
+          description: Defaults to every connected platform.
+          items: { type: string, enum: [facebook, instagram] }
+        postTypes:
+          type: array
+          description: Defaults to feed only.
+          items: { type: string, enum: [feed, story] }
+        at:
+          type: string
+          description: Club local time "YYYY-MM-DDTHH:mm". Omit to publish now.
+
+    ReschedulePublicationRequest:
+      type: object
+      required: [at]
+      properties:
+        at:
+          type: string
+          description: Club local time "YYYY-MM-DDTHH:mm".
 
     SocialDraftStatus:
       type: string

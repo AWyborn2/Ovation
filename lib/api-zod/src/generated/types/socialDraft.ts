@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SocialDraftStatus } from './socialDraftStatus';
+import type { SocialPublication } from './socialPublication';
 
 export interface SocialDraft {
   id: number;
@@ -52,4 +53,8 @@ export interface SocialDraft {
      * @nullable
      */
   staleSince?: Date | null;
+  /** Its Facebook / Instagram posts, newest attempt per platform and post type. */
+  publications?: SocialPublication[];
+  /** A post failed for good and nothing else is pending for it. */
+  needsAttention?: boolean;
 }

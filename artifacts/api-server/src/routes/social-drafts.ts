@@ -38,6 +38,11 @@ import {
   recordDraftRevision,
   revertDraftToRevision,
 } from "../lib/draft-revisions";
+import {
+  cancelDraftPublications,
+  draftPublishing,
+  publicationsByDraft,
+} from "../lib/publishing/publications";
 
 const router: IRouter = Router();
 
@@ -92,7 +97,14 @@ router.get("/social-drafts", requireAdmin, async (req, res): Promise<void> => {
   // Status filters on the effective state, so it's applied after presenting.
   const autoPost = await loadAutoPost(tenantId);
   const now = new Date();
-  const drafts = rows.map((r) => presentDraft(r, autoPost, now));
+  const pubs = await publicationsByDraft(
+    tenantId,
+    rows.map((r) => r.id),
+  );
+  const drafts = rows.map((r) => ({
+    ...presentDraft(r, autoPost, now),
+    ...draftPublishing(pubs.get(r.id)),
+  }));
   res.json(status === undefined ? drafts : drafts.filter((d) => d.status === status));
 });
 
@@ -183,6 +195,8 @@ router.post(
       .set({ status: "awaiting_review", autoReadyAt: null, reviewedAt: new Date() })
       .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
       .returning();
+    // A draft back in review must not go out on its old schedule (R13).
+    await cancelDraftPublications(tenantId, id, "Sent back to review.");
     res.json(presentDraft(updated));
   },
 );
@@ -212,6 +226,13 @@ router.post(
       .set({ status: "posted", reviewedAt: new Date() })
       .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
       .returning();
+    // Shared by hand: nothing still queued may post it again, and a failed
+    // post no longer needs attention (R18).
+    await cancelDraftPublications(tenantId, id, "Marked posted by the club.", [
+      "scheduled",
+      "held",
+      "failed",
+    ]);
     // Stamp the linked milestone event so other features (push notifications,
     // "just posted" feeds) and re-detection know this moment has been shared.
     if (updated.milestoneEventId) {
@@ -249,6 +270,7 @@ router.post(
       res.status(404).json({ error: "Not found" });
       return;
     }
+    await cancelDraftPublications(tenantId, id, "The draft was dismissed.");
     if (updated.milestoneEventId) {
       await db
         .update(milestoneEventsTable)

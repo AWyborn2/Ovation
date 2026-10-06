@@ -84,6 +84,23 @@ function zoneOffsetMinutes(at: Date, timeZone: string): number {
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
+ * A club-local wall-clock time ("YYYY-MM-DDTHH:mm") as a UTC instant, or null
+ * when it isn't one. Used for officer-set publishing times.
+ */
+export function clubTimeToUtc(local: string, timeZone: string = CLUB_TIME_ZONE): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(local);
+  if (!m) return null;
+  const [y, mo, d, h, mi] = m.slice(1).map(Number);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59) return null;
+  const asUtc = Date.UTC(y, mo - 1, d, h, mi);
+  if (new Date(asUtc).getUTCDate() !== d) return null;
+  // Two passes settle the offset across a daylight-saving change.
+  let at = asUtc - zoneOffsetMinutes(new Date(asUtc), timeZone) * 60000;
+  at = asUtc - zoneOffsetMinutes(new Date(at), timeZone) * 60000;
+  return new Date(at);
+}
+
+/**
  * The most recent moment at or before `now` that falls on `day` at `hour`
  * (club time): the moment this week's round set was due.
  */
