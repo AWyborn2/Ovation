@@ -86,6 +86,37 @@ export const DEFAULT_TEMPLATES: { engine: string; platform: string; template: st
   },
 ];
 
+/**
+ * Instagram captions for the "whole round" drafts (round-sets engines). Each
+ * round's draft takes one variation, picked by its source key, so the weekly
+ * post reads differently from round to round and a refresh keeps its pick.
+ * Junior rounds share these, so every line suits any age group. The weekend
+ * wrap never quotes its win count: a winless round would read badly.
+ */
+export const ROUND_SET_CAPTIONS: Record<string, readonly string[]> = {
+  "gameday-round": [
+    "📣 GAME DAY · {round.label} 📣\n\n{stat.value} {stat.label} on {date} 🏏\nFind your side, grab a chair and get down to the ground 🪑☀️\n\nSwipe ➡️ for every opponent, venue and start time\n\n{hashtag} #GameDay",
+    "🏏 Whites washed? Kit bag packed? 🧺\n\n{round.label} is here: {stat.value} {stat.label} on {date} 🗓️\nSwipe ➡️ to see where every side is playing\n\n{app.link}\n{hashtag} #GameDay #ClubCricket",
+    "🗓️ {date}\n\nThe toss is close, so here's the full {round.label} draw: {stat.value} {stat.label} 🪙🏏\nSwipe ➡️ and come cheer on your team 📣\n\n{hashtag} #GameDay",
+    "☀️ Sun's out, stumps are in 🏏\n\n{round.label} · {date}\n{stat.value} {stat.label} across the club. Swipe ➡️ for times and grounds ⏰📍\n\nWhich game are you heading to? 👇\n\n{hashtag} #GameDay",
+    "🔥 ROUND PREVIEW 🔥\n\n{stat.value} {stat.label}, one club, one goal 💪\n{round.label} · {date}\n\nSwipe ➡️ for the full draw\n{app.link}\n\n{hashtag} #GameDay #UpTheClub",
+  ],
+  "teamlists-round": [
+    "📋 SELECTIONS ARE IN 📋\n\n{round.label} · {date}\nAll {stat.value} {stat.label}, every name 🏏\n\nSwipe ➡️ to find your side. Can't make it? Tell your captain now ⏰\n\n{hashtag} #TeamLists #Selections",
+    "🧢 TEAM NEWS 🧢\n\nHere are our {stat.value} {stat.label} for {round.label} ({date}) 🏏\nSwipe ➡️ and tag a teammate who's in 👇\n\n{app.link}\n{hashtag} #TeamLists",
+    "🏏 The XIs are named! 🏏\n\n{round.label} · {date}\n{stat.value} {stat.label} ready to go 💪\n\nSwipe ➡️ for every side. Good luck, everyone 🍀\n\n{hashtag} #TeamLists #ClubCricket",
+    "✍️ Pencilled in and ready to roll ✍️\n\nThe {round.label} team lists: {stat.value} {stat.label} 🧾\n🗓️ {date}\n\nSwipe ➡️ to check you're in, then pack the kit bag 🧺\n\n{hashtag} #TeamLists",
+    "📣 Selection night is done 📣\n\nEvery side for {round.label} on {date}, {stat.value} {stat.label} in all 🏏\nSwipe ➡️ and get behind them this weekend 🙌\n\n{app.link}\n{hashtag} #TeamLists",
+  ],
+  "weekendwrap-round": [
+    "🌯 THE WEEKEND WRAP 🌯\n\n{round.label} · {date}\nEvery result, all in one place 🏏\n\nSwipe ➡️ and shout out the stars from your side 👇\n\n{hashtag} #WeekendWrap #Results",
+    "🏁 STUMPS on {round.label} 🏁\n\nHow every side went, {date} 📊\nSwipe ➡️ for results and top performers 🏏🎯\n\n{app.link}\n{hashtag} #WeekendWrap",
+    "📝 Scorebook's closed for {round.label} 📝\n\nEvery result and every standout from {date} 🏏\nSwipe ➡️. Who's your player of the round? 🌟\n\n{hashtag} #WeekendWrap #ClubCricket",
+    "🏏 That's a wrap on {round.label}! 🎬\n\n{date}\nRuns, wickets and results from across the club. Swipe ➡️\n\nTag a teammate who starred 👇\n\n{hashtag} #WeekendWrap",
+    "📊 ROUND REPORT 📊\n\n{round.label} · {date}\nEvery grade, every result, every performer worth a mention 🏏🙌\n\nSwipe ➡️ for the lot\n{app.link}\n\n{hashtag} #WeekendWrap #Results",
+  ],
+};
+
 export async function ensureSettings(tenantId: number) {
   const settings = await getOrCreateSettings(socialSettingsTable, tenantId);
   // Seed this tenant's default caption templates if missing.
