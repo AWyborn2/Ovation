@@ -126,6 +126,18 @@ export const env = {
   /** Sender, e.g. "Ovation <studio@ovation.example>". Unset = email off. */
   EMAIL_FROM: () => optional("EMAIL_FROM"),
 
+  // ── SMS (Twilio, plan 2026-10-06-002 KTD3) ───────────────────────────────
+  /** Twilio account SID and auth token; either unset = SMS off (email only). */
+  TWILIO_ACCOUNT_SID: () => optional("TWILIO_ACCOUNT_SID"),
+  TWILIO_AUTH_TOKEN: () => optional("TWILIO_AUTH_TOKEN"),
+  /**
+   * Sender: a two-way-capable Australian number in E.164, or a Messaging
+   * Service SID (preferred when both are set). Never an alphanumeric sender
+   * ID — those are one-way, so STOP replies would not opt anyone out.
+   */
+  TWILIO_FROM: () => optional("TWILIO_FROM"),
+  TWILIO_MESSAGING_SERVICE_SID: () => optional("TWILIO_MESSAGING_SERVICE_SID"),
+
   // ── Studio tools (U19) ───────────────────────────────────────────────────
   /** Photoroom API key for background removal; unset = the tool is off (404). */
   PHOTOROOM_API_KEY: () => optional("PHOTOROOM_API_KEY"),
