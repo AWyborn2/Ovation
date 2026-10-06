@@ -155,10 +155,11 @@ In short:
   data disagreement. Funnel all central reads through `central-queries.ts`; guard with
   consistency tests (`*-consistency.test.ts` already exist — extend per flipped read).
 - **GitHub's scheduler is not hourly.** `playhq-sync.yml` asks for `7 * * * *`, but GitHub
-  started it only ~4 times a day in Oct 2026 (20 scheduled runs in 5 days). The server's
-  calendar heals on the next run, but match-week plans (3 h grace) go overdue in between and
-  the watchdog alerts. Reliable hourly runs need an external trigger that calls the
-  workflow's `workflow_dispatch` (decision pending).
+  started it only ~4 times a day in Oct 2026 (20 scheduled runs in 5 days), so match-week plans
+  (3 h grace) went overdue. Since 6 Oct 2026 an external hourly cron-job.org job
+  (`ovation-playhq-sync-trigger`) calls the workflow's `workflow_dispatch` with a fine-grained
+  token (this repo only, Actions read/write, expires 30 Sep 2027). If runs thin out again,
+  check that job and the token first.
 - **Production does not migrate on publish.** Each new migration's SQL is run by hand in the
   Production SQL runner first; `playhq.*` tables come from `scripts/sql/playhq-schema.sql`.
 - **Roadmap docs lag the code** — reconcile before relying on them for sequencing.
