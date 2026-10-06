@@ -14,6 +14,9 @@ import { canonicalizeLines, mergesCacheArg, type CentralMerges } from "./merges"
 import { centralPlayerNames, isPrivateRow } from "./privacy";
 import { classifyInnings } from "./scoring";
 import { clubInvolvedWhere, inList } from "./where";
+import { centralClubWon } from "./match-result";
+
+export { centralClubWon } from "./match-result";
 
 /** Halls Head's club id in the central PCA database (tenant #1 / demo). */
 export const HALLS_HEAD_CENTRAL_CLUB_ID = 1;
@@ -154,6 +157,8 @@ export interface CentralMatchSummary {
   matchDate: string | null;
   venue: string | null;
   result: string | null;
+  /** Did the club win ({@link centralClubWon}); null for a draw, tie or no result. */
+  clubWon: boolean | null;
   opponent: string | null;
   clubScore: string | null;
   opponentScore: string | null;
@@ -325,6 +330,7 @@ async function centralClubMatchesImpl(
       matchDate: m.matchDate,
       venue: m.venue,
       result,
+      clubWon: centralClubWon(m, clubId),
       opponent: isHome ? m.awayTeam : m.homeTeam,
       clubScore: isHome ? m.homeScore : m.awayScore,
       opponentScore: isHome ? m.awayScore : m.homeScore,
@@ -514,7 +520,7 @@ async function centralWeekendWrapImpl(
 
   const matches: CentralWeekendWrapMatch[] = picked.map((m) => {
     const outcome: "WON" | "LOST" | "" =
-      m.result === "Won" ? "WON" : m.result === "Lost" ? "LOST" : "";
+      m.clubWon === true ? "WON" : m.clubWon === false ? "LOST" : "";
     const connector = outcome === "WON" ? "def" : outcome === "LOST" ? "def by" : "vs";
     const opp = m.opponent ?? m.opponentClub?.name ?? "Opposition";
     const clubScore = m.clubScore ?? "—";
@@ -825,6 +831,7 @@ async function centralMatchScorecardImpl(
     matchDate: m.matchDate,
     venue: m.venue,
     result,
+    clubWon: centralClubWon(m, clubId),
     opponent: isHome ? m.awayTeam : m.homeTeam,
     clubScore: isHome ? m.homeScore : m.awayScore,
     opponentScore: isHome ? m.awayScore : m.homeScore,
@@ -849,7 +856,7 @@ async function centralMatchScorecardImpl(
     appGrade: grade,
     seasonStartYear: season,
     battedFirst,
-    clubWon: m.winnerClubId == null ? null : m.winnerClubId === clubId,
+    clubWon: summary.clubWon,
     lines: clubLines,
     oppositionLines,
   };
