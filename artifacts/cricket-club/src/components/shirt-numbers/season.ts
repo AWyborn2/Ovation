@@ -1,5 +1,6 @@
 import { seasonLabel } from "@/lib/season-label";
 import type { RegisterEntryView } from "./api";
+import { nameKey } from "./values";
 
 export { seasonLabel };
 
@@ -9,18 +10,21 @@ export { seasonLabel };
  * `seasonStartYearFor` in lib/db/src/seasons.ts, which the web app can't import.
  */
 const PERTH_OFFSET_MS = 8 * 60 * 60 * 1000;
-export function currentSeasonStartYear(now: Date = new Date()): number {
-  const perth = new Date(now.getTime() + PERTH_OFFSET_MS);
+export function seasonStartYearOf(date: Date): number {
+  const perth = new Date(date.getTime() + PERTH_OFFSET_MS);
   const year = perth.getUTCFullYear();
   return perth.getUTCMonth() >= 6 ? year : year - 1;
+}
+
+/** The current season's start year. */
+export function currentSeasonStartYear(now: Date = new Date()): number {
+  return seasonStartYearOf(now);
 }
 
 /** Seasons for the picker: every season with a register, plus the current and next season. */
 export function seasonOptions(registerSeasons: readonly number[], current: number): number[] {
   return [...new Set([...registerSeasons, current, current + 1])].sort((a, b) => b - a);
 }
-
-const nameKey = (name: string) => name.trim().replace(/\s+/g, " ").toLowerCase();
 
 type Identity = Pick<RegisterEntryView, "name" | "playerId" | "participantId">;
 

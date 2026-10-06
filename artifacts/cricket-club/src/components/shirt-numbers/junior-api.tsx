@@ -14,8 +14,7 @@ import type {
   JuniorShirtNumberEntryUpdate,
   JuniorShirtNumberRowResolution,
 } from "@workspace/api-client-react";
-import { JuniorPlayerTypeahead } from "@/components/junior-player-typeahead";
-import type { PickedPerson, RegisterEntryView, RowResolution, ShirtNumberRegisterApi } from "./api";
+import type { RegisterEntryView, RowResolution, ShirtNumberRegisterApi } from "./api";
 
 /**
  * The juniors register adapter (plan U10, R17): the same register UI over the
@@ -69,23 +68,3 @@ export const juniorShirtNumberApi: ShirtNumberRegisterApi = {
     commitJuniorShirtNumberUpload(id, { resolutions: resolutions.map(juniorResolution) }),
   discardUpload: (id) => discardJuniorShirtNumberUpload(id),
 };
-
-/** Picks one of the club's junior players for the juniors add form. */
-export function JuniorPersonPicker({
-  value,
-  onChange,
-}: {
-  value: PickedPerson | null;
-  onChange: (person: PickedPerson | null) => void;
-}) {
-  return (
-    <JuniorPlayerTypeahead
-      value={
-        value?.participantId
-          ? { participantId: value.participantId, displayName: value.name }
-          : null
-      }
-      onChange={(p) => onChange(p ? { name: p.displayName, participantId: p.participantId } : null)}
-    />
-  );
-}

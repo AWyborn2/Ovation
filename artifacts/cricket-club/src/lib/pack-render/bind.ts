@@ -190,16 +190,12 @@ export function bindInput(input: ShareCardInput): BoundInput {
       set(values, "venueDateTime", input.venueDateTime);
       if (input.squadPhotoUrl) images["squadPhoto"] = input.squadPhotoUrl;
       // Rows stay in batting order either way. With season shirt numbers on
-      // (numbering "shirt", KTD10) the number slot is the shirt number, bound
-      // EXPLICITLY — empty when unnumbered, never the batting order (R15).
+      // (numbering "shirt") the number slot is the shirt number, bound
+      // EXPLICITLY — empty when unnumbered, never the batting order.
       const shirt = input.numbering === "shirt";
       rows["players"] = (input.players ?? []).map((p: TeamListPlayer) => ({
         values: {
-          number: shirt
-            ? p.shirtNumber != null
-              ? String(p.shirtNumber).trim()
-              : ""
-            : String(p.order),
+          number: shirt ? shirtText(p.shirtNumber) : String(p.order),
           surname: p.surname,
           role: p.role ?? "",
         },
@@ -360,7 +356,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
 }
 
 /** Card kinds that show the player's season shirt number (U8, KTD11/KTD12). */
-export const SHIRT_NUMBER_KINDS: ReadonlySet<ShareCardInput["kind"]> = new Set([
+const SHIRT_NUMBER_KINDS: ReadonlySet<ShareCardInput["kind"]> = new Set([
   "century",
   "fiveFor",
   "milestone",
@@ -377,7 +373,12 @@ export const SHIRT_NUMBER_KINDS: ReadonlySet<ShareCardInput["kind"]> = new Set([
 function bindShirtNumber(input: ShareCardInput, values: Record<string, string>): void {
   if (!SHIRT_NUMBER_KINDS.has(input.kind)) return;
   const n = (input as { shirtNumber?: string | number | null }).shirtNumber;
-  values["shirtNumber"] = n != null ? String(n).trim() : "";
+  values["shirtNumber"] = shirtText(n);
+}
+
+/** A shirt number as card text: trimmed, or empty when there is none. */
+function shirtText(n: string | number | null | undefined): string {
+  return n != null ? String(n).trim() : "";
 }
 
 /** Row-size multipliers for a set's density tiers (Club Kit rows read `--rs`). */

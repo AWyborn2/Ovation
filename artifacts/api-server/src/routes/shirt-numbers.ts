@@ -1,4 +1,4 @@
-import { Router, type IRouter, type Request, type Response } from "express";
+import { Router, type IRouter, type Request } from "express";
 import { eq } from "drizzle-orm";
 import { db, shirtNumberSettingsTable } from "@workspace/db";
 import { getShirtNumberSettings, isValidShirtNumber } from "@workspace/db/shirt-numbers";
@@ -29,8 +29,8 @@ import {
   seniorRegisterSeasons,
   startSeniorSeason,
   updateSeniorEntry,
-  type WriteOutcome,
 } from "../lib/shirt-numbers";
+import { enabledSettings, sendOutcome, validSeason } from "../lib/shirt-number-route-helpers";
 import { shirtNumberFileUpload, type MulterRequest } from "../lib/import-upload";
 import {
   buildPreviewRows,
@@ -53,32 +53,6 @@ import {
  */
 
 const router: IRouter = Router();
-
-const FEATURE_OFF =
-  "Shirt numbers are turned off for this club. Turn them on in the shirt-number settings first.";
-
-/** Seasons an admin can sensibly address (start years). */
-const MIN_SEASON = 1850;
-const MAX_SEASON = 2200;
-const validSeason = (s: number) => Number.isInteger(s) && s >= MIN_SEASON && s <= MAX_SEASON;
-
-/** Settings for a write, or a 400 sent when the feature is off. */
-async function enabledSettings(req: Request, res: Response) {
-  const settings = await getShirtNumberSettings(db, getTenantId(req));
-  if (!settings.enabled) {
-    res.status(400).json({ error: FEATURE_OFF });
-    return null;
-  }
-  return settings;
-}
-
-function sendOutcome(res: Response, outcome: WriteOutcome, okStatus: 200 | 201): void {
-  if (outcome.ok) {
-    res.status(okStatus).json({ entry: outcome.entry, warnings: outcome.warnings });
-    return;
-  }
-  res.status(outcome.status).json(outcome.body);
-}
 
 // ── Settings ────────────────────────────────────────────────────────────────
 

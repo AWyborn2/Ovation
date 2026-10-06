@@ -161,7 +161,7 @@ export async function ingestPlayhqDump(
       warnings.push(`team list projection failed: ${err instanceof Error ? err.message : err}`);
     }
 
-  // Season shirt numbers (KTD9): lineup players join their fixture's season register, for
+  // Season shirt numbers: lineup players join their fixture's season register, for
   // tenants with the feature on. Runs on every sync (idempotent) so a list saved earlier
   // still feeds the register; a failure is a warning and never fails the ingest.
   if (orgIds.length)

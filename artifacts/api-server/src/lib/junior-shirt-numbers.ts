@@ -17,6 +17,7 @@ import {
   duplicateEntryIds,
   duplicateWarning,
   duplicatesOf,
+  isUniqueViolation,
   joinNames,
   loadSeasonEntries,
   planSeasonStart,
@@ -29,6 +30,8 @@ import {
 import {
   buildPreviewRows,
   buildUploadRoster,
+  fail,
+  payloadRows,
   splitFullName,
   type CommitOutcome,
   type ParsedUploadRow,
@@ -277,8 +280,6 @@ const conflict = (error: string, warnings: ShirtNumberWarning[] = []) => ({
   status: 409 as const,
   body: { error, warnings },
 });
-
-const isUniqueViolation = (e: unknown) => (e as { code?: string } | null)?.code === "23505";
 
 const ALREADY_ON_REGISTER = (season: number) =>
   `This junior is already on the ${seasonLabel(season)} juniors register.`;
@@ -587,17 +588,6 @@ export async function startJuniorSeason(
     }
     return result;
   });
-}
-
-const fail = (status: 400 | 404, error: string): CommitOutcome => ({
-  ok: false,
-  status,
-  body: { error },
-});
-
-function payloadRows(payload: unknown): PreviewRow[] | null {
-  const rows = (payload as { rows?: unknown } | null)?.rows;
-  return Array.isArray(rows) ? (rows as PreviewRow[]) : null;
 }
 
 /**

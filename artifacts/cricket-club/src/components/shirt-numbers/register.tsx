@@ -19,13 +19,8 @@ import { ShirtNumberRegisterTable, type SaveOutcome } from "./register-table";
 import { ShirtNumberUploadPanel } from "./upload-panel";
 import { StartSeasonDialog, startSeasonLabel } from "./start-season-dialog";
 import { countSeasonStart, currentSeasonStartYear, seasonLabel, seasonOptions } from "./season";
-
-export type PersonPickerProps = {
-  value: PickedPerson | null;
-  onChange: (person: PickedPerson | null) => void;
-};
-
-const NUMBER_RE = /^[0-9]{1,3}$/;
+import { isValidShirtNumber } from "./values";
+import type { PersonPickerProps } from "./person-picker";
 
 /**
  * A side's whole register screen (R4, R5, R7–R9, R11, F1, F4): season picker
@@ -339,7 +334,7 @@ function AddEntryForm({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const n = number.trim();
-    if (n !== "" && !NUMBER_RE.test(n)) {
+    if (n !== "" && !isValidShirtNumber(n)) {
       setError("Use 1 to 3 digits, or leave the number empty.");
       return;
     }

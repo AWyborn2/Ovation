@@ -23,11 +23,13 @@ import type {
   Fixture,
   TeamListPlayer,
   ShirtNumberEntry,
-  ShirtNumberConflict,
   ShirtNumberWarning,
   ShirtNumberWriteResult,
 } from "@workspace/api-client-react";
 import { seasonLabel } from "@/lib/season-label";
+import { conflictOf } from "@/components/shirt-numbers/api";
+import { seasonStartYearOf } from "@/components/shirt-numbers/season";
+import { isValidShirtNumber, nameKey, normaliseGuid } from "@/components/shirt-numbers/values";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -536,28 +538,6 @@ const rowName = (r: TeamListRowState): string =>
 // U7: R10, F3)
 // ---------------------------------------------------------------------------
 
-const PERTH_OFFSET_MS = 8 * 60 * 60 * 1000;
-
-/**
- * The season (start year) a fixture belongs to: Australian seasons run July to
- * June, read in Perth time. Mirrors `seasonStartYearFor` in lib/db/src/seasons.ts,
- * which the web app can't import.
- */
-function fixtureSeason(startAt: string): number {
-  const perth = new Date(new Date(startAt).getTime() + PERTH_OFFSET_MS);
-  const year = perth.getUTCFullYear();
-  return perth.getUTCMonth() >= 6 ? year : year - 1;
-}
-
-const SHIRT_NUMBER_PATTERN = /^[0-9]{1,3}$/;
-
-function normaliseGuid(value: string | null | undefined): string | null {
-  const v = (value ?? "").trim().toLowerCase();
-  return v === "" ? null : v;
-}
-
-const nameKey = (name: string) => name.trim().replace(/\s+/g, " ").toLowerCase();
-
 /** A row's entry on the season register: by player id, else by PlayHQ participant. */
 function registerEntryFor(
   entries: readonly ShirtNumberEntry[],
@@ -589,10 +569,12 @@ function heldNameMatch(
 
 /** The register's 409 body (already on the register, or a blocked duplicate). */
 function conflictMessage(e: unknown): string | null {
-  const err = e as { status?: number; data?: Partial<ShirtNumberConflict> | null } | null;
-  if (err?.status !== 409) return null;
-  const error = err.data?.error ?? "That number can't be used.";
-  const extra = (err.data?.warnings ?? []).map((w) => w.message).filter((m) => m !== error);
+  if ((e as { status?: number } | null)?.status !== 409) return null;
+  const { error, warnings } = conflictOf(e) ?? {
+    error: "That number can't be used.",
+    warnings: [],
+  };
+  const extra = warnings.map((w) => w.message).filter((m) => m !== error);
   return [error, ...extra].join(" ");
 }
 
@@ -656,7 +638,7 @@ function ShirtNumberCell({
   const typedNumber = (): string | null | undefined => {
     const n = value.trim();
     if (n === "") return undefined;
-    if (!SHIRT_NUMBER_PATTERN.test(n)) {
+    if (!isValidShirtNumber(n)) {
       setState({ kind: "error", message: "A shirt number is 1 to 3 digits." });
       return null;
     }
@@ -772,8 +754,8 @@ function TeamListEditor({ fixture, onError }: { fixture: Fixture; onError: (e: u
   const [rows, setRows] = useState<TeamListRowState[] | null>(null); // null = not edited yet
   const [isPublished, setIsPublished] = useState<boolean | null>(null);
 
-  // Season shirt numbers: only read when the club has the feature on (R1).
-  const season = fixtureSeason(fixture.startAt);
+  // Season shirt numbers: only read when the club has the feature on.
+  const season = seasonStartYearOf(new Date(fixture.startAt));
   const shirtSettingsQ = useGetShirtNumberSettings();
   const numbersOn = shirtSettingsQ.data?.enabled === true;
   const registerQ = useListShirtNumbers(

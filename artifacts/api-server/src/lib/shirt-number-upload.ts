@@ -26,6 +26,8 @@ import {
   cleanName,
   duplicateWarning,
   duplicatesOf,
+  isUniqueViolation,
+  joinNames,
   loadSeasonEntries,
   seasonLabel,
   type RegisterEntryLike,
@@ -785,7 +787,7 @@ export async function discardUpload(
   return row !== undefined;
 }
 
-function payloadRows(payload: unknown): PreviewRow[] | null {
+export function payloadRows(payload: unknown): PreviewRow[] | null {
   const rows = (payload as { rows?: unknown } | null)?.rows;
   return Array.isArray(rows) ? (rows as PreviewRow[]) : null;
 }
@@ -812,7 +814,7 @@ export type CommitOutcome =
   | { ok: true; result: CommitResult }
   | { ok: false; status: 400 | 404 | 409; body: ShirtNumberConflict | { error: string } };
 
-const fail = (status: 400 | 404, error: string): CommitOutcome => ({
+export const fail = (status: 400 | 404, error: string): CommitOutcome => ({
   ok: false,
   status,
   body: { error },
@@ -848,8 +850,6 @@ function carriedFrom(
       : undefined;
   return (linked ?? byParticipant)?.number ?? null;
 }
-
-const isUniqueViolation = (e: unknown) => (e as { code?: string } | null)?.code === "23505";
 
 /**
  * Apply a pending senior upload (R4, R5, R8, R11). Rows without a resolution
@@ -954,7 +954,7 @@ export async function commitSeniorUpload(
         }
         // A participant id that matched a player belongs to that player: it
         // does not follow the row when the admin links someone else. Held, it
-        // stays, so the entry links once that participant plays (KTD9).
+        // stays, so the entry links once that participant plays.
         const participantId =
           action === "link" && row.status === "matched" && playerId !== row.playerId
             ? null
@@ -1044,7 +1044,7 @@ export async function commitSeniorUpload(
         );
       }
 
-      // Carry last season's number into new entries without one (KTD6).
+      // Carry last season's number into new entries without one.
       const warnings: ShirtNumberWarning[] = [];
       if (settings.rolloverPolicy === "carry") {
         const previous = await loadSeasonEntries(tx, "senior", tenantId, season - 1);
@@ -1129,8 +1129,7 @@ export async function commitSeniorUpload(
               season,
               number,
               holders,
-              `#${number} is worn by ${names.slice(0, -1).join(", ")} and ` +
-                `${names[names.length - 1]} in ${seasonLabel(season)}.`,
+              `#${number} is worn by ${joinNames(names)} in ${seasonLabel(season)}.`,
             ),
           );
         }

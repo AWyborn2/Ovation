@@ -2,11 +2,12 @@ import { Link } from "wouter";
 import { useGetJuniorsOverview, useGetShirtNumberSettings } from "@workspace/api-client-react";
 import { EmptyState, LoadingState, QueryError } from "@/components/data-states";
 import {
+  JuniorPersonPicker,
   ShirtNumberRegister,
   currentSeasonStartYear,
   seasonLabel,
 } from "@/components/shirt-numbers";
-import { JuniorPersonPicker, juniorShirtNumberApi } from "@/components/shirt-numbers/junior-api";
+import { juniorShirtNumberApi } from "@/components/shirt-numbers/junior-api";
 
 /**
  * Juniors shirt numbers (plan U10, R17): the juniors register for a season,

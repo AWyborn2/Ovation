@@ -722,7 +722,7 @@ const tradingCard = design({
       crest: `<div style="position:relative;width:100%;height:100%">${headerCrest().replace(/10cqmin/g, "7cqmin")}</div>`,
       cap: "#{{capNumber}}",
       // The season shirt number, on its own plate under the crest — never in
-      // the cap slot (U8, AE4).
+      // the cap slot.
       shirt: shirtNumberBadge(3.4, `;position:absolute;right:${u(2)};top:${u(12)};margin:0`),
       name: "{{playerName}}",
       role: "{{role}}",

@@ -10,10 +10,12 @@ import {
 } from "@workspace/db";
 import {
   carriedNumberFor,
+  cleanShirtNumberName,
   normaliseParticipantId,
   type ShirtNumberSettings,
   type ShirtNumberSide,
 } from "@workspace/db/shirt-numbers";
+import { seasonLabel } from "@workspace/scorecard";
 
 /**
  * Season shirt-number register service (docs/plans/2026-10-06-001-feat-season-
@@ -53,9 +55,7 @@ export type ShirtNumberWarning = {
 };
 
 /** "2026/27" for 2026. */
-export function seasonLabel(season: number): string {
-  return `${season}/${String((season + 1) % 100).padStart(2, "0")}`;
-}
+export { seasonLabel };
 
 /**
  * The entries in `entries` wearing exactly `number` (string match: "7" and
@@ -233,11 +233,7 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type Executor = typeof db | Tx;
 
 /** Display names are trimmed and length-capped (the contract's maxLength). */
-export const SHIRT_NUMBER_NAME_MAX = 120;
-
-export function cleanName(name: string): string {
-  return name.trim().replace(/\s+/g, " ").slice(0, SHIRT_NUMBER_NAME_MAX);
-}
+export const cleanName = (name: string): string => cleanShirtNumberName(name);
 
 /** One season's register for a side, as rule-ready entries. */
 export async function loadSeasonEntries(
@@ -369,7 +365,8 @@ async function findSamePerson(
   return row;
 }
 
-const isUniqueViolation = (e: unknown) => (e as { code?: string } | null)?.code === "23505";
+/** A Postgres unique-constraint violation (SQLSTATE 23505). */
+export const isUniqueViolation = (e: unknown) => (e as { code?: string } | null)?.code === "23505";
 
 export type CreateSeniorInput = {
   season: number;

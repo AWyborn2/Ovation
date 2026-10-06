@@ -90,8 +90,7 @@ export function lineupToTeamList(
       displayName: (e.name ?? "").trim(),
       ...(role ? { role } : {}),
       // Kept on every row, linked or not (fill-ins and unmapped players too), so a
-      // held shirt-number entry can still be found for this fixture (season shirt
-      // numbers plan, KTD9 / KTD10).
+      // held shirt-number entry can still be found for this fixture.
       ...(key ? { participantId: key } : {}),
     };
   });

@@ -6,12 +6,11 @@ import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/admin-ui";
 import { cn } from "@/lib/utils";
 import type { RegisterEntryView } from "./api";
+import { isValidShirtNumber } from "./values";
 
 export type SaveOutcome =
   | { ok: true; warnings: ShirtNumberWarning[] }
   | { ok: false; message: string; warnings?: ShirtNumberWarning[] };
-
-const NUMBER_RE = /^[0-9]{1,3}$/;
 
 const SOURCE_LABEL: Record<RegisterEntryView["source"], string> = {
   upload: "Upload",
@@ -104,7 +103,7 @@ export function ShirtNumberRegisterTable({
   const save = async (e: RegisterEntryView) => {
     if (!editing || saving) return;
     const value = editing.value.trim();
-    if (value !== "" && !NUMBER_RE.test(value)) {
+    if (value !== "" && !isValidShirtNumber(value)) {
       setEditError("Use 1 to 3 digits, or leave it empty to clear the number.");
       return;
     }

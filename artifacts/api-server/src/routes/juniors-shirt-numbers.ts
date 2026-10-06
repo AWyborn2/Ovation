@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { db } from "@workspace/db";
-import { getShirtNumberSettings, isValidShirtNumber } from "@workspace/db/shirt-numbers";
+import { isValidShirtNumber } from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import {
   CommitJuniorShirtNumberUploadBody,
@@ -38,8 +38,8 @@ import {
   resolveJuniorParticipant,
   startJuniorSeason,
   updateJuniorEntry,
-  type JuniorWriteOutcome,
 } from "../lib/junior-shirt-numbers";
+import { enabledSettings, sendOutcome, validSeason } from "../lib/shirt-number-route-helpers";
 
 /**
  * Season shirt numbers — the juniors register (plan U10; R17). Kept apart from
@@ -57,37 +57,13 @@ import {
 
 const router: IRouter = Router();
 
-const FEATURE_OFF =
-  "Shirt numbers are turned off for this club. Turn them on in the shirt-number settings first.";
 const NO_JUNIORS = "Juniors are not available for this club.";
-
-const MIN_SEASON = 1850;
-const MAX_SEASON = 2200;
-const validSeason = (s: number) => Number.isInteger(s) && s >= MIN_SEASON && s <= MAX_SEASON;
 
 /** True (and a 404 sent) when the tenant has no native junior data. */
 async function refuseCentral(req: Request, res: Response): Promise<boolean> {
   if (!(await isCentralTenant(req))) return false;
   res.status(404).json({ error: NO_JUNIORS });
   return true;
-}
-
-/** Settings for a write, or a 400 sent when the feature is off. */
-async function enabledSettings(req: Request, res: Response) {
-  const settings = await getShirtNumberSettings(db, getTenantId(req));
-  if (!settings.enabled) {
-    res.status(400).json({ error: FEATURE_OFF });
-    return null;
-  }
-  return settings;
-}
-
-function sendOutcome(res: Response, outcome: JuniorWriteOutcome, okStatus: 200 | 201): void {
-  if (outcome.ok) {
-    res.status(okStatus).json({ entry: outcome.entry, warnings: outcome.warnings });
-    return;
-  }
-  res.status(outcome.status).json(outcome.body);
 }
 
 // ── Register ────────────────────────────────────────────────────────────────

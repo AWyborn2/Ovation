@@ -236,8 +236,8 @@ async function withShirtNumber(input: DraftUpsert): Promise<Record<string, unkno
 }
 
 export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertResult> {
-  // Stamp the season shirt number on every call, BEFORE the change comparison
-  // (KTD11): an unposted draft picks up a newly assigned number on its next
+  // Stamp the season shirt number on every call, BEFORE the change comparison:
+  // an unposted draft picks up a newly assigned number on its next
   // sweep, a posted one goes stale, and an unchanged event stays unchanged.
   const input: DraftUpsert = { ...raw, cardInput: await withShirtNumber(raw) };
   let existing = await findDraftByKey(input.tenantId, input.sourceKey);

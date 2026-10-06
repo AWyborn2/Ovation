@@ -195,7 +195,7 @@ router.put(
     // Store entries exactly as submitted (order preserved); drop null playerIds
     // so free-typed names serialise without a playerId key.
     // A row's PlayHQ participant id (lowercased) is kept so an admin's edit
-    // never loses the link a held shirt-number entry is found by (KTD10).
+    // never loses the link a held shirt-number entry is found by.
     const players: TeamListPlayer[] = body.data.players.map((p: ApiTeamListPlayer) => {
       const participantId = normaliseParticipantId(p.participantId);
       return {

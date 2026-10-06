@@ -571,7 +571,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
       wickets: s.wickets,
     }));
 
-  // Juniors shirt numbers (plan U10, R14/R17): from the juniors register only,
+  // Juniors shirt numbers: from the juniors register only,
   // and only when the club has the feature on (the fields are omitted otherwise).
   const shirt = (await getShirtNumberSettings(db, tenantId)).enabled
     ? await loadJuniorProfileShirtNumbers(

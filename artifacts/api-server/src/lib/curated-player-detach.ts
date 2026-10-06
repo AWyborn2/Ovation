@@ -22,7 +22,7 @@ const SET_NULL_TABLES = [
   "centuries",
   "five_wicket_hauls",
   // Season shirt numbers never had an FK; unlinking makes the entry "held"
-  // again (plan U3, KTD2) rather than losing the club's number record.
+  // again rather than losing the club's number record.
   "shirt_numbers",
 ] as const;
 

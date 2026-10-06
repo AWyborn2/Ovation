@@ -6,6 +6,7 @@ import {
   shirtNumbersTable,
   type ShirtNumberDuplicatePolicy,
   type ShirtNumberRolloverPolicy,
+  type ShirtNumberSettingsRow,
 } from "./schema/shirt_numbers";
 
 /**
@@ -68,6 +69,16 @@ export async function getShirtNumberSettings(
     .from(shirtNumberSettingsTable)
     .where(eq(shirtNumberSettingsTable.tenantId, tenantId))
     .limit(1);
+  return shirtNumberSettingsFromRow(row);
+}
+
+/**
+ * The settings a stored row (or its absence) means: the defaults without a
+ * row, and each unrecognised policy falling back to its default.
+ */
+export function shirtNumberSettingsFromRow(
+  row: ShirtNumberSettingsRow | undefined,
+): ShirtNumberSettings {
   if (!row) return { ...DEFAULT_SHIRT_NUMBER_SETTINGS };
   return {
     enabled: row.enabled === true,

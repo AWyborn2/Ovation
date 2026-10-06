@@ -193,7 +193,7 @@ export async function generateRoundTeamListDrafts(
     .where(and(eq(teamListsTable.tenantId, tenantId), eq(teamListsTable.isPublished, true)));
   const byFixture = new Map(lists.map((l) => [l.fixtureId, l.players]));
 
-  // Season shirt numbers (U7): read only when the club has the feature on.
+  // Season shirt numbers: read only when the club has the feature on.
   const shirtNumbers = teamListShirtNumberLoader(tenantId);
   for (const round of rounds) {
     const teams: Record<string, unknown>[] = [];

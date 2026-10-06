@@ -20,15 +20,19 @@
  */
 import { and, eq, gte, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import type { TeamListPlayer } from "../schema/fixtures";
-import type { ShirtNumberDuplicatePolicy, ShirtNumberSource } from "../schema/shirt_numbers";
+import type {
+  ShirtNumberDuplicatePolicy,
+  ShirtNumberRolloverPolicy,
+  ShirtNumberSource,
+} from "../schema/shirt_numbers";
 import { seasonStartYearFor } from "../seasons";
 import {
   carriedNumberFor,
   cleanShirtNumberName,
-  getShirtNumberSettings,
   linkHeldShirtNumberEntry,
   normaliseParticipantId,
   numberAfterDuplicatePolicy,
+  shirtNumberSettingsFromRow,
 } from "../shirt-numbers";
 import { TEAM_LIST_LOOKAHEAD_DAYS } from "./team-lists";
 
@@ -234,11 +238,12 @@ interface SyncTenant {
   id: number;
   centralClubId: number;
   duplicatePolicy: ShirtNumberDuplicatePolicy;
+  rolloverPolicy: ShirtNumberRolloverPolicy;
 }
 
 /** The linked tenants in scope that have shirt numbers switched on. */
 async function enabledTenants(opts: ShirtNumberSyncOpts): Promise<SyncTenant[]> {
-  const { db, tenantsTable } = await import("../index");
+  const { db, tenantsTable, shirtNumberSettingsTable } = await import("../index");
   const conds = [isNotNull(tenantsTable.playhqOrgId)];
   if (opts.tenantId) conds.push(eq(tenantsTable.id, opts.tenantId));
   if (opts.syncEnabledOnly) conds.push(eq(tenantsTable.playhqSyncEnabled, true));
@@ -251,14 +256,27 @@ async function enabledTenants(opts: ShirtNumberSyncOpts): Promise<SyncTenant[]> 
     .select({ id: tenantsTable.id, centralClubId: tenantsTable.centralClubId })
     .from(tenantsTable)
     .where(and(...conds));
+  if (tenants.length === 0) return [];
+  // One settings read for every candidate tenant; a tenant without a row gets the defaults.
+  const rows = await db
+    .select()
+    .from(shirtNumberSettingsTable)
+    .where(
+      inArray(
+        shirtNumberSettingsTable.tenantId,
+        tenants.map((t) => t.id),
+      ),
+    );
+  const rowByTenant = new Map(rows.map((r) => [r.tenantId, r] as const));
   const out: SyncTenant[] = [];
   for (const t of tenants) {
-    const settings = await getShirtNumberSettings(db, t.id);
+    const settings = shirtNumberSettingsFromRow(rowByTenant.get(t.id));
     if (settings.enabled)
       out.push({
         id: t.id,
         centralClubId: t.centralClubId,
         duplicatePolicy: settings.duplicatePolicy,
+        rolloverPolicy: settings.rolloverPolicy,
       });
   }
   return out;
@@ -390,6 +408,7 @@ export async function syncLineupShirtNumbers(
         season: c.season,
         playerId: c.playerId,
         participantId: c.participantId,
+        rolloverPolicy: t.rolloverPolicy,
       });
       if (n !== null) carried.set(carriedKey(c.season, c.participantId), n);
     }

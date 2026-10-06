@@ -277,7 +277,7 @@ export function renderPackCard(
     html = dropEmptyCapNumber(html);
   }
   // A player with no shirt number this season (or a club with the feature
-  // off) shows no badge at all — never a bare "#" or a sample (R15). Any
+  // off) shows no badge at all — never a bare "#" or a sample. Any
   // card kind: the badge only exists on player-centric designs.
   if (!values["shirtNumber"]) html = dropEmptyShirtNumber(html);
   html = hideFields(html, adj);

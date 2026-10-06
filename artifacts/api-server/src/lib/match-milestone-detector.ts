@@ -379,7 +379,7 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
       cardInput: d.cardInput,
       appPath: `/players/${d.playerId}`,
       playerId: d.playerId,
-      // The match's season, for the player's shirt number (KTD11).
+      // The match's season, for the player's shirt number.
       season,
       milestoneEventId: event.id,
       sourceImportId: importId,
