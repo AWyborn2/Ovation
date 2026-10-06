@@ -138,8 +138,11 @@ favicon, custom_domain, plan`. Resolve tenant per-request (subdomain → context
 'admin'`, is never overwritten), copies finished and in-progress matches into `central.*`,
   then runs the draft sweep for each tenant it touched.
 - A watchdog marks an org overdue when a due plan waits past its grace (weekly 26 h, others
-  3 h). **Known gap:** GitHub's scheduler starts the "hourly" job only ~4 times a day, so
-  match-week plans can go overdue and catch up on the next run — see AGENTS.md.
+  3 h). GitHub's own scheduler starts the "hourly" job only ~4 times a day, so since 6 Oct
+  2026 an hourly cron-job.org job (`ovation-playhq-sync-trigger`, minute 7) starts the workflow
+  through `workflow_dispatch` with a fine-grained token (this repo only, Actions read/write,
+  expires 30 Sep 2027 — renew it before then). GitHub's schedule stays as a backup; runs queue
+  and never overlap.
 
 ### Social and caps (live)
 

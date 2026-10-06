@@ -3,8 +3,10 @@ name: PlayHQ sync
 # The unattended collector for PlayHQ scheduled sync
 # (docs/plans/2026-10-01-001-feat-playhq-scheduled-sync-plan.md, U6).
 #
-# Every hour it asks the API which harness plans are due (GET /api/internal/playhq/plans),
-# runs each in headless Chromium on play.cricket.com.au with the scraper skill's harness,
+# Started hourly by an external cron-job.org job (`ovation-playhq-sync-trigger`) through
+# workflow_dispatch, because GitHub's own schedule below fires only a few times a day; the
+# schedule stays as a backup. Every run asks the API which harness plans are due
+# (GET /api/internal/playhq/plans), runs each in headless Chromium on play.cricket.com.au with the scraper skill's harness,
 # and posts the dump to POST /api/internal/playhq/ingest. The server owns the calendar and
 # marks a plan done only when its ingest lands, so a missed or failed hour heals itself.
 #
