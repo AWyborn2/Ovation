@@ -238,6 +238,7 @@ stateDiagram-v2
 **Dependencies:** None.
 
 **Files:**
+
 - `lib/db/src/schema/shirt_numbers.ts` (new: `shirt_numbers`, `junior_shirt_numbers`, `shirt_number_settings`, `shirt_number_uploads`)
 - `lib/db/src/shirt-numbers.ts` (new: shared register rules — settings read, carry-forward lookup, held-entry link)
 - `lib/db/src/schema/index.ts`
@@ -253,6 +254,7 @@ stateDiagram-v2
 **Patterns to follow:** `lib/db/src/schema/cap_register.ts`; the settings tables read by `getOrCreateSettings`; `lib/db/migrations/0028_cap_status.sql`.
 
 **Test scenarios:**
+
 - `seasonStartYearFor` returns 2026 for 2026-07-01, 2025 for 2026-06-30, and 2025 for 2026-01-15.
 - A Perth fixture starting 2026-07-01T00:30+08:00 maps to 2026 (timezone edge).
 - Carry-forward lookup returns last season's number for a person, and nothing under `blank` or when the person had no number.
@@ -269,10 +271,12 @@ stateDiagram-v2
 **Dependencies:** U1.
 
 **Files:**
+
 - `lib/api-spec/openapi.yaml`
 - `lib/api-client-react/src/**`, `lib/api-zod/src/**` (generated; never hand-edit)
 
 **Approach:** Add a `shirt-numbers` tag with:
+
 - `GET` and `PATCH /shirt-numbers/settings`
 - `GET /shirt-numbers?season=` (admin; includes held entries and duplicate flags)
 - `POST /shirt-numbers`, `PATCH /shirt-numbers/{id}`, `DELETE /shirt-numbers/{id}`
@@ -297,6 +301,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Dependencies:** U1, U2.
 
 **Files:**
+
 - `artifacts/api-server/src/lib/shirt-numbers.ts` (new: duplicate check and season start, built on the shared rules in `lib/db/src/shirt-numbers.ts`)
 - `artifacts/api-server/src/routes/shirt-numbers.ts` (new) and `artifacts/api-server/src/routes/index.ts`
 - `artifacts/api-server/src/lib/curated-player-detach.ts`, `artifacts/api-server/src/lib/history-import.ts` (`PLAYER_REFERENCE_TABLES`), `artifacts/api-server/src/lib/identity-drift.ts`
@@ -308,6 +313,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Patterns to follow:** `artifacts/api-server/src/routes/caps.ts`; `artifacts/api-server/src/routes/caps-review.test.ts` (real Postgres, supertest, a `Date.now()` tenant, an `encodeSession` cookie).
 
 **Test scenarios:**
+
 - Covers AE1. With policy `warn`, giving #7 to a second player in the same season succeeds and returns a warning naming the other player; with `block` it returns 409 and nothing changes.
 - The same #7 in different seasons raises no warning.
 - Covers AE3. Under `carry`, creating a 2026 entry without a number for a player who wore #12 in 2025 stores #12; changing it to #4 leaves the 2025 entry at #12.
@@ -332,6 +338,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Dependencies:** U3.
 
 **Files:**
+
 - `artifacts/api-server/src/lib/shirt-number-upload.ts` (new: CSV/XLSX parsing, header aliases, row matching, preview build, commit apply)
 - `artifacts/api-server/src/lib/shirt-number-upload.test.ts` (new; pure parsing and matching)
 - `artifacts/api-server/src/lib/import-upload.ts` (a multer instance for these uploads: 2 MB, one file, `.csv`/`.xlsx`)
@@ -343,6 +350,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Patterns to follow:** `artifacts/api-server/src/routes/imports-csv.ts` (preview, then commit with resolutions — but with tenant-scoped lookups); `buildNameMatcher` in `artifacts/api-server/src/lib/name-match.ts`.
 
 **Test scenarios:**
+
 - A CSV with `Name,Number` rows parses; an XLSX with `First Name,Surname,Shirt No.` parses to the same rows.
 - An unknown header set returns a preview error listing the headers found.
 - A row whose participant id is in `player_id_map` is `matched` to that player.
@@ -369,6 +377,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Dependencies:** U1, U3.
 
 **Files:**
+
 - `lib/db/src/playhq-ingest/team-lists.ts` (`lineupToTeamList`, `sameTeamList`)
 - `lib/db/src/playhq-ingest/shirt-number-sync.ts` (new)
 - `artifacts/api-server/src/lib/playhq-ingest.ts` (wire the sync into `ingestPlayhqDump`)
@@ -380,6 +389,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Patterns to follow:** the existing `projectTeamLists` structure and `lib/db/src/playhq-ingest/team-lists.test.ts`.
 
 **Test scenarios:**
+
 - A lineup row with an unmapped participant keeps its `participantId` and has no `playerId`.
 - A fill-in id (90000 or above) still gets no `playerId`.
 - Covers F2 / AE2. A held entry with participant P and number #23 is linked once P has a scorecard row for the club, keeps #23, and gains a crosswalk row if it had none.
@@ -403,12 +413,14 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Dependencies:** U3, U4.
 
 **Files:**
+
 - `artifacts/cricket-club/src/pages/admin-shirt-numbers.tsx` (new)
 - `artifacts/cricket-club/src/components/shirt-numbers/` (new: register table, upload preview and review, settings panel)
 - `artifacts/cricket-club/src/pages/admin-groups.tsx`, `artifacts/cricket-club/src/lib/admin-nav.ts`
 - `artifacts/cricket-club/src/components/shirt-numbers/__tests__/register-table.test.tsx` (new)
 
 **Approach:** Place the page in the honours/curation admin group next to the cap register, gated by the `curation` feature like caps. With the feature off, show only the settings panel and its enable switch. The register table has a season picker (defaulting to the current season), Linked and Held filters, inline number editing, duplicate badges, and a "Start season" action labelled by the rollover policy. The upload flow mirrors the import steps: choose file and kind, review the preview, resolve rows, commit. Its states:
+
 - parsing;
 - a parse error that lists the headers found;
 - a preview grouped into matched, suggested, new, invalid and duplicate rows, with a candidate picker on suggested rows and bulk actions ("keep all new as held", "discard all invalid");
@@ -420,6 +432,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Patterns to follow:** `artifacts/cricket-club/src/pages/admin-caps.tsx`; `artifacts/cricket-club/src/components/admin-import/`; `artifacts/cricket-club/src/pages/admin-branding.tsx` for the settings form.
 
 **Test scenarios:**
+
 - With the feature off, only the settings panel renders.
 - Entries sharing a number in a season show a duplicate badge on both rows.
 - Held entries appear under the Held filter and offer "Link to player".
@@ -436,6 +449,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Dependencies:** U3, U5.
 
 **Files:**
+
 - `artifacts/api-server/src/lib/engines/team-list.ts` and `artifacts/api-server/src/lib/engines/round-sets.ts` (shared input builder)
 - `artifacts/api-server/src/lib/engines/team-list.test.ts` (new)
 - `artifacts/cricket-club/src/lib/share-card/types.ts` (`TeamListPlayer.shirtNumber?`, `numbering?`)
@@ -449,6 +463,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Patterns to follow:** the existing `rowsFromPlayers` and save builder in `admin-fixtures.tsx`; the explicit `capNumber` binding comment in `bind.ts`.
 
 **Test scenarios:**
+
 - With the feature on, a team-list card input carries each player's season number and `numbering: "shirt"`; a player with no number carries none.
 - With the feature off, the input is unchanged from today.
 - Fill-ins are still dropped.
@@ -469,6 +484,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Dependencies:** U3.
 
 **Files:**
+
 - `artifacts/api-server/src/lib/draft-upsert.ts` (`DraftUpsert.season`, stamping) and `artifacts/api-server/src/lib/draft-upsert.test.ts` (new or extended)
 - player-centric callers that pass `season`: `artifacts/api-server/src/lib/match-milestone-detector.ts`, `artifacts/api-server/src/lib/central-achievements.ts`, `artifacts/api-server/src/lib/post-commit-social.ts`, `artifacts/api-server/src/lib/roundup.ts`
 - `artifacts/cricket-club/src/lib/share-card/types.ts` (`shirtNumber?` on player-centric kinds)
@@ -484,6 +500,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Patterns to follow:** `dropEmptyCapNumber` and the explicit `capNumber` binding; `pack-own-look-parity.test.ts`.
 
 **Test scenarios:**
+
 - Covers AE4. A `debut` draft for a player with cap #142 and shirt #9 has no `shirtNumber` and renders "CAP 142" only; that player's `milestone` draft carries `shirtNumber: "9"`.
 - A `century` draft for a player with no number this season has no `shirtNumber`, and the rendered card contains no badge and no template sample number.
 - With the feature off, no draft gains `shirtNumber`.
@@ -505,6 +522,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Dependencies:** U2, U3.
 
 **Files:**
+
 - the `getPlayer` (`GET /players/:id`) handler under `artifacts/api-server/src/routes/` (find it by its `getPlayer` operation)
 - `artifacts/api-server/src/routes/player-shirt-numbers.test.ts` (new)
 - `artifacts/cricket-club/src/pages/player-detail/hero.tsx`, `artifacts/cricket-club/src/pages/player-detail.tsx`
@@ -514,6 +532,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Patterns to follow:** how `ProfileHero` renders the `capNumber` pill.
 
 **Test scenarios:**
+
 - Covers AE3. A player with 2025 #12 and 2026 #4 gets `shirtNumber: "4"` and history 2026 #4, 2025 #12.
 - Covers AE2. A held entry never appears on any player's profile.
 - Covers AE5. With the feature off, the response has no `shirtNumber` fields.
@@ -532,6 +551,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Dependencies:** U1–U4.
 
 **Files:**
+
 - `artifacts/api-server/src/routes/juniors-shirt-numbers.ts` (new) and `artifacts/api-server/src/routes/index.ts`
 - `artifacts/api-server/src/routes/juniors-shirt-numbers.test.ts` (new)
 - the junior player detail handler (`GET /juniors/players/{id}`)
@@ -543,6 +563,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Patterns to follow:** `artifacts/api-server/src/routes/juniors-admin-participants.ts`; `artifacts/cricket-club/src/pages/admin-junior-players.tsx`; the juniors checks in `artifacts/api-server/src/routes/tenant-isolation.test.ts`.
 
 **Test scenarios:**
+
 - A junior upload matches rows to `junior_participants` by participant id, then by name.
 - Junior entries never appear in `GET /shirt-numbers` or on senior profiles, and senior entries never appear under `/juniors/shirt-numbers`.
 - A junior player's detail shows the current number and history when enabled.
@@ -557,15 +578,15 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 
 ## Verification Contract
 
-| Gate | Command | Applies to |
-|---|---|---|
-| Types | `pnpm run typecheck` | All units |
-| Codegen drift | `pnpm --filter @workspace/api-spec run codegen`, then no diff in `lib/api-client-react/src` and `lib/api-zod/src` | U2 |
-| Migration drift | `pnpm --filter @workspace/db run generate`, then no diff in `lib/db/migrations` | U1 |
-| Library tests | `pnpm run test:libs` | U1, U5 |
-| Web tests | `pnpm --filter @workspace/cricket-club test` | U6–U10 |
-| API tests (real Postgres) | `pnpm --filter @workspace/api-server test` | U3, U4, U7–U10 |
-| Lint and format | `pnpm run lint`; `npx prettier@3.9.6 --check .` (CI's Prettier version) | All units |
+| Gate                      | Command                                                                                                           | Applies to     |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------- |
+| Types                     | `pnpm run typecheck`                                                                                              | All units      |
+| Codegen drift             | `pnpm --filter @workspace/api-spec run codegen`, then no diff in `lib/api-client-react/src` and `lib/api-zod/src` | U2             |
+| Migration drift           | `pnpm --filter @workspace/db run generate`, then no diff in `lib/db/migrations`                                   | U1             |
+| Library tests             | `pnpm run test:libs`                                                                                              | U1, U5         |
+| Web tests                 | `pnpm --filter @workspace/cricket-club test`                                                                      | U6–U10         |
+| API tests (real Postgres) | `pnpm --filter @workspace/api-server test`                                                                        | U3, U4, U7–U10 |
+| Lint and format           | `pnpm run lint`; `npx prettier@3.9.6 --check .` (CI's Prettier version)                                           | All units      |
 
 On Windows, vitest needs the hand-installed win32 binaries; failures from missing native binaries are environment noise, while assertion failures are real.
 
