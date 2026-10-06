@@ -7913,6 +7913,23 @@ export const BackfillMatchDraftsResponse = zod.object({
 
 
 /**
+ * Re-renders the caption of every draft still in the queue (awaiting
+review or ready) from the club's current caption templates and
+variations. A caption someone has edited is kept, and a posted or
+dismissed draft is never touched. Captions are otherwise written once,
+when a draft is created, so this brings an existing queue up to date
+after the templates change.
+
+ * @summary Rebuild the captions of queued drafts
+ */
+export const RecaptionSocialDraftsResponse = zod.object({
+  "recaptioned": zod.number().describe('Queued drafts whose caption changed.'),
+  "unchanged": zod.number().describe('Queued drafts whose caption already matched.'),
+  "keptEdited": zod.number().describe('Queued drafts left alone because someone edited the caption.')
+})
+
+
+/**
  * @summary List tracked short links with click counts
  */
 export const ListTrackedLinksResponseItem = zod.object({

@@ -511,6 +511,7 @@ export * from './readinessStatusCentral';
 export * from './readinessStatusDb';
 export * from './readinessStatusStatus';
 export * from './recapInput';
+export * from './recaptionDraftsResult';
 export * from './recordLeaderboard';
 export * from './recordLeaderboardEntry';
 export * from './recordLeaderMetric';

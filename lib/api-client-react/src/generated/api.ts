@@ -275,6 +275,7 @@ import type {
   PutTeamListBody,
   ReadinessStatus,
   RecapInput,
+  RecaptionDraftsResult,
   RecordLeaders,
   RecordProgression,
   RecordsDisplaySettings,
@@ -18506,6 +18507,83 @@ export const useBackfillMatchDrafts = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getBackfillMatchDraftsMutationOptions(options));
+    }
+
+export const getRecaptionSocialDraftsUrl = () => {
+
+
+
+
+  return `/api/social-drafts/recaption`
+}
+
+/**
+ * Re-renders the caption of every draft still in the queue (awaiting
+review or ready) from the club's current caption templates and
+variations. A caption someone has edited is kept, and a posted or
+dismissed draft is never touched. Captions are otherwise written once,
+when a draft is created, so this brings an existing queue up to date
+after the templates change.
+
+ * @summary Rebuild the captions of queued drafts
+ */
+export const recaptionSocialDrafts = async ( options?: RequestInit): Promise<RecaptionDraftsResult> => {
+
+  return customFetch<RecaptionDraftsResult>(getRecaptionSocialDraftsUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRecaptionSocialDraftsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recaptionSocialDrafts>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recaptionSocialDrafts>>, TError,void, TContext> => {
+
+const mutationKey = ['recaptionSocialDrafts'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recaptionSocialDrafts>>, void> = () => {
+
+
+          return  recaptionSocialDrafts(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecaptionSocialDraftsMutationResult = NonNullable<Awaited<ReturnType<typeof recaptionSocialDrafts>>>
+
+    export type RecaptionSocialDraftsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Rebuild the captions of queued drafts
+ */
+export const useRecaptionSocialDrafts = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recaptionSocialDrafts>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recaptionSocialDrafts>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRecaptionSocialDraftsMutationOptions(options));
     }
 
 export const getListTrackedLinksUrl = () => {

@@ -24,7 +24,7 @@ import {
   type MatchFormat,
   type PhotoType,
 } from "@workspace/scorecard";
-import { DEFAULT_TEMPLATES, ROUND_SET_CAPTIONS } from "./social-cards-helpers";
+import { DEFAULT_TEMPLATES, CAPTION_VARIATIONS } from "./social-cards-helpers";
 import { objectUrl } from "./photo-store";
 
 /**
@@ -102,7 +102,7 @@ export async function renderDraftCaption(
   /** The draft's source key; picks a whole-round draft's caption variation. */
   seed: string | null = null,
 ): Promise<string> {
-  const variations = ROUND_SET_CAPTIONS[engine];
+  const variations = CAPTION_VARIATIONS[engine];
   if (variations && variations.length > 0) {
     const [settings] = await db
       .select()
