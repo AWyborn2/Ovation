@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, gte } from "drizzle-orm";
+import { and, asc, eq, gte, ne } from "drizzle-orm";
 import { db, fixturesTable, teamListsTable, type TeamListPlayer } from "@workspace/db";
 import {
   ListFixturesQueryParams,
@@ -191,6 +191,19 @@ router.put(
       res.status(404).json({ error: "Fixture not found" });
       return;
     }
+    // A side finalised in the Selection Hub is changed there (re-open, edit,
+    // re-finalise), so the Hub's side and the published list never diverge (KTD6).
+    const [existing] = await db
+      .select({ source: teamListsTable.source })
+      .from(teamListsTable)
+      .where(and(eq(teamListsTable.fixtureId, fixture.id), eq(teamListsTable.tenantId, tenantId)));
+    if (existing?.source === "selection") {
+      res.status(409).json({
+        error:
+          "This team was picked in the Selection Hub. Re-open it there to make changes, so the side and the published list stay the same.",
+      });
+      return;
+    }
     // Store entries exactly as submitted (order preserved); drop null playerIds
     // so free-typed names serialise without a playerId key.
     const players: TeamListPlayer[] = body.data.players.map((p: ApiTeamListPlayer) => ({
@@ -217,8 +230,14 @@ router.put(
           source: "admin",
           ...(body.data.isPublished !== undefined ? { isPublished: body.data.isPublished } : {}),
         },
+        // Never over a Hub list finalised since the check above.
+        setWhere: ne(teamListsTable.source, "selection"),
       })
       .returning();
+    if (!row) {
+      res.status(409).json({ error: "This team was just finalised in the Selection Hub." });
+      return;
+    }
     res.json(row);
   },
 );

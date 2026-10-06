@@ -55,6 +55,7 @@ import historyImportRouter from "./history-import";
 import billingRouter from "./billing";
 import squadRouter from "./squad";
 import availabilitySettingsRouter from "./availability-settings";
+import selectionRouter from "./selection";
 
 const router: IRouter = Router();
 
@@ -114,5 +115,6 @@ router.use(platformStorageRouter);
 router.use(billingRouter);
 router.use(squadRouter);
 router.use(availabilitySettingsRouter);
+router.use(selectionRouter);
 
 export default router;

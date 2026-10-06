@@ -259,7 +259,7 @@ export async function buildRoundDrafts(
  * The round's answers by member and Perth date. A date inside one of the
  * member's away periods (R11) with no explicit answer counts as No.
  */
-async function loadResponses(
+export async function loadResponses(
   tenantId: number,
   roundId: number,
   from: Date,

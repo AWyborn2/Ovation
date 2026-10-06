@@ -2968,6 +2968,418 @@ export const RunAvailabilityStepResponse = zod.object({
 
 
 /**
+ * The current round's header (step times, progress and the section's
+response counts), every side drafted for a fixture of the section with
+its slots, roles, state, version and whether the caller may edit it, the
+pool of active members of the section not placed in any side of the
+round, and the latest changes. Never carries a mobile or an email.
+
+ * @summary The Selection Hub board for one section (admin or captain)
+ */
+export const GetSelectionBoardQueryParams = zod.object({
+  "section": zod.enum(['senior', 'junior']).optional()
+})
+
+
+
+
+export const GetSelectionBoardResponse = zod.object({
+  "section": zod.enum(['senior', 'junior']),
+  "actor": zod.object({
+  "kind": zod.enum(['admin', 'captain']),
+  "name": zod.string(),
+  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub'),
+  "canRemind": zod.boolean().describe('The caller may send the section\'s non-responders a reminder')
+}),
+  "round": zod.union([zod.object({
+  "roundId": zod.number(),
+  "weekendDate": zod.coerce.date(),
+  "sendAt": zod.coerce.date(),
+  "reminderAt": zod.coerce.date(),
+  "cutoffAt": zod.coerce.date(),
+  "finaliseAt": zod.coerce.date().describe('Finalise-by, shown to captains'),
+  "sendStartedAt": zod.coerce.date().nullable(),
+  "reminderStartedAt": zod.coerce.date().nullable(),
+  "cutoffStartedAt": zod.coerce.date().nullable(),
+  "cutoffCompletedAt": zod.coerce.date().nullable(),
+  "counts": zod.object({
+  "yes": zod.number(),
+  "maybe": zod.number(),
+  "no": zod.number(),
+  "none": zod.number(),
+  "late": zod.number().describe('Members with an answer given after the cut-off'),
+  "total": zod.number()
+}).describe('One status per member asked — Yes for any date, else Maybe, else No; None when unanswered')
+}),zod.null()]),
+  "selections": zod.array(zod.object({
+  "id": zod.number(),
+  "roundId": zod.number(),
+  "fixture": zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "opponentName": zod.string(),
+  "startAt": zod.coerce.date(),
+  "venue": zod.string().nullable(),
+  "isHome": zod.boolean(),
+  "roundLabel": zod.string().nullable()
+}),
+  "date": zod.coerce.date().describe('The fixture\'s Perth date'),
+  "state": zod.enum(['draft', 'final']),
+  "version": zod.number(),
+  "slots": zod.array(zod.object({
+  "memberId": zod.number().nullable(),
+  "gap": zod.union([zod.object({
+  "name": zod.string().min(1),
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew'])
+}).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
+  "member": zod.union([zod.object({
+  "id": zod.number(),
+  "displayName": zod.string(),
+  "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
+  "note": zod.string().nullable(),
+  "lastGrade": zod.string().nullable().describe('The grade of the last team list the member appears in, else their grade hint'),
+  "junior": zod.boolean().describe('True for a junior (or under-18) member on the senior board'),
+  "isPrivate": zod.boolean(),
+  "repliedAt": zod.coerce.date().nullable(),
+  "late": zod.boolean().describe('Answered after the cut-off')
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
+})),
+  "captainMemberId": zod.number().nullable(),
+  "keeperMemberId": zod.number().nullable(),
+  "finalisedAt": zod.coerce.date().nullable(),
+  "finalisedBy": zod.string().nullable(),
+  "canEdit": zod.boolean().describe('The caller may change the side now (they have the right and it is not finalised)'),
+  "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
+  "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
+  "warnings": zod.object({
+  "filled": zod.number(),
+  "open": zod.number(),
+  "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
+  "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
+  "noCaptain": zod.boolean(),
+  "noKeeper": zod.boolean()
+})
+})),
+  "pool": zod.array(zod.object({
+  "id": zod.number(),
+  "displayName": zod.string(),
+  "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
+  "note": zod.string().nullable(),
+  "lastGrade": zod.string().nullable().describe('The grade of the last team list the member appears in, else their grade hint'),
+  "junior": zod.boolean().describe('True for a junior (or under-18) member on the senior board'),
+  "isPrivate": zod.boolean(),
+  "repliedAt": zod.coerce.date().nullable(),
+  "late": zod.boolean().describe('Answered after the cut-off')
+}).describe('A squad member as the Hub shows them — never a contact value.')).describe('Active members of the section not placed in any side of the round'),
+  "events": zod.array(zod.object({
+  "id": zod.number(),
+  "selectionId": zod.number(),
+  "grade": zod.string(),
+  "actorKind": zod.string().describe('admin, captain, player or system'),
+  "actorName": zod.string().nullable(),
+  "action": zod.string().describe('draft, update, finalise, reopen or withdraw'),
+  "detail": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date()
+})).describe('The latest changes to the section\'s sides, newest first')
+})
+
+
+/**
+ * Each change replaces a whole side: its 11 slots, captain and keeper,
+with the version the caller last saw. Everything is applied in one
+transaction or nothing is: a side the caller may not edit (or a member
+taken from one) → 403; a finalised side or a stale version → 409; not
+exactly 11 slots, a member twice in the round, or an unknown or inactive
+member → 400. A captain or keeper who is not in their side is cleared
+and the clearing logged. Returns the board of the first changed side's
+section.
+
+ * @summary Save changes to one or more sides of the round (admin or captain)
+ */
+
+
+
+
+export const SaveSelectionBoardBody = zod.object({
+  "changes": zod.array(zod.object({
+  "selectionId": zod.number(),
+  "version": zod.number().describe('The version the caller last saw'),
+  "slots": zod.array(zod.object({
+  "memberId": zod.number().nullable(),
+  "gap": zod.union([zod.object({
+  "name": zod.string().min(1),
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew'])
+}).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]).optional()
+})).describe('The side\'s 11 slots, in order'),
+  "captainMemberId": zod.number().nullable(),
+  "keeperMemberId": zod.number().nullable()
+})).min(1)
+})
+
+
+
+
+export const SaveSelectionBoardResponse = zod.object({
+  "section": zod.enum(['senior', 'junior']),
+  "actor": zod.object({
+  "kind": zod.enum(['admin', 'captain']),
+  "name": zod.string(),
+  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub'),
+  "canRemind": zod.boolean().describe('The caller may send the section\'s non-responders a reminder')
+}),
+  "round": zod.union([zod.object({
+  "roundId": zod.number(),
+  "weekendDate": zod.coerce.date(),
+  "sendAt": zod.coerce.date(),
+  "reminderAt": zod.coerce.date(),
+  "cutoffAt": zod.coerce.date(),
+  "finaliseAt": zod.coerce.date().describe('Finalise-by, shown to captains'),
+  "sendStartedAt": zod.coerce.date().nullable(),
+  "reminderStartedAt": zod.coerce.date().nullable(),
+  "cutoffStartedAt": zod.coerce.date().nullable(),
+  "cutoffCompletedAt": zod.coerce.date().nullable(),
+  "counts": zod.object({
+  "yes": zod.number(),
+  "maybe": zod.number(),
+  "no": zod.number(),
+  "none": zod.number(),
+  "late": zod.number().describe('Members with an answer given after the cut-off'),
+  "total": zod.number()
+}).describe('One status per member asked — Yes for any date, else Maybe, else No; None when unanswered')
+}),zod.null()]),
+  "selections": zod.array(zod.object({
+  "id": zod.number(),
+  "roundId": zod.number(),
+  "fixture": zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "opponentName": zod.string(),
+  "startAt": zod.coerce.date(),
+  "venue": zod.string().nullable(),
+  "isHome": zod.boolean(),
+  "roundLabel": zod.string().nullable()
+}),
+  "date": zod.coerce.date().describe('The fixture\'s Perth date'),
+  "state": zod.enum(['draft', 'final']),
+  "version": zod.number(),
+  "slots": zod.array(zod.object({
+  "memberId": zod.number().nullable(),
+  "gap": zod.union([zod.object({
+  "name": zod.string().min(1),
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew'])
+}).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
+  "member": zod.union([zod.object({
+  "id": zod.number(),
+  "displayName": zod.string(),
+  "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
+  "note": zod.string().nullable(),
+  "lastGrade": zod.string().nullable().describe('The grade of the last team list the member appears in, else their grade hint'),
+  "junior": zod.boolean().describe('True for a junior (or under-18) member on the senior board'),
+  "isPrivate": zod.boolean(),
+  "repliedAt": zod.coerce.date().nullable(),
+  "late": zod.boolean().describe('Answered after the cut-off')
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
+})),
+  "captainMemberId": zod.number().nullable(),
+  "keeperMemberId": zod.number().nullable(),
+  "finalisedAt": zod.coerce.date().nullable(),
+  "finalisedBy": zod.string().nullable(),
+  "canEdit": zod.boolean().describe('The caller may change the side now (they have the right and it is not finalised)'),
+  "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
+  "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
+  "warnings": zod.object({
+  "filled": zod.number(),
+  "open": zod.number(),
+  "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
+  "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
+  "noCaptain": zod.boolean(),
+  "noKeeper": zod.boolean()
+})
+})),
+  "pool": zod.array(zod.object({
+  "id": zod.number(),
+  "displayName": zod.string(),
+  "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
+  "note": zod.string().nullable(),
+  "lastGrade": zod.string().nullable().describe('The grade of the last team list the member appears in, else their grade hint'),
+  "junior": zod.boolean().describe('True for a junior (or under-18) member on the senior board'),
+  "isPrivate": zod.boolean(),
+  "repliedAt": zod.coerce.date().nullable(),
+  "late": zod.boolean().describe('Answered after the cut-off')
+}).describe('A squad member as the Hub shows them — never a contact value.')).describe('Active members of the section not placed in any side of the round'),
+  "events": zod.array(zod.object({
+  "id": zod.number(),
+  "selectionId": zod.number(),
+  "grade": zod.string(),
+  "actorKind": zod.string().describe('admin, captain, player or system'),
+  "actorName": zod.string().nullable(),
+  "action": zod.string().describe('draft, update, finalise, reopen or withdraw'),
+  "detail": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date()
+})).describe('The latest changes to the section\'s sides, newest first')
+})
+
+
+/**
+ * Locks the side, publishes it as the fixture's team list (source
+"selection") and messages each newly selected member (or their
+guardians) with the match details and a "can't make it" link. On a
+re-finalise, members dropped since the last finalise are told too. A
+side may be finalised without a captain or keeper.
+
+ * @summary Finalise a side and publish it as the fixture's team list (admin or captain)
+ */
+export const FinaliseSelectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const FinaliseSelectionResponse = zod.object({
+  "selection": zod.object({
+  "id": zod.number(),
+  "roundId": zod.number(),
+  "fixture": zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "opponentName": zod.string(),
+  "startAt": zod.coerce.date(),
+  "venue": zod.string().nullable(),
+  "isHome": zod.boolean(),
+  "roundLabel": zod.string().nullable()
+}),
+  "date": zod.coerce.date().describe('The fixture\'s Perth date'),
+  "state": zod.enum(['draft', 'final']),
+  "version": zod.number(),
+  "slots": zod.array(zod.object({
+  "memberId": zod.number().nullable(),
+  "gap": zod.union([zod.object({
+  "name": zod.string().min(1),
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew'])
+}).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
+  "member": zod.union([zod.object({
+  "id": zod.number(),
+  "displayName": zod.string(),
+  "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
+  "note": zod.string().nullable(),
+  "lastGrade": zod.string().nullable().describe('The grade of the last team list the member appears in, else their grade hint'),
+  "junior": zod.boolean().describe('True for a junior (or under-18) member on the senior board'),
+  "isPrivate": zod.boolean(),
+  "repliedAt": zod.coerce.date().nullable(),
+  "late": zod.boolean().describe('Answered after the cut-off')
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
+})),
+  "captainMemberId": zod.number().nullable(),
+  "keeperMemberId": zod.number().nullable(),
+  "finalisedAt": zod.coerce.date().nullable(),
+  "finalisedBy": zod.string().nullable(),
+  "canEdit": zod.boolean().describe('The caller may change the side now (they have the right and it is not finalised)'),
+  "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
+  "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
+  "warnings": zod.object({
+  "filled": zod.number(),
+  "open": zod.number(),
+  "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
+  "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
+  "noCaptain": zod.boolean(),
+  "noKeeper": zod.boolean()
+})
+}),
+  "messaged": zod.object({
+  "selected": zod.number().describe('Newly selected members messaged'),
+  "deselected": zod.number().describe('Members dropped since the last finalise who were told')
+})
+})
+
+
+/**
+ * Returns the side to draft and logs it. The published team list stays as
+last finalised until the side is finalised again.
+
+ * @summary Re-open a finalised side for changes (admin or captain)
+ */
+export const ReopenSelectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const ReopenSelectionResponse = zod.object({
+  "id": zod.number(),
+  "roundId": zod.number(),
+  "fixture": zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "opponentName": zod.string(),
+  "startAt": zod.coerce.date(),
+  "venue": zod.string().nullable(),
+  "isHome": zod.boolean(),
+  "roundLabel": zod.string().nullable()
+}),
+  "date": zod.coerce.date().describe('The fixture\'s Perth date'),
+  "state": zod.enum(['draft', 'final']),
+  "version": zod.number(),
+  "slots": zod.array(zod.object({
+  "memberId": zod.number().nullable(),
+  "gap": zod.union([zod.object({
+  "name": zod.string().min(1),
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew'])
+}).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
+  "member": zod.union([zod.object({
+  "id": zod.number(),
+  "displayName": zod.string(),
+  "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
+  "note": zod.string().nullable(),
+  "lastGrade": zod.string().nullable().describe('The grade of the last team list the member appears in, else their grade hint'),
+  "junior": zod.boolean().describe('True for a junior (or under-18) member on the senior board'),
+  "isPrivate": zod.boolean(),
+  "repliedAt": zod.coerce.date().nullable(),
+  "late": zod.boolean().describe('Answered after the cut-off')
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
+})),
+  "captainMemberId": zod.number().nullable(),
+  "keeperMemberId": zod.number().nullable(),
+  "finalisedAt": zod.coerce.date().nullable(),
+  "finalisedBy": zod.string().nullable(),
+  "canEdit": zod.boolean().describe('The caller may change the side now (they have the right and it is not finalised)'),
+  "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
+  "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
+  "warnings": zod.object({
+  "filled": zod.number(),
+  "open": zod.number(),
+  "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
+  "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
+  "noCaptain": zod.boolean(),
+  "noKeeper": zod.boolean()
+})
+})
+
+
+/**
+ * Sends the reminder to members of the section asked this round who
+haven't answered. Each recipient is reminded by hand at most once every
+12 hours; recipients inside that window are skipped.
+
+ * @summary Remind the section's members who haven't answered (admin or captain)
+ */
+export const RemindSelectionNonRespondersBody = zod.object({
+  "section": zod.enum(['senior', 'junior'])
+})
+
+export const RemindSelectionNonRespondersResponse = zod.object({
+  "step": zod.enum(['send', 'remind', 'cutoff']),
+  "roundId": zod.number(),
+  "messaged": zod.number().describe('Members messaged'),
+  "away": zod.number().describe('Members recorded unavailable from an away period instead of being asked'),
+  "noFixture": zod.number().describe('Members with no fixture to be asked about this round'),
+  "throttled": zod.number().describe('Members skipped because they were reminded by hand in the last 12 hours'),
+  "drafts": zod.number().describe('Draft sides created at cut-off')
+})
+
+
+/**
  * @summary List per-season voting configs for an award (admin)
  */
 export const ListAwardVotingConfigsParams = zod.object({
@@ -6129,6 +6541,7 @@ export const GetFixtureTeamListResponse = zod.union([zod.object({
   "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
 })),
   "isPublished": zod.boolean(),
+  "source": zod.string().optional().describe('Who wrote the list: \"admin\", \"playhq\" or \"selection\" (a side finalised in the Selection Hub, which is changed there rather than here)'),
   "createdAt": zod.coerce.date()
 }),zod.null()])
 
@@ -6168,6 +6581,7 @@ export const PutFixtureTeamListResponse = zod.object({
   "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
 })),
   "isPublished": zod.boolean(),
+  "source": zod.string().optional().describe('Who wrote the list: \"admin\", \"playhq\" or \"selection\" (a side finalised in the Selection Hub, which is changed there rather than here)'),
   "createdAt": zod.coerce.date()
 })
 

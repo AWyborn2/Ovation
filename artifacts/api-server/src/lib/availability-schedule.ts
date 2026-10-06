@@ -352,6 +352,8 @@ export type StepOptions = {
   manual?: boolean;
   /** Overrides the module's pace between members. */
   paceMs?: number;
+  /** Reminder only: remind members of this section alone (the Selection Hub's switch, R28). */
+  section?: SquadSection;
 };
 
 export type StepResult = {
@@ -609,6 +611,7 @@ export async function runReminder(
         eq(squadMembersTable.tenantId, tenantId),
         eq(squadMembersTable.active, true),
         inArray(squadMembersTable.id, [...bySlot.keys()]),
+        ...(opts.section ? [eq(squadMembersTable.section, opts.section)] : []),
       ),
     );
 
@@ -862,7 +865,12 @@ export type RoundCounts = {
  * they said Yes for any date, else Maybe, else No; None when they haven't
  * answered. Members asked = those with a request plus those recorded away.
  */
-export async function roundCounts(tenantId: number, roundId: number): Promise<RoundCounts> {
+export async function roundCounts(
+  tenantId: number,
+  roundId: number,
+  /** Narrows the count to these members (one section of the Selection Hub). */
+  onlyMembers?: ReadonlySet<number>,
+): Promise<RoundCounts> {
   const counts: RoundCounts = { yes: 0, maybe: 0, no: 0, none: 0, late: 0, total: 0 };
   const asked = await db
     .selectDistinct({ memberId: availabilityRequestsTable.memberId })
@@ -888,8 +896,10 @@ export async function roundCounts(tenantId: number, roundId: number): Promise<Ro
     );
   const statuses = new Map<number, Set<string>>();
   const late = new Set<number>();
-  for (const a of asked) statuses.set(a.memberId, new Set());
+  const counted = (id: number) => !onlyMembers || onlyMembers.has(id);
+  for (const a of asked) if (counted(a.memberId)) statuses.set(a.memberId, new Set());
   for (const r of responses) {
+    if (!counted(r.memberId)) continue;
     const set = statuses.get(r.memberId) ?? new Set<string>();
     set.add(r.status);
     statuses.set(r.memberId, set);

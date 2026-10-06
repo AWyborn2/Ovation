@@ -143,6 +143,7 @@ import type {
   GetRecordLeadersParams,
   GetRecordProgressionParams,
   GetRecordsParams,
+  GetSelectionBoardParams,
   GetSeniorSeasonTopPerformersParams,
   GetSocialClubSeasonTotalsParams,
   GetSocialLadderPrefillParams,
@@ -302,6 +303,11 @@ import type {
   SchedulePublicationsRequest,
   SearchClubCorrectionMatchesParams,
   SeasonTopPerformers,
+  SelectionBoard,
+  SelectionBoardSave,
+  SelectionFinaliseResult,
+  SelectionRemindBody,
+  SelectionSide,
   SeniorOverview,
   SetJuniorSeniorLinkBody,
   SetPlayerPrivacyBody,
@@ -7263,6 +7269,400 @@ export const useRunAvailabilityStep = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRunAvailabilityStepMutationOptions(options));
+    }
+
+export const getGetSelectionBoardUrl = (params?: GetSelectionBoardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/selection/board?${stringifiedParams}` : `/api/selection/board`
+}
+
+/**
+ * The current round's header (step times, progress and the section's
+response counts), every side drafted for a fixture of the section with
+its slots, roles, state, version and whether the caller may edit it, the
+pool of active members of the section not placed in any side of the
+round, and the latest changes. Never carries a mobile or an email.
+
+ * @summary The Selection Hub board for one section (admin or captain)
+ */
+export const getSelectionBoard = async (params?: GetSelectionBoardParams, options?: RequestInit): Promise<SelectionBoard> => {
+
+  return customFetch<SelectionBoard>(getGetSelectionBoardUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSelectionBoardQueryKey = (params?: GetSelectionBoardParams,) => {
+    return [
+    `/api/selection/board`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSelectionBoardQueryOptions = <TData = Awaited<ReturnType<typeof getSelectionBoard>>, TError = ErrorType<void>>(params?: GetSelectionBoardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSelectionBoard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSelectionBoardQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSelectionBoard>>> = ({ signal }) => getSelectionBoard(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSelectionBoard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSelectionBoardQueryResult = NonNullable<Awaited<ReturnType<typeof getSelectionBoard>>>
+export type GetSelectionBoardQueryError = ErrorType<void>
+
+
+/**
+ * @summary The Selection Hub board for one section (admin or captain)
+ */
+
+export function useGetSelectionBoard<TData = Awaited<ReturnType<typeof getSelectionBoard>>, TError = ErrorType<void>>(
+ params?: GetSelectionBoardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSelectionBoard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSelectionBoardQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveSelectionBoardUrl = () => {
+
+
+
+
+  return `/api/selection/board`
+}
+
+/**
+ * Each change replaces a whole side: its 11 slots, captain and keeper,
+with the version the caller last saw. Everything is applied in one
+transaction or nothing is: a side the caller may not edit (or a member
+taken from one) → 403; a finalised side or a stale version → 409; not
+exactly 11 slots, a member twice in the round, or an unknown or inactive
+member → 400. A captain or keeper who is not in their side is cleared
+and the clearing logged. Returns the board of the first changed side's
+section.
+
+ * @summary Save changes to one or more sides of the round (admin or captain)
+ */
+export const saveSelectionBoard = async (selectionBoardSave: SelectionBoardSave, options?: RequestInit): Promise<SelectionBoard> => {
+
+  return customFetch<SelectionBoard>(getSaveSelectionBoardUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      selectionBoardSave,)
+  }
+);}
+
+
+
+
+export const getSaveSelectionBoardMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveSelectionBoard>>, TError,{data: BodyType<SelectionBoardSave>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveSelectionBoard>>, TError,{data: BodyType<SelectionBoardSave>}, TContext> => {
+
+const mutationKey = ['saveSelectionBoard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveSelectionBoard>>, {data: BodyType<SelectionBoardSave>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveSelectionBoard(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveSelectionBoardMutationResult = NonNullable<Awaited<ReturnType<typeof saveSelectionBoard>>>
+    export type SaveSelectionBoardMutationBody = BodyType<SelectionBoardSave>
+    export type SaveSelectionBoardMutationError = ErrorType<void>
+
+    /**
+ * @summary Save changes to one or more sides of the round (admin or captain)
+ */
+export const useSaveSelectionBoard = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveSelectionBoard>>, TError,{data: BodyType<SelectionBoardSave>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveSelectionBoard>>,
+        TError,
+        {data: BodyType<SelectionBoardSave>},
+        TContext
+      > => {
+      return useMutation(getSaveSelectionBoardMutationOptions(options));
+    }
+
+export const getFinaliseSelectionUrl = (id: number,) => {
+
+
+
+
+  return `/api/selection/${id}/finalise`
+}
+
+/**
+ * Locks the side, publishes it as the fixture's team list (source
+"selection") and messages each newly selected member (or their
+guardians) with the match details and a "can't make it" link. On a
+re-finalise, members dropped since the last finalise are told too. A
+side may be finalised without a captain or keeper.
+
+ * @summary Finalise a side and publish it as the fixture's team list (admin or captain)
+ */
+export const finaliseSelection = async (id: number, options?: RequestInit): Promise<SelectionFinaliseResult> => {
+
+  return customFetch<SelectionFinaliseResult>(getFinaliseSelectionUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getFinaliseSelectionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finaliseSelection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof finaliseSelection>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['finaliseSelection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof finaliseSelection>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  finaliseSelection(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FinaliseSelectionMutationResult = NonNullable<Awaited<ReturnType<typeof finaliseSelection>>>
+
+    export type FinaliseSelectionMutationError = ErrorType<void>
+
+    /**
+ * @summary Finalise a side and publish it as the fixture's team list (admin or captain)
+ */
+export const useFinaliseSelection = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finaliseSelection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof finaliseSelection>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getFinaliseSelectionMutationOptions(options));
+    }
+
+export const getReopenSelectionUrl = (id: number,) => {
+
+
+
+
+  return `/api/selection/${id}/reopen`
+}
+
+/**
+ * Returns the side to draft and logs it. The published team list stays as
+last finalised until the side is finalised again.
+
+ * @summary Re-open a finalised side for changes (admin or captain)
+ */
+export const reopenSelection = async (id: number, options?: RequestInit): Promise<SelectionSide> => {
+
+  return customFetch<SelectionSide>(getReopenSelectionUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getReopenSelectionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reopenSelection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reopenSelection>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['reopenSelection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reopenSelection>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  reopenSelection(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReopenSelectionMutationResult = NonNullable<Awaited<ReturnType<typeof reopenSelection>>>
+
+    export type ReopenSelectionMutationError = ErrorType<void>
+
+    /**
+ * @summary Re-open a finalised side for changes (admin or captain)
+ */
+export const useReopenSelection = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reopenSelection>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reopenSelection>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getReopenSelectionMutationOptions(options));
+    }
+
+export const getRemindSelectionNonRespondersUrl = () => {
+
+
+
+
+  return `/api/selection/rounds/current/remind`
+}
+
+/**
+ * Sends the reminder to members of the section asked this round who
+haven't answered. Each recipient is reminded by hand at most once every
+12 hours; recipients inside that window are skipped.
+
+ * @summary Remind the section's members who haven't answered (admin or captain)
+ */
+export const remindSelectionNonResponders = async (selectionRemindBody: SelectionRemindBody, options?: RequestInit): Promise<AvailabilityStepResult> => {
+
+  return customFetch<AvailabilityStepResult>(getRemindSelectionNonRespondersUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      selectionRemindBody,)
+  }
+);}
+
+
+
+
+export const getRemindSelectionNonRespondersMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof remindSelectionNonResponders>>, TError,{data: BodyType<SelectionRemindBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof remindSelectionNonResponders>>, TError,{data: BodyType<SelectionRemindBody>}, TContext> => {
+
+const mutationKey = ['remindSelectionNonResponders'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof remindSelectionNonResponders>>, {data: BodyType<SelectionRemindBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  remindSelectionNonResponders(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemindSelectionNonRespondersMutationResult = NonNullable<Awaited<ReturnType<typeof remindSelectionNonResponders>>>
+    export type RemindSelectionNonRespondersMutationBody = BodyType<SelectionRemindBody>
+    export type RemindSelectionNonRespondersMutationError = ErrorType<void>
+
+    /**
+ * @summary Remind the section's members who haven't answered (admin or captain)
+ */
+export const useRemindSelectionNonResponders = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof remindSelectionNonResponders>>, TError,{data: BodyType<SelectionRemindBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof remindSelectionNonResponders>>,
+        TError,
+        {data: BodyType<SelectionRemindBody>},
+        TContext
+      > => {
+      return useMutation(getRemindSelectionNonRespondersMutationOptions(options));
     }
 
 export const getListAwardVotingConfigsUrl = (id: number,) => {

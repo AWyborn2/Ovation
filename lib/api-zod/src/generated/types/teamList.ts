@@ -12,5 +12,7 @@ export interface TeamList {
   fixtureId: number;
   players: TeamListPlayer[];
   isPublished: boolean;
+  /** Who wrote the list: "admin", "playhq" or "selection" (a side finalised in the Selection Hub, which is changed there rather than here) */
+  source?: string;
   createdAt: Date;
 }

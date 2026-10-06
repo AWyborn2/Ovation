@@ -3062,6 +3062,230 @@ export interface AvailabilityStepResult {
   drafts: number;
 }
 
+/**
+ * The member's answer for the dates they were asked about (none = no reply)
+ */
+export type SelectionMemberStatus = typeof SelectionMemberStatus[keyof typeof SelectionMemberStatus];
+
+
+export const SelectionMemberStatus = {
+  yes: 'yes',
+  maybe: 'maybe',
+  no: 'no',
+  none: 'none',
+} as const;
+
+/**
+ * A squad member as the Hub shows them — never a contact value.
+ */
+export interface SelectionMember {
+  id: number;
+  displayName: string;
+  status: SelectionMemberStatus;
+  /** @nullable */
+  note: string | null;
+  /**
+     * The grade of the last team list the member appears in, else their grade hint
+     * @nullable
+     */
+  lastGrade: string | null;
+  /** True for a junior (or under-18) member on the senior board */
+  junior: boolean;
+  isPrivate: boolean;
+  /** @nullable */
+  repliedAt: string | null;
+  /** Answered after the cut-off */
+  late: boolean;
+}
+
+export type SelectionGapReason = typeof SelectionGapReason[keyof typeof SelectionGapReason];
+
+
+export const SelectionGapReason = {
+  no: 'no',
+  maybe: 'maybe',
+  no_reply: 'no_reply',
+  not_on_register: 'not_on_register',
+  withdrew: 'withdrew',
+} as const;
+
+/**
+ * Who held an open slot and why they left it ("was <name> · <reason>")
+ */
+export interface SelectionGap {
+  /** @minLength 1 */
+  name: string;
+  reason: SelectionGapReason;
+}
+
+export interface SelectionSlot {
+  /** @nullable */
+  memberId: number | null;
+  gap: SelectionGap | null;
+  member: SelectionMember | null;
+}
+
+export interface SelectionFixture {
+  id: number;
+  grade: string;
+  opponentName: string;
+  startAt: string;
+  /** @nullable */
+  venue: string | null;
+  isHome: boolean;
+  /** @nullable */
+  roundLabel: string | null;
+}
+
+export interface SelectionWarnings {
+  filled: number;
+  open: number;
+  /** Selected members who said Maybe or haven't replied */
+  unconfirmed: number;
+  /** Selected members who said they're unavailable */
+  saidNo: number;
+  noCaptain: boolean;
+  noKeeper: boolean;
+}
+
+export type SelectionSideState = typeof SelectionSideState[keyof typeof SelectionSideState];
+
+
+export const SelectionSideState = {
+  draft: 'draft',
+  final: 'final',
+} as const;
+
+export interface SelectionSide {
+  id: number;
+  roundId: number;
+  fixture: SelectionFixture;
+  /** The fixture's Perth date */
+  date: string;
+  state: SelectionSideState;
+  version: number;
+  slots: SelectionSlot[];
+  /** @nullable */
+  captainMemberId: number | null;
+  /** @nullable */
+  keeperMemberId: number | null;
+  /** @nullable */
+  finalisedAt: string | null;
+  /** @nullable */
+  finalisedBy: string | null;
+  /** The caller may change the side now (they have the right and it is not finalised) */
+  canEdit: boolean;
+  /** The caller may finalise or re-open the side */
+  canFinalise: boolean;
+  /**
+     * Why the side is read-only to the caller; null when they can edit it
+     * @nullable
+     */
+  readOnlyReason: string | null;
+  warnings: SelectionWarnings;
+}
+
+export interface SelectionRound {
+  roundId: number;
+  weekendDate: string;
+  sendAt: string;
+  reminderAt: string;
+  cutoffAt: string;
+  /** Finalise-by, shown to captains */
+  finaliseAt: string;
+  /** @nullable */
+  sendStartedAt: string | null;
+  /** @nullable */
+  reminderStartedAt: string | null;
+  /** @nullable */
+  cutoffStartedAt: string | null;
+  /** @nullable */
+  cutoffCompletedAt: string | null;
+  counts: AvailabilityRoundCounts;
+}
+
+export type SelectionEventDetail = { [key: string]: unknown };
+
+export interface SelectionEvent {
+  id: number;
+  selectionId: number;
+  grade: string;
+  /** admin, captain, player or system */
+  actorKind: string;
+  /** @nullable */
+  actorName: string | null;
+  /** draft, update, finalise, reopen or withdraw */
+  action: string;
+  detail: SelectionEventDetail;
+  createdAt: string;
+}
+
+export type SelectionActorKind = typeof SelectionActorKind[keyof typeof SelectionActorKind];
+
+
+export const SelectionActorKind = {
+  admin: 'admin',
+  captain: 'captain',
+} as const;
+
+export interface SelectionActor {
+  kind: SelectionActorKind;
+  name: string;
+  selectionRule: AvailabilitySelectionRule;
+  /** The caller may send the section's non-responders a reminder */
+  canRemind: boolean;
+}
+
+export interface SelectionBoard {
+  section: SquadSection;
+  actor: SelectionActor;
+  round: SelectionRound | null;
+  selections: SelectionSide[];
+  /** Active members of the section not placed in any side of the round */
+  pool: SelectionMember[];
+  /** The latest changes to the section's sides, newest first */
+  events: SelectionEvent[];
+}
+
+export interface SelectionSlotInput {
+  /** @nullable */
+  memberId: number | null;
+  gap?: SelectionGap | null;
+}
+
+export interface SelectionChange {
+  selectionId: number;
+  /** The version the caller last saw */
+  version: number;
+  /** The side's 11 slots, in order */
+  slots: SelectionSlotInput[];
+  /** @nullable */
+  captainMemberId: number | null;
+  /** @nullable */
+  keeperMemberId: number | null;
+}
+
+export interface SelectionBoardSave {
+  /** @minItems 1 */
+  changes: SelectionChange[];
+}
+
+export type SelectionFinaliseResultMessaged = {
+  /** Newly selected members messaged */
+  selected: number;
+  /** Members dropped since the last finalise who were told */
+  deselected: number;
+};
+
+export interface SelectionFinaliseResult {
+  selection: SelectionSide;
+  messaged: SelectionFinaliseResultMessaged;
+}
+
+export interface SelectionRemindBody {
+  section: SquadSection;
+}
+
 export interface AwardVotingConfig {
   id: number;
   awardId: number;
@@ -7045,6 +7269,8 @@ export interface TeamList {
   fixtureId: number;
   players: TeamListPlayer[];
   isPublished: boolean;
+  /** Who wrote the list: "admin", "playhq" or "selection" (a side finalised in the Selection Hub, which is changed there rather than here) */
+  source?: string;
   createdAt: string;
 }
 
@@ -8159,6 +8385,10 @@ export const GetRecordProgressionKind = {
 export type ImportSquadBody = {
   /** The PlayHQ participant export (CSV) */
   file: Blob;
+};
+
+export type GetSelectionBoardParams = {
+section?: SquadSection;
 };
 
 export type GetMetaConnectPendingParams = {
