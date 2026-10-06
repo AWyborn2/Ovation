@@ -4052,6 +4052,7 @@ export const ListSponsorsResponseItem = zod.object({
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })
@@ -4068,6 +4069,7 @@ export const CreateSponsorBody = zod.object({
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).optional(),
+  "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional()
 })
@@ -4087,6 +4089,7 @@ export const UpdateSponsorBody = zod.object({
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).optional(),
+  "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional()
 })
@@ -4099,6 +4102,7 @@ export const UpdateSponsorResponse = zod.object({
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })
@@ -5363,6 +5367,7 @@ export const GetSocialSettingsResponse = zod.object({
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })),
@@ -5737,10 +5742,12 @@ export const GetFixtureTeamListResponse = zod.union([zod.object({
   "order": zod.number().min(1).describe('Batting\/selection order position (1-based)'),
   "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
   "displayName": zod.string().min(1),
-  "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).optional().describe('Captain \/ vice-captain \/ wicket-keeper marker'),
+  "debut": zod.boolean().optional().describe('Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds).')
 })),
   "isPublished": zod.boolean(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "debutPlayerIds": zod.array(zod.number()).optional().describe('Players in this list the match records say have never played a senior game for the club (automatic debut). An admin\'s `debut` on a player overrides it.')
 }),zod.null()])
 
 
@@ -5760,7 +5767,8 @@ export const PutFixtureTeamListBody = zod.object({
   "order": zod.number().min(1).describe('Batting\/selection order position (1-based)'),
   "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
   "displayName": zod.string().min(1),
-  "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).optional().describe('Captain \/ vice-captain \/ wicket-keeper marker'),
+  "debut": zod.boolean().optional().describe('Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds).')
 })),
   "isPublished": zod.boolean().optional()
 })
@@ -5776,10 +5784,12 @@ export const PutFixtureTeamListResponse = zod.object({
   "order": zod.number().min(1).describe('Batting\/selection order position (1-based)'),
   "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
   "displayName": zod.string().min(1),
-  "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).optional().describe('Captain \/ vice-captain \/ wicket-keeper marker'),
+  "debut": zod.boolean().optional().describe('Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds).')
 })),
   "isPublished": zod.boolean(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "debutPlayerIds": zod.array(zod.number()).optional().describe('Players in this list the match records say have never played a senior game for the club (automatic debut). An admin\'s `debut` on a player overrides it.')
 })
 
 
@@ -6301,6 +6311,7 @@ export const GetHonourDisplayResponse = zod.object({
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
@@ -6571,6 +6582,7 @@ export const GetKioskDisplayResponse = zod.object({
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),

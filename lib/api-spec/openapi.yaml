@@ -12652,6 +12652,13 @@ components:
           description: Card types this sponsor may appear on. Empty = all cards.
           items:
             $ref: "#/components/schemas/CardKind"
+        grades:
+          type: array
+          description: >-
+            Sponsor per team: the grades (fixture grade labels) whose team-list
+            cards show this sponsor as their one logo. Empty = no team of its own.
+          items:
+            type: string
         isPresenting:
           type: boolean
           description: >-
@@ -12679,6 +12686,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CardKind"
+        grades:
+          type: array
+          description: The grades whose team-list cards show this sponsor as their one logo.
+          items:
+            type: string
         isPresenting:
           type: boolean
           description: >-
@@ -12704,6 +12716,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/CardKind"
+        grades:
+          type: array
+          description: The grades whose team-list cards show this sponsor as their one logo.
+          items:
+            type: string
         isPresenting:
           type: boolean
           description: >-
@@ -16749,8 +16766,14 @@ components:
           minLength: 1
         role:
           type: string
-          enum: ["C", "WK", "C/WK"]
-          description: "Captain / wicket-keeper marker"
+          enum: ["C", "VC", "WK", "C/WK", "VC/WK"]
+          description: "Captain / vice-captain / wicket-keeper marker"
+        debut:
+          type: boolean
+          description: >-
+            Debut badge override set by an admin. Omit for automatic: a
+            register-linked player with no previous senior game for the club
+            is a debutant (see TeamList.debutPlayerIds).
 
     TeamList:
       type: object
@@ -16764,6 +16787,13 @@ components:
             $ref: "#/components/schemas/TeamListPlayer"
         isPublished: { type: boolean }
         createdAt: { type: string, format: date-time }
+        debutPlayerIds:
+          type: array
+          items: { type: integer }
+          description: >-
+            Players in this list the match records say have never played a
+            senior game for the club (automatic debut). An admin's `debut` on a
+            player overrides it.
 
     PutTeamListBody:
       type: object

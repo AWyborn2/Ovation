@@ -126,6 +126,13 @@ export function resolveTemplate(
   const covers = all.filter((d) => d.role === "cover");
   const designs = wantsCover ? covers : everyday.length ? everyday : covers;
   if (designs.length === 0) return null;
+  // A card that names its design (a team list's "Starting XI") gets it when
+  // this pack has it; otherwise the kind's usual design.
+  const named = (input as { design?: string | null }).design;
+  if (named) {
+    const hit = designs.find((d) => d.designKey === named);
+    if (hit) return hit.template;
+  }
   if (designs.length === 1) return designs[0].template;
   // gradeLeader / clubLeaderboard: the design whose preset matches the
   // category exactly, else Runs vs Wickets (a pack without a Catches or

@@ -165,4 +165,43 @@ describe("round team lists prefill", () => {
     const [round] = groupFixturesByRound([a]);
     expect(fixtureRoundTeamsToState(round, new Map([[a.id, null]])).teams).toEqual([]);
   });
+
+  it("splits men's and women's teams into their own sets, each named on its cover", () => {
+    const a = fx("A Grade", "2027-02-13T04:30:00Z");
+    const w = fx("Female A Grade", "2027-02-13T02:00:00Z");
+    const j = fx("Under 15", "2027-02-13T00:00:00Z");
+    const rounds = groupFixturesByRound([a, w, j], { byAudience: true });
+    expect(rounds.map((r) => [r.audience, r.fixtures.map((f) => f.grade)])).toEqual([
+      ["junior", ["Under 15"]],
+      ["women", ["Female A Grade"]],
+      ["men", ["A Grade"]],
+    ]);
+    const lists = new Map([
+      [a.id, xi(a.id, true)],
+      [w.id, xi(w.id, true)],
+    ]);
+    const women = fixtureRoundTeamsToState(rounds[1], lists);
+    expect(women.audience).toBe("WOMEN'S");
+    expect(women.teams.map((t) => t.grade)).toEqual(["Female A Grade"]);
+    expect(fixtureRoundTeamsToState(rounds[2], lists).audience).toBe("MEN'S");
+    // Without the split (game day), the seniors stay one round.
+    expect(groupFixturesByRound([a, w, j]).map((r) => r.fixtures.length)).toEqual([1, 2]);
+  });
+
+  it("marks automatic debutants unless the admin said otherwise", () => {
+    const a = fx("A Grade", "2027-02-13T04:30:00Z");
+    const [round] = groupFixturesByRound([a]);
+    const list = {
+      ...xi(a.id, true),
+      debutPlayerIds: [7, 8],
+      players: [
+        { order: 1, displayName: "Jack Manuel", playerId: 7 },
+        { order: 2, displayName: "Sam Rudge", playerId: 8, debut: false },
+        { order: 3, displayName: "New Signing", debut: true },
+      ],
+    } as TeamList;
+    const state = fixtureRoundTeamsToState(round, new Map([[a.id, list]]));
+    expect(state.teams[0].players.map((p) => !!p.debut)).toEqual([true, false, true]);
+    expect(state.teams[0]).toMatchObject({ opponent: "A Grade Opposition", grade: "A Grade" });
+  });
 });

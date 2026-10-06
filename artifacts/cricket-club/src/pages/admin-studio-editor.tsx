@@ -107,6 +107,7 @@ import { useBrand } from "@/lib/brand-context";
 import {
   buildPackData,
   kindSponsors,
+  cardGrade,
   presentingSponsorName,
   tenantHashtag,
 } from "@/lib/pack-card-data";
@@ -199,18 +200,20 @@ function EditorApp({ draftId }: { draftId: number }) {
   const packId =
     draft.packId ?? resolvePackIdForKind(templatesQ.data as CardTemplate[] | undefined, input.kind);
 
+  // A team list carries its team's own sponsor.
+  const grade = cardGrade(input);
   const data = useMemo(
     () => ({
       ...buildPackData({
         brand: bundle?.brand ?? brand,
         hashtag: tenantHashtag(bundle),
-        sponsors: kindSponsors(bundle, input.kind, true),
+        sponsors: kindSponsors(bundle, input.kind, true, grade),
         presentingSponsorName: presentingSponsorName(bundle, true),
         packColourModes: bundle?.settings.packColourModes,
       }),
       photoUrl: draft.photoUrl ?? undefined,
     }),
-    [bundle, brand, input.kind, draft.photoUrl],
+    [bundle, brand, input.kind, grade, draft.photoUrl],
   );
 
   const saved = (draft.adjustments ?? {}) as CardAdjustments;

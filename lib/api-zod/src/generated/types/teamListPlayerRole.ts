@@ -7,13 +7,15 @@
  */
 
 /**
- * Captain / wicket-keeper marker
+ * Captain / vice-captain / wicket-keeper marker
  */
 export type TeamListPlayerRole = typeof TeamListPlayerRole[keyof typeof TeamListPlayerRole];
 
 
 export const TeamListPlayerRole = {
   C: 'C',
+  VC: 'VC',
   WK: 'WK',
   'C/WK': 'C/WK',
+  'VC/WK': 'VC/WK',
 } as const;

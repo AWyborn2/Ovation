@@ -3438,6 +3438,8 @@ export interface Sponsor {
   activeTo?: string | null;
   /** Card types this sponsor may appear on. Empty = all cards. */
   cardKinds: CardKind[];
+  /** Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own. */
+  grades?: string[];
   /** The tenant's designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards' "presented by <sponsor>" line; none set → that line renders empty. */
   isPresenting: boolean;
   displayOrder: number;
@@ -3452,6 +3454,8 @@ export interface SponsorInput {
   /** @nullable */
   activeTo?: string | null;
   cardKinds?: CardKind[];
+  /** The grades whose team-list cards show this sponsor as their one logo. */
+  grades?: string[];
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;
@@ -3466,6 +3470,8 @@ export interface SponsorUpdate {
   /** @nullable */
   activeTo?: string | null;
   cardKinds?: CardKind[];
+  /** The grades whose team-list cards show this sponsor as their one logo. */
+  grades?: string[];
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;
@@ -6739,15 +6745,17 @@ export interface UpdateFixtureBody {
 }
 
 /**
- * Captain / wicket-keeper marker
+ * Captain / vice-captain / wicket-keeper marker
  */
 export type TeamListPlayerRole = typeof TeamListPlayerRole[keyof typeof TeamListPlayerRole];
 
 
 export const TeamListPlayerRole = {
   C: 'C',
+  VC: 'VC',
   WK: 'WK',
   'C/WK': 'C/WK',
+  'VC/WK': 'VC/WK',
 } as const;
 
 export interface TeamListPlayer {
@@ -6760,8 +6768,10 @@ export interface TeamListPlayer {
   playerId?: number | null;
   /** @minLength 1 */
   displayName: string;
-  /** Captain / wicket-keeper marker */
+  /** Captain / vice-captain / wicket-keeper marker */
   role?: TeamListPlayerRole;
+  /** Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds). */
+  debut?: boolean;
 }
 
 export interface TeamList {
@@ -6770,6 +6780,8 @@ export interface TeamList {
   players: TeamListPlayer[];
   isPublished: boolean;
   createdAt: string;
+  /** Players in this list the match records say have never played a senior game for the club (automatic debut). An admin's `debut` on a player overrides it. */
+  debutPlayerIds?: number[];
 }
 
 export interface PutTeamListBody {

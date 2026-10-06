@@ -8,7 +8,12 @@ import {
   type SocialSettingsRow,
 } from "@workspace/db";
 import type { MatchDetail } from "@workspace/api-zod";
-import { gradeTile, isJuniorGradeLabel, matchToSummaryInput } from "@workspace/scorecard";
+import {
+  gradeTile,
+  groupOfGrade,
+  isJuniorGradeLabel,
+  matchToSummaryInput,
+} from "@workspace/scorecard";
 import { loadCentralMatchDetail } from "../match-detail";
 import { inClubGradeOrder } from "../club-grade-order";
 import { familyAllows, resolveFamilyConfig } from "../social-families";
@@ -23,7 +28,7 @@ import {
   roundResultsCarouselOn,
 } from "../round-schedules";
 import { formatFixtureTime } from "./match-day";
-import { teamListToCardInput } from "./team-list";
+import { loadAutoDebuts, teamListToCardInput } from "./team-list";
 
 /**
  * Round sets on a schedule (balanced card sets, plan 2026-10-01-001 U5): a
@@ -77,23 +82,48 @@ export type FixtureRoundGroup = {
   key: string;
   roundLabel: string;
   junior: boolean;
+  /** Team lists only: whose teams these are (men's and women's post apart). */
+  audience?: RoundAudience;
   /** Earliest start first. */
   fixtures: FixtureRow[];
 };
 
+export type RoundAudience = "men" | "women" | "junior";
+
+/** Whose team a grade is: women's and girls' grades apart, everything else senior is men's. */
+export function audienceOfGrade(grade: string): RoundAudience {
+  const g = groupOfGrade(grade);
+  return g === "junior" ? "junior" : g === "women" ? "women" : "men";
+}
+
+/** The cover's word for an audience ("MEN'S TEAMS NAMED"). */
+export const AUDIENCE_LABEL: Record<RoundAudience, string> = {
+  men: "MEN'S",
+  women: "WOMEN'S",
+  junior: "JUNIOR",
+};
+
 /**
  * Fixtures → rounds: the same round label on the same weekend, seniors and
- * juniors apart (the Studio's "this round's fixtures" grouping).
+ * juniors apart (the Studio's "this round's fixtures" grouping). With
+ * `byAudience` (team lists), men's and women's teams are apart too; the men's
+ * key stays "senior", so a round already drafted before the split keeps its
+ * draft.
  */
-export function groupFixtureRounds(fixtures: readonly FixtureRow[]): FixtureRoundGroup[] {
+export function groupFixtureRounds(
+  fixtures: readonly FixtureRow[],
+  opts: { byAudience?: boolean } = {},
+): FixtureRoundGroup[] {
   const groups = new Map<string, FixtureRoundGroup>();
   for (const f of fixtures) {
     const roundLabel = (f.roundLabel ?? "").trim().toUpperCase();
     const junior = isJuniorGradeLabel(f.grade);
-    const key = `${weekendOf(f.startAt)}:${roundLabel || "ROUND"}:${junior ? "junior" : "senior"}`;
+    const audience = opts.byAudience ? audienceOfGrade(f.grade) : undefined;
+    const section = junior ? "junior" : audience === "women" ? "women" : "senior";
+    const key = `${weekendOf(f.startAt)}:${roundLabel || "ROUND"}:${section}`;
     let g = groups.get(key);
     if (!g) {
-      g = { key, roundLabel, junior, fixtures: [] };
+      g = { key, roundLabel, junior, ...(audience ? { audience } : {}), fixtures: [] };
       groups.set(key, g);
     }
     g.fixtures.push(f);
@@ -126,6 +156,7 @@ async function scheduledRounds(
   now: Date,
   anchor: Date,
   allows: (grade: string, junior: boolean) => boolean,
+  opts: { byAudience?: boolean } = {},
 ): Promise<FixtureRoundGroup[]> {
   const fixtures = await db
     .select()
@@ -139,6 +170,7 @@ async function scheduledRounds(
     );
   return groupFixtureRounds(
     fixtures.filter((f) => allows(f.grade, isJuniorGradeLabel(f.grade))),
+    opts,
   ).filter((r) => (r.fixtures[0]?.startAt.getTime() ?? 0) > now.getTime());
 }
 
@@ -186,8 +218,13 @@ export async function generateRoundTeamListDrafts(
   if (!families.matchday.enabled || schedule.mode !== "perRound") return result;
 
   const anchor = lastScheduledAt(now, schedule);
-  const rounds = await scheduledRounds(tenantId, now, anchor, (g, j) =>
-    familyAllows(families, "matchday", g, j),
+  // Men's and women's teams post as their own sets (juniors apart as always).
+  const rounds = await scheduledRounds(
+    tenantId,
+    now,
+    anchor,
+    (g, j) => familyAllows(families, "matchday", g, j),
+    { byAudience: true },
   );
   if (rounds.length === 0) return result;
 
@@ -198,13 +235,15 @@ export async function generateRoundTeamListDrafts(
   const byFixture = new Map(lists.map((l) => [l.fixtureId, l.players]));
 
   for (const round of rounds) {
-    const teams = round.fixtures.flatMap((f) => {
+    const teams: Record<string, unknown>[] = [];
+    for (const f of round.fixtures) {
       const players = byFixture.get(f.id);
-      if (!players) return [];
+      if (!players) continue;
       // Each team is exactly the fixture's own team-list card (fill-ins excluded).
-      const { kind: _kind, ...team } = teamListToCardInput(f, players);
-      return (team.players as unknown[]).length > 0 ? [team] : [];
-    });
+      const debuts = await loadAutoDebuts(tenantId, players, f.startAt);
+      const { kind: _kind, ...team } = teamListToCardInput(f, players, debuts);
+      if ((team.players as unknown[]).length > 0) teams.push(team);
+    }
     if (teams.length === 0) continue;
     const { action } = await upsertDraftByKey({
       tenantId,
@@ -215,6 +254,7 @@ export async function generateRoundTeamListDrafts(
         kind: "teamListRound",
         roundLabel: round.roundLabel,
         date: round.fixtures[0] ? formatRoundDate(round.fixtures[0].startAt) : "",
+        ...(round.audience ? { audience: AUDIENCE_LABEL[round.audience] } : {}),
         teams,
       },
       appPath: "/fixtures",
