@@ -56,6 +56,7 @@ import billingRouter from "./billing";
 import squadRouter from "./squad";
 import availabilitySettingsRouter from "./availability-settings";
 import selectionRouter from "./selection";
+import availabilityRespondRouter from "./availability-respond";
 
 const router: IRouter = Router();
 
@@ -116,5 +117,6 @@ router.use(billingRouter);
 router.use(squadRouter);
 router.use(availabilitySettingsRouter);
 router.use(selectionRouter);
+router.use(availabilityRespondRouter);
 
 export default router;

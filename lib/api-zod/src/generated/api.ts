@@ -3380,6 +3380,342 @@ export const RemindSelectionNonRespondersResponse = zod.object({
 
 
 /**
+ * The token resolves to one recipient (account holder or guardian) of one
+member in one round. Returns that member's dates for the round with the
+current answers, their future away periods, this recipient's own
+contact (masked), and once their side is final, the match. An unknown,
+expired or revoked token, or one of another club, is a 404 without
+detail. Rate-limited by IP.
+
+ * @summary The player's availability page for one personal link (no login)
+ */
+export const getAvailabilityResponsePathTokenMax = 128;
+
+
+
+export const GetAvailabilityResponseParams = zod.object({
+  "token": zod.coerce.string().min(1).max(getAvailabilityResponsePathTokenMax).describe('The personal link token (never logged)')
+})
+
+export const GetAvailabilityResponseResponse = zod.object({
+  "clubName": zod.string(),
+  "clubShortName": zod.string().nullable(),
+  "logoUrl": zod.string().nullable(),
+  "primaryColour": zod.string().nullable(),
+  "firstName": zod.string().describe('The member\'s preferred (or first) name'),
+  "displayName": zod.string(),
+  "recipientSlot": zod.enum(['account', 'guardian1', 'guardian2']).describe('Who a personal link was sent to — the account holder (adults) or a guardian'),
+  "self": zod.boolean().describe('True when the link went to the player themself rather than a guardian'),
+  "weekendDate": zod.string().describe('The round\'s Saturday, YYYY-MM-DD'),
+  "dates": zod.array(zod.object({
+  "date": zod.string().describe('Perth date, YYYY-MM-DD'),
+  "status": zod.union([zod.enum(['yes', 'no', 'maybe']),zod.null()]).describe('The current answer; null when nobody has answered'),
+  "note": zod.string().nullable(),
+  "late": zod.boolean().describe('Answered after cut-off'),
+  "locked": zod.boolean().describe('The member is in a finalised side on this date, so the answer can\'t change')
+})),
+  "away": zod.array(zod.object({
+  "id": zod.number(),
+  "fromDate": zod.string(),
+  "toDate": zod.string()
+})).describe('Away periods that haven\'t ended yet'),
+  "contact": zod.object({
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable()
+}).describe('This recipient\'s contact, masked (e.g. \"04xx xxx 678\", \"j\*\*\*@example.com\")'),
+  "selection": zod.union([zod.object({
+  "grade": zod.string(),
+  "opponent": zod.string(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+}),zod.null()]).describe('The match, once the member is in a finalised side this round'),
+  "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
+  "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
+  "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+})
+
+
+/**
+ * Each date must be one the member is asked about this round. Either
+guardian may answer and the latest answer wins. Answers after cut-off
+are kept and marked late. A date on which the member is in a finalised
+side can't be changed (409); only "can't make it" is allowed then.
+
+ * @summary Save Yes / No / Maybe answers for the member's dates
+ */
+export const saveAvailabilityAnswersPathTokenMax = 128;
+
+
+
+export const SaveAvailabilityAnswersParams = zod.object({
+  "token": zod.coerce.string().min(1).max(saveAvailabilityAnswersPathTokenMax).describe('The personal link token (never logged)')
+})
+
+export const saveAvailabilityAnswersBodyAnswersItemDateRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+export const saveAvailabilityAnswersBodyAnswersItemNoteMax = 280;
+
+export const saveAvailabilityAnswersBodyAnswersMax = 7;
+
+
+
+export const SaveAvailabilityAnswersBody = zod.object({
+  "answers": zod.array(zod.object({
+  "date": zod.string().regex(saveAvailabilityAnswersBodyAnswersItemDateRegExp),
+  "status": zod.enum(['yes', 'no', 'maybe']),
+  "note": zod.string().max(saveAvailabilityAnswersBodyAnswersItemNoteMax).nullish()
+})).min(1).max(saveAvailabilityAnswersBodyAnswersMax)
+})
+
+export const SaveAvailabilityAnswersResponse = zod.object({
+  "clubName": zod.string(),
+  "clubShortName": zod.string().nullable(),
+  "logoUrl": zod.string().nullable(),
+  "primaryColour": zod.string().nullable(),
+  "firstName": zod.string().describe('The member\'s preferred (or first) name'),
+  "displayName": zod.string(),
+  "recipientSlot": zod.enum(['account', 'guardian1', 'guardian2']).describe('Who a personal link was sent to — the account holder (adults) or a guardian'),
+  "self": zod.boolean().describe('True when the link went to the player themself rather than a guardian'),
+  "weekendDate": zod.string().describe('The round\'s Saturday, YYYY-MM-DD'),
+  "dates": zod.array(zod.object({
+  "date": zod.string().describe('Perth date, YYYY-MM-DD'),
+  "status": zod.union([zod.enum(['yes', 'no', 'maybe']),zod.null()]).describe('The current answer; null when nobody has answered'),
+  "note": zod.string().nullable(),
+  "late": zod.boolean().describe('Answered after cut-off'),
+  "locked": zod.boolean().describe('The member is in a finalised side on this date, so the answer can\'t change')
+})),
+  "away": zod.array(zod.object({
+  "id": zod.number(),
+  "fromDate": zod.string(),
+  "toDate": zod.string()
+})).describe('Away periods that haven\'t ended yet'),
+  "contact": zod.object({
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable()
+}).describe('This recipient\'s contact, masked (e.g. \"04xx xxx 678\", \"j\*\*\*@example.com\")'),
+  "selection": zod.union([zod.object({
+  "grade": zod.string(),
+  "opponent": zod.string(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+}),zod.null()]).describe('The match, once the member is in a finalised side this round'),
+  "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
+  "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
+  "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+})
+
+
+/**
+ * Inclusive dates, not in the past, at most 120 days long. Weekends the
+period covers are recorded as unavailable and not asked about again;
+dates of this round it covers are answered No.
+
+ * @summary Mark future dates the member will be away
+ */
+export const addAvailabilityAwayPathTokenMax = 128;
+
+
+
+export const AddAvailabilityAwayParams = zod.object({
+  "token": zod.coerce.string().min(1).max(addAvailabilityAwayPathTokenMax).describe('The personal link token (never logged)')
+})
+
+export const addAvailabilityAwayBodyFromDateRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+export const addAvailabilityAwayBodyToDateRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+
+
+export const AddAvailabilityAwayBody = zod.object({
+  "fromDate": zod.string().regex(addAvailabilityAwayBodyFromDateRegExp),
+  "toDate": zod.string().regex(addAvailabilityAwayBodyToDateRegExp)
+})
+
+
+/**
+ * @summary Remove one of the member's away periods
+ */
+export const removeAvailabilityAwayPathTokenMax = 128;
+
+
+
+export const RemoveAvailabilityAwayParams = zod.object({
+  "token": zod.coerce.string().min(1).max(removeAvailabilityAwayPathTokenMax).describe('The personal link token (never logged)'),
+  "awayId": zod.coerce.number()
+})
+
+export const RemoveAvailabilityAwayResponse = zod.object({
+  "clubName": zod.string(),
+  "clubShortName": zod.string().nullable(),
+  "logoUrl": zod.string().nullable(),
+  "primaryColour": zod.string().nullable(),
+  "firstName": zod.string().describe('The member\'s preferred (or first) name'),
+  "displayName": zod.string(),
+  "recipientSlot": zod.enum(['account', 'guardian1', 'guardian2']).describe('Who a personal link was sent to — the account holder (adults) or a guardian'),
+  "self": zod.boolean().describe('True when the link went to the player themself rather than a guardian'),
+  "weekendDate": zod.string().describe('The round\'s Saturday, YYYY-MM-DD'),
+  "dates": zod.array(zod.object({
+  "date": zod.string().describe('Perth date, YYYY-MM-DD'),
+  "status": zod.union([zod.enum(['yes', 'no', 'maybe']),zod.null()]).describe('The current answer; null when nobody has answered'),
+  "note": zod.string().nullable(),
+  "late": zod.boolean().describe('Answered after cut-off'),
+  "locked": zod.boolean().describe('The member is in a finalised side on this date, so the answer can\'t change')
+})),
+  "away": zod.array(zod.object({
+  "id": zod.number(),
+  "fromDate": zod.string(),
+  "toDate": zod.string()
+})).describe('Away periods that haven\'t ended yet'),
+  "contact": zod.object({
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable()
+}).describe('This recipient\'s contact, masked (e.g. \"04xx xxx 678\", \"j\*\*\*@example.com\")'),
+  "selection": zod.union([zod.object({
+  "grade": zod.string(),
+  "opponent": zod.string(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+}),zod.null()]).describe('The match, once the member is in a finalised side this round'),
+  "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
+  "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
+  "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+})
+
+
+/**
+ * Changes only the contact of the recipient the link was sent to. A
+notice goes to the previous mobile and email, the change is flagged for
+the club's admins, and every other live link of this recipient for the
+round stops working (this one keeps working). A new mobile clears that
+contact's SMS opt-out. The contact is returned masked.
+
+ * @summary Correct this recipient's own mobile or email
+ */
+export const updateAvailabilityContactPathTokenMax = 128;
+
+
+
+export const UpdateAvailabilityContactParams = zod.object({
+  "token": zod.coerce.string().min(1).max(updateAvailabilityContactPathTokenMax).describe('The personal link token (never logged)')
+})
+
+export const updateAvailabilityContactBodyMobileMax = 32;
+
+export const updateAvailabilityContactBodyEmailMin = 3;
+export const updateAvailabilityContactBodyEmailMax = 254;
+
+
+
+export const UpdateAvailabilityContactBody = zod.object({
+  "mobile": zod.string().min(1).max(updateAvailabilityContactBodyMobileMax).optional(),
+  "email": zod.string().min(updateAvailabilityContactBodyEmailMin).max(updateAvailabilityContactBodyEmailMax).optional()
+}).describe('At least one of mobile or email; omitted fields are unchanged')
+
+export const UpdateAvailabilityContactResponse = zod.object({
+  "clubName": zod.string(),
+  "clubShortName": zod.string().nullable(),
+  "logoUrl": zod.string().nullable(),
+  "primaryColour": zod.string().nullable(),
+  "firstName": zod.string().describe('The member\'s preferred (or first) name'),
+  "displayName": zod.string(),
+  "recipientSlot": zod.enum(['account', 'guardian1', 'guardian2']).describe('Who a personal link was sent to — the account holder (adults) or a guardian'),
+  "self": zod.boolean().describe('True when the link went to the player themself rather than a guardian'),
+  "weekendDate": zod.string().describe('The round\'s Saturday, YYYY-MM-DD'),
+  "dates": zod.array(zod.object({
+  "date": zod.string().describe('Perth date, YYYY-MM-DD'),
+  "status": zod.union([zod.enum(['yes', 'no', 'maybe']),zod.null()]).describe('The current answer; null when nobody has answered'),
+  "note": zod.string().nullable(),
+  "late": zod.boolean().describe('Answered after cut-off'),
+  "locked": zod.boolean().describe('The member is in a finalised side on this date, so the answer can\'t change')
+})),
+  "away": zod.array(zod.object({
+  "id": zod.number(),
+  "fromDate": zod.string(),
+  "toDate": zod.string()
+})).describe('Away periods that haven\'t ended yet'),
+  "contact": zod.object({
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable()
+}).describe('This recipient\'s contact, masked (e.g. \"04xx xxx 678\", \"j\*\*\*@example.com\")'),
+  "selection": zod.union([zod.object({
+  "grade": zod.string(),
+  "opponent": zod.string(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+}),zod.null()]).describe('The match, once the member is in a finalised side this round'),
+  "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
+  "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
+  "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+})
+
+
+/**
+ * Re-opens the member's slot as a gap "withdrew", returns the side to
+draft, removes them from the published team list (the rest stays
+published), records No for the match date and alerts the captains and
+admins.
+
+ * @summary "Can't make it" from a selected player
+ */
+export const withdrawAvailabilityPathTokenMax = 128;
+
+
+
+export const WithdrawAvailabilityParams = zod.object({
+  "token": zod.coerce.string().min(1).max(withdrawAvailabilityPathTokenMax).describe('The personal link token (never logged)')
+})
+
+export const WithdrawAvailabilityResponse = zod.object({
+  "clubName": zod.string(),
+  "clubShortName": zod.string().nullable(),
+  "logoUrl": zod.string().nullable(),
+  "primaryColour": zod.string().nullable(),
+  "firstName": zod.string().describe('The member\'s preferred (or first) name'),
+  "displayName": zod.string(),
+  "recipientSlot": zod.enum(['account', 'guardian1', 'guardian2']).describe('Who a personal link was sent to — the account holder (adults) or a guardian'),
+  "self": zod.boolean().describe('True when the link went to the player themself rather than a guardian'),
+  "weekendDate": zod.string().describe('The round\'s Saturday, YYYY-MM-DD'),
+  "dates": zod.array(zod.object({
+  "date": zod.string().describe('Perth date, YYYY-MM-DD'),
+  "status": zod.union([zod.enum(['yes', 'no', 'maybe']),zod.null()]).describe('The current answer; null when nobody has answered'),
+  "note": zod.string().nullable(),
+  "late": zod.boolean().describe('Answered after cut-off'),
+  "locked": zod.boolean().describe('The member is in a finalised side on this date, so the answer can\'t change')
+})),
+  "away": zod.array(zod.object({
+  "id": zod.number(),
+  "fromDate": zod.string(),
+  "toDate": zod.string()
+})).describe('Away periods that haven\'t ended yet'),
+  "contact": zod.object({
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable()
+}).describe('This recipient\'s contact, masked (e.g. \"04xx xxx 678\", \"j\*\*\*@example.com\")'),
+  "selection": zod.union([zod.object({
+  "grade": zod.string(),
+  "opponent": zod.string(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+}),zod.null()]).describe('The match, once the member is in a finalised side this round'),
+  "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
+  "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
+  "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+})
+
+
+/**
  * @summary List per-season voting configs for an award (admin)
  */
 export const ListAwardVotingConfigsParams = zod.object({

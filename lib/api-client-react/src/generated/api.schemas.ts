@@ -3286,6 +3286,153 @@ export interface SelectionRemindBody {
   section: SquadSection;
 }
 
+/**
+ * Who a personal link was sent to — the account holder (adults) or a guardian
+ */
+export type AvailabilityRecipientSlot = typeof AvailabilityRecipientSlot[keyof typeof AvailabilityRecipientSlot];
+
+
+export const AvailabilityRecipientSlot = {
+  account: 'account',
+  guardian1: 'guardian1',
+  guardian2: 'guardian2',
+} as const;
+
+export type AvailabilityStatus = typeof AvailabilityStatus[keyof typeof AvailabilityStatus];
+
+
+export const AvailabilityStatus = {
+  yes: 'yes',
+  no: 'no',
+  maybe: 'maybe',
+} as const;
+
+export interface AvailabilityDateAnswer {
+  /** Perth date, YYYY-MM-DD */
+  date: string;
+  /** The current answer; null when nobody has answered */
+  status: AvailabilityStatus | null;
+  /** @nullable */
+  note: string | null;
+  /** Answered after cut-off */
+  late: boolean;
+  /** The member is in a finalised side on this date, so the answer can't change */
+  locked: boolean;
+}
+
+export interface AvailabilityAwayPeriod {
+  id: number;
+  fromDate: string;
+  toDate: string;
+}
+
+/**
+ * This recipient's contact, masked (e.g. "04xx xxx 678", "j***@example.com")
+ */
+export interface AvailabilityMaskedContact {
+  /** @nullable */
+  mobile: string | null;
+  /** @nullable */
+  email: string | null;
+}
+
+/**
+ * @nullable
+ */
+export type AvailabilityMatchRole = typeof AvailabilityMatchRole[keyof typeof AvailabilityMatchRole] | null;
+
+
+export const AvailabilityMatchRole = {
+  C: 'C',
+  WK: 'WK',
+  'C/WK': 'C/WK',
+} as const;
+
+export interface AvailabilityMatch {
+  grade: string;
+  opponent: string;
+  /** @nullable */
+  venue: string | null;
+  startAt: string;
+  isHome: boolean;
+  /** @nullable */
+  role: AvailabilityMatchRole;
+}
+
+export interface AvailabilityResponsePage {
+  clubName: string;
+  /** @nullable */
+  clubShortName: string | null;
+  /** @nullable */
+  logoUrl: string | null;
+  /** @nullable */
+  primaryColour: string | null;
+  /** The member's preferred (or first) name */
+  firstName: string;
+  displayName: string;
+  recipientSlot: AvailabilityRecipientSlot;
+  /** True when the link went to the player themself rather than a guardian */
+  self: boolean;
+  /** The round's Saturday, YYYY-MM-DD */
+  weekendDate: string;
+  dates: AvailabilityDateAnswer[];
+  /** Away periods that haven't ended yet */
+  away: AvailabilityAwayPeriod[];
+  contact: AvailabilityMaskedContact;
+  /** The match, once the member is in a finalised side this round */
+  selection: AvailabilityMatch | null;
+  /** The member is in a side this round, so "can't make it" is offered */
+  canWithdraw: boolean;
+  /** The member's side is final; only "can't make it" is allowed */
+  locked: boolean;
+  /** The member withdrew from their side this round */
+  withdrawn: boolean;
+  /** Cut-off has passed; new answers are marked late */
+  late: boolean;
+}
+
+export type AvailabilityAnswersInputAnswersItem = {
+  /** @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ */
+  date: string;
+  status: AvailabilityStatus;
+  /**
+     * @maxLength 280
+     * @nullable
+     */
+  note?: string | null;
+};
+
+export interface AvailabilityAnswersInput {
+  /**
+     * @minItems 1
+     * @maxItems 7
+     */
+  answers: AvailabilityAnswersInputAnswersItem[];
+}
+
+export interface AvailabilityAwayInput {
+  /** @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ */
+  fromDate: string;
+  /** @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ */
+  toDate: string;
+}
+
+/**
+ * At least one of mobile or email; omitted fields are unchanged
+ */
+export interface AvailabilityContactInput {
+  /**
+     * @minLength 1
+     * @maxLength 32
+     */
+  mobile?: string;
+  /**
+     * @minLength 3
+     * @maxLength 254
+     */
+  email?: string;
+}
+
 export interface AwardVotingConfig {
   id: number;
   awardId: number;

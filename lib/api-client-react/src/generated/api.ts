@@ -29,6 +29,10 @@ import type {
   AdminUpdate,
   AutoseedCardSetBody,
   AutoseedCardSetResult,
+  AvailabilityAnswersInput,
+  AvailabilityAwayInput,
+  AvailabilityContactInput,
+  AvailabilityResponsePage,
   AvailabilityRoundStatus,
   AvailabilitySettings,
   AvailabilitySettingsInput,
@@ -7663,6 +7667,468 @@ export const useRemindSelectionNonResponders = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRemindSelectionNonRespondersMutationOptions(options));
+    }
+
+export const getGetAvailabilityResponseUrl = (token: string,) => {
+
+
+
+
+  return `/api/availability/respond/${token}`
+}
+
+/**
+ * The token resolves to one recipient (account holder or guardian) of one
+member in one round. Returns that member's dates for the round with the
+current answers, their future away periods, this recipient's own
+contact (masked), and once their side is final, the match. An unknown,
+expired or revoked token, or one of another club, is a 404 without
+detail. Rate-limited by IP.
+
+ * @summary The player's availability page for one personal link (no login)
+ */
+export const getAvailabilityResponse = async (token: string, options?: RequestInit): Promise<AvailabilityResponsePage> => {
+
+  return customFetch<AvailabilityResponsePage>(getGetAvailabilityResponseUrl(token),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAvailabilityResponseQueryKey = (token: string,) => {
+    return [
+    `/api/availability/respond/${token}`
+    ] as const;
+    }
+
+
+export const getGetAvailabilityResponseQueryOptions = <TData = Awaited<ReturnType<typeof getAvailabilityResponse>>, TError = ErrorType<void>>(token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAvailabilityResponse>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAvailabilityResponseQueryKey(token);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAvailabilityResponse>>> = ({ signal }) => getAvailabilityResponse(token, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(token), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAvailabilityResponse>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAvailabilityResponseQueryResult = NonNullable<Awaited<ReturnType<typeof getAvailabilityResponse>>>
+export type GetAvailabilityResponseQueryError = ErrorType<void>
+
+
+/**
+ * @summary The player's availability page for one personal link (no login)
+ */
+
+export function useGetAvailabilityResponse<TData = Awaited<ReturnType<typeof getAvailabilityResponse>>, TError = ErrorType<void>>(
+ token: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAvailabilityResponse>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAvailabilityResponseQueryOptions(token,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveAvailabilityAnswersUrl = (token: string,) => {
+
+
+
+
+  return `/api/availability/respond/${token}`
+}
+
+/**
+ * Each date must be one the member is asked about this round. Either
+guardian may answer and the latest answer wins. Answers after cut-off
+are kept and marked late. A date on which the member is in a finalised
+side can't be changed (409); only "can't make it" is allowed then.
+
+ * @summary Save Yes / No / Maybe answers for the member's dates
+ */
+export const saveAvailabilityAnswers = async (token: string,
+    availabilityAnswersInput: AvailabilityAnswersInput, options?: RequestInit): Promise<AvailabilityResponsePage> => {
+
+  return customFetch<AvailabilityResponsePage>(getSaveAvailabilityAnswersUrl(token),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      availabilityAnswersInput,)
+  }
+);}
+
+
+
+
+export const getSaveAvailabilityAnswersMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveAvailabilityAnswers>>, TError,{token: string;data: BodyType<AvailabilityAnswersInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveAvailabilityAnswers>>, TError,{token: string;data: BodyType<AvailabilityAnswersInput>}, TContext> => {
+
+const mutationKey = ['saveAvailabilityAnswers'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveAvailabilityAnswers>>, {token: string;data: BodyType<AvailabilityAnswersInput>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  saveAvailabilityAnswers(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveAvailabilityAnswersMutationResult = NonNullable<Awaited<ReturnType<typeof saveAvailabilityAnswers>>>
+    export type SaveAvailabilityAnswersMutationBody = BodyType<AvailabilityAnswersInput>
+    export type SaveAvailabilityAnswersMutationError = ErrorType<void>
+
+    /**
+ * @summary Save Yes / No / Maybe answers for the member's dates
+ */
+export const useSaveAvailabilityAnswers = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveAvailabilityAnswers>>, TError,{token: string;data: BodyType<AvailabilityAnswersInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveAvailabilityAnswers>>,
+        TError,
+        {token: string;data: BodyType<AvailabilityAnswersInput>},
+        TContext
+      > => {
+      return useMutation(getSaveAvailabilityAnswersMutationOptions(options));
+    }
+
+export const getAddAvailabilityAwayUrl = (token: string,) => {
+
+
+
+
+  return `/api/availability/respond/${token}/away`
+}
+
+/**
+ * Inclusive dates, not in the past, at most 120 days long. Weekends the
+period covers are recorded as unavailable and not asked about again;
+dates of this round it covers are answered No.
+
+ * @summary Mark future dates the member will be away
+ */
+export const addAvailabilityAway = async (token: string,
+    availabilityAwayInput: AvailabilityAwayInput, options?: RequestInit): Promise<AvailabilityResponsePage> => {
+
+  return customFetch<AvailabilityResponsePage>(getAddAvailabilityAwayUrl(token),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      availabilityAwayInput,)
+  }
+);}
+
+
+
+
+export const getAddAvailabilityAwayMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addAvailabilityAway>>, TError,{token: string;data: BodyType<AvailabilityAwayInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addAvailabilityAway>>, TError,{token: string;data: BodyType<AvailabilityAwayInput>}, TContext> => {
+
+const mutationKey = ['addAvailabilityAway'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addAvailabilityAway>>, {token: string;data: BodyType<AvailabilityAwayInput>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  addAvailabilityAway(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddAvailabilityAwayMutationResult = NonNullable<Awaited<ReturnType<typeof addAvailabilityAway>>>
+    export type AddAvailabilityAwayMutationBody = BodyType<AvailabilityAwayInput>
+    export type AddAvailabilityAwayMutationError = ErrorType<void>
+
+    /**
+ * @summary Mark future dates the member will be away
+ */
+export const useAddAvailabilityAway = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addAvailabilityAway>>, TError,{token: string;data: BodyType<AvailabilityAwayInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addAvailabilityAway>>,
+        TError,
+        {token: string;data: BodyType<AvailabilityAwayInput>},
+        TContext
+      > => {
+      return useMutation(getAddAvailabilityAwayMutationOptions(options));
+    }
+
+export const getRemoveAvailabilityAwayUrl = (token: string,
+    awayId: number,) => {
+
+
+
+
+  return `/api/availability/respond/${token}/away/${awayId}`
+}
+
+/**
+ * @summary Remove one of the member's away periods
+ */
+export const removeAvailabilityAway = async (token: string,
+    awayId: number, options?: RequestInit): Promise<AvailabilityResponsePage> => {
+
+  return customFetch<AvailabilityResponsePage>(getRemoveAvailabilityAwayUrl(token,awayId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveAvailabilityAwayMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeAvailabilityAway>>, TError,{token: string;awayId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeAvailabilityAway>>, TError,{token: string;awayId: number}, TContext> => {
+
+const mutationKey = ['removeAvailabilityAway'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeAvailabilityAway>>, {token: string;awayId: number}> = (props) => {
+          const {token,awayId} = props ?? {};
+
+          return  removeAvailabilityAway(token,awayId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveAvailabilityAwayMutationResult = NonNullable<Awaited<ReturnType<typeof removeAvailabilityAway>>>
+
+    export type RemoveAvailabilityAwayMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove one of the member's away periods
+ */
+export const useRemoveAvailabilityAway = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeAvailabilityAway>>, TError,{token: string;awayId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeAvailabilityAway>>,
+        TError,
+        {token: string;awayId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveAvailabilityAwayMutationOptions(options));
+    }
+
+export const getUpdateAvailabilityContactUrl = (token: string,) => {
+
+
+
+
+  return `/api/availability/respond/${token}/contact`
+}
+
+/**
+ * Changes only the contact of the recipient the link was sent to. A
+notice goes to the previous mobile and email, the change is flagged for
+the club's admins, and every other live link of this recipient for the
+round stops working (this one keeps working). A new mobile clears that
+contact's SMS opt-out. The contact is returned masked.
+
+ * @summary Correct this recipient's own mobile or email
+ */
+export const updateAvailabilityContact = async (token: string,
+    availabilityContactInput: AvailabilityContactInput, options?: RequestInit): Promise<AvailabilityResponsePage> => {
+
+  return customFetch<AvailabilityResponsePage>(getUpdateAvailabilityContactUrl(token),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      availabilityContactInput,)
+  }
+);}
+
+
+
+
+export const getUpdateAvailabilityContactMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAvailabilityContact>>, TError,{token: string;data: BodyType<AvailabilityContactInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAvailabilityContact>>, TError,{token: string;data: BodyType<AvailabilityContactInput>}, TContext> => {
+
+const mutationKey = ['updateAvailabilityContact'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAvailabilityContact>>, {token: string;data: BodyType<AvailabilityContactInput>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  updateAvailabilityContact(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAvailabilityContactMutationResult = NonNullable<Awaited<ReturnType<typeof updateAvailabilityContact>>>
+    export type UpdateAvailabilityContactMutationBody = BodyType<AvailabilityContactInput>
+    export type UpdateAvailabilityContactMutationError = ErrorType<void>
+
+    /**
+ * @summary Correct this recipient's own mobile or email
+ */
+export const useUpdateAvailabilityContact = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAvailabilityContact>>, TError,{token: string;data: BodyType<AvailabilityContactInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAvailabilityContact>>,
+        TError,
+        {token: string;data: BodyType<AvailabilityContactInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateAvailabilityContactMutationOptions(options));
+    }
+
+export const getWithdrawAvailabilityUrl = (token: string,) => {
+
+
+
+
+  return `/api/availability/respond/${token}/withdraw`
+}
+
+/**
+ * Re-opens the member's slot as a gap "withdrew", returns the side to
+draft, removes them from the published team list (the rest stays
+published), records No for the match date and alerts the captains and
+admins.
+
+ * @summary "Can't make it" from a selected player
+ */
+export const withdrawAvailability = async (token: string, options?: RequestInit): Promise<AvailabilityResponsePage> => {
+
+  return customFetch<AvailabilityResponsePage>(getWithdrawAvailabilityUrl(token),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getWithdrawAvailabilityMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdrawAvailability>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof withdrawAvailability>>, TError,{token: string}, TContext> => {
+
+const mutationKey = ['withdrawAvailability'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof withdrawAvailability>>, {token: string}> = (props) => {
+          const {token} = props ?? {};
+
+          return  withdrawAvailability(token,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type WithdrawAvailabilityMutationResult = NonNullable<Awaited<ReturnType<typeof withdrawAvailability>>>
+
+    export type WithdrawAvailabilityMutationError = ErrorType<void>
+
+    /**
+ * @summary "Can't make it" from a selected player
+ */
+export const useWithdrawAvailability = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof withdrawAvailability>>, TError,{token: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof withdrawAvailability>>,
+        TError,
+        {token: string},
+        TContext
+      > => {
+      return useMutation(getWithdrawAvailabilityMutationOptions(options));
     }
 
 export const getListAwardVotingConfigsUrl = (id: number,) => {

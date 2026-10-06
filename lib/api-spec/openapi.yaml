@@ -62,6 +62,8 @@ tags:
     description: The weekly availability round — the club's schedule, the current round's progress and admin "Run now" steps (admin only)
   - name: selection
     description: The Selection Hub — the round board, versioned side saves, finalise and re-open, and reminders (admins and captains; never contact details)
+  - name: availability-respond
+    description: The player availability page behind a personal link (token in the path, no login; rate-limited, never logged)
 paths:
   /healthz:
     get:
@@ -2407,6 +2409,211 @@ paths:
           description: The caller can't edit any side at this club
         "409":
           description: The requests for this round haven't gone out yet
+
+  /availability/respond/{token}:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        description: The personal link token (never logged)
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+    get:
+      operationId: getAvailabilityResponse
+      tags: [availability-respond]
+      summary: The player's availability page for one personal link (no login)
+      description: |
+        The token resolves to one recipient (account holder or guardian) of one
+        member in one round. Returns that member's dates for the round with the
+        current answers, their future away periods, this recipient's own
+        contact (masked), and once their side is final, the match. An unknown,
+        expired or revoked token, or one of another club, is a 404 without
+        detail. Rate-limited by IP.
+      responses:
+        "200":
+          description: The player's page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponsePage"
+        "404":
+          description: Unknown, expired or revoked link
+        "429":
+          description: Too many requests
+    put:
+      operationId: saveAvailabilityAnswers
+      tags: [availability-respond]
+      summary: Save Yes / No / Maybe answers for the member's dates
+      description: |
+        Each date must be one the member is asked about this round. Either
+        guardian may answer and the latest answer wins. Answers after cut-off
+        are kept and marked late. A date on which the member is in a finalised
+        side can't be changed (409); only "can't make it" is allowed then.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvailabilityAnswersInput"
+      responses:
+        "200":
+          description: Saved; the updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponsePage"
+        "400":
+          description: Invalid body, or a date the member isn't asked about
+        "404":
+          description: Unknown, expired or revoked link
+        "409":
+          description: The member's side for that date is final
+        "429":
+          description: Too many requests
+
+  /availability/respond/{token}/away:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        description: The personal link token (never logged)
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+    post:
+      operationId: addAvailabilityAway
+      tags: [availability-respond]
+      summary: Mark future dates the member will be away
+      description: |
+        Inclusive dates, not in the past, at most 120 days long. Weekends the
+        period covers are recorded as unavailable and not asked about again;
+        dates of this round it covers are answered No.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvailabilityAwayInput"
+      responses:
+        "201":
+          description: Added; the updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponsePage"
+        "400":
+          description: Invalid range
+        "404":
+          description: Unknown, expired or revoked link
+        "429":
+          description: Too many requests
+
+  /availability/respond/{token}/away/{awayId}:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        description: The personal link token (never logged)
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+      - name: awayId
+        in: path
+        required: true
+        schema:
+          type: integer
+    delete:
+      operationId: removeAvailabilityAway
+      tags: [availability-respond]
+      summary: Remove one of the member's away periods
+      responses:
+        "200":
+          description: Removed; the updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponsePage"
+        "404":
+          description: Unknown link, or not this member's away period
+        "429":
+          description: Too many requests
+
+  /availability/respond/{token}/contact:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        description: The personal link token (never logged)
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+    patch:
+      operationId: updateAvailabilityContact
+      tags: [availability-respond]
+      summary: Correct this recipient's own mobile or email
+      description: |
+        Changes only the contact of the recipient the link was sent to. A
+        notice goes to the previous mobile and email, the change is flagged for
+        the club's admins, and every other live link of this recipient for the
+        round stops working (this one keeps working). A new mobile clears that
+        contact's SMS opt-out. The contact is returned masked.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvailabilityContactInput"
+      responses:
+        "200":
+          description: Saved; the updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponsePage"
+        "400":
+          description: Not an Australian mobile, not an email, or nothing to change
+        "404":
+          description: Unknown, expired or revoked link
+        "429":
+          description: Too many requests
+
+  /availability/respond/{token}/withdraw:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        description: The personal link token (never logged)
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+    post:
+      operationId: withdrawAvailability
+      tags: [availability-respond]
+      summary: '"Can''t make it" from a selected player'
+      description: |
+        Re-opens the member's slot as a gap "withdrew", returns the side to
+        draft, removes them from the published team list (the rest stays
+        published), records No for the match date and alerts the captains and
+        admins.
+      responses:
+        "200":
+          description: Withdrawn; the updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponsePage"
+        "404":
+          description: Unknown, expired or revoked link
+        "409":
+          description: The member isn't in a side this round
+        "429":
+          description: Too many requests
 
   /awards/{id}/voting:
     get:
@@ -12714,6 +12921,194 @@ components:
       properties:
         section:
           $ref: "#/components/schemas/SquadSection"
+
+    AvailabilityRecipientSlot:
+      type: string
+      enum: [account, guardian1, guardian2]
+      description: Who a personal link was sent to — the account holder (adults) or a guardian
+
+    AvailabilityStatus:
+      type: string
+      enum: ["yes", "no", "maybe"]
+
+    AvailabilityDateAnswer:
+      type: object
+      required: [date, status, note, late, locked]
+      properties:
+        date:
+          type: string
+          description: Perth date, YYYY-MM-DD
+        status:
+          oneOf:
+            - $ref: "#/components/schemas/AvailabilityStatus"
+            - type: "null"
+          description: The current answer; null when nobody has answered
+        note:
+          type: ["string", "null"]
+        late:
+          type: boolean
+          description: Answered after cut-off
+        locked:
+          type: boolean
+          description: The member is in a finalised side on this date, so the answer can't change
+
+    AvailabilityAwayPeriod:
+      type: object
+      required: [id, fromDate, toDate]
+      properties:
+        id:
+          type: integer
+        fromDate:
+          type: string
+        toDate:
+          type: string
+
+    AvailabilityMaskedContact:
+      type: object
+      description: This recipient's contact, masked (e.g. "04xx xxx 678", "j***@example.com")
+      required: [mobile, email]
+      properties:
+        mobile:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+
+    AvailabilityMatch:
+      type: object
+      required: [grade, opponent, venue, startAt, isHome, role]
+      properties:
+        grade:
+          type: string
+        opponent:
+          type: string
+        venue:
+          type: ["string", "null"]
+        startAt:
+          type: string
+          format: date-time
+        isHome:
+          type: boolean
+        role:
+          type: ["string", "null"]
+          enum: [C, WK, C/WK, null]
+
+    AvailabilityResponsePage:
+      type: object
+      required:
+        [
+          clubName,
+          clubShortName,
+          logoUrl,
+          primaryColour,
+          firstName,
+          displayName,
+          recipientSlot,
+          self,
+          weekendDate,
+          dates,
+          away,
+          contact,
+          selection,
+          canWithdraw,
+          locked,
+          withdrawn,
+          late,
+        ]
+      properties:
+        clubName:
+          type: string
+        clubShortName:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        primaryColour:
+          type: ["string", "null"]
+        firstName:
+          type: string
+          description: The member's preferred (or first) name
+        displayName:
+          type: string
+        recipientSlot:
+          $ref: "#/components/schemas/AvailabilityRecipientSlot"
+        self:
+          type: boolean
+          description: True when the link went to the player themself rather than a guardian
+        weekendDate:
+          type: string
+          description: The round's Saturday, YYYY-MM-DD
+        dates:
+          type: array
+          items:
+            $ref: "#/components/schemas/AvailabilityDateAnswer"
+        away:
+          type: array
+          description: Away periods that haven't ended yet
+          items:
+            $ref: "#/components/schemas/AvailabilityAwayPeriod"
+        contact:
+          $ref: "#/components/schemas/AvailabilityMaskedContact"
+        selection:
+          description: The match, once the member is in a finalised side this round
+          oneOf:
+            - $ref: "#/components/schemas/AvailabilityMatch"
+            - type: "null"
+        canWithdraw:
+          type: boolean
+          description: The member is in a side this round, so "can't make it" is offered
+        locked:
+          type: boolean
+          description: The member's side is final; only "can't make it" is allowed
+        withdrawn:
+          type: boolean
+          description: The member withdrew from their side this round
+        late:
+          type: boolean
+          description: Cut-off has passed; new answers are marked late
+
+    AvailabilityAnswersInput:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          minItems: 1
+          maxItems: 7
+          items:
+            type: object
+            required: [date, status]
+            properties:
+              date:
+                type: string
+                pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+              status:
+                $ref: "#/components/schemas/AvailabilityStatus"
+              note:
+                type: ["string", "null"]
+                maxLength: 280
+
+    AvailabilityAwayInput:
+      type: object
+      required: [fromDate, toDate]
+      properties:
+        fromDate:
+          type: string
+          pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        toDate:
+          type: string
+          pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+
+    AvailabilityContactInput:
+      type: object
+      description: At least one of mobile or email; omitted fields are unchanged
+      properties:
+        mobile:
+          type: string
+          minLength: 1
+          maxLength: 32
+        email:
+          type: string
+          minLength: 3
+          maxLength: 254
 
     AwardVotingConfig:
       type: object
