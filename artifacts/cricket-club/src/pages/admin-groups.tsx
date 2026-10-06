@@ -35,6 +35,7 @@ const AdminPremierships = lazy(() => import("@/pages/admin-premierships"));
 const AdminAwards = lazy(() => import("@/pages/admin-awards"));
 const AdminTeamOfDecade = lazy(() => import("@/pages/admin-team-of-decade"));
 const AdminCaps = lazy(() => import("@/pages/admin-caps"));
+const AdminShirtNumbers = lazy(() => import("@/pages/admin-shirt-numbers"));
 const AdminLifeMembers = lazy(() => import("@/pages/admin-life-members"));
 const AdminJuniorPremierships = lazy(() => import("@/pages/admin-junior-premierships"));
 const AdminHonoursDisplay = lazy(() => import("@/pages/admin-honours-display"));
@@ -159,6 +160,7 @@ export function AdminHonoursGroup() {
         awards: <AdminAwards />,
         "team-of-decade": <AdminTeamOfDecade />,
         caps: <AdminCaps />,
+        "shirt-numbers": <AdminShirtNumbers />,
         "life-members": <AdminLifeMembers />,
         "junior-premierships": <AdminJuniorPremierships />,
         display: <AdminHonoursDisplay />,
