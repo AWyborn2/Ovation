@@ -49,7 +49,7 @@ full data model are in `replit.md`.
 ## The central PCA database
 
 Source of truth: `PCA Database/PCA app database/pca_full.db` (SQLite) and
-`pca_full_postgres.sql` (load this into Supabase/Postgres as schema `central`). Scope: 24
+`pca_full_postgres.sql` (loaded into Postgres as schema `central`). Scope: 24
 seasons 2002/03–2025/26, 11,604 matches, ~218k batting / ~129k bowling rows, 27 clubs,
 170 premiers. A trimmed `pca_pilot.db` / `pca_pilot_postgres.sql` also exists. Builder scripts
 
@@ -94,13 +94,64 @@ rewriting either side.
 - `tenants` table: `id, slug (subdomain), club_id (→ central.clubs), name, colours, logo,
 favicon, custom_domain, plan`. Resolve tenant per-request (subdomain → context middleware);
   thread `tenantId` through every API call.
-- Tenant-scope curated tables with `tenant_id`; enforce with Postgres RLS (Supabase).
+- Tenant-scope curated tables with `tenant_id`; enforce with Postgres RLS (still TODO).
 - Per-tenant theming from the tenant row → CSS tokens + `index.html` metadata served dynamically.
 - Auth: per-tenant admins + super-admin; onboarding = "pick your club" → instantly populated.
 - Juniors isolation invariant (junior\__ tables, `/api/juniors/_` only, never blended) holds
   per-tenant.
 
-## STATUS (29 Jun 2026) — read this first
+## STATUS (6 Oct 2026) — read this first
+
+### Where the data lives
+
+- **Replit-managed Postgres holds everything**, in development and production: the app's own
+  tables (`public`), the shared stats (`central.*`), the raw PlayHQ landing tables
+  (`playhq.*`) and Drizzle's bookkeeping. The original Supabase project `ovation-central` was
+  **retired after the move and is read-only** — never write to it, and don't point new work at
+  it (the Supabase connector in assistant sessions is read-only too).
+- Connection variables (values live in Replit secrets; never print or commit them):
+  `DATABASE_URL` (app), `CENTRAL_DATABASE_URL` (read-only `central` reads),
+  `CENTRAL_PROJECTOR_DATABASE_URL` (the one sanctioned `central` writer, the PlayHQ projector),
+  `PLAYHQ_INGEST_DATABASE_URL` (the `playhq_ingest` role: select/insert/update on `playhq.*`
+  only, no delete or DDL). Ash confirmed on 6 Oct 2026 that each points at the right database.
+- **Production schema changes are applied by hand.** Republishing does not migrate production:
+  run the new migration's SQL (`lib/db/migrations/NNNN_*.sql`, written idempotent with
+  `IF NOT EXISTS`) in Replit's Production SQL runner **before** republishing. New `playhq.*`
+  tables come from `scripts/sql/playhq-schema.sql` and go in the database
+  `PLAYHQ_INGEST_DATABASE_URL` points at — check with `select to_regclass('playhq.<table>')`
+  first, because the Production Database pane may not be that database. Assistant sessions
+  cannot reach production; give Ash the SQL.
+- Ops report folders written by scripts run from `scripts/` land in `scripts/exports/`, which is
+  git-ignored (they hold player-level data — never commit them).
+
+### PlayHQ sync (live)
+
+- `.github/workflows/playhq-sync.yml` runs the scraper harness
+  (`.claude/skills/playcricket-stats-scraper/harness.js`) in headless Chromium and posts each
+  dump to `POST /api/internal/playhq/ingest`. The server decides which plans are due
+  (`lib/db/src/playhq-ingest/cadence.ts`): weekly, preweekend (Thu/Fri 18:00), matchmorn,
+  matchday, dayafter, catchup. Manual catch-up: run the workflow with `manual_org` (PlayHQ org
+  GUID) and `manual_since` (YYYY-MM-DD). Halls Head's org is
+  `4559f1b9-86d8-eb11-a7ad-2818780da0cc`.
+- Ingest loads `playhq.*`, projects fixtures into `public.fixtures`, copies the side a club
+  names in PlayHQ into `team_lists` (`source = 'playhq'`; an admin-saved list, `source =
+'admin'`, is never overwritten), copies finished and in-progress matches into `central.*`,
+  then runs the draft sweep for each tenant it touched.
+- A watchdog marks an org overdue when a due plan waits past its grace (weekly 26 h, others
+  3 h). **Known gap:** GitHub's scheduler starts the "hourly" job only ~4 times a day, so
+  match-week plans can go overdue and catch up on the next run — see AGENTS.md.
+
+### Social and caps (live)
+
+- Team List cards draft from a published team list (admin- or PlayHQ-sourced) and feature one
+  selected player's library photo, picked at random per fixture. Pack designs name their photo
+  slot per kind (`squadPhoto`, `teamPhoto`, `cardPhoto`); `KIND_PHOTO_SLOT` in
+  `artifacts/cricket-club/src/lib/pack-render/bind.ts` routes the chosen photo there.
+- A Grade debut caps are issued automatically (`api-server/src/lib/debut-caps.ts`) for a club
+  that has a cap register, as **pending** caps an admin confirms, reorders or declines in Admin
+  → Caps. Public reads show confirmed caps only; declined caps are never re-issued.
+
+### Roadmap phases (status as of 29 Jun 2026, updated where noted)
 
 The roadmap below is the original plan. **Reality has moved ahead of it.** Current state on
 `main`:
@@ -137,13 +188,11 @@ awareness) are implemented; Phase D items are tracked there.
 
 ## Phase 0 — prove the central model (✅ COMPLETE — kept for context)
 
-1. ✅ DONE (11 Jun 2026). Supabase project `ovation-central` (org "Ovation", ap-southeast-2,
-   ref `sbsrjlozgjoavtmdyqit`). Dump loaded into schema `central`; all counts verified
-   (27 clubs, 7,516 players, 11,604 matches, 218,637 batting / 128,937 bowling, 170 premiers;
-   `v_*` views build). `CENTRAL_DATABASE_URL` =
-   `postgresql://postgres.sbsrjlozgjoavtmdyqit:[PASSWORD]@aws-1-ap-southeast-2.pooler.supabase.com:5432/postgres?sslmode=require`
-   (session pooler, IPv4; password held by Ash — never commit it). Loader script:
-   `load-central-db.ps1` in the project folder.
+1. ✅ DONE (11 Jun 2026). Supabase project `ovation-central` (ref `sbsrjlozgjoavtmdyqit`).
+   Dump loaded into schema `central`; all counts verified (27 clubs, 7,516 players, 11,604
+   matches, 218,637 batting / 128,937 bowling, 170 premiers; `v_*` views build). **Superseded:**
+   `central` and `playhq` have since moved to Replit-managed Postgres and the Supabase project
+   is retired, read-only (see STATUS).
 2. New module `lib/db/src/central.ts` (or `lib/central-db`): read-only pool on
    `CENTRAL_DATABASE_URL`, Drizzle schema for the central tables. Never write to it from the app.
 3. Behind a feature flag, repoint ONE read (e.g. grade batting leaderboard) to

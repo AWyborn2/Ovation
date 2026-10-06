@@ -30,8 +30,10 @@ Endpoint shapes: `references/endpoints.md`. Tables and how they join to `central
 
   Server-side `fetch`/`curl` to the API is refused; page → `localhost` is blocked too (tested).
 
-- Repo tooling: Node 24, pnpm 11. Loading needs `CENTRAL_DATABASE_URL` (the ovation-central
-  Supabase project — password held by Ash) or any Postgres you point it at.
+- Repo tooling: Node 24, pnpm 11. Loading needs `CENTRAL_DATABASE_URL` pointing at the Postgres
+  that holds `playhq.*` (Replit-managed since Oct 2026; the old Supabase project is retired and
+  read-only — never load into it) or any Postgres you point it at. Routine loads happen through
+  the scheduled sync (`.github/workflows/playhq-sync.yml`), not by hand.
 - The organisation GUID: the last path segment of the club/association page URL, e.g. Halls Head
   `https://play.cricket.com.au/club/halls-head-cricket-club/4559f1b9-86d8-eb11-a7ad-2818780da0cc`.
   Peel Cricket Association is `c65c0bb8-87d8-eb11-a7ad-2818780da0cc`. For a new club, search on
@@ -148,7 +150,7 @@ cd scripts && ./node_modules/.bin/tsx ./src/playhq-load.ts --init --file=<dump>.
 
 (`--init` applies `scripts/sql/playhq-schema.sql`, idempotent.) Subsequent loads drop `--init`.
 `--report=<days>` prints fixture changes recorded in the last N days, upcoming matches in the
-next 14 days, and completed matches touched. Against the shared Supabase host add `--yes`
+next 14 days, and completed matches touched. Against a shared (non-local) host add `--yes`
 (the script refuses a non-local host without it). `--dir=<folder>` loads every `*.json` in it.
 
 The repo loads no `.env` itself. Ash keeps `CENTRAL_DATABASE_URL` in the gitignored repo-root
