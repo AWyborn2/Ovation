@@ -2792,6 +2792,182 @@ export const RemoveSquadMemberParams = zod.object({
 
 
 /**
+ * Send, reminder, cut-off and finalise-by days and times in Perth, the
+club's switch (off by default — nothing is sent until it is on), the SMS
+switch and the selection rule. A club that has never saved settings gets
+the defaults.
+
+ * @summary The club's weekly availability schedule (admin)
+ */
+export const getAvailabilitySettingsResponseOneSendDowMin = 0;
+export const getAvailabilitySettingsResponseOneSendDowMax = 6;
+
+export const getAvailabilitySettingsResponseOneSendTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getAvailabilitySettingsResponseOneReminderDowMin = 0;
+export const getAvailabilitySettingsResponseOneReminderDowMax = 6;
+
+export const getAvailabilitySettingsResponseOneReminderTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getAvailabilitySettingsResponseOneCutoffDowMin = 0;
+export const getAvailabilitySettingsResponseOneCutoffDowMax = 6;
+
+export const getAvailabilitySettingsResponseOneCutoffTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getAvailabilitySettingsResponseOneFinaliseDowMin = 0;
+export const getAvailabilitySettingsResponseOneFinaliseDowMax = 6;
+
+export const getAvailabilitySettingsResponseOneFinaliseTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+
+
+export const GetAvailabilitySettingsResponse = zod.object({
+  "enabled": zod.boolean().describe('The club\'s switch; nothing is sent while it is off'),
+  "smsEnabled": zod.boolean().describe('Off → email only'),
+  "sendDow": zod.number().min(getAvailabilitySettingsResponseOneSendDowMin).max(getAvailabilitySettingsResponseOneSendDowMax),
+  "sendTime": zod.string().regex(getAvailabilitySettingsResponseOneSendTimeRegExp),
+  "reminderDow": zod.number().min(getAvailabilitySettingsResponseOneReminderDowMin).max(getAvailabilitySettingsResponseOneReminderDowMax),
+  "reminderTime": zod.string().regex(getAvailabilitySettingsResponseOneReminderTimeRegExp),
+  "cutoffDow": zod.number().min(getAvailabilitySettingsResponseOneCutoffDowMin).max(getAvailabilitySettingsResponseOneCutoffDowMax),
+  "cutoffTime": zod.string().regex(getAvailabilitySettingsResponseOneCutoffTimeRegExp),
+  "finaliseDow": zod.number().min(getAvailabilitySettingsResponseOneFinaliseDowMin).max(getAvailabilitySettingsResponseOneFinaliseDowMax),
+  "finaliseTime": zod.string().regex(getAvailabilitySettingsResponseOneFinaliseTimeRegExp),
+  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub')
+}).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n').and(zod.object({
+  "updatedAt": zod.coerce.date().nullable().describe('Null while the club is on the defaults')
+}))
+
+
+/**
+ * Replaces the settings. Within the week that starts on the send day, the
+steps must run in order — send, then reminder, then cut-off, with
+finalise-by no earlier than the cut-off — and the cut-off must be no
+later than that week's Saturday.
+
+ * @summary Save the club's weekly availability schedule (admin)
+ */
+export const updateAvailabilitySettingsBodySendDowMin = 0;
+export const updateAvailabilitySettingsBodySendDowMax = 6;
+
+export const updateAvailabilitySettingsBodySendTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateAvailabilitySettingsBodyReminderDowMin = 0;
+export const updateAvailabilitySettingsBodyReminderDowMax = 6;
+
+export const updateAvailabilitySettingsBodyReminderTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateAvailabilitySettingsBodyCutoffDowMin = 0;
+export const updateAvailabilitySettingsBodyCutoffDowMax = 6;
+
+export const updateAvailabilitySettingsBodyCutoffTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateAvailabilitySettingsBodyFinaliseDowMin = 0;
+export const updateAvailabilitySettingsBodyFinaliseDowMax = 6;
+
+export const updateAvailabilitySettingsBodyFinaliseTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+
+
+export const UpdateAvailabilitySettingsBody = zod.object({
+  "enabled": zod.boolean().describe('The club\'s switch; nothing is sent while it is off'),
+  "smsEnabled": zod.boolean().describe('Off → email only'),
+  "sendDow": zod.number().min(updateAvailabilitySettingsBodySendDowMin).max(updateAvailabilitySettingsBodySendDowMax),
+  "sendTime": zod.string().regex(updateAvailabilitySettingsBodySendTimeRegExp),
+  "reminderDow": zod.number().min(updateAvailabilitySettingsBodyReminderDowMin).max(updateAvailabilitySettingsBodyReminderDowMax),
+  "reminderTime": zod.string().regex(updateAvailabilitySettingsBodyReminderTimeRegExp),
+  "cutoffDow": zod.number().min(updateAvailabilitySettingsBodyCutoffDowMin).max(updateAvailabilitySettingsBodyCutoffDowMax),
+  "cutoffTime": zod.string().regex(updateAvailabilitySettingsBodyCutoffTimeRegExp),
+  "finaliseDow": zod.number().min(updateAvailabilitySettingsBodyFinaliseDowMin).max(updateAvailabilitySettingsBodyFinaliseDowMax),
+  "finaliseTime": zod.string().regex(updateAvailabilitySettingsBodyFinaliseTimeRegExp),
+  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub')
+}).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n')
+
+export const updateAvailabilitySettingsResponseOneSendDowMin = 0;
+export const updateAvailabilitySettingsResponseOneSendDowMax = 6;
+
+export const updateAvailabilitySettingsResponseOneSendTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateAvailabilitySettingsResponseOneReminderDowMin = 0;
+export const updateAvailabilitySettingsResponseOneReminderDowMax = 6;
+
+export const updateAvailabilitySettingsResponseOneReminderTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateAvailabilitySettingsResponseOneCutoffDowMin = 0;
+export const updateAvailabilitySettingsResponseOneCutoffDowMax = 6;
+
+export const updateAvailabilitySettingsResponseOneCutoffTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateAvailabilitySettingsResponseOneFinaliseDowMin = 0;
+export const updateAvailabilitySettingsResponseOneFinaliseDowMax = 6;
+
+export const updateAvailabilitySettingsResponseOneFinaliseTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+
+
+export const UpdateAvailabilitySettingsResponse = zod.object({
+  "enabled": zod.boolean().describe('The club\'s switch; nothing is sent while it is off'),
+  "smsEnabled": zod.boolean().describe('Off → email only'),
+  "sendDow": zod.number().min(updateAvailabilitySettingsResponseOneSendDowMin).max(updateAvailabilitySettingsResponseOneSendDowMax),
+  "sendTime": zod.string().regex(updateAvailabilitySettingsResponseOneSendTimeRegExp),
+  "reminderDow": zod.number().min(updateAvailabilitySettingsResponseOneReminderDowMin).max(updateAvailabilitySettingsResponseOneReminderDowMax),
+  "reminderTime": zod.string().regex(updateAvailabilitySettingsResponseOneReminderTimeRegExp),
+  "cutoffDow": zod.number().min(updateAvailabilitySettingsResponseOneCutoffDowMin).max(updateAvailabilitySettingsResponseOneCutoffDowMax),
+  "cutoffTime": zod.string().regex(updateAvailabilitySettingsResponseOneCutoffTimeRegExp),
+  "finaliseDow": zod.number().min(updateAvailabilitySettingsResponseOneFinaliseDowMin).max(updateAvailabilitySettingsResponseOneFinaliseDowMax),
+  "finaliseTime": zod.string().regex(updateAvailabilitySettingsResponseOneFinaliseTimeRegExp),
+  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub')
+}).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n').and(zod.object({
+  "updatedAt": zod.coerce.date().nullable().describe('Null while the club is on the defaults')
+}))
+
+
+/**
+ * The round for this send week's weekend: each step's scheduled time, when
+it started and finished (null until then), and how many members asked
+said Yes, Maybe or No, or haven't answered. Answers after the cut-off
+has completed count as late. `roundId` is null until the round's first
+step runs.
+
+ * @summary The current round's schedule, progress and response counts (admin)
+ */
+export const GetCurrentAvailabilityRoundResponse = zod.object({
+  "enabled": zod.boolean(),
+  "roundId": zod.number().nullable(),
+  "weekendDate": zod.coerce.date().describe('The round\'s Saturday'),
+  "sendAt": zod.coerce.date(),
+  "reminderAt": zod.coerce.date(),
+  "cutoffAt": zod.coerce.date(),
+  "finaliseAt": zod.coerce.date(),
+  "sendStartedAt": zod.coerce.date().nullable(),
+  "sendCompletedAt": zod.coerce.date().nullable(),
+  "reminderStartedAt": zod.coerce.date().nullable(),
+  "reminderCompletedAt": zod.coerce.date().nullable(),
+  "cutoffStartedAt": zod.coerce.date().nullable(),
+  "cutoffCompletedAt": zod.coerce.date().nullable(),
+  "counts": zod.object({
+  "yes": zod.number(),
+  "maybe": zod.number(),
+  "no": zod.number(),
+  "none": zod.number(),
+  "late": zod.number().describe('Members with an answer given after the cut-off'),
+  "total": zod.number()
+}).describe('One status per member asked — Yes for any date, else Maybe, else No; None when unanswered')
+})
+
+
+/**
+ * Claims the step exactly as the hourly scheduler does, so it never runs
+twice: a send or cut-off that has already started returns 409. A
+reminder may be sent again by hand after it has run, but each recipient
+is reminded by hand at most once every 12 hours; recipients inside that
+window are skipped. Reminders need the requests to have gone out.
+
+ * @summary Run a step of the current round now (admin)
+ */
+export const RunAvailabilityStepParams = zod.object({
+  "step": zod.enum(['send', 'remind', 'cutoff'])
+})
+
+export const RunAvailabilityStepResponse = zod.object({
+  "step": zod.enum(['send', 'remind', 'cutoff']),
+  "roundId": zod.number(),
+  "messaged": zod.number().describe('Members messaged'),
+  "away": zod.number().describe('Members recorded unavailable from an away period instead of being asked'),
+  "noFixture": zod.number().describe('Members with no fixture to be asked about this round'),
+  "throttled": zod.number().describe('Members skipped because they were reminded by hand in the last 12 hours'),
+  "drafts": zod.number().describe('Draft sides created at cut-off')
+})
+
+
+/**
  * @summary List per-season voting configs for an award (admin)
  */
 export const ListAwardVotingConfigsParams = zod.object({

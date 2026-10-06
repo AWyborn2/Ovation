@@ -58,6 +58,8 @@ tags:
     description: Object storage upload and serving endpoints.
   - name: squad
     description: The club's squad register for player availability, imported from the PlayHQ participant export (admin only; contact details never leave admin payloads)
+  - name: availability
+    description: The weekly availability round — the club's schedule, the current round's progress and admin "Run now" steps (admin only)
 paths:
   /healthz:
     get:
@@ -2149,6 +2151,105 @@ paths:
           description: Removed
         "404":
           description: Not found
+
+  /availability/settings:
+    get:
+      operationId: getAvailabilitySettings
+      tags: [availability]
+      summary: The club's weekly availability schedule (admin)
+      description: |
+        Send, reminder, cut-off and finalise-by days and times in Perth, the
+        club's switch (off by default — nothing is sent until it is on), the SMS
+        switch and the selection rule. A club that has never saved settings gets
+        the defaults.
+      responses:
+        "200":
+          description: The settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilitySettings"
+        "401":
+          description: Not signed in as this club's admin
+    put:
+      operationId: updateAvailabilitySettings
+      tags: [availability]
+      summary: Save the club's weekly availability schedule (admin)
+      description: |
+        Replaces the settings. Within the week that starts on the send day, the
+        steps must run in order — send, then reminder, then cut-off, with
+        finalise-by no earlier than the cut-off — and the cut-off must be no
+        later than that week's Saturday.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvailabilitySettingsInput"
+      responses:
+        "200":
+          description: The saved settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilitySettings"
+        "400":
+          description: Invalid body or steps out of order
+        "401":
+          description: Not signed in as this club's admin
+
+  /availability/rounds/current:
+    get:
+      operationId: getCurrentAvailabilityRound
+      tags: [availability]
+      summary: The current round's schedule, progress and response counts (admin)
+      description: |
+        The round for this send week's weekend: each step's scheduled time, when
+        it started and finished (null until then), and how many members asked
+        said Yes, Maybe or No, or haven't answered. Answers after the cut-off
+        has completed count as late. `roundId` is null until the round's first
+        step runs.
+      responses:
+        "200":
+          description: The current round
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityRoundStatus"
+        "401":
+          description: Not signed in as this club's admin
+
+  /availability/rounds/current/{step}:
+    post:
+      operationId: runAvailabilityStep
+      tags: [availability]
+      summary: Run a step of the current round now (admin)
+      description: |
+        Claims the step exactly as the hourly scheduler does, so it never runs
+        twice: a send or cut-off that has already started returns 409. A
+        reminder may be sent again by hand after it has run, but each recipient
+        is reminded by hand at most once every 12 hours; recipients inside that
+        window are skipped. Reminders need the requests to have gone out.
+      parameters:
+        - name: step
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [send, remind, cutoff]
+      responses:
+        "200":
+          description: The step ran
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityStepResult"
+        "400":
+          description: Availability is switched off for this club
+        "401":
+          description: Not signed in as this club's admin
+        "409":
+          description: The step has already run, or the requests haven't gone out yet
 
   /awards/{id}/voting:
     get:
@@ -11932,6 +12033,184 @@ components:
                 type: string
               count:
                 type: integer
+
+    AvailabilitySelectionRule:
+      type: string
+      enum: [captains_own_grade, captains_all_grades, admins_only]
+      description: Who may edit a side in the Selection Hub
+
+    AvailabilitySettingsInput:
+      type: object
+      description: |
+        The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);
+        times are 24-hour "HH:MM". Finalise-by is shown to captains only.
+      required:
+        [
+          enabled,
+          smsEnabled,
+          sendDow,
+          sendTime,
+          reminderDow,
+          reminderTime,
+          cutoffDow,
+          cutoffTime,
+          finaliseDow,
+          finaliseTime,
+          selectionRule,
+        ]
+      properties:
+        enabled:
+          type: boolean
+          description: The club's switch; nothing is sent while it is off
+        smsEnabled:
+          type: boolean
+          description: Off → email only
+        sendDow:
+          type: integer
+          minimum: 0
+          maximum: 6
+        sendTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        reminderDow:
+          type: integer
+          minimum: 0
+          maximum: 6
+        reminderTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        cutoffDow:
+          type: integer
+          minimum: 0
+          maximum: 6
+        cutoffTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        finaliseDow:
+          type: integer
+          minimum: 0
+          maximum: 6
+        finaliseTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        selectionRule:
+          $ref: "#/components/schemas/AvailabilitySelectionRule"
+
+    AvailabilitySettings:
+      allOf:
+        - $ref: "#/components/schemas/AvailabilitySettingsInput"
+        - type: object
+          required: [updatedAt]
+          properties:
+            updatedAt:
+              type: ["string", "null"]
+              format: date-time
+              description: Null while the club is on the defaults
+
+    AvailabilityRoundCounts:
+      type: object
+      description: One status per member asked — Yes for any date, else Maybe, else No; None when unanswered
+      required: [yes, maybe, no, none, late, total]
+      properties:
+        yes:
+          type: integer
+        maybe:
+          type: integer
+        no:
+          type: integer
+        none:
+          type: integer
+        late:
+          type: integer
+          description: Members with an answer given after the cut-off
+        total:
+          type: integer
+
+    AvailabilityRoundStatus:
+      type: object
+      required:
+        [
+          enabled,
+          roundId,
+          weekendDate,
+          sendAt,
+          reminderAt,
+          cutoffAt,
+          finaliseAt,
+          sendStartedAt,
+          sendCompletedAt,
+          reminderStartedAt,
+          reminderCompletedAt,
+          cutoffStartedAt,
+          cutoffCompletedAt,
+          counts,
+        ]
+      properties:
+        enabled:
+          type: boolean
+        roundId:
+          type: ["integer", "null"]
+        weekendDate:
+          type: string
+          format: date
+          description: The round's Saturday
+        sendAt:
+          type: string
+          format: date-time
+        reminderAt:
+          type: string
+          format: date-time
+        cutoffAt:
+          type: string
+          format: date-time
+        finaliseAt:
+          type: string
+          format: date-time
+        sendStartedAt:
+          type: ["string", "null"]
+          format: date-time
+        sendCompletedAt:
+          type: ["string", "null"]
+          format: date-time
+        reminderStartedAt:
+          type: ["string", "null"]
+          format: date-time
+        reminderCompletedAt:
+          type: ["string", "null"]
+          format: date-time
+        cutoffStartedAt:
+          type: ["string", "null"]
+          format: date-time
+        cutoffCompletedAt:
+          type: ["string", "null"]
+          format: date-time
+        counts:
+          $ref: "#/components/schemas/AvailabilityRoundCounts"
+
+    AvailabilityStepResult:
+      type: object
+      required: [step, roundId, messaged, away, noFixture, throttled, drafts]
+      properties:
+        step:
+          type: string
+          enum: [send, remind, cutoff]
+        roundId:
+          type: integer
+        messaged:
+          type: integer
+          description: Members messaged
+        away:
+          type: integer
+          description: Members recorded unavailable from an away period instead of being asked
+        noFixture:
+          type: integer
+          description: Members with no fixture to be asked about this round
+        throttled:
+          type: integer
+          description: Members skipped because they were reminded by hand in the last 12 hours
+        drafts:
+          type: integer
+          description: Draft sides created at cut-off
 
     AwardVotingConfig:
       type: object

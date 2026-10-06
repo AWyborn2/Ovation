@@ -2939,6 +2939,129 @@ export interface SquadImportResult {
   skippedByReason: SquadImportResultSkippedByReasonItem[];
 }
 
+/**
+ * Who may edit a side in the Selection Hub
+ */
+export type AvailabilitySelectionRule = typeof AvailabilitySelectionRule[keyof typeof AvailabilitySelectionRule];
+
+
+export const AvailabilitySelectionRule = {
+  captains_own_grade: 'captains_own_grade',
+  captains_all_grades: 'captains_all_grades',
+  admins_only: 'admins_only',
+} as const;
+
+/**
+ * The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);
+times are 24-hour "HH:MM". Finalise-by is shown to captains only.
+
+ */
+export interface AvailabilitySettingsInput {
+  /** The club's switch; nothing is sent while it is off */
+  enabled: boolean;
+  /** Off → email only */
+  smsEnabled: boolean;
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  sendDow: number;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  sendTime: string;
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  reminderDow: number;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  reminderTime: string;
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  cutoffDow: number;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  cutoffTime: string;
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  finaliseDow: number;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  finaliseTime: string;
+  selectionRule: AvailabilitySelectionRule;
+}
+
+export type AvailabilitySettings = AvailabilitySettingsInput & ({
+  /**
+     * Null while the club is on the defaults
+     * @nullable
+     */
+  updatedAt: string | null;
+});
+
+/**
+ * One status per member asked — Yes for any date, else Maybe, else No; None when unanswered
+ */
+export interface AvailabilityRoundCounts {
+  yes: number;
+  maybe: number;
+  no: number;
+  none: number;
+  /** Members with an answer given after the cut-off */
+  late: number;
+  total: number;
+}
+
+export interface AvailabilityRoundStatus {
+  enabled: boolean;
+  /** @nullable */
+  roundId: number | null;
+  /** The round's Saturday */
+  weekendDate: string;
+  sendAt: string;
+  reminderAt: string;
+  cutoffAt: string;
+  finaliseAt: string;
+  /** @nullable */
+  sendStartedAt: string | null;
+  /** @nullable */
+  sendCompletedAt: string | null;
+  /** @nullable */
+  reminderStartedAt: string | null;
+  /** @nullable */
+  reminderCompletedAt: string | null;
+  /** @nullable */
+  cutoffStartedAt: string | null;
+  /** @nullable */
+  cutoffCompletedAt: string | null;
+  counts: AvailabilityRoundCounts;
+}
+
+export type AvailabilityStepResultStep = typeof AvailabilityStepResultStep[keyof typeof AvailabilityStepResultStep];
+
+
+export const AvailabilityStepResultStep = {
+  send: 'send',
+  remind: 'remind',
+  cutoff: 'cutoff',
+} as const;
+
+export interface AvailabilityStepResult {
+  step: AvailabilityStepResultStep;
+  roundId: number;
+  /** Members messaged */
+  messaged: number;
+  /** Members recorded unavailable from an away period instead of being asked */
+  away: number;
+  /** Members with no fixture to be asked about this round */
+  noFixture: number;
+  /** Members skipped because they were reminded by hand in the last 12 hours */
+  throttled: number;
+  /** Draft sides created at cut-off */
+  drafts: number;
+}
+
 export interface AwardVotingConfig {
   id: number;
   awardId: number;

@@ -380,6 +380,11 @@ export async function messageMember(
     context?: MessageContext;
     /** The club's SMS switch (`availability_settings.sms_enabled`). */
     smsEnabled: boolean;
+    /**
+     * Only these recipient slots (a retry of failed deliveries, a throttled
+     * reminder); other slots are neither messaged nor reported as skipped.
+     */
+    slots?: readonly RecipientSlot[];
     now?: Date;
   },
   logger: Logger = defaultLogger,
@@ -407,9 +412,12 @@ export async function messageMember(
     recipients = reachable ? [r] : [];
     skipped = reachable ? [] : [prev.slot];
   } else {
-    recipients = recipientsFor(member, now);
+    const only = args.slots ? new Set(args.slots) : null;
+    recipients = recipientsFor(member, now).filter((r) => !only || only.has(r.slot));
     const reached = new Set(recipients.map((r) => r.slot));
-    skipped = intendedSlotsFor(member, now).filter((s) => !reached.has(s));
+    skipped = intendedSlotsFor(member, now).filter(
+      (s) => !reached.has(s) && (!only || only.has(s)),
+    );
   }
   if (recipients.length === 0) return { results: [], skipped };
 

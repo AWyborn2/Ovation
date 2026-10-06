@@ -54,6 +54,7 @@ import platformPlayerPrivacyRouter from "./platform-player-privacy";
 import historyImportRouter from "./history-import";
 import billingRouter from "./billing";
 import squadRouter from "./squad";
+import availabilitySettingsRouter from "./availability-settings";
 
 const router: IRouter = Router();
 
@@ -112,5 +113,6 @@ router.use(historyImportRouter);
 router.use(platformStorageRouter);
 router.use(billingRouter);
 router.use(squadRouter);
+router.use(availabilitySettingsRouter);
 
 export default router;

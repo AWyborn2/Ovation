@@ -29,6 +29,10 @@ import type {
   AdminUpdate,
   AutoseedCardSetBody,
   AutoseedCardSetResult,
+  AvailabilityRoundStatus,
+  AvailabilitySettings,
+  AvailabilitySettingsInput,
+  AvailabilityStepResult,
   AvailableClub,
   Award,
   AwardInput,
@@ -6942,6 +6946,323 @@ export const useRemoveSquadMember = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRemoveSquadMemberMutationOptions(options));
+    }
+
+export const getGetAvailabilitySettingsUrl = () => {
+
+
+
+
+  return `/api/availability/settings`
+}
+
+/**
+ * Send, reminder, cut-off and finalise-by days and times in Perth, the
+club's switch (off by default — nothing is sent until it is on), the SMS
+switch and the selection rule. A club that has never saved settings gets
+the defaults.
+
+ * @summary The club's weekly availability schedule (admin)
+ */
+export const getAvailabilitySettings = async ( options?: RequestInit): Promise<AvailabilitySettings> => {
+
+  return customFetch<AvailabilitySettings>(getGetAvailabilitySettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAvailabilitySettingsQueryKey = () => {
+    return [
+    `/api/availability/settings`
+    ] as const;
+    }
+
+
+export const getGetAvailabilitySettingsQueryOptions = <TData = Awaited<ReturnType<typeof getAvailabilitySettings>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAvailabilitySettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAvailabilitySettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAvailabilitySettings>>> = ({ signal }) => getAvailabilitySettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAvailabilitySettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAvailabilitySettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getAvailabilitySettings>>>
+export type GetAvailabilitySettingsQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club's weekly availability schedule (admin)
+ */
+
+export function useGetAvailabilitySettings<TData = Awaited<ReturnType<typeof getAvailabilitySettings>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAvailabilitySettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAvailabilitySettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateAvailabilitySettingsUrl = () => {
+
+
+
+
+  return `/api/availability/settings`
+}
+
+/**
+ * Replaces the settings. Within the week that starts on the send day, the
+steps must run in order — send, then reminder, then cut-off, with
+finalise-by no earlier than the cut-off — and the cut-off must be no
+later than that week's Saturday.
+
+ * @summary Save the club's weekly availability schedule (admin)
+ */
+export const updateAvailabilitySettings = async (availabilitySettingsInput: AvailabilitySettingsInput, options?: RequestInit): Promise<AvailabilitySettings> => {
+
+  return customFetch<AvailabilitySettings>(getUpdateAvailabilitySettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      availabilitySettingsInput,)
+  }
+);}
+
+
+
+
+export const getUpdateAvailabilitySettingsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAvailabilitySettings>>, TError,{data: BodyType<AvailabilitySettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAvailabilitySettings>>, TError,{data: BodyType<AvailabilitySettingsInput>}, TContext> => {
+
+const mutationKey = ['updateAvailabilitySettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAvailabilitySettings>>, {data: BodyType<AvailabilitySettingsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateAvailabilitySettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAvailabilitySettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateAvailabilitySettings>>>
+    export type UpdateAvailabilitySettingsMutationBody = BodyType<AvailabilitySettingsInput>
+    export type UpdateAvailabilitySettingsMutationError = ErrorType<void>
+
+    /**
+ * @summary Save the club's weekly availability schedule (admin)
+ */
+export const useUpdateAvailabilitySettings = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAvailabilitySettings>>, TError,{data: BodyType<AvailabilitySettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAvailabilitySettings>>,
+        TError,
+        {data: BodyType<AvailabilitySettingsInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateAvailabilitySettingsMutationOptions(options));
+    }
+
+export const getGetCurrentAvailabilityRoundUrl = () => {
+
+
+
+
+  return `/api/availability/rounds/current`
+}
+
+/**
+ * The round for this send week's weekend: each step's scheduled time, when
+it started and finished (null until then), and how many members asked
+said Yes, Maybe or No, or haven't answered. Answers after the cut-off
+has completed count as late. `roundId` is null until the round's first
+step runs.
+
+ * @summary The current round's schedule, progress and response counts (admin)
+ */
+export const getCurrentAvailabilityRound = async ( options?: RequestInit): Promise<AvailabilityRoundStatus> => {
+
+  return customFetch<AvailabilityRoundStatus>(getGetCurrentAvailabilityRoundUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCurrentAvailabilityRoundQueryKey = () => {
+    return [
+    `/api/availability/rounds/current`
+    ] as const;
+    }
+
+
+export const getGetCurrentAvailabilityRoundQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentAvailabilityRound>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentAvailabilityRound>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrentAvailabilityRoundQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentAvailabilityRound>>> = ({ signal }) => getCurrentAvailabilityRound({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentAvailabilityRound>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCurrentAvailabilityRoundQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentAvailabilityRound>>>
+export type GetCurrentAvailabilityRoundQueryError = ErrorType<void>
+
+
+/**
+ * @summary The current round's schedule, progress and response counts (admin)
+ */
+
+export function useGetCurrentAvailabilityRound<TData = Awaited<ReturnType<typeof getCurrentAvailabilityRound>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentAvailabilityRound>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCurrentAvailabilityRoundQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getRunAvailabilityStepUrl = (step: 'send' | 'remind' | 'cutoff',) => {
+
+
+
+
+  return `/api/availability/rounds/current/${step}`
+}
+
+/**
+ * Claims the step exactly as the hourly scheduler does, so it never runs
+twice: a send or cut-off that has already started returns 409. A
+reminder may be sent again by hand after it has run, but each recipient
+is reminded by hand at most once every 12 hours; recipients inside that
+window are skipped. Reminders need the requests to have gone out.
+
+ * @summary Run a step of the current round now (admin)
+ */
+export const runAvailabilityStep = async (step: 'send' | 'remind' | 'cutoff', options?: RequestInit): Promise<AvailabilityStepResult> => {
+
+  return customFetch<AvailabilityStepResult>(getRunAvailabilityStepUrl(step),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRunAvailabilityStepMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runAvailabilityStep>>, TError,{step: 'send' | 'remind' | 'cutoff'}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runAvailabilityStep>>, TError,{step: 'send' | 'remind' | 'cutoff'}, TContext> => {
+
+const mutationKey = ['runAvailabilityStep'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runAvailabilityStep>>, {step: 'send' | 'remind' | 'cutoff'}> = (props) => {
+          const {step} = props ?? {};
+
+          return  runAvailabilityStep(step,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunAvailabilityStepMutationResult = NonNullable<Awaited<ReturnType<typeof runAvailabilityStep>>>
+
+    export type RunAvailabilityStepMutationError = ErrorType<void>
+
+    /**
+ * @summary Run a step of the current round now (admin)
+ */
+export const useRunAvailabilityStep = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runAvailabilityStep>>, TError,{step: 'send' | 'remind' | 'cutoff'}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runAvailabilityStep>>,
+        TError,
+        {step: 'send' | 'remind' | 'cutoff'},
+        TContext
+      > => {
+      return useMutation(getRunAvailabilityStepMutationOptions(options));
     }
 
 export const getListAwardVotingConfigsUrl = (id: number,) => {

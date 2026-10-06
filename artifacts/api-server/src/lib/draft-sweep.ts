@@ -34,6 +34,7 @@ import { fillMissingDraftPhotos } from "./draft-enrich";
 import { draftCentralAchievements } from "./central-achievements";
 import { syncDebutCaps } from "./debut-caps";
 import { matchResultCardsOn, resolveRoundSchedules } from "./round-schedules";
+import { runAvailabilitySchedule } from "./availability-schedule";
 
 type Logger = PostCommitLogger & {
   info: (obj: unknown, msg?: string) => void;
@@ -131,6 +132,19 @@ export async function runDraftSweep(
       }
     } catch (err) {
       logger.error({ err, tenantId }, "debut caps failed");
+    }
+    // Player availability (plan 2026-10-06-002 U4): send, remind and cut-off on
+    // the club's schedule. A no-op unless the club has switched it on.
+    try {
+      const avail = await runAvailabilitySchedule(tenantId, now, { logger });
+      if (avail.ran.length || avail.retried) {
+        logger.info(
+          { tenantId, roundId: avail.roundId, ran: avail.ran, retried: avail.retried },
+          "availability round",
+        );
+      }
+    } catch (err) {
+      logger.error({ err, tenantId }, "availability schedule failed");
     }
   }
   if (scope.kind === "scheduled" && (await tenantIsCentral(tenantId))) {
