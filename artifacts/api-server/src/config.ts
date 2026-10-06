@@ -77,6 +77,25 @@ export const env = {
   /** Shared secret for POST /api/internal/draft-sweep; unset = endpoint closed. */
   SOCIAL_SWEEP_SECRET: () => optional("SOCIAL_SWEEP_SECRET"),
 
+  // ── Meta publishing (plan 2026-10-06-001) ────────────────────────────────
+  /** Platform kill switch: connect and publish run only when this is "1". */
+  metaPublishingEnabled: () => process.env.META_PUBLISHING_ENABLED === "1",
+  META_APP_ID: () => optional("META_APP_ID"),
+  META_APP_SECRET: () => optional("META_APP_SECRET"),
+  /** Facebook Login for Business configuration id (replaces `scope`). */
+  META_LOGIN_CONFIG_ID: () => optional("META_LOGIN_CONFIG_ID"),
+  /** Pinned Graph API version (KTD14). */
+  META_GRAPH_VERSION: () => optional("META_GRAPH_VERSION") ?? "v26.0",
+  /** Page-token encryption key: 32 random bytes, base64 (KTD2). */
+  SOCIAL_TOKEN_KEY: () => optional("SOCIAL_TOKEN_KEY"),
+  SOCIAL_TOKEN_KEY_VERSION: () => optional("SOCIAL_TOKEN_KEY_VERSION"),
+  /** The key being rotated out, as "<version>:<base64>"; decrypt only. */
+  SOCIAL_TOKEN_KEY_PREVIOUS: () => optional("SOCIAL_TOKEN_KEY_PREVIOUS"),
+  /** Absolute https origin for image URLs Meta fetches and the OAuth callback. */
+  SOCIAL_PUBLIC_ORIGIN: () => optional("SOCIAL_PUBLIC_ORIGIN"),
+  /** Shared secret for POST /api/internal/publish-sweep; unset = endpoint closed. */
+  SOCIAL_PUBLISH_SECRET: () => optional("SOCIAL_PUBLISH_SECRET"),
+
   // ── PlayHQ scheduled sync ────────────────────────────────────────────────
   /** Shared secret for POST /api/internal/playhq/ingest; unset = endpoint closed. */
   PLAYHQ_SYNC_SECRET: () => optional("PLAYHQ_SYNC_SECRET"),
@@ -152,6 +171,20 @@ const BootSchema = z
     PLATFORM_BASE_DOMAIN: z.string().optional(),
     PROXY_SHARED_SECRET: z.string().min(16, "must be at least 16 characters").optional(),
     CENTRAL_PROJECTION: z.enum(["off", "dry", "on"]).optional(),
+    META_PUBLISHING_ENABLED: z.enum(["0", "1"]).optional(),
+    META_APP_ID: z.string().optional(),
+    META_APP_SECRET: z.string().optional(),
+    META_LOGIN_CONFIG_ID: z.string().optional(),
+    SOCIAL_TOKEN_KEY: z
+      .string()
+      .refine((v) => Buffer.from(v, "base64").length === 32, "must be 32 bytes, base64")
+      .optional(),
+    SOCIAL_TOKEN_KEY_VERSION: positiveInt.optional(),
+    SOCIAL_PUBLIC_ORIGIN: z
+      .string()
+      .url()
+      .refine((v) => v.startsWith("https://"), "must be an https:// origin")
+      .optional(),
   })
   .superRefine((cfg, ctx) => {
     if (cfg.NODE_ENV === "production" && !cfg.SESSION_SECRET) {
@@ -160,6 +193,26 @@ const BootSchema = z
         path: ["SESSION_SECRET"],
         message: "is required in production",
       });
+    }
+    // Meta publishing fails closed (KTD2): switched on means every piece it
+    // needs is present, or the server refuses to start.
+    if (cfg.META_PUBLISHING_ENABLED === "1") {
+      const required = [
+        "META_APP_ID",
+        "META_APP_SECRET",
+        "META_LOGIN_CONFIG_ID",
+        "SOCIAL_TOKEN_KEY",
+        "SOCIAL_PUBLIC_ORIGIN",
+      ] as const;
+      for (const key of required) {
+        if (!cfg[key]) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: "is required when META_PUBLISHING_ENABLED=1",
+          });
+        }
+      }
     }
   });
 
