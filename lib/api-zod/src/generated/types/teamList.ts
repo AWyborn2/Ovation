@@ -15,4 +15,6 @@ export interface TeamList {
   /** Who wrote the list: "admin", "playhq" or "selection" (a side finalised in the Selection Hub, which is changed there rather than here) */
   source?: string;
   createdAt: Date;
+  /** Players in this list the match records say have never played a senior game for the club (automatic debut). An admin's `debut` on a player overrides it. */
+  debutPlayerIds?: number[];
 }

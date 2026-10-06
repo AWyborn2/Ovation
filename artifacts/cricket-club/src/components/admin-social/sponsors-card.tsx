@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Upload, Loader2 } from "lucide-react";
 import type { CardKind } from "@/lib/share-card";
 import { CardKindPicker } from "@/components/card-kind-picker";
+import { TeamSponsorPicker } from "./team-sponsor-picker";
 import { EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { ImageCropDialog, SPONSOR_ASPECTS } from "@/components/admin-ui/image-crop-dialog";
@@ -38,6 +39,7 @@ export function SponsorsCard({
   const [logoUrl, setLogoUrl] = useState<string>("");
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [cardKinds, setCardKinds] = useState<CardKind[]>([]);
+  const [grades, setGrades] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [logoDialogOpen, setLogoDialogOpen] = useState(false);
 
@@ -70,6 +72,7 @@ export function SponsorsCard({
           activeFrom: activeFrom || null,
           activeTo: activeTo || null,
           cardKinds,
+          grades,
           displayOrder: sponsors.length,
         },
       },
@@ -82,6 +85,7 @@ export function SponsorsCard({
           setLogoUrl("");
           setPreviewUrl("");
           setCardKinds([]);
+          setGrades([]);
         },
       },
     );
@@ -133,6 +137,14 @@ export function SponsorsCard({
               <CardKindPicker value={cardKinds} onChange={setCardKinds} />
               <p className="text-xs text-muted-foreground">
                 No specific types selected = logo shows on all card types.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Team sponsor (optional)</Label>
+              <TeamSponsorPicker value={grades} onChange={setGrades} />
+              <p className="text-xs text-muted-foreground">
+                Team list cards for these teams carry this sponsor as their one logo. Teams without
+                their own sponsor show the presenting sponsor.
               </p>
             </div>
           </div>
@@ -235,6 +247,13 @@ export function SponsorsCard({
                     value={s.cardKinds}
                     onChange={(next) => update.mutate({ id: s.id, data: { cardKinds: next } })}
                   />
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Team sponsor for</div>
+                    <TeamSponsorPicker
+                      value={s.grades}
+                      onChange={(next) => update.mutate({ id: s.id, data: { grades: next } })}
+                    />
+                  </div>
                   <div className="flex items-center gap-2">
                     <Switch
                       id={`sp-presenting-${s.id}`}

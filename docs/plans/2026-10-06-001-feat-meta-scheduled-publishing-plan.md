@@ -16,7 +16,7 @@ origin: docs/plans/2026-09-24-001-feat-social-studio-automation-plan.md
 - **Objective:** A club connects its Facebook Page and Instagram professional account once, and Social Studio drafts publish to both — at a time the officer sets, or automatically at the auto-post deadline — with retries, per-platform status and failure alerts.
 - **Origin:** R30 of `docs/plans/2026-09-24-001-feat-social-studio-automation-plan.md` (the deferred "Meta posting" milestone), scoped in a brainstorm on 2026-10-06 and revised after document review the same day.
 - **Product authority:** Ash (Ovation owner, Halls Head media officer). The Product Contract below is authoritative; the Planning Contract is the implementer's baseline and may be refined where code disagrees.
-- **Execution profile:** Eleven units, each its own PR in dependency order. Prod schema changes arrive only when merged `main` is published. The Replit agent migrates the dev DB and reads prod, and prod's real tables are verified after publish. Publishing stays behind a platform kill switch until Meta grants Advanced Access.
+- **Execution profile:** Eleven units, each its own PR in dependency order. Production schema changes are run by hand in Replit's Production SQL runner before republishing, and prod's real tables are verified afterwards. Publishing stays behind a platform kill switch until Meta grants Advanced Access.
 - **Open blockers:** None for building and testing. Going live for clubs other than Halls Head waits on Meta Business Verification and App Review (external, Ash-owned).
 - **Stop conditions:** Stop and ask if implementation shows the Meta app cannot use one platform-level OAuth redirect host for all tenants, or if Page tokens issued via Facebook Login for Business expire on a schedule rather than only on revocation.
 
@@ -89,7 +89,7 @@ Social Studio now drafts a round's cards automatically and hands the officer a p
 ### Success Criteria
 
 - With auto-publish on, a round's fresh drafts reach both platforms with no officer action.
-- A scheduled post goes out within the publish cadence (five minutes) of its time; if the fallback trigger is used, typically within 15 minutes.
+- A scheduled post goes out within the publish cadence (five minutes) of its time; if the five-minute job stops, the hourly sweep still publishes it within the hour.
 - No duplicate posts in pilot use; every failure leaves a visible reason and a working retry.
 - A revoked connection is visible to the club within a day, before the next scheduled post fails.
 
@@ -131,16 +131,16 @@ Product Contract preservation: changed R1, R2, R5, R12 and AE2–AE4, AE7, and a
 
 - KTD1. **Facebook Login for Business, Page token stored, user token discarded.** One connection covers the Page and its linked Instagram account; Instagram publishing uses the Page token. The long-lived user token is exchanged once to list Pages and is never persisted. Between the callback and the admin's Page choice, only the candidate Pages' tokens are held, encrypted, in a pending-choice record. That record is bound to tenant and admin, expires after about 10 minutes and is deleted on use. The chosen Page's token (no expiry, dies only on revocation) is then stored.
 - KTD2. **Tokens encrypted at rest with a managed app-level key.** AES-256-GCM. The key is 32 random bytes held only in Replit Secrets, separate from the Meta app secret, and never logged or present in dev or CI fixtures. The DB holds ciphertext, IV and key version. Rotation re-encrypts all rows under a new version while the old key stays loadable for decryption. Startup fails closed when publishing is enabled and the key is missing.
-- KTD3. **One platform-level OAuth callback host, hardened state.** Meta needs registered redirect URIs, and tenants live on subdomains and custom domains. The connect flow redirects through a single callback on the platform host. The signed, expiring `state` carries tenant, admin, return URL and a nonce, and the nonce is also set in a short-lived HttpOnly cookie and consumed on first use. The return URL must be one of the tenant's known hosts. On both callback and Page choice, the admin is re-checked as a current admin of that tenant.
+- KTD3. **One platform-level OAuth callback host, hardened state.** Meta needs registered redirect URIs, and tenants live on subdomains and custom domains. The connect flow redirects through a single callback on the platform host. The signed, expiring `state` carries tenant, admin, a nonce and the return URL, which the server builds from the host the admin started on (never client input). The callback answers with a single-use, signed completion token that travels only in the connecting browser's redirect; listing and choosing Pages need that token and the same admin's session on the same tenant, so a stranger's login can never land on a club. On both callback and Page choice, the admin is re-checked as a current admin of that tenant.
 - KTD4. **Publications are their own rows, one per draft, platform and post type.** A row carries platform, post type (`feed` or `story`), scheduled time, status, attempt count, next attempt time, last error, Meta container and photo ids, and the external post id. Statuses are `scheduled`, `held`, `publishing`, `published`, `failed` and `cancelled`. Draft status stays `awaiting_review | ready | posted | dismissed`. A draft becomes `posted` when all its non-cancelled publications are `published`. A draft with a final `failed` row and at least one `published` row stays ready and surfaces on needs-attention (R18).
-- KTD5. **Ovation's own publish worker, every five minutes.** Instagram has no API scheduling, so Facebook's native scheduling is not used either — one model for both. A new internal endpoint uses its own secret, distinct from the draft-sweep secret, with a constant-time comparison. It fails closed when the secret is unset. It runs single-flight with a per-run cap on rows and renders. A Replit Scheduled Deployment calls it every five minutes, and the scheduled draft sweep calls it at its end. Autoscale scales to zero, so there is no in-process timer.
+- KTD5. **Ovation's own publish worker, every five minutes.** Instagram has no API scheduling, so Facebook's native scheduling is not used either — one model for both. A new internal endpoint uses its own secret, distinct from the draft-sweep secret, with a constant-time comparison. It fails closed when the secret is unset. It runs single-flight with a per-run cap on rows and renders. An external cron-job.org job calls it every five minutes (GitHub's schedule fires too rarely, as the PlayHQ sync found), and the hourly scheduled draft sweep runs it per club as a backstop. Autoscale scales to zero, so there is no in-process timer.
 - KTD6. **Claim with a guarded update; persist an id before anything goes live.** The worker claims a publication with a conditional update: either `scheduled` and due, or `publishing` with a stale lease. The lease is longer than one render plus one Meta call. Every post type persists a Meta id before the step that makes it live:
   - Instagram persists container ids.
   - Facebook uploads every photo unpublished and persists the photo ids, then publishes. A single photo uses `/{page}/feed` with one `attached_media`, and a Story uses `photo_stories`.
   - Before re-running a publish step, the worker runs the adapter's landed-check: Instagram container `status_code`, Page feed posts, or Page stories, matched on the stored ids.
   - The external post id is the done marker (R11, AE7).
 - KTD6a. **Instagram container status is checked across runs, not polled inside one.** After creating containers, the worker persists their ids and returns the row to `scheduled` with `next_attempt_at` about a minute ahead. Later runs check status once each and publish on FINISHED. Five minutes after the container was created, the attempt counts as transient. A retry for R9 re-renders and creates new containers rather than reusing expired ones.
-- KTD7. **Render at publish time, as JPEG, at an unguessable public URL, then clean up.** The worker renders through the existing post-pack path (`renderCardStill` via the Puppeteer harness). It converts each image to sRGB JPEG under 8 MB with `sharp` and stores it under a tenant-scoped prefix with a random 128-bit key. Absolute URLs come from a new public-origin env var. The images are deleted a short grace after the publication reaches `published`, final `failed` or `cancelled`. Feed posts use the club's portrait size if enabled, else square; Stories use the story size; landscape is not published.
+- KTD7. **Render at publish time, as JPEG, at an unguessable public URL, then clean up.** The worker renders through the existing post-pack path (`renderCardStill` via the Puppeteer harness). It converts each image to sRGB JPEG under 8 MB with `sharp` and stores it at an unguessable object path (a random UUID under the object store's private directory). Absolute URLs come from a new public-origin env var. The images are deleted a short grace after the publication reaches `published`, final `failed` or `cancelled`. Feed posts use the club's portrait size if enabled, else square; Stories use the story size; landscape is not published.
 - KTD8. **Carousels follow the post-pack card-set split, capped at ten.** Multi-page drafts publish as one carousel or album. A set larger than ten images fails up front with a clear reason. Stories publish each page as its own story in order, also capped at ten.
 - KTD9. **Captions per platform at publish time.** If the officer has edited the draft (`editedAt` set), its caption is used on both platforms. Otherwise the Facebook caption is rendered from the club's Facebook template with the same tokens, and Instagram uses the stored caption. Stories carry no caption.
 - KTD10. **Error classes decide retries.**
@@ -212,7 +212,7 @@ Instagram steps: create a child container per image, then a carousel parent (or 
 - The freshness cut-off defaults to 24 hours after first import and must be at least the auto-post window; the API enforces this as well as the UI.
 - Scheduled times are honoured to within the five-minute cadence; the UI says "around" for auto-publish times.
 - Only one Page and Instagram account per club; a club with several Pages picks one during connect.
-- A Replit Scheduled Deployment can run every five minutes. If not, the GitHub Actions pattern from `playhq-sync.yml` is the fallback. It is best-effort, so the cadence wording becomes "typically within 15 minutes".
+- cron-job.org runs the five-minute job reliably. If it stops, the hourly draft sweep still publishes due posts, an hour late at worst.
 
 ### Sequencing
 
@@ -246,7 +246,7 @@ U1 and U2 in parallel, then U3 and U4 in parallel, then U5, U6, U7 and U8. U9 an
   - Every table carries a tenant id like its neighbours.
 - **Patterns to follow:** `lib/db/src/schema/social_cards.ts` (tenant id column, partial indexes, check constraints); migration naming in `lib/db/migrations/`.
 - **Test scenarios:** Test expectation: none -- schema and migration only; behaviour is proven by U3, U5–U7 integration tests running against the migrated schema in CI.
-- **Verification:** The migration applies cleanly on a fresh CI Postgres and on the dev DB via the Replit agent. After publish, a read-only check confirms prod's tables, columns and indexes match 0030, checking the schema itself rather than the migration ledger.
+- **Verification:** The migration applies cleanly on a fresh CI Postgres. On production it is run by hand in Replit's Production SQL runner before republishing; a read-only check then confirms prod's tables, columns and indexes match 0030, checking the schema itself rather than the migration ledger.
 
 ### U2. Token crypto and Meta Graph client
 
@@ -264,7 +264,7 @@ U1 and U2 in parallel, then U3 and U4 in parallel, then U5, U6, U7 and U8. U9 an
   - `secret-box` encrypts and decrypts with a key version, loading current and previous keys.
   - The Meta client is a thin `fetch` wrapper. It pins the version, sends `appsecret_proof`, keeps tokens in headers or bodies, and redacts per KTD15.
   - Error parsing returns `transient | token | duplicate | permanent`, keeping Meta's code and message.
-  - The adapter implements publish for each post type and platform using KTD6's unpublished-first Facebook flow, the landed-check per post type, the Instagram container status check, and health via `debug_token`.
+  - The adapter implements publish for each post type and platform using KTD6's unpublished-first Facebook flow, the landed-check per post type, the Instagram container status check, and a health check that reads the Page and Instagram account with the stored token.
   - A test seam swaps the HTTP layer, like `setEmailTransport`.
 - **Patterns to follow:** `artifacts/api-server/src/lib/integrations/email.ts` (fetch client and test seam), `config.ts` lazy `optional()` getters.
 - **Test scenarios:**
@@ -289,8 +289,8 @@ U1 and U2 in parallel, then U3 and U4 in parallel, then U5, U6, U7 and U8. U9 an
   - `artifacts/api-server/src/app.ts`
   - Tests: `artifacts/api-server/src/routes/social-connections.test.ts`, `artifacts/api-server/src/routes/meta-callbacks.test.ts`
 - **Approach:**
-  - **Start connect.** It requires an admin, the `socialPublishing` entitlement and the kill switch on. It refuses to replace an existing `connected` connection unless the request carries an explicit replace confirmation. It sets the nonce cookie and returns the Meta login URL with KTD3's signed state.
-  - **Callback.** It verifies state, the nonce and the return host, and re-checks the admin. It exchanges the code for a long-lived user token and lists the Pages with their linked Instagram accounts. It writes the pending-choice record and drops the user token. Then it returns to the tenant admin to pick a Page, or auto-picks when there is only one.
+  - **Start connect.** It requires an admin, the `socialPublishing` entitlement and the kill switch on. It refuses to replace an existing `connected` connection unless the request carries an explicit replace confirmation. It returns the Meta login URL with KTD3's signed state.
+  - **Callback.** It verifies the state and re-checks the admin. It exchanges the code for a long-lived user token and lists the Pages with their linked Instagram accounts. It writes the pending-choice record, drops the user token, and returns to the tenant admin with a completion token; the admin picks a Page, or the UI connects the only one.
   - **Choose Page.** It re-checks tenant and admin against the pending record, stores the encrypted token, marks the connection `connected`, deletes the pending record, and releases `held` publications per R16.
   - **Disconnect.** It cancels the tenant's scheduled and held publications and clears the token.
   - **Deauthorize and data deletion.** These follow KTD16.
@@ -298,7 +298,7 @@ U1 and U2 in parallel, then U3 and U4 in parallel, then U5, U6, U7 and U8. U9 an
 - **Patterns to follow:** secret-checked internal routes in `routes/internal-draft-sweep.ts` (mounting before tenant context), `requireAdmin` / `requireEntitlement` in `routes/social-drafts.ts`.
 - **Test scenarios:**
   - Connect start returns 403 without the entitlement or with the kill switch off, and 401 for a non-admin. It returns 409 when already connected and no replace confirmation is sent.
-  - A callback is rejected and stores nothing when its state is expired, tampered, replayed or for another tenant. The same goes for a missing or mismatched nonce cookie and for a return URL outside the tenant's hosts.
+  - A callback is rejected and stores nothing when its state is expired, tampered, replayed or for another tenant. A completion token is single-use and works only for the admin and tenant it was issued to.
   - A callback for an admin removed since starting is rejected.
   - With one Page and a linked Instagram account, the callback stores the connection, and status shows both names. No user token is stored anywhere.
   - With several Pages, a pending record is created. Choosing a Page consumes the record, and a second choose call fails. An expired record fails.
@@ -446,8 +446,8 @@ U1 and U2 in parallel, then U3 and U4 in parallel, then U5, U6, U7 and U8. U9 an
   - `artifacts/api-server/src/lib/draft-notifications.ts` (reconnect notice)
   - Tests: `artifacts/api-server/src/lib/publishing/connection-health.test.ts`
 - **Approach:**
-  - At most once per 24 hours per connected tenant, the scheduled sweep calls the adapter's health check.
-  - An invalid token, or a missing publish scope, flips the connection to `needs_reconnect` and holds scheduled rows.
+  - At most once per 24 hours per connected tenant, the scheduled sweep calls the adapter's health check: reading the Page (and Instagram account) with the stored token, which keeps the token out of URLs (no `debug_token`).
+  - A token error, or a permission error, flips the connection to `needs_reconnect` and holds scheduled rows.
   - It sends one `reconnect_needed` in-app and email notice.
 - **Patterns to follow:** `lastSweepAt` bookkeeping in `lib/draft-sweep.ts`.
 - **Test scenarios:**
@@ -515,11 +515,11 @@ U1 and U2 in parallel, then U3 and U4 in parallel, then U5, U6, U7 and U8. U9 an
 - **Goal:** Record the governance decision, document operations, and prepare the App Review submission (R15).
 - **Requirements:** R15.
 - **Dependencies:** U3 (callbacks exist), U10 (screens to record).
-- **Files:** `CLAUDE.md` (Data governance section), `AGENTS.md` (current-state map), `docs/runbooks/meta-publishing.md` (new), `artifacts/cricket-club/src/pages/privacy.tsx` or the existing privacy page (Meta data use and deletion instructions), `replit.md` (env vars, scheduled job).
+- **Files:** `CLAUDE.md` (Data governance section), `AGENTS.md` (current-state map), `docs/runbooks/meta-publishing.md` (new), `replit.md` (env vars, scheduled job). The privacy policy URL Meta requires is a business document Ash supplies; deletion is handled by the data-deletion callback.
 - **Approach:** CLAUDE.md states that clubs publishing their own results to their own accounts is not treated as commercialising scraped data (decision of 2026-10-06), while the licence work still stands for association-level or resale uses. The runbook covers:
   - the env vars and the kill switch
   - generating the encryption key and rotating it under KTD2
-  - the five-minute Replit Scheduled Deployment and the GitHub Actions fallback
+  - the five-minute cron-job.org job and the hourly sweep backstop
   - the dev-migrate, publish and verify-prod migration flow
   - turning the pilot on
   - Graph version bumps
@@ -533,7 +533,7 @@ U1 and U2 in parallel, then U3 and U4 in parallel, then U5, U6, U7 and U8. U9 an
 
 ## System-Wide Impact
 
-- **Security:** First stored third-party credential in the app. Tokens are encrypted under a managed key (KTD2) and never sent in URLs, logged or returned by any API (KTD15). They are cleared on disconnect, deauthorize and data deletion. OAuth state is signed, nonce-bound, single-use and limited to the tenant's own hosts (KTD3).
+- **Security:** First stored third-party credential in the app. Tokens are encrypted under a managed key (KTD2) and never sent in URLs, logged or returned by any API (KTD15). They are cleared on disconnect, deauthorize and data deletion. OAuth state is signed and expiring, and completion needs a single-use token bound to the connecting admin (KTD3).
 - **Tenant isolation:** Connections, pending choices and publications carry a tenant id. Every route is tenant-scoped, and the U3 and U5 tests include isolation cases.
 - **Juniors:** Junior drafts never auto-publish (R6), and junior cards already render without photos (`post-pack.ts`).
 - **Public content:** Publishing makes stats public on club accounts at volume. Data corrections after posting surface only as the existing stale notice (R12). Images awaiting Meta's fetch live at unguessable URLs and are deleted afterwards (KTD7).
@@ -558,18 +558,18 @@ U1 and U2 in parallel, then U3 and U4 in parallel, then U5, U6, U7 and U8. U9 an
 
 ## Verification Contract
 
-| Gate                | Command                                                                                                                                           | Applies to     |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| Codegen in sync     | `pnpm --filter @workspace/api-spec run codegen` then a clean `git diff`                                                                           | U3, U5, U6, U7 |
-| Typecheck           | `pnpm run typecheck`                                                                                                                              | all            |
-| Lint                | `pnpm run lint`                                                                                                                                   | all            |
-| Format              | `npx prettier@3.9.6 --check .`                                                                                                                    | all            |
-| API tests (real DB) | `pnpm --filter @workspace/api-server run test`                                                                                                    | U2–U8          |
-| Web tests           | `pnpm --filter @workspace/cricket-club run test`                                                                                                  | U9, U10        |
-| Lib tests           | `pnpm run test:libs`                                                                                                                              | U1, U4         |
-| CI                  | `.github/workflows/ci.yml` green on the PR                                                                                                        | all            |
-| Prod schema         | After U1 merges: Replit agent migrates dev and verifies; Ash publishes; read-only check that prod's actual 0030 tables, columns and indexes exist | U1             |
-| Live smoke          | Halls Head connect, then one scheduled single image, one carousel and one story to the real Page and Instagram account                            | after U10      |
+| Gate                | Command                                                                                                                               | Applies to     |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| Codegen in sync     | `pnpm --filter @workspace/api-spec run codegen` then a clean `git diff`                                                               | U3, U5, U6, U7 |
+| Typecheck           | `pnpm run typecheck`                                                                                                                  | all            |
+| Lint                | `pnpm run lint`                                                                                                                       | all            |
+| Format              | `npx prettier@3.9.6 --check .`                                                                                                        | all            |
+| API tests (real DB) | `pnpm --filter @workspace/api-server run test`                                                                                        | U2–U8          |
+| Web tests           | `pnpm --filter @workspace/cricket-club run test`                                                                                      | U9, U10        |
+| Lib tests           | `pnpm run test:libs`                                                                                                                  | U1, U4         |
+| CI                  | `.github/workflows/ci.yml` green on the PR                                                                                            | all            |
+| Prod schema         | Run 0030 in Replit's Production SQL runner, republish, then read-only check that prod's actual 0030 tables, columns and indexes exist | U1             |
+| Live smoke          | Halls Head connect, then one scheduled single image, one carousel and one story to the real Page and Instagram account                | after U10      |
 
 ---
 

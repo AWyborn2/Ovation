@@ -20,9 +20,9 @@ import { purgeTestTenants } from "./tenant-purge.test-helpers";
 
 /**
  * Availability and Selection Hub schema (plan 2026-10-06-002 U1, migration
- * 0031) against real Postgres: the uniques the scheduler and Hub rely on, the
+ * 0032) against real Postgres: the uniques the scheduler and Hub rely on, the
  * cascades from fixture and round, the settings defaults (off until a club
- * opts in, KTD11), tenant purge reaching every new table, and re-applying 0031.
+ * opts in, KTD11), tenant purge reaching every new table, and re-applying 0032.
  *
  * Real-DB integration test (needs DATABASE_URL with migrations applied; CI's
  * api-tests job provides it).
@@ -55,7 +55,7 @@ async function expectPgError(promise: Promise<unknown>, code: string): Promise<v
 const UNIQUE = "23505";
 const CHECK = "23514";
 
-describe("availability and selection schema (migration 0031)", () => {
+describe("availability and selection schema (migration 0032)", () => {
   let tenantId: number;
   let memberId: number;
   let roundId: number;
@@ -274,7 +274,7 @@ describe("availability and selection schema (migration 0031)", () => {
     expect(after).toMatchObject({ captainMemberId: null, keeperMemberId: null });
   });
 
-  it("re-applying migration 0031 is a no-op", async () => {
+  it("re-applying migration 0032 is a no-op", async () => {
     const count = async () =>
       (
         await db.execute<{ n: string }>(
@@ -292,7 +292,7 @@ describe("availability and selection schema (migration 0031)", () => {
         "lib",
         "db",
         "migrations",
-        "0031_availability_selection.sql",
+        "0032_availability_selection.sql",
       ),
       "utf8",
     );

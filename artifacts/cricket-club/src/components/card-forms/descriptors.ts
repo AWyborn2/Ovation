@@ -93,8 +93,16 @@ const HOME_AWAY = [
 const TEAM_ROLE = [
   { value: "", label: "—" },
   { value: "C", label: "Captain" },
+  { value: "VC", label: "Vice-captain" },
   { value: "WK", label: "Keeper" },
   { value: "C/WK", label: "Capt + Keeper" },
+  { value: "VC/WK", label: "Vice + Keeper" },
+] as const;
+
+/** Team-list designs (Starting XI: Club Kit; other packs keep their usual design). */
+const TEAM_LIST_DESIGN = [
+  { value: "", label: "Team Selection" },
+  { value: "starting-xi", label: "Starting XI" },
 ] as const;
 
 const WRAP_OUTCOME = [
@@ -259,9 +267,16 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
   teamList: {
     prefill: "fixture",
     fields: [
+      { key: "design", label: "Design", type: "select", options: TEAM_LIST_DESIGN },
       { key: "gradeRound", label: "Grade / round heading", type: "text" },
       { key: "competitionLine", label: "Competition line", type: "text" },
       { key: "venueDateTime", label: "Venue / date / time", type: "text", full: true },
+      // The Starting XI sets the match out in parts.
+      { key: "roundLabel", label: "Round", type: "text", placeholder: "ROUND 8" },
+      { key: "opponent", label: "Opponent", type: "text" },
+      { key: "venue", label: "Venue", type: "text" },
+      { key: "date", label: "Date", type: "text", placeholder: "SAT 14 DEC" },
+      { key: "startTime", label: "Start time", type: "text", placeholder: "12:00 PM" },
       { key: "squadPhotoUrl", label: "Squad photo", type: "image", full: true },
     ],
     repeat: {
@@ -272,6 +287,7 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
         { key: "order", label: "#", type: "number", width: "w-14" },
         { key: "surname", label: "Surname", type: "text" },
         { key: "role", label: "Role", type: "select", options: TEAM_ROLE, width: "w-32" },
+        { key: "debut", label: "Debut", type: "switch", width: "w-14" },
       ],
       newRow: () => ({ order: 0, surname: "", role: undefined }),
     },
@@ -439,6 +455,8 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
     fields: [
       { key: "roundLabel", label: "Round", type: "text", placeholder: "ROUND 15" },
       { key: "date", label: "Date", type: "text", placeholder: "SATURDAY 14 FEB" },
+      { key: "audience", label: "Teams", type: "text", placeholder: "MEN'S" },
+      { key: "design", label: "Team card design", type: "select", options: TEAM_LIST_DESIGN },
     ],
   },
 

@@ -102,7 +102,7 @@ import { tenantsTable } from "./tenants";
  *   club_history_curated_rows (U11 / migration 0022) — which curated rows a
  *   history batch created; directly tenant-scoped the same way.
  *
- * APPLIED (player availability and Selection Hub, migration 0031):
+ * APPLIED (player availability and Selection Hub, migration 0032):
  *   squad_members, availability_settings, availability_rounds,
  *   availability_requests, availability_tokens, availability_responses,
  *   availability_away, selections, selection_events — directly tenant-scoped

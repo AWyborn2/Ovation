@@ -287,7 +287,7 @@ flowchart LR
 
 | U-ID | Title                                        | Key files                                                                                       | Depends on |
 | ---- | -------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------- |
-| U1   | Schema and migration                         | `lib/db/src/schema/availability.ts`, `lib/db/migrations/0031_*.sql`                             | —          |
+| U1   | Schema and migration                         | `lib/db/src/schema/availability.ts`, `lib/db/migrations/0032_*.sql`                             | —          |
 | U2   | SMS adapter and member messaging             | `api-server/src/lib/integrations/sms.ts`, `api-server/src/lib/availability-messaging.ts`        | U1         |
 | U3   | Squad import and register API                | `api-server/src/routes/squad.ts`, `api-server/src/lib/squad-import.ts`                          | U1         |
 | U4   | Settings and round scheduler                 | `api-server/src/routes/availability-settings.ts`, `api-server/src/lib/availability-schedule.ts` | U1, U2, U6 |
@@ -312,7 +312,7 @@ flowchart LR
 **Files:**
 
 - `lib/db/src/schema/availability.ts` (new); `lib/db/src/schema/index.ts` (export)
-- `lib/db/migrations/0031_availability_selection.sql` and `lib/db/migrations/meta/*` (generated)
+- `lib/db/migrations/0032_availability_selection.sql` and `lib/db/migrations/meta/*` (generated)
 - `artifacts/api-server/src/lib/tenant-purge.test-helpers.ts` (purge the new tables if they don't cascade from tenants)
 - `lib/db/src/schema/fixtures.ts` (document `selection` as a `team_lists.source` value)
 
@@ -746,7 +746,7 @@ flowchart LR
 ## Definition of Done
 
 - U1–U11 implemented with their test scenarios, passing in CI.
-- Migration `0031` is idempotent, and the PR says production needs it applied before republishing (per `CLAUDE.md` STATUS).
+- Migration `0032` is idempotent, and the PR says production needs it applied before republishing (per `CLAUDE.md` STATUS).
 - The PR documents the new optional `TWILIO_*` env vars; without them the feature sends email only.
 - With `availability_settings.enabled` false (the default) the scheduled sweep creates no rounds and sends nothing.
 - No contact value reaches captain payloads, logs or public assets.

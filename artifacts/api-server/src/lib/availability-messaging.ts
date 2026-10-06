@@ -10,6 +10,7 @@ import {
   type NotificationRow,
   type RecipientSlot,
   type SquadMemberRow,
+  type TeamListRole,
 } from "@workspace/db";
 import { sendEmail } from "./integrations/email";
 import {
@@ -92,7 +93,7 @@ export type MessageContext = {
   /** The match, for `selected` and `deselected`. */
   fixture?: MessageFixture;
   /** The member's role in the side, for `selected`. */
-  role?: "C" | "WK" | "C/WK" | null;
+  role?: TeamListRole | null;
   /** For `contact_changed`: the slot that changed and its PREVIOUS contact. */
   previous?: { slot: RecipientSlot; mobile: string | null; email: string | null };
   /** The current request, when there is one, so links use its host. */
@@ -202,7 +203,13 @@ function fitSms(candidates: string[]): string {
   return candidates[candidates.length - 1];
 }
 
-const ROLE_TEXT = { C: "captain", WK: "keeper", "C/WK": "captain and keeper" } as const;
+const ROLE_TEXT: Record<TeamListRole, string> = {
+  C: "captain",
+  VC: "vice-captain",
+  WK: "keeper",
+  "C/WK": "captain and keeper",
+  "VC/WK": "vice-captain and keeper",
+};
 
 type TextInput = {
   kind: MessageKind;

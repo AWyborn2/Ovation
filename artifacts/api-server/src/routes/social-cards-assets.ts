@@ -30,6 +30,11 @@ import { ensureThemes } from "../lib/social-cards-helpers";
  */
 const router: IRouter = Router();
 
+/** A sponsor's teams: trimmed, blanks and repeats dropped. */
+function cleanGrades(grades: readonly string[] | undefined): string[] {
+  return [...new Set((grades ?? []).map((g) => g.trim()).filter(Boolean))];
+}
+
 router.get("/sponsors", async (req, res): Promise<void> => {
   const rows = await db
     .select()
@@ -70,6 +75,7 @@ router.post(
           activeFrom: parsed.data.activeFrom ?? null,
           activeTo: parsed.data.activeTo ?? null,
           cardKinds: parsed.data.cardKinds ?? [],
+          grades: cleanGrades(parsed.data.grades),
           isPresenting,
           displayOrder: parsed.data.displayOrder ?? 0,
         })
@@ -110,6 +116,7 @@ router.patch(
         .update(sponsorsTable)
         .set({
           ...body.data,
+          grades: body.data.grades === undefined ? undefined : cleanGrades(body.data.grades),
           activeFrom: body.data.activeFrom === undefined ? undefined : body.data.activeFrom,
           activeTo: body.data.activeTo === undefined ? undefined : body.data.activeTo,
         })

@@ -70,7 +70,9 @@ export type MatchSummaryInnings = {
 export type TeamListPlayer = {
   order: number;
   surname: string;
-  role?: "C" | "WK" | "C/WK";
+  role?: "C" | "VC" | "WK" | "C/WK" | "VC/WK";
+  /** First senior game for the club: a DEBUT badge on designs that show one. */
+  debut?: boolean;
 };
 
 /**
@@ -248,7 +250,12 @@ export type ShareCardInput =
       squadPhotoUrl?: string | null;
       /** JUNIOR card: forces the junior brown palette + junior labels. */
       junior?: boolean;
-    } & SetSlideFields)
+      /** The grade the XI is for (picks the team's own sponsor). */
+      grade?: string;
+      /** A named design for the card ("starting-xi"); absent = the pack's usual one. */
+      design?: TeamListDesign;
+    } & TeamListMatchParts &
+      SetSlideFields)
   | ({
       kind: "weekendWrap";
       roundLabel: string;
@@ -347,6 +354,10 @@ export type ShareCardInput =
       roundLabel: string;
       date: string;
       teams: RoundTeam[];
+      /** Whose teams these are ("MEN'S", "WOMEN'S"); the cover names them. */
+      audience?: string;
+      /** The design every team card in the set uses. */
+      design?: TeamListDesign;
     } & SetSlideFields)
   | {
       /**
@@ -371,6 +382,18 @@ export type RoundTeam = {
   venueDateTime: string;
   players: TeamListPlayer[];
   squadPhotoUrl?: string | null;
+} & TeamListMatchParts;
+
+/** Team-list designs a card can ask for by name. */
+export type TeamListDesign = "team-list" | "starting-xi";
+
+/** A team list's match in parts, for designs that set it out separately (Starting XI). */
+export type TeamListMatchParts = {
+  roundLabel?: string;
+  opponent?: string;
+  venue?: string;
+  date?: string;
+  startTime?: string;
 };
 
 /** One grade's fixture on a game-day card. */

@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS "availability_requests" (
 	CONSTRAINT "availability_requests_slot_check" CHECK ("recipient_slot" IN ('account', 'guardian1', 'guardian2'))
 );
 --> statement-breakpoint
--- For a database that applied 0031 before retry_count joined the table above.
+-- For a database that applied an earlier draft of this migration without retry_count.
 ALTER TABLE "availability_requests" ADD COLUMN IF NOT EXISTS "retry_count" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "availability_responses" (
 	"id" serial PRIMARY KEY NOT NULL,

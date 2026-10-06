@@ -12,6 +12,8 @@ import { upsertDraftByKey } from "../draft-upsert";
 import { teamListPhotoPlayer } from "../draft-enrich";
 import { resolveRoundSchedules } from "../round-schedules";
 import { formatFixtureDate, formatFixtureTime } from "./match-day";
+import { autoDebutPlayerIds, isDebut } from "../team-list-debuts";
+import { logger } from "../logger";
 
 /**
  * Team lists are usually named a few days out, so look further ahead than the
@@ -26,9 +28,15 @@ function surnameOf(displayName: string): string {
   return (parts[parts.length - 1] ?? "").toUpperCase();
 }
 
+/**
+ * A fixture's XI as a team-list card. `autoDebuts` holds the players the match
+ * records say are debuting (see team-list-debuts.ts); an admin's `debut` on a
+ * player wins over it.
+ */
 export function teamListToCardInput(
   fixture: FixtureRow,
   players: TeamListPlayer[],
+  autoDebuts: ReadonlySet<number> = new Set(),
 ): Record<string, unknown> {
   const round = (fixture.roundLabel ?? "").toUpperCase();
   const venueDateTime = [
@@ -47,9 +55,42 @@ export function teamListToCardInput(
     players: players
       .filter((p) => p.playerId == null || p.playerId < 90000)
       .sort((a, b) => a.order - b.order)
-      .map((p) => ({ order: p.order, surname: surnameOf(p.displayName), role: p.role })),
+      .map((p) => ({
+        order: p.order,
+        surname: surnameOf(p.displayName),
+        role: p.role,
+        ...(isDebut(p, autoDebuts) ? { debut: true } : {}),
+      })),
     grade: fixture.grade,
+    // The match itself, for designs that set it out in parts (Starting XI).
+    roundLabel: round,
+    opponent: fixture.opponentName,
+    ...(fixture.opponentLogoUrl ? { opponentLogoUrl: fixture.opponentLogoUrl } : {}),
+    homeAway: fixture.isHome ? "HOME" : "AWAY",
+    venue: fixture.venue ?? "",
+    date: formatFixtureDate(fixture.startAt),
+    startTime: formatFixtureTime(fixture.startAt),
   };
+}
+
+/** The XI's automatic debutants; a failed lookup only drops the automatic badges. */
+export async function loadAutoDebuts(
+  tenantId: number,
+  players: readonly TeamListPlayer[],
+  before: Date,
+): Promise<Set<number>> {
+  try {
+    return new Set(
+      await autoDebutPlayerIds(
+        tenantId,
+        players.map((p) => p.playerId),
+        before,
+      ),
+    );
+  } catch (err) {
+    logger.warn({ err, tenantId }, "team list debut lookup failed");
+    return new Set();
+  }
 }
 
 export const teamListKey = (fixtureId: number) => `teamlist:${fixtureId}`;
@@ -106,7 +147,11 @@ export async function generateTeamListDrafts(
       engine: "teamlist",
       family: "matchday",
       sourceKey,
-      cardInput: teamListToCardInput(fixture, players),
+      cardInput: teamListToCardInput(
+        fixture,
+        players,
+        await loadAutoDebuts(tenantId, players, fixture.startAt),
+      ),
       appPath: "/fixtures",
       playerId: featured,
       sourceImportedAt: now,
