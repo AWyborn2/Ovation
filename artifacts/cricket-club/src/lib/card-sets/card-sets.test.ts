@@ -212,6 +212,13 @@ describe("planCardSet", () => {
     expect(slides.slice(1).every((s) => s.input.kind === "teamList")).toBe(true);
     expect(slides[4].input).toMatchObject({ gradeRound: "U15 · ROUND 15", junior: true });
     expect(slides[1].input).toMatchObject({ setPage: "2/5" });
+    // Each team's card keeps its grade (its own sponsor) and the round's design.
+    const designed = planCardSet({ ...base, design: "starting-xi" });
+    expect(designed[1].input).toMatchObject({
+      kind: "teamList",
+      grade: base.teams[0].grade,
+      design: "starting-xi",
+    });
     // One team: just that team's card.
     expect(planCardSet({ ...base, teams: [base.teams[0]] }).map((s) => s.input.kind)).toEqual([
       "teamList",

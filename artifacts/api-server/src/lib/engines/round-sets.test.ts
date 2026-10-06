@@ -123,6 +123,12 @@ beforeAll(async () => {
       isPublished: false,
       players: [{ order: 1, playerId: 6, displayName: "Not Yet" }],
     },
+    {
+      tenantId,
+      fixtureId: fx["Female A"],
+      isPublished: true,
+      players: [{ order: 1, playerId: 7, displayName: "Jo Swing", role: "VC", debut: true }],
+    },
   ]);
 });
 
@@ -178,17 +184,31 @@ describe("round sets on a schedule", () => {
     expect(await draftsLike("teamlist:")).toHaveLength(0);
   });
 
-  it("puts the round's published team lists in one set, fill-ins left out", async () => {
+  it("puts the round's published team lists in men's and women's sets, fill-ins left out", async () => {
     await generateRoundTeamListDrafts(tenantId, FRI_1PM);
     const rows = await draftsLike("teamlists-round:");
-    expect(rows).toHaveLength(1);
-    const input = rows[0].cardInput as {
+    expect(rows).toHaveLength(2);
+    type Input = {
       kind: string;
-      teams: { grade: string; players: { surname: string }[] }[];
+      audience?: string;
+      teams: {
+        grade: string;
+        opponent: string;
+        players: { surname: string; role?: string; debut?: boolean }[];
+      }[];
     };
-    expect(input.kind).toBe("teamListRound");
-    expect(input.teams.map((t) => t.grade)).toEqual(["A Grade", "B Grade"]);
-    expect(input.teams[0].players.map((p) => p.surname)).toEqual(["KEEPER"]);
+    // The men's set keeps the "senior" key a round drafted before the split had.
+    const men = rows.find((r) => r.sourceKey?.endsWith(":senior"))!.cardInput as Input;
+    const women = rows.find((r) => r.sourceKey?.endsWith(":women"))!.cardInput as Input;
+    expect(men.kind).toBe("teamListRound");
+    expect(men.audience).toBe("MEN'S");
+    expect(men.teams.map((t) => t.grade)).toEqual(["A Grade", "B Grade"]);
+    expect(men.teams[0].players.map((p) => p.surname)).toEqual(["KEEPER"]);
+    expect(men.teams[0].opponent).toBe("A Grade Rivals");
+    expect(women.audience).toBe("WOMEN'S");
+    expect(women.teams.map((t) => t.grade)).toEqual(["Female A"]);
+    // The admin's VC and debut carry through to the card.
+    expect(women.teams[0].players[0]).toMatchObject({ role: "VC", debut: true });
   });
 
   it("stops refreshing a round once it has started", async () => {

@@ -13,4 +13,6 @@ export interface TeamList {
   players: TeamListPlayer[];
   isPublished: boolean;
   createdAt: Date;
+  /** Players in this list the match records say have never played a senior game for the club (automatic debut). An admin's `debut` on a player overrides it. */
+  debutPlayerIds?: number[];
 }

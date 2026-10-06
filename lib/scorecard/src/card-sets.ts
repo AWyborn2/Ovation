@@ -194,6 +194,7 @@ type TeamRow = {
   venueDateTime: string;
   players: unknown[];
   squadPhotoUrl?: string | null;
+  [extra: string]: unknown;
 };
 
 export interface PlannedSlide<I extends SetInput = SetInput> {
@@ -240,14 +241,18 @@ function balanced<T>(
   });
 }
 
-function teamCard(team: TeamRow, junior: boolean): SetInput {
+/**
+ * One team of a round as its own team-list card: the team's fields as they
+ * came (its grade, so a grade sponsor finds it, and the match parts the
+ * Starting XI sets out), plus the round's chosen design.
+ */
+function teamCard(team: TeamRow, junior: boolean, design: unknown): SetInput {
+  const { squadPhotoUrl, ...rest } = team;
   return {
+    ...rest,
     kind: "teamList",
-    gradeRound: team.gradeRound,
-    competitionLine: team.competitionLine,
-    venueDateTime: team.venueDateTime,
-    players: team.players,
-    ...(team.squadPhotoUrl ? { squadPhotoUrl: team.squadPhotoUrl } : {}),
+    ...(squadPhotoUrl ? { squadPhotoUrl } : {}),
+    ...(typeof design === "string" && design ? { design } : {}),
     ...(junior ? { junior: true } : {}),
   };
 }
@@ -351,7 +356,10 @@ function planSet(input: SetInput, opts: CardSetOptions): PlannedSlide[] {
           section: p.section,
           firstKey: team.grade,
           count: 1,
-          build: (page) => ({ ...teamCard(team, p.section === "junior"), setPage: page }),
+          build: (page) => ({
+            ...teamCard(team, p.section === "junior", input.design),
+            setPage: page,
+          }),
         };
       });
       break;

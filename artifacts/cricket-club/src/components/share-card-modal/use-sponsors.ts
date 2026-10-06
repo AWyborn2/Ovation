@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import type { SocialSettingsBundle } from "@workspace/api-client-react";
 import { sponsorAppliesToKind, type CardSponsor, type ShareCardInput } from "@/lib/share-card";
-import { maxSponsorLogos } from "@/lib/share-card/sponsor-limit";
+import { maxSponsorLogos, sponsorsForCard } from "@/lib/share-card/sponsor-limit";
+import { cardGrade } from "@/lib/pack-card-data";
 
 // Resolves the sponsor strip for the current card: only when sponsors are
 // enabled, the admin has not toggled them off, and the sponsor applies to this
@@ -19,8 +20,13 @@ export function useSponsors({
 }) {
   const sponsors: CardSponsor[] = useMemo(() => {
     if (!bundle?.settings.sponsorsEnabled || !includeSponsors || !input) return [];
-    return (bundle?.activeSponsors ?? [])
-      .filter((s) => sponsorAppliesToKind(s.cardKinds, input.kind))
+    // A team list carries its team's own sponsor, else the presenting one.
+    return sponsorsForCard(
+      bundle?.activeSponsors ?? [],
+      input.kind,
+      cardGrade(input),
+      sponsorAppliesToKind,
+    )
       .slice(0, maxSponsorLogos(input.kind))
       .map((s) => ({
         name: s.name,

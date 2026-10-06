@@ -224,7 +224,9 @@ function FixturePrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
     if (kind === "countdown") return onApply(fixtureToCountdownState(selected));
     if (kind === "teamList") {
       const meta = fixtureToTeamListMeta(selected);
-      const players = teamListQ.data ? teamListPlayersToState(teamListQ.data.players) : {};
+      const players = teamListQ.data
+        ? teamListPlayersToState(teamListQ.data.players, teamListQ.data.debutPlayerIds ?? [])
+        : {};
       return onApply({ ...meta, ...players });
     }
   };
@@ -341,7 +343,8 @@ function RoundTeamListsPrefillPanel({ onApply }: { onApply: Apply }) {
   const params = useMemo(() => ({ upcomingOnly: true }), []);
   const fixturesQ = useListFixtures(params);
   const rounds = useMemo(
-    () => groupFixturesByRound((fixturesQ.data ?? []) as Fixture[]),
+    // Men's and women's teams post as their own sets, each with its own cover.
+    () => groupFixturesByRound((fixturesQ.data ?? []) as Fixture[], { byAudience: true }),
     [fixturesQ.data],
   );
   const [key, setKey] = useState<string>("");
