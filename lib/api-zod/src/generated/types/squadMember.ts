@@ -34,6 +34,11 @@ export interface SquadMember {
   isPrivate: boolean;
   /** @nullable */
   linkedPlayerId: number | null;
+  /**
+     * The linked club player's name (admin only); null when unlinked or the name can't be resolved.
+     * @nullable
+     */
+  linkedPlayerName: string | null;
   account: SquadContactPresence;
   guardian1: SquadContactPresence;
   guardian2: SquadContactPresence;

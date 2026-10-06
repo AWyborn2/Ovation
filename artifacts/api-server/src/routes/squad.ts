@@ -1,11 +1,12 @@
 import { Router, type IRouter, type Request } from "express";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, ne } from "drizzle-orm";
 import { db, squadMembersTable, type SquadMemberRow } from "@workspace/db";
 import {
   GetSquadMemberParams,
   UpdateSquadMemberBody,
   UpdateSquadMemberParams,
   RemoveSquadMemberParams,
+  SearchSquadPlayersQueryParams,
 } from "@workspace/api-zod";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { requireAdmin } from "../middlewares/require-admin";
@@ -22,6 +23,7 @@ import {
 } from "../lib/squad-import";
 import { isUnder18OnDate, perthDate } from "../lib/availability-grades";
 import { revokeMemberTokens } from "../lib/availability-tokens";
+import { linkedPlayerNames, searchClubPlayers } from "../lib/squad-link";
 
 /**
  * The club's squad register for player availability. Admin only. Contact
@@ -55,7 +57,10 @@ const SLOTS = [
   },
 ] as const;
 
-function serializeBase(r: SquadMemberRow) {
+/** Linked player id → name, for the rows being returned (best effort). */
+type Names = Map<number, string>;
+
+function serializeBase(r: SquadMemberRow, names: Names) {
   return {
     id: r.id,
     playhqProfileId: r.playhqProfileId,
@@ -71,14 +76,15 @@ function serializeBase(r: SquadMemberRow) {
     ageGroup: r.ageGroup,
     isPrivate: r.isPrivate,
     linkedPlayerId: r.linkedPlayerId,
+    linkedPlayerName: r.linkedPlayerId != null ? (names.get(r.linkedPlayerId) ?? null) : null,
     contactChangeFlag: r.contactChangeFlag,
     updatedAt: r.updatedAt.toISOString(),
   };
 }
 
 /** List shape: contact presence only, never values. */
-function serializeSummary(r: SquadMemberRow) {
-  const out: Record<string, unknown> = serializeBase(r);
+function serializeSummary(r: SquadMemberRow, names: Names) {
+  const out: Record<string, unknown> = serializeBase(r, names);
   for (const s of SLOTS) {
     out[s.key] = {
       hasName: !!r[s.name],
@@ -91,9 +97,9 @@ function serializeSummary(r: SquadMemberRow) {
 }
 
 /** Admin detail shape: full contacts and date of birth. */
-function serializeDetail(r: SquadMemberRow) {
+function serializeDetail(r: SquadMemberRow, names: Names) {
   const out: Record<string, unknown> = {
-    ...serializeBase(r),
+    ...serializeBase(r, names),
     dateOfBirth: r.dateOfBirth,
     contactChangedAt: r.contactChangedAt ? r.contactChangedAt.toISOString() : null,
   };
@@ -147,17 +153,37 @@ router.post(
   },
 );
 
+/** Names for the linked players among these rows. */
+function namesFor(tenantId: number, rows: SquadMemberRow[]): Promise<Names> {
+  return linkedPlayerNames(
+    tenantId,
+    rows.map((r) => r.linkedPlayerId).filter((id): id is number => id != null),
+  );
+}
+
 router.get("/squad", requireAdmin, async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
   const rows = await db
     .select()
     .from(squadMembersTable)
-    .where(eq(squadMembersTable.tenantId, getTenantId(req)))
+    .where(eq(squadMembersTable.tenantId, tenantId))
     .orderBy(
       asc(squadMembersTable.lastName),
       asc(squadMembersTable.firstName),
       asc(squadMembersTable.id),
     );
-  res.json(rows.map(serializeSummary));
+  const names = await namesFor(tenantId, rows);
+  res.json(rows.map((r) => serializeSummary(r, names)));
+});
+
+// Registered before "/squad/:id" so "player-search" is never read as an id.
+router.get("/squad/player-search", requireAdmin, async (req, res): Promise<void> => {
+  const query = SearchSquadPlayersQueryParams.safeParse(req.query);
+  if (!query.success || query.data.q.trim().length < 2) {
+    res.status(400).json({ error: "Type at least two letters to search" });
+    return;
+  }
+  res.json(await searchClubPlayers(getTenantId(req), query.data.q.trim()));
 });
 
 router.get("/squad/:id", requireAdmin, async (req, res): Promise<void> => {
@@ -179,7 +205,7 @@ router.get("/squad/:id", requireAdmin, async (req, res): Promise<void> => {
     res.status(404).json({ error: "Squad member not found" });
     return;
   }
-  res.json(serializeDetail(row));
+  res.json(serializeDetail(row, await namesFor(getTenantId(req), [row])));
 });
 
 router.patch("/squad/:id", requireAdmin, async (req, res): Promise<void> => {
@@ -210,6 +236,24 @@ router.patch("/squad/:id", requireAdmin, async (req, res): Promise<void> => {
   if (!prev) {
     res.status(404).json({ error: "Squad member not found" });
     return;
+  }
+  // One club player, one squad member.
+  if (b.linkedPlayerId != null && b.linkedPlayerId !== prev.linkedPlayerId) {
+    const [other] = await db
+      .select({ id: squadMembersTable.id })
+      .from(squadMembersTable)
+      .where(
+        and(
+          eq(squadMembersTable.tenantId, tenantId),
+          eq(squadMembersTable.linkedPlayerId, b.linkedPlayerId),
+          ne(squadMembersTable.id, prev.id),
+        ),
+      )
+      .limit(1);
+    if (other) {
+      res.status(409).json({ error: "That player is already linked to another squad member" });
+      return;
+    }
   }
 
   const set: Partial<typeof squadMembersTable.$inferInsert> = { updatedAt: new Date() };
@@ -246,7 +290,7 @@ router.patch("/squad/:id", requireAdmin, async (req, res): Promise<void> => {
       "squad contact edit",
     );
   }
-  res.json(serializeDetail(row));
+  res.json(serializeDetail(row, await namesFor(tenantId, [row])));
 });
 
 // A player's or guardian's removal request: contacts and date of birth are

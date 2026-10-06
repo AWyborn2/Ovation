@@ -306,6 +306,7 @@ import type {
   SaveDraftTemplateRequest,
   SchedulePublicationsRequest,
   SearchClubCorrectionMatchesParams,
+  SearchSquadPlayersParams,
   SeasonTopPerformers,
   SelectionBoard,
   SelectionBoardSave,
@@ -332,6 +333,7 @@ import type {
   SquadMember,
   SquadMemberDetail,
   SquadMemberUpdate,
+  SquadPlayerSearchHit,
   Stat,
   StatInput,
   StatListResponse,
@@ -6730,6 +6732,95 @@ export const useImportSquad = <TError = ErrorType<void>,
       > => {
       return useMutation(getImportSquadMutationOptions(options));
     }
+
+export const getSearchSquadPlayersUrl = (params: SearchSquadPlayersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/squad/player-search?${stringifiedParams}` : `/api/squad/player-search`
+}
+
+/**
+ * Up to 20 of the club's players (never a fill-in) whose name contains
+`q`, case-insensitively, most recently active first. Each hit names the
+squad member it is already linked to, if any. Admin only: private
+players are included.
+
+ * @summary Search the club's players to link a squad member to (admin)
+ */
+export const searchSquadPlayers = async (params: SearchSquadPlayersParams, options?: RequestInit): Promise<SquadPlayerSearchHit[]> => {
+
+  return customFetch<SquadPlayerSearchHit[]>(getSearchSquadPlayersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchSquadPlayersQueryKey = (params?: SearchSquadPlayersParams,) => {
+    return [
+    `/api/squad/player-search`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchSquadPlayersQueryOptions = <TData = Awaited<ReturnType<typeof searchSquadPlayers>>, TError = ErrorType<void>>(params: SearchSquadPlayersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchSquadPlayers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchSquadPlayersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchSquadPlayers>>> = ({ signal }) => searchSquadPlayers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchSquadPlayers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchSquadPlayersQueryResult = NonNullable<Awaited<ReturnType<typeof searchSquadPlayers>>>
+export type SearchSquadPlayersQueryError = ErrorType<void>
+
+
+/**
+ * @summary Search the club's players to link a squad member to (admin)
+ */
+
+export function useSearchSquadPlayers<TData = Awaited<ReturnType<typeof searchSquadPlayers>>, TError = ErrorType<void>>(
+ params: SearchSquadPlayersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchSquadPlayers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchSquadPlayersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetSquadMemberUrl = (id: number,) => {
 

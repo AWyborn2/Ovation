@@ -77,6 +77,7 @@ const MEMBER: SquadMember = {
   ageGroup: "U16",
   isPrivate: false,
   linkedPlayerId: null,
+  linkedPlayerName: null,
   account: none,
   guardian1: presence({ smsOptedOut: true }),
   guardian2: presence({ hasMobile: false }),
@@ -100,6 +101,7 @@ const DETAIL: SquadMemberDetail = {
   ageGroup: "U16",
   isPrivate: false,
   linkedPlayerId: null,
+  linkedPlayerName: null,
   account: { name: null, mobile: null, email: null, smsOptedOut: false },
   guardian1: {
     name: "Sam Hale",
@@ -118,14 +120,15 @@ type Handler = (url: string, method: string) => Reply | undefined;
 
 /** A fetch stub that can answer by method and with error statuses. */
 function installFetch(handler: Handler) {
-  const calls: { url: string; method: string }[] = [];
+  const calls: { url: string; method: string; body?: unknown }[] = [];
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
       const url =
         typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
       const method = (init?.method ?? "GET").toUpperCase();
-      calls.push({ url, method });
+      const body = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
+      calls.push({ url, method, body });
       const reply = handler(url, method) ?? defaults(url);
       const status = reply.status ?? 200;
       if (status === 204) return new Response(null, { status });
@@ -141,6 +144,7 @@ function installFetch(handler: Handler) {
 function defaults(url: string): Reply {
   if (url.includes("/availability/settings")) return { body: SETTINGS };
   if (url.includes("/availability/rounds/current")) return { body: ROUND };
+  if (url.includes("/squad/player-search")) return { body: [] };
   if (/\/squad\/\d+/.test(url)) return { body: DETAIL };
   if (url.includes("/squad")) return { body: [MEMBER] };
   return { body: null };
@@ -273,5 +277,84 @@ describe("admin availability", () => {
     expect(calls.some((c) => c.method === "DELETE")).toBe(false);
     fireEvent.click(await screen.findByRole("button", { name: "Remove details" }));
     await waitFor(() => expect(calls.some((c) => c.method === "DELETE")).toBe(true));
+  });
+
+  it("names the linked player in the squad table", async () => {
+    installFetch((url) =>
+      url.endsWith("/api/squad")
+        ? { body: [{ ...MEMBER, linkedPlayerId: 501, linkedPlayerName: "Jordan Wyllie" }] }
+        : undefined,
+    );
+    renderAt(<AdminAvailability />, "/admin/availability");
+    const row = await screen.findByTestId("squad-row-7");
+    expect(within(row).getByText("Jordan Wyllie")).toBeTruthy();
+    expect(row.textContent).not.toContain("#501");
+  });
+
+  it("links a club player from the drawer search, never one linked elsewhere, and unlinks", async () => {
+    const hits = [
+      {
+        playerId: 503,
+        displayName: "J Barnes",
+        lastSeason: "2025/26",
+        alreadyLinkedTo: { memberId: 99, name: "Jack Barnes" },
+      },
+      { playerId: 502, displayName: "J Barnes", lastSeason: "2022/23", alreadyLinkedTo: null },
+    ];
+    let detail: SquadMemberDetail = {
+      ...DETAIL,
+      linkedPlayerId: 501,
+      linkedPlayerName: "J Wyllie",
+    };
+    const calls = installFetch((url, method) => {
+      if (url.includes("/squad/player-search")) return { body: hits };
+      if (/\/squad\/7$/.test(url) && method === "PATCH") return { body: detail };
+      if (/\/squad\/7$/.test(url)) return { body: detail };
+      return undefined;
+    });
+    renderAt(<AdminAvailability />, "/admin/availability");
+    fireEvent.click(
+      within(await screen.findByTestId("squad-row-7")).getByRole("button", { name: "Edit" }),
+    );
+    const drawer = await screen.findByRole("dialog");
+    const d = within(drawer);
+    // The current link shows by name, not number.
+    expect(await d.findByText("J Wyllie")).toBeTruthy();
+
+    const box = d.getByRole("combobox", { name: "Club player" });
+    fireEvent.focus(box);
+    fireEvent.change(box, { target: { value: "ba" } });
+    const list = await d.findByRole("listbox", { name: "Club players" });
+    const options = await within(list).findAllByRole("option");
+    expect(options).toHaveLength(2);
+    expect(options[0].getAttribute("aria-disabled")).toBe("true");
+    expect(options[0].textContent).toContain("Already linked to Jack Barnes");
+    const search = calls.find((c) => c.url.includes("/squad/player-search"));
+    expect(search?.url).toContain("q=ba");
+
+    // A player linked to someone else can't be picked.
+    fireEvent.mouseDown(options[0]);
+    expect(d.getByTestId("linked-player").textContent).toContain("J Wyllie");
+    fireEvent.mouseDown(options[1]);
+    expect(d.getByTestId("linked-player").textContent).toContain("J Barnes");
+    fireEvent.click(d.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === "PATCH")?.body).toMatchObject({ linkedPlayerId: 502 }),
+    );
+
+    // Unlink sends null.
+    detail = { ...DETAIL, linkedPlayerId: 502, linkedPlayerName: "J Barnes" };
+    fireEvent.click(
+      within(await screen.findByTestId("squad-row-7")).getByRole("button", { name: "Edit" }),
+    );
+    const again = within(await screen.findByRole("dialog"));
+    fireEvent.click(await again.findByRole("button", { name: "Unlink" }));
+    expect(again.getByTestId("linked-player").textContent).toContain("Not linked");
+    fireEvent.click(again.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(calls.filter((c) => c.method === "PATCH").at(-1)?.body).toMatchObject({
+        linkedPlayerId: null,
+      }),
+    );
   });
 });
