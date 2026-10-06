@@ -2579,6 +2579,219 @@ export const DeleteCaptainParams = zod.object({
 
 
 /**
+ * Every member of the club's squad register. Contact details are reported
+as presence flags only (has a name, mobile or email; SMS opted out) —
+`getSquadMember` returns the values.
+
+ * @summary List the squad register (admin)
+ */
+export const ListSquadMembersResponseItem = zod.object({
+  "id": zod.number(),
+  "playhqProfileId": zod.string().nullable(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "preferredName": zod.string().nullable(),
+  "section": zod.enum(['senior', 'junior']),
+  "active": zod.boolean(),
+  "activeSetByAdmin": zod.boolean().describe('The admin set `active` by hand; imports never override it.'),
+  "under18": zod.boolean().nullable().describe('From date of birth (Perth today); null when unknown. Under-18s are contacted through their guardians.'),
+  "gradeHint": zod.string().nullable(),
+  "teamName": zod.string().nullable(),
+  "ageGroup": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "linkedPlayerId": zod.number().nullable(),
+  "account": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian1": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian2": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "contactChangeFlag": zod.boolean().describe('A player or guardian changed a contact from their link; stays up until an admin clears it.'),
+  "updatedAt": zod.string()
+})
+export const ListSquadMembersResponse = zod.array(ListSquadMembersResponseItem)
+
+
+/**
+ * Upserts the register from the PlayHQ participant CSV by (club, Profile
+ID). Only the identity, eligibility, grade and contact columns are read;
+every other column is discarded unread and never stored. Players with an
+active registration in the file's current season become active members;
+other rows are skipped with a reason. Members missing from the file are
+kept, and an admin's hand-set active flag is never overridden. Generated
+clients should treat the file as `Blob`; the web app posts FormData.
+
+ * @summary Import the PlayHQ participant export (admin)
+ */
+export const ImportSquadBody = zod.object({
+  "file": zod.instanceof(File).describe('The PlayHQ participant export (CSV)')
+})
+
+export const ImportSquadResponse = zod.object({
+  "season": zod.string().nullable().describe('The file\'s current season (its most common Season value)'),
+  "created": zod.number(),
+  "updated": zod.number(),
+  "deactivated": zod.number().describe('Existing members stood down because their registration is no longer active'),
+  "linked": zod.number().describe('Members newly linked to a club player record'),
+  "skipped": zod.array(zod.object({
+  "line": zod.number().describe('Line in the uploaded file (the header is line 1)'),
+  "name": zod.string(),
+  "reason": zod.string().describe('missing_profile_id, missing_name, not_a_player, inactive_status, other_season, other_organisation or duplicate_profile')
+})),
+  "skippedByReason": zod.array(zod.object({
+  "reason": zod.string(),
+  "count": zod.number()
+}))
+})
+
+
+/**
+ * @summary Get one squad member with contact details (admin)
+ */
+export const GetSquadMemberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetSquadMemberResponse = zod.object({
+  "id": zod.number(),
+  "playhqProfileId": zod.string().nullable(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "preferredName": zod.string().nullable(),
+  "dateOfBirth": zod.string().nullable().describe('ISO date (YYYY-MM-DD)'),
+  "section": zod.enum(['senior', 'junior']),
+  "active": zod.boolean(),
+  "activeSetByAdmin": zod.boolean(),
+  "under18": zod.boolean().nullable(),
+  "gradeHint": zod.string().nullable(),
+  "teamName": zod.string().nullable(),
+  "ageGroup": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "linkedPlayerId": zod.number().nullable(),
+  "account": zod.object({
+  "name": zod.string().nullable(),
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "smsOptedOut": zod.boolean()
+}),
+  "guardian1": zod.object({
+  "name": zod.string().nullable(),
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "smsOptedOut": zod.boolean()
+}),
+  "guardian2": zod.object({
+  "name": zod.string().nullable(),
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "smsOptedOut": zod.boolean()
+}),
+  "contactChangeFlag": zod.boolean(),
+  "contactChangedAt": zod.string().nullable(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * Setting `active` records it as the admin's choice, which later imports
+never override. Changing a mobile number clears that contact's SMS
+opt-out. `linkedPlayerId` cannot be a fill-in id (>= 90000).
+
+ * @summary Update a squad member (admin)
+ */
+export const UpdateSquadMemberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateSquadMemberBody = zod.object({
+  "active": zod.boolean().optional(),
+  "section": zod.enum(['senior', 'junior']).optional(),
+  "gradeHint": zod.string().nullish(),
+  "linkedPlayerId": zod.number().nullish(),
+  "contactChangeFlag": zod.boolean().optional().describe('Set false to clear the contact-changed flag.'),
+  "account": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.'),
+  "guardian1": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.'),
+  "guardian2": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.')
+})
+
+export const UpdateSquadMemberResponse = zod.object({
+  "id": zod.number(),
+  "playhqProfileId": zod.string().nullable(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "preferredName": zod.string().nullable(),
+  "dateOfBirth": zod.string().nullable().describe('ISO date (YYYY-MM-DD)'),
+  "section": zod.enum(['senior', 'junior']),
+  "active": zod.boolean(),
+  "activeSetByAdmin": zod.boolean(),
+  "under18": zod.boolean().nullable(),
+  "gradeHint": zod.string().nullable(),
+  "teamName": zod.string().nullable(),
+  "ageGroup": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "linkedPlayerId": zod.number().nullable(),
+  "account": zod.object({
+  "name": zod.string().nullable(),
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "smsOptedOut": zod.boolean()
+}),
+  "guardian1": zod.object({
+  "name": zod.string().nullable(),
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "smsOptedOut": zod.boolean()
+}),
+  "guardian2": zod.object({
+  "name": zod.string().nullable(),
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "smsOptedOut": zod.boolean()
+}),
+  "contactChangeFlag": zod.boolean(),
+  "contactChangedAt": zod.string().nullable(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * For a player's or guardian's removal request. Contact details and date
+of birth are deleted outright; the row keeps only the name (so past
+selections still read correctly) and is set inactive by the admin, so
+it is never contacted and later imports don't restore its details.
+
+ * @summary Remove a member's personal details on request (admin)
+ */
+export const RemoveSquadMemberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary List per-season voting configs for an award (admin)
  */
 export const ListAwardVotingConfigsParams = zod.object({

@@ -2786,6 +2786,159 @@ export interface CaptainUpdate {
   grades?: string[];
 }
 
+export type SquadSection = typeof SquadSection[keyof typeof SquadSection];
+
+
+export const SquadSection = {
+  senior: 'senior',
+  junior: 'junior',
+} as const;
+
+/**
+ * Which contact details a recipient slot has — never the values.
+ */
+export interface SquadContactPresence {
+  hasName: boolean;
+  hasMobile: boolean;
+  hasEmail: boolean;
+  smsOptedOut: boolean;
+}
+
+export interface SquadMember {
+  id: number;
+  /** @nullable */
+  playhqProfileId: string | null;
+  firstName: string;
+  lastName: string;
+  /** @nullable */
+  preferredName: string | null;
+  section: SquadSection;
+  active: boolean;
+  /** The admin set `active` by hand; imports never override it. */
+  activeSetByAdmin: boolean;
+  /**
+     * From date of birth (Perth today); null when unknown. Under-18s are contacted through their guardians.
+     * @nullable
+     */
+  under18: boolean | null;
+  /** @nullable */
+  gradeHint: string | null;
+  /** @nullable */
+  teamName: string | null;
+  /** @nullable */
+  ageGroup: string | null;
+  isPrivate: boolean;
+  /** @nullable */
+  linkedPlayerId: number | null;
+  account: SquadContactPresence;
+  guardian1: SquadContactPresence;
+  guardian2: SquadContactPresence;
+  /** A player or guardian changed a contact from their link; stays up until an admin clears it. */
+  contactChangeFlag: boolean;
+  updatedAt: string;
+}
+
+export interface SquadContact {
+  /** @nullable */
+  name: string | null;
+  /** @nullable */
+  mobile: string | null;
+  /** @nullable */
+  email: string | null;
+  smsOptedOut: boolean;
+}
+
+export interface SquadMemberDetail {
+  id: number;
+  /** @nullable */
+  playhqProfileId: string | null;
+  firstName: string;
+  lastName: string;
+  /** @nullable */
+  preferredName: string | null;
+  /**
+     * ISO date (YYYY-MM-DD)
+     * @nullable
+     */
+  dateOfBirth: string | null;
+  section: SquadSection;
+  active: boolean;
+  activeSetByAdmin: boolean;
+  /** @nullable */
+  under18: boolean | null;
+  /** @nullable */
+  gradeHint: string | null;
+  /** @nullable */
+  teamName: string | null;
+  /** @nullable */
+  ageGroup: string | null;
+  isPrivate: boolean;
+  /** @nullable */
+  linkedPlayerId: number | null;
+  account: SquadContact;
+  guardian1: SquadContact;
+  guardian2: SquadContact;
+  contactChangeFlag: boolean;
+  /** @nullable */
+  contactChangedAt: string | null;
+  updatedAt: string;
+}
+
+/**
+ * Omitted fields are unchanged; null or "" clears a value.
+ */
+export interface SquadContactUpdate {
+  /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  mobile?: string | null;
+  /** @nullable */
+  email?: string | null;
+}
+
+export interface SquadMemberUpdate {
+  active?: boolean;
+  section?: SquadSection;
+  /** @nullable */
+  gradeHint?: string | null;
+  /** @nullable */
+  linkedPlayerId?: number | null;
+  /** Set false to clear the contact-changed flag. */
+  contactChangeFlag?: boolean;
+  account?: SquadContactUpdate;
+  guardian1?: SquadContactUpdate;
+  guardian2?: SquadContactUpdate;
+}
+
+export interface SquadImportSkip {
+  /** Line in the uploaded file (the header is line 1) */
+  line: number;
+  name: string;
+  /** missing_profile_id, missing_name, not_a_player, inactive_status, other_season, other_organisation or duplicate_profile */
+  reason: string;
+}
+
+export type SquadImportResultSkippedByReasonItem = {
+  reason: string;
+  count: number;
+};
+
+export interface SquadImportResult {
+  /**
+     * The file's current season (its most common Season value)
+     * @nullable
+     */
+  season: string | null;
+  created: number;
+  updated: number;
+  /** Existing members stood down because their registration is no longer active */
+  deactivated: number;
+  /** Members newly linked to a club player record */
+  linked: number;
+  skipped: SquadImportSkip[];
+  skippedByReason: SquadImportResultSkippedByReasonItem[];
+}
+
 export interface AwardVotingConfig {
   id: number;
   awardId: number;
@@ -7879,6 +8032,11 @@ export const GetRecordProgressionKind = {
   highScore: 'highScore',
   bestBowling: 'bestBowling',
 } as const;
+
+export type ImportSquadBody = {
+  /** The PlayHQ participant export (CSV) */
+  file: Blob;
+};
 
 export type GetMetaConnectPendingParams = {
 token: string;

@@ -56,6 +56,8 @@ tags:
     description: Admin-configurable navigation menus and quick-link/tile cards
   - name: Storage
     description: Object storage upload and serving endpoints.
+  - name: squad
+    description: The club's squad register for player availability, imported from the PlayHQ participant export (admin only; contact details never leave admin payloads)
 paths:
   /healthz:
     get:
@@ -2015,6 +2017,136 @@ paths:
       responses:
         "204":
           description: Deleted
+        "404":
+          description: Not found
+
+  /squad:
+    get:
+      operationId: listSquadMembers
+      tags: [squad]
+      summary: List the squad register (admin)
+      description: |
+        Every member of the club's squad register. Contact details are reported
+        as presence flags only (has a name, mobile or email; SMS opted out) —
+        `getSquadMember` returns the values.
+      responses:
+        "200":
+          description: Squad members, by last then first name
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SquadMember"
+        "401":
+          description: Not signed in as this club's admin
+
+  /squad/import:
+    post:
+      operationId: importSquad
+      tags: [squad]
+      summary: Import the PlayHQ participant export (admin)
+      description: |
+        Upserts the register from the PlayHQ participant CSV by (club, Profile
+        ID). Only the identity, eligibility, grade and contact columns are read;
+        every other column is discarded unread and never stored. Players with an
+        active registration in the file's current season become active members;
+        other rows are skipped with a reason. Members missing from the file are
+        kept, and an admin's hand-set active flag is never overridden. Generated
+        clients should treat the file as `Blob`; the web app posts FormData.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The PlayHQ participant export (CSV)
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadImportResult"
+        "400":
+          description: Missing file, unreadable CSV or a missing required column
+        "401":
+          description: Not signed in as this club's admin
+
+  /squad/{id}:
+    get:
+      operationId: getSquadMember
+      tags: [squad]
+      summary: Get one squad member with contact details (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The member, with contact values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadMemberDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateSquadMember
+      tags: [squad]
+      summary: Update a squad member (admin)
+      description: |
+        Setting `active` records it as the admin's choice, which later imports
+        never override. Changing a mobile number clears that contact's SMS
+        opt-out. `linkedPlayerId` cannot be a fill-in id (>= 90000).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SquadMemberUpdate"
+      responses:
+        "200":
+          description: The updated member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadMemberDetail"
+        "400":
+          description: Invalid body
+        "404":
+          description: Not found
+    delete:
+      operationId: removeSquadMember
+      tags: [squad]
+      summary: Remove a member's personal details on request (admin)
+      description: |
+        For a player's or guardian's removal request. Contact details and date
+        of birth are deleted outright; the row keeps only the name (so past
+        selections still read correctly) and is set inactive by the admin, so
+        it is never contacted and later imports don't restore its details.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
         "404":
           description: Not found
 
@@ -11554,6 +11686,252 @@ components:
           type: array
           items:
             type: string
+
+    SquadSection:
+      type: string
+      enum: [senior, junior]
+
+    SquadContactPresence:
+      type: object
+      description: Which contact details a recipient slot has — never the values.
+      required: [hasName, hasMobile, hasEmail, smsOptedOut]
+      properties:
+        hasName:
+          type: boolean
+        hasMobile:
+          type: boolean
+        hasEmail:
+          type: boolean
+        smsOptedOut:
+          type: boolean
+
+    SquadMember:
+      type: object
+      required:
+        [
+          id,
+          playhqProfileId,
+          firstName,
+          lastName,
+          preferredName,
+          section,
+          active,
+          activeSetByAdmin,
+          under18,
+          gradeHint,
+          teamName,
+          ageGroup,
+          isPrivate,
+          linkedPlayerId,
+          account,
+          guardian1,
+          guardian2,
+          contactChangeFlag,
+          updatedAt,
+        ]
+      properties:
+        id:
+          type: integer
+        playhqProfileId:
+          type: ["string", "null"]
+        firstName:
+          type: string
+        lastName:
+          type: string
+        preferredName:
+          type: ["string", "null"]
+        section:
+          $ref: "#/components/schemas/SquadSection"
+        active:
+          type: boolean
+        activeSetByAdmin:
+          type: boolean
+          description: The admin set `active` by hand; imports never override it.
+        under18:
+          type: ["boolean", "null"]
+          description: From date of birth (Perth today); null when unknown. Under-18s are contacted through their guardians.
+        gradeHint:
+          type: ["string", "null"]
+        teamName:
+          type: ["string", "null"]
+        ageGroup:
+          type: ["string", "null"]
+        isPrivate:
+          type: boolean
+        linkedPlayerId:
+          type: ["integer", "null"]
+        account:
+          $ref: "#/components/schemas/SquadContactPresence"
+        guardian1:
+          $ref: "#/components/schemas/SquadContactPresence"
+        guardian2:
+          $ref: "#/components/schemas/SquadContactPresence"
+        contactChangeFlag:
+          type: boolean
+          description: A player or guardian changed a contact from their link; stays up until an admin clears it.
+        updatedAt:
+          type: string
+
+    SquadContact:
+      type: object
+      required: [name, mobile, email, smsOptedOut]
+      properties:
+        name:
+          type: ["string", "null"]
+        mobile:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        smsOptedOut:
+          type: boolean
+
+    SquadMemberDetail:
+      type: object
+      required:
+        [
+          id,
+          playhqProfileId,
+          firstName,
+          lastName,
+          preferredName,
+          dateOfBirth,
+          section,
+          active,
+          activeSetByAdmin,
+          under18,
+          gradeHint,
+          teamName,
+          ageGroup,
+          isPrivate,
+          linkedPlayerId,
+          account,
+          guardian1,
+          guardian2,
+          contactChangeFlag,
+          contactChangedAt,
+          updatedAt,
+        ]
+      properties:
+        id:
+          type: integer
+        playhqProfileId:
+          type: ["string", "null"]
+        firstName:
+          type: string
+        lastName:
+          type: string
+        preferredName:
+          type: ["string", "null"]
+        dateOfBirth:
+          type: ["string", "null"]
+          description: ISO date (YYYY-MM-DD)
+        section:
+          $ref: "#/components/schemas/SquadSection"
+        active:
+          type: boolean
+        activeSetByAdmin:
+          type: boolean
+        under18:
+          type: ["boolean", "null"]
+        gradeHint:
+          type: ["string", "null"]
+        teamName:
+          type: ["string", "null"]
+        ageGroup:
+          type: ["string", "null"]
+        isPrivate:
+          type: boolean
+        linkedPlayerId:
+          type: ["integer", "null"]
+        account:
+          $ref: "#/components/schemas/SquadContact"
+        guardian1:
+          $ref: "#/components/schemas/SquadContact"
+        guardian2:
+          $ref: "#/components/schemas/SquadContact"
+        contactChangeFlag:
+          type: boolean
+        contactChangedAt:
+          type: ["string", "null"]
+        updatedAt:
+          type: string
+
+    SquadContactUpdate:
+      type: object
+      description: Omitted fields are unchanged; null or "" clears a value.
+      properties:
+        name:
+          type: ["string", "null"]
+        mobile:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+
+    SquadMemberUpdate:
+      type: object
+      properties:
+        active:
+          type: boolean
+        section:
+          $ref: "#/components/schemas/SquadSection"
+        gradeHint:
+          type: ["string", "null"]
+        linkedPlayerId:
+          type: ["integer", "null"]
+        contactChangeFlag:
+          type: boolean
+          description: Set false to clear the contact-changed flag.
+        account:
+          $ref: "#/components/schemas/SquadContactUpdate"
+        guardian1:
+          $ref: "#/components/schemas/SquadContactUpdate"
+        guardian2:
+          $ref: "#/components/schemas/SquadContactUpdate"
+
+    SquadImportSkip:
+      type: object
+      required: [line, name, reason]
+      properties:
+        line:
+          type: integer
+          description: Line in the uploaded file (the header is line 1)
+        name:
+          type: string
+        reason:
+          type: string
+          description: missing_profile_id, missing_name, not_a_player, inactive_status, other_season, other_organisation or duplicate_profile
+
+    SquadImportResult:
+      type: object
+      required: [season, created, updated, deactivated, linked, skipped, skippedByReason]
+      properties:
+        season:
+          type: ["string", "null"]
+          description: The file's current season (its most common Season value)
+        created:
+          type: integer
+        updated:
+          type: integer
+        deactivated:
+          type: integer
+          description: Existing members stood down because their registration is no longer active
+        linked:
+          type: integer
+          description: Members newly linked to a club player record
+        skipped:
+          type: array
+          items:
+            $ref: "#/components/schemas/SquadImportSkip"
+        skippedByReason:
+          type: array
+          items:
+            type: object
+            required: [reason, count]
+            properties:
+              reason:
+                type: string
+              count:
+                type: integer
 
     AwardVotingConfig:
       type: object

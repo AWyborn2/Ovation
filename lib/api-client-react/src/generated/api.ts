@@ -165,6 +165,7 @@ import type {
   HonourDisplaySettingsUpdate,
   ImportPreview,
   ImportRecord,
+  ImportSquadBody,
   IngestClubPhotosRequest,
   IngestClubPhotosResponse,
   IssueAdminResetBody,
@@ -312,6 +313,10 @@ import type {
   Sponsor,
   SponsorInput,
   SponsorUpdate,
+  SquadImportResult,
+  SquadMember,
+  SquadMemberDetail,
+  SquadMemberUpdate,
   Stat,
   StatInput,
   StatListResponse,
@@ -6547,6 +6552,396 @@ export const useDeleteCaptain = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteCaptainMutationOptions(options));
+    }
+
+export const getListSquadMembersUrl = () => {
+
+
+
+
+  return `/api/squad`
+}
+
+/**
+ * Every member of the club's squad register. Contact details are reported
+as presence flags only (has a name, mobile or email; SMS opted out) —
+`getSquadMember` returns the values.
+
+ * @summary List the squad register (admin)
+ */
+export const listSquadMembers = async ( options?: RequestInit): Promise<SquadMember[]> => {
+
+  return customFetch<SquadMember[]>(getListSquadMembersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSquadMembersQueryKey = () => {
+    return [
+    `/api/squad`
+    ] as const;
+    }
+
+
+export const getListSquadMembersQueryOptions = <TData = Awaited<ReturnType<typeof listSquadMembers>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSquadMembers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSquadMembersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSquadMembers>>> = ({ signal }) => listSquadMembers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSquadMembers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSquadMembersQueryResult = NonNullable<Awaited<ReturnType<typeof listSquadMembers>>>
+export type ListSquadMembersQueryError = ErrorType<void>
+
+
+/**
+ * @summary List the squad register (admin)
+ */
+
+export function useListSquadMembers<TData = Awaited<ReturnType<typeof listSquadMembers>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSquadMembers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSquadMembersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getImportSquadUrl = () => {
+
+
+
+
+  return `/api/squad/import`
+}
+
+/**
+ * Upserts the register from the PlayHQ participant CSV by (club, Profile
+ID). Only the identity, eligibility, grade and contact columns are read;
+every other column is discarded unread and never stored. Players with an
+active registration in the file's current season become active members;
+other rows are skipped with a reason. Members missing from the file are
+kept, and an admin's hand-set active flag is never overridden. Generated
+clients should treat the file as `Blob`; the web app posts FormData.
+
+ * @summary Import the PlayHQ participant export (admin)
+ */
+export const importSquad = async (importSquadBody: ImportSquadBody, options?: RequestInit): Promise<SquadImportResult> => {
+    const formData = new FormData();
+formData.append(`file`, importSquadBody.file);
+
+  return customFetch<SquadImportResult>(getImportSquadUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getImportSquadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importSquad>>, TError,{data: BodyType<ImportSquadBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importSquad>>, TError,{data: BodyType<ImportSquadBody>}, TContext> => {
+
+const mutationKey = ['importSquad'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importSquad>>, {data: BodyType<ImportSquadBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importSquad(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportSquadMutationResult = NonNullable<Awaited<ReturnType<typeof importSquad>>>
+    export type ImportSquadMutationBody = BodyType<ImportSquadBody>
+    export type ImportSquadMutationError = ErrorType<void>
+
+    /**
+ * @summary Import the PlayHQ participant export (admin)
+ */
+export const useImportSquad = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importSquad>>, TError,{data: BodyType<ImportSquadBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importSquad>>,
+        TError,
+        {data: BodyType<ImportSquadBody>},
+        TContext
+      > => {
+      return useMutation(getImportSquadMutationOptions(options));
+    }
+
+export const getGetSquadMemberUrl = (id: number,) => {
+
+
+
+
+  return `/api/squad/${id}`
+}
+
+/**
+ * @summary Get one squad member with contact details (admin)
+ */
+export const getSquadMember = async (id: number, options?: RequestInit): Promise<SquadMemberDetail> => {
+
+  return customFetch<SquadMemberDetail>(getGetSquadMemberUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSquadMemberQueryKey = (id: number,) => {
+    return [
+    `/api/squad/${id}`
+    ] as const;
+    }
+
+
+export const getGetSquadMemberQueryOptions = <TData = Awaited<ReturnType<typeof getSquadMember>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSquadMember>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSquadMemberQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSquadMember>>> = ({ signal }) => getSquadMember(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSquadMember>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSquadMemberQueryResult = NonNullable<Awaited<ReturnType<typeof getSquadMember>>>
+export type GetSquadMemberQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get one squad member with contact details (admin)
+ */
+
+export function useGetSquadMember<TData = Awaited<ReturnType<typeof getSquadMember>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSquadMember>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSquadMemberQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateSquadMemberUrl = (id: number,) => {
+
+
+
+
+  return `/api/squad/${id}`
+}
+
+/**
+ * Setting `active` records it as the admin's choice, which later imports
+never override. Changing a mobile number clears that contact's SMS
+opt-out. `linkedPlayerId` cannot be a fill-in id (>= 90000).
+
+ * @summary Update a squad member (admin)
+ */
+export const updateSquadMember = async (id: number,
+    squadMemberUpdate: SquadMemberUpdate, options?: RequestInit): Promise<SquadMemberDetail> => {
+
+  return customFetch<SquadMemberDetail>(getUpdateSquadMemberUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      squadMemberUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateSquadMemberMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSquadMember>>, TError,{id: number;data: BodyType<SquadMemberUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSquadMember>>, TError,{id: number;data: BodyType<SquadMemberUpdate>}, TContext> => {
+
+const mutationKey = ['updateSquadMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSquadMember>>, {id: number;data: BodyType<SquadMemberUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateSquadMember(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSquadMemberMutationResult = NonNullable<Awaited<ReturnType<typeof updateSquadMember>>>
+    export type UpdateSquadMemberMutationBody = BodyType<SquadMemberUpdate>
+    export type UpdateSquadMemberMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a squad member (admin)
+ */
+export const useUpdateSquadMember = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSquadMember>>, TError,{id: number;data: BodyType<SquadMemberUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSquadMember>>,
+        TError,
+        {id: number;data: BodyType<SquadMemberUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateSquadMemberMutationOptions(options));
+    }
+
+export const getRemoveSquadMemberUrl = (id: number,) => {
+
+
+
+
+  return `/api/squad/${id}`
+}
+
+/**
+ * For a player's or guardian's removal request. Contact details and date
+of birth are deleted outright; the row keeps only the name (so past
+selections still read correctly) and is set inactive by the admin, so
+it is never contacted and later imports don't restore its details.
+
+ * @summary Remove a member's personal details on request (admin)
+ */
+export const removeSquadMember = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveSquadMemberUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveSquadMemberMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSquadMember>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeSquadMember>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['removeSquadMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeSquadMember>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  removeSquadMember(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveSquadMemberMutationResult = NonNullable<Awaited<ReturnType<typeof removeSquadMember>>>
+
+    export type RemoveSquadMemberMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a member's personal details on request (admin)
+ */
+export const useRemoveSquadMember = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeSquadMember>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeSquadMember>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRemoveSquadMemberMutationOptions(options));
     }
 
 export const getListAwardVotingConfigsUrl = (id: number,) => {
