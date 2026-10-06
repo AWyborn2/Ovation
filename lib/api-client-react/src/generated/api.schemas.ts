@@ -6249,6 +6249,57 @@ export const SocialDraftStatus = {
   dismissed: 'dismissed',
 } as const;
 
+export type SocialPublicationPlatform = typeof SocialPublicationPlatform[keyof typeof SocialPublicationPlatform];
+
+
+export const SocialPublicationPlatform = {
+  facebook: 'facebook',
+  instagram: 'instagram',
+} as const;
+
+export type SocialPublicationPostType = typeof SocialPublicationPostType[keyof typeof SocialPublicationPostType];
+
+
+export const SocialPublicationPostType = {
+  feed: 'feed',
+  story: 'story',
+} as const;
+
+export type SocialPublicationStatus = typeof SocialPublicationStatus[keyof typeof SocialPublicationStatus];
+
+
+export const SocialPublicationStatus = {
+  scheduled: 'scheduled',
+  held: 'held',
+  publishing: 'publishing',
+  published: 'published',
+  failed: 'failed',
+  cancelled: 'cancelled',
+} as const;
+
+export type SocialPublicationOrigin = typeof SocialPublicationOrigin[keyof typeof SocialPublicationOrigin];
+
+
+export const SocialPublicationOrigin = {
+  manual: 'manual',
+  auto: 'auto',
+} as const;
+
+export interface SocialPublication {
+  id: number;
+  draftId: number;
+  platform: SocialPublicationPlatform;
+  postType: SocialPublicationPostType;
+  status: SocialPublicationStatus;
+  origin: SocialPublicationOrigin;
+  scheduledFor: string;
+  attempts: number;
+  /** @nullable */
+  lastError?: string | null;
+  /** @nullable */
+  publishedAt?: string | null;
+}
+
 export interface SocialDraft {
   id: number;
   engine: string;
@@ -6294,6 +6345,40 @@ export interface SocialDraft {
      * @nullable
      */
   staleSince?: string | null;
+  /** Its Facebook / Instagram posts, newest attempt per platform and post type. */
+  publications?: SocialPublication[];
+  /** A post failed for good and nothing else is pending for it. */
+  needsAttention?: boolean;
+}
+
+export type SchedulePublicationsRequestPlatformsItem = typeof SchedulePublicationsRequestPlatformsItem[keyof typeof SchedulePublicationsRequestPlatformsItem];
+
+
+export const SchedulePublicationsRequestPlatformsItem = {
+  facebook: 'facebook',
+  instagram: 'instagram',
+} as const;
+
+export type SchedulePublicationsRequestPostTypesItem = typeof SchedulePublicationsRequestPostTypesItem[keyof typeof SchedulePublicationsRequestPostTypesItem];
+
+
+export const SchedulePublicationsRequestPostTypesItem = {
+  feed: 'feed',
+  story: 'story',
+} as const;
+
+export interface SchedulePublicationsRequest {
+  /** Defaults to every connected platform. */
+  platforms?: SchedulePublicationsRequestPlatformsItem[];
+  /** Defaults to feed only. */
+  postTypes?: SchedulePublicationsRequestPostTypesItem[];
+  /** Club local time "YYYY-MM-DDTHH:mm". Omit to publish now. */
+  at?: string;
+}
+
+export interface ReschedulePublicationRequest {
+  /** Club local time "YYYY-MM-DDTHH:mm". */
+  at: string;
 }
 
 export type SocialDraftRevisionReason = typeof SocialDraftRevisionReason[keyof typeof SocialDraftRevisionReason];

@@ -6997,7 +6997,20 @@ export const ListSocialDraftsResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 export const ListSocialDraftsResponse = zod.array(ListSocialDraftsResponseItem)
 
@@ -7616,7 +7629,20 @@ export const ApproveSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 
 
@@ -7664,7 +7690,115 @@ export const UpdateSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
+})
+
+
+/**
+ * @summary Schedule a ready draft to Facebook and/or Instagram (or publish now)
+ */
+export const ScheduleDraftPublicationsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ScheduleDraftPublicationsBody = zod.object({
+  "platforms": zod.array(zod.enum(['facebook', 'instagram'])).optional().describe('Defaults to every connected platform.'),
+  "postTypes": zod.array(zod.enum(['feed', 'story'])).optional().describe('Defaults to feed only.'),
+  "at": zod.string().optional().describe('Club local time \"YYYY-MM-DDTHH:mm\". Omit to publish now.')
+})
+
+export const ScheduleDraftPublicationsResponseItem = zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})
+export const ScheduleDraftPublicationsResponse = zod.array(ScheduleDraftPublicationsResponseItem)
+
+
+/**
+ * @summary Move a scheduled post to a new time
+ */
+export const RescheduleSocialPublicationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RescheduleSocialPublicationBody = zod.object({
+  "at": zod.string().describe('Club local time \"YYYY-MM-DDTHH:mm\".')
+})
+
+export const RescheduleSocialPublicationResponse = zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Cancel a scheduled or held post
+ */
+export const CancelSocialPublicationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CancelSocialPublicationResponse = zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Try a failed post again now
+ */
+export const RetrySocialPublicationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RetrySocialPublicationResponse = zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
 })
 
 
@@ -7718,7 +7852,20 @@ export const SendBackSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 
 
@@ -7753,7 +7900,20 @@ export const ReopenSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 
 
@@ -7810,7 +7970,20 @@ export const RevertSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 
 
@@ -7845,7 +8018,20 @@ export const MarkSocialDraftPostedResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 
 
@@ -7886,7 +8072,20 @@ export const GenerateRoundUpResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 export const GenerateRoundUpResponse = zod.array(GenerateRoundUpResponseItem)
 
@@ -7926,7 +8125,20 @@ export const GenerateRecapsResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 export const GenerateRecapsResponse = zod.array(GenerateRecapsResponseItem)
 

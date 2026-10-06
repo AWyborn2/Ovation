@@ -289,9 +289,11 @@ import type {
   RecordsLeaderboards,
   RemovePhotoBackgroundRequest,
   ReplaceHistoryBoundariesBody,
+  ReschedulePublicationRequest,
   RoundUpInput,
   SaveCardPhotoRulesRequest,
   SaveDraftTemplateRequest,
+  SchedulePublicationsRequest,
   SearchClubCorrectionMatchesParams,
   SeasonTopPerformers,
   SeniorOverview,
@@ -302,6 +304,7 @@ import type {
   SlugAvailability,
   SocialDraft,
   SocialDraftRevision,
+  SocialPublication,
   SocialSettings,
   SocialSettingsBundle,
   SocialSettingsUpdate,
@@ -18099,6 +18102,290 @@ export const useUpdateSocialDraft = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateSocialDraftMutationOptions(options));
+    }
+
+export const getScheduleDraftPublicationsUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/publications`
+}
+
+/**
+ * @summary Schedule a ready draft to Facebook and/or Instagram (or publish now)
+ */
+export const scheduleDraftPublications = async (id: number,
+    schedulePublicationsRequest: SchedulePublicationsRequest, options?: RequestInit): Promise<SocialPublication[]> => {
+
+  return customFetch<SocialPublication[]>(getScheduleDraftPublicationsUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      schedulePublicationsRequest,)
+  }
+);}
+
+
+
+
+export const getScheduleDraftPublicationsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scheduleDraftPublications>>, TError,{id: number;data: BodyType<SchedulePublicationsRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof scheduleDraftPublications>>, TError,{id: number;data: BodyType<SchedulePublicationsRequest>}, TContext> => {
+
+const mutationKey = ['scheduleDraftPublications'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof scheduleDraftPublications>>, {id: number;data: BodyType<SchedulePublicationsRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  scheduleDraftPublications(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ScheduleDraftPublicationsMutationResult = NonNullable<Awaited<ReturnType<typeof scheduleDraftPublications>>>
+    export type ScheduleDraftPublicationsMutationBody = BodyType<SchedulePublicationsRequest>
+    export type ScheduleDraftPublicationsMutationError = ErrorType<void>
+
+    /**
+ * @summary Schedule a ready draft to Facebook and/or Instagram (or publish now)
+ */
+export const useScheduleDraftPublications = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof scheduleDraftPublications>>, TError,{id: number;data: BodyType<SchedulePublicationsRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof scheduleDraftPublications>>,
+        TError,
+        {id: number;data: BodyType<SchedulePublicationsRequest>},
+        TContext
+      > => {
+      return useMutation(getScheduleDraftPublicationsMutationOptions(options));
+    }
+
+export const getRescheduleSocialPublicationUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-publications/${id}/reschedule`
+}
+
+/**
+ * @summary Move a scheduled post to a new time
+ */
+export const rescheduleSocialPublication = async (id: number,
+    reschedulePublicationRequest: ReschedulePublicationRequest, options?: RequestInit): Promise<SocialPublication> => {
+
+  return customFetch<SocialPublication>(getRescheduleSocialPublicationUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reschedulePublicationRequest,)
+  }
+);}
+
+
+
+
+export const getRescheduleSocialPublicationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rescheduleSocialPublication>>, TError,{id: number;data: BodyType<ReschedulePublicationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rescheduleSocialPublication>>, TError,{id: number;data: BodyType<ReschedulePublicationRequest>}, TContext> => {
+
+const mutationKey = ['rescheduleSocialPublication'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rescheduleSocialPublication>>, {id: number;data: BodyType<ReschedulePublicationRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  rescheduleSocialPublication(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RescheduleSocialPublicationMutationResult = NonNullable<Awaited<ReturnType<typeof rescheduleSocialPublication>>>
+    export type RescheduleSocialPublicationMutationBody = BodyType<ReschedulePublicationRequest>
+    export type RescheduleSocialPublicationMutationError = ErrorType<void>
+
+    /**
+ * @summary Move a scheduled post to a new time
+ */
+export const useRescheduleSocialPublication = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rescheduleSocialPublication>>, TError,{id: number;data: BodyType<ReschedulePublicationRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rescheduleSocialPublication>>,
+        TError,
+        {id: number;data: BodyType<ReschedulePublicationRequest>},
+        TContext
+      > => {
+      return useMutation(getRescheduleSocialPublicationMutationOptions(options));
+    }
+
+export const getCancelSocialPublicationUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-publications/${id}/cancel`
+}
+
+/**
+ * @summary Cancel a scheduled or held post
+ */
+export const cancelSocialPublication = async (id: number, options?: RequestInit): Promise<SocialPublication> => {
+
+  return customFetch<SocialPublication>(getCancelSocialPublicationUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCancelSocialPublicationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelSocialPublication>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelSocialPublication>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['cancelSocialPublication'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelSocialPublication>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  cancelSocialPublication(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelSocialPublicationMutationResult = NonNullable<Awaited<ReturnType<typeof cancelSocialPublication>>>
+
+    export type CancelSocialPublicationMutationError = ErrorType<void>
+
+    /**
+ * @summary Cancel a scheduled or held post
+ */
+export const useCancelSocialPublication = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelSocialPublication>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cancelSocialPublication>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getCancelSocialPublicationMutationOptions(options));
+    }
+
+export const getRetrySocialPublicationUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-publications/${id}/retry`
+}
+
+/**
+ * @summary Try a failed post again now
+ */
+export const retrySocialPublication = async (id: number, options?: RequestInit): Promise<SocialPublication> => {
+
+  return customFetch<SocialPublication>(getRetrySocialPublicationUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRetrySocialPublicationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retrySocialPublication>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof retrySocialPublication>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['retrySocialPublication'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retrySocialPublication>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  retrySocialPublication(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetrySocialPublicationMutationResult = NonNullable<Awaited<ReturnType<typeof retrySocialPublication>>>
+
+    export type RetrySocialPublicationMutationError = ErrorType<void>
+
+    /**
+ * @summary Try a failed post again now
+ */
+export const useRetrySocialPublication = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retrySocialPublication>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof retrySocialPublication>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRetrySocialPublicationMutationOptions(options));
     }
 
 export const getCreatePostPackUrl = (id: number,) => {
