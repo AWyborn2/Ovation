@@ -21,6 +21,9 @@ const SET_NULL_TABLES = [
   "premiership_players",
   "centuries",
   "five_wicket_hauls",
+  // Season shirt numbers never had an FK; unlinking makes the entry "held"
+  // again (plan U3, KTD2) rather than losing the club's number record.
+  "shirt_numbers",
 ] as const;
 
 /** Curated tables whose rows were `ON DELETE CASCADE`d with the player. */
@@ -35,7 +38,8 @@ const CASCADE_TABLES = ["honour_board_overrides", "player_images"] as const;
  *
  * Mirrors the old FKs exactly: award winners, life members, Team of the Decade
  * members, caps, club roles, premiership players, centuries and five-fors are
- * unlinked (SET NULL); honour-board overrides, player photos and award ballots
+ * unlinked (SET NULL), as are season shirt-number entries (which never had an
+ * FK; unlinked they are simply held again); honour-board overrides, player photos and award ballots
  * picking the player (on a Halls Head award) are deleted (CASCADE). Run it in
  * the same transaction as the delete. A merge does NOT use this — it moves the
  * links to the keeper instead (`reassignMergedNativePlayer`, below).
@@ -81,6 +85,8 @@ const MOVE_TABLES = [...SET_NULL_TABLES, "player_images"] as const;
 const DEDUPE_TABLES = [
   { table: "honour_board_overrides", scope: ["tenant_id", "board_key"] },
   { table: "club_photo_players", scope: ["photo_id"] },
+  // One shirt-number entry per player per season: the keeper's number wins.
+  { table: "shirt_numbers", scope: ["tenant_id", "season"] },
 ] as const;
 
 /** Rows dropped because the keeper already had the same link. */
@@ -91,7 +97,8 @@ export type MergeDedupeSummary = Partial<Record<(typeof DEDUPE_TABLES)[number]["
  * on the merged-away player MOVE to the keeper rather than being cleared (owner
  * decision, 30 Sep 2026) — award winners, life members, Team of the Decade
  * members, caps, club roles, premiership players, centuries, five-fors, player
- * photos, honour-board overrides, library photo tags and award-ballot picks.
+ * photos, honour-board overrides, library photo tags, season shirt-number
+ * entries and award-ballot picks.
  *
  * Tenant 1 rows only: another tenant's row carrying the same integer is that
  * club's own crosswalk player (the U8 invariant). Where a unique index would

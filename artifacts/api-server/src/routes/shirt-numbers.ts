@@ -1,0 +1,244 @@
+import { Router, type IRouter, type Request, type Response } from "express";
+import { eq } from "drizzle-orm";
+import { db, shirtNumberSettingsTable } from "@workspace/db";
+import { getShirtNumberSettings, isValidShirtNumber } from "@workspace/db/shirt-numbers";
+import { seasonStartYearFor } from "@workspace/db/seasons";
+import {
+  CreateShirtNumberBody,
+  DeleteShirtNumberParams,
+  ListShirtNumbersQueryParams,
+  StartShirtNumberSeasonParams,
+  UpdateShirtNumberBody,
+  UpdateShirtNumberParams,
+  UpdateShirtNumberSettingsBody,
+} from "@workspace/api-zod";
+import { requireAdmin } from "../middlewares/require-admin";
+import { requireEntitlement } from "../middlewares/require-entitlement";
+import { adminWriteRateLimiter, registerEditRateLimiter } from "../middlewares/rate-limit";
+import { getTenantId } from "../middlewares/tenant-context";
+import { getOrCreateSettings } from "../lib/settings";
+import { assertPlayerInTenantSpace } from "../lib/curated-player-space";
+import {
+  createSeniorEntry,
+  deleteSeniorEntry,
+  listSeniorEntries,
+  seniorRegisterSeasons,
+  startSeniorSeason,
+  updateSeniorEntry,
+  type WriteOutcome,
+} from "../lib/shirt-numbers";
+
+/**
+ * Season shirt numbers — the senior register (plan U3). Tenant-curated content:
+ * every read and write is scoped to `getTenantId(req)`, and the routes are
+ * deliberately NOT behind `requireNativeStatsTenant` (central-read clubs keep a
+ * register too). Writes need an admin with the curation entitlement; with the
+ * feature off they refuse with 400, except the settings PATCH that turns it on.
+ * Uploads (U4) and the juniors register (U10, under /juniors only) live
+ * elsewhere.
+ */
+
+const router: IRouter = Router();
+
+const FEATURE_OFF =
+  "Shirt numbers are turned off for this club. Turn them on in the shirt-number settings first.";
+
+/** Seasons an admin can sensibly address (start years). */
+const MIN_SEASON = 1850;
+const MAX_SEASON = 2200;
+const validSeason = (s: number) => Number.isInteger(s) && s >= MIN_SEASON && s <= MAX_SEASON;
+
+/** Settings for a write, or a 400 sent when the feature is off. */
+async function enabledSettings(req: Request, res: Response) {
+  const settings = await getShirtNumberSettings(db, getTenantId(req));
+  if (!settings.enabled) {
+    res.status(400).json({ error: FEATURE_OFF });
+    return null;
+  }
+  return settings;
+}
+
+function sendOutcome(res: Response, outcome: WriteOutcome, okStatus: 200 | 201): void {
+  if (outcome.ok) {
+    res.status(okStatus).json({ entry: outcome.entry, warnings: outcome.warnings });
+    return;
+  }
+  res.status(outcome.status).json(outcome.body);
+}
+
+// ── Settings ────────────────────────────────────────────────────────────────
+
+router.get("/shirt-numbers/settings", requireAdmin, async (req, res): Promise<void> => {
+  // Read-only: a tenant that never saved settings gets the defaults (off).
+  res.json(await getShirtNumberSettings(db, getTenantId(req)));
+});
+
+router.patch(
+  "/shirt-numbers/settings",
+  requireAdmin,
+  requireEntitlement("curation"),
+  adminWriteRateLimiter,
+  async (req, res): Promise<void> => {
+    const parsed = UpdateShirtNumberSettingsBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    await getOrCreateSettings(shirtNumberSettingsTable, tenantId);
+    await db
+      .update(shirtNumberSettingsTable)
+      .set({ ...parsed.data, updatedAt: new Date() })
+      .where(eq(shirtNumberSettingsTable.tenantId, tenantId));
+    res.json(await getShirtNumberSettings(db, tenantId));
+  },
+);
+
+// ── Register ────────────────────────────────────────────────────────────────
+
+router.get("/shirt-numbers", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = ListShirtNumbersQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const season = parsed.data.season ?? seasonStartYearFor(new Date());
+  if (!validSeason(season)) {
+    res.status(400).json({ error: "Invalid season" });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const [entries, seasons] = await Promise.all([
+    listSeniorEntries(tenantId, season),
+    seniorRegisterSeasons(tenantId),
+  ]);
+  res.json({ season, seasons, entries });
+});
+
+router.post(
+  "/shirt-numbers",
+  requireAdmin,
+  requireEntitlement("curation"),
+  registerEditRateLimiter,
+  async (req, res): Promise<void> => {
+    const parsed = CreateShirtNumberBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const body = parsed.data;
+    if (!validSeason(body.season)) {
+      res.status(400).json({ error: "Invalid season" });
+      return;
+    }
+    if (body.name.trim() === "") {
+      res.status(400).json({ error: "A name is required" });
+      return;
+    }
+    if (body.number != null && !isValidShirtNumber(body.number)) {
+      res.status(400).json({ error: "A shirt number is 1 to 3 digits" });
+      return;
+    }
+    const settings = await enabledSettings(req, res);
+    if (!settings) return;
+    const tenantId = getTenantId(req);
+    await assertPlayerInTenantSpace(tenantId, body.playerId);
+    const outcome = await createSeniorEntry(
+      tenantId,
+      {
+        season: body.season,
+        name: body.name,
+        participantId: body.participantId,
+        playerId: body.playerId,
+        number: body.number,
+        source: "admin",
+      },
+      settings,
+    );
+    sendOutcome(res, outcome, 201);
+  },
+);
+
+router.patch(
+  "/shirt-numbers/:id",
+  requireAdmin,
+  requireEntitlement("curation"),
+  registerEditRateLimiter,
+  async (req, res): Promise<void> => {
+    const params = UpdateShirtNumberParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const parsed = UpdateShirtNumberBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const body = parsed.data;
+    if (body.name !== undefined && body.name.trim() === "") {
+      res.status(400).json({ error: "A name is required" });
+      return;
+    }
+    if (body.number != null && !isValidShirtNumber(body.number)) {
+      res.status(400).json({ error: "A shirt number is 1 to 3 digits" });
+      return;
+    }
+    const settings = await enabledSettings(req, res);
+    if (!settings) return;
+    const tenantId = getTenantId(req);
+    await assertPlayerInTenantSpace(tenantId, body.playerId);
+    const outcome = await updateSeniorEntry(
+      tenantId,
+      params.data.id,
+      {
+        name: body.name,
+        // `nullish` in the contract: undefined leaves the field, null clears it.
+        participantId: body.participantId,
+        playerId: body.playerId,
+        number: body.number,
+      },
+      settings,
+    );
+    sendOutcome(res, outcome, 200);
+  },
+);
+
+router.delete(
+  "/shirt-numbers/:id",
+  requireAdmin,
+  requireEntitlement("curation"),
+  registerEditRateLimiter,
+  async (req, res): Promise<void> => {
+    const params = DeleteShirtNumberParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    if (!(await enabledSettings(req, res))) return;
+    if (!(await deleteSeniorEntry(getTenantId(req), params.data.id))) {
+      res.status(404).json({ error: "Entry not found" });
+      return;
+    }
+    res.sendStatus(204);
+  },
+);
+
+router.post(
+  "/shirt-numbers/seasons/:season/start",
+  requireAdmin,
+  requireEntitlement("curation"),
+  adminWriteRateLimiter,
+  async (req, res): Promise<void> => {
+    const params = StartShirtNumberSeasonParams.safeParse(req.params);
+    if (!params.success || !validSeason(params.data.season)) {
+      res.status(400).json({ error: "Invalid season" });
+      return;
+    }
+    const settings = await enabledSettings(req, res);
+    if (!settings) return;
+    res.json(await startSeniorSeason(getTenantId(req), params.data.season, settings));
+  },
+);
+
+export default router;
