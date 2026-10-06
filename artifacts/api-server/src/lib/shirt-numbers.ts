@@ -85,7 +85,7 @@ export function duplicateEntryIds(entries: readonly RegisterEntryLike[]): Set<nu
   return out;
 }
 
-function joinNames(names: readonly string[]): string {
+export function joinNames(names: readonly string[]): string {
   if (names.length <= 1) return names.join("");
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }

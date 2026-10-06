@@ -237,7 +237,7 @@ const isBlankRow = (row: readonly string[]) => row.every((c) => c.trim() === "")
 const tidy = (s: string) => s.trim().replace(/\s+/g, " ");
 
 /** "Smith, Jane" → Jane / Smith; "Jane Mary Smith" → "Jane Mary" / Smith. */
-function splitFullName(full: string): { givenName: string; surname: string } {
+export function splitFullName(full: string): { givenName: string; surname: string } {
   const comma = full.indexOf(",");
   if (comma >= 0) {
     return { surname: tidy(full.slice(0, comma)), givenName: tidy(full.slice(comma + 1)) };

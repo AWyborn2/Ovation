@@ -7,7 +7,27 @@ import {
 } from "@workspace/api-client-react";
 import { ArrowLeft } from "lucide-react";
 import { fmtJuniorDate, fmtNum } from "@/lib/juniors";
+import { seasonLabel } from "@/lib/season-label";
 import { LoadingState, QueryError, EmptyState } from "@/components/data-states";
+
+/** Past juniors shirt numbers shown under the name (newest first). */
+const SHIRT_HISTORY_MAX = 6;
+
+/**
+ * "2025/26 #7 · 2024/25 #12": the junior's numbered seasons from the juniors
+ * register, shown when there is more than the current number to tell.
+ */
+function juniorShirtHistory(
+  shirtNumber: string | null | undefined,
+  shirtNumbers: readonly { season: number; number: string }[] | undefined,
+): string | null {
+  const seasons = shirtNumbers ?? [];
+  if (seasons.length === 0 || (seasons.length === 1 && shirtNumber)) return null;
+  return seasons
+    .slice(0, SHIRT_HISTORY_MAX)
+    .map((s) => `${seasonLabel(s.season)} #${s.number}`)
+    .join(" · ");
+}
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
@@ -31,6 +51,7 @@ export default function JuniorsPlayerDetail() {
   } = useGetJuniorPlayer(id, {
     query: { enabled: !!id, queryKey: getGetJuniorPlayerQueryKey(id) },
   });
+  const shirtHistory = player ? juniorShirtHistory(player.shirtNumber, player.shirtNumbers) : null;
 
   return (
     <div className="space-y-6">
@@ -52,13 +73,32 @@ export default function JuniorsPlayerDetail() {
             <div className="mb-2 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-text">
               Junior Player
             </div>
-            <h1 className="text-[clamp(38px,4.6vw,64px)] leading-none">{player.displayName}</h1>
+            <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+              <h1 className="text-[clamp(38px,4.6vw,64px)] leading-none">{player.displayName}</h1>
+              {player.shirtNumber && (
+                <span
+                  data-testid="junior-shirt-number"
+                  aria-label={`Shirt number ${player.shirtNumber}`}
+                  className="rounded-[12px] border-2 border-primary px-2.5 pb-0.5 pt-1 font-serif text-[clamp(28px,3.2vw,44px)] font-extrabold leading-none tabular-nums text-primary-text"
+                >
+                  #{player.shirtNumber}
+                </span>
+              )}
+            </div>
             <div className="text-sm text-muted-foreground mt-1">
               {player.firstSeason && player.lastSeason
                 ? `${player.firstSeason} – ${player.lastSeason}`
                 : (player.firstSeason ?? "")}
               {player.teams ? ` · ${player.teams}` : ""}
             </div>
+            {shirtHistory && (
+              <div
+                data-testid="junior-shirt-history"
+                className="mt-1 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+              >
+                Shirt numbers: {shirtHistory}
+              </div>
+            )}
           </div>
 
           {/* Batting */}

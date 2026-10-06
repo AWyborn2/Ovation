@@ -24,6 +24,9 @@ import { getTenantId } from "../middlewares/tenant-context";
 import { isCentralTenant } from "../lib/tenant";
 import { BALLS_PER_OVER, oversToBalls, ballsToOvers } from "../lib/junior-cricket";
 import { rosterGamesByParticipant } from "../lib/junior-leaderboards";
+import { getShirtNumberSettings } from "@workspace/db/shirt-numbers";
+import { seasonStartYearFor } from "@workspace/db/seasons";
+import { loadJuniorProfileShirtNumbers } from "../lib/junior-shirt-numbers";
 
 /**
  * Junior players directory, player profile, and the senior-link
@@ -568,6 +571,16 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
       wickets: s.wickets,
     }));
 
+  // Juniors shirt numbers (plan U10, R14/R17): from the juniors register only,
+  // and only when the club has the feature on (the fields are omitted otherwise).
+  const shirt = (await getShirtNumberSettings(db, tenantId)).enabled
+    ? await loadJuniorProfileShirtNumbers(
+        tenantId,
+        participant.participantId,
+        seasonStartYearFor(new Date()),
+      )
+    : null;
+
   res.json({
     participantId: participant.participantId,
     displayName: participant.displayName ?? "",
@@ -579,6 +592,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     bowling: bowlingTotals,
     seasons,
     matches,
+    ...(shirt ?? {}),
   });
 });
 

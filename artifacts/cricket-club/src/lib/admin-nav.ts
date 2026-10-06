@@ -162,7 +162,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     href: "/admin/honours",
     icon: Trophy,
     description:
-      "Premierships, awards, Team of the Decade, caps, shirt numbers, life members and junior premierships.",
+      "Premierships, awards, Team of the Decade, caps, shirt numbers, life members, junior premierships and junior shirt numbers.",
     tabs: [
       { value: "premierships", label: "Premierships", path: "/admin/honours", feature: "curation" },
       { value: "awards", label: "Awards", path: "/admin/honours/awards", feature: "curation" },
@@ -189,6 +189,12 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         value: "junior-premierships",
         label: "Junior premierships",
         path: "/admin/honours/junior-premierships",
+      },
+      {
+        value: "junior-shirt-numbers",
+        label: "Junior shirt numbers",
+        path: "/admin/honours/junior-shirt-numbers",
+        feature: "curation",
       },
       {
         value: "display",
