@@ -13,6 +13,7 @@ export type Feature =
   | "customDomain" // serve the club on its own domain
   | "mobileApp" // the Expo mobile app
   | "socialStudio" // social-card / video studio
+  | "socialPublishing" // publishing drafts to Facebook / Instagram (plan 2026-10-06-001)
   | "clubroomTv" // rotating clubroom-TV kiosk
   | "curation"; // honour boards, premierships, awards, ToD, committee, life members, caps
 
@@ -22,6 +23,7 @@ const ALL_ON: Entitlements = {
   customDomain: true,
   mobileApp: true,
   socialStudio: true,
+  socialPublishing: true,
   clubroomTv: true,
   curation: true,
 };
@@ -30,6 +32,7 @@ const ALL_OFF: Entitlements = {
   customDomain: false,
   mobileApp: false,
   socialStudio: false,
+  socialPublishing: false,
   clubroomTv: false,
   curation: false,
 };
@@ -42,7 +45,7 @@ const ALL_OFF: Entitlements = {
  */
 const PLAN_FEATURES: Record<Plan, Entitlements> = {
   free: { ...ALL_OFF },
-  club: { ...ALL_OFF, curation: true, socialStudio: true },
+  club: { ...ALL_OFF, curation: true, socialStudio: true, socialPublishing: true },
   pro: { ...ALL_ON },
 };
 

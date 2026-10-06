@@ -5545,6 +5545,79 @@ export const UpdateSocialSettingsResponse = zod.object({
 
 
 /**
+ * @summary The club's Facebook Page / Instagram connection
+ */
+export const GetMetaConnectionResponse = zod.object({
+  "available": zod.boolean().describe('Whether publishing is switched on for the platform and this club\'s plan.'),
+  "status": zod.enum(['not_connected', 'connected', 'needs_reconnect', 'disconnected']),
+  "statusReason": zod.string().nullish(),
+  "pageName": zod.string().nullish(),
+  "igUsername": zod.string().nullish().describe('Null when the Page has no linked Instagram professional account.'),
+  "connectedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Disconnect Meta and cancel the club's scheduled and held posts
+ */
+export const DisconnectMetaConnectionResponse = zod.object({
+  "available": zod.boolean().describe('Whether publishing is switched on for the platform and this club\'s plan.'),
+  "status": zod.enum(['not_connected', 'connected', 'needs_reconnect', 'disconnected']),
+  "statusReason": zod.string().nullish(),
+  "pageName": zod.string().nullish(),
+  "igUsername": zod.string().nullish().describe('Null when the Page has no linked Instagram professional account.'),
+  "connectedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Begin connecting Meta; returns the Facebook login URL
+ */
+export const StartMetaConnectBody = zod.object({
+  "replace": zod.boolean().optional().describe('Confirms replacing an existing connection.')
+})
+
+export const StartMetaConnectResponse = zod.object({
+  "url": zod.string()
+})
+
+
+/**
+ * @summary The Pages found by the Facebook login, awaiting the admin's choice
+ */
+export const GetMetaConnectPendingQueryParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const GetMetaConnectPendingResponse = zod.object({
+  "pages": zod.array(zod.object({
+  "pageId": zod.string(),
+  "pageName": zod.string(),
+  "igUsername": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Connect the chosen Page (and its linked Instagram account)
+ */
+export const CompleteMetaConnectBody = zod.object({
+  "token": zod.string(),
+  "pageId": zod.string(),
+  "replace": zod.boolean().optional()
+})
+
+export const CompleteMetaConnectResponse = zod.object({
+  "available": zod.boolean().describe('Whether publishing is switched on for the platform and this club\'s plan.'),
+  "status": zod.enum(['not_connected', 'connected', 'needs_reconnect', 'disconnected']),
+  "statusReason": zod.string().nullish(),
+  "pageName": zod.string().nullish(),
+  "igUsername": zod.string().nullish().describe('Null when the Page has no linked Instagram professional account.'),
+  "connectedAt": zod.coerce.date().nullish()
+})
+
+
+/**
  * @summary List fixtures (ordered by start time ascending)
  */
 export const ListFixturesQueryParams = zod.object({
@@ -9408,6 +9481,7 @@ export const GetTenantPlanResponse = zod.object({
   "customDomain": zod.boolean(),
   "mobileApp": zod.boolean(),
   "socialStudio": zod.boolean(),
+  "socialPublishing": zod.boolean().describe('Publishing drafts to Facebook and Instagram.'),
   "clubroomTv": zod.boolean(),
   "curation": zod.boolean()
 }).describe('Per-feature flags resolved from the tenant\'s plan.')
