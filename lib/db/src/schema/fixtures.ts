@@ -66,6 +66,10 @@ export type TeamListPlayer = {
   playerId?: number;
   displayName: string;
   role?: "C" | "WK" | "C/WK";
+  // PlayHQ participant GUID (lowercased) for a row copied from a PlayHQ
+  // lineup, kept even when the row has no playerId, so a held shirt-number
+  // register entry can still be shown on this fixture's team-list card.
+  participantId?: string;
 };
 
 // The published XI for a fixture — exactly one per fixture (unique on

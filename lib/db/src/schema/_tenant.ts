@@ -101,6 +101,14 @@ import { tenantsTable } from "./tenants";
  *   tenant_id themselves so no read has to join through the batch.
  *   club_history_curated_rows (U11 / migration 0022) — which curated rows a
  *   history batch created; directly tenant-scoped the same way.
+ *
+ * APPLIED (season shirt numbers, migration 0031):
+ *   shirt_numbers (senior register; player_id in the tenant's id space, no FK),
+ *   junior_shirt_numbers (juniors register, keyed on participant_id only —
+ *   never blended with the senior one), shirt_number_settings (one row per
+ *   tenant via getOrCreateSettings), shirt_number_uploads (upload previews).
+ *   Directly tenant-scoped from day one (reads filter, writes set from request
+ *   context); never written to the central database.
  * ───────────────────────────────────────────────────────────────────────────
  */
 export const tenantIdColumn = () =>

@@ -183,7 +183,12 @@ export const GetPlayerResponse = zod.object({
   "key": zod.string().describe('Award key (awards.key).'),
   "title": zod.string(),
   "season": zod.number().describe('Season (start year) the award was won.')
-})).optional().describe('Published awards this player has won (one row per season won), used by the trading card.')
+})).optional().describe('Published awards this player has won (one row per season won), used by the trading card.'),
+  "shirtNumber": zod.string().nullish().describe('The player\'s shirt number for the current season. Present only when the club has shirt numbers on and the player has a linked, numbered register entry; never a cap number.'),
+  "shirtNumbers": zod.array(zod.object({
+  "season": zod.number().describe('Season start year'),
+  "number": zod.string()
+})).optional().describe('Shirt numbers worn by season, newest first (linked, numbered entries only). Omitted when the club has shirt numbers off.')
 })
 
 
@@ -2144,6 +2149,258 @@ export const UpdateCapResponse = zod.object({
  * @summary Delete a cap register entry
  */
 export const DeleteCapParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * The tenant's feature switch, duplicate policy and rollover policy. One set of settings covers both the senior and juniors registers. Returns the defaults (off, warn, carry) for a tenant that has never saved them.
+ * @summary Get the club's shirt-number settings
+ */
+export const GetShirtNumberSettingsResponse = zod.object({
+  "enabled": zod.boolean().describe('Feature switch; when off no shirt number appears anywhere.'),
+  "duplicatePolicy": zod.enum(['warn', 'block']).describe('Whether a duplicate number in a season warns (default) or is refused.'),
+  "rolloverPolicy": zod.enum(['carry', 'blank']).describe('`carry`: returning people keep last season\'s number (editable); `blank`: each season starts unnumbered.')
+})
+
+
+/**
+ * Works while the feature is off so an admin can turn it on.
+ * @summary Update the club's shirt-number settings (admin, curation)
+ */
+export const UpdateShirtNumberSettingsBody = zod.object({
+  "enabled": zod.boolean().optional(),
+  "duplicatePolicy": zod.enum(['warn', 'block']).optional().describe('Whether a duplicate number in a season warns (default) or is refused.'),
+  "rolloverPolicy": zod.enum(['carry', 'blank']).optional().describe('`carry`: returning people keep last season\'s number (editable); `blank`: each season starts unnumbered.')
+})
+
+export const UpdateShirtNumberSettingsResponse = zod.object({
+  "enabled": zod.boolean().describe('Feature switch; when off no shirt number appears anywhere.'),
+  "duplicatePolicy": zod.enum(['warn', 'block']).describe('Whether a duplicate number in a season warns (default) or is refused.'),
+  "rolloverPolicy": zod.enum(['carry', 'blank']).describe('`carry`: returning people keep last season\'s number (editable); `blank`: each season starts unnumbered.')
+})
+
+
+/**
+ * Every entry for the season, including held entries (not yet linked to a player who has played) and duplicate-number flags. Defaults to the current season (July-June, Perth time) when `season` is omitted.
+ * @summary The senior shirt-number register for a season (admin)
+ */
+export const ListShirtNumbersQueryParams = zod.object({
+  "season": zod.coerce.number().optional().describe('Season start year (e.g. 2026 for 2026\/27)')
+})
+
+export const ListShirtNumbersResponse = zod.object({
+  "season": zod.number().describe('The season returned'),
+  "seasons": zod.array(zod.number()).describe('Seasons that have a register, newest first (for the season picker).'),
+  "entries": zod.array(zod.object({
+  "id": zod.number(),
+  "season": zod.number(),
+  "name": zod.string(),
+  "participantId": zod.string().nullable().describe('PlayHQ participant GUID (lowercased)'),
+  "playerId": zod.number().nullable().describe('Linked player in the tenant\'s player space; null while held.'),
+  "playerName": zod.string().nullish().describe('The linked player\'s display name, when linked.'),
+  "number": zod.string().nullable().describe('Null when the person is on the register but unnumbered.'),
+  "source": zod.enum(['upload', 'registration', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from.'),
+  "held": zod.boolean().describe('True while the entry is not linked to a player who has played.'),
+  "duplicate": zod.boolean().describe('True when another entry in the season wears the same number.'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * Under the `carry` rollover policy an entry created without a number inherits the person's number from the previous season. A duplicate number returns warnings under the `warn` policy and 409 under `block`.
+ * @summary Add a person to a season's senior register (admin, curation)
+ */
+export const createShirtNumberBodyNameMax = 120;
+
+export const createShirtNumberBodyNumberOneRegExp = new RegExp('^[0-9]{1,3}$');
+
+
+export const CreateShirtNumberBody = zod.object({
+  "season": zod.number(),
+  "name": zod.string().min(1).max(createShirtNumberBodyNameMax),
+  "participantId": zod.string().nullish(),
+  "playerId": zod.number().nullish(),
+  "number": zod.union([zod.string().regex(createShirtNumberBodyNumberOneRegExp).describe('A shirt number as 1-3 digits; leading zeros are kept (\"07\" and \"7\" differ).'),zod.null()]).optional()
+})
+
+
+/**
+ * Assign, change or clear (null) the number, rename, or link the entry to a player. A duplicate number returns warnings under `warn` and 409 under `block`.
+ * @summary Edit a senior register entry (admin, curation)
+ */
+export const UpdateShirtNumberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateShirtNumberBodyNameMax = 120;
+
+export const updateShirtNumberBodyNumberOneRegExp = new RegExp('^[0-9]{1,3}$');
+
+
+export const UpdateShirtNumberBody = zod.object({
+  "name": zod.string().min(1).max(updateShirtNumberBodyNameMax).optional(),
+  "participantId": zod.string().nullish(),
+  "playerId": zod.number().nullish(),
+  "number": zod.union([zod.string().regex(updateShirtNumberBodyNumberOneRegExp).describe('A shirt number as 1-3 digits; leading zeros are kept (\"07\" and \"7\" differ).'),zod.null()]).optional()
+})
+
+export const UpdateShirtNumberResponse = zod.object({
+  "entry": zod.object({
+  "id": zod.number(),
+  "season": zod.number(),
+  "name": zod.string(),
+  "participantId": zod.string().nullable().describe('PlayHQ participant GUID (lowercased)'),
+  "playerId": zod.number().nullable().describe('Linked player in the tenant\'s player space; null while held.'),
+  "playerName": zod.string().nullish().describe('The linked player\'s display name, when linked.'),
+  "number": zod.string().nullable().describe('Null when the person is on the register but unnumbered.'),
+  "source": zod.enum(['upload', 'registration', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from.'),
+  "held": zod.boolean().describe('True while the entry is not linked to a player who has played.'),
+  "duplicate": zod.boolean().describe('True when another entry in the season wears the same number.'),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),
+  "warnings": zod.array(zod.object({
+  "kind": zod.enum(['duplicate']),
+  "season": zod.number(),
+  "number": zod.string(),
+  "message": zod.string(),
+  "entryIds": zod.array(zod.number()).describe('The other register entries already wearing this number.'),
+  "names": zod.array(zod.string())
+}).describe('A duplicate-number notice for a write.'))
+})
+
+
+/**
+ * @summary Remove a senior register entry (admin, curation)
+ */
+export const DeleteShirtNumberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * Copies the previous season's register into `season` according to the club's rollover policy. Idempotent: people already on the season's register are skipped.
+ * @summary Start a season's senior register from the previous season (admin, curation)
+ */
+export const StartShirtNumberSeasonParams = zod.object({
+  "season": zod.coerce.number().describe('Season start year being started')
+})
+
+export const StartShirtNumberSeasonResponse = zod.object({
+  "season": zod.number(),
+  "fromSeason": zod.number(),
+  "created": zod.number().describe('Entries created in the new season.'),
+  "numbered": zod.number().describe('Created entries that carried a number forward.'),
+  "skipped": zod.number().describe('People already on the new season\'s register.'),
+  "warnings": zod.array(zod.object({
+  "kind": zod.enum(['duplicate']),
+  "season": zod.number(),
+  "number": zod.string(),
+  "message": zod.string(),
+  "entryIds": zod.array(zod.number()).describe('The other register entries already wearing this number.'),
+  "names": zod.array(zod.string())
+}).describe('A duplicate-number notice for a write.'))
+})
+
+
+/**
+ * Upload a `.csv` or `.xlsx` (max 2 MB, 1,000 rows) for one season. The
+server parses it, stores a pending preview for this tenant and returns
+it. Nothing is written to the register until the preview is committed.
+A `registration` upload ignores any number column. Generated clients
+should treat the file as `Blob`; the cricket-club frontend posts
+FormData via raw `fetch` against this route.
+
+ * @summary Upload a shirt-number spreadsheet or PlayHQ registration export for preview (admin, curation)
+ */
+export const UploadShirtNumbersBody = zod.object({
+  "file": zod.instanceof(File).describe('The spreadsheet or registration export'),
+  "kind": zod.enum(['numbers', 'registration']).describe('`numbers`: a shirt-number spreadsheet; `registration`: a PlayHQ registered-participants export (numbers ignored).'),
+  "season": zod.number().describe('Starting year of the season (e.g. 2026 for 2026\/27)')
+})
+
+export const UploadShirtNumbersResponse = zod.object({
+  "id": zod.number().describe('Upload id for commit \/ discard'),
+  "side": zod.enum(['senior', 'junior']),
+  "kind": zod.enum(['numbers', 'registration']).describe('`numbers`: a shirt-number spreadsheet; `registration`: a PlayHQ registered-participants export (numbers ignored).'),
+  "season": zod.number(),
+  "fileName": zod.string(),
+  "rows": zod.array(zod.object({
+  "rowIndex": zod.number().describe('1-based data row in the file; resolutions refer to it.'),
+  "name": zod.string(),
+  "participantId": zod.string().nullable().describe('Participant id from the file (lowercased), or the matched junior participant.'),
+  "number": zod.string().nullable(),
+  "status": zod.enum(['matched', 'suggested', 'new', 'invalid']),
+  "playerId": zod.number().nullable().describe('The matched senior player, for `matched` senior rows.'),
+  "candidates": zod.array(zod.object({
+  "playerId": zod.number().nullish(),
+  "participantId": zod.string().nullish(),
+  "name": zod.string(),
+  "score": zod.number().nullish()
+}).describe('A possible match for an upload row. Senior candidates carry a playerId; junior candidates carry a participantId.')).describe('Suggestions for `suggested` rows; never auto-applied.'),
+  "existingEntryId": zod.number().nullable().describe('The season\'s register entry this row would update, if any.'),
+  "existingNumber": zod.string().nullable(),
+  "numberChange": zod.boolean().describe('True when the row changes an existing entry\'s number.'),
+  "duplicate": zod.boolean().describe('True when the row\'s number is worn by someone else in the season.'),
+  "duplicateWith": zod.array(zod.string()).optional(),
+  "errors": zod.array(zod.string()).describe('Why an `invalid` row cannot be applied.')
+})),
+  "counts": zod.object({
+  "total": zod.number(),
+  "matched": zod.number(),
+  "suggested": zod.number(),
+  "new": zod.number(),
+  "invalid": zod.number(),
+  "numberChanges": zod.number(),
+  "duplicates": zod.number()
+}),
+  "unrecognisedHeaders": zod.array(zod.string()),
+  "errors": zod.array(zod.string()).describe('File-level problems (missing name column, etc.)'),
+  "truncated": zod.boolean().describe('True when rows beyond the 1,000-row cap were dropped.')
+})
+
+
+/**
+ * Rows without a resolution take their default: `matched` rows link to the matched player, `new` and `suggested` rows are kept as held, and `invalid` rows are discarded. The club's duplicate policy applies.
+ * @summary Apply a previewed senior upload with per-row resolutions (admin, curation)
+ */
+export const CommitShirtNumberUploadParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CommitShirtNumberUploadBody = zod.object({
+  "resolutions": zod.array(zod.object({
+  "rowIndex": zod.number(),
+  "action": zod.enum(['link', 'hold', 'discard']).describe('`link`: attach to `playerId`; `hold`: keep as a held entry (no player yet); `discard`: skip the row.'),
+  "playerId": zod.number().nullish().describe('Required for `link`.')
+}))
+})
+
+export const CommitShirtNumberUploadResponse = zod.object({
+  "uploadId": zod.number(),
+  "created": zod.number(),
+  "updated": zod.number(),
+  "linked": zod.number(),
+  "held": zod.number(),
+  "discarded": zod.number(),
+  "warnings": zod.array(zod.object({
+  "kind": zod.enum(['duplicate']),
+  "season": zod.number(),
+  "number": zod.string(),
+  "message": zod.string(),
+  "entryIds": zod.array(zod.number()).describe('The other register entries already wearing this number.'),
+  "names": zod.array(zod.string())
+}).describe('A duplicate-number notice for a write.'))
+})
+
+
+/**
+ * @summary Discard a pending senior upload preview (admin, curation)
+ */
+export const DiscardShirtNumberUploadParams = zod.object({
   "id": zod.coerce.number()
 })
 
@@ -5655,6 +5912,7 @@ export const GetFixtureTeamListResponse = zod.union([zod.object({
   "players": zod.array(zod.object({
   "order": zod.number().min(1).describe('Batting\/selection order position (1-based)'),
   "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
+  "participantId": zod.string().optional().describe('PlayHQ participant GUID (lowercased) for a row copied from a PlayHQ lineup, kept even when the row has no playerId; omit for a free-typed name.'),
   "displayName": zod.string().min(1),
   "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
 })),
@@ -5678,6 +5936,7 @@ export const PutFixtureTeamListBody = zod.object({
   "players": zod.array(zod.object({
   "order": zod.number().min(1).describe('Batting\/selection order position (1-based)'),
   "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
+  "participantId": zod.string().optional().describe('PlayHQ participant GUID (lowercased) for a row copied from a PlayHQ lineup, kept even when the row has no playerId; omit for a free-typed name.'),
   "displayName": zod.string().min(1),
   "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
 })),
@@ -5694,6 +5953,7 @@ export const PutFixtureTeamListResponse = zod.object({
   "players": zod.array(zod.object({
   "order": zod.number().min(1).describe('Batting\/selection order position (1-based)'),
   "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
+  "participantId": zod.string().optional().describe('PlayHQ participant GUID (lowercased) for a row copied from a PlayHQ lineup, kept even when the row has no playerId; omit for a free-typed name.'),
   "displayName": zod.string().min(1),
   "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
 })),
@@ -8946,7 +9206,225 @@ export const GetJuniorPlayerResponse = zod.object({
   "wides": zod.number().nullish(),
   "noBalls": zod.number().nullish()
 }).describe('One bowling line in a junior innings. Private participants are masked.'),zod.null()]).optional()
+})),
+  "shirtNumber": zod.string().nullish().describe('The participant\'s juniors shirt number for the current season, from the juniors register only. Present only when the club has shirt numbers on.'),
+  "shirtNumbers": zod.array(zod.object({
+  "season": zod.number().describe('Season start year'),
+  "number": zod.string()
+})).optional().describe('Juniors shirt numbers worn by season, newest first.')
+})
+
+
+/**
+ * Kept completely separate from the senior register. Defaults to the current season when `season` is omitted. Follows the juniors gating for tenants without native junior data.
+ * @summary The juniors shirt-number register for a season (admin)
+ */
+export const ListJuniorShirtNumbersQueryParams = zod.object({
+  "season": zod.coerce.number().optional().describe('Season start year (e.g. 2026 for 2026\/27)')
+})
+
+export const ListJuniorShirtNumbersResponse = zod.object({
+  "season": zod.number(),
+  "seasons": zod.array(zod.number()),
+  "entries": zod.array(zod.object({
+  "id": zod.number(),
+  "season": zod.number(),
+  "participantId": zod.string().describe('PlayHQ participant GUID (lowercased)'),
+  "name": zod.string(),
+  "number": zod.string().nullable(),
+  "source": zod.enum(['upload', 'registration', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from.'),
+  "duplicate": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
 }))
+})
+
+
+/**
+ * Under the `carry` rollover policy an entry created without a number inherits the participant's number from the previous season. A duplicate number returns warnings under `warn` and 409 under `block`.
+ * @summary Add a junior participant to a season's juniors register (admin, curation)
+ */
+
+export const createJuniorShirtNumberBodyNameMax = 120;
+
+export const createJuniorShirtNumberBodyNumberOneRegExp = new RegExp('^[0-9]{1,3}$');
+
+
+export const CreateJuniorShirtNumberBody = zod.object({
+  "season": zod.number(),
+  "participantId": zod.string().min(1),
+  "name": zod.string().min(1).max(createJuniorShirtNumberBodyNameMax).optional().describe('Defaults to the junior participant\'s display name.'),
+  "number": zod.union([zod.string().regex(createJuniorShirtNumberBodyNumberOneRegExp).describe('A shirt number as 1-3 digits; leading zeros are kept (\"07\" and \"7\" differ).'),zod.null()]).optional()
+})
+
+
+/**
+ * @summary Edit a juniors register entry (admin, curation)
+ */
+export const UpdateJuniorShirtNumberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateJuniorShirtNumberBodyNameMax = 120;
+
+export const updateJuniorShirtNumberBodyNumberOneRegExp = new RegExp('^[0-9]{1,3}$');
+
+
+export const UpdateJuniorShirtNumberBody = zod.object({
+  "name": zod.string().min(1).max(updateJuniorShirtNumberBodyNameMax).optional(),
+  "number": zod.union([zod.string().regex(updateJuniorShirtNumberBodyNumberOneRegExp).describe('A shirt number as 1-3 digits; leading zeros are kept (\"07\" and \"7\" differ).'),zod.null()]).optional()
+})
+
+export const UpdateJuniorShirtNumberResponse = zod.object({
+  "entry": zod.object({
+  "id": zod.number(),
+  "season": zod.number(),
+  "participantId": zod.string().describe('PlayHQ participant GUID (lowercased)'),
+  "name": zod.string(),
+  "number": zod.string().nullable(),
+  "source": zod.enum(['upload', 'registration', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from.'),
+  "duplicate": zod.boolean(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+}),
+  "warnings": zod.array(zod.object({
+  "kind": zod.enum(['duplicate']),
+  "season": zod.number(),
+  "number": zod.string(),
+  "message": zod.string(),
+  "entryIds": zod.array(zod.number()).describe('The other register entries already wearing this number.'),
+  "names": zod.array(zod.string())
+}).describe('A duplicate-number notice for a write.'))
+})
+
+
+/**
+ * @summary Remove a juniors register entry (admin, curation)
+ */
+export const DeleteJuniorShirtNumberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * Copies the previous season's juniors register into `season` according to the club's rollover policy. Idempotent: participants already on the season's register are skipped.
+ * @summary Start a season's juniors register from the previous season (admin, curation)
+ */
+export const StartJuniorShirtNumberSeasonParams = zod.object({
+  "season": zod.coerce.number().describe('Season start year being started')
+})
+
+export const StartJuniorShirtNumberSeasonResponse = zod.object({
+  "season": zod.number(),
+  "fromSeason": zod.number(),
+  "created": zod.number().describe('Entries created in the new season.'),
+  "numbered": zod.number().describe('Created entries that carried a number forward.'),
+  "skipped": zod.number().describe('People already on the new season\'s register.'),
+  "warnings": zod.array(zod.object({
+  "kind": zod.enum(['duplicate']),
+  "season": zod.number(),
+  "number": zod.string(),
+  "message": zod.string(),
+  "entryIds": zod.array(zod.number()).describe('The other register entries already wearing this number.'),
+  "names": zod.array(zod.string())
+}).describe('A duplicate-number notice for a write.'))
+})
+
+
+/**
+ * Same file rules as the senior upload (`.csv`/`.xlsx`, 2 MB, 1,000
+rows). Rows are matched against the club's junior participants only.
+Generated clients should treat the file as `Blob`; the cricket-club
+frontend posts FormData via raw `fetch` against this route.
+
+ * @summary Upload a juniors shirt-number spreadsheet or registration export for preview (admin, curation)
+ */
+export const UploadJuniorShirtNumbersBody = zod.object({
+  "file": zod.instanceof(File).describe('The spreadsheet or registration export'),
+  "kind": zod.enum(['numbers', 'registration']).describe('`numbers`: a shirt-number spreadsheet; `registration`: a PlayHQ registered-participants export (numbers ignored).'),
+  "season": zod.number().describe('Starting year of the season (e.g. 2026 for 2026\/27)')
+})
+
+export const UploadJuniorShirtNumbersResponse = zod.object({
+  "id": zod.number().describe('Upload id for commit \/ discard'),
+  "side": zod.enum(['senior', 'junior']),
+  "kind": zod.enum(['numbers', 'registration']).describe('`numbers`: a shirt-number spreadsheet; `registration`: a PlayHQ registered-participants export (numbers ignored).'),
+  "season": zod.number(),
+  "fileName": zod.string(),
+  "rows": zod.array(zod.object({
+  "rowIndex": zod.number().describe('1-based data row in the file; resolutions refer to it.'),
+  "name": zod.string(),
+  "participantId": zod.string().nullable().describe('Participant id from the file (lowercased), or the matched junior participant.'),
+  "number": zod.string().nullable(),
+  "status": zod.enum(['matched', 'suggested', 'new', 'invalid']),
+  "playerId": zod.number().nullable().describe('The matched senior player, for `matched` senior rows.'),
+  "candidates": zod.array(zod.object({
+  "playerId": zod.number().nullish(),
+  "participantId": zod.string().nullish(),
+  "name": zod.string(),
+  "score": zod.number().nullish()
+}).describe('A possible match for an upload row. Senior candidates carry a playerId; junior candidates carry a participantId.')).describe('Suggestions for `suggested` rows; never auto-applied.'),
+  "existingEntryId": zod.number().nullable().describe('The season\'s register entry this row would update, if any.'),
+  "existingNumber": zod.string().nullable(),
+  "numberChange": zod.boolean().describe('True when the row changes an existing entry\'s number.'),
+  "duplicate": zod.boolean().describe('True when the row\'s number is worn by someone else in the season.'),
+  "duplicateWith": zod.array(zod.string()).optional(),
+  "errors": zod.array(zod.string()).describe('Why an `invalid` row cannot be applied.')
+})),
+  "counts": zod.object({
+  "total": zod.number(),
+  "matched": zod.number(),
+  "suggested": zod.number(),
+  "new": zod.number(),
+  "invalid": zod.number(),
+  "numberChanges": zod.number(),
+  "duplicates": zod.number()
+}),
+  "unrecognisedHeaders": zod.array(zod.string()),
+  "errors": zod.array(zod.string()).describe('File-level problems (missing name column, etc.)'),
+  "truncated": zod.boolean().describe('True when rows beyond the 1,000-row cap were dropped.')
+})
+
+
+/**
+ * Junior entries always carry a participant, so a row is either linked to a junior participant or discarded. Rows without a resolution take their default: `matched` rows link to the matched participant and every other row is discarded. The club's duplicate policy applies.
+ * @summary Apply a previewed juniors upload with per-row resolutions (admin, curation)
+ */
+export const CommitJuniorShirtNumberUploadParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CommitJuniorShirtNumberUploadBody = zod.object({
+  "resolutions": zod.array(zod.object({
+  "rowIndex": zod.number(),
+  "action": zod.enum(['link', 'discard']).describe('`link`: attach to the junior `participantId`; `discard`: skip the row.'),
+  "participantId": zod.string().nullish().describe('Required for `link`.')
+}))
+})
+
+export const CommitJuniorShirtNumberUploadResponse = zod.object({
+  "uploadId": zod.number(),
+  "created": zod.number(),
+  "updated": zod.number(),
+  "linked": zod.number(),
+  "held": zod.number(),
+  "discarded": zod.number(),
+  "warnings": zod.array(zod.object({
+  "kind": zod.enum(['duplicate']),
+  "season": zod.number(),
+  "number": zod.string(),
+  "message": zod.string(),
+  "entryIds": zod.array(zod.number()).describe('The other register entries already wearing this number.'),
+  "names": zod.array(zod.string())
+}).describe('A duplicate-number notice for a write.'))
+})
+
+
+/**
+ * @summary Discard a pending juniors upload preview (admin, curation)
+ */
+export const DiscardJuniorShirtNumberUploadParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 

@@ -48,3 +48,4 @@ export * from "./club_history";
 export * from "./club_corrections";
 export * from "./player_privacy_overrides";
 export * from "./social_publishing";
+export * from "./shirt_numbers";
