@@ -1807,8 +1807,63 @@ export interface Entitlements {
   customDomain: boolean;
   mobileApp: boolean;
   socialStudio: boolean;
+  /** Publishing drafts to Facebook and Instagram. */
+  socialPublishing: boolean;
   clubroomTv: boolean;
   curation: boolean;
+}
+
+export type MetaConnectionStatus = typeof MetaConnectionStatus[keyof typeof MetaConnectionStatus];
+
+
+export const MetaConnectionStatus = {
+  not_connected: 'not_connected',
+  connected: 'connected',
+  needs_reconnect: 'needs_reconnect',
+  disconnected: 'disconnected',
+} as const;
+
+export interface MetaConnection {
+  /** Whether publishing is switched on for the platform and this club's plan. */
+  available: boolean;
+  status: MetaConnectionStatus;
+  /** @nullable */
+  statusReason?: string | null;
+  /** @nullable */
+  pageName?: string | null;
+  /**
+     * Null when the Page has no linked Instagram professional account.
+     * @nullable
+     */
+  igUsername?: string | null;
+  /** @nullable */
+  connectedAt?: string | null;
+}
+
+export interface MetaConnectStart {
+  /** Confirms replacing an existing connection. */
+  replace?: boolean;
+}
+
+export interface MetaConnectStartResult {
+  url: string;
+}
+
+export interface MetaConnectPage {
+  pageId: string;
+  pageName: string;
+  /** @nullable */
+  igUsername?: string | null;
+}
+
+export interface MetaConnectPending {
+  pages: MetaConnectPage[];
+}
+
+export interface MetaConnectComplete {
+  token: string;
+  pageId: string;
+  replace?: boolean;
 }
 
 export type TenantPlanPlan = typeof TenantPlanPlan[keyof typeof TenantPlanPlan];
@@ -7709,6 +7764,10 @@ export const GetRecordProgressionKind = {
   highScore: 'highScore',
   bestBowling: 'bestBowling',
 } as const;
+
+export type GetMetaConnectPendingParams = {
+token: string;
+};
 
 export type ListFixturesParams = {
 /**

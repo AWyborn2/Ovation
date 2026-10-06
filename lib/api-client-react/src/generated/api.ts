@@ -133,6 +133,7 @@ import type {
   GetGradeLeaderboardParams,
   GetJuniorSeasonTopPerformersParams,
   GetKioskDisplayParams,
+  GetMetaConnectPendingParams,
   GetPlatformPlayerPrivacyParams,
   GetPlayersVsClubParams,
   GetRecordLeadersParams,
@@ -222,6 +223,11 @@ import type {
   MergeJuniorParticipantBody,
   MergeJuniorParticipantConflict,
   MergeJuniorParticipantResult,
+  MetaConnectComplete,
+  MetaConnectPending,
+  MetaConnectStart,
+  MetaConnectStartResult,
+  MetaConnection,
   MilestoneBoardSettings,
   MilestoneBoardSettingsUpdate,
   MilestonesBoard,
@@ -13233,6 +13239,379 @@ export const useUpdateSocialSettings = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateSocialSettingsMutationOptions(options));
+    }
+
+export const getGetMetaConnectionUrl = () => {
+
+
+
+
+  return `/api/social-connections/meta`
+}
+
+/**
+ * @summary The club's Facebook Page / Instagram connection
+ */
+export const getMetaConnection = async ( options?: RequestInit): Promise<MetaConnection> => {
+
+  return customFetch<MetaConnection>(getGetMetaConnectionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMetaConnectionQueryKey = () => {
+    return [
+    `/api/social-connections/meta`
+    ] as const;
+    }
+
+
+export const getGetMetaConnectionQueryOptions = <TData = Awaited<ReturnType<typeof getMetaConnection>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetaConnection>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMetaConnectionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMetaConnection>>> = ({ signal }) => getMetaConnection({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMetaConnection>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMetaConnectionQueryResult = NonNullable<Awaited<ReturnType<typeof getMetaConnection>>>
+export type GetMetaConnectionQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The club's Facebook Page / Instagram connection
+ */
+
+export function useGetMetaConnection<TData = Awaited<ReturnType<typeof getMetaConnection>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetaConnection>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMetaConnectionQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getDisconnectMetaConnectionUrl = () => {
+
+
+
+
+  return `/api/social-connections/meta`
+}
+
+/**
+ * @summary Disconnect Meta and cancel the club's scheduled and held posts
+ */
+export const disconnectMetaConnection = async ( options?: RequestInit): Promise<MetaConnection> => {
+
+  return customFetch<MetaConnection>(getDisconnectMetaConnectionUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDisconnectMetaConnectionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectMetaConnection>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disconnectMetaConnection>>, TError,void, TContext> => {
+
+const mutationKey = ['disconnectMetaConnection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disconnectMetaConnection>>, void> = () => {
+
+
+          return  disconnectMetaConnection(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisconnectMetaConnectionMutationResult = NonNullable<Awaited<ReturnType<typeof disconnectMetaConnection>>>
+
+    export type DisconnectMetaConnectionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Disconnect Meta and cancel the club's scheduled and held posts
+ */
+export const useDisconnectMetaConnection = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectMetaConnection>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disconnectMetaConnection>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDisconnectMetaConnectionMutationOptions(options));
+    }
+
+export const getStartMetaConnectUrl = () => {
+
+
+
+
+  return `/api/social-connections/meta/start`
+}
+
+/**
+ * @summary Begin connecting Meta; returns the Facebook login URL
+ */
+export const startMetaConnect = async (metaConnectStart: MetaConnectStart, options?: RequestInit): Promise<MetaConnectStartResult> => {
+
+  return customFetch<MetaConnectStartResult>(getStartMetaConnectUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      metaConnectStart,)
+  }
+);}
+
+
+
+
+export const getStartMetaConnectMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startMetaConnect>>, TError,{data: BodyType<MetaConnectStart>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startMetaConnect>>, TError,{data: BodyType<MetaConnectStart>}, TContext> => {
+
+const mutationKey = ['startMetaConnect'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startMetaConnect>>, {data: BodyType<MetaConnectStart>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  startMetaConnect(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartMetaConnectMutationResult = NonNullable<Awaited<ReturnType<typeof startMetaConnect>>>
+    export type StartMetaConnectMutationBody = BodyType<MetaConnectStart>
+    export type StartMetaConnectMutationError = ErrorType<void>
+
+    /**
+ * @summary Begin connecting Meta; returns the Facebook login URL
+ */
+export const useStartMetaConnect = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startMetaConnect>>, TError,{data: BodyType<MetaConnectStart>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startMetaConnect>>,
+        TError,
+        {data: BodyType<MetaConnectStart>},
+        TContext
+      > => {
+      return useMutation(getStartMetaConnectMutationOptions(options));
+    }
+
+export const getGetMetaConnectPendingUrl = (params: GetMetaConnectPendingParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/social-connections/meta/pending?${stringifiedParams}` : `/api/social-connections/meta/pending`
+}
+
+/**
+ * @summary The Pages found by the Facebook login, awaiting the admin's choice
+ */
+export const getMetaConnectPending = async (params: GetMetaConnectPendingParams, options?: RequestInit): Promise<MetaConnectPending> => {
+
+  return customFetch<MetaConnectPending>(getGetMetaConnectPendingUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMetaConnectPendingQueryKey = (params?: GetMetaConnectPendingParams,) => {
+    return [
+    `/api/social-connections/meta/pending`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMetaConnectPendingQueryOptions = <TData = Awaited<ReturnType<typeof getMetaConnectPending>>, TError = ErrorType<void>>(params: GetMetaConnectPendingParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetaConnectPending>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMetaConnectPendingQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMetaConnectPending>>> = ({ signal }) => getMetaConnectPending(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMetaConnectPending>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMetaConnectPendingQueryResult = NonNullable<Awaited<ReturnType<typeof getMetaConnectPending>>>
+export type GetMetaConnectPendingQueryError = ErrorType<void>
+
+
+/**
+ * @summary The Pages found by the Facebook login, awaiting the admin's choice
+ */
+
+export function useGetMetaConnectPending<TData = Awaited<ReturnType<typeof getMetaConnectPending>>, TError = ErrorType<void>>(
+ params: GetMetaConnectPendingParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMetaConnectPending>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMetaConnectPendingQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCompleteMetaConnectUrl = () => {
+
+
+
+
+  return `/api/social-connections/meta/complete`
+}
+
+/**
+ * @summary Connect the chosen Page (and its linked Instagram account)
+ */
+export const completeMetaConnect = async (metaConnectComplete: MetaConnectComplete, options?: RequestInit): Promise<MetaConnection> => {
+
+  return customFetch<MetaConnection>(getCompleteMetaConnectUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      metaConnectComplete,)
+  }
+);}
+
+
+
+
+export const getCompleteMetaConnectMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeMetaConnect>>, TError,{data: BodyType<MetaConnectComplete>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeMetaConnect>>, TError,{data: BodyType<MetaConnectComplete>}, TContext> => {
+
+const mutationKey = ['completeMetaConnect'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeMetaConnect>>, {data: BodyType<MetaConnectComplete>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  completeMetaConnect(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteMetaConnectMutationResult = NonNullable<Awaited<ReturnType<typeof completeMetaConnect>>>
+    export type CompleteMetaConnectMutationBody = BodyType<MetaConnectComplete>
+    export type CompleteMetaConnectMutationError = ErrorType<void>
+
+    /**
+ * @summary Connect the chosen Page (and its linked Instagram account)
+ */
+export const useCompleteMetaConnect = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeMetaConnect>>, TError,{data: BodyType<MetaConnectComplete>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeMetaConnect>>,
+        TError,
+        {data: BodyType<MetaConnectComplete>},
+        TContext
+      > => {
+      return useMutation(getCompleteMetaConnectMutationOptions(options));
     }
 
 export const getListFixturesUrl = (params?: ListFixturesParams,) => {

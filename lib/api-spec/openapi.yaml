@@ -46,6 +46,8 @@ tags:
     description: Juniors data (matches, scorecards, players, leaderboards, premierships) — kept completely separate from senior records
   - name: socialCards
     description: Social share card settings, sponsors, and caption templates
+  - name: socialPublishing
+    description: Publishing Social Studio drafts to the club's Facebook Page and Instagram account
   - name: fixtures
     description: Upcoming fixtures (admin-entered or projected from PlayHQ) and per-fixture team lists; feeds the fixture-driven social cards
   - name: fixturesResults
@@ -3808,6 +3810,95 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SocialSettings"
+
+  /social-connections/meta:
+    get:
+      operationId: getMetaConnection
+      tags: [socialPublishing]
+      summary: The club's Facebook Page / Instagram connection
+      responses:
+        "200":
+          description: Connection state (never includes credentials)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaConnection"
+    delete:
+      operationId: disconnectMetaConnection
+      tags: [socialPublishing]
+      summary: Disconnect Meta and cancel the club's scheduled and held posts
+      responses:
+        "200":
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaConnection"
+
+  /social-connections/meta/start:
+    post:
+      operationId: startMetaConnect
+      tags: [socialPublishing]
+      summary: Begin connecting Meta; returns the Facebook login URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MetaConnectStart"
+      responses:
+        "200":
+          description: Where to send the admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaConnectStartResult"
+        "409":
+          description: Already connected and `replace` was not confirmed
+
+  /social-connections/meta/pending:
+    get:
+      operationId: getMetaConnectPending
+      tags: [socialPublishing]
+      summary: The Pages found by the Facebook login, awaiting the admin's choice
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Candidate Pages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaConnectPending"
+        "404":
+          description: Unknown, expired or someone else's choice
+
+  /social-connections/meta/complete:
+    post:
+      operationId: completeMetaConnect
+      tags: [socialPublishing]
+      summary: Connect the chosen Page (and its linked Instagram account)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MetaConnectComplete"
+      responses:
+        "200":
+          description: Connected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaConnection"
+        "404":
+          description: Unknown, expired or someone else's choice
+        "409":
+          description: Already connected and `replace` was not confirmed
 
   /fixtures:
     get:
@@ -9845,7 +9936,7 @@ components:
     Entitlements:
       type: object
       description: Per-feature flags resolved from the tenant's plan.
-      required: [customDomain, mobileApp, socialStudio, clubroomTv, curation]
+      required: [customDomain, mobileApp, socialStudio, socialPublishing, clubroomTv, curation]
       properties:
         customDomain:
           type: boolean
@@ -9853,9 +9944,78 @@ components:
           type: boolean
         socialStudio:
           type: boolean
+        socialPublishing:
+          type: boolean
+          description: Publishing drafts to Facebook and Instagram.
         clubroomTv:
           type: boolean
         curation:
+          type: boolean
+
+    MetaConnection:
+      type: object
+      required: [available, status]
+      properties:
+        available:
+          type: boolean
+          description: Whether publishing is switched on for the platform and this club's plan.
+        status:
+          type: string
+          enum: [not_connected, connected, needs_reconnect, disconnected]
+        statusReason:
+          type: ["string", "null"]
+        pageName:
+          type: ["string", "null"]
+        igUsername:
+          type: ["string", "null"]
+          description: Null when the Page has no linked Instagram professional account.
+        connectedAt:
+          type: ["string", "null"]
+          format: date-time
+
+    MetaConnectStart:
+      type: object
+      properties:
+        replace:
+          type: boolean
+          description: Confirms replacing an existing connection.
+
+    MetaConnectStartResult:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+
+    MetaConnectPending:
+      type: object
+      required: [pages]
+      properties:
+        pages:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetaConnectPage"
+
+    MetaConnectPage:
+      type: object
+      required: [pageId, pageName]
+      properties:
+        pageId:
+          type: string
+        pageName:
+          type: string
+        igUsername:
+          type: ["string", "null"]
+
+    MetaConnectComplete:
+      type: object
+      required: [token, pageId]
+      properties:
+        token:
+          type: string
+        pageId:
+          type: string
+        replace:
           type: boolean
 
     TenantPlan:
