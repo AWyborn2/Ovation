@@ -498,11 +498,14 @@ function FixtureForm({
 // name, plus captain / wicket-keeper markers. `participantId` is the PlayHQ
 // participant a row was copied from (lineup sync). It is never shown, but it
 // rides along so an admin's save keeps it: a held shirt-number entry is found
-// by it (season shirt numbers, KTD10).
+// by it (season shirt numbers, KTD10). `origin` remembers the PlayHQ row it
+// came from, so an edit to a DIFFERENT person drops the participant id (and
+// restoring the original name brings it back).
 type TeamListRowState = {
   player: SelectedPlayer | null;
   freeName: string;
   participantId: string | null;
+  origin: { name: string; participantId: string } | null;
   isCaptain: boolean;
   isKeeper: boolean;
 };
@@ -511,6 +514,7 @@ const emptyRow = (): TeamListRowState => ({
   player: null,
   freeName: "",
   participantId: null,
+  origin: null,
   isCaptain: false,
   isKeeper: false,
 });
@@ -518,16 +522,31 @@ const emptyRow = (): TeamListRowState => ({
 function rowsFromPlayers(players: TeamListPlayer[]): TeamListRowState[] {
   const rows = [...players]
     .sort((a, b) => a.order - b.order)
-    .map((p) => ({
-      player: p.playerId != null ? { id: p.playerId, surname: p.displayName, givenName: "" } : null,
-      freeName: p.playerId == null ? p.displayName : "",
-      participantId: normaliseGuid(p.participantId),
-      isCaptain: p.role === "C" || p.role === "C/WK",
-      isKeeper: p.role === "WK" || p.role === "C/WK",
-    }));
+    .map((p) => {
+      const participantId = normaliseGuid(p.participantId);
+      return {
+        player:
+          p.playerId != null ? { id: p.playerId, surname: p.displayName, givenName: "" } : null,
+        freeName: p.playerId == null ? p.displayName : "",
+        participantId,
+        origin: participantId !== null ? { name: p.displayName, participantId } : null,
+        isCaptain: p.role === "C" || p.role === "C/WK",
+        isKeeper: p.role === "WK" || p.role === "C/WK",
+      };
+    });
   while (rows.length < TEAM_LIST_ROWS) rows.push(emptyRow());
   return rows.slice(0, TEAM_LIST_ROWS);
 }
+
+/**
+ * The PlayHQ participant a row keeps for a name: its original participant while
+ * the name is still the original PlayHQ name (normalised), else none, so a GUID
+ * is never carried over to a different person.
+ */
+const originParticipantFor = (r: TeamListRowState, name: string): string | null =>
+  r.origin !== null && name.trim() !== "" && nameKey(name) === nameKey(r.origin.name)
+    ? r.origin.participantId
+    : null;
 
 /** The name a row saves under (empty for a blank row). */
 const rowName = (r: TeamListRowState): string =>
@@ -776,18 +795,21 @@ function TeamListEditor({ fixture, onError }: { fixture: Fixture; onError: (e: u
     setRows(copy);
   };
 
-  // A row keeps its PlayHQ participant while it is the same person: linking a
-  // typed row to a register player keeps it; switching or clearing drops it.
+  // A row keeps its PlayHQ participant only while it is the same person: the
+  // same register player, or a player / typed name matching the row's original
+  // PlayHQ name. Renaming, picking someone else or clearing drops it.
   const pickPlayer = (i: number, p: SelectedPlayer | null) => {
     const r = shownRows[i];
-    const samePerson = p !== null && (r.player === null || r.player.id === p.id);
-    setRow(i, { player: p, participantId: samePerson ? r.participantId : null });
+    const participantId =
+      p === null
+        ? null
+        : r.player !== null && r.player.id === p.id
+          ? r.participantId
+          : originParticipantFor(r, `${p.givenName} ${p.surname}`);
+    setRow(i, { player: p, participantId });
   };
   const typeName = (i: number, freeName: string) =>
-    setRow(i, {
-      freeName,
-      participantId: freeName.trim() === "" ? null : shownRows[i].participantId,
-    });
+    setRow(i, { freeName, participantId: originParticipantFor(shownRows[i], freeName) });
 
   const rowElementId = (i: number) => `team-list-${fixture.id}-row-${i}`;
   const unnumbered =

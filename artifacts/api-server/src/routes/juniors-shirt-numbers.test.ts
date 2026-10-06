@@ -51,7 +51,12 @@ type Warning = {
 
 describe("shirt numbers: juniors register", () => {
   const tenants: Record<"a" | "b" | "central", number> = { a: 0, b: 0, central: 0 };
-  const cookies: Record<"a" | "b" | "central", string> = { a: "", b: "", central: "" };
+  /**
+   * `a2` is a second admin of tenant A for the upload tests: adminWriteRateLimiter allows
+   * 30 writes per admin per 5 minutes, so no single admin here makes more than ~25.
+   */
+  type Who = "a" | "a2" | "b" | "central";
+  const cookies: Record<Who, string> = { a: "", a2: "", b: "", central: "" };
   const adminIds: number[] = [];
   /** Tenant A's junior participants (stored upper-case to prove case folding). */
   const J = {
@@ -67,8 +72,8 @@ describe("shirt numbers: juniors register", () => {
   const SEASON = 2026;
   const CURRENT = seasonStartYearFor(new Date());
 
-  const as = (r: request.Test, who: "a" | "b" | "central" = "a") =>
-    r.set("x-tenant-id", String(tenants[who])).set("Cookie", cookies[who]);
+  const as = (r: request.Test, who: Who = "a") =>
+    r.set("x-tenant-id", String(tenants[who === "a2" ? "a" : who])).set("Cookie", cookies[who]);
   const anon = (r: request.Test) => r.set("x-tenant-id", String(tenants.a));
   const settings = (body: object, who: "a" | "b" | "central" = "a") =>
     as(request(app).patch("/api/shirt-numbers/settings"), who).send(body).expect(200);
@@ -89,8 +94,8 @@ describe("shirt numbers: juniors register", () => {
           eq(juniorShirtNumbersTable.season, season),
         ),
       );
-  const upload = (content: string, opts: { kind?: string; season?: number } = {}) =>
-    as(request(app).post("/api/juniors/shirt-numbers/uploads"))
+  const upload = (content: string, opts: { kind?: string; season?: number; who?: Who } = {}) =>
+    as(request(app).post("/api/juniors/shirt-numbers/uploads"), opts.who ?? "a")
       .field("kind", opts.kind ?? "numbers")
       .field("season", String(opts.season ?? SEASON))
       .attach("file", Buffer.from(content), { filename: "juniors.csv" });
@@ -125,6 +130,17 @@ describe("shirt numbers: juniors register", () => {
   beforeAll(async () => {
     process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-junior-shirts";
     await makeTenant("a", false, 98_101);
+    const [a2] = await db
+      .insert(adminsTable)
+      .values({
+        tenantId: tenants.a,
+        username: `junior_shirts_a2_${STAMP}`,
+        displayName: "Junior Shirts a2",
+        passwordHash: "x",
+      })
+      .returning();
+    adminIds.push(a2.id);
+    cookies.a2 = `${SESSION_COOKIE}=${encodeSession({ adminId: a2.id, issuedAt: Date.now() })}`;
     await makeTenant("b", false, 98_102);
     await makeTenant("central", true, 98_103);
     const names: Record<keyof typeof J, string> = {
@@ -327,7 +343,7 @@ describe("shirt numbers: juniors register", () => {
         "Dan Driver,,34",
         "Nobody Known,,35",
       ].join("\n"),
-      { season: 2050 },
+      { season: 2050, who: "a2" },
     );
     expect(res.status).toBe(200);
     expect(res.body.side).toBe("junior");
@@ -341,11 +357,12 @@ describe("shirt numbers: juniors register", () => {
     expect(unknown!.status).toBe("new");
 
     // Link the unknown row to Eli; the senior "hold" action does not exist here.
-    await as(request(app).post(`/api/juniors/shirt-numbers/uploads/${res.body.id}/commit`))
+    await as(request(app).post(`/api/juniors/shirt-numbers/uploads/${res.body.id}/commit`), "a2")
       .send({ resolutions: [{ rowIndex: 3, action: "hold" }] })
       .expect(400);
     const committed = await as(
       request(app).post(`/api/juniors/shirt-numbers/uploads/${res.body.id}/commit`),
+      "a2",
     )
       .send({ resolutions: [{ rowIndex: 3, action: "link", participantId: J.eli }] })
       .expect(200);
@@ -358,16 +375,19 @@ describe("shirt numbers: juniors register", () => {
       ].sort(),
     );
     // Committing again is a conflict.
-    await as(request(app).post(`/api/juniors/shirt-numbers/uploads/${res.body.id}/commit`))
+    await as(request(app).post(`/api/juniors/shirt-numbers/uploads/${res.body.id}/commit`), "a2")
       .send({ resolutions: [] })
       .expect(409);
   });
 
   it("an upload under block refuses a number someone else wears and applies nothing", async () => {
     await settings({ duplicatePolicy: "block" });
-    const res = await upload("Name,Number\nAmy Archer,33\n", { season: 2050 }).expect(200);
+    const res = await upload("Name,Number\nAmy Archer,33\n", { season: 2050, who: "a2" }).expect(
+      200,
+    );
     const blocked = await as(
       request(app).post(`/api/juniors/shirt-numbers/uploads/${res.body.id}/commit`),
+      "a2",
     ).send({ resolutions: [] });
     expect(blocked.status).toBe(409);
     expect(await rows(2050)).toHaveLength(3);
@@ -471,7 +491,9 @@ describe("shirt numbers: juniors register", () => {
     await create({ season: SEASON, participantId: B_KID, number: "07" }, "b").expect(201);
     expect((await list(SEASON)).entries.map((e) => e.participantId)).not.toContain(B_KID);
 
-    const res = await upload("Name,Number\nAmy Archer,5\n", { season: 2060 }).expect(200);
+    const res = await upload("Name,Number\nAmy Archer,5\n", { season: 2060, who: "a2" }).expect(
+      200,
+    );
     await as(request(app).post(`/api/juniors/shirt-numbers/uploads/${res.body.id}/commit`), "b")
       .send({ resolutions: [] })
       .expect(404);
@@ -479,8 +501,10 @@ describe("shirt numbers: juniors register", () => {
       404,
     );
     // A senior-side discard cannot touch a junior upload either.
-    await as(request(app).delete(`/api/shirt-numbers/uploads/${res.body.id}`)).expect(404);
-    await as(request(app).delete(`/api/juniors/shirt-numbers/uploads/${res.body.id}`)).expect(204);
+    await as(request(app).delete(`/api/shirt-numbers/uploads/${res.body.id}`), "a2").expect(404);
+    await as(request(app).delete(`/api/juniors/shirt-numbers/uploads/${res.body.id}`), "a2").expect(
+      204,
+    );
   });
 
   it("a central-read tenant gets an empty register and 404 from junior writes", async () => {

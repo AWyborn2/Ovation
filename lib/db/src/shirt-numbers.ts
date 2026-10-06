@@ -167,6 +167,19 @@ export function cleanShirtNumberName(value: string | null | undefined): string {
 }
 
 /**
+ * The key two register names are "the same name" under: accents stripped, lower case,
+ * letters only ("José O'Neil" and "jose oneil" agree). The identity rule for an id-less
+ * (name-only) held entry, shared by the upload commit and the PlayHQ lineup sync.
+ */
+export function shirtNumberNameKey(name: string): string {
+  return name
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+}
+
+/**
  * The number an automatically created entry keeps under the club's duplicate
  * policy (KTD9): under `block`, a number another entry in the season already
  * wears is left off (the entry is created unnumbered); under `warn` it is kept.

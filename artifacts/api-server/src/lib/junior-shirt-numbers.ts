@@ -14,6 +14,7 @@ import {
   applyCarriedNumber,
   blockedCarryWarning,
   cleanName,
+  conflict,
   duplicateEntryIds,
   duplicateWarning,
   duplicatesOf,
@@ -22,6 +23,7 @@ import {
   loadSeasonEntries,
   planSeasonStart,
   seasonLabel,
+  type Executor,
   type RegisterEntryLike,
   type SeasonStartResult,
   type ShirtNumberConflict,
@@ -251,9 +253,6 @@ export function shapeJuniorShirtNumbers(
 
 // ── Database helpers ────────────────────────────────────────────────────────
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
-type Executor = typeof db | Tx;
-
 /** A junior entry in the contract's `JuniorShirtNumberEntry` shape. */
 export function serializeJuniorEntry(row: JuniorShirtNumberRow, duplicate: boolean) {
   return {
@@ -274,12 +273,6 @@ export type JuniorEntry = ReturnType<typeof serializeJuniorEntry>;
 export type JuniorWriteOutcome =
   | { ok: true; entry: JuniorEntry; warnings: ShirtNumberWarning[] }
   | { ok: false; status: 400 | 404 | 409; body: ShirtNumberConflict | { error: string } };
-
-const conflict = (error: string, warnings: ShirtNumberWarning[] = []) => ({
-  ok: false as const,
-  status: 409 as const,
-  body: { error, warnings },
-});
 
 const ALREADY_ON_REGISTER = (season: number) =>
   `This junior is already on the ${seasonLabel(season)} juniors register.`;
@@ -560,8 +553,15 @@ export async function startJuniorSeason(
     );
     if (values.length === 0) return result;
 
-    const inserted = await tx.insert(juniorShirtNumbersTable).values(values).returning();
+    // A participant added since the read above keeps that row: skip them rather
+    // than fail the whole start, and count only the rows actually created.
+    const inserted = await tx
+      .insert(juniorShirtNumbersTable)
+      .values(values)
+      .onConflictDoNothing()
+      .returning();
     result.created = inserted.length;
+    result.skipped += values.length - inserted.length;
     result.numbered = inserted.filter((r) => r.number !== null).length;
 
     const after = await loadSeasonEntries(tx, "junior", tenantId, season);

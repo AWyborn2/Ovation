@@ -7,6 +7,7 @@ import {
   tenantsTable,
   adminsTable,
   playerIdMapTable,
+  playersTable,
   shirtNumbersTable,
   shirtNumberSettingsTable,
   shirtNumberUploadsTable,
@@ -76,6 +77,11 @@ describe("shirt numbers: uploads", () => {
   let cookie: string;
   /** A second admin of the same club, so the file-limit checks get their own rate bucket. */
   let limitsCookie: string;
+  /**
+   * A third admin of the same club for the later tests: adminWriteRateLimiter allows 30
+   * writes per admin per 5 minutes, so no single admin here makes more than ~25.
+   */
+  let lateCookie: string;
   let otherCookie: string;
   /** Player ids in the club's space (its crosswalk). */
   const P = { alice: 960_001, bea: 960_002, cy: 960_003, dee: 960_004, eve: 960_005 };
@@ -99,8 +105,10 @@ describe("shirt numbers: uploads", () => {
     expect(r.status).toBe(200);
     return r.body as Preview;
   };
-  const commit = (id: number, resolutions: object[] = []) =>
-    as(request(app).post(`/api/shirt-numbers/uploads/${id}/commit`)).send({ resolutions });
+  const commit = (id: number, resolutions: object[] = [], c = cookie) =>
+    as(request(app).post(`/api/shirt-numbers/uploads/${id}/commit`), c).send({ resolutions });
+  const discard = (id: number, c = cookie) =>
+    as(request(app).delete(`/api/shirt-numbers/uploads/${id}`), c);
   const register = (season = SEASON) =>
     db
       .select()
@@ -147,6 +155,7 @@ describe("shirt numbers: uploads", () => {
       );
     cookie = await makeAdmin(tenantId, "main");
     limitsCookie = await makeAdmin(tenantId, "limits");
+    lateCookie = await makeAdmin(tenantId, "late");
     otherCookie = await makeAdmin(otherTenantId, "other");
   });
 
@@ -340,12 +349,12 @@ describe("shirt numbers: uploads", () => {
     });
     const p = await preview(
       `First Name,Last Name,Participant ID,Number\nReg,Carry,${GUID(21)},44\nReg,Plain,,45\n`,
-      { kind: "registration", season: target, fileName: "registrations.csv" },
+      { kind: "registration", season: target, fileName: "registrations.csv", c: lateCookie },
     );
     expect(p.kind).toBe("registration");
     expect(p.rows.map((r) => r.number)).toEqual([null, null]);
 
-    const c = await commit(p.id);
+    const c = await commit(p.id, [], lateCookie);
     expect(c.body).toMatchObject({ created: 2, held: 2 });
     const rows = await register(target);
     expect(rows.find((e) => e.name === "Reg Carry")).toMatchObject({
@@ -356,28 +365,28 @@ describe("shirt numbers: uploads", () => {
   });
 
   it("an unknown header set previews with an error listing the headers found", async () => {
-    const p = await preview("Foo,Bar\n1,2\n");
+    const p = await preview("Foo,Bar\n1,2\n", { c: lateCookie });
     expect(p.rows).toEqual([]);
     expect(p.errors[0]).toContain("Foo");
     expect(p.errors[0]).toContain("Bar");
     expect(p.unrecognisedHeaders).toEqual(["Foo", "Bar"]);
-    const c = await commit(p.id);
+    const c = await commit(p.id, [], lateCookie);
     expect(c.body).toMatchObject({ created: 0, updated: 0 });
   });
 
   it("discard clears the preview; it cannot then be committed or discarded again", async () => {
-    const p = await preview("Name,Number\nDiscard Me,77\n");
-    await as(request(app).delete(`/api/shirt-numbers/uploads/${p.id}`)).expect(204);
+    const p = await preview("Name,Number\nDiscard Me,77\n", { c: lateCookie });
+    await discard(p.id, lateCookie).expect(204);
     const stored = await uploadRow(p.id);
     expect(stored.status).toBe("discarded");
     expect(stored.payload).toBeNull();
-    expect((await commit(p.id)).status).toBe(409);
-    await as(request(app).delete(`/api/shirt-numbers/uploads/${p.id}`)).expect(404);
+    expect((await commit(p.id, [], lateCookie)).status).toBe(409);
+    await discard(p.id, lateCookie).expect(404);
     expect((await register()).some((e) => e.name === "Discard Me")).toBe(false);
   });
 
   it("another club cannot commit or discard this club's pending upload (404)", async () => {
-    const p = await preview("Name,Number\nPrivate Pending,80\n");
+    const p = await preview("Name,Number\nPrivate Pending,80\n", { c: lateCookie });
     const other = () => otherTenantId;
     await as(request(app).post(`/api/shirt-numbers/uploads/${p.id}/commit`), otherCookie, other)
       .send({ resolutions: [] })
@@ -386,7 +395,7 @@ describe("shirt numbers: uploads", () => {
       404,
     );
     expect((await uploadRow(p.id)).status).toBe("pending");
-    await as(request(app).delete(`/api/shirt-numbers/uploads/${p.id}`)).expect(204);
+    await discard(p.id, lateCookie).expect(204);
   });
 
   it("rejects an oversized file (413), another file type, two files, or over 1,000 rows (400)", async () => {
@@ -443,4 +452,137 @@ describe("shirt numbers: uploads", () => {
       }
     },
   );
+});
+
+/**
+ * The native-stats tenant (Halls Head, tenant 1, `reads_from_central` false): its
+ * curated ids are native `players.id`s, so the upload roster comes from the native
+ * players table. A name row must match the real native player, never a fill-in (an
+ * `is_fill_in` row or an id >= 90000), and no write may link a fill-in id.
+ */
+describe("shirt numbers: native-stats tenant uploads and links", () => {
+  const NATIVE = 1;
+  const SEASON_N = 2033;
+  const FILL_IN_ID = 94_000 + (STAMP % 900);
+  const surname = `Native${STAMP}`;
+  let cookieN: string;
+  let adminId: number;
+  let real: number;
+  let flagged: number;
+  let settingsBefore: { enabled: boolean } | undefined;
+
+  const asN = (r: request.Test) => r.set("x-tenant-id", String(NATIVE)).set("Cookie", cookieN);
+
+  beforeAll(async () => {
+    process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-shirt-uploads";
+    const [native] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, NATIVE));
+    expect(native, "CI seeds tenant 1 (seed-ci-tenant.ts)").toBeDefined();
+    expect(native!.readsFromCentral).toBe(false);
+    const [admin] = await db
+      .insert(adminsTable)
+      .values({
+        tenantId: NATIVE,
+        username: `shirt_upload_native_${STAMP}`,
+        displayName: "native",
+        passwordHash: "x",
+      })
+      .returning();
+    adminId = admin.id;
+    cookieN = `${SESSION_COOKIE}=${encodeSession({ adminId, issuedAt: Date.now() })}`;
+    const [r] = await db.insert(playersTable).values({ givenName: "Kim", surname }).returning();
+    const [f] = await db
+      .insert(playersTable)
+      .values({ givenName: "Kim", surname, isFillIn: true })
+      .returning();
+    real = r.id;
+    flagged = f.id;
+    await db.insert(playersTable).values({ id: FILL_IN_ID, givenName: "Kim", surname });
+    [settingsBefore] = await db
+      .select({ enabled: shirtNumberSettingsTable.enabled })
+      .from(shirtNumberSettingsTable)
+      .where(eq(shirtNumberSettingsTable.tenantId, NATIVE));
+    await db
+      .insert(shirtNumberSettingsTable)
+      .values({ tenantId: NATIVE, enabled: true })
+      .onConflictDoUpdate({ target: shirtNumberSettingsTable.tenantId, set: { enabled: true } });
+  });
+
+  afterAll(async () => {
+    await db
+      .delete(shirtNumbersTable)
+      .where(
+        and(
+          eq(shirtNumbersTable.tenantId, NATIVE),
+          inArray(shirtNumbersTable.season, [SEASON_N, SEASON_N + 1]),
+        ),
+      );
+    await db
+      .delete(shirtNumberUploadsTable)
+      .where(
+        and(
+          eq(shirtNumberUploadsTable.tenantId, NATIVE),
+          eq(shirtNumberUploadsTable.season, SEASON_N),
+        ),
+      );
+    await db.delete(playersTable).where(inArray(playersTable.id, [real, flagged, FILL_IN_ID]));
+    await db.delete(adminsTable).where(eq(adminsTable.id, adminId));
+    if (settingsBefore) {
+      await db
+        .update(shirtNumberSettingsTable)
+        .set({ enabled: settingsBefore.enabled })
+        .where(eq(shirtNumberSettingsTable.tenantId, NATIVE));
+    } else {
+      await db
+        .delete(shirtNumberSettingsTable)
+        .where(eq(shirtNumberSettingsTable.tenantId, NATIVE));
+    }
+  });
+
+  it("a name row matches the real native player, never a fill-in, and a fill-in link is refused", async () => {
+    const up = await asN(request(app).post("/api/shirt-numbers/uploads"))
+      .field("kind", "numbers")
+      .field("season", String(SEASON_N))
+      .attach("file", Buffer.from(`Name,Number\nKim ${surname},41\n`), { filename: "native.csv" });
+    expect(up.status).toBe(200);
+    const p = up.body as Preview;
+    expect(p.rows[0]).toMatchObject({ status: "matched", playerId: real });
+    expect(p.rows[0]!.candidates.map((c) => c.playerId)).not.toContain(FILL_IN_ID);
+    expect(p.rows[0]!.candidates.map((c) => c.playerId)).not.toContain(flagged);
+
+    const commitN = (resolutions: object[]) =>
+      asN(request(app).post(`/api/shirt-numbers/uploads/${p.id}/commit`)).send({ resolutions });
+    const refused = await commitN([{ rowIndex: 1, action: "link", playerId: FILL_IN_ID }]);
+    expect(refused.status).toBe(400);
+    expect(refused.body.error).toMatch(/fill-in/);
+
+    const ok = await commitN([]);
+    expect(ok.status).toBe(200);
+    const [entry] = await db
+      .select()
+      .from(shirtNumbersTable)
+      .where(and(eq(shirtNumbersTable.tenantId, NATIVE), eq(shirtNumbersTable.season, SEASON_N)));
+    expect(entry).toMatchObject({ playerId: real, number: "41" });
+  });
+
+  it("the register refuses a fill-in player id (400) and accepts the native player", async () => {
+    const create = (playerId: number) =>
+      asN(request(app).post("/api/shirt-numbers")).send({
+        season: SEASON_N + 1,
+        name: `Kim ${surname}`,
+        playerId,
+        number: "42",
+      });
+    const refused = await create(FILL_IN_ID);
+    expect(refused.status).toBe(400);
+    expect(refused.body.error).toMatch(/fill-in/);
+    const created = await create(real);
+    expect(created.status).toBe(201);
+
+    const patched = await asN(
+      request(app).patch(`/api/shirt-numbers/${created.body.entry.id}`),
+    ).send({
+      playerId: FILL_IN_ID,
+    });
+    expect(patched.status).toBe(400);
+  });
 });

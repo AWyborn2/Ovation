@@ -166,11 +166,19 @@ export async function ingestPlayhqDump(
   // still feeds the register; a failure is a warning and never fails the ingest.
   if (orgIds.length)
     try {
-      await syncLineupShirtNumbers({
+      const lineup = await syncLineupShirtNumbers({
         orgIds,
         syncEnabledOnly: true,
         log: (line) => log.info(`playhq shirt numbers: ${line}`),
       });
+      // One tenant failing never stops the others; each failure is a warning.
+      for (const e of lineup.errors) {
+        log.error(
+          { tenantId: e.tenantId, err: e.message },
+          "playhq ingest: shirt-number lineup sync failed",
+        );
+        warnings.push(`shirt-number lineup sync failed for tenant ${e.tenantId}: ${e.message}`);
+      }
     } catch (err) {
       log.error({ err }, "playhq ingest: shirt-number lineup sync failed");
       warnings.push(`shirt-number lineup sync failed: ${err instanceof Error ? err.message : err}`);
@@ -203,11 +211,18 @@ export async function ingestPlayhqDump(
   // (F2): after the projection, so this sync's results count. Reads central only.
   if (orgIds.length)
     try {
-      await linkHeldShirtNumbers({
+      const links = await linkHeldShirtNumbers({
         orgIds,
         syncEnabledOnly: true,
         log: (line) => log.info(`playhq shirt numbers: ${line}`),
       });
+      for (const e of links.errors) {
+        log.error(
+          { tenantId: e.tenantId, err: e.message },
+          "playhq ingest: shirt-number held-entry link failed",
+        );
+        warnings.push(`shirt-number held-entry link failed for tenant ${e.tenantId}: ${e.message}`);
+      }
     } catch (err) {
       log.error({ err }, "playhq ingest: shirt-number held-entry link failed");
       warnings.push(

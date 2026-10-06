@@ -3,7 +3,7 @@
  * revisions, stale marking and withdrawal. Real-DB integration test (needs
  * DATABASE_URL).
  */
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { and, eq, inArray } from "drizzle-orm";
 import {
   db,
@@ -17,12 +17,33 @@ import {
   playerIdMapTable,
   playerPrivacyOverridesTable,
 } from "@workspace/db";
+import type * as CentralQueries from "@workspace/db/central-queries";
 import { draftKeys, upsertDraftByKey, withdrawDraft, findDraftByKey } from "./draft-upsert";
 import { listDraftRevisions } from "./draft-revisions";
 import {
   detectAndQueueMatchMilestones,
   type MatchMilestoneContext,
 } from "./match-milestone-detector";
+
+/**
+ * The central privacy read behind a draft's shirt-number lookup, switchable per
+ * test: "passthrough" (the real read), "public" (no central needed), or "fail"
+ * (a central outage, to prove a failed lookup is not a content change).
+ */
+const centralPrivacy = vi.hoisted(() => ({
+  mode: "passthrough" as "passthrough" | "public" | "fail",
+}));
+vi.mock("@workspace/db/central-queries", async (importOriginal) => {
+  const actual = await importOriginal<typeof CentralQueries>();
+  return {
+    ...actual,
+    isPrivateGroup: async (...args: Parameters<typeof actual.isPrivateGroup>) => {
+      if (centralPrivacy.mode === "fail") throw new Error("central unreachable (test)");
+      if (centralPrivacy.mode === "public") return false;
+      return actual.isPrivateGroup(...args);
+    },
+  };
+});
 
 const STAMP = Date.now();
 let tenantId: number;
@@ -190,7 +211,10 @@ describe("season shirt numbers on drafts", () => {
   let numbered: number;
   let unnumbered: number;
   let privatePlayer: number;
+  let flakyPlayer: number;
   const privateGuid = `priv-${S}`;
+  // Crosswalked with no privacy override: its lookup reaches the (mocked) central read.
+  const flakyGuid = `flaky-${S}`;
 
   const draft = (
     key: string,
@@ -239,9 +263,10 @@ describe("season shirt numbers on drafts", () => {
         { surname: `Nine${STAMP}`, givenName: "Sam" },
         { surname: `Bare${STAMP}`, givenName: "Sam" },
         { surname: `Priv${STAMP}`, givenName: "Sam" },
+        { surname: `Flaky${STAMP}`, givenName: "Sam" },
       ])
       .returning();
-    [numbered, unnumbered, privatePlayer] = ps.map((p) => p.id);
+    [numbered, unnumbered, privatePlayer, flakyPlayer] = ps.map((p) => p.id);
     await db.insert(shirtNumbersTable).values([
       { tenantId: shirtTenant, season: 2025, name: "Sam Nine", playerId: numbered, number: "9" },
       { tenantId: shirtTenant, season: 2026, name: "Sam Nine", playerId: numbered, number: "4" },
@@ -252,6 +277,13 @@ describe("season shirt numbers on drafts", () => {
         name: "Sam Priv",
         playerId: privatePlayer,
         number: "11",
+      },
+      {
+        tenantId: shirtTenant,
+        season: 2025,
+        name: "Sam Flaky",
+        playerId: flakyPlayer,
+        number: "17",
       },
       // A held entry (no player yet) never reaches a draft (R16).
       {
@@ -264,9 +296,10 @@ describe("season shirt numbers on drafts", () => {
     ]);
     // A private player: crosswalked, with a platform privacy override (so the
     // check never needs the central database).
-    await db
-      .insert(playerIdMapTable)
-      .values({ tenantId: shirtTenant, participantId: privateGuid, playerId: privatePlayer });
+    await db.insert(playerIdMapTable).values([
+      { tenantId: shirtTenant, participantId: privateGuid, playerId: privatePlayer },
+      { tenantId: shirtTenant, participantId: flakyGuid, playerId: flakyPlayer },
+    ]);
     await db
       .insert(playerPrivacyOverridesTable)
       .values({ participantId: privateGuid, isPrivate: true });
@@ -286,6 +319,7 @@ describe("season shirt numbers on drafts", () => {
       );
     }
     await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, shirtTenant));
+    await db.delete(milestoneEventsTable).where(eq(milestoneEventsTable.tenantId, shirtTenant));
     await db.delete(shirtNumbersTable).where(eq(shirtNumbersTable.tenantId, shirtTenant));
     await db
       .delete(shirtNumberSettingsTable)
@@ -296,7 +330,7 @@ describe("season shirt numbers on drafts", () => {
       .where(eq(playerPrivacyOverridesTable.participantId, privateGuid));
     await db
       .delete(playersTable)
-      .where(inArray(playersTable.id, [numbered, unnumbered, privatePlayer]));
+      .where(inArray(playersTable.id, [numbered, unnumbered, privatePlayer, flakyPlayer]));
     await db.delete(tenantsTable).where(eq(tenantsTable.id, shirtTenant));
   });
 
@@ -370,6 +404,78 @@ describe("season shirt numbers on drafts", () => {
     await setEnabled(true);
     const r = await upsertDraftByKey(draft("private", "milestone", privatePlayer, 2025));
     expect(r.draft.cardInput).not.toHaveProperty("shirtNumber");
+  });
+
+  it("a failed lookup keeps a posted card's number: unchanged, no stale flag, no revision", async () => {
+    await setEnabled(true);
+    try {
+      centralPrivacy.mode = "public";
+      const first = await upsertDraftByKey(draft("flaky-posted", "player", flakyPlayer, 2025));
+      expect(first.draft.cardInput).toMatchObject({ shirtNumber: "17" });
+      const unposted = await upsertDraftByKey(draft("flaky-open", "century", flakyPlayer, 2025));
+      expect(unposted.draft.cardInput).toMatchObject({ shirtNumber: "17" });
+      await db
+        .update(socialDraftsTable)
+        .set({ status: "posted" })
+        .where(eq(socialDraftsTable.id, first.draft.id));
+
+      centralPrivacy.mode = "fail";
+      const posted = await upsertDraftByKey(draft("flaky-posted", "player", flakyPlayer, 2025));
+      expect(posted.action).toBe("unchanged");
+      expect(posted.draft.staleSince).toBeNull();
+      expect(posted.draft.cardInput).toMatchObject({ shirtNumber: "17" });
+      expect(await listDraftRevisions(shirtTenant, first.draft.id)).toEqual([]);
+      const [stored] = await db
+        .select({ staleSince: socialDraftsTable.staleSince })
+        .from(socialDraftsTable)
+        .where(eq(socialDraftsTable.id, first.draft.id));
+      expect(stored!.staleSince).toBeNull();
+
+      const open = await upsertDraftByKey(draft("flaky-open", "century", flakyPlayer, 2025));
+      expect(open.action).toBe("unchanged");
+      expect(open.draft.cardInput).toMatchObject({ shirtNumber: "17" });
+
+      // A brand-new draft during the outage goes out without a number (fail closed).
+      const fresh = await upsertDraftByKey(draft("flaky-new", "milestone", flakyPlayer, 2025));
+      expect(fresh.action).toBe("inserted");
+      expect(fresh.draft.cardInput).not.toHaveProperty("shirtNumber");
+    } finally {
+      centralPrivacy.mode = "passthrough";
+    }
+  });
+
+  it("a century from a 2025-season match processed later carries the 2025 number", async () => {
+    await setEnabled(true);
+    // e.g. a June 2026 match (season 2025) imported in August: #9, not 2026's #4.
+    const grade = `Shirt Grade ${S}`;
+    const ctx: MatchMilestoneContext = {
+      tenantId: shirtTenant,
+      importId: 1,
+      grade,
+      season: 2025,
+      round: 3,
+      opponent: "Rivals",
+      abandoned: false,
+      lines: [
+        {
+          playerId: numbered,
+          runs: 104,
+          balls: 120,
+          notOut: false,
+          wickets: 0,
+          runsConceded: null,
+          overs: null,
+        },
+      ],
+      createdCaps: [],
+      gradeGamesBefore: new Map([[numbered, 5]]),
+    };
+    await detectAndQueueMatchMilestones(ctx);
+    const century = await findDraftByKey(
+      shirtTenant,
+      draftKeys.matchFeat("century", numbered, grade, 2025, 3),
+    );
+    expect(century?.cardInput).toMatchObject({ kind: "century", runs: 104, shirtNumber: "9" });
   });
 
   it("switching the feature off drops the number on the next refresh", async () => {

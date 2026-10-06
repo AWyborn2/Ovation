@@ -32,8 +32,10 @@ import {
   linkHeldShirtNumberEntry,
   normaliseParticipantId,
   numberAfterDuplicatePolicy,
+  shirtNumberNameKey,
   shirtNumberSettingsFromRow,
 } from "../shirt-numbers";
+import { MINT_LOCK_KEY, NATIVE_STATS_TENANT_ID } from "../player-id-mint";
 import { TEAM_LIST_LOOKAHEAD_DAYS } from "./team-lists";
 
 /** Player ids at or above this are fill-ins / cap-only, never on the register. */
@@ -55,10 +57,29 @@ export interface LineupCandidate {
 
 /** A register entry as the planners see it (one tenant's rows). */
 export interface ExistingShirtEntry {
+  /** The row id; needed only to attach a lineup participant to a name-only held entry. */
+  id?: number;
   season: number;
+  /** The register name; needed only for the name-only held-entry match. */
+  name?: string;
   participantId: string | null;
   playerId: number | null;
   number: string | null;
+}
+
+/**
+ * A lineup participant attached to an existing name-only held entry (an upload row for
+ * someone who had not played yet): the entry keeps its number and gains the ids.
+ */
+export interface ShirtEntryAttach {
+  entryId: number;
+  participantId: string;
+  playerId: number | null;
+}
+
+export interface LineupPlan {
+  inserts: NewShirtNumberEntry[];
+  attaches: ShirtEntryAttach[];
 }
 
 export interface NewShirtNumberEntry {
@@ -124,9 +145,15 @@ export function missingLineupCandidates(
   return candidates.filter((c) => !onRegister(c, existing));
 }
 
+/** `${season}:${name key}`: the scope a name-only identity is unique within. */
+const seasonNameKey = (season: number, name: string) => `${season}:${shirtNumberNameKey(name)}`;
+
 /**
- * The register entries to insert for a tenant's lineup candidates: only people missing from
- * the season, with last season's number when one was carried (`carried`, keyed by
+ * The register entries to write for a tenant's lineup candidates: only people missing from
+ * the season. A missing candidate whose name matches exactly one id-less (name-only) held
+ * entry in the season, and no other missing candidate's, is attached to that entry (it keeps
+ * its number) — the same name-only identity rule the upload commit uses. Everyone else is
+ * inserted, with last season's number when one was carried (`carried`, keyed by
  * {@link carriedKey}), dropped under `block` when it would duplicate a number already worn
  * in the season (including one planned earlier in this run).
  */
@@ -136,7 +163,7 @@ export function planLineupInserts(args: {
   existing: readonly ExistingShirtEntry[];
   carried: ReadonlyMap<string, string>;
   duplicatePolicy: ShirtNumberDuplicatePolicy;
-}): NewShirtNumberEntry[] {
+}): LineupPlan {
   const taken = new Map<number, Set<string>>();
   const takenIn = (season: number) => {
     let s = taken.get(season);
@@ -145,10 +172,43 @@ export function planLineupInserts(args: {
   };
   for (const e of args.existing) if (e.number !== null) takenIn(e.season).add(e.number);
 
+  const missing = missingLineupCandidates(args.candidates, args.existing);
+
+  // Name-only held entries and missing candidates, per (season, name key): an attach needs
+  // exactly one of each, so two same-named people never share an entry.
+  const nameOnly = new Map<string, ExistingShirtEntry[]>();
+  for (const e of args.existing) {
+    if (e.id === undefined || e.name === undefined) continue;
+    if (e.playerId !== null || e.participantId !== null) continue;
+    const key = seasonNameKey(e.season, e.name);
+    nameOnly.set(key, [...(nameOnly.get(key) ?? []), e]);
+  }
+  const missingByName = new Map<string, number>();
+  for (const c of missing) {
+    const key = seasonNameKey(c.season, c.name);
+    missingByName.set(key, (missingByName.get(key) ?? 0) + 1);
+  }
+
   const planned: ExistingShirtEntry[] = [];
-  const out: NewShirtNumberEntry[] = [];
-  for (const c of missingLineupCandidates(args.candidates, args.existing)) {
+  const inserts: NewShirtNumberEntry[] = [];
+  const attaches: ShirtEntryAttach[] = [];
+  for (const c of missing) {
     if (onRegister(c, planned)) continue;
+
+    const key = seasonNameKey(c.season, c.name);
+    const heldByName = nameOnly.get(key) ?? [];
+    if (heldByName.length === 1 && missingByName.get(key) === 1 && shirtNumberNameKey(c.name)) {
+      const entry = heldByName[0]!;
+      attaches.push({ entryId: entry.id!, participantId: c.participantId, playerId: c.playerId });
+      planned.push({
+        season: c.season,
+        participantId: c.participantId,
+        playerId: c.playerId,
+        number: entry.number,
+      });
+      continue;
+    }
+
     const inUse = takenIn(c.season);
     const number = numberAfterDuplicatePolicy(
       args.carried.get(carriedKey(c.season, c.participantId)) ?? null,
@@ -162,7 +222,7 @@ export function planLineupInserts(args: {
       playerId: c.playerId,
       number,
     });
-    out.push({
+    inserts.push({
       tenantId: args.tenantId,
       season: c.season,
       name: c.name,
@@ -172,8 +232,35 @@ export function planLineupInserts(args: {
       source: "lineup",
     });
   }
-  return out;
+  return { inserts, attaches };
 }
+
+/**
+ * Whether the held-entry link step may mint crosswalk rows for a tenant. Only when the
+ * tenant's curated player ids ARE crosswalk ids — every tenant except Halls Head while it
+ * still reads native stats (mirrors `curatedIdsAreNative` in the api-server, on the raw
+ * `reads_from_central` flag). A native tenant's ids are native `players.id`s: minting would
+ * hand out ids the native importers later reuse for different people, so its held entries
+ * link only through crosswalk rows that already exist (seeded to native ids).
+ */
+export function heldLinkMayMint(tenant: { id: number; readsFromCentral: boolean }): boolean {
+  return !(tenant.id === NATIVE_STATS_TENANT_ID && !tenant.readsFromCentral);
+}
+
+/** One tenant's sync failure, reported instead of aborting the remaining tenants. */
+export interface ShirtNumberSyncError {
+  tenantId: number;
+  message: string;
+}
+
+/** A sync step's outcome: per-tenant summaries plus the tenants that failed. */
+export interface ShirtNumberSyncResult<T> {
+  tenants: T[];
+  errors: ShirtNumberSyncError[];
+}
+
+const isUniqueViolation = (e: unknown) => (e as { code?: string } | null)?.code === "23505";
+const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export interface HeldShirtEntry {
   id: number;
@@ -219,7 +306,8 @@ export function planHeldLinks(args: {
 }
 
 // ---------------------------------------------------------------------------
-// DB wiring (exercised against Postgres in CI, not unit-tested here)
+// DB wiring (exercised against Postgres in CI by the api-server suite
+// src/lib/shirt-number-sync.db.test.ts, not unit-tested here)
 // ---------------------------------------------------------------------------
 
 /** How far back a played fixture's team list still feeds the register. */
@@ -237,6 +325,7 @@ export interface ShirtNumberSyncOpts {
 interface SyncTenant {
   id: number;
   centralClubId: number;
+  readsFromCentral: boolean;
   duplicatePolicy: ShirtNumberDuplicatePolicy;
   rolloverPolicy: ShirtNumberRolloverPolicy;
 }
@@ -253,7 +342,11 @@ async function enabledTenants(opts: ShirtNumberSyncOpts): Promise<SyncTenant[]> 
     conds.push(inArray(sql<string>`lower(${tenantsTable.playhqOrgId})`, wanted));
   }
   const tenants = await db
-    .select({ id: tenantsTable.id, centralClubId: tenantsTable.centralClubId })
+    .select({
+      id: tenantsTable.id,
+      centralClubId: tenantsTable.centralClubId,
+      readsFromCentral: tenantsTable.readsFromCentral,
+    })
     .from(tenantsTable)
     .where(and(...conds));
   if (tenants.length === 0) return [];
@@ -275,6 +368,7 @@ async function enabledTenants(opts: ShirtNumberSyncOpts): Promise<SyncTenant[]> 
       out.push({
         id: t.id,
         centralClubId: t.centralClubId,
+        readsFromCentral: t.readsFromCentral,
         duplicatePolicy: settings.duplicatePolicy,
         rolloverPolicy: settings.rolloverPolicy,
       });
@@ -338,99 +432,152 @@ async function playerIdsFor(
 export interface LineupShirtSyncSummary {
   tenantId: number;
   inserted: number;
+  /** Name-only held entries a lineup participant was attached to (they keep their number). */
+  attached: number;
 }
+
+type Log = (line: string) => void;
 
 /**
  * Step 1 (after `projectTeamLists`): add the lineup participants of each enabled tenant's
- * recent and upcoming team lists to their fixtures' season registers.
+ * recent and upcoming team lists to their fixtures' season registers. One tenant's failure
+ * is logged and reported in `errors`; the remaining tenants still sync.
  */
 export async function syncLineupShirtNumbers(
   opts: ShirtNumberSyncOpts,
-): Promise<LineupShirtSyncSummary[]> {
+): Promise<ShirtNumberSyncResult<LineupShirtSyncSummary>> {
   const log = opts.log ?? ((line: string) => console.log(line));
   const now = opts.now ?? new Date();
+  const result: ShirtNumberSyncResult<LineupShirtSyncSummary> = { tenants: [], errors: [] };
+  for (const t of await enabledTenants(opts)) {
+    const summary: LineupShirtSyncSummary = { tenantId: t.id, inserted: 0, attached: 0 };
+    result.tenants.push(summary);
+    try {
+      await syncTenantLineup(t, summary, now, log);
+    } catch (err) {
+      const message = errorMessage(err);
+      log(`tenant ${t.id}: shirt-number lineup sync failed: ${message}`);
+      result.errors.push({ tenantId: t.id, message });
+    }
+  }
+  return result;
+}
+
+async function syncTenantLineup(
+  t: SyncTenant,
+  summary: LineupShirtSyncSummary,
+  now: Date,
+  log: Log,
+): Promise<void> {
   const { db, fixturesTable, teamListsTable, shirtNumbersTable } = await import("../index");
   const day = 24 * 3600 * 1000;
-
-  const summaries: LineupShirtSyncSummary[] = [];
-  for (const t of await enabledTenants(opts)) {
-    const summary: LineupShirtSyncSummary = { tenantId: t.id, inserted: 0 };
-    summaries.push(summary);
-    const lists = await db
-      .select({ startAt: fixturesTable.startAt, players: teamListsTable.players })
-      .from(teamListsTable)
-      .innerJoin(
-        fixturesTable,
-        and(
-          eq(fixturesTable.id, teamListsTable.fixtureId),
-          eq(fixturesTable.tenantId, teamListsTable.tenantId),
-        ),
-      )
-      .where(
-        and(
-          eq(teamListsTable.tenantId, t.id),
-          gte(
-            fixturesTable.startAt,
-            new Date(now.getTime() - SHIRT_NUMBER_LINEUP_LOOKBACK_DAYS * day),
-          ),
-          lte(fixturesTable.startAt, new Date(now.getTime() + TEAM_LIST_LOOKAHEAD_DAYS * day)),
-        ),
-      );
-    const guids = [
-      ...new Set(
-        lists.flatMap((l) =>
-          (l.players ?? [])
-            .map((p) => normaliseParticipantId(p.participantId))
-            .filter((g): g is string => !!g),
-        ),
+  const lists = await db
+    .select({ startAt: fixturesTable.startAt, players: teamListsTable.players })
+    .from(teamListsTable)
+    .innerJoin(
+      fixturesTable,
+      and(
+        eq(fixturesTable.id, teamListsTable.fixtureId),
+        eq(fixturesTable.tenantId, teamListsTable.tenantId),
       ),
-    ];
-    if (guids.length === 0) continue;
+    )
+    .where(
+      and(
+        eq(teamListsTable.tenantId, t.id),
+        gte(
+          fixturesTable.startAt,
+          new Date(now.getTime() - SHIRT_NUMBER_LINEUP_LOOKBACK_DAYS * day),
+        ),
+        lte(fixturesTable.startAt, new Date(now.getTime() + TEAM_LIST_LOOKAHEAD_DAYS * day)),
+      ),
+    );
+  const guids = [
+    ...new Set(
+      lists.flatMap((l) =>
+        (l.players ?? [])
+          .map((p) => normaliseParticipantId(p.participantId))
+          .filter((g): g is string => !!g),
+      ),
+    ),
+  ];
+  if (guids.length === 0) return;
 
-    const candidates = lineupCandidates(lists, await playerIdsFor(t.id, guids));
-    const seasons = [...new Set(candidates.map((c) => c.season))];
-    if (seasons.length === 0) continue;
-    const existing = await db
-      .select({
-        season: shirtNumbersTable.season,
-        participantId: shirtNumbersTable.participantId,
-        playerId: shirtNumbersTable.playerId,
-        number: shirtNumbersTable.number,
-      })
-      .from(shirtNumbersTable)
-      .where(and(eq(shirtNumbersTable.tenantId, t.id), inArray(shirtNumbersTable.season, seasons)));
+  const candidates = lineupCandidates(lists, await playerIdsFor(t.id, guids));
+  const seasons = [...new Set(candidates.map((c) => c.season))];
+  if (seasons.length === 0) return;
+  const existing = await db
+    .select({
+      id: shirtNumbersTable.id,
+      season: shirtNumbersTable.season,
+      name: shirtNumbersTable.name,
+      participantId: shirtNumbersTable.participantId,
+      playerId: shirtNumbersTable.playerId,
+      number: shirtNumbersTable.number,
+    })
+    .from(shirtNumbersTable)
+    .where(and(eq(shirtNumbersTable.tenantId, t.id), inArray(shirtNumbersTable.season, seasons)));
 
-    const carried = new Map<string, string>();
-    for (const c of missingLineupCandidates(candidates, existing)) {
-      const n = await carriedNumberFor(db, {
-        tenantId: t.id,
-        side: "senior",
-        season: c.season,
-        playerId: c.playerId,
-        participantId: c.participantId,
-        rolloverPolicy: t.rolloverPolicy,
-      });
-      if (n !== null) carried.set(carriedKey(c.season, c.participantId), n);
-    }
-
-    const inserts = planLineupInserts({
+  const carried = new Map<string, string>();
+  for (const c of missingLineupCandidates(candidates, existing)) {
+    const n = await carriedNumberFor(db, {
       tenantId: t.id,
-      candidates,
-      existing,
-      carried,
-      duplicatePolicy: t.duplicatePolicy,
+      side: "senior",
+      season: c.season,
+      playerId: c.playerId,
+      participantId: c.participantId,
+      rolloverPolicy: t.rolloverPolicy,
     });
-    if (inserts.length === 0) continue;
+    if (n !== null) carried.set(carriedKey(c.season, c.participantId), n);
+  }
+
+  const plan = planLineupInserts({
+    tenantId: t.id,
+    candidates,
+    existing,
+    carried,
+    duplicatePolicy: t.duplicatePolicy,
+  });
+  if (plan.inserts.length === 0 && plan.attaches.length === 0) return;
+
+  for (const a of plan.attaches) {
+    try {
+      // Still id-less: an admin who linked the entry since the read above wins.
+      const rows = await db
+        .update(shirtNumbersTable)
+        .set({
+          participantId: a.participantId,
+          ...(a.playerId !== null ? { playerId: a.playerId } : {}),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(shirtNumbersTable.tenantId, t.id),
+            eq(shirtNumbersTable.id, a.entryId),
+            isNull(shirtNumbersTable.playerId),
+            isNull(shirtNumbersTable.participantId),
+          ),
+        )
+        .returning({ id: shirtNumbersTable.id });
+      if (rows.length > 0) summary.attached++;
+    } catch (err) {
+      // A concurrent write took the participant or player for the season: skip this entry.
+      if (!isUniqueViolation(err)) throw err;
+    }
+  }
+
+  if (plan.inserts.length > 0) {
     // A row an admin or upload added since the read above wins (per-person unique indexes).
     const written = await db
       .insert(shirtNumbersTable)
-      .values(inserts)
+      .values(plan.inserts)
       .onConflictDoNothing()
       .returning({ id: shirtNumbersTable.id });
     summary.inserted = written.length;
-    log(`tenant ${t.id}: ${written.length} lineup player(s) added to the shirt-number register`);
   }
-  return summaries;
+  log(
+    `tenant ${t.id}: ${summary.inserted} lineup player(s) added to the shirt-number register` +
+      (summary.attached ? `, ${summary.attached} attached to name-only held entries` : ""),
+  );
 }
 
 export interface HeldShirtLinkSummary {
@@ -438,6 +585,8 @@ export interface HeldShirtLinkSummary {
   linked: number;
   /** Crosswalk rows minted so an appeared participant could be linked. */
   minted: number;
+  /** Appeared participants left held because they have no crosswalk row (native tenant). */
+  unmapped: number;
 }
 
 /** Lowercased GUIDs among `guids` with a senior scorecard or roster row for the club in central. */
@@ -479,61 +628,87 @@ async function centralSeniorAppearances(
 }
 
 /**
+ * The shared crosswalk mint, serialised per tenant with the same transaction-scoped
+ * advisory lock as the synthetic pre-digital mint, so the two never pick the same next id.
+ */
+async function mintCrosswalkLocked(t: SyncTenant): Promise<number> {
+  const { db } = await import("../index");
+  const { mintPlayerIdMap } = await import("../provision");
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(${MINT_LOCK_KEY}, ${t.id})`);
+    return (await mintPlayerIdMap(t.id, t.centralClubId, tx)).minted;
+  });
+}
+
+/**
  * Step 2 (after the central projection): link each enabled tenant's held entries whose
- * participant has played for the tenant's central club, minting crosswalk rows first when
- * needed.
+ * participant has played for the tenant's central club. A crosswalk tenant mints missing
+ * crosswalk rows first; a native tenant ({@link heldLinkMayMint}) never mints and leaves
+ * unmapped participants held. One tenant's failure is logged and reported in `errors`; the
+ * remaining tenants still link.
  */
 export async function linkHeldShirtNumbers(
   opts: ShirtNumberSyncOpts,
-): Promise<HeldShirtLinkSummary[]> {
+): Promise<ShirtNumberSyncResult<HeldShirtLinkSummary>> {
   const log = opts.log ?? ((line: string) => console.log(line));
-  const { db, shirtNumbersTable } = await import("../index");
-
-  const summaries: HeldShirtLinkSummary[] = [];
+  const result: ShirtNumberSyncResult<HeldShirtLinkSummary> = { tenants: [], errors: [] };
   for (const t of await enabledTenants(opts)) {
-    const summary: HeldShirtLinkSummary = { tenantId: t.id, linked: 0, minted: 0 };
-    summaries.push(summary);
-    const heldRows = await db
-      .select({
-        id: shirtNumbersTable.id,
-        tenantId: shirtNumbersTable.tenantId,
-        season: shirtNumbersTable.season,
-        participantId: shirtNumbersTable.participantId,
-      })
-      .from(shirtNumbersTable)
-      .where(
-        and(
-          eq(shirtNumbersTable.tenantId, t.id),
-          isNull(shirtNumbersTable.playerId),
-          isNotNull(shirtNumbersTable.participantId),
-        ),
-      );
-    const held = heldRows.flatMap((h) =>
-      h.participantId ? [{ ...h, participantId: h.participantId }] : [],
-    );
-    if (held.length === 0) continue;
-
-    const guids = [...new Set(held.map((h) => normaliseParticipantId(h.participantId)!))];
-    const appeared = await centralSeniorAppearances(t.centralClubId, guids);
-    if (appeared.size === 0) continue;
-
-    const linkedRows = await db
-      .select({ season: shirtNumbersTable.season, playerId: shirtNumbersTable.playerId })
-      .from(shirtNumbersTable)
-      .where(and(eq(shirtNumbersTable.tenantId, t.id), isNotNull(shirtNumbersTable.playerId)));
-    const linked = linkedRows.map((l) => ({ season: l.season, playerId: l.playerId! }));
-
-    const appearedGuids = [...appeared];
-    let playerIdOf = await playerIdsFor(t.id, appearedGuids);
-    let plan = planHeldLinks({ tenantId: t.id, held, appeared, playerIdOf, linked });
-    if (plan.unmapped.length > 0) {
-      // The shared crosswalk mint: idempotent, continues the tenant's id sequence.
-      const { mintPlayerIdMap } = await import("../provision");
-      summary.minted = (await mintPlayerIdMap(t.id, t.centralClubId)).minted;
-      playerIdOf = await playerIdsFor(t.id, appearedGuids);
-      plan = planHeldLinks({ tenantId: t.id, held, appeared, playerIdOf, linked });
+    const summary: HeldShirtLinkSummary = { tenantId: t.id, linked: 0, minted: 0, unmapped: 0 };
+    result.tenants.push(summary);
+    try {
+      await linkTenantHeld(t, summary, log);
+    } catch (err) {
+      const message = errorMessage(err);
+      log(`tenant ${t.id}: shirt-number held-entry link failed: ${message}`);
+      result.errors.push({ tenantId: t.id, message });
     }
-    for (const l of plan.links)
+  }
+  return result;
+}
+
+async function linkTenantHeld(t: SyncTenant, summary: HeldShirtLinkSummary, log: Log) {
+  const { db, shirtNumbersTable } = await import("../index");
+  const heldRows = await db
+    .select({
+      id: shirtNumbersTable.id,
+      tenantId: shirtNumbersTable.tenantId,
+      season: shirtNumbersTable.season,
+      participantId: shirtNumbersTable.participantId,
+    })
+    .from(shirtNumbersTable)
+    .where(
+      and(
+        eq(shirtNumbersTable.tenantId, t.id),
+        isNull(shirtNumbersTable.playerId),
+        isNotNull(shirtNumbersTable.participantId),
+      ),
+    );
+  const held = heldRows.flatMap((h) =>
+    h.participantId ? [{ ...h, participantId: h.participantId }] : [],
+  );
+  if (held.length === 0) return;
+
+  const guids = [...new Set(held.map((h) => normaliseParticipantId(h.participantId)!))];
+  const appeared = await centralSeniorAppearances(t.centralClubId, guids);
+  if (appeared.size === 0) return;
+
+  const linkedRows = await db
+    .select({ season: shirtNumbersTable.season, playerId: shirtNumbersTable.playerId })
+    .from(shirtNumbersTable)
+    .where(and(eq(shirtNumbersTable.tenantId, t.id), isNotNull(shirtNumbersTable.playerId)));
+  const linked = linkedRows.map((l) => ({ season: l.season, playerId: l.playerId! }));
+
+  const appearedGuids = [...appeared];
+  let playerIdOf = await playerIdsFor(t.id, appearedGuids);
+  let plan = planHeldLinks({ tenantId: t.id, held, appeared, playerIdOf, linked });
+  if (plan.unmapped.length > 0 && heldLinkMayMint(t)) {
+    summary.minted = await mintCrosswalkLocked(t);
+    playerIdOf = await playerIdsFor(t.id, appearedGuids);
+    plan = planHeldLinks({ tenantId: t.id, held, appeared, playerIdOf, linked });
+  }
+  summary.unmapped = plan.unmapped.length;
+  for (const l of plan.links) {
+    try {
       if (
         await linkHeldShirtNumberEntry(db, {
           tenantId: t.id,
@@ -542,10 +717,14 @@ export async function linkHeldShirtNumbers(
         })
       )
         summary.linked++;
-    log(
-      `tenant ${t.id}: ${summary.linked} held shirt-number entr${summary.linked === 1 ? "y" : "ies"} linked` +
-        (summary.minted ? `, ${summary.minted} crosswalk row(s) minted` : ""),
-    );
+    } catch (err) {
+      // A concurrent admin link took (season, player) first: skip this entry, keep going.
+      if (!isUniqueViolation(err)) throw err;
+    }
   }
-  return summaries;
+  log(
+    `tenant ${t.id}: ${summary.linked} held shirt-number entr${summary.linked === 1 ? "y" : "ies"} linked` +
+      (summary.minted ? `, ${summary.minted} crosswalk row(s) minted` : "") +
+      (summary.unmapped ? `, ${summary.unmapped} left held (no crosswalk row; never minted)` : ""),
+  );
 }

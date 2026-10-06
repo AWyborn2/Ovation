@@ -15,7 +15,7 @@ import {
   type ShirtNumberSettings,
   type ShirtNumberSide,
 } from "@workspace/db/shirt-numbers";
-import { seasonLabel } from "@workspace/scorecard";
+import { FILL_IN_THRESHOLD, seasonLabel } from "@workspace/scorecard";
 
 /**
  * Season shirt-number register service (docs/plans/2026-10-06-001-feat-season-
@@ -56,6 +56,17 @@ export type ShirtNumberWarning = {
 
 /** "2026/27" for 2026. */
 export { seasonLabel };
+
+/**
+ * Why a player id cannot be linked to a senior register entry, or null when it can.
+ * Fill-in (90001+) and cap-only (95001+) ids are excluded from every derivation, so
+ * the register never links one (the ingest and the upload roster skip them too).
+ */
+export function fillInLinkError(playerId: number | null | undefined): string | null {
+  return playerId != null && playerId >= FILL_IN_THRESHOLD
+    ? `Player ${playerId} is a fill-in and cannot have a shirt number.`
+    : null;
+}
 
 /**
  * The entries in `entries` wearing exactly `number` (string match: "7" and
@@ -411,11 +422,7 @@ export async function createSeniorEntry(
         if (others.length > 0) {
           const warning = duplicateWarning(input.season, number, others);
           if (settings.duplicatePolicy === "block") {
-            return {
-              ok: false as const,
-              status: 409 as const,
-              body: { error: warning.message, warnings: [warning] },
-            };
+            return conflict(warning.message, [warning]);
           }
           warnings.push(warning);
         }
@@ -464,8 +471,12 @@ export async function createSeniorEntry(
   }
 }
 
-function conflict(error: string): WriteOutcome {
-  return { ok: false, status: 409, body: { error, warnings: [] } };
+/** A 409 refusal carrying the duplicate warnings behind it; shared by every register write. */
+export function conflict(
+  error: string,
+  warnings: ShirtNumberWarning[] = [],
+): { ok: false; status: 409; body: ShirtNumberConflict } {
+  return { ok: false, status: 409, body: { error, warnings } };
 }
 
 export type UpdateSeniorInput = {
@@ -527,11 +538,7 @@ export async function updateSeniorEntry(
         if (others.length > 0) {
           const warning = duplicateWarning(existing.season, number, others);
           if (settings.duplicatePolicy === "block" && number !== existing.number) {
-            return {
-              ok: false as const,
-              status: 409 as const,
-              body: { error: warning.message, warnings: [warning] },
-            };
+            return conflict(warning.message, [warning]);
           }
           warnings.push(warning);
         }
@@ -620,11 +627,16 @@ export async function startSeniorSeason(
     result.skipped = plan.skipped;
     if (plan.create.length === 0) return result;
 
+    // A person the PlayHQ lineup sync (or an admin) added since the read above
+    // keeps that row: skip them rather than fail the whole start (per-person
+    // unique indexes), and count only the rows actually created.
     const inserted = await tx
       .insert(shirtNumbersTable)
       .values(plan.create.map((c) => ({ ...c, tenantId, season })))
+      .onConflictDoNothing()
       .returning();
     result.created = inserted.length;
+    result.skipped += plan.create.length - inserted.length;
     result.numbered = inserted.filter((r) => r.number !== null).length;
 
     const after = await loadSeasonEntries(tx, "senior", tenantId, season);

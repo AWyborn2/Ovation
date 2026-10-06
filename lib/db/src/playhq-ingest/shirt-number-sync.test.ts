@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  heldLinkMayMint,
   lineupCandidates,
   missingLineupCandidates,
   planHeldLinks,
@@ -14,7 +15,7 @@ import type { TeamListPlayer } from "../schema/fixtures";
  * (docs/plans/2026-10-06-001-feat-season-shirt-numbers-plan.md, U5 / KTD9).
  * The planners are pure: the ingest reads the rows, the planners decide, the
  * ingest writes. DB wiring (tenant selection, inserts, links, mint) is covered
- * by CI against Postgres, not here.
+ * by CI against Postgres in artifacts/api-server/src/lib/shirt-number-sync.db.test.ts.
  */
 
 const P = "aaaaaaaa-0000-4000-8000-000000000001";
@@ -87,7 +88,7 @@ describe("planLineupInserts", () => {
       existing: [],
       carried: new Map([[`2026:${P}`, "23"]]),
       duplicatePolicy: "warn",
-    });
+    }).inserts;
     expect(inserts).toEqual([
       {
         tenantId: 7,
@@ -108,7 +109,7 @@ describe("planLineupInserts", () => {
       existing: [],
       carried: new Map(),
       duplicatePolicy: "warn",
-    });
+    }).inserts;
     expect(inserts).toEqual([expect.objectContaining({ playerId: null, number: null })]);
   });
 
@@ -123,7 +124,7 @@ describe("planLineupInserts", () => {
         existing,
         carried: new Map([[`2026:${P}`, "23"]]),
         duplicatePolicy: "warn",
-      }),
+      }).inserts,
     ).toEqual([]);
     expect(
       planLineupInserts({
@@ -132,7 +133,7 @@ describe("planLineupInserts", () => {
         existing: [{ season: 2026, participantId: null, playerId: 42, number: null }],
         carried: new Map(),
         duplicatePolicy: "warn",
-      }),
+      }).inserts,
     ).toEqual([]);
     // A different season is not "already present".
     expect(
@@ -142,7 +143,7 @@ describe("planLineupInserts", () => {
         existing: [{ season: 2025, participantId: P, playerId: 42, number: "23" }],
         carried: new Map(),
         duplicatePolicy: "warn",
-      }),
+      }).inserts,
     ).toHaveLength(1);
   });
 
@@ -153,7 +154,7 @@ describe("planLineupInserts", () => {
       existing: [{ season: 2026, participantId: Q, playerId: 9, number: "23" }],
       carried: new Map([[`2026:${P}`, "23"]]),
       duplicatePolicy: "block",
-    });
+    }).inserts;
     expect(inserts).toEqual([expect.objectContaining({ participantId: P, number: null })]);
   });
 
@@ -164,7 +165,7 @@ describe("planLineupInserts", () => {
       existing: [{ season: 2026, participantId: Q, playerId: 9, number: "23" }],
       carried: new Map([[`2026:${P}`, "23"]]),
       duplicatePolicy: "warn",
-    });
+    }).inserts;
     expect(inserts[0]!.number).toBe("23");
   });
 
@@ -178,8 +179,96 @@ describe("planLineupInserts", () => {
         [`2026:${R}`, "5"],
       ]),
       duplicatePolicy: "block",
-    });
+    }).inserts;
     expect(inserts.map((i) => i.number)).toEqual(["5", null]);
+  });
+});
+
+describe("planLineupInserts: name-only held entries (upload rows for people who had not played)", () => {
+  const candidate = { season: 2026, participantId: P, name: "Pat New", playerId: 42 };
+  const nameOnly = (id: number, name: string, number: string | null): ExistingShirtEntry => ({
+    id,
+    season: 2026,
+    name,
+    participantId: null,
+    playerId: null,
+    number,
+  });
+
+  it("attaches the lineup participant to a unique same-name held entry instead of inserting", () => {
+    const plan = planLineupInserts({
+      tenantId: 7,
+      candidates: [candidate],
+      existing: [nameOnly(11, "  PAT  new", "14")],
+      carried: new Map([[`2026:${P}`, "23"]]),
+      duplicatePolicy: "warn",
+    });
+    expect(plan.inserts).toEqual([]);
+    expect(plan.attaches).toEqual([{ entryId: 11, participantId: P, playerId: 42 }]);
+  });
+
+  it("matches names accent- and punctuation-insensitively, and attaches an unmapped player held", () => {
+    const plan = planLineupInserts({
+      tenantId: 7,
+      candidates: [{ season: 2026, participantId: Q, name: "José O'Neil", playerId: null }],
+      existing: [nameOnly(12, "Jose ONeil", "8")],
+      carried: new Map(),
+      duplicatePolicy: "block",
+    });
+    expect(plan.attaches).toEqual([{ entryId: 12, participantId: Q, playerId: null }]);
+    expect(plan.inserts).toEqual([]);
+  });
+
+  it("inserts a new entry when two name-only held entries share the name (ambiguous)", () => {
+    const plan = planLineupInserts({
+      tenantId: 7,
+      candidates: [candidate],
+      existing: [nameOnly(11, "Pat New", "14"), nameOnly(13, "Pat New", "15")],
+      carried: new Map(),
+      duplicatePolicy: "warn",
+    });
+    expect(plan.attaches).toEqual([]);
+    expect(plan.inserts).toEqual([expect.objectContaining({ participantId: P, number: null })]);
+  });
+
+  it("inserts both when two lineup players share the one held entry's name (ambiguous)", () => {
+    const plan = planLineupInserts({
+      tenantId: 7,
+      candidates: [candidate, { season: 2026, participantId: R, name: "Pat New", playerId: null }],
+      existing: [nameOnly(11, "Pat New", "14")],
+      carried: new Map(),
+      duplicatePolicy: "warn",
+    });
+    expect(plan.attaches).toEqual([]);
+    expect(plan.inserts.map((i) => i.participantId)).toEqual([P, R]);
+  });
+
+  it("ignores held entries in another season, with ids, or with a different name", () => {
+    const plan = planLineupInserts({
+      tenantId: 7,
+      candidates: [candidate],
+      existing: [
+        { ...nameOnly(11, "Pat New", "14"), season: 2025 },
+        { ...nameOnly(12, "Pat New", "15"), participantId: Q },
+        nameOnly(13, "Pat Newer", "16"),
+      ],
+      carried: new Map(),
+      duplicatePolicy: "warn",
+    });
+    expect(plan.attaches).toEqual([]);
+    expect(plan.inserts).toHaveLength(1);
+  });
+});
+
+describe("heldLinkMayMint (native vs crosswalk tenants)", () => {
+  it("never mints for Halls Head while it reads native stats (its ids are native players.id)", () => {
+    expect(heldLinkMayMint({ id: 1, readsFromCentral: false })).toBe(false);
+  });
+
+  it("mints for a crosswalk tenant: Halls Head once cut over to central, and every other tenant", () => {
+    expect(heldLinkMayMint({ id: 1, readsFromCentral: true })).toBe(true);
+    expect(heldLinkMayMint({ id: 7, readsFromCentral: true })).toBe(true);
+    expect(heldLinkMayMint({ id: 7, readsFromCentral: false })).toBe(true);
   });
 });
 

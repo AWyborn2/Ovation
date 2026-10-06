@@ -185,6 +185,41 @@ describe("parseShirtNumberUpload", () => {
     ]);
   });
 
+  it("rejects a sparse sheet with a far-away cell fast, without walking its full extent", async () => {
+    // A1 plus XFD1048576: a few KB on disk, but 1,048,576 x 16,384 cells if
+    // walked densely. The parse must refuse it from the cells actually present.
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet("Numbers");
+    sheet.getCell("A1").value = "Name";
+    sheet.getCell("XFD1048576").value = "x";
+    const buffer = Buffer.from(await wb.xlsx.writeBuffer());
+
+    const started = Date.now();
+    await expect(parseShirtNumberUpload(buffer, "sparse.xlsx", "numbers")).rejects.toBeInstanceOf(
+      UploadParseError,
+    );
+    expect(Date.now() - started).toBeLessThan(5000);
+  });
+
+  it("rejects a sheet whose data reaches too far right or down", async () => {
+    const wide = new ExcelJS.Workbook();
+    const ws = wide.addWorksheet("Numbers");
+    ws.getCell("A1").value = "Name";
+    ws.getCell(1, 500).value = "Stray";
+    await expect(
+      parseShirtNumberUpload(Buffer.from(await wide.xlsx.writeBuffer()), "w.xlsx", "numbers"),
+    ).rejects.toBeInstanceOf(UploadParseError);
+
+    const tall = new ExcelJS.Workbook();
+    const ts = tall.addWorksheet("Numbers");
+    ts.getCell("A1").value = "Name";
+    ts.getCell("B1").value = "Number";
+    ts.getCell(50_000, 1).value = "Far Away";
+    await expect(
+      parseShirtNumberUpload(Buffer.from(await tall.xlsx.writeBuffer()), "t.xlsx", "numbers"),
+    ).rejects.toBeInstanceOf(UploadParseError);
+  });
+
   it(`rejects a file with more than ${SHIRT_NUMBER_UPLOAD_MAX_ROWS} rows`, async () => {
     const lines = ["Name,Number"];
     for (let i = 0; i <= SHIRT_NUMBER_UPLOAD_MAX_ROWS; i++) lines.push(`Player ${i},1`);

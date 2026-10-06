@@ -1,9 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   applyCarriedNumber,
+  conflict,
   duplicateEntryIds,
   duplicateWarning,
   duplicatesOf,
+  fillInLinkError,
   planSeasonStart,
   samePerson,
   seasonLabel,
@@ -249,5 +251,34 @@ describe("planSeasonStart", () => {
     });
     expect(again.create).toHaveLength(0);
     expect(again.skipped).toBe(1);
+  });
+});
+
+describe("fillInLinkError (fill-in exclusion, player_id >= 90000)", () => {
+  it("refuses fill-in and cap-only ids", () => {
+    expect(fillInLinkError(90000)).toMatch(/fill-in/);
+    expect(fillInLinkError(90004)).toMatch(/90004/);
+    expect(fillInLinkError(95001)).toMatch(/fill-in/);
+  });
+
+  it("allows a real player id and an unlinked entry", () => {
+    expect(fillInLinkError(89999)).toBeNull();
+    expect(fillInLinkError(1)).toBeNull();
+    expect(fillInLinkError(null)).toBeNull();
+    expect(fillInLinkError(undefined)).toBeNull();
+  });
+});
+
+describe("conflict", () => {
+  it("is the one 409 shape, with the warnings behind it (none by default)", () => {
+    expect(conflict("Taken")).toEqual({
+      ok: false,
+      status: 409,
+      body: { error: "Taken", warnings: [] },
+    });
+    const w = duplicateWarning(2026, "7", [
+      { id: 1, name: "A", number: "7", playerId: 1, participantId: null },
+    ]);
+    expect(conflict(w.message, [w]).body.warnings).toEqual([w]);
   });
 });

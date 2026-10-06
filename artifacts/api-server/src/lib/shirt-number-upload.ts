@@ -13,18 +13,21 @@ import {
 import {
   isValidShirtNumber,
   normaliseParticipantId,
+  shirtNumberNameKey,
   type ShirtNumberSettings,
   type ShirtNumberSide,
 } from "@workspace/db/shirt-numbers";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
-import { buildNameMatcher, nameKey, norm } from "./name-match";
+import { buildNameMatcher, nameKey } from "./name-match";
 import { loadClubIdentity } from "./club-overlay";
 import { curatedIdsAreNative, playersOutsideTenantSpace } from "./curated-player-space";
 import {
   applyCarriedNumber,
   blockedCarryWarning,
   cleanName,
+  conflict,
   duplicateWarning,
+  fillInLinkError,
   duplicatesOf,
   isUniqueViolation,
   joinNames,
@@ -193,6 +196,17 @@ function cellText(value: ExcelJS.CellValue): string {
   return String(value);
 }
 
+/**
+ * How far a sheet's populated cells may reach. A sparse `.xlsx` (one cell in A1,
+ * one in XFD1048576) is a few KB on disk but enormous if walked densely, so the
+ * walk visits only populated rows and cells and refuses anything beyond these
+ * bounds before building the grid. Rows allow the header scan window and some
+ * blank separator rows on top of the data cap; columns leave room for wide
+ * PlayHQ registration exports.
+ */
+const MAX_SHEET_ROWS = SHIRT_NUMBER_UPLOAD_MAX_ROWS + HEADER_SCAN_ROWS + 100;
+const MAX_SHEET_COLUMNS = 128;
+
 async function readXlsxGrid(buffer: Buffer): Promise<Grid> {
   const wb = new ExcelJS.Workbook();
   try {
@@ -202,19 +216,38 @@ async function readXlsxGrid(buffer: Buffer): Promise<Grid> {
   }
   const sheet = wb.worksheets[0];
   if (!sheet) return [];
-  const grid: Grid = [];
-  const width = sheet.columnCount;
-  for (let r = 1; r <= sheet.rowCount; r++) {
-    const row = sheet.getRow(r);
-    const cells: string[] = [];
-    for (let c = 1; c <= width; c++) {
-      const cell = row.getCell(c);
+
+  // Populated cells only, in row order; the first out-of-bounds cell stops the walk.
+  const populated: { r: number; c: number; text: string }[] = [];
+  let lastRow = 0;
+  let width = 0;
+  sheet.eachRow({ includeEmpty: false }, (row, r) => {
+    if (r > MAX_SHEET_ROWS) {
+      throw new UploadParseError(
+        `The spreadsheet has data down to row ${r.toLocaleString("en-AU")}; the limit is ` +
+          `${SHIRT_NUMBER_UPLOAD_MAX_ROWS.toLocaleString("en-AU")} rows. ` +
+          `Remove stray cells or split it into smaller files.`,
+      );
+    }
+    row.eachCell({ includeEmpty: false }, (cell, c) => {
+      if (c > MAX_SHEET_COLUMNS) {
+        throw new UploadParseError(
+          `The spreadsheet has data in column ${c.toLocaleString("en-AU")}; the limit is ` +
+            `${MAX_SHEET_COLUMNS} columns. Remove stray cells and upload it again.`,
+        );
+      }
       // A merged range's value lives in its top-left cell only.
       const follower = cell.isMerged && cell.master.address !== cell.address;
-      cells.push(follower ? "" : cellText(cell.value).trim());
-    }
-    grid.push(cells);
-  }
+      const text = follower ? "" : cellText(cell.value).trim();
+      if (text === "") return;
+      populated.push({ r, c, text });
+      lastRow = Math.max(lastRow, r);
+      width = Math.max(width, c);
+    });
+  });
+
+  const grid: Grid = Array.from({ length: lastRow }, () => Array<string>(width).fill(""));
+  for (const { r, c, text } of populated) grid[r - 1]![c - 1] = text;
   return grid;
 }
 
@@ -464,7 +497,7 @@ const candidateOf = (p: RosterPerson, score: number | null): PreviewCandidate =>
 });
 
 /** Name-only identity for entries and rows that carry no ids. */
-const fullNameKey = (name: string) => norm(name);
+const fullNameKey = (name: string) => shirtNumberNameKey(name);
 
 /** The register entry a row would update: by player, participant, then (id-less) name. */
 function existingEntryFor<E extends RegisterEntryLike>(
@@ -819,11 +852,6 @@ export const fail = (status: 400 | 404, error: string): CommitOutcome => ({
   status,
   body: { error },
 });
-const conflict = (error: string, warnings: ShirtNumberWarning[] = []): CommitOutcome => ({
-  ok: false,
-  status: 409,
-  body: { error, warnings },
-});
 
 /** One row's planned write. */
 type Planned = {
@@ -878,6 +906,8 @@ export async function commitSeniorUpload(
     if (r.action === "link" && r.playerId == null) {
       return fail(400, `Row ${r.rowIndex}: choose a player to link.`);
     }
+    const fillIn = r.action === "link" ? fillInLinkError(r.playerId) : null;
+    if (fillIn) return fail(400, `Row ${r.rowIndex}: ${fillIn}`);
     byRow.set(r.rowIndex, r);
   }
   const outside = await playersOutsideTenantSpace(

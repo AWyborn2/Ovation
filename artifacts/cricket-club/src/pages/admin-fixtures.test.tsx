@@ -102,6 +102,16 @@ function setupApi(opts: {
     "/social-settings": { settings: { seasonStartDate: null } },
     "/shirt-numbers/settings": settings,
     "/shirt-numbers": opts.register ?? REGISTER,
+    // The player typeahead's register search.
+    "/players?": {
+      players: [
+        { id: 21, surname: "Debutant", givenName: "Held" },
+        { id: 22, surname: "Else", givenName: "Someone" },
+      ],
+      total: 2,
+      page: 1,
+      limit: 10,
+    },
   });
   const base = globalThis.fetch as unknown as (
     input: RequestInfo | URL,
@@ -329,6 +339,61 @@ describe("team-list editor with season shirt numbers", () => {
       { order: 3, displayName: "Typed Name" },
       { order: 4, playerId: 13, displayName: "Pat Unnumbered" },
     ]);
+  });
+
+  describe("a row's PlayHQ participant id only stays with the same person", () => {
+    const savedPlayers = async (writes: Write[]) => {
+      fireEvent.click(screen.getByText("Save team list"));
+      await waitFor(() => expect(writes.some((w) => w.method === "PUT")).toBe(true));
+      return (
+        writes.find((w) => w.method === "PUT")!.body as {
+          players: { displayName: string; playerId?: number; participantId?: string }[];
+        }
+      ).players;
+    };
+    const nameInput = (n: number) => within(row(n)).getByDisplayValue(/./) as HTMLInputElement;
+
+    it("renaming a PlayHQ row to someone else drops its participantId", async () => {
+      const { writes } = setupApi({ enabled: true });
+      await openTeamList();
+      fireEvent.change(nameInput(2), { target: { value: "Someone Else" } });
+      const players = await savedPlayers(writes);
+      expect(players[1]).toEqual({ order: 2, displayName: "Someone Else" });
+    });
+
+    it("a same-name edit (case, spacing) or renaming back keeps it", async () => {
+      const { writes } = setupApi({ enabled: true });
+      await openTeamList();
+      fireEvent.change(nameInput(2), { target: { value: "Someone Else" } });
+      fireEvent.change(nameInput(2), { target: { value: "held  DEBUTANT" } });
+      const players = await savedPlayers(writes);
+      expect(players[1]).toMatchObject({ participantId: HELD_GUID });
+    });
+
+    it("re-picking a different register player drops it; the same-name player keeps it", async () => {
+      const { writes } = setupApi({ enabled: true });
+      await openTeamList();
+      // Row 1 is linked (Alex Opener, #11) with a PlayHQ id: unlink and pick someone else.
+      fireEvent.click(within(row(1)).getByRole("button", { name: "Unlink" }));
+      const search1 = within(row(1)).getByPlaceholderText("Search register…");
+      fireEvent.change(search1, { target: { value: "Some" } });
+      fireEvent.click(await within(row(1)).findByText("Else, Someone"));
+
+      // Row 2 is a typed PlayHQ row: clear it and pick the register player of the same name.
+      fireEvent.change(nameInput(2), { target: { value: "" } });
+      const search2 = within(row(2)).getByPlaceholderText("Search register…");
+      fireEvent.change(search2, { target: { value: "Held" } });
+      fireEvent.click(await within(row(2)).findByText("Debutant, Held"));
+
+      const players = await savedPlayers(writes);
+      expect(players[0]).toMatchObject({ playerId: 22, displayName: "Someone Else" });
+      expect(players[0]).not.toHaveProperty("participantId");
+      expect(players[1]).toMatchObject({
+        playerId: 21,
+        displayName: "Held Debutant",
+        participantId: HELD_GUID,
+      });
+    });
   });
 
   it("with the feature off shows no numbers, banner or controls, and never reads the register", async () => {

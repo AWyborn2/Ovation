@@ -355,14 +355,26 @@ export function bindInput(input: ShareCardInput): BoundInput {
   return { values, images, rows };
 }
 
-/** Card kinds that show the player's season shirt number (U8, KTD11/KTD12). */
-const SHIRT_NUMBER_KINDS: ReadonlySet<ShareCardInput["kind"]> = new Set([
+/**
+ * The card inputs that show the player's season shirt number (U8, KTD11/KTD12).
+ * Each member must declare `shirtNumber`: the binding below reads it without a
+ * cast, so a kind added here without the field fails to compile.
+ */
+type ShirtNumberCardInput = Extract<
+  ShareCardInput,
+  { kind: "century" | "fiveFor" | "milestone" | "player" | "tradingCard" }
+>;
+
+const SHIRT_NUMBER_KINDS: ReadonlySet<string> = new Set<ShirtNumberCardInput["kind"]>([
   "century",
   "fiveFor",
   "milestone",
   "player",
   "tradingCard",
-] as const);
+]);
+
+const showsShirtNumber = (input: ShareCardInput): input is ShirtNumberCardInput =>
+  SHIRT_NUMBER_KINDS.has(input.kind);
 
 /**
  * Bind `shirtNumber` for the player-centric kinds — EXPLICITLY, empty string
@@ -371,9 +383,8 @@ const SHIRT_NUMBER_KINDS: ReadonlySet<ShareCardInput["kind"]> = new Set([
  * renderer drop the badge. `debut` (the A Grade cap card) never gets one.
  */
 function bindShirtNumber(input: ShareCardInput, values: Record<string, string>): void {
-  if (!SHIRT_NUMBER_KINDS.has(input.kind)) return;
-  const n = (input as { shirtNumber?: string | number | null }).shirtNumber;
-  values["shirtNumber"] = shirtText(n);
+  if (!showsShirtNumber(input)) return;
+  values["shirtNumber"] = shirtText(input.shirtNumber);
 }
 
 /** A shirt number as card text: trimmed, or empty when there is none. */

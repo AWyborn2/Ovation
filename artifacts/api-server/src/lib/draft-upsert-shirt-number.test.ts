@@ -10,6 +10,7 @@ import {
   needsShirtNumberLookup,
   shirtNumberSeasonFor,
   stampShirtNumber,
+  stampShirtNumberForUpsert,
   type DraftShirtNumberFacts,
 } from "./draft-upsert";
 
@@ -100,5 +101,48 @@ describe("shirtNumberSeasonFor", () => {
   it("falls back to the season of `now` only without match context", () => {
     expect(shirtNumberSeasonFor(undefined, new Date("2026-08-10T02:00:00Z"))).toBe(2026);
     expect(shirtNumberSeasonFor(null, new Date("2026-06-10T02:00:00Z"))).toBe(2025);
+  });
+});
+
+describe("stampShirtNumberForUpsert (lookup failure vs no number)", () => {
+  it("on a failed lookup, keeps the existing draft's number so the refresh is not a content change", () => {
+    const existing = { ...milestone, shirtNumber: "9" };
+    const out = stampShirtNumberForUpsert(milestone, "failed", existing);
+    expect(out).toEqual(existing);
+  });
+
+  it("on a failed lookup with an existing draft that had no number, stays unnumbered", () => {
+    const out = stampShirtNumberForUpsert({ ...milestone, shirtNumber: "4" }, "failed", milestone);
+    expect(out).toEqual(milestone);
+    expect("shirtNumber" in out).toBe(false);
+  });
+
+  it("on a failed lookup for a new draft (no existing), omits the number (fail closed)", () => {
+    expect(stampShirtNumberForUpsert({ ...milestone, shirtNumber: "4" }, "failed", null)).toEqual(
+      milestone,
+    );
+  });
+
+  it("never carries a number onto a kind that does not show one, even on failure", () => {
+    const debut = { kind: "debut", playerName: "X", capNumber: 142 };
+    expect(stampShirtNumberForUpsert(debut, "failed", { ...debut, shirtNumber: "9" })).toEqual(
+      debut,
+    );
+  });
+
+  it("a successful lookup decides on its own: no number clears, a new number replaces", () => {
+    const existing = { ...milestone, shirtNumber: "9" };
+    expect(
+      stampShirtNumberForUpsert(
+        milestone,
+        { enabled: true, number: null, isPrivate: false },
+        existing,
+      ),
+    ).toEqual(milestone);
+    expect(stampShirtNumberForUpsert(milestone, { ...numbered, number: "12" }, existing)).toEqual({
+      ...milestone,
+      shirtNumber: "12",
+    });
+    expect(stampShirtNumberForUpsert(milestone, null, existing)).toEqual(milestone);
   });
 });

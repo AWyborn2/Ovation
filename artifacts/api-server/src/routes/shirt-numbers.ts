@@ -24,6 +24,7 @@ import { assertPlayerInTenantSpace } from "../lib/curated-player-space";
 import {
   createSeniorEntry,
   deleteSeniorEntry,
+  fillInLinkError,
   listSeniorEntries,
   loadSeasonEntries,
   seniorRegisterSeasons,
@@ -127,6 +128,11 @@ router.post(
       res.status(400).json({ error: "A shirt number is 1 to 3 digits" });
       return;
     }
+    const fillIn = fillInLinkError(body.playerId);
+    if (fillIn) {
+      res.status(400).json({ error: fillIn });
+      return;
+    }
     const settings = await enabledSettings(req, res);
     if (!settings) return;
     const tenantId = getTenantId(req);
@@ -170,6 +176,11 @@ router.patch(
     }
     if (body.number != null && !isValidShirtNumber(body.number)) {
       res.status(400).json({ error: "A shirt number is 1 to 3 digits" });
+      return;
+    }
+    const fillIn = fillInLinkError(body.playerId);
+    if (fillIn) {
+      res.status(400).json({ error: fillIn });
       return;
     }
     const settings = await enabledSettings(req, res);

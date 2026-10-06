@@ -170,6 +170,37 @@ export function stampShirtNumber(
 }
 
 /**
+ * A register lookup for a draft: the facts, null when there is nothing to look up
+ * (no player, or a kind that shows no number), or `"failed"` when the read threw.
+ */
+export type DraftShirtNumberLookup = DraftShirtNumberFacts | null | "failed";
+
+/**
+ * {@link stampShirtNumber} for an upsert, telling a failed lookup apart from "no
+ * number". A failed lookup (e.g. the central privacy read unreachable) keeps
+ * whatever the existing draft already carried, so a transient outage is never a
+ * content change: no refresh revision, no stale flag on a posted card, no caption
+ * churn. With no existing draft it omits the number (fail closed). Pure.
+ */
+export function stampShirtNumberForUpsert(
+  cardInput: Record<string, unknown>,
+  lookup: DraftShirtNumberLookup,
+  existingCardInput: Record<string, unknown> | null | undefined,
+): Record<string, unknown> {
+  if (lookup !== "failed") return stampShirtNumber(cardInput, lookup);
+  const rest = stampShirtNumber(cardInput, null);
+  const kept = existingCardInput?.shirtNumber;
+  if (
+    (typeof kept !== "string" && typeof kept !== "number") ||
+    kept === "" ||
+    !SHIRT_NUMBER_DRAFT_KINDS.has(String(cardInput.kind))
+  ) {
+    return rest;
+  }
+  return { ...rest, shirtNumber: kept };
+}
+
+/**
  * Whether a player is private for public output. A platform privacy override
  * (tenant DB) wins; otherwise the crosswalk's central participant decides
  * (`central.players.is_private`). A native player with no crosswalk row has
@@ -194,14 +225,14 @@ async function draftPlayerIsPrivate(tenantId: number, playerId: number): Promise
 /**
  * The register facts for a draft's player and season. Only a LINKED entry
  * counts (held entries have no playerId, R16). Never throws: a failed read
- * (e.g. the central DB unreachable for the privacy check) returns null, so
- * the draft goes out without a number rather than not at all — fail closed.
+ * (e.g. the central DB unreachable for the privacy check) returns `"failed"`;
+ * see {@link stampShirtNumberForUpsert} for what the upsert does with it.
  */
 async function loadDraftShirtNumberFacts(
   tenantId: number,
   playerId: number,
   season: number,
-): Promise<DraftShirtNumberFacts | null> {
+): Promise<DraftShirtNumberFacts | "failed"> {
   try {
     const settings = await getShirtNumberSettings(db, tenantId);
     if (!settings.enabled) return { enabled: false, number: null, isPrivate: false };
@@ -221,37 +252,50 @@ async function loadDraftShirtNumberFacts(
     return { enabled: true, number, isPrivate: await draftPlayerIsPrivate(tenantId, playerId) };
   } catch (err) {
     logger.warn({ err, tenantId, playerId, season }, "draft shirt-number lookup failed");
-    return null;
+    return "failed";
   }
 }
 
-/** The card input as it should be stored: stamped (or cleared) per KTD11. */
-async function withShirtNumber(input: DraftUpsert): Promise<Record<string, unknown>> {
-  if (!needsShirtNumberLookup(input.cardInput, input.playerId)) {
-    return stampShirtNumber(input.cardInput, null);
-  }
+/** The register lookup for a draft (KTD11); null when the card cannot show a number. */
+async function lookupShirtNumber(input: DraftUpsert): Promise<DraftShirtNumberLookup> {
+  if (!needsShirtNumberLookup(input.cardInput, input.playerId)) return null;
   const season = shirtNumberSeasonFor(input.season, new Date());
-  const facts = await loadDraftShirtNumberFacts(input.tenantId, input.playerId!, season);
-  return stampShirtNumber(input.cardInput, facts);
+  return loadDraftShirtNumberFacts(input.tenantId, input.playerId!, season);
 }
+
+/** `raw` with its card input stamped (or cleared) per KTD11, against the existing draft. */
+const stampedFor = (
+  raw: DraftUpsert,
+  lookup: DraftShirtNumberLookup,
+  existing: { cardInput: unknown } | null | undefined,
+): DraftUpsert => ({
+  ...raw,
+  cardInput: stampShirtNumberForUpsert(
+    raw.cardInput,
+    lookup,
+    existing?.cardInput as Record<string, unknown> | null | undefined,
+  ),
+});
 
 export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertResult> {
   // Stamp the season shirt number on every call, BEFORE the change comparison:
   // an unposted draft picks up a newly assigned number on its next
-  // sweep, a posted one goes stale, and an unchanged event stays unchanged.
-  const input: DraftUpsert = { ...raw, cardInput: await withShirtNumber(raw) };
-  let existing = await findDraftByKey(input.tenantId, input.sourceKey);
-  if (!existing && input.findLegacy) {
-    const legacy = await input.findLegacy();
+  // sweep, a posted one goes stale, and an unchanged event stays unchanged. A
+  // failed lookup keeps the existing draft's number (stampShirtNumberForUpsert).
+  const lookup = await lookupShirtNumber(raw);
+  let existing = await findDraftByKey(raw.tenantId, raw.sourceKey);
+  if (!existing && raw.findLegacy) {
+    const legacy = await raw.findLegacy();
     if (legacy) {
       const [keyed] = await db
         .update(socialDraftsTable)
-        .set({ sourceKey: input.sourceKey, family: legacy.family ?? input.family })
+        .set({ sourceKey: raw.sourceKey, family: legacy.family ?? raw.family })
         .where(eq(socialDraftsTable.id, legacy.id))
         .returning();
       existing = keyed;
     }
   }
+  let input = stampedFor(raw, lookup, existing);
 
   const enrichment = () =>
     enrichDraft({
@@ -304,6 +348,7 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
       if ((err as { code?: string }).code !== "23505") throw err;
       existing = await findDraftByKey(input.tenantId, input.sourceKey);
       if (!existing) throw err;
+      input = stampedFor(raw, lookup, existing);
     }
   }
 
