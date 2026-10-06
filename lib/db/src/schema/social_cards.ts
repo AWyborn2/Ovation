@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { tenantIdColumn } from "./_tenant";
+import { adminsTable } from "./admins";
 
 export const sponsorsTable = pgTable(
   "sponsors",
@@ -593,6 +594,11 @@ export const socialDraftsTable = pgTable(
     photoSource: text("photo_source"),
     adjustments: jsonb("adjustments"), // editor overlay (per-format geometry + shared edits)
     editedAt: timestamp("edited_at", { withTimezone: true }),
+    // The admin who made the draft by hand (Studio editor / Create a card); null for a
+    // draft the sweep made, and for drafts from before this was recorded.
+    createdByAdminId: integer("created_by_admin_id").references(() => adminsTable.id, {
+      onDelete: "set null",
+    }),
     // Set when a posted draft's source data changed after it was shared.
     staleSince: timestamp("stale_since", { withTimezone: true }),
   },

@@ -105,8 +105,29 @@ describe("POST /social-drafts (ad-hoc)", () => {
       .from(socialDraftsTable)
       .where(eq(socialDraftsTable.id, res.body.id));
     expect(row.sourceImportedAt).toBeNull();
-    const list = await as(0).get("/social-drafts?status=awaiting_review");
-    expect(list.body.map((d: { id: number }) => d.id)).toContain(res.body.id);
+    expect(row.createdByAdminId).toBe(adminIds[0]);
+  });
+
+  it("stays out of the queue until it is edited, then shows who made it", async () => {
+    const res = await as(0).post("/social-drafts", { cardInput: signing, packId: null });
+    const ids = async () =>
+      ((await as(0).get("/social-drafts?status=awaiting_review")).body as { id: number }[]).map(
+        (d) => d.id,
+      );
+    const pending = async () => (await as(0).get("/social-drafts/pending-count")).body.count;
+    const before = await pending();
+    expect(await ids()).not.toContain(res.body.id);
+
+    const edited = await request(app)
+      .patch(`/api/social-drafts/${res.body.id}`)
+      .set("Cookie", cookies[0])
+      .set("x-tenant-id", String(tenantIds[0]))
+      .send({ caption: "Welcome Sam" });
+    expect(edited.status).toBe(200);
+    expect(await ids()).toContain(res.body.id);
+    expect(await pending()).toBe(before + 1);
+    const list = (await as(0).get("/social-drafts")).body as { id: number; createdBy: string }[];
+    expect(list.find((d) => d.id === res.body.id)?.createdBy).toBe("A");
   });
 
   it("a blank canvas keeps the blank pack and its layers", async () => {
