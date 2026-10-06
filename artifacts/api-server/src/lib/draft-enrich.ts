@@ -24,7 +24,7 @@ import {
   type MatchFormat,
   type PhotoType,
 } from "@workspace/scorecard";
-import { DEFAULT_TEMPLATES } from "./social-cards-helpers";
+import { DEFAULT_TEMPLATES, ROUND_SET_CAPTIONS } from "./social-cards-helpers";
 import { objectUrl } from "./photo-store";
 
 /**
@@ -99,7 +99,22 @@ export async function renderDraftCaption(
   engine: string,
   cardInput: Record<string, unknown>,
   appPath: string,
+  /** The draft's source key; picks a whole-round draft's caption variation. */
+  seed: string | null = null,
 ): Promise<string> {
+  const variations = ROUND_SET_CAPTIONS[engine];
+  if (variations && variations.length > 0) {
+    const [settings] = await db
+      .select()
+      .from(socialSettingsTable)
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+    return renderWithSettings(
+      pickCaptionVariation(variations, seed),
+      cardInput,
+      appPath,
+      settings ?? null,
+    );
+  }
   const captionEngine = CAPTION_ENGINE[engine] ?? "ondemand";
   const [[settings], [tpl]] = await Promise.all([
     db.select().from(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId)),
@@ -119,6 +134,15 @@ export async function renderDraftCaption(
     DEFAULT_TEMPLATES.find((t) => t.engine === captionEngine && t.platform === "instagram")
       ?.template ??
     "";
+  return renderWithSettings(template, cardInput, appPath, settings ?? null);
+}
+
+function renderWithSettings(
+  template: string,
+  cardInput: Record<string, unknown>,
+  appPath: string,
+  settings: { clubUrl: string | null; clubHashtag: string | null } | null,
+): string {
   const clubUrl = settings?.clubUrl ?? "";
   const hashtag = settings?.clubHashtag ?? "";
   const kind = typeof cardInput.kind === "string" ? cardInput.kind : "";
@@ -132,6 +156,16 @@ export async function renderDraftCaption(
     },
   );
   return truncateForPlatform(raw, "instagram");
+}
+
+/**
+ * One of a whole-round draft's caption variations for its seed: the same round
+ * always reads the same, consecutive rounds spread across the variations. With
+ * no seed, the first.
+ */
+export function pickCaptionVariation(variations: readonly string[], seed: string | null): string {
+  if (!seed) return variations[0] ?? "";
+  return variations[hash32(seed) % variations.length] ?? "";
 }
 
 /** `/players/42` → 42: most player cards link to the player's page. */
@@ -719,7 +753,13 @@ export async function enrichDraft(input: EnrichInput): Promise<DraftEnrichment> 
   const playerId = input.playerId ?? playerIdFromAppPath(input.appPath);
   const [packId, caption, photo] = await Promise.all([
     resolveDraftPack(input.tenantId, kind),
-    renderDraftCaption(input.tenantId, input.engine, input.cardInput, input.appPath),
+    renderDraftCaption(
+      input.tenantId,
+      input.engine,
+      input.cardInput,
+      input.appPath,
+      input.seed ?? null,
+    ),
     pickDraftPhoto(input.tenantId, {
       playerId,
       grade,
