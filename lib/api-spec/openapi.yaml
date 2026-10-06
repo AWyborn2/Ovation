@@ -17987,6 +17987,15 @@ components:
         photoSource: { type: ["string", "null"] }
         adjustments: {}
         editedAt: { type: ["string", "null"], format: date-time }
+        createdByAdminId:
+          type: ["integer", "null"]
+          description: "The admin who made the draft by hand; null for drafts the sweep made."
+        createdBy:
+          type: ["string", "null"]
+          description: >-
+            The name of the admin who made the draft by hand (in the queue list);
+            null for drafts the sweep made and for drafts from before this was
+            recorded.
         staleSince:
           type: ["string", "null"]
           format: date-time

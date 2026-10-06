@@ -7015,6 +7015,16 @@ export interface SocialDraft {
   /** @nullable */
   editedAt?: string | null;
   /**
+     * The admin who made the draft by hand; null for drafts the sweep made.
+     * @nullable
+     */
+  createdByAdminId?: number | null;
+  /**
+     * The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.
+     * @nullable
+     */
+  createdBy?: string | null;
+  /**
      * Set when a posted draft's source data changed after it was shared
      * @nullable
      */
