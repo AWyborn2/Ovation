@@ -1,4 +1,4 @@
-import { and, eq, or, type SQL } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "./index";
 import {
   juniorShirtNumbersTable,
@@ -145,4 +145,79 @@ export async function carriedNumberFor(
   // entry); prefer the one linked to the player.
   const linked = playerId !== null ? rows.find((r) => r.playerId === playerId) : undefined;
   return (linked ?? rows[0])?.number ?? null;
+}
+
+/** Longest display name a register writer stores (KTD9: names are trimmed and capped). */
+export const SHIRT_NUMBER_NAME_MAX = 120;
+
+/** A register display name: trimmed, inner whitespace collapsed, capped at {@link SHIRT_NUMBER_NAME_MAX}. */
+export function cleanShirtNumberName(value: string | null | undefined): string {
+  return (value ?? "").trim().replace(/\s+/g, " ").slice(0, SHIRT_NUMBER_NAME_MAX);
+}
+
+/**
+ * The number an automatically created entry keeps under the club's duplicate
+ * policy (KTD9): under `block`, a number another entry in the season already
+ * wears is left off (the entry is created unnumbered); under `warn` it is kept.
+ * `taken` holds the season's numbers in use, compared as exact strings (KTD3).
+ */
+export function numberAfterDuplicatePolicy(
+  number: string | null,
+  taken: ReadonlySet<string>,
+  policy: ShirtNumberDuplicatePolicy,
+): string | null {
+  if (number === null) return null;
+  return policy === "block" && taken.has(number) ? null : number;
+}
+
+/** The numbers worn in a tenant's senior register for one season (for the block-policy skip). */
+export async function seasonNumbersInUse(
+  executor: Reader,
+  tenantId: number,
+  season: number,
+): Promise<Set<string>> {
+  const rows = await executor
+    .select({ number: shirtNumbersTable.number })
+    .from(shirtNumbersTable)
+    .where(
+      and(
+        eq(shirtNumbersTable.tenantId, tenantId),
+        eq(shirtNumbersTable.season, season),
+        isNotNull(shirtNumbersTable.number),
+      ),
+    );
+  return new Set(rows.flatMap((r) => (r.number === null ? [] : [r.number])));
+}
+
+/**
+ * Link a held senior entry to a player in the tenant's id space (KTD2, KTD9):
+ * sets `playerId` only while the entry is still held, and only when no other
+ * entry of the same tenant and season is already linked to that player (the
+ * per-person unique index), so re-runs and races are no-ops. The number is
+ * untouched. Returns whether the entry was linked.
+ *
+ * The caller vouches that `playerId` is in the tenant's space (a row of the
+ * tenant's `player_id_map`, below the fill-in range).
+ */
+export async function linkHeldShirtNumberEntry(
+  executor: Pick<Db, "update">,
+  args: { tenantId: number; entryId: number; playerId: number },
+): Promise<boolean> {
+  const rows = await executor
+    .update(shirtNumbersTable)
+    .set({ playerId: args.playerId, updatedAt: new Date() })
+    .where(
+      and(
+        eq(shirtNumbersTable.tenantId, args.tenantId),
+        eq(shirtNumbersTable.id, args.entryId),
+        isNull(shirtNumbersTable.playerId),
+        sql`not exists (
+          select 1 from shirt_numbers s2
+           where s2.tenant_id = ${args.tenantId}
+             and s2.season = ${shirtNumbersTable.season}
+             and s2.player_id = ${args.playerId})`,
+      ),
+    )
+    .returning({ id: shirtNumbersTable.id });
+  return rows.length > 0;
 }

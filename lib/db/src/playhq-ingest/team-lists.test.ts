@@ -66,11 +66,78 @@ describe("lineupToTeamList", () => {
       ]),
     );
     expect(list).toEqual([
-      { order: 1, playerId: 12, displayName: "Cam Skipper", role: "C/WK" },
-      { order: 2, displayName: "Fill In" },
-      { order: 3, displayName: "New Face" },
+      {
+        order: 1,
+        playerId: 12,
+        displayName: "Cam Skipper",
+        role: "C/WK",
+        participantId: A.toLowerCase(),
+      },
+      // A fill-in id (>= 90000) still gets no playerId, but keeps its participant.
+      { order: 2, displayName: "Fill In", participantId: B },
+      // An unmapped participant keeps its participantId and has no playerId.
+      { order: 3, displayName: "New Face", participantId: C },
     ]);
     expect(sameTeamList(list, [...list])).toBe(true);
     expect(sameTeamList(list, list.slice(1))).toBe(false);
+  });
+});
+
+describe("lineupToTeamList participant ids (season shirt numbers, U5)", () => {
+  it("stores the participant lowercased, and omits it for a name-only row", () => {
+    const list = lineupToTeamList(
+      [
+        {
+          participantId: A,
+          name: " Upper Case ",
+          position: 1,
+          isCaptain: false,
+          isWicketKeeper: false,
+        },
+        {
+          participantId: null,
+          name: "No Id",
+          position: 2,
+          isCaptain: false,
+          isWicketKeeper: false,
+        },
+      ],
+      new Map(),
+    );
+    expect(list).toEqual([
+      { order: 1, displayName: "Upper Case", participantId: A.toLowerCase() },
+      { order: 2, displayName: "No Id" },
+    ]);
+  });
+});
+
+describe("sameTeamList", () => {
+  it("treats a list saved before participant ids were kept as changed, so the sync rewrites it", () => {
+    const fresh = lineupToTeamList(
+      [
+        {
+          participantId: C,
+          name: "New Face",
+          position: 1,
+          isCaptain: false,
+          isWicketKeeper: false,
+        },
+      ],
+      new Map(),
+    );
+    const legacy = [{ order: 1, displayName: "New Face" }];
+    expect(sameTeamList(legacy, fresh)).toBe(false);
+    expect(sameTeamList(fresh, [{ participantId: C, displayName: "New Face", order: 1 }])).toBe(
+      true,
+    );
+  });
+
+  it("compares participant ids case-insensitively", () => {
+    expect(
+      sameTeamList(
+        [{ order: 1, displayName: "X", participantId: A }],
+        [{ order: 1, displayName: "X", participantId: A.toLowerCase() }],
+      ),
+    ).toBe(true);
   });
 });

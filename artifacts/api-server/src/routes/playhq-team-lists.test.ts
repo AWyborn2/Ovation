@@ -251,9 +251,15 @@ describe("PlayHQ named side → team list → Team List draft", () => {
     const { list } = await teamList();
     expect(list).toMatchObject({ source: "playhq", isPublished: true });
     expect(list.players).toEqual([
-      { order: 1, playerId: playerIds[0], displayName: "Cam Skipper", role: "C" },
-      { order: 2, playerId: playerIds[1], displayName: "Pat Snapped" },
-      { order: 3, displayName: "Nina Newcomer" },
+      {
+        order: 1,
+        playerId: playerIds[0],
+        participantId: P_CAPTAIN,
+        displayName: "Cam Skipper",
+        role: "C",
+      },
+      { order: 2, playerId: playerIds[1], participantId: P_PHOTO, displayName: "Pat Snapped" },
+      { order: 3, participantId: P_NEW, displayName: "Nina Newcomer" },
     ]);
   });
 

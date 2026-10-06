@@ -15,7 +15,9 @@ import {
   loadRows,
   projectFixtures,
   projectTeamLists,
+  linkHeldShirtNumbers,
   rowsFromDump,
+  syncLineupShirtNumbers,
   type Dump,
   type LoadRows,
   type Queryable,
@@ -159,6 +161,21 @@ export async function ingestPlayhqDump(
       warnings.push(`team list projection failed: ${err instanceof Error ? err.message : err}`);
     }
 
+  // Season shirt numbers (KTD9): lineup players join their fixture's season register, for
+  // tenants with the feature on. Runs on every sync (idempotent) so a list saved earlier
+  // still feeds the register; a failure is a warning and never fails the ingest.
+  if (orgIds.length)
+    try {
+      await syncLineupShirtNumbers({
+        orgIds,
+        syncEnabledOnly: true,
+        log: (line) => log.info(`playhq shirt numbers: ${line}`),
+      });
+    } catch (err) {
+      log.error({ err }, "playhq ingest: shirt-number lineup sync failed");
+      warnings.push(`shirt-number lineup sync failed: ${err instanceof Error ? err.message : err}`);
+    }
+
   const tenants: PlayhqIngestResponse["tenants"] = [];
   for (const s of summaries) {
     let swept = false;
@@ -181,6 +198,22 @@ export async function ingestPlayhqDump(
   }
 
   const centralProjection = await projectDumpToCentral(rows, warnings, log);
+
+  // Held shirt-number entries link once their player has played for the club in central
+  // (F2): after the projection, so this sync's results count. Reads central only.
+  if (orgIds.length)
+    try {
+      await linkHeldShirtNumbers({
+        orgIds,
+        syncEnabledOnly: true,
+        log: (line) => log.info(`playhq shirt numbers: ${line}`),
+      });
+    } catch (err) {
+      log.error({ err }, "playhq ingest: shirt-number held-entry link failed");
+      warnings.push(
+        `shirt-number held-entry link failed: ${err instanceof Error ? err.message : err}`,
+      );
+    }
 
   let status = meta.status ?? "ok";
   if (warnings.length && status === "ok") status = "partial";
