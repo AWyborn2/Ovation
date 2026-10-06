@@ -25,7 +25,7 @@ import {
   captionTemplatesTable,
   notificationsTable,
 } from "@workspace/db";
-import { closePlayhqIngestPool } from "@workspace/db/playhq-ingest";
+import { closePlayhqIngestPool, projectTeamLists } from "@workspace/db/playhq-ingest";
 import { teamListKey } from "../lib/engines/team-list";
 
 const SQL_DIR = path.resolve(__dirname, "../../../../scripts/sql");
@@ -292,5 +292,277 @@ describe("PlayHQ named side → team list → Team List draft", () => {
     const { list } = await teamList();
     expect(list.source).toBe("admin");
     expect(list.players).toEqual(mine);
+  });
+});
+
+// R34: once a fixture is played, the side PlayHQ recorded replaces a list finalised in the
+// Selection Hub (source = "selection"). Before the match, and for an admin's list always,
+// the selection stands.
+describe("after the match: PlayHQ's side replaces a Selection Hub list", () => {
+  const DAY = 86_400_000;
+  const NOW = new Date();
+  const ago = (days: number) => new Date(NOW.getTime() - days * DAY);
+  const ids = {
+    played: randomUUID(),
+    lineupOnly: randomUUID(),
+    noSide: randomUUID(),
+    unfinished: randomUUID(),
+    adminPast: randomUUID(),
+    tomorrow: randomUUID(),
+    stale: randomUUID(),
+  };
+  const hub = [{ order: 1, displayName: "Hub Pick" }];
+  const fixtureOf = new Map<string, number>();
+
+  async function playhqMatch(id: string, startAt: Date, status: string, statusId: number) {
+    await admin.query(
+      `insert into playhq.matches
+         (id, grade_id, status, status_id, start_at, home_team_id, home_org_id,
+          away_team_id, away_org_id, raw, fetched_at)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, '{}'::jsonb, now())`,
+      [id, GRADE, status, statusId, startAt.toISOString(), TEAM_OURS, ORG, TEAM_THEIRS, OPP],
+    );
+  }
+  async function scorecard(id: string, ours: Named[]) {
+    const raw = {
+      id,
+      status: "COMPLETED",
+      teams: [
+        { id: TEAM_OURS, players: ours },
+        { id: TEAM_THEIRS, players: [named(P_OPP, "Otto Opposition")] },
+      ],
+      innings: [],
+    };
+    await admin.query(
+      `insert into playhq.scorecards (match_id, grade_id, status, raw, fetched_at)
+       values ($1, $2, 'COMPLETED', $3::jsonb, now())`,
+      [id, GRADE, JSON.stringify(raw)],
+    );
+  }
+  async function lineup(id: string, ours: Named[]) {
+    await admin.query(
+      `insert into playhq.match_lineups (match_id, team_id, players, fetched_at)
+       values ($1, $2, $3::jsonb, now())`,
+      [id, TEAM_OURS, JSON.stringify(ours)],
+    );
+  }
+  async function fixtureWithList(matchId: string, startAt: Date, source: string) {
+    const [fx] = await db
+      .insert(fixturesTable)
+      .values({
+        tenantId,
+        grade: "F Grade",
+        opponentName: "Rivals",
+        startAt,
+        source: "playhq",
+        playhqMatchId: matchId,
+      })
+      .returning();
+    await db
+      .insert(teamListsTable)
+      .values({ tenantId, fixtureId: fx.id, players: hub, isPublished: true, source });
+    fixtureOf.set(matchId, fx.id);
+  }
+  async function listOf(matchId: string) {
+    const [list] = await db
+      .select()
+      .from(teamListsTable)
+      .where(
+        and(
+          eq(teamListsTable.tenantId, tenantId),
+          eq(teamListsTable.fixtureId, fixtureOf.get(matchId)!),
+        ),
+      );
+    return list;
+  }
+  const allIds = () => Object.values(ids);
+
+  beforeAll(async () => {
+    const side = [named(P_CAPTAIN, "Cam Skipper", ["Captain"]), named(P_NEW, "Nina Newcomer")];
+    // Played yesterday, finished: the scorecard's side wins over the pre-match lineup.
+    await playhqMatch(ids.played, ago(1), "COMPLETED", 3);
+    await scorecard(ids.played, side);
+    await lineup(ids.played, [named(P_PHOTO, "Pat Snapped")]);
+    await fixtureWithList(ids.played, ago(1), "selection");
+    // Finished with no scorecard side loaded yet: the last named lineup is used.
+    await playhqMatch(ids.lineupOnly, ago(2), "COMPLETED", 3);
+    await lineup(ids.lineupOnly, [named(P_PHOTO, "Pat Snapped")]);
+    await fixtureWithList(ids.lineupOnly, ago(2), "selection");
+    // Finished, but PlayHQ holds no side for the club: keep the selection.
+    await playhqMatch(ids.noSide, ago(1), "COMPLETED", 3);
+    await fixtureWithList(ids.noSide, ago(1), "selection");
+    // Started yesterday, not finished (a two-day game between its days).
+    await playhqMatch(ids.unfinished, ago(1), "IN_PROGRESS", 1);
+    await lineup(ids.unfinished, side);
+    await fixtureWithList(ids.unfinished, ago(1), "selection");
+    // An admin's list stays the record, played or not.
+    await playhqMatch(ids.adminPast, ago(1), "COMPLETED", 3);
+    await scorecard(ids.adminPast, side);
+    await fixtureWithList(ids.adminPast, ago(1), "admin");
+    // Tomorrow's selection stands before the match, whatever PlayHQ names.
+    await playhqMatch(ids.tomorrow, new Date(NOW.getTime() + DAY), "UPCOMING", 0);
+    await lineup(ids.tomorrow, side);
+    await fixtureWithList(ids.tomorrow, new Date(NOW.getTime() + DAY), "selection");
+    // Outside the 7-day window: left alone.
+    await playhqMatch(ids.stale, ago(10), "COMPLETED", 3);
+    await scorecard(ids.stale, side);
+    await fixtureWithList(ids.stale, ago(10), "selection");
+  });
+
+  afterAll(async () => {
+    await admin.query(`delete from playhq.match_lineups where match_id = any($1::uuid[])`, [
+      allIds(),
+    ]);
+    await admin.query(`delete from playhq.scorecards where match_id = any($1::uuid[])`, [allIds()]);
+    await admin.query(`delete from playhq.fixture_changes where match_id = any($1::uuid[])`, [
+      allIds(),
+    ]);
+    await admin.query(`delete from playhq.matches where id = any($1::uuid[])`, [allIds()]);
+  });
+
+  it("a failing replacement pass is logged and skipped; the projection still runs", async () => {
+    // The played-sides query (the only one reading scorecards) blows up.
+    const central = {
+      query: (text: string, params?: unknown[]) =>
+        text.includes("playhq.scorecards")
+          ? Promise.reject(new Error("invalid input syntax for type uuid"))
+          : admin.query(text, params),
+    } as unknown as typeof admin;
+    const lines: string[] = [];
+    const [summary] = await projectTeamLists({
+      tenantId,
+      central,
+      now: NOW,
+      log: (line) => lines.push(line),
+    });
+    expect(summary).toMatchObject({ tenantId, replacedSelection: 0 });
+    expect(lines.some((l) => /played-selection replacement failed/.test(l))).toBe(true);
+    expect((await listOf(ids.played)).source).toBe("selection");
+  });
+
+  it("replaces only finished, recent selection lists with PlayHQ's side, as source playhq", async () => {
+    const [summary] = await projectTeamLists({ tenantId, central: admin, now: NOW, log: () => {} });
+    expect(summary.replacedSelection).toBe(2);
+
+    const played = await listOf(ids.played);
+    expect(played).toMatchObject({ source: "playhq", isPublished: true });
+    expect(played.players).toEqual([
+      { order: 1, playerId: playerIds[0], displayName: "Cam Skipper", role: "C" },
+      { order: 2, displayName: "Nina Newcomer" },
+    ]);
+    const lineupOnly = await listOf(ids.lineupOnly);
+    expect(lineupOnly.source).toBe("playhq");
+    expect(lineupOnly.players).toEqual([
+      { order: 1, playerId: playerIds[1], displayName: "Pat Snapped" },
+    ]);
+
+    for (const [id, source] of [
+      [ids.noSide, "selection"],
+      [ids.unfinished, "selection"],
+      [ids.adminPast, "admin"],
+      [ids.tomorrow, "selection"],
+      [ids.stale, "selection"],
+    ] as const) {
+      const list = await listOf(id);
+      expect({ id, source: list.source, players: list.players }).toEqual({
+        id,
+        source,
+        players: hub,
+      });
+    }
+  });
+
+  it("is idempotent: a second run finds nothing left to replace", async () => {
+    const [summary] = await projectTeamLists({ tenantId, central: admin, now: NOW, log: () => {} });
+    expect(summary.replacedSelection).toBe(0);
+    expect((await listOf(ids.played)).source).toBe("playhq");
+  });
+
+  it("runs from a scorecard-only sync (the match-day / day-after plans name no lineups)", async () => {
+    // The two-day game finishes; the next run lists it COMPLETED with its scorecard and
+    // names no upcoming lineups.
+    const at = new Date().toISOString();
+    const side = [named(P_PHOTO, "Pat Snapped"), named(P_NEW, "Nina Newcomer")];
+    const team = (id: string, org: string, name: string, players?: Named[]) => ({
+      id,
+      displayName: `${name} F Grade`,
+      name: "F Grade",
+      owningOrganisation: { id: org, name },
+      ...(players ? { players } : {}),
+    });
+    const match = {
+      id: ids.unfinished,
+      status: "COMPLETED",
+      statusId: 3,
+      matchType: "Two Day",
+      matchTypeId: 3,
+      round: { id: randomUUID(), name: "Round 2", shortName: "R2" },
+      grade: { id: GRADE, name: "F Grade" },
+      matchSchedule: [{ matchDay: 1, startDateTime: ago(1).toISOString() }],
+      venue: { name: "Home Oval", playingSurface: { name: "Home Oval - 1" } },
+    };
+    const res = await request(app)
+      .post("/api/internal/playhq/ingest")
+      .set("x-sync-secret", SECRET)
+      .send({
+        collector: "manual",
+        planName: "dayafter",
+        dump: {
+          version: "2.0.0",
+          exportedAt: at,
+          origin: "https://play.cricket.com.au",
+          records: [
+            {
+              key: "plan|1",
+              kind: "plan",
+              id: at,
+              meta: {},
+              fetchedAt: at,
+              data: { orgId: ORG, seasons: "current", kinds: ["matches"], scorecards: "since" },
+            },
+            {
+              key: `matches|${GRADE}`,
+              kind: "matches",
+              id: GRADE,
+              meta: { gradeId: GRADE },
+              fetchedAt: at,
+              data: {
+                matches: [
+                  {
+                    ...match,
+                    teams: [
+                      team(TEAM_OURS, ORG, "Lineup Cricket Club"),
+                      team(TEAM_THEIRS, OPP, "Rivals Cricket Club"),
+                    ],
+                  },
+                ],
+              },
+            },
+            {
+              key: `scorecard|${ids.unfinished}`,
+              kind: "scorecard",
+              id: ids.unfinished,
+              meta: { gradeId: GRADE },
+              fetchedAt: at,
+              data: {
+                ...match,
+                teams: [
+                  team(TEAM_OURS, ORG, "Lineup Cricket Club", side),
+                  team(TEAM_THEIRS, OPP, "Rivals Cricket Club", [named(P_OPP, "Otto Opposition")]),
+                ],
+                innings: [],
+              },
+            },
+          ],
+        },
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.warnings).toEqual([]);
+    const list = await listOf(ids.unfinished);
+    expect(list.source).toBe("playhq");
+    expect(list.players).toEqual([
+      { order: 1, playerId: playerIds[1], displayName: "Pat Snapped" },
+      { order: 2, displayName: "Nina Newcomer" },
+    ]);
   });
 });

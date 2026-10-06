@@ -56,6 +56,14 @@ tags:
     description: Admin-configurable navigation menus and quick-link/tile cards
   - name: Storage
     description: Object storage upload and serving endpoints.
+  - name: squad
+    description: The club's squad register for player availability, imported from the PlayHQ participant export (admin only; contact details never leave admin payloads)
+  - name: availability
+    description: The weekly availability round — the club's schedule, the current round's progress and admin "Run now" steps (admin only)
+  - name: selection
+    description: The Selection Hub — the round board, versioned side saves, finalise and re-open, and reminders (admins and captains; never contact details)
+  - name: availability-respond
+    description: The player availability page behind a personal link (token in the path, no login; rate-limited, never logged)
 paths:
   /healthz:
     get:
@@ -2017,6 +2025,610 @@ paths:
           description: Deleted
         "404":
           description: Not found
+
+  /squad:
+    get:
+      operationId: listSquadMembers
+      tags: [squad]
+      summary: List the squad register (admin)
+      description: |
+        Every member of the club's squad register. Contact details are reported
+        as presence flags only (has a name, mobile or email; SMS opted out) —
+        `getSquadMember` returns the values.
+      responses:
+        "200":
+          description: Squad members, by last then first name
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SquadMember"
+        "401":
+          description: Not signed in as this club's admin
+
+  /squad/import:
+    post:
+      operationId: importSquad
+      tags: [squad]
+      summary: Import the PlayHQ participant export (admin)
+      description: |
+        Upserts the register from the PlayHQ participant CSV by (club, Profile
+        ID). Only the identity, eligibility, grade and contact columns are read;
+        every other column is discarded unread and never stored. Players with an
+        active registration in the file's current season become active members;
+        other rows are skipped with a reason. Members missing from the file are
+        kept, and an admin's hand-set active flag is never overridden. Generated
+        clients should treat the file as `Blob`; the web app posts FormData.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The PlayHQ participant export (CSV)
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadImportResult"
+        "400":
+          description: Missing file, unreadable CSV or a missing required column
+        "401":
+          description: Not signed in as this club's admin
+
+  /squad/{id}:
+    get:
+      operationId: getSquadMember
+      tags: [squad]
+      summary: Get one squad member with contact details (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The member, with contact values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadMemberDetail"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateSquadMember
+      tags: [squad]
+      summary: Update a squad member (admin)
+      description: |
+        Setting `active` records it as the admin's choice, which later imports
+        never override. Changing a mobile number clears that contact's SMS
+        opt-out. `linkedPlayerId` cannot be a fill-in id (>= 90000).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SquadMemberUpdate"
+      responses:
+        "200":
+          description: The updated member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadMemberDetail"
+        "400":
+          description: Invalid body
+        "404":
+          description: Not found
+    delete:
+      operationId: removeSquadMember
+      tags: [squad]
+      summary: Remove a member's personal details on request (admin)
+      description: |
+        For a player's or guardian's removal request. Contact details and date
+        of birth are deleted outright; the row keeps only the name (so past
+        selections still read correctly) and is set inactive by the admin, so
+        it is never contacted and later imports don't restore its details.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+        "404":
+          description: Not found
+
+  /availability/settings:
+    get:
+      operationId: getAvailabilitySettings
+      tags: [availability]
+      summary: The club's weekly availability schedule (admin)
+      description: |
+        Send, reminder, cut-off and finalise-by days and times in Perth, the
+        club's switch (off by default — nothing is sent until it is on), the SMS
+        switch and the selection rule. A club that has never saved settings gets
+        the defaults.
+      responses:
+        "200":
+          description: The settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilitySettings"
+        "401":
+          description: Not signed in as this club's admin
+    put:
+      operationId: updateAvailabilitySettings
+      tags: [availability]
+      summary: Save the club's weekly availability schedule (admin)
+      description: |
+        Replaces the settings. Within the week that starts on the send day, the
+        steps must run in order — send, then reminder, then cut-off, with
+        finalise-by no earlier than the cut-off — and the cut-off must be no
+        later than that week's Saturday.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvailabilitySettingsInput"
+      responses:
+        "200":
+          description: The saved settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilitySettings"
+        "400":
+          description: Invalid body or steps out of order
+        "401":
+          description: Not signed in as this club's admin
+
+  /availability/rounds/current:
+    get:
+      operationId: getCurrentAvailabilityRound
+      tags: [availability]
+      summary: The current round's schedule, progress and response counts (admin)
+      description: |
+        The round for this send week's weekend: each step's scheduled time, when
+        it started and finished (null until then), and how many members asked
+        said Yes, Maybe or No, or haven't answered. Answers after the cut-off
+        has completed count as late. `roundId` is null until the round's first
+        step runs.
+      responses:
+        "200":
+          description: The current round
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityRoundStatus"
+        "401":
+          description: Not signed in as this club's admin
+
+  /availability/rounds/current/{step}:
+    post:
+      operationId: runAvailabilityStep
+      tags: [availability]
+      summary: Run a step of the current round now (admin)
+      description: |
+        Claims the step exactly as the hourly scheduler does, so it never runs
+        twice: a send or cut-off that has already started returns 409. A
+        reminder may be sent again by hand after it has run, but each recipient
+        is reminded by hand at most once every 12 hours; recipients inside that
+        window are skipped. Reminders need the requests to have gone out.
+      parameters:
+        - name: step
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [send, remind, cutoff]
+      responses:
+        "200":
+          description: The step ran
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityStepResult"
+        "400":
+          description: Availability is switched off for this club
+        "401":
+          description: Not signed in as this club's admin
+        "409":
+          description: The step has already run, or the requests haven't gone out yet
+
+  /selection/board:
+    get:
+      operationId: getSelectionBoard
+      tags: [selection]
+      summary: The Selection Hub board for one section (admin or captain)
+      description: |
+        The current round's header (step times, progress and the section's
+        response counts), every side drafted for a fixture of the section with
+        its slots, roles, state, version and whether the caller may edit it, the
+        pool of active members of the section not placed in any side of the
+        round, and the latest changes. Never carries a mobile or an email.
+      parameters:
+        - name: section
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/SquadSection"
+      responses:
+        "200":
+          description: The board
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelectionBoard"
+        "401":
+          description: Not signed in as this club's admin or captain
+    put:
+      operationId: saveSelectionBoard
+      tags: [selection]
+      summary: Save changes to one or more sides of the round (admin or captain)
+      description: |
+        Each change replaces a whole side: its 11 slots, captain and keeper,
+        with the version the caller last saw. Everything is applied in one
+        transaction or nothing is: a side the caller may not edit (or a member
+        taken from one) → 403; a finalised side or a stale version → 409; not
+        exactly 11 slots, a member twice in the round, or an unknown or inactive
+        member → 400. A captain or keeper who is not in their side is cleared
+        and the clearing logged. Returns the board of the first changed side's
+        section.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelectionBoardSave"
+      responses:
+        "200":
+          description: Saved; the updated board
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelectionBoard"
+        "400":
+          description: Invalid change (slot count, duplicate or unknown member)
+        "401":
+          description: Not signed in as this club's admin or captain
+        "403":
+          description: The caller may not edit a side the change touches
+        "404":
+          description: Side not found
+        "409":
+          description: A side is finalised or was changed since the caller loaded it
+
+  /selection/{id}/finalise:
+    post:
+      operationId: finaliseSelection
+      tags: [selection]
+      summary: Finalise a side and publish it as the fixture's team list (admin or captain)
+      description: |
+        Locks the side, publishes it as the fixture's team list (source
+        "selection") and messages each newly selected member (or their
+        guardians) with the match details and a "can't make it" link. On a
+        re-finalise, members dropped since the last finalise are told too. A
+        side may be finalised without a captain or keeper. The body carries the
+        side's version as loaded, so a side changed since can't be published
+        unseen. A member every delivery failed for is not marked notified, so
+        the next finalise tries them again. A private member is published as
+        "Private Player". Refused once the match has started.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelectionFinaliseBody"
+      responses:
+        "200":
+          description: Finalised
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelectionFinaliseResult"
+        "400":
+          description: No version in the body
+        "401":
+          description: Not signed in as this club's admin or captain
+        "403":
+          description: The caller may not edit this side
+        "404":
+          description: Side not found
+        "409":
+          description: Already finalised, changed since the caller loaded it, or the match has started
+
+  /selection/{id}/reopen:
+    post:
+      operationId: reopenSelection
+      tags: [selection]
+      summary: Re-open a finalised side for changes (admin or captain)
+      description: |
+        Returns the side to draft and logs it. The published team list stays as
+        last finalised until the side is finalised again. Refused once the match
+        has started.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Re-opened
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelectionSide"
+        "401":
+          description: Not signed in as this club's admin or captain
+        "403":
+          description: The caller may not edit this side
+        "404":
+          description: Side not found
+        "409":
+          description: The side is not finalised, or the match has started
+
+  /selection/rounds/current/remind:
+    post:
+      operationId: remindSelectionNonResponders
+      tags: [selection]
+      summary: Remind the section's members who haven't answered (admin or captain)
+      description: |
+        Sends the reminder to members of the section asked this round who
+        haven't answered. Each recipient is reminded by hand at most once every
+        12 hours; recipients inside that window are skipped.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelectionRemindBody"
+      responses:
+        "200":
+          description: Reminders sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityStepResult"
+        "401":
+          description: Not signed in as this club's admin or captain
+        "403":
+          description: The caller can't edit any side at this club
+        "409":
+          description: The requests for this round haven't gone out yet
+
+  /availability/respond/{token}:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        description: The personal link token (never logged)
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+    get:
+      operationId: getAvailabilityResponse
+      tags: [availability-respond]
+      summary: The player's availability page for one personal link (no login)
+      description: |
+        The token resolves to one recipient (account holder or guardian) of one
+        member in one round. Returns that member's dates for the round with the
+        current answers, their future away periods, this recipient's own
+        contact (masked), and once their side is final, the match. An unknown,
+        expired or revoked token, or one of another club, is a 404 without
+        detail. Rate-limited by IP.
+      responses:
+        "200":
+          description: The player's page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponsePage"
+        "404":
+          description: Unknown, expired or revoked link
+        "429":
+          description: Too many requests
+    put:
+      operationId: saveAvailabilityAnswers
+      tags: [availability-respond]
+      summary: Save Yes / No / Maybe answers for the member's dates
+      description: |
+        Each date must be one the member is asked about this round. Either
+        guardian may answer and the latest answer wins. Answers after cut-off
+        are kept and marked late. A date on which the member is in a finalised
+        side can't be changed (409); only "can't make it" is allowed then.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvailabilityAnswersInput"
+      responses:
+        "200":
+          description: Saved; the updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponsePage"
+        "400":
+          description: Invalid body, or a date the member isn't asked about
+        "404":
+          description: Unknown, expired or revoked link
+        "409":
+          description: The member's side for that date is final
+        "429":
+          description: Too many requests
+
+  /availability/respond/{token}/away:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        description: The personal link token (never logged)
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+    post:
+      operationId: addAvailabilityAway
+      tags: [availability-respond]
+      summary: Mark future dates the member will be away
+      description: |
+        Inclusive dates, not in the past, at most 120 days long. Weekends the
+        period covers are recorded as unavailable and not asked about again;
+        dates of this round it covers are answered No.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvailabilityAwayInput"
+      responses:
+        "201":
+          description: Added; the updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponsePage"
+        "400":
+          description: Invalid range
+        "404":
+          description: Unknown, expired or revoked link
+        "429":
+          description: Too many requests
+
+  /availability/respond/{token}/away/{awayId}:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        description: The personal link token (never logged)
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+      - name: awayId
+        in: path
+        required: true
+        schema:
+          type: integer
+    delete:
+      operationId: removeAvailabilityAway
+      tags: [availability-respond]
+      summary: Remove one of the member's away periods
+      responses:
+        "200":
+          description: Removed; the updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponsePage"
+        "404":
+          description: Unknown link, or not this member's away period
+        "429":
+          description: Too many requests
+
+  /availability/respond/{token}/contact:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        description: The personal link token (never logged)
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+    patch:
+      operationId: updateAvailabilityContact
+      tags: [availability-respond]
+      summary: Correct this recipient's own mobile or email
+      description: |
+        Changes only the contact of the recipient the link was sent to. A
+        notice goes to the previous mobile and email, the change is flagged for
+        the club's admins, and every other live link of this recipient for the
+        round stops working (this one keeps working). A new mobile clears that
+        contact's SMS opt-out. The contact is returned masked. One change per
+        member every 12 hours; another within that time is refused with
+        `{"error": "too_many_changes"}`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvailabilityContactInput"
+      responses:
+        "200":
+          description: Saved; the updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponsePage"
+        "400":
+          description: Not an Australian mobile, not an email, or nothing to change
+        "404":
+          description: Unknown, expired or revoked link
+        "429":
+          description: Too many requests, or a contact change within 12 hours of the last (too_many_changes)
+
+  /availability/respond/{token}/withdraw:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        description: The personal link token (never logged)
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+    post:
+      operationId: withdrawAvailability
+      tags: [availability-respond]
+      summary: '"Can''t make it" from a selected player'
+      description: |
+        Re-opens the member's slot as a gap "withdrew", returns the side to
+        draft, removes them from the published team list (the rest stays
+        published), records No for the match date and alerts the captains and
+        admins.
+      responses:
+        "200":
+          description: Withdrawn; the updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponsePage"
+        "404":
+          description: Unknown, expired or revoked link
+        "409":
+          description: The member isn't in a side this round (not_selected), or the match has started (match_started)
+        "429":
+          description: Too many requests
 
   /awards/{id}/voting:
     get:
@@ -4032,6 +4644,8 @@ paths:
                 $ref: "#/components/schemas/TeamList"
         "404":
           description: Fixture not found
+        "409":
+          description: The list was finalised in the Selection Hub; change it there
 
   /fixtures-results:
     get:
@@ -11555,6 +12169,976 @@ components:
           items:
             type: string
 
+    SquadSection:
+      type: string
+      enum: [senior, junior]
+
+    SquadContactPresence:
+      type: object
+      description: Which contact details a recipient slot has — never the values.
+      required: [hasName, hasMobile, hasEmail, smsOptedOut]
+      properties:
+        hasName:
+          type: boolean
+        hasMobile:
+          type: boolean
+        hasEmail:
+          type: boolean
+        smsOptedOut:
+          type: boolean
+
+    SquadMember:
+      type: object
+      required:
+        [
+          id,
+          playhqProfileId,
+          firstName,
+          lastName,
+          preferredName,
+          section,
+          active,
+          activeSetByAdmin,
+          under18,
+          gradeHint,
+          teamName,
+          ageGroup,
+          isPrivate,
+          linkedPlayerId,
+          account,
+          guardian1,
+          guardian2,
+          contactChangeFlag,
+          updatedAt,
+        ]
+      properties:
+        id:
+          type: integer
+        playhqProfileId:
+          type: ["string", "null"]
+        firstName:
+          type: string
+        lastName:
+          type: string
+        preferredName:
+          type: ["string", "null"]
+        section:
+          $ref: "#/components/schemas/SquadSection"
+        active:
+          type: boolean
+        activeSetByAdmin:
+          type: boolean
+          description: The admin set `active` by hand; imports never override it.
+        under18:
+          type: ["boolean", "null"]
+          description: From date of birth (Perth today); null when unknown. Under-18s are contacted through their guardians.
+        gradeHint:
+          type: ["string", "null"]
+        teamName:
+          type: ["string", "null"]
+        ageGroup:
+          type: ["string", "null"]
+        isPrivate:
+          type: boolean
+        linkedPlayerId:
+          type: ["integer", "null"]
+        account:
+          $ref: "#/components/schemas/SquadContactPresence"
+        guardian1:
+          $ref: "#/components/schemas/SquadContactPresence"
+        guardian2:
+          $ref: "#/components/schemas/SquadContactPresence"
+        contactChangeFlag:
+          type: boolean
+          description: A player or guardian changed a contact from their link; stays up until an admin clears it.
+        updatedAt:
+          type: string
+
+    SquadContact:
+      type: object
+      required: [name, mobile, email, smsOptedOut]
+      properties:
+        name:
+          type: ["string", "null"]
+        mobile:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        smsOptedOut:
+          type: boolean
+
+    SquadMemberDetail:
+      type: object
+      required:
+        [
+          id,
+          playhqProfileId,
+          firstName,
+          lastName,
+          preferredName,
+          dateOfBirth,
+          section,
+          active,
+          activeSetByAdmin,
+          under18,
+          gradeHint,
+          teamName,
+          ageGroup,
+          isPrivate,
+          linkedPlayerId,
+          account,
+          guardian1,
+          guardian2,
+          contactChangeFlag,
+          contactChangedAt,
+          updatedAt,
+        ]
+      properties:
+        id:
+          type: integer
+        playhqProfileId:
+          type: ["string", "null"]
+        firstName:
+          type: string
+        lastName:
+          type: string
+        preferredName:
+          type: ["string", "null"]
+        dateOfBirth:
+          type: ["string", "null"]
+          description: ISO date (YYYY-MM-DD)
+        section:
+          $ref: "#/components/schemas/SquadSection"
+        active:
+          type: boolean
+        activeSetByAdmin:
+          type: boolean
+        under18:
+          type: ["boolean", "null"]
+        gradeHint:
+          type: ["string", "null"]
+        teamName:
+          type: ["string", "null"]
+        ageGroup:
+          type: ["string", "null"]
+        isPrivate:
+          type: boolean
+        linkedPlayerId:
+          type: ["integer", "null"]
+        account:
+          $ref: "#/components/schemas/SquadContact"
+        guardian1:
+          $ref: "#/components/schemas/SquadContact"
+        guardian2:
+          $ref: "#/components/schemas/SquadContact"
+        contactChangeFlag:
+          type: boolean
+        contactChangedAt:
+          type: ["string", "null"]
+        updatedAt:
+          type: string
+
+    SquadContactUpdate:
+      type: object
+      description: Omitted fields are unchanged; null or "" clears a value.
+      properties:
+        name:
+          type: ["string", "null"]
+        mobile:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+
+    SquadMemberUpdate:
+      type: object
+      properties:
+        active:
+          type: boolean
+        section:
+          $ref: "#/components/schemas/SquadSection"
+        gradeHint:
+          type: ["string", "null"]
+        linkedPlayerId:
+          type: ["integer", "null"]
+        contactChangeFlag:
+          type: boolean
+          description: Set false to clear the contact-changed flag.
+        account:
+          $ref: "#/components/schemas/SquadContactUpdate"
+        guardian1:
+          $ref: "#/components/schemas/SquadContactUpdate"
+        guardian2:
+          $ref: "#/components/schemas/SquadContactUpdate"
+
+    SquadImportSkip:
+      type: object
+      required: [line, name, reason]
+      properties:
+        line:
+          type: integer
+          description: Line in the uploaded file (the header is line 1)
+        name:
+          type: string
+        reason:
+          type: string
+          description: missing_profile_id, missing_name, not_a_player, inactive_status, other_season, other_organisation or duplicate_profile
+
+    SquadImportResult:
+      type: object
+      required: [season, created, updated, deactivated, linked, contactsKept, skipped, skippedByReason]
+      properties:
+        season:
+          type: ["string", "null"]
+          description: The file's current season (its most common Season value)
+        created:
+          type: integer
+        updated:
+          type: integer
+        deactivated:
+          type: integer
+          description: Existing members stood down because their registration is no longer active
+        linked:
+          type: integer
+          description: Members newly linked to a club player record
+        contactsKept:
+          type: integer
+          description: Members whose contacts were kept because a player or guardian changed them from their link and an admin hasn't cleared the flag yet
+        skipped:
+          type: array
+          items:
+            $ref: "#/components/schemas/SquadImportSkip"
+        skippedByReason:
+          type: array
+          items:
+            type: object
+            required: [reason, count]
+            properties:
+              reason:
+                type: string
+              count:
+                type: integer
+
+    AvailabilitySelectionRule:
+      type: string
+      enum: [captains_own_grade, captains_all_grades, admins_only]
+      description: Who may edit a side in the Selection Hub
+
+    AvailabilitySettingsInput:
+      type: object
+      description: |
+        The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);
+        times are 24-hour "HH:MM". Finalise-by is shown to captains only.
+      required:
+        [
+          enabled,
+          smsEnabled,
+          sendDow,
+          sendTime,
+          reminderDow,
+          reminderTime,
+          cutoffDow,
+          cutoffTime,
+          finaliseDow,
+          finaliseTime,
+          selectionRule,
+        ]
+      properties:
+        enabled:
+          type: boolean
+          description: The club's switch; nothing is sent while it is off
+        smsEnabled:
+          type: boolean
+          description: Off → email only
+        sendDow:
+          type: integer
+          minimum: 0
+          maximum: 6
+        sendTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        reminderDow:
+          type: integer
+          minimum: 0
+          maximum: 6
+        reminderTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        cutoffDow:
+          type: integer
+          minimum: 0
+          maximum: 6
+        cutoffTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        finaliseDow:
+          type: integer
+          minimum: 0
+          maximum: 6
+        finaliseTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        selectionRule:
+          $ref: "#/components/schemas/AvailabilitySelectionRule"
+
+    AvailabilitySettings:
+      allOf:
+        - $ref: "#/components/schemas/AvailabilitySettingsInput"
+        - type: object
+          required: [updatedAt]
+          properties:
+            updatedAt:
+              type: ["string", "null"]
+              format: date-time
+              description: Null while the club is on the defaults
+
+    AvailabilityRoundCounts:
+      type: object
+      description: One status per member asked — Yes for any date, else Maybe, else No; None when unanswered
+      required: [yes, maybe, no, none, late, total]
+      properties:
+        yes:
+          type: integer
+        maybe:
+          type: integer
+        no:
+          type: integer
+        none:
+          type: integer
+        late:
+          type: integer
+          description: Members with an answer given after the cut-off
+        total:
+          type: integer
+
+    AvailabilityRoundStatus:
+      type: object
+      required:
+        [
+          enabled,
+          roundId,
+          weekendDate,
+          sendAt,
+          reminderAt,
+          cutoffAt,
+          finaliseAt,
+          sendStartedAt,
+          sendCompletedAt,
+          reminderStartedAt,
+          reminderCompletedAt,
+          cutoffStartedAt,
+          cutoffCompletedAt,
+          counts,
+        ]
+      properties:
+        enabled:
+          type: boolean
+        roundId:
+          type: ["integer", "null"]
+        weekendDate:
+          type: string
+          format: date
+          description: The round's Saturday
+        sendAt:
+          type: string
+          format: date-time
+        reminderAt:
+          type: string
+          format: date-time
+        cutoffAt:
+          type: string
+          format: date-time
+        finaliseAt:
+          type: string
+          format: date-time
+        sendStartedAt:
+          type: ["string", "null"]
+          format: date-time
+        sendCompletedAt:
+          type: ["string", "null"]
+          format: date-time
+        reminderStartedAt:
+          type: ["string", "null"]
+          format: date-time
+        reminderCompletedAt:
+          type: ["string", "null"]
+          format: date-time
+        cutoffStartedAt:
+          type: ["string", "null"]
+          format: date-time
+        cutoffCompletedAt:
+          type: ["string", "null"]
+          format: date-time
+        counts:
+          $ref: "#/components/schemas/AvailabilityRoundCounts"
+
+    AvailabilityStepResult:
+      type: object
+      required: [step, roundId, messaged, away, noFixture, throttled, drafts]
+      properties:
+        step:
+          type: string
+          enum: [send, remind, cutoff]
+        roundId:
+          type: integer
+        messaged:
+          type: integer
+          description: Members messaged
+        away:
+          type: integer
+          description: Members recorded unavailable from an away period instead of being asked
+        noFixture:
+          type: integer
+          description: Members with no fixture to be asked about this round
+        throttled:
+          type: integer
+          description: Members skipped because they were reminded by hand in the last 12 hours
+        drafts:
+          type: integer
+          description: Draft sides created at cut-off
+
+    SelectionMemberStatus:
+      type: string
+      enum: [yes, maybe, no, none]
+      description: The member's answer for the dates they were asked about (none = no reply)
+
+    SelectionMember:
+      type: object
+      description: A squad member as the Hub shows them — never a contact value.
+      required: [id, displayName, status, note, lastGrade, junior, isPrivate, repliedAt, late]
+      properties:
+        id:
+          type: integer
+        displayName:
+          type: string
+        status:
+          $ref: "#/components/schemas/SelectionMemberStatus"
+        note:
+          type: ["string", "null"]
+        lastGrade:
+          type: ["string", "null"]
+          description: The grade of the last team list the member appears in, else their grade hint
+        junior:
+          type: boolean
+          description: True for a junior (or under-18) member on the senior board
+        isPrivate:
+          type: boolean
+        repliedAt:
+          type: ["string", "null"]
+          format: date-time
+        late:
+          type: boolean
+          description: Answered after the cut-off
+
+    SelectionGapReason:
+      type: string
+      enum: [no, maybe, no_reply, not_on_register, withdrew, picked_elsewhere]
+
+    SelectionGap:
+      type: object
+      description: Who held an open slot and why they left it ("was <name> · <reason>")
+      required: [name, reason]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        reason:
+          $ref: "#/components/schemas/SelectionGapReason"
+
+    SelectionSlot:
+      type: object
+      required: [memberId, gap, member]
+      properties:
+        memberId:
+          type: ["integer", "null"]
+        gap:
+          oneOf:
+            - $ref: "#/components/schemas/SelectionGap"
+            - type: "null"
+        member:
+          oneOf:
+            - $ref: "#/components/schemas/SelectionMember"
+            - type: "null"
+
+    SelectionFixture:
+      type: object
+      required: [id, grade, opponentName, startAt, venue, isHome, roundLabel]
+      properties:
+        id:
+          type: integer
+        grade:
+          type: string
+        opponentName:
+          type: string
+        startAt:
+          type: string
+          format: date-time
+        venue:
+          type: ["string", "null"]
+        isHome:
+          type: boolean
+        roundLabel:
+          type: ["string", "null"]
+
+    SelectionWarnings:
+      type: object
+      required: [filled, open, unconfirmed, saidNo, noCaptain, noKeeper]
+      properties:
+        filled:
+          type: integer
+        open:
+          type: integer
+        unconfirmed:
+          type: integer
+          description: Selected members who said Maybe or haven't replied
+        saidNo:
+          type: integer
+          description: Selected members who said they're unavailable
+        noCaptain:
+          type: boolean
+        noKeeper:
+          type: boolean
+
+    SelectionSide:
+      type: object
+      required:
+        [
+          id,
+          roundId,
+          fixture,
+          date,
+          state,
+          version,
+          slots,
+          captainMemberId,
+          keeperMemberId,
+          finalisedAt,
+          finalisedBy,
+          canEdit,
+          canFinalise,
+          readOnlyReason,
+          warnings,
+        ]
+      properties:
+        id:
+          type: integer
+        roundId:
+          type: integer
+        fixture:
+          $ref: "#/components/schemas/SelectionFixture"
+        date:
+          type: string
+          format: date
+          description: The fixture's Perth date
+        state:
+          type: string
+          enum: [draft, final]
+        version:
+          type: integer
+        slots:
+          type: array
+          items:
+            $ref: "#/components/schemas/SelectionSlot"
+        captainMemberId:
+          type: ["integer", "null"]
+        keeperMemberId:
+          type: ["integer", "null"]
+        finalisedAt:
+          type: ["string", "null"]
+          format: date-time
+        finalisedBy:
+          type: ["string", "null"]
+        canEdit:
+          type: boolean
+          description: The caller may change the side now (they have the right and it is not finalised)
+        canFinalise:
+          type: boolean
+          description: The caller may finalise or re-open the side
+        readOnlyReason:
+          type: ["string", "null"]
+          description: Why the side is read-only to the caller; null when they can edit it
+        warnings:
+          $ref: "#/components/schemas/SelectionWarnings"
+
+    SelectionRound:
+      type: object
+      required:
+        [
+          roundId,
+          weekendDate,
+          sendAt,
+          reminderAt,
+          cutoffAt,
+          finaliseAt,
+          sendStartedAt,
+          reminderStartedAt,
+          cutoffStartedAt,
+          cutoffCompletedAt,
+          counts,
+        ]
+      properties:
+        roundId:
+          type: integer
+        weekendDate:
+          type: string
+          format: date
+        sendAt:
+          type: string
+          format: date-time
+        reminderAt:
+          type: string
+          format: date-time
+        cutoffAt:
+          type: string
+          format: date-time
+        finaliseAt:
+          type: string
+          format: date-time
+          description: Finalise-by, shown to captains
+        sendStartedAt:
+          type: ["string", "null"]
+          format: date-time
+        reminderStartedAt:
+          type: ["string", "null"]
+          format: date-time
+        cutoffStartedAt:
+          type: ["string", "null"]
+          format: date-time
+        cutoffCompletedAt:
+          type: ["string", "null"]
+          format: date-time
+        counts:
+          $ref: "#/components/schemas/AvailabilityRoundCounts"
+
+    SelectionEvent:
+      type: object
+      required: [id, selectionId, grade, actorKind, actorName, action, detail, createdAt]
+      properties:
+        id:
+          type: integer
+        selectionId:
+          type: integer
+        grade:
+          type: string
+        actorKind:
+          type: string
+          description: admin, captain, player or system
+        actorName:
+          type: ["string", "null"]
+        action:
+          type: string
+          description: draft, update, finalise, reopen or withdraw
+        detail:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+
+    SelectionActor:
+      type: object
+      required: [kind, name, selectionRule, canRemind]
+      properties:
+        kind:
+          type: string
+          enum: [admin, captain]
+        name:
+          type: string
+        selectionRule:
+          $ref: "#/components/schemas/AvailabilitySelectionRule"
+        canRemind:
+          type: boolean
+          description: The caller may send the section's non-responders a reminder
+
+    SelectionBoard:
+      type: object
+      required: [section, actor, round, selections, pool, events]
+      properties:
+        section:
+          $ref: "#/components/schemas/SquadSection"
+        actor:
+          $ref: "#/components/schemas/SelectionActor"
+        round:
+          oneOf:
+            - $ref: "#/components/schemas/SelectionRound"
+            - type: "null"
+        selections:
+          type: array
+          items:
+            $ref: "#/components/schemas/SelectionSide"
+        pool:
+          type: array
+          description: Active members of the section not placed in any side of the round
+          items:
+            $ref: "#/components/schemas/SelectionMember"
+        events:
+          type: array
+          description: The latest changes to the section's sides, newest first
+          items:
+            $ref: "#/components/schemas/SelectionEvent"
+
+    SelectionSlotInput:
+      type: object
+      required: [memberId]
+      properties:
+        memberId:
+          type: ["integer", "null"]
+        gap:
+          oneOf:
+            - $ref: "#/components/schemas/SelectionGap"
+            - type: "null"
+
+    SelectionChange:
+      type: object
+      required: [selectionId, version, slots, captainMemberId, keeperMemberId]
+      properties:
+        selectionId:
+          type: integer
+        version:
+          type: integer
+          description: The version the caller last saw
+        slots:
+          type: array
+          description: The side's 11 slots, in order
+          items:
+            $ref: "#/components/schemas/SelectionSlotInput"
+        captainMemberId:
+          type: ["integer", "null"]
+        keeperMemberId:
+          type: ["integer", "null"]
+
+    SelectionBoardSave:
+      type: object
+      required: [changes]
+      properties:
+        changes:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/SelectionChange"
+
+    SelectionFinaliseBody:
+      type: object
+      required: [version]
+      properties:
+        version:
+          type: integer
+          description: The side's version as the caller loaded it
+
+    SelectionFinaliseResult:
+      type: object
+      required: [selection, messaged]
+      properties:
+        selection:
+          $ref: "#/components/schemas/SelectionSide"
+        messaged:
+          type: object
+          required: [selected, deselected, failed]
+          properties:
+            selected:
+              type: integer
+              description: Newly selected members messaged
+            deselected:
+              type: integer
+              description: Members dropped since the last finalise who were told
+            failed:
+              type: integer
+              description: Members every delivery failed for; the next finalise tries them again
+
+    SelectionRemindBody:
+      type: object
+      required: [section]
+      properties:
+        section:
+          $ref: "#/components/schemas/SquadSection"
+
+    AvailabilityRecipientSlot:
+      type: string
+      enum: [account, guardian1, guardian2]
+      description: Who a personal link was sent to — the account holder (adults) or a guardian
+
+    AvailabilityStatus:
+      type: string
+      enum: ["yes", "no", "maybe"]
+
+    AvailabilityDateAnswer:
+      type: object
+      required: [date, status, note, late, locked]
+      properties:
+        date:
+          type: string
+          description: Perth date, YYYY-MM-DD
+        status:
+          oneOf:
+            - $ref: "#/components/schemas/AvailabilityStatus"
+            - type: "null"
+          description: The current answer; null when nobody has answered
+        note:
+          type: ["string", "null"]
+        late:
+          type: boolean
+          description: Answered after cut-off
+        locked:
+          type: boolean
+          description: The member is in a finalised side on this date, so the answer can't change
+
+    AvailabilityAwayPeriod:
+      type: object
+      required: [id, fromDate, toDate]
+      properties:
+        id:
+          type: integer
+        fromDate:
+          type: string
+        toDate:
+          type: string
+
+    AvailabilityMaskedContact:
+      type: object
+      description: This recipient's contact, masked (e.g. "04xx xxx 678", "j***@example.com")
+      required: [mobile, email]
+      properties:
+        mobile:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+
+    AvailabilityMatch:
+      type: object
+      required: [grade, opponent, venue, startAt, isHome, role]
+      properties:
+        grade:
+          type: string
+        opponent:
+          type: string
+        venue:
+          type: ["string", "null"]
+        startAt:
+          type: string
+          format: date-time
+        isHome:
+          type: boolean
+        role:
+          type: ["string", "null"]
+          enum: [C, WK, C/WK, null]
+
+    AvailabilityResponsePage:
+      type: object
+      required:
+        [
+          clubName,
+          clubShortName,
+          logoUrl,
+          primaryColour,
+          firstName,
+          displayName,
+          recipientSlot,
+          self,
+          weekendDate,
+          dates,
+          away,
+          contact,
+          selection,
+          canWithdraw,
+          locked,
+          withdrawn,
+          late,
+        ]
+      properties:
+        clubName:
+          type: string
+        clubShortName:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        primaryColour:
+          type: ["string", "null"]
+        firstName:
+          type: string
+          description: The member's preferred (or first) name
+        displayName:
+          type: string
+        recipientSlot:
+          $ref: "#/components/schemas/AvailabilityRecipientSlot"
+        self:
+          type: boolean
+          description: True when the link went to the player themself rather than a guardian
+        weekendDate:
+          type: string
+          description: The round's Saturday, YYYY-MM-DD
+        dates:
+          type: array
+          items:
+            $ref: "#/components/schemas/AvailabilityDateAnswer"
+        away:
+          type: array
+          description: Away periods that haven't ended yet
+          items:
+            $ref: "#/components/schemas/AvailabilityAwayPeriod"
+        contact:
+          $ref: "#/components/schemas/AvailabilityMaskedContact"
+        selection:
+          description: The match, once the member is in a finalised side this round
+          oneOf:
+            - $ref: "#/components/schemas/AvailabilityMatch"
+            - type: "null"
+        canWithdraw:
+          type: boolean
+          description: The member is in a side this round, so "can't make it" is offered
+        locked:
+          type: boolean
+          description: The member's side is final; only "can't make it" is allowed
+        withdrawn:
+          type: boolean
+          description: The member withdrew from their side this round
+        late:
+          type: boolean
+          description: Cut-off has passed; new answers are marked late
+
+    AvailabilityAnswersInput:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          minItems: 1
+          maxItems: 7
+          items:
+            type: object
+            required: [date, status]
+            properties:
+              date:
+                type: string
+                pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+              status:
+                $ref: "#/components/schemas/AvailabilityStatus"
+              note:
+                type: ["string", "null"]
+                maxLength: 280
+
+    AvailabilityAwayInput:
+      type: object
+      required: [fromDate, toDate]
+      properties:
+        fromDate:
+          type: string
+          pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        toDate:
+          type: string
+          pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+
+    AvailabilityContactInput:
+      type: object
+      description: At least one of mobile or email; omitted fields are unchanged
+      properties:
+        mobile:
+          type: string
+          minLength: 1
+          maxLength: 32
+        email:
+          type: string
+          minLength: 3
+          maxLength: 254
+
     AwardVotingConfig:
       type: object
       required:
@@ -16786,6 +18370,9 @@ components:
           items:
             $ref: "#/components/schemas/TeamListPlayer"
         isPublished: { type: boolean }
+        source:
+          type: string
+          description: 'Who wrote the list: "admin", "playhq" or "selection" (a side finalised in the Selection Hub, which is changed there rather than here)'
         createdAt: { type: string, format: date-time }
         debutPlayerIds:
           type: array
