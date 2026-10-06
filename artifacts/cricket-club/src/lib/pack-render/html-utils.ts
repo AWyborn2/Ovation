@@ -461,3 +461,16 @@ export function dropEmptyPresentedBy(html: string): string {
 export function dropEmptyCapNumber(html: string): string {
   return html.replace(/<div[^>]*>CAP \{\{capNumber\}\}<\/div>/g, "");
 }
+
+/**
+ * Remove the season shirt-number badge from a player-centric card when no
+ * number resolved (shirt-numbers plan U8, KTD12) — the twin of
+ * {@link dropEmptyCapNumber}. Every pack places the shared badge fragment
+ * (`shirtNumberBadge` in pack-templates/skeleton-kit.ts), a single `<div>`
+ * holding only `#{{shirtNumber}}`, so it is matched and dropped whole: no
+ * orphan "#", no sample, and the card's markup is what it was before shirt
+ * numbers existed. Called BEFORE field substitution.
+ */
+export function dropEmptyShirtNumber(html: string): string {
+  return html.replace(/<div data-shirt-number="1"[^>]*>#\{\{shirtNumber\}\}<\/div>/g, "");
+}

@@ -12,6 +12,7 @@ import {
   type PackTokens,
   type PackCardData,
 } from "./pack-render";
+import { bindInput } from "./pack-render/bind";
 import { sampleCardInput } from "./sample-card-inputs";
 import type { ShareCardInput, CardSize, LadderRow } from "./share-card";
 
@@ -1207,5 +1208,147 @@ describe("renderPackCard full-bleed photo placement (B3)", () => {
       // Every size promotes the hero wrapper to the full-bleed geometry.
       expect(a, size).toContain(FULLBLEED_WRAPPER);
     }
+  });
+});
+
+describe("renderPackCard season shirt number (shirt numbers U8)", () => {
+  // Player-centric cards carry the player's season shirt number as a bare "#N"
+  // badge (KTD12). The key is bound explicitly — an absent number must never
+  // fall back to a sample — and an unnumbered card loses the badge whole.
+  const PACK_IDS = [
+    "broadcast-dark-v1",
+    "gold-foil-v1",
+    "bold-type-v1",
+    "neon-night-v1",
+    "sunset-v1",
+    "club-kit-v1",
+  ];
+  const KINDS = ["century", "fiveFor", "milestone", "player", "tradingCard"] as const;
+  const SIZES: CardSize[] = ["square", "portrait", "story", "landscape"];
+  const BADGE = /data-shirt-number="1"[^>]*>#9</;
+
+  const withShirt = (kind: (typeof KINDS)[number], shirtNumber: string | null | undefined) =>
+    ({
+      ...sampleCardInput(kind),
+      ...(shirtNumber === undefined ? {} : { shirtNumber }),
+    }) as ShareCardInput;
+
+  it("binds shirtNumber explicitly for the player-centric kinds only", () => {
+    for (const kind of KINDS) {
+      expect(bindInput(withShirt(kind, "9")).values.shirtNumber, kind).toBe("9");
+      // Absent → bound empty, never left for the template sample.
+      expect(bindInput(withShirt(kind, undefined)).values.shirtNumber, kind).toBe("");
+      expect(bindInput(withShirt(kind, null)).values.shirtNumber, kind).toBe("");
+    }
+    const debut = {
+      ...sampleCardInput("debut"),
+      shirtNumber: "9",
+    } as unknown as ShareCardInput;
+    expect("shirtNumber" in bindInput(debut).values).toBe(false);
+  });
+
+  it("shows the badge with the number in every pack, kind and size", () => {
+    for (const packId of PACK_IDS) {
+      for (const kind of KINDS) {
+        if (!packSupportsKind(kind, packId)) continue;
+        for (const size of SIZES) {
+          const html = renderPackCard(
+            withShirt(kind, "9"),
+            size,
+            true,
+            TOKENS,
+            false,
+            null,
+            packId,
+          );
+          const ctx = `${packId}/${kind}/${size}`;
+          expect(html, ctx).not.toBe("");
+          expect(html, ctx).toMatch(BADGE);
+          expect(hasUnresolved(html), ctx).toBe(false);
+        }
+      }
+    }
+  });
+
+  it("keeps leading zeros verbatim", () => {
+    const html = renderPackCard(withShirt("milestone", "07"), "story", true, TOKENS, false);
+    expect(html).toMatch(/data-shirt-number="1"[^>]*>#07</);
+  });
+
+  it("drops the badge whole for an unnumbered player — no '#', no sample — and renders as before", () => {
+    for (const packId of PACK_IDS) {
+      for (const kind of KINDS) {
+        if (!packSupportsKind(kind, packId)) continue;
+        for (const size of SIZES) {
+          const ctx = `${packId}/${kind}/${size}`;
+          const absent = renderPackCard(
+            withShirt(kind, undefined),
+            size,
+            true,
+            TOKENS,
+            false,
+            null,
+            packId,
+          );
+          expect(absent, ctx).not.toContain("data-shirt-number");
+          expect(absent, ctx).not.toContain("shirtNumber");
+          expect(hasUnresolved(absent), ctx).toBe(false);
+          // Null and empty render exactly like a card that never had the key.
+          for (const v of [null, "", "  "]) {
+            expect(
+              renderPackCard(withShirt(kind, v), size, true, TOKENS, false, null, packId),
+              `${ctx} (${JSON.stringify(v)})`,
+            ).toBe(absent);
+          }
+        }
+      }
+    }
+  });
+
+  it("(AE4) the debut cap card shows the cap only, the milestone the shirt number", () => {
+    for (const packId of PACK_IDS) {
+      const debut = renderPackCard(
+        {
+          ...sampleCardInput("debut"),
+          capNumber: 142,
+          shirtNumber: "9",
+        } as unknown as ShareCardInput,
+        "story",
+        true,
+        TOKENS,
+        false,
+        null,
+        packId,
+      );
+      expect(debut, packId).toContain("CAP 142");
+      expect(debut, packId).not.toContain("data-shirt-number");
+      expect(debut, packId).not.toContain("#9");
+
+      const milestone = renderPackCard(
+        withShirt("milestone", "9"),
+        "story",
+        true,
+        TOKENS,
+        false,
+        null,
+        packId,
+      );
+      expect(milestone, packId).toMatch(BADGE);
+      expect(milestone, packId).not.toMatch(/CAP 142|#142/);
+    }
+  });
+
+  it("a trading card shows cap and shirt number each in its own place", () => {
+    const input = {
+      ...sampleCardInput("tradingCard"),
+      capNumber: 142,
+      shirtNumber: "9",
+    } as ShareCardInput;
+    const html = renderPackCard(input, "story", true, TOKENS, false, null, "club-kit-v1");
+    expect(html).toContain(">#142<");
+    expect(html).toMatch(BADGE);
+    // Two different elements: the cap slot never holds the shirt number.
+    expect(html).not.toContain(">#9</div>#142");
+    expect(html.match(/>#9</g)?.length).toBe(1);
   });
 });

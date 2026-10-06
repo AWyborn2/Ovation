@@ -1,4 +1,5 @@
 import type { PackCardTemplate } from "../types";
+import { shirtNumberField, withShirtNumber } from "../skeleton-kit";
 import { SK_COND } from "../shared";
 import {
   BD_RULE,
@@ -31,7 +32,7 @@ const html = bdCard({
       `</div>` +
       bdCond("FIVE-FOR", 8.4, ";margin-top:1cqmin") +
       BD_RULE +
-      bdCond("{{playerName}}", 7) +
+      withShirtNumber(bdCond("{{playerName}}", 7)) +
       bdEyebrow(
         "<span>{{grade}}</span> · vs <span>{{opponent}}</span> · RD <span>{{round}}</span>",
         MUTED,
@@ -49,6 +50,7 @@ export const fiveFor: PackCardTemplate = {
   fields: [
     ...clubHeaderFields(),
     textField("playerName", "Player name", "Alex Osborne"),
+    shirtNumberField(),
     textField("grade", "Grade", "A GRADE"),
     textField("wickets", "Wickets", "5"),
     textField("figures", "Figures", "5/23"),

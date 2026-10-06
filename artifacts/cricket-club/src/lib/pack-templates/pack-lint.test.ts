@@ -85,6 +85,22 @@ const EXTRA_KEY_ALLOWLIST: Record<string, readonly string[]> = {
   "club-kit-v1/bigMoment": ["photo"],
 };
 
+/**
+ * Player-centric kinds that show the player's season shirt number (season
+ * shirt numbers plan, U8 / KTD12). `debut` is deliberately absent: it is the
+ * A Grade cap card and shows the cap number only (AE4).
+ */
+const SHIRT_NUMBER_KINDS: readonly string[] = [
+  "century",
+  "fiveFor",
+  "milestone",
+  "player",
+  "tradingCard",
+];
+
+/** The shared badge fragment, exactly as `dropEmptyShirtNumber` matches it. */
+const SHIRT_NUMBER_BADGE_RE = /<div data-shirt-number="1"[^>]*>#\{\{shirtNumber\}\}<\/div>/;
+
 /** Kinds a single pack introduces, with no reference design (by pack id). */
 const PACK_ONLY_KINDS: Record<string, readonly string[]> = {
   "club-kit-v1": ["roundFixtures", "tradingCard", "juniorHighlights"],
@@ -299,6 +315,29 @@ for (const pack of listPackManifests()) {
             /\{\{potm\b/.test(html),
             `${entry.designKey}/${format} still renders a potm.* placeholder`,
           ).toBe(false);
+        }
+      }
+    });
+
+    it("(U8) every player-centric design carries the shirt-number badge in every format", () => {
+      // The badge must be the exact markup `dropEmptyShirtNumber` strips, so an
+      // unnumbered player's card loses it whole (no orphan "#", no sample).
+      for (const entry of designs) {
+        if (!SHIRT_NUMBER_KINDS.includes(entry.kind)) continue;
+        for (const [format, html] of formatEntries(entry)) {
+          expect(
+            SHIRT_NUMBER_BADGE_RE.test(html),
+            `${entry.designKey}/${format} has no shirt-number badge`,
+          ).toBe(true);
+        }
+      }
+    });
+
+    it("(U8) no other design binds a shirt number — the debut (cap) card least of all", () => {
+      for (const entry of designs) {
+        if (SHIRT_NUMBER_KINDS.includes(entry.kind)) continue;
+        for (const [format, html] of formatEntries(entry)) {
+          expect(html, `${entry.designKey}/${format}`).not.toContain("{{shirtNumber}}");
         }
       }
     });

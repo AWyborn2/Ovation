@@ -275,6 +275,9 @@ export default function PlayerDetail() {
     // Social assets lead with a library photo the player is tagged in, then
     // the headshot (the profile hero itself keeps the headshot first).
     photoUrl: player.libraryPhotoUrl ?? player.imageUrl ?? null,
+    // This season's shirt number (null when the feature is off or the player
+    // has none — the card then shows no badge).
+    shirtNumber: player.shirtNumber ?? null,
   };
 
   const adminPhotoControls = isAdmin ? (

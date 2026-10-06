@@ -346,8 +346,30 @@ export function bindInput(input: ShareCardInput): BoundInput {
     }
   }
 
+  bindShirtNumber(input, values);
   bindSetValues(input, values);
   return { values, images, rows };
+}
+
+/** Card kinds that show the player's season shirt number (U8, KTD11/KTD12). */
+export const SHIRT_NUMBER_KINDS: ReadonlySet<ShareCardInput["kind"]> = new Set([
+  "century",
+  "fiveFor",
+  "milestone",
+  "player",
+  "tradingCard",
+] as const);
+
+/**
+ * Bind `shirtNumber` for the player-centric kinds — EXPLICITLY, empty string
+ * and all, never via set(), for the same reason as `capNumber` on debut: an
+ * absent key falls through to the template sample. An empty value makes the
+ * renderer drop the badge. `debut` (the A Grade cap card) never gets one.
+ */
+function bindShirtNumber(input: ShareCardInput, values: Record<string, string>): void {
+  if (!SHIRT_NUMBER_KINDS.has(input.kind)) return;
+  const n = (input as { shirtNumber?: string | number | null }).shirtNumber;
+  values["shirtNumber"] = n != null ? String(n).trim() : "";
 }
 
 /** Row-size multipliers for a set's density tiers (Club Kit rows read `--rs`). */

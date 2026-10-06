@@ -153,6 +153,7 @@ describe("buildAchievementDrafts", () => {
         sourceKey: "feat:century:A Grade:2024:3:41",
         playerId: 41,
         grade: "A Grade",
+        season: 2024,
         cardInput: {
           kind: "century",
           playerName: "R Star",
@@ -169,6 +170,7 @@ describe("buildAchievementDrafts", () => {
         sourceKey: `feat:fiveFor:A Grade:2024:3:${centralPlayerKey("g-unmapped")}`,
         playerId: null,
         grade: "A Grade",
+        season: 2024,
         cardInput: {
           kind: "fiveFor",
           playerName: "U Bowler",
@@ -186,6 +188,7 @@ describe("buildAchievementDrafts", () => {
         sourceKey: "debut:A Grade:42",
         playerId: 42,
         grade: "A Grade",
+        season: 2024,
         cardInput: {
           kind: "debut",
           playerName: "D Debut",
@@ -201,6 +204,7 @@ describe("buildAchievementDrafts", () => {
         sourceKey: "milestone:41:runs:0",
         playerId: 41,
         grade: "A Grade",
+        season: 2024,
         cardInput: {
           kind: "milestone",
           playerName: "R Star",
@@ -294,6 +298,8 @@ describe("draftCentralAchievements", () => {
         sourceKey: "feat:century:A Grade:2024:3:41",
         appPath: "/players/41",
         playerId: 41,
+        // The match's season, for the player's shirt number (KTD11).
+        season: 2024,
         sourceImportedAt: seenAt,
       }),
     );

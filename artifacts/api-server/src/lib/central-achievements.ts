@@ -48,6 +48,8 @@ export type AchievementDraft = {
   sourceKey: string;
   playerId: number | null;
   grade: string;
+  /** The match's season (start year), for the player's shirt number (KTD11). */
+  season: number;
   cardInput: Record<string, unknown>;
 };
 
@@ -77,6 +79,7 @@ export function buildAchievementDrafts(
           sourceKey: draftKeys.matchFeat("century", ref, a.grade, a.season, a.round),
           playerId,
           grade: a.grade,
+          season: a.season,
           cardInput: {
             kind: "century",
             playerName,
@@ -95,6 +98,7 @@ export function buildAchievementDrafts(
           sourceKey: draftKeys.matchFeat("fiveFor", ref, a.grade, a.season, a.round),
           playerId,
           grade: a.grade,
+          season: a.season,
           cardInput: {
             kind: "fiveFor",
             playerName,
@@ -114,6 +118,7 @@ export function buildAchievementDrafts(
           sourceKey: draftKeys.debut(ref, a.grade),
           playerId,
           grade: a.grade,
+          season: a.season,
           cardInput: {
             kind: "debut",
             playerName,
@@ -132,6 +137,7 @@ export function buildAchievementDrafts(
           sourceKey: draftKeys.careerMilestone(ref, key, a.tierIndex),
           playerId,
           grade: a.grade,
+          season: a.season,
           cardInput: {
             kind: "milestone",
             playerName,
@@ -204,6 +210,7 @@ export async function draftCentralAchievements(
       cardInput: d.cardInput,
       appPath: playerPath(d.playerId),
       playerId: d.playerId,
+      season: d.season,
       sourceImportedAt: seenAt,
     });
     if (r.action === "inserted" || r.action === "refreshed") result.drafted++;

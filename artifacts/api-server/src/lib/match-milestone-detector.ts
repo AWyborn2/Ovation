@@ -273,7 +273,7 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
       };
       if (await findDraftByKey(tenantId, sourceKey)) {
         // Already drafted: a corrected score refreshes the same card.
-        await upsertFeat(tenantId, sourceKey, cardInput, l.playerId, importId);
+        await upsertFeat(tenantId, sourceKey, cardInput, l.playerId, importId, season);
       } else if (!seenInnings.has(key)) {
         seenInnings.add(key);
         detected.push({
@@ -320,7 +320,7 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
         photoUrl: photoFor(l.playerId),
       };
       if (await findDraftByKey(tenantId, sourceKey)) {
-        await upsertFeat(tenantId, sourceKey, cardInput, l.playerId, importId);
+        await upsertFeat(tenantId, sourceKey, cardInput, l.playerId, importId, season);
       } else if (!seenInnings.has(key)) {
         seenInnings.add(key);
         detected.push({
@@ -379,6 +379,8 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
       cardInput: d.cardInput,
       appPath: `/players/${d.playerId}`,
       playerId: d.playerId,
+      // The match's season, for the player's shirt number (KTD11).
+      season,
       milestoneEventId: event.id,
       sourceImportId: importId,
     });
@@ -392,6 +394,7 @@ async function upsertFeat(
   cardInput: Record<string, unknown>,
   playerId: number,
   importId: number,
+  season: number,
 ): Promise<void> {
   await upsertDraftByKey({
     tenantId,
@@ -401,6 +404,7 @@ async function upsertFeat(
     cardInput,
     appPath: `/players/${playerId}`,
     playerId,
+    season,
     sourceImportId: importId,
   });
 }

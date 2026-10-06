@@ -124,6 +124,12 @@ export type ShareCardInput =
       headline?: string;
       photoUrl?: string | null;
       /**
+       * The player's season shirt number (season shirt numbers, U8), stamped
+       * server-side on auto drafts; absent = no number, and the card shows no
+       * badge (never a placeholder or the cap number).
+       */
+      shirtNumber?: string | null;
+      /**
        * Marks this as a JUNIOR card: it is forced to render in the junior brown
        * palette (regardless of the selected theme) and gets junior-specific
        * labels/filenames. Junior data stays isolated from senior records.
@@ -137,6 +143,12 @@ export type ShareCardInput =
       stats: StatLine[];
       headline?: string;
       photoUrl?: string | null;
+      /**
+       * The player's season shirt number (season shirt numbers, U8), stamped
+       * server-side on auto drafts; absent = no number, and the card shows no
+       * badge (never a placeholder or the cap number).
+       */
+      shirtNumber?: string | null;
     }
   | {
       kind: "record";
@@ -192,6 +204,12 @@ export type ShareCardInput =
       round?: number | null;
       headline?: string;
       photoUrl?: string | null;
+      /**
+       * The player's season shirt number (season shirt numbers, U8), stamped
+       * server-side on auto drafts; absent = no number, and the card shows no
+       * badge (never a placeholder or the cap number).
+       */
+      shirtNumber?: string | null;
     }
   | {
       kind: "fiveFor";
@@ -205,6 +223,12 @@ export type ShareCardInput =
       round?: number | null;
       headline?: string;
       photoUrl?: string | null;
+      /**
+       * The player's season shirt number (season shirt numbers, U8), stamped
+       * server-side on auto drafts; absent = no number, and the card shows no
+       * badge (never a placeholder or the cap number).
+       */
+      shirtNumber?: string | null;
     }
   | {
       kind: "matchSummary";
@@ -331,6 +355,12 @@ export type ShareCardInput =
       /** Up to four stats, e.g. Matches / Runs / Wickets / Average. */
       stats: { label: string; value: string }[];
       photoUrl?: string | null;
+      /**
+       * The player's season shirt number (season shirt numbers, U8), stamped
+       * server-side on auto drafts; absent = no number, and the card shows no
+       * badge (never a placeholder or the cap number).
+       */
+      shirtNumber?: string | null;
     }
   | ({
       /**

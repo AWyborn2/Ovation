@@ -1,10 +1,16 @@
 import { and, desc, eq, like, ne, sql } from "drizzle-orm";
 import {
   db,
+  playerIdMapTable,
+  playerPrivacyOverridesTable,
+  shirtNumbersTable,
   socialDraftsTable,
   socialDraftRevisionsTable,
   type SocialDraftRow,
 } from "@workspace/db";
+import { seasonStartYearFor } from "@workspace/db/seasons";
+import { getShirtNumberSettings } from "@workspace/db/shirt-numbers";
+import { logger } from "./logger";
 import { normalizeDraftStatus } from "./draft-status";
 import { recordDraftRevision } from "./draft-revisions";
 import { enrichDraft, isAutoPhoto } from "./draft-enrich";
@@ -45,6 +51,13 @@ export type DraftUpsert = {
   sourceImportedAt?: Date;
   /** The player the card celebrates, for the photo pick (R5). */
   playerId?: number | null;
+  /**
+   * The season (start year) the card's event belongs to, for the player's
+   * shirt number (season shirt numbers, KTD11). Player-centric callers set it
+   * from their match, so a June match processed in August shows the number
+   * worn that season; without it the season of "now" is used.
+   */
+  season?: number | null;
   /** The grade, for a grade photo when no player photo exists (R5). */
   grade?: string | null;
   /**
@@ -91,7 +104,142 @@ export async function findDraftByKey(
   return row ?? null;
 }
 
-export async function upsertDraftByKey(input: DraftUpsert): Promise<DraftUpsertResult> {
+// ---------------------------------------------------------------------------
+// Season shirt numbers (docs/plans/2026-10-06-001-feat-season-shirt-numbers-plan.md,
+// U8 / KTD11)
+// ---------------------------------------------------------------------------
+
+/**
+ * Card kinds that show the player's season shirt number. `debut` is NOT here:
+ * it is the A Grade cap card and shows the cap number only (AE4).
+ */
+export const SHIRT_NUMBER_DRAFT_KINDS: ReadonlySet<string> = new Set([
+  "century",
+  "fiveFor",
+  "milestone",
+  "player",
+  "tradingCard",
+]);
+
+/** What the register says about a draft's player, for stamping. */
+export type DraftShirtNumberFacts = {
+  /** The tenant's shirt-number feature switch (R1). */
+  enabled: boolean;
+  /** The player's linked entry number for the season, or null (R15). */
+  number: string | null;
+  /** Private players never get a number on a draft. */
+  isPrivate: boolean;
+};
+
+/** True when a draft could carry a shirt number, so the register is worth reading. */
+export function needsShirtNumberLookup(
+  cardInput: Record<string, unknown>,
+  playerId: number | null | undefined,
+): boolean {
+  return playerId != null && SHIRT_NUMBER_DRAFT_KINDS.has(String(cardInput.kind));
+}
+
+/** The season a draft's shirt number comes from: the caller's match season, else now's. */
+export function shirtNumberSeasonFor(season: number | null | undefined, now: Date): number {
+  return season ?? seasonStartYearFor(now);
+}
+
+/**
+ * The card input with `shirtNumber` stamped or removed — pure, never mutates.
+ * Stamped only for a player-centric kind with the feature on, a number, and a
+ * public player; in EVERY other case the key is absent (feature switched off,
+ * number cleared, a debut card), so a refresh drops a stale number rather than
+ * keeping it. `facts` is null when there is no player or the lookup failed.
+ */
+export function stampShirtNumber(
+  cardInput: Record<string, unknown>,
+  facts: DraftShirtNumberFacts | null,
+): Record<string, unknown> {
+  const { shirtNumber: _previous, ...rest } = cardInput;
+  void _previous;
+  if (
+    !facts ||
+    !facts.enabled ||
+    facts.isPrivate ||
+    !facts.number ||
+    !SHIRT_NUMBER_DRAFT_KINDS.has(String(cardInput.kind))
+  ) {
+    return rest;
+  }
+  return { ...rest, shirtNumber: facts.number };
+}
+
+/**
+ * Whether a player is private for public output. A platform privacy override
+ * (tenant DB) wins; otherwise the crosswalk's central participant decides
+ * (`central.players.is_private`). A native player with no crosswalk row has
+ * no privacy flag. Read-only on central.
+ */
+async function draftPlayerIsPrivate(tenantId: number, playerId: number): Promise<boolean> {
+  const mapped = await db
+    .select({ participantId: playerIdMapTable.participantId })
+    .from(playerIdMapTable)
+    .where(and(eq(playerIdMapTable.tenantId, tenantId), eq(playerIdMapTable.playerId, playerId)));
+  const ids = mapped.map((m) => m.participantId);
+  if (ids.length === 0) return false;
+  const overrides = await db
+    .select({ isPrivate: playerPrivacyOverridesTable.isPrivate })
+    .from(playerPrivacyOverridesTable)
+    .where(eq(playerPrivacyOverridesTable.participantId, ids[0]!));
+  if (overrides.length > 0) return overrides[0]!.isPrivate === true;
+  const { isPrivateGroup } = await import("@workspace/db/central-queries");
+  return isPrivateGroup(ids);
+}
+
+/**
+ * The register facts for a draft's player and season. Only a LINKED entry
+ * counts (held entries have no playerId, R16). Never throws: a failed read
+ * (e.g. the central DB unreachable for the privacy check) returns null, so
+ * the draft goes out without a number rather than not at all — fail closed.
+ */
+async function loadDraftShirtNumberFacts(
+  tenantId: number,
+  playerId: number,
+  season: number,
+): Promise<DraftShirtNumberFacts | null> {
+  try {
+    const settings = await getShirtNumberSettings(db, tenantId);
+    if (!settings.enabled) return { enabled: false, number: null, isPrivate: false };
+    const [entry] = await db
+      .select({ number: shirtNumbersTable.number })
+      .from(shirtNumbersTable)
+      .where(
+        and(
+          eq(shirtNumbersTable.tenantId, tenantId),
+          eq(shirtNumbersTable.season, season),
+          eq(shirtNumbersTable.playerId, playerId),
+        ),
+      )
+      .limit(1);
+    const number = entry?.number ?? null;
+    if (!number) return { enabled: true, number: null, isPrivate: false };
+    return { enabled: true, number, isPrivate: await draftPlayerIsPrivate(tenantId, playerId) };
+  } catch (err) {
+    logger.warn({ err, tenantId, playerId, season }, "draft shirt-number lookup failed");
+    return null;
+  }
+}
+
+/** The card input as it should be stored: stamped (or cleared) per KTD11. */
+async function withShirtNumber(input: DraftUpsert): Promise<Record<string, unknown>> {
+  if (!needsShirtNumberLookup(input.cardInput, input.playerId)) {
+    return stampShirtNumber(input.cardInput, null);
+  }
+  const season = shirtNumberSeasonFor(input.season, new Date());
+  const facts = await loadDraftShirtNumberFacts(input.tenantId, input.playerId!, season);
+  return stampShirtNumber(input.cardInput, facts);
+}
+
+export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertResult> {
+  // Stamp the season shirt number on every call, BEFORE the change comparison
+  // (KTD11): an unposted draft picks up a newly assigned number on its next
+  // sweep, a posted one goes stale, and an unchanged event stays unchanged.
+  const input: DraftUpsert = { ...raw, cardInput: await withShirtNumber(raw) };
   let existing = await findDraftByKey(input.tenantId, input.sourceKey);
   if (!existing && input.findLegacy) {
     const legacy = await input.findLegacy();
