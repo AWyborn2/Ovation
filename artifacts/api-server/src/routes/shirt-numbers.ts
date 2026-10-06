@@ -4,8 +4,11 @@ import { db, shirtNumberSettingsTable } from "@workspace/db";
 import { getShirtNumberSettings, isValidShirtNumber } from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import {
+  CommitShirtNumberUploadBody,
+  CommitShirtNumberUploadParams,
   CreateShirtNumberBody,
   DeleteShirtNumberParams,
+  DiscardShirtNumberUploadParams,
   ListShirtNumbersQueryParams,
   StartShirtNumberSeasonParams,
   UpdateShirtNumberBody,
@@ -22,11 +25,22 @@ import {
   createSeniorEntry,
   deleteSeniorEntry,
   listSeniorEntries,
+  loadSeasonEntries,
   seniorRegisterSeasons,
   startSeniorSeason,
   updateSeniorEntry,
   type WriteOutcome,
 } from "../lib/shirt-numbers";
+import { shirtNumberFileUpload, type MulterRequest } from "../lib/import-upload";
+import {
+  buildPreviewRows,
+  commitSeniorUpload,
+  createUpload,
+  discardUpload,
+  loadSeniorUploadRoster,
+  parseShirtNumberUpload,
+  UploadParseError,
+} from "../lib/shirt-number-upload";
 
 /**
  * Season shirt numbers — the senior register (plan U3). Tenant-curated content:
@@ -34,8 +48,8 @@ import {
  * deliberately NOT behind `requireNativeStatsTenant` (central-read clubs keep a
  * register too). Writes need an admin with the curation entitlement; with the
  * feature off they refuse with 400, except the settings PATCH that turns it on.
- * Uploads (U4) and the juniors register (U10, under /juniors only) live
- * elsewhere.
+ * Bulk uploads (U4) preview first and write only on commit. The juniors
+ * register (U10) lives under /juniors only.
  */
 
 const router: IRouter = Router();
@@ -238,6 +252,121 @@ router.post(
     const settings = await enabledSettings(req, res);
     if (!settings) return;
     res.json(await startSeniorSeason(getTenantId(req), params.data.season, settings));
+  },
+);
+
+// ── Uploads (U4) ────────────────────────────────────────────────────────────
+
+router.post(
+  "/shirt-numbers/uploads",
+  requireAdmin,
+  requireEntitlement("curation"),
+  adminWriteRateLimiter,
+  shirtNumberFileUpload,
+  async (req: Request, res): Promise<void> => {
+    const file = (req as MulterRequest).file;
+    if (!file) {
+      res.status(400).json({ error: "Missing file field" });
+      return;
+    }
+    const kind = req.body?.kind;
+    if (kind !== "numbers" && kind !== "registration") {
+      res.status(400).json({ error: 'kind must be "numbers" or "registration"' });
+      return;
+    }
+    const seasonRaw = String(req.body?.season ?? "");
+    const season = /^\d+$/.test(seasonRaw) ? Number(seasonRaw) : NaN;
+    if (!validSeason(season)) {
+      res.status(400).json({ error: "Invalid season" });
+      return;
+    }
+    if (!(await enabledSettings(req, res))) return;
+
+    let parsed;
+    try {
+      parsed = await parseShirtNumberUpload(file.buffer, file.originalname, kind);
+    } catch (e) {
+      if (e instanceof UploadParseError) {
+        res.status(400).json({ error: e.message });
+        return;
+      }
+      throw e;
+    }
+
+    const tenantId = getTenantId(req);
+    let rows: ReturnType<typeof buildPreviewRows> = [];
+    if (parsed.errors.length === 0 && parsed.rows.length > 0) {
+      const [roster, entries] = await Promise.all([
+        loadSeniorUploadRoster(tenantId),
+        loadSeasonEntries(db, "senior", tenantId, season),
+      ]);
+      rows = buildPreviewRows(parsed.rows, roster, entries);
+    }
+    const preview = await createUpload({
+      tenantId,
+      side: "senior",
+      kind,
+      season,
+      payload: {
+        fileName: file.originalname.slice(0, 255),
+        rows,
+        unrecognisedHeaders: parsed.unrecognisedHeaders,
+        errors: parsed.errors,
+      },
+    });
+    res.json(preview);
+  },
+);
+
+router.post(
+  "/shirt-numbers/uploads/:id/commit",
+  requireAdmin,
+  requireEntitlement("curation"),
+  adminWriteRateLimiter,
+  async (req, res): Promise<void> => {
+    const params = CommitShirtNumberUploadParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const parsed = CommitShirtNumberUploadBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const settings = await enabledSettings(req, res);
+    if (!settings) return;
+    const outcome = await commitSeniorUpload(
+      getTenantId(req),
+      params.data.id,
+      parsed.data.resolutions,
+      settings,
+    );
+    if (outcome.ok) {
+      res.json(outcome.result);
+      return;
+    }
+    res.status(outcome.status).json(outcome.body);
+  },
+);
+
+router.delete(
+  "/shirt-numbers/uploads/:id",
+  requireAdmin,
+  requireEntitlement("curation"),
+  adminWriteRateLimiter,
+  async (req, res): Promise<void> => {
+    const params = DiscardShirtNumberUploadParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    // Discarding only clears a preview, so it works with the feature off too.
+    if (!(await discardUpload(getTenantId(req), "senior", params.data.id))) {
+      res.status(404).json({ error: "Upload not found" });
+      return;
+    }
+    res.sendStatus(204);
   },
 );
 
