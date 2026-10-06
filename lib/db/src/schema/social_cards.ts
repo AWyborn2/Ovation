@@ -432,6 +432,11 @@ export const socialSettingsTable = pgTable(
     // deadline (its own import time + the window) becomes ready. Off by default.
     autoPostEnabled: boolean("auto_post_enabled").notNull().default(false),
     autoPostWindowHours: integer("auto_post_window_hours").notNull().default(12),
+    // Meta publishing (plan 2026-10-06-001 R4, R5): with auto-post on and a
+    // connection, drafts first imported within the freshness cut-off publish
+    // at their deadline instead of only becoming ready.
+    autoPublishEnabled: boolean("auto_publish_enabled").notNull().default(false),
+    autoPublishFreshnessHours: integer("auto_publish_freshness_hours").notNull().default(24),
     // Club-level address for draft notifications (admins have no email field).
     // Null = in-app only.
     notificationEmail: text("notification_email"),
