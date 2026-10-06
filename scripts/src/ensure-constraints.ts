@@ -328,6 +328,14 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
           ON "matches" ("source_key")
           WHERE "source_key" IS NOT NULL`,
   },
+  // Squad register (migration 0031): one member per PlayHQ profile per tenant,
+  // the re-import upsert key; hand-added members have no profile id.
+  {
+    name: "squad_members_tenant_profile_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "squad_members_tenant_profile_uidx"
+          ON "squad_members" ("tenant_id", "playhq_profile_id")
+          WHERE "playhq_profile_id" IS NOT NULL`,
+  },
 ];
 
 /** Non-unique indexes: stats-core performance, FK columns, tenant_id. */
