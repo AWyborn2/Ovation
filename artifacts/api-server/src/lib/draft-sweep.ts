@@ -28,6 +28,8 @@ import { tenantIsCentral, getTenantCentralClubId, NATIVE_STATS_TENANT_ID } from 
 import { loadAutoPost, persistDueDrafts } from "./effective-draft-state";
 import { notifyDraftsReady } from "./draft-notifications";
 import { runPublishSweep } from "./publishing/publish-worker";
+import { scheduleAutoPublish } from "./publishing/auto-publish";
+import { checkConnectionHealth } from "./publishing/connection-health";
 import { fillMissingDraftPhotos } from "./draft-enrich";
 import { draftCentralAchievements } from "./central-achievements";
 import { syncDebutCaps } from "./debut-caps";
@@ -172,18 +174,31 @@ export async function runDraftSweep(
 
   if (scope.kind === "scheduled") {
     // Auto-post (KTD4): store what already reads as ready, then tell the club
-    // once for the whole batch.
+    // once for the whole batch. With auto-publish on, fresh drafts are
+    // scheduled to Facebook / Instagram instead and skip the notice.
     try {
       if ((await loadAutoPost(tenantId)).enabled) {
         const promoted = await persistDueDrafts(tenantId, now);
         summary.promoted = promoted.length;
-        await notifyDraftsReady(tenantId, promoted, logger);
+        const autoPublished = await scheduleAutoPublish(tenantId, now);
+        await notifyDraftsReady(
+          tenantId,
+          promoted.filter((id) => !autoPublished.has(id)),
+          logger,
+        );
       }
     } catch (err) {
       logger.error({ err, tenantId }, "auto-post promotion failed");
     }
-    // Meta publishing: anything due for this club goes out now rather than
-    // waiting for the five-minute publish job (no-op while publishing is off).
+    // Meta publishing: the daily connection check first (a revoked token
+    // holds posts instead of failing them), then anything due goes out now
+    // rather than waiting for the five-minute publish job. Both are no-ops
+    // while publishing is off.
+    try {
+      await checkConnectionHealth(tenantId, now, logger);
+    } catch (err) {
+      logger.error({ err, tenantId }, "meta health check failed");
+    }
     try {
       await runPublishSweep({ tenantId, now }, logger);
     } catch (err) {

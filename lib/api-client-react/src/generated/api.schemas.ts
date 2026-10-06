@@ -4208,6 +4208,10 @@ export interface SocialSettings {
   autoPostEnabled?: boolean;
   /** Hours after a draft's own import before it becomes ready. */
   autoPostWindowHours?: number;
+  /** With auto-post on and Meta connected: fresh drafts publish to Facebook and Instagram at their deadline instead of only becoming ready. */
+  autoPublishEnabled?: boolean;
+  /** Only drafts first imported within this many hours auto-publish; older ones become ready. */
+  autoPublishFreshnessHours?: number;
   /**
      * Where draft notifications are emailed. Null = in-app only.
      * @nullable
@@ -4839,6 +4843,12 @@ export interface SocialSettingsUpdate {
      * @maximum 168
      */
   autoPostWindowHours?: number;
+  autoPublishEnabled?: boolean;
+  /**
+     * @minimum 1
+     * @maximum 336
+     */
+  autoPublishFreshnessHours?: number;
   /** @nullable */
   notificationEmail?: string | null;
   /** Merged into the stored map: only the packs sent change, the others keep their mode. */

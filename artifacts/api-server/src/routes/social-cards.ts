@@ -30,6 +30,7 @@ import { renderCardStill, harnessOriginFromHeaders } from "../lib/card-video-ren
 import { DEFAULT_TEMPLATES, ensureSettings } from "../lib/social-cards-helpers";
 import { resolveFamilyConfig, syncFamilySettings } from "../lib/social-families";
 import { persistDueDrafts } from "../lib/effective-draft-state";
+import { loadConnection } from "../lib/publishing/connections";
 
 // Deliberately loose: the address is only ever a recipient for our own mail.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -133,6 +134,28 @@ router.patch(
         }
       }
       roundSchedules = mergeRoundSchedules(current.roundSchedules, patchSchedules);
+    }
+    // Auto-publish (Meta publishing R4, R5) rides on auto-post and a live
+    // connection, and never publishes drafts older than the window allows.
+    const autoPostAfter = parsed.data.autoPostEnabled ?? current.autoPostEnabled;
+    if (!autoPostAfter) parsed.data.autoPublishEnabled = false;
+    if (parsed.data.autoPublishEnabled === true && !current.autoPublishEnabled) {
+      if ((await loadConnection(tenantId))?.status !== "connected") {
+        res.status(400).json({ error: "Connect Facebook and Instagram before auto-publishing." });
+        return;
+      }
+    }
+    const windowAfter = parsed.data.autoPostWindowHours ?? current.autoPostWindowHours;
+    const freshnessAfter =
+      parsed.data.autoPublishFreshnessHours ?? current.autoPublishFreshnessHours;
+    if (
+      (parsed.data.autoPublishEnabled ?? current.autoPublishEnabled) &&
+      freshnessAfter < windowAfter
+    ) {
+      res.status(400).json({
+        error: "The auto-publish cut-off must be at least the auto-post window.",
+      });
+      return;
     }
     // Turning auto-post off first stores every draft that already reads as
     // ready, so none quietly returns to review (KTD4, AE5).

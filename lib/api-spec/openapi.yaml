@@ -13415,6 +13415,12 @@ components:
         autoPostWindowHours:
           type: integer
           description: "Hours after a draft's own import before it becomes ready."
+        autoPublishEnabled:
+          type: boolean
+          description: "With auto-post on and Meta connected: fresh drafts publish to Facebook and Instagram at their deadline instead of only becoming ready."
+        autoPublishFreshnessHours:
+          type: integer
+          description: "Only drafts first imported within this many hours auto-publish; older ones become ready."
         notificationEmail:
           type: ["string", "null"]
           description: "Where draft notifications are emailed. Null = in-app only."
@@ -14301,6 +14307,12 @@ components:
           type: integer
           minimum: 1
           maximum: 168
+        autoPublishEnabled:
+          type: boolean
+        autoPublishFreshnessHours:
+          type: integer
+          minimum: 1
+          maximum: 336
         notificationEmail:
           type: ["string", "null"]
         packColourModes:
