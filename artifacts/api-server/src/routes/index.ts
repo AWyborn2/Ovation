@@ -32,6 +32,8 @@ import fixturesRouter from "./fixtures";
 import fixturesResultsRouter from "./fixtures-results";
 import playhqSyncStatusRouter from "./playhq-sync-status";
 import socialDraftsRouter from "./social-drafts";
+import socialConnectionsRouter from "./social-connections";
+import socialPublicationsRouter from "./social-publications";
 import clubPhotosRouter from "./club-photos";
 import cardPhotoRulesRouter from "./card-photo-rules";
 import studioToolsRouter from "./studio-tools";
@@ -53,6 +55,10 @@ import platformAdminRouter from "./platform-admin";
 import platformPlayerPrivacyRouter from "./platform-player-privacy";
 import historyImportRouter from "./history-import";
 import billingRouter from "./billing";
+import squadRouter from "./squad";
+import availabilitySettingsRouter from "./availability-settings";
+import selectionRouter from "./selection";
+import availabilityRespondRouter from "./availability-respond";
 
 const router: IRouter = Router();
 
@@ -89,6 +95,8 @@ router.use(fixturesRouter);
 router.use(playhqSyncStatusRouter);
 router.use(fixturesResultsRouter);
 router.use(socialDraftsRouter);
+router.use(socialConnectionsRouter);
+router.use(socialPublicationsRouter);
 router.use(clubPhotosRouter);
 router.use(cardPhotoRulesRouter);
 router.use(studioToolsRouter);
@@ -110,5 +118,9 @@ router.use(platformPlayerPrivacyRouter);
 router.use(historyImportRouter);
 router.use(platformStorageRouter);
 router.use(billingRouter);
+router.use(squadRouter);
+router.use(availabilitySettingsRouter);
+router.use(selectionRouter);
+router.use(availabilityRespondRouter);
 
 export default router;

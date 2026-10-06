@@ -19,6 +19,8 @@ export interface TeamListPlayer {
   participantId?: string;
   /** @minLength 1 */
   displayName: string;
-  /** Captain / wicket-keeper marker */
+  /** Captain / vice-captain / wicket-keeper marker */
   role?: TeamListPlayerRole;
+  /** Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds). */
+  debut?: boolean;
 }

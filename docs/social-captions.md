@@ -455,17 +455,22 @@ _A carousel set with every grade's result across a round's weekend._
 
 ---
 
-## 🔄 Whole-round drafts: built-in variations
+## 🔄 Auto-drafted Game Day, Team List and Weekend Wrap captions
 
-When Game Day, Team Lists or the Weekend Wrap are set to **Whole round** (Social queue → Round
-cards), each round's draft is captioned automatically from a pool of five variations. A different
-one is picked each round, so the weekly post never reads the same twice, and a refresh keeps the
-round's pick. Edit a draft's caption and it stays yours.
+Game Day and Team List drafts, whether set to **Each match** or **Whole round** (Social queue →
+Round cards), and the Weekend Wrap are captioned automatically from a pool of five variations
+each. A different one is picked per match or per round, so the posts never read the same twice,
+and a refresh keeps the draft's pick. Edit a draft's caption and it stays yours.
 
-The variations live in `ROUND_SET_CAPTIONS`
-(`artifacts/api-server/src/lib/social-cards-helpers.ts`). Junior rounds use the same pools, so
+The variations live in `CAPTION_VARIATIONS`
+(`artifacts/api-server/src/lib/social-cards-helpers.ts`). Junior drafts use the same pools, so
 every line works for any age group. Weekend Wrap variations never quote the win count, so a
 winless round still reads well.
+
+**Captions are written when a draft is made.** Drafts already in the queue keep the caption they
+were drafted with. To bring them up to date after a template or variation change, use **Refresh
+captions** on the Social queue: it rebuilds every waiting draft's caption, keeps any you've
+edited, and never touches posted, dismissed or hand-made cards.
 
 ---
 

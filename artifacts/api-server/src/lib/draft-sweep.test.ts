@@ -209,12 +209,59 @@ describe("central drafting sweep", () => {
     expect(await stumpsDrafts()).toHaveLength(1); // a one-day game never gets a Stumps card
   });
 
+  it("a first sweep (no watermark) drafts the recent window, not the history", async () => {
+    await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId));
+    await db
+      .update(socialSettingsTable)
+      .set({ centralSweepWatermark: null })
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+    await runDraftSweep(tenantId, { kind: "scheduled", now: NOW }, log);
+    const keys = (await centralDrafts()).map((d) => d.sourceKey);
+    expect(keys).toContain(draftKeys.centralMatchSummary(BASE + 3));
+    expect(keys).not.toContain(draftKeys.centralMatchSummary(BASE + 2));
+    expect(await watermark()).toBe(BASE + 7);
+  });
+
   it("records the sweep time for sweep health", async () => {
     const [s] = await db
       .select()
       .from(socialSettingsTable)
       .where(eq(socialSettingsTable.tenantId, tenantId));
     expect(s.lastSweepAt).not.toBeNull();
+  });
+
+  it("match results as a whole round: one carousel in grade order, no per-match cards", async () => {
+    await db
+      .update(socialSettingsTable)
+      .set({
+        engineRoundUp: true,
+        roundSchedules: { weekendWrap: { mode: "perRound", day: 0, hour: 19 } },
+      })
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+    // Round 4 already has A Grade games; add a B Grade one the same weekend.
+    await centralMatch(BASE + 8, { grade: "B Grade" });
+    await runDraftSweep(tenantId, { kind: "scheduled", now: NOW }, log);
+
+    expect((await centralDrafts()).map((d) => d.sourceKey)).not.toContain(
+      draftKeys.centralMatchSummary(BASE + 8),
+    );
+    const [wrap] = await db
+      .select()
+      .from(socialDraftsTable)
+      .where(
+        and(
+          eq(socialDraftsTable.tenantId, tenantId),
+          like(socialDraftsTable.sourceKey, "weekendwrap-round:%"),
+        ),
+      );
+    const input = wrap.cardInput as {
+      kind: string;
+      matches: { gradeLabel: string }[];
+      results: { kind: string }[];
+    };
+    expect(input.kind).toBe("weekendWrap");
+    expect(input.matches.map((m) => m.gradeLabel)).toEqual(["A Grade", "B Grade"]);
+    expect(input.results.map((r) => r.kind)).toEqual(["matchSummary", "matchSummary"]);
   });
 });
 

@@ -39,8 +39,14 @@ describe("Round cards settings", () => {
     expect(describeSchedule("gameDay", { mode: "perRound", day: 4, hour: 18 })).toBe(
       "The whole round as one set, every Thursday at 6 pm.",
     );
-    expect(describeSchedule("weekendWrap", { mode: "off", day: 0, hour: 19 })).toBe(
+    expect(describeSchedule("teamLists", { mode: "off", day: 5, hour: 12 })).toBe(
       "Not drafted automatically.",
+    );
+    expect(describeSchedule("weekendWrap", { mode: "off", day: 0, hour: 19 })).toBe(
+      "Each match gets its own result card once it's finished.",
+    );
+    expect(describeSchedule("weekendWrap", { mode: "perRound", day: 0, hour: 19 })).toMatch(
+      /^Last round's results as one carousel .* every Sunday at 7 pm\. No separate/,
     );
   });
 
@@ -77,11 +83,17 @@ describe("Round cards settings", () => {
     });
   });
 
-  it("the weekend wrap is whole round or off only", () => {
+  it("match results: each match, whole round or both; the old 'off' reads as each match", () => {
     renderAt(<RoundSchedulesCard settings={SETTINGS} />, "/admin/social/cards");
-    const options = Array.from(
-      (screen.getByLabelText("Weekend wrap: how it drafts") as HTMLSelectElement).options,
-    ).map((o) => o.value);
-    expect(options).toEqual(["perRound", "off"]);
+    const select = screen.getByLabelText("Match results: how it drafts") as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => o.value)).toEqual([
+      "perFixture",
+      "perRound",
+      "both",
+    ]);
+    expect(select.value).toBe("perFixture");
+    expect(screen.queryByLabelText("Match results: day")).toBeNull();
+    fireEvent.change(select, { target: { value: "both" } });
+    expect(screen.getByLabelText("Match results: day")).toBeTruthy();
   });
 });

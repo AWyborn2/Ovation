@@ -7,7 +7,15 @@ import {
   type FixtureRow,
   type SocialSettingsRow,
 } from "@workspace/db";
-import { gradeTile, isJuniorGradeLabel } from "@workspace/scorecard";
+import type { MatchDetail } from "@workspace/api-zod";
+import {
+  gradeTile,
+  groupOfGrade,
+  isJuniorGradeLabel,
+  matchToSummaryInput,
+} from "@workspace/scorecard";
+import { loadCentralMatchDetail } from "../match-detail";
+import { inClubGradeOrder } from "../club-grade-order";
 import { familyAllows, resolveFamilyConfig } from "../social-families";
 import { upsertDraftByKey } from "../draft-upsert";
 import { loadClubIdentity } from "../club-overlay";
@@ -17,9 +25,15 @@ import {
   ROUND_WINDOW_MS,
   lastScheduledAt,
   resolveRoundSchedules,
+  roundResultsCarouselOn,
 } from "../round-schedules";
 import { formatFixtureTime } from "./match-day";
-import { teamListSeasonOf, teamListShirtNumberLoader, teamListToCardInput } from "./team-list";
+import {
+  loadAutoDebuts,
+  teamListSeasonOf,
+  teamListShirtNumberLoader,
+  teamListToCardInput,
+} from "./team-list";
 
 /**
  * Round sets on a schedule (balanced card sets, plan 2026-10-01-001 U5): a
@@ -73,23 +87,48 @@ export type FixtureRoundGroup = {
   key: string;
   roundLabel: string;
   junior: boolean;
+  /** Team lists only: whose teams these are (men's and women's post apart). */
+  audience?: RoundAudience;
   /** Earliest start first. */
   fixtures: FixtureRow[];
 };
 
+export type RoundAudience = "men" | "women" | "junior";
+
+/** Whose team a grade is: women's and girls' grades apart, everything else senior is men's. */
+export function audienceOfGrade(grade: string): RoundAudience {
+  const g = groupOfGrade(grade);
+  return g === "junior" ? "junior" : g === "women" ? "women" : "men";
+}
+
+/** The cover's word for an audience ("MEN'S TEAMS NAMED"). */
+export const AUDIENCE_LABEL: Record<RoundAudience, string> = {
+  men: "MEN'S",
+  women: "WOMEN'S",
+  junior: "JUNIOR",
+};
+
 /**
  * Fixtures → rounds: the same round label on the same weekend, seniors and
- * juniors apart (the Studio's "this round's fixtures" grouping).
+ * juniors apart (the Studio's "this round's fixtures" grouping). With
+ * `byAudience` (team lists), men's and women's teams are apart too; the men's
+ * key stays "senior", so a round already drafted before the split keeps its
+ * draft.
  */
-export function groupFixtureRounds(fixtures: readonly FixtureRow[]): FixtureRoundGroup[] {
+export function groupFixtureRounds(
+  fixtures: readonly FixtureRow[],
+  opts: { byAudience?: boolean } = {},
+): FixtureRoundGroup[] {
   const groups = new Map<string, FixtureRoundGroup>();
   for (const f of fixtures) {
     const roundLabel = (f.roundLabel ?? "").trim().toUpperCase();
     const junior = isJuniorGradeLabel(f.grade);
-    const key = `${weekendOf(f.startAt)}:${roundLabel || "ROUND"}:${junior ? "junior" : "senior"}`;
+    const audience = opts.byAudience ? audienceOfGrade(f.grade) : undefined;
+    const section = junior ? "junior" : audience === "women" ? "women" : "senior";
+    const key = `${weekendOf(f.startAt)}:${roundLabel || "ROUND"}:${section}`;
     let g = groups.get(key);
     if (!g) {
-      g = { key, roundLabel, junior, fixtures: [] };
+      g = { key, roundLabel, junior, ...(audience ? { audience } : {}), fixtures: [] };
       groups.set(key, g);
     }
     g.fixtures.push(f);
@@ -122,6 +161,7 @@ async function scheduledRounds(
   now: Date,
   anchor: Date,
   allows: (grade: string, junior: boolean) => boolean,
+  opts: { byAudience?: boolean } = {},
 ): Promise<FixtureRoundGroup[]> {
   const fixtures = await db
     .select()
@@ -135,6 +175,7 @@ async function scheduledRounds(
     );
   return groupFixtureRounds(
     fixtures.filter((f) => allows(f.grade, isJuniorGradeLabel(f.grade))),
+    opts,
   ).filter((r) => (r.fixtures[0]?.startAt.getTime() ?? 0) > now.getTime());
 }
 
@@ -182,8 +223,13 @@ export async function generateRoundTeamListDrafts(
   if (!families.matchday.enabled || schedule.mode !== "perRound") return result;
 
   const anchor = lastScheduledAt(now, schedule);
-  const rounds = await scheduledRounds(tenantId, now, anchor, (g, j) =>
-    familyAllows(families, "matchday", g, j),
+  // Men's and women's teams post as their own sets (juniors apart as always).
+  const rounds = await scheduledRounds(
+    tenantId,
+    now,
+    anchor,
+    (g, j) => familyAllows(families, "matchday", g, j),
+    { byAudience: true },
   );
   if (rounds.length === 0) return result;
 
@@ -201,9 +247,11 @@ export async function generateRoundTeamListDrafts(
       const players = byFixture.get(f.id);
       if (!players) continue;
       // Each team is exactly the fixture's own team-list card (fill-ins excluded).
+      const debuts = await loadAutoDebuts(tenantId, players, f.startAt);
       const { kind: _kind, ...team } = teamListToCardInput(
         f,
         players,
+        debuts,
         await shirtNumbers(teamListSeasonOf(f)),
       );
       if ((team.players as unknown[]).length > 0) teams.push(team);
@@ -218,6 +266,7 @@ export async function generateRoundTeamListDrafts(
         kind: "teamListRound",
         roundLabel: round.roundLabel,
         date: round.fixtures[0] ? formatRoundDate(round.fixtures[0].startAt) : "",
+        ...(round.audience ? { audience: AUDIENCE_LABEL[round.audience] } : {}),
         teams,
       },
       appPath: "/fixtures",
@@ -239,10 +288,11 @@ function seasonOf(d: Date): number {
 }
 
 /**
- * The weekend wrap as one round set, at the club's chosen day and hour: the
- * latest round the club played in the week before that moment. Central-data
- * clubs only (the wrap reads central results); seniors only, as central data
- * holds no junior grades.
+ * The round's match results as one carousel, at the club's chosen day and hour: the
+ * latest round the club played in the week before that moment, as the weekend wrap
+ * (its cover) followed by each match's own result card, in the club's grade order.
+ * Drafted when match results are "perRound" or "both". Central-data clubs only (the
+ * wrap reads central results); seniors only, as central data holds no junior grades.
  */
 export async function generateWeekendWrapDrafts(
   tenantId: number,
@@ -252,7 +302,7 @@ export async function generateWeekendWrapDrafts(
   const settings = await loadSettings(tenantId);
   const families = resolveFamilyConfig(settings);
   const schedule = resolveRoundSchedules(settings?.roundSchedules).weekendWrap;
-  if (!families.roundup.enabled || schedule.mode !== "perRound") return result;
+  if (!families.roundup.enabled || !roundResultsCarouselOn(schedule.mode)) return result;
   if (!(await tenantIsCentral(tenantId))) return result;
 
   const anchor = lastScheduledAt(now, schedule);
@@ -274,6 +324,23 @@ export async function generateWeekendWrapDrafts(
   const wrap = await centralWeekendWrap(clubId, season, round, merges);
   if (wrap.matches.length === 0) return result;
 
+  // The round as a carousel (Ash, 6 Oct 2026): the wrap is its cover, then each match's own
+  // result card in the same grade order. A match whose scorecard can't be read keeps its row
+  // on the cover but gets no slide.
+  const ordered = await inClubGradeOrder(tenantId, wrap.matches);
+  const rows: typeof ordered = [];
+  const results: Record<string, unknown>[] = [];
+  for (const m of ordered) {
+    const detail = await loadCentralMatchDetail({ tenantId, clubId }, m.matchId);
+    if (detail) {
+      rows.push(m);
+      results.push(
+        matchToSummaryInput(detail as unknown as MatchDetail) as Record<string, unknown>,
+      );
+    }
+  }
+  const listed = [...rows, ...ordered.filter((m) => !rows.includes(m))];
+
   const { action } = await upsertDraftByKey({
     tenantId,
     engine: "weekendwrap-round",
@@ -283,12 +350,13 @@ export async function generateWeekendWrapDrafts(
       kind: "weekendWrap",
       roundLabel: wrap.roundLabel.toUpperCase(),
       dateRange: wrap.dateRange,
-      matches: wrap.matches.map((m) => ({
+      matches: listed.map((m) => ({
         gradeLabel: m.gradeLabel,
         resultLine: m.resultLine,
         performers: m.performers,
         outcome: WRAP_OUTCOME[m.outcome] ?? "draw",
       })),
+      results,
     },
     appPath: "/fixtures",
     sourceImportedAt: now,

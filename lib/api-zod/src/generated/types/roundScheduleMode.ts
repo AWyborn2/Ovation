@@ -7,7 +7,7 @@
  */
 
 /**
- * "perFixture" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). "perRound" drafts the whole round as one balanced set at `day` / `hour`. "off" drafts nothing. The weekend wrap is "off" or "perRound" only.
+ * "perFixture" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). "perRound" drafts the whole round as one balanced set at `day` / `hour`. "off" drafts nothing. Match results (`weekendWrap`) differ: "perFixture" or "off" drafts each match's own result card only, "perRound" drafts the round as one carousel (its cover, then each match's result card) instead, and "both" drafts both. "both" is for match results only.
  */
 export type RoundScheduleMode = typeof RoundScheduleMode[keyof typeof RoundScheduleMode];
 
@@ -16,4 +16,5 @@ export const RoundScheduleMode = {
   off: 'off',
   perFixture: 'perFixture',
   perRound: 'perRound',
+  both: 'both',
 } as const;

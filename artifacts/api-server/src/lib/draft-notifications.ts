@@ -41,3 +41,41 @@ export async function notifyDraftsReady(
   }
   return row;
 }
+
+/**
+ * One in-app notice, echoed by email to the club's notification address
+ * (best-effort). Shared by the Meta publishing notices (plan 2026-10-06-001):
+ * posts published, posts that failed for good, and a connection that needs
+ * reconnecting.
+ */
+export async function notifyClub(
+  tenantId: number,
+  notice: {
+    kind: "published" | "publish_failed" | "reconnect_needed";
+    title: string;
+    body: string;
+    link: string;
+    payload?: Record<string, unknown>;
+  },
+  logger: Logger,
+): Promise<NotificationRow> {
+  const [row] = await db
+    .insert(notificationsTable)
+    .values({ tenantId, ...notice, payload: notice.payload ?? {} })
+    .returning();
+  const [settings] = await db
+    .select({ email: socialSettingsTable.notificationEmail })
+    .from(socialSettingsTable)
+    .where(eq(socialSettingsTable.tenantId, tenantId));
+  if (settings?.email) {
+    const result = await sendEmail({
+      to: settings.email,
+      subject: notice.title,
+      text: `${notice.body}\n\n${notice.link}`,
+    });
+    if (!result.sent && result.reason === "failed") {
+      logger.warn({ tenantId, error: result.error }, `${notice.kind} email failed`);
+    }
+  }
+  return row;
+}

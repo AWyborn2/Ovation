@@ -254,8 +254,9 @@ describe.skipIf(!isLocalDb)("club corrections admin (tenant-scoped)", () => {
     };
     cookieA = await cookieFor(a, "owner-a");
     cookieB = await cookieFor(b, "owner-b");
-    // KTD8: the club's first sweep only records its newest match (no drafts).
-    expect(await sweepCentralMatches(a, new Date("2024-11-20T00:00:00Z"), log)).toEqual({
+    // KTD8: record the watermark. A first sweep drafts only matches in its recent window,
+    // so sweeping long after these matches records the newest one and drafts nothing.
+    expect(await sweepCentralMatches(a, new Date("2030-01-01T00:00:00Z"), log)).toEqual({
       seen: 0,
       drafted: 0,
       achievements: 0,

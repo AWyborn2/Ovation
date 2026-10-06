@@ -9,6 +9,8 @@ import {
   getListNotificationsQueryKey,
   useListSocialDrafts,
   getListSocialDraftsQueryKey,
+  useGetMetaConnection,
+  getGetMetaConnectionQueryKey,
   type NotificationList,
   type SocialSettingsBundle,
 } from "@workspace/api-client-react";
@@ -25,20 +27,28 @@ export function sweepIsStale(lastSweepAt: string | null | undefined, now = new D
 }
 
 const AWAITING = { status: "awaiting_review" } as const;
+const READY = { status: "ready" } as const;
 
 /**
  * The admin hub's "needs attention" strip (Social Studio U24): drafts waiting
  * for review, recent imports, recent notifications, and a warning when the
- * automatic draft sweep has gone quiet.
+ * automatic draft sweep has gone quiet. With Meta publishing: a connection
+ * that needs reconnecting, and drafts whose post failed for good (R18).
  */
 export function NeedsAttention() {
-  const { socialStudio } = useEntitlements();
+  const { socialStudio, socialPublishing } = useEntitlements();
   const importsQ = useListImports({ query: { queryKey: getListImportsQueryKey() } });
   const notificationsQ = useListNotifications({
     query: { queryKey: getListNotificationsQueryKey() },
   });
   const draftsQ = useListSocialDrafts(AWAITING, {
     query: { queryKey: getListSocialDraftsQueryKey(AWAITING), enabled: !!socialStudio },
+  });
+  const metaQ = useGetMetaConnection({
+    query: { queryKey: getGetMetaConnectionQueryKey(), enabled: !!socialPublishing },
+  });
+  const readyQ = useListSocialDrafts(READY, {
+    query: { queryKey: getListSocialDraftsQueryKey(READY), enabled: !!socialPublishing },
   });
   const settingsQ = useGetSocialSettings({
     query: { queryKey: getGetSocialSettingsQueryKey(), enabled: !!socialStudio },
@@ -54,6 +64,9 @@ export function NeedsAttention() {
   );
   const settings = (settingsQ.data as SocialSettingsBundle | undefined)?.settings;
   const staleSweep = socialStudio && settingsQ.isSuccess && sweepIsStale(settings?.lastSweepAt);
+  const meta = metaQ.data;
+  const reconnect = !!meta?.available && meta.status === "needs_reconnect";
+  const failed = (readyQ.data ?? []).filter((d) => d.needsAttention);
 
   return (
     <section aria-label="Needs attention" className="space-y-4">
@@ -71,6 +84,50 @@ export function NeedsAttention() {
                 : "The sweep hasn't run yet. "}
               New results won't be drafted until the scheduled sweep runs again. Cards still draft
               after each import.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {reconnect && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-xl border border-[var(--loss-fg)]/40 bg-[var(--loss-bg)] px-4 py-3 text-sm"
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--loss-fg)]" aria-hidden />
+          <div>
+            <p className="font-semibold">Reconnect Facebook and Instagram</p>
+            <p className="text-muted-foreground">
+              {meta?.statusReason ? `${meta.statusReason} ` : ""}Scheduled posts are on hold until
+              you reconnect.{" "}
+              <Link href="/admin/social/cards" className="font-medium text-primary-text underline">
+                Reconnect
+              </Link>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {failed.length > 0 && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 rounded-xl border border-[var(--loss-fg)]/40 bg-[var(--loss-bg)] px-4 py-3 text-sm"
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--loss-fg)]" aria-hidden />
+          <div>
+            <p className="font-semibold">
+              {failed.length === 1
+                ? "1 card couldn't be published"
+                : `${failed.length} cards couldn't be published`}
+            </p>
+            <p className="text-muted-foreground">
+              Retry them, or share by hand and mark them posted.{" "}
+              <Link
+                href={`/admin/social/queue?ids=${failed.map((d) => d.id).join(",")}`}
+                className="font-medium text-primary-text underline"
+              >
+                Open in the queue
+              </Link>
             </p>
           </div>
         </div>

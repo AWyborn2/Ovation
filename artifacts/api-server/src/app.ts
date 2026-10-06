@@ -7,6 +7,8 @@ import router from "./routes";
 import { tenantContext } from "./middlewares/tenant-context";
 import internalDraftSweepRouter from "./routes/internal-draft-sweep";
 import internalPlayhqIngestRouter from "./routes/internal-playhq-ingest";
+import metaCallbacksRouter from "./routes/meta-callbacks";
+import internalPublishSweepRouter from "./routes/internal-publish-sweep";
 import { billingWebhookHandler } from "./routes/billing";
 import { goRedirectRouter } from "./routes/social-drafts";
 import { logger } from "./lib/logger";
@@ -39,6 +41,16 @@ function buildAllowedOrigins(): Set<string> {
 
 const allowedOrigins = buildAllowedOrigins();
 
+/**
+ * The request path as logged: the query string dropped, and the personal-link
+ * token after `/availability/respond/` replaced with `[token]` — the token is
+ * the player page's only credential, so it never reaches a log line.
+ * Case-insensitive, like Express routing.
+ */
+export function logUrl(url: string | undefined): string | undefined {
+  return url?.split("?")[0].replace(/(\/availability\/respond\/)[^/]+/gi, "$1[token]");
+}
+
 app.use(
   pinoHttp({
     logger,
@@ -47,7 +59,7 @@ app.use(
         return {
           id: req.id,
           method: req.method,
-          url: req.url?.split("?")[0],
+          url: logUrl(req.url),
         };
       },
       res(res) {
@@ -109,6 +121,11 @@ app.use(express.json({ limit: "100kb" }));
 // Machine-to-machine drafting sweep: secret-protected, and the tenant comes
 // from the body, so it is mounted ahead of host-based tenant resolution.
 app.use("/api/internal", internalDraftSweepRouter);
+app.use("/api/internal", internalPublishSweepRouter);
+
+// Meta's OAuth callback and app callbacks live on the one platform host Meta
+// knows; the tenant comes from a signed state or signed request, never the host.
+app.use("/api/meta", metaCallbacksRouter);
 
 // Resolve the tenant (header → env → default) for every API request before the
 // routes run, so handlers can read it via getTenantId(req).

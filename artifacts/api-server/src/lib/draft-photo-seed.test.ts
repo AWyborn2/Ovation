@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("@workspace/db", () => ({ db: {} }));
-vi.mock("./social-cards-helpers", () => ({ DEFAULT_TEMPLATES: [], ROUND_SET_CAPTIONS: {} }));
+vi.mock("./social-cards-helpers", () => ({ DEFAULT_TEMPLATES: [], CAPTION_VARIATIONS: {} }));
 vi.mock("./photo-store", () => ({ objectUrl: (p: string) => `/api/storage${p}` }));
 
 import { draftPhotoGrade, seededPick } from "./draft-enrich";

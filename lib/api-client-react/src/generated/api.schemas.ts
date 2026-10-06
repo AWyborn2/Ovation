@@ -1820,8 +1820,63 @@ export interface Entitlements {
   customDomain: boolean;
   mobileApp: boolean;
   socialStudio: boolean;
+  /** Publishing drafts to Facebook and Instagram. */
+  socialPublishing: boolean;
   clubroomTv: boolean;
   curation: boolean;
+}
+
+export type MetaConnectionStatus = typeof MetaConnectionStatus[keyof typeof MetaConnectionStatus];
+
+
+export const MetaConnectionStatus = {
+  not_connected: 'not_connected',
+  connected: 'connected',
+  needs_reconnect: 'needs_reconnect',
+  disconnected: 'disconnected',
+} as const;
+
+export interface MetaConnection {
+  /** Whether publishing is switched on for the platform and this club's plan. */
+  available: boolean;
+  status: MetaConnectionStatus;
+  /** @nullable */
+  statusReason?: string | null;
+  /** @nullable */
+  pageName?: string | null;
+  /**
+     * Null when the Page has no linked Instagram professional account.
+     * @nullable
+     */
+  igUsername?: string | null;
+  /** @nullable */
+  connectedAt?: string | null;
+}
+
+export interface MetaConnectStart {
+  /** Confirms replacing an existing connection. */
+  replace?: boolean;
+}
+
+export interface MetaConnectStartResult {
+  url: string;
+}
+
+export interface MetaConnectPage {
+  pageId: string;
+  pageName: string;
+  /** @nullable */
+  igUsername?: string | null;
+}
+
+export interface MetaConnectPending {
+  pages: MetaConnectPage[];
+}
+
+export interface MetaConnectComplete {
+  token: string;
+  pageId: string;
+  replace?: boolean;
 }
 
 export type TenantPlanPlan = typeof TenantPlanPlan[keyof typeof TenantPlanPlan];
@@ -2744,6 +2799,663 @@ export interface CaptainUpdate {
   grades?: string[];
 }
 
+export type SquadSection = typeof SquadSection[keyof typeof SquadSection];
+
+
+export const SquadSection = {
+  senior: 'senior',
+  junior: 'junior',
+} as const;
+
+/**
+ * Which contact details a recipient slot has — never the values.
+ */
+export interface SquadContactPresence {
+  hasName: boolean;
+  hasMobile: boolean;
+  hasEmail: boolean;
+  smsOptedOut: boolean;
+}
+
+export interface SquadMember {
+  id: number;
+  /** @nullable */
+  playhqProfileId: string | null;
+  firstName: string;
+  lastName: string;
+  /** @nullable */
+  preferredName: string | null;
+  section: SquadSection;
+  active: boolean;
+  /** The admin set `active` by hand; imports never override it. */
+  activeSetByAdmin: boolean;
+  /**
+     * From date of birth (Perth today); null when unknown. Under-18s are contacted through their guardians.
+     * @nullable
+     */
+  under18: boolean | null;
+  /** @nullable */
+  gradeHint: string | null;
+  /** @nullable */
+  teamName: string | null;
+  /** @nullable */
+  ageGroup: string | null;
+  isPrivate: boolean;
+  /** @nullable */
+  linkedPlayerId: number | null;
+  account: SquadContactPresence;
+  guardian1: SquadContactPresence;
+  guardian2: SquadContactPresence;
+  /** A player or guardian changed a contact from their link; stays up until an admin clears it. */
+  contactChangeFlag: boolean;
+  updatedAt: string;
+}
+
+export interface SquadContact {
+  /** @nullable */
+  name: string | null;
+  /** @nullable */
+  mobile: string | null;
+  /** @nullable */
+  email: string | null;
+  smsOptedOut: boolean;
+}
+
+export interface SquadMemberDetail {
+  id: number;
+  /** @nullable */
+  playhqProfileId: string | null;
+  firstName: string;
+  lastName: string;
+  /** @nullable */
+  preferredName: string | null;
+  /**
+     * ISO date (YYYY-MM-DD)
+     * @nullable
+     */
+  dateOfBirth: string | null;
+  section: SquadSection;
+  active: boolean;
+  activeSetByAdmin: boolean;
+  /** @nullable */
+  under18: boolean | null;
+  /** @nullable */
+  gradeHint: string | null;
+  /** @nullable */
+  teamName: string | null;
+  /** @nullable */
+  ageGroup: string | null;
+  isPrivate: boolean;
+  /** @nullable */
+  linkedPlayerId: number | null;
+  account: SquadContact;
+  guardian1: SquadContact;
+  guardian2: SquadContact;
+  contactChangeFlag: boolean;
+  /** @nullable */
+  contactChangedAt: string | null;
+  updatedAt: string;
+}
+
+/**
+ * Omitted fields are unchanged; null or "" clears a value.
+ */
+export interface SquadContactUpdate {
+  /** @nullable */
+  name?: string | null;
+  /** @nullable */
+  mobile?: string | null;
+  /** @nullable */
+  email?: string | null;
+}
+
+export interface SquadMemberUpdate {
+  active?: boolean;
+  section?: SquadSection;
+  /** @nullable */
+  gradeHint?: string | null;
+  /** @nullable */
+  linkedPlayerId?: number | null;
+  /** Set false to clear the contact-changed flag. */
+  contactChangeFlag?: boolean;
+  account?: SquadContactUpdate;
+  guardian1?: SquadContactUpdate;
+  guardian2?: SquadContactUpdate;
+}
+
+export interface SquadImportSkip {
+  /** Line in the uploaded file (the header is line 1) */
+  line: number;
+  name: string;
+  /** missing_profile_id, missing_name, not_a_player, inactive_status, other_season, other_organisation or duplicate_profile */
+  reason: string;
+}
+
+export type SquadImportResultSkippedByReasonItem = {
+  reason: string;
+  count: number;
+};
+
+export interface SquadImportResult {
+  /**
+     * The file's current season (its most common Season value)
+     * @nullable
+     */
+  season: string | null;
+  created: number;
+  updated: number;
+  /** Existing members stood down because their registration is no longer active */
+  deactivated: number;
+  /** Members newly linked to a club player record */
+  linked: number;
+  /** Members whose contacts were kept because a player or guardian changed them from their link and an admin hasn't cleared the flag yet */
+  contactsKept: number;
+  skipped: SquadImportSkip[];
+  skippedByReason: SquadImportResultSkippedByReasonItem[];
+}
+
+/**
+ * Who may edit a side in the Selection Hub
+ */
+export type AvailabilitySelectionRule = typeof AvailabilitySelectionRule[keyof typeof AvailabilitySelectionRule];
+
+
+export const AvailabilitySelectionRule = {
+  captains_own_grade: 'captains_own_grade',
+  captains_all_grades: 'captains_all_grades',
+  admins_only: 'admins_only',
+} as const;
+
+/**
+ * The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);
+times are 24-hour "HH:MM". Finalise-by is shown to captains only.
+
+ */
+export interface AvailabilitySettingsInput {
+  /** The club's switch; nothing is sent while it is off */
+  enabled: boolean;
+  /** Off → email only */
+  smsEnabled: boolean;
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  sendDow: number;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  sendTime: string;
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  reminderDow: number;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  reminderTime: string;
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  cutoffDow: number;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  cutoffTime: string;
+  /**
+     * @minimum 0
+     * @maximum 6
+     */
+  finaliseDow: number;
+  /** @pattern ^([01][0-9]|2[0-3]):[0-5][0-9]$ */
+  finaliseTime: string;
+  selectionRule: AvailabilitySelectionRule;
+}
+
+export type AvailabilitySettings = AvailabilitySettingsInput & ({
+  /**
+     * Null while the club is on the defaults
+     * @nullable
+     */
+  updatedAt: string | null;
+});
+
+/**
+ * One status per member asked — Yes for any date, else Maybe, else No; None when unanswered
+ */
+export interface AvailabilityRoundCounts {
+  yes: number;
+  maybe: number;
+  no: number;
+  none: number;
+  /** Members with an answer given after the cut-off */
+  late: number;
+  total: number;
+}
+
+export interface AvailabilityRoundStatus {
+  enabled: boolean;
+  /** @nullable */
+  roundId: number | null;
+  /** The round's Saturday */
+  weekendDate: string;
+  sendAt: string;
+  reminderAt: string;
+  cutoffAt: string;
+  finaliseAt: string;
+  /** @nullable */
+  sendStartedAt: string | null;
+  /** @nullable */
+  sendCompletedAt: string | null;
+  /** @nullable */
+  reminderStartedAt: string | null;
+  /** @nullable */
+  reminderCompletedAt: string | null;
+  /** @nullable */
+  cutoffStartedAt: string | null;
+  /** @nullable */
+  cutoffCompletedAt: string | null;
+  counts: AvailabilityRoundCounts;
+}
+
+export type AvailabilityStepResultStep = typeof AvailabilityStepResultStep[keyof typeof AvailabilityStepResultStep];
+
+
+export const AvailabilityStepResultStep = {
+  send: 'send',
+  remind: 'remind',
+  cutoff: 'cutoff',
+} as const;
+
+export interface AvailabilityStepResult {
+  step: AvailabilityStepResultStep;
+  roundId: number;
+  /** Members messaged */
+  messaged: number;
+  /** Members recorded unavailable from an away period instead of being asked */
+  away: number;
+  /** Members with no fixture to be asked about this round */
+  noFixture: number;
+  /** Members skipped because they were reminded by hand in the last 12 hours */
+  throttled: number;
+  /** Draft sides created at cut-off */
+  drafts: number;
+}
+
+/**
+ * The member's answer for the dates they were asked about (none = no reply)
+ */
+export type SelectionMemberStatus = typeof SelectionMemberStatus[keyof typeof SelectionMemberStatus];
+
+
+export const SelectionMemberStatus = {
+  yes: 'yes',
+  maybe: 'maybe',
+  no: 'no',
+  none: 'none',
+} as const;
+
+/**
+ * A squad member as the Hub shows them — never a contact value.
+ */
+export interface SelectionMember {
+  id: number;
+  displayName: string;
+  status: SelectionMemberStatus;
+  /** @nullable */
+  note: string | null;
+  /**
+     * The grade of the last team list the member appears in, else their grade hint
+     * @nullable
+     */
+  lastGrade: string | null;
+  /** True for a junior (or under-18) member on the senior board */
+  junior: boolean;
+  isPrivate: boolean;
+  /** @nullable */
+  repliedAt: string | null;
+  /** Answered after the cut-off */
+  late: boolean;
+}
+
+export type SelectionGapReason = typeof SelectionGapReason[keyof typeof SelectionGapReason];
+
+
+export const SelectionGapReason = {
+  no: 'no',
+  maybe: 'maybe',
+  no_reply: 'no_reply',
+  not_on_register: 'not_on_register',
+  withdrew: 'withdrew',
+  picked_elsewhere: 'picked_elsewhere',
+} as const;
+
+/**
+ * Who held an open slot and why they left it ("was <name> · <reason>")
+ */
+export interface SelectionGap {
+  /** @minLength 1 */
+  name: string;
+  reason: SelectionGapReason;
+}
+
+export interface SelectionSlot {
+  /** @nullable */
+  memberId: number | null;
+  gap: SelectionGap | null;
+  member: SelectionMember | null;
+}
+
+export interface SelectionFixture {
+  id: number;
+  grade: string;
+  opponentName: string;
+  startAt: string;
+  /** @nullable */
+  venue: string | null;
+  isHome: boolean;
+  /** @nullable */
+  roundLabel: string | null;
+}
+
+export interface SelectionWarnings {
+  filled: number;
+  open: number;
+  /** Selected members who said Maybe or haven't replied */
+  unconfirmed: number;
+  /** Selected members who said they're unavailable */
+  saidNo: number;
+  noCaptain: boolean;
+  noKeeper: boolean;
+}
+
+export type SelectionSideState = typeof SelectionSideState[keyof typeof SelectionSideState];
+
+
+export const SelectionSideState = {
+  draft: 'draft',
+  final: 'final',
+} as const;
+
+export interface SelectionSide {
+  id: number;
+  roundId: number;
+  fixture: SelectionFixture;
+  /** The fixture's Perth date */
+  date: string;
+  state: SelectionSideState;
+  version: number;
+  slots: SelectionSlot[];
+  /** @nullable */
+  captainMemberId: number | null;
+  /** @nullable */
+  keeperMemberId: number | null;
+  /** @nullable */
+  finalisedAt: string | null;
+  /** @nullable */
+  finalisedBy: string | null;
+  /** The caller may change the side now (they have the right and it is not finalised) */
+  canEdit: boolean;
+  /** The caller may finalise or re-open the side */
+  canFinalise: boolean;
+  /**
+     * Why the side is read-only to the caller; null when they can edit it
+     * @nullable
+     */
+  readOnlyReason: string | null;
+  warnings: SelectionWarnings;
+}
+
+export interface SelectionRound {
+  roundId: number;
+  weekendDate: string;
+  sendAt: string;
+  reminderAt: string;
+  cutoffAt: string;
+  /** Finalise-by, shown to captains */
+  finaliseAt: string;
+  /** @nullable */
+  sendStartedAt: string | null;
+  /** @nullable */
+  reminderStartedAt: string | null;
+  /** @nullable */
+  cutoffStartedAt: string | null;
+  /** @nullable */
+  cutoffCompletedAt: string | null;
+  counts: AvailabilityRoundCounts;
+}
+
+export type SelectionEventDetail = { [key: string]: unknown };
+
+export interface SelectionEvent {
+  id: number;
+  selectionId: number;
+  grade: string;
+  /** admin, captain, player or system */
+  actorKind: string;
+  /** @nullable */
+  actorName: string | null;
+  /** draft, update, finalise, reopen or withdraw */
+  action: string;
+  detail: SelectionEventDetail;
+  createdAt: string;
+}
+
+export type SelectionActorKind = typeof SelectionActorKind[keyof typeof SelectionActorKind];
+
+
+export const SelectionActorKind = {
+  admin: 'admin',
+  captain: 'captain',
+} as const;
+
+export interface SelectionActor {
+  kind: SelectionActorKind;
+  name: string;
+  selectionRule: AvailabilitySelectionRule;
+  /** The caller may send the section's non-responders a reminder */
+  canRemind: boolean;
+}
+
+export interface SelectionBoard {
+  section: SquadSection;
+  actor: SelectionActor;
+  round: SelectionRound | null;
+  selections: SelectionSide[];
+  /** Active members of the section not placed in any side of the round */
+  pool: SelectionMember[];
+  /** The latest changes to the section's sides, newest first */
+  events: SelectionEvent[];
+}
+
+export interface SelectionSlotInput {
+  /** @nullable */
+  memberId: number | null;
+  gap?: SelectionGap | null;
+}
+
+export interface SelectionChange {
+  selectionId: number;
+  /** The version the caller last saw */
+  version: number;
+  /** The side's 11 slots, in order */
+  slots: SelectionSlotInput[];
+  /** @nullable */
+  captainMemberId: number | null;
+  /** @nullable */
+  keeperMemberId: number | null;
+}
+
+export interface SelectionBoardSave {
+  /** @minItems 1 */
+  changes: SelectionChange[];
+}
+
+export interface SelectionFinaliseBody {
+  /** The side's version as the caller loaded it */
+  version: number;
+}
+
+export type SelectionFinaliseResultMessaged = {
+  /** Newly selected members messaged */
+  selected: number;
+  /** Members dropped since the last finalise who were told */
+  deselected: number;
+  /** Members every delivery failed for; the next finalise tries them again */
+  failed: number;
+};
+
+export interface SelectionFinaliseResult {
+  selection: SelectionSide;
+  messaged: SelectionFinaliseResultMessaged;
+}
+
+export interface SelectionRemindBody {
+  section: SquadSection;
+}
+
+/**
+ * Who a personal link was sent to — the account holder (adults) or a guardian
+ */
+export type AvailabilityRecipientSlot = typeof AvailabilityRecipientSlot[keyof typeof AvailabilityRecipientSlot];
+
+
+export const AvailabilityRecipientSlot = {
+  account: 'account',
+  guardian1: 'guardian1',
+  guardian2: 'guardian2',
+} as const;
+
+export type AvailabilityStatus = typeof AvailabilityStatus[keyof typeof AvailabilityStatus];
+
+
+export const AvailabilityStatus = {
+  yes: 'yes',
+  no: 'no',
+  maybe: 'maybe',
+} as const;
+
+export interface AvailabilityDateAnswer {
+  /** Perth date, YYYY-MM-DD */
+  date: string;
+  /** The current answer; null when nobody has answered */
+  status: AvailabilityStatus | null;
+  /** @nullable */
+  note: string | null;
+  /** Answered after cut-off */
+  late: boolean;
+  /** The member is in a finalised side on this date, so the answer can't change */
+  locked: boolean;
+}
+
+export interface AvailabilityAwayPeriod {
+  id: number;
+  fromDate: string;
+  toDate: string;
+}
+
+/**
+ * This recipient's contact, masked (e.g. "04xx xxx 678", "j***@example.com")
+ */
+export interface AvailabilityMaskedContact {
+  /** @nullable */
+  mobile: string | null;
+  /** @nullable */
+  email: string | null;
+}
+
+/**
+ * @nullable
+ */
+export type AvailabilityMatchRole = typeof AvailabilityMatchRole[keyof typeof AvailabilityMatchRole] | null;
+
+
+export const AvailabilityMatchRole = {
+  C: 'C',
+  WK: 'WK',
+  'C/WK': 'C/WK',
+} as const;
+
+export interface AvailabilityMatch {
+  grade: string;
+  opponent: string;
+  /** @nullable */
+  venue: string | null;
+  startAt: string;
+  isHome: boolean;
+  /** @nullable */
+  role: AvailabilityMatchRole;
+}
+
+export interface AvailabilityResponsePage {
+  clubName: string;
+  /** @nullable */
+  clubShortName: string | null;
+  /** @nullable */
+  logoUrl: string | null;
+  /** @nullable */
+  primaryColour: string | null;
+  /** The member's preferred (or first) name */
+  firstName: string;
+  displayName: string;
+  recipientSlot: AvailabilityRecipientSlot;
+  /** True when the link went to the player themself rather than a guardian */
+  self: boolean;
+  /** The round's Saturday, YYYY-MM-DD */
+  weekendDate: string;
+  dates: AvailabilityDateAnswer[];
+  /** Away periods that haven't ended yet */
+  away: AvailabilityAwayPeriod[];
+  contact: AvailabilityMaskedContact;
+  /** The match, once the member is in a finalised side this round */
+  selection: AvailabilityMatch | null;
+  /** The member is in a side this round, so "can't make it" is offered */
+  canWithdraw: boolean;
+  /** The member's side is final; only "can't make it" is allowed */
+  locked: boolean;
+  /** The member withdrew from their side this round */
+  withdrawn: boolean;
+  /** Cut-off has passed; new answers are marked late */
+  late: boolean;
+}
+
+export type AvailabilityAnswersInputAnswersItem = {
+  /** @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ */
+  date: string;
+  status: AvailabilityStatus;
+  /**
+     * @maxLength 280
+     * @nullable
+     */
+  note?: string | null;
+};
+
+export interface AvailabilityAnswersInput {
+  /**
+     * @minItems 1
+     * @maxItems 7
+     */
+  answers: AvailabilityAnswersInputAnswersItem[];
+}
+
+export interface AvailabilityAwayInput {
+  /** @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ */
+  fromDate: string;
+  /** @pattern ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ */
+  toDate: string;
+}
+
+/**
+ * At least one of mobile or email; omitted fields are unchanged
+ */
+export interface AvailabilityContactInput {
+  /**
+     * @minLength 1
+     * @maxLength 32
+     */
+  mobile?: string;
+  /**
+     * @minLength 3
+     * @maxLength 254
+     */
+  email?: string;
+}
+
 export interface AwardVotingConfig {
   id: number;
   awardId: number;
@@ -3396,6 +4108,8 @@ export interface Sponsor {
   activeTo?: string | null;
   /** Card types this sponsor may appear on. Empty = all cards. */
   cardKinds: CardKind[];
+  /** Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own. */
+  grades?: string[];
   /** The tenant's designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards' "presented by <sponsor>" line; none set → that line renders empty. */
   isPresenting: boolean;
   displayOrder: number;
@@ -3410,6 +4124,8 @@ export interface SponsorInput {
   /** @nullable */
   activeTo?: string | null;
   cardKinds?: CardKind[];
+  /** The grades whose team-list cards show this sponsor as their one logo. */
+  grades?: string[];
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;
@@ -3424,6 +4140,8 @@ export interface SponsorUpdate {
   /** @nullable */
   activeTo?: string | null;
   cardKinds?: CardKind[];
+  /** The grades whose team-list cards show this sponsor as their one logo. */
+  grades?: string[];
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;
@@ -4095,7 +4813,7 @@ export const PackColourMode = {
 export interface PackColourModes {[key: string]: PackColourMode}
 
 /**
- * "perFixture" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). "perRound" drafts the whole round as one balanced set at `day` / `hour`. "off" drafts nothing. The weekend wrap is "off" or "perRound" only.
+ * "perFixture" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). "perRound" drafts the whole round as one balanced set at `day` / `hour`. "off" drafts nothing. Match results (`weekendWrap`) differ: "perFixture" or "off" drafts each match's own result card only, "perRound" drafts the round as one carousel (its cover, then each match's result card) instead, and "both" drafts both. "both" is for match results only.
  */
 export type RoundScheduleMode = typeof RoundScheduleMode[keyof typeof RoundScheduleMode];
 
@@ -4104,10 +4822,11 @@ export const RoundScheduleMode = {
   off: 'off',
   perFixture: 'perFixture',
   perRound: 'perRound',
+  both: 'both',
 } as const;
 
 export interface RoundSchedule {
-  /** "perFixture" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). "perRound" drafts the whole round as one balanced set at `day` / `hour`. "off" drafts nothing. The weekend wrap is "off" or "perRound" only. */
+  /** "perFixture" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). "perRound" drafts the whole round as one balanced set at `day` / `hour`. "off" drafts nothing. Match results (`weekendWrap`) differ: "perFixture" or "off" drafts each match's own result card only, "perRound" drafts the round as one carousel (its cover, then each match's result card) instead, and "both" drafts both. "both" is for match results only. */
   mode: RoundScheduleMode;
   /**
      * Day of the week the round set is drafted (0 = Sunday), club time.
@@ -4166,6 +4885,10 @@ export interface SocialSettings {
   autoPostEnabled?: boolean;
   /** Hours after a draft's own import before it becomes ready. */
   autoPostWindowHours?: number;
+  /** With auto-post on and Meta connected: fresh drafts publish to Facebook and Instagram at their deadline instead of only becoming ready. */
+  autoPublishEnabled?: boolean;
+  /** Only drafts first imported within this many hours auto-publish; older ones become ready. */
+  autoPublishFreshnessHours?: number;
   /**
      * Where draft notifications are emailed. Null = in-app only.
      * @nullable
@@ -4797,6 +5520,12 @@ export interface SocialSettingsUpdate {
      * @maximum 168
      */
   autoPostWindowHours?: number;
+  autoPublishEnabled?: boolean;
+  /**
+     * @minimum 1
+     * @maximum 336
+     */
+  autoPublishFreshnessHours?: number;
   /** @nullable */
   notificationEmail?: string | null;
   /** Merged into the stored map: only the packs sent change, the others keep their mode. */
@@ -6207,6 +6936,57 @@ export const SocialDraftStatus = {
   dismissed: 'dismissed',
 } as const;
 
+export type SocialPublicationPlatform = typeof SocialPublicationPlatform[keyof typeof SocialPublicationPlatform];
+
+
+export const SocialPublicationPlatform = {
+  facebook: 'facebook',
+  instagram: 'instagram',
+} as const;
+
+export type SocialPublicationPostType = typeof SocialPublicationPostType[keyof typeof SocialPublicationPostType];
+
+
+export const SocialPublicationPostType = {
+  feed: 'feed',
+  story: 'story',
+} as const;
+
+export type SocialPublicationStatus = typeof SocialPublicationStatus[keyof typeof SocialPublicationStatus];
+
+
+export const SocialPublicationStatus = {
+  scheduled: 'scheduled',
+  held: 'held',
+  publishing: 'publishing',
+  published: 'published',
+  failed: 'failed',
+  cancelled: 'cancelled',
+} as const;
+
+export type SocialPublicationOrigin = typeof SocialPublicationOrigin[keyof typeof SocialPublicationOrigin];
+
+
+export const SocialPublicationOrigin = {
+  manual: 'manual',
+  auto: 'auto',
+} as const;
+
+export interface SocialPublication {
+  id: number;
+  draftId: number;
+  platform: SocialPublicationPlatform;
+  postType: SocialPublicationPostType;
+  status: SocialPublicationStatus;
+  origin: SocialPublicationOrigin;
+  scheduledFor: string;
+  attempts: number;
+  /** @nullable */
+  lastError?: string | null;
+  /** @nullable */
+  publishedAt?: string | null;
+}
+
 export interface SocialDraft {
   id: number;
   engine: string;
@@ -6252,6 +7032,50 @@ export interface SocialDraft {
      * @nullable
      */
   staleSince?: string | null;
+  /** Its Facebook / Instagram posts, newest attempt per platform and post type. */
+  publications?: SocialPublication[];
+  /** A post failed for good and nothing else is pending for it. */
+  needsAttention?: boolean;
+}
+
+export interface PublishSweepSummary {
+  /** True when publishing is off or another run was already going. */
+  skipped?: boolean;
+  claimed: number;
+  published: number;
+  failed: number;
+  held: number;
+  waiting: number;
+}
+
+export type SchedulePublicationsRequestPlatformsItem = typeof SchedulePublicationsRequestPlatformsItem[keyof typeof SchedulePublicationsRequestPlatformsItem];
+
+
+export const SchedulePublicationsRequestPlatformsItem = {
+  facebook: 'facebook',
+  instagram: 'instagram',
+} as const;
+
+export type SchedulePublicationsRequestPostTypesItem = typeof SchedulePublicationsRequestPostTypesItem[keyof typeof SchedulePublicationsRequestPostTypesItem];
+
+
+export const SchedulePublicationsRequestPostTypesItem = {
+  feed: 'feed',
+  story: 'story',
+} as const;
+
+export interface SchedulePublicationsRequest {
+  /** Defaults to every connected platform. */
+  platforms?: SchedulePublicationsRequestPlatformsItem[];
+  /** Defaults to feed only. */
+  postTypes?: SchedulePublicationsRequestPostTypesItem[];
+  /** Club local time "YYYY-MM-DDTHH:mm". Omit to publish now. */
+  at?: string;
+}
+
+export interface ReschedulePublicationRequest {
+  /** Club local time "YYYY-MM-DDTHH:mm". */
+  at: string;
 }
 
 export type SocialDraftRevisionReason = typeof SocialDraftRevisionReason[keyof typeof SocialDraftRevisionReason];
@@ -6317,6 +7141,15 @@ export interface BackfillMatchesInput {
      * @maxItems 2
      */
   include?: BackfillMatchesInputIncludeItem[];
+}
+
+export interface RecaptionDraftsResult {
+  /** Queued drafts whose caption changed. */
+  recaptioned: number;
+  /** Queued drafts whose caption already matched. */
+  unchanged: number;
+  /** Queued drafts left alone because someone edited the caption. */
+  keptEdited: number;
 }
 
 export interface BackfillMatchesResult {
@@ -6961,15 +7794,17 @@ export interface JuniorShirtNumberWriteResult {
 }
 
 /**
- * Captain / wicket-keeper marker
+ * Captain / vice-captain / wicket-keeper marker
  */
 export type TeamListPlayerRole = typeof TeamListPlayerRole[keyof typeof TeamListPlayerRole];
 
 
 export const TeamListPlayerRole = {
   C: 'C',
+  VC: 'VC',
   WK: 'WK',
   'C/WK': 'C/WK',
+  'VC/WK': 'VC/WK',
 } as const;
 
 export interface TeamListPlayer {
@@ -6984,8 +7819,10 @@ export interface TeamListPlayer {
   participantId?: string;
   /** @minLength 1 */
   displayName: string;
-  /** Captain / wicket-keeper marker */
+  /** Captain / vice-captain / wicket-keeper marker */
   role?: TeamListPlayerRole;
+  /** Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds). */
+  debut?: boolean;
 }
 
 export interface TeamList {
@@ -6993,7 +7830,11 @@ export interface TeamList {
   fixtureId: number;
   players: TeamListPlayer[];
   isPublished: boolean;
+  /** Who wrote the list: "admin", "playhq" or "selection" (a side finalised in the Selection Hub, which is changed there rather than here) */
+  source?: string;
   createdAt: string;
+  /** Players in this list the match records say have never played a senior game for the club (automatic debut). An admin's `debut` on a player overrides it. */
+  debutPlayerIds?: number[];
 }
 
 export interface PutTeamListBody {
@@ -8124,6 +8965,19 @@ export type UploadShirtNumbersBody = {
   kind: ShirtNumberUploadKind;
   /** Starting year of the season (e.g. 2026 for 2026/27) */
   season: number;
+};
+
+export type ImportSquadBody = {
+  /** The PlayHQ participant export (CSV) */
+  file: Blob;
+};
+
+export type GetSelectionBoardParams = {
+section?: SquadSection;
+};
+
+export type GetMetaConnectPendingParams = {
+token: string;
 };
 
 export type ListFixturesParams = {

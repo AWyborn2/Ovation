@@ -14,6 +14,9 @@ import { canonicalizeLines, mergesCacheArg, type CentralMerges } from "./merges"
 import { centralPlayerNames, isPrivateRow } from "./privacy";
 import { classifyInnings } from "./scoring";
 import { clubInvolvedWhere, inList } from "./where";
+import { centralClubWon } from "./match-result";
+
+export { centralClubWon } from "./match-result";
 
 /** Halls Head's club id in the central PCA database (tenant #1 / demo). */
 export const HALLS_HEAD_CENTRAL_CLUB_ID = 1;
@@ -72,6 +75,19 @@ export async function centralClubMaxMatchId(clubId: number): Promise<number> {
     .from(centralMatchesTable)
     .where(clubInvolvedWhere(clubId));
   return Number(row?.max ?? 0);
+}
+
+/**
+ * Where a club's first drafting sweep starts: just before its earliest match dated on or
+ * after `sinceDay` (YYYY-MM-DD), so the recent window is drafted and older history is not.
+ * With no match that recent, its newest match id (or 0), like `centralClubMaxMatchId`.
+ */
+export async function centralClubSweepStart(clubId: number, sinceDay: string): Promise<number> {
+  const [row] = await centralDb
+    .select({ min: sql<number | null>`min(${centralMatchesTable.matchId})` })
+    .from(centralMatchesTable)
+    .where(and(clubInvolvedWhere(clubId), sql`${centralMatchesTable.matchDate} >= ${sinceDay}`));
+  return row?.min != null ? Number(row.min) - 1 : centralClubMaxMatchId(clubId);
 }
 
 /** One central match past the sweep watermark, with its app grade resolved. */
@@ -141,6 +157,8 @@ export interface CentralMatchSummary {
   matchDate: string | null;
   venue: string | null;
   result: string | null;
+  /** Did the club win ({@link centralClubWon}); null for a draw, tie or no result. */
+  clubWon: boolean | null;
   opponent: string | null;
   clubScore: string | null;
   opponentScore: string | null;
@@ -312,6 +330,7 @@ async function centralClubMatchesImpl(
       matchDate: m.matchDate,
       venue: m.venue,
       result,
+      clubWon: centralClubWon(m, clubId),
       opponent: isHome ? m.awayTeam : m.homeTeam,
       clubScore: isHome ? m.homeScore : m.awayScore,
       opponentScore: isHome ? m.awayScore : m.homeScore,
@@ -363,6 +382,8 @@ function formatWrapDate(ymd: string | null): { label: string; sort: string } | n
 
 /** One grade's line in the Weekend Wrap card (A6). */
 export interface CentralWeekendWrapMatch {
+  /** Central match id (for the match's own result card in a round-results carousel). */
+  matchId: number;
   gradeLabel: string;
   resultLine: string;
   performers: string;
@@ -501,7 +522,7 @@ async function centralWeekendWrapImpl(
 
   const matches: CentralWeekendWrapMatch[] = picked.map((m) => {
     const outcome: "WON" | "LOST" | "" =
-      m.result === "Won" ? "WON" : m.result === "Lost" ? "LOST" : "";
+      m.clubWon === true ? "WON" : m.clubWon === false ? "LOST" : "";
     const connector = outcome === "WON" ? "def" : outcome === "LOST" ? "def by" : "vs";
     const opp = m.opponent ?? m.opponentClub?.name ?? "Opposition";
     const clubScore = m.clubScore ?? "—";
@@ -521,6 +542,7 @@ async function centralWeekendWrapImpl(
     }
 
     return {
+      matchId: m.id,
       gradeLabel: m.grade,
       resultLine,
       performers: parts.join(", "),
@@ -812,6 +834,7 @@ async function centralMatchScorecardImpl(
     matchDate: m.matchDate,
     venue: m.venue,
     result,
+    clubWon: centralClubWon(m, clubId),
     opponent: isHome ? m.awayTeam : m.homeTeam,
     clubScore: isHome ? m.homeScore : m.awayScore,
     opponentScore: isHome ? m.awayScore : m.homeScore,
@@ -836,7 +859,7 @@ async function centralMatchScorecardImpl(
     appGrade: grade,
     seasonStartYear: season,
     battedFirst,
-    clubWon: m.winnerClubId == null ? null : m.winnerClubId === clubId,
+    clubWon: summary.clubWon,
     lines: clubLines,
     oppositionLines,
   };

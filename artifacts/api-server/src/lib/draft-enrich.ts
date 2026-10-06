@@ -24,7 +24,7 @@ import {
   type MatchFormat,
   type PhotoType,
 } from "@workspace/scorecard";
-import { DEFAULT_TEMPLATES, ROUND_SET_CAPTIONS } from "./social-cards-helpers";
+import { DEFAULT_TEMPLATES, CAPTION_VARIATIONS } from "./social-cards-helpers";
 import { objectUrl } from "./photo-store";
 
 /**
@@ -93,7 +93,11 @@ export async function resolveDraftPack(tenantId: number, kind: string): Promise<
   return resolvePackIdForKind(rows, kind);
 }
 
-/** The Instagram caption the composer would produce for this card. */
+/**
+ * The caption the composer would produce for this card: Instagram's by
+ * default (what a draft stores), or another platform's template when
+ * publishing there (Meta publishing KTD9).
+ */
 export async function renderDraftCaption(
   tenantId: number,
   engine: string,
@@ -101,8 +105,9 @@ export async function renderDraftCaption(
   appPath: string,
   /** The draft's source key; picks a whole-round draft's caption variation. */
   seed: string | null = null,
+  platform: "instagram" | "facebook" = "instagram",
 ): Promise<string> {
-  const variations = ROUND_SET_CAPTIONS[engine];
+  const variations = CAPTION_VARIATIONS[engine];
   if (variations && variations.length > 0) {
     const [settings] = await db
       .select()
@@ -113,6 +118,7 @@ export async function renderDraftCaption(
       cardInput,
       appPath,
       settings ?? null,
+      platform,
     );
   }
   const captionEngine = CAPTION_ENGINE[engine] ?? "ondemand";
@@ -125,16 +131,16 @@ export async function renderDraftCaption(
         and(
           eq(captionTemplatesTable.tenantId, tenantId),
           eq(captionTemplatesTable.engine, captionEngine),
-          eq(captionTemplatesTable.platform, "instagram"),
+          eq(captionTemplatesTable.platform, platform),
         ),
       ),
   ]);
   const template =
     tpl?.template ??
-    DEFAULT_TEMPLATES.find((t) => t.engine === captionEngine && t.platform === "instagram")
+    DEFAULT_TEMPLATES.find((t) => t.engine === captionEngine && t.platform === platform)
       ?.template ??
     "";
-  return renderWithSettings(template, cardInput, appPath, settings ?? null);
+  return renderWithSettings(template, cardInput, appPath, settings ?? null, platform);
 }
 
 function renderWithSettings(
@@ -142,6 +148,7 @@ function renderWithSettings(
   cardInput: Record<string, unknown>,
   appPath: string,
   settings: { clubUrl: string | null; clubHashtag: string | null } | null,
+  platform: "instagram" | "facebook",
 ): string {
   const clubUrl = settings?.clubUrl ?? "";
   const hashtag = settings?.clubHashtag ?? "";
@@ -155,7 +162,7 @@ function renderWithSettings(
       appLink: captionAppLink(clubUrl, appPath),
     },
   );
-  return truncateForPlatform(raw, "instagram");
+  return truncateForPlatform(raw, platform);
 }
 
 /**

@@ -4,6 +4,7 @@ import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { loadClubIdentity } from "../lib/club-overlay";
 import { getRequestCentralClubId } from "../lib/tenant";
+import { inClubGradeOrder } from "../lib/club-grade-order";
 
 /**
  * Social Studio prefill reads for the fixture/stats-driven Pack A cards
@@ -74,9 +75,11 @@ router.get(
       return;
     }
     const clubId = await getRequestCentralClubId(req);
-    const { merges } = await loadClubIdentity(getTenantId(req));
+    const tenantId = getTenantId(req);
+    const { merges } = await loadClubIdentity(tenantId);
     const { centralWeekendWrap } = await import("@workspace/db/central-queries");
-    res.json(await centralWeekendWrap(clubId, season, round, merges));
+    const wrap = await centralWeekendWrap(clubId, season, round, merges);
+    res.json({ ...wrap, matches: await inClubGradeOrder(tenantId, wrap.matches) });
   },
 );
 

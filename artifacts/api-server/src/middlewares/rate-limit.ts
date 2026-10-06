@@ -169,3 +169,20 @@ export const adminWriteRateLimiter = rateLimit({
     error: "Too many admin write requests. Please wait a few minutes and try again.",
   },
 });
+
+/**
+ * Throttle the player availability page's token endpoints. The
+ * link is the only credential, so an unthrottled endpoint would let
+ * one client guess tokens as fast as the server answers. Keyed by IP (there is
+ * no session); successes count too, since every request resolves a token. A
+ * real player opens the page and saves a few answers, well under this.
+ */
+export const availabilityLinkRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many requests. Please wait a few minutes and try again.",
+  },
+});

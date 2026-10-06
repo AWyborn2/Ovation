@@ -10,8 +10,10 @@ import type { RoundScheduleRow, RoundSchedulesRow } from "@workspace/db";
  *  - team lists:   one card per published XI ("perFixture", the default), the
  *                  round's published XIs as one set at a chosen day and hour,
  *                  or off;
- *  - weekend wrap: the round's results as one set at a chosen day and hour,
- *                  or off (the default).
+ *  - match results ("weekendWrap"): each match's own result card ("perFixture", or "off",
+ *                  the default), the round's results as one carousel at a chosen day and
+ *                  hour, the cover then each match's result card ("perRound"; the
+ *                  per-match cards stop), or "both".
  *
  * Times are club time. Tenants carry no timezone yet and every pilot club is
  * in Western Australia, so club time is Perth time, as for fixture times.
@@ -51,10 +53,20 @@ export function resolveRoundSchedules(saved: RoundSchedulesRow | null | undefine
 
 /** Why a submitted schedule can't be saved, or null when it's fine. */
 export function invalidRoundSchedule(card: RoundCard, s: RoundSchedule): string | null {
-  if (card === "weekendWrap" && s.mode === "perFixture") {
-    return "The weekend wrap drafts once a round, not per match.";
+  if (card !== "weekendWrap" && s.mode === "both") {
+    return "Only match results can draft both per match and per round.";
   }
   return null;
+}
+
+/** Match results: the round carousel is drafted ("perRound" or "both"). */
+export function roundResultsCarouselOn(mode: RoundSchedule["mode"]): boolean {
+  return mode === "perRound" || mode === "both";
+}
+
+/** Match results: each match gets its own result card (everything but carousel-only). */
+export function matchResultCardsOn(mode: RoundSchedule["mode"]): boolean {
+  return mode !== "perRound";
 }
 
 /** Saved schedules with `patch` merged in per card (the others keep theirs). */
@@ -82,6 +94,23 @@ function zoneOffsetMinutes(at: Date, timeZone: string): number {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * A club-local wall-clock time ("YYYY-MM-DDTHH:mm") as a UTC instant, or null
+ * when it isn't one. Used for officer-set publishing times.
+ */
+export function clubTimeToUtc(local: string, timeZone: string = CLUB_TIME_ZONE): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(local);
+  if (!m) return null;
+  const [y, mo, d, h, mi] = m.slice(1).map(Number);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59) return null;
+  const asUtc = Date.UTC(y, mo - 1, d, h, mi);
+  if (new Date(asUtc).getUTCDate() !== d) return null;
+  // Two passes settle the offset across a daylight-saving change.
+  let at = asUtc - zoneOffsetMinutes(new Date(asUtc), timeZone) * 60000;
+  at = asUtc - zoneOffsetMinutes(new Date(at), timeZone) * 60000;
+  return new Date(at);
+}
 
 /**
  * The most recent moment at or before `now` that falls on `day` at `hour`

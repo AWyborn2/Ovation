@@ -495,19 +495,22 @@ function FixtureForm({
 }
 
 // One editable row of the XI: either a register-linked player or a free-typed
-// name, plus captain / wicket-keeper markers. `participantId` is the PlayHQ
-// participant a row was copied from (lineup sync). It is never shown, but it
-// rides along so an admin's save keeps it: a held shirt-number entry is found
-// by it (season shirt numbers, KTD10). `origin` remembers the PlayHQ row it
-// came from, so an edit to a DIFFERENT person drops the participant id (and
-// restoring the original name brings it back).
+// name, plus captain / vice-captain / wicket-keeper markers and the debut
+// override (undefined = automatic, from the match records). `participantId` is
+// the PlayHQ participant a row was copied from (lineup sync). It is never
+// shown, but it rides along so an admin's save keeps it: a held shirt-number
+// entry is found by it (season shirt numbers, KTD10). `origin` remembers the
+// PlayHQ row it came from, so an edit to a DIFFERENT person drops the
+// participant id (and restoring the original name brings it back).
 type TeamListRowState = {
   player: SelectedPlayer | null;
   freeName: string;
   participantId: string | null;
   origin: { name: string; participantId: string } | null;
   isCaptain: boolean;
+  isVice: boolean;
   isKeeper: boolean;
+  debut: boolean | undefined;
 };
 
 const emptyRow = (): TeamListRowState => ({
@@ -516,7 +519,9 @@ const emptyRow = (): TeamListRowState => ({
   participantId: null,
   origin: null,
   isCaptain: false,
+  isVice: false,
   isKeeper: false,
+  debut: undefined,
 });
 
 function rowsFromPlayers(players: TeamListPlayer[]): TeamListRowState[] {
@@ -531,7 +536,9 @@ function rowsFromPlayers(players: TeamListPlayer[]): TeamListRowState[] {
         participantId,
         origin: participantId !== null ? { name: p.displayName, participantId } : null,
         isCaptain: p.role === "C" || p.role === "C/WK",
-        isKeeper: p.role === "WK" || p.role === "C/WK",
+        isVice: p.role === "VC" || p.role === "VC/WK",
+        isKeeper: p.role === "WK" || p.role === "C/WK" || p.role === "VC/WK",
+        debut: typeof p.debut === "boolean" ? p.debut : undefined,
       };
     });
   while (rows.length < TEAM_LIST_ROWS) rows.push(emptyRow());
@@ -766,6 +773,17 @@ function ShirtNumberCell({
   );
 }
 
+/** A row's role: captain or vice-captain, either with the gloves. */
+function teamListRole(r: {
+  isCaptain: boolean;
+  isVice: boolean;
+  isKeeper: boolean;
+}): TeamListPlayer["role"] {
+  const lead = r.isCaptain ? "C" : r.isVice ? "VC" : null;
+  if (lead && r.isKeeper) return lead === "C" ? "C/WK" : "VC/WK";
+  return lead ?? (r.isKeeper ? "WK" : undefined);
+}
+
 function TeamListEditor({ fixture, onError }: { fixture: Fixture; onError: (e: unknown) => void }) {
   const queryClient = useQueryClient();
   const listQ = useGetFixtureTeamList(fixture.id);
@@ -789,6 +807,8 @@ function TeamListEditor({ fixture, onError }: { fixture: Fixture; onError: (e: u
   const savedPlayers = listQ.data?.players ?? [];
   const shownRows = rows ?? rowsFromPlayers(savedPlayers);
   const shownPublished = isPublished ?? listQ.data?.isPublished ?? false;
+  const autoDebuts = new Set(listQ.data?.debutPlayerIds ?? []);
+  const isAutoDebut = (r: TeamListRowState) => !!r.player && autoDebuts.has(r.player.id);
 
   const setRow = (i: number, next: Partial<TeamListRowState>) => {
     const copy = shownRows.map((r, idx) => (idx === i ? { ...r, ...next } : r));
@@ -832,14 +852,14 @@ function TeamListEditor({ fixture, onError }: { fixture: Fixture; onError: (e: u
     for (const r of shownRows) {
       const displayName = rowName(r);
       if (!displayName) continue;
-      const role: TeamListPlayer["role"] =
-        r.isCaptain && r.isKeeper ? "C/WK" : r.isCaptain ? "C" : r.isKeeper ? "WK" : undefined;
+      const role = teamListRole(r);
       players.push({
         order: order++,
         ...(r.player ? { playerId: r.player.id } : {}),
         ...(r.participantId ? { participantId: r.participantId } : {}),
         displayName,
         ...(role ? { role } : {}),
+        ...(r.debut !== undefined ? { debut: r.debut } : {}),
       });
     }
     putList.mutate(
@@ -867,8 +887,9 @@ function TeamListEditor({ fixture, onError }: { fixture: Fixture; onError: (e: u
         </label>
       </div>
       <p className="text-xs text-muted-foreground">
-        Pick a player from the register or type a name (e.g. a new signing). Mark the captain (C)
-        and wicket-keeper (WK).
+        Pick a player from the register or type a name (e.g. a new signing). Mark the captain (C),
+        vice-captain (VC) and wicket-keeper (WK). Debut is marked automatically for a register
+        player with no senior game for the club yet; click it to change.
         {numbersOn && ` Shirt numbers are for the ${seasonLabel(season)} season.`}
       </p>
       {unnumbered.length > 0 && (
@@ -919,9 +940,17 @@ function TeamListEditor({ fixture, onError }: { fixture: Fixture; onError: (e: u
                   type="button"
                   size="sm"
                   variant={r.isCaptain ? "default" : "outline"}
-                  onClick={() => setRow(i, { isCaptain: !r.isCaptain })}
+                  onClick={() => setRow(i, { isCaptain: !r.isCaptain, isVice: false })}
                 >
                   C
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={r.isVice ? "default" : "outline"}
+                  onClick={() => setRow(i, { isVice: !r.isVice, isCaptain: false })}
+                >
+                  VC
                 </Button>
                 <Button
                   type="button"
@@ -931,6 +960,22 @@ function TeamListEditor({ fixture, onError }: { fixture: Fixture; onError: (e: u
                 >
                   WK
                 </Button>
+                {(() => {
+                  const on = r.debut ?? isAutoDebut(r);
+                  const auto = r.debut === undefined && on;
+                  return (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={on ? "default" : "outline"}
+                      title={auto ? "Debut (automatic: no senior game for the club yet)" : "Debut"}
+                      aria-pressed={on}
+                      onClick={() => setRow(i, { debut: !on })}
+                    >
+                      Debut{auto ? " · auto" : ""}
+                    </Button>
+                  );
+                })()}
               </div>
             </div>
             {entries !== null && rowName(r) && (

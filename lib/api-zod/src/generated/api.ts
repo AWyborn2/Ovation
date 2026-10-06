@@ -2836,6 +2836,1156 @@ export const DeleteCaptainParams = zod.object({
 
 
 /**
+ * Every member of the club's squad register. Contact details are reported
+as presence flags only (has a name, mobile or email; SMS opted out) —
+`getSquadMember` returns the values.
+
+ * @summary List the squad register (admin)
+ */
+export const ListSquadMembersResponseItem = zod.object({
+  "id": zod.number(),
+  "playhqProfileId": zod.string().nullable(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "preferredName": zod.string().nullable(),
+  "section": zod.enum(['senior', 'junior']),
+  "active": zod.boolean(),
+  "activeSetByAdmin": zod.boolean().describe('The admin set `active` by hand; imports never override it.'),
+  "under18": zod.boolean().nullable().describe('From date of birth (Perth today); null when unknown. Under-18s are contacted through their guardians.'),
+  "gradeHint": zod.string().nullable(),
+  "teamName": zod.string().nullable(),
+  "ageGroup": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "linkedPlayerId": zod.number().nullable(),
+  "account": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian1": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian2": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "contactChangeFlag": zod.boolean().describe('A player or guardian changed a contact from their link; stays up until an admin clears it.'),
+  "updatedAt": zod.string()
+})
+export const ListSquadMembersResponse = zod.array(ListSquadMembersResponseItem)
+
+
+/**
+ * Upserts the register from the PlayHQ participant CSV by (club, Profile
+ID). Only the identity, eligibility, grade and contact columns are read;
+every other column is discarded unread and never stored. Players with an
+active registration in the file's current season become active members;
+other rows are skipped with a reason. Members missing from the file are
+kept, and an admin's hand-set active flag is never overridden. Generated
+clients should treat the file as `Blob`; the web app posts FormData.
+
+ * @summary Import the PlayHQ participant export (admin)
+ */
+export const ImportSquadBody = zod.object({
+  "file": zod.instanceof(File).describe('The PlayHQ participant export (CSV)')
+})
+
+export const ImportSquadResponse = zod.object({
+  "season": zod.string().nullable().describe('The file\'s current season (its most common Season value)'),
+  "created": zod.number(),
+  "updated": zod.number(),
+  "deactivated": zod.number().describe('Existing members stood down because their registration is no longer active'),
+  "linked": zod.number().describe('Members newly linked to a club player record'),
+  "contactsKept": zod.number().describe('Members whose contacts were kept because a player or guardian changed them from their link and an admin hasn\'t cleared the flag yet'),
+  "skipped": zod.array(zod.object({
+  "line": zod.number().describe('Line in the uploaded file (the header is line 1)'),
+  "name": zod.string(),
+  "reason": zod.string().describe('missing_profile_id, missing_name, not_a_player, inactive_status, other_season, other_organisation or duplicate_profile')
+})),
+  "skippedByReason": zod.array(zod.object({
+  "reason": zod.string(),
+  "count": zod.number()
+}))
+})
+
+
+/**
+ * @summary Get one squad member with contact details (admin)
+ */
+export const GetSquadMemberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetSquadMemberResponse = zod.object({
+  "id": zod.number(),
+  "playhqProfileId": zod.string().nullable(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "preferredName": zod.string().nullable(),
+  "dateOfBirth": zod.string().nullable().describe('ISO date (YYYY-MM-DD)'),
+  "section": zod.enum(['senior', 'junior']),
+  "active": zod.boolean(),
+  "activeSetByAdmin": zod.boolean(),
+  "under18": zod.boolean().nullable(),
+  "gradeHint": zod.string().nullable(),
+  "teamName": zod.string().nullable(),
+  "ageGroup": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "linkedPlayerId": zod.number().nullable(),
+  "account": zod.object({
+  "name": zod.string().nullable(),
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "smsOptedOut": zod.boolean()
+}),
+  "guardian1": zod.object({
+  "name": zod.string().nullable(),
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "smsOptedOut": zod.boolean()
+}),
+  "guardian2": zod.object({
+  "name": zod.string().nullable(),
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "smsOptedOut": zod.boolean()
+}),
+  "contactChangeFlag": zod.boolean(),
+  "contactChangedAt": zod.string().nullable(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * Setting `active` records it as the admin's choice, which later imports
+never override. Changing a mobile number clears that contact's SMS
+opt-out. `linkedPlayerId` cannot be a fill-in id (>= 90000).
+
+ * @summary Update a squad member (admin)
+ */
+export const UpdateSquadMemberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateSquadMemberBody = zod.object({
+  "active": zod.boolean().optional(),
+  "section": zod.enum(['senior', 'junior']).optional(),
+  "gradeHint": zod.string().nullish(),
+  "linkedPlayerId": zod.number().nullish(),
+  "contactChangeFlag": zod.boolean().optional().describe('Set false to clear the contact-changed flag.'),
+  "account": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.'),
+  "guardian1": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.'),
+  "guardian2": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.')
+})
+
+export const UpdateSquadMemberResponse = zod.object({
+  "id": zod.number(),
+  "playhqProfileId": zod.string().nullable(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "preferredName": zod.string().nullable(),
+  "dateOfBirth": zod.string().nullable().describe('ISO date (YYYY-MM-DD)'),
+  "section": zod.enum(['senior', 'junior']),
+  "active": zod.boolean(),
+  "activeSetByAdmin": zod.boolean(),
+  "under18": zod.boolean().nullable(),
+  "gradeHint": zod.string().nullable(),
+  "teamName": zod.string().nullable(),
+  "ageGroup": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "linkedPlayerId": zod.number().nullable(),
+  "account": zod.object({
+  "name": zod.string().nullable(),
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "smsOptedOut": zod.boolean()
+}),
+  "guardian1": zod.object({
+  "name": zod.string().nullable(),
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "smsOptedOut": zod.boolean()
+}),
+  "guardian2": zod.object({
+  "name": zod.string().nullable(),
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable(),
+  "smsOptedOut": zod.boolean()
+}),
+  "contactChangeFlag": zod.boolean(),
+  "contactChangedAt": zod.string().nullable(),
+  "updatedAt": zod.string()
+})
+
+
+/**
+ * For a player's or guardian's removal request. Contact details and date
+of birth are deleted outright; the row keeps only the name (so past
+selections still read correctly) and is set inactive by the admin, so
+it is never contacted and later imports don't restore its details.
+
+ * @summary Remove a member's personal details on request (admin)
+ */
+export const RemoveSquadMemberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * Send, reminder, cut-off and finalise-by days and times in Perth, the
+club's switch (off by default — nothing is sent until it is on), the SMS
+switch and the selection rule. A club that has never saved settings gets
+the defaults.
+
+ * @summary The club's weekly availability schedule (admin)
+ */
+export const getAvailabilitySettingsResponseOneSendDowMin = 0;
+export const getAvailabilitySettingsResponseOneSendDowMax = 6;
+
+export const getAvailabilitySettingsResponseOneSendTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getAvailabilitySettingsResponseOneReminderDowMin = 0;
+export const getAvailabilitySettingsResponseOneReminderDowMax = 6;
+
+export const getAvailabilitySettingsResponseOneReminderTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getAvailabilitySettingsResponseOneCutoffDowMin = 0;
+export const getAvailabilitySettingsResponseOneCutoffDowMax = 6;
+
+export const getAvailabilitySettingsResponseOneCutoffTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const getAvailabilitySettingsResponseOneFinaliseDowMin = 0;
+export const getAvailabilitySettingsResponseOneFinaliseDowMax = 6;
+
+export const getAvailabilitySettingsResponseOneFinaliseTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+
+
+export const GetAvailabilitySettingsResponse = zod.object({
+  "enabled": zod.boolean().describe('The club\'s switch; nothing is sent while it is off'),
+  "smsEnabled": zod.boolean().describe('Off → email only'),
+  "sendDow": zod.number().min(getAvailabilitySettingsResponseOneSendDowMin).max(getAvailabilitySettingsResponseOneSendDowMax),
+  "sendTime": zod.string().regex(getAvailabilitySettingsResponseOneSendTimeRegExp),
+  "reminderDow": zod.number().min(getAvailabilitySettingsResponseOneReminderDowMin).max(getAvailabilitySettingsResponseOneReminderDowMax),
+  "reminderTime": zod.string().regex(getAvailabilitySettingsResponseOneReminderTimeRegExp),
+  "cutoffDow": zod.number().min(getAvailabilitySettingsResponseOneCutoffDowMin).max(getAvailabilitySettingsResponseOneCutoffDowMax),
+  "cutoffTime": zod.string().regex(getAvailabilitySettingsResponseOneCutoffTimeRegExp),
+  "finaliseDow": zod.number().min(getAvailabilitySettingsResponseOneFinaliseDowMin).max(getAvailabilitySettingsResponseOneFinaliseDowMax),
+  "finaliseTime": zod.string().regex(getAvailabilitySettingsResponseOneFinaliseTimeRegExp),
+  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub')
+}).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n').and(zod.object({
+  "updatedAt": zod.coerce.date().nullable().describe('Null while the club is on the defaults')
+}))
+
+
+/**
+ * Replaces the settings. Within the week that starts on the send day, the
+steps must run in order — send, then reminder, then cut-off, with
+finalise-by no earlier than the cut-off — and the cut-off must be no
+later than that week's Saturday.
+
+ * @summary Save the club's weekly availability schedule (admin)
+ */
+export const updateAvailabilitySettingsBodySendDowMin = 0;
+export const updateAvailabilitySettingsBodySendDowMax = 6;
+
+export const updateAvailabilitySettingsBodySendTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateAvailabilitySettingsBodyReminderDowMin = 0;
+export const updateAvailabilitySettingsBodyReminderDowMax = 6;
+
+export const updateAvailabilitySettingsBodyReminderTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateAvailabilitySettingsBodyCutoffDowMin = 0;
+export const updateAvailabilitySettingsBodyCutoffDowMax = 6;
+
+export const updateAvailabilitySettingsBodyCutoffTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateAvailabilitySettingsBodyFinaliseDowMin = 0;
+export const updateAvailabilitySettingsBodyFinaliseDowMax = 6;
+
+export const updateAvailabilitySettingsBodyFinaliseTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+
+
+export const UpdateAvailabilitySettingsBody = zod.object({
+  "enabled": zod.boolean().describe('The club\'s switch; nothing is sent while it is off'),
+  "smsEnabled": zod.boolean().describe('Off → email only'),
+  "sendDow": zod.number().min(updateAvailabilitySettingsBodySendDowMin).max(updateAvailabilitySettingsBodySendDowMax),
+  "sendTime": zod.string().regex(updateAvailabilitySettingsBodySendTimeRegExp),
+  "reminderDow": zod.number().min(updateAvailabilitySettingsBodyReminderDowMin).max(updateAvailabilitySettingsBodyReminderDowMax),
+  "reminderTime": zod.string().regex(updateAvailabilitySettingsBodyReminderTimeRegExp),
+  "cutoffDow": zod.number().min(updateAvailabilitySettingsBodyCutoffDowMin).max(updateAvailabilitySettingsBodyCutoffDowMax),
+  "cutoffTime": zod.string().regex(updateAvailabilitySettingsBodyCutoffTimeRegExp),
+  "finaliseDow": zod.number().min(updateAvailabilitySettingsBodyFinaliseDowMin).max(updateAvailabilitySettingsBodyFinaliseDowMax),
+  "finaliseTime": zod.string().regex(updateAvailabilitySettingsBodyFinaliseTimeRegExp),
+  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub')
+}).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n')
+
+export const updateAvailabilitySettingsResponseOneSendDowMin = 0;
+export const updateAvailabilitySettingsResponseOneSendDowMax = 6;
+
+export const updateAvailabilitySettingsResponseOneSendTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateAvailabilitySettingsResponseOneReminderDowMin = 0;
+export const updateAvailabilitySettingsResponseOneReminderDowMax = 6;
+
+export const updateAvailabilitySettingsResponseOneReminderTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateAvailabilitySettingsResponseOneCutoffDowMin = 0;
+export const updateAvailabilitySettingsResponseOneCutoffDowMax = 6;
+
+export const updateAvailabilitySettingsResponseOneCutoffTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+export const updateAvailabilitySettingsResponseOneFinaliseDowMin = 0;
+export const updateAvailabilitySettingsResponseOneFinaliseDowMax = 6;
+
+export const updateAvailabilitySettingsResponseOneFinaliseTimeRegExp = new RegExp('^([01][0-9]|2[0-3]):[0-5][0-9]$');
+
+
+export const UpdateAvailabilitySettingsResponse = zod.object({
+  "enabled": zod.boolean().describe('The club\'s switch; nothing is sent while it is off'),
+  "smsEnabled": zod.boolean().describe('Off → email only'),
+  "sendDow": zod.number().min(updateAvailabilitySettingsResponseOneSendDowMin).max(updateAvailabilitySettingsResponseOneSendDowMax),
+  "sendTime": zod.string().regex(updateAvailabilitySettingsResponseOneSendTimeRegExp),
+  "reminderDow": zod.number().min(updateAvailabilitySettingsResponseOneReminderDowMin).max(updateAvailabilitySettingsResponseOneReminderDowMax),
+  "reminderTime": zod.string().regex(updateAvailabilitySettingsResponseOneReminderTimeRegExp),
+  "cutoffDow": zod.number().min(updateAvailabilitySettingsResponseOneCutoffDowMin).max(updateAvailabilitySettingsResponseOneCutoffDowMax),
+  "cutoffTime": zod.string().regex(updateAvailabilitySettingsResponseOneCutoffTimeRegExp),
+  "finaliseDow": zod.number().min(updateAvailabilitySettingsResponseOneFinaliseDowMin).max(updateAvailabilitySettingsResponseOneFinaliseDowMax),
+  "finaliseTime": zod.string().regex(updateAvailabilitySettingsResponseOneFinaliseTimeRegExp),
+  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub')
+}).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n').and(zod.object({
+  "updatedAt": zod.coerce.date().nullable().describe('Null while the club is on the defaults')
+}))
+
+
+/**
+ * The round for this send week's weekend: each step's scheduled time, when
+it started and finished (null until then), and how many members asked
+said Yes, Maybe or No, or haven't answered. Answers after the cut-off
+has completed count as late. `roundId` is null until the round's first
+step runs.
+
+ * @summary The current round's schedule, progress and response counts (admin)
+ */
+export const GetCurrentAvailabilityRoundResponse = zod.object({
+  "enabled": zod.boolean(),
+  "roundId": zod.number().nullable(),
+  "weekendDate": zod.coerce.date().describe('The round\'s Saturday'),
+  "sendAt": zod.coerce.date(),
+  "reminderAt": zod.coerce.date(),
+  "cutoffAt": zod.coerce.date(),
+  "finaliseAt": zod.coerce.date(),
+  "sendStartedAt": zod.coerce.date().nullable(),
+  "sendCompletedAt": zod.coerce.date().nullable(),
+  "reminderStartedAt": zod.coerce.date().nullable(),
+  "reminderCompletedAt": zod.coerce.date().nullable(),
+  "cutoffStartedAt": zod.coerce.date().nullable(),
+  "cutoffCompletedAt": zod.coerce.date().nullable(),
+  "counts": zod.object({
+  "yes": zod.number(),
+  "maybe": zod.number(),
+  "no": zod.number(),
+  "none": zod.number(),
+  "late": zod.number().describe('Members with an answer given after the cut-off'),
+  "total": zod.number()
+}).describe('One status per member asked — Yes for any date, else Maybe, else No; None when unanswered')
+})
+
+
+/**
+ * Claims the step exactly as the hourly scheduler does, so it never runs
+twice: a send or cut-off that has already started returns 409. A
+reminder may be sent again by hand after it has run, but each recipient
+is reminded by hand at most once every 12 hours; recipients inside that
+window are skipped. Reminders need the requests to have gone out.
+
+ * @summary Run a step of the current round now (admin)
+ */
+export const RunAvailabilityStepParams = zod.object({
+  "step": zod.enum(['send', 'remind', 'cutoff'])
+})
+
+export const RunAvailabilityStepResponse = zod.object({
+  "step": zod.enum(['send', 'remind', 'cutoff']),
+  "roundId": zod.number(),
+  "messaged": zod.number().describe('Members messaged'),
+  "away": zod.number().describe('Members recorded unavailable from an away period instead of being asked'),
+  "noFixture": zod.number().describe('Members with no fixture to be asked about this round'),
+  "throttled": zod.number().describe('Members skipped because they were reminded by hand in the last 12 hours'),
+  "drafts": zod.number().describe('Draft sides created at cut-off')
+})
+
+
+/**
+ * The current round's header (step times, progress and the section's
+response counts), every side drafted for a fixture of the section with
+its slots, roles, state, version and whether the caller may edit it, the
+pool of active members of the section not placed in any side of the
+round, and the latest changes. Never carries a mobile or an email.
+
+ * @summary The Selection Hub board for one section (admin or captain)
+ */
+export const GetSelectionBoardQueryParams = zod.object({
+  "section": zod.enum(['senior', 'junior']).optional()
+})
+
+
+
+
+export const GetSelectionBoardResponse = zod.object({
+  "section": zod.enum(['senior', 'junior']),
+  "actor": zod.object({
+  "kind": zod.enum(['admin', 'captain']),
+  "name": zod.string(),
+  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub'),
+  "canRemind": zod.boolean().describe('The caller may send the section\'s non-responders a reminder')
+}),
+  "round": zod.union([zod.object({
+  "roundId": zod.number(),
+  "weekendDate": zod.coerce.date(),
+  "sendAt": zod.coerce.date(),
+  "reminderAt": zod.coerce.date(),
+  "cutoffAt": zod.coerce.date(),
+  "finaliseAt": zod.coerce.date().describe('Finalise-by, shown to captains'),
+  "sendStartedAt": zod.coerce.date().nullable(),
+  "reminderStartedAt": zod.coerce.date().nullable(),
+  "cutoffStartedAt": zod.coerce.date().nullable(),
+  "cutoffCompletedAt": zod.coerce.date().nullable(),
+  "counts": zod.object({
+  "yes": zod.number(),
+  "maybe": zod.number(),
+  "no": zod.number(),
+  "none": zod.number(),
+  "late": zod.number().describe('Members with an answer given after the cut-off'),
+  "total": zod.number()
+}).describe('One status per member asked — Yes for any date, else Maybe, else No; None when unanswered')
+}),zod.null()]),
+  "selections": zod.array(zod.object({
+  "id": zod.number(),
+  "roundId": zod.number(),
+  "fixture": zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "opponentName": zod.string(),
+  "startAt": zod.coerce.date(),
+  "venue": zod.string().nullable(),
+  "isHome": zod.boolean(),
+  "roundLabel": zod.string().nullable()
+}),
+  "date": zod.coerce.date().describe('The fixture\'s Perth date'),
+  "state": zod.enum(['draft', 'final']),
+  "version": zod.number(),
+  "slots": zod.array(zod.object({
+  "memberId": zod.number().nullable(),
+  "gap": zod.union([zod.object({
+  "name": zod.string().min(1),
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew', 'picked_elsewhere'])
+}).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
+  "member": zod.union([zod.object({
+  "id": zod.number(),
+  "displayName": zod.string(),
+  "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
+  "note": zod.string().nullable(),
+  "lastGrade": zod.string().nullable().describe('The grade of the last team list the member appears in, else their grade hint'),
+  "junior": zod.boolean().describe('True for a junior (or under-18) member on the senior board'),
+  "isPrivate": zod.boolean(),
+  "repliedAt": zod.coerce.date().nullable(),
+  "late": zod.boolean().describe('Answered after the cut-off')
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
+})),
+  "captainMemberId": zod.number().nullable(),
+  "keeperMemberId": zod.number().nullable(),
+  "finalisedAt": zod.coerce.date().nullable(),
+  "finalisedBy": zod.string().nullable(),
+  "canEdit": zod.boolean().describe('The caller may change the side now (they have the right and it is not finalised)'),
+  "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
+  "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
+  "warnings": zod.object({
+  "filled": zod.number(),
+  "open": zod.number(),
+  "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
+  "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
+  "noCaptain": zod.boolean(),
+  "noKeeper": zod.boolean()
+})
+})),
+  "pool": zod.array(zod.object({
+  "id": zod.number(),
+  "displayName": zod.string(),
+  "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
+  "note": zod.string().nullable(),
+  "lastGrade": zod.string().nullable().describe('The grade of the last team list the member appears in, else their grade hint'),
+  "junior": zod.boolean().describe('True for a junior (or under-18) member on the senior board'),
+  "isPrivate": zod.boolean(),
+  "repliedAt": zod.coerce.date().nullable(),
+  "late": zod.boolean().describe('Answered after the cut-off')
+}).describe('A squad member as the Hub shows them — never a contact value.')).describe('Active members of the section not placed in any side of the round'),
+  "events": zod.array(zod.object({
+  "id": zod.number(),
+  "selectionId": zod.number(),
+  "grade": zod.string(),
+  "actorKind": zod.string().describe('admin, captain, player or system'),
+  "actorName": zod.string().nullable(),
+  "action": zod.string().describe('draft, update, finalise, reopen or withdraw'),
+  "detail": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date()
+})).describe('The latest changes to the section\'s sides, newest first')
+})
+
+
+/**
+ * Each change replaces a whole side: its 11 slots, captain and keeper,
+with the version the caller last saw. Everything is applied in one
+transaction or nothing is: a side the caller may not edit (or a member
+taken from one) → 403; a finalised side or a stale version → 409; not
+exactly 11 slots, a member twice in the round, or an unknown or inactive
+member → 400. A captain or keeper who is not in their side is cleared
+and the clearing logged. Returns the board of the first changed side's
+section.
+
+ * @summary Save changes to one or more sides of the round (admin or captain)
+ */
+
+
+
+
+export const SaveSelectionBoardBody = zod.object({
+  "changes": zod.array(zod.object({
+  "selectionId": zod.number(),
+  "version": zod.number().describe('The version the caller last saw'),
+  "slots": zod.array(zod.object({
+  "memberId": zod.number().nullable(),
+  "gap": zod.union([zod.object({
+  "name": zod.string().min(1),
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew', 'picked_elsewhere'])
+}).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]).optional()
+})).describe('The side\'s 11 slots, in order'),
+  "captainMemberId": zod.number().nullable(),
+  "keeperMemberId": zod.number().nullable()
+})).min(1)
+})
+
+
+
+
+export const SaveSelectionBoardResponse = zod.object({
+  "section": zod.enum(['senior', 'junior']),
+  "actor": zod.object({
+  "kind": zod.enum(['admin', 'captain']),
+  "name": zod.string(),
+  "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub'),
+  "canRemind": zod.boolean().describe('The caller may send the section\'s non-responders a reminder')
+}),
+  "round": zod.union([zod.object({
+  "roundId": zod.number(),
+  "weekendDate": zod.coerce.date(),
+  "sendAt": zod.coerce.date(),
+  "reminderAt": zod.coerce.date(),
+  "cutoffAt": zod.coerce.date(),
+  "finaliseAt": zod.coerce.date().describe('Finalise-by, shown to captains'),
+  "sendStartedAt": zod.coerce.date().nullable(),
+  "reminderStartedAt": zod.coerce.date().nullable(),
+  "cutoffStartedAt": zod.coerce.date().nullable(),
+  "cutoffCompletedAt": zod.coerce.date().nullable(),
+  "counts": zod.object({
+  "yes": zod.number(),
+  "maybe": zod.number(),
+  "no": zod.number(),
+  "none": zod.number(),
+  "late": zod.number().describe('Members with an answer given after the cut-off'),
+  "total": zod.number()
+}).describe('One status per member asked — Yes for any date, else Maybe, else No; None when unanswered')
+}),zod.null()]),
+  "selections": zod.array(zod.object({
+  "id": zod.number(),
+  "roundId": zod.number(),
+  "fixture": zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "opponentName": zod.string(),
+  "startAt": zod.coerce.date(),
+  "venue": zod.string().nullable(),
+  "isHome": zod.boolean(),
+  "roundLabel": zod.string().nullable()
+}),
+  "date": zod.coerce.date().describe('The fixture\'s Perth date'),
+  "state": zod.enum(['draft', 'final']),
+  "version": zod.number(),
+  "slots": zod.array(zod.object({
+  "memberId": zod.number().nullable(),
+  "gap": zod.union([zod.object({
+  "name": zod.string().min(1),
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew', 'picked_elsewhere'])
+}).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
+  "member": zod.union([zod.object({
+  "id": zod.number(),
+  "displayName": zod.string(),
+  "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
+  "note": zod.string().nullable(),
+  "lastGrade": zod.string().nullable().describe('The grade of the last team list the member appears in, else their grade hint'),
+  "junior": zod.boolean().describe('True for a junior (or under-18) member on the senior board'),
+  "isPrivate": zod.boolean(),
+  "repliedAt": zod.coerce.date().nullable(),
+  "late": zod.boolean().describe('Answered after the cut-off')
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
+})),
+  "captainMemberId": zod.number().nullable(),
+  "keeperMemberId": zod.number().nullable(),
+  "finalisedAt": zod.coerce.date().nullable(),
+  "finalisedBy": zod.string().nullable(),
+  "canEdit": zod.boolean().describe('The caller may change the side now (they have the right and it is not finalised)'),
+  "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
+  "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
+  "warnings": zod.object({
+  "filled": zod.number(),
+  "open": zod.number(),
+  "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
+  "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
+  "noCaptain": zod.boolean(),
+  "noKeeper": zod.boolean()
+})
+})),
+  "pool": zod.array(zod.object({
+  "id": zod.number(),
+  "displayName": zod.string(),
+  "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
+  "note": zod.string().nullable(),
+  "lastGrade": zod.string().nullable().describe('The grade of the last team list the member appears in, else their grade hint'),
+  "junior": zod.boolean().describe('True for a junior (or under-18) member on the senior board'),
+  "isPrivate": zod.boolean(),
+  "repliedAt": zod.coerce.date().nullable(),
+  "late": zod.boolean().describe('Answered after the cut-off')
+}).describe('A squad member as the Hub shows them — never a contact value.')).describe('Active members of the section not placed in any side of the round'),
+  "events": zod.array(zod.object({
+  "id": zod.number(),
+  "selectionId": zod.number(),
+  "grade": zod.string(),
+  "actorKind": zod.string().describe('admin, captain, player or system'),
+  "actorName": zod.string().nullable(),
+  "action": zod.string().describe('draft, update, finalise, reopen or withdraw'),
+  "detail": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date()
+})).describe('The latest changes to the section\'s sides, newest first')
+})
+
+
+/**
+ * Locks the side, publishes it as the fixture's team list (source
+"selection") and messages each newly selected member (or their
+guardians) with the match details and a "can't make it" link. On a
+re-finalise, members dropped since the last finalise are told too. A
+side may be finalised without a captain or keeper. The body carries the
+side's version as loaded, so a side changed since can't be published
+unseen. A member every delivery failed for is not marked notified, so
+the next finalise tries them again. A private member is published as
+"Private Player". Refused once the match has started.
+
+ * @summary Finalise a side and publish it as the fixture's team list (admin or captain)
+ */
+export const FinaliseSelectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const FinaliseSelectionBody = zod.object({
+  "version": zod.number().describe('The side\'s version as the caller loaded it')
+})
+
+
+
+
+export const FinaliseSelectionResponse = zod.object({
+  "selection": zod.object({
+  "id": zod.number(),
+  "roundId": zod.number(),
+  "fixture": zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "opponentName": zod.string(),
+  "startAt": zod.coerce.date(),
+  "venue": zod.string().nullable(),
+  "isHome": zod.boolean(),
+  "roundLabel": zod.string().nullable()
+}),
+  "date": zod.coerce.date().describe('The fixture\'s Perth date'),
+  "state": zod.enum(['draft', 'final']),
+  "version": zod.number(),
+  "slots": zod.array(zod.object({
+  "memberId": zod.number().nullable(),
+  "gap": zod.union([zod.object({
+  "name": zod.string().min(1),
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew', 'picked_elsewhere'])
+}).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
+  "member": zod.union([zod.object({
+  "id": zod.number(),
+  "displayName": zod.string(),
+  "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
+  "note": zod.string().nullable(),
+  "lastGrade": zod.string().nullable().describe('The grade of the last team list the member appears in, else their grade hint'),
+  "junior": zod.boolean().describe('True for a junior (or under-18) member on the senior board'),
+  "isPrivate": zod.boolean(),
+  "repliedAt": zod.coerce.date().nullable(),
+  "late": zod.boolean().describe('Answered after the cut-off')
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
+})),
+  "captainMemberId": zod.number().nullable(),
+  "keeperMemberId": zod.number().nullable(),
+  "finalisedAt": zod.coerce.date().nullable(),
+  "finalisedBy": zod.string().nullable(),
+  "canEdit": zod.boolean().describe('The caller may change the side now (they have the right and it is not finalised)'),
+  "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
+  "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
+  "warnings": zod.object({
+  "filled": zod.number(),
+  "open": zod.number(),
+  "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
+  "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
+  "noCaptain": zod.boolean(),
+  "noKeeper": zod.boolean()
+})
+}),
+  "messaged": zod.object({
+  "selected": zod.number().describe('Newly selected members messaged'),
+  "deselected": zod.number().describe('Members dropped since the last finalise who were told'),
+  "failed": zod.number().describe('Members every delivery failed for; the next finalise tries them again')
+})
+})
+
+
+/**
+ * Returns the side to draft and logs it. The published team list stays as
+last finalised until the side is finalised again. Refused once the match
+has started.
+
+ * @summary Re-open a finalised side for changes (admin or captain)
+ */
+export const ReopenSelectionParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+export const ReopenSelectionResponse = zod.object({
+  "id": zod.number(),
+  "roundId": zod.number(),
+  "fixture": zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "opponentName": zod.string(),
+  "startAt": zod.coerce.date(),
+  "venue": zod.string().nullable(),
+  "isHome": zod.boolean(),
+  "roundLabel": zod.string().nullable()
+}),
+  "date": zod.coerce.date().describe('The fixture\'s Perth date'),
+  "state": zod.enum(['draft', 'final']),
+  "version": zod.number(),
+  "slots": zod.array(zod.object({
+  "memberId": zod.number().nullable(),
+  "gap": zod.union([zod.object({
+  "name": zod.string().min(1),
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew', 'picked_elsewhere'])
+}).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
+  "member": zod.union([zod.object({
+  "id": zod.number(),
+  "displayName": zod.string(),
+  "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
+  "note": zod.string().nullable(),
+  "lastGrade": zod.string().nullable().describe('The grade of the last team list the member appears in, else their grade hint'),
+  "junior": zod.boolean().describe('True for a junior (or under-18) member on the senior board'),
+  "isPrivate": zod.boolean(),
+  "repliedAt": zod.coerce.date().nullable(),
+  "late": zod.boolean().describe('Answered after the cut-off')
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
+})),
+  "captainMemberId": zod.number().nullable(),
+  "keeperMemberId": zod.number().nullable(),
+  "finalisedAt": zod.coerce.date().nullable(),
+  "finalisedBy": zod.string().nullable(),
+  "canEdit": zod.boolean().describe('The caller may change the side now (they have the right and it is not finalised)'),
+  "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
+  "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
+  "warnings": zod.object({
+  "filled": zod.number(),
+  "open": zod.number(),
+  "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
+  "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
+  "noCaptain": zod.boolean(),
+  "noKeeper": zod.boolean()
+})
+})
+
+
+/**
+ * Sends the reminder to members of the section asked this round who
+haven't answered. Each recipient is reminded by hand at most once every
+12 hours; recipients inside that window are skipped.
+
+ * @summary Remind the section's members who haven't answered (admin or captain)
+ */
+export const RemindSelectionNonRespondersBody = zod.object({
+  "section": zod.enum(['senior', 'junior'])
+})
+
+export const RemindSelectionNonRespondersResponse = zod.object({
+  "step": zod.enum(['send', 'remind', 'cutoff']),
+  "roundId": zod.number(),
+  "messaged": zod.number().describe('Members messaged'),
+  "away": zod.number().describe('Members recorded unavailable from an away period instead of being asked'),
+  "noFixture": zod.number().describe('Members with no fixture to be asked about this round'),
+  "throttled": zod.number().describe('Members skipped because they were reminded by hand in the last 12 hours'),
+  "drafts": zod.number().describe('Draft sides created at cut-off')
+})
+
+
+/**
+ * The token resolves to one recipient (account holder or guardian) of one
+member in one round. Returns that member's dates for the round with the
+current answers, their future away periods, this recipient's own
+contact (masked), and once their side is final, the match. An unknown,
+expired or revoked token, or one of another club, is a 404 without
+detail. Rate-limited by IP.
+
+ * @summary The player's availability page for one personal link (no login)
+ */
+export const getAvailabilityResponsePathTokenMax = 128;
+
+
+
+export const GetAvailabilityResponseParams = zod.object({
+  "token": zod.coerce.string().min(1).max(getAvailabilityResponsePathTokenMax).describe('The personal link token (never logged)')
+})
+
+export const GetAvailabilityResponseResponse = zod.object({
+  "clubName": zod.string(),
+  "clubShortName": zod.string().nullable(),
+  "logoUrl": zod.string().nullable(),
+  "primaryColour": zod.string().nullable(),
+  "firstName": zod.string().describe('The member\'s preferred (or first) name'),
+  "displayName": zod.string(),
+  "recipientSlot": zod.enum(['account', 'guardian1', 'guardian2']).describe('Who a personal link was sent to — the account holder (adults) or a guardian'),
+  "self": zod.boolean().describe('True when the link went to the player themself rather than a guardian'),
+  "weekendDate": zod.string().describe('The round\'s Saturday, YYYY-MM-DD'),
+  "dates": zod.array(zod.object({
+  "date": zod.string().describe('Perth date, YYYY-MM-DD'),
+  "status": zod.union([zod.enum(['yes', 'no', 'maybe']),zod.null()]).describe('The current answer; null when nobody has answered'),
+  "note": zod.string().nullable(),
+  "late": zod.boolean().describe('Answered after cut-off'),
+  "locked": zod.boolean().describe('The member is in a finalised side on this date, so the answer can\'t change')
+})),
+  "away": zod.array(zod.object({
+  "id": zod.number(),
+  "fromDate": zod.string(),
+  "toDate": zod.string()
+})).describe('Away periods that haven\'t ended yet'),
+  "contact": zod.object({
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable()
+}).describe('This recipient\'s contact, masked (e.g. \"04xx xxx 678\", \"j\*\*\*@example.com\")'),
+  "selection": zod.union([zod.object({
+  "grade": zod.string(),
+  "opponent": zod.string(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+}),zod.null()]).describe('The match, once the member is in a finalised side this round'),
+  "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
+  "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
+  "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+})
+
+
+/**
+ * Each date must be one the member is asked about this round. Either
+guardian may answer and the latest answer wins. Answers after cut-off
+are kept and marked late. A date on which the member is in a finalised
+side can't be changed (409); only "can't make it" is allowed then.
+
+ * @summary Save Yes / No / Maybe answers for the member's dates
+ */
+export const saveAvailabilityAnswersPathTokenMax = 128;
+
+
+
+export const SaveAvailabilityAnswersParams = zod.object({
+  "token": zod.coerce.string().min(1).max(saveAvailabilityAnswersPathTokenMax).describe('The personal link token (never logged)')
+})
+
+export const saveAvailabilityAnswersBodyAnswersItemDateRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+export const saveAvailabilityAnswersBodyAnswersItemNoteMax = 280;
+
+export const saveAvailabilityAnswersBodyAnswersMax = 7;
+
+
+
+export const SaveAvailabilityAnswersBody = zod.object({
+  "answers": zod.array(zod.object({
+  "date": zod.string().regex(saveAvailabilityAnswersBodyAnswersItemDateRegExp),
+  "status": zod.enum(['yes', 'no', 'maybe']),
+  "note": zod.string().max(saveAvailabilityAnswersBodyAnswersItemNoteMax).nullish()
+})).min(1).max(saveAvailabilityAnswersBodyAnswersMax)
+})
+
+export const SaveAvailabilityAnswersResponse = zod.object({
+  "clubName": zod.string(),
+  "clubShortName": zod.string().nullable(),
+  "logoUrl": zod.string().nullable(),
+  "primaryColour": zod.string().nullable(),
+  "firstName": zod.string().describe('The member\'s preferred (or first) name'),
+  "displayName": zod.string(),
+  "recipientSlot": zod.enum(['account', 'guardian1', 'guardian2']).describe('Who a personal link was sent to — the account holder (adults) or a guardian'),
+  "self": zod.boolean().describe('True when the link went to the player themself rather than a guardian'),
+  "weekendDate": zod.string().describe('The round\'s Saturday, YYYY-MM-DD'),
+  "dates": zod.array(zod.object({
+  "date": zod.string().describe('Perth date, YYYY-MM-DD'),
+  "status": zod.union([zod.enum(['yes', 'no', 'maybe']),zod.null()]).describe('The current answer; null when nobody has answered'),
+  "note": zod.string().nullable(),
+  "late": zod.boolean().describe('Answered after cut-off'),
+  "locked": zod.boolean().describe('The member is in a finalised side on this date, so the answer can\'t change')
+})),
+  "away": zod.array(zod.object({
+  "id": zod.number(),
+  "fromDate": zod.string(),
+  "toDate": zod.string()
+})).describe('Away periods that haven\'t ended yet'),
+  "contact": zod.object({
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable()
+}).describe('This recipient\'s contact, masked (e.g. \"04xx xxx 678\", \"j\*\*\*@example.com\")'),
+  "selection": zod.union([zod.object({
+  "grade": zod.string(),
+  "opponent": zod.string(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+}),zod.null()]).describe('The match, once the member is in a finalised side this round'),
+  "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
+  "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
+  "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+})
+
+
+/**
+ * Inclusive dates, not in the past, at most 120 days long. Weekends the
+period covers are recorded as unavailable and not asked about again;
+dates of this round it covers are answered No.
+
+ * @summary Mark future dates the member will be away
+ */
+export const addAvailabilityAwayPathTokenMax = 128;
+
+
+
+export const AddAvailabilityAwayParams = zod.object({
+  "token": zod.coerce.string().min(1).max(addAvailabilityAwayPathTokenMax).describe('The personal link token (never logged)')
+})
+
+export const addAvailabilityAwayBodyFromDateRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+export const addAvailabilityAwayBodyToDateRegExp = new RegExp('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+
+
+export const AddAvailabilityAwayBody = zod.object({
+  "fromDate": zod.string().regex(addAvailabilityAwayBodyFromDateRegExp),
+  "toDate": zod.string().regex(addAvailabilityAwayBodyToDateRegExp)
+})
+
+
+/**
+ * @summary Remove one of the member's away periods
+ */
+export const removeAvailabilityAwayPathTokenMax = 128;
+
+
+
+export const RemoveAvailabilityAwayParams = zod.object({
+  "token": zod.coerce.string().min(1).max(removeAvailabilityAwayPathTokenMax).describe('The personal link token (never logged)'),
+  "awayId": zod.coerce.number()
+})
+
+export const RemoveAvailabilityAwayResponse = zod.object({
+  "clubName": zod.string(),
+  "clubShortName": zod.string().nullable(),
+  "logoUrl": zod.string().nullable(),
+  "primaryColour": zod.string().nullable(),
+  "firstName": zod.string().describe('The member\'s preferred (or first) name'),
+  "displayName": zod.string(),
+  "recipientSlot": zod.enum(['account', 'guardian1', 'guardian2']).describe('Who a personal link was sent to — the account holder (adults) or a guardian'),
+  "self": zod.boolean().describe('True when the link went to the player themself rather than a guardian'),
+  "weekendDate": zod.string().describe('The round\'s Saturday, YYYY-MM-DD'),
+  "dates": zod.array(zod.object({
+  "date": zod.string().describe('Perth date, YYYY-MM-DD'),
+  "status": zod.union([zod.enum(['yes', 'no', 'maybe']),zod.null()]).describe('The current answer; null when nobody has answered'),
+  "note": zod.string().nullable(),
+  "late": zod.boolean().describe('Answered after cut-off'),
+  "locked": zod.boolean().describe('The member is in a finalised side on this date, so the answer can\'t change')
+})),
+  "away": zod.array(zod.object({
+  "id": zod.number(),
+  "fromDate": zod.string(),
+  "toDate": zod.string()
+})).describe('Away periods that haven\'t ended yet'),
+  "contact": zod.object({
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable()
+}).describe('This recipient\'s contact, masked (e.g. \"04xx xxx 678\", \"j\*\*\*@example.com\")'),
+  "selection": zod.union([zod.object({
+  "grade": zod.string(),
+  "opponent": zod.string(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+}),zod.null()]).describe('The match, once the member is in a finalised side this round'),
+  "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
+  "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
+  "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+})
+
+
+/**
+ * Changes only the contact of the recipient the link was sent to. A
+notice goes to the previous mobile and email, the change is flagged for
+the club's admins, and every other live link of this recipient for the
+round stops working (this one keeps working). A new mobile clears that
+contact's SMS opt-out. The contact is returned masked. One change per
+member every 12 hours; another within that time is refused with
+`{"error": "too_many_changes"}`.
+
+ * @summary Correct this recipient's own mobile or email
+ */
+export const updateAvailabilityContactPathTokenMax = 128;
+
+
+
+export const UpdateAvailabilityContactParams = zod.object({
+  "token": zod.coerce.string().min(1).max(updateAvailabilityContactPathTokenMax).describe('The personal link token (never logged)')
+})
+
+export const updateAvailabilityContactBodyMobileMax = 32;
+
+export const updateAvailabilityContactBodyEmailMin = 3;
+export const updateAvailabilityContactBodyEmailMax = 254;
+
+
+
+export const UpdateAvailabilityContactBody = zod.object({
+  "mobile": zod.string().min(1).max(updateAvailabilityContactBodyMobileMax).optional(),
+  "email": zod.string().min(updateAvailabilityContactBodyEmailMin).max(updateAvailabilityContactBodyEmailMax).optional()
+}).describe('At least one of mobile or email; omitted fields are unchanged')
+
+export const UpdateAvailabilityContactResponse = zod.object({
+  "clubName": zod.string(),
+  "clubShortName": zod.string().nullable(),
+  "logoUrl": zod.string().nullable(),
+  "primaryColour": zod.string().nullable(),
+  "firstName": zod.string().describe('The member\'s preferred (or first) name'),
+  "displayName": zod.string(),
+  "recipientSlot": zod.enum(['account', 'guardian1', 'guardian2']).describe('Who a personal link was sent to — the account holder (adults) or a guardian'),
+  "self": zod.boolean().describe('True when the link went to the player themself rather than a guardian'),
+  "weekendDate": zod.string().describe('The round\'s Saturday, YYYY-MM-DD'),
+  "dates": zod.array(zod.object({
+  "date": zod.string().describe('Perth date, YYYY-MM-DD'),
+  "status": zod.union([zod.enum(['yes', 'no', 'maybe']),zod.null()]).describe('The current answer; null when nobody has answered'),
+  "note": zod.string().nullable(),
+  "late": zod.boolean().describe('Answered after cut-off'),
+  "locked": zod.boolean().describe('The member is in a finalised side on this date, so the answer can\'t change')
+})),
+  "away": zod.array(zod.object({
+  "id": zod.number(),
+  "fromDate": zod.string(),
+  "toDate": zod.string()
+})).describe('Away periods that haven\'t ended yet'),
+  "contact": zod.object({
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable()
+}).describe('This recipient\'s contact, masked (e.g. \"04xx xxx 678\", \"j\*\*\*@example.com\")'),
+  "selection": zod.union([zod.object({
+  "grade": zod.string(),
+  "opponent": zod.string(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+}),zod.null()]).describe('The match, once the member is in a finalised side this round'),
+  "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
+  "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
+  "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+})
+
+
+/**
+ * Re-opens the member's slot as a gap "withdrew", returns the side to
+draft, removes them from the published team list (the rest stays
+published), records No for the match date and alerts the captains and
+admins.
+
+ * @summary "Can't make it" from a selected player
+ */
+export const withdrawAvailabilityPathTokenMax = 128;
+
+
+
+export const WithdrawAvailabilityParams = zod.object({
+  "token": zod.coerce.string().min(1).max(withdrawAvailabilityPathTokenMax).describe('The personal link token (never logged)')
+})
+
+export const WithdrawAvailabilityResponse = zod.object({
+  "clubName": zod.string(),
+  "clubShortName": zod.string().nullable(),
+  "logoUrl": zod.string().nullable(),
+  "primaryColour": zod.string().nullable(),
+  "firstName": zod.string().describe('The member\'s preferred (or first) name'),
+  "displayName": zod.string(),
+  "recipientSlot": zod.enum(['account', 'guardian1', 'guardian2']).describe('Who a personal link was sent to — the account holder (adults) or a guardian'),
+  "self": zod.boolean().describe('True when the link went to the player themself rather than a guardian'),
+  "weekendDate": zod.string().describe('The round\'s Saturday, YYYY-MM-DD'),
+  "dates": zod.array(zod.object({
+  "date": zod.string().describe('Perth date, YYYY-MM-DD'),
+  "status": zod.union([zod.enum(['yes', 'no', 'maybe']),zod.null()]).describe('The current answer; null when nobody has answered'),
+  "note": zod.string().nullable(),
+  "late": zod.boolean().describe('Answered after cut-off'),
+  "locked": zod.boolean().describe('The member is in a finalised side on this date, so the answer can\'t change')
+})),
+  "away": zod.array(zod.object({
+  "id": zod.number(),
+  "fromDate": zod.string(),
+  "toDate": zod.string()
+})).describe('Away periods that haven\'t ended yet'),
+  "contact": zod.object({
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable()
+}).describe('This recipient\'s contact, masked (e.g. \"04xx xxx 678\", \"j\*\*\*@example.com\")'),
+  "selection": zod.union([zod.object({
+  "grade": zod.string(),
+  "opponent": zod.string(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+}),zod.null()]).describe('The match, once the member is in a finalised side this round'),
+  "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
+  "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
+  "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+})
+
+
+/**
  * @summary List per-season voting configs for an award (admin)
  */
 export const ListAwardVotingConfigsParams = zod.object({
@@ -4309,6 +5459,7 @@ export const ListSponsorsResponseItem = zod.object({
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })
@@ -4325,6 +5476,7 @@ export const CreateSponsorBody = zod.object({
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).optional(),
+  "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional()
 })
@@ -4344,6 +5496,7 @@ export const UpdateSponsorBody = zod.object({
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).optional(),
+  "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional()
 })
@@ -4356,6 +5509,7 @@ export const UpdateSponsorResponse = zod.object({
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })
@@ -5567,6 +6721,8 @@ export const GetSocialSettingsResponse = zod.object({
   "lastSweepAt": zod.coerce.date().nullish().describe('When the scheduled drafting sweep last completed for this club (read-only).'),
   "autoPostEnabled": zod.boolean().optional().describe('When on, auto-drafts still awaiting review at their deadline become ready.'),
   "autoPostWindowHours": zod.number().optional().describe('Hours after a draft\'s own import before it becomes ready.'),
+  "autoPublishEnabled": zod.boolean().optional().describe('With auto-post on and Meta connected: fresh drafts publish to Facebook and Instagram at their deadline instead of only becoming ready.'),
+  "autoPublishFreshnessHours": zod.number().optional().describe('Only drafts first imported within this many hours auto-publish; older ones become ready.'),
   "notificationEmail": zod.string().nullish().describe('Where draft notifications are emailed. Null = in-app only.'),
   "familyConfig": zod.object({
   "results": zod.object({
@@ -5589,17 +6745,17 @@ export const GetSocialSettingsResponse = zod.object({
   "packColourModes": zod.record(zod.string(), zod.enum(['club', 'pack']).describe('How a design pack is coloured for this club. \"club\" (Club colours) — the club\'s background colour becomes the card stage and panel and its primary colour the accent, beating the card theme\'s colours. \"pack\" (Pack\'s own look) — the pack renders with its own palette, theme first.')).optional().describe('Colour mode per design pack id (e.g. \"sunset-v1\"). A pack absent from the map is \"club\".'),
   "roundSchedules": zod.object({
   "gameDay": zod.object({
-  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "mode": zod.enum(['off', 'perFixture', 'perRound', 'both']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. Match results (`weekendWrap`) differ: \"perFixture\" or \"off\" drafts each match\'s own result card only, \"perRound\" drafts the round as one carousel (its cover, then each match\'s result card) instead, and \"both\" drafts both. \"both\" is for match results only.'),
   "day": zod.number().min(getSocialSettingsResponseSettingsRoundSchedulesGameDayDayMin).max(getSocialSettingsResponseSettingsRoundSchedulesGameDayDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
   "hour": zod.number().min(getSocialSettingsResponseSettingsRoundSchedulesGameDayHourMin).max(getSocialSettingsResponseSettingsRoundSchedulesGameDayHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
 }),
   "teamLists": zod.object({
-  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "mode": zod.enum(['off', 'perFixture', 'perRound', 'both']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. Match results (`weekendWrap`) differ: \"perFixture\" or \"off\" drafts each match\'s own result card only, \"perRound\" drafts the round as one carousel (its cover, then each match\'s result card) instead, and \"both\" drafts both. \"both\" is for match results only.'),
   "day": zod.number().min(getSocialSettingsResponseSettingsRoundSchedulesTeamListsDayMin).max(getSocialSettingsResponseSettingsRoundSchedulesTeamListsDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
   "hour": zod.number().min(getSocialSettingsResponseSettingsRoundSchedulesTeamListsHourMin).max(getSocialSettingsResponseSettingsRoundSchedulesTeamListsHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
 }),
   "weekendWrap": zod.object({
-  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "mode": zod.enum(['off', 'perFixture', 'perRound', 'both']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. Match results (`weekendWrap`) differ: \"perFixture\" or \"off\" drafts each match\'s own result card only, \"perRound\" drafts the round as one carousel (its cover, then each match\'s result card) instead, and \"both\" drafts both. \"both\" is for match results only.'),
   "day": zod.number().min(getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapDayMin).max(getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
   "hour": zod.number().min(getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapHourMin).max(getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
 })
@@ -5618,6 +6774,7 @@ export const GetSocialSettingsResponse = zod.object({
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })),
@@ -5638,6 +6795,8 @@ export const GetSocialSettingsResponse = zod.object({
  * @summary Update social card settings
  */
 export const updateSocialSettingsBodyAutoPostWindowHoursMax = 168;
+
+export const updateSocialSettingsBodyAutoPublishFreshnessHoursMax = 336;
 
 export const updateSocialSettingsBodyRoundSchedulesOneGameDayDayMin = 0;
 export const updateSocialSettingsBodyRoundSchedulesOneGameDayDayMax = 6;
@@ -5698,21 +6857,23 @@ export const UpdateSocialSettingsBody = zod.object({
 }).optional().describe('Partial family switches; omitted families and grades keep their current values.'),
   "autoPostEnabled": zod.boolean().optional(),
   "autoPostWindowHours": zod.number().min(1).max(updateSocialSettingsBodyAutoPostWindowHoursMax).optional(),
+  "autoPublishEnabled": zod.boolean().optional(),
+  "autoPublishFreshnessHours": zod.number().min(1).max(updateSocialSettingsBodyAutoPublishFreshnessHoursMax).optional(),
   "notificationEmail": zod.string().nullish(),
   "packColourModes": zod.record(zod.string(), zod.enum(['club', 'pack']).describe('How a design pack is coloured for this club. \"club\" (Club colours) — the club\'s background colour becomes the card stage and panel and its primary colour the accent, beating the card theme\'s colours. \"pack\" (Pack\'s own look) — the pack renders with its own palette, theme first.')).describe('Colour mode per design pack id (e.g. \"sunset-v1\"). A pack absent from the map is \"club\".').optional().describe('Merged into the stored map: only the packs sent change, the others keep their mode.'),
   "roundSchedules": zod.object({
   "gameDay": zod.object({
-  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "mode": zod.enum(['off', 'perFixture', 'perRound', 'both']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. Match results (`weekendWrap`) differ: \"perFixture\" or \"off\" drafts each match\'s own result card only, \"perRound\" drafts the round as one carousel (its cover, then each match\'s result card) instead, and \"both\" drafts both. \"both\" is for match results only.'),
   "day": zod.number().min(updateSocialSettingsBodyRoundSchedulesOneGameDayDayMin).max(updateSocialSettingsBodyRoundSchedulesOneGameDayDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
   "hour": zod.number().min(updateSocialSettingsBodyRoundSchedulesOneGameDayHourMin).max(updateSocialSettingsBodyRoundSchedulesOneGameDayHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
 }).optional(),
   "teamLists": zod.object({
-  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "mode": zod.enum(['off', 'perFixture', 'perRound', 'both']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. Match results (`weekendWrap`) differ: \"perFixture\" or \"off\" drafts each match\'s own result card only, \"perRound\" drafts the round as one carousel (its cover, then each match\'s result card) instead, and \"both\" drafts both. \"both\" is for match results only.'),
   "day": zod.number().min(updateSocialSettingsBodyRoundSchedulesOneTeamListsDayMin).max(updateSocialSettingsBodyRoundSchedulesOneTeamListsDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
   "hour": zod.number().min(updateSocialSettingsBodyRoundSchedulesOneTeamListsHourMin).max(updateSocialSettingsBodyRoundSchedulesOneTeamListsHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
 }).optional(),
   "weekendWrap": zod.object({
-  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "mode": zod.enum(['off', 'perFixture', 'perRound', 'both']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. Match results (`weekendWrap`) differ: \"perFixture\" or \"off\" drafts each match\'s own result card only, \"perRound\" drafts the round as one carousel (its cover, then each match\'s result card) instead, and \"both\" drafts both. \"both\" is for match results only.'),
   "day": zod.number().min(updateSocialSettingsBodyRoundSchedulesOneWeekendWrapDayMin).max(updateSocialSettingsBodyRoundSchedulesOneWeekendWrapDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
   "hour": zod.number().min(updateSocialSettingsBodyRoundSchedulesOneWeekendWrapHourMin).max(updateSocialSettingsBodyRoundSchedulesOneWeekendWrapHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
 }).optional()
@@ -5761,6 +6922,8 @@ export const UpdateSocialSettingsResponse = zod.object({
   "lastSweepAt": zod.coerce.date().nullish().describe('When the scheduled drafting sweep last completed for this club (read-only).'),
   "autoPostEnabled": zod.boolean().optional().describe('When on, auto-drafts still awaiting review at their deadline become ready.'),
   "autoPostWindowHours": zod.number().optional().describe('Hours after a draft\'s own import before it becomes ready.'),
+  "autoPublishEnabled": zod.boolean().optional().describe('With auto-post on and Meta connected: fresh drafts publish to Facebook and Instagram at their deadline instead of only becoming ready.'),
+  "autoPublishFreshnessHours": zod.number().optional().describe('Only drafts first imported within this many hours auto-publish; older ones become ready.'),
   "notificationEmail": zod.string().nullish().describe('Where draft notifications are emailed. Null = in-app only.'),
   "familyConfig": zod.object({
   "results": zod.object({
@@ -5783,21 +6946,94 @@ export const UpdateSocialSettingsResponse = zod.object({
   "packColourModes": zod.record(zod.string(), zod.enum(['club', 'pack']).describe('How a design pack is coloured for this club. \"club\" (Club colours) — the club\'s background colour becomes the card stage and panel and its primary colour the accent, beating the card theme\'s colours. \"pack\" (Pack\'s own look) — the pack renders with its own palette, theme first.')).optional().describe('Colour mode per design pack id (e.g. \"sunset-v1\"). A pack absent from the map is \"club\".'),
   "roundSchedules": zod.object({
   "gameDay": zod.object({
-  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "mode": zod.enum(['off', 'perFixture', 'perRound', 'both']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. Match results (`weekendWrap`) differ: \"perFixture\" or \"off\" drafts each match\'s own result card only, \"perRound\" drafts the round as one carousel (its cover, then each match\'s result card) instead, and \"both\" drafts both. \"both\" is for match results only.'),
   "day": zod.number().min(updateSocialSettingsResponseRoundSchedulesGameDayDayMin).max(updateSocialSettingsResponseRoundSchedulesGameDayDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
   "hour": zod.number().min(updateSocialSettingsResponseRoundSchedulesGameDayHourMin).max(updateSocialSettingsResponseRoundSchedulesGameDayHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
 }),
   "teamLists": zod.object({
-  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "mode": zod.enum(['off', 'perFixture', 'perRound', 'both']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. Match results (`weekendWrap`) differ: \"perFixture\" or \"off\" drafts each match\'s own result card only, \"perRound\" drafts the round as one carousel (its cover, then each match\'s result card) instead, and \"both\" drafts both. \"both\" is for match results only.'),
   "day": zod.number().min(updateSocialSettingsResponseRoundSchedulesTeamListsDayMin).max(updateSocialSettingsResponseRoundSchedulesTeamListsDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
   "hour": zod.number().min(updateSocialSettingsResponseRoundSchedulesTeamListsHourMin).max(updateSocialSettingsResponseRoundSchedulesTeamListsHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
 }),
   "weekendWrap": zod.object({
-  "mode": zod.enum(['off', 'perFixture', 'perRound']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. The weekend wrap is \"off\" or \"perRound\" only.'),
+  "mode": zod.enum(['off', 'perFixture', 'perRound', 'both']).describe('\"perFixture\" drafts one card per match ahead of it (game day two days out, team lists once the XI is published). \"perRound\" drafts the whole round as one balanced set at `day` \/ `hour`. \"off\" drafts nothing. Match results (`weekendWrap`) differ: \"perFixture\" or \"off\" drafts each match\'s own result card only, \"perRound\" drafts the round as one carousel (its cover, then each match\'s result card) instead, and \"both\" drafts both. \"both\" is for match results only.'),
   "day": zod.number().min(updateSocialSettingsResponseRoundSchedulesWeekendWrapDayMin).max(updateSocialSettingsResponseRoundSchedulesWeekendWrapDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
   "hour": zod.number().min(updateSocialSettingsResponseRoundSchedulesWeekendWrapHourMin).max(updateSocialSettingsResponseRoundSchedulesWeekendWrapHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
 })
 }).optional().describe('When the round cards draft themselves (balanced card sets). Always complete in a response: a card never saved shows its default.')
+})
+
+
+/**
+ * @summary The club's Facebook Page / Instagram connection
+ */
+export const GetMetaConnectionResponse = zod.object({
+  "available": zod.boolean().describe('Whether publishing is switched on for the platform and this club\'s plan.'),
+  "status": zod.enum(['not_connected', 'connected', 'needs_reconnect', 'disconnected']),
+  "statusReason": zod.string().nullish(),
+  "pageName": zod.string().nullish(),
+  "igUsername": zod.string().nullish().describe('Null when the Page has no linked Instagram professional account.'),
+  "connectedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Disconnect Meta and cancel the club's scheduled and held posts
+ */
+export const DisconnectMetaConnectionResponse = zod.object({
+  "available": zod.boolean().describe('Whether publishing is switched on for the platform and this club\'s plan.'),
+  "status": zod.enum(['not_connected', 'connected', 'needs_reconnect', 'disconnected']),
+  "statusReason": zod.string().nullish(),
+  "pageName": zod.string().nullish(),
+  "igUsername": zod.string().nullish().describe('Null when the Page has no linked Instagram professional account.'),
+  "connectedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Begin connecting Meta; returns the Facebook login URL
+ */
+export const StartMetaConnectBody = zod.object({
+  "replace": zod.boolean().optional().describe('Confirms replacing an existing connection.')
+})
+
+export const StartMetaConnectResponse = zod.object({
+  "url": zod.string()
+})
+
+
+/**
+ * @summary The Pages found by the Facebook login, awaiting the admin's choice
+ */
+export const GetMetaConnectPendingQueryParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const GetMetaConnectPendingResponse = zod.object({
+  "pages": zod.array(zod.object({
+  "pageId": zod.string(),
+  "pageName": zod.string(),
+  "igUsername": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Connect the chosen Page (and its linked Instagram account)
+ */
+export const CompleteMetaConnectBody = zod.object({
+  "token": zod.string(),
+  "pageId": zod.string(),
+  "replace": zod.boolean().optional()
+})
+
+export const CompleteMetaConnectResponse = zod.object({
+  "available": zod.boolean().describe('Whether publishing is switched on for the platform and this club\'s plan.'),
+  "status": zod.enum(['not_connected', 'connected', 'needs_reconnect', 'disconnected']),
+  "statusReason": zod.string().nullish(),
+  "pageName": zod.string().nullish(),
+  "igUsername": zod.string().nullish().describe('Null when the Page has no linked Instagram professional account.'),
+  "connectedAt": zod.coerce.date().nullish()
 })
 
 
@@ -5914,10 +7150,13 @@ export const GetFixtureTeamListResponse = zod.union([zod.object({
   "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
   "participantId": zod.string().optional().describe('PlayHQ participant GUID (lowercased) for a row copied from a PlayHQ lineup, kept even when the row has no playerId; omit for a free-typed name.'),
   "displayName": zod.string().min(1),
-  "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).optional().describe('Captain \/ vice-captain \/ wicket-keeper marker'),
+  "debut": zod.boolean().optional().describe('Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds).')
 })),
   "isPublished": zod.boolean(),
-  "createdAt": zod.coerce.date()
+  "source": zod.string().optional().describe('Who wrote the list: \"admin\", \"playhq\" or \"selection\" (a side finalised in the Selection Hub, which is changed there rather than here)'),
+  "createdAt": zod.coerce.date(),
+  "debutPlayerIds": zod.array(zod.number()).optional().describe('Players in this list the match records say have never played a senior game for the club (automatic debut). An admin\'s `debut` on a player overrides it.')
 }),zod.null()])
 
 
@@ -5938,7 +7177,8 @@ export const PutFixtureTeamListBody = zod.object({
   "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
   "participantId": zod.string().optional().describe('PlayHQ participant GUID (lowercased) for a row copied from a PlayHQ lineup, kept even when the row has no playerId; omit for a free-typed name.'),
   "displayName": zod.string().min(1),
-  "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).optional().describe('Captain \/ vice-captain \/ wicket-keeper marker'),
+  "debut": zod.boolean().optional().describe('Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds).')
 })),
   "isPublished": zod.boolean().optional()
 })
@@ -5955,10 +7195,13 @@ export const PutFixtureTeamListResponse = zod.object({
   "playerId": zod.number().nullish().describe('Register-linked player id; omit\/null for a free-typed name. Fill-in ids (>= 90000) are rejected.'),
   "participantId": zod.string().optional().describe('PlayHQ participant GUID (lowercased) for a row copied from a PlayHQ lineup, kept even when the row has no playerId; omit for a free-typed name.'),
   "displayName": zod.string().min(1),
-  "role": zod.enum(['C', 'WK', 'C/WK']).optional().describe('Captain \/ wicket-keeper marker')
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).optional().describe('Captain \/ vice-captain \/ wicket-keeper marker'),
+  "debut": zod.boolean().optional().describe('Debut badge override set by an admin. Omit for automatic: a register-linked player with no previous senior game for the club is a debutant (see TeamList.debutPlayerIds).')
 })),
   "isPublished": zod.boolean(),
-  "createdAt": zod.coerce.date()
+  "source": zod.string().optional().describe('Who wrote the list: \"admin\", \"playhq\" or \"selection\" (a side finalised in the Selection Hub, which is changed there rather than here)'),
+  "createdAt": zod.coerce.date(),
+  "debutPlayerIds": zod.array(zod.number()).optional().describe('Players in this list the match records say have never played a senior game for the club (automatic debut). An admin\'s `debut` on a player overrides it.')
 })
 
 
@@ -6480,6 +7723,7 @@ export const GetHonourDisplayResponse = zod.object({
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
@@ -6750,6 +7994,7 @@ export const GetKioskDisplayResponse = zod.object({
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
@@ -7184,7 +8429,20 @@ export const ListSocialDraftsResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 export const ListSocialDraftsResponse = zod.array(ListSocialDraftsResponseItem)
 
@@ -7266,6 +8524,20 @@ export const RunDraftSweepResponse = zod.object({
   "roundSets": zod.number().optional().describe('Round sets (game day, team lists, weekend wrap) drafted on the club\'s schedule.'),
   "promoted": zod.number().optional().describe('Drafts moved to ready because their auto-post deadline passed.')
 }))
+})
+
+
+/**
+ * Machine-to-machine only. Requires the `x-publish-secret` header to equal the server's SOCIAL_PUBLISH_SECRET (which must differ from SOCIAL_SWEEP_SECRET); answers 401 otherwise, including when no secret is configured. Does nothing while META_PUBLISHING_ENABLED is off.
+ * @summary Publish due Facebook / Instagram posts (scheduled job)
+ */
+export const RunPublishSweepResponse = zod.object({
+  "skipped": zod.boolean().optional().describe('True when publishing is off or another run was already going.'),
+  "claimed": zod.number(),
+  "published": zod.number(),
+  "failed": zod.number(),
+  "held": zod.number(),
+  "waiting": zod.number()
 })
 
 
@@ -7803,7 +9075,20 @@ export const ApproveSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 
 
@@ -7851,7 +9136,115 @@ export const UpdateSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
+})
+
+
+/**
+ * @summary Schedule a ready draft to Facebook and/or Instagram (or publish now)
+ */
+export const ScheduleDraftPublicationsParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ScheduleDraftPublicationsBody = zod.object({
+  "platforms": zod.array(zod.enum(['facebook', 'instagram'])).optional().describe('Defaults to every connected platform.'),
+  "postTypes": zod.array(zod.enum(['feed', 'story'])).optional().describe('Defaults to feed only.'),
+  "at": zod.string().optional().describe('Club local time \"YYYY-MM-DDTHH:mm\". Omit to publish now.')
+})
+
+export const ScheduleDraftPublicationsResponseItem = zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})
+export const ScheduleDraftPublicationsResponse = zod.array(ScheduleDraftPublicationsResponseItem)
+
+
+/**
+ * @summary Move a scheduled post to a new time
+ */
+export const RescheduleSocialPublicationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RescheduleSocialPublicationBody = zod.object({
+  "at": zod.string().describe('Club local time \"YYYY-MM-DDTHH:mm\".')
+})
+
+export const RescheduleSocialPublicationResponse = zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Cancel a scheduled or held post
+ */
+export const CancelSocialPublicationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CancelSocialPublicationResponse = zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Try a failed post again now
+ */
+export const RetrySocialPublicationParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RetrySocialPublicationResponse = zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
 })
 
 
@@ -7905,7 +9298,20 @@ export const SendBackSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 
 
@@ -7940,7 +9346,20 @@ export const ReopenSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 
 
@@ -7997,7 +9416,20 @@ export const RevertSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 
 
@@ -8032,7 +9464,20 @@ export const MarkSocialDraftPostedResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 
 
@@ -8073,7 +9518,20 @@ export const GenerateRoundUpResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 export const GenerateRoundUpResponse = zod.array(GenerateRoundUpResponseItem)
 
@@ -8113,7 +9571,20 @@ export const GenerateRecapsResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
-  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared')
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
 })
 export const GenerateRecapsResponse = zod.array(GenerateRecapsResponseItem)
 
@@ -8169,6 +9640,23 @@ export const BackfillMatchDraftsResponse = zod.object({
   "capped": zod.boolean().describe('True when more matches matched than the per-call cap.'),
   "errors": zod.array(zod.string()),
   "achievements": zod.number().optional().describe('Achievement cards (centuries, five-fors, debuts, milestones) drafted, new or refreshed. Present only when `include` asked for achievements.\n')
+})
+
+
+/**
+ * Re-renders the caption of every draft still in the queue (awaiting
+review or ready) from the club's current caption templates and
+variations. A caption someone has edited is kept, and a posted or
+dismissed draft is never touched. Captions are otherwise written once,
+when a draft is created, so this brings an existing queue up to date
+after the templates change.
+
+ * @summary Rebuild the captions of queued drafts
+ */
+export const RecaptionSocialDraftsResponse = zod.object({
+  "recaptioned": zod.number().describe('Queued drafts whose caption changed.'),
+  "unchanged": zod.number().describe('Queued drafts whose caption already matched.'),
+  "keptEdited": zod.number().describe('Queued drafts left alone because someone edited the caption.')
 })
 
 
@@ -9869,6 +11357,7 @@ export const GetTenantPlanResponse = zod.object({
   "customDomain": zod.boolean(),
   "mobileApp": zod.boolean(),
   "socialStudio": zod.boolean(),
+  "socialPublishing": zod.boolean().describe('Publishing drafts to Facebook and Instagram.'),
   "clubroomTv": zod.boolean(),
   "curation": zod.boolean()
 }).describe('Per-feature flags resolved from the tenant\'s plan.')

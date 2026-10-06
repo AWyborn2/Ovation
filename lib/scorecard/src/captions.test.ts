@@ -131,6 +131,19 @@ const cases: Array<[string, CaptionCardInput & Record<string, unknown>, string]>
     "|12:30pm|start|Match Day|||Rivals CC|Round 3|Home Oval|Sat 19 Oct|club.example/go/abc|club.example|#GoClub",
   ],
   [
+    "matchDay with the fixture's grade",
+    {
+      kind: "matchDay",
+      roundLabel: "ROUND 3",
+      oppositionName: "Rivals CC",
+      venue: "Home Oval",
+      date: "SAT 19 OCT",
+      startTime: "12:30pm",
+      grade: "A Grade",
+    },
+    "|12:30pm|start|Match Day||A Grade|Rivals CC|ROUND 3|Home Oval|SAT 19 OCT|club.example/go/abc|club.example|#GoClub",
+  ],
+  [
     "roundFixtures",
     {
       kind: "roundFixtures",

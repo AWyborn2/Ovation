@@ -378,8 +378,9 @@ describe.skipIf(!isLocalDb)("duplicate-player suggestions and review", () => {
 
   describe("confirm, undo, reject and reopen", () => {
     it("KTD8: recording the sweep watermark first", async () => {
-      // The club's first sweep only records its newest match (no drafts).
-      const first = await sweepCentralMatches(t1, new Date("2024-11-10T00:00:00Z"), log);
+      // A first sweep drafts only matches in its recent window, so sweeping long after these
+      // matches records the newest one and drafts nothing.
+      const first = await sweepCentralMatches(t1, new Date("2030-01-01T00:00:00Z"), log);
       expect(first).toEqual({ seen: 0, drafted: 0, achievements: 0 });
     });
 
@@ -436,6 +437,8 @@ describe.skipIf(!isLocalDb)("duplicate-player suggestions and review", () => {
         .set("Cookie", cookieT1)
         .expect(200);
       expect(res.body.matches[0].performers).toBe("Chris Phelps 60");
+      // The recorded winner decides the outcome, not the result sentence ("Dup Test CC won").
+      expect(res.body.matches[0].outcome).toBe("WON");
     });
 
     it("a confirmed pair can't be rejected or reopened (only undone)", async () => {

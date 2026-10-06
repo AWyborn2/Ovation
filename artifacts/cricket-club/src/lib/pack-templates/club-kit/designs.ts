@@ -6,8 +6,16 @@ import type {
   PackTemplateRepeat,
 } from "../types";
 import { BROADCAST_DARK_PACK } from "../broadcast-dark";
-import { shirtNumberBadge, shirtNumberField, withShirtNumber } from "../skeleton-kit";
-import { clubHeaderFields, photoField, repeatField, slot, textField } from "../shared";
+import {
+  clubHeaderFields,
+  photoField,
+  repeatField,
+  slot,
+  sponsorsOff,
+  sponsorsOn,
+  textField,
+} from "../shared";
+import { shirtNumberBadge, shirtNumberField, treatedPhoto, withShirtNumber } from "../skeleton-kit";
 import {
   ckCard,
   ckFormats,
@@ -19,6 +27,9 @@ import {
 } from "./card";
 import {
   C,
+  background,
+  supportedBy,
+  tricolourRule,
   CK_COND,
   CK_MONO,
   CK_SANS,
@@ -78,6 +89,13 @@ const EXTRA_FIELDS: Record<string, PackTemplateField> = {
   "opposition.barName": textField("opposition.barName", "Opposition name on score bar", ""),
   "club.logoDisplay": textField("club.logoDisplay", "Club logo shown", "flex"),
   "opposition.logoDisplay": textField("opposition.logoDisplay", "Opposition logo shown", "flex"),
+  // Starting XI: the match set out in parts (the reference design runs them
+  // together in `gradeRound` / `venueDateTime`).
+  roundLabel: textField("roundLabel", "Round", "ROUND 3"),
+  opponent: textField("opponent", "Opponent", "MARINERS"),
+  venue: textField("venue", "Venue", "RUSHTON PARK"),
+  date: textField("date", "Date", "SAT 8 NOV"),
+  startTime: textField("startTime", "Start time", "12:30 PM"),
 };
 
 /** A set's row unit: card cqmin scaled by the set's density (`--rs`, from `{{rowScale}}`). */
@@ -346,6 +364,85 @@ const teamList = design({
       "squadPhoto",
       "list",
     ),
+});
+
+/** A badge chip on a Starting XI row; `cleanupEmptyBadges` drops it when its value is empty. */
+const supportedByLabel = supportedBy(u, "PROUDLY SUPPORTED BY");
+
+const xiBadge = (text: string, bg: string, ink: string, size: number) =>
+  `<span data-badge="1" style="flex:none;font-family:${CK_COND};font-weight:800;font-size:${u(size)};line-height:1;letter-spacing:.06em;padding:${u(0.5)} ${u(0.9)};background:${bg};color:${ink}">${text}</span>`;
+
+/**
+ * Starting XI: the player photo down the left with the match under it, the
+ * numbered XI on a dark panel down the right, and one sponsor logo. Each team
+ * of a round set is one of these, so its own sponsor (sponsor per team) is
+ * the only logo on it.
+ */
+const startingXi = design({
+  kind: "teamList",
+  designKey: "starting-xi",
+  name: "Starting XI",
+  rowExtras: { players: [textField("debut", "Debut badge", "")] },
+  build: (f) => {
+    const tall = isTall(f);
+    // Row height and type from the room the format gives the list.
+    const k = { square: 1, portrait: 1.12, story: 1.3, landscape: 0.92 }[f];
+    const ku = (n: number) => u(+(n * k).toFixed(2));
+    const left = f === "landscape" ? "50%" : tall ? "44%" : "46%";
+    const photo = treatedPhoto(
+      "squadPhoto",
+      "inset:0",
+      slot("squadPhoto", "photo", "rect", undefined, "50% 18%"),
+    );
+    const sponsor =
+      `<div data-sponsor-strip="1" style="display:flex;flex-direction:column;align-items:flex-end;gap:${u(0.8)}">` +
+      supportedByLabel +
+      `<div data-sponsor-tile="1" style="width:${u(16)};height:${u(7)};flex:none;overflow:hidden;background:rgba(255,255,255,.94)">${slot("sponsor1", "sponsor", "rect")}</div>` +
+      `</div>` +
+      `<div data-sponsor-fallback="1"><div style="display:flex;flex-direction:column;align-items:flex-end;gap:${u(0.6)}">${supportedByLabel}<span data-sponsor-name="1" style="font-family:${CK_SANS};font-weight:700;font-size:${u(2)};white-space:nowrap;color:${C.chalk}">{{sponsorPresentedBy}}</span></div></div>`;
+    const row =
+      `<div style="display:flex;align-items:center;gap:${ku(1.4)};min-height:${ku(5.6)};border-bottom:${u(0.15)} solid ${C.line};min-width:0">` +
+      `<span style="flex:none;width:${ku(4.4)};font-family:${CK_COND};font-weight:900;font-size:${ku(4)};line-height:1;color:${C.pt}">{{row.number}}</span>` +
+      `<span data-fit="13" style="flex:1;min-width:0;font-family:${CK_COND};font-weight:800;font-size:calc(${ku(4.2)} * var(--fit,1));line-height:1;text-transform:uppercase;white-space:nowrap;overflow:hidden;color:${C.chalk}">{{row.surname}}</span>` +
+      xiBadge("{{row.role}}", C.p, C.onp, +(2.3 * k).toFixed(2)) +
+      xiBadge("{{row.debut}}", C.chalk, C.base, +(2.3 * k).toFixed(2)) +
+      `</div>`;
+    return (
+      `<div data-pack-skeleton="1" style="position:absolute;inset:0;container-type:size;overflow:hidden;font-family:${CK_SANS};color:${C.chalk}">` +
+      background() +
+      // The photo, fading into the panel on its right edge and the match under it.
+      `<div style="position:absolute;left:0;top:0;bottom:0;width:${left};overflow:hidden">` +
+      photo +
+      `<div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,transparent 62%,${C.base} 100%),linear-gradient(0deg,${C.base} 0%,${C.base70} 28%,transparent 55%)"></div>` +
+      `</div>` +
+      // Left column: crest top, the match bottom.
+      `<div style="position:absolute;left:6cqmin;top:6cqmin;bottom:6cqmin;width:calc(${left} - 8cqmin);display:flex;flex-direction:column;justify-content:space-between;min-width:0">` +
+      `<div style="display:flex;align-items:center;gap:2cqmin;min-width:0">${headerCrest()}</div>` +
+      `<div style="display:flex;flex-direction:column;align-items:flex-start;gap:${u(1)};min-width:0;width:100%">` +
+      eyebrow(u, "{{roundLabel}}") +
+      `<div data-fit="12" style="font-family:${CK_COND};font-weight:900;font-size:calc(${u(tall ? 6.4 : 5.6)} * var(--fit,1));line-height:.92;text-transform:uppercase;color:${C.chalk};width:100%">{{clubName}}</div>` +
+      `<div data-fit="12" style="font-family:${CK_COND};font-weight:800;font-size:calc(${u(tall ? 4.6 : 4)} * var(--fit,1));line-height:.95;text-transform:uppercase;color:${C.pt};width:100%">vs {{opponent}}</div>` +
+      tricolourRule(u, 0.6) +
+      meta(u, "{{venue}}", "") +
+      `<div style="font-family:${CK_MONO};font-weight:500;font-size:${u(1.8)};letter-spacing:.14em;text-transform:uppercase;color:${C.chalk2}">{{date}} · {{startTime}}</div>` +
+      `</div></div>` +
+      // Right panel: grade, STARTING XI, the list, the sponsor.
+      `<div style="position:absolute;right:0;top:0;bottom:0;width:calc(100% - ${left});box-sizing:border-box;padding:6cqmin 6cqmin 6cqmin 4cqmin;background:${C.base};display:flex;flex-direction:column;gap:${u(1.6)};min-width:0">` +
+      `<div style="display:flex;flex-direction:column;align-items:flex-start;gap:${u(0.6)}">` +
+      eyebrow(u, "{{competitionLine}}{{setMarker}}") +
+      display(
+        u,
+        `STARTING <span style="color:${C.pt}">XI</span>`,
+        tall ? 9 : 8,
+        ";line-height:.85",
+      ) +
+      `</div>` +
+      `<div data-repeat="players" data-repeat-max="12" style="flex:1 1 0;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:${ku(0.3)}">${row}</div>` +
+      `<div style="flex:none;display:flex;justify-content:flex-end;align-items:flex-end;min-height:${u(7)}">${sponsorsOn(sponsor)}${sponsorsOff("")}</div>` +
+      `</div>` +
+      `</div>`
+    );
+  },
 });
 
 const premiership = design({
@@ -855,6 +952,7 @@ const teamListsCover = coverDesign(
 export const CLUB_KIT_DESIGNS: PackDesignEntry[] = [
   matchResult,
   teamList,
+  startingXi,
   weekendWrap,
   ladder,
   playerSpotlight,

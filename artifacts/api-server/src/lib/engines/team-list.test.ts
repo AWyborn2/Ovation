@@ -26,6 +26,8 @@ const fixture: FixtureRow = {
   createdAt: new Date("2026-10-01T00:00:00Z"),
 } as FixtureRow;
 
+const NO_DEBUTS: ReadonlySet<number> = new Set();
+
 const PARTICIPANT = "0f1e2d3c-aaaa-bbbb-cccc-000000000001";
 
 const players: TeamListPlayer[] = [
@@ -53,7 +55,7 @@ const cardPlayers = (input: Record<string, unknown>) => input.players as CardPla
 
 describe("teamListToCardInput with season shirt numbers", () => {
   it("carries each kept player's number and numbering: shirt, in batting order", () => {
-    const input = teamListToCardInput(fixture, players, numbers);
+    const input = teamListToCardInput(fixture, players, NO_DEBUTS, numbers);
     expect(input.numbering).toBe("shirt");
     expect(cardPlayers(input)).toEqual([
       { order: 1, surname: "OPENER", role: "C", shirtNumber: "7" },
@@ -65,7 +67,7 @@ describe("teamListToCardInput with season shirt numbers", () => {
   });
 
   it("gives an unnumbered player no number at all (R15)", () => {
-    const input = teamListToCardInput(fixture, players, numbers);
+    const input = teamListToCardInput(fixture, players, NO_DEBUTS, numbers);
     const unnumbered = cardPlayers(input).find((p) => p.surname === "UNNUMBERED")!;
     expect("shirtNumber" in unnumbered).toBe(false);
     const typed = cardPlayers(input).find((p) => p.surname === "NAME")!;
@@ -73,13 +75,13 @@ describe("teamListToCardInput with season shirt numbers", () => {
   });
 
   it("shows a held participant's number on this fixture's card (R16 exception)", () => {
-    const input = teamListToCardInput(fixture, players, numbers);
+    const input = teamListToCardInput(fixture, players, NO_DEBUTS, numbers);
     expect(cardPlayers(input).find((p) => p.surname === "DEBUTANT")?.shirtNumber).toBe("31");
   });
 
   it("still drops fill-ins", () => {
     for (const n of [numbers, null, undefined]) {
-      const input = teamListToCardInput(fixture, players, n);
+      const input = teamListToCardInput(fixture, players, NO_DEBUTS, n);
       expect(cardPlayers(input).map((p) => p.surname)).not.toContain("IN");
       expect(cardPlayers(input)).toHaveLength(5);
     }
@@ -87,7 +89,7 @@ describe("teamListToCardInput with season shirt numbers", () => {
 
   it("keeps the card input identical to today when the feature is off", () => {
     const before = teamListToCardInput(fixture, players);
-    expect(teamListToCardInput(fixture, players, null)).toEqual(before);
+    expect(teamListToCardInput(fixture, players, NO_DEBUTS, null)).toEqual(before);
     expect(before).not.toHaveProperty("numbering");
     expect(cardPlayers(before).some((p) => "shirtNumber" in p)).toBe(false);
     expect(Object.keys(before)).toEqual([
@@ -97,6 +99,12 @@ describe("teamListToCardInput with season shirt numbers", () => {
       "venueDateTime",
       "players",
       "grade",
+      "roundLabel",
+      "opponent",
+      "homeAway",
+      "venue",
+      "date",
+      "startTime",
     ]);
   });
 
@@ -108,6 +116,7 @@ describe("teamListToCardInput with season shirt numbers", () => {
     const input = teamListToCardInput(
       fixture,
       [{ order: 1, playerId: 11, participantId: PARTICIPANT, displayName: "Alex Opener" }],
+      NO_DEBUTS,
       both,
     );
     expect(cardPlayers(input)[0].shirtNumber).toBe("7");

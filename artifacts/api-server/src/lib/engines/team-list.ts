@@ -16,6 +16,7 @@ import { upsertDraftByKey } from "../draft-upsert";
 import { teamListPhotoPlayer } from "../draft-enrich";
 import { resolveRoundSchedules } from "../round-schedules";
 import { formatFixtureDate, formatFixtureTime } from "./match-day";
+import { autoDebutPlayerIds, isDebut } from "../team-list-debuts";
 
 /**
  * Team lists are usually named a few days out, so look further ahead than the
@@ -138,10 +139,14 @@ export const teamListSeasonOf = (fixture: Pick<FixtureRow, "startAt">): number =
  * fixture season's map, passed only when the club has shirt numbers on) each
  * kept player carries their `shirtNumber` (none when unnumbered) and the card
  * carries `numbering: "shirt"`. Without it the input is exactly as before.
+ *
+ * `autoDebuts` holds the players the match records say are debuting (see
+ * team-list-debuts.ts); an admin's `debut` on a player wins over it.
  */
 export function teamListToCardInput(
   fixture: FixtureRow,
   players: TeamListPlayer[],
+  autoDebuts: ReadonlySet<number> = new Set(),
   numbers?: TeamListShirtNumbers | null,
 ): Record<string, unknown> {
   const round = (fixture.roundLabel ?? "").toUpperCase();
@@ -162,13 +167,46 @@ export function teamListToCardInput(
       .filter((p) => p.playerId == null || p.playerId < 90000)
       .sort((a, b) => a.order - b.order)
       .map((p) => {
-        const row = { order: p.order, surname: surnameOf(p.displayName), role: p.role };
+        const row = {
+          order: p.order,
+          surname: surnameOf(p.displayName),
+          role: p.role,
+          ...(isDebut(p, autoDebuts) ? { debut: true } : {}),
+        };
         const shirtNumber = numbers ? shirtNumberOf(p, numbers) : null;
         return shirtNumber ? { ...row, shirtNumber } : row;
       }),
     grade: fixture.grade,
+    // The match itself, for designs that set it out in parts (Starting XI).
+    roundLabel: round,
+    opponent: fixture.opponentName,
+    ...(fixture.opponentLogoUrl ? { opponentLogoUrl: fixture.opponentLogoUrl } : {}),
+    homeAway: fixture.isHome ? "HOME" : "AWAY",
+    venue: fixture.venue ?? "",
+    date: formatFixtureDate(fixture.startAt),
+    startTime: formatFixtureTime(fixture.startAt),
     ...(numbers ? { numbering: "shirt" } : {}),
   };
+}
+
+/** The XI's automatic debutants; a failed lookup only drops the automatic badges. */
+export async function loadAutoDebuts(
+  tenantId: number,
+  players: readonly TeamListPlayer[],
+  before: Date,
+): Promise<Set<number>> {
+  try {
+    return new Set(
+      await autoDebutPlayerIds(
+        tenantId,
+        players.map((p) => p.playerId),
+        before,
+      ),
+    );
+  } catch (err) {
+    logger.warn({ err, tenantId }, "team list debut lookup failed");
+    return new Set();
+  }
 }
 
 export const teamListKey = (fixtureId: number) => `teamlist:${fixtureId}`;
@@ -229,6 +267,7 @@ export async function generateTeamListDrafts(
       cardInput: teamListToCardInput(
         fixture,
         players,
+        await loadAutoDebuts(tenantId, players, fixture.startAt),
         await shirtNumbers(teamListSeasonOf(fixture)),
       ),
       appPath: "/fixtures",

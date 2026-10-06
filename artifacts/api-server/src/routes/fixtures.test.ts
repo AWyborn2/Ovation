@@ -209,6 +209,30 @@ describe("fixtures + team lists", () => {
       .set("x-tenant-id", String(tenantAId))
       .expect(200);
     expect(got.body.players).toEqual(put.body.players);
+    // No crosswalk for these ids: nothing is an automatic debut.
+    expect(got.body.debutPlayerIds).toEqual([]);
+  });
+
+  it("stores the vice-captain role and an admin's debut override", async () => {
+    const created = await createFixture();
+    const id: number = created.body.id;
+    const put = await request(app)
+      .put(`/api/fixtures/${id}/team-list`)
+      .set("x-tenant-id", String(tenantAId))
+      .set("Cookie", cookieA)
+      .send({
+        players: [
+          { order: 1, playerId: 42, displayName: "A Opener", role: "VC/WK", debut: true },
+          { order: 2, playerId: 43, displayName: "B Bowler", debut: false },
+          { order: 3, displayName: "C Newbie" },
+        ],
+      })
+      .expect(200);
+    expect(put.body.players[0]).toMatchObject({ role: "VC/WK", debut: true });
+    expect(put.body.players[1].debut).toBe(false);
+    // No override: the key is absent (automatic).
+    expect("debut" in put.body.players[2]).toBe(false);
+    expect(Array.isArray(put.body.debutPlayerIds)).toBe(true);
   });
 
   it("keeps each row's PlayHQ participantId (lowercased) through an admin save", async () => {

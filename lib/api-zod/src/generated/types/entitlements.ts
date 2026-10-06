@@ -13,6 +13,8 @@ export interface Entitlements {
   customDomain: boolean;
   mobileApp: boolean;
   socialStudio: boolean;
+  /** Publishing drafts to Facebook and Instagram. */
+  socialPublishing: boolean;
   clubroomTv: boolean;
   curation: boolean;
 }

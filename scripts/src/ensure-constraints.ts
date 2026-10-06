@@ -234,7 +234,7 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     name: "club_corrections_identity_check",
     sql: `btrim("playhq_match_id") <> '' AND btrim("participant_id") <> ''`,
   },
-  // Season shirt numbers (migration 0031): digit-string numbers (KTD3) and the
+  // Season shirt numbers (migration 0033): digit-string numbers (KTD3) and the
   // source, policy and upload value sets.
   ...["shirt_numbers", "junior_shirt_numbers"].flatMap((table) => [
     {
@@ -360,7 +360,7 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
           ON "club_corrections" ("tenant_id", "playhq_match_id", "participant_id", "field")
           WHERE "removed_at" IS NULL`,
   },
-  // Season shirt numbers (migration 0031, KTD4): a person appears at most once
+  // Season shirt numbers (migration 0033, KTD4): a person appears at most once
   // per tenant and season. Uniqueness is per person, never per number.
   {
     name: "shirt_numbers_tenant_season_participant_uidx",
@@ -390,6 +390,14 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
     sql: `CREATE UNIQUE INDEX IF NOT EXISTS "matches_source_key_uidx"
           ON "matches" ("source_key")
           WHERE "source_key" IS NOT NULL`,
+  },
+  // Squad register (migration 0032): one member per PlayHQ profile per tenant,
+  // the re-import upsert key; hand-added members have no profile id.
+  {
+    name: "squad_members_tenant_profile_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "squad_members_tenant_profile_uidx"
+          ON "squad_members" ("tenant_id", "playhq_profile_id")
+          WHERE "playhq_profile_id" IS NOT NULL`,
   },
 ];
 

@@ -18,6 +18,7 @@ const ALL_ON: Entitlements = {
   customDomain: true,
   mobileApp: true,
   socialStudio: true,
+  socialPublishing: true,
   clubroomTv: true,
   curation: true,
 };

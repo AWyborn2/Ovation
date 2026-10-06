@@ -300,12 +300,16 @@ describe("renderPackCard with tenant data (PackCardData)", () => {
     expect(sponsorTiles(html)).toBe(1);
   });
 
-  it("(a) other cards fill all three sponsor tiles; premiership cards one", () => {
-    const team = renderPackCard(sampleCardInput("teamList"), "story", true, TOKENS, false, DATA);
+  it("(a) other cards fill all three sponsor tiles; premiership and team-list cards one", () => {
+    const wrap = renderPackCard(sampleCardInput("weekendWrap"), "story", true, TOKENS, false, DATA);
     for (const s of ["spon-a", "spon-b", "spon-c"]) {
-      expect(team).toContain(`src="https://cdn.example.com/${s}.png"`);
+      expect(wrap).toContain(`src="https://cdn.example.com/${s}.png"`);
     }
-    expect(sponsorTiles(team)).toBe(3);
+    expect(sponsorTiles(wrap)).toBe(3);
+    // A team list carries its team's one sponsor (sponsor per team).
+    const team = renderPackCard(sampleCardInput("teamList"), "story", true, TOKENS, false, DATA);
+    expect(team).not.toContain("spon-b.png");
+    expect(sponsorTiles(team)).toBeLessThanOrEqual(1);
     const prem = renderPackCard(sampleCardInput("premiership"), "story", true, TOKENS, false, DATA);
     expect(prem).not.toContain("spon-b.png");
     expect(sponsorTiles(prem)).toBeLessThanOrEqual(1);

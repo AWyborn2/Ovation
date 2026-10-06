@@ -42,6 +42,12 @@ export interface SocialSettingsUpdate {
      * @maximum 168
      */
   autoPostWindowHours?: number;
+  autoPublishEnabled?: boolean;
+  /**
+     * @minimum 1
+     * @maximum 336
+     */
+  autoPublishFreshnessHours?: number;
   /** @nullable */
   notificationEmail?: string | null;
   /** Merged into the stored map: only the packs sent change, the others keep their mode. */

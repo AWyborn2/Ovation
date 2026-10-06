@@ -222,8 +222,22 @@
     {
       "idx": 31,
       "version": "7",
-      "when": 1791262381215,
-      "tag": "0031_shirt_numbers",
+      "when": 1791281571239,
+      "tag": "0031_sponsor_grades",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791307857155,
+      "tag": "0032_availability_selection",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791325517320,
+      "tag": "0033_shirt_numbers",
       "breakpoints": true
     }
   ]

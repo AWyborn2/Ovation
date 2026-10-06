@@ -77,6 +77,9 @@ const EXTRA_KEY_ALLOWLIST: Record<string, readonly string[]> = {
   ],
   // Club Kit gives these kinds the jumper-trim photo frame; Broadcast Dark's
   // designs have no photo. The slot takes the tenant's selected photo.
+  // Club Kit's Starting XI sets the match out in parts (round, opponent,
+  // venue, date, time) where the reference runs them together.
+  "club-kit-v1/teamList": ["roundLabel", "opponent", "venue", "date", "startTime"],
   "club-kit-v1/clubLeaderboard": ["photo"],
   "club-kit-v1/ladder": ["photo"],
   "club-kit-v1/weekendWrap": ["photo"],

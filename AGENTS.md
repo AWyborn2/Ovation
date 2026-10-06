@@ -102,6 +102,20 @@ In short:
   every hourly run calls `/api/internal/playhq/sweep` (scheduled sweep for every club).
 - **Social Studio automation is live:** result, achievement, round-up and match-day cards
   (incl. Team Lists from PlayHQ selections) draft into the review queue.
+- **Availability and Selection Hub are built, off per club by default**
+  (`availability_settings.enabled`; plan `docs/plans/2026-10-06-002-feat-player-availability-selection-plan.md`).
+  Admins import the PlayHQ participant CSV into `squad_members` (only whitelisted columns are
+  kept). The scheduled sweep then runs each enabled club's weekly round: SMS (Twilio, optional
+  `TWILIO_*`) and email requests with per-recipient hashed links, a reminder, and at cut-off a
+  draft `selections` row per fixture seeded from the grade's last team list. Captains and
+  admins edit drafts in the Hub (`/admin/selection`, `/captain/selection`). Finalising publishes
+  the fixture's `team_lists` row with `source = "selection"`: the fixtures team-list PUT
+  refuses to edit it, and the PlayHQ projector replaces it with the played side only after
+  the match. Players answer at the public `/availability/:token`; the token path segment is
+  redacted from request logs. Contacts never reach captain payloads or logs.
+- **Meta publishing is built but switched off** (`META_PUBLISHING_ENABLED`): clubs connect a
+  Facebook Page + Instagram account and drafts publish on a schedule or automatically at the
+  auto-post deadline. Waits on Meta App Review; runbook `docs/runbooks/meta-publishing.md`.
 - **Billing and entitlements are built but switched off** (Phase 2c/2d); onboarding,
   tenant-scoped admin auth and the platform-admin console are live.
 
@@ -209,6 +223,10 @@ In short:
   `scripts/sql/playhq-schema.sql` (+ `playhq-ingest-role.sql`, `central-projector.sql`)
 - Social drafting: `api-server/src/lib/draft-sweep.ts` (entry), `lib/engines/*` (per card
   kind), `lib/draft-enrich.ts` (pack, caption and photo pick)
+- Meta publishing: `api-server/src/lib/publishing/` (destination boundary + Meta adapter,
+  publish worker, auto-publish, connection health, media prep), routes
+  `social-connections.ts`, `social-publications.ts`, `meta-callbacks.ts`,
+  `internal-publish-sweep.ts`; token encryption `lib/secret-box.ts`
 - Caps: `routes/caps.ts` (register + confirmation queue), `lib/debut-caps.ts` (automatic
   A Grade debut caps), `lib/cap-sync.ts`
 - App entry: `api-server/src/app.ts` (middleware wiring) → `index.ts`

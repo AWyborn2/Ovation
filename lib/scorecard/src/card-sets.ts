@@ -196,6 +196,7 @@ type TeamRow = {
   squadPhotoUrl?: string | null;
   /** "shirt" when the club numbers its players: rows then print shirt numbers. */
   numbering?: "shirt";
+  [extra: string]: unknown;
 };
 
 export interface PlannedSlide<I extends SetInput = SetInput> {
@@ -242,15 +243,18 @@ function balanced<T>(
   });
 }
 
-function teamCard(team: TeamRow, junior: boolean): SetInput {
+/**
+ * One team of a round as its own team-list card: the team's fields as they
+ * came (its grade, so a grade sponsor finds it, and the match parts the
+ * Starting XI sets out), plus the round's chosen design.
+ */
+function teamCard(team: TeamRow, junior: boolean, design: unknown): SetInput {
+  const { squadPhotoUrl, ...rest } = team;
   return {
+    ...rest,
     kind: "teamList",
-    gradeRound: team.gradeRound,
-    competitionLine: team.competitionLine,
-    venueDateTime: team.venueDateTime,
-    players: team.players,
-    ...(team.squadPhotoUrl ? { squadPhotoUrl: team.squadPhotoUrl } : {}),
-    ...(team.numbering ? { numbering: team.numbering } : {}),
+    ...(squadPhotoUrl ? { squadPhotoUrl } : {}),
+    ...(typeof design === "string" && design ? { design } : {}),
     ...(junior ? { junior: true } : {}),
   };
 }
@@ -302,6 +306,24 @@ function planSet(input: SetInput, opts: CardSetOptions): PlannedSlide[] {
       break;
     }
     case "weekendWrap": {
+      // A round-results carousel (Ash, 6 Oct 2026): the wrap's cover, then each match's own
+      // result card, in the wrap's order. Without `results` it is the list-style wrap.
+      const results = Array.isArray(input.results) ? (input.results as SetInput[]) : [];
+      if (results.length > 0) {
+        cap = 1;
+        const rows = (input.matches as MatchRow[] | undefined) ?? [];
+        details = results.map((r, i) => {
+          // Keyed by the matching wrap row's grade (results and matches share an order).
+          const grade = rows[i]?.gradeLabel ?? String(i);
+          return {
+            section: "senior",
+            firstKey: grade,
+            count: 1,
+            build: (page) => ({ ...r, setPage: page }),
+          };
+        });
+        break;
+      }
       cap = SET_CAPS.weekendWrap;
       const parts = balanced(
         (input.matches as MatchRow[]) ?? [],
@@ -336,7 +358,10 @@ function planSet(input: SetInput, opts: CardSetOptions): PlannedSlide[] {
           section: p.section,
           firstKey: team.grade,
           count: 1,
-          build: (page) => ({ ...teamCard(team, p.section === "junior"), setPage: page }),
+          build: (page) => ({
+            ...teamCard(team, p.section === "junior", input.design),
+            setPage: page,
+          }),
         };
       });
       break;

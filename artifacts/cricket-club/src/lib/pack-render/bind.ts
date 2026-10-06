@@ -188,6 +188,13 @@ export function bindInput(input: ShareCardInput): BoundInput {
       set(values, "gradeRound", input.gradeRound);
       set(values, "competitionLine", input.competitionLine);
       set(values, "venueDateTime", input.venueDateTime);
+      // The match in parts, for designs that set it out separately (Starting XI).
+      // Bound even when absent, so a list without them never shows samples.
+      values["roundLabel"] = input.roundLabel ?? "";
+      values["opponent"] = input.opponent ? cardTeamName(input.opponent) : "";
+      values["venue"] = input.venue ?? "";
+      values["date"] = input.date ?? "";
+      values["startTime"] = input.startTime ?? "";
       if (input.squadPhotoUrl) images["squadPhoto"] = input.squadPhotoUrl;
       // Rows stay in batting order either way. With season shirt numbers on
       // (numbering "shirt") the number slot is the shirt number, bound
@@ -198,6 +205,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
           number: shirt ? shirtText(p.shirtNumber) : String(p.order),
           surname: p.surname,
           role: p.role ?? "",
+          debut: p.debut ? "DEBUT" : "",
         },
       }));
       break;
@@ -446,7 +454,8 @@ function bindSetValues(input: ShareCardInput, values: Record<string, string>): v
       const n = input.teams?.length ?? 0;
       values["coverDate"] = input.date ?? "";
       values["coverCount"] = String(n);
-      values["coverLabel"] = n === 1 ? "TEAM NAMED" : "TEAMS NAMED";
+      const named = n === 1 ? "TEAM NAMED" : "TEAMS NAMED";
+      values["coverLabel"] = input.audience ? `${input.audience} ${named}` : named;
       values["coverList"] = dotList((input.teams ?? []).map((t) => t.grade));
       break;
     }

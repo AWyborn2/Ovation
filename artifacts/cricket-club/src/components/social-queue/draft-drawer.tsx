@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { EditDrawer, StatusPill } from "@/components/admin-ui";
 import { PostPackButton } from "@/components/post-pack/post-pack-button";
+import { SchedulePanel } from "./schedule-panel";
 import {
   STATUS_LABEL,
   STATUS_TONE,
@@ -216,9 +217,11 @@ export function DraftDrawer({
           </div>
         )}
 
+        {status !== "dismissed" && <SchedulePanel key={current.id} draft={current} />}
+
         {status !== "dismissed" && (
           <section className="space-y-2">
-            <h3 className="text-sm font-semibold">Share</h3>
+            <h3 className="text-sm font-semibold">Share by hand</h3>
             <PostPackButton
               key={current.id}
               draft={current}

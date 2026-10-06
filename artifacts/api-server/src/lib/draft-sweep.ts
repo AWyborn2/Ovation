@@ -27,9 +27,14 @@ import { generateRoundUpDrafts } from "./roundup";
 import { tenantIsCentral, getTenantCentralClubId, NATIVE_STATS_TENANT_ID } from "./tenant";
 import { loadAutoPost, persistDueDrafts } from "./effective-draft-state";
 import { notifyDraftsReady } from "./draft-notifications";
+import { runPublishSweep } from "./publishing/publish-worker";
+import { scheduleAutoPublish } from "./publishing/auto-publish";
+import { checkConnectionHealth } from "./publishing/connection-health";
 import { fillMissingDraftPhotos } from "./draft-enrich";
 import { draftCentralAchievements } from "./central-achievements";
 import { syncDebutCaps } from "./debut-caps";
+import { matchResultCardsOn, resolveRoundSchedules } from "./round-schedules";
+import { runAvailabilitySchedule } from "./availability-schedule";
 
 type Logger = PostCommitLogger & {
   info: (obj: unknown, msg?: string) => void;
@@ -128,6 +133,19 @@ export async function runDraftSweep(
     } catch (err) {
       logger.error({ err, tenantId }, "debut caps failed");
     }
+    // Player availability: send, remind and cut-off on
+    // the club's schedule. A no-op unless the club has switched it on.
+    try {
+      const avail = await runAvailabilitySchedule(tenantId, now, { logger });
+      if (avail.ran.length || avail.retried) {
+        logger.info(
+          { tenantId, roundId: avail.roundId, ran: avail.ran, retried: avail.retried },
+          "availability round",
+        );
+      }
+    } catch (err) {
+      logger.error({ err, tenantId }, "availability schedule failed");
+    }
   }
   if (scope.kind === "scheduled" && (await tenantIsCentral(tenantId))) {
     try {
@@ -171,15 +189,35 @@ export async function runDraftSweep(
 
   if (scope.kind === "scheduled") {
     // Auto-post (KTD4): store what already reads as ready, then tell the club
-    // once for the whole batch.
+    // once for the whole batch. With auto-publish on, fresh drafts are
+    // scheduled to Facebook / Instagram instead and skip the notice.
     try {
       if ((await loadAutoPost(tenantId)).enabled) {
         const promoted = await persistDueDrafts(tenantId, now);
         summary.promoted = promoted.length;
-        await notifyDraftsReady(tenantId, promoted, logger);
+        const autoPublished = await scheduleAutoPublish(tenantId, now);
+        await notifyDraftsReady(
+          tenantId,
+          promoted.filter((id) => !autoPublished.has(id)),
+          logger,
+        );
       }
     } catch (err) {
       logger.error({ err, tenantId }, "auto-post promotion failed");
+    }
+    // Meta publishing: the daily connection check first (a revoked token
+    // holds posts instead of failing them), then anything due goes out now
+    // rather than waiting for the five-minute publish job. Both are no-ops
+    // while publishing is off.
+    try {
+      await checkConnectionHealth(tenantId, now, logger);
+    } catch (err) {
+      logger.error({ err, tenantId }, "meta health check failed");
+    }
+    try {
+      await runPublishSweep({ tenantId, now }, logger);
+    } catch (err) {
+      logger.error({ err, tenantId }, "publish sweep failed");
     }
     await db
       .update(socialSettingsTable)
@@ -237,28 +275,32 @@ function perthDay(t: Date): string {
 
 /**
  * Draft match summaries and achievement cards for a central-data club's matches
- * past its watermark, then advance the watermark. The first sweep only records
- * the club's newest match, so switching drafting on never floods the queue with
- * history.
+ * past its watermark, then advance the watermark. The first sweep starts the
+ * watermark just before the club's earliest match in the recent window, so it
+ * drafts the last few weeks' results but never floods the queue with history.
  */
 export async function sweepCentralMatches(
   tenantId: number,
   now: Date,
   logger: Logger,
 ): Promise<{ seen: number; drafted: number; achievements: number }> {
-  const { centralClubMaxMatchId, centralClubMatchesAfter } =
+  const { centralClubSweepStart, centralClubMatchesAfter } =
     await import("@workspace/db/central-queries");
   const settings = await ensureSettings(tenantId);
   const clubId = await getTenantCentralClubId(tenantId);
 
-  if (settings.centralSweepWatermark == null) {
-    await setWatermark(tenantId, await centralClubMaxMatchId(clubId));
-    return { seen: 0, drafted: 0, achievements: 0 };
+  let watermark = settings.centralSweepWatermark;
+  if (watermark == null) {
+    watermark = await centralClubSweepStart(
+      clubId,
+      perthDay(new Date(now.getTime() - CENTRAL_RECENT_MS)),
+    );
+    await setWatermark(tenantId, watermark);
   }
 
   const { matches, lastSeenId } = await centralClubMatchesAfter(
     clubId,
-    settings.centralSweepWatermark,
+    watermark,
     CENTRAL_SWEEP_LIMIT,
   );
   if (lastSeenId == null) return { seen: 0, drafted: 0, achievements: 0 };
@@ -295,11 +337,18 @@ export async function sweepCentralMatches(
       logger.warn({ tenantId, errors: stumps.errors }, "central stumps drafts had errors");
   }
 
-  const result = await generateMatchSummaryDrafts(
-    tenantId,
-    done.map((m) => m.matchId),
-    { kind: "central", clubId, seenAt: now },
+  // A club posting its results as a round carousel only ("perRound") gets no per-match
+  // result cards; the carousel engine drafts the round instead.
+  const perMatch = matchResultCardsOn(
+    resolveRoundSchedules(settings.roundSchedules).weekendWrap.mode,
   );
+  const result = perMatch
+    ? await generateMatchSummaryDrafts(
+        tenantId,
+        done.map((m) => m.matchId),
+        { kind: "central", clubId, seenAt: now },
+      )
+    : { drafted: 0, skipped: done.length, errors: [] as string[] };
   if (result.errors.length > 0) {
     logger.warn({ tenantId, errors: result.errors }, "central match summary drafts had errors");
   }

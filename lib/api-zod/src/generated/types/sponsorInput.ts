@@ -16,6 +16,8 @@ export interface SponsorInput {
   /** @nullable */
   activeTo?: string | null;
   cardKinds?: CardKind[];
+  /** The grades whose team-list cards show this sponsor as their one logo. */
+  grades?: string[];
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;

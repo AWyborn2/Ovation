@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, gte } from "drizzle-orm";
+import { and, asc, eq, gte, ne } from "drizzle-orm";
 import { db, fixturesTable, teamListsTable, type TeamListPlayer } from "@workspace/db";
 import { normaliseParticipantId } from "@workspace/db/shirt-numbers";
 import {
@@ -17,11 +17,35 @@ import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
+import { autoDebutPlayerIds } from "../lib/team-list-debuts";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
 // Fill-ins (playerId >= FILL_IN_THRESHOLD) are excluded from every stats
 // derivation and must never appear on a published team list either.
+
+/**
+ * The list with its automatic debutants. A failed central read only costs the
+ * automatic badges (the admin can still set them), so it never fails the list.
+ */
+async function withDebuts(
+  tenantId: number,
+  row: typeof teamListsTable.$inferSelect,
+  startAt: Date | null,
+) {
+  let debutPlayerIds: number[] = [];
+  try {
+    debutPlayerIds = await autoDebutPlayerIds(
+      tenantId,
+      row.players.map((p) => p.playerId),
+      startAt,
+    );
+  } catch (err) {
+    logger.warn({ err, tenantId, fixtureId: row.fixtureId }, "team list debut lookup failed");
+  }
+  return { ...row, debutPlayerIds };
+}
 
 /** The tenant's fixture with this id, or undefined (never another tenant's). */
 async function findFixture(tenantId: number, id: number) {
@@ -159,7 +183,7 @@ router.get("/fixtures/:id/team-list", async (req, res): Promise<void> => {
     .select()
     .from(teamListsTable)
     .where(and(eq(teamListsTable.fixtureId, fixture.id), eq(teamListsTable.tenantId, tenantId)));
-  res.json(row ?? null);
+  res.json(row ? await withDebuts(tenantId, row, fixture.startAt) : null);
 });
 
 router.put(
@@ -192,6 +216,19 @@ router.put(
       res.status(404).json({ error: "Fixture not found" });
       return;
     }
+    // A side finalised in the Selection Hub is changed there (re-open, edit,
+    // re-finalise), so the Hub's side and the published list never diverge.
+    const [existing] = await db
+      .select({ source: teamListsTable.source })
+      .from(teamListsTable)
+      .where(and(eq(teamListsTable.fixtureId, fixture.id), eq(teamListsTable.tenantId, tenantId)));
+    if (existing?.source === "selection") {
+      res.status(409).json({
+        error:
+          "This team was picked in the Selection Hub. Re-open it there to make changes, so the side and the published list stay the same.",
+      });
+      return;
+    }
     // Store entries exactly as submitted (order preserved); drop null playerIds
     // so free-typed names serialise without a playerId key.
     // A row's PlayHQ participant id (lowercased) is kept so an admin's edit
@@ -204,6 +241,7 @@ router.put(
         ...(participantId !== null ? { participantId } : {}),
         displayName: p.displayName,
         ...(p.role != null ? { role: p.role } : {}),
+        ...(typeof p.debut === "boolean" ? { debut: p.debut } : {}),
       };
     });
     // One XI per fixture: upsert on the (tenantId, fixtureId) unique index.
@@ -224,9 +262,15 @@ router.put(
           source: "admin",
           ...(body.data.isPublished !== undefined ? { isPublished: body.data.isPublished } : {}),
         },
+        // Never over a Hub list finalised since the check above.
+        setWhere: ne(teamListsTable.source, "selection"),
       })
       .returning();
-    res.json(row);
+    if (!row) {
+      res.status(409).json({ error: "This team was just finalised in the Selection Hub." });
+      return;
+    }
+    res.json(await withDebuts(tenantId, row, fixture.startAt));
   },
 );
 
