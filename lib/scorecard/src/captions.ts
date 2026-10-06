@@ -153,6 +153,8 @@ const tokensFor = (input: CaptionCardInput): Record<string, string> | null => {
         "stat.value": text(f.startTime),
         "stat.label": "start",
         "stat.tier": "Match Day",
+        // Auto-drafted match day cards carry the fixture's grade; Studio ones may not.
+        "grade.name": text(f.grade),
         "opponent.name": text(f.oppositionName),
         "round.label": text(f.roundLabel),
         venue: text(f.venue),

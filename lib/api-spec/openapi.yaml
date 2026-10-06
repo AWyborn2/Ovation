@@ -5418,6 +5418,26 @@ paths:
         "400":
           description: Invalid body
 
+  /social-drafts/recaption:
+    post:
+      summary: Rebuild the captions of queued drafts
+      description: |
+        Re-renders the caption of every draft still in the queue (awaiting
+        review or ready) from the club's current caption templates and
+        variations. A caption someone has edited is kept, and a posted or
+        dismissed draft is never touched. Captions are otherwise written once,
+        when a draft is created, so this brings an existing queue up to date
+        after the templates change.
+      operationId: recaptionSocialDrafts
+      tags: [social-drafts]
+      responses:
+        "200":
+          description: Recaption results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecaptionDraftsResult"
+
   /tracked-links:
     get:
       operationId: listTrackedLinks
@@ -16128,6 +16148,19 @@ components:
             omitted); `achievements` = centuries, five-fors, senior debuts and
             career milestones from those matches (central-data clubs).
 
+    RecaptionDraftsResult:
+      type: object
+      required: [recaptioned, unchanged, keptEdited]
+      properties:
+        recaptioned:
+          type: integer
+          description: Queued drafts whose caption changed.
+        unchanged:
+          type: integer
+          description: Queued drafts whose caption already matched.
+        keptEdited:
+          type: integer
+          description: Queued drafts left alone because someone edited the caption.
     BackfillMatchesResult:
       type: object
       required: [considered, drafted, skipped, capped, errors]

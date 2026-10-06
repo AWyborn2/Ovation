@@ -30,6 +30,7 @@ import {
 import { getTenantId } from "../middlewares/tenant-context";
 import { NATIVE_STATS_TENANT_ID, tenantIsCentral } from "../lib/tenant";
 import { backfillMatchDrafts } from "../lib/draft-sweep";
+import { recaptionQueuedDrafts } from "../lib/draft-recaption";
 import { effectiveDraftStatus, loadAutoPost, type AutoPost } from "../lib/effective-draft-state";
 import { isDraftStatus, normalizeDraftStatus, type DraftStatus } from "../lib/draft-status";
 import {
@@ -694,6 +695,17 @@ router.post(
         include,
       }),
     );
+  },
+);
+
+// Recaption: rebuild queued drafts' captions from the current templates and
+// variations (captions are otherwise fixed at creation). Edited captions stay.
+router.post(
+  "/social-drafts/recaption",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    res.json(await recaptionQueuedDrafts(getTenantId(req)));
   },
 );
 

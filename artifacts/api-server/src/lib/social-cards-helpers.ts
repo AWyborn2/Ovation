@@ -87,13 +87,28 @@ export const DEFAULT_TEMPLATES: { engine: string; platform: string; template: st
 ];
 
 /**
- * Instagram captions for the "whole round" drafts (round-sets engines). Each
- * round's draft takes one variation, picked by its source key, so the weekly
- * post reads differently from round to round and a refresh keeps its pick.
- * Junior rounds share these, so every line suits any age group. The weekend
- * wrap never quotes its win count: a winless round would read badly.
+ * Instagram captions for the game day, team list and weekend wrap drafts, per
+ * match (`matchday`, `teamlist`) and per whole round (round-sets engines).
+ * Each draft takes one variation, picked by its source key, so the posts read
+ * differently from match to match and round to round, and a refresh keeps the
+ * draft's pick. Junior drafts share these, so every line suits any age group.
+ * The weekend wrap never quotes its win count: a winless round would read badly.
  */
-export const ROUND_SET_CAPTIONS: Record<string, readonly string[]> = {
+export const CAPTION_VARIATIONS: Record<string, readonly string[]> = {
+  matchday: [
+    "📣 MATCH DAY 📣\n\n{grade.name} take on {opponent.name} 🏏\n📍 {venue}\n🗓️ {date} · ⏰ {stat.value}\n\nBring a chair and bring the noise 🪑🔊\n\n{hashtag} #MatchDay",
+    "🏏 Game on! 🏏\n\n{grade.name} v {opponent.name}, {round.label}\nFirst ball {stat.value}, {date} at {venue} ☀️\n\nCome down and get behind the team 🙌\n\n{app.link}\n{hashtag} #MatchDay",
+    "🪙 The toss is close…\n\n{grade.name} face {opponent.name} on {date} 🏏\n📍 {venue} · ⏰ {stat.value}\n\nWho's coming down? 👇\n\n{hashtag} #MatchDay #ClubCricket",
+    "☀️ Whites on, game face on ☀️\n\n{round.label}: {grade.name} against {opponent.name}\n🗓️ {date} · ⏰ {stat.value}\n📍 {venue}\n\nLet's go! 💪\n\n{hashtag} #MatchDay",
+    "🔥 MATCH PREVIEW 🔥\n\n{grade.name} v {opponent.name}, {round.label} 🏏\n⏰ {stat.value} start, {date}\n📍 {venue}\n\nSee you at the ground 🍿\n\n{app.link}\n{hashtag} #MatchDay",
+  ],
+  teamlist: [
+    "📋 TEAM NEWS 📋\n\nYour {grade.name} XI 🏏\n📍 {venue}\n\nWhites washed? Kit bag packed? 🧺 Good luck, team! 💪\n\n{hashtag} #TeamList",
+    "🧢 SELECTED 🧢\n\nHere's the {grade.name} side 🏏\n📍 {venue}\n\nTag a teammate who's in 👇\n\n{app.link}\n{hashtag} #TeamList #Selections",
+    "✍️ The XI is named! ✍️\n\n{grade.name}\n📍 {venue}\n\nCan't make it? Tell your captain now, not on game morning ⏰😅\n\n{hashtag} #TeamList",
+    "🏏 Pads packed, ready to roll 🏏\n\nThe {grade.name} team is in 📋\n📍 {venue}\n\nGet down and get behind them 🙌\n\n{hashtag} #TeamList #ClubCricket",
+    "📣 Selection's done 📣\n\n{grade.name}: the side for this weekend 🏏\n📍 {venue}\n\nGood luck, everyone 🍀\n\n{app.link}\n{hashtag} #TeamList",
+  ],
   "gameday-round": [
     "📣 GAME DAY · {round.label} 📣\n\n{stat.value} {stat.label} on {date} 🏏\nFind your side, grab a chair and get down to the ground 🪑☀️\n\nSwipe ➡️ for every opponent, venue and start time\n\n{hashtag} #GameDay",
     "🏏 Whites washed? Kit bag packed? 🧺\n\n{round.label} is here: {stat.value} {stat.label} on {date} 🗓️\nSwipe ➡️ to see where every side is playing\n\n{app.link}\n{hashtag} #GameDay #ClubCricket",

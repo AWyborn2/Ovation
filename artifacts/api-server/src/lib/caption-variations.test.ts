@@ -1,6 +1,7 @@
 /**
- * Whole-round drafts (game day, team lists, weekend wrap) caption themselves
- * from a pool of variations, one per round. Mocked unit test (no database).
+ * Game day, team list and weekend wrap drafts, per match and per whole round,
+ * caption themselves from a pool of variations, one per draft. Mocked unit
+ * test (no database).
  */
 import { describe, it, expect, vi } from "vitest";
 import { renderCaption } from "@workspace/scorecard";
@@ -9,11 +10,30 @@ vi.mock("@workspace/db", () => ({ db: {} }));
 vi.mock("./photo-store", () => ({ objectUrl: (p: string) => `/api/storage${p}` }));
 
 import { pickCaptionVariation } from "./draft-enrich";
-import { ROUND_SET_CAPTIONS } from "./social-cards-helpers";
+import { CAPTION_VARIATIONS } from "./social-cards-helpers";
 
 const ctx = { clubUrl: "club.example", hashtag: "#GoClub", appLink: "club.example/fixtures" };
 
+// Shaped like the engines' card inputs (fixtureToMatchDayInput, teamListToCardInput, round-sets).
 const inputs: Record<string, { kind: string } & Record<string, unknown>> = {
+  matchday: {
+    kind: "matchDay",
+    roundLabel: "ROUND 5",
+    oppositionName: "Rivals CC",
+    homeAway: "HOME",
+    venue: "Home Oval",
+    date: "SAT 14 FEB",
+    startTime: "12:30pm",
+    grade: "A Grade",
+  },
+  teamlist: {
+    kind: "teamList",
+    gradeRound: "A GRADE — ROUND 5",
+    competitionLine: "A Grade",
+    venueDateTime: "Home Oval • SAT 14 FEB • 12:30pm",
+    players: new Array(11).fill({}),
+    grade: "A Grade",
+  },
   "gameday-round": {
     kind: "roundFixtures",
     roundLabel: "ROUND 5",
@@ -34,27 +54,36 @@ const inputs: Record<string, { kind: string } & Record<string, unknown>> = {
   },
 };
 
-describe("ROUND_SET_CAPTIONS", () => {
-  it("covers each whole-round engine with several variations", () => {
-    expect(Object.keys(ROUND_SET_CAPTIONS).sort()).toEqual(Object.keys(inputs).sort());
-    for (const variations of Object.values(ROUND_SET_CAPTIONS)) {
+/** What every variation of an engine must show, so no draft loses its key detail. */
+const mustShow: Record<string, string> = {
+  matchday: "Rivals CC",
+  teamlist: "A GRADE",
+  "gameday-round": "ROUND 5",
+  "teamlists-round": "ROUND 5",
+  "weekendwrap-round": "ROUND 5",
+};
+
+describe("CAPTION_VARIATIONS", () => {
+  it("covers each game day, team list and wrap engine with several variations", () => {
+    expect(Object.keys(CAPTION_VARIATIONS).sort()).toEqual(Object.keys(inputs).sort());
+    for (const variations of Object.values(CAPTION_VARIATIONS)) {
       expect(variations.length).toBeGreaterThanOrEqual(3);
       expect(new Set(variations).size).toBe(variations.length);
     }
   });
 
   it.each(Object.keys(inputs))("%s: every variation fills its tokens", (engine) => {
-    for (const template of ROUND_SET_CAPTIONS[engine]!) {
+    for (const template of CAPTION_VARIATIONS[engine]!) {
       const caption = renderCaption(template, inputs[engine]!, ctx);
       expect(caption).not.toMatch(/\{[\w.]+\}/);
-      expect(caption).toContain("ROUND 5");
+      expect(caption).toContain(mustShow[engine]);
       expect(caption).toContain("#GoClub");
       expect(caption.length).toBeLessThanOrEqual(2200);
     }
   });
 
   it("never quotes the weekend wrap's win count (a winless round)", () => {
-    for (const template of ROUND_SET_CAPTIONS["weekendwrap-round"]!) {
+    for (const template of CAPTION_VARIATIONS["weekendwrap-round"]!) {
       expect(template).not.toContain("{stat.value}");
     }
   });

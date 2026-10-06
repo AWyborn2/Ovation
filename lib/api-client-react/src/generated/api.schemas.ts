@@ -6306,6 +6306,15 @@ export interface BackfillMatchesInput {
   include?: BackfillMatchesInputIncludeItem[];
 }
 
+export interface RecaptionDraftsResult {
+  /** Queued drafts whose caption changed. */
+  recaptioned: number;
+  /** Queued drafts whose caption already matched. */
+  unchanged: number;
+  /** Queued drafts left alone because someone edited the caption. */
+  keptEdited: number;
+}
+
 export interface BackfillMatchesResult {
   /** Matches drafted or skipped in this call (at most 60). */
   considered: number;

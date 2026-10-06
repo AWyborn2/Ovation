@@ -4,6 +4,8 @@ import { Link, useLocation, useSearch } from "wouter";
 import {
   useListSocialDrafts,
   getListSocialDraftsQueryKey,
+  useRecaptionSocialDrafts,
+  type RecaptionDraftsResult,
   markSocialDraftPosted,
   useListTrackedLinks,
   getListTrackedLinksQueryKey,
@@ -19,6 +21,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ImageIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ShareCardModal, type EngineKey } from "@/components/share-card-modal";
 import { ListSkeleton, EmptyState, QueryError } from "@/components/data-states";
@@ -65,6 +68,15 @@ function slideCount(d: SocialDraft): number {
   return planCardSet(input, opts).length;
 }
 
+/** "3 captions refreshed · 2 edited kept" */
+function recaptionSummary(r: RecaptionDraftsResult): string {
+  const parts = [
+    r.recaptioned === 1 ? "1 caption refreshed" : `${r.recaptioned} captions refreshed`,
+  ];
+  if (r.keptEdited > 0) parts.push(`${r.keptEdited} edited kept`);
+  return parts.join(" · ");
+}
+
 export default function AdminSocialQueue() {
   const qc = useQueryClient();
   const draftsQ = useListSocialDrafts(undefined, {
@@ -93,6 +105,18 @@ export default function AdminSocialQueue() {
     qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
     qc.invalidateQueries({ queryKey: getGetPendingSocialDraftCountQueryKey() });
   };
+
+  // Captions are written when a draft is made; this rebuilds the queue's from
+  // the current templates (edited captions are kept).
+  const [recaptioned, setRecaptioned] = useState<RecaptionDraftsResult | null>(null);
+  const recaption = useRecaptionSocialDrafts({
+    mutation: {
+      onSuccess: (result) => {
+        setRecaptioned(result);
+        invalidateDrafts();
+      },
+    },
+  });
 
   const drafts = useMemo(() => (draftsQ.data ?? []) as SocialDraft[], [draftsQ.data]);
   const counts = useMemo(() => {
@@ -213,12 +237,35 @@ export default function AdminSocialQueue() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">
-        Cards drafted from your imports, ready to review, share and post.{" "}
-        <Link href="/admin/social/library" className="text-primary-text underline">
-          Photo library
-        </Link>
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          Cards drafted from your imports, ready to review, share and post.{" "}
+          <Link href="/admin/social/library" className="text-primary-text underline">
+            Photo library
+          </Link>
+        </p>
+        <div className="flex items-center gap-3">
+          {recaptioned && (
+            <span className="text-xs text-muted-foreground" role="status">
+              {recaptionSummary(recaptioned)}
+            </span>
+          )}
+          {recaption.isError && (
+            <span className="text-xs text-destructive" role="alert">
+              Couldn&rsquo;t refresh captions. Try again.
+            </span>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={recaption.isPending}
+            onClick={() => recaption.mutate()}
+            title="Rebuild the caption of every waiting draft from your current caption templates. Captions you've edited are kept."
+          >
+            {recaption.isPending ? "Refreshing…" : "Refresh captions"}
+          </Button>
+        </div>
+      </div>
 
       {batchIds && (
         <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/60 px-3 py-2 text-sm">
