@@ -19,7 +19,7 @@ import {
   resolveRoundSchedules,
 } from "../round-schedules";
 import { formatFixtureTime } from "./match-day";
-import { teamListToCardInput } from "./team-list";
+import { teamListSeasonOf, teamListShirtNumberLoader, teamListToCardInput } from "./team-list";
 
 /**
  * Round sets on a schedule (balanced card sets, plan 2026-10-01-001 U5): a
@@ -193,14 +193,21 @@ export async function generateRoundTeamListDrafts(
     .where(and(eq(teamListsTable.tenantId, tenantId), eq(teamListsTable.isPublished, true)));
   const byFixture = new Map(lists.map((l) => [l.fixtureId, l.players]));
 
+  // Season shirt numbers (U7): read only when the club has the feature on.
+  const shirtNumbers = teamListShirtNumberLoader(tenantId);
   for (const round of rounds) {
-    const teams = round.fixtures.flatMap((f) => {
+    const teams: Record<string, unknown>[] = [];
+    for (const f of round.fixtures) {
       const players = byFixture.get(f.id);
-      if (!players) return [];
+      if (!players) continue;
       // Each team is exactly the fixture's own team-list card (fill-ins excluded).
-      const { kind: _kind, ...team } = teamListToCardInput(f, players);
-      return (team.players as unknown[]).length > 0 ? [team] : [];
-    });
+      const { kind: _kind, ...team } = teamListToCardInput(
+        f,
+        players,
+        await shirtNumbers(teamListSeasonOf(f)),
+      );
+      if ((team.players as unknown[]).length > 0) teams.push(team);
+    }
     if (teams.length === 0) continue;
     const { action } = await upsertDraftByKey({
       tenantId,

@@ -189,9 +189,17 @@ export function bindInput(input: ShareCardInput): BoundInput {
       set(values, "competitionLine", input.competitionLine);
       set(values, "venueDateTime", input.venueDateTime);
       if (input.squadPhotoUrl) images["squadPhoto"] = input.squadPhotoUrl;
+      // Rows stay in batting order either way. With season shirt numbers on
+      // (numbering "shirt", KTD10) the number slot is the shirt number, bound
+      // EXPLICITLY — empty when unnumbered, never the batting order (R15).
+      const shirt = input.numbering === "shirt";
       rows["players"] = (input.players ?? []).map((p: TeamListPlayer) => ({
         values: {
-          number: String(p.order),
+          number: shirt
+            ? p.shirtNumber != null
+              ? String(p.shirtNumber).trim()
+              : ""
+            : String(p.order),
           surname: p.surname,
           role: p.role ?? "",
         },

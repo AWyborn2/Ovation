@@ -13,8 +13,21 @@ import {
   useUpdateSocialSettings,
   getGetSocialSettingsQueryKey,
   useGetTenantPlayhqSyncStatus,
+  useGetShirtNumberSettings,
+  useListShirtNumbers,
+  useCreateShirtNumber,
+  useUpdateShirtNumber,
+  getListShirtNumbersQueryKey,
 } from "@workspace/api-client-react";
-import type { Fixture, TeamListPlayer } from "@workspace/api-client-react";
+import type {
+  Fixture,
+  TeamListPlayer,
+  ShirtNumberEntry,
+  ShirtNumberConflict,
+  ShirtNumberWarning,
+  ShirtNumberWriteResult,
+} from "@workspace/api-client-react";
+import { seasonLabel } from "@/lib/season-label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -480,10 +493,14 @@ function FixtureForm({
 }
 
 // One editable row of the XI: either a register-linked player or a free-typed
-// name, plus captain / wicket-keeper markers.
+// name, plus captain / wicket-keeper markers. `participantId` is the PlayHQ
+// participant a row was copied from (lineup sync). It is never shown, but it
+// rides along so an admin's save keeps it: a held shirt-number entry is found
+// by it (season shirt numbers, KTD10).
 type TeamListRowState = {
   player: SelectedPlayer | null;
   freeName: string;
+  participantId: string | null;
   isCaptain: boolean;
   isKeeper: boolean;
 };
@@ -491,6 +508,7 @@ type TeamListRowState = {
 const emptyRow = (): TeamListRowState => ({
   player: null,
   freeName: "",
+  participantId: null,
   isCaptain: false,
   isKeeper: false,
 });
@@ -501,11 +519,250 @@ function rowsFromPlayers(players: TeamListPlayer[]): TeamListRowState[] {
     .map((p) => ({
       player: p.playerId != null ? { id: p.playerId, surname: p.displayName, givenName: "" } : null,
       freeName: p.playerId == null ? p.displayName : "",
+      participantId: normaliseGuid(p.participantId),
       isCaptain: p.role === "C" || p.role === "C/WK",
       isKeeper: p.role === "WK" || p.role === "C/WK",
     }));
   while (rows.length < TEAM_LIST_ROWS) rows.push(emptyRow());
   return rows.slice(0, TEAM_LIST_ROWS);
+}
+
+/** The name a row saves under (empty for a blank row). */
+const rowName = (r: TeamListRowState): string =>
+  r.player ? `${r.player.givenName} ${r.player.surname}`.trim() : r.freeName.trim();
+
+// ---------------------------------------------------------------------------
+// Season shirt numbers on the team list (docs/plans/2026-10-06-001-feat-season-shirt-numbers-plan.md,
+// U7: R10, F3)
+// ---------------------------------------------------------------------------
+
+const PERTH_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+/**
+ * The season (start year) a fixture belongs to: Australian seasons run July to
+ * June, read in Perth time. Mirrors `seasonStartYearFor` in lib/db/src/seasons.ts,
+ * which the web app can't import.
+ */
+function fixtureSeason(startAt: string): number {
+  const perth = new Date(new Date(startAt).getTime() + PERTH_OFFSET_MS);
+  const year = perth.getUTCFullYear();
+  return perth.getUTCMonth() >= 6 ? year : year - 1;
+}
+
+const SHIRT_NUMBER_PATTERN = /^[0-9]{1,3}$/;
+
+function normaliseGuid(value: string | null | undefined): string | null {
+  const v = (value ?? "").trim().toLowerCase();
+  return v === "" ? null : v;
+}
+
+const nameKey = (name: string) => name.trim().replace(/\s+/g, " ").toLowerCase();
+
+/** A row's entry on the season register: by player id, else by PlayHQ participant. */
+function registerEntryFor(
+  entries: readonly ShirtNumberEntry[],
+  playerId: number | null,
+  participantId: string | null,
+): ShirtNumberEntry | undefined {
+  return (
+    (playerId != null ? entries.find((e) => e.playerId === playerId) : undefined) ??
+    (participantId != null
+      ? entries.find((e) => normaliseGuid(e.participantId) === participantId)
+      : undefined)
+  );
+}
+
+/** A held entry (not yet linked to a player) whose name matches the row's. */
+function heldNameMatch(
+  entries: readonly ShirtNumberEntry[],
+  name: string,
+  participantId: string | null,
+): ShirtNumberEntry | undefined {
+  const key = nameKey(name);
+  return entries.find(
+    (e) =>
+      e.playerId === null &&
+      nameKey(e.name) === key &&
+      (e.participantId === null || normaliseGuid(e.participantId) === participantId),
+  );
+}
+
+/** The register's 409 body (already on the register, or a blocked duplicate). */
+function conflictMessage(e: unknown): string | null {
+  const err = e as { status?: number; data?: Partial<ShirtNumberConflict> | null } | null;
+  if (err?.status !== 409) return null;
+  const error = err.data?.error ?? "That number can't be used.";
+  const extra = (err.data?.warnings ?? []).map((w) => w.message).filter((m) => m !== error);
+  return [error, ...extra].join(" ");
+}
+
+type AssignState =
+  | { kind: "idle" }
+  | { kind: "saving" }
+  | { kind: "saved"; warnings: ShirtNumberWarning[] }
+  | { kind: "error"; message: string };
+
+/**
+ * One row's season shirt number: the number when it has one; else an inline
+ * "Assign #" for a row with a player or PlayHQ id (numbering the person's
+ * existing register entry, or adding one for the fixture's season), with an
+ * offer to link a held entry whose name matches. A free-typed row with no id
+ * only gets a hint: it has to be linked to a player first.
+ */
+function ShirtNumberCell({
+  inputId,
+  name,
+  playerId,
+  participantId,
+  season,
+  entries,
+}: {
+  inputId: string;
+  name: string;
+  playerId: number | null;
+  participantId: string | null;
+  season: number;
+  entries: readonly ShirtNumberEntry[];
+}) {
+  const queryClient = useQueryClient();
+  const create = useCreateShirtNumber();
+  const update = useUpdateShirtNumber();
+  const [value, setValue] = useState("");
+  const [state, setState] = useState<AssignState>({ kind: "idle" });
+
+  if (playerId == null && participantId == null) {
+    return <p className="text-xs text-muted-foreground">Link this player to number them</p>;
+  }
+
+  const existing = registerEntryFor(entries, playerId, participantId);
+  const number = existing?.number ?? null;
+  const held = existing ? undefined : heldNameMatch(entries, name, participantId);
+  const saving = state.kind === "saving";
+
+  const handlers = {
+    onSuccess: (r: ShirtNumberWriteResult) => {
+      setValue("");
+      setState({ kind: "saved", warnings: r.warnings ?? [] });
+      queryClient.invalidateQueries({ queryKey: getListShirtNumbersQueryKey({ season }) });
+    },
+    onError: (e: unknown) =>
+      setState({
+        kind: "error",
+        message: conflictMessage(e) ?? handleAdminMutationError(e) ?? "Request failed",
+      }),
+  };
+
+  /** The typed number, or null after flagging it when it isn't 1-3 digits. */
+  const typedNumber = (): string | null | undefined => {
+    const n = value.trim();
+    if (n === "") return undefined;
+    if (!SHIRT_NUMBER_PATTERN.test(n)) {
+      setState({ kind: "error", message: "A shirt number is 1 to 3 digits." });
+      return null;
+    }
+    return n;
+  };
+
+  const assign = () => {
+    const n = typedNumber();
+    if (n === null) return;
+    if (n === undefined) {
+      setState({ kind: "error", message: "A shirt number is 1 to 3 digits." });
+      return;
+    }
+    setState({ kind: "saving" });
+    if (existing) {
+      update.mutate({ id: existing.id, data: { number: n } }, handlers);
+    } else {
+      create.mutate(
+        {
+          data: {
+            season,
+            name,
+            ...(playerId != null ? { playerId } : {}),
+            ...(participantId != null ? { participantId } : {}),
+            number: n,
+          },
+        },
+        handlers,
+      );
+    }
+  };
+
+  const linkHeld = (entry: ShirtNumberEntry) => {
+    const n = typedNumber();
+    if (n === null) return;
+    setState({ kind: "saving" });
+    update.mutate(
+      {
+        id: entry.id,
+        data: {
+          ...(playerId != null ? { playerId } : {}),
+          ...(participantId != null && entry.participantId === null ? { participantId } : {}),
+          ...(n !== undefined ? { number: n } : {}),
+        },
+      },
+      handlers,
+    );
+  };
+
+  return (
+    <div className="space-y-1">
+      {number !== null ? (
+        <div className="flex items-baseline gap-2 text-sm">
+          <span className="font-semibold">#{number}</span>
+          <span className="text-xs text-muted-foreground">{seasonLabel(season)}</span>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            id={inputId}
+            data-shirt-number-input="1"
+            aria-label={`Shirt number for ${name}`}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            inputMode="numeric"
+            maxLength={4}
+            placeholder="#"
+            className="h-8 w-16"
+            disabled={saving}
+          />
+          <Button type="button" size="sm" variant="outline" onClick={assign} disabled={saving}>
+            {saving ? "Saving…" : "Assign #"}
+          </Button>
+          {held && (
+            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              Held entry “{held.name.trim()}”{held.number ? ` (#${held.number})` : ""} matches.
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => linkHeld(held)}
+                disabled={saving}
+              >
+                Link held entry
+              </Button>
+            </span>
+          )}
+        </div>
+      )}
+      {state.kind === "saved" && (
+        <p className="text-xs text-muted-foreground">
+          Saved.
+          {state.warnings.map((w) => (
+            <span key={`${w.season}-${w.number}`} className="block text-amber-700">
+              {w.message}
+            </span>
+          ))}
+        </p>
+      )}
+      {state.kind === "error" && (
+        <p role="alert" className="text-xs text-destructive">
+          {state.message}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function TeamListEditor({ fixture, onError }: { fixture: Fixture; onError: (e: unknown) => void }) {
@@ -514,6 +771,16 @@ function TeamListEditor({ fixture, onError }: { fixture: Fixture; onError: (e: u
   const putList = usePutFixtureTeamList();
   const [rows, setRows] = useState<TeamListRowState[] | null>(null); // null = not edited yet
   const [isPublished, setIsPublished] = useState<boolean | null>(null);
+
+  // Season shirt numbers: only read when the club has the feature on (R1).
+  const season = fixtureSeason(fixture.startAt);
+  const shirtSettingsQ = useGetShirtNumberSettings();
+  const numbersOn = shirtSettingsQ.data?.enabled === true;
+  const registerQ = useListShirtNumbers(
+    { season },
+    { query: { enabled: numbersOn, queryKey: getListShirtNumbersQueryKey({ season }) } },
+  );
+  const entries = numbersOn ? (registerQ.data?.entries ?? null) : null;
 
   if (listQ.isLoading) return <ListSkeleton />;
   if (listQ.isError) return <QueryError onRetry={() => listQ.refetch()} />;
@@ -527,19 +794,46 @@ function TeamListEditor({ fixture, onError }: { fixture: Fixture; onError: (e: u
     setRows(copy);
   };
 
+  // A row keeps its PlayHQ participant while it is the same person: linking a
+  // typed row to a register player keeps it; switching or clearing drops it.
+  const pickPlayer = (i: number, p: SelectedPlayer | null) => {
+    const r = shownRows[i];
+    const samePerson = p !== null && (r.player === null || r.player.id === p.id);
+    setRow(i, { player: p, participantId: samePerson ? r.participantId : null });
+  };
+  const typeName = (i: number, freeName: string) =>
+    setRow(i, {
+      freeName,
+      participantId: freeName.trim() === "" ? null : shownRows[i].participantId,
+    });
+
+  const rowElementId = (i: number) => `team-list-${fixture.id}-row-${i}`;
+  const unnumbered =
+    entries === null
+      ? []
+      : shownRows.flatMap((r, i) => {
+          if (!rowName(r)) return [];
+          const e = registerEntryFor(entries, r.player?.id ?? null, r.participantId);
+          return e?.number ? [] : [i];
+        });
+  const jumpToUnnumbered = () => {
+    const el = document.getElementById(rowElementId(unnumbered[0]));
+    el?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+    el?.querySelector<HTMLInputElement>("[data-shirt-number-input]")?.focus();
+  };
+
   const save = () => {
     const players: TeamListPlayer[] = [];
     let order = 1;
     for (const r of shownRows) {
-      const displayName = r.player
-        ? `${r.player.givenName} ${r.player.surname}`.trim()
-        : r.freeName.trim();
+      const displayName = rowName(r);
       if (!displayName) continue;
       const role: TeamListPlayer["role"] =
         r.isCaptain && r.isKeeper ? "C/WK" : r.isCaptain ? "C" : r.isKeeper ? "WK" : undefined;
       players.push({
         order: order++,
         ...(r.player ? { playerId: r.player.id } : {}),
+        ...(r.participantId ? { participantId: r.participantId } : {}),
         displayName,
         ...(role ? { role } : {}),
       });
@@ -571,51 +865,82 @@ function TeamListEditor({ fixture, onError }: { fixture: Fixture; onError: (e: u
       <p className="text-xs text-muted-foreground">
         Pick a player from the register or type a name (e.g. a new signing). Mark the captain (C)
         and wicket-keeper (WK).
+        {numbersOn && ` Shirt numbers are for the ${seasonLabel(season)} season.`}
       </p>
+      {unnumbered.length > 0 && (
+        <div
+          data-testid="shirt-number-banner"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
+        >
+          <span>
+            {unnumbered.length === 1
+              ? "1 selected player has no shirt number"
+              : `${unnumbered.length} selected players have no shirt number`}{" "}
+            for {seasonLabel(season)}. You can still save the list.
+          </span>
+          <Button type="button" size="sm" variant="outline" onClick={jumpToUnnumbered}>
+            Go to first
+          </Button>
+        </div>
+      )}
       <div className="space-y-2">
         {shownRows.map((r, i) => (
-          <div key={i} className="grid grid-cols-[24px_1fr_auto] items-center gap-2">
-            <span className="text-xs text-muted-foreground text-right">{i + 1}.</span>
-            {r.player ? (
-              <PlayerTypeahead value={r.player} onChange={(p) => setRow(i, { player: p })} />
-            ) : r.freeName ? (
-              <Input
-                value={r.freeName}
-                onChange={(e) => setRow(i, { freeName: e.target.value })}
-                placeholder="Type a name"
-              />
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                <PlayerTypeahead
-                  value={null}
-                  onChange={(p) => setRow(i, { player: p })}
-                  placeholder="Search register…"
-                />
+          <div key={i} id={rowElementId(i)} data-testid={`team-list-row-${i + 1}`}>
+            <div className="grid grid-cols-[24px_1fr_auto] items-center gap-2">
+              <span className="text-xs text-muted-foreground text-right">{i + 1}.</span>
+              {r.player ? (
+                <PlayerTypeahead value={r.player} onChange={(p) => pickPlayer(i, p)} />
+              ) : r.freeName ? (
                 <Input
                   value={r.freeName}
-                  onChange={(e) => setRow(i, { freeName: e.target.value })}
-                  placeholder="…or type a name"
+                  onChange={(e) => typeName(i, e.target.value)}
+                  placeholder="Type a name"
+                />
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <PlayerTypeahead
+                    value={null}
+                    onChange={(p) => pickPlayer(i, p)}
+                    placeholder="Search register…"
+                  />
+                  <Input
+                    value={r.freeName}
+                    onChange={(e) => typeName(i, e.target.value)}
+                    placeholder="…or type a name"
+                  />
+                </div>
+              )}
+              <div className="flex gap-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={r.isCaptain ? "default" : "outline"}
+                  onClick={() => setRow(i, { isCaptain: !r.isCaptain })}
+                >
+                  C
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={r.isKeeper ? "default" : "outline"}
+                  onClick={() => setRow(i, { isKeeper: !r.isKeeper })}
+                >
+                  WK
+                </Button>
+              </div>
+            </div>
+            {entries !== null && rowName(r) && (
+              <div className="mt-1 pl-8">
+                <ShirtNumberCell
+                  inputId={`${rowElementId(i)}-shirt`}
+                  name={rowName(r)}
+                  playerId={r.player?.id ?? null}
+                  participantId={r.participantId}
+                  season={season}
+                  entries={entries}
                 />
               </div>
             )}
-            <div className="flex gap-1">
-              <Button
-                type="button"
-                size="sm"
-                variant={r.isCaptain ? "default" : "outline"}
-                onClick={() => setRow(i, { isCaptain: !r.isCaptain })}
-              >
-                C
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={r.isKeeper ? "default" : "outline"}
-                onClick={() => setRow(i, { isKeeper: !r.isKeeper })}
-              >
-                WK
-              </Button>
-            </div>
           </div>
         ))}
       </div>

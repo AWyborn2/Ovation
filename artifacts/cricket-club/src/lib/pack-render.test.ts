@@ -1352,3 +1352,46 @@ describe("renderPackCard season shirt number (shirt numbers U8)", () => {
     expect(html.match(/>#9</g)?.length).toBe(1);
   });
 });
+
+describe("team-list season shirt numbers (U7, KTD10)", () => {
+  type TeamListInput = Extract<ShareCardInput, { kind: "teamList" }>;
+  const base = sampleCardInput("teamList") as TeamListInput;
+  const numbered: TeamListInput = {
+    ...base,
+    numbering: "shirt",
+    players: [
+      { order: 1, surname: "BURRAGE", shirtNumber: "23" },
+      { order: 2, surname: "RUDGE" },
+      { order: 3, surname: "MANUEL", role: "C", shirtNumber: "07" },
+    ],
+  };
+  const numbersOf = (input: ShareCardInput) =>
+    (bindInput(input).rows.players ?? []).map((r) => r.values.number);
+
+  it("binds row.number to the shirt number (empty when unnumbered) with numbering: shirt", () => {
+    expect(numbersOf(numbered)).toEqual(["23", "", "07"]);
+  });
+
+  it("never falls back to the batting order under numbering: shirt", () => {
+    const none: TeamListInput = {
+      ...numbered,
+      players: numbered.players.map(({ shirtNumber: _n, ...p }) => p),
+    };
+    expect(numbersOf(none)).toEqual(["", "", ""]);
+  });
+
+  it("binds the batting order without numbering, even if players carry numbers", () => {
+    const { numbering: _n, ...withoutNumbering } = numbered;
+    expect(numbersOf(withoutNumbering as ShareCardInput)).toEqual(["1", "2", "3"]);
+    expect(numbersOf(base)).toEqual(base.players.map((p) => String(p.order)));
+  });
+
+  it("renders the shirt numbers in the team-list rows, unresolved-free", () => {
+    for (const packId of ["broadcast-dark-v1", "club-kit-v1"]) {
+      const html = renderPackCard(numbered, "story", true, TOKENS, false, null, packId);
+      expect(html, packId).toContain(">23<");
+      expect(html, packId).toContain(">07<");
+      expect(hasUnresolved(html), packId).toBe(false);
+    }
+  });
+});

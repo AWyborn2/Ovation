@@ -71,7 +71,18 @@ export type TeamListPlayer = {
   order: number;
   surname: string;
   role?: "C" | "WK" | "C/WK";
+  /**
+   * The player's season shirt number (season shirt numbers U7, KTD10). Only
+   * printed when the card carries `numbering: "shirt"`; absent when unnumbered.
+   */
+  shirtNumber?: string | null;
 };
+
+/**
+ * What a team-list row's number shows: the batting order (default) or, for a
+ * club with season shirt numbers on, each player's shirt number.
+ */
+export type TeamListNumbering = "order" | "shirt";
 
 /**
  * Fields a card carries when it is one slide of a balanced card set
@@ -269,6 +280,8 @@ export type ShareCardInput =
       competitionLine: string;
       venueDateTime: string;
       players: TeamListPlayer[];
+      /** "shirt": rows print season shirt numbers, never the batting order (KTD10). */
+      numbering?: TeamListNumbering;
       squadPhotoUrl?: string | null;
       /** JUNIOR card: forces the junior brown palette + junior labels. */
       junior?: boolean;
@@ -394,6 +407,8 @@ export type RoundTeam = {
   competitionLine: string;
   venueDateTime: string;
   players: TeamListPlayer[];
+  /** As on a `teamList` card: "shirt" when the club shows season shirt numbers. */
+  numbering?: TeamListNumbering;
   squadPhotoUrl?: string | null;
 };
 
