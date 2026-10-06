@@ -7096,6 +7096,20 @@ export const RunDraftSweepResponse = zod.object({
 
 
 /**
+ * Machine-to-machine only. Requires the `x-publish-secret` header to equal the server's SOCIAL_PUBLISH_SECRET (which must differ from SOCIAL_SWEEP_SECRET); answers 401 otherwise, including when no secret is configured. Does nothing while META_PUBLISHING_ENABLED is off.
+ * @summary Publish due Facebook / Instagram posts (scheduled job)
+ */
+export const RunPublishSweepResponse = zod.object({
+  "skipped": zod.boolean().optional().describe('True when publishing is off or another run was already going.'),
+  "claimed": zod.number(),
+  "published": zod.number(),
+  "failed": zod.number(),
+  "held": zod.number(),
+  "waiting": zod.number()
+})
+
+
+/**
  * Machine-to-machine only. Requires the `x-sync-secret` header to equal the server's PLAYHQ_SYNC_SECRET; answers 401 otherwise (including when no secret is configured), and 503 when PLAYHQ_INGEST_DATABASE_URL is unset or its role can write outside schema `playhq`. Loads the dump into `playhq.*` (junior and pathway grades are dropped), records a `playhq.scrape_runs` row, projects fixtures for every tenant linked to an organisation in the dump, and runs the fixtures draft sweep for the tenants it touched. Accepts `Content-Encoding: gzip`; the body limit applies to the decompressed JSON.
  * @summary Load a PlayHQ harness dump (scheduled sync / manual upload)
  */

@@ -77,11 +77,11 @@ beforeAll(async () => {
   process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-publications";
   const [a] = await db
     .insert(tenantsTable)
-    .values({ slug: `pub-a-${STAMP}`, centralClubId: 9951, name: "Pub A", plan: "pro" })
+    .values({ slug: `pub-a-${STAMP}`, centralClubId: 98404, name: "Pub A", plan: "pro" })
     .returning();
   const [b] = await db
     .insert(tenantsTable)
-    .values({ slug: `pub-b-${STAMP}`, centralClubId: 9952, name: "Pub B", plan: "pro" })
+    .values({ slug: `pub-b-${STAMP}`, centralClubId: 98405, name: "Pub B", plan: "pro" })
     .returning();
   tenantA = a.id;
   tenantB = b.id;

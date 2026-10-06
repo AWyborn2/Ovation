@@ -4638,6 +4638,26 @@ paths:
         "404":
           description: Tenant not found
 
+  /internal/publish-sweep:
+    post:
+      operationId: runPublishSweep
+      tags: [socialPublishing]
+      summary: Publish due Facebook / Instagram posts (scheduled job)
+      description: >-
+        Machine-to-machine only. Requires the `x-publish-secret` header to equal
+        the server's SOCIAL_PUBLISH_SECRET (which must differ from
+        SOCIAL_SWEEP_SECRET); answers 401 otherwise, including when no secret is
+        configured. Does nothing while META_PUBLISHING_ENABLED is off.
+      responses:
+        "200":
+          description: What the run did
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishSweepSummary"
+        "401":
+          description: Missing or wrong publish secret
+
   /internal/playhq/ingest:
     post:
       operationId: ingestPlayhqDump
@@ -16362,6 +16382,19 @@ components:
         needsAttention:
           type: boolean
           description: A post failed for good and nothing else is pending for it.
+
+    PublishSweepSummary:
+      type: object
+      required: [claimed, published, failed, held, waiting]
+      properties:
+        skipped:
+          type: boolean
+          description: True when publishing is off or another run was already going.
+        claimed: { type: integer }
+        published: { type: integer }
+        failed: { type: integer }
+        held: { type: integer }
+        waiting: { type: integer }
 
     SocialPublication:
       type: object

@@ -27,6 +27,7 @@ import { generateRoundUpDrafts } from "./roundup";
 import { tenantIsCentral, getTenantCentralClubId, NATIVE_STATS_TENANT_ID } from "./tenant";
 import { loadAutoPost, persistDueDrafts } from "./effective-draft-state";
 import { notifyDraftsReady } from "./draft-notifications";
+import { runPublishSweep } from "./publishing/publish-worker";
 import { fillMissingDraftPhotos } from "./draft-enrich";
 import { draftCentralAchievements } from "./central-achievements";
 import { syncDebutCaps } from "./debut-caps";
@@ -180,6 +181,13 @@ export async function runDraftSweep(
       }
     } catch (err) {
       logger.error({ err, tenantId }, "auto-post promotion failed");
+    }
+    // Meta publishing: anything due for this club goes out now rather than
+    // waiting for the five-minute publish job (no-op while publishing is off).
+    try {
+      await runPublishSweep({ tenantId, now }, logger);
+    } catch (err) {
+      logger.error({ err, tenantId }, "publish sweep failed");
     }
     await db
       .update(socialSettingsTable)

@@ -8,6 +8,7 @@ import { tenantContext } from "./middlewares/tenant-context";
 import internalDraftSweepRouter from "./routes/internal-draft-sweep";
 import internalPlayhqIngestRouter from "./routes/internal-playhq-ingest";
 import metaCallbacksRouter from "./routes/meta-callbacks";
+import internalPublishSweepRouter from "./routes/internal-publish-sweep";
 import { billingWebhookHandler } from "./routes/billing";
 import { goRedirectRouter } from "./routes/social-drafts";
 import { logger } from "./lib/logger";
@@ -110,6 +111,7 @@ app.use(express.json({ limit: "100kb" }));
 // Machine-to-machine drafting sweep: secret-protected, and the tenant comes
 // from the body, so it is mounted ahead of host-based tenant resolution.
 app.use("/api/internal", internalDraftSweepRouter);
+app.use("/api/internal", internalPublishSweepRouter);
 
 // Meta's OAuth callback and app callbacks live on the one platform host Meta
 // knows; the tenant comes from a signed state or signed request, never the host.

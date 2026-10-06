@@ -278,6 +278,7 @@ import type {
   PremiershipUpdate,
   ProvisionTenantBody,
   ProvisioningExclusion,
+  PublishSweepSummary,
   PutTeamListBody,
   ReadinessStatus,
   RecapInput,
@@ -16313,6 +16314,77 @@ export const useRunDraftSweep = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getRunDraftSweepMutationOptions(options));
+    }
+
+export const getRunPublishSweepUrl = () => {
+
+
+
+
+  return `/api/internal/publish-sweep`
+}
+
+/**
+ * Machine-to-machine only. Requires the `x-publish-secret` header to equal the server's SOCIAL_PUBLISH_SECRET (which must differ from SOCIAL_SWEEP_SECRET); answers 401 otherwise, including when no secret is configured. Does nothing while META_PUBLISHING_ENABLED is off.
+ * @summary Publish due Facebook / Instagram posts (scheduled job)
+ */
+export const runPublishSweep = async ( options?: RequestInit): Promise<PublishSweepSummary> => {
+
+  return customFetch<PublishSweepSummary>(getRunPublishSweepUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRunPublishSweepMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runPublishSweep>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runPublishSweep>>, TError,void, TContext> => {
+
+const mutationKey = ['runPublishSweep'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runPublishSweep>>, void> = () => {
+
+
+          return  runPublishSweep(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunPublishSweepMutationResult = NonNullable<Awaited<ReturnType<typeof runPublishSweep>>>
+
+    export type RunPublishSweepMutationError = ErrorType<void>
+
+    /**
+ * @summary Publish due Facebook / Instagram posts (scheduled job)
+ */
+export const useRunPublishSweep = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runPublishSweep>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runPublishSweep>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRunPublishSweepMutationOptions(options));
     }
 
 export const getIngestPlayhqDumpUrl = () => {

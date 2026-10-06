@@ -513,6 +513,7 @@ export * from './provisioningExclusion';
 export * from './provisioningExclusionVisibility';
 export * from './provisionTenantBody';
 export * from './provisionTenantBodyPlan';
+export * from './publishSweepSummary';
 export * from './putTeamListBody';
 export * from './readinessStatus';
 export * from './readinessStatusCentral';
