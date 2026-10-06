@@ -328,7 +328,7 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
           ON "matches" ("source_key")
           WHERE "source_key" IS NOT NULL`,
   },
-  // Squad register (migration 0031): one member per PlayHQ profile per tenant,
+  // Squad register (migration 0032): one member per PlayHQ profile per tenant,
   // the re-import upsert key; hand-added members have no profile id.
   {
     name: "squad_members_tenant_profile_uidx",
