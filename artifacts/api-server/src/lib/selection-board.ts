@@ -41,6 +41,7 @@ import {
   SIDE_SIZE,
   TWELFTH_INDEX,
   XI_SIZE,
+  buildRoundDrafts,
   loadResponses,
   normaliseSlots,
   xiMemberIds,
@@ -306,6 +307,11 @@ export async function buildBoard(
 ): Promise<Board> {
   const { rule, weekendDate, slots: stepSlots, round } = await currentRound(tenantId, now);
   const window = roundWindow(weekendDate);
+  // Backfill already-sent rounds created before early drafting was supported.
+  // The builder is idempotent and never overwrites a saved or finalised side.
+  if (round && (round.sendStartedAt || round.sendCompletedAt)) {
+    await buildRoundDrafts(tenantId, round.id, now);
+  }
 
   // Independent reads, run together. `sides` is every side of the round (any
   // section), so a member placed anywhere is out of the pool; `statusByDate` is

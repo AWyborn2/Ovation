@@ -7,6 +7,7 @@ import {
   useGetCurrentAvailabilityRound,
   getGetCurrentAvailabilityRoundQueryKey,
   useRunAvailabilityStep,
+  getGetSelectionBoardQueryKey,
   useListSquadMembers,
   getListSquadMembersQueryKey,
   useImportSquad,
@@ -397,7 +398,7 @@ const STEPS: {
     started: (r) => r.sendStartedAt,
     completed: (r) => r.sendCompletedAt,
     confirm:
-      "Send availability requests to every eligible active player (or a junior's parents) with contact details for this weekend. You can repeat this as often as needed; each run sends again, even to people already contacted. Scheduled sends still avoid duplicates.",
+      "Send availability requests to every eligible active player (or a junior's parents) with contact details for this weekend and open draft teams in the Selection Hub immediately. You can repeat this as often as needed; each run sends again, even to people already contacted. Existing team edits are kept. Scheduled sends still avoid duplicates.",
   },
   {
     key: "remind",
@@ -415,7 +416,7 @@ const STEPS: {
     started: (r) => r.cutoffStartedAt,
     completed: (r) => r.cutoffCompletedAt,
     confirm:
-      "Draft sides will be built from the answers so far and captains told they're ready. Later answers are still accepted and shown as late.",
+      "Mark the availability cut-off now. Existing draft teams and your selection edits will be kept; any missing fixture drafts will be created. Later answers are still accepted and shown as late.",
   },
 ];
 
@@ -436,7 +437,8 @@ function describeResult(r: AvailabilityStepResult): string {
   if (r.away) parts.push(`${r.away} away`);
   if (r.noFixture) parts.push(`${r.noFixture} with no game this round`);
   if (r.throttled) parts.push(`${r.throttled} reminded recently, skipped`);
-  if (r.step === "cutoff") parts.push(`${r.drafts} draft side${r.drafts === 1 ? "" : "s"} built`);
+  if (r.step === "cutoff" || r.step === "send")
+    parts.push(`${r.drafts} draft side${r.drafts === 1 ? "" : "s"} built`);
   return parts.join(" · ");
 }
 
@@ -463,6 +465,7 @@ function RoundCard() {
         onSuccess: (res) => {
           setResult(`${s.label}: ${describeResult(res)}`);
           queryClient.invalidateQueries({ queryKey: getGetCurrentAvailabilityRoundQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetSelectionBoardQueryKey() });
         },
         onError: (e) => setError(errorMessage(e)),
       },

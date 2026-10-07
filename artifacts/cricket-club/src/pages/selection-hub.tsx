@@ -54,7 +54,9 @@ export default function SelectionHub() {
   const [section, setSection] = useState<SquadSection>("senior");
   const params = { section };
   const queryKey = getGetSelectionBoardQueryKey(params);
-  const board = useGetSelectionBoard(params, { query: { queryKey } });
+  const board = useGetSelectionBoard(params, {
+    query: { queryKey, staleTime: 0, refetchInterval: 15_000 },
+  });
   const [local, setLocal] = useState<BoardState | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -287,7 +289,7 @@ export default function SelectionHub() {
                 <EmptyState
                   className="col-span-full"
                   title="No drafts yet"
-                  message="Drafts are built at cut-off for each grade with a fixture this round."
+                  message="Drafts open when availability requests are sent for each grade with a fixture this round. Check that this section has fixtures scheduled."
                 />
               ) : (
                 view.selections.map((side) => (

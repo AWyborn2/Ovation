@@ -588,6 +588,9 @@ async function runSend(
   opts: StepOptions,
 ): Promise<StepResult> {
   const result = emptyResult("send");
+  // Open the board before paced delivery, so staff can work while requests go out.
+  // Repeated/resumed sends only create missing sides and never replace edits.
+  result.drafts = await prepareRoundDrafts(tenantId, round, now, opts, true);
   const pace = opts.paceMs ?? sendPaceMs;
   const members = await activeMembers(tenantId);
   const dates = await loadRoundDates(tenantId, round.weekendDate, members);
@@ -780,16 +783,15 @@ export async function runReminder(
   return result;
 }
 
-/** Cut-off: build the draft sides, then tell captains and admins. */
-async function runCutoff(
+/** Create missing sides, and announce readiness once when they first appear. */
+async function prepareRoundDrafts(
   tenantId: number,
   round: AvailabilityRoundRow,
   now: Date,
   opts: StepOptions,
-): Promise<StepResult> {
-  const result = emptyResult("cutoff");
+  requestsOpening: boolean,
+): Promise<number> {
   const drafts = await buildRoundDrafts(tenantId, round.id, now);
-  result.drafts = drafts.created;
   if (drafts.created > 0) {
     const sides = drafts.created === 1 ? "1 draft side is" : `${drafts.created} draft sides are`;
     await notifyStaff(
@@ -797,7 +799,9 @@ async function runCutoff(
         tenantId,
         kind: "selection_drafts_ready",
         title: "Draft sides are ready",
-        body: `Availability has closed for the weekend of ${round.weekendDate}. ${sides} ready to pick in the Selection Hub.`,
+        body: requestsOpening
+          ? `Availability requests are going out for the weekend of ${round.weekendDate}. ${sides} ready to start drafting in the Selection Hub. Availability replies will continue to update as players respond.`
+          : `Availability has closed for the weekend of ${round.weekendDate}. ${sides} ready to pick in the Selection Hub.`,
         link: "/admin/selection",
         payload: {
           roundId: round.id,
@@ -808,6 +812,18 @@ async function runCutoff(
       opts.logger,
     );
   }
+  return drafts.created;
+}
+
+/** Cut-off marks later replies as late; existing draft edits are preserved. */
+async function runCutoff(
+  tenantId: number,
+  round: AvailabilityRoundRow,
+  now: Date,
+  opts: StepOptions,
+): Promise<StepResult> {
+  const result = emptyResult("cutoff");
+  result.drafts = await prepareRoundDrafts(tenantId, round, now, opts, false);
   return result;
 }
 

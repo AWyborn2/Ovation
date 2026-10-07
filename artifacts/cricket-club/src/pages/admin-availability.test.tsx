@@ -266,7 +266,7 @@ describe("admin availability", () => {
     const calls = installFetch((url, method) => {
       if (url.includes("/availability/rounds/current/send") && method === "POST") {
         return {
-          body: { step: "send", roundId: 77, messaged: 1, away: 0, noFixture: 0, throttled: 0, drafts: 0 },
+          body: { step: "send", roundId: 77, messaged: 1, away: 0, noFixture: 0, throttled: 0, drafts: 2 },
         };
       }
       if (url.includes("/availability/rounds/current")) {
@@ -285,11 +285,13 @@ describe("admin availability", () => {
       const dialog = await screen.findByRole("alertdialog");
       expect(dialog.textContent).toMatch(/repeat this as often as needed/i);
       expect(dialog.textContent).toMatch(/each run sends again/i);
+      expect(dialog.textContent).toMatch(/open draft teams.*immediately/i);
+      expect(dialog.textContent).toMatch(/Existing team edits are kept/i);
       fireEvent.click(within(dialog).getByRole("button", { name: "Run now" }));
       await waitFor(() => {
         expect(calls.filter(c => c.url.includes("/availability/rounds/current/send") && c.method === "POST"))
           .toHaveLength(attempt);
-        expect(screen.getByText("Send requests: 1 messaged")).toBeTruthy();
+        expect(screen.getByText("Send requests: 1 messaged · 2 draft sides built")).toBeTruthy();
       });
     }
   });

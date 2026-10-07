@@ -11,6 +11,7 @@ import {
   fixturesTable,
   availabilityRequestsTable,
   availabilityRoundsTable,
+  selectionsTable,
 } from "@workspace/db";
 import {
   SESSION_COOKIE,
@@ -266,14 +267,27 @@ describe("availability settings API", () => {
   it("Run now sends repeatedly without duplicating request records", async () => {
     const res = await as(cookieA, tenantA).post("/api/availability/rounds/current/send");
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ step: "send", messaged: 2 });
+    expect(res.body).toMatchObject({ step: "send", messaged: 2, drafts: 1 });
+    const [side] = await db.select().from(selectionsTable)
+      .where(eq(selectionsTable.tenantId, tenantA));
+    expect(side.state).toBe("draft");
+    const editedSlots = [
+      { memberId: null, gap: { name: "Saved draft", reason: "no_reply" as const } },
+      ...side.slots.slice(1),
+    ];
+    await db.update(selectionsTable).set({ slots: editedSlots, version: 3 })
+      .where(eq(selectionsTable.id, side.id));
     expect(email.map((m) => m.to).sort()).toEqual(["alex@example.com", "sam@example.com"]);
     for (let attempt = 0; attempt < 4; attempt++) {
       email = [];
       sms = [];
       const again = await as(cookieA, tenantA).post("/api/availability/rounds/current/send");
       expect(again.status).toBe(200);
-      expect(again.body).toMatchObject({ step: "send", messaged: 2 });
+      expect(again.body).toMatchObject({ step: "send", messaged: 2, drafts: 0 });
+      const sides = await db.select().from(selectionsTable)
+        .where(eq(selectionsTable.tenantId, tenantA));
+      expect(sides).toHaveLength(1);
+      expect(sides[0]).toMatchObject({ id: side.id, slots: editedSlots, version: 3 });
       expect(email.map((m) => m.to).sort()).toEqual(["alex@example.com", "sam@example.com"]);
       const requests = await db
         .select()
@@ -281,6 +295,20 @@ describe("availability settings API", () => {
         .where(eq(availabilityRequestsTable.tenantId, tenantA));
       expect(requests).toHaveLength(2);
     }
+  });
+
+  it("opens drafts for an already-sent round without resending requests or waiting for cut-off", async () => {
+    await db.delete(selectionsTable).where(eq(selectionsTable.tenantId, tenantA));
+    const deliveries = email.length + sms.length;
+    const board = await as(cookieA, tenantA).get("/api/selection/board?section=senior");
+    expect(board.status).toBe(200);
+    expect(board.body.round.cutoffStartedAt).toBeNull();
+    expect(board.body.selections).toHaveLength(1);
+    expect(board.body.selections[0]).toMatchObject({ state: "draft", canEdit: true });
+    const again = await as(cookieA, tenantA).get("/api/selection/board?section=senior");
+    expect(again.body.selections.map((side: { id: number }) => side.id))
+      .toEqual(board.body.selections.map((side: { id: number }) => side.id));
+    expect(email.length + sms.length).toBe(deliveries);
   });
 
   it("a manual remind goes to non-responders; a second within 12 hours sends nothing", async () => {
@@ -320,10 +348,10 @@ describe("availability settings API", () => {
     ).toBe(400);
   });
 
-  it("Run now cut-off drafts the side, then 409 on a repeat", async () => {
+  it("Run now cut-off retains the already-created side, then 409 on a repeat", async () => {
     const res = await as(cookieA, tenantA).post("/api/availability/rounds/current/cutoff");
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ step: "cutoff", drafts: 1 });
+    expect(res.body).toMatchObject({ step: "cutoff", drafts: 0 });
     expect(
       (await as(cookieA, tenantA).post("/api/availability/rounds/current/cutoff")).status,
     ).toBe(409);
