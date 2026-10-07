@@ -20,4 +20,4 @@
 
 ## Blockers
 
-- 168 starter layouts must be designed in the new editor before release (design task, Ash or a designer).
+- 168 starter layouts are hand-designed in the new editor (decided 2026-10-07). Design track starts after U8; the switch stays off until the U6 contract test passes with no skips. Progress = remaining skips in that test.
