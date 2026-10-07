@@ -166,6 +166,45 @@ describe("availability settings API", () => {
     });
   });
 
+  it("reports the platform's SMS provider, null when SMS isn't configured", async () => {
+    const keys = [
+      "SMS_PROVIDER",
+      "TWILIO_ACCOUNT_SID",
+      "TWILIO_AUTH_TOKEN",
+      "TWILIO_FROM",
+      "TWILIO_MESSAGING_SERVICE_SID",
+      "CLICKSEND_USERNAME",
+      "CLICKSEND_API_KEY",
+      "CLICKSEND_FROM",
+    ];
+    const saved = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
+    const fake = async (m: SmsMessage) => {
+      sms.push(m);
+    };
+    try {
+      for (const k of keys) delete process.env[k];
+      setSmsTransport(null);
+      const off = await as(cookieA, tenantA).get("/api/availability/settings");
+      expect(off.body.smsProvider).toBeNull();
+
+      process.env.CLICKSEND_USERNAME = "owner";
+      process.env.CLICKSEND_API_KEY = "key";
+      process.env.CLICKSEND_FROM = "+61498765432";
+      const cs = await as(cookieA, tenantA).get("/api/availability/settings");
+      expect(cs.body.smsProvider).toBe("clicksend");
+
+      setSmsTransport(fake, "twilio");
+      const tw = await as(cookieA, tenantA).get("/api/availability/settings");
+      expect(tw.body.smsProvider).toBe("twilio");
+    } finally {
+      for (const k of keys) {
+        if (saved[k] === undefined) delete process.env[k];
+        else process.env[k] = saved[k];
+      }
+      setSmsTransport(fake);
+    }
+  });
+
   it("PUT with the cut-off before the send → 400 with a clear message", async () => {
     const res = await as(cookieA, tenantA).put("/api/availability/settings", {
       ...VALID,

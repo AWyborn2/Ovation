@@ -37,6 +37,7 @@ import type {
   AvailabilitySettings,
   AvailabilitySettingsInput,
   AvailabilityStepResult,
+  AvailabilityTextsInput,
   AvailableClub,
   Award,
   AwardInput,
@@ -8995,6 +8996,84 @@ export const useUpdateAvailabilityContact = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateAvailabilityContactMutationOptions(options));
+    }
+
+export const getSetAvailabilityTextsUrl = (token: string,) => {
+
+
+
+
+  return `/api/availability/respond/${token}/texts`
+}
+
+/**
+ * Sets or clears the SMS opt-out of the recipient the link was sent to
+(only that slot); email continues either way. The functional
+unsubscribe for senders whose replies don't reach the platform
+(ClickSend own number), and how someone who stopped texts starts them
+again.
+
+ * @summary Stop or restart text messages to this recipient
+ */
+export const setAvailabilityTexts = async (token: string,
+    availabilityTextsInput: AvailabilityTextsInput, options?: RequestInit): Promise<AvailabilityResponsePage> => {
+
+  return customFetch<AvailabilityResponsePage>(getSetAvailabilityTextsUrl(token),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      availabilityTextsInput,)
+  }
+);}
+
+
+
+
+export const getSetAvailabilityTextsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAvailabilityTexts>>, TError,{token: string;data: BodyType<AvailabilityTextsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setAvailabilityTexts>>, TError,{token: string;data: BodyType<AvailabilityTextsInput>}, TContext> => {
+
+const mutationKey = ['setAvailabilityTexts'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setAvailabilityTexts>>, {token: string;data: BodyType<AvailabilityTextsInput>}> = (props) => {
+          const {token,data} = props ?? {};
+
+          return  setAvailabilityTexts(token,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetAvailabilityTextsMutationResult = NonNullable<Awaited<ReturnType<typeof setAvailabilityTexts>>>
+    export type SetAvailabilityTextsMutationBody = BodyType<AvailabilityTextsInput>
+    export type SetAvailabilityTextsMutationError = ErrorType<void>
+
+    /**
+ * @summary Stop or restart text messages to this recipient
+ */
+export const useSetAvailabilityTexts = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAvailabilityTexts>>, TError,{token: string;data: BodyType<AvailabilityTextsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setAvailabilityTexts>>,
+        TError,
+        {token: string;data: BodyType<AvailabilityTextsInput>},
+        TContext
+      > => {
+      return useMutation(getSetAvailabilityTextsMutationOptions(options));
     }
 
 export const getWithdrawAvailabilityUrl = (token: string,) => {

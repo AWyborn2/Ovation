@@ -32,6 +32,7 @@ import {
 } from "../lib/availability-schedule";
 import { defaultTokenExpiry, mintRequestToken } from "../lib/availability-tokens";
 import { logger } from "../lib/logger";
+import { messageMember } from "../lib/availability-messaging";
 import { maskEmail, maskMobile } from "./availability-respond";
 
 /**
@@ -715,5 +716,103 @@ describe("availability respond API", () => {
         .set({ startAt: fx.startAt })
         .where(eq(fixturesTable.id, fixtureA));
     }
+  });
+
+  it("stop texts from a link sets only that slot's opt-out; the next request emails but doesn't text; start clears it", async () => {
+    const optOuts = async () =>
+      (
+        await db
+          .select({
+            g1: squadMembersTable.guardian1SmsOptOut,
+            g2: squadMembersTable.guardian2SmsOptOut,
+          })
+          .from(squadMembersTable)
+          .where(eq(squadMembersTable.id, junior))
+      )[0];
+    await db
+      .update(squadMembersTable)
+      .set({ guardian1SmsOptOut: false, guardian2SmsOptOut: false })
+      .where(eq(squadMembersTable.id, junior));
+    const g1 = await tokenFor(junior, "guardian1");
+
+    const page = await asA(request(app).get(path(g1))).expect(200);
+    expect(page.body).toMatchObject({ smsOptedOut: false, textsAvailable: true });
+
+    await asA(request(app).post(path(g1, "/texts")))
+      .send({ stop: "yes" })
+      .expect(400);
+    const logs: string[] = [];
+    const spy = vi.spyOn(logger, "info").mockImplementation(((obj: unknown, msg?: string) => {
+      logs.push(JSON.stringify({ obj, msg }));
+    }) as never);
+    let stopped: request.Response;
+    try {
+      stopped = await asA(request(app).post(path(g1, "/texts")))
+        .send({ stop: true })
+        .expect(200);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(stopped.body.smsOptedOut).toBe(true);
+    expect(await optOuts()).toEqual({ g1: true, g2: false });
+    expect(logs.join(" ")).not.toContain(G1_MOBILE);
+    expect(logs.join(" ")).not.toContain(G1_EMAIL);
+    // Guardian 2's own page is unaffected.
+    const g2Page = await asA(request(app).get(path(await tokenFor(junior, "guardian2"))));
+    expect(g2Page.body.smsOptedOut).toBe(false);
+
+    // The next message texts guardian 2 only, and still emails both.
+    sms = [];
+    email = [];
+    const [member] = await db
+      .select()
+      .from(squadMembersTable)
+      .where(eq(squadMembersTable.id, junior));
+    const out = await messageMember({
+      tenantId: tenantA,
+      member,
+      kind: "request",
+      context: { roundId },
+      smsEnabled: true,
+    });
+    expect(out.results.find((r) => r.slot === "guardian1")).toMatchObject({
+      sms: "opted_out",
+      email: "sent",
+    });
+    // (Guardian 2's contact may have been corrected by an earlier test.)
+    expect(sms.map((m) => m.to)).toEqual([normaliseAuMobile(member.guardian2Mobile)]);
+    expect(email.map((e) => e.to).sort()).toEqual(
+      [member.guardian1Email, member.guardian2Email].sort(),
+    );
+
+    // Starting again is allowed from the same link.
+    const started = await asA(request(app).post(path(g1, "/texts")))
+      .send({ stop: false })
+      .expect(200);
+    expect(started.body.smsOptedOut).toBe(false);
+    expect(await optOuts()).toEqual({ g1: false, g2: false });
+  });
+
+  it("stop texts with an expired or another club's link is a bare 404 and changes nothing", async () => {
+    await db
+      .update(squadMembersTable)
+      .set({ accountSmsOptOut: false })
+      .where(eq(squadMembersTable.id, adult));
+    const expired = await tokenFor(adult, "account", new Date(Date.now() - 60_000));
+    await asA(request(app).post(path(expired, "/texts")))
+      .send({ stop: true })
+      .expect(404);
+    const valid = await tokenFor(adult, "account");
+    const res = await request(app)
+      .post(path(valid, "/texts"))
+      .set("x-tenant-id", String(tenantB))
+      .send({ stop: true })
+      .expect(404);
+    expect(res.body).toEqual({ error: "not_found" });
+    const [row] = await db
+      .select({ optOut: squadMembersTable.accountSmsOptOut })
+      .from(squadMembersTable)
+      .where(eq(squadMembersTable.id, adult));
+    expect(row.optOut).toBe(false);
   });
 });

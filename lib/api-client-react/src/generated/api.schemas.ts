@@ -3037,12 +3037,26 @@ export interface AvailabilitySettingsInput {
   selectionRule: AvailabilitySelectionRule;
 }
 
+export type AvailabilitySmsProvider = typeof AvailabilitySmsProvider[keyof typeof AvailabilitySmsProvider];
+
+
+export const AvailabilitySmsProvider = {
+  twilio: 'twilio',
+  clicksend: 'clicksend',
+} as const;
+
 export type AvailabilitySettings = AvailabilitySettingsInput & ({
   /**
      * Null while the club is on the defaults
      * @nullable
      */
   updatedAt: string | null;
+  /** The platform's SMS provider, null when SMS isn't configured
+  (email only). With "clicksend" texts come from the club's own
+  mobile, so replies (STOP included) go to that phone, not here —
+  players answer and stop texts through their link.
+   */
+  smsProvider: AvailabilitySmsProvider | null;
 });
 
 /**
@@ -3459,6 +3473,15 @@ export interface AvailabilityResponsePage {
   withdrawn: boolean;
   /** Cut-off has passed; new answers are marked late */
   late: boolean;
+  /** This recipient has stopped text messages (email only) */
+  smsOptedOut: boolean;
+  /** The club sends texts at all (its SMS switch and a configured provider) */
+  textsAvailable: boolean;
+}
+
+export interface AvailabilityTextsInput {
+  /** True stops text messages to this recipient; false starts them again */
+  stop: boolean;
 }
 
 export type AvailabilityAnswersInputAnswersItem = {

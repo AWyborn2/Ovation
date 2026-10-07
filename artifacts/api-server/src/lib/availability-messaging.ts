@@ -16,6 +16,7 @@ import { sendEmail } from "./integrations/email";
 import {
   sendSms,
   smsEnabled,
+  smsRepliesReachUs,
   normaliseAuMobile,
   redactContact,
   isGsm7,
@@ -38,7 +39,9 @@ import { logger as defaultLogger } from "./logger";
  * A member is reached through the right contacts: the account holder for
  * adults, Parent/Guardian 1 and 2 for members under 18 on the day of sending.
  * Each recipient gets an SMS (when the club has SMS on and that contact
- * hasn't replied STOP) plus an email. Every message that carries a link
+ * hasn't opted out) plus an email. With Twilio a STOP reply opts out; with
+ * ClickSend's own-number sender replies go to the club's phone, so the SMS
+ * points at the personal link instead, whose page can stop texts. Every message that carries a link
  * mints a fresh token for its recipient and records the last delivery
  * result per channel on the recipient's `availability_requests` row, which the
  * scheduler reads to re-attempt only failed recipients.
@@ -110,6 +113,8 @@ const LINKED_KINDS: ReadonlySet<MessageKind> = new Set([
 ]);
 
 const STOP_LINE = "Reply STOP to opt out.";
+/** When replies don't reach us (ClickSend own number): the link's page stops texts. */
+const LINK_STOP_LINE = "Stop texts at the link.";
 const SMS_LIMIT = 160;
 
 /**
@@ -225,6 +230,11 @@ type TextInput = {
   greetingName: string | null;
   link: string | null;
   context: MessageContext;
+  /**
+   * How the SMS offers an opt-out: "reply" (STOP, the default) when replies
+   * reach the provider, "link" when they don't ({@link smsRepliesReachUs}).
+   */
+  optOut?: "reply" | "link";
 };
 
 /** Build the SMS and email for one recipient. Exported for tests. */
@@ -233,6 +243,8 @@ export function buildMessage(input: TextInput): {
   email: { subject: string; text: string };
 } {
   const { kind, clubShort, clubName, player, self, link, context } = input;
+  const byLink = input.optOut === "link";
+  const stopLine = byLink ? LINK_STOP_LINE : STOP_LINE;
   const hi = `Hi ${input.greetingName?.trim() || "there"},`;
   const who = self ? "you" : player;
   const fixture = context.fixture;
@@ -243,10 +255,10 @@ export function buildMessage(input: TextInput): {
       const tag = kind === "reminder" ? `${clubShort} reminder` : clubShort;
       const ask = self ? "Are you available" : `Is ${player} available`;
       const sms = fitSms([
-        `${tag}: ${ask} to play this weekend? Tap to answer: ${link} ${STOP_LINE}`,
-        `${tag}: ${ask} this weekend? ${link} ${STOP_LINE}`,
-        `${clubShort}: Available this weekend? ${link} ${STOP_LINE}`,
-        `Available this weekend? ${link} ${STOP_LINE}`,
+        `${tag}: ${ask} to play this weekend? Tap to answer: ${link} ${stopLine}`,
+        `${tag}: ${ask} this weekend? ${link} ${stopLine}`,
+        `${clubShort}: Available this weekend? ${link} ${stopLine}`,
+        `Available this weekend? ${link} ${stopLine}`,
       ]);
       const subject =
         kind === "reminder"
@@ -277,7 +289,7 @@ export function buildMessage(input: TextInput): {
       const as12th = context.twelfth ? " as 12th player" : "";
       const lead = self ? `You're selected${as12th}` : `${player} is selected${as12th}`;
       // Match details matter more than one segment here: no fitting.
-      const sms = `${clubShort}: ${lead}${role} for ${match}${venue}. Can't make it? ${link} ${STOP_LINE}`;
+      const sms = `${clubShort}: ${lead}${role} for ${match}${venue}. Can't make it? ${link} ${stopLine}`;
       const text = [
         hi,
         "",
@@ -298,7 +310,7 @@ export function buildMessage(input: TextInput): {
       const grade = fixture?.grade ?? "the";
       const day = fixture ? ` on ${formatMatchDay(fixture.startAt)}` : " this weekend";
       const lead = self ? "You're" : `${player} is`;
-      const sms = `${clubShort}: ${lead} no longer in the ${grade} side${day}. Details: ${link} ${STOP_LINE}`;
+      const sms = `${clubShort}: ${lead} no longer in the ${grade} side${day}. Details: ${link} ${stopLine}`;
       const text = [
         hi,
         "",
@@ -313,10 +325,13 @@ export function buildMessage(input: TextInput): {
       return { sms, email: { subject: `${clubName}: team change for ${grade}`, text } };
     }
     case "contact_changed": {
+      // No link here, and this old contact is off the list now: with link
+      // opt-outs there is nothing to point at, so the line is left off.
+      const stop = byLink ? "" : ` ${STOP_LINE}`;
       const sms = fitSms([
-        `${clubShort}: The contact details for ${player} were just changed from their availability link. Not you? Contact the club. ${STOP_LINE}`,
-        `${clubShort}: Contact details for ${player} were changed. Not you? Contact the club. ${STOP_LINE}`,
-        `${clubShort}: Contact details were changed. Not you? Contact the club. ${STOP_LINE}`,
+        `${clubShort}: The contact details for ${player} were just changed from their availability link. Not you? Contact the club.${stop}`,
+        `${clubShort}: Contact details for ${player} were changed. Not you? Contact the club.${stop}`,
+        `${clubShort}: Contact details were changed. Not you? Contact the club.${stop}`,
       ]);
       const text = [
         hi,
@@ -482,6 +497,7 @@ export async function messageMember(
         greetingName: r.slot === "account" ? player : r.name,
         link,
         context,
+        optOut: smsRepliesReachUs() ? "reply" : "link",
       });
 
       // SMS: club switch and platform credentials, then contact, then opt-out.

@@ -2966,6 +2966,46 @@ paths:
         "429":
           description: Too many requests, or a contact change within 12 hours of the last (too_many_changes)
 
+  /availability/respond/{token}/texts:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        description: The personal link token (never logged)
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+    post:
+      operationId: setAvailabilityTexts
+      tags: [availability-respond]
+      summary: Stop or restart text messages to this recipient
+      description: |
+        Sets or clears the SMS opt-out of the recipient the link was sent to
+        (only that slot); email continues either way. The functional
+        unsubscribe for senders whose replies don't reach the platform
+        (ClickSend own number), and how someone who stopped texts starts them
+        again.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AvailabilityTextsInput"
+      responses:
+        "200":
+          description: Saved; the updated page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AvailabilityResponsePage"
+        "400":
+          description: Invalid body
+        "404":
+          description: Unknown, expired or revoked link
+        "429":
+          description: Too many requests
+
   /availability/respond/{token}/withdraw:
     parameters:
       - name: token
@@ -13183,12 +13223,25 @@ components:
       allOf:
         - $ref: "#/components/schemas/AvailabilitySettingsInput"
         - type: object
-          required: [updatedAt]
+          required: [updatedAt, smsProvider]
           properties:
             updatedAt:
               type: ["string", "null"]
               format: date-time
               description: Null while the club is on the defaults
+            smsProvider:
+              description: |
+                The platform's SMS provider, null when SMS isn't configured
+                (email only). With "clicksend" texts come from the club's own
+                mobile, so replies (STOP included) go to that phone, not here —
+                players answer and stop texts through their link.
+              oneOf:
+                - $ref: "#/components/schemas/AvailabilitySmsProvider"
+                - type: "null"
+
+    AvailabilitySmsProvider:
+      type: string
+      enum: [twilio, clicksend]
 
     AvailabilityRoundCounts:
       type: object
@@ -13756,6 +13809,8 @@ components:
           locked,
           withdrawn,
           late,
+          smsOptedOut,
+          textsAvailable,
         ]
       properties:
         clubName:
@@ -13807,6 +13862,20 @@ components:
         late:
           type: boolean
           description: Cut-off has passed; new answers are marked late
+        smsOptedOut:
+          type: boolean
+          description: This recipient has stopped text messages (email only)
+        textsAvailable:
+          type: boolean
+          description: The club sends texts at all (its SMS switch and a configured provider)
+
+    AvailabilityTextsInput:
+      type: object
+      required: [stop]
+      properties:
+        stop:
+          type: boolean
+          description: True stops text messages to this recipient; false starts them again
 
     AvailabilityAnswersInput:
       type: object

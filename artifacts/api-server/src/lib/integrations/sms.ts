@@ -1,16 +1,27 @@
 import { env } from "../../config";
 
 /**
- * SMS through Twilio's Messages REST API, mirroring
+ * SMS through Twilio's Messages REST API or ClickSend's v3 SMS API, mirroring
  * the email adapter: off when the credentials or a sender are missing, each
  * request bounded by {@link SMS_TIMEOUT_MS}, one retry for a failure that may
  * be transient (a network error, a timeout, a 429 or a 5xx), then the failure
  * goes back to the caller — SMS never blocks the state change it describes.
  *
- * STOP is Twilio's built-in opt-out (Advanced Opt-Out on a two-way Australian
- * number or Messaging Service pool). A send to a number that replied STOP
- * fails with error 21610, reported here as `opted_out` so the caller can flag
- * that contact and go email-only for it. There is no inbound webhook.
+ * Which provider sends is {@link smsProvider}: `SMS_PROVIDER` when set, else
+ * whichever is fully configured, Twilio first when both are (adding ClickSend
+ * keys never silently moves an existing Twilio setup).
+ *
+ * Twilio: STOP is Twilio's built-in opt-out (Advanced Opt-Out on a two-way
+ * Australian number or Messaging Service pool). A send to a number that
+ * replied STOP fails with error 21610, reported here as `opted_out` so the
+ * caller can flag that contact and go email-only for it. There is no inbound
+ * webhook.
+ *
+ * ClickSend: sends from the club's own verified mobile ("own number" sender),
+ * so replies — STOP included — go to that phone and never reach us. Messages
+ * then carry a link-based opt-out instead (see {@link smsRepliesReachUs}). A
+ * per-message status naming ClickSend's own opt-out list is still reported as
+ * `opted_out`.
  *
  * Results and errors never carry a number, an address or a credential: any
  * error text is passed through {@link redactContact} before it leaves here.
@@ -21,10 +32,12 @@ export type SmsResult =
 
 export type SmsTransport = (message: SmsMessage) => Promise<void>;
 
+export type SmsProvider = "twilio" | "clicksend";
+
 /** Twilio error 21610: the recipient replied STOP to this sender. */
 export const TWILIO_OPTED_OUT = 21610;
 
-/** How long one Twilio request may take before it is abandoned. */
+/** How long one provider request may take before it is abandoned. */
 export const SMS_TIMEOUT_MS = 10_000;
 
 /**
@@ -39,6 +52,14 @@ export class SmsTransportError extends Error {
   ) {
     super(message);
     this.name = "SmsTransportError";
+  }
+}
+
+/** The provider refused the send because the recipient is on its opt-out list. */
+export class SmsOptedOutError extends SmsTransportError {
+  constructor(message: string) {
+    super(message);
+    this.name = "SmsOptedOutError";
   }
 }
 
@@ -74,20 +95,108 @@ const twilioTransport: SmsTransport = async (message) => {
   throw new SmsTransportError(`Twilio responded ${res.status}${detail}`, code, res.status);
 };
 
-let override: SmsTransport | null = null;
+type ClickSendBody = {
+  response_code?: unknown;
+  data?: { messages?: { status?: unknown }[] };
+};
 
-/** Test seam: route SMS through `transport` (null restores Twilio). */
-export function setSmsTransport(transport: SmsTransport | null): void {
-  override = transport;
+/**
+ * ClickSend's `POST /v3/sms/send`: JSON `{ messages: [...] }` with HTTP basic
+ * auth (API username : API key). A 200 only means the request was accepted —
+ * each message carries its own `status`, and only "SUCCESS" means queued.
+ */
+const clickSendTransport: SmsTransport = async (message) => {
+  const user = env.CLICKSEND_USERNAME() ?? "";
+  const key = env.CLICKSEND_API_KEY() ?? "";
+  const res = await fetch("https://rest.clicksend.com/v3/sms/send", {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${user}:${key}`).toString("base64")}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messages: [
+        {
+          source: "ovation",
+          from: env.CLICKSEND_FROM() ?? "",
+          to: message.to,
+          body: message.body,
+        },
+      ],
+    }),
+    signal: AbortSignal.timeout(SMS_TIMEOUT_MS),
+  });
+  let body: ClickSendBody | null = null;
+  try {
+    body = (await res.json()) as ClickSendBody;
+  } catch {
+    body = null;
+  }
+  if (!res.ok) {
+    const code = typeof body?.response_code === "string" ? `: ${body.response_code}` : "";
+    throw new SmsTransportError(`ClickSend responded ${res.status}${code}`, undefined, res.status);
+  }
+  const status = body?.data?.messages?.[0]?.status;
+  if (status === "SUCCESS") return;
+  const label = typeof status === "string" && status ? status : "no message status";
+  // ClickSend's own opt-out list; the status names are not documented, so match loosely.
+  if (/UNSUBSCRIB|OPT/i.test(label)) throw new SmsOptedOutError(`ClickSend status ${label}`);
+  // Answered 200 with a per-message refusal: final, so never retried.
+  throw new SmsTransportError(`ClickSend status ${label}`, undefined, res.status);
+};
+
+let override: { transport: SmsTransport; provider: SmsProvider } | null = null;
+
+/**
+ * Test seam: route SMS through `transport`, standing in for `provider`
+ * (Twilio by default) so message wording follows it. Null restores the real
+ * providers.
+ */
+export function setSmsTransport(
+  transport: SmsTransport | null,
+  provider: SmsProvider = "twilio",
+): void {
+  override = transport ? { transport, provider } : null;
 }
 
-export function smsEnabled(): boolean {
-  if (override != null) return true;
+function twilioConfigured(): boolean {
   return (
     !!env.TWILIO_ACCOUNT_SID() &&
     !!env.TWILIO_AUTH_TOKEN() &&
     (!!env.TWILIO_FROM() || !!env.TWILIO_MESSAGING_SERVICE_SID())
   );
+}
+
+function clickSendConfigured(): boolean {
+  return !!env.CLICKSEND_USERNAME() && !!env.CLICKSEND_API_KEY() && !!env.CLICKSEND_FROM();
+}
+
+/**
+ * The provider that sends, or null when SMS is off. `SMS_PROVIDER` wins when
+ * set (and means off if that provider isn't fully configured); unset, Twilio
+ * when it is configured, else ClickSend when it is.
+ */
+export function smsProvider(): SmsProvider | null {
+  if (override != null) return override.provider;
+  const explicit = env.SMS_PROVIDER();
+  if (explicit === "twilio") return twilioConfigured() ? "twilio" : null;
+  if (explicit === "clicksend") return clickSendConfigured() ? "clicksend" : null;
+  if (twilioConfigured()) return "twilio";
+  if (clickSendConfigured()) return "clicksend";
+  return null;
+}
+
+/**
+ * True when a reply (STOP in particular) reaches the provider and opts the
+ * contact out — Twilio only. ClickSend's own-number sender delivers replies to
+ * the club's phone, so messages must offer a link-based opt-out instead.
+ */
+export function smsRepliesReachUs(): boolean {
+  return smsProvider() === "twilio";
+}
+
+export function smsEnabled(): boolean {
+  return smsProvider() != null;
 }
 
 /**
@@ -168,11 +277,21 @@ function retryable(err: unknown): boolean {
 }
 
 export async function sendSms(message: SmsMessage): Promise<SmsResult> {
-  if (!smsEnabled()) return { sent: false, reason: "disabled" };
+  const provider = smsProvider();
+  if (provider == null) return { sent: false, reason: "disabled" };
   const to = normaliseAuMobile(message.to);
   if (!to) return { sent: false, reason: "failed", error: "not an Australian mobile number" };
-  const transport = override ?? twilioTransport;
-  const secrets = [message.to, to, env.TWILIO_ACCOUNT_SID(), env.TWILIO_AUTH_TOKEN()];
+  const transport =
+    override?.transport ?? (provider === "clicksend" ? clickSendTransport : twilioTransport);
+  const secrets = [
+    message.to,
+    to,
+    env.TWILIO_ACCOUNT_SID(),
+    env.TWILIO_AUTH_TOKEN(),
+    env.CLICKSEND_USERNAME(),
+    env.CLICKSEND_API_KEY(),
+    env.CLICKSEND_FROM(),
+  ];
   let lastError: unknown;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -180,7 +299,8 @@ export async function sendSms(message: SmsMessage): Promise<SmsResult> {
       return { sent: true };
     } catch (err) {
       // An opt-out is final: retrying would only fail the same way.
-      if (errorCode(err) === TWILIO_OPTED_OUT) return { sent: false, reason: "opted_out" };
+      if (err instanceof SmsOptedOutError || errorCode(err) === TWILIO_OPTED_OUT)
+        return { sent: false, reason: "opted_out" };
       lastError = err;
       if (!retryable(err)) break;
     }
