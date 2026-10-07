@@ -1,4 +1,4 @@
-import type { PackTemplateFormats } from "./types";
+import type { PackTemplateField, PackTemplateFormats } from "./types";
 import {
   SK_COND,
   anchoredBody,
@@ -13,6 +13,7 @@ import {
   sponsorLogosOrName,
   sponsorsOff,
   sponsorsOn,
+  textField,
 } from "./shared";
 
 /**
@@ -214,6 +215,52 @@ export function kSub(text: string, extra = ""): string {
 /** Accent pill (result banners, equations, cap numbers). */
 export function kPill(text: string, size = 5, extra = ""): string {
   return `<div style="font-family:${SK_COND};font-weight:800;font-size:${size}cqmin;line-height:1.05;letter-spacing:.04em;text-transform:uppercase;padding:1.3cqmin 3.2cqmin;background:${K.acc};color:${K.accInk};border-radius:${K.pillR};box-shadow:${K.pillGlow};text-shadow:none${extra}">${text}</div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Season shirt number (shirt-numbers plan U8, KTD12)
+// ---------------------------------------------------------------------------
+
+/**
+ * The player's season shirt number on a player-centric card (century,
+ * five-for, milestone, spotlight, trading card) — ONE fragment shared by every
+ * pack, so the treatment and the strip rule never drift.
+ *
+ * - A bare `#N`, never the cap pill: a dark plate with light type and an
+ *   accent hairline, where the cap reads as an accent-filled pill — the two
+ *   numbers can never be mistaken for each other.
+ * - A legibility floor (`max(…, 26px)` on the 1080-wide native card) so the
+ *   number survives the small body box of square / landscape formats.
+ * - The `#` sits OUTSIDE the placeholder and the div holds nothing else:
+ *   `dropEmptyShirtNumber` matches this exact markup and removes the whole
+ *   badge when the input carries no number, before substitution — so an
+ *   unnumbered card shows no badge, no orphan `#` and never the field sample.
+ *   With the badge gone the card's markup is exactly what it was before
+ *   shirt numbers existed (feature off renders unchanged).
+ *
+ * `extra` (starting with `;`) adjusts the placement only — e.g. absolute
+ * positioning on the trading card frame.
+ */
+export function shirtNumberBadge(size = 4.4, extra = ""): string {
+  return `<div data-shirt-number="1" style="flex:none;align-self:flex-start;box-sizing:border-box;min-width:2.1em;padding:.16em .34em .12em;margin:.6cqmin 0 1.2cqmin;font-family:${SK_COND};font-weight:800;font-size:max(${size}cqmin,26px);line-height:1;letter-spacing:.02em;text-align:center;white-space:nowrap;background:rgba(10,12,16,.82);color:#F2F5F8;border:.22cqmin solid var(--sk-acc-solid,var(--gold,#FBAC27));border-radius:.5cqmin;text-shadow:none;box-shadow:none${extra}">#{{shirtNumber}}</div>`;
+}
+
+/**
+ * A player name line with the shirt-number badge in its fixed place: directly
+ * above the name, in every player-centric design of every pack.
+ */
+export function withShirtNumber(nameHtml: string, size?: number): string {
+  return shirtNumberBadge(size) + nameHtml;
+}
+
+/**
+ * The `shirtNumber` field every player-centric design declares. Its sample is
+ * EMPTY on purpose: the renderer always binds the key explicitly for these
+ * kinds, and should anything ever fall back to the sample it must not invent
+ * a number for a real player.
+ */
+export function shirtNumberField(): PackTemplateField {
+  return textField("shirtNumber", "Shirt number", "");
 }
 
 /** Presented-by line set in the body, for cards whose footer carries the logos. */

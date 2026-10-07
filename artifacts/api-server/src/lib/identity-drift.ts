@@ -19,6 +19,7 @@ import {
   playerIdMapTable,
   playerImagesTable,
   premiershipPlayersTable,
+  shirtNumbersTable,
   teamOfDecadeMembersTable,
   type MergeStatus,
 } from "@workspace/db";
@@ -217,7 +218,7 @@ export interface IdentityDriftResult {
 
 /**
  * Every curated row that hangs off one of `playerIds` (or, for premiership
- * team lists, one of `guids`). Sequential on purpose: the script's reader is a
+ * team lists and season shirt numbers, one of `guids`). Sequential on purpose: the script's reader is a
  * single transaction client.
  */
 async function loadCuratedRefs(
@@ -259,6 +260,28 @@ async function loadCuratedRefs(
           or(
             ids.length ? inArray(premiershipPlayersTable.playerId, ids) : undefined,
             inArray(premiershipPlayersTable.participantId, [...guids]),
+          ),
+        ),
+      ),
+  );
+  // Season shirt numbers likewise: a held entry carries only the GUID.
+  take(
+    "shirt_numbers",
+    await reader
+      .select({
+        rowId: shirtNumbersTable.id,
+        playerId: shirtNumbersTable.playerId,
+        participantId: shirtNumbersTable.participantId,
+        label: sql<string>`'shirt ' || coalesce('#' || ${shirtNumbersTable.number}, '(unnumbered)') || ' ' || ${shirtNumbersTable.season}`,
+        personName: shirtNumbersTable.name,
+      })
+      .from(shirtNumbersTable)
+      .where(
+        and(
+          eq(shirtNumbersTable.tenantId, tenantId),
+          or(
+            ids.length ? inArray(shirtNumbersTable.playerId, ids) : undefined,
+            inArray(shirtNumbersTable.participantId, [...guids]),
           ),
         ),
       ),

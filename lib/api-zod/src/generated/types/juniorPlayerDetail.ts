@@ -9,6 +9,7 @@ import type { JuniorBattingTotals } from './juniorBattingTotals';
 import type { JuniorBowlingTotals } from './juniorBowlingTotals';
 import type { JuniorPlayerMatchLine } from './juniorPlayerMatchLine';
 import type { JuniorPlayerSeason } from './juniorPlayerSeason';
+import type { ShirtNumberSeason } from './shirtNumberSeason';
 
 export interface JuniorPlayerDetail {
   participantId: string;
@@ -28,4 +29,11 @@ export interface JuniorPlayerDetail {
   bowling: JuniorBowlingTotals;
   seasons: JuniorPlayerSeason[];
   matches: JuniorPlayerMatchLine[];
+  /**
+     * The participant's juniors shirt number for the current season, from the juniors register only. Present only when the club has shirt numbers on.
+     * @nullable
+     */
+  shirtNumber?: string | null;
+  /** Juniors shirt numbers worn by season, newest first. */
+  shirtNumbers?: ShirtNumberSeason[];
 }

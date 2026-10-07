@@ -28,6 +28,13 @@ export interface TradingCardData {
   name: string;
   /** A Grade (male or female) cap number, or null if the player holds no A Grade cap. */
   number: number | null;
+  /**
+   * The player's shirt number for the current season (season shirt numbers,
+   * U8/U9), or null when the club has the feature off or the player has none.
+   * Drawn on its own plate, never in the cap slot: a player can hold cap #142
+   * and wear #9.
+   */
+  shirtNumber?: string | null;
   role: CardRole;
   /** Optional 1-5 star rating; null hides the star row. */
   rating: number | null;
@@ -190,6 +197,7 @@ export function buildTradingCardData(
   const data: TradingCardData = {
     name: `${player.givenName} ${player.surname}`.trim(),
     number: capNumber,
+    shirtNumber: player.shirtNumber?.trim() || null,
     role: normaliseRole(player.cardRole) ?? deriveRole(agg),
     rating:
       typeof player.cardRating === "number" && player.cardRating > 0

@@ -235,6 +235,28 @@ describe("fixtures + team lists", () => {
     expect(Array.isArray(put.body.debutPlayerIds)).toBe(true);
   });
 
+  it("keeps each row's PlayHQ participantId (lowercased) through an admin save", async () => {
+    const created = await createFixture();
+    const id: number = created.body.id;
+    const guid = "AbCdEf01-0000-4000-8000-00000000C0DE";
+    const put = await request(app)
+      .put(`/api/fixtures/${id}/team-list`)
+      .set("x-tenant-id", String(tenantAId))
+      .set("Cookie", cookieA)
+      .send({
+        players: [
+          { order: 1, playerId: 42, participantId: guid, displayName: "Linked Player" },
+          { order: 2, participantId: guid.replace("C0DE", "C0DF"), displayName: "Held Player" },
+          { order: 3, displayName: "Typed Name" },
+        ],
+      })
+      .expect(200);
+    expect(put.body.players[0].participantId).toBe(guid.toLowerCase());
+    expect(put.body.players[1].participantId).toBe(guid.replace("C0DE", "C0DF").toLowerCase());
+    expect(put.body.players[1].playerId).toBeUndefined();
+    expect(put.body.players[2]).not.toHaveProperty("participantId");
+  });
+
   it("rejects fill-in playerIds (>= 90000) with 400", async () => {
     const created = await createFixture();
     const id: number = created.body.id;

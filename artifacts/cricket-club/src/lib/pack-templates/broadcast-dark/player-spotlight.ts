@@ -1,4 +1,5 @@
 import type { PackCardTemplate } from "../types";
+import { shirtNumberField, withShirtNumber } from "../skeleton-kit";
 import { SK_MONO } from "../shared";
 import {
   ACC,
@@ -40,7 +41,7 @@ const html = bdCard({
   photo: "photo",
   body: bdColumn(
     bdEyebrow("PLAYER SPOTLIGHT") +
-      bdDisplay("{{playerName}}", 13, ";max-width:78cqmin") +
+      withShirtNumber(bdDisplay("{{playerName}}", 13, ";max-width:78cqmin")) +
       `<div style="display:flex;gap:2cqmin;margin-top:4cqmin">${statBox(1)}${statBox(2)}${statBox(3)}</div>` +
       bdSub("{{headline}}", ";margin-top:4cqmin;max-width:72cqmin"),
   ),
@@ -56,6 +57,7 @@ export const playerSpotlight: PackCardTemplate = {
     ...clubHeaderFields(),
     textField("season", "Season", "2025/26"),
     textField("playerName", "Player name", "JACK MANUEL"),
+    shirtNumberField(),
     textField("stat1Value", "Stat 1 value", "428"),
     textField("stat1Label", "Stat 1 label", "RUNS"),
     textField("stat2Value", "Stat 2 value", "12"),

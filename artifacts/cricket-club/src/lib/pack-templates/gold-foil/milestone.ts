@@ -1,4 +1,5 @@
 import type { PackCardTemplate } from "../types";
+import { shirtNumberField } from "../skeleton-kit";
 import { clubHeaderFields, photoField, textField } from "../shared";
 import { milestoneFormats } from "../skeleton-designs";
 import { FOIL_LOOK } from "./fragments";
@@ -18,6 +19,7 @@ export const milestone: PackCardTemplate = {
     textField("currentValue", "Milestone value", "100"),
     textField("milestoneLabel", "Milestone label", "GAMES"),
     textField("playerName", "Player name", "TIM MILES"),
+    shirtNumberField(),
     textField(
       "headline",
       "Tribute line",

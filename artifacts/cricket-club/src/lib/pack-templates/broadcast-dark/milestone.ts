@@ -1,4 +1,5 @@
 import type { PackCardTemplate } from "../types";
+import { shirtNumberField, withShirtNumber } from "../skeleton-kit";
 import {
   BD_RULE,
   bdCard,
@@ -28,7 +29,7 @@ const html = bdCard({
       bdDisplay("{{currentValue}}", 36, ";line-height:.84") +
       bdCond("{{milestoneLabel}}", 8.4, ";margin-top:1cqmin") +
       BD_RULE +
-      bdCond("{{playerName}}", 7) +
+      withShirtNumber(bdCond("{{playerName}}", 7)) +
       bdSub("{{headline}}", ";margin-top:1.6cqmin;max-width:76cqmin"),
   ),
   footer: bdFooterOn("proudly supported by"),
@@ -45,6 +46,7 @@ export const milestone: PackCardTemplate = {
     textField("currentValue", "Milestone value", "100"),
     textField("milestoneLabel", "Milestone label", "GAMES"),
     textField("playerName", "Player name", "TIM MILES"),
+    shirtNumberField(),
     textField(
       "headline",
       "Tribute line",

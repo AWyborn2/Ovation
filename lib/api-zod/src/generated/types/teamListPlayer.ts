@@ -15,6 +15,8 @@ export interface TeamListPlayer {
   order: number;
   /** Register-linked player id; omit/null for a free-typed name. Fill-in ids (>= 90000) are rejected. */
   playerId?: number | null;
+  /** PlayHQ participant GUID (lowercased) for a row copied from a PlayHQ lineup, kept even when the row has no playerId; omit for a free-typed name. */
+  participantId?: string;
   /** @minLength 1 */
   displayName: string;
   /** Captain / vice-captain / wicket-keeper marker */

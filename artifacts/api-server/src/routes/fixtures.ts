@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, gte, ne } from "drizzle-orm";
 import { db, fixturesTable, teamListsTable, type TeamListPlayer } from "@workspace/db";
+import { normaliseParticipantId } from "@workspace/db/shirt-numbers";
 import {
   ListFixturesQueryParams,
   CreateFixtureBody,
@@ -230,13 +231,19 @@ router.put(
     }
     // Store entries exactly as submitted (order preserved); drop null playerIds
     // so free-typed names serialise without a playerId key.
-    const players: TeamListPlayer[] = body.data.players.map((p: ApiTeamListPlayer) => ({
-      order: p.order,
-      ...(p.playerId != null ? { playerId: p.playerId } : {}),
-      displayName: p.displayName,
-      ...(p.role != null ? { role: p.role } : {}),
-      ...(typeof p.debut === "boolean" ? { debut: p.debut } : {}),
-    }));
+    // A row's PlayHQ participant id (lowercased) is kept so an admin's edit
+    // never loses the link a held shirt-number entry is found by.
+    const players: TeamListPlayer[] = body.data.players.map((p: ApiTeamListPlayer) => {
+      const participantId = normaliseParticipantId(p.participantId);
+      return {
+        order: p.order,
+        ...(p.playerId != null ? { playerId: p.playerId } : {}),
+        ...(participantId !== null ? { participantId } : {}),
+        displayName: p.displayName,
+        ...(p.role != null ? { role: p.role } : {}),
+        ...(typeof p.debut === "boolean" ? { debut: p.debut } : {}),
+      };
+    });
     // One XI per fixture: upsert on the (tenantId, fixtureId) unique index.
     const [row] = await db
       .insert(teamListsTable)

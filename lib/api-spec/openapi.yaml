@@ -22,6 +22,8 @@ tags:
     description: Match scorecard read operations
   - name: caps
     description: A Grade Cap Register operations
+  - name: shirtNumbers
+    description: Per-season shirt-number register (opt-in per club), settings and bulk uploads
   - name: lifeMembers
     description: Life Members operations
   - name: auth
@@ -1538,6 +1540,337 @@ paths:
           description: Deleted
         "404":
           description: Not found
+
+  /shirt-numbers/settings:
+    get:
+      operationId: getShirtNumberSettings
+      tags: [shirtNumbers]
+      summary: Get the club's shirt-number settings
+      description: >-
+        The tenant's feature switch, duplicate policy and rollover policy. One
+        set of settings covers both the senior and juniors registers. Returns
+        the defaults (off, warn, carry) for a tenant that has never saved them.
+      responses:
+        "200":
+          description: Shirt-number settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberSettings"
+    patch:
+      operationId: updateShirtNumberSettings
+      tags: [shirtNumbers]
+      summary: Update the club's shirt-number settings (admin, curation)
+      description: >-
+        Works while the feature is off so an admin can turn it on.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShirtNumberSettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberSettings"
+        "400":
+          description: Invalid settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /shirt-numbers:
+    get:
+      operationId: listShirtNumbers
+      tags: [shirtNumbers]
+      summary: The senior shirt-number register for a season (admin)
+      description: >-
+        Every entry for the season, including held entries (not yet linked to
+        a player who has played) and duplicate-number flags. Defaults to the
+        current season (July-June, Perth time) when `season` is omitted.
+      parameters:
+        - name: season
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Season start year (e.g. 2026 for 2026/27)
+      responses:
+        "200":
+          description: Register for the season
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberRegister"
+    post:
+      operationId: createShirtNumber
+      tags: [shirtNumbers]
+      summary: Add a person to a season's senior register (admin, curation)
+      description: >-
+        Under the `carry` rollover policy an entry created without a number
+        inherits the person's number from the previous season. A duplicate
+        number returns warnings under the `warn` policy and 409 under `block`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShirtNumberEntryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberWriteResult"
+        "400":
+          description: Invalid entry, or the feature is off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: >-
+            The person is already on this season's register, or the number is
+            a duplicate under the `block` policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberConflict"
+
+  /shirt-numbers/{id}:
+    patch:
+      operationId: updateShirtNumber
+      tags: [shirtNumbers]
+      summary: Edit a senior register entry (admin, curation)
+      description: >-
+        Assign, change or clear (null) the number, rename, or link the entry to
+        a player. A duplicate number returns warnings under `warn` and 409
+        under `block`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShirtNumberEntryUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberWriteResult"
+        "400":
+          description: Invalid update, or the feature is off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found
+        "409":
+          description: >-
+            The player is already on this season's register, or the number is
+            a duplicate under the `block` policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberConflict"
+    delete:
+      operationId: deleteShirtNumber
+      tags: [shirtNumbers]
+      summary: Remove a senior register entry (admin, curation)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /shirt-numbers/seasons/{season}/start:
+    post:
+      operationId: startShirtNumberSeason
+      tags: [shirtNumbers]
+      summary: Start a season's senior register from the previous season (admin, curation)
+      description: >-
+        Copies the previous season's register into `season` according to the
+        club's rollover policy. Idempotent: people already on the season's
+        register are skipped.
+      parameters:
+        - name: season
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Season start year being started
+      responses:
+        "200":
+          description: Season started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberSeasonStartResult"
+        "400":
+          description: Invalid season, or the feature is off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /shirt-numbers/seasons/{season}/from-squad:
+    post:
+      operationId: addSquadToShirtNumberSeason
+      tags: [shirtNumbers]
+      summary: Add the club's senior squad to a season's register (admin, curation)
+      description: >-
+        Adds the active senior members of the club's squad register (the
+        availability squad import) to `season` without numbers of their own.
+        A member linked to one of the club's players is added with that player;
+        anyone else is added as a held entry under their name. Idempotent:
+        someone already on the season's register is left as they are, number
+        unchanged. New entries carry last season's number under the `carry`
+        rollover policy; under `block` a carried number someone already wears
+        is left off and reported in `warnings`.
+      parameters:
+        - name: season
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Season start year to add the squad to
+      responses:
+        "200":
+          description: Squad added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberSquadAddResult"
+        "400":
+          description: Invalid season, or the feature is off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /shirt-numbers/uploads:
+    post:
+      operationId: uploadShirtNumbers
+      tags: [shirtNumbers]
+      summary: Upload a shirt-number spreadsheet for preview (admin, curation)
+      description: |
+        Upload a `.csv` or `.xlsx` (max 2 MB, 1,000 rows) for one season. The
+        server parses it, stores a pending preview for this tenant and returns
+        it. Nothing is written to the register until the preview is committed.
+        Generated clients
+        should treat the file as `Blob`; the cricket-club frontend posts
+        FormData via raw `fetch` against this route.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, kind, season]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The shirt-number spreadsheet
+                kind:
+                  $ref: "#/components/schemas/ShirtNumberUploadKind"
+                season:
+                  type: integer
+                  description: Starting year of the season (e.g. 2026 for 2026/27)
+      responses:
+        "200":
+          description: Preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberUploadPreview"
+        "400":
+          description: Invalid file, kind or season, or the feature is off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /shirt-numbers/uploads/{id}/commit:
+    post:
+      operationId: commitShirtNumberUpload
+      tags: [shirtNumbers]
+      summary: Apply a previewed senior upload with per-row resolutions (admin, curation)
+      description: >-
+        Rows without a resolution take their default: `matched` rows link to
+        the matched player, `new` and `suggested` rows are kept as held, and
+        `invalid` rows are discarded. The club's duplicate policy applies.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShirtNumberUploadCommit"
+      responses:
+        "200":
+          description: Applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberUploadCommitResult"
+        "400":
+          description: Invalid resolutions, or the feature is off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found (or another tenant's upload)
+        "409":
+          description: >-
+            The upload is no longer pending, or a number is a duplicate under
+            the `block` policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberConflict"
+
+  /shirt-numbers/uploads/{id}:
+    delete:
+      operationId: discardShirtNumberUpload
+      tags: [shirtNumbers]
+      summary: Discard a pending senior upload preview (admin, curation)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Discarded
+        "404":
+          description: Not found (or another tenant's upload)
 
   /life-members:
     get:
@@ -7242,6 +7575,292 @@ paths:
         "404":
           description: Not found (or a private participant)
 
+  /juniors/shirt-numbers:
+    get:
+      operationId: listJuniorShirtNumbers
+      tags: [juniors]
+      summary: The juniors shirt-number register for a season (admin)
+      description: >-
+        Kept completely separate from the senior register. Defaults to the
+        current season when `season` is omitted. Follows the juniors gating
+        for tenants without native junior data.
+      parameters:
+        - name: season
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Season start year (e.g. 2026 for 2026/27)
+      responses:
+        "200":
+          description: Juniors register for the season
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorShirtNumberRegister"
+    post:
+      operationId: createJuniorShirtNumber
+      tags: [juniors]
+      summary: Add a junior participant to a season's juniors register (admin, curation)
+      description: >-
+        Under the `carry` rollover policy an entry created without a number
+        inherits the participant's number from the previous season. A
+        duplicate number returns warnings under `warn` and 409 under `block`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JuniorShirtNumberEntryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorShirtNumberWriteResult"
+        "400":
+          description: Invalid entry, or the feature is off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: >-
+            The participant is already on this season's register, or the
+            number is a duplicate under the `block` policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberConflict"
+
+  /juniors/shirt-numbers/{id}:
+    patch:
+      operationId: updateJuniorShirtNumber
+      tags: [juniors]
+      summary: Edit a juniors register entry (admin, curation)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JuniorShirtNumberEntryUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorShirtNumberWriteResult"
+        "400":
+          description: Invalid update, or the feature is off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found
+        "409":
+          description: The number is a duplicate under the `block` policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberConflict"
+    delete:
+      operationId: deleteJuniorShirtNumber
+      tags: [juniors]
+      summary: Remove a juniors register entry (admin, curation)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /juniors/shirt-numbers/seasons/{season}/start:
+    post:
+      operationId: startJuniorShirtNumberSeason
+      tags: [juniors]
+      summary: Start a season's juniors register from the previous season (admin, curation)
+      description: >-
+        Copies the previous season's juniors register into `season` according
+        to the club's rollover policy. Idempotent: participants already on the
+        season's register are skipped.
+      parameters:
+        - name: season
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Season start year being started
+      responses:
+        "200":
+          description: Season started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberSeasonStartResult"
+        "400":
+          description: Invalid season, or the feature is off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /juniors/shirt-numbers/seasons/{season}/from-squad:
+    post:
+      operationId: addSquadToJuniorShirtNumberSeason
+      tags: [juniors]
+      summary: Add the club's junior squad to a season's juniors register (admin, curation)
+      description: >-
+        Adds the active junior members of the club's squad register to the
+        juniors register for `season`. Each member must match one of the
+        club's junior participants (by participant id, else a unique exact
+        name); unmatched members are listed in `unmatched` and not created.
+        Idempotent, with the same carry-forward and duplicate rules as the
+        senior register. Clubs without native junior data get 404.
+      parameters:
+        - name: season
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Season start year to add the squad to
+      responses:
+        "200":
+          description: Squad added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberSquadAddResult"
+        "400":
+          description: Invalid season, or the feature is off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Juniors are not available for this club
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /juniors/shirt-numbers/uploads:
+    post:
+      operationId: uploadJuniorShirtNumbers
+      tags: [juniors]
+      summary: Upload a juniors shirt-number spreadsheet for preview (admin, curation)
+      description: |
+        Same file rules as the senior upload (`.csv`/`.xlsx`, 2 MB, 1,000
+        rows). Rows are matched against the club's junior participants only.
+        Generated clients should treat the file as `Blob`; the cricket-club
+        frontend posts FormData via raw `fetch` against this route.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, kind, season]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The shirt-number spreadsheet
+                kind:
+                  $ref: "#/components/schemas/ShirtNumberUploadKind"
+                season:
+                  type: integer
+                  description: Starting year of the season (e.g. 2026 for 2026/27)
+      responses:
+        "200":
+          description: Preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberUploadPreview"
+        "400":
+          description: Invalid file, kind or season, or the feature is off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /juniors/shirt-numbers/uploads/{id}/commit:
+    post:
+      operationId: commitJuniorShirtNumberUpload
+      tags: [juniors]
+      summary: Apply a previewed juniors upload with per-row resolutions (admin, curation)
+      description: >-
+        Junior entries always carry a participant, so a row is either linked
+        to a junior participant or discarded. Rows without a resolution take
+        their default: `matched` rows link to the matched participant and every
+        other row is discarded. The club's duplicate policy applies.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JuniorShirtNumberUploadCommit"
+      responses:
+        "200":
+          description: Applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberUploadCommitResult"
+        "400":
+          description: Invalid resolutions, or the feature is off
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found (or another tenant's upload)
+        "409":
+          description: >-
+            The upload is no longer pending, or a number is a duplicate under
+            the `block` policy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberConflict"
+
+  /juniors/shirt-numbers/uploads/{id}:
+    delete:
+      operationId: discardJuniorShirtNumberUpload
+      tags: [juniors]
+      summary: Discard a pending juniors upload preview (admin, curation)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Discarded
+        "404":
+          description: Not found (or another tenant's upload)
+
   /juniors/participants/{id}/merge:
     post:
       operationId: mergeJuniorParticipant
@@ -8774,6 +9393,19 @@ components:
             by the trading card.
           items:
             $ref: "#/components/schemas/PlayerAward"
+        shirtNumber:
+          type: ["string", "null"]
+          description: >-
+            The player's shirt number for the current season. Present only when
+            the club has shirt numbers on and the player has a linked,
+            numbered register entry; never a cap number.
+        shirtNumbers:
+          type: array
+          description: >-
+            Shirt numbers worn by season, newest first (linked, numbered
+            entries only). Omitted when the club has shirt numbers off.
+          items:
+            $ref: "#/components/schemas/ShirtNumberSeason"
 
     PlayerAward:
       type: object
@@ -18342,6 +18974,525 @@ components:
         isHome: { type: boolean }
         notes: { type: ["string", "null"] }
 
+    ShirtNumberDuplicatePolicy:
+      type: string
+      enum: [warn, block]
+      description: Whether a duplicate number in a season warns (default) or is refused.
+
+    ShirtNumberRolloverPolicy:
+      type: string
+      enum: [carry, blank]
+      description: >-
+        `carry`: returning people keep last season's number (editable);
+        `blank`: each season starts unnumbered.
+
+    ShirtNumberSettings:
+      type: object
+      required: [enabled, duplicatePolicy, rolloverPolicy]
+      properties:
+        enabled:
+          type: boolean
+          description: Feature switch; when off no shirt number appears anywhere.
+        duplicatePolicy:
+          $ref: "#/components/schemas/ShirtNumberDuplicatePolicy"
+        rolloverPolicy:
+          $ref: "#/components/schemas/ShirtNumberRolloverPolicy"
+
+    ShirtNumberSettingsUpdate:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        duplicatePolicy:
+          $ref: "#/components/schemas/ShirtNumberDuplicatePolicy"
+        rolloverPolicy:
+          $ref: "#/components/schemas/ShirtNumberRolloverPolicy"
+
+    ShirtNumberSource:
+      type: string
+      enum: [upload, squad, lineup, admin, rollover]
+      description: >-
+        Where a register entry came from. `squad`: added from the club's squad
+        register (the availability squad import) by "Add squad to register".
+
+    ShirtNumberValue:
+      type: string
+      pattern: "^[0-9]{1,3}$"
+      description: A shirt number as 1-3 digits; leading zeros are kept ("07" and "7" differ).
+
+    ShirtNumberSeason:
+      type: object
+      required: [season, number]
+      properties:
+        season:
+          type: integer
+          description: Season start year
+        number:
+          type: string
+
+    ShirtNumberWarning:
+      type: object
+      required: [kind, season, number, message, entryIds, names]
+      description: A duplicate-number notice for a write.
+      properties:
+        kind:
+          type: string
+          enum: [duplicate]
+        season:
+          type: integer
+        number:
+          type: string
+        message:
+          type: string
+        entryIds:
+          type: array
+          description: The other register entries already wearing this number.
+          items:
+            type: integer
+        names:
+          type: array
+          items:
+            type: string
+
+    ShirtNumberConflict:
+      type: object
+      required: [error, warnings]
+      properties:
+        error:
+          type: string
+        warnings:
+          type: array
+          description: The duplicates that blocked the write (empty for other conflicts).
+          items:
+            $ref: "#/components/schemas/ShirtNumberWarning"
+
+    ShirtNumberEntry:
+      type: object
+      required:
+        [id, season, name, participantId, playerId, number, source, held, duplicate, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        season:
+          type: integer
+        name:
+          type: string
+        participantId:
+          type: ["string", "null"]
+          description: PlayHQ participant GUID (lowercased)
+        playerId:
+          type: ["integer", "null"]
+          description: Linked player in the tenant's player space; null while held.
+        playerName:
+          type: ["string", "null"]
+          description: The linked player's display name, when linked.
+        number:
+          type: ["string", "null"]
+          description: Null when the person is on the register but unnumbered.
+        source:
+          $ref: "#/components/schemas/ShirtNumberSource"
+        held:
+          type: boolean
+          description: True while the entry is not linked to a player who has played.
+        duplicate:
+          type: boolean
+          description: True when another entry in the season wears the same number.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ShirtNumberRegister:
+      type: object
+      required: [season, seasons, entries]
+      properties:
+        season:
+          type: integer
+          description: The season returned
+        seasons:
+          type: array
+          description: Seasons that have a register, newest first (for the season picker).
+          items:
+            type: integer
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShirtNumberEntry"
+
+    ShirtNumberEntryInput:
+      type: object
+      required: [season, name]
+      properties:
+        season:
+          type: integer
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        participantId:
+          type: ["string", "null"]
+        playerId:
+          type: ["integer", "null"]
+        number:
+          oneOf:
+            - $ref: "#/components/schemas/ShirtNumberValue"
+            - type: "null"
+
+    ShirtNumberEntryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        participantId:
+          type: ["string", "null"]
+        playerId:
+          type: ["integer", "null"]
+        number:
+          oneOf:
+            - $ref: "#/components/schemas/ShirtNumberValue"
+            - type: "null"
+
+    ShirtNumberWriteResult:
+      type: object
+      required: [entry, warnings]
+      properties:
+        entry:
+          $ref: "#/components/schemas/ShirtNumberEntry"
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShirtNumberWarning"
+
+    ShirtNumberSeasonStartResult:
+      type: object
+      required: [season, fromSeason, created, numbered, skipped, warnings]
+      properties:
+        season:
+          type: integer
+        fromSeason:
+          type: integer
+        created:
+          type: integer
+          description: Entries created in the new season.
+        numbered:
+          type: integer
+          description: Created entries that carried a number forward.
+        skipped:
+          type: integer
+          description: People already on the new season's register.
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShirtNumberWarning"
+
+    ShirtNumberSquadAddResult:
+      type: object
+      required: [season, created, skipped, unmatched, warnings]
+      properties:
+        season:
+          type: integer
+        created:
+          type: integer
+          description: Register entries created from the squad.
+        skipped:
+          type: integer
+          description: Squad members already on the season's register (left as they are).
+        unmatched:
+          type: array
+          items:
+            type: string
+          description: >-
+            Juniors only: names of squad members who match none of the club's
+            junior participants, so were not added. Always empty for seniors.
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShirtNumberWarning"
+
+    ShirtNumberUploadKind:
+      type: string
+      enum: [numbers]
+      description: >-
+        `numbers`: the club's shirt-number spreadsheet. Registered players
+        without numbers come from the squad register ("Add squad to register").
+
+    ShirtNumberPreviewStatus:
+      type: string
+      enum: [matched, suggested, new, invalid]
+
+    ShirtNumberCandidate:
+      type: object
+      required: [name]
+      description: >-
+        A possible match for an upload row. Senior candidates carry a
+        playerId; junior candidates carry a participantId.
+      properties:
+        playerId:
+          type: ["integer", "null"]
+        participantId:
+          type: ["string", "null"]
+        name:
+          type: string
+        score:
+          type: ["number", "null"]
+
+    ShirtNumberPreviewRow:
+      type: object
+      required:
+        [rowIndex, name, participantId, number, status, playerId, candidates, existingEntryId, existingNumber, numberChange, duplicate, errors]
+      properties:
+        rowIndex:
+          type: integer
+          description: 1-based data row in the file; resolutions refer to it.
+        name:
+          type: string
+        participantId:
+          type: ["string", "null"]
+          description: Participant id from the file (lowercased), or the matched junior participant.
+        number:
+          type: ["string", "null"]
+        status:
+          $ref: "#/components/schemas/ShirtNumberPreviewStatus"
+        playerId:
+          type: ["integer", "null"]
+          description: The matched senior player, for `matched` senior rows.
+        candidates:
+          type: array
+          description: Suggestions for `suggested` rows; never auto-applied.
+          items:
+            $ref: "#/components/schemas/ShirtNumberCandidate"
+        existingEntryId:
+          type: ["integer", "null"]
+          description: The season's register entry this row would update, if any.
+        existingNumber:
+          type: ["string", "null"]
+        numberChange:
+          type: boolean
+          description: True when the row changes an existing entry's number.
+        duplicate:
+          type: boolean
+          description: True when the row's number is worn by someone else in the season.
+        duplicateWith:
+          type: array
+          items:
+            type: string
+        errors:
+          type: array
+          description: Why an `invalid` row cannot be applied.
+          items:
+            type: string
+
+    ShirtNumberPreviewCounts:
+      type: object
+      required: [total, matched, suggested, new, invalid, numberChanges, duplicates]
+      properties:
+        total:
+          type: integer
+        matched:
+          type: integer
+        suggested:
+          type: integer
+        new:
+          type: integer
+        invalid:
+          type: integer
+        numberChanges:
+          type: integer
+        duplicates:
+          type: integer
+
+    ShirtNumberUploadPreview:
+      type: object
+      required:
+        [id, side, kind, season, fileName, rows, counts, unrecognisedHeaders, errors, truncated]
+      properties:
+        id:
+          type: integer
+          description: Upload id for commit / discard
+        side:
+          type: string
+          enum: [senior, junior]
+        kind:
+          $ref: "#/components/schemas/ShirtNumberUploadKind"
+        season:
+          type: integer
+        fileName:
+          type: string
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShirtNumberPreviewRow"
+        counts:
+          $ref: "#/components/schemas/ShirtNumberPreviewCounts"
+        unrecognisedHeaders:
+          type: array
+          items:
+            type: string
+        errors:
+          type: array
+          description: File-level problems (missing name column, etc.)
+          items:
+            type: string
+        truncated:
+          type: boolean
+          description: True when rows beyond the 1,000-row cap were dropped.
+
+    ShirtNumberRowResolution:
+      type: object
+      required: [rowIndex, action]
+      properties:
+        rowIndex:
+          type: integer
+        action:
+          type: string
+          enum: [link, hold, discard]
+          description: >-
+            `link`: attach to `playerId`; `hold`: keep as a held entry (no
+            player yet); `discard`: skip the row.
+        playerId:
+          type: ["integer", "null"]
+          description: Required for `link`.
+
+    ShirtNumberUploadCommit:
+      type: object
+      required: [resolutions]
+      properties:
+        resolutions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShirtNumberRowResolution"
+
+    JuniorShirtNumberRowResolution:
+      type: object
+      required: [rowIndex, action]
+      properties:
+        rowIndex:
+          type: integer
+        action:
+          type: string
+          enum: [link, discard]
+          description: "`link`: attach to the junior `participantId`; `discard`: skip the row."
+        participantId:
+          type: ["string", "null"]
+          description: Required for `link`.
+
+    JuniorShirtNumberUploadCommit:
+      type: object
+      required: [resolutions]
+      properties:
+        resolutions:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorShirtNumberRowResolution"
+
+    ShirtNumberUploadCommitResult:
+      type: object
+      required: [uploadId, created, updated, linked, held, discarded, warnings]
+      properties:
+        uploadId:
+          type: integer
+        created:
+          type: integer
+        updated:
+          type: integer
+        linked:
+          type: integer
+        held:
+          type: integer
+        discarded:
+          type: integer
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShirtNumberWarning"
+
+    JuniorShirtNumberEntry:
+      type: object
+      required: [id, season, participantId, name, number, source, duplicate, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        season:
+          type: integer
+        participantId:
+          type: string
+          description: PlayHQ participant GUID (lowercased)
+        name:
+          type: string
+        number:
+          type: ["string", "null"]
+        source:
+          $ref: "#/components/schemas/ShirtNumberSource"
+        duplicate:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    JuniorShirtNumberRegister:
+      type: object
+      required: [season, seasons, entries]
+      properties:
+        season:
+          type: integer
+        seasons:
+          type: array
+          items:
+            type: integer
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorShirtNumberEntry"
+
+    JuniorShirtNumberEntryInput:
+      type: object
+      required: [season, participantId]
+      properties:
+        season:
+          type: integer
+        participantId:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: Defaults to the junior participant's display name.
+        number:
+          oneOf:
+            - $ref: "#/components/schemas/ShirtNumberValue"
+            - type: "null"
+
+    JuniorShirtNumberEntryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        number:
+          oneOf:
+            - $ref: "#/components/schemas/ShirtNumberValue"
+            - type: "null"
+
+    JuniorShirtNumberWriteResult:
+      type: object
+      required: [entry, warnings]
+      properties:
+        entry:
+          $ref: "#/components/schemas/JuniorShirtNumberEntry"
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShirtNumberWarning"
+
     TeamListPlayer:
       type: object
       required: [order, displayName]
@@ -18354,6 +19505,9 @@ components:
           type: integer
           nullable: true
           description: "Register-linked player id; omit/null for a free-typed name. Fill-in ids (>= 90000) are rejected."
+        participantId:
+          type: string
+          description: "PlayHQ participant GUID (lowercased) for a row copied from a PlayHQ lineup, kept even when the row has no playerId; omit for a free-typed name."
         displayName:
           type: string
           minLength: 1
@@ -19157,6 +20311,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/JuniorPlayerMatchLine"
+        shirtNumber:
+          type: ["string", "null"]
+          description: >-
+            The participant's juniors shirt number for the current season, from
+            the juniors register only. Present only when the club has shirt
+            numbers on.
+        shirtNumbers:
+          type: array
+          description: Juniors shirt numbers worn by season, newest first.
+          items:
+            $ref: "#/components/schemas/ShirtNumberSeason"
 
     JuniorBattingLeader:
       type: object

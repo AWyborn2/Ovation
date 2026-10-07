@@ -172,6 +172,31 @@ export function PlayerPhoto({ data, height }: { data: TradingCardData; height: n
       >
         {data.role}
       </div>
+      {data.shirtNumber && (
+        // Season shirt number: a bare "#N" on a dark plate under the role
+        // pill, in its own place — the cap number keeps the header's corner.
+        <div
+          data-testid="trading-card-shirt-number"
+          style={{
+            position: "absolute",
+            top: 44,
+            right: 12,
+            minWidth: 44,
+            textAlign: "center",
+            background: "rgba(10,12,16,0.82)",
+            color: "#fff",
+            border: `1px solid ${GOLD}`,
+            borderRadius: 6,
+            padding: "3px 8px",
+            fontSize: 20,
+            fontWeight: 900,
+            lineHeight: 1,
+            letterSpacing: 0.4,
+          }}
+        >
+          #{data.shirtNumber}
+        </div>
+      )}
       {data.debutYear !== null && (
         <div
           style={{
