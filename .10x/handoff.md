@@ -1,7 +1,7 @@
 # Handoff
 
-**From:** Architect + Staff Engineer (Phase 2)
-**To:** Engineering Manager + Senior Engineer (Phase 3)
+**From:** Engineering Manager + Senior Engineer (Phase 3)
+**To:** SDE + DBA (Phase 4)
 **Feature:** card-kind-templates
 
 ## Context
@@ -12,5 +12,6 @@
 
 ## Next steps
 
-1. Read ADR-001 (layer documents), ADR-002 (versioned copy), ADR-003 (switch, lazy creation, warnings gate) in .10x/adrs/.
-2. Break U1–U10 into half-day tasks with sequencing, and the implementation approach per task.
+1. Implement in task order from decisions/engineering-manager/card-kind-templates.md, starting T1.1.
+2. Follow the tricky-part notes in decisions/senior-engineer/card-kind-templates.md.
+3. Keep the switch off; every pipeline change covers both branches.
