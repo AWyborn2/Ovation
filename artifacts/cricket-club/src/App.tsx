@@ -69,6 +69,7 @@ const AdminAvailability = lazy(() => import("@/pages/admin-availability"));
 // The personal availability link a player or parent opens from their SMS/email.
 const AvailabilityRespond = lazy(() => import("@/pages/availability-respond"));
 const CardRenderHarness = lazy(() => import("@/pages/card-render-harness"));
+const AdminStarterProofs = lazy(() => import("@/pages/admin-starter-proofs"));
 const HonoursDisplay = lazy(() => import("@/pages/honours-display"));
 const HonoursKiosk = lazy(() => import("@/pages/honours-kiosk"));
 
@@ -146,6 +147,9 @@ function AdminRoutes() {
             <Route path="/admin/settings/trading-cards">
               <Redirect to="/admin/social/trading-cards" />
             </Route>
+
+            {/* Card kind templates: starter proofs contact sheet (plan U10). */}
+            <Route path="/admin/kind-templates/proofs" component={AdminStarterProofs} />
 
             {/* Consolidated tabbed groups (each tab is a deep-linkable path). */}
             <Route path="/admin/social/:tab?" component={AdminSocialGroup} />
