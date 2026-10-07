@@ -201,6 +201,11 @@ import type {
   JuniorSeasonTopPerformers,
   JuniorSeniorLink,
   JuniorSeniorLinkSummary,
+  JuniorShirtNumberEntryInput,
+  JuniorShirtNumberEntryUpdate,
+  JuniorShirtNumberRegister,
+  JuniorShirtNumberUploadCommit,
+  JuniorShirtNumberWriteResult,
   JuniorSocialMilestone,
   JuniorStatCorrection,
   KioskTokenInput,
@@ -215,10 +220,12 @@ import type {
   ListJuniorLeaderboardParams,
   ListJuniorMatchesParams,
   ListJuniorPlayersParams,
+  ListJuniorShirtNumbersParams,
   ListJuniorStatCorrectionsParams,
   ListMatchesParams,
   ListNavItemsParams,
   ListPlayersParams,
+  ListShirtNumbersParams,
   ListSocialDraftsParams,
   ListStatsParams,
   LoginRequest,
@@ -317,6 +324,18 @@ import type {
   SeniorOverview,
   SetJuniorSeniorLinkBody,
   SetPlayerPrivacyBody,
+  ShirtNumberConflict,
+  ShirtNumberEntryInput,
+  ShirtNumberEntryUpdate,
+  ShirtNumberRegister,
+  ShirtNumberSeasonStartResult,
+  ShirtNumberSettings,
+  ShirtNumberSettingsUpdate,
+  ShirtNumberSquadAddResult,
+  ShirtNumberUploadCommit,
+  ShirtNumberUploadCommitResult,
+  ShirtNumberUploadPreview,
+  ShirtNumberWriteResult,
   SignupBody,
   SignupResult,
   SlugAvailability,
@@ -369,9 +388,11 @@ import type {
   UpdateSocialDraftRequest,
   UpdateTenantBody,
   UpdateTenantBrandBody,
+  UploadJuniorShirtNumbersBody,
   UploadMatchBatchBody,
   UploadMatchScorecardBody,
   UploadPlaycricketCsvBody,
+  UploadShirtNumbersBody,
   UploadUrlRequest,
   UploadUrlResponse,
   VotableAward,
@@ -4672,6 +4693,823 @@ export const useDeleteCap = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteCapMutationOptions(options));
+    }
+
+export const getGetShirtNumberSettingsUrl = () => {
+
+
+
+
+  return `/api/shirt-numbers/settings`
+}
+
+/**
+ * The tenant's feature switch, duplicate policy and rollover policy. One set of settings covers both the senior and juniors registers. Returns the defaults (off, warn, carry) for a tenant that has never saved them.
+ * @summary Get the club's shirt-number settings
+ */
+export const getShirtNumberSettings = async ( options?: RequestInit): Promise<ShirtNumberSettings> => {
+
+  return customFetch<ShirtNumberSettings>(getGetShirtNumberSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetShirtNumberSettingsQueryKey = () => {
+    return [
+    `/api/shirt-numbers/settings`
+    ] as const;
+    }
+
+
+export const getGetShirtNumberSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getShirtNumberSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getShirtNumberSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetShirtNumberSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getShirtNumberSettings>>> = ({ signal }) => getShirtNumberSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getShirtNumberSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetShirtNumberSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getShirtNumberSettings>>>
+export type GetShirtNumberSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the club's shirt-number settings
+ */
+
+export function useGetShirtNumberSettings<TData = Awaited<ReturnType<typeof getShirtNumberSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getShirtNumberSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetShirtNumberSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateShirtNumberSettingsUrl = () => {
+
+
+
+
+  return `/api/shirt-numbers/settings`
+}
+
+/**
+ * Works while the feature is off so an admin can turn it on.
+ * @summary Update the club's shirt-number settings (admin, curation)
+ */
+export const updateShirtNumberSettings = async (shirtNumberSettingsUpdate: ShirtNumberSettingsUpdate, options?: RequestInit): Promise<ShirtNumberSettings> => {
+
+  return customFetch<ShirtNumberSettings>(getUpdateShirtNumberSettingsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      shirtNumberSettingsUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateShirtNumberSettingsMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateShirtNumberSettings>>, TError,{data: BodyType<ShirtNumberSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateShirtNumberSettings>>, TError,{data: BodyType<ShirtNumberSettingsUpdate>}, TContext> => {
+
+const mutationKey = ['updateShirtNumberSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateShirtNumberSettings>>, {data: BodyType<ShirtNumberSettingsUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateShirtNumberSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateShirtNumberSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateShirtNumberSettings>>>
+    export type UpdateShirtNumberSettingsMutationBody = BodyType<ShirtNumberSettingsUpdate>
+    export type UpdateShirtNumberSettingsMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Update the club's shirt-number settings (admin, curation)
+ */
+export const useUpdateShirtNumberSettings = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateShirtNumberSettings>>, TError,{data: BodyType<ShirtNumberSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateShirtNumberSettings>>,
+        TError,
+        {data: BodyType<ShirtNumberSettingsUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateShirtNumberSettingsMutationOptions(options));
+    }
+
+export const getListShirtNumbersUrl = (params?: ListShirtNumbersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/shirt-numbers?${stringifiedParams}` : `/api/shirt-numbers`
+}
+
+/**
+ * Every entry for the season, including held entries (not yet linked to a player who has played) and duplicate-number flags. Defaults to the current season (July-June, Perth time) when `season` is omitted.
+ * @summary The senior shirt-number register for a season (admin)
+ */
+export const listShirtNumbers = async (params?: ListShirtNumbersParams, options?: RequestInit): Promise<ShirtNumberRegister> => {
+
+  return customFetch<ShirtNumberRegister>(getListShirtNumbersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListShirtNumbersQueryKey = (params?: ListShirtNumbersParams,) => {
+    return [
+    `/api/shirt-numbers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListShirtNumbersQueryOptions = <TData = Awaited<ReturnType<typeof listShirtNumbers>>, TError = ErrorType<unknown>>(params?: ListShirtNumbersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listShirtNumbers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListShirtNumbersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listShirtNumbers>>> = ({ signal }) => listShirtNumbers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listShirtNumbers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListShirtNumbersQueryResult = NonNullable<Awaited<ReturnType<typeof listShirtNumbers>>>
+export type ListShirtNumbersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The senior shirt-number register for a season (admin)
+ */
+
+export function useListShirtNumbers<TData = Awaited<ReturnType<typeof listShirtNumbers>>, TError = ErrorType<unknown>>(
+ params?: ListShirtNumbersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listShirtNumbers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListShirtNumbersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateShirtNumberUrl = () => {
+
+
+
+
+  return `/api/shirt-numbers`
+}
+
+/**
+ * Under the `carry` rollover policy an entry created without a number inherits the person's number from the previous season. A duplicate number returns warnings under the `warn` policy and 409 under `block`.
+ * @summary Add a person to a season's senior register (admin, curation)
+ */
+export const createShirtNumber = async (shirtNumberEntryInput: ShirtNumberEntryInput, options?: RequestInit): Promise<ShirtNumberWriteResult> => {
+
+  return customFetch<ShirtNumberWriteResult>(getCreateShirtNumberUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      shirtNumberEntryInput,)
+  }
+);}
+
+
+
+
+export const getCreateShirtNumberMutationOptions = <TError = ErrorType<ErrorEnvelope | ShirtNumberConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createShirtNumber>>, TError,{data: BodyType<ShirtNumberEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createShirtNumber>>, TError,{data: BodyType<ShirtNumberEntryInput>}, TContext> => {
+
+const mutationKey = ['createShirtNumber'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createShirtNumber>>, {data: BodyType<ShirtNumberEntryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createShirtNumber(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateShirtNumberMutationResult = NonNullable<Awaited<ReturnType<typeof createShirtNumber>>>
+    export type CreateShirtNumberMutationBody = BodyType<ShirtNumberEntryInput>
+    export type CreateShirtNumberMutationError = ErrorType<ErrorEnvelope | ShirtNumberConflict>
+
+    /**
+ * @summary Add a person to a season's senior register (admin, curation)
+ */
+export const useCreateShirtNumber = <TError = ErrorType<ErrorEnvelope | ShirtNumberConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createShirtNumber>>, TError,{data: BodyType<ShirtNumberEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createShirtNumber>>,
+        TError,
+        {data: BodyType<ShirtNumberEntryInput>},
+        TContext
+      > => {
+      return useMutation(getCreateShirtNumberMutationOptions(options));
+    }
+
+export const getUpdateShirtNumberUrl = (id: number,) => {
+
+
+
+
+  return `/api/shirt-numbers/${id}`
+}
+
+/**
+ * Assign, change or clear (null) the number, rename, or link the entry to a player. A duplicate number returns warnings under `warn` and 409 under `block`.
+ * @summary Edit a senior register entry (admin, curation)
+ */
+export const updateShirtNumber = async (id: number,
+    shirtNumberEntryUpdate: ShirtNumberEntryUpdate, options?: RequestInit): Promise<ShirtNumberWriteResult> => {
+
+  return customFetch<ShirtNumberWriteResult>(getUpdateShirtNumberUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      shirtNumberEntryUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateShirtNumberMutationOptions = <TError = ErrorType<ErrorEnvelope | void | ShirtNumberConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateShirtNumber>>, TError,{id: number;data: BodyType<ShirtNumberEntryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateShirtNumber>>, TError,{id: number;data: BodyType<ShirtNumberEntryUpdate>}, TContext> => {
+
+const mutationKey = ['updateShirtNumber'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateShirtNumber>>, {id: number;data: BodyType<ShirtNumberEntryUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateShirtNumber(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateShirtNumberMutationResult = NonNullable<Awaited<ReturnType<typeof updateShirtNumber>>>
+    export type UpdateShirtNumberMutationBody = BodyType<ShirtNumberEntryUpdate>
+    export type UpdateShirtNumberMutationError = ErrorType<ErrorEnvelope | void | ShirtNumberConflict>
+
+    /**
+ * @summary Edit a senior register entry (admin, curation)
+ */
+export const useUpdateShirtNumber = <TError = ErrorType<ErrorEnvelope | void | ShirtNumberConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateShirtNumber>>, TError,{id: number;data: BodyType<ShirtNumberEntryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateShirtNumber>>,
+        TError,
+        {id: number;data: BodyType<ShirtNumberEntryUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateShirtNumberMutationOptions(options));
+    }
+
+export const getDeleteShirtNumberUrl = (id: number,) => {
+
+
+
+
+  return `/api/shirt-numbers/${id}`
+}
+
+/**
+ * @summary Remove a senior register entry (admin, curation)
+ */
+export const deleteShirtNumber = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteShirtNumberUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteShirtNumberMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteShirtNumber>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteShirtNumber>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteShirtNumber'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteShirtNumber>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteShirtNumber(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteShirtNumberMutationResult = NonNullable<Awaited<ReturnType<typeof deleteShirtNumber>>>
+
+    export type DeleteShirtNumberMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a senior register entry (admin, curation)
+ */
+export const useDeleteShirtNumber = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteShirtNumber>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteShirtNumber>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteShirtNumberMutationOptions(options));
+    }
+
+export const getStartShirtNumberSeasonUrl = (season: number,) => {
+
+
+
+
+  return `/api/shirt-numbers/seasons/${season}/start`
+}
+
+/**
+ * Copies the previous season's register into `season` according to the club's rollover policy. Idempotent: people already on the season's register are skipped.
+ * @summary Start a season's senior register from the previous season (admin, curation)
+ */
+export const startShirtNumberSeason = async (season: number, options?: RequestInit): Promise<ShirtNumberSeasonStartResult> => {
+
+  return customFetch<ShirtNumberSeasonStartResult>(getStartShirtNumberSeasonUrl(season),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getStartShirtNumberSeasonMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startShirtNumberSeason>>, TError,{season: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startShirtNumberSeason>>, TError,{season: number}, TContext> => {
+
+const mutationKey = ['startShirtNumberSeason'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startShirtNumberSeason>>, {season: number}> = (props) => {
+          const {season} = props ?? {};
+
+          return  startShirtNumberSeason(season,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartShirtNumberSeasonMutationResult = NonNullable<Awaited<ReturnType<typeof startShirtNumberSeason>>>
+
+    export type StartShirtNumberSeasonMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Start a season's senior register from the previous season (admin, curation)
+ */
+export const useStartShirtNumberSeason = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startShirtNumberSeason>>, TError,{season: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startShirtNumberSeason>>,
+        TError,
+        {season: number},
+        TContext
+      > => {
+      return useMutation(getStartShirtNumberSeasonMutationOptions(options));
+    }
+
+export const getAddSquadToShirtNumberSeasonUrl = (season: number,) => {
+
+
+
+
+  return `/api/shirt-numbers/seasons/${season}/from-squad`
+}
+
+/**
+ * Adds the active senior members of the club's squad register (the availability squad import) to `season` without numbers of their own. A member linked to one of the club's players is added with that player; anyone else is added as a held entry under their name. Idempotent: someone already on the season's register is left as they are, number unchanged. New entries carry last season's number under the `carry` rollover policy; under `block` a carried number someone already wears is left off and reported in `warnings`.
+ * @summary Add the club's senior squad to a season's register (admin, curation)
+ */
+export const addSquadToShirtNumberSeason = async (season: number, options?: RequestInit): Promise<ShirtNumberSquadAddResult> => {
+
+  return customFetch<ShirtNumberSquadAddResult>(getAddSquadToShirtNumberSeasonUrl(season),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAddSquadToShirtNumberSeasonMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, TError,{season: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, TError,{season: number}, TContext> => {
+
+const mutationKey = ['addSquadToShirtNumberSeason'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, {season: number}> = (props) => {
+          const {season} = props ?? {};
+
+          return  addSquadToShirtNumberSeason(season,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddSquadToShirtNumberSeasonMutationResult = NonNullable<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>>
+
+    export type AddSquadToShirtNumberSeasonMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Add the club's senior squad to a season's register (admin, curation)
+ */
+export const useAddSquadToShirtNumberSeason = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, TError,{season: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>,
+        TError,
+        {season: number},
+        TContext
+      > => {
+      return useMutation(getAddSquadToShirtNumberSeasonMutationOptions(options));
+    }
+
+export const getUploadShirtNumbersUrl = () => {
+
+
+
+
+  return `/api/shirt-numbers/uploads`
+}
+
+/**
+ * Upload a `.csv` or `.xlsx` (max 2 MB, 1,000 rows) for one season. The
+server parses it, stores a pending preview for this tenant and returns
+it. Nothing is written to the register until the preview is committed.
+Generated clients
+should treat the file as `Blob`; the cricket-club frontend posts
+FormData via raw `fetch` against this route.
+
+ * @summary Upload a shirt-number spreadsheet for preview (admin, curation)
+ */
+export const uploadShirtNumbers = async (uploadShirtNumbersBody: UploadShirtNumbersBody, options?: RequestInit): Promise<ShirtNumberUploadPreview> => {
+    const formData = new FormData();
+formData.append(`file`, uploadShirtNumbersBody.file);
+formData.append(`kind`, uploadShirtNumbersBody.kind);
+formData.append(`season`, uploadShirtNumbersBody.season.toString())
+
+  return customFetch<ShirtNumberUploadPreview>(getUploadShirtNumbersUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getUploadShirtNumbersMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadShirtNumbers>>, TError,{data: BodyType<UploadShirtNumbersBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadShirtNumbers>>, TError,{data: BodyType<UploadShirtNumbersBody>}, TContext> => {
+
+const mutationKey = ['uploadShirtNumbers'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadShirtNumbers>>, {data: BodyType<UploadShirtNumbersBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  uploadShirtNumbers(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadShirtNumbersMutationResult = NonNullable<Awaited<ReturnType<typeof uploadShirtNumbers>>>
+    export type UploadShirtNumbersMutationBody = BodyType<UploadShirtNumbersBody>
+    export type UploadShirtNumbersMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Upload a shirt-number spreadsheet for preview (admin, curation)
+ */
+export const useUploadShirtNumbers = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadShirtNumbers>>, TError,{data: BodyType<UploadShirtNumbersBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadShirtNumbers>>,
+        TError,
+        {data: BodyType<UploadShirtNumbersBody>},
+        TContext
+      > => {
+      return useMutation(getUploadShirtNumbersMutationOptions(options));
+    }
+
+export const getCommitShirtNumberUploadUrl = (id: number,) => {
+
+
+
+
+  return `/api/shirt-numbers/uploads/${id}/commit`
+}
+
+/**
+ * Rows without a resolution take their default: `matched` rows link to the matched player, `new` and `suggested` rows are kept as held, and `invalid` rows are discarded. The club's duplicate policy applies.
+ * @summary Apply a previewed senior upload with per-row resolutions (admin, curation)
+ */
+export const commitShirtNumberUpload = async (id: number,
+    shirtNumberUploadCommit: ShirtNumberUploadCommit, options?: RequestInit): Promise<ShirtNumberUploadCommitResult> => {
+
+  return customFetch<ShirtNumberUploadCommitResult>(getCommitShirtNumberUploadUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      shirtNumberUploadCommit,)
+  }
+);}
+
+
+
+
+export const getCommitShirtNumberUploadMutationOptions = <TError = ErrorType<ErrorEnvelope | void | ShirtNumberConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitShirtNumberUpload>>, TError,{id: number;data: BodyType<ShirtNumberUploadCommit>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof commitShirtNumberUpload>>, TError,{id: number;data: BodyType<ShirtNumberUploadCommit>}, TContext> => {
+
+const mutationKey = ['commitShirtNumberUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof commitShirtNumberUpload>>, {id: number;data: BodyType<ShirtNumberUploadCommit>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  commitShirtNumberUpload(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CommitShirtNumberUploadMutationResult = NonNullable<Awaited<ReturnType<typeof commitShirtNumberUpload>>>
+    export type CommitShirtNumberUploadMutationBody = BodyType<ShirtNumberUploadCommit>
+    export type CommitShirtNumberUploadMutationError = ErrorType<ErrorEnvelope | void | ShirtNumberConflict>
+
+    /**
+ * @summary Apply a previewed senior upload with per-row resolutions (admin, curation)
+ */
+export const useCommitShirtNumberUpload = <TError = ErrorType<ErrorEnvelope | void | ShirtNumberConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitShirtNumberUpload>>, TError,{id: number;data: BodyType<ShirtNumberUploadCommit>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof commitShirtNumberUpload>>,
+        TError,
+        {id: number;data: BodyType<ShirtNumberUploadCommit>},
+        TContext
+      > => {
+      return useMutation(getCommitShirtNumberUploadMutationOptions(options));
+    }
+
+export const getDiscardShirtNumberUploadUrl = (id: number,) => {
+
+
+
+
+  return `/api/shirt-numbers/uploads/${id}`
+}
+
+/**
+ * @summary Discard a pending senior upload preview (admin, curation)
+ */
+export const discardShirtNumberUpload = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDiscardShirtNumberUploadUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDiscardShirtNumberUploadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof discardShirtNumberUpload>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof discardShirtNumberUpload>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['discardShirtNumberUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof discardShirtNumberUpload>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  discardShirtNumberUpload(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DiscardShirtNumberUploadMutationResult = NonNullable<Awaited<ReturnType<typeof discardShirtNumberUpload>>>
+
+    export type DiscardShirtNumberUploadMutationError = ErrorType<void>
+
+    /**
+ * @summary Discard a pending senior upload preview (admin, curation)
+ */
+export const useDiscardShirtNumberUpload = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof discardShirtNumberUpload>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof discardShirtNumberUpload>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDiscardShirtNumberUploadMutationOptions(options));
     }
 
 export const getListLifeMembersUrl = () => {
@@ -23885,6 +24723,670 @@ export function useGetJuniorPlayer<TData = Awaited<ReturnType<typeof getJuniorPl
 
 
 
+
+export const getListJuniorShirtNumbersUrl = (params?: ListJuniorShirtNumbersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/juniors/shirt-numbers?${stringifiedParams}` : `/api/juniors/shirt-numbers`
+}
+
+/**
+ * Kept completely separate from the senior register. Defaults to the current season when `season` is omitted. Follows the juniors gating for tenants without native junior data.
+ * @summary The juniors shirt-number register for a season (admin)
+ */
+export const listJuniorShirtNumbers = async (params?: ListJuniorShirtNumbersParams, options?: RequestInit): Promise<JuniorShirtNumberRegister> => {
+
+  return customFetch<JuniorShirtNumberRegister>(getListJuniorShirtNumbersUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorShirtNumbersQueryKey = (params?: ListJuniorShirtNumbersParams,) => {
+    return [
+    `/api/juniors/shirt-numbers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListJuniorShirtNumbersQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorShirtNumbers>>, TError = ErrorType<unknown>>(params?: ListJuniorShirtNumbersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorShirtNumbers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorShirtNumbersQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorShirtNumbers>>> = ({ signal }) => listJuniorShirtNumbers(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorShirtNumbers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorShirtNumbersQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorShirtNumbers>>>
+export type ListJuniorShirtNumbersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The juniors shirt-number register for a season (admin)
+ */
+
+export function useListJuniorShirtNumbers<TData = Awaited<ReturnType<typeof listJuniorShirtNumbers>>, TError = ErrorType<unknown>>(
+ params?: ListJuniorShirtNumbersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorShirtNumbers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorShirtNumbersQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateJuniorShirtNumberUrl = () => {
+
+
+
+
+  return `/api/juniors/shirt-numbers`
+}
+
+/**
+ * Under the `carry` rollover policy an entry created without a number inherits the participant's number from the previous season. A duplicate number returns warnings under `warn` and 409 under `block`.
+ * @summary Add a junior participant to a season's juniors register (admin, curation)
+ */
+export const createJuniorShirtNumber = async (juniorShirtNumberEntryInput: JuniorShirtNumberEntryInput, options?: RequestInit): Promise<JuniorShirtNumberWriteResult> => {
+
+  return customFetch<JuniorShirtNumberWriteResult>(getCreateJuniorShirtNumberUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      juniorShirtNumberEntryInput,)
+  }
+);}
+
+
+
+
+export const getCreateJuniorShirtNumberMutationOptions = <TError = ErrorType<ErrorEnvelope | ShirtNumberConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createJuniorShirtNumber>>, TError,{data: BodyType<JuniorShirtNumberEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createJuniorShirtNumber>>, TError,{data: BodyType<JuniorShirtNumberEntryInput>}, TContext> => {
+
+const mutationKey = ['createJuniorShirtNumber'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createJuniorShirtNumber>>, {data: BodyType<JuniorShirtNumberEntryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createJuniorShirtNumber(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateJuniorShirtNumberMutationResult = NonNullable<Awaited<ReturnType<typeof createJuniorShirtNumber>>>
+    export type CreateJuniorShirtNumberMutationBody = BodyType<JuniorShirtNumberEntryInput>
+    export type CreateJuniorShirtNumberMutationError = ErrorType<ErrorEnvelope | ShirtNumberConflict>
+
+    /**
+ * @summary Add a junior participant to a season's juniors register (admin, curation)
+ */
+export const useCreateJuniorShirtNumber = <TError = ErrorType<ErrorEnvelope | ShirtNumberConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createJuniorShirtNumber>>, TError,{data: BodyType<JuniorShirtNumberEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createJuniorShirtNumber>>,
+        TError,
+        {data: BodyType<JuniorShirtNumberEntryInput>},
+        TContext
+      > => {
+      return useMutation(getCreateJuniorShirtNumberMutationOptions(options));
+    }
+
+export const getUpdateJuniorShirtNumberUrl = (id: number,) => {
+
+
+
+
+  return `/api/juniors/shirt-numbers/${id}`
+}
+
+/**
+ * @summary Edit a juniors register entry (admin, curation)
+ */
+export const updateJuniorShirtNumber = async (id: number,
+    juniorShirtNumberEntryUpdate: JuniorShirtNumberEntryUpdate, options?: RequestInit): Promise<JuniorShirtNumberWriteResult> => {
+
+  return customFetch<JuniorShirtNumberWriteResult>(getUpdateJuniorShirtNumberUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      juniorShirtNumberEntryUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateJuniorShirtNumberMutationOptions = <TError = ErrorType<ErrorEnvelope | void | ShirtNumberConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorShirtNumber>>, TError,{id: number;data: BodyType<JuniorShirtNumberEntryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateJuniorShirtNumber>>, TError,{id: number;data: BodyType<JuniorShirtNumberEntryUpdate>}, TContext> => {
+
+const mutationKey = ['updateJuniorShirtNumber'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateJuniorShirtNumber>>, {id: number;data: BodyType<JuniorShirtNumberEntryUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateJuniorShirtNumber(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateJuniorShirtNumberMutationResult = NonNullable<Awaited<ReturnType<typeof updateJuniorShirtNumber>>>
+    export type UpdateJuniorShirtNumberMutationBody = BodyType<JuniorShirtNumberEntryUpdate>
+    export type UpdateJuniorShirtNumberMutationError = ErrorType<ErrorEnvelope | void | ShirtNumberConflict>
+
+    /**
+ * @summary Edit a juniors register entry (admin, curation)
+ */
+export const useUpdateJuniorShirtNumber = <TError = ErrorType<ErrorEnvelope | void | ShirtNumberConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorShirtNumber>>, TError,{id: number;data: BodyType<JuniorShirtNumberEntryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateJuniorShirtNumber>>,
+        TError,
+        {id: number;data: BodyType<JuniorShirtNumberEntryUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateJuniorShirtNumberMutationOptions(options));
+    }
+
+export const getDeleteJuniorShirtNumberUrl = (id: number,) => {
+
+
+
+
+  return `/api/juniors/shirt-numbers/${id}`
+}
+
+/**
+ * @summary Remove a juniors register entry (admin, curation)
+ */
+export const deleteJuniorShirtNumber = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteJuniorShirtNumberUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteJuniorShirtNumberMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorShirtNumber>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorShirtNumber>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteJuniorShirtNumber'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteJuniorShirtNumber>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteJuniorShirtNumber(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteJuniorShirtNumberMutationResult = NonNullable<Awaited<ReturnType<typeof deleteJuniorShirtNumber>>>
+
+    export type DeleteJuniorShirtNumberMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a juniors register entry (admin, curation)
+ */
+export const useDeleteJuniorShirtNumber = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorShirtNumber>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteJuniorShirtNumber>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteJuniorShirtNumberMutationOptions(options));
+    }
+
+export const getStartJuniorShirtNumberSeasonUrl = (season: number,) => {
+
+
+
+
+  return `/api/juniors/shirt-numbers/seasons/${season}/start`
+}
+
+/**
+ * Copies the previous season's juniors register into `season` according to the club's rollover policy. Idempotent: participants already on the season's register are skipped.
+ * @summary Start a season's juniors register from the previous season (admin, curation)
+ */
+export const startJuniorShirtNumberSeason = async (season: number, options?: RequestInit): Promise<ShirtNumberSeasonStartResult> => {
+
+  return customFetch<ShirtNumberSeasonStartResult>(getStartJuniorShirtNumberSeasonUrl(season),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getStartJuniorShirtNumberSeasonMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startJuniorShirtNumberSeason>>, TError,{season: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startJuniorShirtNumberSeason>>, TError,{season: number}, TContext> => {
+
+const mutationKey = ['startJuniorShirtNumberSeason'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startJuniorShirtNumberSeason>>, {season: number}> = (props) => {
+          const {season} = props ?? {};
+
+          return  startJuniorShirtNumberSeason(season,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartJuniorShirtNumberSeasonMutationResult = NonNullable<Awaited<ReturnType<typeof startJuniorShirtNumberSeason>>>
+
+    export type StartJuniorShirtNumberSeasonMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Start a season's juniors register from the previous season (admin, curation)
+ */
+export const useStartJuniorShirtNumberSeason = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startJuniorShirtNumberSeason>>, TError,{season: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startJuniorShirtNumberSeason>>,
+        TError,
+        {season: number},
+        TContext
+      > => {
+      return useMutation(getStartJuniorShirtNumberSeasonMutationOptions(options));
+    }
+
+export const getAddSquadToJuniorShirtNumberSeasonUrl = (season: number,) => {
+
+
+
+
+  return `/api/juniors/shirt-numbers/seasons/${season}/from-squad`
+}
+
+/**
+ * Adds the active junior members of the club's squad register to the juniors register for `season`. Each member must match one of the club's junior participants (by participant id, else a unique exact name); unmatched members are listed in `unmatched` and not created. Idempotent, with the same carry-forward and duplicate rules as the senior register. Clubs without native junior data get 404.
+ * @summary Add the club's junior squad to a season's juniors register (admin, curation)
+ */
+export const addSquadToJuniorShirtNumberSeason = async (season: number, options?: RequestInit): Promise<ShirtNumberSquadAddResult> => {
+
+  return customFetch<ShirtNumberSquadAddResult>(getAddSquadToJuniorShirtNumberSeasonUrl(season),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAddSquadToJuniorShirtNumberSeasonMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSquadToJuniorShirtNumberSeason>>, TError,{season: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addSquadToJuniorShirtNumberSeason>>, TError,{season: number}, TContext> => {
+
+const mutationKey = ['addSquadToJuniorShirtNumberSeason'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSquadToJuniorShirtNumberSeason>>, {season: number}> = (props) => {
+          const {season} = props ?? {};
+
+          return  addSquadToJuniorShirtNumberSeason(season,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddSquadToJuniorShirtNumberSeasonMutationResult = NonNullable<Awaited<ReturnType<typeof addSquadToJuniorShirtNumberSeason>>>
+
+    export type AddSquadToJuniorShirtNumberSeasonMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Add the club's junior squad to a season's juniors register (admin, curation)
+ */
+export const useAddSquadToJuniorShirtNumberSeason = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSquadToJuniorShirtNumberSeason>>, TError,{season: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addSquadToJuniorShirtNumberSeason>>,
+        TError,
+        {season: number},
+        TContext
+      > => {
+      return useMutation(getAddSquadToJuniorShirtNumberSeasonMutationOptions(options));
+    }
+
+export const getUploadJuniorShirtNumbersUrl = () => {
+
+
+
+
+  return `/api/juniors/shirt-numbers/uploads`
+}
+
+/**
+ * Same file rules as the senior upload (`.csv`/`.xlsx`, 2 MB, 1,000
+rows). Rows are matched against the club's junior participants only.
+Generated clients should treat the file as `Blob`; the cricket-club
+frontend posts FormData via raw `fetch` against this route.
+
+ * @summary Upload a juniors shirt-number spreadsheet for preview (admin, curation)
+ */
+export const uploadJuniorShirtNumbers = async (uploadJuniorShirtNumbersBody: UploadJuniorShirtNumbersBody, options?: RequestInit): Promise<ShirtNumberUploadPreview> => {
+    const formData = new FormData();
+formData.append(`file`, uploadJuniorShirtNumbersBody.file);
+formData.append(`kind`, uploadJuniorShirtNumbersBody.kind);
+formData.append(`season`, uploadJuniorShirtNumbersBody.season.toString())
+
+  return customFetch<ShirtNumberUploadPreview>(getUploadJuniorShirtNumbersUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getUploadJuniorShirtNumbersMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadJuniorShirtNumbers>>, TError,{data: BodyType<UploadJuniorShirtNumbersBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof uploadJuniorShirtNumbers>>, TError,{data: BodyType<UploadJuniorShirtNumbersBody>}, TContext> => {
+
+const mutationKey = ['uploadJuniorShirtNumbers'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof uploadJuniorShirtNumbers>>, {data: BodyType<UploadJuniorShirtNumbersBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  uploadJuniorShirtNumbers(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UploadJuniorShirtNumbersMutationResult = NonNullable<Awaited<ReturnType<typeof uploadJuniorShirtNumbers>>>
+    export type UploadJuniorShirtNumbersMutationBody = BodyType<UploadJuniorShirtNumbersBody>
+    export type UploadJuniorShirtNumbersMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Upload a juniors shirt-number spreadsheet for preview (admin, curation)
+ */
+export const useUploadJuniorShirtNumbers = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadJuniorShirtNumbers>>, TError,{data: BodyType<UploadJuniorShirtNumbersBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof uploadJuniorShirtNumbers>>,
+        TError,
+        {data: BodyType<UploadJuniorShirtNumbersBody>},
+        TContext
+      > => {
+      return useMutation(getUploadJuniorShirtNumbersMutationOptions(options));
+    }
+
+export const getCommitJuniorShirtNumberUploadUrl = (id: number,) => {
+
+
+
+
+  return `/api/juniors/shirt-numbers/uploads/${id}/commit`
+}
+
+/**
+ * Junior entries always carry a participant, so a row is either linked to a junior participant or discarded. Rows without a resolution take their default: `matched` rows link to the matched participant and every other row is discarded. The club's duplicate policy applies.
+ * @summary Apply a previewed juniors upload with per-row resolutions (admin, curation)
+ */
+export const commitJuniorShirtNumberUpload = async (id: number,
+    juniorShirtNumberUploadCommit: JuniorShirtNumberUploadCommit, options?: RequestInit): Promise<ShirtNumberUploadCommitResult> => {
+
+  return customFetch<ShirtNumberUploadCommitResult>(getCommitJuniorShirtNumberUploadUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      juniorShirtNumberUploadCommit,)
+  }
+);}
+
+
+
+
+export const getCommitJuniorShirtNumberUploadMutationOptions = <TError = ErrorType<ErrorEnvelope | void | ShirtNumberConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitJuniorShirtNumberUpload>>, TError,{id: number;data: BodyType<JuniorShirtNumberUploadCommit>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof commitJuniorShirtNumberUpload>>, TError,{id: number;data: BodyType<JuniorShirtNumberUploadCommit>}, TContext> => {
+
+const mutationKey = ['commitJuniorShirtNumberUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof commitJuniorShirtNumberUpload>>, {id: number;data: BodyType<JuniorShirtNumberUploadCommit>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  commitJuniorShirtNumberUpload(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CommitJuniorShirtNumberUploadMutationResult = NonNullable<Awaited<ReturnType<typeof commitJuniorShirtNumberUpload>>>
+    export type CommitJuniorShirtNumberUploadMutationBody = BodyType<JuniorShirtNumberUploadCommit>
+    export type CommitJuniorShirtNumberUploadMutationError = ErrorType<ErrorEnvelope | void | ShirtNumberConflict>
+
+    /**
+ * @summary Apply a previewed juniors upload with per-row resolutions (admin, curation)
+ */
+export const useCommitJuniorShirtNumberUpload = <TError = ErrorType<ErrorEnvelope | void | ShirtNumberConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitJuniorShirtNumberUpload>>, TError,{id: number;data: BodyType<JuniorShirtNumberUploadCommit>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof commitJuniorShirtNumberUpload>>,
+        TError,
+        {id: number;data: BodyType<JuniorShirtNumberUploadCommit>},
+        TContext
+      > => {
+      return useMutation(getCommitJuniorShirtNumberUploadMutationOptions(options));
+    }
+
+export const getDiscardJuniorShirtNumberUploadUrl = (id: number,) => {
+
+
+
+
+  return `/api/juniors/shirt-numbers/uploads/${id}`
+}
+
+/**
+ * @summary Discard a pending juniors upload preview (admin, curation)
+ */
+export const discardJuniorShirtNumberUpload = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDiscardJuniorShirtNumberUploadUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDiscardJuniorShirtNumberUploadMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof discardJuniorShirtNumberUpload>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof discardJuniorShirtNumberUpload>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['discardJuniorShirtNumberUpload'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof discardJuniorShirtNumberUpload>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  discardJuniorShirtNumberUpload(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DiscardJuniorShirtNumberUploadMutationResult = NonNullable<Awaited<ReturnType<typeof discardJuniorShirtNumberUpload>>>
+
+    export type DiscardJuniorShirtNumberUploadMutationError = ErrorType<void>
+
+    /**
+ * @summary Discard a pending juniors upload preview (admin, curation)
+ */
+export const useDiscardJuniorShirtNumberUpload = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof discardJuniorShirtNumberUpload>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof discardJuniorShirtNumberUpload>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDiscardJuniorShirtNumberUploadMutationOptions(options));
+    }
 
 export const getMergeJuniorParticipantUrl = (id: string,) => {
 

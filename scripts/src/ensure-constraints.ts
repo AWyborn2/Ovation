@@ -234,6 +234,45 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     name: "club_corrections_identity_check",
     sql: `btrim("playhq_match_id") <> '' AND btrim("participant_id") <> ''`,
   },
+  // Season shirt numbers (migration 0034): digit-string numbers (KTD3) and the
+  // source, policy and upload value sets.
+  ...["shirt_numbers", "junior_shirt_numbers"].flatMap((table) => [
+    {
+      table,
+      name: `${table}_number_check`,
+      sql: `"number" IS NULL OR "number" ~ '^[0-9]{1,3}$'`,
+    },
+    {
+      table,
+      name: `${table}_source_check`,
+      sql: `"source" IN ('upload', 'squad', 'lineup', 'admin', 'rollover')`,
+    },
+  ]),
+  {
+    table: "shirt_number_settings",
+    name: "shirt_number_settings_duplicate_policy_check",
+    sql: `"duplicate_policy" IN ('warn', 'block')`,
+  },
+  {
+    table: "shirt_number_settings",
+    name: "shirt_number_settings_rollover_policy_check",
+    sql: `"rollover_policy" IN ('carry', 'blank')`,
+  },
+  {
+    table: "shirt_number_uploads",
+    name: "shirt_number_uploads_side_check",
+    sql: `"side" IN ('senior', 'junior')`,
+  },
+  {
+    table: "shirt_number_uploads",
+    name: "shirt_number_uploads_kind_check",
+    sql: `"kind" IN ('numbers')`,
+  },
+  {
+    table: "shirt_number_uploads",
+    name: "shirt_number_uploads_status_check",
+    sql: `"status" IN ('pending', 'committed', 'discarded')`,
+  },
 ];
 
 /**
@@ -321,6 +360,30 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
           ON "club_corrections" ("tenant_id", "playhq_match_id", "participant_id", "field")
           WHERE "removed_at" IS NULL`,
   },
+  // Season shirt numbers (migration 0034, KTD4): a person appears at most once
+  // per tenant and season. Uniqueness is per person, never per number.
+  {
+    name: "shirt_numbers_tenant_season_participant_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "shirt_numbers_tenant_season_participant_uidx"
+          ON "shirt_numbers" ("tenant_id", "season", "participant_id")
+          WHERE "participant_id" IS NOT NULL`,
+  },
+  {
+    name: "shirt_numbers_tenant_season_player_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "shirt_numbers_tenant_season_player_uidx"
+          ON "shirt_numbers" ("tenant_id", "season", "player_id")
+          WHERE "player_id" IS NOT NULL`,
+  },
+  {
+    name: "junior_shirt_numbers_tenant_season_participant_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "junior_shirt_numbers_tenant_season_participant_uidx"
+          ON "junior_shirt_numbers" ("tenant_id", "season", "participant_id")`,
+  },
+  {
+    name: "shirt_number_settings_tenant_unique",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "shirt_number_settings_tenant_unique"
+          ON "shirt_number_settings" ("tenant_id")`,
+  },
   // Bulk master-DB load: unique on the master source key.
   {
     name: "matches_source_key_uidx",
@@ -362,6 +425,7 @@ const INDEXES: { name: string; table: string; columns: string[] }[] = [
   { name: "junior_match_bowling_match_idx", table: "junior_match_bowling", columns: ["match_id"] },
   { name: "junior_match_rosters_match_idx", table: "junior_match_rosters", columns: ["match_id"] },
   { name: "player_images_player_idx", table: "player_images", columns: ["player_id"] },
+  { name: "shirt_numbers_player_idx", table: "shirt_numbers", columns: ["player_id"] },
   ...[
     "admin_password_resets",
     "admins",
@@ -400,6 +464,9 @@ const INDEXES: { name: string; table: string; columns: string[] }[] = [
     "club_history_rows",
     "club_corrections",
     "club_history_curated_rows",
+    "shirt_numbers",
+    "junior_shirt_numbers",
+    "shirt_number_uploads",
   ].map((table) => ({ name: `${table}_tenant_idx`, table, columns: ["tenant_id"] })),
 ];
 

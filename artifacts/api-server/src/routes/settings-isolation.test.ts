@@ -9,7 +9,9 @@ import {
   socialSettingsTable,
   tradingCardSettingsTable,
   captionTemplatesTable,
+  shirtNumberSettingsTable,
 } from "@workspace/db";
+import { getShirtNumberSettings } from "@workspace/db/shirt-numbers";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
 /**
@@ -55,6 +57,9 @@ describe("tenant-scoped settings singletons", () => {
 
   afterAll(async () => {
     await db.delete(captionTemplatesTable).where(eq(captionTemplatesTable.tenantId, tenant2Id));
+    await db
+      .delete(shirtNumberSettingsTable)
+      .where(eq(shirtNumberSettingsTable.tenantId, tenant2Id));
     await db.delete(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenant2Id));
     await db
       .delete(tradingCardSettingsTable)
@@ -124,5 +129,55 @@ describe("tenant-scoped settings singletons", () => {
       .set("x-tenant-id", String(tenant2Id))
       .expect(200);
     expect(asT2.body.statKeys).toContain("iso-stat-t2");
+  });
+
+  it("shirt-number-settings: a brand-new tenant reads the defaults (off) without a row being created", async () => {
+    const res = await request(app)
+      .get("/api/shirt-numbers/settings")
+      .set("Cookie", adminCookie)
+      .set("x-tenant-id", String(tenant2Id))
+      .expect(200);
+    expect(res.body).toEqual({ enabled: false, duplicatePolicy: "warn", rolloverPolicy: "carry" });
+    const rows = await db
+      .select()
+      .from(shirtNumberSettingsTable)
+      .where(eq(shirtNumberSettingsTable.tenantId, tenant2Id));
+    expect(rows).toEqual([]);
+  });
+
+  it("shirt-number-settings: tenant 2 turning the feature on never changes tenant 1's settings", async () => {
+    const t1Before = await getShirtNumberSettings(db, 1);
+    await request(app)
+      .patch("/api/shirt-numbers/settings")
+      .set("Cookie", adminCookie)
+      .set("x-tenant-id", String(tenant2Id))
+      .send({ enabled: !t1Before.enabled, duplicatePolicy: "block", rolloverPolicy: "blank" })
+      .expect(200);
+
+    expect(await getShirtNumberSettings(db, 1)).toEqual(t1Before);
+    const asT2 = await request(app)
+      .get("/api/shirt-numbers/settings")
+      .set("Cookie", adminCookie)
+      .set("x-tenant-id", String(tenant2Id))
+      .expect(200);
+    expect(asT2.body).toEqual({
+      enabled: !t1Before.enabled,
+      duplicatePolicy: "block",
+      rolloverPolicy: "blank",
+    });
+  });
+
+  it("shirt-number-settings: a tenant 2 admin session cannot read or change tenant 1's settings", async () => {
+    await request(app)
+      .get("/api/shirt-numbers/settings")
+      .set("Cookie", adminCookie)
+      .set("x-tenant-id", "1")
+      .expect(401);
+    await request(app)
+      .patch("/api/shirt-numbers/settings")
+      .set("Cookie", adminCookie)
+      .set("x-tenant-id", "1")
+      .send({ enabled: true })
+      .expect(401);
   });
 });

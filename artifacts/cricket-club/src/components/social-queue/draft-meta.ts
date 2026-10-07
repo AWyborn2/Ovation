@@ -88,7 +88,18 @@ export function draftGrade(d: SocialDraft): string | null {
 export function draftSource(d: SocialDraft, now: Date = new Date()): string {
   const from = ENGINE_LABEL[d.engine] ?? d.engine;
   const at = d.sourceImportedAt ?? d.createdAt;
-  return `${from} · ${relativeTime(at, now)}`;
+  const by = draftCreator(d);
+  return `${from} · ${relativeTime(at, now)}${by ? ` · ${by}` : ""}`;
+}
+
+/**
+ * Who made a draft, for the queue's audit trail: "by <admin>" for a card made by hand,
+ * "automatic" for one the sweep made, nothing for a hand-made card from before this was
+ * recorded.
+ */
+export function draftCreator(d: Pick<SocialDraft, "engine" | "createdBy">): string | null {
+  if (d.createdBy) return `by ${d.createdBy}`;
+  return d.engine === "adhoc" ? null : "automatic";
 }
 
 export function relativeTime(iso: string | null | undefined, now: Date = new Date()): string {

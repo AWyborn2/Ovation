@@ -15,7 +15,7 @@ import {
   sponsorsOn,
   textField,
 } from "../shared";
-import { treatedPhoto } from "../skeleton-kit";
+import { shirtNumberBadge, shirtNumberField, treatedPhoto, withShirtNumber } from "../skeleton-kit";
 import {
   ckCard,
   ckFormats,
@@ -255,7 +255,7 @@ const milestone = design({
             `;line-height:.82;letter-spacing:-.01em;color:${C.pt}`,
           ) +
           `<div style="display:flex;align-items:center;gap:2cqmin;margin-top:1.4cqmin">${tricolourDash(u)}${display(u, "{{milestoneLabel}}", 6, "", 800)}</div>` +
-          display(u, "{{playerName}}", 9, ";line-height:.9;margin-top:2.4cqmin") +
+          withShirtNumber(display(u, "{{playerName}}", 9, ";line-height:.9;margin-top:2.4cqmin")) +
           meta(u, "{{headline}}", ";margin-top:1.6cqmin;max-width:100%"),
       ),
       NAME_FOOTER,
@@ -494,7 +494,9 @@ const playerSpotlight = design({
       "SPOTLIGHT",
       col(
         eyebrow(ku, "PLAYER SPOTLIGHT · {{season}}") +
-          display(ku, "{{playerName}}", 9, `;line-height:.9;margin-top:${ku(1.2)}`) +
+          withShirtNumber(
+            display(ku, "{{playerName}}", 9, `;line-height:.9;margin-top:${ku(1.2)}`),
+          ) +
           `<div style="display:flex;gap:.8cqmin;width:100%;margin-top:${ku(2.4)}">` +
           [1, 2, 3].map((n) => statCell(ku, `{{stat${n}Value}}`, `{{stat${n}Label}}`)).join("") +
           `</div>` +
@@ -587,7 +589,7 @@ const century = design({
         eyebrow(u, "RAISED THE BAT") +
           `<div style="display:flex;align-items:flex-end;gap:1.6cqmin">${display(u, "{{runs}}", heroSize(f, 30, 23), `;line-height:.82;color:${C.pt}`)}${display(u, "({{balls}})", 5, `;color:${C.chalk2};padding-bottom:1cqmin`, 700)}</div>` +
           `<div style="display:flex;align-items:center;gap:2cqmin;margin-top:1.4cqmin">${tricolourDash(u)}${display(u, "CENTURY", 6, "", 800)}</div>` +
-          display(u, "{{playerName}}", 9, ";line-height:.9;margin-top:2.2cqmin") +
+          withShirtNumber(display(u, "{{playerName}}", 9, ";line-height:.9;margin-top:2.2cqmin")) +
           eyebrow(u, MATCH_LINE, C.chalk2, ";margin-top:1.4cqmin"),
       ),
       { hashtag: "clubHashtag", sponsors: "logos", off: true },
@@ -606,7 +608,7 @@ const fiveFor = design({
         eyebrow(u, "{{wickets}} WICKETS") +
           `<div style="display:flex;align-items:flex-end;gap:1.6cqmin">${display(u, "{{figures}}", heroSize(f, 26, 20), `;line-height:.82;color:${C.pt}`)}${display(u, "({{overs}})", 5, `;color:${C.chalk2};padding-bottom:1cqmin`, 700)}</div>` +
           `<div style="display:flex;align-items:center;gap:2cqmin;margin-top:1.4cqmin">${tricolourDash(u)}${display(u, "FIVE-FOR", 6, "", 800)}</div>` +
-          display(u, "{{playerName}}", 9, ";line-height:.9;margin-top:2.2cqmin") +
+          withShirtNumber(display(u, "{{playerName}}", 9, ";line-height:.9;margin-top:2.2cqmin")) +
           eyebrow(u, MATCH_LINE, C.chalk2, ";margin-top:1.4cqmin"),
       ),
       { hashtag: "clubHashtag", sponsors: "logos", off: true },
@@ -801,6 +803,7 @@ const tradingCard = design({
       textField("playerName", "Player name", "SAMPLE PLAYER"),
       textField("role", "Role", "BATTING ALL-ROUNDER"),
       textField("capNumber", "Cap number", "242"),
+      shirtNumberField(),
       textField("season", "Season", "2025/26"),
       ...[1, 2, 3, 4].flatMap((n) => [
         textField(`stat${n}Value`, `Stat ${n} value`, ["48", "1,294", "61", "29.8"][n - 1]),
@@ -815,6 +818,9 @@ const tradingCard = design({
       photo: slot("cardPhoto", "photo"),
       crest: `<div style="position:relative;width:100%;height:100%">${headerCrest().replace(/10cqmin/g, "7cqmin")}</div>`,
       cap: "#{{capNumber}}",
+      // The season shirt number, on its own plate under the crest — never in
+      // the cap slot.
+      shirt: shirtNumberBadge(3.4, `;position:absolute;right:${u(2)};top:${u(12)};margin:0`),
       name: "{{playerName}}",
       role: "{{role}}",
       stats: [1, 2, 3, 4].map((n) => ({ value: `{{stat${n}Value}}`, label: `{{stat${n}Label}}` })),

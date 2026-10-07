@@ -73,7 +73,18 @@ export type TeamListPlayer = {
   role?: "C" | "VC" | "WK" | "C/WK" | "VC/WK";
   /** First senior game for the club: a DEBUT badge on designs that show one. */
   debut?: boolean;
+  /**
+   * The player's season shirt number (season shirt numbers U7, KTD10). Only
+   * printed when the card carries `numbering: "shirt"`; absent when unnumbered.
+   */
+  shirtNumber?: string | null;
 };
+
+/**
+ * What a team-list row's number shows: the batting order (default) or, for a
+ * club with season shirt numbers on, each player's shirt number.
+ */
+export type TeamListNumbering = "order" | "shirt";
 
 /**
  * Fields a card carries when it is one slide of a balanced card set
@@ -126,6 +137,12 @@ export type ShareCardInput =
       headline?: string;
       photoUrl?: string | null;
       /**
+       * The player's season shirt number (season shirt numbers, U8), stamped
+       * server-side on auto drafts; absent = no number, and the card shows no
+       * badge (never a placeholder or the cap number).
+       */
+      shirtNumber?: string | null;
+      /**
        * Marks this as a JUNIOR card: it is forced to render in the junior brown
        * palette (regardless of the selected theme) and gets junior-specific
        * labels/filenames. Junior data stays isolated from senior records.
@@ -139,6 +156,12 @@ export type ShareCardInput =
       stats: StatLine[];
       headline?: string;
       photoUrl?: string | null;
+      /**
+       * The player's season shirt number (season shirt numbers, U8), stamped
+       * server-side on auto drafts; absent = no number, and the card shows no
+       * badge (never a placeholder or the cap number).
+       */
+      shirtNumber?: string | null;
     }
   | {
       kind: "record";
@@ -194,6 +217,12 @@ export type ShareCardInput =
       round?: number | null;
       headline?: string;
       photoUrl?: string | null;
+      /**
+       * The player's season shirt number (season shirt numbers, U8), stamped
+       * server-side on auto drafts; absent = no number, and the card shows no
+       * badge (never a placeholder or the cap number).
+       */
+      shirtNumber?: string | null;
     }
   | {
       kind: "fiveFor";
@@ -207,6 +236,12 @@ export type ShareCardInput =
       round?: number | null;
       headline?: string;
       photoUrl?: string | null;
+      /**
+       * The player's season shirt number (season shirt numbers, U8), stamped
+       * server-side on auto drafts; absent = no number, and the card shows no
+       * badge (never a placeholder or the cap number).
+       */
+      shirtNumber?: string | null;
     }
   | {
       kind: "matchSummary";
@@ -247,6 +282,8 @@ export type ShareCardInput =
       competitionLine: string;
       venueDateTime: string;
       players: TeamListPlayer[];
+      /** "shirt": rows print season shirt numbers, never the batting order (KTD10). */
+      numbering?: TeamListNumbering;
       squadPhotoUrl?: string | null;
       /** JUNIOR card: forces the junior brown palette + junior labels. */
       junior?: boolean;
@@ -344,6 +381,12 @@ export type ShareCardInput =
       /** Up to four stats, e.g. Matches / Runs / Wickets / Average. */
       stats: { label: string; value: string }[];
       photoUrl?: string | null;
+      /**
+       * The player's season shirt number (season shirt numbers, U8), stamped
+       * server-side on auto drafts; absent = no number, and the card shows no
+       * badge (never a placeholder or the cap number).
+       */
+      shirtNumber?: string | null;
     }
   | ({
       /**
@@ -381,6 +424,8 @@ export type RoundTeam = {
   competitionLine: string;
   venueDateTime: string;
   players: TeamListPlayer[];
+  /** As on a `teamList` card: "shirt" when the club shows season shirt numbers. */
+  numbering?: TeamListNumbering;
   squadPhotoUrl?: string | null;
 } & TeamListMatchParts;
 

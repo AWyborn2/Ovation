@@ -13,7 +13,10 @@ import {
   awardsTable,
   awardWinnersTable,
   juniorParticipantsTable,
+  shirtNumbersTable,
 } from "@workspace/db";
+import { getShirtNumberSettings } from "@workspace/db/shirt-numbers";
+import { seasonStartYearFor } from "@workspace/db/seasons";
 import {
   CreatePlayerBody,
   UpdatePlayerBody,
@@ -57,6 +60,7 @@ import { classifyDismissal } from "../lib/dismissal-parse";
 import { oversToBalls } from "@workspace/scorecard";
 import { resolveOpponentClub } from "../lib/opponent-club";
 import { DEFAULT_VS_CLUB_MIN_INNINGS, loadVsClub } from "../lib/vs-club";
+import { shapePlayerShirtNumbers, type PlayerShirtNumbers } from "../lib/player-shirt-numbers";
 
 const router: IRouter = Router();
 
@@ -334,6 +338,39 @@ async function capOnlyPlayerDetail(tenantId: number, playerId: number) {
   };
 }
 
+/**
+ * Season shirt numbers for the profile (shirt-numbers plan U9, KTD13): only
+ * when the tenant has the feature on, only this tenant's register, and only
+ * entries linked to one of the player's ids (held entries stay hidden, R16).
+ * Returns no fields at all when the feature is off (AE5). Callers only reach
+ * this for a player who is public: a private central player is a 404 before.
+ */
+async function profileShirtNumbers(
+  tenantId: number,
+  playerIds: readonly number[],
+  presentedId: number,
+): Promise<PlayerShirtNumbers | Record<string, never>> {
+  const settings = await getShirtNumberSettings(db, tenantId);
+  if (!settings.enabled || playerIds.length === 0) return {};
+  const rows = await db
+    .select({
+      season: shirtNumbersTable.season,
+      number: shirtNumbersTable.number,
+      playerId: shirtNumbersTable.playerId,
+    })
+    .from(shirtNumbersTable)
+    .where(
+      and(
+        eq(shirtNumbersTable.tenantId, tenantId),
+        inArray(shirtNumbersTable.playerId, [...playerIds]),
+      ),
+    );
+  return shapePlayerShirtNumbers(rows, {
+    currentSeason: seasonStartYearFor(new Date()),
+    preferredPlayerId: presentedId,
+  });
+}
+
 router.get("/players/:id", async (req, res): Promise<void> => {
   const params = GetPlayerParams.safeParse(req.params);
   if (!params.success) {
@@ -361,7 +398,10 @@ router.get("/players/:id", async (req, res): Promise<void> => {
       // cap register's links still open after the cut-over.
       const capOnly = await capOnlyPlayerDetail(tenantId, params.data.id);
       if (capOnly) {
-        res.json(capOnly);
+        res.json({
+          ...capOnly,
+          ...(await profileShirtNumbers(tenantId, [params.data.id], params.data.id)),
+        });
         return;
       }
       res.status(404).json({ error: "Player not found" });
@@ -454,6 +494,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
       })),
       premierships: premRows,
       awards: awardRows,
+      ...(await profileShirtNumbers(tenantId, groupIds, playerId)),
     });
     return;
   }
@@ -556,6 +597,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     stats,
     premierships: premRows,
     awards: awardRows,
+    ...(await profileShirtNumbers(source.tenantId, [params.data.id], params.data.id)),
   });
 });
 

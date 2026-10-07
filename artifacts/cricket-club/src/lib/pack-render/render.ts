@@ -38,6 +38,7 @@ import {
   dropEmptyCapNumber,
   dropEmptyImageBlocks,
   dropEmptyPresentedBy,
+  dropEmptyShirtNumber,
   expandRepeats,
   initialsOf,
   limitSponsorTiles,
@@ -276,6 +277,10 @@ export function renderPackCard(
   if (input.kind === "debut" && !values["capNumber"]) {
     html = dropEmptyCapNumber(html);
   }
+  // A player with no shirt number this season (or a club with the feature
+  // off) shows no badge at all — never a bare "#" or a sample. Any
+  // card kind: the badge only exists on player-centric designs.
+  if (!values["shirtNumber"]) html = dropEmptyShirtNumber(html);
   html = hideFields(html, adj);
   html = substituteFields(html, values);
   // Long club and team names shrink to fit, then wrap, instead of "…".

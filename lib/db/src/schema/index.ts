@@ -49,3 +49,4 @@ export * from "./club_corrections";
 export * from "./player_privacy_overrides";
 export * from "./social_publishing";
 export * from "./availability";
+export * from "./shirt_numbers";

@@ -1,4 +1,5 @@
 import type { PackCardTemplate } from "../types";
+import { shirtNumberField, withShirtNumber } from "../skeleton-kit";
 import { SK_COND } from "../shared";
 import {
   BD_RULE,
@@ -30,7 +31,7 @@ const html = bdCard({
       `</div>` +
       bdCond("CENTURY", 8.4, ";margin-top:1cqmin") +
       BD_RULE +
-      bdCond("{{playerName}}", 7) +
+      withShirtNumber(bdCond("{{playerName}}", 7)) +
       bdEyebrow(
         "<span>{{grade}}</span> · vs <span>{{opponent}}</span> · RD <span>{{round}}</span>",
         MUTED,
@@ -48,6 +49,7 @@ export const century: PackCardTemplate = {
   fields: [
     ...clubHeaderFields(),
     textField("playerName", "Player name", "Jack Manuel"),
+    shirtNumberField(),
     textField("grade", "Grade", "A GRADE"),
     textField("runs", "Runs", "112*"),
     textField("balls", "Balls", "68"),
