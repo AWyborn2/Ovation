@@ -46,7 +46,8 @@
     "playhq-project-central": "tsx ./src/playhq-project-central.ts",
     "playhq-upload": "tsx ./src/playhq-upload.ts",
     "test": "vitest run && node --test playhq-sync/runner.test.mjs playhq-sync/harness.test.mjs",
-    "link-hh-cap-only-players": "tsx ./src/link-hh-cap-only-players.ts"
+    "link-hh-cap-only-players": "tsx ./src/link-hh-cap-only-players.ts",
+    "build-google-fonts-catalogue": "tsx ./src/build-google-fonts-catalogue.ts"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
