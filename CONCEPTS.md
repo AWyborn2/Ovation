@@ -82,3 +82,11 @@ The ready-to-share bundle for one card: its images in the chosen formats plus a 
 ### Posting window
 
 The club-set number of hours after an import within which its auto-drafts must be posted when auto-post is on. At the deadline, drafts still awaiting review become ready to post.
+
+### Card kind template
+
+A club's one design for a card kind, made of editable elements (the starter's own parts plus anything the admin adds) with a separate canvas per size. Automated drafts of that kind render from it; a single draft can still be tweaked without changing it.
+
+### Starter design
+
+A ready-made design (Club Kit or Broadcast) that a club copies into a card kind template as its starting point. The copy has no live link back to the starter.
