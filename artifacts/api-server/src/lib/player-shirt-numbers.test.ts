@@ -48,6 +48,20 @@ describe("shapePlayerShirtNumbers", () => {
     expect(out).toEqual({ shirtNumber: null, shirtNumbers: [{ season: 2023, number: "07" }] });
   });
 
+  it("R14: a season after the current one is not worn yet and stays off the profile", () => {
+    const out = shapePlayerShirtNumbers([row(2030, "22"), row(2026, "4"), row(2025, "12")], {
+      currentSeason: 2026,
+      preferredPlayerId: 7,
+    });
+    expect(out).toEqual({
+      shirtNumber: "4",
+      shirtNumbers: [
+        { season: 2026, number: "4" },
+        { season: 2025, number: "12" },
+      ],
+    });
+  });
+
   it("one entry per season, preferring the presented player's own row in a merge group", () => {
     const out = shapePlayerShirtNumbers([row(2026, "3", 8), row(2026, "5", 7), row(2025, "1", 8)], {
       currentSeason: 2026,

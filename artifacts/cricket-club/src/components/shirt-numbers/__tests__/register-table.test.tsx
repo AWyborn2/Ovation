@@ -285,6 +285,70 @@ describe("Register (senior)", () => {
   });
 });
 
+describe("Add squad to register", () => {
+  const routes = (): Route[] => [
+    {
+      match: /\/api\/shirt-numbers\?season=/,
+      reply: () => ({ season: 2026, seasons: [2026], entries: [] }),
+    },
+  ];
+
+  it("confirms the season, adds the squad and shows the created, skipped and unmatched summary", async () => {
+    const requests = stubApi([
+      ...routes(),
+      {
+        method: "POST",
+        match: /\/api\/shirt-numbers\/seasons\/2026\/from-squad$/,
+        reply: () => ({
+          season: 2026,
+          created: 3,
+          skipped: 2,
+          unmatched: ["Zed Unknown"],
+          warnings: [],
+        }),
+      },
+    ]);
+    renderAt(
+      <ShirtNumberRegister
+        api={seniorShirtNumberApi}
+        settings={SETTINGS_ON as never}
+        initialSeason={2026}
+      />,
+    );
+    const add = await screen.findByRole("button", { name: /add squad to register/i });
+    await waitFor(() => expect(add).toBeEnabled());
+    fireEvent.click(add);
+    const dialog = await screen.findByRole("alertdialog");
+    expect(within(dialog).getAllByText(/2026\/27/).length).toBeGreaterThan(0);
+    // Nothing is sent until confirmed.
+    expect(requests.some((r) => /from-squad/.test(r.url))).toBe(false);
+    fireEvent.click(within(dialog).getByRole("button", { name: /add squad/i }));
+
+    const summary = await screen.findByTestId("squad-add-summary");
+    expect(summary).toHaveTextContent(/3 added/);
+    expect(summary).toHaveTextContent(/2 already on the register/);
+    expect(summary).toHaveTextContent(/Zed Unknown/);
+    expect(
+      requests.filter((r) => r.method === "POST" && /\/seasons\/2026\/from-squad$/.test(r.url)),
+    ).toHaveLength(1);
+  });
+
+  it("offers only the number spreadsheet upload, with no registration-export option", async () => {
+    stubApi(routes());
+    renderAt(
+      <ShirtNumberRegister
+        api={seniorShirtNumberApi}
+        settings={SETTINGS_ON as never}
+        initialSeason={2026}
+      />,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: /upload file/i }));
+    expect(screen.getByLabelText("File")).toBeInTheDocument();
+    expect(screen.queryByText(/registered participants/i)).toBeNull();
+    expect(screen.queryByRole("radio")).toBeNull();
+  });
+});
+
 describe("Upload review", () => {
   const row = (rowIndex: number, name: string, status: string, extra: object = {}) => ({
     rowIndex,

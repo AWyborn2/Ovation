@@ -2200,7 +2200,7 @@ export const ListShirtNumbersResponse = zod.object({
   "playerId": zod.number().nullable().describe('Linked player in the tenant\'s player space; null while held.'),
   "playerName": zod.string().nullish().describe('The linked player\'s display name, when linked.'),
   "number": zod.string().nullable().describe('Null when the person is on the register but unnumbered.'),
-  "source": zod.enum(['upload', 'registration', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from.'),
+  "source": zod.enum(['upload', 'squad', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from. `squad`: added from the club\'s squad register (the availability squad import) by \"Add squad to register\".'),
   "held": zod.boolean().describe('True while the entry is not linked to a player who has played.'),
   "duplicate": zod.boolean().describe('True when another entry in the season wears the same number.'),
   "createdAt": zod.coerce.date(),
@@ -2256,7 +2256,7 @@ export const UpdateShirtNumberResponse = zod.object({
   "playerId": zod.number().nullable().describe('Linked player in the tenant\'s player space; null while held.'),
   "playerName": zod.string().nullish().describe('The linked player\'s display name, when linked.'),
   "number": zod.string().nullable().describe('Null when the person is on the register but unnumbered.'),
-  "source": zod.enum(['upload', 'registration', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from.'),
+  "source": zod.enum(['upload', 'squad', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from. `squad`: added from the club\'s squad register (the availability squad import) by \"Add squad to register\".'),
   "held": zod.boolean().describe('True while the entry is not linked to a player who has played.'),
   "duplicate": zod.boolean().describe('True when another entry in the season wears the same number.'),
   "createdAt": zod.coerce.date(),
@@ -2307,25 +2307,49 @@ export const StartShirtNumberSeasonResponse = zod.object({
 
 
 /**
+ * Adds the active senior members of the club's squad register (the availability squad import) to `season` without numbers of their own. A member linked to one of the club's players is added with that player; anyone else is added as a held entry under their name. Idempotent: someone already on the season's register is left as they are, number unchanged. New entries carry last season's number under the `carry` rollover policy; under `block` a carried number someone already wears is left off and reported in `warnings`.
+ * @summary Add the club's senior squad to a season's register (admin, curation)
+ */
+export const AddSquadToShirtNumberSeasonParams = zod.object({
+  "season": zod.coerce.number().describe('Season start year to add the squad to')
+})
+
+export const AddSquadToShirtNumberSeasonResponse = zod.object({
+  "season": zod.number(),
+  "created": zod.number().describe('Register entries created from the squad.'),
+  "skipped": zod.number().describe('Squad members already on the season\'s register (left as they are).'),
+  "unmatched": zod.array(zod.string()).describe('Juniors only: names of squad members who match none of the club\'s junior participants, so were not added. Always empty for seniors.'),
+  "warnings": zod.array(zod.object({
+  "kind": zod.enum(['duplicate']),
+  "season": zod.number(),
+  "number": zod.string(),
+  "message": zod.string(),
+  "entryIds": zod.array(zod.number()).describe('The other register entries already wearing this number.'),
+  "names": zod.array(zod.string())
+}).describe('A duplicate-number notice for a write.'))
+})
+
+
+/**
  * Upload a `.csv` or `.xlsx` (max 2 MB, 1,000 rows) for one season. The
 server parses it, stores a pending preview for this tenant and returns
 it. Nothing is written to the register until the preview is committed.
-A `registration` upload ignores any number column. Generated clients
+Generated clients
 should treat the file as `Blob`; the cricket-club frontend posts
 FormData via raw `fetch` against this route.
 
- * @summary Upload a shirt-number spreadsheet or PlayHQ registration export for preview (admin, curation)
+ * @summary Upload a shirt-number spreadsheet for preview (admin, curation)
  */
 export const UploadShirtNumbersBody = zod.object({
-  "file": zod.instanceof(File).describe('The spreadsheet or registration export'),
-  "kind": zod.enum(['numbers', 'registration']).describe('`numbers`: a shirt-number spreadsheet; `registration`: a PlayHQ registered-participants export (numbers ignored).'),
+  "file": zod.instanceof(File).describe('The shirt-number spreadsheet'),
+  "kind": zod.enum(['numbers']).describe('`numbers`: the club\'s shirt-number spreadsheet. Registered players without numbers come from the squad register (\"Add squad to register\").'),
   "season": zod.number().describe('Starting year of the season (e.g. 2026 for 2026\/27)')
 })
 
 export const UploadShirtNumbersResponse = zod.object({
   "id": zod.number().describe('Upload id for commit \/ discard'),
   "side": zod.enum(['senior', 'junior']),
-  "kind": zod.enum(['numbers', 'registration']).describe('`numbers`: a shirt-number spreadsheet; `registration`: a PlayHQ registered-participants export (numbers ignored).'),
+  "kind": zod.enum(['numbers']).describe('`numbers`: the club\'s shirt-number spreadsheet. Registered players without numbers come from the squad register (\"Add squad to register\").'),
   "season": zod.number(),
   "fileName": zod.string(),
   "rows": zod.array(zod.object({
@@ -10720,7 +10744,7 @@ export const ListJuniorShirtNumbersResponse = zod.object({
   "participantId": zod.string().describe('PlayHQ participant GUID (lowercased)'),
   "name": zod.string(),
   "number": zod.string().nullable(),
-  "source": zod.enum(['upload', 'registration', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from.'),
+  "source": zod.enum(['upload', 'squad', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from. `squad`: added from the club\'s squad register (the availability squad import) by \"Add squad to register\".'),
   "duplicate": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -10770,7 +10794,7 @@ export const UpdateJuniorShirtNumberResponse = zod.object({
   "participantId": zod.string().describe('PlayHQ participant GUID (lowercased)'),
   "name": zod.string(),
   "number": zod.string().nullable(),
-  "source": zod.enum(['upload', 'registration', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from.'),
+  "source": zod.enum(['upload', 'squad', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from. `squad`: added from the club\'s squad register (the availability squad import) by \"Add squad to register\".'),
   "duplicate": zod.boolean(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -10820,23 +10844,47 @@ export const StartJuniorShirtNumberSeasonResponse = zod.object({
 
 
 /**
+ * Adds the active junior members of the club's squad register to the juniors register for `season`. Each member must match one of the club's junior participants (by participant id, else a unique exact name); unmatched members are listed in `unmatched` and not created. Idempotent, with the same carry-forward and duplicate rules as the senior register. Clubs without native junior data get 404.
+ * @summary Add the club's junior squad to a season's juniors register (admin, curation)
+ */
+export const AddSquadToJuniorShirtNumberSeasonParams = zod.object({
+  "season": zod.coerce.number().describe('Season start year to add the squad to')
+})
+
+export const AddSquadToJuniorShirtNumberSeasonResponse = zod.object({
+  "season": zod.number(),
+  "created": zod.number().describe('Register entries created from the squad.'),
+  "skipped": zod.number().describe('Squad members already on the season\'s register (left as they are).'),
+  "unmatched": zod.array(zod.string()).describe('Juniors only: names of squad members who match none of the club\'s junior participants, so were not added. Always empty for seniors.'),
+  "warnings": zod.array(zod.object({
+  "kind": zod.enum(['duplicate']),
+  "season": zod.number(),
+  "number": zod.string(),
+  "message": zod.string(),
+  "entryIds": zod.array(zod.number()).describe('The other register entries already wearing this number.'),
+  "names": zod.array(zod.string())
+}).describe('A duplicate-number notice for a write.'))
+})
+
+
+/**
  * Same file rules as the senior upload (`.csv`/`.xlsx`, 2 MB, 1,000
 rows). Rows are matched against the club's junior participants only.
 Generated clients should treat the file as `Blob`; the cricket-club
 frontend posts FormData via raw `fetch` against this route.
 
- * @summary Upload a juniors shirt-number spreadsheet or registration export for preview (admin, curation)
+ * @summary Upload a juniors shirt-number spreadsheet for preview (admin, curation)
  */
 export const UploadJuniorShirtNumbersBody = zod.object({
-  "file": zod.instanceof(File).describe('The spreadsheet or registration export'),
-  "kind": zod.enum(['numbers', 'registration']).describe('`numbers`: a shirt-number spreadsheet; `registration`: a PlayHQ registered-participants export (numbers ignored).'),
+  "file": zod.instanceof(File).describe('The shirt-number spreadsheet'),
+  "kind": zod.enum(['numbers']).describe('`numbers`: the club\'s shirt-number spreadsheet. Registered players without numbers come from the squad register (\"Add squad to register\").'),
   "season": zod.number().describe('Starting year of the season (e.g. 2026 for 2026\/27)')
 })
 
 export const UploadJuniorShirtNumbersResponse = zod.object({
   "id": zod.number().describe('Upload id for commit \/ discard'),
   "side": zod.enum(['senior', 'junior']),
-  "kind": zod.enum(['numbers', 'registration']).describe('`numbers`: a shirt-number spreadsheet; `registration`: a PlayHQ registered-participants export (numbers ignored).'),
+  "kind": zod.enum(['numbers']).describe('`numbers`: the club\'s shirt-number spreadsheet. Registered players without numbers come from the squad register (\"Add squad to register\").'),
   "season": zod.number(),
   "fileName": zod.string(),
   "rows": zod.array(zod.object({

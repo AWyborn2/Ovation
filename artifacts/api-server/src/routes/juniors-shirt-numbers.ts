@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { isValidShirtNumber } from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import {
+  AddSquadToJuniorShirtNumberSeasonParams,
   CommitJuniorShirtNumberUploadBody,
   CommitJuniorShirtNumberUploadParams,
   CreateJuniorShirtNumberBody,
@@ -40,6 +41,7 @@ import {
   updateJuniorEntry,
 } from "../lib/junior-shirt-numbers";
 import { enabledSettings, sendOutcome, validSeason } from "../lib/shirt-number-route-helpers";
+import { addSquadToJuniorRegister } from "../lib/shirt-number-squad";
 
 /**
  * Season shirt numbers — the juniors register (plan U10; R17). Kept apart from
@@ -218,6 +220,28 @@ router.post(
   },
 );
 
+// "Add squad to register" for juniors: the active junior members of the club's
+// squad register, each matched to one of the club's junior participants. Only
+// `section = 'junior'` members are read, and only the juniors register is
+// written (juniors isolation).
+router.post(
+  "/juniors/shirt-numbers/seasons/:season/from-squad",
+  requireAdmin,
+  requireEntitlement("curation"),
+  adminWriteRateLimiter,
+  async (req, res): Promise<void> => {
+    const params = AddSquadToJuniorShirtNumberSeasonParams.safeParse(req.params);
+    if (!params.success || !validSeason(params.data.season)) {
+      res.status(400).json({ error: "Invalid season" });
+      return;
+    }
+    if (await refuseCentral(req, res)) return;
+    const settings = await enabledSettings(req, res);
+    if (!settings) return;
+    res.json(await addSquadToJuniorRegister(getTenantId(req), params.data.season, settings));
+  },
+);
+
 // ── Uploads ─────────────────────────────────────────────────────────────────
 
 router.post(
@@ -233,8 +257,8 @@ router.post(
       return;
     }
     const kind = req.body?.kind;
-    if (kind !== "numbers" && kind !== "registration") {
-      res.status(400).json({ error: 'kind must be "numbers" or "registration"' });
+    if (kind !== "numbers") {
+      res.status(400).json({ error: 'kind must be "numbers"' });
       return;
     }
     const seasonRaw = String(req.body?.season ?? "");
@@ -248,7 +272,7 @@ router.post(
 
     let parsed;
     try {
-      parsed = await parseShirtNumberUpload(file.buffer, file.originalname, kind);
+      parsed = await parseShirtNumberUpload(file.buffer, file.originalname);
     } catch (e) {
       if (e instanceof UploadParseError) {
         res.status(400).json({ error: e.message });

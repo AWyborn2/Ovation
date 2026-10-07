@@ -5,6 +5,7 @@ import {
   updateJuniorShirtNumber,
   deleteJuniorShirtNumber,
   startJuniorShirtNumberSeason,
+  addSquadToJuniorShirtNumberSeason,
   uploadJuniorShirtNumbers,
   commitJuniorShirtNumberUpload,
   discardJuniorShirtNumberUpload,
@@ -63,6 +64,7 @@ export const juniorShirtNumberApi: ShirtNumberRegisterApi = {
   },
   deleteEntry: (id) => deleteJuniorShirtNumber(id),
   startSeason: (season) => startJuniorShirtNumberSeason(season),
+  addSquad: (season) => addSquadToJuniorShirtNumberSeason(season),
   upload: (input) => uploadJuniorShirtNumbers(input),
   commitUpload: (id, resolutions) =>
     commitJuniorShirtNumberUpload(id, { resolutions: resolutions.map(juniorResolution) }),

@@ -17,5 +17,6 @@ export { ShirtNumberRegisterTable, type SaveOutcome } from "./register-table";
 export { ShirtNumberSettingsPanel } from "./settings-panel";
 export { ShirtNumberUploadPanel } from "./upload-panel";
 export { StartSeasonDialog, startSeasonLabel } from "./start-season-dialog";
+export { AddSquadDialog, squadAddSummary } from "./add-squad-dialog";
 export { SeniorPersonPicker, JuniorPersonPicker, type PersonPickerProps } from "./person-picker";
 export { currentSeasonStartYear, countSeasonStart, seasonOptions, seasonLabel } from "./season";

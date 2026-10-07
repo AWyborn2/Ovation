@@ -1,7 +1,11 @@
 import { useState, type ComponentType } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ShirtNumberSettings, ShirtNumberWarning } from "@workspace/api-client-react";
-import { Plus, Upload } from "lucide-react";
+import type {
+  ShirtNumberSettings,
+  ShirtNumberSquadAddResult,
+  ShirtNumberWarning,
+} from "@workspace/api-client-react";
+import { Plus, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +22,7 @@ import {
 import { ShirtNumberRegisterTable, type SaveOutcome } from "./register-table";
 import { ShirtNumberUploadPanel } from "./upload-panel";
 import { StartSeasonDialog, startSeasonLabel } from "./start-season-dialog";
+import { AddSquadDialog, squadAddSummary } from "./add-squad-dialog";
 import { countSeasonStart, currentSeasonStartYear, seasonLabel, seasonOptions } from "./season";
 import { isValidShirtNumber } from "./values";
 import type { PersonPickerProps } from "./person-picker";
@@ -25,7 +30,8 @@ import type { PersonPickerProps } from "./person-picker";
 /**
  * A side's whole register screen (R4, R5, R7–R9, R11, F1, F4): season picker
  * (defaulting to the current season), the register table, add person,
- * "Start season" by rollover policy, and the upload flow. Side-agnostic: the
+ * "Start season" by rollover policy, "Add squad to register" from the club's
+ * squad register, and the number-spreadsheet upload. Side-agnostic: the
  * senior page passes `seniorShirtNumberApi` and `SeniorPersonPicker`; a
  * juniors page passes its own adapter and participant picker.
  */
@@ -55,6 +61,8 @@ export function ShirtNumberRegister({
   const [adding, setAdding] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [addingSquad, setAddingSquad] = useState(false);
+  const [squadResult, setSquadResult] = useState<ShirtNumberSquadAddResult | null>(null);
 
   const register = useQuery({
     queryKey: api.registerQueryKey(season),
@@ -79,6 +87,7 @@ export function ShirtNumberRegister({
   };
 
   const start = useMutation({ mutationFn: api.startSeason });
+  const addSquad = useMutation({ mutationFn: api.addSquad });
   const remove = useMutation({ mutationFn: api.deleteEntry });
 
   const entries = register.data?.entries ?? [];
@@ -158,6 +167,24 @@ export function ShirtNumberRegister({
     });
   };
 
+  const onAddSquad = () => {
+    addSquad.mutate(season, {
+      onSuccess: (res) => {
+        setSquadResult(res);
+        invalidate(res.season);
+        report(
+          `Squad added to ${seasonLabel(res.season)}: ${squadAddSummary(res)}` +
+            (res.unmatched.length > 0 ? ` ${res.unmatched.length} not matched.` : ""),
+          res.warnings,
+        );
+      },
+      onError: (e) => {
+        setAddingSquad(false);
+        setError(errorMessage(e));
+      },
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -189,6 +216,17 @@ export function ShirtNumberRegister({
             onClick={() => setStarting(true)}
           >
             {startSeasonLabel(settings.rolloverPolicy, season - 1)}
+          </Button>
+          <Button
+            variant="outline"
+            disabled={addSquad.isPending || !register.data}
+            onClick={() => {
+              setSquadResult(null);
+              setAddingSquad(true);
+            }}
+          >
+            <Users className="mr-1.5 h-4 w-4" aria-hidden />
+            Add squad to register
           </Button>
           <Button
             variant="outline"
@@ -307,6 +345,16 @@ export function ShirtNumberRegister({
         rolloverPolicy={settings.rolloverPolicy}
         pending={start.isPending}
         onConfirm={onStart}
+      />
+
+      <AddSquadDialog
+        open={addingSquad}
+        onOpenChange={setAddingSquad}
+        side={api.side}
+        season={season}
+        pending={addSquad.isPending}
+        result={squadResult}
+        onConfirm={onAddSquad}
       />
     </div>
   );

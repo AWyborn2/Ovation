@@ -20,7 +20,8 @@ export type PlayerShirtNumbers = {
 
 /**
  * Held entries (no linked player, KTD2) and unnumbered seasons are dropped
- * (R15, R16). A merge group can hold more than one linked entry for a season;
+ * (R15, R16). Seasons after the current one (an admin planning ahead) are not
+ * worn yet, so they stay off the profile until they start (R14). A merge group can hold more than one linked entry for a season;
  * the presented player's own entry wins, otherwise the first one seen.
  */
 export function shapePlayerShirtNumbers(
@@ -30,6 +31,7 @@ export function shapePlayerShirtNumbers(
   const bySeason = new Map<number, PlayerShirtNumberRow & { number: string }>();
   for (const r of rows) {
     if (r.playerId === null || r.number === null || r.number === "") continue;
+    if (r.season > opts.currentSeason) continue;
     const existing = bySeason.get(r.season);
     if (
       !existing ||

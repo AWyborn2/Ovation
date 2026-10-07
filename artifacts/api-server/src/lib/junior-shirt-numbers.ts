@@ -229,7 +229,8 @@ export type JuniorProfileShirtNumbers = {
  * A junior profile's `shirtNumber` (current season) and `shirtNumbers`
  * (numbered seasons, newest first) from register rows of the participant and
  * any duplicates merged into it; the participant's own entry wins a season.
- * Unnumbered seasons are dropped (R15).
+ * Unnumbered seasons are dropped (R15), and so are seasons after the current
+ * one: a number planned ahead is not worn yet (R14).
  */
 export function shapeJuniorShirtNumbers(
   rows: readonly { season: number; number: string | null; participantId: string }[],
@@ -239,6 +240,7 @@ export function shapeJuniorShirtNumbers(
   const bySeason = new Map<number, { number: string; own: boolean }>();
   for (const r of rows) {
     if (r.number === null || r.number === "") continue;
+    if (r.season > opts.currentSeason) continue;
     const isOwn = normaliseParticipantId(r.participantId) === own;
     const existing = bySeason.get(r.season);
     if (!existing || (!existing.own && isOwn)) {
@@ -713,7 +715,7 @@ export async function commitJuniorUpload(
         }
       }
 
-      const source: ShirtNumberSource = upload.kind === "registration" ? "registration" : "upload";
+      const source: ShirtNumberSource = "upload";
       let updated = 0;
       const touched = new Set<string>();
       const inserts: (typeof juniorShirtNumbersTable.$inferInsert)[] = [];

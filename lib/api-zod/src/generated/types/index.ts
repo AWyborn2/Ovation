@@ -626,6 +626,7 @@ export * from './shirtNumberSeasonStartResult';
 export * from './shirtNumberSettings';
 export * from './shirtNumberSettingsUpdate';
 export * from './shirtNumberSource';
+export * from './shirtNumberSquadAddResult';
 export * from './shirtNumberUploadCommit';
 export * from './shirtNumberUploadCommitResult';
 export * from './shirtNumberUploadKind';

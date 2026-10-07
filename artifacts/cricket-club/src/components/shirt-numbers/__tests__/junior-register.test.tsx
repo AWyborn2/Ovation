@@ -129,7 +129,7 @@ describe("Admin junior shirt numbers page", () => {
 });
 
 describe("Junior register adapter", () => {
-  it("creates by participant, edits only name and number, and never holds upload rows", async () => {
+  it("creates by participant, edits only name and number, never holds upload rows, adds the squad via juniors", async () => {
     const requests = stubApi([
       {
         method: "POST",
@@ -140,6 +140,11 @@ describe("Junior register adapter", () => {
         method: "PATCH",
         match: /\/api\/juniors\/shirt-numbers\/9$/,
         reply: () => ({ entry: juniorEntry(9, "Cal", "4"), warnings: [] }),
+      },
+      {
+        method: "POST",
+        match: /\/api\/juniors\/shirt-numbers\/seasons\/2026\/from-squad$/,
+        reply: () => ({ season: 2026, created: 1, skipped: 0, unmatched: [], warnings: [] }),
       },
       {
         method: "POST",
@@ -170,8 +175,9 @@ describe("Junior register adapter", () => {
     await expect(
       juniorShirtNumberApi.createEntry({ season: 2026, name: "No One", number: null }),
     ).rejects.toThrow(/junior player/i);
+    expect(await juniorShirtNumberApi.addSquad(2026)).toMatchObject({ created: 1 });
 
-    const [create, patch, commit] = requests;
+    const [create, patch, commit, squad] = requests;
     expect(create).toMatchObject({
       method: "POST",
       body: { season: 2026, participantId: "guid-9", name: "Cal", number: "3" },
@@ -183,6 +189,10 @@ describe("Junior register adapter", () => {
         { rowIndex: 2, action: "discard" },
         { rowIndex: 3, action: "discard" },
       ],
+    });
+    expect(squad).toMatchObject({
+      method: "POST",
+      url: expect.stringMatching(/\/api\/juniors\/shirt-numbers\/seasons\/2026\/from-squad$/),
     });
     expect(requests.every((r) => /\/api\/juniors\//.test(r.url))).toBe(true);
     expect(juniorShirtNumberApi.supportsHeld).toBe(false);

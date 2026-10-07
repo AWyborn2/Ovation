@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS "junior_shirt_numbers" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "junior_shirt_numbers_number_check" CHECK ("number" IS NULL OR "number" ~ '^[0-9]{1,3}$'),
-	CONSTRAINT "junior_shirt_numbers_source_check" CHECK ("source" IN ('upload', 'registration', 'lineup', 'admin', 'rollover'))
+	CONSTRAINT "junior_shirt_numbers_source_check" CHECK ("source" IN ('upload', 'squad', 'lineup', 'admin', 'rollover'))
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "shirt_number_settings" (
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS "shirt_number_uploads" (
 	"payload" jsonb,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "shirt_number_uploads_side_check" CHECK ("side" IN ('senior', 'junior')),
-	CONSTRAINT "shirt_number_uploads_kind_check" CHECK ("kind" IN ('numbers', 'registration')),
+	CONSTRAINT "shirt_number_uploads_kind_check" CHECK ("kind" IN ('numbers')),
 	CONSTRAINT "shirt_number_uploads_status_check" CHECK ("status" IN ('pending', 'committed', 'discarded'))
 );
 --> statement-breakpoint
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS "shirt_numbers" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "shirt_numbers_number_check" CHECK ("number" IS NULL OR "number" ~ '^[0-9]{1,3}$'),
-	CONSTRAINT "shirt_numbers_source_check" CHECK ("source" IN ('upload', 'registration', 'lineup', 'admin', 'rollover'))
+	CONSTRAINT "shirt_numbers_source_check" CHECK ("source" IN ('upload', 'squad', 'lineup', 'admin', 'rollover'))
 );
 --> statement-breakpoint
 DO $$ BEGIN

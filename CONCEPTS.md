@@ -51,7 +51,7 @@ _Avoid:_ cap number, squad number
 
 ### Season squad register
 
-A tenant's per-season list of people and their shirt numbers, built from a club spreadsheet, a PlayHQ registration export and synced lineups. An entry stays held — admin-only — until a lineup links it to a player who has played.
+A tenant's per-season list of people and their shirt numbers, seeded from the club's squad register (the availability squad import, via "Add squad to register") and the club's number spreadsheet, and extended by synced lineups. An entry stays held — admin-only — until a lineup links it to a player who has played.
 
 ## Branding and onboarding
 

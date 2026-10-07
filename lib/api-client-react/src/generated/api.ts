@@ -330,6 +330,7 @@ import type {
   ShirtNumberSeasonStartResult,
   ShirtNumberSettings,
   ShirtNumberSettingsUpdate,
+  ShirtNumberSquadAddResult,
   ShirtNumberUploadCommit,
   ShirtNumberUploadCommitResult,
   ShirtNumberUploadPreview,
@@ -5213,6 +5214,77 @@ export const useStartShirtNumberSeason = <TError = ErrorType<ErrorEnvelope>,
       return useMutation(getStartShirtNumberSeasonMutationOptions(options));
     }
 
+export const getAddSquadToShirtNumberSeasonUrl = (season: number,) => {
+
+
+
+
+  return `/api/shirt-numbers/seasons/${season}/from-squad`
+}
+
+/**
+ * Adds the active senior members of the club's squad register (the availability squad import) to `season` without numbers of their own. A member linked to one of the club's players is added with that player; anyone else is added as a held entry under their name. Idempotent: someone already on the season's register is left as they are, number unchanged. New entries carry last season's number under the `carry` rollover policy; under `block` a carried number someone already wears is left off and reported in `warnings`.
+ * @summary Add the club's senior squad to a season's register (admin, curation)
+ */
+export const addSquadToShirtNumberSeason = async (season: number, options?: RequestInit): Promise<ShirtNumberSquadAddResult> => {
+
+  return customFetch<ShirtNumberSquadAddResult>(getAddSquadToShirtNumberSeasonUrl(season),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAddSquadToShirtNumberSeasonMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, TError,{season: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, TError,{season: number}, TContext> => {
+
+const mutationKey = ['addSquadToShirtNumberSeason'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, {season: number}> = (props) => {
+          const {season} = props ?? {};
+
+          return  addSquadToShirtNumberSeason(season,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddSquadToShirtNumberSeasonMutationResult = NonNullable<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>>
+
+    export type AddSquadToShirtNumberSeasonMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Add the club's senior squad to a season's register (admin, curation)
+ */
+export const useAddSquadToShirtNumberSeason = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, TError,{season: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>,
+        TError,
+        {season: number},
+        TContext
+      > => {
+      return useMutation(getAddSquadToShirtNumberSeasonMutationOptions(options));
+    }
+
 export const getUploadShirtNumbersUrl = () => {
 
 
@@ -5225,11 +5297,11 @@ export const getUploadShirtNumbersUrl = () => {
  * Upload a `.csv` or `.xlsx` (max 2 MB, 1,000 rows) for one season. The
 server parses it, stores a pending preview for this tenant and returns
 it. Nothing is written to the register until the preview is committed.
-A `registration` upload ignores any number column. Generated clients
+Generated clients
 should treat the file as `Blob`; the cricket-club frontend posts
 FormData via raw `fetch` against this route.
 
- * @summary Upload a shirt-number spreadsheet or PlayHQ registration export for preview (admin, curation)
+ * @summary Upload a shirt-number spreadsheet for preview (admin, curation)
  */
 export const uploadShirtNumbers = async (uploadShirtNumbersBody: UploadShirtNumbersBody, options?: RequestInit): Promise<ShirtNumberUploadPreview> => {
     const formData = new FormData();
@@ -5282,7 +5354,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UploadShirtNumbersMutationError = ErrorType<ErrorEnvelope>
 
     /**
- * @summary Upload a shirt-number spreadsheet or PlayHQ registration export for preview (admin, curation)
+ * @summary Upload a shirt-number spreadsheet for preview (admin, curation)
  */
 export const useUploadShirtNumbers = <TError = ErrorType<ErrorEnvelope>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadShirtNumbers>>, TError,{data: BodyType<UploadShirtNumbersBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -24931,6 +25003,77 @@ export const useStartJuniorShirtNumberSeason = <TError = ErrorType<ErrorEnvelope
       return useMutation(getStartJuniorShirtNumberSeasonMutationOptions(options));
     }
 
+export const getAddSquadToJuniorShirtNumberSeasonUrl = (season: number,) => {
+
+
+
+
+  return `/api/juniors/shirt-numbers/seasons/${season}/from-squad`
+}
+
+/**
+ * Adds the active junior members of the club's squad register to the juniors register for `season`. Each member must match one of the club's junior participants (by participant id, else a unique exact name); unmatched members are listed in `unmatched` and not created. Idempotent, with the same carry-forward and duplicate rules as the senior register. Clubs without native junior data get 404.
+ * @summary Add the club's junior squad to a season's juniors register (admin, curation)
+ */
+export const addSquadToJuniorShirtNumberSeason = async (season: number, options?: RequestInit): Promise<ShirtNumberSquadAddResult> => {
+
+  return customFetch<ShirtNumberSquadAddResult>(getAddSquadToJuniorShirtNumberSeasonUrl(season),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAddSquadToJuniorShirtNumberSeasonMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSquadToJuniorShirtNumberSeason>>, TError,{season: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addSquadToJuniorShirtNumberSeason>>, TError,{season: number}, TContext> => {
+
+const mutationKey = ['addSquadToJuniorShirtNumberSeason'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSquadToJuniorShirtNumberSeason>>, {season: number}> = (props) => {
+          const {season} = props ?? {};
+
+          return  addSquadToJuniorShirtNumberSeason(season,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddSquadToJuniorShirtNumberSeasonMutationResult = NonNullable<Awaited<ReturnType<typeof addSquadToJuniorShirtNumberSeason>>>
+
+    export type AddSquadToJuniorShirtNumberSeasonMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Add the club's junior squad to a season's juniors register (admin, curation)
+ */
+export const useAddSquadToJuniorShirtNumberSeason = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSquadToJuniorShirtNumberSeason>>, TError,{season: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addSquadToJuniorShirtNumberSeason>>,
+        TError,
+        {season: number},
+        TContext
+      > => {
+      return useMutation(getAddSquadToJuniorShirtNumberSeasonMutationOptions(options));
+    }
+
 export const getUploadJuniorShirtNumbersUrl = () => {
 
 
@@ -24945,7 +25088,7 @@ rows). Rows are matched against the club's junior participants only.
 Generated clients should treat the file as `Blob`; the cricket-club
 frontend posts FormData via raw `fetch` against this route.
 
- * @summary Upload a juniors shirt-number spreadsheet or registration export for preview (admin, curation)
+ * @summary Upload a juniors shirt-number spreadsheet for preview (admin, curation)
  */
 export const uploadJuniorShirtNumbers = async (uploadJuniorShirtNumbersBody: UploadJuniorShirtNumbersBody, options?: RequestInit): Promise<ShirtNumberUploadPreview> => {
     const formData = new FormData();
@@ -24998,7 +25141,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UploadJuniorShirtNumbersMutationError = ErrorType<ErrorEnvelope>
 
     /**
- * @summary Upload a juniors shirt-number spreadsheet or registration export for preview (admin, curation)
+ * @summary Upload a juniors shirt-number spreadsheet for preview (admin, curation)
  */
 export const useUploadJuniorShirtNumbers = <TError = ErrorType<ErrorEnvelope>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof uploadJuniorShirtNumbers>>, TError,{data: BodyType<UploadJuniorShirtNumbersBody>}, TContext>, request?: SecondParameter<typeof customFetch>}

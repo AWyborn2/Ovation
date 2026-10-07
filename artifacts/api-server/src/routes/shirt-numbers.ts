@@ -4,6 +4,7 @@ import { db, shirtNumberSettingsTable } from "@workspace/db";
 import { getShirtNumberSettings, isValidShirtNumber } from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import {
+  AddSquadToShirtNumberSeasonParams,
   CommitShirtNumberUploadBody,
   CommitShirtNumberUploadParams,
   CreateShirtNumberBody,
@@ -33,6 +34,7 @@ import {
 } from "../lib/shirt-numbers";
 import { enabledSettings, sendOutcome, validSeason } from "../lib/shirt-number-route-helpers";
 import { shirtNumberFileUpload, type MulterRequest } from "../lib/import-upload";
+import { addSquadToSeniorRegister } from "../lib/shirt-number-squad";
 import {
   buildPreviewRows,
   commitSeniorUpload,
@@ -49,8 +51,9 @@ import {
  * deliberately NOT behind `requireNativeStatsTenant` (central-read clubs keep a
  * register too). Writes need an admin with the curation entitlement; with the
  * feature off they refuse with 400, except the settings PATCH that turns it on.
- * Bulk uploads (U4) preview first and write only on commit. The juniors
- * register (U10) lives under /juniors only.
+ * Bulk uploads (U4) preview first and write only on commit; "Add squad to
+ * register" adds the club's senior squad (`squad_members`) to a season. The
+ * juniors register (U10) lives under /juniors only.
  */
 
 const router: IRouter = Router();
@@ -240,6 +243,26 @@ router.post(
   },
 );
 
+// "Add squad to register" (R5): the active senior members of the club's squad
+// register, the one PlayHQ import. Only `section = 'senior'` members are read,
+// and only the senior register is written.
+router.post(
+  "/shirt-numbers/seasons/:season/from-squad",
+  requireAdmin,
+  requireEntitlement("curation"),
+  adminWriteRateLimiter,
+  async (req, res): Promise<void> => {
+    const params = AddSquadToShirtNumberSeasonParams.safeParse(req.params);
+    if (!params.success || !validSeason(params.data.season)) {
+      res.status(400).json({ error: "Invalid season" });
+      return;
+    }
+    const settings = await enabledSettings(req, res);
+    if (!settings) return;
+    res.json(await addSquadToSeniorRegister(getTenantId(req), params.data.season, settings));
+  },
+);
+
 // ── Uploads (U4) ────────────────────────────────────────────────────────────
 
 router.post(
@@ -255,8 +278,8 @@ router.post(
       return;
     }
     const kind = req.body?.kind;
-    if (kind !== "numbers" && kind !== "registration") {
-      res.status(400).json({ error: 'kind must be "numbers" or "registration"' });
+    if (kind !== "numbers") {
+      res.status(400).json({ error: 'kind must be "numbers"' });
       return;
     }
     const seasonRaw = String(req.body?.season ?? "");
@@ -269,7 +292,7 @@ router.post(
 
     let parsed;
     try {
-      parsed = await parseShirtNumberUpload(file.buffer, file.originalname, kind);
+      parsed = await parseShirtNumberUpload(file.buffer, file.originalname);
     } catch (e) {
       if (e instanceof UploadParseError) {
         res.status(400).json({ error: e.message });

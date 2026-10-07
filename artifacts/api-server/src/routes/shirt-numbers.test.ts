@@ -48,8 +48,14 @@ describe("shirt numbers: senior register", () => {
   let tenantId: number;
   let adminId: number;
   let cookie: string;
-  /** Player ids in the tenant's space (its crosswalk). */
-  const P = { alice: 970_001, bea: 970_002, cy: 970_003, dee: 970_004, eve: 970_005 };
+  /**
+   * Player ids in the tenant's space: the crosswalk rows seeded below. A
+   * central tenant's ids are only its crosswalk ints, and they must sit below
+   * the fill-in threshold (player_id >= 90000 is a fill-in, refused with 400).
+   */
+  const P = { alice: 70_001, bea: 70_002, cy: 70_003, dee: 70_004, eve: 70_005 };
+  /** Below the fill-in threshold but not in the crosswalk: outside the space. */
+  const STRANGER = 89_999;
 
   const as = (r: request.Test) => r.set("x-tenant-id", String(tenantId)).set("Cookie", cookie);
   const anon = (r: request.Test) => r.set("x-tenant-id", String(tenantId));
@@ -259,7 +265,11 @@ describe("shirt numbers: senior register", () => {
   });
 
   it("a player outside the club's space is rejected", async () => {
-    await create({ season: 2026, name: "Stranger", playerId: 1_999_999 }).expect(422);
+    await create({ season: 2026, name: "Stranger", playerId: STRANGER }).expect(422);
+  });
+
+  it("a fill-in player id (>= 90000) is refused before the space check", async () => {
+    await create({ season: 2026, name: "Fill In", playerId: 90_004 }).expect(400);
   });
 
   it("AE3: under carry a new entry inherits last season's number; editing it leaves last season alone", async () => {

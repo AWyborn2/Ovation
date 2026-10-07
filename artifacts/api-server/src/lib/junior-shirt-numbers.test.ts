@@ -262,6 +262,18 @@ describe("shapeJuniorShirtNumbers", () => {
     ).toBeNull();
   });
 
+  it("a season after the current one is not worn yet and stays off the profile (R14)", () => {
+    expect(
+      shapeJuniorShirtNumbers(
+        [
+          { season: 2030, number: "22", participantId: G.amy },
+          { season: 2026, number: "4", participantId: G.amy },
+        ],
+        { currentSeason: 2026, participantId: G.amy },
+      ),
+    ).toEqual({ shirtNumber: "4", shirtNumbers: [{ season: 2026, number: "4" }] });
+  });
+
   it("the keeper's own entry wins over a merged duplicate's in the same season", () => {
     const shaped = shapeJuniorShirtNumbers(
       [

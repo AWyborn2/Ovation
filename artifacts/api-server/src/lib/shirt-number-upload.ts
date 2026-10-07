@@ -39,15 +39,16 @@ import {
 } from "./shirt-numbers";
 
 /**
- * Season shirt numbers — spreadsheet and PlayHQ registration-export uploads
- * (docs/plans/2026-10-06-001-feat-season-shirt-numbers-plan.md, U4; R4, R5,
- * R7, R8, R11; KTD8).
+ * Season shirt numbers — the club's number-spreadsheet upload
+ * (docs/plans/2026-10-06-001-feat-season-shirt-numbers-plan.md, U4; R4, R7,
+ * R8, R11; KTD8). Registered players without numbers come from the club's
+ * squad register instead ("Add squad to register", ./shirt-number-squad.ts).
  *
  * Three layers:
  *
  *   1. Parsing (pure): a `.csv` or `.xlsx` becomes rows of name / participant
  *      id / number, with headers matched case- and space-insensitively against
- *      alias lists. A `registration` upload ignores any number column.
+ *      alias lists.
  *   2. Matching (pure): each row is classified `matched` | `suggested` | `new`
  *      | `invalid` against an injected {@link UploadRoster} and the season's
  *      register. Side-agnostic: a senior roster's people carry a `playerId`, a
@@ -202,7 +203,7 @@ function cellText(value: ExcelJS.CellValue): string {
  * walk visits only populated rows and cells and refuses anything beyond these
  * bounds before building the grid. Rows allow the header scan window and some
  * blank separator rows on top of the data cap; columns leave room for wide
- * PlayHQ registration exports.
+ * club sheets.
  */
 const MAX_SHEET_ROWS = SHIRT_NUMBER_UPLOAD_MAX_ROWS + HEADER_SCAN_ROWS + 100;
 const MAX_SHEET_COLUMNS = 128;
@@ -290,7 +291,7 @@ function parseNumberCell(raw: string): { number: string | null; error: string | 
 }
 
 /** Parse a grid (header row somewhere near the top, data below). Pure. */
-export function parseUploadGrid(grid: Grid, kind: ShirtNumberUploadKind): ParsedUpload {
+export function parseUploadGrid(grid: Grid): ParsedUpload {
   const firstNonBlank = grid.findIndex((r) => !isBlankRow(r));
   if (firstNonBlank < 0) {
     return { rows: [], unrecognisedHeaders: [], errors: ["The file has no rows."] };
@@ -328,14 +329,13 @@ export function parseUploadGrid(grid: Grid, kind: ShirtNumberUploadKind): Parsed
     (h) => h !== "" && !FIELD_BY_ALIAS.has(normaliseHeader(h)),
   );
 
-  const readsNumbers = kind === "numbers";
-  if (readsNumbers && !columns.has("number")) {
+  if (!columns.has("number")) {
     return {
       rows: [],
       unrecognisedHeaders,
       errors: [
-        `No shirt number column found. Add a "Number" column, or upload this file as a ` +
-          `registration export.`,
+        `No shirt number column found. Add a "Number" column. To add registered players ` +
+          `without numbers, use "Add squad to register".`,
       ],
     };
   }
@@ -377,12 +377,9 @@ export function parseUploadGrid(grid: Grid, kind: ShirtNumberUploadKind): Parsed
       }
     }
 
-    let number: string | null = null;
-    if (readsNumbers) {
-      const parsed = parseNumberCell(cell(row, "number"));
-      number = parsed.number;
-      if (parsed.error) errors.push(parsed.error);
-    }
+    const parsedNumber = parseNumberCell(cell(row, "number"));
+    const number = parsedNumber.number;
+    if (parsedNumber.error) errors.push(parsedNumber.error);
 
     rows.push({ rowIndex: i + 1, name, givenName, surname, participantId, number, errors });
   });
@@ -398,12 +395,11 @@ export function parseUploadGrid(grid: Grid, kind: ShirtNumberUploadKind): Parsed
 export async function parseShirtNumberUpload(
   buffer: Buffer,
   fileName: string,
-  kind: ShirtNumberUploadKind,
 ): Promise<ParsedUpload> {
   const type = uploadFileType(fileName);
   if (type === null) throw new UploadParseError("Upload a .csv or .xlsx file.");
   const grid = type === "xlsx" ? await readXlsxGrid(buffer) : readCsvGrid(buffer);
-  return parseUploadGrid(grid, kind);
+  return parseUploadGrid(grid);
 }
 
 // ── Matching ────────────────────────────────────────────────────────────────
@@ -1092,7 +1088,7 @@ export async function commitSeniorUpload(
       }
 
       // ── Write ──
-      const source = upload.kind === "registration" ? "registration" : "upload";
+      const source = "upload" as const;
       let created = 0;
       let updated = 0;
       let linked = 0;

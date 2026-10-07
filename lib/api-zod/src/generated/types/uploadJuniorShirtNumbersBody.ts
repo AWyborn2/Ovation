@@ -8,7 +8,7 @@
 import type { ShirtNumberUploadKind } from './shirtNumberUploadKind';
 
 export type UploadJuniorShirtNumbersBody = {
-  /** The spreadsheet or registration export */
+  /** The shirt-number spreadsheet */
   file: Blob;
   kind: ShirtNumberUploadKind;
   /** Starting year of the season (e.g. 2026 for 2026/27) */

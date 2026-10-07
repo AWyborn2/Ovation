@@ -14,7 +14,7 @@ export type SaveOutcome =
 
 const SOURCE_LABEL: Record<RegisterEntryView["source"], string> = {
   upload: "Upload",
-  registration: "Registration",
+  squad: "Squad",
   lineup: "Team list",
   admin: "Admin",
   rollover: "Carried forward",

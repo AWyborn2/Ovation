@@ -27,7 +27,7 @@ execution: code
 ### Summary
 
 An opt-in tenant feature that keeps a per-season squad register of shirt numbers.
-The register is seeded by a bulk spreadsheet upload, can also be populated from a PlayHQ registration export or from synced PlayHQ lineups, and is maintained by admins as players join — including a prompt to assign a number when an unnumbered player is selected.
+The register is seeded by a bulk spreadsheet upload, can also be populated from the club's squad register (the availability squad import, via "Add squad to register") or from synced PlayHQ lineups, and is maintained by admins as players join — including a prompt to assign a number when an unnumbered player is selected.
 Numbers appear on the team-list card, individual player social assets, and the player profile; A Grade cap cards are unchanged, and juniors keep a separate register.
 
 ### Problem Frame
@@ -68,7 +68,7 @@ Shirt numbers are per-season, can be duplicated, and belong to people who may no
 **Building the register**
 
 - R4. An admin can bulk-upload a shirt-number spreadsheet for a season, creating or updating register entries with names and numbers.
-- R5. An admin can upload a PlayHQ registered-participants export for a season, adding registered players to that season's register without numbers.
+- R5. An admin can add the club's registered players to a season's register without numbers via "Add squad to register": they come from the club's squad register (`squad_members`, the availability squad import — the club's one PlayHQ import), not a separate upload.
 - R6. Players who appear in a synced PlayHQ lineup for the season are added to that season's register automatically if not already present.
 - R7. Each upload shows a preview before it is applied: matched entries, new entries, number changes, duplicates, and rows that couldn't be matched.
 - R8. Rows that can't be confidently matched to a player go to a review list where an admin links, creates as held, or discards them.
@@ -127,7 +127,7 @@ Shirt numbers are per-season, can be duplicated, and belong to people who may no
 
 - A Grade cap numbers and the cap card are unchanged.
 - No writing numbers back to PlayHQ.
-- No live pull of registrations from PlayHQ; registrations arrive as a club-uploaded export.
+- No live pull of registrations from PlayHQ; registered players come from the club's squad register (the availability squad import).
 - No stub public profiles for players who haven't played.
 - No combined junior-and-senior register or display.
 
@@ -135,7 +135,7 @@ Shirt numbers are per-season, can be duplicated, and belong to people who may no
 
 - Team lists are pre-filled from PlayHQ match lineups and linked to tenant players through the existing PlayHQ-to-player identity map, so held entries can be linked when a lineup arrives.
 - Lineup entries the identity map can't resolve are stored with their PlayHQ participant id, so they can be numbered from the team-list prompt; the number reaches their profile once they have played and are linked. Team-list rows typed in by hand with no PlayHQ id must be linked to a player before they can be numbered.
-- A club's PlayHQ registration export carries enough identity (name at minimum, PlayHQ participant id if present) to match most rows; the rest go to review.
+- The squad register's PlayHQ `Profile ID` is assumed, not verified, to equal the participant GUID, so "Add squad to register" never stores it as a participant id: seniors link through the member's `linked_player_id` (held by name otherwise), and juniors need a junior participant match (participant id hit, else a unique exact name); unmatched juniors are reported, not created.
 - "Season" for the register aligns with the season the club's PlayHQ competitions run in.
 
 ### Outstanding Questions
@@ -163,14 +163,14 @@ Shirt numbers are per-season, can be duplicated, and belong to people who may no
 
 ### Key Technical Decisions
 
-- KTD1. **One tenant-curated register table per side.** Senior entries live in a new `shirt_numbers` table and junior entries in `junior_shirt_numbers`, both tenant-scoped with `tenantIdColumn()`. Each entry carries `season` (integer start year, matching `matches.season`), a display `name`, an optional PlayHQ `participantId`, a `number`, and a `source` (`upload` | `registration` | `lineup` | `admin` | `rollover`). Senior entries add an optional `playerId` in the tenant's player space with no foreign key, guarded by `assertPlayerInTenantSpace` exactly like `cap_register.playerId`. Junior entries key on `participantId` against `junior_participants` and never carry a senior `playerId` (juniors isolation).
+- KTD1. **One tenant-curated register table per side.** Senior entries live in a new `shirt_numbers` table and junior entries in `junior_shirt_numbers`, both tenant-scoped with `tenantIdColumn()`. Each entry carries `season` (integer start year, matching `matches.season`), a display `name`, an optional PlayHQ `participantId`, a `number`, and a `source` (`upload` | `squad` | `lineup` | `admin` | `rollover`). Senior entries add an optional `playerId` in the tenant's player space with no foreign key, guarded by `assertPlayerInTenantSpace` exactly like `cap_register.playerId`. Junior entries key on `participantId` against `junior_participants` and never carry a senior `playerId` (juniors isolation).
 - KTD2. **"Held" is derived, not stored.** A senior entry is held while `playerId` is null and becomes public once linked. No status column means no state to drift.
 - KTD3. **Numbers are short digit strings.** Store `number` as text validated to 1–3 digits so "00" and "07" survive verbatim; a null number means "on the register, unnumbered". Duplicate detection compares exact strings within (tenant, season).
 - KTD4. **Uniqueness is per person, not per number.** Partial unique indexes on (tenant, season, participantId) and (tenant, season, playerId) where not null stop the same person appearing twice in a season. Numbers are never unique in the schema; the club's duplicate policy is enforced in the service layer. Because `drizzle-kit push` can't see multi-column partial uniques, also add them to `scripts/src/ensure-constraints.ts` (the cap-register precedent).
 - KTD5. **Settings follow the singleton-settings pattern.** A `shirt_number_settings` table (one row per tenant via `getOrCreateSettings` in `artifacts/api-server/src/lib/settings.ts`) holds `enabled` (default false), `duplicatePolicy` (`warn` | `block`, default `warn`) and `rolloverPolicy` (`carry` | `blank`, default `carry`). Tenants have no generic feature-settings column, and every other display feature uses this pattern.
 - KTD6. **Carry-forward applies at entry creation.** Under `carry`, any new entry created without a number for a person who had one last season inherits it, whatever the source. An explicit "Start season" admin action materialises the whole previous season at once (idempotent; skips people already present). Under `blank` neither happens.
 - KTD7. **Season is derived from dates by one shared helper.** Add `seasonStartYearFor(date)` in `lib/db` (Australian July–June season) and use it for fixtures (which have only `startAt`, no season column), lineup ingest, and the admin default season.
-- KTD8. **Uploads get their own tenant-scoped preview store.** Previews live in a new `shirt_number_uploads` table (`tenantIdColumn()`, `side` = senior | junior, `kind`, `season`, `status`, jsonb `payload`), not in `importsTable`, which has no tenant column, a `kind` check constraint and native-only commit routes. Every preview, commit and discard lookup filters on `getTenantId(req)` and returns 404 on a mismatch. Files are parsed server-side with the existing `multer` + `csv-parse` + `exceljs` stack through a dedicated multer instance capped at 2 MB and one file, `.csv`/`.xlsx` only, with a parsed-row cap of 1,000. Upload, commit and discard run behind `requireAdmin`, `requireEntitlement("curation")` and `adminWriteRateLimiter`, and deliberately not `requireNativeStatsTenant`, because the register is tenant-curated content that central-read tenants also use. Matching order: PlayHQ participant id via `player_id_map`, then exact normalised name, then suggestions from `buildNameMatcher` (`artifacts/api-server/src/lib/name-match.ts`). Suggestions are never auto-applied because central display names are "Initial Surname" and collide; unresolved rows go to the preview's review list. Discarded and committed previews have their payload cleared.
+- KTD8. **Uploads get their own tenant-scoped preview store.** The only upload is the club's number spreadsheet (`kind` = `numbers`); the PlayHQ registration export was dropped in favour of the squad register ("Add squad to register", which writes directly and needs no preview). Previews live in a new `shirt_number_uploads` table (`tenantIdColumn()`, `side` = senior | junior, `kind`, `season`, `status`, jsonb `payload`), not in `importsTable`, which has no tenant column, a `kind` check constraint and native-only commit routes. Every preview, commit and discard lookup filters on `getTenantId(req)` and returns 404 on a mismatch. Files are parsed server-side with the existing `multer` + `csv-parse` + `exceljs` stack through a dedicated multer instance capped at 2 MB and one file, `.csv`/`.xlsx` only, with a parsed-row cap of 1,000. Upload, commit and discard run behind `requireAdmin`, `requireEntitlement("curation")` and `adminWriteRateLimiter`, and deliberately not `requireNativeStatsTenant`, because the register is tenant-curated content that central-read tenants also use. Matching order: PlayHQ participant id via `player_id_map`, then exact normalised name, then suggestions from `buildNameMatcher` (`artifacts/api-server/src/lib/name-match.ts`). Suggestions are never auto-applied because central display names are "Initial Surname" and collide; unresolved rows go to the preview's review list. Discarded and committed previews have their payload cleared.
 - KTD9. **Lineups and played matches feed the register inside the PlayHQ ingest.** The register rules shared by the ingest and the API (enabled-settings read, carry-forward lookup, held-entry link) live in `lib/db/src/shirt-numbers.ts` so both packages use one implementation. `lineupToTeamList` keeps the PlayHQ `participantId` on each `TeamListPlayer` (new optional field), and `sameTeamList` compares it so existing PlayHQ lists gain it on the next sync. After team lists are projected, tenants with the feature enabled get missing lineup players added to the fixture's season register. After the central projection, a held entry is linked once its participant has a scorecard or roster row for the tenant's club; if the crosswalk has no row for that participant yet, the ingest mints one with the shared minting helper first. That keeps "linked" equal to "has played", so no stub profiles appear. Every sync read and write takes an explicit tenant id, PlayHQ GUIDs are lowercased before storage and comparison, and lineup names are trimmed and length-capped. Under the `block` duplicate policy, the sync skips a carried-forward number that would create a duplicate and leaves the entry unnumbered. This is the only automatic write path, and it is wired into `ingestPlayhqDump` in `artifacts/api-server/src/lib/playhq-ingest.ts`, where a failure is reported as a warning rather than failing the ingest.
 - KTD10. **Team-list cards reuse the existing row number slot.** The team-list templates already print `{{row.number}}`, currently the batting order. When the feature is on, the caller loads a number map for the fixture's season and passes it to `teamListToCardInput`, keeping that function synchronous and pure for both the per-fixture and round-set builders. Each row's number is found by `playerId`, or by `participantId` for a held selected player (the R16 exception), and the card input carries `numbering: "shirt"`. `bind.ts` then binds `row.number` to the shirt number (empty when unnumbered) while rows stay in batting order. No team-list template changes.
 - KTD11. **Player-centric social cards get the number at draft upsert.** `upsertDraftByKey` (`artifacts/api-server/src/lib/draft-upsert.ts`) is the single choke point for auto drafts and already receives `playerId`. On every call, before the `sameCardInput` comparison, it stamps `shirtNumber` into the card input for kinds `century`, `fiveFor`, `milestone`, `player` and `tradingCard` when the feature is on and the player has a linked, non-private number for the draft's season. Stamping on every call means an unposted draft picks up the current number on its next sweep, and a posted draft gets the existing stale-revision treatment, rather than the number vanishing on refresh. `DraftUpsert` gains an optional `season` that each player-centric caller sets from its match; `seasonStartYearFor(now)` is used only when a caller has no match context. `debut` is excluded because it is the A Grade cap card.
@@ -185,7 +185,8 @@ Data flow from the three sources into the register and out to the three surfaces
 ```mermaid
 flowchart TB
   S1[Club number spreadsheet] --> UP[Upload preview and review]
-  S2[PlayHQ registration export] --> UP
+  S2[Club squad register: availability squad import] --> SQ[Add squad to register]
+  SQ --> REG
   S3[PlayHQ lineup sync] --> ING[Ingest: add lineup players, link held entries]
   UP --> REG[(Season squad register)]
   ING --> REG
@@ -281,10 +282,11 @@ stateDiagram-v2
 - `GET /shirt-numbers?season=` (admin; includes held entries and duplicate flags)
 - `POST /shirt-numbers`, `PATCH /shirt-numbers/{id}`, `DELETE /shirt-numbers/{id}`
 - `POST /shirt-numbers/seasons/{season}/start`
-- `POST /shirt-numbers/uploads` (multipart: `file`, `kind` = `numbers` | `registration`, `season`), returning a preview
+- `POST /shirt-numbers/seasons/{season}/from-squad` ("Add squad to register"), returning `{season, created, skipped, unmatched, warnings}`
+- `POST /shirt-numbers/uploads` (multipart: `file`, `kind` = `numbers`, `season`), returning a preview
 - `POST /shirt-numbers/uploads/{id}/commit` (per-row resolutions) and `DELETE /shirt-numbers/uploads/{id}`
 
-Mirror the register, upload and season-start routes under `/juniors/shirt-numbers`. Write responses carry a `warnings` array of duplicate notices; a block-policy duplicate returns 409. Add optional `shirtNumber` and `shirtNumbers` (`{season, number}[]`) to `PlayerDetail` and to the junior player detail schema, and optional `participantId` to `TeamListPlayer`. Run `pnpm --filter @workspace/api-spec run codegen` and commit the output.
+Mirror the register, upload, season-start and from-squad routes under `/juniors/shirt-numbers`. Write responses carry a `warnings` array of duplicate notices; a block-policy duplicate returns 409. Add optional `shirtNumber` and `shirtNumbers` (`{season, number}[]`) to `PlayerDetail` and to the junior player detail schema, and optional `participantId` to `TeamListPlayer`. Run `pnpm --filter @workspace/api-spec run codegen` and commit the output.
 
 **Patterns to follow:** the `caps` tag (`listCaps`, `createCap`, `updateCap`, `deleteCap`) and the playcricket-csv upload operation.
 
@@ -329,9 +331,11 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 
 **Verification:** All listed tests pass against the CI Postgres, and the existing isolation suites still pass.
 
-### U4. Spreadsheet and registration-export upload
+### U4. Spreadsheet upload and "Add squad to register"
 
-**Goal:** Bulk-load a season from the club's number sheet or a PlayHQ registration export, with a preview and review before anything is written.
+**Goal:** Bulk-load a season from the club's number sheet, with a preview and review before anything is written, and add the club's squad register to a season.
+
+**Note (Oct 2026):** the PlayHQ registration-export upload was replaced by "Add squad to register" (`POST /shirt-numbers/seasons/{season}/from-squad`, `artifacts/api-server/src/lib/shirt-number-squad.ts`): active senior squad members are added idempotently with source `squad`, linked by `linked_player_id` (validated in the tenant's space, never a fill-in) or held by name; existing entries keep their number; new ones carry forward under the rollover and block policies.
 
 **Requirements:** R4, R5, R7, R8, R11; F1.
 
@@ -345,7 +349,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 - `artifacts/api-server/src/routes/shirt-numbers.ts` (upload, commit, discard routes)
 - `artifacts/api-server/src/routes/shirt-numbers-upload.test.ts` (new)
 
-**Approach:** Accept `.csv` and `.xlsx`. Normalise headers case- and space-insensitively against alias lists for name, first name, last name, participant or profile id, and number; a `registration` upload ignores any number column. Build the tenant's roster from its player space (native players for native tenants; crosswalk plus central names for central-read tenants). Classify each row as `matched`, `suggested`, `new` or `invalid`. Cap parsed rows at 1,000. Store the preview as a pending `shirt_number_uploads` row (KTD8). Commit takes per-row resolutions (link to player, keep as held, discard), applies the duplicate policy, and is idempotent per import.
+**Approach:** Accept `.csv` and `.xlsx`. Normalise headers case- and space-insensitively against alias lists for name, first name, last name, participant or profile id, and number. Build the tenant's roster from its player space (native players for native tenants; crosswalk plus central names for central-read tenants). Classify each row as `matched`, `suggested`, `new` or `invalid`. Cap parsed rows at 1,000. Store the preview as a pending `shirt_number_uploads` row (KTD8). Commit takes per-row resolutions (link to player, keep as held, discard), applies the duplicate policy, and is idempotent per import.
 
 **Patterns to follow:** `artifacts/api-server/src/routes/imports-csv.ts` (preview, then commit with resolutions — but with tenant-scoped lookups); `buildNameMatcher` in `artifacts/api-server/src/lib/name-match.ts`.
 
@@ -357,7 +361,7 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 - A row whose normalised name matches exactly one roster player is `matched`; one matching two players is `suggested` with both candidates.
 - A row with no match is `new` and appears in the review list.
 - A row with number "abc" is `invalid` and never written.
-- A registration upload adds entries without numbers and ignores a number column.
+- Covers R5. "Add squad to register" adds linked, held and private senior squad members once (a re-run changes nothing), carries numbers, and never stores a profile id as a participant id (`shirt-number-squad.test.ts`, `routes/shirt-numbers-squad.test.ts`).
 - Covers F1. Committing "keep as held" for an unmatched row creates a held entry; "discard" writes nothing for it.
 - Under `block`, a commit containing a duplicate number is rejected with the conflicting rows listed; under `warn` it applies and returns warnings.
 - Committing the same import twice creates no duplicates.
@@ -549,6 +553,8 @@ Mirror the register, upload and season-start routes under `/juniors/shirt-number
 **Requirements:** R17, applying R4, R5, R7–R9, R11, R14, R15 and R16 to juniors; KTD1, KTD8, KTD14.
 
 **Dependencies:** U1–U4.
+
+**Note (Oct 2026):** juniors get "Add squad to register" too (`POST /juniors/shirt-numbers/seasons/{season}/from-squad`): active junior squad members only, each matched to a junior participant (participant id hit, else a unique exact normalised name); unmatched members are listed in the response and not created. Central-read clubs get 404, like the other junior routes.
 
 **Files:**
 

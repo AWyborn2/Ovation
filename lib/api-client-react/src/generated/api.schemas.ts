@@ -7450,14 +7450,14 @@ export interface ShirtNumberSettingsUpdate {
 }
 
 /**
- * Where a register entry came from.
+ * Where a register entry came from. `squad`: added from the club's squad register (the availability squad import) by "Add squad to register".
  */
 export type ShirtNumberSource = typeof ShirtNumberSource[keyof typeof ShirtNumberSource];
 
 
 export const ShirtNumberSource = {
   upload: 'upload',
-  registration: 'registration',
+  squad: 'squad',
   lineup: 'lineup',
   admin: 'admin',
   rollover: 'rollover',
@@ -7580,15 +7580,25 @@ export interface ShirtNumberSeasonStartResult {
   warnings: ShirtNumberWarning[];
 }
 
+export interface ShirtNumberSquadAddResult {
+  season: number;
+  /** Register entries created from the squad. */
+  created: number;
+  /** Squad members already on the season's register (left as they are). */
+  skipped: number;
+  /** Juniors only: names of squad members who match none of the club's junior participants, so were not added. Always empty for seniors. */
+  unmatched: string[];
+  warnings: ShirtNumberWarning[];
+}
+
 /**
- * `numbers`: a shirt-number spreadsheet; `registration`: a PlayHQ registered-participants export (numbers ignored).
+ * `numbers`: the club's shirt-number spreadsheet. Registered players without numbers come from the squad register ("Add squad to register").
  */
 export type ShirtNumberUploadKind = typeof ShirtNumberUploadKind[keyof typeof ShirtNumberUploadKind];
 
 
 export const ShirtNumberUploadKind = {
   numbers: 'numbers',
-  registration: 'registration',
 } as const;
 
 export type ShirtNumberPreviewStatus = typeof ShirtNumberPreviewStatus[keyof typeof ShirtNumberPreviewStatus];
@@ -8960,7 +8970,7 @@ season?: number;
 };
 
 export type UploadShirtNumbersBody = {
-  /** The spreadsheet or registration export */
+  /** The shirt-number spreadsheet */
   file: Blob;
   kind: ShirtNumberUploadKind;
   /** Starting year of the season (e.g. 2026 for 2026/27) */
@@ -9146,7 +9156,7 @@ season?: number;
 };
 
 export type UploadJuniorShirtNumbersBody = {
-  /** The spreadsheet or registration export */
+  /** The shirt-number spreadsheet */
   file: Blob;
   kind: ShirtNumberUploadKind;
   /** Starting year of the season (e.g. 2026 for 2026/27) */

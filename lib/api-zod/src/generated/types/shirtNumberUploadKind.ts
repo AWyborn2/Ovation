@@ -7,12 +7,11 @@
  */
 
 /**
- * `numbers`: a shirt-number spreadsheet; `registration`: a PlayHQ registered-participants export (numbers ignored).
+ * `numbers`: the club's shirt-number spreadsheet. Registered players without numbers come from the squad register ("Add squad to register").
  */
 export type ShirtNumberUploadKind = typeof ShirtNumberUploadKind[keyof typeof ShirtNumberUploadKind];
 
 
 export const ShirtNumberUploadKind = {
   numbers: 'numbers',
-  registration: 'registration',
 } as const;

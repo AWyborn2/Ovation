@@ -6,6 +6,7 @@ import {
   updateShirtNumber,
   deleteShirtNumber,
   startShirtNumberSeason,
+  addSquadToShirtNumberSeason,
   uploadShirtNumbers,
   commitShirtNumberUpload,
   discardShirtNumberUpload,
@@ -15,6 +16,7 @@ import type {
   ShirtNumberConflict,
   ShirtNumberSeasonStartResult,
   ShirtNumberSource,
+  ShirtNumberSquadAddResult,
   ShirtNumberUploadCommitResult,
   ShirtNumberUploadKind,
   ShirtNumberUploadPreview,
@@ -86,6 +88,8 @@ export interface ShirtNumberRegisterApi {
   updateEntry: (id: number, patch: EntryPatch) => Promise<WriteResultView>;
   deleteEntry: (id: number) => Promise<void>;
   startSeason: (season: number) => Promise<ShirtNumberSeasonStartResult>;
+  /** "Add squad to register": the club's squad register (this side's members) into `season`. */
+  addSquad: (season: number) => Promise<ShirtNumberSquadAddResult>;
   upload: (input: {
     file: File;
     kind: ShirtNumberUploadKind;
@@ -130,6 +134,7 @@ export const seniorShirtNumberApi: ShirtNumberRegisterApi = {
   updateEntry: (id, patch) => updateShirtNumber(id, patch),
   deleteEntry: (id) => deleteShirtNumber(id),
   startSeason: (season) => startShirtNumberSeason(season),
+  addSquad: (season) => addSquadToShirtNumberSeason(season),
   upload: (input) => uploadShirtNumbers(input),
   commitUpload: (id, resolutions) =>
     commitShirtNumberUpload(id, {

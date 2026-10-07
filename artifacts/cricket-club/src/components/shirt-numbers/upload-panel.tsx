@@ -3,7 +3,6 @@ import { useMutation } from "@tanstack/react-query";
 import type {
   ShirtNumberPreviewRow,
   ShirtNumberUploadCommitResult,
-  ShirtNumberUploadKind,
   ShirtNumberUploadPreview,
   ShirtNumberWarning,
 } from "@workspace/api-client-react";
@@ -87,10 +86,11 @@ function decode(rowIndex: number, value: string): RowResolution | null {
 }
 
 /**
- * Upload a shirt-number spreadsheet or PlayHQ registration export (R4, R5,
- * R7, R8): choose kind and file, review the preview grouped by match status
- * with a candidate picker on suggested rows and bulk actions, then commit.
- * A block-policy rejection lists the conflicting rows.
+ * Upload the club's shirt-number spreadsheet (R4, R7, R8): choose a file,
+ * review the preview grouped by match status with a candidate picker on
+ * suggested rows and bulk actions, then commit. A block-policy rejection
+ * lists the conflicting rows. Registered players without numbers come from
+ * the squad register ("Add squad to register"), not an upload.
  */
 export function ShirtNumberUploadPanel({
   api,
@@ -101,7 +101,6 @@ export function ShirtNumberUploadPanel({
   season: number;
   onCommitted: (result: ShirtNumberUploadCommitResult) => void;
 }) {
-  const [kind, setKind] = useState<ShirtNumberUploadKind>("numbers");
   const [file, setFile] = useState<File | null>(null);
   const [fileKey, setFileKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -140,7 +139,7 @@ export function ShirtNumberUploadPanel({
       return;
     }
     upload.mutate(
-      { file, kind, season },
+      { file, kind: "numbers", season },
       {
         onSuccess: (p) => {
           setPreview(p);
@@ -208,37 +207,10 @@ export function ShirtNumberUploadPanel({
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="space-y-4">
-            <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">What are you uploading?</legend>
-              <label className="flex items-start gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="shirt-upload-kind"
-                  checked={kind === "numbers"}
-                  onChange={() => setKind("numbers")}
-                />
-                <span>
-                  Shirt-number spreadsheet
-                  <span className="block text-xs text-muted-foreground">
-                    A name column and a number column (.csv or .xlsx).
-                  </span>
-                </span>
-              </label>
-              <label className="flex items-start gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="shirt-upload-kind"
-                  checked={kind === "registration"}
-                  onChange={() => setKind("registration")}
-                />
-                <span>
-                  PlayHQ registered participants
-                  <span className="block text-xs text-muted-foreground">
-                    Adds registered players to the season without numbers.
-                  </span>
-                </span>
-              </label>
-            </fieldset>
+            <p className="m-0 text-sm text-muted-foreground">
+              Your club&rsquo;s shirt-number spreadsheet: a name column and a number column. To add
+              registered players without numbers, use &ldquo;Add squad to register&rdquo;.
+            </p>
             <div className="space-y-1">
               <Label htmlFor={`shirt-upload-file-${api.side}`}>File</Label>
               <Input

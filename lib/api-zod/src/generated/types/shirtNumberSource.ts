@@ -7,14 +7,14 @@
  */
 
 /**
- * Where a register entry came from.
+ * Where a register entry came from. `squad`: added from the club's squad register (the availability squad import) by "Add squad to register".
  */
 export type ShirtNumberSource = typeof ShirtNumberSource[keyof typeof ShirtNumberSource];
 
 
 export const ShirtNumberSource = {
   upload: 'upload',
-  registration: 'registration',
+  squad: 'squad',
   lineup: 'lineup',
   admin: 'admin',
   rollover: 'rollover',

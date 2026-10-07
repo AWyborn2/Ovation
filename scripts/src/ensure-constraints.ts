@@ -245,7 +245,7 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     {
       table,
       name: `${table}_source_check`,
-      sql: `"source" IN ('upload', 'registration', 'lineup', 'admin', 'rollover')`,
+      sql: `"source" IN ('upload', 'squad', 'lineup', 'admin', 'rollover')`,
     },
   ]),
   {
@@ -266,7 +266,7 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
   {
     table: "shirt_number_uploads",
     name: "shirt_number_uploads_kind_check",
-    sql: `"kind" IN ('numbers', 'registration')`,
+    sql: `"kind" IN ('numbers')`,
   },
   {
     table: "shirt_number_uploads",

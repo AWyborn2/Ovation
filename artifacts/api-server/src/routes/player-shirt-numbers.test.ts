@@ -20,14 +20,20 @@ import { seasonStartYearFor } from "@workspace/db/seasons";
  * for a private player.
  *
  * Real-DB integration test (DATABASE_URL + CENTRAL_DATABASE_URL, CI fixture
- * from seed-ci-central-fixture.ts): two central-read tenants on Mandurah
- * (club 2), whose fixture side has Casey (public) and a private player.
+ * from seed-ci-central-fixture.ts): tenant A on Mandurah (club 2), whose
+ * fixture side has Casey (public) and a private player, and tenant B on
+ * Pinjarra (club 3, Drew). A central club backs at most one tenant
+ * (`tenants_central_club_id_uidx`), so the two tenants need two clubs; their
+ * crosswalk ids both start at 1, so the same integer is a different person in
+ * each tenant's space.
  */
 
 const STAMP = Date.now();
 const MANDURAH = 2;
+const PINJARRA = 3;
 const CASEY = "33333333-3333-4333-8333-333333333333";
 const PRIVATE = "44444444-4444-4444-8444-444444444444";
+const DREW = "55555555-5555-4555-8555-555555555555";
 const NOW = seasonStartYearFor(new Date());
 const LAST = NOW - 1;
 
@@ -41,7 +47,7 @@ describe("player profile shirt numbers", () => {
   let tenantA: number;
   let tenantB: number;
   let caseyA: number;
-  let caseyB: number;
+  let drewB: number;
   let privateA: number | undefined;
 
   const get = (tenantId: number, playerId: number) =>
@@ -54,22 +60,22 @@ describe("player profile shirt numbers", () => {
   };
 
   beforeAll(async () => {
-    const make = async (suffix: string) => {
+    const make = async (suffix: string, clubId: number) => {
       const [t] = await db
         .insert(tenantsTable)
         .values({
           slug: `u9-shirts-${suffix}-${STAMP}`,
-          centralClubId: MANDURAH,
+          centralClubId: clubId,
           name: `U9 Shirts ${suffix}`,
           readsFromCentral: true,
           plan: "club",
         })
         .returning();
-      await mintPlayerIdMap(t!.id, MANDURAH);
+      await mintPlayerIdMap(t!.id, clubId);
       return t!.id;
     };
-    tenantA = await make("a");
-    tenantB = await make("b");
+    tenantA = await make("a", MANDURAH);
+    tenantB = await make("b", PINJARRA);
 
     const mapA = await db
       .select()
@@ -83,8 +89,9 @@ describe("player profile shirt numbers", () => {
       .select()
       .from(playerIdMapTable)
       .where(eq(playerIdMapTable.tenantId, tenantB))
-      .then((rows) => rows.filter((m) => m.participantId === CASEY));
-    caseyB = mapB!.playerId;
+      .then((rows) => rows.filter((m) => m.participantId === DREW));
+    expect(mapB, "fixture player should be in tenant B's crosswalk").toBeDefined();
+    drewB = mapB!.playerId;
 
     await db.insert(shirtNumbersTable).values([
       // AE3: last season #12, this season #4.
@@ -100,11 +107,11 @@ describe("player profile shirt numbers", () => {
         participantId: CASEY,
         number: "23",
       },
-      // Tenant B's own entry for Casey (crosswalk ids are per tenant, so this is
-      // usually the same integer as caseyA) must never reach tenant A.
-      { tenantId: tenantB, season: LAST - 3, name: "Other Club", playerId: caseyB, number: "99" },
+      // Tenant B's own entry for its player (crosswalk ids are per tenant, so
+      // this is usually the same integer as caseyA) must never reach tenant A.
+      { tenantId: tenantB, season: LAST - 3, name: "Other Club", playerId: drewB, number: "99" },
     ]);
-    if (caseyB !== caseyA) {
+    if (drewB !== caseyA) {
       // The same integer in tenant B's space is a different person there.
       await db.insert(shirtNumbersTable).values({
         tenantId: tenantB,
@@ -154,8 +161,8 @@ describe("player profile shirt numbers", () => {
     ]);
   });
 
-  it("a tenant only sees its own register for the same player", async () => {
-    const body = (await get(tenantB, caseyB).expect(200)).body as Detail;
+  it("a tenant only sees its own register for the same player id", async () => {
+    const body = (await get(tenantB, drewB).expect(200)).body as Detail;
     expect(body.shirtNumber).toBeNull();
     expect(body.shirtNumbers).toEqual([{ season: LAST - 3, number: "99" }]);
   });

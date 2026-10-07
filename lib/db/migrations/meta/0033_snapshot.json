@@ -1,5 +1,5 @@
 {
-  "id": "996e6347-3710-431e-910e-2d5c9cfbe9d4",
+  "id": "13dd6158-5bae-4485-8a7c-67a5bc3f6e42",
   "prevId": "67639a87-0d1c-4f99-9e45-34669baca54a",
   "version": "7",
   "dialect": "postgresql",
@@ -12875,7 +12875,7 @@
         },
         "junior_shirt_numbers_source_check": {
           "name": "junior_shirt_numbers_source_check",
-          "value": "\"source\" IN ('upload', 'registration', 'lineup', 'admin', 'rollover')"
+          "value": "\"source\" IN ('upload', 'squad', 'lineup', 'admin', 'rollover')"
         }
       },
       "isRLSEnabled": false
@@ -13071,7 +13071,7 @@
         },
         "shirt_number_uploads_kind_check": {
           "name": "shirt_number_uploads_kind_check",
-          "value": "\"kind\" IN ('numbers', 'registration')"
+          "value": "\"kind\" IN ('numbers')"
         },
         "shirt_number_uploads_status_check": {
           "name": "shirt_number_uploads_status_check",
@@ -13262,7 +13262,7 @@
         },
         "shirt_numbers_source_check": {
           "name": "shirt_numbers_source_check",
-          "value": "\"source\" IN ('upload', 'registration', 'lineup', 'admin', 'rollover')"
+          "value": "\"source\" IN ('upload', 'squad', 'lineup', 'admin', 'rollover')"
         }
       },
       "isRLSEnabled": false

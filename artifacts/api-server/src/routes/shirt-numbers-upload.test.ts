@@ -15,8 +15,9 @@ import {
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
 /**
- * Season shirt numbers — spreadsheet and registration-export uploads (plan U4;
- * R4, R5, R7, R8, R11; F1; KTD8). Preview, per-row resolutions, the duplicate
+ * Season shirt numbers — the number-spreadsheet upload (plan U4; R4, R7, R8,
+ * R11; F1; KTD8). Registered players come from the squad register instead
+ * (routes/shirt-numbers-squad.test.ts). Preview, per-row resolutions, the duplicate
  * policy, idempotent commits, discard, tenant isolation and the file limits.
  * Both clubs are central-read tenants, so this also proves uploads are not
  * fenced to native-stats clubs.
@@ -83,8 +84,11 @@ describe("shirt numbers: uploads", () => {
    */
   let lateCookie: string;
   let otherCookie: string;
-  /** Player ids in the club's space (its crosswalk). */
-  const P = { alice: 960_001, bea: 960_002, cy: 960_003, dee: 960_004, eve: 960_005 };
+  /**
+   * Player ids in the club's space (its crosswalk), below the fill-in threshold:
+   * player_id >= 90000 is a fill-in and a "link" resolution to one is refused.
+   */
+  const P = { alice: 60_001, bea: 60_002, cy: 60_003, dee: 60_004, eve: 60_005 };
 
   const as = (r: request.Test, c = cookie, t = () => tenantId) =>
     r.set("x-tenant-id", String(t())).set("Cookie", c);
@@ -336,32 +340,6 @@ describe("shirt numbers: uploads", () => {
     expect(applied.body.warnings).toHaveLength(1);
     expect(applied.body.warnings[0]).toMatchObject({ number: "9" });
     expect(applied.body.warnings[0].names.sort()).toEqual(["Alice A", "Eve E"]);
-  });
-
-  it("R5: a registration upload ignores numbers; new entries carry last season's number", async () => {
-    const target = SEASON + 1;
-    await db.insert(shirtNumbersTable).values({
-      tenantId,
-      season: target - 1,
-      name: "Reg Carry",
-      participantId: GUID(21),
-      number: "21",
-    });
-    const p = await preview(
-      `First Name,Last Name,Participant ID,Number\nReg,Carry,${GUID(21)},44\nReg,Plain,,45\n`,
-      { kind: "registration", season: target, fileName: "registrations.csv", c: lateCookie },
-    );
-    expect(p.kind).toBe("registration");
-    expect(p.rows.map((r) => r.number)).toEqual([null, null]);
-
-    const c = await commit(p.id, [], lateCookie);
-    expect(c.body).toMatchObject({ created: 2, held: 2 });
-    const rows = await register(target);
-    expect(rows.find((e) => e.name === "Reg Carry")).toMatchObject({
-      number: "21",
-      source: "registration",
-    });
-    expect(rows.find((e) => e.name === "Reg Plain")).toMatchObject({ number: null });
   });
 
   it("an unknown header set previews with an error listing the headers found", async () => {

@@ -31,9 +31,9 @@ export class UnsupportedUploadTypeError extends Error {
 }
 
 /**
- * One shirt-number spreadsheet or PlayHQ registration export: 2 MB, one file,
- * `.csv` / `.xlsx` only. Mount through {@link shirtNumberFileUpload} so the
- * limits answer 413 / 400 instead of reaching the error handler as a 500.
+ * One shirt-number spreadsheet: 2 MB, one file, `.csv` / `.xlsx` only. Mount
+ * through {@link shirtNumberFileUpload} so the limits answer 413 / 400 instead
+ * of reaching the error handler as a 500.
  */
 export const shirtNumberUpload = multer({
   storage: multer.memoryStorage(),

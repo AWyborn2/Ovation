@@ -56,7 +56,6 @@ describe("parseShirtNumberUpload", () => {
     const parsed = await parseShirtNumberUpload(
       csv("Name,Number\nJane Smith,7\nTom Brown,07\n"),
       "numbers.csv",
-      "numbers",
     );
     expect(parsed.errors).toEqual([]);
     expect(parsed.unrecognisedHeaders).toEqual([]);
@@ -74,7 +73,6 @@ describe("parseShirtNumberUpload", () => {
         ["Tom", "Brown", "07"],
       ]),
       "numbers.xlsx",
-      "numbers",
     );
     expect(parsed.errors).toEqual([]);
     expect(parsed.rows.map((r) => [r.rowIndex, r.name, r.number])).toEqual([
@@ -88,7 +86,6 @@ describe("parseShirtNumberUpload", () => {
     const parsed = await parseShirtNumberUpload(
       csv(`  PLAYER NAME ,  Profile ID , # , Notes\nJane Smith,${GUID_A.toUpperCase()},9,x\n`),
       "numbers.csv",
-      "numbers",
     );
     expect(parsed.errors).toEqual([]);
     expect(parsed.unrecognisedHeaders).toEqual(["Notes"]);
@@ -103,7 +100,6 @@ describe("parseShirtNumberUpload", () => {
     const parsed = await parseShirtNumberUpload(
       csv('Name,Number\n"Smith, Jane",4\n'),
       "numbers.csv",
-      "numbers",
     );
     expect(parsed.rows[0]).toMatchObject({
       name: "Jane Smith",
@@ -113,7 +109,7 @@ describe("parseShirtNumberUpload", () => {
   });
 
   it("an unknown header set is a file-level error listing the headers found", async () => {
-    const parsed = await parseShirtNumberUpload(csv("Foo,Bar\n1,2\n"), "numbers.csv", "numbers");
+    const parsed = await parseShirtNumberUpload(csv("Foo,Bar\n1,2\n"), "numbers.csv");
     expect(parsed.rows).toEqual([]);
     expect(parsed.errors).toHaveLength(1);
     expect(parsed.errors[0]).toContain("Foo");
@@ -121,8 +117,8 @@ describe("parseShirtNumberUpload", () => {
     expect(parsed.unrecognisedHeaders).toEqual(["Foo", "Bar"]);
   });
 
-  it("a numbers upload without a number column is a file-level error", async () => {
-    const parsed = await parseShirtNumberUpload(csv("Name\nJane Smith\n"), "n.csv", "numbers");
+  it("an upload without a number column is a file-level error", async () => {
+    const parsed = await parseShirtNumberUpload(csv("Name\nJane Smith\n"), "n.csv");
     expect(parsed.rows).toEqual([]);
     expect(parsed.errors[0]).toMatch(/number/i);
   });
@@ -131,7 +127,6 @@ describe("parseShirtNumberUpload", () => {
     const parsed = await parseShirtNumberUpload(
       csv("Name,Number\nJane Smith,abc\nTom Brown,\nAmy Lee,1234\nBo Diaz,#12\n,5\n"),
       "numbers.csv",
-      "numbers",
     );
     const byIndex = new Map(parsed.rows.map((r) => [r.rowIndex, r]));
     expect(byIndex.get(1)!.errors[0]).toMatch(/1 to 3 digits/);
@@ -141,27 +136,13 @@ describe("parseShirtNumberUpload", () => {
     expect(byIndex.get(5)!.errors[0]).toMatch(/name/i);
   });
 
-  it("a registration upload ignores any number column", async () => {
-    const parsed = await parseShirtNumberUpload(
-      csv("First Name,Last Name,Participant ID,Number\nJane,Smith,abc-1,7\nTom,Brown,,xyz\n"),
-      "registrations.csv",
-      "registration",
-    );
-    expect(parsed.errors).toEqual([]);
-    expect(parsed.rows.map((r) => [r.name, r.number, r.errors])).toEqual([
-      ["Jane Smith", null, []],
-      ["Tom Brown", null, []],
-    ]);
-  });
-
-  it("a registration upload needs no number column", async () => {
+  it("a file without a number column points to the squad register", async () => {
     const parsed = await parseShirtNumberUpload(
       csv("First Name,Last Name\nJane,Smith\n"),
       "registrations.csv",
-      "registration",
     );
-    expect(parsed.errors).toEqual([]);
-    expect(parsed.rows).toHaveLength(1);
+    expect(parsed.rows).toEqual([]);
+    expect(parsed.errors[0]).toMatch(/add squad to register/i);
   });
 
   it("skips blank rows and finds a header below title rows", async () => {
@@ -175,7 +156,6 @@ describe("parseShirtNumberUpload", () => {
         ["Tom Brown", 8],
       ]),
       "numbers.xlsx",
-      "numbers",
     );
     expect(parsed.errors).toEqual([]);
     expect(parsed.unrecognisedHeaders).toEqual([]);
@@ -195,7 +175,7 @@ describe("parseShirtNumberUpload", () => {
     const buffer = Buffer.from(await wb.xlsx.writeBuffer());
 
     const started = Date.now();
-    await expect(parseShirtNumberUpload(buffer, "sparse.xlsx", "numbers")).rejects.toBeInstanceOf(
+    await expect(parseShirtNumberUpload(buffer, "sparse.xlsx")).rejects.toBeInstanceOf(
       UploadParseError,
     );
     expect(Date.now() - started).toBeLessThan(5000);
@@ -207,7 +187,7 @@ describe("parseShirtNumberUpload", () => {
     ws.getCell("A1").value = "Name";
     ws.getCell(1, 500).value = "Stray";
     await expect(
-      parseShirtNumberUpload(Buffer.from(await wide.xlsx.writeBuffer()), "w.xlsx", "numbers"),
+      parseShirtNumberUpload(Buffer.from(await wide.xlsx.writeBuffer()), "w.xlsx"),
     ).rejects.toBeInstanceOf(UploadParseError);
 
     const tall = new ExcelJS.Workbook();
@@ -216,26 +196,26 @@ describe("parseShirtNumberUpload", () => {
     ts.getCell("B1").value = "Number";
     ts.getCell(50_000, 1).value = "Far Away";
     await expect(
-      parseShirtNumberUpload(Buffer.from(await tall.xlsx.writeBuffer()), "t.xlsx", "numbers"),
+      parseShirtNumberUpload(Buffer.from(await tall.xlsx.writeBuffer()), "t.xlsx"),
     ).rejects.toBeInstanceOf(UploadParseError);
   });
 
   it(`rejects a file with more than ${SHIRT_NUMBER_UPLOAD_MAX_ROWS} rows`, async () => {
     const lines = ["Name,Number"];
     for (let i = 0; i <= SHIRT_NUMBER_UPLOAD_MAX_ROWS; i++) lines.push(`Player ${i},1`);
-    await expect(
-      parseShirtNumberUpload(csv(lines.join("\n")), "big.csv", "numbers"),
-    ).rejects.toBeInstanceOf(UploadParseError);
+    await expect(parseShirtNumberUpload(csv(lines.join("\n")), "big.csv")).rejects.toBeInstanceOf(
+      UploadParseError,
+    );
 
     const ok = ["Name,Number"];
     for (let i = 0; i < SHIRT_NUMBER_UPLOAD_MAX_ROWS; i++) ok.push(`Player ${i},1`);
-    const parsed = await parseShirtNumberUpload(csv(ok.join("\n")), "ok.csv", "numbers");
+    const parsed = await parseShirtNumberUpload(csv(ok.join("\n")), "ok.csv");
     expect(parsed.rows).toHaveLength(SHIRT_NUMBER_UPLOAD_MAX_ROWS);
   });
 
   it("an unreadable spreadsheet is a parse error", async () => {
     await expect(
-      parseShirtNumberUpload(Buffer.from("not a zip"), "broken.xlsx", "numbers"),
+      parseShirtNumberUpload(Buffer.from("not a zip"), "broken.xlsx"),
     ).rejects.toBeInstanceOf(UploadParseError);
   });
 });
@@ -249,7 +229,7 @@ describe("buildPreviewRows", () => {
   ]);
 
   async function preview(text: string, season: Parameters<typeof buildPreviewRows>[2] = []) {
-    const parsed = await parseShirtNumberUpload(csv(text), "n.csv", "numbers");
+    const parsed = await parseShirtNumberUpload(csv(text), "n.csv");
     return buildPreviewRows(parsed.rows, roster, season);
   }
 

@@ -25,12 +25,16 @@ import { tenantIdColumn } from "./_tenant";
  * so the PlayHQ ingest and the API use one implementation (KTD9).
  */
 
-/** Where a register entry came from (KTD1). */
-export type ShirtNumberSource = "upload" | "registration" | "lineup" | "admin" | "rollover";
+/**
+ * Where a register entry came from (KTD1). `squad`: added from the club's squad
+ * register (`squad_members`, the availability squad import) by "Add squad to
+ * register".
+ */
+export type ShirtNumberSource = "upload" | "squad" | "lineup" | "admin" | "rollover";
 
 /** SQL for the digit rule on `number` (KTD3): 1-3 digits, leading zeros kept. */
 const NUMBER_CHECK = sql`"number" IS NULL OR "number" ~ '^[0-9]{1,3}$'`;
-const SOURCE_CHECK = sql`"source" IN ('upload', 'registration', 'lineup', 'admin', 'rollover')`;
+const SOURCE_CHECK = sql`"source" IN ('upload', 'squad', 'lineup', 'admin', 'rollover')`;
 
 // One entry per person per season. "Held" is derived, not stored (KTD2): an
 // entry is held while `playerId` is null and becomes public once linked.
@@ -142,10 +146,11 @@ export const shirtNumberSettingsTable = pgTable(
 export type ShirtNumberSettingsRow = typeof shirtNumberSettingsTable.$inferSelect;
 
 export type ShirtNumberUploadSide = "senior" | "junior";
-export type ShirtNumberUploadKind = "numbers" | "registration";
+/** Only the club's number spreadsheet; registered players come from the squad register. */
+export type ShirtNumberUploadKind = "numbers";
 export type ShirtNumberUploadStatus = "pending" | "committed" | "discarded";
 
-// Upload previews (KTD8): a parsed spreadsheet or registration export waiting
+// Upload previews (KTD8): a parsed number spreadsheet waiting
 // for an admin to review and commit. Tenant-scoped (every lookup filters on the
 // request's tenant), not importsTable. The payload is cleared on commit or
 // discard; its shape is owned by the api-server upload service.
@@ -164,7 +169,7 @@ export const shirtNumberUploadsTable = pgTable(
   (t) => ({
     idxTenant: index("shirt_number_uploads_tenant_idx").on(t.tenantId),
     chkSide: check("shirt_number_uploads_side_check", sql`"side" IN ('senior', 'junior')`),
-    chkKind: check("shirt_number_uploads_kind_check", sql`"kind" IN ('numbers', 'registration')`),
+    chkKind: check("shirt_number_uploads_kind_check", sql`"kind" IN ('numbers')`),
     chkStatus: check(
       "shirt_number_uploads_status_check",
       sql`"status" IN ('pending', 'committed', 'discarded')`,
