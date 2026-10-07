@@ -33,6 +33,9 @@ export async function recordDraftRevision(
     photoUrl: draft.photoUrl,
     photoSource: draft.photoSource,
     adjustments: draft.adjustments,
+    // The design base, so restoring this revision restores it too (kind templates).
+    packId: draft.packId,
+    templateVersion: draft.templateVersion,
     reason,
   });
   const kept = await tx
@@ -101,6 +104,20 @@ export async function revertDraftToRevision(
       );
     if (!rev) return null;
     await recordDraftRevision(draft, "revert", tx);
+    // When a card kind template is involved on either side, the revision's
+    // design base comes back with its adjustments (a pack design must not be
+    // laid over the blank base, nor a template over a pack), and the restored
+    // design owes a layout check (KTD10). Pack-only history keeps the draft's
+    // pack as before.
+    const templated = draft.templateVersion !== null || rev.templateVersion !== null;
+    const designBase = templated
+      ? {
+          packId: rev.packId,
+          templateVersion: rev.templateVersion,
+          layoutWarnings: null,
+          layoutCheckPending: rev.templateVersion !== null,
+        }
+      : {};
     const [updated] = await tx
       .update(socialDraftsTable)
       .set({
@@ -109,6 +126,7 @@ export async function revertDraftToRevision(
         photoUrl: rev.photoUrl,
         photoSource: rev.photoSource,
         adjustments: rev.adjustments,
+        ...designBase,
         editedAt: new Date(),
         // A manual action: stop any pending auto-promotion (KTD4).
         autoReadyAt: null,

@@ -340,3 +340,60 @@ describe("applying to waiting drafts (R16, R18, AE4)", () => {
     expect(milestone.waitingDrafts).toBe(3);
   });
 });
+
+describe("hand-made and hand-edited drafts (U7)", () => {
+  const patch = (c: string, path: string, body: object) =>
+    request(app)
+      .patch(`/api${path}`)
+      .set("Cookie", c)
+      .set("x-tenant-id", String(tenantId))
+      .send(body);
+
+  it("a card started from the club's design copies the kind template when on", async () => {
+    on();
+    const res = await as(cookie).post("/social-drafts", {
+      cardInput: { kind: "milestone", playerName: "Sam", value: 100 },
+      packId: "club-kit",
+    });
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({
+      packId: "blank",
+      templateVersion: expect.any(Number),
+      layoutCheckPending: true,
+    });
+  });
+
+  it("a blank canvas stays blank, and the switch off keeps the pack", async () => {
+    on();
+    const blank = await as(cookie).post("/social-drafts", {
+      cardInput: { kind: "milestone", playerName: "Sam", value: 100 },
+      packId: "blank",
+    });
+    expect(blank.body.templateVersion).toBeNull();
+    delete process.env.KIND_TEMPLATES;
+    const off = await as(cookie).post("/social-drafts", {
+      cardInput: { kind: "milestone", playerName: "Sam", value: 100 },
+      packId: "club-kit",
+    });
+    expect(off.body).toMatchObject({ packId: "club-kit", templateVersion: null });
+  });
+
+  it("a design edit on a templated draft marks the design, not the caption", async () => {
+    on();
+    const created = await as(cookie).post("/social-drafts", {
+      cardInput: { kind: "milestone", playerName: "Sam", value: 100 },
+      packId: "club-kit",
+    });
+    await db
+      .update(socialDraftsTable)
+      .set({ layoutCheckPending: false })
+      .where(eq(socialDraftsTable.id, created.body.id));
+    const res = await patch(cookie, `/social-drafts/${created.body.id}`, {
+      adjustments: placeholderDocument("milestone"),
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.editedAt).toBeNull();
+    expect(res.body.designEditedAt).not.toBeNull();
+    expect(res.body.layoutCheckPending).toBe(true);
+  });
+});

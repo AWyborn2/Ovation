@@ -18969,6 +18969,16 @@ components:
             type: object
             additionalProperties: true
 
+    LayoutWarning:
+      type: object
+      required: [reason, size]
+      properties:
+        reason: { type: string, enum: [overflow, font, slides] }
+        size: { type: string, enum: [square, portrait, story, landscape] }
+        layerId: { type: string }
+        row: { type: integer }
+        field: { type: string }
+        detail: { type: string }
     SocialDraft:
       type: object
       required: [id, engine, status, cardInput, appPath, sourceMatchIsJunior, createdAt]
@@ -19004,6 +19014,26 @@ components:
         photoSource: { type: ["string", "null"] }
         adjustments: {}
         editedAt: { type: ["string", "null"], format: date-time }
+        templateVersion:
+          type: ["integer", "null"]
+          description: >-
+            The card kind template version this draft copied; null for a draft that uses a pack.
+        designEditedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When an admin last edited this templated draft's design by hand.
+        layoutWarnings:
+          type: ["object", "null"]
+          description: >-
+            Layout warnings from the last render, per card size ("needs a look"). A size with an
+            empty list rendered cleanly; a missing size hasn't been rendered.
+          additionalProperties:
+            type: array
+            items: { $ref: "#/components/schemas/LayoutWarning" }
+        layoutCheckPending:
+          type: boolean
+          description: >-
+            True while a templated draft owes a layout check; automation leaves it alone until then.
         createdByAdminId:
           type: ["integer", "null"]
           description: "The admin who made the draft by hand; null for drafts the sweep made."

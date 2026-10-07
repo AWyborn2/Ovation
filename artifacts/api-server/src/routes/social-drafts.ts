@@ -45,6 +45,7 @@ import {
   draftPublishing,
   publicationsByDraft,
 } from "../lib/publishing/publications";
+import { BLANK_PACK_ID, templatedDesignFor } from "../lib/kind-templates";
 
 const router: IRouter = Router();
 
@@ -394,6 +395,13 @@ router.post(
       packId = template.packId;
       adjustments = template.adjustments;
     }
+    // With card kind templates on, a card started from the club's design
+    // (not a blank canvas, a saved template or a supplied layout) copies the
+    // kind's template (ADR-002).
+    const templated =
+      templateId === undefined && adjustments === null && packId !== BLANK_PACK_ID
+        ? await templatedDesignFor(tenantId, cardInput.kind, packId)
+        : null;
     const [row] = await db
       .insert(socialDraftsTable)
       .values({
@@ -407,6 +415,7 @@ router.post(
         autoReadyAt: null,
         editedAt: adjustments ? new Date() : null,
         createdByAdminId: (req as RequestWithAdmin).admin?.id ?? null,
+        ...(templated ?? {}),
       })
       .returning();
     res.status(201).json(presentDraft(row));
@@ -563,7 +572,14 @@ router.patch(
     if (adjustments !== undefined) {
       // Editor overlay (U15): stored as-is; the web renderer applies it.
       patch.adjustments = adjustments;
-      patch.editedAt = patch.editedAt ?? new Date();
+      if (draft.templateVersion !== null) {
+        // A templated draft's design edit: `editedAt` stays the caption
+        // marker, and the new layout owes a check (KTD10).
+        patch.designEditedAt = new Date();
+        patch.layoutCheckPending = true;
+      } else {
+        patch.editedAt = patch.editedAt ?? new Date();
+      }
     }
     const updated = await db.transaction(async (tx) => {
       await recordDraftRevision(draft, "edit", tx);

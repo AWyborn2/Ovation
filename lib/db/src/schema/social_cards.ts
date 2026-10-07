@@ -680,6 +680,10 @@ export const socialDraftRevisionsTable = pgTable(
     photoUrl: text("photo_url"),
     photoSource: text("photo_source"),
     adjustments: jsonb("adjustments"),
+    // The design base the snapshot rendered on (card kind templates): restoring a
+    // revision restores the pack and template version with its adjustments.
+    packId: text("pack_id"),
+    templateVersion: integer("template_version"),
     reason: text("reason").notNull(), // "refresh" | "edit" | "revert" | "template"
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

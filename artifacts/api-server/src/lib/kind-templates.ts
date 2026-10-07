@@ -30,8 +30,12 @@ import {
   type StarterDocument,
 } from "@workspace/scorecard/kind-templates";
 import { recordDraftRevision } from "./draft-revisions";
+import { kindTemplatesEnabled } from "./kind-templates-switch";
 
 export const KIND_SOURCE = "kind";
+
+/** The base every templated draft renders on (ADR-001). */
+export const BLANK_PACK_ID = "blank";
 
 /** Draft statuses a template apply may change (R18: never posted). */
 export const UNPOSTED_STATUSES = ["awaiting_review", "ready"] as const;
@@ -349,4 +353,37 @@ export async function applyKindTemplate(
     const skipped = expectedDrafts === undefined ? 0 : Math.max(0, expectedDrafts - changed);
     return { changed, skipped };
   });
+}
+
+/** The design columns a new draft takes from its kind's template. */
+export type TemplatedDesign = {
+  packId: typeof BLANK_PACK_ID;
+  adjustments: unknown;
+  templateVersion: number;
+  layoutCheckPending: true;
+};
+
+/**
+ * The design a new draft of `kind` starts with when card kind templates are
+ * on for the club (KTD18): a copy of the kind's template, created from the
+ * starter its current pack maps to if it doesn't exist yet (ADR-002). The
+ * draft owes a layout check before automation can touch it (ADR-003). Null
+ * when the switch is off or the kind has no template — the draft keeps its
+ * pack.
+ */
+export async function templatedDesignFor(
+  tenantId: number,
+  kind: unknown,
+  currentPackId: string | null,
+): Promise<TemplatedDesign | null> {
+  if (typeof kind !== "string" || !isTemplateKind(kind) || !kindTemplatesEnabled(tenantId)) {
+    return null;
+  }
+  const template = await ensureKindTemplate(tenantId, kind, currentPackId);
+  return {
+    packId: BLANK_PACK_ID,
+    adjustments: structuredClone(template.adjustments ?? { layers: [] }),
+    templateVersion: template.version,
+    layoutCheckPending: true,
+  };
 }

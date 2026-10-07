@@ -7067,6 +7067,40 @@ export interface KindTemplateConflict {
   updatedByName?: string | null;
 }
 
+export type LayoutWarningReason = typeof LayoutWarningReason[keyof typeof LayoutWarningReason];
+
+
+export const LayoutWarningReason = {
+  overflow: 'overflow',
+  font: 'font',
+  slides: 'slides',
+} as const;
+
+export type LayoutWarningSize = typeof LayoutWarningSize[keyof typeof LayoutWarningSize];
+
+
+export const LayoutWarningSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
+export interface LayoutWarning {
+  reason: LayoutWarningReason;
+  size: LayoutWarningSize;
+  layerId?: string;
+  row?: number;
+  field?: string;
+  detail?: string;
+}
+
+/**
+ * Layout warnings from the last render, per card size ("needs a look"). A size with an empty list rendered cleanly; a missing size hasn't been rendered.
+ * @nullable
+ */
+export type SocialDraftLayoutWarnings = {[key: string]: LayoutWarning[]} | null;
+
 export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraftStatus];
 
 
@@ -7168,6 +7202,23 @@ export interface SocialDraft {
   adjustments?: unknown;
   /** @nullable */
   editedAt?: string | null;
+  /**
+     * The card kind template version this draft copied; null for a draft that uses a pack.
+     * @nullable
+     */
+  templateVersion?: number | null;
+  /**
+     * When an admin last edited this templated draft's design by hand.
+     * @nullable
+     */
+  designEditedAt?: string | null;
+  /**
+     * Layout warnings from the last render, per card size ("needs a look"). A size with an empty list rendered cleanly; a missing size hasn't been rendered.
+     * @nullable
+     */
+  layoutWarnings?: SocialDraftLayoutWarnings;
+  /** True while a templated draft owes a layout check; automation leaves it alone until then. */
+  layoutCheckPending?: boolean;
   /**
      * The admin who made the draft by hand; null for drafts the sweep made.
      * @nullable

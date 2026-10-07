@@ -1,4 +1,4 @@
--- Card kind templates (docs/plans/2026-10-07-002-feat-card-kind-templates-plan.md, U5;
+-- Card kind templates (docs/plans/2026-10-07-002-feat-card-kind-templates-plan.md, U5/U7;
 -- ADR-002, ADR-003). Additive: new nullable or defaulted columns, one partial unique
 -- index, and one widened check constraint. No existing row changes meaning, so this can
 -- apply before or after the code that reads it ships.
@@ -8,6 +8,7 @@
 --   social_drafts.template_version                                which template version a draft copied
 --   social_drafts.layout_warnings / layout_check_pending          "needs a look" gate (KTD10)
 --   social_drafts.design_edited_at                                hand design edits (editedAt stays the caption marker)
+--   social_draft_revisions.pack_id / template_version             restoring a revision restores its design base
 --   social_draft_revisions_reason_check                           allows "template" (snapshot before an apply, R16)
 --
 -- Idempotent (production was push-built and baselined at 0000): columns use
@@ -19,6 +20,8 @@ ALTER TABLE "card_templates" ADD COLUMN IF NOT EXISTS "updated_at" timestamp wit
 ALTER TABLE "card_templates" ADD COLUMN IF NOT EXISTS "updated_by_admin_id" integer;--> statement-breakpoint
 ALTER TABLE "card_templates" ADD COLUMN IF NOT EXISTS "replaced_pack_id" text;--> statement-breakpoint
 ALTER TABLE "card_templates" ADD COLUMN IF NOT EXISTS "notice_dismissed_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "social_draft_revisions" ADD COLUMN IF NOT EXISTS "pack_id" text;--> statement-breakpoint
+ALTER TABLE "social_draft_revisions" ADD COLUMN IF NOT EXISTS "template_version" integer;--> statement-breakpoint
 ALTER TABLE "social_drafts" ADD COLUMN IF NOT EXISTS "template_version" integer;--> statement-breakpoint
 ALTER TABLE "social_drafts" ADD COLUMN IF NOT EXISTS "layout_warnings" jsonb;--> statement-breakpoint
 ALTER TABLE "social_drafts" ADD COLUMN IF NOT EXISTS "layout_check_pending" boolean DEFAULT false NOT NULL;--> statement-breakpoint
