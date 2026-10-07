@@ -2417,6 +2417,38 @@ paths:
         "401":
           description: Not signed in as this club's admin
 
+  /squad/player-search:
+    get:
+      operationId: searchSquadPlayers
+      tags: [squad]
+      summary: Search the club's players to link a squad member to (admin)
+      description: |
+        Up to 20 of the club's players (never a fill-in) whose name contains
+        `q`, case-insensitively, most recently active first. Each hit names the
+        squad member it is already linked to, if any. Admin only: private
+        players are included.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 80
+      responses:
+        "200":
+          description: Matching players
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SquadPlayerSearchHit"
+        "400":
+          description: Missing or too-short query
+        "401":
+          description: Not signed in as this club's admin
+
   /squad/{id}:
     get:
       operationId: getSquadMember
@@ -2468,6 +2500,8 @@ paths:
           description: Invalid body
         "404":
           description: Not found
+        "409":
+          description: The club player is already linked to another squad member
     delete:
       operationId: removeSquadMember
       tags: [squad]
@@ -12837,6 +12871,7 @@ components:
           ageGroup,
           isPrivate,
           linkedPlayerId,
+          linkedPlayerName,
           account,
           guardian1,
           guardian2,
@@ -12874,6 +12909,9 @@ components:
           type: boolean
         linkedPlayerId:
           type: ["integer", "null"]
+        linkedPlayerName:
+          type: ["string", "null"]
+          description: The linked club player's name (admin only); null when unlinked or the name can't be resolved.
         account:
           $ref: "#/components/schemas/SquadContactPresence"
         guardian1:
@@ -12918,6 +12956,7 @@ components:
           ageGroup,
           isPrivate,
           linkedPlayerId,
+          linkedPlayerName,
           account,
           guardian1,
           guardian2,
@@ -12957,6 +12996,9 @@ components:
           type: boolean
         linkedPlayerId:
           type: ["integer", "null"]
+        linkedPlayerName:
+          type: ["string", "null"]
+          description: The linked club player's name (admin only); null when unlinked or the name can't be resolved.
         account:
           $ref: "#/components/schemas/SquadContact"
         guardian1:
@@ -13001,6 +13043,29 @@ components:
           $ref: "#/components/schemas/SquadContactUpdate"
         guardian2:
           $ref: "#/components/schemas/SquadContactUpdate"
+
+    SquadPlayerSearchHit:
+      type: object
+      required: [playerId, displayName, lastSeason, alreadyLinkedTo]
+      properties:
+        playerId:
+          type: integer
+        displayName:
+          type: string
+        lastSeason:
+          type: ["string", "null"]
+          description: The latest season they played for the club (e.g. "2025/26"), when known
+        alreadyLinkedTo:
+          oneOf:
+            - type: "null"
+            - type: object
+              required: [memberId, name]
+              properties:
+                memberId:
+                  type: integer
+                name:
+                  type: string
+          description: The squad member already linked to this player, if any
 
     SquadImportSkip:
       type: object

@@ -2843,6 +2843,11 @@ export interface SquadMember {
   isPrivate: boolean;
   /** @nullable */
   linkedPlayerId: number | null;
+  /**
+     * The linked club player's name (admin only); null when unlinked or the name can't be resolved.
+     * @nullable
+     */
+  linkedPlayerName: string | null;
   account: SquadContactPresence;
   guardian1: SquadContactPresence;
   guardian2: SquadContactPresence;
@@ -2888,6 +2893,11 @@ export interface SquadMemberDetail {
   isPrivate: boolean;
   /** @nullable */
   linkedPlayerId: number | null;
+  /**
+     * The linked club player's name (admin only); null when unlinked or the name can't be resolved.
+     * @nullable
+     */
+  linkedPlayerName: string | null;
   account: SquadContact;
   guardian1: SquadContact;
   guardian2: SquadContact;
@@ -2921,6 +2931,26 @@ export interface SquadMemberUpdate {
   account?: SquadContactUpdate;
   guardian1?: SquadContactUpdate;
   guardian2?: SquadContactUpdate;
+}
+
+/**
+ * The squad member already linked to this player, if any
+ */
+export type SquadPlayerSearchHitAlreadyLinkedTo = null | {
+  memberId: number;
+  name: string;
+};
+
+export interface SquadPlayerSearchHit {
+  playerId: number;
+  displayName: string;
+  /**
+     * The latest season they played for the club (e.g. "2025/26"), when known
+     * @nullable
+     */
+  lastSeason: string | null;
+  /** The squad member already linked to this player, if any */
+  alreadyLinkedTo: SquadPlayerSearchHitAlreadyLinkedTo;
 }
 
 export interface SquadImportSkip {
@@ -8990,6 +9020,14 @@ export type UploadShirtNumbersBody = {
 export type ImportSquadBody = {
   /** The PlayHQ participant export (CSV) */
   file: Blob;
+};
+
+export type SearchSquadPlayersParams = {
+/**
+ * @minLength 2
+ * @maxLength 80
+ */
+q: string;
 };
 
 export type GetSelectionBoardParams = {

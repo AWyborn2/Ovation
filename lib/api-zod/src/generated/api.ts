@@ -2881,6 +2881,7 @@ export const ListSquadMembersResponseItem = zod.object({
   "ageGroup": zod.string().nullable(),
   "isPrivate": zod.boolean(),
   "linkedPlayerId": zod.number().nullable(),
+  "linkedPlayerName": zod.string().nullable().describe('The linked club player\'s name (admin only); null when unlinked or the name can\'t be resolved.'),
   "account": zod.object({
   "hasName": zod.boolean(),
   "hasMobile": zod.boolean(),
@@ -2940,6 +2941,35 @@ export const ImportSquadResponse = zod.object({
 
 
 /**
+ * Up to 20 of the club's players (never a fill-in) whose name contains
+`q`, case-insensitively, most recently active first. Each hit names the
+squad member it is already linked to, if any. Admin only: private
+players are included.
+
+ * @summary Search the club's players to link a squad member to (admin)
+ */
+export const searchSquadPlayersQueryQMin = 2;
+export const searchSquadPlayersQueryQMax = 80;
+
+
+
+export const SearchSquadPlayersQueryParams = zod.object({
+  "q": zod.coerce.string().min(searchSquadPlayersQueryQMin).max(searchSquadPlayersQueryQMax)
+})
+
+export const SearchSquadPlayersResponseItem = zod.object({
+  "playerId": zod.number(),
+  "displayName": zod.string(),
+  "lastSeason": zod.string().nullable().describe('The latest season they played for the club (e.g. \"2025\/26\"), when known'),
+  "alreadyLinkedTo": zod.union([zod.null(),zod.object({
+  "memberId": zod.number(),
+  "name": zod.string()
+})]).describe('The squad member already linked to this player, if any')
+})
+export const SearchSquadPlayersResponse = zod.array(SearchSquadPlayersResponseItem)
+
+
+/**
  * @summary Get one squad member with contact details (admin)
  */
 export const GetSquadMemberParams = zod.object({
@@ -2962,6 +2992,7 @@ export const GetSquadMemberResponse = zod.object({
   "ageGroup": zod.string().nullable(),
   "isPrivate": zod.boolean(),
   "linkedPlayerId": zod.number().nullable(),
+  "linkedPlayerName": zod.string().nullable().describe('The linked club player\'s name (admin only); null when unlinked or the name can\'t be resolved.'),
   "account": zod.object({
   "name": zod.string().nullable(),
   "mobile": zod.string().nullable(),
@@ -3036,6 +3067,7 @@ export const UpdateSquadMemberResponse = zod.object({
   "ageGroup": zod.string().nullable(),
   "isPrivate": zod.boolean(),
   "linkedPlayerId": zod.number().nullable(),
+  "linkedPlayerName": zod.string().nullable().describe('The linked club player\'s name (admin only); null when unlinked or the name can\'t be resolved.'),
   "account": zod.object({
   "name": zod.string().nullable(),
   "mobile": zod.string().nullable(),

@@ -10,6 +10,12 @@ import {
 } from "@workspace/db";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { norm } from "./name-match";
+import {
+  isLinkablePlayerId,
+  loadInitialIndex,
+  matchByInitial,
+  memberInitialKeys,
+} from "./squad-link";
 
 /**
  * PlayHQ participant export → the club's squad register.
@@ -402,19 +408,29 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * - A changed mobile clears that contact's SMS opt-out: it is a new number.
  * - Linking only fills an empty `linked_player_id`, so an admin's link
  *   is never replaced, and never reuses a player already linked to another
- *   member of the tenant.
+ *   member of the tenant. Every member in the file that is still unlinked is
+ *   tried again, so re-uploading a file links members an earlier import
+ *   couldn't. In order: the `Profile ID` in the tenant's crosswalk, a unique
+ *   full name in the club's team-list history, then first initial + surname
+ *   against the club's central players (`./squad-link`). A name shared by two
+ *   members of the file never links by name.
  */
 export async function applySquadImport(
   tenantId: number,
   plan: SquadImportPlan,
 ): Promise<SquadImportResult> {
   const profileIds = plan.members.map((m) => m.playhqProfileId);
-  const links = await loadLinkSources(tenantId, profileIds);
+  const [links, initialIndex] = await Promise.all([
+    loadLinkSources(tenantId, profileIds),
+    loadInitialIndex(tenantId),
+  ]);
 
   // Name keys shared by two members of this file can't link by name.
   const nameCounts = new Map<string, number>();
+  const initialCounts = new Map<string, number>();
   for (const m of plan.members) {
     for (const k of memberNameKeys(m)) nameCounts.set(k, (nameCounts.get(k) ?? 0) + 1);
+    for (const k of memberInitialKeys(m)) initialCounts.set(k, (initialCounts.get(k) ?? 0) + 1);
   }
 
   let created = 0;
@@ -464,6 +480,10 @@ export async function applySquadImport(
           if (hit != null) hits.add(hit);
         }
         if (hits.size === 1) id = [...hits][0];
+      }
+      if (id == null && memberInitialKeys(m).every((k) => (initialCounts.get(k) ?? 0) === 1)) {
+        const hit = matchByInitial(m, initialIndex);
+        if (hit && isLinkablePlayerId(hit.playerId)) id = hit.playerId;
       }
       if (id == null || taken.has(id)) return null;
       taken.add(id);

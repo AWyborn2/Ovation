@@ -266,6 +266,16 @@ export async function getTenantCentralClubId(tenantId: number): Promise<number> 
   return centralClubId;
 }
 
+/**
+ * The tenant's central club id, or null when it has none — for best-effort
+ * surfaces (squad player linking) that simply skip central when a club isn't
+ * configured, instead of failing the request. Stats reads must keep using the
+ * fail-closed {@link getTenantCentralClubId}.
+ */
+export async function tenantCentralClubIdOrNull(tenantId: number): Promise<number | null> {
+  return (await getTenantConfig(tenantId)).centralClubId;
+}
+
 /** The central club id for the current request's tenant. */
 export async function getRequestCentralClubId(req: Request): Promise<number> {
   return getTenantCentralClubId(getTenantId(req));
