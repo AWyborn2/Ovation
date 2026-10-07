@@ -10,3 +10,8 @@ Nothing for this feature yet. Relevant existing code: Studio editor (`components
 - **Deviation:** row variants travel as a parallel `rowVariants` map in the render context instead of changing the `rows` shape library elements already read.
 - **Verified:** web typecheck 0 errors; web suite 135 files / 1,495 tests green; scorecard kind-templates 15 tests green.
 - **Local env note:** this worktree needed `pnpm install --frozen-lockfile` plus win32 rollup 4.60.3 and esbuild 0.28.2 binaries in node_modules (not committed).
+
+- **U2 (T2.1–T2.3).** `lib/scorecard/src/kind-templates/warnings.ts` (LayoutWarning, per-size DraftLayoutWarnings, merge/has/cover helpers, MIN_TEXT_FIT 0.6). `pack-render/layer-fit.ts`: pure step-down loop + DOM adapter; only token text and row cells carry `data-fit` (legacy bytes unchanged); records `data-fit-scale`. Harness returns `warnings` with each still; server `renderCardStill` passes them through. Real-browser smoke not run locally (no Chromium) — covered at Phase 5.
+- **U3 (T3.1–T3.3).** Static `KIND_FIELDS` catalogue in `lib/scorecard` (21 kinds; Club Kit for the 3 Club-Kit-only kinds) + web parity test re-deriving it from the registry; `samples.ts` preview and stress samples; blank-base `packTextFields` reads the catalogue.
+- **U4 (T4.1–T4.2).** `scripts/src/build-google-fonts-catalogue.ts` → committed `google-fonts-catalogue.json` (1,728 open-source, non-brand families; prettier-ignored); `lib/document-fonts.ts` loads exactly the faces a document uses, snaps weights, detects empty loads as failures; harness emits `font` warnings.
+- **Deviation:** font loader lives in a new `lib/document-fonts.ts` rather than inside `card-fonts.ts`, so the curated loader is untouched.
