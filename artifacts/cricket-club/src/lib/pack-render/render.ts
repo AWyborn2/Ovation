@@ -4,6 +4,7 @@
  * self-contained card html string.
  */
 
+import { kindFields } from "@workspace/scorecard/kind-templates";
 import { isSetKind, planCardSet } from "../card-sets/plan";
 import { getPackManifest } from "../pack-templates/registry";
 import type { ShareCardInput, CardSize } from "../share-card";
@@ -320,7 +321,11 @@ export function packTextFields(
   input: ShareCardInput,
   packId?: string | null,
 ): { key: string; label: string }[] {
-  if (packId === BLANK_PACK_ID) return [];
+  // A blank canvas (and every card kind template) offers the kind's live
+  // fields from the shared catalogue (KTD4).
+  if (packId === BLANK_PACK_ID) {
+    return (kindFields(input.kind)?.fields ?? []).filter((f) => !LAYOUT_ONLY_FIELD.test(f.key));
+  }
   const template = resolveTemplate(input, packId);
   if (!template) return [];
   return template.fields
