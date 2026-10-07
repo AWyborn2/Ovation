@@ -125,11 +125,11 @@ export function eventText(e: SelectionEvent): string {
       if (added.length) bits.push(`${added.join(", ")} in`);
       if (removed.length) bits.push(`${removed.join(", ")} out`);
       if (d.reordered) bits.push("order changed");
-      const cleared = new Set(
-        Array.isArray(d.rolesCleared)
-          ? (d.rolesCleared as { role?: string }[]).map((r) => r.role)
-          : [],
-      );
+      const clearedList = Array.isArray(d.rolesCleared)
+        ? (d.rolesCleared as { role?: string; twelfth?: boolean }[])
+        : [];
+      const cleared = new Set(clearedList.map((r) => r.role));
+      const toTwelfth = new Set(clearedList.filter((r) => r.twelfth).map((r) => r.role));
       for (const [key, word] of [
         ["captain", "captain"],
         ["keeper", "keeper"],
@@ -138,7 +138,9 @@ export function eventText(e: SelectionEvent): string {
         if (!c) continue;
         if (c.to?.name) bits.push(`${c.to.name} named ${word}`);
         else if (cleared.has(key))
-          bits.push(`no ${word} (${c.from?.name ?? "holder"} left the side)`);
+          bits.push(
+            `no ${word} (${c.from?.name ?? "holder"} ${toTwelfth.has(key) ? "moved to 12th" : "left the side"})`,
+          );
         else bits.push(`${word} cleared`);
       }
       return bits.length ? `${g}: ${bits.join("; ")}` : `${g} updated`;

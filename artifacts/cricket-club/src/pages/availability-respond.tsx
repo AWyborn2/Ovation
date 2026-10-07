@@ -265,7 +265,12 @@ function MatchDetails({
         ) : null}
         <dt className="text-muted-foreground">Start</dt>
         <dd className="font-medium">{formatStart(match.startAt)}</dd>
-        {match.role ? (
+        {match.twelfth ? (
+          <>
+            <dt className="text-muted-foreground">Role</dt>
+            <dd className="font-medium">12th player</dd>
+          </>
+        ) : match.role ? (
           <>
             <dt className="text-muted-foreground">Role</dt>
             <dd className="font-medium">{ROLE_LABEL[match.role] ?? match.role}</dd>

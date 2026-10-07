@@ -120,15 +120,18 @@ describe("availability respond API", () => {
         )
     )[0];
 
-  /** A Grade, finalised with `selected` as captain and `filler`, published as its team list. */
-  async function finalSide(): Promise<number> {
+  /**
+   * A Grade, finalised with `selected` as captain and `filler`, published as its
+   * team list. Stored as 11 slots, as sides were before the 12th player, unless
+   * `filler` is the 12th (slot 12).
+   */
+  async function finalSide(opts: { fillerTwelfth?: boolean } = {}): Promise<number> {
     await db.delete(selectionsTable).where(eq(selectionsTable.tenantId, tenantA));
     await db.delete(teamListsTable).where(eq(teamListsTable.tenantId, tenantA));
-    const slots: SelectionSlot[] = [
-      { memberId: selected },
-      { memberId: filler },
-      ...Array.from({ length: 9 }, () => ({ memberId: null })),
-    ];
+    const open = (n: number) => Array.from({ length: n }, () => ({ memberId: null }));
+    const slots: SelectionSlot[] = opts.fillerTwelfth
+      ? [{ memberId: selected }, ...open(10), { memberId: filler }]
+      : [{ memberId: selected }, { memberId: filler }, ...open(9)];
     const [row] = await db
       .insert(selectionsTable)
       .values({
@@ -513,6 +516,14 @@ describe("availability respond API", () => {
     expect(out).not.toContain(token);
   });
 
+  it("a member picked 12th sees they're the 12th player", async () => {
+    await finalSide({ fillerTwelfth: true });
+    const page = await asA(request(app).get(path(await tokenFor(filler, "account")))).expect(200);
+    expect(page.body.selection).toMatchObject({ grade: "A Grade", role: null, twelfth: true });
+    const cap = await asA(request(app).get(path(await tokenFor(selected, "account")))).expect(200);
+    expect(cap.body.selection).toMatchObject({ role: "C", twelfth: false });
+  });
+
   it("answering after the member's side is final → 409; GET shows the match", async () => {
     await finalSide();
     const token = await tokenFor(selected, "account");
@@ -526,6 +537,7 @@ describe("availability respond API", () => {
         venue: "Rushton Park",
         isHome: false,
         role: "C",
+        twelfth: false,
       },
     });
     expect(page.body.dates.find((d: { date: string }) => d.date === sat).locked).toBe(true);

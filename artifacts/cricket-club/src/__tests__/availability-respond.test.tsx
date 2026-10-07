@@ -144,6 +144,7 @@ describe("AvailabilityRespond (U11)", () => {
         startAt: "2026-10-10T04:30:00.000Z",
         isHome: true,
         role: "WK",
+        twelfth: false,
       },
     });
     const withdrawn = basePage({ withdrawn: true });
@@ -170,6 +171,28 @@ describe("AvailabilityRespond (U11)", () => {
     const post = calls.find((c) => c.method === "POST" && c.url.endsWith("/withdraw"));
     expect(post?.url).toContain(`/api/availability/respond/${TOKEN}/withdraw`);
     expect(screen.queryByText("You've been picked")).toBeNull();
+  });
+
+  it("a player picked 12th sees they're the 12th player", async () => {
+    installFetch(() => ({
+      status: 200,
+      body: basePage({
+        locked: true,
+        canWithdraw: true,
+        selection: {
+          grade: "A Grade",
+          opponent: "Mandurah",
+          venue: null,
+          startAt: "2026-10-10T04:30:00.000Z",
+          isHome: false,
+          role: null,
+          twelfth: true,
+        },
+      }),
+    }));
+    renderPage();
+    expect(await screen.findByText("You've been picked")).toBeTruthy();
+    expect(screen.getByText("12th player")).toBeTruthy();
   });
 
   it("shows server validation errors inline for away dates", async () => {

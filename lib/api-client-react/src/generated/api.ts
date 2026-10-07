@@ -8304,14 +8304,16 @@ export const getSaveSelectionBoardUrl = () => {
 }
 
 /**
- * Each change replaces a whole side: its 11 slots, captain and keeper,
-with the version the caller last saw. Everything is applied in one
-transaction or nothing is: a side the caller may not edit (or a member
-taken from one) → 403; a finalised side or a stale version → 409; not
-exactly 11 slots, a member twice in the round, or an unknown or inactive
-member → 400. A captain or keeper who is not in their side is cleared
-and the clearing logged. Returns the board of the first changed side's
-section.
+ * Each change replaces a whole side: its 12 slots (the XI in slots 1–11,
+the 12th player in slot 12), captain and keeper, with the version the
+caller last saw. A side sent with 11 slots (an older client) is read
+as having an empty 12th. Everything is applied in one transaction or
+nothing is: a side the caller may not edit (or a member taken from
+one) → 403; a finalised side or a stale version → 409; not 12 (or 11)
+slots, a member twice in the round, or an unknown or inactive member
+→ 400. A captain or keeper who is not in the XI (out of the side, or
+moved to 12th) is cleared and the clearing logged. Returns the board
+of the first changed side's section.
 
  * @summary Save changes to one or more sides of the round (admin or captain)
  */

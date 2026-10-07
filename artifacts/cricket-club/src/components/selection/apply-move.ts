@@ -55,7 +55,18 @@ export type MoveResult = {
 
 export type Location = { kind: "side"; sideId: number; index: number } | { kind: "pool" };
 
-export const SIDE_SIZE = 11;
+/** Every side has 12 slots: the XI in slots 1–11 and the 12th player in slot 12. */
+export const SIDE_SIZE = 12;
+
+/** The playing XI. A side is complete with 11; the 12th is optional. */
+export const XI_SIZE = 11;
+
+/** The 12th player's slot (zero-based). */
+export const TWELFTH_INDEX = XI_SIZE;
+
+/** Members of the XI (slots 1–11): only they can be captain or keeper. */
+const xiIds = (slots: readonly SelectionSlot[]) =>
+  new Set(slots.slice(0, XI_SIZE).flatMap((s) => (s.memberId != null ? [s.memberId] : [])));
 
 const refuse = (reason: RefusalReason, message = ""): Refusal => ({ ok: false, reason, message });
 
@@ -83,13 +94,18 @@ function memberOf(state: BoardState, memberId: number): SelectionMember | null {
 const nameOf = (state: BoardState, memberId: number) =>
   memberOf(state, memberId)?.displayName ?? `Player #${memberId}`;
 
-/** The card's counts and warnings, recomputed from its slots and roles. */
+/**
+ * The card's counts and warnings, recomputed from its slots and roles. `filled`
+ * and `open` count the XI only: an empty 12th is not an open slot.
+ */
 export function sideWarnings(side: SelectionSide): SelectionWarnings {
   const picked = side.slots.filter((s) => s.memberId != null);
+  const inXi = side.slots.slice(0, XI_SIZE).filter((s) => s.memberId != null).length;
   const status = (s: SelectionSlot) => s.member?.status ?? "none";
   return {
-    filled: picked.length,
-    open: SIDE_SIZE - picked.length,
+    filled: inXi,
+    open: XI_SIZE - inXi,
+    twelfth: side.slots[TWELFTH_INDEX]?.memberId != null,
     unconfirmed: picked.filter((s) => status(s) === "maybe" || status(s) === "none").length,
     saidNo: picked.filter((s) => status(s) === "no").length,
     noCaptain: side.captainMemberId == null,
@@ -148,6 +164,7 @@ function resolve(
     return { ok: true, from, index: target.index };
   }
   if (from.kind === "side" && from.sideId === side.id) return refuse("noop");
+  // The first open slot in 1–12 order, so the XI fills before the 12th.
   const open = side.slots.findIndex((s) => s.memberId == null);
   if (open < 0) {
     return refuse(
@@ -198,8 +215,14 @@ function applyRole(
   if (locked) return locked;
   const word = action.role === "captain" ? "captain" : "keeper";
   const field = action.role === "captain" ? "captainMemberId" : "keeperMemberId";
-  if (action.memberId != null && !side.slots.some((s) => s.memberId === action.memberId)) {
-    return refuse("not_in_side", `Only a player in ${sideLabel(side)} can be its ${word}.`);
+  if (action.memberId != null && !xiIds(side.slots).has(action.memberId)) {
+    const twelfth = side.slots[TWELFTH_INDEX]?.memberId === action.memberId;
+    return refuse(
+      "not_in_side",
+      twelfth
+        ? `The 12th player can't be ${sideLabel(side)} ${word}. Move them into the XI first.`
+        : `Only a player in ${sideLabel(side)} can be its ${word}.`,
+    );
   }
   if (side[field] === action.memberId) return refuse("noop");
   const next = { ...side, [field]: action.memberId };
@@ -287,22 +310,22 @@ export function applyMove(state: BoardState, action: BoardAction): MoveResult | 
     if (from.kind === "pool" || from.sideId !== target.sideId) warning = pickWarning(moving);
   }
 
-  // A role belongs to the side: a captain or keeper who leaves it loses it.
+  // A role belongs to the XI: a captain or keeper who leaves it (or moves to 12th) loses it.
   const touched = [...slotsOf.keys()];
   const selections = state.selections.map((side) => {
     const nextSlots = slotsOf.get(side.id);
     if (!nextSlots) return side;
     const next: SelectionSide = { ...side, slots: nextSlots };
-    const inSide = new Set(nextSlots.map((s) => s.memberId).filter((id) => id != null));
+    const inXi = xiIds(nextSlots);
+    const twelfthId = nextSlots[TWELFTH_INDEX]?.memberId ?? null;
     for (const [field, word] of [
       ["captainMemberId", "captain"],
       ["keeperMemberId", "keeper"],
     ] as const) {
       const holder = next[field];
-      if (holder != null && !inSide.has(holder)) {
-        log.push(
-          `${sideLabel(side)} no longer has a ${word} (${nameOf(state, holder)} left the side)`,
-        );
+      if (holder != null && !inXi.has(holder)) {
+        const why = holder === twelfthId ? "moved to 12th" : "left the side";
+        log.push(`${sideLabel(side)} no longer has a ${word} (${nameOf(state, holder)} ${why})`);
         next[field] = null;
       }
     }

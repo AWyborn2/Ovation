@@ -8,6 +8,7 @@ import {
   toChanges,
   type BoardState,
 } from "./apply-move";
+import { eventText } from "./labels";
 
 /** A member as the Hub API returns them. */
 function member(
@@ -28,7 +29,7 @@ function member(
   };
 }
 
-/** A side of 11 slots: the given members first, then open slots. */
+/** A side of 12 slots (the XI, then the 12th): the given members first, then open slots. */
 function side(
   id: number,
   grade: string,
@@ -37,7 +38,7 @@ function side(
     Pick<SelectionSide, "state" | "canEdit" | "captainMemberId" | "keeperMemberId">
   > = {},
 ): SelectionSide {
-  const slots = Array.from({ length: 11 }, (_, i) => {
+  const slots = Array.from({ length: 12 }, (_, i) => {
     const m = members[i] ?? null;
     return { memberId: m?.id ?? null, member: m, gap: null };
   });
@@ -67,6 +68,7 @@ function side(
     warnings: {
       filled: 0,
       open: 11,
+      twelfth: false,
       unconfirmed: 0,
       saidNo: 0,
       noCaptain: true,
@@ -81,7 +83,8 @@ const range = (from: number, n: number, prefix: string) =>
 
 function board(): BoardState {
   const a = range(100, 9, "A player");
-  const b = range(200, 11, "B player");
+  // B Grade is full: an XI and a 12th.
+  const b = range(200, 12, "B player");
   const c = range(300, 10, "C player");
   return {
     selections: [
@@ -176,8 +179,36 @@ describe("applyMove — moves", () => {
     expect(r).toEqual({
       ok: false,
       reason: "full",
-      message: "B Grade already has 11. Drop onto a player to swap them out.",
+      message: "B Grade already has 12. Drop onto a player to swap them out.",
     });
+  });
+
+  it("an XI with an open 12th takes a card drop as the 12th player", () => {
+    const s = board();
+    const xi = range(400, 11, "D player");
+    s.selections.push(side(4, "D Grade", xi));
+    expect(sideOf(s, 4).warnings).toMatchObject({ filled: 11, open: 0, twelfth: false });
+    const r = applyMove(s, { kind: "move", memberId: 900, target: { kind: "side", sideId: 4 } });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(ids(sideOf(r.state, 4))[11]).toBe(900);
+    expect(sideOf(r.state, 4).warnings).toMatchObject({ filled: 11, open: 0, twelfth: true });
+  });
+
+  it("a card drop fills the XI's open slots before the 12th", () => {
+    const s = board();
+    // C Grade: 10 players, so slot 11 is open; put someone in the 12th too.
+    const c = sideOf(s, 3);
+    const slots = [...c.slots];
+    slots[11] = { memberId: 903, member: member(903, "Twelfth"), gap: null };
+    s.selections[2] = { ...c, slots };
+    const r = applyMove(s, { kind: "move", memberId: 900, target: { kind: "side", sideId: 3 } });
+    expect(r.ok && ids(sideOf(r.state, 3))[10]).toBe(900);
+  });
+
+  it("an empty 12th is not an open slot", () => {
+    // A Grade has 9: two open in the XI; the empty 12th doesn't count.
+    expect(sideOf(board(), 1).warnings).toMatchObject({ filled: 9, open: 2, twelfth: false });
   });
 
   it("team → pool empties the slot and adds the player to the pool", () => {
@@ -331,6 +362,30 @@ describe("applyMove — captain and keeper", () => {
     expect(r.ok && r.log).toContain("A Grade no longer has a keeper (A player 2 left the side)");
   });
 
+  it("moving the captain to 12th clears the captain (they're no longer in the XI)", () => {
+    const r = applyMove(board(), {
+      kind: "move",
+      memberId: 100,
+      target: { kind: "slot", sideId: 1, index: 11 },
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const a = sideOf(r.state, 1);
+    expect(ids(a)[11]).toBe(100);
+    expect(a.captainMemberId).toBeNull();
+    expect(a.keeperMemberId).toBe(101);
+    expect(r.log).toContain("A Grade no longer has a captain (A player 1 moved to 12th)");
+  });
+
+  it("refuses the 12th player as captain or keeper", () => {
+    const r = applyMove(board(), { kind: "role", sideId: 2, role: "keeper", memberId: 211 });
+    expect(r).toEqual({
+      ok: false,
+      reason: "not_in_side",
+      message: "The 12th player can't be B Grade keeper. Move them into the XI first.",
+    });
+  });
+
   it("one player may hold both roles (AE9)", () => {
     const r = applyMove(board(), { kind: "role", sideId: 1, role: "captain", memberId: 101 });
     expect(r.ok).toBe(true);
@@ -378,10 +433,42 @@ describe("toChanges", () => {
     expect(changes.map((c) => c.selectionId).sort()).toEqual([1, 3]);
     const a = changes.find((c) => c.selectionId === 1)!;
     expect(a.version).toBe(3);
-    expect(a.slots).toHaveLength(11);
+    expect(a.slots).toHaveLength(12);
     expect(a.slots[4]).toEqual({ memberId: 305, gap: null });
     expect(a.captainMemberId).toBe(100);
     expect(a.keeperMemberId).toBe(101);
+  });
+});
+
+describe("eventText", () => {
+  it("says a role holder moved to 12th rather than left the side", () => {
+    const base = {
+      id: 1,
+      selectionId: 1,
+      grade: "A Grade",
+      actorKind: "admin",
+      actorName: "Ash",
+      action: "update",
+      createdAt: "2026-10-15T10:01:00.000Z",
+    };
+    expect(
+      eventText({
+        ...base,
+        detail: {
+          captain: { from: { id: 1, name: "Ava Hill" }, to: null },
+          rolesCleared: [{ role: "captain", memberId: 1, name: "Ava Hill", twelfth: true }],
+        },
+      }),
+    ).toBe("A Grade: no captain (Ava Hill moved to 12th)");
+    expect(
+      eventText({
+        ...base,
+        detail: {
+          keeper: { from: { id: 2, name: "Ben Cole" }, to: null },
+          rolesCleared: [{ role: "keeper", memberId: 2, name: "Ben Cole" }],
+        },
+      }),
+    ).toBe("A Grade: no keeper (Ben Cole left the side)");
   });
 });
 

@@ -3295,6 +3295,9 @@ export const GetSelectionBoardQueryParams = zod.object({
 })
 
 
+export const getSelectionBoardResponseSelectionsItemSlotsMin = 12;
+export const getSelectionBoardResponseSelectionsItemSlotsMax = 12;
+
 
 
 export const GetSelectionBoardResponse = zod.object({
@@ -3357,7 +3360,7 @@ export const GetSelectionBoardResponse = zod.object({
   "repliedAt": zod.coerce.date().nullable(),
   "late": zod.boolean().describe('Answered after the cut-off')
 }).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
-})),
+})).min(getSelectionBoardResponseSelectionsItemSlotsMin).max(getSelectionBoardResponseSelectionsItemSlotsMax).describe('The side\'s 12 slots in order; 1–11 are the XI and slot 12 the 12th player'),
   "captainMemberId": zod.number().nullable(),
   "keeperMemberId": zod.number().nullable(),
   "finalisedAt": zod.coerce.date().nullable(),
@@ -3366,8 +3369,9 @@ export const GetSelectionBoardResponse = zod.object({
   "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
   "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
   "warnings": zod.object({
-  "filled": zod.number(),
-  "open": zod.number(),
+  "filled": zod.number().describe('Players in the XI (slots 1–11); the 12th is not counted'),
+  "open": zod.number().describe('Open slots in the XI; an empty 12th is not an open slot'),
+  "twelfth": zod.boolean().describe('Slot 12 (the 12th player) is filled'),
   "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
   "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
   "noCaptain": zod.boolean(),
@@ -3399,17 +3403,22 @@ export const GetSelectionBoardResponse = zod.object({
 
 
 /**
- * Each change replaces a whole side: its 11 slots, captain and keeper,
-with the version the caller last saw. Everything is applied in one
-transaction or nothing is: a side the caller may not edit (or a member
-taken from one) → 403; a finalised side or a stale version → 409; not
-exactly 11 slots, a member twice in the round, or an unknown or inactive
-member → 400. A captain or keeper who is not in their side is cleared
-and the clearing logged. Returns the board of the first changed side's
-section.
+ * Each change replaces a whole side: its 12 slots (the XI in slots 1–11,
+the 12th player in slot 12), captain and keeper, with the version the
+caller last saw. A side sent with 11 slots (an older client) is read
+as having an empty 12th. Everything is applied in one transaction or
+nothing is: a side the caller may not edit (or a member taken from
+one) → 403; a finalised side or a stale version → 409; not 12 (or 11)
+slots, a member twice in the round, or an unknown or inactive member
+→ 400. A captain or keeper who is not in the XI (out of the side, or
+moved to 12th) is cleared and the clearing logged. Returns the board
+of the first changed side's section.
 
  * @summary Save changes to one or more sides of the round (admin or captain)
  */
+
+export const saveSelectionBoardBodyChangesItemSlotsMin = 11;
+export const saveSelectionBoardBodyChangesItemSlotsMax = 12;
 
 
 
@@ -3424,12 +3433,15 @@ export const SaveSelectionBoardBody = zod.object({
   "name": zod.string().min(1),
   "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew', 'picked_elsewhere'])
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]).optional()
-})).describe('The side\'s 11 slots, in order'),
+})).min(saveSelectionBoardBodyChangesItemSlotsMin).max(saveSelectionBoardBodyChangesItemSlotsMax).describe('The side\'s 12 slots in order: 1–11 are the XI, slot 12 the 12th\nplayer. 11 slots (an older client) are read as an empty 12th.\n'),
   "captainMemberId": zod.number().nullable(),
   "keeperMemberId": zod.number().nullable()
 })).min(1)
 })
 
+
+export const saveSelectionBoardResponseSelectionsItemSlotsMin = 12;
+export const saveSelectionBoardResponseSelectionsItemSlotsMax = 12;
 
 
 
@@ -3493,7 +3505,7 @@ export const SaveSelectionBoardResponse = zod.object({
   "repliedAt": zod.coerce.date().nullable(),
   "late": zod.boolean().describe('Answered after the cut-off')
 }).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
-})),
+})).min(saveSelectionBoardResponseSelectionsItemSlotsMin).max(saveSelectionBoardResponseSelectionsItemSlotsMax).describe('The side\'s 12 slots in order; 1–11 are the XI and slot 12 the 12th player'),
   "captainMemberId": zod.number().nullable(),
   "keeperMemberId": zod.number().nullable(),
   "finalisedAt": zod.coerce.date().nullable(),
@@ -3502,8 +3514,9 @@ export const SaveSelectionBoardResponse = zod.object({
   "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
   "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
   "warnings": zod.object({
-  "filled": zod.number(),
-  "open": zod.number(),
+  "filled": zod.number().describe('Players in the XI (slots 1–11); the 12th is not counted'),
+  "open": zod.number().describe('Open slots in the XI; an empty 12th is not an open slot'),
+  "twelfth": zod.boolean().describe('Slot 12 (the 12th player) is filled'),
   "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
   "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
   "noCaptain": zod.boolean(),
@@ -3556,6 +3569,9 @@ export const FinaliseSelectionBody = zod.object({
 })
 
 
+export const finaliseSelectionResponseSelectionSlotsMin = 12;
+export const finaliseSelectionResponseSelectionSlotsMax = 12;
+
 
 
 export const FinaliseSelectionResponse = zod.object({
@@ -3591,7 +3607,7 @@ export const FinaliseSelectionResponse = zod.object({
   "repliedAt": zod.coerce.date().nullable(),
   "late": zod.boolean().describe('Answered after the cut-off')
 }).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
-})),
+})).min(finaliseSelectionResponseSelectionSlotsMin).max(finaliseSelectionResponseSelectionSlotsMax).describe('The side\'s 12 slots in order; 1–11 are the XI and slot 12 the 12th player'),
   "captainMemberId": zod.number().nullable(),
   "keeperMemberId": zod.number().nullable(),
   "finalisedAt": zod.coerce.date().nullable(),
@@ -3600,8 +3616,9 @@ export const FinaliseSelectionResponse = zod.object({
   "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
   "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
   "warnings": zod.object({
-  "filled": zod.number(),
-  "open": zod.number(),
+  "filled": zod.number().describe('Players in the XI (slots 1–11); the 12th is not counted'),
+  "open": zod.number().describe('Open slots in the XI; an empty 12th is not an open slot'),
+  "twelfth": zod.boolean().describe('Slot 12 (the 12th player) is filled'),
   "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
   "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
   "noCaptain": zod.boolean(),
@@ -3627,6 +3644,9 @@ export const ReopenSelectionParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+export const reopenSelectionResponseSlotsMin = 12;
+export const reopenSelectionResponseSlotsMax = 12;
 
 
 
@@ -3662,7 +3682,7 @@ export const ReopenSelectionResponse = zod.object({
   "repliedAt": zod.coerce.date().nullable(),
   "late": zod.boolean().describe('Answered after the cut-off')
 }).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
-})),
+})).min(reopenSelectionResponseSlotsMin).max(reopenSelectionResponseSlotsMax).describe('The side\'s 12 slots in order; 1–11 are the XI and slot 12 the 12th player'),
   "captainMemberId": zod.number().nullable(),
   "keeperMemberId": zod.number().nullable(),
   "finalisedAt": zod.coerce.date().nullable(),
@@ -3671,8 +3691,9 @@ export const ReopenSelectionResponse = zod.object({
   "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
   "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
   "warnings": zod.object({
-  "filled": zod.number(),
-  "open": zod.number(),
+  "filled": zod.number().describe('Players in the XI (slots 1–11); the 12th is not counted'),
+  "open": zod.number().describe('Open slots in the XI; an empty 12th is not an open slot'),
+  "twelfth": zod.boolean().describe('Slot 12 (the 12th player) is filled'),
   "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
   "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
   "noCaptain": zod.boolean(),
@@ -3753,7 +3774,8 @@ export const GetAvailabilityResponseResponse = zod.object({
   "venue": zod.string().nullable(),
   "startAt": zod.coerce.date(),
   "isHome": zod.boolean(),
-  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable(),
+  "twelfth": zod.boolean().describe('Picked as the side\'s 12th player (slot 12)')
 }),zod.null()]).describe('The match, once the member is in a finalised side this round'),
   "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
   "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
@@ -3825,7 +3847,8 @@ export const SaveAvailabilityAnswersResponse = zod.object({
   "venue": zod.string().nullable(),
   "startAt": zod.coerce.date(),
   "isHome": zod.boolean(),
-  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable(),
+  "twelfth": zod.boolean().describe('Picked as the side\'s 12th player (slot 12)')
 }),zod.null()]).describe('The match, once the member is in a finalised side this round'),
   "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
   "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
@@ -3903,7 +3926,8 @@ export const RemoveAvailabilityAwayResponse = zod.object({
   "venue": zod.string().nullable(),
   "startAt": zod.coerce.date(),
   "isHome": zod.boolean(),
-  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable(),
+  "twelfth": zod.boolean().describe('Picked as the side\'s 12th player (slot 12)')
 }),zod.null()]).describe('The match, once the member is in a finalised side this round'),
   "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
   "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
@@ -3975,7 +3999,8 @@ export const UpdateAvailabilityContactResponse = zod.object({
   "venue": zod.string().nullable(),
   "startAt": zod.coerce.date(),
   "isHome": zod.boolean(),
-  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable(),
+  "twelfth": zod.boolean().describe('Picked as the side\'s 12th player (slot 12)')
 }),zod.null()]).describe('The match, once the member is in a finalised side this round'),
   "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
   "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
@@ -4032,7 +4057,8 @@ export const WithdrawAvailabilityResponse = zod.object({
   "venue": zod.string().nullable(),
   "startAt": zod.coerce.date(),
   "isHome": zod.boolean(),
-  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable()
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable(),
+  "twelfth": zod.boolean().describe('Picked as the side\'s 12th player (slot 12)')
 }),zod.null()]).describe('The match, once the member is in a finalised side this round'),
   "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
   "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),

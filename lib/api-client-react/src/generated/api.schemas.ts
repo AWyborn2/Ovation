@@ -3184,8 +3184,12 @@ export interface SelectionFixture {
 }
 
 export interface SelectionWarnings {
+  /** Players in the XI (slots 1–11); the 12th is not counted */
   filled: number;
+  /** Open slots in the XI; an empty 12th is not an open slot */
   open: number;
+  /** Slot 12 (the 12th player) is filled */
+  twelfth: boolean;
   /** Selected members who said Maybe or haven't replied */
   unconfirmed: number;
   /** Selected members who said they're unavailable */
@@ -3210,6 +3214,11 @@ export interface SelectionSide {
   date: string;
   state: SelectionSideState;
   version: number;
+  /**
+     * The side's 12 slots in order; 1–11 are the XI and slot 12 the 12th player
+     * @minItems 12
+     * @maxItems 12
+     */
   slots: SelectionSlot[];
   /** @nullable */
   captainMemberId: number | null;
@@ -3303,7 +3312,13 @@ export interface SelectionChange {
   selectionId: number;
   /** The version the caller last saw */
   version: number;
-  /** The side's 11 slots, in order */
+  /**
+     * The side's 12 slots in order: 1–11 are the XI, slot 12 the 12th
+  player. 11 slots (an older client) are read as an empty 12th.
+
+     * @minItems 11
+     * @maxItems 12
+     */
   slots: SelectionSlotInput[];
   /** @nullable */
   captainMemberId: number | null;
@@ -3410,6 +3425,8 @@ export interface AvailabilityMatch {
   isHome: boolean;
   /** @nullable */
   role: AvailabilityMatchRole;
+  /** Picked as the side's 12th player (slot 12) */
+  twelfth: boolean;
 }
 
 export interface AvailabilityResponsePage {
