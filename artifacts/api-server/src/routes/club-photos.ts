@@ -61,6 +61,31 @@ function queryFlag(raw: unknown): boolean {
   return raw === true || raw === "true" || raw === "1";
 }
 
+type IngestStage = "read" | "convert" | "save";
+
+/** Keep storage/database failures distinct from decoding, without exposing SQL. */
+function ingestFailureMessage(err: unknown, stage: IngestStage): string {
+  if (err instanceof IngestError) return err.message;
+  if (stage === "save") {
+    // Drizzle wraps the Postgres error in `cause`; inspect only known metadata.
+    let cause: unknown = err;
+    for (let depth = 0; depth < 5 && cause && typeof cause === "object"; depth++) {
+      const failure = cause as { code?: unknown; constraint?: unknown; cause?: unknown };
+      if (
+        failure.code === "23514" &&
+        failure.constraint === "club_photos_photo_types_check"
+      ) {
+        return "The photo converted successfully, but the library's database does not yet allow the selected photo category. Upload to Unsorted or update the database photo-category rules, then retry.";
+      }
+      cause = failure.cause;
+    }
+    return "The photo converted successfully, but could not be saved to the library. Please retry.";
+  }
+  return stage === "convert"
+    ? "This image could not be processed."
+    : "This upload could not be read. Please retry the upload.";
+}
+
 async function addTags(tenantId: number, photoIds: number[], playerIds: number[]): Promise<void> {
   const values = photoIds.flatMap((photoId) =>
     playerIds.map((playerId) => ({ tenantId, photoId, playerId })),
@@ -144,9 +169,12 @@ router.post("/club-photos/ingest", requireAdmin, async (req, res): Promise<void>
   const results = await Promise.all(
     objectPaths.map((objectPath) =>
       withTenantSlot(tenantId, async () => {
+        let stage: IngestStage = "read";
         try {
           const original = await store.read(objectPath);
+          stage = "convert";
           const image = await ingestImage(original);
+          stage = "save";
           const mainPath = await store.write(image.jpeg, "image/jpeg");
           const thumbPath = await store.write(image.thumb, "image/jpeg");
           const [row] = await db
@@ -173,10 +201,9 @@ router.post("/club-photos/ingest", requireAdmin, async (req, res): Promise<void>
           });
           return { objectPath, ok: true as const, photoId: row.id };
         } catch (err) {
-          const message =
-            err instanceof IngestError ? err.message : "This upload could not be read.";
+          const message = ingestFailureMessage(err, stage);
           if (!(err instanceof IngestError))
-            req.log.warn({ err, objectPath }, "photo ingest failed");
+            req.log.warn({ err, objectPath, stage }, "photo ingest failed");
           return { objectPath, ok: false as const, error: message };
         }
       }),

@@ -69,3 +69,4 @@
 - [Development host smoke tests](development-host-smoke-tests.md) — public dev host and loopback can select different platform/club modes; confirm the mode before browser tests.
 - [Pending Git merges and checkpoints](pending-git-merges.md) — a no-commit pull can still become a merge commit through automatic checkpointing; stop on divergence when Git commits are forbidden.
 - [Availability testing requirement](availability-testing.md) — repeated manual request sends are intentional: the user needs unrestricted repeat testing, not a once-per-round manual action.
+- [Publishing constraint checks](publishing-constraint-checks.md) — a “no schema diff” result can miss CHECK-constraint drift; compare live definitions before promising republishing will repair it.

@@ -148,7 +148,9 @@ async function ingestInBatches(
         if (!match) continue;
         opts.onState(
           match.index,
-          r.ok ? { phase: "done" } : { phase: "error", message: r.error ?? "Couldn't convert." },
+          r.ok
+            ? { phase: "done" }
+            : { phase: "error", message: r.error ?? "The photo could not be added to the library." },
         );
       }
     } catch {

@@ -4,13 +4,14 @@
  * tenant isolation. Real-DB integration test (needs DATABASE_URL); object
  * storage is replaced by an in-memory store.
  */
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import request from "supertest";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, lt, max } from "drizzle-orm";
 import sharp from "sharp";
 import app from "../app";
 import {
   db,
+  getDb,
   tenantsTable,
   adminsTable,
   playersTable,
@@ -89,11 +90,17 @@ beforeAll(async () => {
     if (tid === tenantId) cookie = c;
     else otherCookie = c;
   }
+  // The populated native sequence includes reserved cap/fill-in ids >= 90000.
+  // Photo tags need regular senior ids, not whatever that sequence yields.
+  const [regular] = await db.select({ maxId: max(playersTable.id) })
+    .from(playersTable).where(lt(playersTable.id, 90000));
+  const firstPlayerId = (regular.maxId ?? 0) + 1;
+  if (firstPlayerId + 1 >= 90000) throw new Error("No regular senior fixture ids available");
   const players = await db
     .insert(playersTable)
     .values([
-      { surname: `Lens${STAMP}`, givenName: "Pat" },
-      { surname: `Shutter${STAMP}`, givenName: "Kim" },
+      { id: firstPlayerId, surname: `Lens${STAMP}`, givenName: "Pat" },
+      { id: firstPlayerId + 1, surname: `Shutter${STAMP}`, givenName: "Kim" },
     ])
     .returning();
   playerIds.push(...players.map((p) => p.id));
@@ -157,6 +164,71 @@ describe("ingest", () => {
     const res = await api("post", "/club-photos/ingest").send({ objectPaths: paths });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/50/);
+  });
+
+  it("saves a Premiership photo with the updated category rules", async () => {
+    const original = await upload("premiership.jpg", await jpeg());
+    const res = await api("post", "/club-photos/ingest").send({
+      objectPaths: [original],
+      grade: "D Grade",
+      photoType: "premiership",
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.results[0]).toMatchObject({
+      ok: true,
+      photo: { grade: "D Grade", photoTypes: ["premiership"] },
+    });
+    expect(objects.has(original)).toBe(false);
+  });
+
+  it("explains an outdated photo-category constraint without blaming conversion or exposing SQL", async () => {
+    const original = await upload("outdated-category.jpg", await jpeg());
+    const postgresError = Object.assign(new Error("private database details"), {
+      code: "23514",
+      constraint: "club_photos_photo_types_check",
+    });
+    const insert = vi.spyOn(getDb(), "insert").mockImplementationOnce(() => {
+      throw new Error("private SQL and parameters", { cause: postgresError });
+    });
+    try {
+      const res = await api("post", "/club-photos/ingest").send({
+        objectPaths: [original],
+        grade: "D Grade",
+        photoType: "premiership",
+      });
+      expect(res.status).toBe(200);
+      const result = res.body.results[0];
+      expect(result.ok).toBe(false);
+      expect(result.error).toMatch(/converted successfully/i);
+      expect(result.error).toMatch(/database.*photo category/i);
+      expect(result.error).toMatch(/Unsorted/);
+      expect(result.error).not.toMatch(/private|SQL|23514|club_photos/);
+      expect(objects.has(original)).toBe(true);
+    } finally {
+      insert.mockRestore();
+    }
+  });
+
+  it("distinguishes a library-save failure from a missing upload", async () => {
+    const original = await upload("save-failure.jpg", await jpeg());
+    const write = vi.spyOn(memoryStore, "write").mockRejectedValueOnce(new Error("storage unavailable"));
+    try {
+      const saved = await api("post", "/club-photos/ingest").send({ objectPaths: [original] });
+      expect(saved.body.results[0]).toMatchObject({
+        ok: false,
+        error: "The photo converted successfully, but could not be saved to the library. Please retry.",
+      });
+      expect(objects.has(original)).toBe(true);
+    } finally {
+      write.mockRestore();
+    }
+    const missing = await api("post", "/club-photos/ingest").send({
+      objectPaths: [`/objects/uploads/${STAMP}-missing`],
+    });
+    expect(missing.body.results[0]).toMatchObject({
+      ok: false,
+      error: "This upload could not be read. Please retry the upload.",
+    });
   });
 
   it("refuses to sign a HEIC upload over 25 MB", async () => {
