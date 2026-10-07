@@ -10,6 +10,7 @@ import {
   type SelectionBoard,
   type SquadSection,
 } from "@workspace/api-client-react";
+import { AddActivePlayer } from "@/components/add-active-player";
 import { CaptainShell } from "@/components/captain-shell";
 import { EmptyState, LoadingState, QueryError } from "@/components/data-states";
 import {
@@ -242,6 +243,8 @@ export default function SelectionHub() {
             )}
           </h1>
         </div>
+        <div className="flex items-center gap-2">
+        <AddActivePlayer section={section} />
         <div
           role="group"
           aria-label="Section"
@@ -261,6 +264,7 @@ export default function SelectionHub() {
               {s === "senior" ? "Seniors" : "Juniors"}
             </button>
           ))}
+        </div>
         </div>
       </header>
 

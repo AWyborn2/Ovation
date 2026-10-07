@@ -352,6 +352,7 @@ import type {
   SquadImportResult,
   SquadMember,
   SquadMemberDetail,
+  SquadMemberInput,
   SquadMemberUpdate,
   SquadPlayerSearchHit,
   Stat,
@@ -7410,6 +7411,77 @@ export const useDeleteCaptain = <TError = ErrorType<void>,
       return useMutation(getDeleteCaptainMutationOptions(options));
     }
 
+export const getCreateSquadMemberUrl = () => {
+
+
+
+
+  return `/api/squad`
+}
+
+/**
+ * @summary Add or reactivate an active squad member (admin or captain)
+ */
+export const createSquadMember = async (squadMemberInput: SquadMemberInput, options?: RequestInit): Promise<SquadMember> => {
+
+  return customFetch<SquadMember>(getCreateSquadMemberUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      squadMemberInput,)
+  }
+);}
+
+
+
+
+export const getCreateSquadMemberMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSquadMember>>, TError,{data: BodyType<SquadMemberInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSquadMember>>, TError,{data: BodyType<SquadMemberInput>}, TContext> => {
+
+const mutationKey = ['createSquadMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSquadMember>>, {data: BodyType<SquadMemberInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSquadMember(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSquadMemberMutationResult = NonNullable<Awaited<ReturnType<typeof createSquadMember>>>
+    export type CreateSquadMemberMutationBody = BodyType<SquadMemberInput>
+    export type CreateSquadMemberMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add or reactivate an active squad member (admin or captain)
+ */
+export const useCreateSquadMember = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSquadMember>>, TError,{data: BodyType<SquadMemberInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSquadMember>>,
+        TError,
+        {data: BodyType<SquadMemberInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSquadMemberMutationOptions(options));
+    }
+
 export const getListSquadMembersUrl = () => {
 
 
@@ -7490,6 +7562,153 @@ export function useListSquadMembers<TData = Awaited<ReturnType<typeof listSquadM
 
 
 
+
+export const getListSelectionRosterUrl = () => {
+
+
+
+
+  return `/api/selection/roster`
+}
+
+/**
+ * @summary List roster identities without contact values (admin or captain)
+ */
+export const listSelectionRoster = async ( options?: RequestInit): Promise<SquadMember[]> => {
+
+  return customFetch<SquadMember[]>(getListSelectionRosterUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSelectionRosterQueryKey = () => {
+    return [
+    `/api/selection/roster`
+    ] as const;
+    }
+
+
+export const getListSelectionRosterQueryOptions = <TData = Awaited<ReturnType<typeof listSelectionRoster>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSelectionRoster>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSelectionRosterQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSelectionRoster>>> = ({ signal }) => listSelectionRoster({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSelectionRoster>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSelectionRosterQueryResult = NonNullable<Awaited<ReturnType<typeof listSelectionRoster>>>
+export type ListSelectionRosterQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List roster identities without contact values (admin or captain)
+ */
+
+export function useListSelectionRoster<TData = Awaited<ReturnType<typeof listSelectionRoster>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSelectionRoster>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSelectionRosterQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getActivateSquadMemberUrl = (id: number,) => {
+
+
+
+
+  return `/api/squad/${id}/activate`
+}
+
+/**
+ * @summary Reactivate a previous squad member (admin or captain)
+ */
+export const activateSquadMember = async (id: number, options?: RequestInit): Promise<SquadMember> => {
+
+  return customFetch<SquadMember>(getActivateSquadMemberUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getActivateSquadMemberMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateSquadMember>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof activateSquadMember>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['activateSquadMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activateSquadMember>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  activateSquadMember(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActivateSquadMemberMutationResult = NonNullable<Awaited<ReturnType<typeof activateSquadMember>>>
+
+    export type ActivateSquadMemberMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Reactivate a previous squad member (admin or captain)
+ */
+export const useActivateSquadMember = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateSquadMember>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof activateSquadMember>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getActivateSquadMemberMutationOptions(options));
+    }
 
 export const getImportSquadUrl = () => {
 

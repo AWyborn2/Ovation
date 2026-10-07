@@ -2360,6 +2360,23 @@ paths:
           description: Not found
 
   /squad:
+    post:
+      operationId: createSquadMember
+      tags: [squad]
+      summary: Add or reactivate an active squad member (admin or captain)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SquadMemberInput"
+      responses:
+        "201":
+          description: Active squad member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadMember"
     get:
       operationId: listSquadMembers
       tags: [squad]
@@ -2379,6 +2396,40 @@ paths:
                   $ref: "#/components/schemas/SquadMember"
         "401":
           description: Not signed in as this club's admin
+
+  /selection/roster:
+    get:
+      operationId: listSelectionRoster
+      tags: [squad]
+      summary: List roster identities without contact values (admin or captain)
+      responses:
+        "200":
+          description: Club roster
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SquadMember"
+
+  /squad/{id}/activate:
+    post:
+      operationId: activateSquadMember
+      tags: [squad]
+      summary: Reactivate a previous squad member (admin or captain)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Active member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadMember"
 
   /squad/import:
     post:
@@ -13064,6 +13115,35 @@ components:
           type: ["string", "null"]
         email:
           type: ["string", "null"]
+
+    SquadMemberInput:
+      type: object
+      required: [firstName, lastName, section]
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        section:
+          $ref: "#/components/schemas/SquadSection"
+        linkedPlayerId:
+          type: ["integer", "null"]
+        dateOfBirth:
+          type: ["string", "null"]
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+        gradeHint:
+          type: ["string", "null"]
+          maxLength: 100
+        account:
+          $ref: "#/components/schemas/SquadContactUpdate"
+        guardian1:
+          $ref: "#/components/schemas/SquadContactUpdate"
+        guardian2:
+          $ref: "#/components/schemas/SquadContactUpdate"
 
     SquadMemberUpdate:
       type: object

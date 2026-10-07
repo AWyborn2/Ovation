@@ -2919,6 +2919,35 @@ export interface SquadContactUpdate {
   email?: string | null;
 }
 
+export interface SquadMemberInput {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  firstName: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  lastName: string;
+  section: SquadSection;
+  /** @nullable */
+  linkedPlayerId?: number | null;
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  dateOfBirth?: string | null;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  gradeHint?: string | null;
+  account?: SquadContactUpdate;
+  guardian1?: SquadContactUpdate;
+  guardian2?: SquadContactUpdate;
+}
+
 export interface SquadMemberUpdate {
   active?: boolean;
   section?: SquadSection;

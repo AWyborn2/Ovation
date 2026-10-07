@@ -18,7 +18,9 @@ import {
   type ProvisioningContext,
 } from "./schema/provisioning_exclusions";
 import { centralDb, centralClubsTable, isCentralClubProvisionable } from "./central";
-import { centralClubParticipants } from "./central-queries";
+import { centralClubParticipants, centralCurrentSeasonSquad } from "./central-queries";
+import { seasonStartYearFor } from "./seasons";
+import { seedCurrentSeasonSquad } from "./squad-seed";
 import { seedTenantPremierships, type SeedTenantPremiershipsResult } from "./premierships-seed";
 
 /**
@@ -213,6 +215,7 @@ export async function provisionTenant(
     shortName: values.shortName,
   };
 
+  const currentPlayers = await centralCurrentSeasonSquad(club.clubId, seasonStartYearFor(new Date()));
   // Tenant row + crosswalk mint in ONE transaction: a failure while minting
   // used to leave a tenant with a partial player_id_map.
   const { tenant, admin, minted, totalParticipants } = await db.transaction(async (tx) => {
@@ -231,6 +234,7 @@ export async function provisionTenant(
     // provisioning path and the backfill script (scripts/backfill-player-id-map)
     // mint identically.
     const mint = await mintPlayerIdMap(row.id, row.centralClubId, tx);
+    await seedCurrentSeasonSquad(tx, row.id, currentPlayers);
 
     // First admin in the SAME transaction: if this insert fails, the tenant and
     // its crosswalk roll back with it, so a retry can never hit "already taken"

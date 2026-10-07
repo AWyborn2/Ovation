@@ -673,6 +673,7 @@ export * from './squadImportResultSkippedByReasonItem';
 export * from './squadImportSkip';
 export * from './squadMember';
 export * from './squadMemberDetail';
+export * from './squadMemberInput';
 export * from './squadMemberUpdate';
 export * from './squadPlayerSearchHit';
 export * from './squadPlayerSearchHitAlreadyLinkedTo';

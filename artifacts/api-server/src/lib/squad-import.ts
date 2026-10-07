@@ -440,21 +440,14 @@ export async function applySquadImport(
   let contactsKept = 0;
 
   await db.transaction(async (tx: Tx) => {
-    const lookupIds = [...profileIds, ...plan.inactiveProfileIds];
-    const existing =
-      lookupIds.length === 0
-        ? []
-        : await tx
-            .select()
-            .from(squadMembersTable)
-            .where(
-              and(
-                eq(squadMembersTable.tenantId, tenantId),
-                inArray(squadMembersTable.playhqProfileId, lookupIds),
-              ),
-            );
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(72401, ${tenantId})`);
+    const existing = await tx.select().from(squadMembersTable)
+      .where(eq(squadMembersTable.tenantId, tenantId));
     const byProfile = new Map<string, SquadMemberRow>();
-    for (const row of existing) byProfile.set(row.playhqProfileId!, row);
+    for (const row of existing) {
+      if (row.playhqProfileId) byProfile.set(row.playhqProfileId, row);
+    }
+    const adopted = new Set<number>();
 
     const taken = new Set<number>(
       (
@@ -492,7 +485,23 @@ export async function applySquadImport(
 
     const now = new Date();
     for (const m of plan.members) {
-      const prev = byProfile.get(m.playhqProfileId);
+      let prev = byProfile.get(m.playhqProfileId);
+      if (!prev) {
+        const initial = matchByInitial(m, initialIndex);
+        const knownId = links.byProfile.get(m.playhqProfileId.toLowerCase()) ?? initial?.playerId ?? null;
+        const keys = memberNameKeys(m);
+        const initials = memberInitialKeys(m);
+        const candidates = existing.filter((r) => !r.playhqProfileId && !adopted.has(r.id) &&
+          (knownId !== null && r.linkedPlayerId === knownId ||
+            r.section === m.section && r.linkedPlayerId === null &&
+              (memberNameKeys(r).some((k) => keys.includes(k) && nameCounts.get(k) === 1) ||
+                memberInitialKeys(r).some((k) => initials.includes(k) && initialCounts.get(k) === 1))));
+        if (candidates.length === 1) {
+          prev = candidates[0];
+          adopted.add(prev.id);
+          byProfile.set(m.playhqProfileId, prev);
+        }
+      }
       const identity = {
         firstName: m.firstName,
         lastName: m.lastName,
@@ -532,7 +541,9 @@ export async function applySquadImport(
       }
 
       const heldByAdmin = prev.activeSetByAdmin && !prev.active;
-      const set: Partial<typeof squadMembersTable.$inferInsert> = { ...identity, updatedAt: now };
+      const set: Partial<typeof squadMembersTable.$inferInsert> = {
+        ...identity, playhqProfileId: m.playhqProfileId, updatedAt: now,
+      };
       if (!heldByAdmin && prev.contactChangeFlag) {
         set.dateOfBirth = contacts.dateOfBirth;
         contactsKept++;

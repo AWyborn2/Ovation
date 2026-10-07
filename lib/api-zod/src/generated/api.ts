@@ -2860,6 +2860,43 @@ export const DeleteCaptainParams = zod.object({
 
 
 /**
+ * @summary Add or reactivate an active squad member (admin or captain)
+ */
+export const createSquadMemberBodyFirstNameMax = 100;
+
+export const createSquadMemberBodyLastNameMax = 100;
+
+export const createSquadMemberBodyDateOfBirthRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const createSquadMemberBodyGradeHintMax = 100;
+
+
+
+export const CreateSquadMemberBody = zod.object({
+  "firstName": zod.string().min(1).max(createSquadMemberBodyFirstNameMax),
+  "lastName": zod.string().min(1).max(createSquadMemberBodyLastNameMax),
+  "section": zod.enum(['senior', 'junior']),
+  "linkedPlayerId": zod.number().nullish(),
+  "dateOfBirth": zod.string().regex(createSquadMemberBodyDateOfBirthRegExp).nullish(),
+  "gradeHint": zod.string().max(createSquadMemberBodyGradeHintMax).nullish(),
+  "account": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.'),
+  "guardian1": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.'),
+  "guardian2": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.')
+})
+
+
+/**
  * Every member of the club's squad register. Contact details are reported
 as presence flags only (has a name, mobile or email; SMS opted out) —
 `getSquadMember` returns the values.
@@ -2904,6 +2941,95 @@ export const ListSquadMembersResponseItem = zod.object({
   "updatedAt": zod.string()
 })
 export const ListSquadMembersResponse = zod.array(ListSquadMembersResponseItem)
+
+
+/**
+ * @summary List roster identities without contact values (admin or captain)
+ */
+export const ListSelectionRosterResponseItem = zod.object({
+  "id": zod.number(),
+  "playhqProfileId": zod.string().nullable(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "preferredName": zod.string().nullable(),
+  "section": zod.enum(['senior', 'junior']),
+  "active": zod.boolean(),
+  "activeSetByAdmin": zod.boolean().describe('The admin set `active` by hand; imports never override it.'),
+  "under18": zod.boolean().nullable().describe('From date of birth (Perth today); null when unknown. Under-18s are contacted through their guardians.'),
+  "gradeHint": zod.string().nullable(),
+  "teamName": zod.string().nullable(),
+  "ageGroup": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "linkedPlayerId": zod.number().nullable(),
+  "linkedPlayerName": zod.string().nullable().describe('The linked club player\'s name (admin only); null when unlinked or the name can\'t be resolved.'),
+  "account": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian1": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian2": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "contactChangeFlag": zod.boolean().describe('A player or guardian changed a contact from their link; stays up until an admin clears it.'),
+  "updatedAt": zod.string()
+})
+export const ListSelectionRosterResponse = zod.array(ListSelectionRosterResponseItem)
+
+
+/**
+ * @summary Reactivate a previous squad member (admin or captain)
+ */
+export const ActivateSquadMemberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ActivateSquadMemberResponse = zod.object({
+  "id": zod.number(),
+  "playhqProfileId": zod.string().nullable(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "preferredName": zod.string().nullable(),
+  "section": zod.enum(['senior', 'junior']),
+  "active": zod.boolean(),
+  "activeSetByAdmin": zod.boolean().describe('The admin set `active` by hand; imports never override it.'),
+  "under18": zod.boolean().nullable().describe('From date of birth (Perth today); null when unknown. Under-18s are contacted through their guardians.'),
+  "gradeHint": zod.string().nullable(),
+  "teamName": zod.string().nullable(),
+  "ageGroup": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "linkedPlayerId": zod.number().nullable(),
+  "linkedPlayerName": zod.string().nullable().describe('The linked club player\'s name (admin only); null when unlinked or the name can\'t be resolved.'),
+  "account": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian1": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian2": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "contactChangeFlag": zod.boolean().describe('A player or guardian changed a contact from their link; stays up until an admin clears it.'),
+  "updatedAt": zod.string()
+})
 
 
 /**

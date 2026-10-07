@@ -9,7 +9,10 @@ import {
   playerIdMapTable,
   premiershipsTable,
   provisioningExclusionsTable,
+  squadMembersTable,
 } from "@workspace/db";
+import { centralCurrentSeasonSquad } from "@workspace/db/central-queries";
+import { seasonStartYearFor } from "@workspace/db/seasons";
 import { findFoldedCentralClub } from "../lib/central-club.test-helpers";
 // Type-only (erased at runtime), so it never bypasses the vi.mock below; the
 // inline `typeof import()` form is forbidden by consistent-type-imports.
@@ -70,6 +73,7 @@ describe("platform self-serve signup", () => {
       // Provisioning seeds the premiership board (cascades to its players).
       await db.delete(premiershipsTable).where(eq(premiershipsTable.tenantId, createdTenantId));
       await db.delete(playerIdMapTable).where(eq(playerIdMapTable.tenantId, createdTenantId));
+      await db.delete(squadMembersTable).where(eq(squadMembersTable.tenantId, createdTenantId));
       await db.delete(tenantsTable).where(eq(tenantsTable.id, createdTenantId));
     }
     delete process.env.SIGNUP_MODE;
@@ -96,6 +100,16 @@ describe("platform self-serve signup", () => {
     expect(signup.body.slug).toBe(SLUG);
     expect(signup.body.redirectUrl).toContain(`${SLUG}.`);
     createdTenantId = signup.body.tenantId;
+
+    const source = await centralCurrentSeasonSquad(club.centralClubId, seasonStartYearFor(new Date()));
+    const seeded = await db.select().from(squadMembersTable)
+      .where(eq(squadMembersTable.tenantId, createdTenantId!));
+    expect(seeded.every((m) => m.active && !m.activeSetByAdmin && !m.playhqProfileId)).toBe(true);
+    for (const player of source) {
+      const tokens = player.name.trim().split(/\s+/);
+      const firstName = tokens.shift()!;
+      expect(seeded.some((m) => m.firstName === firstName && m.lastName === tokens.join(" "))).toBe(true);
+    }
 
     // Signup mints a session immediately (U1) — no separate login call needed.
     const setCookie = signup.headers["set-cookie"];
@@ -310,6 +324,7 @@ describe("platform self-serve signup", () => {
     // Provisioning seeds the premiership board (cascades to its players).
     await db.delete(premiershipsTable).where(eq(premiershipsTable.tenantId, retryTenantId));
     await db.delete(playerIdMapTable).where(eq(playerIdMapTable.tenantId, retryTenantId));
+    await db.delete(squadMembersTable).where(eq(squadMembersTable.tenantId, retryTenantId));
     await db.delete(tenantsTable).where(eq(tenantsTable.id, retryTenantId));
   });
 });

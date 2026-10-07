@@ -47,6 +47,7 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { plural } from "@/lib/plural";
 import { useConfirm } from "@/components/confirm-dialog";
+import { AddActivePlayer } from "@/components/add-active-player";
 import { SquadPlayerPicker, type LinkedPlayer } from "@/components/squad-player-picker";
 
 /**
@@ -682,8 +683,9 @@ function SquadCard() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex-row items-center justify-between gap-2">
         <CardTitle>Squad</CardTitle>
+        <AddActivePlayer />
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">

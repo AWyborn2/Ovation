@@ -1,15 +1,18 @@
 import { Router, type IRouter, type Request } from "express";
-import { and, asc, eq, ne } from "drizzle-orm";
-import { db, squadMembersTable, type SquadMemberRow } from "@workspace/db";
+import { and, asc, eq, ne, sql } from "drizzle-orm";
+import { db, squadMembersTable, playerIdMapTable, type SquadMemberRow } from "@workspace/db";
 import {
   GetSquadMemberParams,
   UpdateSquadMemberBody,
   UpdateSquadMemberParams,
   RemoveSquadMemberParams,
   SearchSquadPlayersQueryParams,
+  CreateSquadMemberBody,
+  ActivateSquadMemberParams,
 } from "@workspace/api-zod";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { requireAdmin } from "../middlewares/require-admin";
+import { requireAdminOrCaptain } from "../middlewares/require-admin-or-captain";
 import { getTenantId } from "../middlewares/tenant-context";
 import { adminWriteRateLimiter } from "../middlewares/rate-limit";
 import { scorecardUpload, type MulterRequest } from "../lib/import-upload";
@@ -23,7 +26,7 @@ import {
 } from "../lib/squad-import";
 import { isUnder18OnDate, perthDate } from "../lib/availability-grades";
 import { revokeMemberTokens } from "../lib/availability-tokens";
-import { linkedPlayerNames, searchClubPlayers } from "../lib/squad-link";
+import { linkedPlayerNames, loadCentralPlayerGroups, searchClubPlayers } from "../lib/squad-link";
 
 /**
  * The club's squad register for player availability. Admin only. Contact
@@ -177,13 +180,126 @@ router.get("/squad", requireAdmin, async (req, res): Promise<void> => {
 });
 
 // Registered before "/squad/:id" so "player-search" is never read as an id.
-router.get("/squad/player-search", requireAdmin, async (req, res): Promise<void> => {
+router.get("/squad/player-search", requireAdminOrCaptain, async (req, res): Promise<void> => {
   const query = SearchSquadPlayersQueryParams.safeParse(req.query);
   if (!query.success || query.data.q.trim().length < 2) {
     res.status(400).json({ error: "Type at least two letters to search" });
     return;
   }
   res.json(await searchClubPlayers(getTenantId(req), query.data.q.trim()));
+});
+
+router.get("/selection/roster", requireAdminOrCaptain, async (req, res): Promise<void> => {
+  const tenantId = getTenantId(req);
+  const rows = await db.select().from(squadMembersTable)
+    .where(eq(squadMembersTable.tenantId, tenantId))
+    .orderBy(asc(squadMembersTable.lastName), asc(squadMembersTable.firstName));
+  res.json(rows.map((r) => serializeSummary(r, new Map())));
+});
+
+router.post("/squad/:id/activate", requireAdminOrCaptain, adminWriteRateLimiter, async (req, res): Promise<void> => {
+  const params = ActivateSquadMemberParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid member id" });
+    return;
+  }
+  const [row] = await db.update(squadMembersTable)
+    .set({ active: true, activeSetByAdmin: true, updatedAt: new Date() })
+    .where(and(eq(squadMembersTable.tenantId, getTenantId(req)), eq(squadMembersTable.id, params.data.id)))
+    .returning();
+  if (!row) {
+    res.status(404).json({ error: "Squad member not found" });
+    return;
+  }
+  res.json(serializeSummary(row, new Map()));
+});
+
+router.post("/squad", requireAdminOrCaptain, adminWriteRateLimiter, async (req, res): Promise<void> => {
+  const parsed = CreateSquadMemberBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid player details", issues: parsed.error.issues });
+    return;
+  }
+  const b = parsed.data;
+  const firstName = b.firstName.trim();
+  const lastName = b.lastName.trim();
+  if (!firstName || !lastName) {
+    res.status(400).json({ error: "Enter a first name and surname" });
+    return;
+  }
+  if (b.dateOfBirth && (b.dateOfBirth > perthDate(new Date()) ||
+    Number.isNaN(Date.parse(b.dateOfBirth)) ||
+    new Date(b.dateOfBirth).toISOString().slice(0, 10) !== b.dateOfBirth)) {
+    res.status(400).json({ error: "Enter a valid date of birth, not in the future" });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  let isPrivate = false;
+  if (b.linkedPlayerId != null) {
+    // Crosswalk ownership is authoritative; never trust an id supplied by the browser.
+    const [owned] = await db.select().from(playerIdMapTable)
+      .where(and(eq(playerIdMapTable.tenantId, tenantId), eq(playerIdMapTable.playerId, b.linkedPlayerId)));
+    const nativeName = owned ? null : (await linkedPlayerNames(tenantId, [b.linkedPlayerId])).get(b.linkedPlayerId);
+    if (b.linkedPlayerId <= 0 || b.linkedPlayerId >= FILL_IN_THRESHOLD || (!owned && !nativeName)) {
+      res.status(400).json({ error: "Choose a player belonging to this club" });
+      return;
+    }
+    const group = (await loadCentralPlayerGroups(tenantId)).find((p) => p.playerId === b.linkedPlayerId);
+    isPrivate = group?.isPrivate ?? false;
+  }
+  const values: typeof squadMembersTable.$inferInsert = {
+    tenantId, firstName, lastName, section: b.section, dateOfBirth: b.dateOfBirth ?? null,
+    gradeHint: b.gradeHint?.trim() || null, linkedPlayerId: b.linkedPlayerId ?? null,
+    active: true, activeSetByAdmin: true,
+    isPrivate,
+  };
+  for (const s of SLOTS) {
+    const c = b[s.key];
+    if (!c) continue;
+    values[s.name] = c.name?.trim() || null;
+    values[s.mobile] = normaliseMobile(c.mobile);
+    values[s.email] = normaliseEmail(c.email);
+    if (c.mobile?.trim() && !/^\+?\d{8,15}$/.test(values[s.mobile] ?? "")) {
+      res.status(400).json({ error: `Enter a valid mobile number for ${s.key}` });
+      return;
+    }
+    if (c.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values[s.email] ?? "")) {
+      res.status(400).json({ error: `Enter a valid email address for ${s.key}` });
+      return;
+    }
+  }
+  const row = await db.transaction(async (tx) => {
+    // Serialize manual additions/imports for this tenant to prevent double clicks
+    // from creating duplicate identities without needing a new schema constraint.
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(72401, ${tenantId})`);
+    const existing = await tx.select().from(squadMembersTable).where(eq(squadMembersTable.tenantId, tenantId));
+    const key = (first: string, last: string) => `${first} ${last}`.toLowerCase().trim().replace(/\s+/g, " ");
+    const linked = b.linkedPlayerId == null ? undefined :
+      existing.find((r) => r.linkedPlayerId === b.linkedPlayerId);
+    const sameName = existing.filter((r) => r.section === b.section &&
+      (b.linkedPlayerId == null || r.linkedPlayerId == null) &&
+      key(r.firstName, r.lastName) === key(firstName, lastName));
+    if (!linked && sameName.length > 1) return null;
+    const prev = linked ?? sameName[0];
+    if (prev) {
+      // Reactivation must not overwrite saved contacts, privacy, names or section.
+      const [updated] = await tx.update(squadMembersTable)
+        .set({
+          active: true, activeSetByAdmin: true, updatedAt: new Date(),
+          ...(prev.linkedPlayerId === null && b.linkedPlayerId != null
+            ? { linkedPlayerId: b.linkedPlayerId, isPrivate: prev.isPrivate || isPrivate } : {}),
+        })
+        .where(and(eq(squadMembersTable.id, prev.id), eq(squadMembersTable.tenantId, tenantId))).returning();
+      return updated;
+    }
+    const [created] = await tx.insert(squadMembersTable).values(values).returning();
+    return created;
+  });
+  if (!row) {
+    res.status(409).json({ error: "Several roster members have this name. Choose the existing player to reactivate." });
+    return;
+  }
+  res.status(201).json(serializeSummary(row, new Map()));
 });
 
 router.get("/squad/:id", requireAdmin, async (req, res): Promise<void> => {

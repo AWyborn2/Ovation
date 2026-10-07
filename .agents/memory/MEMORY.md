@@ -71,3 +71,4 @@
 - [Availability testing requirement](availability-testing.md) — repeated manual request sends are intentional: the user needs unrestricted repeat testing, not a once-per-round manual action.
 - [Early team drafting](availability-selection-timing.md) — clubs must be able to draft teams as soon as availability requests go out, without waiting for cut-off.
 - [Publishing constraint checks](publishing-constraint-checks.md) — a “no schema diff” result can miss CHECK-constraint drift; compare live definitions before promising republishing will repair it.
+- [Active roster onboarding](active-roster-onboarding.md) — current-season appearances seed new clubs' active roster; admins and captains can maintain it without repeated participant reports.

@@ -41,6 +41,7 @@ let clubParticipants: { participantId: string; displayName: string | null; isPri
 vi.mock("./central-queries", async (importOriginal) => ({
   ...(await importOriginal<typeof CentralQueries>()),
   centralClubParticipants: async () => clubParticipants,
+  centralCurrentSeasonSquad: async () => [],
 }));
 
 import { provisionTenant, ProvisionError, mintPlayerIdMap, MINT_ID_CEILING } from "./provision";
