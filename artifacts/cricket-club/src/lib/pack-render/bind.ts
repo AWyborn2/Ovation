@@ -172,7 +172,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
       break;
     }
     case "matchDay": {
-      set(values, "grade", input.grade ?? "");
+      set(values, "grade", input.grade?.trim() || "GAME DAY");
       if (input.carouselPage) {
         set(values, "weekendTitle", input.carouselPage.title);
         set(values, "fixtureCount", input.carouselPage.fixtureCount);
