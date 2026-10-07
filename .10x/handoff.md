@@ -1,7 +1,7 @@
 # Handoff
 
-**From:** Discovery (orchestrator)
-**To:** Product Manager / Architect (spec review, then Phase 1–2)
+**From:** CTO + Product Manager (Phase 1)
+**To:** Architect + Staff Engineer (Phase 2)
 **Feature:** card-kind-templates
 
 ## Context
@@ -12,6 +12,5 @@
 
 ## Next steps
 
-1. User approves the updated spec and plan.
-2. Phase 1 (CTO + PM): confirm strategy, scope and success criteria.
-3. Phase 2 (Architect + Staff Engineer): write ADR-001 for the template document model, the draft-copy model and the kind-templates switch.
+1. Write ADRs: template document model on the blank base; draft holds a versioned copy; switch plus lazy creation; warnings computed before automation.
+2. Record component boundaries, failure modes and cross-cutting concerns.
