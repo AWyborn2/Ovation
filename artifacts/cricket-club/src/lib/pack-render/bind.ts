@@ -172,6 +172,15 @@ export function bindInput(input: ShareCardInput): BoundInput {
       break;
     }
     case "matchDay": {
+      set(values, "grade", input.grade ?? "");
+      if (input.carouselPage) {
+        set(values, "weekendTitle", input.carouselPage.title);
+        set(values, "fixtureCount", input.carouselPage.fixtureCount);
+        input.carouselPage.sponsors.forEach((s, i) => {
+          set(values, `weekendSponsorName${i}`, s.name);
+          if (s.logoUrl) images[`weekendSponsor${i}`] = s.logoUrl;
+        });
+      }
       set(values, "roundLabel", input.roundLabel);
       set(values, "opposition.name", cardTeamName(input.oppositionName));
       set(values, "homeAway", input.homeAway);

@@ -4972,6 +4972,28 @@ paths:
         "409":
           description: Already connected and `replace` was not confirmed
 
+  /weekend-carousel/sources:
+    get:
+      operationId: getWeekendCarouselSources
+      tags: [social]
+      summary: Tenant-scoped weekend fixtures and eligible action photos for on-demand export
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' } }
+        - { name: to, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' } }
+      responses:
+        "200":
+          description: Sources, with cancelled fixtures and ineligible photos excluded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WeekendCarouselSources" }
+        "400":
+          description: Invalid date range
+        "401":
+          description: Admin sign-in required
+        "403":
+          description: Social Studio entitlement required
+        "503":
+          description: Fixture status could not be verified
   /fixtures:
     get:
       operationId: listFixtures
@@ -19035,6 +19057,20 @@ components:
         lastClickedAt: { type: ["string", "null"], format: date-time }
         createdAt: { type: string, format: date-time }
 
+    WeekendCarouselSources:
+      type: object
+      required: [timeZone, fixtures, photos, warnings]
+      properties:
+        timeZone: { type: string }
+        fixtures:
+          type: array
+          items: { $ref: "#/components/schemas/Fixture" }
+        photos:
+          type: array
+          items: { $ref: "#/components/schemas/ClubPhoto" }
+        warnings:
+          type: array
+          items: { type: string }
     Fixture:
       type: object
       required: [id, grade, opponentName, startAt, isHome, source, createdAt]

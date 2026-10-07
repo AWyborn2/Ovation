@@ -153,6 +153,7 @@ import type {
   GetSocialClubSeasonTotalsParams,
   GetSocialLadderPrefillParams,
   GetSocialWeekendWrapPrefillParams,
+  GetWeekendCarouselSourcesParams,
   GoogleDriveConfig,
   GradeDistribution,
   GradeSummary,
@@ -398,6 +399,7 @@ import type {
   UploadUrlRequest,
   UploadUrlResponse,
   VotableAward,
+  WeekendCarouselSources,
   WeekendWrap
 } from './api.schemas';
 
@@ -16439,6 +16441,90 @@ export const useCompleteMetaConnect = <TError = ErrorType<void>,
       > => {
       return useMutation(getCompleteMetaConnectMutationOptions(options));
     }
+
+export const getGetWeekendCarouselSourcesUrl = (params: GetWeekendCarouselSourcesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/weekend-carousel/sources?${stringifiedParams}` : `/api/weekend-carousel/sources`
+}
+
+/**
+ * @summary Tenant-scoped weekend fixtures and eligible action photos for on-demand export
+ */
+export const getWeekendCarouselSources = async (params: GetWeekendCarouselSourcesParams, options?: RequestInit): Promise<WeekendCarouselSources> => {
+
+  return customFetch<WeekendCarouselSources>(getGetWeekendCarouselSourcesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWeekendCarouselSourcesQueryKey = (params?: GetWeekendCarouselSourcesParams,) => {
+    return [
+    `/api/weekend-carousel/sources`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetWeekendCarouselSourcesQueryOptions = <TData = Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError = ErrorType<void>>(params: GetWeekendCarouselSourcesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWeekendCarouselSourcesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWeekendCarouselSources>>> = ({ signal }) => getWeekendCarouselSources(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWeekendCarouselSourcesQueryResult = NonNullable<Awaited<ReturnType<typeof getWeekendCarouselSources>>>
+export type GetWeekendCarouselSourcesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Tenant-scoped weekend fixtures and eligible action photos for on-demand export
+ */
+
+export function useGetWeekendCarouselSources<TData = Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError = ErrorType<void>>(
+ params: GetWeekendCarouselSourcesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWeekendCarouselSourcesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListFixturesUrl = (params?: ListFixturesParams,) => {
   const normalizedParams = new URLSearchParams();

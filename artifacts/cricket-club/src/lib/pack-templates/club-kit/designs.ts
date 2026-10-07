@@ -77,6 +77,7 @@ const HEADER_FIELDS: PackTemplateField[] = [
 const EXTRA_FIELDS: Record<string, PackTemplateField> = {
   clubMonogram: textField("clubMonogram", "Club monogram (no crest)", "YC"),
   photo: photoField("photo", "Frame photo", "Club photo"),
+  grade: textField("grade", "Grade / team", ""),
   clubHashtag: textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
   resultWord: textField("resultWord", "Result headline", "WIN"),
   setMarker: textField("setMarker", "Set page marker", ""),
@@ -320,14 +321,13 @@ const matchDay = design({
       "GAME DAY",
       col(
         eyebrow(u, "{{date}} · {{roundLabel}}") +
+          meta(u, "{{grade}}", ";margin-top:1cqmin") +
           twoLineTitle(u, "GAME", "DAY", f === "portrait" ? 12 : 16) +
-          `<div style="width:100%;margin-top:2cqmin">` +
-          gradeRow(u, {
-            grade: "{{homeAway}}",
-            opponent: "v {{opposition.name}}",
-            venue: "{{venue}}",
-            time: "{{startTime}}",
-          }) +
+          `<div style="width:100%;margin-top:2cqmin;padding:1.5cqmin;background:${C.panel}">` +
+          `<div style="display:flex;justify-content:space-between;gap:1cqmin;margin-bottom:1cqmin">` +
+          meta(u, "{{homeAway}}") + display(u, "{{startTime}}", 3.2) + `</div>` +
+          display(u, "v {{opposition.name}}", 3.8, ";line-height:1.05;overflow-wrap:anywhere") +
+          meta(u, "{{venue}}", ";margin-top:.8cqmin;overflow-wrap:anywhere") +
           `</div>`,
       ),
       LOGO_FOOTER,

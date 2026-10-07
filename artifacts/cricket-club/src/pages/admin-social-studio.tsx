@@ -42,6 +42,7 @@ import { type PackCardData } from "@/lib/pack-render";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { useConfirm } from "@/components/confirm-dialog";
 import { LoadingState, QueryError } from "@/components/data-states";
+import { WeekendCarousel } from "@/components/weekend-carousel";
 
 // Renders a card preview (built-in body + optional saved layout) to an <img>.
 function CardThumb({
@@ -415,6 +416,20 @@ export default function AdminSocialStudio() {
             </div>
           </div>
         )}
+      </section>
+
+      {/* Weekend match-day carousel entry */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Weekend match day</h2>
+        <Card>
+          <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Turn this weekend's fixtures into a branded carousel: a title slide, one slide per
+              team and a sponsors close, downloaded as one ZIP.
+            </p>
+            <WeekendCarousel />
+          </CardContent>
+        </Card>
       </section>
 
       {/* Trading cards entry */}

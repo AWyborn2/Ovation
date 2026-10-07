@@ -263,6 +263,15 @@ export type ShareCardInput =
     }
   | {
       kind: "matchDay";
+      /** Grade/team label for fixture-based cards. */
+      grade?: string;
+      /** On-demand weekend set bookends, rendered by Club Kit only. */
+      carouselPage?: {
+        page: "title" | "sponsors";
+        title: string;
+        fixtureCount: number;
+        sponsors: { name: string; logoUrl: string }[];
+      };
       roundLabel: string;
       oppositionName: string;
       oppositionLogoUrl?: string | null;

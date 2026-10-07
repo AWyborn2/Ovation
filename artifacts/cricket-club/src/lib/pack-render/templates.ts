@@ -12,6 +12,7 @@ import type {
 } from "../pack-templates/types";
 import type { ShareCardInput, CardSize } from "../share-card";
 import type { PackImageSlot } from "./types";
+import { weekendBookendTemplate } from "../pack-templates/club-kit/weekend-bookends";
 
 /**
  * Slot keys the generic per-slot override PANEL hides — the tenant-branding
@@ -116,6 +117,9 @@ export function resolveTemplate(
   input: ShareCardInput,
   packId?: string | null,
 ): PackCardTemplate | null {
+  if (packId === "club-kit-v1" && input.kind === "matchDay" && input.carouselPage) {
+    return weekendBookendTemplate(input.carouselPage.page, input.carouselPage.sponsors.length, input.carouselPage.title.length);
+  }
   const all = designsByKind(packId).get(input.kind);
   if (!all || all.length === 0) return null;
   // A set's cover renders the kind's cover design (none → no cover); every

@@ -7325,6 +7325,13 @@ export interface Fixture {
   createdAt: string;
 }
 
+export interface WeekendCarouselSources {
+  timeZone: string;
+  fixtures: Fixture[];
+  photos: ClubPhoto[];
+  warnings: string[];
+}
+
 /**
  * The other side of a PlayHQ fixture — the opposing club as PlayHQ names it.
  */
@@ -9105,6 +9112,17 @@ section?: SquadSection;
 
 export type GetMetaConnectPendingParams = {
 token: string;
+};
+
+export type GetWeekendCarouselSourcesParams = {
+/**
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+from: string;
+/**
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+to: string;
 };
 
 export type ListFixturesParams = {

@@ -29,6 +29,8 @@ type HarnessMeta = {
 // wire — `CardRenderStillInput.options` is `additionalProperties: true`, so no
 // OpenAPI change was needed to add this field).
 type StillOptions = {
+  /** On-demand sets must not silently export a blank failed image. */
+  strictImages?: boolean;
   size: CardSize;
   sponsorsOn: boolean;
   junior: boolean;
@@ -268,6 +270,9 @@ export default function CardRenderHarness() {
       // photo while the image is still fetching.
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       await waitForImages(stillContainer);
+      if (options.strictImages && Array.from(stillContainer.querySelectorAll("img")).some(img => !img.complete || img.naturalWidth === 0)) {
+        throw new Error("A card image could not be loaded. Check the selected photo and club/sponsor logos, then retry.");
+      }
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       );

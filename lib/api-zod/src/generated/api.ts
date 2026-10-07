@@ -7323,6 +7323,54 @@ export const CompleteMetaConnectResponse = zod.object({
 
 
 /**
+ * @summary Tenant-scoped weekend fixtures and eligible action photos for on-demand export
+ */
+export const getWeekendCarouselSourcesQueryFromRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getWeekendCarouselSourcesQueryToRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const GetWeekendCarouselSourcesQueryParams = zod.object({
+  "from": zod.coerce.string().regex(getWeekendCarouselSourcesQueryFromRegExp),
+  "to": zod.coerce.string().regex(getWeekendCarouselSourcesQueryToRegExp)
+})
+
+export const GetWeekendCarouselSourcesResponse = zod.object({
+  "timeZone": zod.string(),
+  "fixtures": zod.array(zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "roundLabel": zod.string().nullish(),
+  "opponentName": zod.string(),
+  "opponentClubId": zod.number().nullish().describe('Optional link into the shared clubs register'),
+  "opponentLogoUrl": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "notes": zod.string().nullish(),
+  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)'),
+  "playhqMatchId": zod.string().nullish().describe('PlayHQ match GUID for playhq-sourced rows; null for manual rows'),
+  "createdAt": zod.coerce.date()
+})),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number()),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+})),
+  "warnings": zod.array(zod.string())
+})
+
+
+/**
  * @summary List fixtures (ordered by start time ascending)
  */
 export const ListFixturesQueryParams = zod.object({
