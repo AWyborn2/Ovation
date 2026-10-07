@@ -1,6 +1,6 @@
 # DBA — card-kind-templates
 
-## Schema found [DISCOVERED]
+## Schema found [CONFIRMED 2026-10-07]
 
 - `card_templates` (`lib/db/src/schema/social_cards.ts`): `source` (background | layers | pack | editor), `cardKinds`, `packId`, `packVariant`, `baseKind`, `adjustments` jsonb, `isDefault` (legacy), `defaultForKinds` (one kind per template, enforced by `clearDefaultKinds` across all sources); unique index on (tenant, source, packId, packVariant) where source = 'pack'.
 - `card_layouts`: one row per tenant and kind (legacy per-kind overrides).

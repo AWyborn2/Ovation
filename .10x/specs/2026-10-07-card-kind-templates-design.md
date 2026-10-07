@@ -12,33 +12,23 @@ Every Social Studio card kind (21 kinds) gets one club template made of editable
 
 - Requirements (Product Contract): approved by Ash, 2026-10-07.
 - Implementation plan scope: approved by Ash, 2026-10-07.
-- Headless document review: 0 fixes applied; 11 proposed fixes, 3 decisions and 4 FYI observations open.
+- Headless document review: 11 proposed fixes accepted by Ash and 3 decisions made (2026-10-07); all folded into the plan.
 
-## Open review items
+## Review items — resolved 2026-10-07
 
-### Proposed fixes (concrete fix, needs confirmation)
+All 11 proposed fixes accepted and folded into the plan (KTD4, KTD5, KTD6, KTD9, KTD10, KTD18, KTD19; units U1–U9).
 
-1. [P0] Needs-a-look is never computed before auto-promotion or auto-publish — render every enabled size at draft creation, refresh and apply; unrendered templated drafts are ineligible; publish worker aborts on warnings. (feasibility, adversarial)
-2. [P1] Kind templates must not use `defaultForKinds`/`clearDefaultKinds` — that strips pack claims and confuses the share-card modal. Key on `base_kind` with a partial unique index; exclude `source = 'kind'` from layout lists. (feasibility, adversarial)
-3. [P1] Template document types, size/capacity helpers and the field catalogue belong in `lib/scorecard`, not the web app, because the server and set planner need them. (feasibility)
-4. [P1] Broadcast Dark has no design for roundFixtures, tradingCard, juniorHighlights — catalogue those from Club Kit; design their Broadcast starters from scratch. (feasibility)
-5. [P1] Apply must not clear `editedAt`, which protects hand-written captions; use a separate design-edited marker. (adversarial)
-6. [P1] Add a kind-templates switch, off by default, flipped only after the starter contract passes with no skips. (adversarial)
-7. [P2] Shrink-to-fit uses an injected measurer for jsdom unit tests plus a real-browser smoke test. (feasibility)
-8. [P2] Shrink-to-fit and warnings also apply to text cells in list rows. (adversarial)
-9. [P2] Queue: "Needs a look" filter, drawer reason with "Edit design" and "Mark ready anyway" (confirmed), tests. (design-lens)
-10. [P2] Apply dialog: count, warns tweaks reset, defaults to "Don't apply", skipped at zero, in-progress and failure states. (design-lens)
-11. [P2] One owner for add-to-sizes and per-size presence helpers (U1's module). (scope-guardian)
+Decisions:
 
-### Decisions (need user judgment)
+- A. Per-slide tweaks: one design per carousel; a tweak applies to every slide (KTD6).
+- B. Colour modes and uploaded-background templates: kept in this release; retiring them is follow-up work.
+- C. Editor devices: desktop and tablet with touch (new R23, KTD20).
 
-A. Per-slide tweaks on templated carousels — proposal: one document at the root, every slide renders it, a tweak applies to all slides.
-B. Do colour modes and background templates retire in this release (U9 removes them; R20 does not mention them)?
-C. Template editor accessibility and narrow screens — keyboard/tablet support, or desktop-only?
+FYI items folded in: starter chooser thumbnails and retired-pack banner (U8, U9); U6/U10 split into static vs rendered checks; fixture templates for U7/U10 until starters land.
 
-### FYI
+## Spec self-review
 
-- Starter chooser should preview each starter; retired-pack notice as a banner on the Templates section.
-- Editor loading/empty/error states not enumerated.
-- U6 contract test and U10 template lint overlap.
-- U7 and U10 are built against fixture templates until U6 content lands.
+- Placeholders: none.
+- Consistency: KTD5 no longer uses defaultForKinds; U9 keeps colour modes; DoD references R1–R23 and the switch.
+- Scope: one feature behind one switch; starter design is the critical path.
+- Ambiguity: needs-a-look timing, caption protection and slide tweaks are now explicit.

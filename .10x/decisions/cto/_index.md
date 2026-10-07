@@ -1,6 +1,6 @@
 # CTO — Index
 
-## Cross-cutting [DISCOVERED]
+## Cross-cutting [CONFIRMED 2026-10-07]
 
 - Ovation is a white-label cricket stats-and-history platform; Halls Head is tenant #1, Peel Cricket Association clubs are pilots, WA Premier Cricket is projected into `central`.
 - Stack: pnpm TypeScript monorepo — React + Vite + Tailwind web (`artifacts/cricket-club`), Expo mobile, Express 5 + Drizzle + Postgres API (`artifacts/api-server`), OpenAPI-first (`lib/api-spec`), shared view-model `lib/scorecard`, schema `lib/db`.

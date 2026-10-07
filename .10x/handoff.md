@@ -12,6 +12,6 @@
 
 ## Next steps
 
-1. User confirms the discovery findings.
-2. Resolve the 11 proposed fixes and 3 decisions; update the plan in place.
-3. Phase 1 (CTO + PM) and Phase 2 (ADR, architect, staff engineer).
+1. User approves the updated spec and plan.
+2. Phase 1 (CTO + PM): confirm strategy, scope and success criteria.
+3. Phase 2 (Architect + Staff Engineer): write ADR-001 for the template document model, the draft-copy model and the kind-templates switch.

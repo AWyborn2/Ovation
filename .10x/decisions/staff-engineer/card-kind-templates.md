@@ -1,6 +1,6 @@
 # Staff Engineer — card-kind-templates
 
-## Conventions found [DISCOVERED]
+## Conventions found [CONFIRMED 2026-10-07]
 
 - OpenAPI-first: edit `lib/api-spec/openapi.yaml`, run `pnpm --filter @workspace/api-spec run codegen`; never hand-edit generated clients.
 - Juniors isolation (no junior photos, junior rows first name + initial), fill-in exclusion (`playerId >= 90000`), private-player redaction.

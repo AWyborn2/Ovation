@@ -1,6 +1,6 @@
 # Architect — card-kind-templates
 
-## Current architecture [DISCOVERED]
+## Current architecture [CONFIRMED 2026-10-07]
 
 - Cards render from code-built HTML pack templates (`artifacts/cricket-club/src/lib/pack-templates/`, six packs) bound to card data by `bindInput` and tenant data by `applyPackData` (`lib/pack-render/bind.ts`).
 - The Studio editor stores per-draft `adjustments` (field overrides, hidden slots, photo transform, free layers with per-size geometry) applied over the pack at render (`lib/pack-render/adjustments.ts`).

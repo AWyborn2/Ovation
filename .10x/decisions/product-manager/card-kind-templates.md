@@ -1,6 +1,6 @@
 # Product Manager — card-kind-templates
 
-## Scope [DISCOVERED from approved brainstorm, 2026-10-07]
+## Scope [CONFIRMED 2026-10-07]
 
 - Requirements R1–R22 and acceptance examples AE1–AE7 in `docs/plans/2026-10-07-002-feat-card-kind-templates-plan.md` (Product Contract), approved by Ash.
 - Primary user: each club's volunteer social admin (changes over; must be self-explanatory).

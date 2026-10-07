@@ -1,6 +1,6 @@
 # product manager — Index
 
-Cross-cutting notes for this role. Entries tagged [DISCOVERED] were reverse-engineered from the codebase, not actively decided.
+Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were discovered in the codebase and confirmed by the user.
 
 ## Active features
 
