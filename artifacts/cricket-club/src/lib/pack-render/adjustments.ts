@@ -13,6 +13,7 @@
 import type { RowsSpec, TemplateTextStyle } from "@workspace/scorecard/kind-templates";
 import type { CardSize } from "../share-card";
 import { escapeHtml } from "./html-utils";
+import { FIT_ATTR } from "./layer-fit";
 import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
 import { renderElement, type ElementLayerState } from "../studio-elements/registry";
 import { clubKitPaletteFor, clubKitVars } from "./club-kit-vars";
@@ -275,6 +276,9 @@ export function substituteTokens(text: string, values: Record<string, string>): 
   return text.replace(TOKEN, (_all, key: string) => values[key] ?? "");
 }
 
+/** A fittable element's designed size in cqw, for `FIT_ATTR`. */
+const fitBase = (style: TemplateTextStyle | undefined) => (style?.fontSize ?? 5).toFixed(2);
+
 /** Inline CSS for a text box (text layers and list-row cells). */
 function textCss(raw: TemplateTextStyle | undefined, extra: string[] = []): string {
   const s = {
@@ -318,6 +322,8 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
         ...cell.style,
         ...(variant ? spec.variants?.[variant]?.[cell.field] : undefined),
       };
+      // Cells stay on one line so an overflow shows as width, which the fit
+      // step shrinks and, failing that, reports (KTD9).
       const css = textCss(style, [
         "position:absolute",
         `left:${cell.x}%`,
@@ -325,8 +331,8 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
         "top:0",
         "height:100%",
         "overflow:hidden",
-      ]);
-      return `<div data-row-cell="${escapeHtml(cell.field)}" style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
+      ]).replace("white-space:pre-wrap", "white-space:nowrap");
+      return `<div data-row-cell="${escapeHtml(cell.field)}" ${FIT_ATTR}="${fitBase(style)}" style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
     });
     const top = i * (spec.rowHeight + gap);
     return `<div data-row-index="${i}"${variant ? ` data-row-variant="${escapeHtml(variant)}"` : ""} style="position:absolute;left:0;right:0;top:${top.toFixed(3)}cqw;height:${spec.rowHeight.toFixed(3)}cqw">${cells.join("")}</div>`;
@@ -371,7 +377,9 @@ function layerInner(
           : (layer.content ?? "");
       // A box made only of live fields that are all empty isn't drawn (KTD15).
       if (tokens && text.trim() === "") return null;
-      return `<div style="${textCss(raw, ["width:100%", "height:100%"])}">${escapeHtml(text)}</div>`;
+      // Live-field text shrinks to fit (KTD9); other text renders as before.
+      const fit = tokens ? ` ${FIT_ATTR}="${fitBase(raw)}"` : "";
+      return `<div${fit} style="${textCss(raw, ["width:100%", "height:100%"])}">${escapeHtml(text)}</div>`;
     }
     case "photo":
       return renderPhoto(layer, size, ctx);

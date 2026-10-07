@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import puppeteer, { type Browser, type Page } from "puppeteer-core";
+import type { LayoutWarning } from "@workspace/scorecard/kind-templates";
 import { logger } from "./logger";
 import { env } from "../config";
 
@@ -174,6 +175,8 @@ type StillMeta = {
   width: number;
   height: number;
   selector: string;
+  /** Layout warnings from the harness fit step (card kind templates); absent on older harnesses. */
+  warnings?: LayoutWarning[];
 };
 type HarnessApi = {
   ready: boolean;
@@ -308,6 +311,8 @@ export type StillRenderResult = {
   ext: StillFormat;
   width: number;
   height: number;
+  /** Layout warnings for this size (KTD9); empty when everything fits. */
+  warnings: LayoutWarning[];
 };
 
 const STILL_TYPES = {
@@ -380,6 +385,7 @@ export async function renderCardStill(
       ext: format,
       width: meta.width,
       height: meta.height,
+      warnings: meta.warnings ?? [],
     };
   } finally {
     try {

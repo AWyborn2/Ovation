@@ -11,6 +11,8 @@ import { prepareAnimation } from "@/lib/share-card-animation";
 import { PackCard } from "@/components/pack-card";
 import { packNativeSize, type CardAdjustments, type PackCardData } from "@/lib/pack-render";
 import { ensureCardFontsLoaded } from "@/lib/card-fonts";
+import { fitLayersInDom } from "@/lib/pack-render/layer-fit";
+import type { LayoutWarning } from "@workspace/scorecard/kind-templates";
 import { clipDuration, seekAnimations } from "@/lib/pack-render/animation-clock";
 
 // Metrics returned by init() so the server knows how many frames to capture.
@@ -49,6 +51,11 @@ type StillMeta = {
   height: number;
   /** CSS selector of the mounted card element (stable id). */
   selector: string;
+  /**
+   * Layout warnings for this size (card kind templates, KTD9): live text that
+   * still overflows at the minimum size. Empty when everything fits.
+   */
+  warnings: LayoutWarning[];
 };
 
 type HarnessApi = {
@@ -187,11 +194,17 @@ export default function CardRenderHarness() {
       },
       async renderStill(payload) {
         const native = await mountPack(payload.input, payload.options, false);
+        // Shrink live text that overflows, then repaint before the screenshot.
+        const warnings = stillContainer ? fitLayersInDom(stillContainer, payload.options.size) : [];
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        );
         setStatus("still");
         return {
           width: native.w,
           height: native.h,
           selector: `#${STILL_CONTAINER_ID}`,
+          warnings,
         };
       },
       dispose() {
