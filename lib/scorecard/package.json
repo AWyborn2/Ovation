@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./brand": "./src/brand.ts"
+    "./brand": "./src/brand.ts",
+    "./kind-templates": "./src/kind-templates/index.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*"
