@@ -143,7 +143,12 @@ router.post(
         ? await runReminder(tenantId, round, settings.smsEnabled, now, opts)
         : null);
     if (!result) {
-      res.status(409).json({ error: `The ${params.data.step} step has already run this round.` });
+      res.status(409).json({
+        error:
+          step === "send"
+            ? "A request send is already running. Wait for it to finish, then try again."
+            : `The ${params.data.step} step has already run this round.`,
+      });
       return;
     }
     req.log?.info(

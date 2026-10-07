@@ -383,7 +383,8 @@ const STEPS: {
     at: (r) => r.sendAt,
     started: (r) => r.sendStartedAt,
     completed: (r) => r.sendCompletedAt,
-    confirm: "Every active player (or a junior's parents) will be asked about this weekend now.",
+    confirm:
+      "Send availability requests to every eligible active player (or a junior's parents) with contact details for this weekend. You can repeat this as often as needed; each run sends again, even to people already contacted. Scheduled sends still avoid duplicates.",
   },
   {
     key: "remind",
@@ -407,7 +408,11 @@ const STEPS: {
 
 function stepState(r: AvailabilityRoundStatus, s: (typeof STEPS)[number]): string {
   const completed = s.completed(r);
-  if (completed) return `Done ${formatPerth(completed)}`;
+  if (completed) {
+    return s.key === "send"
+      ? `Last sent ${formatPerth(completed)} · Run now sends again`
+      : `Done ${formatPerth(completed)}`;
+  }
   const started = s.started(r);
   if (started) return `Started ${formatPerth(started)}`;
   return `Due ${formatPerth(s.at(r))}`;
