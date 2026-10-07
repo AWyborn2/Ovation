@@ -248,16 +248,14 @@ describe.skipIf(!isLocalDb)("squad player linking", () => {
     cookieA = `${SESSION_COOKIE}=${encodeSession({ adminId: adminA, issuedAt: Date.now() })}`;
     cookieB = `${SESSION_COOKIE}=${encodeSession({ adminId: adminB, issuedAt: Date.now() })}`;
 
-    await db
-      .insert(playerIdMapTable)
-      .values([
-        ...MAP_A.map(([participantId, playerId]) => ({
-          tenantId: tenantA,
-          participantId,
-          playerId,
-        })),
-        { tenantId: tenantB, participantId: P.other, playerId: 601 },
-      ]);
+    await db.insert(playerIdMapTable).values([
+      ...MAP_A.map(([participantId, playerId]) => ({
+        tenantId: tenantA,
+        participantId,
+        playerId,
+      })),
+      { tenantId: tenantB, participantId: P.other, playerId: 601 },
+    ]);
     // An admin already linked another member to D Dup's player.
     const [holder] = await db
       .insert(squadMembersTable)
