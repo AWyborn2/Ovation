@@ -90,6 +90,28 @@ describe("weekend sponsor placements", () => {
   });
 });
 
+describe("weekend cover and centred sponsor rows", () => {
+  it.each(Object.keys(SIZES) as CardSize[])("replaces the match count and balances four/five logos in %s", size => {
+    for (const count of [4, 5]) {
+      const slides = buildWeekendSlides(createTeamSlides([fixture()], []), [], {
+        ...bundle, activeSponsors: bundle.activeSponsors.slice(0, count),
+      }, "Match day", "2026-10-09", "2026-10-11");
+      const html = slides.map(sl => renderPackCard(sl.input, size, sl.sponsorsOn,
+        resolveCardTokens({ data: sl.data, junior: false, packId: "club-kit-v1" }),
+        false, sl.data, "club-kit-v1"));
+      expect(html[0]).toContain("ROUND 1");
+      expect(html[0]).toContain("SWIPE &gt;&gt;");
+      expect(html[0]).not.toContain("MATCHES ·");
+      const closing = html.at(-1)!;
+      expect(closing).toContain("flex-wrap:wrap;justify-content:center");
+      expect(closing.match(/data-weekend-sponsor=/g)).toHaveLength(count);
+      expect(closing).toContain(count === 4
+        ? "flex:0 0 calc((100% - 1.5cqmin) / 2)"
+        : "flex:0 0 calc((100% - 3cqmin) / 3)");
+    }
+  });
+});
+
 describe("weekend dates", () => {
   it.each([
     ["2026-10-05T04:00:00Z", "2026-10-09", "2026-10-11"],
@@ -144,7 +166,9 @@ describe("strict photos and full ordered sets", () => {
     const html = renderPackCard(slides[0].input, size, false,
       resolveCardTokens({ data: slides[0].data, packId: "club-kit-v1", junior: false }), false, slides[0].data, "club-kit-v1");
     expect(html).toContain("/photos/10.jpg");
-    expect(html).toContain("SWIPE FOR EVERY TEAM");
+    expect(html).toContain("ROUND 1");
+    expect(html).toContain("SWIPE &gt;&gt;");
+    expect(html).not.toContain("MATCHES · SWIPE");
     expect(html).toContain("linear-gradient(180deg,rgba(0,0,0,.76)");
     expect(html).not.toContain("{{");
     const removed = buildWeekendSlides(teams, [photo()], bundle, "Weekend", "2026-10-09", "2026-10-11", undefined,
