@@ -11,7 +11,13 @@ export interface SelectionChange {
   selectionId: number;
   /** The version the caller last saw */
   version: number;
-  /** The side's 11 slots, in order */
+  /**
+     * The side's 12 slots in order: 1–11 are the XI, slot 12 the 12th
+  player. 11 slots (an older client) are read as an empty 12th.
+
+     * @minItems 11
+     * @maxItems 12
+     */
   slots: SelectionSlotInput[];
   /** @nullable */
   captainMemberId: number | null;

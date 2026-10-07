@@ -2286,14 +2286,16 @@ paths:
       tags: [selection]
       summary: Save changes to one or more sides of the round (admin or captain)
       description: |
-        Each change replaces a whole side: its 11 slots, captain and keeper,
-        with the version the caller last saw. Everything is applied in one
-        transaction or nothing is: a side the caller may not edit (or a member
-        taken from one) → 403; a finalised side or a stale version → 409; not
-        exactly 11 slots, a member twice in the round, or an unknown or inactive
-        member → 400. A captain or keeper who is not in their side is cleared
-        and the clearing logged. Returns the board of the first changed side's
-        section.
+        Each change replaces a whole side: its 12 slots (the XI in slots 1–11,
+        the 12th player in slot 12), captain and keeper, with the version the
+        caller last saw. A side sent with 11 slots (an older client) is read
+        as having an empty 12th. Everything is applied in one transaction or
+        nothing is: a side the caller may not edit (or a member taken from
+        one) → 403; a finalised side or a stale version → 409; not 12 (or 11)
+        slots, a member twice in the round, or an unknown or inactive member
+        → 400. A captain or keeper who is not in the XI (out of the side, or
+        moved to 12th) is cleared and the clearing logged. Returns the board
+        of the first changed side's section.
       requestBody:
         required: true
         content:
@@ -12681,12 +12683,17 @@ components:
 
     SelectionWarnings:
       type: object
-      required: [filled, open, unconfirmed, saidNo, noCaptain, noKeeper]
+      required: [filled, open, twelfth, unconfirmed, saidNo, noCaptain, noKeeper]
       properties:
         filled:
           type: integer
+          description: Players in the XI (slots 1–11); the 12th is not counted
         open:
           type: integer
+          description: Open slots in the XI; an empty 12th is not an open slot
+        twelfth:
+          type: boolean
+          description: Slot 12 (the 12th player) is filled
         unconfirmed:
           type: integer
           description: Selected members who said Maybe or haven't replied
@@ -12736,6 +12743,9 @@ components:
           type: integer
         slots:
           type: array
+          description: The side's 12 slots in order; 1–11 are the XI and slot 12 the 12th player
+          minItems: 12
+          maxItems: 12
           items:
             $ref: "#/components/schemas/SelectionSlot"
         captainMemberId:
@@ -12898,7 +12908,11 @@ components:
           description: The version the caller last saw
         slots:
           type: array
-          description: The side's 11 slots, in order
+          description: |
+            The side's 12 slots in order: 1–11 are the XI, slot 12 the 12th
+            player. 11 slots (an older client) are read as an empty 12th.
+          minItems: 11
+          maxItems: 12
           items:
             $ref: "#/components/schemas/SelectionSlotInput"
         captainMemberId:
@@ -13004,7 +13018,7 @@ components:
 
     AvailabilityMatch:
       type: object
-      required: [grade, opponent, venue, startAt, isHome, role]
+      required: [grade, opponent, venue, startAt, isHome, role, twelfth]
       properties:
         grade:
           type: string
@@ -13020,6 +13034,9 @@ components:
         role:
           type: ["string", "null"]
           enum: [C, WK, C/WK, null]
+        twelfth:
+          type: boolean
+          description: Picked as the side's 12th player (slot 12)
 
     AvailabilityResponsePage:
       type: object

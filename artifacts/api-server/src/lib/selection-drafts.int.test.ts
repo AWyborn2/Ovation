@@ -172,7 +172,7 @@ describe("buildRoundDrafts", () => {
   it("seeds A Grade from last week's side with labelled gaps (AE1, R37)", async () => {
     const s = await selectionFor(fx.a);
     expect(s).toMatchObject({ roundId, state: "draft", version: 1 });
-    expect(s.slots).toHaveLength(11);
+    expect(s.slots).toHaveLength(12);
     expect(s.slots[0]).toEqual({ memberId: memberIds.get("Ava Hill") });
     expect(s.slots[1]).toEqual({ memberId: null, gap: { name: "Ben Cole", reason: "no" } });
     expect(s.slots[2]).toEqual({ memberId: null, gap: { name: "Cal Dunn", reason: "no" } });
@@ -200,9 +200,9 @@ describe("buildRoundDrafts", () => {
     expect(sat.slots.slice(2).every((x) => x.memberId == null && !x.gap)).toBe(true);
 
     const sun = await selectionFor(fx.bSun);
-    expect(sun.slots).toEqual(Array.from({ length: 11 }, () => ({ memberId: null })));
+    expect(sun.slots).toEqual(Array.from({ length: 12 }, () => ({ memberId: null })));
     const c = await selectionFor(fx.c);
-    expect(c.slots).toEqual(Array.from({ length: 11 }, () => ({ memberId: null })));
+    expect(c.slots).toEqual(Array.from({ length: 12 }, () => ({ memberId: null })));
   });
 
   it("logs a system draft event per side", async () => {

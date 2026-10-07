@@ -29,10 +29,11 @@ import {
  * row, seeded from the team list of that grade's most recent fixture before the
  * round. Each listed player who answered Yes for the fixture's date keeps their
  * slot; everyone else leaves an open slot labelled "was <name> · <reason>" (no,
- * maybe, no reply, not on register) in the same position. Nobody else is
+ * maybe, no reply, not on register) in the same position. The first 12 entries
+ * seed the side (a list with a 12th player fills slot 12). Nobody else is
  * placed: a Yes player who was not in the last side waits in the pool,
  * and nobody moves between grades on their own. Last game's captain and keeper
- * carry over only while still in the side.
+ * carry over only while still in the XI.
  *
  * Nobody is placed twice in a round: fixtures are drafted in start order with
  * one round-wide set of placed members, seeded from the round's existing
@@ -42,8 +43,30 @@ import {
  * overwritten, so re-running the cut-off is a no-op.
  */
 
-/** Every side has 11 slots. */
-export const SIDE_SIZE = 11;
+/** Every side has 12 slots: the XI in slots 1–11 and the 12th player in slot 12. */
+export const SIDE_SIZE = 12;
+
+/** The playing XI: slots 1–11. A side is complete with these; the 12th is optional. */
+export const XI_SIZE = 11;
+
+/** The 12th player's slot (zero-based). */
+export const TWELFTH_INDEX = XI_SIZE;
+
+/**
+ * A stored or submitted side as 12 slots. Sides saved before the 12th player
+ * have 11; they read as an empty 12th. Every reader and writer of
+ * `selections.slots` goes through this, so the rest of the code sees 12.
+ */
+export function normaliseSlots<T extends { memberId: number | null }>(slots: readonly T[]): T[] {
+  const out = [...slots];
+  while (out.length < SIDE_SIZE) out.push({ memberId: null } as T);
+  return out;
+}
+
+/** The members in the XI (slots 1–11), for captain and keeper. */
+export function xiMemberIds(slots: readonly { memberId: number | null }[]): Set<number> {
+  return new Set(slots.slice(0, XI_SIZE).flatMap((s) => (s.memberId != null ? [s.memberId] : [])));
+}
 
 /** Answers per member, keyed by Perth date (`YYYY-MM-DD`). */
 export type ResponsesByMember = ReadonlyMap<number, ReadonlyMap<string, AvailabilityStatus>>;
@@ -102,6 +125,8 @@ export function buildDraftSlots(input: {
     placed.add(m.id);
     elsewhere.add(m.id);
     slots[i] = { memberId: m.id };
+    // Captain and keeper come from the XI only; a 12th player holds no role.
+    if (i >= XI_SIZE) return;
     if (entry.role === "C" || entry.role === "C/WK") captainMemberId ??= m.id;
     if (entry.role === "WK" || entry.role === "C/WK") keeperMemberId ??= m.id;
   });
@@ -262,7 +287,8 @@ export async function buildRoundDrafts(
         action: "draft",
         detail: {
           seededFromFixtureId: seed?.fixtureId ?? null,
-          filled: draft.slots.filter((s) => s.memberId != null).length,
+          filled: draft.slots.slice(0, XI_SIZE).filter((s) => s.memberId != null).length,
+          twelfth: draft.slots[TWELFTH_INDEX]?.memberId != null,
         },
         createdAt: now,
       });

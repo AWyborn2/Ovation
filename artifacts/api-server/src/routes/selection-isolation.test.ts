@@ -49,7 +49,7 @@ describe("Selection Hub tenant isolation", () => {
   let captainB: string;
 
   const sideSlots = (ids: number[]) =>
-    [...ids, ...Array(11 - ids.length).fill(null)].map((memberId) => ({ memberId }));
+    [...ids, ...Array(12 - ids.length).fill(null)].map((memberId) => ({ memberId }));
 
   beforeAll(async () => {
     setSmsTransport(async () => {});

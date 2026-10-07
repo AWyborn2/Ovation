@@ -37,7 +37,14 @@ import {
   roundWeekendFor,
 } from "./availability-schedule";
 import { isUnder18, messageMember, notifyStaff, type MessageBatch } from "./availability-messaging";
-import { SIDE_SIZE, loadResponses } from "./selection-drafts";
+import {
+  SIDE_SIZE,
+  TWELFTH_INDEX,
+  XI_SIZE,
+  loadResponses,
+  normaliseSlots,
+  xiMemberIds,
+} from "./selection-drafts";
 import type { SelectionActor } from "../middlewares/require-admin-or-captain";
 import { logger as defaultLogger } from "./logger";
 
@@ -50,10 +57,12 @@ import { logger as defaultLogger } from "./logger";
  *   summaries are built from explicitly listed non-contact columns, so no
  *   mobile or email can reach a captain.
  * - `saveBoard` applies whole-side changes in one transaction with the round's
- *   sides locked: rights, the final lock, versions, 11 slots and "no
+ *   sides locked: rights, the final lock, versions, 12 slots and "no
  *   member twice in the round" (for the members the save places) are all
  *   checked before anything is written; a captain or keeper no longer in their
- *   side is cleared and logged.
+ *   XI (left the side, or moved to 12th) is cleared and logged.
+ * - A side is the XI (slots 1–11) plus an optional 12th player (slot 12).
+ *   Sides stored before the 12th read as 12 slots via `normaliseSlots`.
  * - `finaliseSelection` publishes a side as the fixture's team list (source
  *   "selection"; a private member as "Private Player") and messages only the
  *   members the change affects; `reopenSelection` returns it to draft and
@@ -184,8 +193,12 @@ export type BoardSide = {
   canFinalise: boolean;
   readOnlyReason: string | null;
   warnings: {
+    /** Players in the XI (slots 1–11). */
     filled: number;
+    /** Open slots in the XI; an empty 12th is not one. */
     open: number;
+    /** Slot 12 is filled. */
+    twelfth: boolean;
     unconfirmed: number;
     saidNo: number;
     noCaptain: boolean;
@@ -427,7 +440,7 @@ export async function buildBoard(
     const date = perthDate(f.startAt);
     const right = selectionRight(actor, rule, f.grade);
     const final = sel.state === "final";
-    const slots = sel.slots.map((slot) => {
+    const slots = normaliseSlots(sel.slots).map((slot) => {
       const m = slot.memberId != null ? byId.get(slot.memberId) : undefined;
       return {
         memberId: slot.memberId,
@@ -436,6 +449,7 @@ export async function buildBoard(
       };
     });
     const picked = slots.flatMap((s) => (s.member ? [s.member] : []));
+    const inXi = slots.slice(0, XI_SIZE).filter((s) => s.member).length;
     return {
       id: sel.id,
       roundId: sel.roundId,
@@ -464,8 +478,9 @@ export async function buildBoard(
           ? "This side is finalised. Re-open it to make changes."
           : null,
       warnings: {
-        filled: picked.length,
-        open: SIDE_SIZE - picked.length,
+        filled: inXi,
+        open: XI_SIZE - inXi,
+        twelfth: slots[TWELFTH_INDEX]?.member != null,
         unconfirmed: picked.filter((m) => m.status === "maybe" || m.status === "none").length,
         saidNo: picked.filter((m) => m.status === "no").length,
         noCaptain: sel.captainMemberId == null,
@@ -584,25 +599,27 @@ const memberIdsOf = (slots: readonly { memberId: number | null }[]) =>
  * Apply whole-side changes atomically. Throws `SelectionError` (and
  * writes nothing) for: a side not found (404); a side — or a member taken from
  * a side — the actor may not edit (403); a finalised side or a stale version
- * (409); not 11 slots, a member twice in the round, an unknown member or a
+ * (409); not 12 (or a legacy 11) slots, a member twice in the round, an unknown member or a
  * newly placed inactive one (400). Returns the section of the first change.
  */
 export async function saveBoard(
   tenantId: number,
   actor: SelectionActor,
-  changes: readonly SideChange[],
+  input: readonly SideChange[],
   now: Date = new Date(),
 ): Promise<{ section: SquadSection; selectionIds: number[] }> {
-  if (changes.length === 0) throw new SelectionError(400, "Nothing to save.");
-  const ids = changes.map((c) => c.selectionId);
+  if (input.length === 0) throw new SelectionError(400, "Nothing to save.");
+  const ids = input.map((c) => c.selectionId);
   if (new Set(ids).size !== ids.length) {
     throw new SelectionError(400, "Each side can appear only once in a save.");
   }
-  for (const c of changes) {
-    if (c.slots.length !== SIDE_SIZE) {
+  // 12 slots; an older client's 11 read as an empty 12th.
+  const changes = input.map((c) => {
+    if (c.slots.length !== SIDE_SIZE && c.slots.length !== XI_SIZE) {
       throw new SelectionError(400, `A side has exactly ${SIDE_SIZE} slots.`);
     }
-  }
+    return { ...c, slots: normaliseSlots(c.slots) };
+  });
   const rule = await selectionRule(tenantId);
 
   return db.transaction(async (tx) => {
@@ -716,16 +733,29 @@ export async function saveBoard(
             : { memberId: null },
       );
       const inSide = new Set(memberIdsOf(slots));
-      // A captain or keeper must be in their own side; otherwise the role clears.
-      const rolesCleared: { role: "captain" | "keeper"; memberId: number; name: string }[] = [];
+      const inXi = xiMemberIds(slots);
+      // A captain or keeper must be in their own XI (not the 12th); otherwise the role clears.
+      const rolesCleared: {
+        role: "captain" | "keeper";
+        memberId: number;
+        name: string;
+        twelfth?: true;
+      }[] = [];
+      const clear = (role: "captain" | "keeper", id: number) =>
+        rolesCleared.push({
+          role,
+          memberId: id,
+          name: nameOf(id),
+          ...(inSide.has(id) ? { twelfth: true as const } : {}),
+        });
       let captain = c.captainMemberId;
       let keeper = c.keeperMemberId;
-      if (captain != null && !inSide.has(captain)) {
-        rolesCleared.push({ role: "captain", memberId: captain, name: nameOf(captain) });
+      if (captain != null && !inXi.has(captain)) {
+        clear("captain", captain);
         captain = null;
       }
-      if (keeper != null && !inSide.has(keeper)) {
-        rolesCleared.push({ role: "keeper", memberId: keeper, name: nameOf(keeper) });
+      if (keeper != null && !inXi.has(keeper)) {
+        clear("keeper", keeper);
         keeper = null;
       }
 
@@ -747,7 +777,7 @@ export async function saveBoard(
       const reordered =
         added.length === 0 &&
         removed.length === 0 &&
-        JSON.stringify(selection.slots.map((s) => s.memberId)) !==
+        JSON.stringify(normaliseSlots(selection.slots).map((s) => s.memberId)) !==
           JSON.stringify(slots.map((s) => s.memberId));
       const role = (from: number | null, to: number | null) =>
         from === to
@@ -871,7 +901,9 @@ export async function finaliseSelection(
     }
     refuseIfStarted(fixture, now, "finalised");
 
-    const picked = memberIdsOf(selection.slots);
+    const sideSlots = normaliseSlots(selection.slots);
+    const picked = memberIdsOf(sideSlots);
+    const twelfthId = sideSlots[TWELFTH_INDEX]?.memberId ?? null;
     const members =
       picked.length > 0
         ? await tx
@@ -882,13 +914,15 @@ export async function finaliseSelection(
             )
         : [];
     const memberOf = new Map(members.map((m) => [m.id, m]));
+    // The XI in order, then the 12th player always as order 12.
     const players: TeamListPlayer[] = [];
     for (const id of picked) {
       const m = memberOf.get(id);
       if (!m) continue;
-      const role = roleOf(id, selection);
+      const twelfth = id === twelfthId;
+      const role = twelfth ? undefined : roleOf(id, selection);
       players.push({
-        order: players.length + 1,
+        order: twelfth ? SIDE_SIZE : players.length + 1,
         // Fill-in ids never reach a team list, nor does a private member's id.
         ...(!m.isPrivate && m.linkedPlayerId != null && m.linkedPlayerId < FILL_IN_THRESHOLD
           ? { playerId: m.linkedPlayerId }
@@ -931,14 +965,15 @@ export async function finaliseSelection(
       action: "finalise",
       detail: {
         players: players.length,
-        open: SIDE_SIZE - players.length,
+        open: XI_SIZE - players.filter((p) => p.order <= XI_SIZE).length,
+        twelfth: twelfthId != null && memberOf.has(twelfthId),
         captainMemberId: selection.captainMemberId,
         keeperMemberId: selection.keeperMemberId,
         notified: { selected: toSelect, deselected: toDeselect },
       },
       createdAt: now,
     });
-    return { selection, fixture, toSelect, toDeselect };
+    return { selection, fixture, toSelect, toDeselect, twelfthId };
   });
 
   const { selection, fixture } = plan;
@@ -976,7 +1011,9 @@ export async function finaliseSelection(
           context: {
             roundId: selection.roundId,
             fixture: matchFixture,
-            role: kind === "selected" ? (roleOf(id, selection) ?? null) : null,
+            role:
+              kind === "selected" && id !== plan.twelfthId ? (roleOf(id, selection) ?? null) : null,
+            twelfth: kind === "selected" && id === plan.twelfthId,
             req: opts.req,
           },
           smsEnabled: settings?.smsEnabled ?? true,
@@ -1113,7 +1150,7 @@ export async function withdrawFromSelection(
     const out: LockedSide[] = [];
     for (const side of sides) {
       const { selection, fixture } = side;
-      const slots: SelectionSlot[] = selection.slots.map((s) =>
+      const slots: SelectionSlot[] = normaliseSlots(selection.slots).map((s) =>
         s.memberId === memberId ? { memberId: null, gap: { name, reason: "withdrew" } } : s,
       );
       const rolesCleared: string[] = [];
@@ -1169,7 +1206,8 @@ export async function withdrawFromSelection(
                 ? p.playerId !== linked
                 : normaliseName(p.displayName) !== key,
           )
-          .map((p, i) => ({ ...p, order: i + 1 }));
+          // The XI renumbers; a 12th player keeps order 12.
+          .map((p, i) => (p.order > XI_SIZE ? p : { ...p, order: i + 1 }));
         if (players.length !== list.players.length) {
           await tx
             .update(teamListsTable)

@@ -94,6 +94,8 @@ export type MessageContext = {
   fixture?: MessageFixture;
   /** The member's role in the side, for `selected`. */
   role?: TeamListRole | null;
+  /** For `selected`: picked as the side's 12th player (slot 12), who holds no role. */
+  twelfth?: boolean;
   /** For `contact_changed`: the slot that changed and its PREVIOUS contact. */
   previous?: { slot: RecipientSlot; mobile: string | null; email: string | null };
   /** The current request, when there is one, so links use its host. */
@@ -271,8 +273,9 @@ export function buildMessage(input: TextInput): {
         ? `${fixture.grade} v ${fixture.opponentName}, ${formatMatchTime(fixture.startAt)}`
         : "this weekend";
       const venue = fixture?.venue?.trim() ? ` at ${fixture.venue.trim()}` : "";
-      const role = context.role ? ` (${ROLE_TEXT[context.role]})` : "";
-      const lead = self ? "You're selected" : `${player} is selected`;
+      const role = context.twelfth ? "" : context.role ? ` (${ROLE_TEXT[context.role]})` : "";
+      const as12th = context.twelfth ? " as 12th player" : "";
+      const lead = self ? `You're selected${as12th}` : `${player} is selected${as12th}`;
       // Match details matter more than one segment here: no fitting.
       const sms = `${clubShort}: ${lead}${role} for ${match}${venue}. Can't make it? ${link} ${STOP_LINE}`;
       const text = [

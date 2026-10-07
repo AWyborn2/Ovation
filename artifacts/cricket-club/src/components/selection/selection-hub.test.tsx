@@ -55,7 +55,7 @@ function side(
   filled: number,
   opts: Partial<SelectionSide> = {},
 ): SelectionSide {
-  const slots = Array.from({ length: 11 }, (_, i) =>
+  const slots = Array.from({ length: 12 }, (_, i) =>
     i < filled
       ? { memberId: id * 100 + i, member: member(id * 100 + i, `${grade} ${i + 1}`), gap: null }
       : { memberId: null, member: null, gap: null },
@@ -108,7 +108,8 @@ function makeBoard(): SelectionBoard {
     },
     selections: [
       side(1, "A Grade", 9),
-      side(2, "B Grade", 11),
+      // B Grade is full: the XI and a 12th.
+      side(2, "B Grade", 12),
       side(3, "C Grade", 11, {
         state: "final",
         canEdit: false,
@@ -258,6 +259,35 @@ describe("final and read-only cards", () => {
     expect(within(a).getByText("No captain")).toBeTruthy();
   });
 
+  it('counts the XI out of 11 with +12th, and labels slot 12 "12th"', async () => {
+    stubApi(makeBoard());
+    renderHub();
+    const b = await screen.findByTestId("side-2");
+    expect(b.textContent).toContain("11/11 +12th");
+    const bSlots = within(b).getAllByRole("listitem");
+    expect(bSlots).toHaveLength(12);
+    expect(bSlots[10].textContent).toMatch(/^11/);
+    expect(bSlots[11].textContent).toMatch(/^12th/);
+    expect(within(b).queryByText(/open slot/)).toBeNull();
+
+    // C Grade has an XI and an empty 12th: complete, no open-slot warning.
+    const c = screen.getByTestId("side-3");
+    expect(c.textContent).toContain("11/11");
+    expect(c.textContent).not.toContain("+12th");
+    expect(within(c).queryByText(/open slot/)).toBeNull();
+    expect(within(c).getAllByRole("listitem")[11].textContent).toMatch(/^12thOpen slot/);
+  });
+
+  it("the 12th can't be picked as captain or keeper", async () => {
+    stubApi(makeBoard());
+    renderHub();
+    const b = await screen.findByTestId("side-2");
+    const [captain] = within(b).getAllByRole("combobox") as HTMLSelectElement[];
+    const names = [...captain.options].map((o) => o.textContent);
+    expect(names).toContain("B Grade 11");
+    expect(names).not.toContain("B Grade 12");
+  });
+
   it("finalise asks first, stating the count and what's missing", async () => {
     stubApi(makeBoard());
     renderHub();
@@ -320,7 +350,7 @@ describe("moving a player", () => {
     };
     expect(body.changes).toHaveLength(1);
     expect(body.changes[0]).toMatchObject({ selectionId: 1, version: 4 });
-    expect(body.changes[0].slots).toHaveLength(11);
+    expect(body.changes[0].slots).toHaveLength(12);
     expect(body.changes[0].slots[9]).toEqual({ memberId: 902, gap: null });
     expect(screen.getByTestId("hub-announcer").textContent).toBe(
       "Quiet Q moved from the pool to A Grade",
@@ -403,7 +433,7 @@ describe("moving a player", () => {
       document.elementFromPoint = original;
     }
     expect(screen.getByTestId("hub-announcer").textContent).toBe(
-      "B Grade already has 11. Drop onto a player to swap them out.",
+      "B Grade already has 12. Drop onto a player to swap them out.",
     );
     expect(requests.some((r) => r.method === "PUT")).toBe(false);
   });

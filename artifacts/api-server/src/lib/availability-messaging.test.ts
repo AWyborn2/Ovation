@@ -194,6 +194,36 @@ describe("message text", () => {
     expect(email.text).toContain("Rushton Park");
     expect(email.text).toContain(link);
   });
+
+  it("a 12th player is told they're selected as 12th player, with no role", () => {
+    for (const self of [true, false]) {
+      const { sms, email } = buildMessage({
+        kind: "selected",
+        clubShort: "HHCC",
+        clubName: "Halls Head Cricket Club",
+        player: "Jordan",
+        self,
+        greetingName: "Sam",
+        link,
+        context: {
+          roundId: 1,
+          role: "C",
+          twelfth: true,
+          fixture: {
+            grade: "A Grade",
+            opponentName: "Mandurah",
+            startAt: new Date("2026-10-10T05:30:00Z"),
+            venue: null,
+          },
+        },
+      });
+      const lead = self ? "You're selected as 12th player" : "Jordan is selected as 12th player";
+      expect(sms).toContain(`${lead} for A Grade v Mandurah`);
+      expect(sms).not.toContain("captain");
+      expect(email.subject).toContain(`${lead} for A Grade`);
+      expect(email.text).toContain(`${lead} for A Grade v Mandurah`);
+    }
+  });
 });
 
 describe("messageMember / notifyStaff (DB)", () => {

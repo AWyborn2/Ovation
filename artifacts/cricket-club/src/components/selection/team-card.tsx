@@ -4,7 +4,7 @@ import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { plural } from "@/lib/plural";
-import { SIDE_SIZE, sideEditable, sideLabel } from "./apply-move";
+import { TWELFTH_INDEX, XI_SIZE, sideEditable, sideLabel } from "./apply-move";
 import { GAP_REASON, perthDateTime } from "./labels";
 import { PlayerChip, type ChipRole } from "./player-chip";
 
@@ -18,7 +18,7 @@ export function roleOf(side: SelectionSide, memberId: number | null): ChipRole {
   return null;
 }
 
-/** The finalise confirmation's "Heads up" list. */
+/** The finalise confirmation's "Heads up" list; an empty 12th is not an open slot. */
 export function finaliseHeadsUp(side: SelectionSide): string[] {
   const w = side.warnings;
   const bits: string[] = [];
@@ -35,8 +35,8 @@ const selectClass =
 
 /**
  * One grade's side: fixture, filled count,
- * Draft/Final state, warnings, captain and keeper pickers, the 11 slots (each
- * a drop zone), and the finalise / re-open footer.
+ * Draft/Final state, warnings, captain and keeper pickers, the 12 slots (the
+ * XI then the 12th player, each a drop zone), and the finalise / re-open footer.
  */
 export function TeamCard({
   side,
@@ -67,6 +67,8 @@ export function TeamCard({
   const edit = sideEditable(side);
   const w = side.warnings;
   const picked = side.slots.filter((s) => s.memberId != null && s.member);
+  // Captain and keeper come from the XI; the 12th holds no role.
+  const xi = side.slots.slice(0, XI_SIZE).filter((s) => s.memberId != null && s.member);
   const nameOf = (id: number | null) =>
     id == null ? null : (side.slots.find((s) => s.memberId === id)?.member?.displayName ?? null);
   const f = side.fixture;
@@ -90,7 +92,8 @@ export function TeamCard({
             {label}
           </h2>
           <span className="font-mono text-[13px] tabular-nums text-muted-foreground">
-            <b className="text-foreground">{w.filled}</b>/{SIDE_SIZE}
+            <b className="text-foreground">{w.filled}</b>/{XI_SIZE}
+            {w.twelfth && " +12th"}
           </span>
           <span
             className={cn(
@@ -130,7 +133,7 @@ export function TeamCard({
                     onChange={(e) => onRole(role, e.target.value ? Number(e.target.value) : null)}
                   >
                     <option value="">Not set</option>
-                    {picked.map((s) => (
+                    {xi.map((s) => (
                       <option key={s.memberId} value={s.memberId!}>
                         {s.member!.displayName}
                       </option>
@@ -193,8 +196,8 @@ export function TeamCard({
             data-index={i}
             className="flex min-h-10 items-center gap-1.5 rounded-md px-0.5 py-px data-[drop-state=no]:bg-[var(--loss-bg)] data-[drop-state=ok]:bg-blue-500/10 data-[drop-state=no]:shadow-[inset_0_0_0_2px_var(--loss-fg)] data-[drop-state=ok]:shadow-[inset_0_0_0_2px_var(--color-blue-500)]"
           >
-            <span className="w-5 flex-none text-right font-mono text-[11px] tabular-nums text-muted-foreground">
-              {i + 1}
+            <span className="w-7 flex-none text-right font-mono text-[11px] tabular-nums text-muted-foreground">
+              {i === TWELFTH_INDEX ? "12th" : i + 1}
             </span>
             {slot.memberId != null && slot.member ? (
               <PlayerChip
@@ -225,8 +228,8 @@ export function TeamCard({
           <>
             <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-[var(--win-fg)]">
               <Lock className="h-3.5 w-3.5" aria-hidden />
-              Finalised and published as the team list. {plural(w.filled, "player")} notified by SMS
-              and email.
+              Finalised and published as the team list. {plural(picked.length, "player")} notified
+              by SMS and email.
             </div>
             {side.canFinalise && (
               <Button variant="ghost" className="w-full" disabled={busy} onClick={onReopen}>
@@ -242,7 +245,8 @@ export function TeamCard({
         ) : confirming ? (
           <>
             <div className="rounded-md bg-muted px-2.5 py-2 text-[12.5px]" role="status">
-              Finalise {label} with {plural(w.filled, "player")}?{" "}
+              Finalise {label} with {plural(w.filled, "player")}
+              {w.twelfth ? " and a 12th" : ""}?{" "}
               {headsUp.length > 0 && <b>Heads up: {headsUp.join(", ")}. </b>}
               Each player{junior ? "'s parent" : ""} gets an SMS and email with the match details,
               and the side is published as the team list.
@@ -266,7 +270,7 @@ export function TeamCard({
         ) : side.canFinalise ? (
           <Button
             className="w-full"
-            disabled={busy || w.filled === 0}
+            disabled={busy || picked.length === 0}
             onClick={() => setConfirming(true)}
           >
             Finalise {label}

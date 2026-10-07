@@ -18,6 +18,11 @@ export interface SelectionSide {
   date: Date;
   state: SelectionSideState;
   version: number;
+  /**
+     * The side's 12 slots in order; 1–11 are the XI and slot 12 the 12th player
+     * @minItems 12
+     * @maxItems 12
+     */
   slots: SelectionSlot[];
   /** @nullable */
   captainMemberId: number | null;
