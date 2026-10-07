@@ -19,6 +19,7 @@ import {
   GetAvailabilityResponseParams,
   RemoveAvailabilityAwayParams,
   SaveAvailabilityAnswersBody,
+  SetAvailabilityTextsBody,
   UpdateAvailabilityContactBody,
 } from "@workspace/api-zod";
 import { getTenantId } from "../middlewares/tenant-context";
@@ -33,7 +34,7 @@ import { datesForMember, loadAvailabilitySettings } from "../lib/availability-sc
 import { memberDisplayName, memberFirstName, perthDate } from "../lib/availability-grades";
 import { SelectionError, withdrawFromSelection } from "../lib/selection-board";
 import { TWELFTH_INDEX } from "../lib/selection-drafts";
-import { normaliseAuMobile } from "../lib/integrations/sms";
+import { normaliseAuMobile, smsEnabled } from "../lib/integrations/sms";
 import { normaliseEmail, normaliseMobile } from "../lib/squad-import";
 import { getTenantBrand } from "../lib/tenant-brand";
 
@@ -51,6 +52,9 @@ import { getTenantBrand } from "../lib/tenant-brand";
  *
  * Answers change freely until the member's side for that date is final; after
  * that only "can't make it" (withdraw) is allowed.
+ *
+ * The page can also stop (and restart) texts to its recipient: the functional
+ * unsubscribe when replies don't reach us (ClickSend own-number sender).
  */
 const router: IRouter = Router();
 
@@ -200,9 +204,10 @@ function roleIn(side: SelectionRow, memberId: number): "C" | "WK" | "C/WK" | nul
 async function buildPage(found: ResolvedAvailabilityToken, now: Date = new Date()) {
   const { member, request, round } = found;
   const tenantId = member.tenantId;
-  const [brand, sides] = await Promise.all([
+  const [brand, sides, settings] = await Promise.all([
     getTenantBrand(tenantId),
     memberSides(tenantId, round.id, member.id),
+    loadAvailabilitySettings(tenantId),
   ]);
   const [dates, answers, away, withdrewEvent] = await Promise.all([
     askedDates(found, sides),
@@ -277,6 +282,9 @@ async function buildPage(found: ResolvedAvailabilityToken, now: Date = new Date(
     locked: finalDates.size > 0,
     withdrawn: withdrewEvent,
     late: round.cutoffCompletedAt != null,
+    smsOptedOut: member[cols.optOut],
+    // Same default as the senders: a club without saved settings has SMS on.
+    textsAvailable: (settings?.smsEnabled ?? true) && smsEnabled(),
   };
 }
 
@@ -564,6 +572,33 @@ router.patch(`${BASE}/contact`, availabilityLinkRateLimiter, async (req, res): P
   }
   req.log?.info({ tenantId, memberId: member.id, slot, fields, revoked }, "availability contact");
 
+  const [fresh] = await db.select().from(squadMembersTable).where(scoped);
+  res.json(await buildPage({ ...found, member: fresh ?? member }, now));
+});
+
+router.post(`${BASE}/texts`, availabilityLinkRateLimiter, async (req, res): Promise<void> => {
+  const found = await resolve(req, res);
+  if (!found) return;
+  const body = SetAvailabilityTextsBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "invalid_body" });
+    return;
+  }
+  const { member, request } = found;
+  const tenantId = member.tenantId;
+  const slot = request.recipientSlot;
+  const now = new Date();
+  const scoped = and(eq(squadMembersTable.id, member.id), eq(squadMembersTable.tenantId, tenantId));
+  // Only this link's recipient slot. Starting again is the person's own
+  // choice, made from their own link, so it is allowed as freely as stopping.
+  await db
+    .update(squadMembersTable)
+    .set({ [SLOT_COLUMNS[slot].optOut]: body.data.stop, updatedAt: now })
+    .where(scoped);
+  req.log?.info(
+    { tenantId, memberId: member.id, slot, stop: body.data.stop },
+    "availability texts",
+  );
   const [fresh] = await db.select().from(squadMembersTable).where(scoped);
   res.json(await buildPage({ ...found, member: fresh ?? member }, now));
 });

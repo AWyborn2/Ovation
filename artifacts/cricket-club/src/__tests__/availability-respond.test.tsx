@@ -39,6 +39,8 @@ function basePage(over: Partial<AvailabilityResponsePage> = {}): AvailabilityRes
     locked: false,
     withdrawn: false,
     late: false,
+    smsOptedOut: false,
+    textsAvailable: true,
     ...over,
   };
 }
@@ -223,6 +225,53 @@ describe("AvailabilityRespond (U11)", () => {
     expect(
       await screen.findByText(/Your contact details were changed in the last 12 hours/),
     ).toBeTruthy();
+  });
+
+  it("Stop text messages posts stop and confirms email only; Start again posts stop: false", async () => {
+    let stopped = false;
+    const calls = installFetch(({ method, url, body }) => {
+      if (method === "POST" && url.endsWith("/texts")) {
+        stopped = (body as { stop: boolean }).stop;
+        return { status: 200, body: basePage({ smsOptedOut: stopped }) };
+      }
+      return { status: 200, body: basePage({ smsOptedOut: stopped }) };
+    });
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: "Stop text messages" }));
+    expect(await screen.findByText("Done. We'll only email you from now on.")).toBeTruthy();
+    const post = calls.find((c) => c.method === "POST");
+    expect(post?.url).toContain(`/api/availability/respond/${TOKEN}/texts`);
+    expect(post?.body).toEqual({ stop: true });
+
+    fireEvent.click(screen.getByRole("button", { name: "Start text messages again" }));
+    expect(await screen.findByText("Text messages are on again.")).toBeTruthy();
+    expect(calls.filter((c) => c.method === "POST").map((c) => c.body)).toEqual([
+      { stop: true },
+      { stop: false },
+    ]);
+    expect(screen.getByRole("button", { name: "Stop text messages" })).toBeTruthy();
+  });
+
+  it("an opted-out recipient sees the email-only note; no control without a mobile or texts", async () => {
+    installFetch(() => ({ status: 200, body: basePage({ smsOptedOut: true }) }));
+    renderPage();
+    expect(await screen.findByTestId("texts-stopped")).toHaveTextContent(/only email you/);
+    expect(screen.getByRole("button", { name: "Start text messages again" })).toBeTruthy();
+    cleanup();
+
+    installFetch(() => ({
+      status: 200,
+      body: basePage({ contact: { mobile: null, email: "s***@example.com" } }),
+    }));
+    renderPage();
+    await screen.findByRole("heading", { name: "Hi Sam" });
+    expect(screen.queryByTestId("text-messages")).toBeNull();
+    cleanup();
+
+    installFetch(() => ({ status: 200, body: basePage({ textsAvailable: false }) }));
+    renderPage();
+    await screen.findByRole("heading", { name: "Hi Sam" });
+    expect(screen.queryByTestId("text-messages")).toBeNull();
   });
 
   it("a 404 shows the expired-link message", async () => {

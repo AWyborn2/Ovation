@@ -126,7 +126,13 @@ export const env = {
   /** Sender, e.g. "Ovation <studio@ovation.example>". Unset = email off. */
   EMAIL_FROM: () => optional("EMAIL_FROM"),
 
-  // ── SMS (Twilio) ─────────────────────────────────────────────────────────
+  // ── SMS (Twilio or ClickSend) ────────────────────────────────────────────
+  /**
+   * "twilio" or "clicksend". Unset = whichever is fully configured, Twilio
+   * first when both are (so adding ClickSend keys never silently moves an
+   * existing Twilio setup); neither configured = SMS off (email only).
+   */
+  SMS_PROVIDER: () => optional("SMS_PROVIDER"),
   /** Twilio account SID and auth token; either unset = SMS off (email only). */
   TWILIO_ACCOUNT_SID: () => optional("TWILIO_ACCOUNT_SID"),
   TWILIO_AUTH_TOKEN: () => optional("TWILIO_AUTH_TOKEN"),
@@ -137,6 +143,15 @@ export const env = {
    */
   TWILIO_FROM: () => optional("TWILIO_FROM"),
   TWILIO_MESSAGING_SERVICE_SID: () => optional("TWILIO_MESSAGING_SERVICE_SID"),
+  /** ClickSend API username and key (HTTP basic auth); either unset = ClickSend off. */
+  CLICKSEND_USERNAME: () => optional("CLICKSEND_USERNAME"),
+  CLICKSEND_API_KEY: () => optional("CLICKSEND_API_KEY"),
+  /**
+   * Sender: the club's own verified mobile in E.164 (ClickSend "own number").
+   * Replies, STOP included, go to that phone and never reach us, so messages
+   * sent this way carry a link-based opt-out instead. Unset = ClickSend off.
+   */
+  CLICKSEND_FROM: () => optional("CLICKSEND_FROM"),
 
   // ── Studio tools (U19) ───────────────────────────────────────────────────
   /** Photoroom API key for background removal; unset = the tool is off (404). */
@@ -183,6 +198,7 @@ const BootSchema = z
     PLATFORM_BASE_DOMAIN: z.string().optional(),
     PROXY_SHARED_SECRET: z.string().min(16, "must be at least 16 characters").optional(),
     CENTRAL_PROJECTION: z.enum(["off", "dry", "on"]).optional(),
+    SMS_PROVIDER: z.enum(["twilio", "clicksend"]).optional(),
     META_PUBLISHING_ENABLED: z.enum(["0", "1"]).optional(),
     META_APP_ID: z.string().optional(),
     META_APP_SECRET: z.string().optional(),

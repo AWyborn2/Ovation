@@ -166,6 +166,78 @@ describe("message text", () => {
     }
   });
 
+  it("with link opt-out (ClickSend own number) every linked SMS ends with the link line", () => {
+    for (const self of [true, false]) {
+      for (const kind of ["request", "reminder"] as const) {
+        const { sms } = buildMessage({
+          kind,
+          clubShort: "Halls Head Cricket Club",
+          clubName: "Halls Head Cricket Club",
+          player: "Jordan",
+          self,
+          greetingName: "Sam",
+          link,
+          context: ctx,
+          optOut: "link",
+        });
+        expect(sms).toContain(link);
+        expect(sms).not.toContain("Reply STOP");
+        expect(sms.endsWith(`${link} Stop texts at the link.`)).toBe(true);
+        expect(isGsm7(sms)).toBe(true);
+        expect(gsm7Length(sms)).toBeLessThanOrEqual(160);
+      }
+      // A typical short name still asks the full question within one segment.
+      const short = buildMessage({
+        kind: "request",
+        clubShort: "HHCC",
+        clubName: "Halls Head Cricket Club",
+        player: "Jordan",
+        self,
+        greetingName: "Sam",
+        link,
+        context: ctx,
+        optOut: "link",
+      }).sms;
+      expect(short).toMatch(self ? /^HHCC: Are you available/ : /^HHCC: Is Jordan available/);
+      expect(short.endsWith("Stop texts at the link.")).toBe(true);
+      expect(gsm7Length(short)).toBeLessThanOrEqual(160);
+    }
+    const fixture = {
+      grade: "A Grade",
+      opponentName: "Mandurah",
+      startAt: new Date("2026-10-10T05:30:00Z"),
+    };
+    for (const kind of ["selected", "deselected"] as const) {
+      const { sms } = buildMessage({
+        kind,
+        clubShort: "HHCC",
+        clubName: "Halls Head Cricket Club",
+        player: "Jordan",
+        self: true,
+        greetingName: "Jordan",
+        link,
+        context: { roundId: 1, fixture },
+        optOut: "link",
+      });
+      expect(sms.endsWith(`${link} Stop texts at the link.`)).toBe(true);
+    }
+    // contact_changed has no link to point at, so it carries no opt-out line.
+    const changed = buildMessage({
+      kind: "contact_changed",
+      clubShort: "HHCC",
+      clubName: "Halls Head Cricket Club",
+      player: "Jordan",
+      self: true,
+      greetingName: "Jordan",
+      link: null,
+      context: {},
+      optOut: "link",
+    }).sms;
+    expect(changed).not.toContain("STOP");
+    expect(changed).not.toContain("Stop texts");
+    expect(changed.endsWith("Contact the club.")).toBe(true);
+  });
+
   it("a selected message names the match, the role and the can't-make-it link", () => {
     const { sms, email } = buildMessage({
       kind: "selected",
@@ -608,6 +680,28 @@ describe("messageMember / notifyStaff (DB)", () => {
     expect(smsSent[0].body).not.toContain("/availability/");
     expect(smsSent[0].body.endsWith("Reply STOP to opt out.")).toBe(true);
     expect(await requestRows(member.id)).toHaveLength(0);
+  });
+
+  it("through ClickSend (replies don't reach us) the request SMS offers the link opt-out", async () => {
+    useFakeTransports();
+    setSmsTransport(async (m) => {
+      smsSent.push(m);
+    }, "clicksend");
+    const member = await newMember();
+    const out = await messageMember({
+      tenantId,
+      member,
+      kind: "request",
+      context: { roundId },
+      smsEnabled: true,
+      now: NOW,
+    });
+    expect(out.results[0]).toMatchObject({ sms: "sent", email: "sent" });
+    const sms = smsSent[0].body;
+    expect(sms).toMatch(/\/availability\/[A-Za-z0-9_-]+ Stop texts at the link\.$/);
+    expect(sms).not.toContain("Reply STOP");
+    expect(sms.startsWith("TVCC")).toBe(true);
+    expect(gsm7Length(sms)).toBeLessThanOrEqual(160);
   });
 
   it("another tenant's member is a no-op", async () => {
