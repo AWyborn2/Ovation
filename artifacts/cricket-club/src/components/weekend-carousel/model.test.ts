@@ -18,6 +18,78 @@ const bundle = {
   activeSponsors: Array.from({ length: 7 }, (_, i) => ({ name: `Sponsor ${i + 1}`, logoUrl: `/sponsor-${i + 1}.png`, cardKinds: ["matchDay"] })),
 } as unknown as SocialSettingsBundle;
 
+describe("weekend sponsor placements", () => {
+  const sponsorBundle = {
+    ...bundle,
+    activeSponsors: [
+      { name: "Headline", logoUrl: "/headline.png", isPresenting: true, grades: [], cardKinds: [] },
+      { name: "A sponsor", logoUrl: "/a-sponsor.png", grades: ["a-grade"], cardKinds: ["teamList"] },
+      { name: "B sponsor", logoUrl: "/b-sponsor.png", grades: ["B Grade"], cardKinds: [] },
+      { name: "Other team", logoUrl: "/other.png", grades: ["C Grade"], cardKinds: [] },
+      ...Array.from({ length: 8 }, (_, i) => ({
+        name: `Club supporter ${i}`, logoUrl: `/club-${i}.png`, grades: [],
+        // Every unassigned active sponsor belongs on the closing page, even
+        // if they aren't enabled for standalone match-day cards.
+        cardKinds: ["milestone"],
+      })),
+    ],
+  } as unknown as SocialSettingsBundle;
+  const build = (b = sponsorBundle) => buildWeekendSlides(
+    createTeamSlides([fixture(), fixture(2, { grade: "B Grade" }), fixture(3, { grade: "U15" })], []),
+    [], b, "Weekend", "2026-10-09", "2026-10-11",
+  );
+  it.each(Object.keys(SIZES) as CardSize[])("places each sponsor in the correct rendered %s slide", size => {
+    const slides = build();
+    const html = slides.map(sl => renderPackCard(sl.input, size, sl.sponsorsOn,
+      resolveCardTokens({ data: sl.data, junior: sl.junior, packId: "club-kit-v1" }),
+      sl.junior, sl.data, "club-kit-v1"));
+    expect(html[0]).toContain("PRESENTED BY");
+    expect(html[0]).toContain("/headline.png");
+    expect(html[0]).not.toContain("/a-sponsor.png");
+    expect(slides[1].data.sponsors).toEqual([{ name: "A sponsor", logoUrl: "/a-sponsor.png" }]);
+    expect(slides[2].data.sponsors).toEqual([{ name: "B sponsor", logoUrl: "/b-sponsor.png" }]);
+    expect(html[1]).toContain("/a-sponsor.png");
+    expect(html[2]).toContain("/b-sponsor.png");
+    for (const card of html.slice(1, 4)) {
+      expect(card).not.toContain("/headline.png");
+      expect(card).not.toContain("/other.png");
+      expect(card).not.toContain("/club-0.png");
+    }
+    expect(slides[3].sponsorsOn).toBe(false);
+    expect(slides[3].warnings.join(" ")).toContain("No sponsor is assigned");
+    const closing = html.at(-1)!;
+    for (let i = 0; i < 8; i++) expect(closing).toContain(`/club-${i}.png`);
+    expect(closing).toContain("/headline.png"); // Also unassigned to a team.
+    expect(closing).not.toContain("/a-sponsor.png");
+    expect(closing).not.toContain("/b-sponsor.png");
+    expect(closing).not.toContain("/other.png");
+  });
+  it("respects sponsors off everywhere", () => {
+    const slides = build({ ...sponsorBundle, settings: { ...sponsorBundle.settings, sponsorsEnabled: false } });
+    expect(slides.every(s => !s.sponsorsOn)).toBe(true);
+    expect(slides.every(s => !s.data.sponsors?.length)).toBe(true);
+    expect(slides.at(-1)!.input).toMatchObject({ carouselPage: { sponsors: [] } });
+  });
+  it("never substitutes another sponsor when no presenting sponsor exists", () => {
+    const slides = build({ ...sponsorBundle, activeSponsors: sponsorBundle.activeSponsors.filter(s => !s.isPresenting) });
+    expect(slides[0].sponsorsOn).toBe(false);
+    expect(slides[0].data.presentingSponsorName).toBeUndefined();
+  });
+  it("shows a name when the assigned sponsor has no logo, and only one when assignments overlap", () => {
+    const slides = build({ ...sponsorBundle, activeSponsors: [
+      { ...sponsorBundle.activeSponsors[1], logoUrl: "" },
+      { ...sponsorBundle.activeSponsors[2], grades: ["A Grade", "B Grade"] },
+    ] });
+    expect(slides[1].data.sponsors).toHaveLength(1);
+    expect(slides[1].warnings.join(" ")).toContain("Multiple sponsors");
+    const html = renderPackCard(slides[1].input, "square", true,
+      resolveCardTokens({ data: slides[1].data, junior: false, packId: "club-kit-v1" }),
+      false, slides[1].data, "club-kit-v1");
+    expect(html).toContain("A sponsor");
+    expect(html).not.toContain("/b-sponsor.png");
+  });
+});
+
 describe("weekend dates", () => {
   it.each([
     ["2026-10-05T04:00:00Z", "2026-10-09", "2026-10-11"],
@@ -107,7 +179,7 @@ describe("strict photos and full ordered sets", () => {
     const teams = createTeamSlides([fixture(1, { venue: null, opponentName: "" })], [photo()]);
     const slides = buildWeekendSlides(teams, [photo(1, { grade: "B Grade" })], bundle, "Weekend", "2026-10-09", "2026-10-11");
     expect(slides[1].data.photoUrl).toBeNull();
-    expect(slides[1].warnings).toHaveLength(3);
+    expect(slides[1].warnings).toHaveLength(4);
     expect(slides[1].input).toMatchObject({ venue: "Venue TBC", oppositionName: "Opponent TBC" });
   });
   it("keeps duplicate-grade fixtures and all 14 slides, plus every eligible sponsor", () => {

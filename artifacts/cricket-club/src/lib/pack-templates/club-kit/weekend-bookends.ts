@@ -41,7 +41,8 @@ export function weekendBookendTemplate(page: "title" | "sponsors", sponsorCount:
             display(cq, "{{fixtureCount}}", tall ? 24 : 20, ";margin-top:4cqmin") +
             meta(cq, "MATCHES · SWIPE FOR EVERY TEAM")
           : eyebrow(cq, "{{date}}") + display(cq, "OUR SPONSORS", tall ? 10 : 8) + sponsorGrid,
-        footer: { hashtag: "clubHashtag", sponsors: "logos", off: true },
+        footer: { hashtag: "clubHashtag", sponsors: "logos", off: true,
+          ...(page === "title" ? { label: "PRESENTED BY" } : {}) },
       });
     }),
   };

@@ -14,3 +14,9 @@ The cover/title page has a separate requested photo rule: let the admin choose a
 **Why:** The user explicitly requested a selectable cover photo from 2026 Club-wide photos.
 
 **How to apply:** Use the library's existing Season tag and Club-wide folder, allow all photo categories for the cover, and retain tenant isolation and privacy restrictions.
+
+Weekend carousel sponsor placement must follow the user's requested roles: one team sponsor on each team's match card, the designated “Presented by” sponsor on the title card, and all sponsors without a team assignment on the final page.
+
+**Why:** The user repeated this requirement after the cover-photo work; generic match-day sponsor filtering does not express the intended placements.
+
+**How to apply:** Keep these carousel-specific roles separate from standalone card rules. Do not fill a missing team assignment with another team's sponsor. “All unassigned” includes the presenting sponsor if it has no team assignment; retain the active-sponsor and sponsors-enabled controls.

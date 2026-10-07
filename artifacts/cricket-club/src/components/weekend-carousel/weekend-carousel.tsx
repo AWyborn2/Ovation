@@ -277,7 +277,8 @@ function GenerateBar({ s }: { s: WeekendCarouselState }) {
 function GeneratedSet({ s }: { s: WeekendCarouselState }) {
   const lock = s.exporting;
   const noSponsors = !s.slides.some(sl =>
-    sl.input.kind === "matchDay" && (sl.input.carouselPage?.sponsors.length ?? 0) > 0);
+    (sl.sponsorsOn && (sl.data.sponsors?.length ?? 0) > 0) ||
+    (sl.input.kind === "matchDay" && (sl.input.carouselPage?.sponsors.length ?? 0) > 0));
   // Crop frame mirrors the Club Kit photo panel: 46% of card width x full
   // height on square/landscape; tall formats are fluid, so the slide preview
   // below is authoritative there.

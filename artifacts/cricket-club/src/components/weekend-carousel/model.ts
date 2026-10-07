@@ -2,7 +2,8 @@ import type { ClubPhoto, Fixture, SocialSettingsBundle } from "@workspace/api-cl
 import { isJuniorGradeLabel } from "@workspace/scorecard";
 import type { PhotoTransform, ShareCardInput } from "@/lib/share-card";
 import type { PackCardData } from "@/lib/pack-render";
-import { buildPackData, kindSponsors, tenantHashtag } from "@/lib/pack-card-data";
+import { buildPackData, tenantHashtag } from "@/lib/pack-card-data";
+import { gradeMatchKey } from "@/lib/share-card/sponsor-limit";
 
 // Same club-time standard as the fixture and availability engines. Tenants do
 // not yet have a timezone setting; never use the browser/server's local zone.
@@ -95,8 +96,14 @@ export function buildWeekendSlides(
   }).replace(/,/g, "").toUpperCase();
   const rangeLabel = `${dateLabel(new Date(`${from}T12:00:00Z`))} – ${dateLabel(new Date(`${to}T12:00:00Z`))}`;
   const base = { brand: bundle.brand, hashtag: tenantHashtag(bundle), packColourModes: bundle.settings.packColourModes };
-  const sponsorList = teams.flatMap(t => kindSponsors(bundle, "matchDay", true, t.fixture.grade));
-  const sponsors = sponsorList.filter((s, i) => sponsorList.findIndex(p => p.name === s.name && p.logoUrl === s.logoUrl) === i);
+  // Carousel placements are explicit roles, not the generic match-day strip.
+  // Keep API ordering when more than one sponsor is assigned to a grade.
+  const activeSponsors = bundle.settings.sponsorsEnabled ? bundle.activeSponsors : [];
+  const presenting = activeSponsors.find(s => s.isPresenting);
+  const sponsorData = (s: (typeof activeSponsors)[number]) => ({ name: s.name, logoUrl: s.logoUrl });
+  const sponsors = activeSponsors
+    .filter(s => !(s.grades ?? []).some(g => gradeMatchKey(g)))
+    .map(sponsorData);
   const blank: Extract<ShareCardInput, { kind: "matchDay" }> = {
     kind: "matchDay", roundLabel: "", oppositionName: "", homeAway: "HOME", venue: "", date: rangeLabel, startTime: "",
   };
@@ -105,15 +112,20 @@ export function buildWeekendSlides(
   const bookend = (page: "title" | "sponsors"): WeekendSlide => ({
     id: page,
     label: page === "title" ? "Title page" : "Sponsors",
-    input: { ...blank, carouselPage: { page, title: title.trim() || "This weekend", fixtureCount: teams.length, sponsors,
+    input: { ...blank, carouselPage: { page, title: title.trim() || "This weekend", fixtureCount: teams.length, sponsors: page === "sponsors" ? sponsors : [],
       ...(page === "title" && coverPhoto ? { hasCoverPhoto: true } : {}) } },
-    data: buildPackData(page === "title" && coverPhoto
-      ? { ...base, photoUrl: coverPhoto.url, photoTransform: cover!.selection.transform }
-      : base),
+    data: buildPackData({
+      ...base,
+      ...(page === "title" ? {
+        sponsors: presenting ? [sponsorData(presenting)] : [],
+        presentingSponsorName: presenting?.name,
+        ...(coverPhoto ? { photoUrl: coverPhoto.url, photoTransform: cover!.selection.transform } : {}),
+      } : {}),
+    }),
     junior: false,
-    sponsorsOn: false,
+    sponsorsOn: page === "title" && !!presenting,
     warnings: page === "title" && invalidCover ? [COVER_PHOTO_UNAVAILABLE]
-      : page === "sponsors" && !sponsors.length ? ["No active sponsors apply to these match-day cards. Add sponsors in Social settings; the closing page will show a club thank-you instead."] : [],
+      : page === "sponsors" && !sponsors.length ? ["No active sponsors without a team assignment are available, or sponsors are switched off. The closing page shows a club thank-you instead."] : [],
   });
   return [
     bookend("title"),
@@ -123,13 +135,18 @@ export function buildWeekendSlides(
       // deletion/reclassification and no arbitrary URL accepted from UI state.
       const photo = eligiblePhotos(photos, f.grade).find(p => p.id === photoId);
       const warnings: string[] = [];
+      const gradeKey = gradeMatchKey(f.grade);
+      const assigned = activeSponsors.filter(s => gradeKey && (s.grades ?? []).some(g => gradeMatchKey(g) === gradeKey));
+      const teamSponsor = assigned[0];
+      if (bundle.settings.sponsorsEnabled && !teamSponsor) warnings.push("No sponsor is assigned to this team. Assign one in sponsor settings.");
+      if (assigned.length > 1) warnings.push("Multiple sponsors are assigned to this team. Only the first in sponsor order is shown.");
       if (!photo) warnings.push(junior ? "Junior privacy: this card has no photo." : "No eligible photo selected. Choose a batting, bowling or fielding photo in this grade's library.");
       if (!f.venue?.trim()) warnings.push("Venue is missing. Update the fixture before sharing.");
       if (!f.opponentName.trim()) warnings.push("Opponent is missing. Update the fixture before sharing.");
       const at = new Date(f.startAt);
       return {
         id: `fixture-${f.id}`, label: `${f.grade} v ${f.opponentName}`, warnings, junior,
-        sponsorsOn: !!bundle.settings.sponsorsEnabled,
+        sponsorsOn: !!teamSponsor,
         input: {
           kind: "matchDay", grade: f.grade, roundLabel: f.roundLabel ?? "",
           oppositionName: f.opponentName || "Opponent TBC", oppositionLogoUrl: f.opponentLogoUrl,
@@ -138,7 +155,8 @@ export function buildWeekendSlides(
           junior,
         },
         data: buildPackData({ ...base, photoUrl: photo?.url ?? null, photoTransform: transform,
-          sponsors: kindSponsors(bundle, "matchDay", !!bundle.settings.sponsorsEnabled, f.grade) }),
+          sponsors: teamSponsor ? [sponsorData(teamSponsor)] : [],
+          presentingSponsorName: teamSponsor?.name }),
       };
     }),
     bookend("sponsors"),
