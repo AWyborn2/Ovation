@@ -18,6 +18,9 @@ import {
   createTeamSlides,
   buildWeekendSlides,
   moveTeam,
+  eligibleCoverPhotos,
+  COVER_PHOTO_UNAVAILABLE,
+  type CoverPhoto,
   type TeamSlide,
   type WeekendSlide,
 } from "./model";
@@ -75,12 +78,17 @@ export function useWeekendCarousel() {
 
   const fixtures = useMemo(() => (sources?.fixtures ?? []) as Fixture[], [sources]);
   const photos = useMemo(() => (sources?.photos ?? []) as ClubPhoto[], [sources]);
+  const coverPhotos = useMemo(() => eligibleCoverPhotos(sources?.coverPhotos ?? []), [sources]);
   const sourceWarnings = sources?.warnings ?? [];
   const timeZone = sources?.timeZone ?? CLUB_TIME_ZONE;
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
 
   const [title, setTitle] = useState("Match day");
   const [size, setSize] = useState<CardSize>("square");
+  const [cover, setCover] = useState<CoverPhoto>({
+    photoId: null, transform: { focalX: 0.5, focalY: 0.5, zoom: 1 },
+  });
+  const coverUnavailable = cover.photoId !== null && !coverPhotos.some(p => p.id === cover.photoId);
 
   const inRange = rangeValid ? fixtures : [];
   const inRangeSig = inRange.map((f) => f.id).join(",");
@@ -120,8 +128,9 @@ export function useWeekendCarousel() {
       generated.from,
       generated.to,
       CLUB_TIME_ZONE,
+      { selection: cover, photos: coverPhotos },
     );
-  }, [generated, photos, bundle, title]);
+  }, [generated, photos, bundle, title, cover, coverPhotos]);
 
   const [exporting, setExporting] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -165,7 +174,7 @@ export function useWeekendCarousel() {
       },
     }) as Promise<Blob>;
 
-  const canExport = !!generated && !stale && slides.length > 0 && !exporting &&
+  const canExport = !!generated && !stale && slides.length > 0 && !exporting && !coverUnavailable &&
     !sourcesQ.isError && !settingsQ.isError && !sourcesQ.isFetching && !settingsQ.isFetching;
   const runExport = async () => {
     if (!canExport) return;
@@ -173,7 +182,19 @@ export function useWeekendCarousel() {
     setExportError(null);
     setProgress({ done: 0, total: slides.length });
     try {
-      await downloadWeekendZip(slides, size, render, (done, total) => setProgress({ done, total }));
+      // A second admin may have removed or retagged the photo since preview.
+      // Rebuild from fresh server-approved URLs, never silently replace the pick.
+      let exportSlides = slides;
+      if (cover.photoId !== null) {
+        const fresh = await sourcesQ.refetch();
+        if (fresh.isError || !fresh.data) throw new Error("Could not verify the cover photo. Retry before exporting.");
+        const allowed = eligibleCoverPhotos(fresh.data.coverPhotos);
+        if (!allowed.some(p => p.id === cover.photoId)) throw new Error(COVER_PHOTO_UNAVAILABLE);
+        exportSlides = buildWeekendSlides(generated!.teams, photos, bundle!,
+          title.trim() || "Match day", generated!.from, generated!.to, CLUB_TIME_ZONE,
+          { selection: cover, photos: allowed });
+      }
+      await downloadWeekendZip(exportSlides, size, render, (done, total) => setProgress({ done, total }));
     } catch (e) {
       setExportError(e instanceof Error ? e.message : "Export failed. Nothing was downloaded.");
     } finally {
@@ -193,6 +214,10 @@ export function useWeekendCarousel() {
     error,
     retry,
     photos,
+    coverPhotos,
+    cover,
+    coverUnavailable,
+    patchCover: (patch: Partial<CoverPhoto>) => !exporting && setCover(c => ({ ...c, ...patch })),
     bundle,
     sourceWarnings,
     timeZone,

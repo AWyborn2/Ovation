@@ -271,6 +271,7 @@ export type ShareCardInput =
         title: string;
         fixtureCount: number;
         sponsors: { name: string; logoUrl: string }[];
+        hasCoverPhoto?: boolean;
       };
       roundLabel: string;
       oppositionName: string;

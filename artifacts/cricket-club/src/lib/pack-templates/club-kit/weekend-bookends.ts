@@ -5,7 +5,7 @@ import { cq, display, eyebrow, meta } from "./parts";
 
 /** Private variants of matchDay; not standalone gallery kinds. Same Club Kit
  * layout, brand tokens, escaping, fonts and still-render harness as team cards. */
-export function weekendBookendTemplate(page: "title" | "sponsors", sponsorCount: number, titleLength = 0): PackCardTemplate {
+export function weekendBookendTemplate(page: "title" | "sponsors", sponsorCount: number, titleLength = 0, hasCoverPhoto = false): PackCardTemplate {
   const count = Math.max(0, sponsorCount);
   return {
     kind: "matchDay",
@@ -34,6 +34,7 @@ export function weekendBookendTemplate(page: "title" | "sponsors", sponsorCount:
         : meta(cq, "THANK YOU TO OUR CLUB COMMUNITY", ";margin-top:4cqmin");
       return ckCard({
         format: f, chip: "THIS WEEKEND", wide: true,
+        backdropPhoto: page === "title" && hasCoverPhoto ? "photo" : undefined,
         body: page === "title"
           ? eyebrow(cq, "{{date}}") +
             display(cq, "{{weekendTitle}}", titleLength > 45 ? 6 : titleLength > 25 ? 8 : tall ? 13 : 11, ";line-height:.95;overflow-wrap:anywhere;margin-top:3cqmin") +

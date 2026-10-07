@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, gte, inArray, lt, or } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, lt, or } from "drizzle-orm";
 import { db, fixturesTable, clubPhotosTable } from "@workspace/db";
 import { centralDb, playhqMatchesTable } from "@workspace/db/central";
 import { GetWeekendCarouselSourcesQueryParams, GetWeekendCarouselSourcesResponse } from "@workspace/api-zod";
@@ -9,7 +9,7 @@ import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
 import { CLUB_TIME_ZONE, clubTimeToUtc } from "../lib/round-schedules";
 import { getTenantPlayhqOrgId } from "../lib/tenant";
-import { presentPhotos } from "../lib/club-photo-library";
+import { nonSeniorPlayerIds, presentPhotos } from "../lib/club-photo-library";
 
 const router: IRouter = Router();
 
@@ -61,10 +61,18 @@ router.get("/weekend-carousel/sources", requireAdmin, requireEntitlement("social
     eq(clubPhotosTable.tenantId, tenantId), inArray(clubPhotosTable.grade, grades),
   )) : [];
   const eligible = photoRows.filter(p => p.photoTypes.some(t => ["batting", "bowling", "fielding"].includes(t)));
+  // Club-wide is represented by a NULL grade, not all grade folders.
+  const coverRows = await db.select().from(clubPhotosTable).where(and(
+    eq(clubPhotosTable.tenantId, tenantId), isNull(clubPhotosTable.grade),
+    eq(clubPhotosTable.season, 2026),
+  )).orderBy(asc(clubPhotosTable.id));
+  const coverPhotos = await presentPhotos(tenantId, coverRows);
+  const unsafePlayerIds = new Set(await nonSeniorPlayerIds(tenantId, coverPhotos.flatMap(p => p.playerIds)));
   res.json(GetWeekendCarouselSourcesResponse.parse({
     timeZone: CLUB_TIME_ZONE,
     fixtures: fixtures.map(f => ({ ...f, startAt: f.startAt.toISOString(), createdAt: f.createdAt.toISOString() })),
     photos: await presentPhotos(tenantId, eligible),
+    coverPhotos: coverPhotos.filter(p => !p.playerIds.some(id => unsafePlayerIds.has(id))),
     warnings: fixtures.length < rows.length ? [`Excluded ${rows.length - fixtures.length} bye or cancelled/abandoned fixture(s).`] : [],
   }));
 });

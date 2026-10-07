@@ -154,6 +154,8 @@ export interface CkCardParts {
   footer: CkFooter;
   /** Body spans the full width even beside the side frame (trading card). */
   wide?: boolean;
+  /** Full-card photo with a contrast scrim; used by the weekend cover only. */
+  backdropPhoto?: string;
 }
 
 /** One Club Kit card at one format. */
@@ -166,6 +168,10 @@ export function ckCard(parts: CkCardParts): string {
     parts.photo && tall ? fluidTopFrame(format, parts.depth ?? "hero", photo) : "";
   const layers =
     background() +
+    (parts.backdropPhoto
+      ? `<div data-drop-if-empty="${parts.backdropPhoto}" style="position:absolute;inset:0">${slot(parts.backdropPhoto, "photo", "rect")}` +
+        `<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.76),rgba(0,0,0,.60) 40%,rgba(0,0,0,.78))"></div></div>`
+      : "") +
     `<div data-drop-if-empty="clubLogo" style="position:absolute;inset:0;pointer-events:none">${watermark(cq, CLUB_LOGO_SLOT)}</div>` +
     sideFrameHtml;
   const maxW = !tall && parts.photo && !parts.wide ? "52%" : "100%";

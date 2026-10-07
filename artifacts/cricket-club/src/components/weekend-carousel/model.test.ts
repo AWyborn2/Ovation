@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ClubPhoto, Fixture, SocialSettingsBundle } from "@workspace/api-client-react";
-import { buildWeekendSlides, createTeamSlides, eligiblePhotos, fixturesInRange, moveTeam, validRange, weekendRange } from "./model";
+import { buildWeekendSlides, createTeamSlides, eligiblePhotos, eligibleCoverPhotos, fixturesInRange, moveTeam, validRange, weekendRange } from "./model";
 import { renderPackCard, resolveCardTokens } from "@/lib/pack-render";
 import { SIZES, type CardSize } from "@/lib/share-card";
 
@@ -50,6 +50,39 @@ describe("weekend dates", () => {
 });
 
 describe("strict photos and full ordered sets", () => {
+  it("accepts every category only in Club-wide Season 2026, not dates or other grades", () => {
+    const photos = [
+      photo(1, { grade: null, season: 2026, photoTypes: ["team"] }),
+      photo(2, { grade: null, season: 2026, photoTypes: [] }),
+      photo(3, { grade: null, season: 2026, photoTypes: ["celebrating"] }),
+      photo(4, { season: 2026 }), photo(5, { grade: null, season: 2025 }),
+      photo(6, { grade: null, createdAt: "2026-10-10T00:00:00Z" }),
+      photo(7, { grade: "U15", season: 2026 }),
+    ];
+    expect(eligibleCoverPhotos(photos).map(p => p.id)).toEqual([1, 2, 3]);
+  });
+  it.each(Object.keys(SIZES) as CardSize[])("renders cover photo and preserves other slides in %s", size => {
+    const teams = createTeamSlides([fixture()], [photo()]);
+    const baseline = buildWeekendSlides(teams, [photo()], bundle, "Weekend", "2026-10-09", "2026-10-11");
+    const cover = { selection: { photoId: 10, transform: { focalX: .2, focalY: .7, zoom: 2 } },
+      photos: [photo(10, { grade: null, season: 2026, photoTypes: ["team"] })] };
+    const slides = buildWeekendSlides(teams, [photo()], bundle, "Weekend", "2026-10-09", "2026-10-11", undefined, cover);
+    expect(slides.slice(1)).toEqual(baseline.slice(1));
+    expect(slides[0].data.photoTransform).toEqual(cover.selection.transform);
+    const html = renderPackCard(slides[0].input, size, false,
+      resolveCardTokens({ data: slides[0].data, packId: "club-kit-v1", junior: false }), false, slides[0].data, "club-kit-v1");
+    expect(html).toContain("/photos/10.jpg");
+    expect(html).toContain("SWIPE FOR EVERY TEAM");
+    expect(html).toContain("linear-gradient(180deg,rgba(0,0,0,.76)");
+    expect(html).not.toContain("{{");
+    const removed = buildWeekendSlides(teams, [photo()], bundle, "Weekend", "2026-10-09", "2026-10-11", undefined,
+      { ...cover, selection: { ...cover.selection, photoId: null } });
+    expect(removed).toEqual(baseline);
+    const missing = buildWeekendSlides(teams, [photo()], bundle, "Weekend", "2026-10-09", "2026-10-11", undefined,
+      { ...cover, photos: [] });
+    expect(missing[0].data.photoUrl).toBeUndefined();
+    expect(missing[0].warnings[0]).toContain("no longer available");
+  });
   it("allows action tags only, exact grade only; multi-tag matches; no junior photos", () => {
     const photos = [photo(1), photo(2, { photoTypes: ["bowling"] }), photo(3, { photoTypes: ["fielding", "celebrating"] }),
       photo(4, { grade: "B Grade" }), photo(5, { photoTypes: ["team"] }),

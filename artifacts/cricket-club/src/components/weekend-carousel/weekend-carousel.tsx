@@ -28,6 +28,7 @@ import { PackCard } from "@/components/pack-card";
 import { PhotoReposition } from "@/components/photo-reposition";
 import { SIZES, type CardSize } from "@/lib/share-card";
 import { CLUB_TIME_ZONE, eligiblePhotos, type TeamSlide } from "./model";
+import { CoverPhotoPicker } from "./cover-photo-picker";
 import {
   slideAdjustments,
   useWeekendCarousel,
@@ -266,7 +267,7 @@ function GenerateBar({ s }: { s: WeekendCarouselState }) {
         </p>
       ) : (
         <p className="text-xs text-muted-foreground">
-          Photos are chosen once when you generate. Regenerating resets photo and crop choices.
+          Team photos are chosen once when you generate. Regenerating resets team photos and crops, not your cover.
         </p>
       )}
     </div>
@@ -322,6 +323,8 @@ function GeneratedSet({ s }: { s: WeekendCarouselState }) {
           </div>
         </fieldset>
       </div>
+
+      <CoverPhotoPicker s={s} />
 
       {noSponsors && (
         <p className="flex items-center gap-2 rounded border px-3 py-2 text-sm text-muted-foreground" data-testid="text-no-sponsors">

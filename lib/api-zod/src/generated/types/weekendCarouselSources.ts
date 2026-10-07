@@ -12,5 +12,7 @@ export interface WeekendCarouselSources {
   timeZone: string;
   fixtures: Fixture[];
   photos: ClubPhoto[];
+  /** Current club's Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules. */
+  coverPhotos: ClubPhoto[];
   warnings: string[];
 }

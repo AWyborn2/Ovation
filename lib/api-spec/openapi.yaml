@@ -19059,7 +19059,7 @@ components:
 
     WeekendCarouselSources:
       type: object
-      required: [timeZone, fixtures, photos, warnings]
+      required: [timeZone, fixtures, photos, coverPhotos, warnings]
       properties:
         timeZone: { type: string }
         fixtures:
@@ -19067,6 +19067,10 @@ components:
           items: { $ref: "#/components/schemas/Fixture" }
         photos:
           type: array
+          items: { $ref: "#/components/schemas/ClubPhoto" }
+        coverPhotos:
+          type: array
+          description: "Current club's Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules."
           items: { $ref: "#/components/schemas/ClubPhoto" }
         warnings:
           type: array

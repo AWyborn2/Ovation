@@ -7,6 +7,9 @@ const fixtures = [
 ];
 const mutateAsync = vi.fn(async () => new Blob(["png"]));
 const download = vi.fn(async () => {});
+const coverPhoto = { id: 10, grade: null, season: 2026, photoTypes: ["team"], url: "/cover.jpg", thumbUrl: "/cover-thumb.jpg" };
+let coverPhotos = [coverPhoto];
+const refetch = vi.fn(async () => ({ data: { coverPhotos }, isError: false }));
 
 vi.mock("@workspace/api-client-react", () => ({
   useGetWeekendCarouselSources: (p: { from: string }) => ({
@@ -14,34 +17,27 @@ vi.mock("@workspace/api-client-react", () => ({
       timeZone: "Australia/Perth",
       fixtures: p.from === "2025-11-07" ? fixtures : [],
       photos: [],
+      coverPhotos,
       warnings: ["PlayHQ status could not be checked for 1 fixture"],
     },
     isLoading: false,
     isError: false,
+    refetch,
   }),
   getGetWeekendCarouselSourcesQueryKey: (p: unknown) => ["sources", p],
-  useGetSocialSettings: () => ({ data: { settings: {} }, isLoading: false, isError: false }),
+  useGetSocialSettings: () => ({ data: { settings: {}, activeSponsors: [] }, isLoading: false, isError: false }),
   getGetSocialSettingsQueryKey: () => ["settings"],
   useCreateCardRenderStill: () => ({ mutateAsync }),
 }));
-vi.mock("@/components/pack-card", () => ({ PackCard: () => <div data-testid="pack-card" /> }));
+vi.mock("@/components/pack-card", () => ({ PackCard: ({ data }: { data: unknown }) => <div data-testid="pack-card" data-card={JSON.stringify(data)} /> }));
+vi.mock("@/components/photo-reposition", () => ({
+  PhotoReposition: ({ onChange }: { onChange: (v: unknown) => void }) =>
+    <button onClick={() => onChange({ focalX: .2, focalY: .7, zoom: 2 })}>Adjust crop</button>,
+}));
 vi.mock("./export", () => ({ downloadWeekendZip: download }));
-vi.mock("./model", () => ({
-  CLUB_TIME_ZONE: "Australia/Perth",
+vi.mock("./model", async (importOriginal) => ({
+  ...await importOriginal<typeof import("./model")>(),
   weekendRange: () => ({ from: "2025-11-07", to: "2025-11-09" }),
-  eligiblePhotos: () => [],
-  createTeamSlides: (fx: { id: number }[]) =>
-    fx.map((fixture) => ({ fixture, photoId: null, transform: { focalX: 0.5, focalY: 0.5, zoom: 1 } })),
-  buildWeekendSlides: (teams: { fixture: { id: number } }[]) => [
-    { id: "title", label: "Title", input: {}, data: {}, junior: false, sponsorsOn: false, warnings: [] },
-    ...teams.map((t) => ({ id: `t${t.fixture.id}`, label: `Team ${t.fixture.id}`, input: {}, data: {}, junior: false, sponsorsOn: false, warnings: ["No photo"] })),
-  ],
-  moveTeam: (t: unknown[], a: number, b: number) => {
-    const n = [...t];
-    const [m] = n.splice(a, 1);
-    n.splice(b, 0, m);
-    return n;
-  },
 }));
 
 const { WeekendCarouselBody } = await import("./weekend-carousel");
@@ -59,6 +55,7 @@ const mount = () =>
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  coverPhotos = [coverPhoto];
 });
 
 describe("WeekendCarousel", () => {
@@ -73,7 +70,7 @@ describe("WeekendCarousel", () => {
   it("generates slides, exports with the selected size, and marks stale on selection change", async () => {
     mount();
     fireEvent.click(screen.getByTestId("button-generate-weekend"));
-    expect(screen.getAllByTestId("pack-card")).toHaveLength(3);
+    expect(screen.getAllByTestId("pack-card")).toHaveLength(4);
     expect(screen.getByTestId("text-no-sponsors")).toBeTruthy();
     fireEvent.click(screen.getByTestId("button-size-story"));
     fireEvent.click(screen.getByTestId("button-export-weekend"));
@@ -94,5 +91,42 @@ describe("WeekendCarousel", () => {
     fireEvent.click(screen.getByLabelText("Move B Grade at Rockingham up"));
     const rows = screen.getAllByTestId(/^row-fixture-/);
     expect(rows[0].getAttribute("data-testid")).toBe("row-fixture-2");
+  });
+  it("keeps cover and crop through title, size, order, regeneration and export; supports removal", async () => {
+    mount();
+    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    fireEvent.click(screen.getByTestId("button-cover-photo-10"));
+    fireEvent.click(screen.getByText("Adjust crop"));
+    fireEvent.change(screen.getByTestId("input-weekend-title"), { target: { value: "Our weekend" } });
+    fireEvent.click(screen.getByTestId("button-size-story"));
+    fireEvent.click(screen.getAllByLabelText("Move B Grade at Rockingham up")[1]);
+    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    const getCover = () => JSON.parse(screen.getAllByTestId("pack-card")[0].getAttribute("data-card")!);
+    expect(getCover()).toMatchObject({ photoUrl: "/cover.jpg", photoTransform: { focalX: .2, focalY: .7, zoom: 2 } });
+    fireEvent.click(screen.getByTestId("button-export-weekend"));
+    await waitFor(() => expect(download).toHaveBeenCalledTimes(1));
+    expect(refetch).toHaveBeenCalledTimes(1);
+    const slides = (download.mock.calls[0] as unknown[])[0] as { data: unknown }[];
+    expect(slides[0].data).toEqual(getCover());
+    await waitFor(() => expect((screen.getByTestId("button-no-cover-photo") as HTMLButtonElement).disabled).toBe(false));
+    fireEvent.click(screen.getByTestId("button-no-cover-photo"));
+    expect(getCover().photoUrl).toBeUndefined();
+  });
+  it("stops export when fresh source data no longer permits the selected cover", async () => {
+    mount();
+    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    fireEvent.click(screen.getByTestId("button-cover-photo-10"));
+    refetch.mockResolvedValueOnce({ data: { coverPhotos: [] }, isError: false });
+    fireEvent.click(screen.getByTestId("button-export-weekend"));
+    await waitFor(() => expect(screen.getByTestId("text-export-error").textContent).toContain("no longer available"));
+    expect(download).not.toHaveBeenCalled();
+  });
+  it("shows an actionable empty state without preventing no-photo export", async () => {
+    coverPhotos = [];
+    mount();
+    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    expect(screen.getByTestId("text-no-cover-photos").textContent).toContain("Season 2026");
+    fireEvent.click(screen.getByTestId("button-export-weekend"));
+    await waitFor(() => expect(download).toHaveBeenCalledTimes(1));
   });
 });

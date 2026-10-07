@@ -8,6 +8,12 @@ import { buildPackData, kindSponsors, tenantHashtag } from "@/lib/pack-card-data
 // not yet have a timezone setting; never use the browser/server's local zone.
 export const CLUB_TIME_ZONE = "Australia/Perth";
 export type TeamSlide = { fixture: Fixture; photoId: number | null; transform: PhotoTransform };
+export type CoverPhoto = { photoId: number | null; transform: PhotoTransform };
+export const COVER_PHOTO_UNAVAILABLE = "The selected cover photo is no longer available in Club-wide · Season 2026. Choose another photo or remove it before exporting.";
+
+export function eligibleCoverPhotos(photos: ClubPhoto[]): ClubPhoto[] {
+  return photos.filter(p => p.grade === null && p.season === 2026);
+}
 export type WeekendSlide = {
   id: string;
   label: string;
@@ -81,6 +87,7 @@ export function moveTeam(teams: TeamSlide[], from: number, to: number): TeamSlid
 export function buildWeekendSlides(
   teams: TeamSlide[], photos: ClubPhoto[], bundle: SocialSettingsBundle,
   title: string, from: string, to: string, timeZone = CLUB_TIME_ZONE,
+  cover?: { selection: CoverPhoto; photos: ClubPhoto[] },
 ): WeekendSlide[] {
   if (!teams.length || !validRange(from, to)) return [];
   const dateLabel = (date: Date) => date.toLocaleDateString("en-AU", {
@@ -93,14 +100,20 @@ export function buildWeekendSlides(
   const blank: Extract<ShareCardInput, { kind: "matchDay" }> = {
     kind: "matchDay", roundLabel: "", oppositionName: "", homeAway: "HOME", venue: "", date: rangeLabel, startTime: "",
   };
+  const coverPhoto = cover && eligibleCoverPhotos(cover.photos).find(p => p.id === cover.selection.photoId);
+  const invalidCover = cover?.selection.photoId != null && !coverPhoto;
   const bookend = (page: "title" | "sponsors"): WeekendSlide => ({
     id: page,
     label: page === "title" ? "Title page" : "Sponsors",
-    input: { ...blank, carouselPage: { page, title: title.trim() || "This weekend", fixtureCount: teams.length, sponsors } },
-    data: buildPackData(base),
+    input: { ...blank, carouselPage: { page, title: title.trim() || "This weekend", fixtureCount: teams.length, sponsors,
+      ...(page === "title" && coverPhoto ? { hasCoverPhoto: true } : {}) } },
+    data: buildPackData(page === "title" && coverPhoto
+      ? { ...base, photoUrl: coverPhoto.url, photoTransform: cover!.selection.transform }
+      : base),
     junior: false,
     sponsorsOn: false,
-    warnings: page === "sponsors" && !sponsors.length ? ["No active sponsors apply to these match-day cards. Add sponsors in Social settings; the closing page will show a club thank-you instead."] : [],
+    warnings: page === "title" && invalidCover ? [COVER_PHOTO_UNAVAILABLE]
+      : page === "sponsors" && !sponsors.length ? ["No active sponsors apply to these match-day cards. Add sponsors in Social settings; the closing page will show a club thank-you instead."] : [],
   });
   return [
     bookend("title"),

@@ -118,7 +118,7 @@ export function resolveTemplate(
   packId?: string | null,
 ): PackCardTemplate | null {
   if (packId === "club-kit-v1" && input.kind === "matchDay" && input.carouselPage) {
-    return weekendBookendTemplate(input.carouselPage.page, input.carouselPage.sponsors.length, input.carouselPage.title.length);
+    return weekendBookendTemplate(input.carouselPage.page, input.carouselPage.sponsors.length, input.carouselPage.title.length, input.carouselPage.hasCoverPhoto);
   }
   const all = designsByKind(packId).get(input.kind);
   if (!all || all.length === 0) return null;

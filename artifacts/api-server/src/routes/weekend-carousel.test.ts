@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { db, tenantsTable, adminsTable, fixturesTable, clubPhotosTable } from "@workspace/db";
+import { db, tenantsTable, adminsTable, fixturesTable, clubPhotosTable, clubPhotoPlayersTable } from "@workspace/db";
 import app from "../app";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
@@ -14,6 +14,7 @@ vi.mock("@workspace/db/central", async importOriginal => ({
 const stamp = Date.now();
 let tenant: number, other: number, cookie: string;
 let expected: number[], photoId: number;
+let coverIds: number[];
 const cancelledId = randomUUID();
 const orgId = randomUUID();
 
@@ -49,6 +50,20 @@ beforeAll(async () => {
     { ...p, photoTypes: ["team"] },
   ]).returning();
   photoId = photos[0].id;
+  const cover = { ...p, grade: null, season: 2026 };
+  const covers = await db.insert(clubPhotosTable).values([
+    { ...cover, photoTypes: ["team"] },
+    { ...cover, photoTypes: ["celebrating"] },
+    { ...cover, photoTypes: [] },
+    { ...cover, season: 2025 },
+    { ...cover, season: null },
+    { ...cover, grade: "A Grade" },
+    { ...cover, grade: "U15" },
+    { ...cover, tenantId: other },
+    { ...cover }, // Invalid legacy player tag: not in this tenant's senior crosswalk.
+  ]).returning();
+  coverIds = covers.slice(0, 3).map(p => p.id);
+  await db.insert(clubPhotoPlayersTable).values({ tenantId: tenant, photoId: covers[8].id, playerId: -12345 });
   centralRows.mockResolvedValue([{ id: cancelledId, status: "CANCELLED" }]);
 });
 afterAll(async () => {
@@ -73,7 +88,9 @@ describe("weekend carousel protected sources", () => {
     expect(res.body.timeZone).toBe("Australia/Perth");
     expect(res.body.fixtures.map((f: { id: number }) => f.id)).toEqual(expected);
     expect(res.body.warnings[0]).toContain("Excluded 3");
-    expect(res.body.photos.map((p: { id: number }) => p.id)).toEqual([photoId]);
+    expect(res.body.photos.map((p: { id: number }) => p.id)).toContain(photoId);
+    expect(res.body.photos.every((p: { grade: string }) => p.grade === "A Grade")).toBe(true);
+    expect(res.body.coverPhotos.map((p: { id: number }) => p.id)).toEqual(coverIds);
   });
   it("rejects invalid/reversed dates rather than normalising them", async () => {
     for (const [from, to] of [["2026-02-30", "2026-03-01"], ["2026-10-12", "2026-10-09"], ["oops", "2026-10-11"]]) {
@@ -85,6 +102,21 @@ describe("weekend carousel protected sources", () => {
     expect(res.status).toBe(200);
     expect(res.body.fixtures).toEqual([]);
     expect(res.body.photos).toEqual([]);
+    expect(res.body.coverPhotos.map((p: { id: number }) => p.id)).toEqual(coverIds);
+  });
+  it("rechecks cover tags and deletion on each source request", async () => {
+    const [cover] = await db.insert(clubPhotosTable).values({
+      tenantId: tenant, objectPath: `/objects/temporary-cover-${stamp}`, thumbPath: `/objects/temporary-cover-thumb-${stamp}`,
+      width: 100, height: 100, grade: null, season: 2026, photoTypes: ["team"],
+    }).returning();
+    const ids = async () => (await fetchSources().query({ from: "2026-10-09", to: "2026-10-11" })).body.coverPhotos.map((p: { id: number }) => p.id);
+    expect(await ids()).toContain(cover.id);
+    await db.update(clubPhotosTable).set({ season: 2025 }).where(eq(clubPhotosTable.id, cover.id));
+    expect(await ids()).not.toContain(cover.id);
+    await db.update(clubPhotosTable).set({ season: 2026, grade: "A Grade" }).where(eq(clubPhotosTable.id, cover.id));
+    expect(await ids()).not.toContain(cover.id);
+    await db.delete(clubPhotosTable).where(eq(clubPhotosTable.id, cover.id));
+    expect(await ids()).not.toContain(cover.id);
   });
   it("fails explicitly if live cancellation status is unavailable", async () => {
     centralRows.mockRejectedValueOnce(new Error("Test central outage"));
