@@ -96,6 +96,8 @@ async function queueCareerCrossings(
   tenantId: number,
   sourceImportId: number,
   beforeMap: Map<number, CareerTotals>,
+  /** The committed matches' season, for each player's shirt number (KTD11). */
+  season: number | null,
 ): Promise<void> {
   // Career totals come from the native stats tables, which belong to the one
   // native club. A central tenant has none of its own; drafting here would
@@ -152,6 +154,7 @@ async function queueCareerCrossings(
       },
       appPath: `/players/${c.playerId}`,
       playerId: c.playerId,
+      season,
       milestoneEventId: event.id,
       sourceImportId,
     });
@@ -211,7 +214,7 @@ export async function runPostCommitSocial(opts: PostCommitSocialOpts): Promise<v
 
   if (families.achievements.enabled) {
     try {
-      await queueCareerCrossings(tenantId, importId, beforeMap);
+      await queueCareerCrossings(tenantId, importId, beforeMap, season);
     } catch (err) {
       logger.error({ err }, "milestone detection failed");
     }
@@ -282,7 +285,13 @@ export async function runBatchPostCommitSocial(opts: BatchPostCommitSocialOpts):
 
   if (families.achievements.enabled) {
     try {
-      await queueCareerCrossings(tenantId, sourceImportId, beforeMap);
+      // A batch can span seasons; a career crossing lands in the latest.
+      await queueCareerCrossings(
+        tenantId,
+        sourceImportId,
+        beforeMap,
+        affected.length > 0 ? Math.max(...affected.map((a) => a.season)) : null,
+      );
     } catch (err) {
       logger.error({ err }, "milestone detection failed");
     }

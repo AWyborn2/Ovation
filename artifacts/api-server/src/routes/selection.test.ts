@@ -70,7 +70,14 @@ type SideBody = {
   readOnlyReason: string | null;
   fixture: { grade: string };
   slots: { memberId: number | null; gap: unknown; member: { id: number; status: string } | null }[];
-  warnings: { filled: number; open: number; saidNo: number; noCaptain: boolean };
+  warnings: {
+    filled: number;
+    open: number;
+    twelfth: boolean;
+    saidNo: number;
+    noCaptain: boolean;
+    noKeeper: boolean;
+  };
 };
 
 describe("Selection Hub API", () => {
@@ -142,7 +149,10 @@ describe("Selection Hub API", () => {
       .where(eq(availabilitySettingsTable.tenantId, tenantA));
   };
 
-  const pad = (ids: (number | null)[]) => [...ids, ...Array(11 - ids.length).fill(null)];
+  const pad = (ids: (number | null)[], size = 12) => [
+    ...ids,
+    ...Array(size - ids.length).fill(null),
+  ];
 
   beforeAll(async () => {
     setSendPaceMs(0);
@@ -381,7 +391,14 @@ describe("Selection Hub API", () => {
     expect(b.round?.counts.total).toBe(4);
     expect(b.round?.counts.no).toBe(1);
     const a = b.selections.find((s) => s.id === sel.A)!;
-    expect(a.warnings).toMatchObject({ filled: 10, open: 1, saidNo: 0, noCaptain: false });
+    expect(a.slots).toHaveLength(12);
+    expect(a.warnings).toMatchObject({
+      filled: 10,
+      open: 1,
+      twelfth: false,
+      saidNo: 0,
+      noCaptain: false,
+    });
     expect(a.slots.find((s) => s.memberId === m[3])?.member?.status).toBe("yes");
 
     const jb = await board(asAdmin, "junior");
@@ -389,15 +406,17 @@ describe("Selection Hub API", () => {
     expect(jb.pool.map((p) => p.id)).toEqual([junior]);
   });
 
-  it("more than 11 slots, or a member twice, → 400 and nothing written", async () => {
-    const twelve = await changeFor(sel.C, (ids) => [...ids, m[28]]);
-    expect((await put(asAdmin, [twelve])).status).toBe(400);
+  it("more than 12 slots, too few, or a member twice → 400 and nothing written", async () => {
+    const thirteen = await changeFor(sel.C, (ids) => [...ids, m[28]]);
+    expect((await put(asAdmin, [thirteen])).status).toBe(400);
+    const ten = await changeFor(sel.C, (ids) => ids.slice(0, 10));
+    expect((await put(asAdmin, [ten])).status).toBe(400);
 
     // m11 is in B Grade, which the save doesn't change.
-    const dupAcross = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[11]]);
+    const dupAcross = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[11], ids[11]]);
     expect((await put(asAdmin, [dupAcross])).status).toBe(400);
 
-    const dupWithin = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[1]]);
+    const dupWithin = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[1], ids[11]]);
     expect((await put(asAdmin, [dupWithin])).status).toBe(400);
 
     expect((await loadSel(sel.A)).version).toBe(1);
@@ -409,8 +428,99 @@ describe("Selection Hub API", () => {
     expect(events).toHaveLength(0);
   });
 
+  describe("the 12th player", () => {
+    /** A Grade with m28 as 12th player (slot 12), saved through the API. */
+    const withTwelfth = async () => {
+      const a = await changeFor(sel.A, (ids) => [...ids.slice(0, 11), m[28]]);
+      expect((await put(asAdmin, [a])).status).toBe(200);
+    };
+
+    it("a side saved with 11 slots (before the 12th) reads and saves as 12 with an empty 12th", async () => {
+      const legacy = pad(m.slice(22, 28), 11).map((memberId) => ({ memberId }));
+      await db.update(selectionsTable).set({ slots: legacy }).where(eq(selectionsTable.id, sel.C));
+      const c = (await board(asAdmin)).selections.find((s) => s.id === sel.C)!;
+      expect(c.slots).toHaveLength(12);
+      expect(c.slots[11]).toMatchObject({ memberId: null, member: null });
+      expect(c.warnings).toMatchObject({ filled: 6, open: 5, twelfth: false });
+
+      // An older client's 11-slot save is accepted and stored as 12.
+      const old = await changeFor(sel.C, (ids) => [...ids.slice(0, 6), m[28], ...ids.slice(7)]);
+      expect(old.slots).toHaveLength(11);
+      expect((await put(asAdmin, [old])).status).toBe(200);
+      const row = await loadSel(sel.C);
+      expect(row.slots).toHaveLength(12);
+      expect(row.slots[6].memberId).toBe(m[28]);
+      expect(row.slots[11]).toEqual({ memberId: null });
+    });
+
+    it("an empty 12th is not an open slot; a filled one counts as +12th, not in the XI", async () => {
+      const full = (await board(asAdmin)).selections.find((s) => s.id === sel.B)!;
+      expect(full.warnings).toMatchObject({ filled: 11, open: 0, twelfth: false });
+      const b = await changeFor(sel.B, (ids) => [...ids.slice(0, 11), m[28]]);
+      const res = await put(asAdmin, [b]);
+      expect(res.status).toBe(200);
+      const side = (res.body.selections as SideBody[]).find((s) => s.id === sel.B)!;
+      expect(side.warnings).toMatchObject({ filled: 11, open: 0, twelfth: true });
+    });
+
+    it("a captain or keeper moved to 12th loses the role, logged as moved to 12th", async () => {
+      // m1 (captain) to slot 12, m28 into their XI slot; the client still names m1 captain.
+      const a = await changeFor(sel.A, (ids) => [m[28], ...ids.slice(1, 11), m[1]]);
+      const res = await put(asAdmin, [a]);
+      expect(res.status).toBe(200);
+      const row = await loadSel(sel.A);
+      expect(row.slots[11].memberId).toBe(m[1]);
+      expect(row.captainMemberId).toBeNull();
+      expect(row.keeperMemberId).toBe(m[2]);
+      const [event] = await db
+        .select()
+        .from(selectionEventsTable)
+        .where(
+          and(
+            eq(selectionEventsTable.selectionId, sel.A),
+            eq(selectionEventsTable.action, "update"),
+          ),
+        );
+      expect(event.detail.rolesCleared).toEqual([
+        { role: "captain", memberId: m[1], name: "P1 Member", twelfth: true },
+      ]);
+
+      // Naming the 12th as keeper clears it too.
+      const k = await changeFor(sel.A, (ids) => ids, { keeper: m[1] });
+      expect((await put(asAdmin, [k])).status).toBe(200);
+      expect((await loadSel(sel.A)).keeperMemberId).toBeNull();
+    });
+
+    it("finalise publishes the 12th as order 12 and tells them they're 12th player", async () => {
+      await withTwelfth();
+      const res = await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
+        .send(await ver(sel.A))
+        .expect(200);
+      expect(res.body.messaged).toEqual({ selected: 11, deselected: 0, failed: 0 });
+      const list = await teamListOf(fixture.A);
+      expect(list.players).toHaveLength(11);
+      // A Grade's XI has an open slot: the XI is 1–10 and the 12th stays order 12.
+      expect(list.players.map((p) => p.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12]);
+      expect(list.players[10]).toEqual({ order: 12, displayName: "P28 Member" });
+      expect(emailsTo(28)).toHaveLength(1);
+      expect(emailsTo(28)[0].text).toMatch(/selected as 12th player for A Grade v Mandurah/);
+      expect(emailsTo(1)[0].text).not.toMatch(/12th/);
+      const toTwelfth = sms.filter((x) => x.body.includes("12th player"));
+      expect(toTwelfth).toHaveLength(1);
+
+      // A withdrawal from the XI renumbers it and leaves the 12th at order 12.
+      await withdrawFromSelection(tenantA, m[2], roundId, {
+        kind: "player",
+        id: null,
+        name: null,
+      });
+      const after = await teamListOf(fixture.A);
+      expect(after.players.map((p) => p.order)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 12]);
+    });
+  });
+
   it("moving a C Grade player into A Grade's open slot updates both sides in one save (AE3)", async () => {
-    const a = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[22]]);
+    const a = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[22], ids[11]]);
     const c = await changeFor(sel.C, (ids) => [null, ...ids.slice(1)]);
     const res = await put(asAdmin, [a, c]);
     expect(res.status).toBe(200);
@@ -435,7 +545,7 @@ describe("Selection Hub API", () => {
   });
 
   it("a member who said No can be placed and stays flagged (AE4)", async () => {
-    const a = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[30]]);
+    const a = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[30], ids[11]]);
     const res = await put(asAdmin, [a]);
     expect(res.status).toBe(200);
     const side = (res.body.selections as SideBody[]).find((s) => s.id === sel.A)!;
@@ -450,7 +560,7 @@ describe("Selection Hub API", () => {
     expect(aSide.readOnlyReason).toMatch(/own grade/);
     expect(b.selections.find((s) => s.id === sel.B)!.canEdit).toBe(true);
 
-    const toA = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[28]]);
+    const toA = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[28], ids[11]]);
     expect((await put(asCaptain, [toA])).status).toBe(403);
 
     // Pulling m1 out of A Grade into B Grade.
@@ -498,7 +608,7 @@ describe("Selection Hub API", () => {
   it("moving A Grade's captain into B Grade clears A's captain and logs it (AE8)", async () => {
     // The client still names m1 as A's captain; the server clears it.
     const a = await changeFor(sel.A, (ids) => [null, ...ids.slice(1)]);
-    const b = await changeFor(sel.B, (ids) => [...ids.slice(0, 10), m[1]]);
+    const b = await changeFor(sel.B, (ids) => [...ids.slice(0, 10), m[1], ids[11]]);
     const res = await put(asAdmin, [a, b]);
     expect(res.status).toBe(200);
     const [rowA, rowB] = [await loadSel(sel.A), await loadSel(sel.B)];
@@ -551,7 +661,7 @@ describe("Selection Hub API", () => {
       (await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`)).send(await ver(sel.A)))
         .status,
     ).toBe(409);
-    const edit = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[28]]);
+    const edit = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[28], ids[11]]);
     expect((await put(asAdmin, [edit])).status).toBe(409);
   });
 
@@ -595,7 +705,7 @@ describe("Selection Hub API", () => {
     expect(still.isPublished).toBe(true);
     expect((await asAdmin(request(app).post(`/api/selection/${sel.A}/reopen`))).status).toBe(409);
 
-    const swap = await changeFor(sel.A, (ids) => [...ids.slice(0, 9), m[28], null]);
+    const swap = await changeFor(sel.A, (ids) => [...ids.slice(0, 9), m[28], null, ids[11]]);
     expect((await put(asAdmin, [swap])).status).toBe(200);
     const res = await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
       .send(await ver(sel.A))
@@ -752,12 +862,12 @@ describe("Selection Hub API", () => {
     const c2 = await changeFor(sel.C, (ids) => [...ids.slice(0, 7), m[28], ...ids.slice(8)]);
     expect((await put(asAdmin, [c2])).status).toBe(400);
     // Taking m28 out of A Grade resolves it.
-    const a = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), null]);
+    const a = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), null, ids[11]]);
     expect((await put(asAdmin, [a])).status).toBe(200);
   });
 
   it("a save with one valid and one stale side → 409, the valid side unchanged and nothing logged", async () => {
-    const a = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[28]]);
+    const a = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[28], ids[11]]);
     const c = { ...(await changeFor(sel.C, (ids) => ids)), version: 99 };
     expect((await put(asAdmin, [a, c])).status).toBe(409);
     const rowA = await loadSel(sel.A);

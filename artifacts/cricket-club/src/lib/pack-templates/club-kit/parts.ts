@@ -380,6 +380,8 @@ export function tradingFrame(
     photo: string;
     crest: string;
     cap: string;
+    /** The shirt-number badge (absolutely placed; dropped whole when unnumbered). */
+    shirt?: string;
     name: string;
     role: string;
     stats: Array<{ value: string; label: string }>;
@@ -393,6 +395,7 @@ export function tradingFrame(
     `<div style="position:absolute;left:0;right:0;top:0;height:${u(2.4)};display:flex"><div style="flex:3;background:${C.s}"></div><div style="flex:1;background:${C.chalk}"></div><div style="flex:3;background:${C.s}"></div></div>` +
     `<div style="position:absolute;left:${u(2)};top:${u(4)};font-family:${CK_COND};font-weight:900;font-size:${u(3.6)};line-height:1;padding:${u(0.4)} ${u(1)};background:${C.s};color:${C.chalk}">${cells.cap}</div>` +
     `<div style="position:absolute;right:${u(2)};top:${u(3.6)};width:${u(7)};height:${u(7)}">${cells.crest}</div>` +
+    (cells.shirt ?? "") +
     `<div style="position:absolute;left:${u(2)};right:${u(2)};bottom:${u(2)}">` +
     `<div style="font-family:${CK_COND};font-weight:900;font-size:${u(5.4)};line-height:.9;text-transform:uppercase;color:${C.chalk};display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${cells.name}</div>` +
     `<div style="font-family:${CK_MONO};font-weight:600;font-size:${u(1.3)};letter-spacing:.14em;text-transform:uppercase;margin-top:${u(0.8)};color:${C.pt}">${cells.role}</div>` +

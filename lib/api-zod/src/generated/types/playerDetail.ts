@@ -7,6 +7,7 @@
  */
 import type { PlayerAward } from './playerAward';
 import type { PlayerPremiership } from './playerPremiership';
+import type { ShirtNumberSeason } from './shirtNumberSeason';
 import type { Stat } from './stat';
 
 export interface PlayerDetail {
@@ -45,4 +46,11 @@ export interface PlayerDetail {
   premierships?: PlayerPremiership[];
   /** Published awards this player has won (one row per season won), used by the trading card. */
   awards?: PlayerAward[];
+  /**
+     * The player's shirt number for the current season. Present only when the club has shirt numbers on and the player has a linked, numbered register entry; never a cap number.
+     * @nullable
+     */
+  shirtNumber?: string | null;
+  /** Shirt numbers worn by season, newest first (linked, numbered entries only). Omitted when the club has shirt numbers off. */
+  shirtNumbers?: ShirtNumberSeason[];
 }

@@ -251,9 +251,15 @@ describe("PlayHQ named side → team list → Team List draft", () => {
     const { list } = await teamList();
     expect(list).toMatchObject({ source: "playhq", isPublished: true });
     expect(list.players).toEqual([
-      { order: 1, playerId: playerIds[0], displayName: "Cam Skipper", role: "C" },
-      { order: 2, playerId: playerIds[1], displayName: "Pat Snapped" },
-      { order: 3, displayName: "Nina Newcomer" },
+      {
+        order: 1,
+        playerId: playerIds[0],
+        participantId: P_CAPTAIN,
+        displayName: "Cam Skipper",
+        role: "C",
+      },
+      { order: 2, playerId: playerIds[1], participantId: P_PHOTO, displayName: "Pat Snapped" },
+      { order: 3, participantId: P_NEW, displayName: "Nina Newcomer" },
     ]);
   });
 
@@ -446,14 +452,22 @@ describe("after the match: PlayHQ's side replaces a Selection Hub list", () => {
 
     const played = await listOf(ids.played);
     expect(played).toMatchObject({ source: "playhq", isPublished: true });
+    // Every row keeps its PlayHQ participant id (linked or not), so a held
+    // shirt-number entry can still be found for the fixture.
     expect(played.players).toEqual([
-      { order: 1, playerId: playerIds[0], displayName: "Cam Skipper", role: "C" },
-      { order: 2, displayName: "Nina Newcomer" },
+      {
+        order: 1,
+        playerId: playerIds[0],
+        participantId: P_CAPTAIN,
+        displayName: "Cam Skipper",
+        role: "C",
+      },
+      { order: 2, participantId: P_NEW, displayName: "Nina Newcomer" },
     ]);
     const lineupOnly = await listOf(ids.lineupOnly);
     expect(lineupOnly.source).toBe("playhq");
     expect(lineupOnly.players).toEqual([
-      { order: 1, playerId: playerIds[1], displayName: "Pat Snapped" },
+      { order: 1, playerId: playerIds[1], participantId: P_PHOTO, displayName: "Pat Snapped" },
     ]);
 
     for (const [id, source] of [
@@ -561,8 +575,8 @@ describe("after the match: PlayHQ's side replaces a Selection Hub list", () => {
     const list = await listOf(ids.unfinished);
     expect(list.source).toBe("playhq");
     expect(list.players).toEqual([
-      { order: 1, playerId: playerIds[1], displayName: "Pat Snapped" },
-      { order: 2, displayName: "Nina Newcomer" },
+      { order: 1, playerId: playerIds[1], participantId: P_PHOTO, displayName: "Pat Snapped" },
+      { order: 2, participantId: P_NEW, displayName: "Nina Newcomer" },
     ]);
   });
 });

@@ -7,8 +7,12 @@
  */
 
 export interface SelectionWarnings {
+  /** Players in the XI (slots 1–11); the 12th is not counted */
   filled: number;
+  /** Open slots in the XI; an empty 12th is not an open slot */
   open: number;
+  /** Slot 12 (the 12th player) is filled */
+  twelfth: boolean;
   /** Selected members who said Maybe or haven't replied */
   unconfirmed: number;
   /** Selected members who said they're unavailable */

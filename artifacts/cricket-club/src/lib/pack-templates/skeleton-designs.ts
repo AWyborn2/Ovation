@@ -22,6 +22,7 @@ import {
   kitCard,
   kitChip,
   kitFormats,
+  withShirtNumber,
 } from "./skeleton-kit";
 
 /**
@@ -178,7 +179,7 @@ export function playerSpotlightFormats(look: PackLook): PackTemplateFormats {
     body: kColumn(
       look,
       kEyebrow("PLAYER SPOTLIGHT") +
-        kNum("{{playerName}}", 13, ";max-width:78cqmin") +
+        withShirtNumber(kNum("{{playerName}}", 13, ";max-width:78cqmin")) +
         `<div style="display:flex;gap:2cqmin;margin-top:4cqmin">${statBox(1)}${statBox(2)}${statBox(3)}</div>` +
         kSub("{{headline}}", ";margin-top:4cqmin;max-width:72cqmin"),
     ),
@@ -230,7 +231,7 @@ export function milestoneFormats(look: PackLook): PackTemplateFormats {
         kNum("{{currentValue}}", 36, ";line-height:.84") +
         kCond("{{milestoneLabel}}", 8.4, ";margin-top:1cqmin") +
         K_RULE +
-        kCond("{{playerName}}", 7) +
+        withShirtNumber(kCond("{{playerName}}", 7)) +
         kSub("{{headline}}", ";margin-top:1.6cqmin;max-width:76cqmin"),
     ),
     footer: kFooterOn("proudly supported by"),
@@ -579,7 +580,7 @@ export function centuryFormats(look: PackLook, footer?: Partial<FooterKeys>): Pa
         heroWithAside("{{runs}}", 36, "{{balls}}") +
         kCond("CENTURY", 8.4, ";margin-top:1cqmin") +
         K_RULE +
-        kCond("{{playerName}}", 7) +
+        withShirtNumber(kCond("{{playerName}}", 7)) +
         kEyebrow(MATCH_LINE, K.muted, ";margin-top:1.6cqmin;font-weight:500"),
     ),
     footer: kFooterPresented("presented by", ft),
@@ -600,7 +601,7 @@ export function fiveForFormats(look: PackLook, footer?: Partial<FooterKeys>): Pa
         heroWithAside("{{figures}}", 32, "{{overs}}") +
         kCond("FIVE-FOR", 8.4, ";margin-top:1cqmin") +
         K_RULE +
-        kCond("{{playerName}}", 7) +
+        withShirtNumber(kCond("{{playerName}}", 7)) +
         kEyebrow(MATCH_LINE, K.muted, ";margin-top:1.6cqmin;font-weight:500"),
     ),
     footer: kFooterPresented("presented by", ft),

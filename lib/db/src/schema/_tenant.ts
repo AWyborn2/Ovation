@@ -109,6 +109,13 @@ import { tenantsTable } from "./tenants";
  *   from day one (every read filters, every write sets it from request
  *   context), even where a parent (round, request, selection) also reaches
  *   the tenant, so no read has to join through the parent.
+ * APPLIED (season shirt numbers, migration 0034):
+ *   shirt_numbers (senior register; player_id in the tenant's id space, no FK),
+ *   junior_shirt_numbers (juniors register, keyed on participant_id only —
+ *   never blended with the senior one), shirt_number_settings (one row per
+ *   tenant via getOrCreateSettings), shirt_number_uploads (upload previews).
+ *   Directly tenant-scoped from day one (reads filter, writes set from request
+ *   context); never written to the central database.
  * ───────────────────────────────────────────────────────────────────────────
  */
 export const tenantIdColumn = () =>

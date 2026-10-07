@@ -35,8 +35,10 @@ const AdminPremierships = lazy(() => import("@/pages/admin-premierships"));
 const AdminAwards = lazy(() => import("@/pages/admin-awards"));
 const AdminTeamOfDecade = lazy(() => import("@/pages/admin-team-of-decade"));
 const AdminCaps = lazy(() => import("@/pages/admin-caps"));
+const AdminShirtNumbers = lazy(() => import("@/pages/admin-shirt-numbers"));
 const AdminLifeMembers = lazy(() => import("@/pages/admin-life-members"));
 const AdminJuniorPremierships = lazy(() => import("@/pages/admin-junior-premierships"));
+const AdminJuniorShirtNumbers = lazy(() => import("@/pages/admin-junior-shirt-numbers"));
 const AdminHonoursDisplay = lazy(() => import("@/pages/admin-honours-display"));
 
 // Every tab page is a separate lazy chunk: opening one admin tab no longer
@@ -159,8 +161,10 @@ export function AdminHonoursGroup() {
         awards: <AdminAwards />,
         "team-of-decade": <AdminTeamOfDecade />,
         caps: <AdminCaps />,
+        "shirt-numbers": <AdminShirtNumbers />,
         "life-members": <AdminLifeMembers />,
         "junior-premierships": <AdminJuniorPremierships />,
+        "junior-shirt-numbers": <AdminJuniorShirtNumbers />,
         display: <AdminHonoursDisplay />,
       }}
     />

@@ -251,6 +251,12 @@ export interface PlayerAward {
   season: number;
 }
 
+export interface ShirtNumberSeason {
+  /** Season start year */
+  season: number;
+  number: string;
+}
+
 export interface PlayerDetail {
   id: number;
   surname: string;
@@ -287,6 +293,13 @@ export interface PlayerDetail {
   premierships?: PlayerPremiership[];
   /** Published awards this player has won (one row per season won), used by the trading card. */
   awards?: PlayerAward[];
+  /**
+     * The player's shirt number for the current season. Present only when the club has shirt numbers on and the player has a linked, numbered register entry; never a cap number.
+     * @nullable
+     */
+  shirtNumber?: string | null;
+  /** Shirt numbers worn by season, newest first (linked, numbered entries only). Omitted when the club has shirt numbers off. */
+  shirtNumbers?: ShirtNumberSeason[];
 }
 
 export interface PremiershipPlayer {
@@ -2830,6 +2843,11 @@ export interface SquadMember {
   isPrivate: boolean;
   /** @nullable */
   linkedPlayerId: number | null;
+  /**
+     * The linked club player's name (admin only); null when unlinked or the name can't be resolved.
+     * @nullable
+     */
+  linkedPlayerName: string | null;
   account: SquadContactPresence;
   guardian1: SquadContactPresence;
   guardian2: SquadContactPresence;
@@ -2875,6 +2893,11 @@ export interface SquadMemberDetail {
   isPrivate: boolean;
   /** @nullable */
   linkedPlayerId: number | null;
+  /**
+     * The linked club player's name (admin only); null when unlinked or the name can't be resolved.
+     * @nullable
+     */
+  linkedPlayerName: string | null;
   account: SquadContact;
   guardian1: SquadContact;
   guardian2: SquadContact;
@@ -2908,6 +2931,26 @@ export interface SquadMemberUpdate {
   account?: SquadContactUpdate;
   guardian1?: SquadContactUpdate;
   guardian2?: SquadContactUpdate;
+}
+
+/**
+ * The squad member already linked to this player, if any
+ */
+export type SquadPlayerSearchHitAlreadyLinkedTo = null | {
+  memberId: number;
+  name: string;
+};
+
+export interface SquadPlayerSearchHit {
+  playerId: number;
+  displayName: string;
+  /**
+     * The latest season they played for the club (e.g. "2025/26"), when known
+     * @nullable
+     */
+  lastSeason: string | null;
+  /** The squad member already linked to this player, if any */
+  alreadyLinkedTo: SquadPlayerSearchHitAlreadyLinkedTo;
 }
 
 export interface SquadImportSkip {
@@ -3141,8 +3184,12 @@ export interface SelectionFixture {
 }
 
 export interface SelectionWarnings {
+  /** Players in the XI (slots 1–11); the 12th is not counted */
   filled: number;
+  /** Open slots in the XI; an empty 12th is not an open slot */
   open: number;
+  /** Slot 12 (the 12th player) is filled */
+  twelfth: boolean;
   /** Selected members who said Maybe or haven't replied */
   unconfirmed: number;
   /** Selected members who said they're unavailable */
@@ -3167,6 +3214,11 @@ export interface SelectionSide {
   date: string;
   state: SelectionSideState;
   version: number;
+  /**
+     * The side's 12 slots in order; 1–11 are the XI and slot 12 the 12th player
+     * @minItems 12
+     * @maxItems 12
+     */
   slots: SelectionSlot[];
   /** @nullable */
   captainMemberId: number | null;
@@ -3260,7 +3312,13 @@ export interface SelectionChange {
   selectionId: number;
   /** The version the caller last saw */
   version: number;
-  /** The side's 11 slots, in order */
+  /**
+     * The side's 12 slots in order: 1–11 are the XI, slot 12 the 12th
+  player. 11 slots (an older client) are read as an empty 12th.
+
+     * @minItems 11
+     * @maxItems 12
+     */
   slots: SelectionSlotInput[];
   /** @nullable */
   captainMemberId: number | null;
@@ -3367,6 +3425,8 @@ export interface AvailabilityMatch {
   isHome: boolean;
   /** @nullable */
   role: AvailabilityMatchRole;
+  /** Picked as the side's 12th player (slot 12) */
+  twelfth: boolean;
 }
 
 export interface AvailabilityResponsePage {
@@ -7412,6 +7472,395 @@ export interface UpdateFixtureBody {
 }
 
 /**
+ * Whether a duplicate number in a season warns (default) or is refused.
+ */
+export type ShirtNumberDuplicatePolicy = typeof ShirtNumberDuplicatePolicy[keyof typeof ShirtNumberDuplicatePolicy];
+
+
+export const ShirtNumberDuplicatePolicy = {
+  warn: 'warn',
+  block: 'block',
+} as const;
+
+/**
+ * `carry`: returning people keep last season's number (editable); `blank`: each season starts unnumbered.
+ */
+export type ShirtNumberRolloverPolicy = typeof ShirtNumberRolloverPolicy[keyof typeof ShirtNumberRolloverPolicy];
+
+
+export const ShirtNumberRolloverPolicy = {
+  carry: 'carry',
+  blank: 'blank',
+} as const;
+
+export interface ShirtNumberSettings {
+  /** Feature switch; when off no shirt number appears anywhere. */
+  enabled: boolean;
+  duplicatePolicy: ShirtNumberDuplicatePolicy;
+  rolloverPolicy: ShirtNumberRolloverPolicy;
+}
+
+export interface ShirtNumberSettingsUpdate {
+  enabled?: boolean;
+  duplicatePolicy?: ShirtNumberDuplicatePolicy;
+  rolloverPolicy?: ShirtNumberRolloverPolicy;
+}
+
+/**
+ * Where a register entry came from. `squad`: added from the club's squad register (the availability squad import) by "Add squad to register".
+ */
+export type ShirtNumberSource = typeof ShirtNumberSource[keyof typeof ShirtNumberSource];
+
+
+export const ShirtNumberSource = {
+  upload: 'upload',
+  squad: 'squad',
+  lineup: 'lineup',
+  admin: 'admin',
+  rollover: 'rollover',
+} as const;
+
+/**
+ * A shirt number as 1-3 digits; leading zeros are kept ("07" and "7" differ).
+ * @pattern ^[0-9]{1,3}$
+ */
+export type ShirtNumberValue = string;
+
+export type ShirtNumberWarningKind = typeof ShirtNumberWarningKind[keyof typeof ShirtNumberWarningKind];
+
+
+export const ShirtNumberWarningKind = {
+  duplicate: 'duplicate',
+} as const;
+
+/**
+ * A duplicate-number notice for a write.
+ */
+export interface ShirtNumberWarning {
+  kind: ShirtNumberWarningKind;
+  season: number;
+  number: string;
+  message: string;
+  /** The other register entries already wearing this number. */
+  entryIds: number[];
+  names: string[];
+}
+
+export interface ShirtNumberConflict {
+  error: string;
+  /** The duplicates that blocked the write (empty for other conflicts). */
+  warnings: ShirtNumberWarning[];
+}
+
+export interface ShirtNumberEntry {
+  id: number;
+  season: number;
+  name: string;
+  /**
+     * PlayHQ participant GUID (lowercased)
+     * @nullable
+     */
+  participantId: string | null;
+  /**
+     * Linked player in the tenant's player space; null while held.
+     * @nullable
+     */
+  playerId: number | null;
+  /**
+     * The linked player's display name, when linked.
+     * @nullable
+     */
+  playerName?: string | null;
+  /**
+     * Null when the person is on the register but unnumbered.
+     * @nullable
+     */
+  number: string | null;
+  source: ShirtNumberSource;
+  /** True while the entry is not linked to a player who has played. */
+  held: boolean;
+  /** True when another entry in the season wears the same number. */
+  duplicate: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ShirtNumberRegister {
+  /** The season returned */
+  season: number;
+  /** Seasons that have a register, newest first (for the season picker). */
+  seasons: number[];
+  entries: ShirtNumberEntry[];
+}
+
+export interface ShirtNumberEntryInput {
+  season: number;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  /** @nullable */
+  participantId?: string | null;
+  /** @nullable */
+  playerId?: number | null;
+  number?: ShirtNumberValue | null;
+}
+
+export interface ShirtNumberEntryUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name?: string;
+  /** @nullable */
+  participantId?: string | null;
+  /** @nullable */
+  playerId?: number | null;
+  number?: ShirtNumberValue | null;
+}
+
+export interface ShirtNumberWriteResult {
+  entry: ShirtNumberEntry;
+  warnings: ShirtNumberWarning[];
+}
+
+export interface ShirtNumberSeasonStartResult {
+  season: number;
+  fromSeason: number;
+  /** Entries created in the new season. */
+  created: number;
+  /** Created entries that carried a number forward. */
+  numbered: number;
+  /** People already on the new season's register. */
+  skipped: number;
+  warnings: ShirtNumberWarning[];
+}
+
+export interface ShirtNumberSquadAddResult {
+  season: number;
+  /** Register entries created from the squad. */
+  created: number;
+  /** Squad members already on the season's register (left as they are). */
+  skipped: number;
+  /** Juniors only: names of squad members who match none of the club's junior participants, so were not added. Always empty for seniors. */
+  unmatched: string[];
+  warnings: ShirtNumberWarning[];
+}
+
+/**
+ * `numbers`: the club's shirt-number spreadsheet. Registered players without numbers come from the squad register ("Add squad to register").
+ */
+export type ShirtNumberUploadKind = typeof ShirtNumberUploadKind[keyof typeof ShirtNumberUploadKind];
+
+
+export const ShirtNumberUploadKind = {
+  numbers: 'numbers',
+} as const;
+
+export type ShirtNumberPreviewStatus = typeof ShirtNumberPreviewStatus[keyof typeof ShirtNumberPreviewStatus];
+
+
+export const ShirtNumberPreviewStatus = {
+  matched: 'matched',
+  suggested: 'suggested',
+  new: 'new',
+  invalid: 'invalid',
+} as const;
+
+/**
+ * A possible match for an upload row. Senior candidates carry a playerId; junior candidates carry a participantId.
+ */
+export interface ShirtNumberCandidate {
+  /** @nullable */
+  playerId?: number | null;
+  /** @nullable */
+  participantId?: string | null;
+  name: string;
+  /** @nullable */
+  score?: number | null;
+}
+
+export interface ShirtNumberPreviewRow {
+  /** 1-based data row in the file; resolutions refer to it. */
+  rowIndex: number;
+  name: string;
+  /**
+     * Participant id from the file (lowercased), or the matched junior participant.
+     * @nullable
+     */
+  participantId: string | null;
+  /** @nullable */
+  number: string | null;
+  status: ShirtNumberPreviewStatus;
+  /**
+     * The matched senior player, for `matched` senior rows.
+     * @nullable
+     */
+  playerId: number | null;
+  /** Suggestions for `suggested` rows; never auto-applied. */
+  candidates: ShirtNumberCandidate[];
+  /**
+     * The season's register entry this row would update, if any.
+     * @nullable
+     */
+  existingEntryId: number | null;
+  /** @nullable */
+  existingNumber: string | null;
+  /** True when the row changes an existing entry's number. */
+  numberChange: boolean;
+  /** True when the row's number is worn by someone else in the season. */
+  duplicate: boolean;
+  duplicateWith?: string[];
+  /** Why an `invalid` row cannot be applied. */
+  errors: string[];
+}
+
+export interface ShirtNumberPreviewCounts {
+  total: number;
+  matched: number;
+  suggested: number;
+  new: number;
+  invalid: number;
+  numberChanges: number;
+  duplicates: number;
+}
+
+export type ShirtNumberUploadPreviewSide = typeof ShirtNumberUploadPreviewSide[keyof typeof ShirtNumberUploadPreviewSide];
+
+
+export const ShirtNumberUploadPreviewSide = {
+  senior: 'senior',
+  junior: 'junior',
+} as const;
+
+export interface ShirtNumberUploadPreview {
+  /** Upload id for commit / discard */
+  id: number;
+  side: ShirtNumberUploadPreviewSide;
+  kind: ShirtNumberUploadKind;
+  season: number;
+  fileName: string;
+  rows: ShirtNumberPreviewRow[];
+  counts: ShirtNumberPreviewCounts;
+  unrecognisedHeaders: string[];
+  /** File-level problems (missing name column, etc.) */
+  errors: string[];
+  /** True when rows beyond the 1,000-row cap were dropped. */
+  truncated: boolean;
+}
+
+/**
+ * `link`: attach to `playerId`; `hold`: keep as a held entry (no player yet); `discard`: skip the row.
+ */
+export type ShirtNumberRowResolutionAction = typeof ShirtNumberRowResolutionAction[keyof typeof ShirtNumberRowResolutionAction];
+
+
+export const ShirtNumberRowResolutionAction = {
+  link: 'link',
+  hold: 'hold',
+  discard: 'discard',
+} as const;
+
+export interface ShirtNumberRowResolution {
+  rowIndex: number;
+  /** `link`: attach to `playerId`; `hold`: keep as a held entry (no player yet); `discard`: skip the row. */
+  action: ShirtNumberRowResolutionAction;
+  /**
+     * Required for `link`.
+     * @nullable
+     */
+  playerId?: number | null;
+}
+
+export interface ShirtNumberUploadCommit {
+  resolutions: ShirtNumberRowResolution[];
+}
+
+/**
+ * `link`: attach to the junior `participantId`; `discard`: skip the row.
+ */
+export type JuniorShirtNumberRowResolutionAction = typeof JuniorShirtNumberRowResolutionAction[keyof typeof JuniorShirtNumberRowResolutionAction];
+
+
+export const JuniorShirtNumberRowResolutionAction = {
+  link: 'link',
+  discard: 'discard',
+} as const;
+
+export interface JuniorShirtNumberRowResolution {
+  rowIndex: number;
+  /** `link`: attach to the junior `participantId`; `discard`: skip the row. */
+  action: JuniorShirtNumberRowResolutionAction;
+  /**
+     * Required for `link`.
+     * @nullable
+     */
+  participantId?: string | null;
+}
+
+export interface JuniorShirtNumberUploadCommit {
+  resolutions: JuniorShirtNumberRowResolution[];
+}
+
+export interface ShirtNumberUploadCommitResult {
+  uploadId: number;
+  created: number;
+  updated: number;
+  linked: number;
+  held: number;
+  discarded: number;
+  warnings: ShirtNumberWarning[];
+}
+
+export interface JuniorShirtNumberEntry {
+  id: number;
+  season: number;
+  /** PlayHQ participant GUID (lowercased) */
+  participantId: string;
+  name: string;
+  /** @nullable */
+  number: string | null;
+  source: ShirtNumberSource;
+  duplicate: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JuniorShirtNumberRegister {
+  season: number;
+  seasons: number[];
+  entries: JuniorShirtNumberEntry[];
+}
+
+export interface JuniorShirtNumberEntryInput {
+  season: number;
+  /** @minLength 1 */
+  participantId: string;
+  /**
+     * Defaults to the junior participant's display name.
+     * @minLength 1
+     * @maxLength 120
+     */
+  name?: string;
+  number?: ShirtNumberValue | null;
+}
+
+export interface JuniorShirtNumberEntryUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name?: string;
+  number?: ShirtNumberValue | null;
+}
+
+export interface JuniorShirtNumberWriteResult {
+  entry: JuniorShirtNumberEntry;
+  warnings: ShirtNumberWarning[];
+}
+
+/**
  * Captain / vice-captain / wicket-keeper marker
  */
 export type TeamListPlayerRole = typeof TeamListPlayerRole[keyof typeof TeamListPlayerRole];
@@ -7433,6 +7882,8 @@ export interface TeamListPlayer {
   order: number;
   /** Register-linked player id; omit/null for a free-typed name. Fill-in ids (>= 90000) are rejected. */
   playerId?: number | null;
+  /** PlayHQ participant GUID (lowercased) for a row copied from a PlayHQ lineup, kept even when the row has no playerId; omit for a free-typed name. */
+  participantId?: string;
   /** @minLength 1 */
   displayName: string;
   /** Captain / vice-captain / wicket-keeper marker */
@@ -8069,6 +8520,13 @@ export interface JuniorPlayerDetail {
   bowling: JuniorBowlingTotals;
   seasons: JuniorPlayerSeason[];
   matches: JuniorPlayerMatchLine[];
+  /**
+     * The participant's juniors shirt number for the current season, from the juniors register only. Present only when the club has shirt numbers on.
+     * @nullable
+     */
+  shirtNumber?: string | null;
+  /** Juniors shirt numbers worn by season, newest first. */
+  shirtNumbers?: ShirtNumberSeason[];
 }
 
 export interface JuniorBattingLeader {
@@ -8561,9 +9019,32 @@ export const GetRecordProgressionKind = {
   bestBowling: 'bestBowling',
 } as const;
 
+export type ListShirtNumbersParams = {
+/**
+ * Season start year (e.g. 2026 for 2026/27)
+ */
+season?: number;
+};
+
+export type UploadShirtNumbersBody = {
+  /** The shirt-number spreadsheet */
+  file: Blob;
+  kind: ShirtNumberUploadKind;
+  /** Starting year of the season (e.g. 2026 for 2026/27) */
+  season: number;
+};
+
 export type ImportSquadBody = {
   /** The PlayHQ participant export (CSV) */
   file: Blob;
+};
+
+export type SearchSquadPlayersParams = {
+/**
+ * @minLength 2
+ * @maxLength 80
+ */
+q: string;
 };
 
 export type GetSelectionBoardParams = {
@@ -8730,6 +9211,21 @@ ageGroup?: string;
  * Include private participants (honoured only for a signed-in admin — the flag is silently ignored otherwise). Used by the junior players admin so the privacy flag can be managed in both directions.
  */
 includePrivate?: boolean;
+};
+
+export type ListJuniorShirtNumbersParams = {
+/**
+ * Season start year (e.g. 2026 for 2026/27)
+ */
+season?: number;
+};
+
+export type UploadJuniorShirtNumbersBody = {
+  /** The shirt-number spreadsheet */
+  file: Blob;
+  kind: ShirtNumberUploadKind;
+  /** Starting year of the season (e.g. 2026 for 2026/27) */
+  season: number;
 };
 
 export type ListJuniorLeaderboardParams = {

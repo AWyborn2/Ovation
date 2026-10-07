@@ -51,7 +51,7 @@ export type SelectionGapReason =
   "no" | "maybe" | "no_reply" | "not_on_register" | "withdrew" | "picked_elsewhere";
 
 /**
- * One of a side's 11 slots. `memberId` null is an open slot; `gap` names the
+ * One of a side's 12 slots (1–11 the XI, 12 the 12th player). `memberId` null is an open slot; `gap` names the
  * player who held it and why they left.
  */
 export type SelectionSlot = {
@@ -320,10 +320,11 @@ export const availabilityAwayTable = pgTable(
 export type AvailabilityAwayRow = typeof availabilityAwayTable.$inferSelect;
 
 // One side per fixture, unique on fixture_id; deleting the fixture or
-// the round removes it. `slots` is the ordered XI (11 entries) and `version`
-// is the optimistic-concurrency check for Hub saves: a save carries its
-// last-seen version and bumps it. Captain and keeper are members in the side
-// and clear when that member leaves it. Finalising publishes into
+// the round removes it. `slots` is the ordered XI plus the 12th player (12
+// entries; sides saved before the 12th have 11 and read as an empty 12th) and
+// `version` is the optimistic-concurrency check for Hub saves: a save carries
+// its last-seen version and bumps it. Captain and keeper are members of the XI
+// and clear when that member leaves it or moves to 12th. Finalising publishes into
 // the fixture's `team_lists` row with source "selection".
 export const selectionsTable = pgTable(
   "selections",

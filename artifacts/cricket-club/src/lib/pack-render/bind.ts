@@ -196,9 +196,13 @@ export function bindInput(input: ShareCardInput): BoundInput {
       values["date"] = input.date ?? "";
       values["startTime"] = input.startTime ?? "";
       if (input.squadPhotoUrl) images["squadPhoto"] = input.squadPhotoUrl;
+      // Rows stay in batting order either way. With season shirt numbers on
+      // (numbering "shirt") the number slot is the shirt number, bound
+      // EXPLICITLY — empty when unnumbered, never the batting order.
+      const shirt = input.numbering === "shirt";
       rows["players"] = (input.players ?? []).map((p: TeamListPlayer) => ({
         values: {
-          number: String(p.order),
+          number: shirt ? shirtText(p.shirtNumber) : String(p.order),
           surname: p.surname,
           role: p.role ?? "",
           debut: p.debut ? "DEBUT" : "",
@@ -354,8 +358,46 @@ export function bindInput(input: ShareCardInput): BoundInput {
     }
   }
 
+  bindShirtNumber(input, values);
   bindSetValues(input, values);
   return { values, images, rows };
+}
+
+/**
+ * The card inputs that show the player's season shirt number (U8, KTD11/KTD12).
+ * Each member must declare `shirtNumber`: the binding below reads it without a
+ * cast, so a kind added here without the field fails to compile.
+ */
+type ShirtNumberCardInput = Extract<
+  ShareCardInput,
+  { kind: "century" | "fiveFor" | "milestone" | "player" | "tradingCard" }
+>;
+
+const SHIRT_NUMBER_KINDS: ReadonlySet<string> = new Set<ShirtNumberCardInput["kind"]>([
+  "century",
+  "fiveFor",
+  "milestone",
+  "player",
+  "tradingCard",
+]);
+
+const showsShirtNumber = (input: ShareCardInput): input is ShirtNumberCardInput =>
+  SHIRT_NUMBER_KINDS.has(input.kind);
+
+/**
+ * Bind `shirtNumber` for the player-centric kinds — EXPLICITLY, empty string
+ * and all, never via set(), for the same reason as `capNumber` on debut: an
+ * absent key falls through to the template sample. An empty value makes the
+ * renderer drop the badge. `debut` (the A Grade cap card) never gets one.
+ */
+function bindShirtNumber(input: ShareCardInput, values: Record<string, string>): void {
+  if (!showsShirtNumber(input)) return;
+  values["shirtNumber"] = shirtText(input.shirtNumber);
+}
+
+/** A shirt number as card text: trimmed, or empty when there is none. */
+function shirtText(n: string | number | null | undefined): string {
+  return n != null ? String(n).trim() : "";
 }
 
 /** Row-size multipliers for a set's density tiers (Club Kit rows read `--rs`). */

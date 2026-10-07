@@ -32,6 +32,7 @@ import { messageMember, notifyStaff } from "../lib/availability-messaging";
 import { datesForMember, loadAvailabilitySettings } from "../lib/availability-schedule";
 import { memberDisplayName, memberFirstName, perthDate } from "../lib/availability-grades";
 import { SelectionError, withdrawFromSelection } from "../lib/selection-board";
+import { TWELFTH_INDEX } from "../lib/selection-drafts";
 import { normaliseAuMobile } from "../lib/integrations/sms";
 import { normaliseEmail, normaliseMobile } from "../lib/squad-import";
 import { getTenantBrand } from "../lib/tenant-brand";
@@ -268,6 +269,8 @@ async function buildPage(found: ResolvedAvailabilityToken, now: Date = new Date(
           startAt: final.fixture.startAt,
           isHome: final.fixture.isHome,
           role: roleIn(final.selection, member.id),
+          // Slot 12 is the 12th player; older 11-slot sides have none.
+          twelfth: final.selection.slots[TWELFTH_INDEX]?.memberId === member.id,
         }
       : null,
     canWithdraw: sides.length > 0,

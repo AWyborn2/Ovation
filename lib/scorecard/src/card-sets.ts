@@ -194,6 +194,8 @@ type TeamRow = {
   venueDateTime: string;
   players: unknown[];
   squadPhotoUrl?: string | null;
+  /** "shirt" when the club numbers its players: rows then print shirt numbers. */
+  numbering?: "shirt";
   [extra: string]: unknown;
 };
 

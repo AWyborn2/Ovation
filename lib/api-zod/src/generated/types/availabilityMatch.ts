@@ -16,4 +16,6 @@ export interface AvailabilityMatch {
   isHome: boolean;
   /** @nullable */
   role: AvailabilityMatchRole;
+  /** Picked as the side's 12th player (slot 12) */
+  twelfth: boolean;
 }

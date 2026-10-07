@@ -1,4 +1,5 @@
 import type { PackCardTemplate } from "../types";
+import { shirtNumberField } from "../skeleton-kit";
 import { clubHeaderFields, photoField, textField } from "../shared";
 import { playerSpotlightFormats } from "../skeleton-designs";
 import { FOIL_LOOK } from "./fragments";
@@ -16,6 +17,7 @@ export const playerSpotlight: PackCardTemplate = {
     ...clubHeaderFields(),
     textField("season", "Season", "2025/26"),
     textField("playerName", "Player name", "JACK MANUEL"),
+    shirtNumberField(),
     textField("stat1Value", "Stat 1 value", "428"),
     textField("stat1Label", "Stat 1 label", "RUNS"),
     textField("stat2Value", "Stat 2 value", "12"),

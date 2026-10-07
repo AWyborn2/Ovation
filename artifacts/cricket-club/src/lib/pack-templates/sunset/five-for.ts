@@ -1,4 +1,5 @@
 import type { PackCardTemplate } from "../types";
+import { shirtNumberField } from "../skeleton-kit";
 import { clubHeaderFields, photoField, textField } from "../shared";
 import { fiveForFormats } from "../skeleton-designs";
 import { SUNSET_LOOK } from "./fragments";
@@ -15,6 +16,7 @@ export const fiveFor: PackCardTemplate = {
   fields: [
     ...clubHeaderFields(),
     textField("playerName", "Player name", "Alex Osborne"),
+    shirtNumberField(),
     textField("grade", "Grade", "A GRADE"),
     textField("wickets", "Wickets", "5"),
     textField("figures", "Figures", "5/23"),

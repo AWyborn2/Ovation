@@ -1976,6 +1976,7 @@ const PLAYER_REFERENCE_TABLES = [
   "premiership_players",
   "team_of_decade_members",
   "milestone_events",
+  "shirt_numbers",
 ] as const;
 
 /** True when anything in the tenant still points at the player id. */

@@ -1,4 +1,5 @@
 import type { PackCardTemplate } from "../types";
+import { shirtNumberField } from "../skeleton-kit";
 import { clubHeaderFields, photoField, textField } from "../shared";
 import { centuryFormats } from "../skeleton-designs";
 import { NEON_LOOK } from "./fragments";
@@ -15,6 +16,7 @@ export const century: PackCardTemplate = {
   fields: [
     ...clubHeaderFields(),
     textField("playerName", "Player name", "Jack Manuel"),
+    shirtNumberField(),
     textField("grade", "Grade", "A GRADE"),
     textField("runs", "Runs", "112*"),
     textField("balls", "Balls", "68"),

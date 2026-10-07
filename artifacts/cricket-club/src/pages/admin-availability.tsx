@@ -45,6 +45,7 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { plural } from "@/lib/plural";
 import { useConfirm } from "@/components/confirm-dialog";
+import { SquadPlayerPicker, type LinkedPlayer } from "@/components/squad-player-picker";
 
 /**
  * Admin → Availability: the
@@ -771,7 +772,9 @@ function SquadCard() {
                       )}
                     </td>
                     <td className="p-2">
-                      {m.linkedPlayerId != null ? `#${m.linkedPlayerId}` : "Not linked"}
+                      {m.linkedPlayerId == null
+                        ? "Not linked"
+                        : (m.linkedPlayerName ?? `#${m.linkedPlayerId}`)}
                     </td>
                     <td className="p-2 text-right">
                       <Button size="sm" variant="outline" onClick={() => setEditingId(m.id)}>
@@ -809,7 +812,7 @@ type ContactForm = { name: string; mobile: string; email: string };
 type DrawerForm = {
   section: SquadSection;
   gradeHint: string;
-  linkedPlayerId: string;
+  linked: LinkedPlayer | null;
   clearContactFlag: boolean;
 } & Record<ContactSlot, ContactForm>;
 
@@ -828,7 +831,7 @@ function toForm(d: SquadMemberDetail): DrawerForm {
   return {
     section: d.section,
     gradeHint: d.gradeHint ?? "",
-    linkedPlayerId: d.linkedPlayerId != null ? String(d.linkedPlayerId) : "",
+    linked: d.linkedPlayerId != null ? { id: d.linkedPlayerId, name: d.linkedPlayerName } : null,
     clearContactFlag: false,
     account: slot("account"),
     guardian1: slot("guardian1"),
@@ -863,12 +866,6 @@ function MemberDrawer({
 
   const onSave = () => {
     if (!form) return;
-    const linked = form.linkedPlayerId.trim();
-    const linkedId = linked === "" ? null : Number(linked);
-    if (linkedId !== null && (!Number.isInteger(linkedId) || linkedId <= 0)) {
-      setError("The club player number must be a whole number.");
-      return;
-    }
     setError(null);
     // Only the contact fields that were edited go up; the rest are left alone.
     const original = data ? toForm(data) : null;
@@ -886,7 +883,7 @@ function MemberDrawer({
         data: {
           section: form.section,
           gradeHint: form.gradeHint.trim() || null,
-          linkedPlayerId: linkedId,
+          linkedPlayerId: form.linked?.id ?? null,
           account: contact("account"),
           guardian1: contact("guardian1"),
           guardian2: contact("guardian2"),
@@ -979,13 +976,11 @@ function MemberDrawer({
                   />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
-                  <Label htmlFor="member-linked">Club player number</Label>
-                  <Input
-                    id="member-linked"
-                    inputMode="numeric"
-                    placeholder="Not linked"
-                    value={form.linkedPlayerId}
-                    onChange={(e) => setForm({ ...form, linkedPlayerId: e.target.value })}
+                  <Label htmlFor="member-linked">Club player</Label>
+                  <SquadPlayerPicker
+                    memberId={id}
+                    value={form.linked}
+                    onChange={(linked) => setForm({ ...form, linked })}
                   />
                   <p className="text-xs text-muted-foreground">
                     Links this person to their record on the club&rsquo;s stats pages so their past

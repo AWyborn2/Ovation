@@ -25,7 +25,7 @@ export const MINT_ID_CEILING = 90000;
  * Halls Head: the tenant whose player ids are its native `players.id`s, so
  * anything minted for it starts above the highest native id.
  */
-const NATIVE_STATS_TENANT_ID = 1;
+export const NATIVE_STATS_TENANT_ID = 1;
 
 /**
  * Participant-key prefix of a synthetic (pre-digital-only) player: a club-local

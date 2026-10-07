@@ -105,6 +105,26 @@ export const juniorEditRateLimiter = rateLimit({
 });
 
 /**
+ * Throttle per-entry edits to a curated register (season shirt numbers).
+ *
+ * Same trade as the junior edit limiter: assigning numbers is one cheap write
+ * per player, and a preseason sitting assigns a whole squad's worth, so the
+ * import-sized `adminWriteRateLimiter` (30 per 5 minutes) would stop an admin
+ * doing their job. Bulk register actions (season start, settings) still use
+ * `adminWriteRateLimiter`.
+ */
+export const registerEditRateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  limit: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: adminWriteRateLimitKey,
+  message: {
+    error: "Too many edits in a short period. Please wait a minute and retry.",
+  },
+});
+
+/**
  * Throttle permanent junior participant merges.
  *
  * The inverse trade to the edit limiter: merging two profiles is destructive

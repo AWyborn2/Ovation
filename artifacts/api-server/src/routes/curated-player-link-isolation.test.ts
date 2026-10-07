@@ -30,6 +30,8 @@ import {
   clubPhotosTable,
   clubPhotoPlayersTable,
   centuriesTable,
+  shirtNumbersTable,
+  shirtNumberSettingsTable,
 } from "@workspace/db";
 import {
   encodeSession,
@@ -118,10 +120,13 @@ describe("curated player links stay inside the club's own player id space", () =
     clubRoleId: number;
     honourBoardKey: string;
     premiershipId: number;
+    shirtNumberId: number;
   };
   const fx: Record<number, Fixtures> = {};
   let votingConfigId: number;
   let ballotId: number;
+  /** Tenant 1's shirt-number settings before this suite (restored after). */
+  let t1ShirtSettings: typeof shirtNumberSettingsTable.$inferSelect | undefined;
 
   const post = (tenantId: number, path: string, body: object, cookie?: string) =>
     request(app)
@@ -188,6 +193,12 @@ describe("curated player links stay inside the club's own player id space", () =
       .insert(premiershipsTable)
       .values({ tenantId, year: 1998, grade: "A Grade", competition: `U8 Comp ${label}` })
       .returning();
+    // Season 1991: the POST write case uses 1990, so a crosswalk-only id can
+    // be linked by both cases without the one-entry-per-player-per-season rule.
+    const [shirt] = await db
+      .insert(shirtNumbersTable)
+      .values({ tenantId, season: 1991, name: `U8 Shirt ${label}` })
+      .returning();
     return {
       awardId: award.id,
       awardKey: award.key,
@@ -199,6 +210,7 @@ describe("curated player links stay inside the club's own player id space", () =
       clubRoleId: role.id,
       honourBoardKey,
       premiershipId: prem.id,
+      shirtNumberId: shirt.id,
     };
   }
 
@@ -329,6 +341,19 @@ describe("curated player links stay inside the club's own player id space", () =
     cookie1 = `${SESSION_COOKIE}=${encodeSession({ adminId: admin1Id, issuedAt: Date.now() })}`;
     cookie2 = `${SESSION_COOKIE}=${encodeSession({ adminId: admin2Id, issuedAt: Date.now() })}`;
 
+    // Shirt numbers on for both clubs, so the register's write routes reach
+    // the player-space check rather than stopping at the feature switch.
+    [t1ShirtSettings] = await db
+      .select()
+      .from(shirtNumberSettingsTable)
+      .where(eq(shirtNumberSettingsTable.tenantId, T1));
+    for (const tenantId of [T1, t2]) {
+      await db
+        .insert(shirtNumberSettingsTable)
+        .values({ tenantId, enabled: true })
+        .onConflictDoUpdate({ target: shirtNumberSettingsTable.tenantId, set: { enabled: true } });
+    }
+
     fx[T1] = await seedFixtures(T1, "t1");
     fx[t2] = await seedFixtures(t2, "t2");
 
@@ -425,6 +450,24 @@ describe("curated player links stay inside the club's own player id space", () =
           sql`${premiershipsTable.competition} like 'U8 %'`,
         ),
       );
+    await db
+      .delete(shirtNumbersTable)
+      .where(
+        and(
+          inArray(shirtNumbersTable.tenantId, tenants),
+          sql`${shirtNumbersTable.name} like 'U8 %'`,
+        ),
+      );
+    await db.delete(shirtNumberSettingsTable).where(eq(shirtNumberSettingsTable.tenantId, t2));
+    if (t1ShirtSettings) {
+      const { enabled, duplicatePolicy, rolloverPolicy } = t1ShirtSettings;
+      await db
+        .update(shirtNumberSettingsTable)
+        .set({ enabled, duplicatePolicy, rolloverPolicy })
+        .where(eq(shirtNumberSettingsTable.tenantId, T1));
+    } else {
+      await db.delete(shirtNumberSettingsTable).where(eq(shirtNumberSettingsTable.tenantId, T1));
+    }
     await db
       .delete(clubPhotosTable) // cascades the tags
       .where(sql`${clubPhotosTable.objectPath} like ${`%${STAMP}%`}`);
@@ -588,6 +631,15 @@ describe("curated player links stay inside the club's own player id space", () =
           players: [{ playerId: id, name: "x", isCaptain: false }],
         }),
     },
+    {
+      route: "POST /shirt-numbers",
+      send: (t, id) =>
+        post(t, "/shirt-numbers", { season: 1990, name: "U8 Shirt x", playerId: id, number: "1" }),
+    },
+    {
+      route: "PATCH /shirt-numbers/:id",
+      send: (t, id) => patch(t, `/shirt-numbers/${fx[t]!.shirtNumberId}`, { playerId: id }),
+    },
   ];
 
   describe("an id outside the tenant's space is rejected on every write route", () => {
@@ -651,6 +703,7 @@ describe("curated player links stay inside the club's own player id space", () =
           .select()
           .from(premiershipPlayersTable)
           .where(inArray(premiershipPlayersTable.playerId, bad)),
+        db.select().from(shirtNumbersTable).where(inArray(shirtNumbersTable.playerId, bad)),
       ]);
       expect(leaked.flat()).toEqual([]);
     });
@@ -792,11 +845,35 @@ describe("curated player links stay inside the club's own player id space", () =
         })
         .returning();
 
+      const shirts = await db
+        .insert(shirtNumbersTable)
+        .values([
+          { tenantId: T1, season: 2003, name: "U8 Shirt del t1", playerId: native.D, number: "4" },
+          { tenantId: t2, season: 2003, name: "U8 Shirt del t2", playerId: native.D, number: "4" },
+        ])
+        .returning();
+
       await request(app)
         .delete(`/api/players/${native.D}`)
         .set(asTenant(T1))
         .set("Cookie", cookie1)
         .expect(204);
+
+      // A shirt-number entry is unlinked (held again), never deleted.
+      const shirtRows = await db
+        .select()
+        .from(shirtNumbersTable)
+        .where(
+          inArray(
+            shirtNumbersTable.id,
+            shirts.map((r) => r.id),
+          ),
+        );
+      expect(shirtRows.find((r) => r.tenantId === T1)).toMatchObject({
+        playerId: null,
+        number: "4",
+      });
+      expect(shirtRows.find((r) => r.tenantId === t2)?.playerId).toBe(native.D);
 
       const life = await db
         .select()
@@ -868,6 +945,17 @@ describe("curated player links stay inside the club's own player id space", () =
 
     it("merge: award winners, ToD members, club roles, photos and ballots MOVE to the keeper (owner decision 30 Sep 2026); collisions de-duplicate", async () => {
       const { M, K } = native;
+      // Shirt numbers: one entry per player per season, so a same-season clash
+      // keeps the keeper's entry; another season's entry moves.
+      const shirts = await db
+        .insert(shirtNumbersTable)
+        .values([
+          { tenantId: T1, season: 2012, name: "U8 Shirt m 2012", playerId: M, number: "5" },
+          { tenantId: T1, season: 2012, name: "U8 Shirt k 2012", playerId: K, number: "9" },
+          { tenantId: T1, season: 2013, name: "U8 Shirt m 2013", playerId: M, number: "6" },
+          { tenantId: t2, season: 2012, name: "U8 Shirt t2 2012", playerId: M, number: "5" },
+        ])
+        .returning();
       const winners = await db
         .insert(awardWinnersTable)
         .values([
@@ -1062,6 +1150,21 @@ describe("curated player links stay inside the club's own player id space", () =
         .from(awardBallotsTable)
         .where(eq(awardBallotsTable.id, ballotId));
       expect(t2Ballot?.pick1PlayerId).toBe(native.A);
+
+      const shirtRows = await db
+        .select()
+        .from(shirtNumbersTable)
+        .where(
+          inArray(
+            shirtNumbersTable.id,
+            shirts.map((r) => r.id),
+          ),
+        );
+      expect(
+        shirtRows
+          .map((r) => `${r.tenantId === T1 ? "t1" : "t2"}|${r.season}|${r.playerId}|${r.number}`)
+          .sort(),
+      ).toEqual([`t1|2012|${K}|9`, `t1|2013|${K}|6`, `t2|2012|${M}|5`].sort());
     });
   });
 

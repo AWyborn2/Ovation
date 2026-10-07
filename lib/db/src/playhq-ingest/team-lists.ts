@@ -103,14 +103,28 @@ export function lineupToTeamList(
       ...(playerId != null && playerId < FILL_IN_THRESHOLD ? { playerId } : {}),
       displayName: (e.name ?? "").trim(),
       ...(role ? { role } : {}),
+      // Kept on every row, linked or not (fill-ins and unmapped players too), so a
+      // held shirt-number entry can still be found for this fixture.
+      ...(key ? { participantId: key } : {}),
     };
   });
 }
 
-/** Key-order-independent comparison of two team lists. */
+/**
+ * Key-order-independent comparison of two team lists. Includes the participant id, so a
+ * PlayHQ list saved before ids were kept is rewritten (gaining them) on the next sync.
+ */
 export function sameTeamList(a: readonly TeamListPlayer[], b: readonly TeamListPlayer[]): boolean {
   const norm = (l: readonly TeamListPlayer[]) =>
-    JSON.stringify(l.map((p) => [p.order, p.playerId ?? null, p.displayName, p.role ?? null]));
+    JSON.stringify(
+      l.map((p) => [
+        p.order,
+        p.playerId ?? null,
+        p.displayName,
+        p.role ?? null,
+        p.participantId?.toLowerCase() ?? null,
+      ]),
+    );
   return norm(a) === norm(b);
 }
 

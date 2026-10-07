@@ -28,7 +28,12 @@ import {
   roundResultsCarouselOn,
 } from "../round-schedules";
 import { formatFixtureTime } from "./match-day";
-import { loadAutoDebuts, teamListToCardInput } from "./team-list";
+import {
+  loadAutoDebuts,
+  teamListSeasonOf,
+  teamListShirtNumberLoader,
+  teamListToCardInput,
+} from "./team-list";
 
 /**
  * Round sets on a schedule (balanced card sets, plan 2026-10-01-001 U5): a
@@ -234,6 +239,8 @@ export async function generateRoundTeamListDrafts(
     .where(and(eq(teamListsTable.tenantId, tenantId), eq(teamListsTable.isPublished, true)));
   const byFixture = new Map(lists.map((l) => [l.fixtureId, l.players]));
 
+  // Season shirt numbers: read only when the club has the feature on.
+  const shirtNumbers = teamListShirtNumberLoader(tenantId);
   for (const round of rounds) {
     const teams: Record<string, unknown>[] = [];
     for (const f of round.fixtures) {
@@ -241,7 +248,12 @@ export async function generateRoundTeamListDrafts(
       if (!players) continue;
       // Each team is exactly the fixture's own team-list card (fill-ins excluded).
       const debuts = await loadAutoDebuts(tenantId, players, f.startAt);
-      const { kind: _kind, ...team } = teamListToCardInput(f, players, debuts);
+      const { kind: _kind, ...team } = teamListToCardInput(
+        f,
+        players,
+        debuts,
+        await shirtNumbers(teamListSeasonOf(f)),
+      );
       if ((team.players as unknown[]).length > 0) teams.push(team);
     }
     if (teams.length === 0) continue;
