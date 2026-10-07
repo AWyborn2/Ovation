@@ -77,6 +77,14 @@ export const env = {
   /** Shared secret for POST /api/internal/draft-sweep; unset = endpoint closed. */
   SOCIAL_SWEEP_SECRET: () => optional("SOCIAL_SWEEP_SECRET"),
 
+  // ── Card kind templates (plan 2026-10-07-002, ADR-003) ───────────────────
+  /**
+   * Release switch: "all", or a comma-separated list of tenant ids. Unset (the
+   * default) keeps every club on design packs, so republishing main is safe
+   * while the starter designs are incomplete.
+   */
+  KIND_TEMPLATES: () => optional("KIND_TEMPLATES"),
+
   // ── Meta publishing (plan 2026-10-06-001) ────────────────────────────────
   /** Platform kill switch: connect and publish run only when this is "1". */
   metaPublishingEnabled: () => process.env.META_PUBLISHING_ENABLED === "1",
@@ -200,6 +208,10 @@ const BootSchema = z
     CENTRAL_PROJECTION: z.enum(["off", "dry", "on"]).optional(),
     SMS_PROVIDER: z.enum(["twilio", "clicksend"]).optional(),
     META_PUBLISHING_ENABLED: z.enum(["0", "1"]).optional(),
+    KIND_TEMPLATES: z
+      .string()
+      .regex(/^(all|\d+(,\d+)*)$/, 'must be "all" or a comma-separated list of tenant ids')
+      .optional(),
     META_APP_ID: z.string().optional(),
     META_APP_SECRET: z.string().optional(),
     META_LOGIN_CONFIG_ID: z.string().optional(),
