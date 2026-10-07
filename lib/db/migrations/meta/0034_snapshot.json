@@ -1,6 +1,6 @@
 {
-  "id": "256fc6ed-2c7f-40f1-8638-f3350a848ca8",
-  "prevId": "67639a87-0d1c-4f99-9e45-34669baca54a",
+  "id": "f7b4e1f1-9d30-441b-8d6a-539bb9302a50",
+  "prevId": "256fc6ed-2c7f-40f1-8638-f3350a848ca8",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -12758,6 +12758,530 @@
         "squad_members_section_check": {
           "name": "squad_members_section_check",
           "value": "\"section\" IN ('senior', 'junior')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.junior_shirt_numbers": {
+      "name": "junior_shirt_numbers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "season": {
+          "name": "season",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "participant_id": {
+          "name": "participant_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "number": {
+          "name": "number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'admin'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "junior_shirt_numbers_tenant_idx": {
+          "name": "junior_shirt_numbers_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "junior_shirt_numbers_tenant_season_participant_uidx": {
+          "name": "junior_shirt_numbers_tenant_season_participant_uidx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "season",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "participant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "junior_shirt_numbers_tenant_id_tenants_id_fk": {
+          "name": "junior_shirt_numbers_tenant_id_tenants_id_fk",
+          "tableFrom": "junior_shirt_numbers",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "junior_shirt_numbers_number_check": {
+          "name": "junior_shirt_numbers_number_check",
+          "value": "\"number\" IS NULL OR \"number\" ~ '^[0-9]{1,3}$'"
+        },
+        "junior_shirt_numbers_source_check": {
+          "name": "junior_shirt_numbers_source_check",
+          "value": "\"source\" IN ('upload', 'squad', 'lineup', 'admin', 'rollover')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.shirt_number_settings": {
+      "name": "shirt_number_settings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "enabled": {
+          "name": "enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "duplicate_policy": {
+          "name": "duplicate_policy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'warn'"
+        },
+        "rollover_policy": {
+          "name": "rollover_policy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'carry'"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "shirt_number_settings_tenant_unique": {
+          "name": "shirt_number_settings_tenant_unique",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "shirt_number_settings_tenant_id_tenants_id_fk": {
+          "name": "shirt_number_settings_tenant_id_tenants_id_fk",
+          "tableFrom": "shirt_number_settings",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "shirt_number_settings_duplicate_policy_check": {
+          "name": "shirt_number_settings_duplicate_policy_check",
+          "value": "\"duplicate_policy\" IN ('warn', 'block')"
+        },
+        "shirt_number_settings_rollover_policy_check": {
+          "name": "shirt_number_settings_rollover_policy_check",
+          "value": "\"rollover_policy\" IN ('carry', 'blank')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.shirt_number_uploads": {
+      "name": "shirt_number_uploads",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "side": {
+          "name": "side",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "season": {
+          "name": "season",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "shirt_number_uploads_tenant_idx": {
+          "name": "shirt_number_uploads_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "shirt_number_uploads_tenant_id_tenants_id_fk": {
+          "name": "shirt_number_uploads_tenant_id_tenants_id_fk",
+          "tableFrom": "shirt_number_uploads",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "shirt_number_uploads_side_check": {
+          "name": "shirt_number_uploads_side_check",
+          "value": "\"side\" IN ('senior', 'junior')"
+        },
+        "shirt_number_uploads_kind_check": {
+          "name": "shirt_number_uploads_kind_check",
+          "value": "\"kind\" IN ('numbers')"
+        },
+        "shirt_number_uploads_status_check": {
+          "name": "shirt_number_uploads_status_check",
+          "value": "\"status\" IN ('pending', 'committed', 'discarded')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.shirt_numbers": {
+      "name": "shirt_numbers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "season": {
+          "name": "season",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "participant_id": {
+          "name": "participant_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "player_id": {
+          "name": "player_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "number": {
+          "name": "number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'admin'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "shirt_numbers_tenant_idx": {
+          "name": "shirt_numbers_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "shirt_numbers_player_idx": {
+          "name": "shirt_numbers_player_idx",
+          "columns": [
+            {
+              "expression": "player_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "shirt_numbers_tenant_season_participant_uidx": {
+          "name": "shirt_numbers_tenant_season_participant_uidx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "season",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "participant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"participant_id\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "shirt_numbers_tenant_season_player_uidx": {
+          "name": "shirt_numbers_tenant_season_player_uidx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "season",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "player_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"player_id\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "shirt_numbers_tenant_id_tenants_id_fk": {
+          "name": "shirt_numbers_tenant_id_tenants_id_fk",
+          "tableFrom": "shirt_numbers",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "shirt_numbers_number_check": {
+          "name": "shirt_numbers_number_check",
+          "value": "\"number\" IS NULL OR \"number\" ~ '^[0-9]{1,3}$'"
+        },
+        "shirt_numbers_source_check": {
+          "name": "shirt_numbers_source_check",
+          "value": "\"source\" IN ('upload', 'squad', 'lineup', 'admin', 'rollover')"
         }
       },
       "isRLSEnabled": false

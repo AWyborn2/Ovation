@@ -1,8 +1,10 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import {
   db,
+  adminsTable,
   cardTemplatesTable,
+  socialDraftRevisionsTable,
   socialDraftsTable,
   trackedLinksTable,
   importsTable,
@@ -10,7 +12,7 @@ import {
   matchesTable,
   juniorMatchesTable,
 } from "@workspace/db";
-import { requireAdmin } from "../middlewares/require-admin";
+import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { publicWriteRateLimiter } from "../middlewares/rate-limit";
 import {
@@ -75,9 +77,41 @@ async function loadDraft(tenantId: number, id: number) {
   return draft ?? null;
 }
 
+/**
+ * A card opened in the Studio editor is filed as an ad-hoc draft so the editor has something
+ * to save into. Until someone saves an edit (every edit records a revision) or acts on it, it
+ * stays out of the queue, so just looking at a card in the editor leaves nothing behind.
+ */
+const notAnUntouchedEditorDraft = sql`NOT (
+  ${socialDraftsTable.engine} = 'adhoc'
+  AND ${socialDraftsTable.status} = 'awaiting_review'
+  AND NOT EXISTS (
+    SELECT 1 FROM ${socialDraftRevisionsTable}
+    WHERE ${socialDraftRevisionsTable.draftId} = ${socialDraftsTable.id}
+  )
+)`;
+
+/** Display names of the admins who made `rows` by hand, by admin id. */
+async function creatorNames(
+  tenantId: number,
+  rows: { createdByAdminId: number | null }[],
+): Promise<Map<number, string>> {
+  const ids = [...new Set(rows.map((r) => r.createdByAdminId).filter((id) => id != null))];
+  if (ids.length === 0) return new Map();
+  const admins = await db
+    .select({
+      id: adminsTable.id,
+      displayName: adminsTable.displayName,
+      username: adminsTable.username,
+    })
+    .from(adminsTable)
+    .where(and(eq(adminsTable.tenantId, tenantId), inArray(adminsTable.id, ids)));
+  return new Map(admins.map((a) => [a.id, a.displayName?.trim() || a.username]));
+}
+
 router.get("/social-drafts", requireAdmin, async (req, res): Promise<void> => {
   const tenantId = getTenantId(req);
-  const conditions: SQL[] = [eq(socialDraftsTable.tenantId, tenantId)];
+  const conditions: SQL[] = [eq(socialDraftsTable.tenantId, tenantId), notAnUntouchedEditorDraft];
   const status = req.query.status;
   if (status !== undefined && !isDraftStatus(status)) {
     res.status(400).json({ error: "Invalid status" });
@@ -101,9 +135,11 @@ router.get("/social-drafts", requireAdmin, async (req, res): Promise<void> => {
     tenantId,
     rows.map((r) => r.id),
   );
+  const names = await creatorNames(tenantId, rows);
   const drafts = rows.map((r) => ({
     ...presentDraft(r, autoPost, now),
     ...draftPublishing(pubs.get(r.id)),
+    createdBy: r.createdByAdminId != null ? (names.get(r.createdByAdminId) ?? null) : null,
   }));
   res.json(status === undefined ? drafts : drafts.filter((d) => d.status === status));
 });
@@ -113,6 +149,7 @@ router.get("/social-drafts/pending-count", requireAdmin, async (req, res): Promi
   const conditions: SQL[] = [
     eq(socialDraftsTable.tenantId, tenantId),
     eq(socialDraftsTable.status, "awaiting_review"),
+    notAnUntouchedEditorDraft,
   ];
   // Drafts past their deadline already read as ready while auto-post is on.
   if ((await loadAutoPost(tenantId)).enabled) {
@@ -369,6 +406,7 @@ router.post(
         adjustments,
         autoReadyAt: null,
         editedAt: adjustments ? new Date() : null,
+        createdByAdminId: (req as RequestWithAdmin).admin?.id ?? null,
       })
       .returning();
     res.status(201).json(presentDraft(row));

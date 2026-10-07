@@ -234,7 +234,7 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     name: "club_corrections_identity_check",
     sql: `btrim("playhq_match_id") <> '' AND btrim("participant_id") <> ''`,
   },
-  // Season shirt numbers (migration 0033): digit-string numbers (KTD3) and the
+  // Season shirt numbers (migration 0034): digit-string numbers (KTD3) and the
   // source, policy and upload value sets.
   ...["shirt_numbers", "junior_shirt_numbers"].flatMap((table) => [
     {
@@ -360,7 +360,7 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
           ON "club_corrections" ("tenant_id", "playhq_match_id", "participant_id", "field")
           WHERE "removed_at" IS NULL`,
   },
-  // Season shirt numbers (migration 0033, KTD4): a person appears at most once
+  // Season shirt numbers (migration 0034, KTD4): a person appears at most once
   // per tenant and season. Uniqueness is per person, never per number.
   {
     name: "shirt_numbers_tenant_season_participant_uidx",

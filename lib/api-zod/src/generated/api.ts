@@ -8453,6 +8453,8 @@ export const ListSocialDraftsResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
@@ -9099,6 +9101,8 @@ export const ApproveSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
@@ -9160,6 +9164,8 @@ export const UpdateSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
@@ -9322,6 +9328,8 @@ export const SendBackSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
@@ -9370,6 +9378,8 @@ export const ReopenSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
@@ -9440,6 +9450,8 @@ export const RevertSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
@@ -9488,6 +9500,8 @@ export const MarkSocialDraftPostedResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
@@ -9542,6 +9556,8 @@ export const GenerateRoundUpResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
@@ -9595,6 +9611,8 @@ export const GenerateRecapsResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
