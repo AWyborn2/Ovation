@@ -240,6 +240,16 @@ describe("Club Kit designs", () => {
 });
 
 describe("Club Kit-only kinds", () => {
+  it.each(SIZES)("doubles match-day sponsor logos without changing other cards in %s", size => {
+    const data = buildPackData({ brand: HALLS, sponsors: [{ name: "Team sponsor", logoUrl: "https://cdn.example/sponsor.png" }] });
+    const tokens = resolveCardTokens({ theme: null, junior: false, data, packId: ID });
+    const match = renderPackCard(sampleCardInput("matchDay"), size, true, tokens, false, data, ID);
+    expect(match).toContain("width:18cqmin;height:8cqmin");
+    expect(match).toContain('src="https://cdn.example/sponsor.png"');
+    const other = renderPackCard(sampleCardInput("roundFixtures"), size, true, tokens, false, data, ID);
+    expect(other).toContain("width:9cqmin;height:4cqmin");
+    expect(other).not.toContain("width:18cqmin;height:8cqmin");
+  });
   it.each(["square", "portrait", "story", "landscape"] as CardSize[])("makes the grade the game-day heading and shows the opponent crest in %s", size => {
     const input = {
       ...sampleCardInput("matchDay"),

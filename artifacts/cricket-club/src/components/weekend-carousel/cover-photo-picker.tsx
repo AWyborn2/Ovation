@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { ImageOff } from "lucide-react";
-import { PhotoReposition } from "@/components/photo-reposition";
-import { SIZES } from "@/lib/share-card";
+import { PhotoPlacement, SlidePreview } from "./slide-preview";
 import { COVER_PHOTO_UNAVAILABLE } from "./model";
 import type { WeekendCarouselState } from "./use-weekend-carousel";
 
 export function CoverPhotoPicker({ s }: { s: WeekendCarouselState }) {
   const chosen = s.coverPhotos.find(p => p.id === s.cover.photoId);
+  const slide = s.slides.find(sl => sl.id === "title");
   const [failed, setFailed] = useState<Set<string>>(new Set());
   return (
     <section className="space-y-3 rounded-md border p-3" aria-labelledby="cover-photo-heading">
@@ -17,7 +17,9 @@ export function CoverPhotoPicker({ s }: { s: WeekendCarouselState }) {
         </p>
       </div>
       {s.coverUnavailable && <p role="alert" className="text-sm text-destructive">{COVER_PHOTO_UNAVAILABLE}</p>}
-      <div className="grid gap-3 md:grid-cols-[1fr_16rem]">
+      <div className="grid items-start gap-5 md:grid-cols-2">
+        {slide && <SlidePreview slide={slide} size={s.size} />}
+        <div className="min-w-0 space-y-4">
         <div className="max-h-64 overflow-y-auto p-1">
           <div className="flex flex-wrap gap-2" role="group" aria-label="Cover photo choices">
             <button type="button" aria-pressed={s.cover.photoId === null}
@@ -51,11 +53,9 @@ export function CoverPhotoPicker({ s }: { s: WeekendCarouselState }) {
             A thumbnail could not load. Check the selected photo in the slide preview; if its full image fails, no ZIP will be downloaded.
           </p>}
         </div>
-        {chosen && <fieldset disabled={s.exporting}>
-          <PhotoReposition key={chosen.id} src={chosen.url} aspect={SIZES[s.size]}
-            value={s.cover.transform} onChange={transform => s.patchCover({ transform })} />
-          <p className="mt-1 text-xs text-muted-foreground">Drag to position, or adjust zoom. Check the cover preview below.</p>
-        </fieldset>}
+        {chosen && <PhotoPlacement label="Cover" disabled={s.exporting}
+          value={s.cover.transform} onChange={transform => s.patchCover({ transform })} />}
+        </div>
       </div>
     </section>
   );

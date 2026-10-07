@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-library/react";
 
 const fixtures = [
   { id: 1, grade: "A Grade", opponentName: "Mandurah", startAt: "2025-11-08T02:00:00Z", isHome: true, source: "manual", createdAt: "" },
@@ -9,6 +9,7 @@ const mutateAsync = vi.fn(async () => new Blob(["png"]));
 const download = vi.fn(async () => {});
 const coverPhoto = { id: 10, grade: null, season: 2026, photoTypes: ["team"], url: "/cover.jpg", thumbUrl: "/cover-thumb.jpg" };
 let coverPhotos = [coverPhoto];
+let teamPhotos: { id: number; grade: string; photoTypes: string[]; url: string }[] = [];
 const refetch = vi.fn(async () => ({ data: { coverPhotos }, isError: false }));
 
 vi.mock("@workspace/api-client-react", () => ({
@@ -16,7 +17,7 @@ vi.mock("@workspace/api-client-react", () => ({
     data: {
       timeZone: "Australia/Perth",
       fixtures: p.from === "2025-11-07" ? fixtures : [],
-      photos: [],
+      photos: teamPhotos,
       coverPhotos,
       warnings: ["PlayHQ status could not be checked for 1 fixture"],
     },
@@ -30,17 +31,13 @@ vi.mock("@workspace/api-client-react", () => ({
   useCreateCardRenderStill: () => ({ mutateAsync }),
 }));
 vi.mock("@/components/pack-card", () => ({ PackCard: ({ data }: { data: unknown }) => <div data-testid="pack-card" data-card={JSON.stringify(data)} /> }));
-vi.mock("@/components/photo-reposition", () => ({
-  PhotoReposition: ({ onChange }: { onChange: (v: unknown) => void }) =>
-    <button onClick={() => onChange({ focalX: .2, focalY: .7, zoom: 2 })}>Adjust crop</button>,
-}));
 vi.mock("./export", () => ({ downloadWeekendZip: download }));
 vi.mock("./model", async (importOriginal) => ({
   ...await importOriginal<typeof import("./model")>(),
   weekendRange: () => ({ from: "2025-11-07", to: "2025-11-09" }),
 }));
 
-const { WeekendCarouselBody } = await import("./weekend-carousel");
+const { WeekendCarouselBody, WeekendCarousel } = await import("./weekend-carousel");
 const { Dialog, DialogContent } = await import("@/components/ui/dialog");
 
 const mount = () =>
@@ -56,9 +53,41 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   coverPhotos = [coverPhoto];
+  teamPhotos = [];
 });
 
 describe("WeekendCarousel", () => {
+  it("opens a full-screen editor", () => {
+    render(<WeekendCarousel />);
+    fireEvent.click(screen.getByTestId("button-open-weekend-carousel"));
+    expect(screen.getByTestId("weekend-fullscreen-editor")).toHaveClass("h-[100dvh]", "w-full", "max-w-none");
+  });
+
+  it("edits each team's photo beside its live preview and exports the same crop", async () => {
+    teamPhotos = [{ id: 11, grade: "A Grade", photoTypes: ["batting"], url: "/team.jpg" }];
+    mount();
+    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    const editor = within(screen.getByTestId("team-1"));
+    expect(editor.getByTestId("slide-fixture-1")).toBeTruthy();
+    fireEvent.click(editor.getByTestId("button-photo-1-11"));
+    fireEvent.change(editor.getByLabelText("A Grade horizontal"), { target: { value: "0.25" } });
+    fireEvent.change(editor.getByLabelText("A Grade vertical"), { target: { value: "0.75" } });
+    fireEvent.change(editor.getByLabelText("A Grade zoom"), { target: { value: "1.8" } });
+    const preview = () => JSON.parse(editor.getByTestId("pack-card").getAttribute("data-card")!);
+    expect(preview()).toMatchObject({ photoUrl: "/team.jpg", photoTransform: { focalX: .25, focalY: .75, zoom: 1.8 } });
+    fireEvent.click(screen.getByTestId("button-size-portrait"));
+    expect(preview().photoTransform.zoom).toBe(1.8);
+    fireEvent.click(screen.getByTestId("button-export-weekend"));
+    await waitFor(() => expect(download).toHaveBeenCalledTimes(1));
+    const slides = (download.mock.calls[0] as unknown[])[0] as { id: string; data: unknown }[];
+    expect(slides.find(sl => sl.id === "fixture-1")?.data).toEqual(preview());
+    await waitFor(() => expect(editor.getByRole("button", { name: "Reset" })).not.toBeDisabled());
+    fireEvent.click(editor.getByRole("button", { name: "Reset" }));
+    expect(preview().photoTransform).toEqual({ focalX: .5, focalY: .5, zoom: 1 });
+    fireEvent.click(editor.getByTestId("button-no-photo-1"));
+    expect(editor.queryByLabelText("A Grade zoom")).toBeNull();
+    expect(preview().photoUrl).toBeNull();
+  });
   it("selects every fixture by default and shows the Perth timezone", () => {
     mount();
     expect((screen.getByTestId("checkbox-fixture-1") as HTMLInputElement).checked).toBe(true);
@@ -96,7 +125,9 @@ describe("WeekendCarousel", () => {
     mount();
     fireEvent.click(screen.getByTestId("button-generate-weekend"));
     fireEvent.click(screen.getByTestId("button-cover-photo-10"));
-    fireEvent.click(screen.getByText("Adjust crop"));
+    fireEvent.change(screen.getByLabelText("Cover horizontal"), { target: { value: "0.2" } });
+    fireEvent.change(screen.getByLabelText("Cover vertical"), { target: { value: "0.7" } });
+    fireEvent.change(screen.getByLabelText("Cover zoom"), { target: { value: "2" } });
     fireEvent.change(screen.getByTestId("input-weekend-title"), { target: { value: "Our weekend" } });
     fireEvent.click(screen.getByTestId("button-size-story"));
     fireEvent.click(screen.getAllByLabelText("Move B Grade at Rockingham up")[1]);

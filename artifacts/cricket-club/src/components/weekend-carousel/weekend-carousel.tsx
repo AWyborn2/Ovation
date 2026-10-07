@@ -24,15 +24,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EmptyState, QueryError } from "@/components/data-states";
-import { PackCard } from "@/components/pack-card";
-import { PhotoReposition } from "@/components/photo-reposition";
 import { SIZES, type CardSize } from "@/lib/share-card";
 import { CLUB_TIME_ZONE, eligiblePhotos, type TeamSlide } from "./model";
 import { CoverPhotoPicker } from "./cover-photo-picker";
+import { PhotoPlacement, SlidePreview } from "./slide-preview";
 import {
-  slideAdjustments,
   useWeekendCarousel,
-  WEEKEND_PACK_ID, type WeekendCarouselState } from "./use-weekend-carousel";
+  type WeekendCarouselState } from "./use-weekend-carousel";
 
 const SIZE_KEYS = Object.keys(SIZES) as CardSize[];
 
@@ -63,7 +61,8 @@ export function WeekendCarousel({ className }: { className?: string } = {}) {
         <Layers className="mr-1 h-3.5 w-3.5" aria-hidden /> Weekend match-day carousel
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[92dvh] w-[min(96vw,72rem)] max-w-none overflow-y-auto p-0">
+        <DialogContent className="left-0 top-0 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 sm:rounded-none"
+          data-testid="weekend-fullscreen-editor">
           {open && <WeekendCarouselBody />}
         </DialogContent>
       </Dialog>
@@ -74,15 +73,15 @@ export function WeekendCarousel({ className }: { className?: string } = {}) {
 export function WeekendCarouselBody() {
   const s = useWeekendCarousel();
   return (
-    <div className="flex flex-col">
-      <DialogHeader className="space-y-1 border-b px-5 py-4 text-left">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <DialogHeader className="shrink-0 space-y-1 border-b px-5 py-4 pr-12 text-left">
         <DialogTitle className="text-xl">Weekend match-day carousel</DialogTitle>
         <DialogDescription>
           Pick this weekend's fixtures, check photos, download every slide as one ZIP. Nothing is
           saved or published.
         </DialogDescription>
       </DialogHeader>
-      <div className="space-y-6 px-5 py-5">
+      <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto overflow-x-hidden px-5 py-5">
         {s.error ? (
           <QueryError
             title="Couldn't load fixtures, photos or settings"
@@ -279,15 +278,7 @@ function GeneratedSet({ s }: { s: WeekendCarouselState }) {
   const noSponsors = !s.slides.some(sl =>
     (sl.sponsorsOn && (sl.data.sponsors?.length ?? 0) > 0) ||
     (sl.input.kind === "matchDay" && (sl.input.carouselPage?.sponsors.length ?? 0) > 0));
-  // Crop frame mirrors the Club Kit photo panel: 46% of card width x full
-  // height on square/landscape; tall formats are fluid, so the slide preview
-  // below is authoritative there.
-  const aspect =
-    s.size === "square" || s.size === "landscape"
-      ? { w: Math.round(SIZES[s.size].w * 0.46), h: SIZES[s.size].h }
-      : { w: SIZES[s.size].w, h: SIZES[s.size].h };
-  const fluidFrame = s.size !== "square" && s.size !== "landscape";
-  const previewW = s.size === "landscape" ? 300 : s.size === "story" ? 150 : 200;
+  const closingSlide = s.slides.find(sl => sl.id === "sponsors");
 
   return (
     <section className="space-y-5">
@@ -345,46 +336,18 @@ function GeneratedSet({ s }: { s: WeekendCarouselState }) {
                 team={t}
                 index={i}
                 count={s.generated!.teams.length}
-                aspect={aspect}
-                fluidFrame={fluidFrame}
               />
             ))}
           </ol>
         </div>
       )}
 
-      <div className="space-y-3">
-        <h3 className="text-base">Slides · {s.slides.length}</h3>
-        <ol className="flex gap-4 overflow-x-auto pb-2" aria-label="Slide previews">
-          {s.slides.map((sl, i) => (
-            <li key={sl.id} className="shrink-0 space-y-1.5" style={{ width: previewW }} data-testid={`slide-${sl.id}`}>
-              <div className="overflow-hidden rounded-md border bg-muted">
-                <PackCard
-                  input={sl.input}
-                  size={s.size}
-                  sponsorsOn={sl.sponsorsOn}
-                  junior={sl.junior}
-                  data={sl.data}
-                  packId={WEEKEND_PACK_ID}
-                  adjustments={slideAdjustments(sl, s.size)}
-                  width={previewW}
-                />
-              </div>
-              <p className="text-xs font-medium">
-                <span className="font-mono text-muted-foreground">{String(i + 1).padStart(2, "0")}</span>{" "}
-                {sl.label}
-              </p>
-              {sl.warnings.map((w) => (
-                <p key={w} className="flex gap-1 text-[11px] text-amber-700 dark:text-amber-400">
-                  <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden /> {w}
-                </p>
-              ))}
-            </li>
-          ))}
-        </ol>
-      </div>
+      {closingSlide && <section className="space-y-3 rounded-md border p-3">
+        <h3 className="text-base">Sponsors · final slide</h3>
+        <SlidePreview slide={closingSlide} size={s.size} />
+      </section>}
 
-      <div className="sticky bottom-0 -mx-5 flex flex-wrap items-center gap-3 border-t bg-card px-5 py-3">
+      <div className="sticky bottom-0 z-10 -mx-5 flex flex-wrap items-center gap-3 border-t bg-card px-5 py-3">
         <Button onClick={s.runExport} disabled={!s.canExport} data-testid="button-export-weekend">
           <Download className="mr-1 h-3.5 w-3.5" aria-hidden />
           {s.exporting ? "Exporting…" : `Download ZIP (${s.slides.length} PNGs)`}
@@ -417,20 +380,17 @@ function TeamEditor({
   team,
   index,
   count,
-  aspect,
-  fluidFrame,
 }: {
   s: WeekendCarouselState;
   team: TeamSlide;
   index: number;
   count: number;
-  aspect: { w: number; h: number };
-  fluidFrame: boolean;
 }) {
   const lock = s.exporting;
   const options = eligiblePhotos(s.photos, team.fixture.grade);
   const chosen = options.find((p) => p.id === team.photoId) ?? null;
   const label = fixtureLine(team.fixture);
+  const slide = s.slides.find(sl => sl.id === `fixture-${team.fixture.id}`);
 
   return (
     <li className="rounded-md border p-3" data-testid={`team-${team.fixture.id}`}>
@@ -440,8 +400,10 @@ function TeamEditor({
         <Badge variant="outline" className="text-[10px]">{team.fixture.grade}</Badge>
         <OrderButtons label={label} index={index} count={count} disabled={lock} onMove={(d) => s.moveTeamAt(index, d)} />
       </div>
-      <div className="mt-3 grid gap-3 md:grid-cols-[1fr_16rem]">
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={`Photo for ${label}`}>
+      <div className="mt-3 grid items-start gap-5 md:grid-cols-2">
+        {slide && <SlidePreview slide={slide} size={s.size} />}
+        <div className="min-w-0 space-y-4">
+        <div className="flex max-h-64 flex-wrap gap-2 overflow-y-auto p-1" role="radiogroup" aria-label={`Photo for ${label}`}>
           <button
             type="button"
             role="radio"
@@ -477,20 +439,14 @@ function TeamEditor({
           )}
         </div>
         {chosen && (
-          <fieldset disabled={lock}>
-            <PhotoReposition
-              src={chosen.url}
-              aspect={aspect}
+            <PhotoPlacement
               value={team.transform}
               onChange={(transform) => s.patchTeam(index, { transform })}
+              disabled={lock}
+              label={team.fixture.grade}
             />
-            {fluidFrame && (
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                This format's photo area is fluid; check the slide preview below for the exact crop.
-              </p>
-            )}
-          </fieldset>
         )}
+        </div>
       </div>
     </li>
   );

@@ -105,13 +105,15 @@ export interface CkFooter {
   label?: string;
   /** Emit a sponsors-off branch (the strip simply disappears). */
   off?: boolean;
+  /** Larger tiles for match-day team sponsors; other designs keep their size. */
+  largeLogos?: boolean;
 }
 
-function sponsorLogos(): string {
+function sponsorLogos(large = false): string {
   return [1, 2, 3]
     .map(
       (n) =>
-        `<div data-sponsor-tile="${n}" style="width:9cqmin;height:4cqmin;flex:none;overflow:hidden;background:rgba(255,255,255,.92)">${slot(`sponsor${n}`, "sponsor", "rect")}</div>`,
+        `<div data-sponsor-tile="${n}" style="width:${large ? 18 : 9}cqmin;height:${large ? 8 : 4}cqmin;flex:none;overflow:hidden;background:rgba(255,255,255,.92)">${slot(`sponsor${n}`, "sponsor", "rect")}</div>`,
     )
     .join("");
 }
@@ -122,7 +124,7 @@ export function footer(f: CkFooter): string {
   const strip =
     f.sponsors === "logos"
       ? // Logos; the presenting sponsor's name only when the club has no logos.
-        `<div data-sponsor-strip="1" style="display:flex;align-items:center;gap:1.2cqmin;min-width:0">${supportedBy(cq, f.label)}${sponsorLogos()}</div>` +
+        `<div data-sponsor-strip="1" style="display:flex;${f.largeLogos ? "flex-direction:column;align-items:flex-start" : "align-items:center"};gap:1.2cqmin;min-width:0">${supportedBy(cq, f.label)}${f.largeLogos ? `<div style="display:flex;gap:1.2cqmin">${sponsorLogos(true)}</div>` : sponsorLogos()}</div>` +
         `<div data-sponsor-fallback="1"><div style="display:flex;align-items:center;gap:1.4cqmin;min-width:0">${supportedBy(cq, f.label)} <span data-sponsor-name="1" style="font-family:${CK_SANS};font-weight:700;font-size:2cqmin;white-space:nowrap;color:${C.chalk}">{{sponsorPresentedBy}}</span></div></div>`
       : `<div style="display:flex;align-items:center;gap:1.4cqmin;min-width:0">${supportedBy(cq, f.label)} <span data-sponsor-name="1" style="font-family:${CK_SANS};font-weight:700;font-size:2cqmin;white-space:nowrap;color:${C.chalk}">{{sponsorPresentedBy}}</span></div>`;
   return (

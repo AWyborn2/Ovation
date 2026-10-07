@@ -335,7 +335,7 @@ const matchDay = design({
           meta(u, "{{venue}}", ";margin-top:.8cqmin;overflow-wrap:anywhere") +
           `</div>`,
       ),
-      LOGO_FOOTER,
+      { ...LOGO_FOOTER, largeLogos: true },
       "photo",
       "list",
     ),
