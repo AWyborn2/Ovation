@@ -10,6 +10,7 @@
  * reported as inherited so the editor and post pack can flag it for review.
  */
 
+import type { RowsSpec, TemplateTextStyle } from "@workspace/scorecard/kind-templates";
 import type { CardSize } from "../share-card";
 import { escapeHtml } from "./html-utils";
 import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
@@ -35,7 +36,11 @@ export type FreeLayerKind =
   | "sticker"
   | "chart"
   /** A Studio library element (`lib/studio-elements`), e.g. Club Kit score bars. */
-  | "element";
+  | "element"
+  /** The card's photo (kind templates, ADR-001); never drawn on junior cards. */
+  | "photo"
+  /** One styled list row repeated per data row (kind templates, ADR-001). */
+  | "rows";
 
 export type FreeLayer = {
   id: string;
@@ -63,18 +68,14 @@ export type FreeLayer = {
   playerId?: number;
   /** A library element's id and edited props (`kind: "element"`). */
   element?: ElementLayerState;
-  style?: {
-    color?: string;
-    background?: string;
-    fontFamily?: string;
-    /** Font size in percent of the artboard width. */
-    fontSize?: number;
-    fontWeight?: number;
-    align?: "left" | "center" | "right";
-    radius?: number;
-    opacity?: number;
-  };
+  /** The list row a `rows` layer repeats. */
+  rows?: RowsSpec;
+  /** The photo's focal point and zoom per size (`kind: "photo"`). */
+  photo?: Partial<Record<CardSize, PhotoAdjust>>;
+  style?: TemplateTextStyle;
   animation?: LayerAnimation;
+  /** The sizes this layer is on; absent means every size (kind templates). */
+  sizes?: CardSize[];
   /** Per-format boxes. */
   geometry: Partial<Record<CardSize, LayerBox>>;
   /** When each format's box was last edited (ms since epoch). */
@@ -257,13 +258,102 @@ export interface FreeLayerContext {
   brand?: PackCardData["brand"] | null;
   junior?: boolean;
   rows?: Record<string, Array<Record<string, string>>>;
+  /** Each repeat row's variant, parallel to `rows` (for `rows` layers). */
+  rowVariants?: Record<string, Array<string | undefined>>;
+  /** The card photo for `photo` layers; null/absent draws nothing. */
+  photoUrl?: string | null;
 }
 
+const TOKEN = /\{\{\s*([\w.]+)\s*\}\}/g;
+
+/** Whether text carries `{{field}}` tokens. */
+export const hasFieldTokens = (text: string | undefined): boolean =>
+  !!text && /\{\{\s*[\w.]+\s*\}\}/.test(text);
+
+/** Text with each `{{field}}` token replaced by its card value (empty when absent). */
+export function substituteTokens(text: string, values: Record<string, string>): string {
+  return text.replace(TOKEN, (_all, key: string) => values[key] ?? "");
+}
+
+/** Inline CSS for a text box (text layers and list-row cells). */
+function textCss(raw: TemplateTextStyle | undefined, extra: string[] = []): string {
+  const s = {
+    ...(raw ?? {}),
+    color: cssValue(raw?.color),
+    background: cssValue(raw?.background),
+    fontFamily: cssValue(raw?.fontFamily),
+  };
+  return [
+    ...extra,
+    "display:flex",
+    "align-items:center",
+    `justify-content:${s.align === "left" ? "flex-start" : s.align === "right" ? "flex-end" : "center"}`,
+    `text-align:${s.align ?? "center"}`,
+    `color:${s.color ?? "inherit"}`,
+    `font-family:${s.fontFamily ?? "var(--disp,'Anton'),sans-serif"}`,
+    `font-size:${(s.fontSize ?? 5).toFixed(2)}cqw`,
+    `font-weight:${s.fontWeight ?? 700}`,
+    "line-height:1.05",
+    "white-space:pre-wrap",
+    s.letterSpacing != null ? `letter-spacing:${s.letterSpacing}em` : "",
+    s.background ? `background:${s.background}` : "",
+    s.radius != null ? `border-radius:${s.radius}px` : "",
+  ]
+    .filter(Boolean)
+    .join(";");
+}
+
+/** A `rows` layer: one positioned row per data row, cells placed across it. */
+function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
+  const spec = layer.rows;
+  if (!spec) return null;
+  const rows = ctx.rows?.[spec.repeat] ?? [];
+  if (rows.length === 0) return null;
+  const variants = ctx.rowVariants?.[spec.repeat] ?? [];
+  const gap = spec.gap ?? 0;
+  const out = rows.map((row, i) => {
+    const variant = variants[i];
+    const cells = spec.cells.map((cell) => {
+      const style = {
+        ...cell.style,
+        ...(variant ? spec.variants?.[variant]?.[cell.field] : undefined),
+      };
+      const css = textCss(style, [
+        "position:absolute",
+        `left:${cell.x}%`,
+        `width:${cell.w}%`,
+        "top:0",
+        "height:100%",
+        "overflow:hidden",
+      ]);
+      return `<div data-row-cell="${escapeHtml(cell.field)}" style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
+    });
+    const top = i * (spec.rowHeight + gap);
+    return `<div data-row-index="${i}"${variant ? ` data-row-variant="${escapeHtml(variant)}"` : ""} style="position:absolute;left:0;right:0;top:${top.toFixed(3)}cqw;height:${spec.rowHeight.toFixed(3)}cqw">${cells.join("")}</div>`;
+  });
+  return `<div style="position:relative;width:100%;height:100%;overflow:hidden">${out.join("")}</div>`;
+}
+
+/** A `photo` layer: the card photo at this size's focal point and zoom. */
+function renderPhoto(layer: FreeLayer, size: CardSize, ctx: FreeLayerContext): string | null {
+  // Junior cards never show a photo, whatever the document holds (KTD14).
+  if (ctx.junior || !ctx.photoUrl) return null;
+  const t = resolveGeometry(layer.photo, undefined, size)?.value ?? {
+    focalX: 50,
+    focalY: 50,
+    zoom: 1,
+  };
+  const radius = layer.style?.radius != null ? `;border-radius:${layer.style.radius}px` : "";
+  return `<div style="width:100%;height:100%;overflow:hidden${radius}"><img src="${escapeHtml(ctx.photoUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;object-position:${t.focalX}% ${t.focalY}%;transform:scale(${t.zoom});transform-origin:${t.focalX}% ${t.focalY}%" /></div>`;
+}
+
+/** A layer's inner markup; null when it should not be drawn at all. */
 function layerInner(
   layer: FreeLayer,
   values: Record<string, string>,
   ctx: FreeLayerContext = {},
-): string {
+  size: CardSize = "square",
+): string | null {
   const raw = layer.style ?? {};
   const s = {
     ...raw,
@@ -273,25 +363,20 @@ function layerInner(
   };
   switch (layer.kind) {
     case "text": {
-      const css = [
-        "width:100%",
-        "height:100%",
-        "display:flex",
-        "align-items:center",
-        `justify-content:${s.align === "left" ? "flex-start" : s.align === "right" ? "flex-end" : "center"}`,
-        `text-align:${s.align ?? "center"}`,
-        `color:${s.color ?? "inherit"}`,
-        `font-family:${s.fontFamily ?? "var(--disp,'Anton'),sans-serif"}`,
-        `font-size:${(s.fontSize ?? 5).toFixed(2)}cqw`,
-        `font-weight:${s.fontWeight ?? 700}`,
-        "line-height:1.05",
-        "white-space:pre-wrap",
-        s.background ? `background:${s.background}` : "",
-        s.radius != null ? `border-radius:${s.radius}px` : "",
-      ].filter(Boolean);
-      const text = layer.bind ? (values[layer.bind] ?? "") : (layer.content ?? "");
-      return `<div style="${css.join(";")}">${escapeHtml(text)}</div>`;
+      const tokens = !layer.bind && hasFieldTokens(layer.content);
+      const text = layer.bind
+        ? (values[layer.bind] ?? "")
+        : tokens
+          ? substituteTokens(layer.content ?? "", values)
+          : (layer.content ?? "");
+      // A box made only of live fields that are all empty isn't drawn (KTD15).
+      if (tokens && text.trim() === "") return null;
+      return `<div style="${textCss(raw, ["width:100%", "height:100%"])}">${escapeHtml(text)}</div>`;
     }
+    case "photo":
+      return renderPhoto(layer, size, ctx);
+    case "rows":
+      return renderRows(layer, ctx);
     case "shape":
       return `<div style="width:100%;height:100%;background:${s.background ?? "var(--gold,#fbac27)"};border-radius:${s.radius ?? 0}px"></div>`;
     case "image":
@@ -340,8 +425,11 @@ export function renderFreeLayers(
       : "";
   const parts = layers.map((layer) => {
     if (layer.hidden) return "";
+    if (layer.sizes && !layer.sizes.includes(size)) return "";
     const box = resolveGeometry(layer.geometry, layer.editedAt, size);
     if (!box) return "";
+    const inner = layerInner(layer, values, ctx, size);
+    if (inner === null) return "";
     const { x, y, w, h, rotate } = box.value;
     const anim = opts.animate ? ANIMATION[layer.animation?.kind ?? "none"] : null;
     const css = [
@@ -355,7 +443,7 @@ export function renderFreeLayers(
       anim ? `animation:${anim}` : "",
       anim && layer.animation?.delayMs ? `animation-delay:${layer.animation.delayMs}ms` : "",
     ].filter(Boolean);
-    return `<div data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${box.from}"` : ""} style="${css.join(";")}">${layerInner(layer, values, ctx)}</div>`;
+    return `<div data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${box.from}"` : ""} style="${css.join(";")}">${inner}</div>`;
   });
   const style = opts.animate ? `<style>${LAYER_KEYFRAMES}</style>` : "";
   return `<div class="pack-free-layers" style="position:absolute;inset:0;pointer-events:none;container-type:inline-size${palette}">${style}${parts.join("")}</div>`;
