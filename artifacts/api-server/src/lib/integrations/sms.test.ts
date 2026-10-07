@@ -3,6 +3,8 @@ import {
   sendSms,
   setSmsTransport,
   smsEnabled,
+  smsProvider,
+  smsRepliesReachUs,
   normaliseAuMobile,
   redactContact,
   isGsm7,
@@ -20,6 +22,10 @@ const TWILIO_KEYS = [
   "TWILIO_AUTH_TOKEN",
   "TWILIO_FROM",
   "TWILIO_MESSAGING_SERVICE_SID",
+  "SMS_PROVIDER",
+  "CLICKSEND_USERNAME",
+  "CLICKSEND_API_KEY",
+  "CLICKSEND_FROM",
 ] as const;
 const saved = Object.fromEntries(TWILIO_KEYS.map((k) => [k, process.env[k]]));
 
@@ -262,5 +268,213 @@ describe("sendSms", () => {
     const [, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit];
     const form = new URLSearchParams(String(init.body));
     expect(form.get("From")).toBe("+61400000000");
+  });
+});
+
+function setTwilioEnv() {
+  process.env.TWILIO_ACCOUNT_SID = "ACtest123";
+  process.env.TWILIO_AUTH_TOKEN = "authtoken-secret";
+  process.env.TWILIO_FROM = "+61400000000";
+}
+
+function setClickSendEnv() {
+  process.env.CLICKSEND_USERNAME = "club.owner@example.com";
+  process.env.CLICKSEND_API_KEY = "CS-API-KEY-SECRET";
+  process.env.CLICKSEND_FROM = "+61498765432";
+}
+
+/** A ClickSend v3 /sms/send response with one message of the given status. */
+function clickSendResponse(status: string, http = 200) {
+  return new Response(
+    JSON.stringify({
+      http_code: http,
+      response_code: http === 200 ? "SUCCESS" : "BAD_REQUEST",
+      response_msg: "Messages queued for delivery.",
+      data: {
+        total_count: 1,
+        queued_count: status === "SUCCESS" ? 1 : 0,
+        messages: [{ to: "+61412345678", body: "x", message_id: "M1", status }],
+      },
+    }),
+    { status: http, headers: { "Content-Type": "application/json" } },
+  );
+}
+
+describe("smsProvider", () => {
+  it("is null when nothing is configured", () => {
+    clearTwilioEnv();
+    expect(smsProvider()).toBeNull();
+    expect(smsEnabled()).toBe(false);
+    expect(smsRepliesReachUs()).toBe(false);
+  });
+
+  it("picks whichever provider is fully configured", () => {
+    clearTwilioEnv();
+    setTwilioEnv();
+    expect(smsProvider()).toBe("twilio");
+    expect(smsRepliesReachUs()).toBe(true);
+
+    clearTwilioEnv();
+    setClickSendEnv();
+    expect(smsProvider()).toBe("clicksend");
+    expect(smsEnabled()).toBe(true);
+    expect(smsRepliesReachUs()).toBe(false);
+  });
+
+  it("needs the ClickSend sender as well as the credentials", () => {
+    clearTwilioEnv();
+    setClickSendEnv();
+    delete process.env.CLICKSEND_FROM;
+    expect(smsProvider()).toBeNull();
+  });
+
+  it("keeps Twilio when both are configured and SMS_PROVIDER is unset", () => {
+    clearTwilioEnv();
+    setTwilioEnv();
+    setClickSendEnv();
+    expect(smsProvider()).toBe("twilio");
+  });
+
+  it("follows an explicit SMS_PROVIDER, and is off when that provider is not configured", () => {
+    clearTwilioEnv();
+    setTwilioEnv();
+    setClickSendEnv();
+    process.env.SMS_PROVIDER = "clicksend";
+    expect(smsProvider()).toBe("clicksend");
+    process.env.SMS_PROVIDER = "twilio";
+    expect(smsProvider()).toBe("twilio");
+
+    clearTwilioEnv();
+    setTwilioEnv();
+    process.env.SMS_PROVIDER = "clicksend";
+    expect(smsProvider()).toBeNull();
+    expect(smsEnabled()).toBe(false);
+  });
+
+  it("a test transport reports the provider it stands in for (Twilio by default)", () => {
+    clearTwilioEnv();
+    setSmsTransport(async () => {});
+    expect(smsProvider()).toBe("twilio");
+    setSmsTransport(async () => {}, "clicksend");
+    expect(smsProvider()).toBe("clicksend");
+    expect(smsRepliesReachUs()).toBe(false);
+  });
+});
+
+describe("sendSms through ClickSend", () => {
+  it("posts to the v3 send API with basic auth, the own-number sender and a JSON body", async () => {
+    clearTwilioEnv();
+    setClickSendEnv();
+    const fetchSpy = vi.fn(async () => clickSendResponse("SUCCESS"));
+    vi.stubGlobal("fetch", fetchSpy);
+    await expect(sendSms({ to: "0412 345 678", body: "hello" })).resolves.toEqual({ sent: true });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://rest.clicksend.com/v3/sms/send");
+    expect(init.method).toBe("POST");
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBe(
+      `Basic ${Buffer.from("club.owner@example.com:CS-API-KEY-SECRET").toString("base64")}`,
+    );
+    expect(headers["Content-Type"]).toBe("application/json");
+    expect(JSON.parse(String(init.body))).toEqual({
+      messages: [{ source: "ovation", from: "+61498765432", to: "+61412345678", body: "hello" }],
+    });
+  });
+
+  it("reports a non-SUCCESS message status as failed, without retrying or leaking contact data", async () => {
+    clearTwilioEnv();
+    setClickSendEnv();
+    for (const status of ["INVALID_RECIPIENT", "INSUFFICIENT_CREDIT", "COUNTRY_NOT_ENABLED"]) {
+      const fetchSpy = vi.fn(async () => clickSendResponse(status));
+      vi.stubGlobal("fetch", fetchSpy);
+      const result = await sendSms({ to: "0412345678", body: "x" });
+      expect(result).toMatchObject({ sent: false, reason: "failed" });
+      expect(result.sent === false && result.error).toContain(status);
+      const text = JSON.stringify(result);
+      expect(text).not.toContain("412345678");
+      expect(text).not.toContain("498765432");
+      expect(text).not.toContain("CS-API-KEY-SECRET");
+      expect(text).not.toContain("club.owner@example.com");
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it("maps ClickSend's own opt-out list to opted_out", async () => {
+    clearTwilioEnv();
+    setClickSendEnv();
+    for (const status of ["UNSUBSCRIBED", "RECIPIENT_OPTED_OUT"]) {
+      const fetchSpy = vi.fn(async () => clickSendResponse(status));
+      vi.stubGlobal("fetch", fetchSpy);
+      await expect(sendSms({ to: "0412345678", body: "x" })).resolves.toEqual({
+        sent: false,
+        reason: "opted_out",
+      });
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it("retries a timeout and a 5xx once", async () => {
+    clearTwilioEnv();
+    setClickSendEnv();
+    const hung = vi.fn(async () => {
+      throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
+    });
+    vi.stubGlobal("fetch", hung);
+    await expect(sendSms({ to: "0412345678", body: "x" })).resolves.toMatchObject({
+      sent: false,
+      reason: "failed",
+    });
+    expect(hung).toHaveBeenCalledTimes(2);
+
+    const down = vi.fn(async () => new Response("Service Unavailable", { status: 503 }));
+    vi.stubGlobal("fetch", down);
+    await sendSms({ to: "0412345678", body: "x" });
+    expect(down).toHaveBeenCalledTimes(2);
+
+    let calls = 0;
+    const flaky = vi.fn(async () =>
+      ++calls === 1 ? clickSendResponse("x", 502) : clickSendResponse("SUCCESS"),
+    );
+    vi.stubGlobal("fetch", flaky);
+    await expect(sendSms({ to: "0412345678", body: "x" })).resolves.toEqual({ sent: true });
+    expect(flaky).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry a 4xx such as bad credentials", async () => {
+    clearTwilioEnv();
+    setClickSendEnv();
+    const fetchSpy = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            http_code: 401,
+            response_code: "INVALID_CREDENTIALS",
+            response_msg: "Invalid credentials for club.owner@example.com",
+          }),
+          { status: 401 },
+        ),
+    );
+    vi.stubGlobal("fetch", fetchSpy);
+    const result = await sendSms({ to: "0412345678", body: "x" });
+    expect(result).toMatchObject({ sent: false, reason: "failed" });
+    expect(result.sent === false && result.error).toContain("INVALID_CREDENTIALS");
+    expect(JSON.stringify(result)).not.toContain("club.owner@example.com");
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("routes to Twilio, unchanged, when SMS_PROVIDER=twilio", async () => {
+    clearTwilioEnv();
+    setTwilioEnv();
+    setClickSendEnv();
+    process.env.SMS_PROVIDER = "twilio";
+    const fetchSpy = vi.fn(
+      async () => new Response(JSON.stringify({ sid: "SM1" }), { status: 201 }),
+    );
+    vi.stubGlobal("fetch", fetchSpy);
+    await expect(sendSms({ to: "0412345678", body: "x" })).resolves.toEqual({ sent: true });
+    const [url] = fetchSpy.mock.calls[0] as unknown as [string];
+    expect(url).toContain("api.twilio.com");
   });
 });

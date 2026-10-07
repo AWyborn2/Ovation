@@ -3144,7 +3144,8 @@ export const GetAvailabilitySettingsResponse = zod.object({
   "finaliseTime": zod.string().regex(getAvailabilitySettingsResponseOneFinaliseTimeRegExp),
   "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub')
 }).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n').and(zod.object({
-  "updatedAt": zod.coerce.date().nullable().describe('Null while the club is on the defaults')
+  "updatedAt": zod.coerce.date().nullable().describe('Null while the club is on the defaults'),
+  "smsProvider": zod.union([zod.enum(['twilio', 'clicksend']),zod.null()]).describe('The platform\'s SMS provider, null when SMS isn\'t configured\n(email only). With \"clicksend\" texts come from the club\'s own\nmobile, so replies (STOP included) go to that phone, not here —\nplayers answer and stop texts through their link.\n')
 }))
 
 
@@ -3219,7 +3220,8 @@ export const UpdateAvailabilitySettingsResponse = zod.object({
   "finaliseTime": zod.string().regex(updateAvailabilitySettingsResponseOneFinaliseTimeRegExp),
   "selectionRule": zod.enum(['captains_own_grade', 'captains_all_grades', 'admins_only']).describe('Who may edit a side in the Selection Hub')
 }).describe('The weekly rhythm in Perth time. Days are 0 (Sunday) to 6 (Saturday);\ntimes are 24-hour \"HH:MM\". Finalise-by is shown to captains only.\n').and(zod.object({
-  "updatedAt": zod.coerce.date().nullable().describe('Null while the club is on the defaults')
+  "updatedAt": zod.coerce.date().nullable().describe('Null while the club is on the defaults'),
+  "smsProvider": zod.union([zod.enum(['twilio', 'clicksend']),zod.null()]).describe('The platform\'s SMS provider, null when SMS isn\'t configured\n(email only). With \"clicksend\" texts come from the club\'s own\nmobile, so replies (STOP included) go to that phone, not here —\nplayers answer and stop texts through their link.\n')
 }))
 
 
@@ -3780,7 +3782,9 @@ export const GetAvailabilityResponseResponse = zod.object({
   "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
   "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
   "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
-  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late'),
+  "smsOptedOut": zod.boolean().describe('This recipient has stopped text messages (email only)'),
+  "textsAvailable": zod.boolean().describe('The club sends texts at all (its SMS switch and a configured provider)')
 })
 
 
@@ -3853,7 +3857,9 @@ export const SaveAvailabilityAnswersResponse = zod.object({
   "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
   "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
   "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
-  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late'),
+  "smsOptedOut": zod.boolean().describe('This recipient has stopped text messages (email only)'),
+  "textsAvailable": zod.boolean().describe('The club sends texts at all (its SMS switch and a configured provider)')
 })
 
 
@@ -3932,7 +3938,9 @@ export const RemoveAvailabilityAwayResponse = zod.object({
   "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
   "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
   "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
-  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late'),
+  "smsOptedOut": zod.boolean().describe('This recipient has stopped text messages (email only)'),
+  "textsAvailable": zod.boolean().describe('The club sends texts at all (its SMS switch and a configured provider)')
 })
 
 
@@ -4005,7 +4013,74 @@ export const UpdateAvailabilityContactResponse = zod.object({
   "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
   "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
   "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
-  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late'),
+  "smsOptedOut": zod.boolean().describe('This recipient has stopped text messages (email only)'),
+  "textsAvailable": zod.boolean().describe('The club sends texts at all (its SMS switch and a configured provider)')
+})
+
+
+/**
+ * Sets or clears the SMS opt-out of the recipient the link was sent to
+(only that slot); email continues either way. The functional
+unsubscribe for senders whose replies don't reach the platform
+(ClickSend own number), and how someone who stopped texts starts them
+again.
+
+ * @summary Stop or restart text messages to this recipient
+ */
+export const setAvailabilityTextsPathTokenMax = 128;
+
+
+
+export const SetAvailabilityTextsParams = zod.object({
+  "token": zod.coerce.string().min(1).max(setAvailabilityTextsPathTokenMax).describe('The personal link token (never logged)')
+})
+
+export const SetAvailabilityTextsBody = zod.object({
+  "stop": zod.boolean().describe('True stops text messages to this recipient; false starts them again')
+})
+
+export const SetAvailabilityTextsResponse = zod.object({
+  "clubName": zod.string(),
+  "clubShortName": zod.string().nullable(),
+  "logoUrl": zod.string().nullable(),
+  "primaryColour": zod.string().nullable(),
+  "firstName": zod.string().describe('The member\'s preferred (or first) name'),
+  "displayName": zod.string(),
+  "recipientSlot": zod.enum(['account', 'guardian1', 'guardian2']).describe('Who a personal link was sent to — the account holder (adults) or a guardian'),
+  "self": zod.boolean().describe('True when the link went to the player themself rather than a guardian'),
+  "weekendDate": zod.string().describe('The round\'s Saturday, YYYY-MM-DD'),
+  "dates": zod.array(zod.object({
+  "date": zod.string().describe('Perth date, YYYY-MM-DD'),
+  "status": zod.union([zod.enum(['yes', 'no', 'maybe']),zod.null()]).describe('The current answer; null when nobody has answered'),
+  "note": zod.string().nullable(),
+  "late": zod.boolean().describe('Answered after cut-off'),
+  "locked": zod.boolean().describe('The member is in a finalised side on this date, so the answer can\'t change')
+})),
+  "away": zod.array(zod.object({
+  "id": zod.number(),
+  "fromDate": zod.string(),
+  "toDate": zod.string()
+})).describe('Away periods that haven\'t ended yet'),
+  "contact": zod.object({
+  "mobile": zod.string().nullable(),
+  "email": zod.string().nullable()
+}).describe('This recipient\'s contact, masked (e.g. \"04xx xxx 678\", \"j\*\*\*@example.com\")'),
+  "selection": zod.union([zod.object({
+  "grade": zod.string(),
+  "opponent": zod.string(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "role": zod.union([zod.literal('C'),zod.literal('WK'),zod.literal('C/WK'),zod.literal(null)]).nullable(),
+  "twelfth": zod.boolean().describe('Picked as the side\'s 12th player (slot 12)')
+}),zod.null()]).describe('The match, once the member is in a finalised side this round'),
+  "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
+  "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
+  "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late'),
+  "smsOptedOut": zod.boolean().describe('This recipient has stopped text messages (email only)'),
+  "textsAvailable": zod.boolean().describe('The club sends texts at all (its SMS switch and a configured provider)')
 })
 
 
@@ -4063,7 +4138,9 @@ export const WithdrawAvailabilityResponse = zod.object({
   "canWithdraw": zod.boolean().describe('The member is in a side this round, so \"can\'t make it\" is offered'),
   "locked": zod.boolean().describe('The member\'s side is final; only \"can\'t make it\" is allowed'),
   "withdrawn": zod.boolean().describe('The member withdrew from their side this round'),
-  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late')
+  "late": zod.boolean().describe('Cut-off has passed; new answers are marked late'),
+  "smsOptedOut": zod.boolean().describe('This recipient has stopped text messages (email only)'),
+  "textsAvailable": zod.boolean().describe('The club sends texts at all (its SMS switch and a configured provider)')
 })
 
 

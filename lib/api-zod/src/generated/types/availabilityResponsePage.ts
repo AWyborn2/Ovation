@@ -41,4 +41,8 @@ export interface AvailabilityResponsePage {
   withdrawn: boolean;
   /** Cut-off has passed; new answers are marked late */
   late: boolean;
+  /** This recipient has stopped text messages (email only) */
+  smsOptedOut: boolean;
+  /** The club sends texts at all (its SMS switch and a configured provider) */
+  textsAvailable: boolean;
 }

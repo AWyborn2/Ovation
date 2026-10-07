@@ -34,6 +34,7 @@ const SETTINGS: AvailabilitySettings = {
   finaliseTime: "12:00",
   selectionRule: "captains_own_grade",
   updatedAt: null,
+  smsProvider: null,
 };
 
 const ROUND: AvailabilityRoundStatus = {
@@ -168,6 +169,31 @@ describe("admin availability", () => {
     expect(alert.textContent).toBe(message);
     const put = calls.find((c) => c.method === "PUT");
     expect(put?.url).toContain("/api/availability/settings");
+  });
+
+  it("says which SMS provider sends, and that ClickSend replies go to the club's phone", async () => {
+    installFetch((url) =>
+      url.includes("/availability/settings")
+        ? { body: { ...SETTINGS, smsProvider: "clicksend" } }
+        : undefined,
+    );
+    renderAt(<AdminAvailability />, "/admin/availability");
+    expect(await screen.findByText(/club's own mobile through ClickSend/)).toBeTruthy();
+    expect(screen.getByText(/with the link in the message rather than by replying/)).toBeTruthy();
+    cleanup();
+
+    installFetch((url) =>
+      url.includes("/availability/settings")
+        ? { body: { ...SETTINGS, smsProvider: "twilio" } }
+        : undefined,
+    );
+    renderAt(<AdminAvailability />, "/admin/availability");
+    expect(await screen.findByText(/sent through Twilio; anyone who replies STOP/)).toBeTruthy();
+    cleanup();
+
+    installFetch(() => undefined);
+    renderAt(<AdminAvailability />, "/admin/availability");
+    expect(await screen.findByText(/aren't set up for the platform yet/)).toBeTruthy();
   });
 
   it("disables Run now while the club has availability off", async () => {

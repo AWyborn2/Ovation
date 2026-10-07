@@ -18,6 +18,7 @@ import {
 import type {
   AvailabilitySelectionRule,
   AvailabilitySettingsInput,
+  AvailabilitySmsProvider,
   AvailabilityRoundStatus,
   AvailabilityStepResult,
   SquadContactPresence,
@@ -199,6 +200,18 @@ function DayTimePicker({
   );
 }
 
+/** Which provider sends texts, and where replies go — shown under the SMS switch. */
+function smsProviderNote(provider: AvailabilitySmsProvider | null): string {
+  switch (provider) {
+    case "clicksend":
+      return "Texts come from the club's own mobile through ClickSend, so replies (STOP included) go to that phone, not here. Ask players to answer, and to stop texts, with the link in the message rather than by replying.";
+    case "twilio":
+      return "Texts are sent through Twilio; anyone who replies STOP stops getting them.";
+    default:
+      return "Text messages aren't set up for the platform yet, so nothing goes by text.";
+  }
+}
+
 function SettingsCard() {
   const queryClient = useQueryClient();
   const { data, isLoading, isError, refetch } = useGetAvailabilitySettings();
@@ -276,8 +289,8 @@ function SettingsCard() {
                 <div>
                   <Label htmlFor="availability-sms">Also send a text message</Label>
                   <p className="text-xs text-muted-foreground">
-                    Every request always goes by email. Text messages also need SMS to be set up for
-                    the platform; turn this off to run email only.
+                    Every request always goes by email; turn this off to run email only.{" "}
+                    {smsProviderNote(data?.smsProvider ?? null)}
                   </p>
                 </div>
                 <Switch
@@ -1004,7 +1017,7 @@ function MemberDrawer({
                   {data[s.key].smsOptedOut && (
                     <p className="text-xs text-destructive">
                       Opted out of text messages; they still get emails. Changing the mobile number
-                      turns texts back on.
+                      turns texts back on, or they can start texts again from their link.
                     </p>
                   )}
                   <Input

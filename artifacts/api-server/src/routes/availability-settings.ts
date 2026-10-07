@@ -17,6 +17,7 @@ import {
   validateSchedule,
   type ScheduleStep,
 } from "../lib/availability-schedule";
+import { smsProvider } from "../lib/integrations/sms";
 
 /**
  * The club's weekly availability round: the schedule, the current round's
@@ -34,8 +35,9 @@ const DEFAULTS = {
   selectionRule: "captains_own_grade",
 } as const;
 
+/** The club's settings plus the platform's SMS provider (null = email only). */
 function serialize(row: AvailabilitySettingsRow | null) {
-  if (!row) return { ...DEFAULTS, updatedAt: null };
+  if (!row) return { ...DEFAULTS, updatedAt: null, smsProvider: smsProvider() };
   return {
     enabled: row.enabled,
     smsEnabled: row.smsEnabled,
@@ -49,6 +51,7 @@ function serialize(row: AvailabilitySettingsRow | null) {
     finaliseTime: row.finaliseTime,
     selectionRule: row.selectionRule,
     updatedAt: row.updatedAt,
+    smsProvider: smsProvider(),
   };
 }
 

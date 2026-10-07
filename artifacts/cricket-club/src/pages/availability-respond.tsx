@@ -8,6 +8,7 @@ import {
   useGetAvailabilityResponse,
   useRemoveAvailabilityAway,
   useSaveAvailabilityAnswers,
+  useSetAvailabilityTexts,
   useUpdateAvailabilityContact,
   useWithdrawAvailability,
   type AvailabilityDateAnswer,
@@ -570,7 +571,75 @@ function ContactDetails({
           Edit details
         </Button>
       )}
+      <TextMessages token={token} page={page} onPage={onPage} />
     </Section>
+  );
+}
+
+/**
+ * Stop (or start again) text messages to this recipient. The only opt-out when
+ * texts come from the club's own mobile, where replies never reach the club's
+ * system. Shown when there is a mobile and the club texts, or texts are stopped.
+ */
+function TextMessages({
+  token,
+  page,
+  onPage,
+}: {
+  token: string;
+  page: AvailabilityResponsePage;
+  onPage: (p: AvailabilityResponsePage) => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const [changed, setChanged] = useState(false);
+  const texts = useSetAvailabilityTexts({
+    mutation: {
+      onSuccess: (p) => {
+        onPage(p);
+        setError(null);
+        setChanged(true);
+      },
+      onError: (e) =>
+        setError(errorText(e, "Couldn't change your text messages. Please try again.")),
+    },
+  });
+
+  if (!page.contact.mobile || (!page.textsAvailable && !page.smsOptedOut)) return null;
+  const stopped = page.smsOptedOut;
+
+  return (
+    <div className="mt-4 border-t pt-4" data-testid="text-messages">
+      <p className="text-sm font-medium">Text messages</p>
+      {stopped ? (
+        <p className="mt-1 text-sm text-muted-foreground" data-testid="texts-stopped">
+          {changed
+            ? "Done. We'll only email you from now on."
+            : "Text messages are stopped. We only email you."}
+        </p>
+      ) : (
+        <p className="mt-1 text-sm text-muted-foreground">
+          {changed
+            ? "Text messages are on again."
+            : "We text you about availability and selection as well as emailing."}
+        </p>
+      )}
+      <Button
+        variant="outline"
+        className="mt-3 min-h-11 w-full"
+        disabled={texts.isPending}
+        onClick={() => {
+          setChanged(false);
+          texts.mutate({ token, data: { stop: !stopped } });
+        }}
+      >
+        {texts.isPending ? "Saving…" : stopped ? "Start text messages again" : "Stop text messages"}
+      </Button>
+      {error ? (
+        <p className="mt-2 text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
 

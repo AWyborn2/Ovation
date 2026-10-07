@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AvailabilitySettingsInput } from './availabilitySettingsInput';
+import type { AvailabilitySmsProvider } from './availabilitySmsProvider';
 
 export type AvailabilitySettings = AvailabilitySettingsInput & ({
   /**
@@ -13,4 +14,10 @@ export type AvailabilitySettings = AvailabilitySettingsInput & ({
      * @nullable
      */
   updatedAt: Date | null;
+  /** The platform's SMS provider, null when SMS isn't configured
+  (email only). With "clicksend" texts come from the club's own
+  mobile, so replies (STOP included) go to that phone, not here —
+  players answer and stop texts through their link.
+   */
+  smsProvider: AvailabilitySmsProvider | null;
 });
