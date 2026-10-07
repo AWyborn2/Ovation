@@ -2,7 +2,7 @@
 
 **Project:** Ovation (white-label cricket club platform)
 **Active feature:** card-kind-templates
-**Phase:** Implementation in progress (Milestone C next)
+**Phase:** Implementation in progress (Milestone D next)
 
 ## Phase tracking — card-kind-templates
 
@@ -14,7 +14,7 @@
 | 1 Strategy | Done | Build now; success criteria in decisions/product-manager |
 | 2 Design (ADR) | Done | ADR-001, ADR-002, ADR-003 accepted |
 | 3 Planning | Done | 40 tasks in 4 milestones + design track; see decisions/engineering-manager |
-| 4 Implementation | In progress | Milestones A and B done; U7 next |
+| 4 Implementation | In progress | Milestones A, B and C done; U8 next |
 | 5 Verification | Not started | |
 | 6 Delivery | Not started | |
 
@@ -26,7 +26,7 @@
 
 Milestone A: T1.1–T1.6, T2.1–T2.3, T3.1–T3.3, T4.1–T4.2 — done
 Milestone B: T5.1–T5.7, T6.1, T10.1–T10.2 — done
-Milestone C: T7.1–T7.5 — not started
+Milestone C: T7.1–T7.5 — done (2026-10-07)
 Milestone D: T8.1–T8.7, T6.2, T9.1–T9.3 — not started
 Design track: D1–D3 — not started
 Release: R1–R4 — not started
