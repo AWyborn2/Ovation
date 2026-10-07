@@ -2,7 +2,7 @@
 
 **Project:** Ovation (white-label cricket club platform)
 **Active feature:** card-kind-templates
-**Phase:** Strategy Complete
+**Phase:** Design Complete
 
 ## Phase tracking — card-kind-templates
 
@@ -12,7 +12,7 @@
 | Discovery | Done | `.10x/` created; decisions tagged [DISCOVERED] |
 | Spec review | Approved | 11 fixes accepted, 3 decisions made and folded into the plan (2026-10-07) |
 | 1 Strategy | Done | Build now; success criteria in decisions/product-manager |
-| 2 Design (ADR) | Not started | |
+| 2 Design (ADR) | Done | ADR-001, ADR-002, ADR-003 accepted |
 | 3 Planning | Not started | Plan U1–U10 exists; EM/Senior review pending |
 | 4 Implementation | Not started | |
 | 5 Verification | Not started | |

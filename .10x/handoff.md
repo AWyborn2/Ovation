@@ -1,7 +1,7 @@
 # Handoff
 
-**From:** CTO + Product Manager (Phase 1)
-**To:** Architect + Staff Engineer (Phase 2)
+**From:** Architect + Staff Engineer (Phase 2)
+**To:** Engineering Manager + Senior Engineer (Phase 3)
 **Feature:** card-kind-templates
 
 ## Context
@@ -12,5 +12,5 @@
 
 ## Next steps
 
-1. Write ADRs: template document model on the blank base; draft holds a versioned copy; switch plus lazy creation; warnings computed before automation.
-2. Record component boundaries, failure modes and cross-cutting concerns.
+1. Read ADR-001 (layer documents), ADR-002 (versioned copy), ADR-003 (switch, lazy creation, warnings gate) in .10x/adrs/.
+2. Break U1–U10 into half-day tasks with sequencing, and the implementation approach per task.
