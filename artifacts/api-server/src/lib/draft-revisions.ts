@@ -10,7 +10,8 @@ import {
 /** Revisions kept per draft; the oldest are dropped beyond this (KTD2). */
 export const MAX_DRAFT_REVISIONS = 20;
 
-export type RevisionReason = "refresh" | "edit" | "revert";
+/** Why a revision was recorded; "template" = before a kind template was applied (R16). */
+export type RevisionReason = "refresh" | "edit" | "revert" | "template";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Executor = typeof db | Tx;

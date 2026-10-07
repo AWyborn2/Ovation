@@ -6996,6 +6996,77 @@ export interface EditorTemplate {
   createdAt: string;
 }
 
+export interface KindTemplateSummary {
+  kind: string;
+  version: number;
+  /** @nullable */
+  updatedAt: string | null;
+  /**
+     * The retired design pack this template replaced, if any (R19).
+     * @nullable
+     */
+  replacedPackId: string | null;
+  noticeDismissed: boolean;
+  /** Unposted drafts of this kind an apply would change. */
+  waitingDrafts: number;
+}
+
+export interface KindTemplateList {
+  /** Whether card kind templates are switched on for this club. */
+  enabled: boolean;
+  templates: KindTemplateSummary[];
+}
+
+export type KindTemplate = KindTemplateSummary & ({
+  document: CardAdjustments;
+  /**
+     * Who saved the current version.
+     * @nullable
+     */
+  updatedByName?: string | null;
+});
+
+export interface SaveKindTemplateRequest {
+  /** The version this edit started from. */
+  baseVersion: number;
+  document: CardAdjustments;
+}
+
+export type StartKindTemplateRequestStarter = typeof StartKindTemplateRequestStarter[keyof typeof StartKindTemplateRequestStarter];
+
+
+export const StartKindTemplateRequestStarter = {
+  'club-kit': 'club-kit',
+  broadcast: 'broadcast',
+} as const;
+
+export interface StartKindTemplateRequest {
+  starter: StartKindTemplateRequestStarter;
+  /** Required when the kind already has a template. */
+  baseVersion?: number;
+}
+
+export interface ApplyKindTemplateRequest {
+  /** The saved template version to apply. */
+  version: number;
+  /** How many waiting drafts the admin was shown; any shortfall is reported as skipped. */
+  expectedDrafts?: number;
+}
+
+export interface ApplyKindTemplateResult {
+  changed: number;
+  skipped: number;
+}
+
+export interface KindTemplateConflict {
+  error: string;
+  currentVersion: number;
+  /** @nullable */
+  updatedAt?: string | null;
+  /** @nullable */
+  updatedByName?: string | null;
+}
+
 export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraftStatus];
 
 
@@ -7165,6 +7236,7 @@ export const SocialDraftRevisionReason = {
   refresh: 'refresh',
   edit: 'edit',
   revert: 'revert',
+  template: 'template',
 } as const;
 
 export interface SocialDraftRevision {

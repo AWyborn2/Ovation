@@ -680,14 +680,14 @@ export const socialDraftRevisionsTable = pgTable(
     photoUrl: text("photo_url"),
     photoSource: text("photo_source"),
     adjustments: jsonb("adjustments"),
-    reason: text("reason").notNull(), // "refresh" | "edit" | "revert"
+    reason: text("reason").notNull(), // "refresh" | "edit" | "revert" | "template"
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     idxDraft: index("social_draft_revisions_draft_idx").on(t.draftId, t.createdAt),
     chkReason: check(
       "social_draft_revisions_reason_check",
-      sql`"reason" IN ('refresh', 'edit', 'revert')`,
+      sql`"reason" IN ('refresh', 'edit', 'revert', 'template')`,
     ),
   }),
 );

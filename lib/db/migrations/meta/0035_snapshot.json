@@ -1,5 +1,5 @@
 {
-  "id": "bda17796-ead5-4b78-88f5-da2b4c0d8e1b",
+  "id": "e69b07a3-9ce8-49f2-bd55-cd9b2cb34bac",
   "prevId": "f7b4e1f1-9d30-441b-8d6a-539bb9302a50",
   "version": "7",
   "dialect": "postgresql",
@@ -4644,7 +4644,7 @@
       "checkConstraints": {
         "social_draft_revisions_reason_check": {
           "name": "social_draft_revisions_reason_check",
-          "value": "\"reason\" IN ('refresh', 'edit', 'revert')"
+          "value": "\"reason\" IN ('refresh', 'edit', 'revert', 'template')"
         }
       },
       "isRLSEnabled": false
