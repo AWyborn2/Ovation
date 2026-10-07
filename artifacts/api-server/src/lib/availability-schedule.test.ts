@@ -24,6 +24,7 @@ import {
   ensureRound,
   datesForGrade,
   datesForMember,
+  roundLabelForGrade,
   deliveryFailed,
   dueSteps,
   roundCounts,
@@ -221,6 +222,26 @@ describe("datesForGrade (KTD12)", () => {
   });
 });
 
+describe("roundLabelForGrade", () => {
+  const fixtures = [
+    { grade: "A Grade", startAt: perth("2026-10-17T13:00:00"), roundLabel: "Round 6" },
+    { grade: "B Grade", startAt: perth("2026-10-18T10:00:00"), roundLabel: " Round 6 " },
+    { grade: "C Grade", startAt: perth("2026-10-18T10:00:00"), roundLabel: "Round 5" },
+    { grade: "Under 15", startAt: perth("2026-10-17T08:00:00"), roundLabel: null },
+  ];
+  it("names the round the member's own fixtures share", () => {
+    expect(roundLabelForGrade("A Grade", "senior", fixtures)).toBe("Round 6");
+    expect(roundLabelForGrade("B Grade", "senior", fixtures)).toBe("Round 6");
+    expect(roundLabelForGrade("C Grade", "senior", fixtures)).toBe("Round 5");
+  });
+  it("is null when the section's fixtures disagree, are unlabelled or absent", () => {
+    expect(roundLabelForGrade(null, "senior", fixtures)).toBeNull();
+    expect(roundLabelForGrade(null, "junior", fixtures)).toBeNull();
+    expect(roundLabelForGrade(null, "junior", [])).toBeNull();
+    expect(roundLabelForGrade(null, "senior", fixtures.slice(0, 2))).toBe("Round 6");
+  });
+});
+
 describe("deliveryFailed", () => {
   it("failed when nothing was delivered and a channel failed (or the message never finished)", () => {
     expect(deliveryFailed({ smsResult: "failed", emailResult: "failed" })).toBe(true);
@@ -285,6 +306,7 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
         grade: "A Grade",
         opponentName: "Mandurah",
         startAt: perth("2026-10-17T13:00:00"),
+        roundLabel: "Round 6",
       },
       {
         tenantId: t.id,
@@ -438,6 +460,17 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
     const all = JSON.stringify([...sms, ...email]);
     expect(all).not.toContain("avery@example.com");
     expect(all).not.toContain("ina@example.com");
+    // Personal texts: the A Grade adult's names its round and tags the link
+    // (this long test host drops "for the weekend" to fit one SMS); the
+    // unlabelled under-15 fixture falls back to the weekend's date.
+    const adultSms = sms.find((m) => m.to === "+61412000001")!.body;
+    expect(adultSms).toMatch(
+      /^Hi Alex, let us know your availability (for the weekend )?\(Round 6\)\. Thanks .*\/a\/r6\/[A-Za-z0-9]{12} /,
+    );
+    const guardianSms = sms.find((m) => m.to === "+61412000003")!.body;
+    expect(guardianSms).toMatch(
+      /^Hi Glen, let us know Jules's availability (for the weekend )?\(Sat 17 Oct\)\. Thanks .*\/a\/[A-Za-z0-9]{12} /,
+    );
 
     // The away member answers No for the date they'd be asked about (R11).
     const away = await db
@@ -492,6 +525,7 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
     expect(summary.ran).toEqual(["reminder"]);
     expect(email.map((m) => m.to).sort()).toEqual([FLAKY_EMAIL, "gail@example.com"]);
     expect(sms.map((m) => m.to)).toEqual(["+61412000003"]);
+    expect(sms[0].body).toMatch(/^Reminder: Hi Glen, please let us know Jules's availability/);
     expect(email.every((m) => /reminder/i.test(m.subject))).toBe(true);
   });
 

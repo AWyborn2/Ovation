@@ -28,8 +28,9 @@ import {
   defaultTokenExpiry,
   loadTenantForLinks,
   mintRequestToken,
+  roundTag,
 } from "./availability-tokens";
-import { isUnder18OnDate, memberFirstName, perthDate } from "./availability-grades";
+import { isUnder18OnDate, memberFirstName, perthDate, perthDayStart } from "./availability-grades";
 import { CLUB_TIME_ZONE } from "./round-schedules";
 import { logger as defaultLogger } from "./logger";
 
@@ -91,6 +92,12 @@ export type MessageFixture = {
 export type MessageContext = {
   /** The round the message belongs to; required for every kind with a link. */
   roundId?: number;
+  /**
+   * For `request` and `reminder`: the round label of the member's weekend
+   * fixtures ("Round 6"), when they agree on one. Without it the text names
+   * the weekend's Saturday ("Sat 18 Oct") and the link has no round tag.
+   */
+  roundLabel?: string | null;
   /** Token expiry; defaults to the end of the day after the round's weekend. */
   expiresAt?: Date;
   /** The match, for `selected` and `deselected`. */
@@ -199,6 +206,16 @@ function formatMatchDay(startAt: Date): string {
   return formatMatchTime(startAt).split(" ").slice(0, 3).join(" ");
 }
 
+/** "Sat 18 Oct" for a round's weekend Saturday (YYYY-MM-DD). */
+export function weekendDayLabel(weekendDate: string): string {
+  return formatMatchDay(perthDayStart(weekendDate));
+}
+
+/** The first word of a contact's name ("Alex Parent" → "Alex"), or null. */
+function firstWord(name: string | null | undefined): string | null {
+  return name?.trim().split(/\s+/)[0] || null;
+}
+
 /**
  * The first candidate that fits one GSM-7 segment, else the last (shortest)
  * one. Used for the weekly request and reminder, which go to every member.
@@ -229,6 +246,11 @@ type TextInput = {
   self: boolean;
   greetingName: string | null;
   link: string | null;
+  /**
+   * For `request` and `reminder`: how the text names the round ("Round 6",
+   * or the weekend's Saturday "Sat 18 Oct"); null says "this weekend".
+   */
+  round?: string | null;
   context: MessageContext;
   /**
    * How the SMS offers an opt-out: "reply" (STOP, the default) when replies
@@ -252,30 +274,45 @@ export function buildMessage(input: TextInput): {
   switch (kind) {
     case "request":
     case "reminder": {
-      const tag = kind === "reminder" ? `${clubShort} reminder` : clubShort;
-      const ask = self ? "Are you available" : `Is ${player} available`;
+      // "Hi Sam, let us know your availability for the weekend (Round 6).
+      // Thanks HHCC <link> <stop>", with shorter forms for a long name, club
+      // or link, so the weekly message stays one SMS.
+      const reminder = kind === "reminder";
+      const lead = reminder ? "Reminder: " : "";
+      const greet = input.greetingName?.trim();
+      const hiShort = greet ? `Hi ${greet},` : "Hi,";
+      const ask = reminder ? "please let us know" : "let us know";
+      const whose = self ? "your" : `${player}'s`;
+      const round = input.round?.trim() || null;
+      const thanks = `Thanks ${clubShort}`;
+      const tail = `${link} ${stopLine}`;
+      const asked = `${lead}${hiShort} ${ask} ${whose} availability`;
       const sms = fitSms([
-        `${tag}: ${ask} to play this weekend? Tap to answer: ${link} ${stopLine}`,
-        `${tag}: ${ask} this weekend? ${link} ${stopLine}`,
-        `${clubShort}: Available this weekend? ${link} ${stopLine}`,
-        `Available this weekend? ${link} ${stopLine}`,
+        ...(round
+          ? [
+              `${asked} for the weekend (${round}). ${thanks} ${tail}`,
+              `${asked} (${round}). ${thanks} ${tail}`,
+            ]
+          : []),
+        `${asked} this weekend. ${thanks} ${tail}`,
+        `${asked} this weekend. ${tail}`,
+        `${clubShort}: Available this weekend? ${tail}`,
+        `Available this weekend? ${tail}`,
       ]);
-      const subject =
-        kind === "reminder"
-          ? `Reminder: ${self ? "your" : `${player}'s`} availability this weekend`
-          : `${clubName}: ${self ? "are you" : `is ${player}`} available this weekend?`;
+      const when = round ? `for the weekend (${round})` : "this weekend";
+      const subject = `${lead}${hiShort} ${ask} ${whose} availability ${when}`;
+      const please = `Please let us know ${whose} availability ${when}.`;
       const text = [
         hi,
         "",
-        kind === "reminder"
-          ? `We haven't had an answer yet. ${ask} to play this weekend?`
-          : `${ask} to play this weekend?`,
+        reminder ? `We haven't had an answer yet. ${please}` : please,
         "Answer Yes, No or Maybe for each day here — no login needed:",
         "",
         `${link}`,
         "",
         `You can change ${self ? "your" : "the"} answer until the team is picked, and mark any dates ${who === "you" ? "you'll" : `${player} will`} be away.`,
         "",
+        "Thanks,",
         clubName,
       ].join("\n");
       return { sms, email: { subject, text } };
@@ -475,6 +512,11 @@ export async function messageMember(
   const player = memberFirstName(member);
   const sendSmsForClub = args.smsEnabled && smsEnabled();
 
+  // How request and reminder texts name the round, and the link's round tag.
+  const roundLabel = context.roundLabel?.trim() || null;
+  const round = roundLabel ?? (batch.round ? weekendDayLabel(batch.round.weekendDate) : null);
+  const tag = roundTag(roundLabel);
+
   const results: RecipientResult[] = [];
   for (const r of recipients) {
     const log = { tenantId, memberId: member.id, slot: r.slot, kind };
@@ -486,7 +528,7 @@ export async function messageMember(
       if (linked && context.roundId != null && expiresAt && tenantForLinks) {
         requestId = await ensureRequest(tenantId, context.roundId, member.id, r.slot);
         const { token } = await mintRequestToken({ tenantId, requestId, expiresAt });
-        link = availabilityLink(tenantForLinks, token, context.req);
+        link = availabilityLink(tenantForLinks, token, context.req, tag);
       }
       const text = buildMessage({
         kind,
@@ -494,8 +536,10 @@ export async function messageMember(
         clubName,
         player,
         self: r.slot === "account",
-        greetingName: r.slot === "account" ? player : r.name,
+        // A guardian is greeted by their own first name.
+        greetingName: r.slot === "account" ? player : firstWord(r.name),
         link,
+        round,
         context,
         optOut: smsRepliesReachUs() ? "reply" : "link",
       });
