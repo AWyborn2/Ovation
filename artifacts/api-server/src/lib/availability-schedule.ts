@@ -272,7 +272,21 @@ export function deliveryFailed(
 }
 
 /** A fixture as the date rules read it. */
-export type WindowFixture = { grade: string; startAt: Date };
+export type WindowFixture = { grade: string; startAt: Date; roundLabel?: string | null };
+
+/**
+ * The round's fixtures a member is asked about: their grade's, or with no
+ * known grade (or none for it that weekend) every fixture in their section.
+ */
+function memberFixtures<F extends WindowFixture>(
+  grade: string | null,
+  section: SquadSection,
+  fixtures: readonly F[],
+): F[] {
+  const own = grade ? fixtures.filter((f) => f.grade === grade) : [];
+  if (own.length > 0) return own;
+  return fixtures.filter((f) => fixtureSection(f.grade) === section);
+}
 
 /**
  * The Perth dates a member is asked about (pure): each date in the
@@ -284,14 +298,33 @@ export function datesForGrade(
   section: SquadSection,
   fixtures: readonly WindowFixture[],
 ): string[] {
-  const dates = (list: readonly WindowFixture[]) =>
-    [...new Set(list.map((f) => perthDate(f.startAt)))].sort();
-  const own = grade ? dates(fixtures.filter((f) => f.grade === grade)) : [];
-  if (own.length > 0) return own;
-  return dates(fixtures.filter((f) => fixtureSection(f.grade) === section));
+  const list = memberFixtures(grade, section, fixtures);
+  return [...new Set(list.map((f) => perthDate(f.startAt)))].sort();
+}
+
+/**
+ * The round label for a member's message (pure): the label their fixtures
+ * (as {@link datesForGrade} picks them) all share, e.g. "Round 6". Null when
+ * they have none, any is unlabelled or they disagree — the message then names
+ * the weekend's date instead.
+ */
+export function roundLabelForGrade(
+  grade: string | null,
+  section: SquadSection,
+  fixtures: readonly WindowFixture[],
+): string | null {
+  const labels = new Set(
+    memberFixtures(grade, section, fixtures).map((f) => f.roundLabel?.trim() ?? ""),
+  );
+  if (labels.size !== 1) return null;
+  const [label] = labels;
+  return label || null;
 }
 
 type DatedMember = MemberIdentity & Pick<SquadMemberRow, "section">;
+
+/** What one member is asked about in a round: the dates, and the round label. */
+export type MemberRound = { dates: string[]; roundLabel: string | null };
 
 /**
  * The dates each member is asked about in the round of `weekendDate`:
@@ -303,11 +336,29 @@ export async function loadRoundDates(
   weekendDate: string,
   members: readonly DatedMember[],
 ): Promise<Map<number, string[]>> {
-  const out = new Map<number, string[]>();
+  const plan = await loadMemberRounds(tenantId, weekendDate, members);
+  return new Map([...plan].map(([id, r]) => [id, r.dates]));
+}
+
+/**
+ * {@link loadRoundDates} plus each member's round label
+ * ({@link roundLabelForGrade}), from the same queries — what the send,
+ * reminder and retry pass to their messages.
+ */
+export async function loadMemberRounds(
+  tenantId: number,
+  weekendDate: string,
+  members: readonly DatedMember[],
+): Promise<Map<number, MemberRound>> {
+  const out = new Map<number, MemberRound>();
   if (members.length === 0) return out;
   const window = roundWindow(weekendDate);
   const fixtures = await db
-    .select({ grade: fixturesTable.grade, startAt: fixturesTable.startAt })
+    .select({
+      grade: fixturesTable.grade,
+      startAt: fixturesTable.startAt,
+      roundLabel: fixturesTable.roundLabel,
+    })
     .from(fixturesTable)
     .where(
       and(
@@ -317,7 +368,7 @@ export async function loadRoundDates(
       ),
     );
   if (fixtures.length === 0) {
-    for (const m of members) out.set(m.id, []);
+    for (const m of members) out.set(m.id, { dates: [], roundLabel: null });
     return out;
   }
   const [grades, lists] = await Promise.all([
@@ -353,7 +404,11 @@ export async function loadRoundDates(
     grades.map((g) => g.grade),
   );
   for (const m of members) {
-    out.set(m.id, datesForGrade(byMember.get(m.id) ?? null, m.section, fixtures));
+    const grade = byMember.get(m.id) ?? null;
+    out.set(m.id, {
+      dates: datesForGrade(grade, m.section, fixtures),
+      roundLabel: roundLabelForGrade(grade, m.section, fixtures),
+    });
   }
   return out;
 }
@@ -593,7 +648,7 @@ async function runSend(
   result.drafts = await prepareRoundDrafts(tenantId, round, now, opts, true);
   const pace = opts.paceMs ?? sendPaceMs;
   const members = await activeMembers(tenantId);
-  const dates = await loadRoundDates(tenantId, round.weekendDate, members);
+  const plan = await loadMemberRounds(tenantId, round.weekendDate, members);
   const window = roundWindow(round.weekendDate);
   const away = await db
     .select({
@@ -632,7 +687,7 @@ async function runSend(
   const batch: MessageBatch = {};
   let first = true;
   for (const m of members) {
-    const asked = dates.get(m.id) ?? [];
+    const asked = plan.get(m.id)?.dates ?? [];
     if (asked.length === 0) {
       result.noFixture++;
       continue;
@@ -672,7 +727,7 @@ async function runSend(
         tenantId,
         member: m,
         kind: "request",
-        context: { roundId: round.id },
+        context: { roundId: round.id, roundLabel: plan.get(m.id)?.roundLabel ?? null },
         smsEnabled: smsOn,
         slots,
         now,
@@ -729,6 +784,7 @@ export async function runReminder(
       ),
     );
 
+  const plan = await loadMemberRounds(tenantId, round.weekendDate, members);
   const since = now.getTime() - MANUAL_REMINDER_GAP_MS;
   const remindedSince = opts.remindedSince?.getTime() ?? null;
   const lastAttempt = (r: AvailabilityRequestRow | undefined) =>
@@ -758,7 +814,7 @@ export async function runReminder(
         tenantId,
         member: m,
         kind: "reminder",
-        context: { roundId: round.id },
+        context: { roundId: round.id, roundLabel: plan.get(m.id)?.roundLabel ?? null },
         smsEnabled: smsOn,
         slots,
         now,
@@ -922,6 +978,7 @@ export async function retryFailedDeliveries(
       ),
     );
   const kind: MessageKind = round.reminderStartedAt != null ? "reminder" : "request";
+  const plan = await loadMemberRounds(tenantId, round.weekendDate, members);
   const pace = opts.paceMs ?? sendPaceMs;
   const batch: MessageBatch = {};
   let retried = 0;
@@ -932,7 +989,7 @@ export async function retryFailedDeliveries(
         tenantId,
         member: m,
         kind,
-        context: { roundId: round.id },
+        context: { roundId: round.id, roundLabel: plan.get(m.id)?.roundLabel ?? null },
         smsEnabled: smsOn,
         slots: bySlot.get(m.id),
         now,

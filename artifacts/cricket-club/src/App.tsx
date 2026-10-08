@@ -14,6 +14,7 @@ import { createAppQueryClient } from "@/lib/query-client";
 import { AdminShell } from "@/components/admin-shell";
 import { LandingRoutes } from "@/pages/landing";
 import { useCurrentAdmin } from "@/lib/admin-auth";
+import { AVAILABILITY_LINK_ROUTES } from "@/lib/availability-routes";
 // Home (and the landing tree above) stay statically imported so first paint of
 // the most-visited page isn't gated on fetching a second chunk. Everything else
 // is route-split via React.lazy below.
@@ -319,8 +320,11 @@ export function Router() {
             link without hitting the sign-in wall. */}
         <Route path="/admin/reset" component={AdminReset} />
         {/* A player's or parent's personal availability link: no login, the
-            token in the path is the credential (validated server-side). */}
-        <Route path="/availability/:token" component={AvailabilityRespond} />
+            token in the path is the credential (validated server-side). Short
+            links (/a/r6/:token, /a/:token) and the older /availability/:token. */}
+        <Route path={AVAILABILITY_LINK_ROUTES[0]} component={AvailabilityRespond} />
+        <Route path={AVAILABILITY_LINK_ROUTES[1]} component={AvailabilityRespond} />
+        <Route path={AVAILABILITY_LINK_ROUTES[2]} component={AvailabilityRespond} />
         {/* The Studio editor is its own full-screen app, outside the admin shell. */}
         <Route path="/admin/social/editor/:id">
           <AdminShell bare>

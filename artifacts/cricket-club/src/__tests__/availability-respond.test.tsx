@@ -4,6 +4,7 @@ import { Route } from "wouter";
 import type { AvailabilityResponsePage } from "@workspace/api-client-react";
 import { renderAt } from "@/test/render";
 import AvailabilityRespond from "@/pages/availability-respond";
+import { AVAILABILITY_LINK_ROUTES } from "@/lib/availability-routes";
 
 afterEach(() => {
   cleanup();
@@ -79,6 +80,34 @@ function renderPage() {
 }
 
 describe("AvailabilityRespond (U11)", () => {
+  it.each([
+    ["/a/r6/", "the short link with a round tag"],
+    ["/a/", "the short link without a tag"],
+    ["/availability/", "the older long link"],
+  ])("opens from %s (%s) with the token from the path", async (prefix) => {
+    const calls = installFetch(({ url }) =>
+      url.includes(`/availability/respond/${TOKEN}`)
+        ? { status: 200, body: basePage() }
+        : undefined,
+    );
+    renderAt(
+      <>
+        {AVAILABILITY_LINK_ROUTES.map((path) => (
+          <Route key={path} path={path}>
+            <AvailabilityRespond />
+          </Route>
+        ))}
+      </>,
+      `${prefix}${TOKEN}`,
+    );
+    expect(await screen.findByRole("heading", { name: "Hi Sam" })).toBeTruthy();
+    // Exactly one route matched, and it asked the API for this token only.
+    expect(screen.getAllByRole("heading", { name: "Hi Sam" })).toHaveLength(1);
+    const gets = calls.filter((c) => c.url.includes("/availability/respond/"));
+    expect(gets.length).toBeGreaterThan(0);
+    for (const c of gets) expect(c.url).toMatch(new RegExp(`/api/availability/respond/${TOKEN}$`));
+  });
+
   it("renders one answer row per date returned", async () => {
     installFetch(({ url }) =>
       url.includes(`/availability/respond/${TOKEN}`)

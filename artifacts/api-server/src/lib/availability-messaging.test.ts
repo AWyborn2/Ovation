@@ -26,14 +26,19 @@ import {
   messageMember,
   notifyStaff,
   recipientsFor,
+  weekendDayLabel,
 } from "./availability-messaging";
 import {
   availabilityLink,
+  availabilityPath,
   defaultTokenExpiry,
+  generateAvailabilityToken,
   mintRequestToken,
   resolveAvailabilityToken,
   revokeOtherTokens,
+  roundTag,
 } from "./availability-tokens";
+import { generateResetToken } from "./auth";
 import { purgeTestTenants } from "./tenant-purge.test-helpers";
 
 /**
@@ -192,7 +197,7 @@ describe("message text", () => {
         expect(isGsm7(sms)).toBe(true);
         expect(gsm7Length(sms)).toBeLessThanOrEqual(160);
       }
-      // A typical short name still asks the full question within one segment.
+      // A typical short name and short link still ask the personal question.
       const short = buildMessage({
         kind: "request",
         clubShort: "HHCC",
@@ -200,11 +205,15 @@ describe("message text", () => {
         player: "Jordan",
         self,
         greetingName: "Sam",
-        link,
+        link: "https://hallshead.ovationcc.app/a/Xk3p9Qa2bC1d",
         context: ctx,
         optOut: "link",
       }).sms;
-      expect(short).toMatch(self ? /^HHCC: Are you available/ : /^HHCC: Is Jordan available/);
+      expect(short).toMatch(
+        self
+          ? /^Hi Sam, let us know your availability this weekend\. Thanks HHCC /
+          : /^Hi Sam, let us know Jordan's availability this weekend\. Thanks HHCC /,
+      );
       expect(short.endsWith("Stop texts at the link.")).toBe(true);
       expect(gsm7Length(short)).toBeLessThanOrEqual(160);
     }
@@ -242,6 +251,135 @@ describe("message text", () => {
     expect(changed).not.toContain("STOP");
     expect(changed).not.toContain("Stop texts");
     expect(changed.endsWith("Contact the club.")).toBe(true);
+  });
+
+  describe("personal request and reminder (one SMS)", () => {
+    // A realistic short link: club subdomain, round tag, 12-character token.
+    const shortLink = "https://hallshead.ovationcc.app/a/r6/Xk3p9Qa2bC1d";
+    const personal = (over: Partial<Parameters<typeof buildMessage>[0]> = {}) =>
+      buildMessage({
+        kind: "request",
+        clubShort: "HHCC",
+        clubName: "Halls Head Cricket Club",
+        player: "Jordan",
+        self: true,
+        greetingName: "Jordan",
+        link: shortLink,
+        round: "Round 6",
+        context: ctx,
+        ...over,
+      });
+    const fits = (sms: string) => isGsm7(sms) && gsm7Length(sms) <= 160;
+
+    it("the request reads as the club asked, for both opt-out styles", () => {
+      const reply = personal().sms;
+      expect(reply).toBe(
+        `Hi Jordan, let us know your availability for the weekend (Round 6). Thanks HHCC ${shortLink} Reply STOP to opt out.`,
+      );
+      expect(gsm7Length(reply)).toBe(152);
+      const link = personal({ optOut: "link" }).sms;
+      expect(link).toBe(
+        `Hi Jordan, let us know your availability for the weekend (Round 6). Thanks HHCC ${shortLink} Stop texts at the link.`,
+      );
+      expect(gsm7Length(link)).toBe(153);
+    });
+
+    it("a guardian is greeted by name and asked about the player", () => {
+      for (const optOut of ["reply", "link"] as const) {
+        const { sms } = personal({ self: false, greetingName: "Alex", optOut });
+        expect(
+          sms.startsWith(
+            "Hi Alex, let us know Jordan's availability for the weekend (Round 6). Thanks HHCC ",
+          ),
+        ).toBe(true);
+        expect(fits(sms)).toBe(true);
+      }
+      // No guardian name on file: no name in the greeting.
+      const anon = personal({ self: false, greetingName: null }).sms;
+      expect(anon.startsWith("Hi, let us know Jordan's availability for the weekend")).toBe(true);
+    });
+
+    it("the reminder asks again, dropping 'for the weekend' when the full form is too long", () => {
+      for (const optOut of ["reply", "link"] as const) {
+        const short = personal({
+          kind: "reminder",
+          greetingName: "Al",
+          optOut,
+          link: "https://hhcc.au/a/r6/Xk3p9Qa2bC1d",
+        }).sms;
+        expect(
+          short.startsWith(
+            "Reminder: Hi Al, please let us know your availability for the weekend (Round 6). Thanks HHCC ",
+          ),
+        ).toBe(true);
+        expect(fits(short)).toBe(true);
+        const { sms } = personal({ kind: "reminder", optOut });
+        expect(
+          sms.startsWith(
+            `Reminder: Hi Jordan, please let us know your availability (Round 6). Thanks HHCC ${shortLink} `,
+          ),
+        ).toBe(true);
+        expect(fits(sms)).toBe(true);
+        const guardian = personal({ kind: "reminder", self: false, greetingName: "Alex", optOut });
+        expect(
+          guardian.sms.startsWith(
+            "Reminder: Hi Alex, please let us know Jordan's availability (Round 6). Thanks HHCC ",
+          ),
+        ).toBe(true);
+        expect(fits(guardian.sms)).toBe(true);
+      }
+    });
+
+    it("falls back to shorter forms for a long club name, always within one SMS", () => {
+      for (const kind of ["request", "reminder"] as const) {
+        for (const self of [true, false]) {
+          for (const optOut of ["reply", "link"] as const) {
+            const { sms } = personal({
+              kind,
+              self,
+              optOut,
+              greetingName: "Alexandra",
+              player: "Maximilian",
+              clubShort: "Halls Head Cricket Club Incorporated",
+            });
+            expect(sms).toContain(shortLink);
+            expect(fits(sms)).toBe(true);
+          }
+        }
+      }
+    });
+
+    it("uses the weekend date when there's no round label", () => {
+      expect(weekendDayLabel("2026-10-17")).toBe("Sat 17 Oct");
+      const { sms, email } = personal({ round: "Sat 17 Oct" });
+      expect(
+        sms.startsWith("Hi Jordan, let us know your availability for the weekend (Sat 17 Oct)."),
+      ).toBe(true);
+      expect(fits(sms)).toBe(true);
+      expect(email.subject).toContain("(Sat 17 Oct)");
+      // No round at all: "this weekend".
+      expect(
+        personal({ round: null }).sms.startsWith(
+          "Hi Jordan, let us know your availability this weekend. Thanks HHCC",
+        ),
+      ).toBe(true);
+    });
+
+    it("the email is personal too", () => {
+      const { email } = personal();
+      expect(email.subject).toBe(
+        "Hi Jordan, let us know your availability for the weekend (Round 6)",
+      );
+      expect(email.text.startsWith("Hi Jordan,\n")).toBe(true);
+      expect(email.text).toContain(
+        "Please let us know your availability for the weekend (Round 6).",
+      );
+      expect(email.text).toContain(shortLink);
+      const reminder = personal({ kind: "reminder", self: false, greetingName: "Alex" }).email;
+      expect(reminder.subject).toBe(
+        "Reminder: Hi Alex, please let us know Jordan's availability for the weekend (Round 6)",
+      );
+    });
   });
 
   it("a selected message names the match, the role and the can't-make-it link", () => {
@@ -395,16 +533,21 @@ describe("messageMember / notifyStaff (DB)", () => {
 
     // The SMS names the club, carries a working personal link and the STOP line.
     const sms = smsSent[0].body;
-    expect(sms.startsWith("TVCC")).toBe(true);
+    expect(
+      sms.startsWith("Hi Pat, let us know your availability for the weekend (Sat 10 Oct)."),
+    ).toBe(true);
+    expect(sms).toContain("Thanks TVCC");
     expect(sms.endsWith("Reply STOP to opt out.")).toBe(true);
     expect(gsm7Length(sms)).toBeLessThanOrEqual(160);
-    const match = /https:\/\/([^/\s]+)\/availability\/([A-Za-z0-9_-]+)/.exec(sms);
+    // No round label: the short link has no round tag.
+    const match = /https:\/\/([^/\s]+)\/a\/([A-Za-z0-9]{12}) /.exec(sms);
     expect(match?.[1]).toBe(`${slug}.ovation.test`);
     const resolved = await resolveAvailabilityToken(tenantId, match![2], NOW);
     expect(resolved?.member.id).toBe(member.id);
     expect(resolved?.request.recipientSlot).toBe("account");
-    expect(emailSent[0].text).toContain(match![0]);
-    expect(emailSent[0].subject).toContain("Test Valley Cricket Club");
+    expect(emailSent[0].text).toContain(match![0].trim());
+    expect(emailSent[0].subject).toMatch(/^Hi Pat, /);
+    expect(emailSent[0].text).toContain("Test Valley Cricket Club");
 
     // One token per recipient per message, shared by its SMS and email; only
     // the hash is stored.
@@ -447,7 +590,7 @@ describe("messageMember / notifyStaff (DB)", () => {
       .from(availabilityTokensTable)
       .where(eq(availabilityTokensTable.requestId, rows[0].id));
     expect(tokens).toHaveLength(2);
-    expect(smsSent[1].body).toContain("reminder");
+    expect(smsSent[1].body).toMatch(/^Reminder: Hi Again,/);
     expect(smsSent[0].body).not.toBe(smsSent[1].body);
   });
 
@@ -480,8 +623,12 @@ describe("messageMember / notifyStaff (DB)", () => {
     ]);
     expect(smsSent.map((m) => m.to).sort()).toEqual(["+61411111111", "+61422222222"]);
     expect(emailSent.map((m) => m.to).sort()).toEqual(["g1@example.com", "g2@example.com"]);
-    expect(smsSent[0].body).toContain("Is Jordan available");
-    expect(emailSent.find((e) => e.to === "g1@example.com")?.text).toMatch(/^Hi Alex Parent,/);
+    // Each guardian is greeted by their own first name.
+    expect(smsSent.find((m) => m.to === "+61411111111")?.body).toMatch(
+      /^Hi Alex, let us know Jordan's availability/,
+    );
+    expect(smsSent.find((m) => m.to === "+61422222222")?.body).toMatch(/^Hi Sam, /);
+    expect(emailSent.find((e) => e.to === "g1@example.com")?.text).toMatch(/^Hi Alex,/);
     const rows = await requestRows(member.id);
     expect(rows.map((r) => r.recipientSlot).sort()).toEqual(["guardian1", "guardian2"]);
   });
@@ -656,7 +803,7 @@ describe("messageMember / notifyStaff (DB)", () => {
     });
     expect(sel.results[0]).toMatchObject({ sms: "sent", email: "sent" });
     expect(smsSent[0].body).toContain("You're selected (keeper) for B Grade v Rockingham");
-    expect(smsSent[0].body).toMatch(/\/availability\/[A-Za-z0-9_-]+ Reply STOP to opt out\.$/);
+    expect(smsSent[0].body).toMatch(/\/a\/[A-Za-z0-9]{12} Reply STOP to opt out\.$/);
     await messageMember({
       tenantId,
       member,
@@ -686,7 +833,7 @@ describe("messageMember / notifyStaff (DB)", () => {
     expect(out.results[0]).toMatchObject({ slot: "account", requestId: null, sms: "sent" });
     expect(smsSent.map((m) => m.to)).toEqual(["+61411000111"]);
     expect(emailSent.map((m) => m.to)).toEqual(["old@example.com"]);
-    expect(smsSent[0].body).not.toContain("/availability/");
+    expect(smsSent[0].body).not.toContain("/a/");
     expect(smsSent[0].body.endsWith("Reply STOP to opt out.")).toBe(true);
     expect(await requestRows(member.id)).toHaveLength(0);
   });
@@ -707,9 +854,30 @@ describe("messageMember / notifyStaff (DB)", () => {
     });
     expect(out.results[0]).toMatchObject({ sms: "sent", email: "sent" });
     const sms = smsSent[0].body;
-    expect(sms).toMatch(/\/availability\/[A-Za-z0-9_-]+ Stop texts at the link\.$/);
+    expect(sms).toMatch(/\/a\/[A-Za-z0-9]{12} Stop texts at the link\.$/);
     expect(sms).not.toContain("Reply STOP");
-    expect(sms.startsWith("TVCC")).toBe(true);
+    expect(sms.startsWith("Hi Pat, ")).toBe(true);
+    expect(gsm7Length(sms)).toBeLessThanOrEqual(160);
+  });
+
+  it("with the member's round label the link carries a round tag and the text names the round", async () => {
+    useFakeTransports();
+    const member = await newMember({ firstName: "Robin" });
+    await messageMember({
+      tenantId,
+      member,
+      kind: "request",
+      context: { roundId, roundLabel: "Round 6" },
+      smsEnabled: true,
+      now: NOW,
+    });
+    const sms = smsSent[0].body;
+    expect(
+      sms.startsWith("Hi Robin, let us know your availability for the weekend (Round 6)."),
+    ).toBe(true);
+    const match = new RegExp(`https://${slug}\\.ovation\\.test/a/r6/([A-Za-z0-9]{12}) `).exec(sms);
+    expect(match).not.toBeNull();
+    expect((await resolveAvailabilityToken(tenantId, match![1], NOW))?.member.id).toBe(member.id);
     expect(gsm7Length(sms)).toBeLessThanOrEqual(160);
   });
 
@@ -748,7 +916,7 @@ describe("messageMember / notifyStaff (DB)", () => {
       const a = await mintRequestToken({ tenantId, requestId, expiresAt });
       const b = await mintRequestToken({ tenantId, requestId, expiresAt });
       expect(a.token).not.toBe(b.token);
-      expect(a.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+      expect(a.token).toMatch(/^[A-Za-z0-9]{12}$/);
 
       const ra = await resolveAvailabilityToken(tenantId, a.token, NOW);
       expect(ra).toMatchObject({
@@ -772,13 +940,57 @@ describe("messageMember / notifyStaff (DB)", () => {
       expect(await resolveAvailabilityToken(tenantId, b.token, NOW)).not.toBeNull();
     });
 
-    it("builds links on the club's own host (custom domain wins)", () => {
+    it("still resolves a long token minted before short links", async () => {
+      const { token, tokenHash } = generateResetToken();
+      expect(token).toHaveLength(43);
+      await db.insert(availabilityTokensTable).values({
+        tenantId,
+        requestId,
+        tokenHash,
+        expiresAt: new Date("2026-10-13T00:00:00+08:00"),
+      });
+      expect((await resolveAvailabilityToken(tenantId, token, NOW))?.request.id).toBe(requestId);
+    });
+
+    it("new tokens are 12 random base62 characters", () => {
+      const seen = new Set<string>();
+      for (let i = 0; i < 500; i++) {
+        const t = generateAvailabilityToken();
+        expect(t).toMatch(/^[A-Za-z0-9]{12}$/);
+        seen.add(t);
+      }
+      expect(seen.size).toBe(500);
+    });
+
+    it("builds short links on the club's own host (custom domain wins), round tag optional", () => {
       expect(availabilityLink({ slug: "hallshead", customDomain: null }, "abc")).toBe(
-        "https://hallshead.ovation.test/availability/abc",
+        "https://hallshead.ovation.test/a/abc",
       );
-      expect(availabilityLink({ slug: "hallshead", customDomain: "stats.hhcc.au" }, "abc")).toBe(
-        "https://stats.hhcc.au/availability/abc",
-      );
+      expect(
+        availabilityLink(
+          { slug: "hallshead", customDomain: "stats.hhcc.au" },
+          "abc",
+          undefined,
+          "r6",
+        ),
+      ).toBe("https://stats.hhcc.au/a/r6/abc");
+      expect(availabilityPath("abc", "r6")).toBe("/a/r6/abc");
+      expect(availabilityPath("abc")).toBe("/a/abc");
+      expect(availabilityPath("abc", null)).toBe("/a/abc");
+      // A tag that isn't 1-6 letters or digits is left out, never trusted.
+      expect(availabilityPath("abc", "r6/../x")).toBe("/a/abc");
+      expect(availabilityPath("abc", "toolong7")).toBe("/a/abc");
+    });
+
+    it("round tags come from numbered round labels only", () => {
+      expect(roundTag("Round 6")).toBe("r6");
+      expect(roundTag(" round 12 ")).toBe("r12");
+      expect(roundTag("R3")).toBe("r3");
+      expect(roundTag("Rd 04")).toBe("r4");
+      expect(roundTag("Semi Final")).toBeNull();
+      expect(roundTag("")).toBeNull();
+      expect(roundTag(null)).toBeNull();
+      expect(roundTag("Round 123456")).toBeNull();
     });
 
     it("the default expiry is the end of the day after the weekend, Perth time", () => {
