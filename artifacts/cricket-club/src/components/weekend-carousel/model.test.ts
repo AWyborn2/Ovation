@@ -119,9 +119,18 @@ describe("weekend cover and centred sponsor rows", () => {
       const closing = html.at(-1)!;
       expect(closing).toContain("flex-wrap:wrap;justify-content:center");
       expect(closing.match(/data-weekend-sponsor=/g)).toHaveLength(count);
-      expect(closing).toContain(count === 4
+      expect(closing).toContain(count === 4 || size === "portrait" || size === "story"
         ? "flex:0 0 calc((100% - 1.5cqmin) / 2)"
         : "flex:0 0 calc((100% - 3cqmin) / 3)");
+      const doc = new DOMParser().parseFromString(closing, "text/html");
+      const tiles = [...doc.querySelectorAll<HTMLElement>("[data-weekend-sponsor]")];
+      expect(new Set(tiles.map(tile => tile.style.flexBasis)).size).toBe(1);
+      for (const tile of tiles) {
+        expect(tile.style.aspectRatio).toBe("2 / 1");
+        expect(tile.textContent?.trim()).toBe("");
+        expect(tile.querySelector("img")?.style.objectFit).toBe("contain");
+      }
+      expect((doc.querySelector("[data-skeleton-body]") as HTMLElement).style.justifyContent).toBe("center");
     }
   });
 });

@@ -157,6 +157,8 @@ export interface CkCardParts {
   footer: CkFooter;
   /** Body spans the full width even beside the side frame (trading card). */
   wide?: boolean;
+  /** Centre logo-only boards rather than reserving the tall photo area. */
+  centerBody?: boolean;
   /** Full-card photo with a contrast scrim; used by the weekend cover only. */
   backdropPhoto?: string;
 }
@@ -179,7 +181,7 @@ export function ckCard(parts: CkCardParts): string {
     sideFrameHtml;
   const maxW = !tall && parts.photo && !parts.wide ? "52%" : "100%";
   const bodyStyle =
-    `;container-type:normal;justify-content:${tall ? "flex-end" : "center"}` +
+    `;container-type:normal;justify-content:${tall && !parts.centerBody ? "flex-end" : "center"}` +
     `;position:relative;max-width:${maxW}`;
   return skeletonCard({
     vars: `color:${C.chalk}`,

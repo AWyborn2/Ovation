@@ -26,3 +26,9 @@ The primary action sends the whole carousel to the Social review queue with a ma
 **Why:** The user requested review with a match-day caption instead of exporting the carousel.
 
 **How to apply:** Save the reviewed composition, not instructions to randomly select photos again later. Do not automatically publish a newly submitted carousel.
+
+Sponsor closing slides must show logos only, without sponsor-name captions, in equal-sized 2:1 containers. Portrait and story layouts should use their vertical space rather than leaving the large empty photo area above a small grid.
+
+**Why:** The user requested consistency across the square, portrait and story sponsor slides.
+
+**How to apply:** Keep every tile equal within each format, preserve complete logos without cropping, and adapt grid columns to the card proportions.
