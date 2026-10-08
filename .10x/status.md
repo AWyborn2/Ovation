@@ -2,7 +2,7 @@
 
 **Project:** Ovation (white-label cricket club platform)
 **Active feature:** card-kind-templates
-**Phase:** Verification (Phase 5)
+**Phase:** Delivery — PR open; production release per decisions/devops (switch stays off until starters are designed)
 
 ## Phase tracking — card-kind-templates
 
@@ -15,8 +15,8 @@
 | 2 Design (ADR) | Done | ADR-001, ADR-002, ADR-003 accepted |
 | 3 Planning | Done | 40 tasks in 4 milestones + design track; see decisions/engineering-manager |
 | 4 Implementation | Done | Milestones A–D done; starters are the design track |
-| 5 Verification | Not started | |
-| 6 Delivery | Not started | |
+| 5 Verification | Done | Security + QA reviews; all findings fixed or accepted (reviews/2026-10-08) |
+| 6 Delivery | In progress | Release plan, rollback and runbook written; PR open |
 
 ## Blockers
 
