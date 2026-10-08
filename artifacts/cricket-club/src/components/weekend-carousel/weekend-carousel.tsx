@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { EmptyState, QueryError } from "@/components/data-states";
 import { SIZES, type CardSize } from "@/lib/share-card";
+import { listPackManifests } from "@/lib/pack-templates/registry";
 import { CLUB_TIME_ZONE, eligiblePhotos, type TeamSlide } from "./model";
 import { CoverPhotoPicker } from "./cover-photo-picker";
 import { PhotoPlacement, SlidePreview } from "./slide-preview";
@@ -92,6 +93,15 @@ export function WeekendCarouselBody({ initialType = "matchDay" }: { initialType?
               data-testid={`button-carousel-type-${type}`}>{CAROUSEL_LABELS[type]}</Button>
           ))}
         </fieldset>
+        <div className="space-y-1">
+          <Label htmlFor="carousel-pack">Built-in design pack</Label>
+          <select id="carousel-pack" value={s.packId} disabled={s.exporting}
+            onChange={e => s.setPackId(e.target.value)} data-testid="select-carousel-pack"
+            className="flex h-10 w-full max-w-sm rounded-md border border-input bg-background px-3 text-sm">
+            {listPackManifests().map(pack => <option key={pack.packId} value={pack.packId}>{pack.name}</option>)}
+          </select>
+          <p className="text-xs text-muted-foreground">Applies to every slide, including the cover and sponsors. Changing the pack keeps your photos, crops, order and caption.</p>
+        </div>
         {s.error ? (
           <QueryError
             title="Couldn't load carousel sources, photos or settings"
@@ -358,7 +368,7 @@ function GeneratedSet({ s }: { s: WeekendCarouselState }) {
 
       {closingSlide && <section className="space-y-3 rounded-md border p-3">
         <h3 className="text-base">Sponsors · final slide</h3>
-        <SlidePreview slide={closingSlide} size={s.size} />
+        <SlidePreview slide={closingSlide} size={s.size} packId={s.packId} />
       </section>}
 
       <section className="space-y-2">
@@ -418,7 +428,7 @@ function TeamEditor({
         <OrderButtons label={label} index={index} count={count} disabled={lock} onMove={(d) => s.moveTeamAt(index, d)} />
       </div>
       <div className="mt-3 grid items-start gap-5 md:grid-cols-2">
-        {slide && <SlidePreview slide={slide} size={s.size} />}
+        {slide && <SlidePreview slide={slide} size={s.size} packId={s.packId} />}
         <div className="min-w-0 space-y-4">
         <div className="flex max-h-64 flex-wrap gap-2 overflow-y-auto p-1" role="radiogroup" aria-label={`Photo for ${label}`}>
           <button

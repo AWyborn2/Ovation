@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
+import { readQueuedCarousel, carouselPackId, isCarouselPackId } from "@workspace/scorecard/queued-carousel";
 import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import {
   db,
@@ -385,11 +385,28 @@ router.post(
     }
     const tenantId = getTenantId(req);
     let packId = parsed.data.packId ?? null;
+    if ("weekendCarousel" in cardInput) {
+      const selection = cardInput.weekendCarousel as { packId?: unknown } | null;
+      if ((selection && selection.packId !== undefined && !isCarouselPackId(selection.packId)) ||
+        (parsed.data.packId != null && !isCarouselPackId(parsed.data.packId))) {
+        res.status(400).json({ error: "Unknown carousel design pack. Choose a registered built-in pack." });
+        return;
+      }
+    }
     const carousel = readQueuedCarousel(cardInput);
     if ("weekendCarousel" in cardInput && (!carousel || cardInput.kind !== "matchDay" ||
       !parsed.data.caption?.trim() || templateId !== undefined)) {
       res.status(400).json({ error: "A carousel needs 3–20 valid slides of the selected type and a caption." });
       return;
+    }
+    if (carousel) {
+      if (carousel.packId !== undefined && packId !== null && packId !== carousel.packId) {
+        res.status(400).json({ error: "The carousel design pack must match the saved composition." });
+        return;
+      }
+      // Freeze new top-level choices too; absence on historical payloads stays Club Kit.
+      if (carousel.packId === undefined && packId !== null) carousel.packId = packId;
+      packId = carouselPackId(carousel);
     }
     const sourceKey = carousel ? `weekend-carousel:${carousel.submissionId}` : null;
     if (sourceKey) {
@@ -398,7 +415,6 @@ router.post(
         sql`${socialDraftsTable.status} != 'dismissed'`,
       ));
       if (existing) { res.status(200).json(presentDraft(existing)); return; }
-      packId = "club-kit-v1";
     }
     let adjustments: unknown = parsed.data.adjustments ?? null;
     if (templateId !== undefined) {

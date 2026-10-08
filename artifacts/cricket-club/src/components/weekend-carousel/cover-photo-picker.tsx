@@ -18,7 +18,7 @@ export function CoverPhotoPicker({ s }: { s: WeekendCarouselState }) {
       </div>
       {s.coverUnavailable && <p role="alert" className="text-sm text-destructive">{COVER_PHOTO_UNAVAILABLE}</p>}
       <div className="grid items-start gap-5 md:grid-cols-2">
-        {slide && <SlidePreview slide={slide} size={s.size} />}
+        {slide && <SlidePreview slide={slide} size={s.size} packId={s.packId} />}
         <div className="min-w-0 space-y-4">
         <div className="max-h-64 overflow-y-auto p-1">
           <div className="flex flex-wrap gap-2" role="group" aria-label="Cover photo choices">

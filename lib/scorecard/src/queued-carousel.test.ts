@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readQueuedCarousel, type CarouselSetType } from "./queued-carousel";
+import { readQueuedCarousel, carouselPackId, CAROUSEL_PACK_IDS, type CarouselSetType } from "./queued-carousel";
 
 const make = (type?: CarouselSetType) => {
   const input = type === "teamList" ? { kind: "teamList", players: [{ order: 1, surname: "SMITH" }] }
@@ -13,6 +13,26 @@ const make = (type?: CarouselSetType) => {
   } };
 };
 describe("queued carousel compatibility and validation", () => {
+  it.each(CAROUSEL_PACK_IDS)("keeps the saved %s choice for every type and size", packId => {
+    for (const type of ["matchDay", "teamList", "results", "matchSummary"] as const) {
+      for (const size of ["square", "portrait", "story", "landscape"]) {
+        const payload = make(type);
+        Object.assign(payload.weekendCarousel, { packId, size });
+        const saved = readQueuedCarousel(payload)!;
+        expect(carouselPackId(saved)).toBe(packId);
+        expect(saved).toBe(payload.weekendCarousel);
+      }
+    }
+  });
+  it("uses Club Kit only for legacy absence and rejects explicit invalid choices", () => {
+    expect(carouselPackId(readQueuedCarousel(make())!)).toBe("club-kit-v1");
+    for (const packId of ["custom-background", "", null, 12]) {
+      const payload = make();
+      Object.assign(payload.weekendCarousel, { packId });
+      expect(readQueuedCarousel(payload)).toBeNull();
+      expect(() => carouselPackId({ packId })).toThrow(/Unknown carousel design pack/);
+    }
+  });
   it.each([undefined, "matchDay", "teamList", "results", "matchSummary"] as const)("reads %s without mutating the frozen payload", type => {
     const p = make(type); const before = JSON.stringify(p);
     expect(readQueuedCarousel(p)).toBe(p.weekendCarousel);

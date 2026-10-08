@@ -10,7 +10,7 @@ import { getTenantBrand } from "./tenant-brand";
 import { loadActiveSponsors } from "./active-sponsors";
 import { renderCardStill } from "./card-video-renderer";
 import { resolveDraftPack } from "./draft-enrich";
-import { readQueuedCarousel, queuedSlideAdjustments } from "@workspace/scorecard/queued-carousel";
+import { readQueuedCarousel, queuedSlideAdjustments, carouselPackId } from "@workspace/scorecard/queued-carousel";
 
 /**
  * Render a draft's slides at a size, exactly as the Studio preview shows them
@@ -83,7 +83,7 @@ export async function renderDraftSlides(
     for (const size of sizes) {
       for (const [i, slide] of carousel.slides.entries()) {
         const { buffer } = await serialised(() => renderer(slide.input, {
-          size, packId: "club-kit-v1", data: slide.data, junior: slide.junior,
+          size, packId: carouselPackId(carousel), data: slide.data, junior: slide.junior,
           sponsorsOn: slide.sponsorsOn, strictImages: true,
           adjustments: queuedSlideAdjustments(slide, size),
         }, harnessOrigin));

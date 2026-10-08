@@ -15,7 +15,7 @@ import {
 } from "@workspace/api-client-react";
 import type { CardSize } from "@/lib/share-card";
 import type { CardAdjustments } from "@/lib/pack-render";
-import { CAROUSEL_LABELS, type CarouselSetType } from "@workspace/scorecard/queued-carousel";
+import { CAROUSEL_LABELS, isCarouselPackId, type CarouselSetType } from "@workspace/scorecard/queued-carousel";
 import {
   CLUB_TIME_ZONE,
   weekendRange,
@@ -94,6 +94,7 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
   const [captionEdit, setCaptionEdit] = useState<string | null>(null);
   const [queued, setQueued] = useState<{ key: string; id: number } | null>(null);
   const [size, setSize] = useState<CardSize>("square");
+  const [packId, setPackId] = useState(WEEKEND_PACK_ID);
   const [cover, setCover] = useState<CoverPhoto>({
     photoId: null, transform: { focalX: 0.5, focalY: 0.5, zoom: 1 },
   });
@@ -147,7 +148,7 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
   const caption = captionEdit ?? carouselCaption(
     setType, generated?.teams ?? [], title, bundle?.settings.clubHashtag,
   );
-  const queueKey = JSON.stringify([slides, size, caption]);
+  const queueKey = JSON.stringify([slides, size, caption, packId]);
   const queuedId = queued?.key === queueKey ? queued.id : null;
 
   const togglePick = (id: number) =>
@@ -205,12 +206,12 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
         submission.current = { key: queueKey, id: crypto.randomUUID() };
       }
       const draft = await createDraft.mutateAsync({ data: {
-        packId: WEEKEND_PACK_ID,
+        packId,
         caption: caption.trim(),
         cardInput: {
           kind: "matchDay", headline: `${title.trim() || CAROUSEL_LABELS[setType]} carousel`,
           roundLabel: `${generated!.from} – ${generated!.to}`,
-          weekendCarousel: { version: 1, setType, submissionId: submission.current.id, size, slides: queuedSlides },
+          weekendCarousel: { version: 1, packId, setType, submissionId: submission.current.id, size, slides: queuedSlides },
         },
       } });
       setQueued({ key: queueKey, id: draft.id });
@@ -270,6 +271,13 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
     title,
     setTitle: (v: string) => !exporting && setTitle(v),
     size,
+    packId,
+    setPackId: (value: string) => {
+      if (exporting) return;
+      if (!isCarouselPackId(value)) throw new Error("Choose a registered built-in carousel pack.");
+      setPackId(value);
+      setQueueError(null);
+    },
     setSize: (v: CardSize) => !exporting && setSize(v),
     orderedPicks,
     selected,

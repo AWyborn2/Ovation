@@ -1,10 +1,13 @@
 /**
  * Opt-in real-Chromium image audit (no production data or storage writes).
  * pnpm --filter @workspace/api-server exec tsx src/maintenance/carousel-image-audit.ts
- * Optional: --type=teamList (matchDay/results/matchSummary), --size=square
+ * Optional: --type=teamList (matchDay/results/matchSummary), --size=square,
+ * --pack=gold-foil-v1, --output=/tmp/custom-audit.
+ * --type=matchSummary additionally exercises dense four-innings scorecards.
  *
- * Drives the real SlidePreview and real post-pack HTTP handler. Only byte
- * storage is replaced with an in-memory store; PNG rendering is NOT mocked.
+ * Exercises the real builder with browser-only fixture responses, then the
+ * real SlidePreview and post-pack HTTP handler. Only byte storage is replaced
+ * with an in-memory store; PNG rendering is NOT mocked.
  * Fixture PNGs are served by a short-lived loopback server, never stored in DB.
  * Failure images and downloaded ZIPs are kept under /tmp/carousel-image-audit.
  */
@@ -19,20 +22,22 @@ import JSZip from "jszip";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import { db, tenantsTable, adminsTable, socialDraftsTable } from "@workspace/db";
-import { type QueuedCarouselSlide } from "@workspace/scorecard/queued-carousel";
+import { CAROUSEL_PACK_IDS, type QueuedCarouselSlide } from "@workspace/scorecard/queued-carousel";
 import app from "../app";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { setPhotoStore } from "../lib/photo-store";
 import { closeBrowser } from "../lib/card-video-renderer";
+import { auditCarouselBuilder } from "./carousel-builder-audit";
 
-const output = "/tmp/carousel-image-audit";
 const origin = "http://localhost:80";
 const allTypes = ["matchDay", "teamList", "results", "matchSummary"] as const;
 const allSizes = ["square", "portrait", "story", "landscape"] as const;
 const filter = (key: string) => process.argv.find(a => a.startsWith(`--${key}=`))?.split("=")[1];
+const output = filter("output") ?? "/tmp/carousel-image-audit";
 const types = allTypes.filter(t => !filter("type") || filter("type") === t);
 const sizes = allSizes.filter(s => !filter("size") || filter("size") === s);
-assert(types.length && sizes.length, "Invalid type or size filter");
+const packs = CAROUSEL_PACK_IDS.filter(p => !filter("pack") || filter("pack") === p);
+assert(types.length && sizes.length && packs.length, "Invalid type, size or pack filter");
 await mkdir(output, { recursive: true });
 
 // Actual decoded PNG fixtures: edge detail, transparency, internal whitespace,
@@ -83,7 +88,8 @@ let page: Page | undefined;
 let passed = 0;
 try {
   const [tenant] = await db.insert(tenantsTable).values({
-    slug: `image-audit-${randomUUID()}`, name: "Image Audit Club", centralClubId: 9989, plan: "pro",
+    slug: `image-audit-${randomUUID()}`, name: "Image Audit Club",
+    centralClubId: 1_000_000_000 + parseInt(randomUUID().slice(0, 7), 16), plan: "pro",
   }).returning();
   tenantId = tenant.id;
   const [admin] = await db.insert(adminsTable).values({
@@ -110,6 +116,7 @@ try {
       })),
     ],
   };
+  await auditCarouselBuilder(page, fixture, output);
   for (const type of types) {
     // Use the real builder: source assignment, selected photos and saved crops
     // must travel through the same code as the editor, not test-only markup.
@@ -120,10 +127,17 @@ try {
         kind: "matchSummary", grade: "A Grade", matchTitle: "A Grade • Round 1",
         result: "Club won by 40 runs", resultWinner: "club", carouselDetail: args.type === "matchSummary",
         club: { name: "Image Audit Club" }, opposition: { name: "Visitors" },
-        innings: ["club", "opposition"].map((teamKey, i) => ({
-          teamKey, inningsNum: 1, totalRuns: String(200 - i * 40), wickets: "6", overs: "40",
-          topBatters: [{ name: "Test Batter", runs: 80, balls: 70, notOut: true }],
-          topBowlers: [{ name: "Test Bowler", wickets: 3, runs: 20, overs: "8" }],
+        innings: (args.type === "matchSummary" ? ["club", "opposition", "club", "opposition"] : ["club", "opposition"]).map((teamKey, i) => ({
+          teamKey, inningsNum: i < 2 ? 1 : 2, totalRuns: String(200 - i * 40), wickets: "6", overs: "40",
+          topBatters: [
+            { name: "Test Batter Full Name", runs: 80, balls: 70, notOut: true },
+            { name: "Another Full Name", runs: 62, balls: 53 },
+            { name: "Third Test Batter", runs: 41, balls: 30 },
+          ],
+          topBowlers: [
+            { name: "Test Bowler Full Name", wickets: 3, runs: 20, overs: "8" },
+            { name: "Another Test Bowler", wickets: 2, runs: 28, overs: "7" },
+          ],
         })),
       };
       const input = args.type === "teamList" ? {
@@ -148,9 +162,10 @@ try {
     assert.equal((slides[1].data.photoTransform as any).zoom, 1.45);
     assert(!JSON.stringify(slides[2].input).includes("Wrong team"));
 
+    for (const packId of packs) {
     for (const size of sizes) {
       const draftInput = { kind: "matchDay", weekendCarousel: {
-        version: 1, submissionId: randomUUID(), setType: type, size, slides,
+        version: 1, packId, submissionId: randomUUID(), setType: type, size, slides,
       } };
       const caption = `Image audit: ${type} / ${size}`;
       const [draft] = await db.insert(socialDraftsTable).values({
@@ -163,7 +178,7 @@ try {
       const zipPath = String(response.body.zipUrl).replace("/api/storage", "");
       const zipBytes = objects.get(zipPath);
       assert(zipBytes, `No ZIP at ${zipPath}`);
-      await writeFile(`${output}/${type}-${size}.zip`, zipBytes);
+      await writeFile(`${output}/${packId}-${type}-${size}.zip`, zipBytes);
       const zip = await JSZip.loadAsync(zipBytes);
       assert.equal(await zip.file("caption.txt")!.async("string"), caption);
       const pngs = Object.keys(zip.files).filter(n => n.endsWith(".png"));
@@ -176,10 +191,10 @@ try {
         const png = await zip.file(pngs[index])!.async("nodebuffer");
         assert(pngs[index].endsWith(`-${index + 1}of3.png`), "ZIP slide order changed");
         const meta = await sharp(png).metadata();
-        const name = `${type}-${size}-${index}`;
+        const name = `${packId}-${type}-${size}-${index}`;
         await writeFile(`${output}/${name}-export.png`, png);
         await page.setViewport({ width: meta.width!, height: meta.height!, deviceScaleFactor: 1 });
-        await page.evaluate(async ({ slide, size, width }) => {
+        await page.evaluate(async ({ slide, size, width, packId }) => {
           const load = new Function("path", "return import(path)") as (p: string) => Promise<any>;
           const [{ default: React }, { default: ReactDOM }, { SlidePreview }] = await Promise.all([
             load("/node_modules/.vite/deps/react.js"), load("/node_modules/.vite/deps/react-dom_client.js"),
@@ -195,7 +210,7 @@ try {
           Object.assign(host.style, { position: "fixed", left: "0", top: "0", width: `${width}px`, zIndex: "2147483647" });
           document.body.append(host);
           g.auditRoot = ReactDOM.createRoot(host);
-          g.auditRoot.render(React.createElement(SlidePreview, { slide, size }));
+          g.auditRoot.render(React.createElement(SlidePreview, { slide, size, packId }));
           await new Promise(r => setTimeout(r, 100));
           const frame = host.querySelector("[data-testid^=slide-] > div");
           if (!frame) throw new Error("Preview frame missing");
@@ -205,7 +220,7 @@ try {
           await document.fonts.ready;
           await Promise.all([...host.querySelectorAll("img")].map((img: any) => img.decode()));
           await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-        }, { slide, size, width: meta.width! });
+        }, { slide, size, packId, width: meta.width! });
         const card: import("puppeteer-core").ElementHandle | null = await page.$("#audit-preview [data-testid^=slide-] > div > div");
         assert(card);
         const preview: Buffer = Buffer.from(await card.screenshot());
@@ -215,17 +230,28 @@ try {
         assert.equal(a.length, b.length, `${name}: dimensions differ`);
         let totalDifference = 0;
         for (let i = 0; i < a.length; i++) totalDifference += Math.abs(a[i] - b[i]);
-        assert(totalDifference / a.length < .5, `${name}: preview/export pixels differ (${totalDifference / a.length})`);
+        // A scaled React preview and native screenshot can use slightly
+        // different glyph-edge antialiasing, especially with four innings.
+        // Bound raw error tightly AND compare mildly blurred pixels to catch
+        // actual layout/crop changes without treating hinting as lost content.
+        const blurredA = await sharp(png).blur(1).ensureAlpha().raw().toBuffer();
+        const blurredB = await sharp(preview).blur(1).ensureAlpha().raw().toBuffer();
+        let blurredDifference = 0;
+        for (let i = 0; i < blurredA.length; i++) blurredDifference += Math.abs(blurredA[i] - blurredB[i]);
+        assert(totalDifference / a.length < 1 && blurredDifference / blurredA.length < .5,
+          `${name}: preview/export pixels differ (raw ${totalDifference / a.length}, blurred ${blurredDifference / blurredA.length})`);
         await checkLogoGeometry(page, slide, meta.width!, meta.height!);
       }
       await db.delete(socialDraftsTable).where(eq(socialDraftsTable.id, draft.id));
       objects.clear();
       passed++;
-      console.log(`PASS ${type}/${size}: real ZIP, crops, sponsor roles, geometry and preview pixels`);
+      console.log(`PASS ${packId}/${type}/${size}: real ZIP, crops, sponsor roles, geometry and preview pixels`);
+    }
     }
   }
   // Sparse and crowded grids, including incomplete final rows. These are
   // geometry checks on the real native renderer; ZIP parity is covered above.
+  for (const packId of packs) {
   for (const size of sizes) {
     for (const count of [0, 1, 2, 5, 10, 18, 25]) {
       const sponsors = Array.from({ length: count }, (_, i) => ({
@@ -240,12 +266,13 @@ try {
         g.auditRoot?.unmount();
         g.document.querySelector("#audit-preview")?.remove();
         return g.__cardRenderHarness.renderStill(payload);
-      }, { input, options: { size, packId: "club-kit-v1", junior: false, sponsorsOn: false, strictImages: true,
+      }, { input, options: { size, packId, junior: false, sponsorsOn: false, strictImages: true,
         data: { brand: fixture.brand, sponsors: [], hashtag: "#ImageAudit" } } });
       await page.setViewport({ width: native.width, height: native.height });
       await checkLogoGeometry(page, { label: `Closing grid ${count}` } as QueuedCarouselSlide,
         native.width, native.height, "#pack-still-root");
     }
+  }
   }
   // Broken selected artwork must fail the actual export, not return a partial
   // success. No stored blob may be written before all slides render.
@@ -291,6 +318,14 @@ async function checkLogoGeometry(page: Page, slide: QueuedCarouselSlide, width: 
     const host = g.document.querySelector(selector);
     const getComputedStyle = g.getComputedStyle.bind(g);
     const boxes = [...host.querySelectorAll("[data-weekend-sponsor]")].map(e => e.getBoundingClientRect());
+    for (const panel of host.querySelectorAll("[data-innings]")) {
+      for (const element of [panel, ...panel.querySelectorAll("*")]) {
+        const rect = element.getBoundingClientRect();
+        if (rect.top < -1 || rect.bottom > height + 1 || rect.left < -1 || rect.right > width + 1) {
+          problems.push("Innings information is outside the card");
+        }
+      }
+    }
     for (const b of boxes) {
       if (Math.abs(b.width / b.height - 2) > .03) problems.push("Sponsor tile is not 2:1");
       if (Math.abs(b.width - boxes[0].width) > 1 || Math.abs(b.height - boxes[0].height) > 1) problems.push("Sponsor tiles have unequal sizes");
@@ -309,7 +344,7 @@ async function checkLogoGeometry(page: Page, slide: QueuedCarouselSlide, width: 
       const style = getComputedStyle(image);
       const element = image.getBoundingClientRect();
       if (!image.naturalWidth || !image.naturalHeight) problems.push("Logo did not decode");
-      if (style.objectFit !== "contain") problems.push("Logo is cropped or stretched");
+      if (style.objectFit !== "contain") problems.push(`Logo is cropped or stretched: ${image.src.split("/").at(-1)} (${style.objectFit})`);
       if (style.transform !== "none") problems.push("Photo zoom leaked onto a logo");
       // object-fit contains the artwork, not necessarily the replaced element's
       // box. Check the painted bounds so intentional slot clipping is not

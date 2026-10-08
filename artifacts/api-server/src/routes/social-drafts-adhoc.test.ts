@@ -19,6 +19,8 @@ import {
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { randomUUID } from "node:crypto";
+import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
+import { PACKS } from "../lib/design-packs";
 import { renderDraftSlides, setStillRenderer } from "../lib/draft-render";
 import { logger } from "../lib/logger";
 
@@ -95,6 +97,49 @@ const adjustments = {
 };
 
 describe("POST /social-drafts (ad-hoc)", () => {
+  it("accepts exactly the server's registered built-in pack identities", () => {
+    expect([...CAROUSEL_PACK_IDS].sort()).toEqual(PACKS.map(p => p.id).sort());
+  });
+  it.each(CAROUSEL_PACK_IDS)("freezes %s for review and exports instead of the mutable draft default", async packId => {
+    const slides = ["title", "content", "sponsors"].map((id, index) => ({
+      id, label: id, junior: false, sponsorsOn: false, warnings: [],
+      input: { kind: "matchDay", ...(index !== 1 ? { carouselPage: { page: id, title: "Frozen set", sponsors: [] } } : {}) },
+      data: { photoTransform: { focalX: .2, focalY: .6, zoom: 1.4 } },
+    }));
+    const composition = { version: 1, packId, submissionId: randomUUID(), size: "square", slides };
+    const response = await as(0).post("/social-drafts", {
+      packId, caption: "Frozen caption", cardInput: { kind: "matchDay", weekendCarousel: composition },
+    });
+    expect(response.status).toBe(201);
+    expect(response.body.packId).toBe(packId);
+    expect(response.body.cardInput.weekendCarousel).toEqual(composition);
+    const [row] = await db.select().from(socialDraftsTable).where(eq(socialDraftsTable.id, response.body.id));
+    const calls: Record<string, unknown>[] = [];
+    setStillRenderer(async (_input, options) => {
+      calls.push(options as Record<string, unknown>);
+      return { buffer: Buffer.from("png"), contentType: "image/png" };
+    });
+    try {
+      await renderDraftSlides({ ...row, packId: "unrelated-current-default" }, ["square", "portrait", "story", "landscape"], null, logger);
+      expect(calls).toHaveLength(12);
+      expect(calls.every(c => c.packId === packId)).toBe(true);
+      const legacy = structuredClone(row.cardInput) as { weekendCarousel: { packId?: string } };
+      delete legacy.weekendCarousel.packId;
+      calls.length = 0;
+      await renderDraftSlides({ ...row, cardInput: legacy, packId: "sunset-v1" }, ["square"], null, logger);
+      expect(calls.every(c => c.packId === "club-kit-v1")).toBe(true);
+    } finally { setStillRenderer(null); }
+    const invalid = await as(0).post("/social-drafts", {
+      caption: "Invalid pack", cardInput: { kind: "matchDay", weekendCarousel: { ...composition, packId: "uploaded-custom" } },
+    });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.error).toMatch(/Unknown carousel design pack/);
+    const mismatched = await as(0).post("/social-drafts", {
+      packId: packId === "sunset-v1" ? "club-kit-v1" : "sunset-v1",
+      caption: "Mismatch", cardInput: { kind: "matchDay", weekendCarousel: composition },
+    });
+    expect(mismatched.status).toBe(400);
+  });
   it("queues an entire match-day carousel once, keeps it private and renders every saved slide", async () => {
     const slides = ["title", "fixture-11", "sponsors"].map((id, index) => ({
       id, label: id, junior: false, sponsorsOn: index !== 2, warnings: [],
@@ -103,7 +148,7 @@ describe("POST /social-drafts (ad-hoc)", () => {
     }));
     const body = {
       cardInput: { kind: "matchDay", headline: "Round one carousel", weekendCarousel: {
-        version: 1, submissionId: randomUUID(), size: "portrait", slides,
+        version: 1, packId: "club-kit-v1", submissionId: randomUUID(), size: "portrait", slides,
       } },
       caption: "MATCH DAY\nA Grade v Visitors",
       packId: "club-kit-v1",

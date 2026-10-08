@@ -6,13 +6,13 @@ import type { WeekendSlide } from "./model";
 import { slideAdjustments, WEEKEND_PACK_ID } from "./use-weekend-carousel";
 
 /** Use the export renderer itself, rather than an approximate photo crop. */
-export function SlidePreview({ slide, size }: { slide: WeekendSlide; size: CardSize }) {
+export function SlidePreview({ slide, size, packId = WEEKEND_PACK_ID }: { slide: WeekendSlide; size: CardSize; packId?: string }) {
   return (
     <div className="min-w-0 space-y-2" data-testid={`slide-${slide.id}`}>
       <div className="mx-auto w-full overflow-hidden rounded-md border bg-muted"
         style={{ maxWidth: Math.min(480, 560 * SIZES[size].w / SIZES[size].h) }}>
         <PackCard input={slide.input} size={size} sponsorsOn={slide.sponsorsOn}
-          junior={slide.junior} data={slide.data} packId={WEEKEND_PACK_ID}
+          junior={slide.junior} data={slide.data} packId={packId}
           adjustments={slideAdjustments(slide, size)} />
       </div>
       <p className="text-center text-xs text-muted-foreground">{slide.label}</p>

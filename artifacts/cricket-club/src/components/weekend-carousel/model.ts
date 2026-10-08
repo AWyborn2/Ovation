@@ -163,13 +163,13 @@ export function buildWeekendSlides(
       return {
         id: `fixture-${f.id}`, label: `${f.grade} v ${f.opponentName}`, warnings, junior,
         sponsorsOn: !!teamSponsor,
-        input: input ?? {
+        input: Object.assign({}, input ?? {
           kind: "matchDay", grade: f.grade, roundLabel: f.roundLabel ?? "",
           oppositionName: f.opponentName || "Opponent TBC", oppositionLogoUrl: f.opponentLogoUrl,
           homeAway: f.isHome ? "HOME" : "AWAY", venue: f.venue?.trim() || "Venue TBC",
           date: dateLabel(at), startTime: at.toLocaleTimeString("en-AU", { timeZone, hour: "numeric", minute: "2-digit", hour12: true }).toUpperCase(),
           junior,
-        },
+        } satisfies ShareCardInput, { carouselContent: true }),
         data: buildPackData({ ...base, photoUrl: photo?.url ?? null, photoTransform: transform,
           sponsors: teamSponsor ? [sponsorData(teamSponsor)] : [],
           presentingSponsorName: teamSponsor?.name }),

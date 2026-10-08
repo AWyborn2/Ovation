@@ -44,3 +44,9 @@ The same on-demand composition, photo and review rules apply to Team lists, Resu
 **Why:** The user requested those three set types alongside Match day while preserving scheduled and individual-card behaviour. Changing the shared default summary design would change those existing outputs too.
 
 **How to apply:** Reuse existing card builders and the frozen review/export flow, not a separate editor or the manually authored card-set feature. Never refresh a saved composition from live scorecards or reselect photos during export.
+
+Carousel pack selection includes every built-in pack, but excludes saved custom backgrounds, layer templates and uploaded designs. One pack applies to the complete set, including cover and closing sponsors.
+
+**Why:** The user explicitly confirmed this scope; existing compositions must not be changed by future club-default changes.
+
+**How to apply:** Treat pack changes as presentation-only edits that preserve selected teams, order, photos, crops and caption. Absence in historical compositions means Club Kit; reject explicit unknown choices.

@@ -1,6 +1,21 @@
 /** Frozen, admin-authored carousel payload shared by queue previews and publishing.
  * No browser types: this module is also used by the API server. */
 export type CarouselSize = "square" | "portrait" | "story" | "landscape";
+/** Built-in identities only; never uploaded backgrounds or layer templates. */
+export const CAROUSEL_PACK_IDS = [
+  "broadcast-dark-v1", "gold-foil-v1", "bold-type-v1",
+  "neon-night-v1", "sunset-v1", "club-kit-v1",
+] as const;
+export const LEGACY_CAROUSEL_PACK_ID = "club-kit-v1";
+export function isCarouselPackId(value: unknown): value is typeof CAROUSEL_PACK_IDS[number] {
+  return typeof value === "string" && (CAROUSEL_PACK_IDS as readonly string[]).includes(value);
+}
+/** Only absence means legacy. Explicit invalid selections must not fall back. */
+export function carouselPackId(carousel: { packId?: unknown }): string {
+  if (carousel.packId === undefined) return LEGACY_CAROUSEL_PACK_ID;
+  if (!isCarouselPackId(carousel.packId)) throw new Error("Unknown carousel design pack. Choose a registered built-in pack.");
+  return carousel.packId;
+}
 export type CarouselSetType = "matchDay" | "teamList" | "results" | "matchSummary";
 export const CAROUSEL_LABELS: Record<CarouselSetType, string> = {
   matchDay: "Match day", teamList: "Team lists", results: "Results", matchSummary: "Match summaries",
@@ -16,6 +31,7 @@ export interface QueuedCarouselSlide {
 }
 export interface QueuedCarousel {
   version: 1;
+  packId?: string;
   setType?: CarouselSetType;
   submissionId: string;
   size: CarouselSize;
@@ -28,6 +44,7 @@ const object = (v: unknown): v is Record<string, unknown> =>
 export function readQueuedCarousel(input: unknown): QueuedCarousel | null {
   if (!object(input) || !object(input.weekendCarousel)) return null;
   const c = input.weekendCarousel;
+  if (c.packId !== undefined && !isCarouselPackId(c.packId)) return null;
   if (c.setType !== undefined && !Object.hasOwn(CAROUSEL_LABELS, String(c.setType))) return null;
   const kind = c.setType === "teamList" ? "teamList"
     : c.setType === "results" || c.setType === "matchSummary" ? "matchSummary" : "matchDay";

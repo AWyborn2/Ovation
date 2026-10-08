@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-library/react";
+import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 
 const fixtures = [
   { id: 1, grade: "A Grade", opponentName: "Mandurah", startAt: "2025-11-08T02:00:00Z", isHome: true, source: "manual", createdAt: "" },
@@ -9,7 +10,7 @@ const mutateAsync = vi.fn(async (_request: unknown) => ({ id: 123, status: "awai
 const invalidateQueries = vi.fn();
 vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQueries }) }));
 const queuedRequest = () => mutateAsync.mock.calls[0][0] as {
-  data: { caption: string; cardInput: { weekendCarousel: { size: string; submissionId: string; slides: { id: string; data: unknown }[] } } };
+  data: { packId: string; caption: string; cardInput: { weekendCarousel: { packId: string; size: string; submissionId: string; slides: { id: string; data: unknown }[] } } };
 };
 const coverPhoto = { id: 10, grade: null, season: 2026, photoTypes: ["team"], url: "/cover.jpg", thumbUrl: "/cover-thumb.jpg" };
 let coverPhotos = [coverPhoto];
@@ -51,7 +52,7 @@ vi.mock("@workspace/api-client-react", () => ({
   getListSocialDraftsQueryKey: () => ["drafts"],
   getGetPendingSocialDraftCountQueryKey: () => ["pending"],
 }));
-vi.mock("@/components/pack-card", () => ({ PackCard: ({ data }: { data: unknown }) => <div data-testid="pack-card" data-card={JSON.stringify(data)} /> }));
+vi.mock("@/components/pack-card", () => ({ PackCard: ({ data, packId }: { data: unknown; packId: string }) => <div data-testid="pack-card" data-pack={packId} data-card={JSON.stringify(data)} /> }));
 vi.mock("./model", async (importOriginal) => ({
   ...await importOriginal<typeof import("./model")>(),
   weekendRange: () => ({ from: "2025-11-07", to: "2025-11-09" }),
@@ -80,6 +81,34 @@ afterEach(() => {
 });
 
 describe("WeekendCarousel", () => {
+  it.each(["matchDay", "teamList", "results", "matchSummary"])("switches every pack without resetting the %s composition", async type => {
+    teamPhotos = [{ id: 20, grade: "A Grade", photoTypes: ["batting"], url: "/team.jpg" }];
+    mount();
+    fireEvent.click(screen.getByTestId(`button-carousel-type-${type}`));
+    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    fireEvent.click(screen.getByTestId("button-cover-photo-10"));
+    fireEvent.change(screen.getByLabelText("Cover zoom"), { target: { value: "1.7" } });
+    fireEvent.click(within(screen.getByTestId("team-1")).getByLabelText("Move A Grade vs Mandurah down"));
+    fireEvent.change(screen.getByTestId("input-weekend-caption"), { target: { value: "Keep my caption" } });
+    const before = screen.getAllByTestId("pack-card").map(el => el.getAttribute("data-card"));
+    expect(screen.getByTestId("select-carousel-pack").querySelectorAll("option")).toHaveLength(CAROUSEL_PACK_IDS.length);
+    for (const packId of CAROUSEL_PACK_IDS) {
+      fireEvent.change(screen.getByTestId("select-carousel-pack"), { target: { value: packId } });
+      expect(screen.getAllByTestId("pack-card").map(el => el.getAttribute("data-pack"))).toEqual(Array(4).fill(packId));
+      expect(screen.getAllByTestId("pack-card").map(el => el.getAttribute("data-card"))).toEqual(before);
+      expect(screen.getByTestId("input-weekend-caption")).toHaveValue("Keep my caption");
+      expect(screen.queryByTestId("text-weekend-stale")).toBeNull();
+    }
+    fireEvent.change(screen.getByTestId("select-carousel-pack"), { target: { value: "neon-night-v1" } });
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    expect(queuedRequest().data.packId).toBe("neon-night-v1");
+    expect(queuedRequest().data.cardInput.weekendCarousel.packId).toBe("neon-night-v1");
+    expect(queuedRequest().data.cardInput.weekendCarousel.slides.map(s => s.id)).toEqual(["title", "fixture-2", "fixture-1", "sponsors"]);
+    expect(queuedRequest().data.cardInput.weekendCarousel.slides[0].data).toMatchObject({ photoTransform: { zoom: 1.7 } });
+    fireEvent.change(screen.getByTestId("select-carousel-pack"), { target: { value: "sunset-v1" } });
+    expect(screen.getByTestId("button-queue-weekend")).not.toBeDisabled();
+  });
   it.each(["teamList", "results", "matchSummary"])("queues an ordered frozen %s set with its own caption and type", async type => {
     mount();
     fireEvent.click(screen.getByTestId(`button-carousel-type-${type}`));

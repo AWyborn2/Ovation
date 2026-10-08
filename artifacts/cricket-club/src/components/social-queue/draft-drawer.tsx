@@ -101,6 +101,8 @@ export function DraftDrawer({
 
   const status = draftStatus(current);
   const carousel = readQueuedCarousel(current.cardInput);
+  const invalidCarousel = !!current.cardInput && typeof current.cardInput === "object" &&
+    "weekendCarousel" in current.cardInput && !carousel;
   const revisions = revisionsQ.data ?? [];
   // The newest refresh revision holds the corrected data for a stale card.
   const correction = current.staleSince ? revisions.find((r) => r.reason === "refresh") : undefined;
@@ -223,6 +225,9 @@ export function DraftDrawer({
         )}
 
         {carousel && <CarouselPreview key={current.id} carousel={carousel} />}
+        {invalidCarousel && <p role="alert" className="text-sm text-destructive">
+          This saved carousel has an invalid composition or unknown built-in design pack. It cannot be previewed or exported.
+        </p>}
         {status !== "dismissed" && <SchedulePanel key={current.id} draft={current} />}
 
         {status !== "dismissed" && (
