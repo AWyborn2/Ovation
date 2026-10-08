@@ -38,3 +38,9 @@ Sponsor closing slides must show logos only, without sponsor-name captions, in e
 **Why:** The user requested consistency across the square, portrait and story sponsor slides.
 
 **How to apply:** Keep every tile equal within each format, preserve complete logos without cropping, and adapt grid columns to the card proportions.
+
+The same on-demand composition, photo and review rules apply to Team lists, Results and Match summaries. Results are concise; summaries include detailed innings and standout performances. Keep the detailed summary variant specific to the on-demand carousel.
+
+**Why:** The user requested those three set types alongside Match day while preserving scheduled and individual-card behaviour. Changing the shared default summary design would change those existing outputs too.
+
+**How to apply:** Reuse existing card builders and the frozen review/export flow, not a separate editor or the manually authored card-set feature. Never refresh a saved composition from live scorecards or reselect photos during export.
