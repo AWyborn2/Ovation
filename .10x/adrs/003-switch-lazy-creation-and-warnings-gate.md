@@ -17,28 +17,32 @@ Production is republished from `main` by hand for unrelated work, and schema cha
 
 ## Alternatives Considered
 
-| Alternative | Pros | Cons | Why Not |
-|---|---|---|---|
-| Ship without a switch, merge only when starters complete | No flag code | A long-lived branch drifting from `main` for weeks; any partial merge goes live on republish | Too risky with hand-run deploys |
-| Bulk SQL migration creating every club's templates | Explicit, one-off | Must be run by hand in production; needs final starters at migration time; harder to roll back | Lazy creation is idempotent and self-healing |
-| Per-kind switch | Earlier value | Owner chose all kinds together | Declined by owner |
-| Compute warnings only at publish time | No extra renders | Flagged cards are already scheduled; auto-promotion can't see them | Breaks R14's intent |
+| Alternative                                              | Pros              | Cons                                                                                           | Why Not                                      |
+| -------------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| Ship without a switch, merge only when starters complete | No flag code      | A long-lived branch drifting from `main` for weeks; any partial merge goes live on republish   | Too risky with hand-run deploys              |
+| Bulk SQL migration creating every club's templates       | Explicit, one-off | Must be run by hand in production; needs final starters at migration time; harder to roll back | Lazy creation is idempotent and self-healing |
+| Per-kind switch                                          | Earlier value     | Owner chose all kinds together                                                                 | Declined by owner                            |
+| Compute warnings only at publish time                    | No extra renders  | Flagged cards are already scheduled; auto-promotion can't see them                             | Breaks R14's intent                          |
 
 ## Consequences
 
 ### Positive
+
 - Merging and republishing are safe at every step; rollback is turning the switch off.
 - No production data migration beyond additive columns and an index.
 - No cut-off card reaches automation.
 
 ### Negative
+
 - Extra headless renders per draft (every enabled size) during the hourly sweep.
 - Two code paths (pack and template) coexist until the follow-up removes retired packs.
 
 ### Risks
+
 - Sweep slows for clubs with many drafts → renders are serialised and only for pending drafts; measure after launch (SRE).
 - Google Fonts unreachable from the harness → font-failure warning blocks automation for affected drafts rather than posting wrong fonts.
 
 ## Dependencies
+
 - Depends on ADR-001 and ADR-002.
 - Constrains release: the switch flip is a DevOps step with SRE monitoring of render time and warning rates.

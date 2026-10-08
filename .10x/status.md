@@ -6,17 +6,17 @@
 
 ## Phase tracking — card-kind-templates
 
-| Phase | State | Notes |
-|---|---|---|
-| 0 Brainstorming | Done | Requirements approved 2026-10-07; plan written (`docs/plans/2026-10-07-002-feat-card-kind-templates-plan.md`) |
-| Discovery | Done | `.10x/` created; decisions tagged [DISCOVERED] |
-| Spec review | Approved | 11 fixes accepted, 3 decisions made and folded into the plan (2026-10-07) |
-| 1 Strategy | Done | Build now; success criteria in decisions/product-manager |
-| 2 Design (ADR) | Done | ADR-001, ADR-002, ADR-003 accepted |
-| 3 Planning | Done | 40 tasks in 4 milestones + design track; see decisions/engineering-manager |
-| 4 Implementation | Done | Milestones A–D done; starters are the design track |
-| 5 Verification | Done | Security + QA reviews; all findings fixed or accepted (reviews/2026-10-08) |
-| 6 Delivery | In progress | Release plan, rollback and runbook written; PR open |
+| Phase            | State       | Notes                                                                                                         |
+| ---------------- | ----------- | ------------------------------------------------------------------------------------------------------------- |
+| 0 Brainstorming  | Done        | Requirements approved 2026-10-07; plan written (`docs/plans/2026-10-07-002-feat-card-kind-templates-plan.md`) |
+| Discovery        | Done        | `.10x/` created; decisions tagged [DISCOVERED]                                                                |
+| Spec review      | Approved    | 11 fixes accepted, 3 decisions made and folded into the plan (2026-10-07)                                     |
+| 1 Strategy       | Done        | Build now; success criteria in decisions/product-manager                                                      |
+| 2 Design (ADR)   | Done        | ADR-001, ADR-002, ADR-003 accepted                                                                            |
+| 3 Planning       | Done        | 40 tasks in 4 milestones + design track; see decisions/engineering-manager                                    |
+| 4 Implementation | Done        | Milestones A–D done; starters are the design track                                                            |
+| 5 Verification   | Done        | Security + QA reviews; all findings fixed or accepted (reviews/2026-10-08)                                    |
+| 6 Delivery       | In progress | Release plan, rollback and runbook written; PR open                                                           |
 
 ## Blockers
 

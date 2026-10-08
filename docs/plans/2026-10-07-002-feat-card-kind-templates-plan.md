@@ -238,18 +238,18 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 
 ## Implementation Units
 
-| U-ID | Title | Key files | Depends on |
-|---|---|---|---|
-| U1 | Template document model and layer rendering | `lib/scorecard/src/kind-templates/document.ts`, `artifacts/cricket-club/src/lib/pack-render/adjustments.ts` | — |
-| U2 | Shrink-to-fit and layout warnings | `artifacts/cricket-club/src/lib/pack-render/layer-fit.ts` | U1 |
-| U3 | Live-field catalogue and preview samples | `lib/scorecard/src/kind-templates/fields.ts` | U1 |
-| U4 | Google Fonts catalogue and loading | `artifacts/cricket-club/src/lib/card-fonts.ts` | U1 |
-| U5 | Storage, migration, switch and API | `lib/db/src/schema/social_cards.ts`, `artifacts/api-server/src/routes/kind-templates.ts` | U1 |
-| U6 | Starter library and contract | `lib/scorecard/src/kind-templates/starters/` | U1, U3, U5, U8 (content) |
-| U7 | Automated drafts use kind templates | `artifacts/api-server/src/lib/kind-templates.ts`, `draft-upsert.ts`, `draft-render.ts` | U2, U5, U6 |
-| U8 | Template editor mode | `artifacts/cricket-club/src/pages/admin-kind-template-editor.tsx` | U1–U5 |
-| U9 | Studio surfaces and retirements | `artifacts/cricket-club/src/pages/admin-social-studio.tsx` | U5, U7, U8 |
-| U10 | Leak and parity guards for templates | `artifacts/cricket-club/src/lib/kind-templates/template-lint.test.ts` | U1, U3, U6 |
+| U-ID | Title                                       | Key files                                                                                                   | Depends on               |
+| ---- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------ |
+| U1   | Template document model and layer rendering | `lib/scorecard/src/kind-templates/document.ts`, `artifacts/cricket-club/src/lib/pack-render/adjustments.ts` | —                        |
+| U2   | Shrink-to-fit and layout warnings           | `artifacts/cricket-club/src/lib/pack-render/layer-fit.ts`                                                   | U1                       |
+| U3   | Live-field catalogue and preview samples    | `lib/scorecard/src/kind-templates/fields.ts`                                                                | U1                       |
+| U4   | Google Fonts catalogue and loading          | `artifacts/cricket-club/src/lib/card-fonts.ts`                                                              | U1                       |
+| U5   | Storage, migration, switch and API          | `lib/db/src/schema/social_cards.ts`, `artifacts/api-server/src/routes/kind-templates.ts`                    | U1                       |
+| U6   | Starter library and contract                | `lib/scorecard/src/kind-templates/starters/`                                                                | U1, U3, U5, U8 (content) |
+| U7   | Automated drafts use kind templates         | `artifacts/api-server/src/lib/kind-templates.ts`, `draft-upsert.ts`, `draft-render.ts`                      | U2, U5, U6               |
+| U8   | Template editor mode                        | `artifacts/cricket-club/src/pages/admin-kind-template-editor.tsx`                                           | U1–U5                    |
+| U9   | Studio surfaces and retirements             | `artifacts/cricket-club/src/pages/admin-social-studio.tsx`                                                  | U5, U7, U8               |
+| U10  | Leak and parity guards for templates        | `artifacts/cricket-club/src/lib/kind-templates/template-lint.test.ts`                                       | U1, U3, U6               |
 
 ### U1. Template document model and layer rendering
 
@@ -260,6 +260,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Dependencies:** None
 
 **Files:**
+
 - Create: `lib/scorecard/src/kind-templates/document.ts` (document types; sizes present; layers for a size; add-to-sizes placement; rows capacity per size — the single owner of these rules)
 - Create: `lib/scorecard/src/kind-templates/index.ts`
 - Modify: `artifacts/cricket-club/src/lib/pack-render/adjustments.ts` (layer kinds, per-size presence, token substitution, render branches; imports the shared types)
@@ -268,6 +269,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 - Test: `lib/scorecard/src/kind-templates/document.test.ts`, `artifacts/cricket-club/src/lib/pack-render/adjustments.test.ts`
 
 **Approach:**
+
 - Add `photo` and `rows` layer kinds and an optional per-layer set of sizes; a layer with no set is on every size (keeps existing drafts valid).
 - Text content resolves `{{key}}` tokens from the same `values` map `bind` uses, escaped; `bind` keeps working for existing layers.
 - The `rows` layer renders one row per entry of `ctx.rows[repeat]`, positioning cells inside each row by fraction of the layer width and honouring a row `variant` the way `expandRepeats` does. Its capacity per size is the number of rows that fit its box at its row height.
@@ -279,6 +281,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Patterns to follow:** `renderFreeLayers` and `layerInner` in `adjustments.ts`; `liveRows` in `artifacts/cricket-club/src/lib/studio-elements/registry.ts`; `expandRepeats` in `artifacts/cricket-club/src/lib/pack-render/html-utils.ts`.
 
 **Test scenarios:**
+
 - Happy path: a text layer with content `"{{playerName}} – {{runs}}*"` renders the bound values with the typed punctuation.
 - Happy path: a `rows` layer bound to `rows` with three cells renders one row per ladder entry with cells at their fractional positions; a `club` variant row picks its variant style.
 - Happy path: a layer present only on `square` renders on square and is absent on story.
@@ -301,12 +304,14 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Dependencies:** U1
 
 **Files:**
+
 - Create: `artifacts/cricket-club/src/lib/pack-render/layer-fit.ts`
 - Modify: `artifacts/cricket-club/src/pages/card-render-harness.tsx` (run fit after fonts and images load; return warnings with the still)
 - Modify: `artifacts/api-server/src/lib/card-video-renderer.ts` (carry warnings back from `renderStill`)
 - Test: `artifacts/cricket-club/src/lib/pack-render/layer-fit.test.ts`, `artifacts/api-server/src/lib/card-video-renderer.test.ts`
 
 **Approach:**
+
 - The fit step is a pure step-down loop over text layers and `rows` text cells that takes an injected `overflows(element)` function; the browser passes a real DOM measurer, tests pass a fake.
 - Each overflowing element steps down in small increments to 60% of its designed size; if it still overflows, keep the floor size and record `{ layerId, row?, size, reason: "overflow" }`.
 - Font-load failures and slide counts over 10 add warnings with their own reasons.
@@ -315,6 +320,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Patterns to follow:** `MIN_FIT` and `fitFor` in `artifacts/cricket-club/src/lib/pack-render/name-fit.ts`; `mountPack` and `waitForImages` in `card-render-harness.tsx`.
 
 **Test scenarios:**
+
 - Covers AE2. With a fake measurer reporting overflow until 80%, a name element ends at 80% with no warning.
 - Covers AE2. With a fake measurer reporting overflow at every size, the element ends at 60% with one overflow warning naming the layer and size.
 - Edge case: a ladder row whose team name overflows its cell produces a warning naming the layer, row and size.
@@ -333,12 +339,14 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Dependencies:** U1
 
 **Files:**
+
 - Create: `lib/scorecard/src/kind-templates/fields.ts` (static field and repeat catalogue per kind, with labels)
 - Create: `artifacts/cricket-club/src/lib/kind-templates/samples.ts` (sample input per kind plus stress variant)
 - Modify: `artifacts/cricket-club/src/lib/pack-render/render.ts` (`packTextFields` on the blank base reads the catalogue)
 - Test: `lib/scorecard/src/kind-templates/fields.test.ts`, `artifacts/cricket-club/src/lib/kind-templates/fields-parity.test.ts`
 
 **Approach:**
+
 - The catalogue is static data: Broadcast Dark's design fields and repeats, and Club Kit's for roundFixtures, tradingCard and juniorHighlights (`PACK_ONLY_KINDS`).
 - A web parity test resolves each kind's reference design with `resolveTemplate` and checks the static catalogue matches it and the keys `bindInput` produces.
 - Samples reuse each kind's existing sample input; the stress variant swaps in a long name, blanks optional fields and makes lists nine rows.
@@ -346,6 +354,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Patterns to follow:** `resolveTemplate` in `artifacts/cricket-club/src/lib/pack-render/templates.ts`; field parity checks and `PACK_ONLY_KINDS` in `artifacts/cricket-club/src/lib/pack-templates/pack-lint.test.ts`.
 
 **Test scenarios:**
+
 - Happy path: every one of the 21 kinds returns a non-empty field list, including the three Club-Kit-only kinds.
 - Happy path: list kinds expose their repeat key and row cell fields.
 - Integration: the parity test fails if a reference design gains or renames a field the catalogue lacks.
@@ -363,6 +372,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Dependencies:** U1
 
 **Files:**
+
 - Create: `artifacts/cricket-club/src/lib/google-fonts-catalogue.json`
 - Create: `scripts/src/build-google-fonts-catalogue.ts`
 - Modify: `artifacts/cricket-club/src/lib/card-fonts.ts` (load the families a document uses; explicit `document.fonts.load` per family)
@@ -370,6 +380,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 - Test: `artifacts/cricket-club/src/lib/card-fonts.test.ts`
 
 **Approach:**
+
 - The script writes family names and available weights; commit its output. Name its data source in the script header and keep any API key out of the repo.
 - A loader collects families from a document's text styles, requests them from the Google Fonts CSS API with only the weights used, and treats an empty result from `document.fonts.load` as a failure (it resolves rather than rejects for a missing family).
 - Existing curated fonts keep loading as today so legacy drafts are unchanged.
@@ -377,6 +388,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Patterns to follow:** `ensureCardFontsLoaded` in `artifacts/cricket-club/src/lib/card-fonts.ts`; the explicit-load lesson in `.agents/memory/canvas-share-card-fonts.md`.
 
 **Test scenarios:**
+
 - Happy path: a document using two families requests both, with only the weights in use.
 - Edge case: a family with spaces in its name is requested correctly encoded.
 - Error path: a load that returns no faces is reported as a failed family instead of hanging or passing silently.
@@ -393,6 +405,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Dependencies:** U1
 
 **Files:**
+
 - Modify: `lib/db/src/schema/social_cards.ts` (`card_templates`: version, replaced pack, notice dismissed; partial unique index on (tenant, base kind) where source = 'kind'; `social_drafts`: layout warnings per size, template version, `designEditedAt`)
 - Create: `lib/db/migrations/0035_kind_templates.sql` and its `meta` snapshot and journal entry
 - Modify: `lib/api-spec/openapi.yaml` (kind template schemas and paths), then regenerate clients
@@ -403,6 +416,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 - Test: `artifacts/api-server/src/routes/kind-templates.test.ts`, `artifacts/api-server/src/lib/kind-templates.test.ts`
 
 **Approach:**
+
 - Endpoints: list kind templates (kind, version, updated, replaced-pack notice), get one kind's template (creating it lazily), save with base version, start from a starter, dismiss notice, and apply a version to waiting drafts (returns changed and skipped counts). All return a clear "not enabled" response while the switch is off.
 - Lazy creation uses insert-or-ignore on the partial unique index, then reads back the row. Kind template rows never set `defaultForKinds`.
 - Apply runs in one transaction: select unposted drafts of the kind, snapshot each into revisions, re-check status per row, write the copied document with `packId = blank`, clear `designEditedAt`, leave `editedAt` (captions) untouched, and mark the draft as needing a warnings render.
@@ -411,6 +425,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Patterns to follow:** `shouldReadCentral` in `artifacts/api-server/src/lib/tenant.ts`; revision snapshots in `artifacts/api-server/src/lib/draft-revisions.ts`; route test style in `artifacts/api-server/src/routes/social-drafts-edit.test.ts`.
 
 **Test scenarios:**
+
 - Happy path: getting a kind with no template creates one from the mapped starter and returns version 1.
 - Edge case: two concurrent gets for the same kind create exactly one row.
 - Integration: creating a kind template leaves the club's pack row `defaultForKinds` unchanged, and the template list endpoint does not return it.
@@ -434,12 +449,14 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Dependencies:** U1, U3, U5; content authoring depends on U8
 
 **Files:**
+
 - Create: `lib/scorecard/src/kind-templates/starters.ts` (loader and the pack-to-starter map)
 - Create: `lib/scorecard/src/kind-templates/starters/club-kit/<kind>.json`, `lib/scorecard/src/kind-templates/starters/broadcast/<kind>.json`
 - Modify: `artifacts/cricket-club/src/pages/admin-kind-template-editor.tsx` (platform-admin "Export as starter")
 - Test: `lib/scorecard/src/kind-templates/starters.test.ts`
 
 **Approach:**
+
 - Starter documents use the U1 document shape; the map sends retired packs to a starter per KTD11.
 - "Export as starter" is visible to platform admins only and downloads the current document as the starter JSON for that kind; committing it is a normal code change.
 - Author by opening each kind in template mode on a stock club, rebuilding the pack's look with layers and registry elements, checking stress samples, and exporting. The Broadcast starters for roundFixtures, tradingCard and juniorHighlights are designed from scratch.
@@ -449,6 +466,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Patterns to follow:** Club Kit parts already registered as elements in `artifacts/cricket-club/src/lib/studio-elements/registry.ts`; `skeleton-contract.ts` in `artifacts/cricket-club/src/lib/pack-templates/`.
 
 **Test scenarios:**
+
 - Happy path: both starters have a document for every one of the 21 kinds, and each document has elements on all four sizes.
 - Edge case: every `{{field}}` token, `bind` key and `rows` repeat in a starter exists in that kind's field catalogue.
 - Edge case: no starter contains a club-identity literal (e.g. "HALLS HEAD", sample hashtags) or a hard-coded photo URL.
@@ -465,6 +483,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Dependencies:** U2, U5, U6
 
 **Files:**
+
 - Modify: `artifacts/api-server/src/lib/draft-upsert.ts` (new drafts: blank base plus template copy and version; refresh keeps the document; mark for warnings render)
 - Modify: `artifacts/api-server/src/lib/draft-enrich.ts` (stop resolving packs for templated kinds)
 - Modify: `artifacts/api-server/src/lib/draft-render.ts` (render-for-warnings at every enabled size; store warnings per size; templated drafts ignore `adjustments.slides`; slide planning from template capacity)
@@ -475,6 +494,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 - Test: `artifacts/api-server/src/lib/draft-upsert.test.ts`, `artifacts/api-server/src/lib/draft-render.test.ts`, `lib/scorecard/src/card-sets.test.ts`, `artifacts/api-server/src/lib/publishing/auto-publish.test.ts`
 
 **Approach:**
+
 - With the switch off, every path behaves exactly as today.
 - New drafts call get-or-create for the kind and copy that version's document.
 - Re-ingest refresh updates card data and caption as today, leaves the document alone and marks the draft for a warnings render.
@@ -485,6 +505,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Patterns to follow:** the insert and refresh paths in `draft-upsert.ts`; the injectable still renderer (`setStillRenderer`) in `draft-render.ts` for tests; `planCardSet` and `evenSizes` in `card-sets.ts`.
 
 **Test scenarios:**
+
 - Covers AE1. A milestone drafted after the template was edited carries that template version's document.
 - Happy path: a re-ingest refresh of an untouched draft updates the score, keeps the document and queues a warnings render.
 - Covers AE3. A results template with capacity five and nine results plans two slides of five and four.
@@ -508,6 +529,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Dependencies:** U1–U5
 
 **Files:**
+
 - Create: `artifacts/cricket-club/src/pages/admin-kind-template-editor.tsx` (route `/admin/social/templates/:kind`)
 - Modify: `artifacts/cricket-club/src/App.tsx` (route)
 - Modify: `artifacts/cricket-club/src/components/studio-editor/canvas.tsx` (touch selection, drag, resize and rotate with larger handles)
@@ -519,6 +541,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 - Test: `artifacts/cricket-club/src/components/studio-editor/__tests__/template-mode.test.tsx`, `artifacts/cricket-club/src/components/studio-editor/__tests__/editor-core.test.ts`
 
 **Approach:**
+
 - Reuse the editor shell, canvas, layers drawer and history; template mode loads and saves the kind template instead of a draft.
 - First open of a kind without a template shows a starter choice (Club Kit or Broadcast) with a thumbnail of each.
 - Size tabs switch canvases; adding an element prompts "Add to other sizes?" and places it per KTD16 as one undo step.
@@ -531,6 +554,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Patterns to follow:** `artifacts/cricket-club/src/pages/admin-studio-editor.tsx`; editor tests in `artifacts/cricket-club/src/components/studio-editor/__tests__/`.
 
 **Test scenarios:**
+
 - Covers AE5. Adding a logo on square and accepting "add to other sizes" creates it on the other three sizes; one undo removes all four.
 - Happy path: changing a text layer's font, size, weight, colour, alignment and letter spacing persists through save and reload.
 - Happy path: inserting a `{{runs}}` field into a text box renders the sample value.
@@ -552,6 +576,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Dependencies:** U5, U7, U8
 
 **Files:**
+
 - Modify: `artifacts/cricket-club/src/pages/admin-social-studio.tsx` (Templates section: one row per kind with thumbnail, starter origin and Edit; replaces `PackPerTypeSection`; retired-pack banner; the colour-mode switch stays)
 - Modify: `artifacts/cricket-club/src/pages/admin-social.tsx` (remove the canvas template builder from `TemplatesCard`; uploaded-background templates stay)
 - Modify: `artifacts/cricket-club/src/pages/admin-studio-editor.tsx` (remove `SaveTemplateButton`)
@@ -560,6 +585,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 - Test: `artifacts/cricket-club/src/pages/__tests__/admin-social-studio-templates.test.tsx`, `artifacts/cricket-club/src/components/social-queue/__tests__/needs-a-look.test.tsx`
 
 **Approach:**
+
 - All new surfaces render only when the switch is on; otherwise the Studio is unchanged.
 - The Templates section reads the kind template list; a banner at its top names the replaced pack and links to each affected kind until dismissed.
 - The queue badge and filter read draft warnings; the drawer explains the reason per size and links to the editor.
@@ -568,6 +594,7 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Patterns to follow:** existing Studio section cards in `admin-social-studio.tsx`; queue filters and drawer in `components/social-queue/`.
 
 **Test scenarios:**
+
 - Happy path: the Templates section lists all 21 kinds with their starter origin and an Edit link.
 - Covers AE7. A kind created from Gold Foil shows the banner naming Gold Foil; dismissing hides it.
 - Covers AE2. A draft with an overflow warning shows "Needs a look" with the reason in the queue and drawer and appears under the "Needs a look" filter.
@@ -586,17 +613,20 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 **Dependencies:** U1, U3, U6
 
 **Files:**
+
 - Create: `artifacts/cricket-club/src/lib/kind-templates/template-lint.test.ts`
 - Modify: `artifacts/cricket-club/src/lib/pack-card-mounts.test.ts` (template mounts must pass tenant data)
 - Create: `scripts/src/render-starter-proofs.ts` (renders every starter × kind × size with sample, stress and junior data to PNGs for review)
 
 **Approach:**
+
 - Template lint renders each starter document for a non-Halls-Head tenant and asserts no sample literal and no unresolved `{{` token in the output, and no photo on junior slides. U6's contract test owns the static checks on the documents themselves; U10 owns rendered-output checks.
 - The proof script writes images under `scripts/exports/` (git-ignored) for a human contact-sheet review.
 
 **Patterns to follow:** `artifacts/cricket-club/src/lib/pack-templates/pack-lint.test.ts`; `artifacts/api-server/src/lib/pack-coverage-parity.test.ts`; the "render a real PNG" learning in the pack renderer memory.
 
 **Test scenarios:**
+
 - Happy path: every starter document renders for a second tenant with that tenant's name and no "HALLS HEAD" text.
 - Edge case: a rendered starter with an unresolved `{{` token fails lint naming the kind, size and token.
 - Covers AE6. Every starter's junior render contains no photo.
@@ -607,17 +637,17 @@ Phase A (model and rendering): U1, U2, U3, U4. Phase B (storage and starters): U
 
 ## Verification Contract
 
-| Gate | Command or check | Applies to |
-|---|---|---|
-| Codegen | `pnpm --filter @workspace/api-spec run codegen` after OpenAPI edits; no hand edits to generated files | U5 |
-| Typecheck | `pnpm run typecheck` | All |
-| Web tests | `pnpm --filter @workspace/cricket-club run test` (on Windows: `NODE_ENV=test ./node_modules/.bin/vitest run` from `artifacts/cricket-club`) | U1–U4, U8–U10 |
-| API tests | `pnpm --filter @workspace/api-server run test` | U5, U7 |
-| Library tests | `pnpm run test:libs` | U6, U7 |
-| Lint and format | `pnpm run lint`; `npx -y prettier@3.9.6 --check .` | All |
-| Migration | `0035_kind_templates.sql` applies twice cleanly; drizzle generate produces nothing new | U5 |
-| Real render | `scripts/src/render-starter-proofs.ts` contact sheet reviewed for both starters, all kinds and sizes, with sample, stress and junior data | U6, U10 |
-| Server render smoke | the render harness smoke test with a non-curated Google Font and an overflow case | U2, U4, U7 |
+| Gate                | Command or check                                                                                                                            | Applies to    |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| Codegen             | `pnpm --filter @workspace/api-spec run codegen` after OpenAPI edits; no hand edits to generated files                                       | U5            |
+| Typecheck           | `pnpm run typecheck`                                                                                                                        | All           |
+| Web tests           | `pnpm --filter @workspace/cricket-club run test` (on Windows: `NODE_ENV=test ./node_modules/.bin/vitest run` from `artifacts/cricket-club`) | U1–U4, U8–U10 |
+| API tests           | `pnpm --filter @workspace/api-server run test`                                                                                              | U5, U7        |
+| Library tests       | `pnpm run test:libs`                                                                                                                        | U6, U7        |
+| Lint and format     | `pnpm run lint`; `npx -y prettier@3.9.6 --check .`                                                                                          | All           |
+| Migration           | `0035_kind_templates.sql` applies twice cleanly; drizzle generate produces nothing new                                                      | U5            |
+| Real render         | `scripts/src/render-starter-proofs.ts` contact sheet reviewed for both starters, all kinds and sizes, with sample, stress and junior data   | U6, U10       |
+| Server render smoke | the render harness smoke test with a non-curated Google Font and an overflow case                                                           | U2, U4, U7    |
 
 ---
 

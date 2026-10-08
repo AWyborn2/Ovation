@@ -17,12 +17,14 @@
 **Problem statement.** A volunteer club admin can restyle one card at a time but never a card kind, and cannot reformat the pack's own parts, so every automated card arrives in a stock design and weekly edits are repeated or abandoned.
 
 **User stories.**
+
 - As a club admin, I open "Milestone" once, move and restyle its parts, add our sponsor line and font, and every future milestone card uses it.
 - As a club admin, when a card's data does not fit my design, I am told before it posts rather than finding it cut off on Facebook.
 - As a club admin, I can still tweak one card without changing the template.
 - As a club admin on a tablet at the ground, I can adjust a template by touch.
 
 **Success criteria (measured after the switch goes on).**
+
 - Every active club has a kind template for each card kind it drafts (lazy creation works).
 - Within four weeks of launch, Halls Head has edited at least five kind templates beyond the starter.
 - Zero automated posts with a "needs a look" warning reach Facebook or Instagram.

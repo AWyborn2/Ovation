@@ -17,6 +17,7 @@
 ## Phase 2 design (2026-10-07) — ADR-001, ADR-002, ADR-003
 
 **Components and boundaries**
+
 - `lib/scorecard/src/kind-templates/` (shared): document types and helpers, per-kind field catalogue, starters and pack-to-starter map, rows capacity. No DOM, no DB.
 - Web renderer (`artifacts/cricket-club/src/lib/pack-render/`): renders documents on the blank base; `layer-fit.ts` shrinks and reports warnings with an injected measurer.
 - Render harness (`/__card-render`): loads fonts explicitly, renders, runs fit, returns image plus warnings.
@@ -26,12 +27,13 @@
 **Data flow:** starter → lazy kind template (versioned) → copied into draft at creation or apply → rendered at every enabled size → warnings per size → promotion/publish gate → post or share by hand.
 
 **Failure modes**
-| Failure | Effect | Handling |
-|---|---|---|
-| Starter missing for a kind | Draft can't get a design | Switch stays off until contract passes; with switch on, contract guarantees coverage |
-| Lazy-create race | Duplicate templates | Partial unique index + insert-or-ignore |
-| Concurrent template saves | Overwritten work | Version check; conflict message |
-| Font fails to load | Wrong metrics, wrong image | Fallback stack + warning; automation blocked |
-| Render harness error during sweep | No warnings computed | Draft stays unrendered → ineligible for automation; retried next sweep |
-| Apply races publish | Posted card changed | Status re-check inside transaction; skipped count |
-| Over 10 slides | Meta rejects carousel | Rows after slide 10 not posted; warning |
+
+| Failure                           | Effect                     | Handling                                                                             |
+| --------------------------------- | -------------------------- | ------------------------------------------------------------------------------------ |
+| Starter missing for a kind        | Draft can't get a design   | Switch stays off until contract passes; with switch on, contract guarantees coverage |
+| Lazy-create race                  | Duplicate templates        | Partial unique index + insert-or-ignore                                              |
+| Concurrent template saves         | Overwritten work           | Version check; conflict message                                                      |
+| Font fails to load                | Wrong metrics, wrong image | Fallback stack + warning; automation blocked                                         |
+| Render harness error during sweep | No warnings computed       | Draft stays unrendered → ineligible for automation; retried next sweep               |
+| Apply races publish               | Posted card changed        | Status re-check inside transaction; skipped count                                    |
+| Over 10 slides                    | Meta rejects carousel      | Rows after slide 10 not posted; warning                                              |
