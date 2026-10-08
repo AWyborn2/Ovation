@@ -210,7 +210,9 @@ const BootSchema = z
     META_PUBLISHING_ENABLED: z.enum(["0", "1"]).optional(),
     KIND_TEMPLATES: z
       .string()
-      .regex(/^(all|\d+(,\d+)*)$/, 'must be "all" or a comma-separated list of tenant ids')
+      // Spaces and stray commas are fine ("1, 7," reads as 1 and 7), exactly
+      // as the switch itself parses it.
+      .regex(/^\s*(all|[\d\s,]*)\s*$/, 'must be "all" or a comma-separated list of tenant ids')
       .optional(),
     META_APP_ID: z.string().optional(),
     META_APP_SECRET: z.string().optional(),

@@ -160,6 +160,34 @@ describe("starting, saving and conflicts", () => {
     expect(res.body.emptySizes).toEqual(["story"]);
   });
 
+  it("refuses markup smuggled into style values, unknown settings and foreign fields", async () => {
+    on();
+    const base = placeholderDocument("milestone");
+    const bad = [
+      // Breaks out of style="…" if printed raw.
+      { ...base.layers[0], style: { letterSpacing: '1"><img src=x onerror=alert(1)>' } },
+      { ...base.layers[0], style: { fontWeight: "900;background:url(x)" } },
+      { ...base.layers[0], style: { color: 'red"><script>' } },
+      { ...base.layers[0], onclick: "x" },
+      { ...base.layers[0], content: "{{password}}" },
+      { ...base.layers[0], kind: "chart" },
+      { ...base.layers[0], kind: "image", content: "javascript:alert(1)" },
+    ];
+    for (const layer of bad) {
+      const res = await as(cookie).put("/kind-templates/milestone", {
+        baseVersion: 2,
+        document: { layers: [layer, ...base.layers.slice(1)] },
+      });
+      expect(res.status, JSON.stringify(layer).slice(0, 80)).toBe(400);
+      expect(res.body.problems.length).toBeGreaterThan(0);
+    }
+    const extraKey = await as(cookie).put("/kind-templates/milestone", {
+      baseVersion: 2,
+      document: { ...base, fields: { x: "y" } },
+    });
+    expect(extraKey.status).toBe(400);
+  });
+
   it("restarting an existing template needs the current version", async () => {
     on();
     const missing = await as(cookie).post("/kind-templates/milestone/start", {

@@ -152,6 +152,15 @@ describe("template editor", () => {
     expect(layerBoxes()).toHaveLength(1);
   });
 
+  it("closes the add-to-sizes offer once anything else changes", async () => {
+    open();
+    fireEvent.click(await screen.findByRole("button", { name: "Text" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add a heading" }));
+    expect(screen.getByRole("button", { name: "Add to all sizes" })).toBeTruthy();
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(screen.queryByRole("button", { name: "Add to all sizes" })).toBeNull();
+  });
+
   it("keeps an element on its own size when the admin says so", async () => {
     open();
     fireEvent.click(await screen.findByRole("button", { name: "Text" }));

@@ -67,6 +67,7 @@ export function EditorCanvas({
   onChange,
   onLayout,
   flagged = [],
+  touch = false,
 }: {
   doc: EditorDoc;
   size: CardSize;
@@ -87,6 +88,8 @@ export function EditorCanvas({
   onLayout?: (warnings: LayoutWarning[]) => void;
   /** Layers to outline as needing a look. */
   flagged?: string[];
+  /** Tablet editing: drags never scroll the page, and handles grow on touch screens. */
+  touch?: boolean;
 }) {
   const boardRef = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
@@ -234,7 +237,10 @@ export function EditorCanvas({
     <div
       ref={boardRef}
       data-testid="editor-artboard"
-      className="relative touch-none select-none shadow-[0_24px_48px_-16px_rgba(0,0,0,.7)]"
+      className={cn(
+        "relative select-none shadow-[0_24px_48px_-16px_rgba(0,0,0,.7)]",
+        touch && "touch-none",
+      )}
       style={{ width }}
       onPointerDown={() => onSelect(null)}
       onPointerMove={onPointerMove}
@@ -306,7 +312,11 @@ export function EditorCanvas({
                 <span
                   key={h}
                   aria-label={`Resize ${h}`}
-                  className="pointer-events-auto absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-[var(--ed-accent)] bg-white [@media(pointer:coarse)]:h-6 [@media(pointer:coarse)]:w-6 [@media(pointer:coarse)]:rounded-full"
+                  className={cn(
+                    "pointer-events-auto absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-[var(--ed-accent)] bg-white",
+                    touch &&
+                      "[@media(pointer:coarse)]:h-6 [@media(pointer:coarse)]:w-6 [@media(pointer:coarse)]:rounded-full",
+                  )}
                   style={{
                     left: HANDLE_POS[h].left,
                     top: HANDLE_POS[h].top,
@@ -318,7 +328,10 @@ export function EditorCanvas({
             {!single.locked && (
               <span
                 aria-label="Rotate"
-                className="pointer-events-auto absolute left-1/2 h-4 w-4 -translate-x-1/2 cursor-grab rounded-full border-2 border-[var(--ed-accent)] bg-white [@media(pointer:coarse)]:h-7 [@media(pointer:coarse)]:w-7"
+                className={cn(
+                  "pointer-events-auto absolute left-1/2 h-4 w-4 -translate-x-1/2 cursor-grab rounded-full border-2 border-[var(--ed-accent)] bg-white",
+                  touch && "[@media(pointer:coarse)]:h-7 [@media(pointer:coarse)]:w-7",
+                )}
                 style={{ top: "calc(100% + 30px)" }}
                 onPointerDown={startRotate}
               />

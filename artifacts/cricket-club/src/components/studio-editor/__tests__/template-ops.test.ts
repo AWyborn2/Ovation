@@ -147,3 +147,36 @@ describe("starterExport (T6.2)", () => {
     });
   });
 });
+
+describe("renderer hardening (security review 2026-10-08)", () => {
+  it("prints admin-authored numbers and alignment as harmless values", () => {
+    const brand = { name: "Seaview", logoUrl: "https://example.test/seaview.png" };
+    const data = buildPackData({ brand, hashtag: "#S", sponsors: [] });
+    const tokens = resolvePackTokens({
+      brand: brandDefaultTokens(brand),
+      theme: null,
+      junior: false,
+    });
+    const evil = '1"><img src=x onerror=alert(1)>';
+    const html = renderPackCard(
+      { kind: "century", playerName: "Sam", runs: 104 } as never,
+      "square",
+      true,
+      tokens,
+      false,
+      data,
+      BLANK_PACK_ID,
+      {
+        layers: [
+          text("a", {
+            style: { letterSpacing: evil, fontWeight: evil, radius: evil, align: evil } as never,
+            geometry: { square: { x: evil, y: 1, w: 2, h: 3 } as never },
+          }),
+        ],
+      },
+    );
+    expect(html).not.toContain("<img src=x");
+    expect(html).not.toContain("onerror");
+    expect(html).toContain("text-align:center");
+  });
+});

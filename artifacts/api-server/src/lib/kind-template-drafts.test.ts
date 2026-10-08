@@ -235,6 +235,38 @@ describe("layout checks (KTD10)", () => {
     });
   });
 
+  it("drops warnings for a size the club has turned off", async () => {
+    const d = await draft({
+      layoutCheckPending: true,
+      layoutWarnings: { story: [{ reason: "overflow", size: "story" }] },
+    });
+    await checkDraftLayout(d, logger);
+    expect((await reload(d.id)).layoutWarnings).toEqual({ square: [] });
+  });
+
+  it("never stores a result for a design that changed while it rendered", async () => {
+    const d = await draft({ layoutCheckPending: true, layoutWarnings: null });
+    // An apply lands while the render is running.
+    setStillRenderer(async (input, options) => {
+      await db
+        .update(socialDraftsTable)
+        .set({ adjustments: { layers: [] }, templateVersion: 4, layoutCheckPending: true })
+        .where(eq(socialDraftsTable.id, d.id));
+      return fakeRender(input, options);
+    });
+    const result = await checkDraftLayout(d, logger);
+    expect(result.stored).toBe(false);
+    const after = await reload(d.id);
+    expect(after.layoutCheckPending).toBe(true);
+    expect(after.layoutWarnings).toBeNull();
+  });
+
+  it("stops a club's checks at its render budget", async () => {
+    for (let i = 0; i < 3; i += 1) await draft({ layoutCheckPending: true, layoutWarnings: null });
+    expect(await runPendingLayoutChecks(tenantId, logger, 20, 2)).toBe(2);
+    expect(renders).toHaveLength(2);
+  });
+
   it("run for pending drafts only, and leave them pending without a render harness", async () => {
     const pending = await draft({ layoutCheckPending: true, layoutWarnings: null });
     const done = await draft();

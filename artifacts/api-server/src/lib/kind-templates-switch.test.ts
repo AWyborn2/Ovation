@@ -35,3 +35,20 @@ describe("kindTemplatesEnabled (KTD18)", () => {
     expect(kindTemplatesEnabled(0)).toBe(false);
   });
 });
+
+describe("boot check for KIND_TEMPLATES", () => {
+  it("accepts every value the switch reads, and rejects junk", async () => {
+    const { validateConfigAtBoot } = await import("../config");
+    // Only this variable's verdict matters; others may be unset in tests.
+    const boots = (v: string) => {
+      try {
+        validateConfigAtBoot({ ...process.env, KIND_TEMPLATES: v });
+        return true;
+      } catch (e) {
+        return !String((e as Error).message).includes("KIND_TEMPLATES");
+      }
+    };
+    for (const ok of ["all", "1", "1,7", "1, 7", "1, 7,", " 3 "]) expect(boots(ok), ok).toBe(true);
+    for (const bad of ["yes", "1;7", "tenant-1"]) expect(boots(bad), bad).toBe(false);
+  });
+});

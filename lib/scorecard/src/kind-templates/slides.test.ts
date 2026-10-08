@@ -66,6 +66,33 @@ describe("planTemplateSlides (KTD13)", () => {
     expect(plan.warning).toMatchObject({ reason: "slides", size: "square", layerId: "results" });
   });
 
+  it("splits junior rows by their grade label, even when the list fits", () => {
+    const input = {
+      kind: "roundFixtures",
+      matches: [{ grade: "A Grade" }, { grade: "Colts" }, { gradeLabel: "Under 13" }],
+    };
+    const plan = planTemplateSlides(input, doc(5), "square");
+    expect(plan.slides).toHaveLength(2);
+    expect((plan.slides[0].input.matches as unknown[]).length).toBe(2);
+    expect(plan.slides[0].input.junior).toBeUndefined();
+    expect(plan.slides[1].input.junior).toBe(true);
+  });
+
+  it("marks an all-junior list that fits as a junior card", () => {
+    const plan = planTemplateSlides(
+      { kind: "roundFixtures", matches: [{ grade: "U15s" }] },
+      doc(5),
+      "square",
+    );
+    expect(plan.slides).toHaveLength(1);
+    expect(plan.slides[0].input.junior).toBe(true);
+  });
+
+  it("warns when not even one row fits the list's box", () => {
+    const plan = planTemplateSlides({ kind: "weekendWrap", matches: rows(3) }, doc(0), "square");
+    expect(plan.warning).toMatchObject({ reason: "overflow", layerId: "results" });
+  });
+
   it("is one slide when the template has no rows layer on that size", () => {
     const plan = planTemplateSlides({ kind: "weekendWrap", matches: rows(9) }, doc(5), "story");
     expect(plan.slides).toHaveLength(1);

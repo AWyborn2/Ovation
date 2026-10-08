@@ -283,7 +283,12 @@ function TemplateEditor({
   const input = plan.slides[0].input as unknown as ShareCardInput;
   const values = packFieldValues(input, data, BLANK_PACK_ID);
 
-  const edit = useCallback((next: EditorDoc) => setHistory((h) => commit(h, next)), []);
+  // Any other change closes the add-to-sizes offer, so accepting it can only
+  // ever fold into the add it was made for (one undo step).
+  const edit = useCallback((next: EditorDoc) => {
+    setHistory((h) => commit(h, next));
+    setAddPrompt(null);
+  }, []);
   const onCanvasChange = (next: EditorDoc, done: boolean) => {
     if (!done) {
       if (!gestureBase.current) gestureBase.current = history.present;
@@ -292,7 +297,10 @@ function TemplateEditor({
     }
     const base = gestureBase.current;
     gestureBase.current = null;
-    if (base) setHistory((h) => commitFrom(h, base, next));
+    if (base) {
+      setHistory((h) => commitFrom(h, base, next));
+      setAddPrompt(null);
+    }
   };
 
   const layers = layersOnSize(doc, format);
@@ -337,6 +345,7 @@ function TemplateEditor({
           break;
         case "redo":
           setHistory((h) => redo(h));
+          setAddPrompt(null);
           break;
         case "delete":
           if (s.selection.length) {
@@ -453,7 +462,10 @@ function TemplateEditor({
           setHistory((h) => undo(h));
           setAddPrompt(null);
         }}
-        onRedo={() => setHistory((h) => redo(h))}
+        onRedo={() => {
+          setHistory((h) => redo(h));
+          setAddPrompt(null);
+        }}
         dirty={dirty}
         saving={save.isPending}
         onSave={onSave}
@@ -619,6 +631,7 @@ function TemplateEditor({
             }}
             onChange={onCanvasChange}
             onLayout={onLayout}
+            touch
             flagged={warnings.map((w) => w.layerId).filter((id): id is string => !!id)}
           />
 

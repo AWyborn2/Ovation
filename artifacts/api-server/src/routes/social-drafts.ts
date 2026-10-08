@@ -33,7 +33,12 @@ import { getTenantId } from "../middlewares/tenant-context";
 import { NATIVE_STATS_TENANT_ID, tenantIsCentral } from "../lib/tenant";
 import { backfillMatchDrafts } from "../lib/draft-sweep";
 import { recaptionQueuedDrafts } from "../lib/draft-recaption";
-import { effectiveDraftStatus, loadAutoPost, type AutoPost } from "../lib/effective-draft-state";
+import {
+  effectiveDraftStatus,
+  layoutClear,
+  loadAutoPost,
+  type AutoPost,
+} from "../lib/effective-draft-state";
 import { isDraftStatus, normalizeDraftStatus, type DraftStatus } from "../lib/draft-status";
 import {
   listDraftRevisions,
@@ -152,10 +157,11 @@ router.get("/social-drafts/pending-count", requireAdmin, async (req, res): Promi
     eq(socialDraftsTable.status, "awaiting_review"),
     notAnUntouchedEditorDraft,
   ];
-  // Drafts past their deadline already read as ready while auto-post is on.
+  // Drafts past their deadline already read as ready while auto-post is on —
+  // unless their layout needs a look, which keeps them waiting (KTD10).
   if ((await loadAutoPost(tenantId)).enabled) {
     conditions.push(
-      sql`(${socialDraftsTable.autoReadyAt} IS NULL OR ${socialDraftsTable.autoReadyAt} > now())`,
+      sql`(${socialDraftsTable.autoReadyAt} IS NULL OR ${socialDraftsTable.autoReadyAt} > now() OR NOT ${layoutClear})`,
     );
   }
   const [row] = await db

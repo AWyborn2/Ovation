@@ -7,6 +7,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { emptySizes } from "./document";
+import { templateDocumentErrors } from "./validate";
 import { kindFields, kindHasRepeat, TEMPLATE_CARD_KINDS } from "./fields";
 import {
   isRetiredPack,
@@ -52,6 +53,12 @@ describe("placeholder document", () => {
     expect(String(doc.layers[0].content)).toMatch(/^\{\{\w+\}\}$/);
   });
 
+  it("passes the save validator for every kind", () => {
+    for (const kind of TEMPLATE_CARD_KINDS) {
+      expect(templateDocumentErrors(placeholderDocument(kind), kind), kind).toEqual([]);
+    }
+  });
+
   it("is a fresh copy each time", () => {
     const a = startingDocument("club-kit", "ladder");
     a.layers.length = 0;
@@ -68,6 +75,9 @@ for (const starter of STARTER_IDS) {
 
     for (const kind of TEMPLATE_CARD_KINDS) {
       const doc = starterDocument(starter, kind);
+      it.skipIf(!doc)(`${kind} passes the save validator (no smuggled markup)`, () => {
+        expect(templateDocumentErrors(doc!, kind)).toEqual([]);
+      });
       it.skipIf(!doc)(`${kind} has elements on every size`, () => {
         expect(emptySizes(doc!)).toEqual([]);
       });

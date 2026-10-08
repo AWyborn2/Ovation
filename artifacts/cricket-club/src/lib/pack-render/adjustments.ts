@@ -251,7 +251,21 @@ export const LAYER_KEYFRAMES =
 
 /** A style value safe to place inside a style attribute. */
 const cssValue = (v: string | undefined): string | undefined =>
-  v == null ? undefined : v.replace(/[";<>{}]/g, "");
+  v == null ? undefined : String(v).replace(/[";<>{}]/g, "");
+
+/**
+ * A number safe to place in markup: documents are admin-authored JSON, so a
+ * "number" may be any value. Non-finite values fall back; valid numbers print
+ * exactly as before.
+ */
+const num = (v: unknown, fallback = 0): number => {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : fallback;
+};
+
+const ALIGN = new Set(["left", "center", "right"]);
+const alignOf = (v: unknown): "left" | "center" | "right" =>
+  typeof v === "string" && ALIGN.has(v) ? (v as "left" | "center" | "right") : "center";
 
 /** Per-render context for library elements (club colours, crest, live rows). */
 export interface FreeLayerContext {
@@ -277,7 +291,7 @@ export function substituteTokens(text: string, values: Record<string, string>): 
 }
 
 /** A fittable element's designed size in cqw, for `FIT_ATTR`. */
-const fitBase = (style: TemplateTextStyle | undefined) => (style?.fontSize ?? 5).toFixed(2);
+const fitBase = (style: TemplateTextStyle | undefined) => num(style?.fontSize, 5).toFixed(2);
 
 /** Inline CSS for a text box (text layers and list-row cells). */
 function textCss(raw: TemplateTextStyle | undefined, extra: string[] = []): string {
@@ -291,17 +305,17 @@ function textCss(raw: TemplateTextStyle | undefined, extra: string[] = []): stri
     ...extra,
     "display:flex",
     "align-items:center",
-    `justify-content:${s.align === "left" ? "flex-start" : s.align === "right" ? "flex-end" : "center"}`,
-    `text-align:${s.align ?? "center"}`,
+    `justify-content:${alignOf(s.align) === "left" ? "flex-start" : alignOf(s.align) === "right" ? "flex-end" : "center"}`,
+    `text-align:${alignOf(s.align)}`,
     `color:${s.color ?? "inherit"}`,
     `font-family:${s.fontFamily ?? "var(--disp,'Anton'),sans-serif"}`,
-    `font-size:${(s.fontSize ?? 5).toFixed(2)}cqw`,
-    `font-weight:${s.fontWeight ?? 700}`,
+    `font-size:${num(s.fontSize, 5).toFixed(2)}cqw`,
+    `font-weight:${num(s.fontWeight, 700)}`,
     "line-height:1.05",
     "white-space:pre-wrap",
-    s.letterSpacing != null ? `letter-spacing:${s.letterSpacing}em` : "",
+    s.letterSpacing != null ? `letter-spacing:${num(s.letterSpacing)}em` : "",
     s.background ? `background:${s.background}` : "",
-    s.radius != null ? `border-radius:${s.radius}px` : "",
+    s.radius != null ? `border-radius:${num(s.radius)}px` : "",
   ]
     .filter(Boolean)
     .join(";");
@@ -311,10 +325,16 @@ function textCss(raw: TemplateTextStyle | undefined, extra: string[] = []): stri
 function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
   const spec = layer.rows;
   if (!spec) return null;
-  const rows = ctx.rows?.[spec.repeat] ?? [];
-  if (rows.length === 0) return null;
-  const variants = ctx.rowVariants?.[spec.repeat] ?? [];
-  const gap = spec.gap ?? 0;
+  const own = (o: object | undefined) =>
+    o && Object.prototype.hasOwnProperty.call(o, spec.repeat)
+      ? (o as Record<string, unknown>)[spec.repeat]
+      : undefined;
+  const rows = own(ctx.rows);
+  if (!Array.isArray(rows) || rows.length === 0 || !Array.isArray(spec.cells)) return null;
+  const listed = own(ctx.rowVariants);
+  const variants: Array<string | undefined> = Array.isArray(listed) ? listed : [];
+  const gap = num(spec.gap);
+  const rowHeight = num(spec.rowHeight, 7);
   const out = rows.map((row, i) => {
     const variant = variants[i];
     const cells = spec.cells.map((cell) => {
@@ -326,16 +346,16 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
       // step shrinks and, failing that, reports (KTD9).
       const css = textCss(style, [
         "position:absolute",
-        `left:${cell.x}%`,
-        `width:${cell.w}%`,
+        `left:${num(cell.x)}%`,
+        `width:${num(cell.w)}%`,
         "top:0",
         "height:100%",
         "overflow:hidden",
       ]).replace("white-space:pre-wrap", "white-space:nowrap");
       return `<div data-row-cell="${escapeHtml(cell.field)}" ${FIT_ATTR}="${fitBase(style)}" style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
     });
-    const top = i * (spec.rowHeight + gap);
-    return `<div data-row-index="${i}"${variant ? ` data-row-variant="${escapeHtml(variant)}"` : ""} style="position:absolute;left:0;right:0;top:${top.toFixed(3)}cqw;height:${spec.rowHeight.toFixed(3)}cqw">${cells.join("")}</div>`;
+    const top = i * (rowHeight + gap);
+    return `<div data-row-index="${i}"${variant ? ` data-row-variant="${escapeHtml(variant)}"` : ""} style="position:absolute;left:0;right:0;top:${top.toFixed(3)}cqw;height:${rowHeight.toFixed(3)}cqw">${cells.join("")}</div>`;
   });
   return `<div style="position:relative;width:100%;height:100%;overflow:hidden">${out.join("")}</div>`;
 }
@@ -349,8 +369,11 @@ function renderPhoto(layer: FreeLayer, size: CardSize, ctx: FreeLayerContext): s
     focalY: 50,
     zoom: 1,
   };
-  const radius = layer.style?.radius != null ? `;border-radius:${layer.style.radius}px` : "";
-  return `<div style="width:100%;height:100%;overflow:hidden${radius}"><img src="${escapeHtml(ctx.photoUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;object-position:${t.focalX}% ${t.focalY}%;transform:scale(${t.zoom});transform-origin:${t.focalX}% ${t.focalY}%" /></div>`;
+  const radius = layer.style?.radius != null ? `;border-radius:${num(layer.style.radius)}px` : "";
+  const fx = num(t.focalX, 50);
+  const fy = num(t.focalY, 50);
+  const zoom = num(t.zoom, 1);
+  return `<div style="width:100%;height:100%;overflow:hidden${radius}"><img src="${escapeHtml(ctx.photoUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;object-position:${fx}% ${fy}%;transform:scale(${zoom});transform-origin:${fx}% ${fy}%" /></div>`;
 }
 
 /** A layer's inner markup; null when it should not be drawn at all. */
@@ -386,7 +409,7 @@ function layerInner(
     case "rows":
       return renderRows(layer, ctx);
     case "shape":
-      return `<div style="width:100%;height:100%;background:${s.background ?? "var(--gold,#fbac27)"};border-radius:${s.radius ?? 0}px"></div>`;
+      return `<div style="width:100%;height:100%;background:${s.background ?? "var(--gold,#fbac27)"};border-radius:${num(s.radius)}px"></div>`;
     case "image": {
       // A template's image can be a field token (the club crest), resolved
       // from the club's own brand so no template holds a fixed URL (KTD4).
@@ -399,7 +422,7 @@ function layerInner(
         return `<img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:contain;display:block" />`;
       }
       return layer.content
-        ? `<img src="${escapeHtml(layer.content)}" alt="" style="width:100%;height:100%;object-fit:${layer.style?.radius ? "cover" : "contain"};display:block${layer.style?.radius != null ? `;border-radius:${layer.style.radius}px` : ""}" />`
+        ? `<img src="${escapeHtml(layer.content)}" alt="" style="width:100%;height:100%;object-fit:${layer.style?.radius ? "cover" : "contain"};display:block${layer.style?.radius != null ? `;border-radius:${num(layer.style.radius)}px` : ""}" />`
         : "";
     }
     case "medal":
@@ -453,16 +476,16 @@ export function renderFreeLayers(
     const anim = opts.animate ? ANIMATION[layer.animation?.kind ?? "none"] : null;
     const css = [
       "position:absolute",
-      `left:${x}%`,
-      `top:${y}%`,
-      `width:${w}%`,
-      `height:${h}%`,
-      rotate ? `transform:rotate(${rotate}deg)` : "",
-      layer.style?.opacity != null ? `opacity:${layer.style.opacity}` : "",
+      `left:${num(x)}%`,
+      `top:${num(y)}%`,
+      `width:${num(w)}%`,
+      `height:${num(h)}%`,
+      rotate ? `transform:rotate(${num(rotate)}deg)` : "",
+      layer.style?.opacity != null ? `opacity:${num(layer.style.opacity, 1)}` : "",
       anim ? `animation:${anim}` : "",
-      anim && layer.animation?.delayMs ? `animation-delay:${layer.animation.delayMs}ms` : "",
+      anim && layer.animation?.delayMs ? `animation-delay:${num(layer.animation.delayMs)}ms` : "",
     ].filter(Boolean);
-    return `<div data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${box.from}"` : ""} style="${css.join(";")}">${inner}</div>`;
+    return `<div data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${escapeHtml(String(box.from))}"` : ""} style="${css.join(";")}">${inner}</div>`;
   });
   const style = opts.animate ? `<style>${LAYER_KEYFRAMES}</style>` : "";
   return `<div class="pack-free-layers" style="position:absolute;inset:0;pointer-events:none;container-type:inline-size${palette}">${style}${parts.join("")}</div>`;

@@ -4,10 +4,9 @@ import {
   type CardSetOptions,
   type SetInput,
 } from "@workspace/scorecard";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, socialDraftsTable, type SocialDraftRow } from "@workspace/db";
 import {
-  mergeRenderedWarnings,
   planTemplateSlides,
   type DraftLayoutWarnings,
   type LayerDocument,
@@ -224,33 +223,48 @@ export function canRenderHeadless(): boolean {
   return stillRendererOverridden() || !!env.RENDER_HARNESS_URL() || !!env.RENDER_HARNESS_ORIGIN();
 }
 
+/** What one layout check found, and how many images it rendered. */
+export type LayoutCheck = { warnings: DraftLayoutWarnings; renders: number; stored: boolean };
+
 /**
  * Render a templated draft at every enabled size and store its layout
- * warnings (KTD10): the sizes rendered replace their previous entries and the
- * pending check clears. Returns the warnings found.
+ * warnings (KTD10). A full check replaces the stored warnings, so a size the
+ * club has since turned off can't keep the draft blocked. The result is only
+ * stored if the draft is unchanged since it was read — an apply, edit or data
+ * refresh during the render leaves it pending for the next sweep, so a stale
+ * clean result can never clear a design nobody checked.
  */
-export async function checkDraftLayout(
-  draft: SocialDraftRow,
-  log: Logger,
-): Promise<DraftLayoutWarnings> {
+export async function checkDraftLayout(draft: SocialDraftRow, log: Logger): Promise<LayoutCheck> {
   const sizes = await enabledSizes(draft.tenantId);
   const slides = await renderDraftSlides(draft, sizes, null, log);
   const warnings = layoutWarningsFrom(slides, sizes);
-  await db
+  const updated = await db
     .update(socialDraftsTable)
-    .set({
-      layoutWarnings: mergeRenderedWarnings(
-        draft.layoutWarnings as DraftLayoutWarnings | null,
-        warnings,
+    .set({ layoutWarnings: warnings, layoutCheckPending: false })
+    .where(
+      and(
+        eq(socialDraftsTable.id, draft.id),
+        eq(socialDraftsTable.layoutCheckPending, true),
+        draft.templateVersion === null
+          ? isNull(socialDraftsTable.templateVersion)
+          : eq(socialDraftsTable.templateVersion, draft.templateVersion),
+        sql`${socialDraftsTable.adjustments} is not distinct from ${JSON.stringify(draft.adjustments ?? null)}::jsonb`,
+        sql`${socialDraftsTable.cardInput} is not distinct from ${JSON.stringify(draft.cardInput ?? null)}::jsonb`,
       ),
-      layoutCheckPending: false,
-    })
-    .where(eq(socialDraftsTable.id, draft.id));
-  return warnings;
+    )
+    .returning({ id: socialDraftsTable.id });
+  return { warnings, renders: slides.length, stored: updated.length > 0 };
 }
 
 /** How many layout checks one sweep runs per club, so a backlog can't stall it. */
 export const LAYOUT_CHECKS_PER_SWEEP = 20;
+
+/**
+ * How many images one club's layout checks may render per sweep. Renders
+ * share one headless browser across clubs, so this — not the draft count —
+ * keeps one club's long lists or repeated applies from delaying everyone.
+ */
+export const LAYOUT_RENDERS_PER_SWEEP = 60;
 
 /**
  * Run the layout checks templated drafts still owe, oldest first (ADR-003).
@@ -262,6 +276,7 @@ export async function runPendingLayoutChecks(
   tenantId: number,
   log: Logger,
   limit = LAYOUT_CHECKS_PER_SWEEP,
+  renderBudget = LAYOUT_RENDERS_PER_SWEEP,
 ): Promise<number> {
   const pending = await db
     .select()
@@ -284,10 +299,13 @@ export async function runPendingLayoutChecks(
     return 0;
   }
   let checked = 0;
+  let renders = 0;
   for (const draft of pending) {
+    if (renders >= renderBudget) break;
     try {
-      await checkDraftLayout(draft, log);
-      checked += 1;
+      const result = await checkDraftLayout(draft, log);
+      renders += result.renders;
+      if (result.stored) checked += 1;
     } catch (err) {
       log.warn(
         { err, tenantId, draftId: draft.id },

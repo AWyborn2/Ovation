@@ -13,6 +13,7 @@ import {
   type TemplateSize,
 } from "./document";
 import type { LayoutWarning } from "./warnings";
+import { isJuniorGradeLabel } from "../junior-grade";
 
 /** The most images a Meta carousel takes. */
 export const MAX_CAROUSEL_SLIDES = 10;
@@ -32,12 +33,23 @@ export function evenParts(n: number, parts: number): number[] {
   return Array.from({ length: parts }, (_, i) => base + (i < extra ? 1 : 0));
 }
 
-const isJuniorRow = (row: unknown): boolean =>
-  typeof row === "object" && row !== null && (row as { junior?: unknown }).junior === true;
+/**
+ * Whether a list row is a junior one: flagged, or its grade is a junior grade
+ * (rows carry `grade` or `gradeLabel`, as the pack planner reads them).
+ */
+export function isJuniorRow(row: unknown): boolean {
+  if (typeof row !== "object" || row === null) return false;
+  const r = row as { junior?: unknown; grade?: unknown; gradeLabel?: unknown };
+  if (r.junior === true) return true;
+  const grade =
+    typeof r.grade === "string" ? r.grade : typeof r.gradeLabel === "string" ? r.gradeLabel : null;
+  return isJuniorGradeLabel(grade);
+}
 
 /**
  * Plan a templated card's slides at `size`. A card without a rows layer on
- * that size, or whose list fits, is one slide carrying the input unchanged.
+ * that size, or whose list fits in one section, is one slide carrying the
+ * input (marked junior when every row is a junior row).
  */
 export function planTemplateSlides<I extends Record<string, unknown>>(
   input: I,
@@ -52,12 +64,29 @@ export function planTemplateSlides<I extends Record<string, unknown>>(
   const repeat = rowsLayer.rows.repeat;
   const rows = input[repeat] as unknown[];
   const capacity = documentRowsCapacity(doc, size, repeat) ?? 0;
-  if (capacity <= 0 || rows.length <= capacity) return single;
-
-  // Seniors first, then juniors, each split evenly on its own slides.
+  // Seniors first, then juniors: they never share a slide, even when they'd fit.
   const groups = [rows.filter((r) => !isJuniorRow(r)), rows.filter(isJuniorRow)].filter(
     (g) => g.length > 0,
   );
+  if (rows.length > 0 && capacity <= 0) {
+    // Not even one row fits the list's box, so every row would be hidden.
+    return {
+      ...single,
+      warning: {
+        reason: "overflow",
+        size,
+        layerId: rowsLayer.id,
+        detail: "No list row fits its box",
+      },
+    };
+  }
+  if (groups.length <= 1 && rows.length <= capacity) {
+    // One section that fits: a single slide, marked junior when it is (no photo).
+    return groups[0] && isJuniorRow(groups[0][0])
+      ? { slides: [{ key: "single", input: { ...input, junior: true } as I, page: 1, of: 1 }] }
+      : single;
+  }
+
   const chunks: Array<{ rows: unknown[]; junior: boolean }> = [];
   for (const group of groups) {
     const junior = isJuniorRow(group[0]);

@@ -26,6 +26,7 @@ import {
   kindFields,
   startingDocument,
   starterForPack,
+  templateDocumentErrors,
   type StarterId,
   type StarterDocument,
 } from "@workspace/scorecard/kind-templates";
@@ -147,21 +148,21 @@ export async function updatedByName(row: CardTemplateRow): Promise<string | null
   return admin ? admin.displayName?.trim() || admin.username : null;
 }
 
-/** Reject a document the template can't hold (KTD15). */
-export function validateDocument(document: unknown): StarterDocument {
-  if (
-    typeof document !== "object" ||
-    document === null ||
-    !Array.isArray((document as StarterDocument).layers)
-  ) {
-    throw new KindTemplateError(400, { error: "A template needs a list of layers." });
-  }
-  const doc = document as StarterDocument;
-  if (doc.layers.length > MAX_TEMPLATE_LAYERS) {
+/**
+ * Reject a document the template can't hold: a strictly checked shape (only
+ * known settings, finite in-range numbers, bounded text, this kind's own
+ * fields — security review 2026-10-08), at most MAX_TEMPLATE_LAYERS elements,
+ * and no empty size (KTD15).
+ */
+export function validateDocument(document: unknown, kind: string): StarterDocument {
+  const problems = templateDocumentErrors(document, kind);
+  if (problems.length > 0) {
     throw new KindTemplateError(400, {
-      error: `A template can hold at most ${MAX_TEMPLATE_LAYERS} elements.`,
+      error: problems[0],
+      problems: problems.slice(0, 20),
     });
   }
+  const doc = document as StarterDocument;
   const empty = emptySizes(doc);
   if (empty.length > 0) {
     throw new KindTemplateError(400, {
@@ -279,7 +280,7 @@ export async function saveKindTemplate(
   document: unknown,
   adminId: number | null,
 ): Promise<CardTemplateRow> {
-  const doc = validateDocument(document);
+  const doc = validateDocument(document, kind);
   const existing = await loadKindTemplate(tenantId, kind);
   if (!existing) throw notFound("This card kind has no template yet.");
   if (existing.version !== baseVersion) throw await conflict(existing);
