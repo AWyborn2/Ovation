@@ -62,10 +62,10 @@ try {
     logger.info({ type }, "Checking carousel editor");
     await page.locator(`[data-testid="button-open-carousel-${type}"]`).click();
     await page.waitForSelector('[data-testid="button-generate-weekend"]');
-    await page.click('[data-testid="button-generate-weekend"]');
+    await page.locator('[data-testid="button-generate-weekend"]').click();
     await page.waitForSelector('[data-testid="button-queue-weekend"]');
     for (const size of ["square", "portrait", "story", "landscape"]) {
-      await page.click(`[data-testid="button-size-${size}"]`);
+      await page.locator(`[data-testid="button-size-${size}"]`).click();
       await new Promise(resolve => setTimeout(resolve, 300));
       const slide = await page.$('[data-testid="slide-fixture-1"]');
       await slide!.screenshot({ path: `/tmp/carousel-browser/${type}-${size}.png` });
@@ -74,7 +74,7 @@ try {
         if (panels.length !== 4) throw new Error(`Expected four innings in ${size}, got ${panels.length}`);
       }
     }
-    await page.click('[data-testid="button-queue-weekend"]');
+    await page.locator('[data-testid="button-queue-weekend"]').click();
     try {
       await page.waitForSelector('[data-testid="status-weekend-queued"]', { timeout: 10000 });
     } catch (error) {
@@ -89,13 +89,18 @@ try {
   await page.setViewport({ width: 390, height: 844 });
   await page.locator('[data-testid="button-open-carousel-matchSummary"]').click();
   await page.waitForSelector('[data-testid="button-generate-weekend"]');
-  await page.click('[data-testid="button-generate-weekend"]');
+  await page.locator('[data-testid="button-generate-weekend"]').click();
   await page.screenshot({ path: "/tmp/carousel-browser/mobile-editor.png" });
   if (errors.length) throw new Error(errors.join("\n"));
   const rows = await db.select().from(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenant.id));
   if (rows.length !== 3 || rows.some(r => r.status !== "awaiting_review")) throw new Error("Unexpected review records");
   logger.info({ types: ["teamList", "results", "matchSummary"], savedSets: rows.length }, "Carousel browser check passed");
 } catch (error) {
+  const page = (await browser?.pages())?.at(-1);
+  if (page) {
+    await page.screenshot({ path: "/tmp/carousel-browser/failure.png" });
+    logger.error({ text: await page.$eval("body", e => e.textContent?.slice(-3500)) }, "Browser failure state");
+  }
   logger.error({ err: error }, "Carousel browser check failed");
   throw error;
 } finally {
