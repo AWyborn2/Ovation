@@ -3,8 +3,8 @@ import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-li
 import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 
 const fixtures = [
-  { id: 1, grade: "A Grade", opponentName: "Mandurah", startAt: "2025-11-08T02:00:00Z", isHome: true, source: "manual", createdAt: "" },
-  { id: 2, grade: "B Grade", opponentName: "Rockingham", startAt: "2025-11-08T02:00:00Z", isHome: false, source: "manual", createdAt: "" },
+  { id: 1, grade: "A Grade", roundLabel: "5", opponentName: "Mandurah", startAt: "2025-11-08T02:00:00Z", isHome: true, source: "manual", createdAt: "" },
+  { id: 2, grade: "B Grade", roundLabel: "R5", opponentName: "Rockingham", startAt: "2025-11-08T02:00:00Z", isHome: false, source: "manual", createdAt: "" },
 ];
 const mutateAsync = vi.fn(async (_request: unknown) => ({ id: 123, status: "awaiting_review" }));
 const invalidateQueries = vi.fn();
@@ -16,7 +16,7 @@ const coverPhoto = { id: 10, grade: null, season: 2026, photoTypes: ["team"], ur
 let coverPhotos = [coverPhoto];
 let teamPhotos: { id: number; grade: string; photoTypes: string[]; url: string }[] = [];
 const summary = {
-  kind: "matchSummary", matchTitle: "A Grade • Round 1", result: "Won by 40 runs",
+  kind: "matchSummary", matchTitle: "A Grade • Round 5", result: "Won by 40 runs",
   club: { name: "Our Club" }, opposition: { name: "Visitors" },
   innings: [{ teamKey: "club", totalRuns: "200", wickets: "6", overs: "40", inningsNum: 1,
     topBatters: [{ name: "Smith", runs: 80 }], topBowlers: [{ name: "Jones", wickets: 3, runs: 20, overs: "8" }] }],
@@ -106,6 +106,7 @@ describe("WeekendCarousel", () => {
     expect(queuedRequest().data.cardInput.weekendCarousel.packId).toBe("neon-night-v1");
     expect(queuedRequest().data.cardInput.weekendCarousel.slides.map(s => s.id)).toEqual(["title", "fixture-2", "fixture-1", "sponsors"]);
     expect(queuedRequest().data.cardInput.weekendCarousel.slides[0].data).toMatchObject({ photoTransform: { zoom: 1.7 } });
+    expect(queuedRequest().data.cardInput.weekendCarousel.slides[0]).toMatchObject({ input: { roundLabel: "ROUND 5" } });
     fireEvent.change(screen.getByTestId("select-carousel-pack"), { target: { value: "sunset-v1" } });
     expect(screen.getByTestId("button-queue-weekend")).not.toBeDisabled();
   });
@@ -123,6 +124,7 @@ describe("WeekendCarousel", () => {
     const request = queuedRequest().data;
     expect(request.caption).toBe(`Edited ${type} caption`);
     expect(request.cardInput.weekendCarousel).toMatchObject({ setType: type, size: "landscape" });
+    expect(request.cardInput.weekendCarousel.slides[0]).toMatchObject({ input: { roundLabel: "ROUND 5" } });
     expect(request.cardInput.weekendCarousel.slides.map(s => s.id)).toEqual(["title", "fixture-2", "fixture-1", "sponsors"]);
     expect(request.cardInput.weekendCarousel.slides[1]).toMatchObject({ input: inputFor(type) });
   });

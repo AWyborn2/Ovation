@@ -14,7 +14,7 @@ export function weekendBookendTemplate(page: "title" | "sponsors", sponsorCount:
     sponsorVariants: ["off", "on"],
     fields: [
       ...clubHeaderFields(),
-      ...["clubMonogram", "clubHashtag", "sponsorPresentedBy", "weekendTitle", "date"].map(k => textField(k, k, "")),
+      ...["clubMonogram", "clubHashtag", "sponsorPresentedBy", "weekendTitle", "date", "roundLabel"].map(k => textField(k, k, "")),
     ],
     formats: ckFormats(f => {
       const tall = f === "story" || f === "portrait";
@@ -41,7 +41,8 @@ export function weekendBookendTemplate(page: "title" | "sponsors", sponsorCount:
         body: page === "title"
           ? eyebrow(cq, "{{date}}") +
             display(cq, "{{weekendTitle}}", titleLength > 45 ? 6 : titleLength > 25 ? 8 : tall ? 13 : 11, ";line-height:.95;overflow-wrap:anywhere;margin-top:3cqmin") +
-            display(cq, "ROUND 1", tall ? 16 : 14, ";margin-top:4cqmin") +
+            display(cq, "{{roundLabel}}", tall ? 16 : 14, `;margin-top:4cqmin;font-size:calc(${cq(tall ? 16 : 14)} * var(--fit,1))`)
+              .replace("<div ", '<div data-fit="7" ') +
             display(cq, "SWIPE &gt;&gt;", tall ? 10 : 8, `;margin-top:2cqmin;color:${C.pt}`)
           : eyebrow(cq, "{{date}}") + display(cq, "OUR SPONSORS", tall ? 10 : 8) + sponsorGrid,
         footer: { hashtag: "clubHashtag", sponsors: "logos", off: true,

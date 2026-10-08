@@ -101,6 +101,26 @@ export function moveTeam(teams: TeamSlide[], from: number, to: number): TeamSlid
   return next;
 }
 
+/** Do not infer a round from dates or a grade name. Summary titles include
+ * their explicit round/stage after " • "; a finals stage takes precedence
+ * over a scorecard fixture's numeric round. */
+export function carouselRoundLabel(teams: TeamSlide[]): string {
+  const labels = teams.map(({ fixture, input }) => {
+    const summaryRound = input?.kind === "matchSummary"
+      ? input.matchTitle.split(" • ").slice(1).join(" • ")
+      : "";
+    const contentRound = input && "roundLabel" in input ? input.roundLabel : "";
+    const raw = (summaryRound.trim() || contentRound?.trim() || fixture.roundLabel?.trim() || "").replace(/\s+/g, " ");
+    const numeric = raw.match(/^(?:(?:round|r)\s*\.?\s*)?(\d+)$/i);
+    return numeric ? `ROUND ${Number(numeric[1])}` : raw.toUpperCase();
+  });
+  const distinct = new Set(labels.filter(Boolean));
+  if (distinct.size > 1) return "MIXED ROUNDS";
+  // A known round for one team does not establish the round of another.
+  if (!labels.length || labels.some(label => !label)) return "";
+  return labels[0];
+}
+
 export function buildWeekendSlides(
   teams: TeamSlide[], photos: ClubPhoto[], bundle: SocialSettingsBundle,
   title: string, from: string, to: string, timeZone = CLUB_TIME_ZONE,
@@ -121,7 +141,7 @@ export function buildWeekendSlides(
     .filter(s => !(s.grades ?? []).some(g => gradeMatchKey(g)))
     .map(sponsorData);
   const blank: Extract<ShareCardInput, { kind: "matchDay" }> = {
-    kind: "matchDay", roundLabel: "", oppositionName: "", homeAway: "HOME", venue: "", date: rangeLabel, startTime: "",
+    kind: "matchDay", roundLabel: carouselRoundLabel(teams), oppositionName: "", homeAway: "HOME", venue: "", date: rangeLabel, startTime: "",
   };
   const coverPhoto = cover && eligibleCoverPhotos(cover.photos).find(p => p.id === cover.selection.photoId);
   const invalidCover = cover?.selection.photoId != null && !coverPhoto;

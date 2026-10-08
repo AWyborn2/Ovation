@@ -192,7 +192,9 @@ export function bindInput(input: ShareCardInput): BoundInput {
           if (s.logoUrl) images[`weekendSponsor${i}`] = s.logoUrl;
         });
       }
-      set(values, "roundLabel", input.roundLabel);
+      // Explicitly clear absent labels on historical frozen covers rather than
+      // allowing sample data to supply a made-up round.
+      values["roundLabel"] = input.roundLabel ?? "";
       set(values, "opposition.name", cardTeamName(input.oppositionName));
       set(values, "homeAway", input.homeAway);
       set(values, "oppositionHomeAway", input.homeAway === "HOME" ? "AWAY" : "HOME");

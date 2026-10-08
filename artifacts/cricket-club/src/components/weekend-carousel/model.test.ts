@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ClubPhoto, Fixture, SocialSettingsBundle } from "@workspace/api-client-react";
-import { buildWeekendSlides, createTeamSlides, eligiblePhotos, eligibleCoverPhotos, fixturesInRange, moveTeam, validRange, weekendRange } from "./model";
+import { buildWeekendSlides, carouselRoundLabel, createTeamSlides, eligiblePhotos, eligibleCoverPhotos, fixturesInRange, moveTeam, validRange, weekendRange, type TeamSlide } from "./model";
 import { renderPackCard, resolveCardTokens } from "@/lib/pack-render";
 import { SIZES, type CardSize } from "@/lib/share-card";
 
@@ -17,6 +17,53 @@ const bundle = {
   brand: { name: "Our Cricket Club", primaryColour: "#009900", backgroundColour: "#001122" },
   activeSponsors: Array.from({ length: 7 }, (_, i) => ({ name: `Sponsor ${i + 1}`, logoUrl: `/sponsor-${i + 1}.png`, cardKinds: ["matchDay"] })),
 } as unknown as SocialSettingsBundle;
+
+describe("carousel cover round labels", () => {
+  const teams = (...rounds: (string | null | undefined)[]) =>
+    createTeamSlides(rounds.map((roundLabel, i) => fixture(i + 1, { roundLabel })), []);
+
+  it("normalises numeric rounds and round prefixes across selected grades", () => {
+    expect(carouselRoundLabel(teams("5", " ROUND 5 ", "r5", "round. 05"))).toBe("ROUND 5");
+    expect(carouselRoundLabel(teams("12"))).toBe("ROUND 12");
+    expect(carouselRoundLabel(teams("Grand Final", " grand   final "))).toBe("GRAND FINAL");
+  });
+  it("never invents one round for mixed or incomplete selections", () => {
+    expect(carouselRoundLabel(teams("5", "6"))).toBe("MIXED ROUNDS");
+    expect(carouselRoundLabel(teams("5", "Grand Final"))).toBe("MIXED ROUNDS");
+    expect(carouselRoundLabel(teams("5", ""))).toBe("");
+    expect(carouselRoundLabel(teams(null, undefined, " "))).toBe("");
+    expect(carouselRoundLabel([])).toBe("");
+  });
+  it("uses explicit team-list rounds and summary rounds/stages, not grade numbers", () => {
+    const summary = (matchTitle: string): TeamSlide["input"] => ({
+      kind: "matchSummary", matchTitle, result: "Won", resultWinner: "club",
+      club: { name: "Our Club", primaryColor: "#123", secondaryColor: "#456", textColor: "#fff" },
+      opposition: { name: "Visitors", primaryColor: "#123", secondaryColor: "#456", textColor: "#fff" }, innings: [],
+    });
+    const selected = teams("14", null);
+    selected[0].input = summary("A Grade • Grand Final");
+    selected[1].input = summary("Under 14 • Grand Final");
+    expect(carouselRoundLabel(selected)).toBe("GRAND FINAL");
+    selected[1].input = summary("Under 14 • Round 5");
+    expect(carouselRoundLabel(selected)).toBe("MIXED ROUNDS");
+    selected[0].input = summary("Under 14");
+    selected[0].fixture.roundLabel = null;
+    expect(carouselRoundLabel(selected)).toBe("");
+    const list = teams(null);
+    list[0].input = { kind: "teamList", gradeRound: "A Grade", competitionLine: "",
+      venueDateTime: "", players: [], roundLabel: "R7" };
+    expect(carouselRoundLabel(list)).toBe("ROUND 7");
+  });
+  it("freezes the derived label into the cover without changing team inputs", () => {
+    const selected = teams("R5", "5");
+    const slides = buildWeekendSlides(selected, [], bundle, "Match day", "2026-10-09", "2026-10-11");
+    const frozen = JSON.parse(JSON.stringify(slides));
+    selected[0].fixture.roundLabel = "6";
+    expect(frozen[0].input.roundLabel).toBe("ROUND 5");
+    expect(slides[1].input).toMatchObject({ roundLabel: "R5" });
+    expect(slides[2].input).toMatchObject({ roundLabel: "5" });
+  });
+});
 
 describe("weekend sponsor placements", () => {
   const sponsorBundle = {
@@ -113,7 +160,7 @@ describe("weekend cover and centred sponsor rows", () => {
       const html = slides.map(sl => renderPackCard(sl.input, size, sl.sponsorsOn,
         resolveCardTokens({ data: sl.data, junior: false, packId: "club-kit-v1" }),
         false, sl.data, "club-kit-v1"));
-      expect(html[0]).toContain("ROUND 1");
+      expect(html[0]).not.toContain("ROUND 1");
       expect(html[0]).toContain("SWIPE &gt;&gt;");
       expect(html[0]).not.toContain("MATCHES ·");
       const closing = html.at(-1)!;
@@ -189,7 +236,7 @@ describe("strict photos and full ordered sets", () => {
     const html = renderPackCard(slides[0].input, size, false,
       resolveCardTokens({ data: slides[0].data, packId: "club-kit-v1", junior: false }), false, slides[0].data, "club-kit-v1");
     expect(html).toContain("/photos/10.jpg");
-    expect(html).toContain("ROUND 1");
+    expect(html).not.toContain("ROUND 1");
     expect(html).toContain("SWIPE &gt;&gt;");
     expect(html).not.toContain("MATCHES · SWIPE");
     expect(html).toContain("linear-gradient(180deg,rgba(0,0,0,.76)");

@@ -20,7 +20,7 @@ const detail: ShareCardInput = {
   club: team("Halls Head"), opposition: team("Mariners"), innings, carouselDetail: true,
 };
 const weekend = (page: "title" | "sponsors"): ShareCardInput => ({
-  kind: "matchDay", roundLabel: "R1", oppositionName: "X", homeAway: "HOME", venue: "V", date: "SAT", startTime: "1pm",
+  kind: "matchDay", roundLabel: "ROUND 5", oppositionName: "X", homeAway: "HOME", venue: "V", date: "SAT", startTime: "1pm",
   carouselPage: { page, title: "Big Weekend", fixtureCount: 4, hasCoverPhoto: true,
     sponsors: [1, 2, 3, 4, 5].map((i) => ({ name: `S${i}`, logoUrl: `https://x/${i}.png` })) },
 } as ShareCardInput);
@@ -37,9 +37,25 @@ describe("carousel templates across packs", () => {
         for (const v of ["201", "180", "150", "131", "Batclub1", "Bowlopposition2"]) expect(d).toContain(v);
         const t = renderPackCard(weekend("title"), size, false, tokens, false, null, pack.packId);
         expect(t).toContain("Big Weekend");
+        expect(t).toContain("ROUND 5");
+        expect(t).not.toContain("ROUND 1");
         const s = renderPackCard(weekend("sponsors"), size, false, tokens, false, null, pack.packId);
         expect(s.match(/data-sponsor-logo-frame="1"/g)?.length).toBe(5);
         expect(s).toContain("aspect-ratio:2 / 1");
+      }
+    });
+    it(`${pack.packId}: frozen covers show mixed rounds, finals or no round in every format`, () => {
+      for (const size of SIZES) {
+        for (const roundLabel of ["MIXED ROUNDS", "GRAND FINAL", "ROUND 12", "", undefined]) {
+          const input = JSON.parse(JSON.stringify({ ...weekend("title"), roundLabel }));
+          const html = renderPackCard(input, size, false, tokens, false, null, pack.packId);
+          const text = new DOMParser().parseFromString(html, "text/html").body.textContent;
+          expect(html).not.toContain("ROUND 1<");
+          expect(html).not.toContain("{{roundLabel}}");
+          if (roundLabel) expect(text).toContain(roundLabel);
+          else expect(text).not.toMatch(/\bROUND\b/);
+          expect(text).toContain("SWIPE");
+        }
       }
     });
   }

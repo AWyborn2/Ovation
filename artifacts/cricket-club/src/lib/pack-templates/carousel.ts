@@ -84,7 +84,8 @@ export function skeletonWeekendTemplate(
             look,
             kEyebrow("{{date}}") +
               `<div style="font-family:${K_DISP};font-size:${tsz}cqmin;line-height:.95;text-transform:uppercase;margin-top:3cqmin;overflow-wrap:anywhere;text-shadow:${K.titleGlow}">{{weekendTitle}}</div>` +
-              kCond("ROUND 1", 11, `;margin-top:3cqmin;color:${K.accText}`) +
+              kCond("{{roundLabel}}", 11, `;margin-top:3cqmin;color:${K.accText};font-size:calc(11cqmin * var(--fit,1))`)
+                .replace("<div ", '<div data-fit="10" ') +
               kEyebrow("SWIPE &gt;&gt;", K.muted, ";margin-top:2cqmin"),
             true,
           )
@@ -103,7 +104,7 @@ export function skeletonWeekendTemplate(
   };
   const fields = [
     ...clubHeaderFields(),
-    ...["clubHashtag", "sponsorPresentedBy", "weekendTitle", "date"].map((k) => textField(k, k, "")),
+    ...["clubHashtag", "sponsorPresentedBy", "weekendTitle", "date", "roundLabel"].map((k) => textField(k, k, "")),
     ...(photoKey ? [photoField("photo", "Cover photo", "Club photo")] : []),
     ...sponsorKeys.map((k) => ({ key: k, label: "Sponsor logo", type: "logo" as const, sample: "" })),
   ];
