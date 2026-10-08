@@ -51,6 +51,7 @@ const AdminUsers = lazy(() => import("@/pages/admin-users"));
 const AdminImport = lazy(() => import("@/pages/admin-import"));
 const AdminReset = lazy(() => import("@/pages/admin-reset"));
 const AdminStudioEditor = lazy(() => import("@/pages/admin-studio-editor"));
+const AdminKindTemplateEditor = lazy(() => import("@/pages/admin-kind-template-editor"));
 // admin-groups exposes NAMED exports, so map each to a default for lazy().
 function lazyNamed<M extends Record<string, unknown>, K extends keyof M>(
   loader: () => Promise<M>,
@@ -333,6 +334,12 @@ export function Router() {
         <Route path="/admin/social/editor/:id">
           <AdminShell bare>
             <AdminStudioEditor />
+          </AdminShell>
+        </Route>
+        {/* Card kind template editor (plan U8), full-screen like the Studio editor. */}
+        <Route path="/admin/social/templates/:kind">
+          <AdminShell bare>
+            <AdminKindTemplateEditor />
           </AdminShell>
         </Route>
         <Route path="/admin/*" component={AdminRoutes} />

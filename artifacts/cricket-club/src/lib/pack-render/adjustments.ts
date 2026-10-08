@@ -387,10 +387,21 @@ function layerInner(
       return renderRows(layer, ctx);
     case "shape":
       return `<div style="width:100%;height:100%;background:${s.background ?? "var(--gold,#fbac27)"};border-radius:${s.radius ?? 0}px"></div>`;
-    case "image":
+    case "image": {
+      // A template's image can be a field token (the club crest), resolved
+      // from the club's own brand so no template holds a fixed URL (KTD4).
+      if (hasFieldTokens(layer.content)) {
+        const src = substituteTokens(layer.content ?? "", {
+          ...values,
+          clubLogo: ctx.brand?.logoUrl ?? "",
+        }).trim();
+        if (!src) return null;
+        return `<img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:contain;display:block" />`;
+      }
       return layer.content
         ? `<img src="${escapeHtml(layer.content)}" alt="" style="width:100%;height:100%;object-fit:${layer.style?.radius ? "cover" : "contain"};display:block${layer.style?.radius != null ? `;border-radius:${layer.style.radius}px` : ""}" />`
         : "";
+    }
     case "medal":
       return renderMedal(layer.content ?? "100", layer.sub);
     case "sticker":

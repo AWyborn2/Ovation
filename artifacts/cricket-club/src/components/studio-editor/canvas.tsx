@@ -1,9 +1,11 @@
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { layerOnSize, type LayoutWarning } from "@workspace/scorecard/kind-templates";
 import type { CardTheme as ApiCardTheme } from "@workspace/api-client-react";
 import { PackCard } from "@/components/pack-card";
 import type { LayerBox, PackCardData } from "@/lib/pack-render";
 import type { CardSize, ShareCardInput } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
+import { fitLayersInDom } from "@/lib/pack-render/layer-fit";
 import { boxOf, clamp, layersOf, setBoxes, type EditorDoc } from "./document";
 import { boundsOf, snapMove, snapRotation, type Guide } from "./guides";
 
@@ -21,6 +23,15 @@ const HANDLE_POS: Record<Handle, { left: string; top: string; cursor: string }> 
 };
 const MIN_SIZE = 2;
 
+/** Keep a gesture's pointer events on its element; best-effort (it throws if the pointer is gone). */
+function capturePointer(e: ReactPointerEvent): void {
+  try {
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+  } catch {
+    // The gesture still works through the artboard's own handlers.
+  }
+}
+
 type Drag =
   | { kind: "move"; x0: number; y0: number; start: Record<string, LayerBox> }
   | { kind: "resize"; handle: Handle; x0: number; y0: number; start: LayerBox; id: string }
@@ -33,6 +44,12 @@ type Drag =
  * drag to move with smart guides, handles to resize, and a rotate handle that
  * snaps to 0/±90/180. Changes stream to `onChange(doc, false)` while dragging
  * and commit with `onChange(doc, true)` on release.
+ *
+ * Pointer events cover mouse, pen and touch alike; on a coarse pointer (a
+ * tablet) the handles grow to a finger-sized target (kind templates, R23).
+ * Layers not on the current size (a template's per-size presence) are not
+ * shown. With `onLayout`, live-field text is shrunk to fit after each render
+ * and the overflow warnings reported, as the server render does (KTD9).
  */
 export function EditorCanvas({
   doc,
@@ -48,6 +65,8 @@ export function EditorCanvas({
   onToggle,
   onEnterGroup,
   onChange,
+  onLayout,
+  flagged = [],
 }: {
   doc: EditorDoc;
   size: CardSize;
@@ -64,12 +83,35 @@ export function EditorCanvas({
   onToggle: (id: string) => void;
   onEnterGroup: (id: string) => void;
   onChange: (doc: EditorDoc, commit: boolean) => void;
+  /** Run the shrink-to-fit step after each render and report what still overflows. */
+  onLayout?: (warnings: LayoutWarning[]) => void;
+  /** Layers to outline as needing a look. */
+  flagged?: string[];
 }) {
   const boardRef = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const [guides, setGuides] = useState<Guide[]>([]);
 
-  const layers = layersOf(doc).filter((l) => !l.hidden);
+  const layers = layersOf(doc).filter((l) => !l.hidden && layerOnSize(l, size));
+
+  // Shrink-to-fit runs on the rendered card, so it reflects real fonts and boxes.
+  const layoutRef = useRef(onLayout);
+  layoutRef.current = onLayout;
+  const docJson = JSON.stringify(doc);
+  const inputJson = JSON.stringify(input);
+  const fitting = !!onLayout;
+  useLayoutEffect(() => {
+    const board = boardRef.current;
+    if (!fitting || !board) return;
+    const run = () => layoutRef.current?.(fitLayersInDom(board, size));
+    run();
+    // The card can commit its markup after this effect (and replaces it on
+    // every change), which would wipe the fit: re-fit whenever its content
+    // changes. The fit itself only touches attributes, so it can't retrigger.
+    const observer = new MutationObserver(run);
+    observer.observe(board, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
+  }, [fitting, docJson, inputJson, size, width, junior, data]);
   const selected = layers.filter((l) => selection.includes(l.id));
   const selectedBoxes = selected.map((l) => boxOf(l, size)).filter((b): b is LayerBox => !!b);
   const single = selected.length === 1 ? selected[0] : null;
@@ -98,7 +140,7 @@ export function EditorCanvas({
       }
     }
     drag.current = { kind: "move", x0: e.clientX, y0: e.clientY, start };
-    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+    capturePointer(e);
   };
 
   const sameGroup = (id: string, group: string) =>
@@ -164,7 +206,7 @@ export function EditorCanvas({
       start: singleBox,
       id: single.id,
     };
-    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+    capturePointer(e);
   };
 
   const startRotate = (e: ReactPointerEvent) => {
@@ -177,7 +219,7 @@ export function EditorCanvas({
       cx: r.left + ((singleBox.x + singleBox.w / 2) / 100) * r.width,
       cy: r.top + ((singleBox.y + singleBox.h / 2) / 100) * r.height,
     };
-    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+    capturePointer(e);
   };
 
   const bounds = selectedBoxes.length > 1 ? boundsOf(selectedBoxes) : null;
@@ -192,7 +234,7 @@ export function EditorCanvas({
     <div
       ref={boardRef}
       data-testid="editor-artboard"
-      className="relative select-none shadow-[0_24px_48px_-16px_rgba(0,0,0,.7)]"
+      className="relative touch-none select-none shadow-[0_24px_48px_-16px_rgba(0,0,0,.7)]"
       style={{ width }}
       onPointerDown={() => onSelect(null)}
       onPointerMove={onPointerMove}
@@ -215,6 +257,7 @@ export function EditorCanvas({
           const b = boxOf(l, size);
           if (!b) return null;
           const isSel = selection.includes(l.id);
+          const isFlagged = flagged.includes(l.id);
           return (
             <div
               key={l.id}
@@ -226,6 +269,9 @@ export function EditorCanvas({
                 isSel &&
                   selected.length > 1 &&
                   "outline outline-[1.5px] outline-[var(--ed-accent)]",
+                isFlagged &&
+                  !isSel &&
+                  "outline outline-2 outline-dashed outline-[var(--ed-danger)]",
               )}
               style={{
                 left: `${b.x}%`,
@@ -260,7 +306,7 @@ export function EditorCanvas({
                 <span
                   key={h}
                   aria-label={`Resize ${h}`}
-                  className="pointer-events-auto absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-[var(--ed-accent)] bg-white"
+                  className="pointer-events-auto absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm border border-[var(--ed-accent)] bg-white [@media(pointer:coarse)]:h-6 [@media(pointer:coarse)]:w-6 [@media(pointer:coarse)]:rounded-full"
                   style={{
                     left: HANDLE_POS[h].left,
                     top: HANDLE_POS[h].top,
@@ -272,7 +318,7 @@ export function EditorCanvas({
             {!single.locked && (
               <span
                 aria-label="Rotate"
-                className="pointer-events-auto absolute left-1/2 h-4 w-4 -translate-x-1/2 cursor-grab rounded-full border-2 border-[var(--ed-accent)] bg-white"
+                className="pointer-events-auto absolute left-1/2 h-4 w-4 -translate-x-1/2 cursor-grab rounded-full border-2 border-[var(--ed-accent)] bg-white [@media(pointer:coarse)]:h-7 [@media(pointer:coarse)]:w-7"
                 style={{ top: "calc(100% + 30px)" }}
                 onPointerDown={startRotate}
               />
