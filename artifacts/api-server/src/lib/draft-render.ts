@@ -10,6 +10,7 @@ import { getTenantBrand } from "./tenant-brand";
 import { loadActiveSponsors } from "./active-sponsors";
 import { renderCardStill } from "./card-video-renderer";
 import { resolveDraftPack } from "./draft-enrich";
+import { readQueuedCarousel, queuedSlideAdjustments } from "@workspace/scorecard/queued-carousel";
 
 /**
  * Render a draft's slides at a size, exactly as the Studio preview shows them
@@ -75,6 +76,22 @@ export async function renderDraftSlides(
 ): Promise<RenderedSlide[]> {
   const tenantId = draft.tenantId;
   const input = (draft.cardInput ?? {}) as Record<string, unknown>;
+  const carousel = readQueuedCarousel(input);
+  if ("weekendCarousel" in input && !carousel) throw new Error("Invalid saved carousel; cannot render its slides.");
+  if (carousel) {
+    const rendered: RenderedSlide[] = [];
+    for (const size of sizes) {
+      for (const [i, slide] of carousel.slides.entries()) {
+        const { buffer } = await serialised(() => renderer(slide.input, {
+          size, packId: "club-kit-v1", data: slide.data, junior: slide.junior,
+          sponsorsOn: slide.sponsorsOn, strictImages: true,
+          adjustments: queuedSlideAdjustments(slide, size),
+        }, harnessOrigin));
+        rendered.push({ size, png: buffer, page: i + 1, of: carousel.slides.length });
+      }
+    }
+    return rendered;
+  }
   const kind = typeof input.kind === "string" ? input.kind : "card";
   const junior = draft.sourceMatchIsJunior || input.junior === true;
   const [settings, brand, sponsors, clubPack] = await Promise.all([

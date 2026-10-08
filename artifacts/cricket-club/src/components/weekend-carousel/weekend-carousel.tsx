@@ -4,7 +4,7 @@ import {
   ArrowDown,
   ArrowUp,
   CalendarRange,
-  Download,
+  Send,
   ImageOff,
   Info,
   Layers,
@@ -13,6 +13,7 @@ import {
 import type { Fixture } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -77,8 +78,8 @@ export function WeekendCarouselBody() {
       <DialogHeader className="shrink-0 space-y-1 border-b px-5 py-4 pr-12 text-left">
         <DialogTitle className="text-xl">Weekend match-day carousel</DialogTitle>
         <DialogDescription>
-          Pick this weekend's fixtures, check photos, download every slide as one ZIP. Nothing is
-          saved or published.
+          Pick the fixtures, check photos and caption, then send the whole carousel to review.
+          Nothing is published until it is approved.
         </DialogDescription>
       </DialogHeader>
       <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto overflow-x-hidden px-5 py-5">
@@ -262,7 +263,7 @@ function GenerateBar({ s }: { s: WeekendCarouselState }) {
       </Button>
       {s.stale ? (
         <p className="text-sm text-destructive" role="status" data-testid="text-weekend-stale">
-          Fixture selection changed. Regenerate before exporting.
+          Fixture selection changed. Regenerate before sending to review.
         </p>
       ) : (
         <p className="text-xs text-muted-foreground">
@@ -347,27 +348,30 @@ function GeneratedSet({ s }: { s: WeekendCarouselState }) {
         <SlidePreview slide={closingSlide} size={s.size} />
       </section>}
 
+      <section className="space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="weekend-caption">Match-day caption</Label>
+          <Button variant="ghost" size="sm" disabled={lock} onClick={s.resetCaption}>Reset caption</Button>
+        </div>
+        <Textarea id="weekend-caption" value={s.caption} maxLength={5000} rows={10}
+          disabled={lock} onChange={e => s.setCaption(e.target.value)} data-testid="input-weekend-caption" />
+        <p className="text-xs text-muted-foreground">One caption for the entire carousel. You can edit it again in the review queue.</p>
+        {s.slides.length > 20 && <p role="alert" className="text-sm text-destructive">
+          A carousel can contain up to 20 slides. Select fewer fixtures.
+        </p>}
+      </section>
+
       <div className="sticky bottom-0 z-10 -mx-5 flex flex-wrap items-center gap-3 border-t bg-card px-5 py-3">
-        <Button onClick={s.runExport} disabled={!s.canExport} data-testid="button-export-weekend">
-          <Download className="mr-1 h-3.5 w-3.5" aria-hidden />
-          {s.exporting ? "Exporting…" : `Download ZIP (${s.slides.length} PNGs)`}
+        <Button onClick={s.runQueue} disabled={!s.canQueue} data-testid="button-queue-weekend">
+          <Send className="mr-1 h-3.5 w-3.5" aria-hidden />
+          {s.exporting ? "Sending to review…" : s.queuedId ? "Sent to review" : `Send to review (${s.slides.length} slides)`}
         </Button>
-        {s.exporting && s.progress && (
-          <div className="flex min-w-[12rem] flex-1 items-center gap-2" role="status" data-testid="status-export-progress">
-            <div className="h-1.5 flex-1 overflow-hidden rounded bg-muted">
-              <div
-                className="h-full origin-left bg-primary transition-transform"
-                style={{ transform: `scaleX(${s.progress.total ? s.progress.done / s.progress.total : 0})` }}
-              />
-            </div>
-            <span className="font-mono text-xs">
-              {s.progress.done}/{s.progress.total}
-            </span>
-          </div>
-        )}
-        {s.exportError && (
-          <p className="text-sm text-destructive" role="alert" data-testid="text-export-error">
-            {s.exportError}
+        {s.queuedId && <p role="status" className="text-sm" data-testid="status-weekend-queued">
+          Carousel saved for review. <a className="underline" href={`/admin/social/queue?draft=${s.queuedId}`}>View in review queue</a>
+        </p>}
+        {s.queueError && (
+          <p className="text-sm text-destructive" role="alert" data-testid="text-queue-error">
+            {s.queueError}
           </p>
         )}
       </div>

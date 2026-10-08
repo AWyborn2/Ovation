@@ -5,8 +5,12 @@ const fixtures = [
   { id: 1, grade: "A Grade", opponentName: "Mandurah", startAt: "2025-11-08T02:00:00Z", isHome: true, source: "manual", createdAt: "" },
   { id: 2, grade: "B Grade", opponentName: "Rockingham", startAt: "2025-11-08T02:00:00Z", isHome: false, source: "manual", createdAt: "" },
 ];
-const mutateAsync = vi.fn(async () => new Blob(["png"]));
-const download = vi.fn(async () => {});
+const mutateAsync = vi.fn(async (_request: unknown) => ({ id: 123, status: "awaiting_review" }));
+const invalidateQueries = vi.fn();
+vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQueries }) }));
+const queuedRequest = () => mutateAsync.mock.calls[0][0] as {
+  data: { caption: string; cardInput: { weekendCarousel: { size: string; submissionId: string; slides: { id: string; data: unknown }[] } } };
+};
 const coverPhoto = { id: 10, grade: null, season: 2026, photoTypes: ["team"], url: "/cover.jpg", thumbUrl: "/cover-thumb.jpg" };
 let coverPhotos = [coverPhoto];
 let teamPhotos: { id: number; grade: string; photoTypes: string[]; url: string }[] = [];
@@ -28,10 +32,11 @@ vi.mock("@workspace/api-client-react", () => ({
   getGetWeekendCarouselSourcesQueryKey: (p: unknown) => ["sources", p],
   useGetSocialSettings: () => ({ data: { settings: {}, activeSponsors: [] }, isLoading: false, isError: false }),
   getGetSocialSettingsQueryKey: () => ["settings"],
-  useCreateCardRenderStill: () => ({ mutateAsync }),
+  useCreateSocialDraft: () => ({ mutateAsync }),
+  getListSocialDraftsQueryKey: () => ["drafts"],
+  getGetPendingSocialDraftCountQueryKey: () => ["pending"],
 }));
 vi.mock("@/components/pack-card", () => ({ PackCard: ({ data }: { data: unknown }) => <div data-testid="pack-card" data-card={JSON.stringify(data)} /> }));
-vi.mock("./export", () => ({ downloadWeekendZip: download }));
 vi.mock("./model", async (importOriginal) => ({
   ...await importOriginal<typeof import("./model")>(),
   weekendRange: () => ({ from: "2025-11-07", to: "2025-11-09" }),
@@ -63,7 +68,7 @@ describe("WeekendCarousel", () => {
     expect(screen.getByTestId("weekend-fullscreen-editor")).toHaveClass("h-[100dvh]", "w-full", "max-w-none");
   });
 
-  it("edits each team's photo beside its live preview and exports the same crop", async () => {
+  it("edits each team's photo beside its live preview and queues the same crop", async () => {
     teamPhotos = [{ id: 11, grade: "A Grade", photoTypes: ["batting"], url: "/team.jpg" }];
     mount();
     fireEvent.click(screen.getByTestId("button-generate-weekend"));
@@ -77,9 +82,9 @@ describe("WeekendCarousel", () => {
     expect(preview()).toMatchObject({ photoUrl: "/team.jpg", photoTransform: { focalX: .25, focalY: .75, zoom: 1.8 } });
     fireEvent.click(screen.getByTestId("button-size-portrait"));
     expect(preview().photoTransform.zoom).toBe(1.8);
-    fireEvent.click(screen.getByTestId("button-export-weekend"));
-    await waitFor(() => expect(download).toHaveBeenCalledTimes(1));
-    const slides = (download.mock.calls[0] as unknown[])[0] as { id: string; data: unknown }[];
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+    const slides = queuedRequest().data.cardInput.weekendCarousel.slides;
     expect(slides.find(sl => sl.id === "fixture-1")?.data).toEqual(preview());
     await waitFor(() => expect(editor.getByRole("button", { name: "Reset" })).not.toBeDisabled());
     fireEvent.click(editor.getByRole("button", { name: "Reset" }));
@@ -96,23 +101,27 @@ describe("WeekendCarousel", () => {
     expect(screen.getByTestId("list-source-warnings").textContent).toContain("PlayHQ status");
   });
 
-  it("generates slides, exports with the selected size, and marks stale on selection change", async () => {
+  it("queues one carousel with an editable caption and size, then blocks duplicate submissions", async () => {
     mount();
     fireEvent.click(screen.getByTestId("button-generate-weekend"));
     expect(screen.getAllByTestId("pack-card")).toHaveLength(4);
     expect(screen.getByTestId("text-no-sponsors")).toBeTruthy();
     fireEvent.click(screen.getByTestId("button-size-story"));
-    fireEvent.click(screen.getByTestId("button-export-weekend"));
-    await waitFor(() => expect(download).toHaveBeenCalledTimes(1));
-    expect((download.mock.calls[0] as unknown[])[1]).toBe("story");
-    const renderFn = (download.mock.calls[0] as unknown[])[2] as (sl: unknown, sz: string) => Promise<Blob>;
-    await renderFn({ input: {}, data: { photoTransform: { focalX: 0.3, focalY: 0.4, zoom: 2 } }, junior: false, sponsorsOn: true }, "story");
-    const opts = (mutateAsync.mock.calls[0] as unknown as [{ data: { options: Record<string, unknown> } }])[0].data.options;
-    expect(opts).toMatchObject({ size: "story", packId: "club-kit-v1", strictImages: true, adjustments: { photo: { story: { focalX: 0.3, focalY: 0.4, zoom: 2 } } } });
+    expect((screen.getByTestId("input-weekend-caption") as HTMLTextAreaElement).value).toContain("A Grade v Mandurah");
+    fireEvent.change(screen.getByTestId("input-weekend-caption"), { target: { value: "Match day! Come support our teams." } });
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(screen.getByTestId("status-weekend-queued")).toBeTruthy());
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+    expect(queuedRequest().data.caption).toBe("Match day! Come support our teams.");
+    expect(queuedRequest().data.cardInput.weekendCarousel.size).toBe("story");
+    expect(queuedRequest().data.cardInput.weekendCarousel.slides.map(s => s.id)).toEqual(["title", "fixture-1", "fixture-2", "sponsors"]);
+    expect(screen.getByTestId("button-queue-weekend")).toBeDisabled();
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["drafts"] });
+    expect(screen.getByRole("link", { name: "View in review queue" })).toHaveAttribute("href", "/admin/social/queue?draft=123");
 
     fireEvent.click(screen.getByTestId("checkbox-fixture-2"));
     expect(screen.getByTestId("text-weekend-stale")).toBeTruthy();
-    expect(screen.queryByTestId("button-export-weekend")).toBeNull();
+    expect(screen.queryByTestId("button-queue-weekend")).toBeNull();
   });
 
   it("reorders fixtures with accessible up/down controls", () => {
@@ -121,7 +130,7 @@ describe("WeekendCarousel", () => {
     const rows = screen.getAllByTestId(/^row-fixture-/);
     expect(rows[0].getAttribute("data-testid")).toBe("row-fixture-2");
   });
-  it("keeps cover and crop through title, size, order, regeneration and export; supports removal", async () => {
+  it("keeps cover and crop through title, size, order, regeneration and queueing; supports removal", async () => {
     mount();
     fireEvent.click(screen.getByTestId("button-generate-weekend"));
     fireEvent.click(screen.getByTestId("button-cover-photo-10"));
@@ -134,30 +143,42 @@ describe("WeekendCarousel", () => {
     fireEvent.click(screen.getByTestId("button-generate-weekend"));
     const getCover = () => JSON.parse(screen.getAllByTestId("pack-card")[0].getAttribute("data-card")!);
     expect(getCover()).toMatchObject({ photoUrl: "/cover.jpg", photoTransform: { focalX: .2, focalY: .7, zoom: 2 } });
-    fireEvent.click(screen.getByTestId("button-export-weekend"));
-    await waitFor(() => expect(download).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
     expect(refetch).toHaveBeenCalledTimes(1);
-    const slides = (download.mock.calls[0] as unknown[])[0] as { data: unknown }[];
+    const slides = queuedRequest().data.cardInput.weekendCarousel.slides;
     expect(slides[0].data).toEqual(getCover());
     await waitFor(() => expect((screen.getByTestId("button-no-cover-photo") as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(screen.getByTestId("button-no-cover-photo"));
     expect(getCover().photoUrl).toBeUndefined();
   });
-  it("stops export when fresh source data no longer permits the selected cover", async () => {
+  it("stops queueing when fresh source data no longer permits the selected cover", async () => {
     mount();
     fireEvent.click(screen.getByTestId("button-generate-weekend"));
     fireEvent.click(screen.getByTestId("button-cover-photo-10"));
     refetch.mockResolvedValueOnce({ data: { coverPhotos: [] }, isError: false });
-    fireEvent.click(screen.getByTestId("button-export-weekend"));
-    await waitFor(() => expect(screen.getByTestId("text-export-error").textContent).toContain("no longer available"));
-    expect(download).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(screen.getByTestId("text-queue-error").textContent).toContain("no longer available"));
+    expect(mutateAsync).not.toHaveBeenCalled();
   });
-  it("shows an actionable empty state without preventing no-photo export", async () => {
+  it("shows an actionable empty state without preventing no-photo queueing", async () => {
     coverPhotos = [];
     mount();
     fireEvent.click(screen.getByTestId("button-generate-weekend"));
     expect(screen.getByTestId("text-no-cover-photos").textContent).toContain("Season 2026");
-    fireEvent.click(screen.getByTestId("button-export-weekend"));
-    await waitFor(() => expect(download).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
+  });
+  it("keeps selections after an error and reuses the same submission ID on retry", async () => {
+    mutateAsync.mockRejectedValueOnce(new Error("Network unavailable"));
+    mount();
+    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(screen.getByTestId("text-queue-error")).toHaveTextContent("Network unavailable"));
+    const firstId = queuedRequest().data.cardInput.weekendCarousel.submissionId;
+    fireEvent.click(screen.getByTestId("button-queue-weekend"));
+    await waitFor(() => expect(screen.getByTestId("status-weekend-queued")).toBeTruthy());
+    const second = mutateAsync.mock.calls[1][0] as ReturnType<typeof queuedRequest>;
+    expect(second.data.cardInput.weekendCarousel.submissionId).toBe(firstId);
   });
 });

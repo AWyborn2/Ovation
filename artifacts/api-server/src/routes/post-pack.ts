@@ -8,6 +8,7 @@ import { getTenantId } from "../middlewares/tenant-context";
 import { harnessOriginFromHeaders } from "../lib/card-video-renderer";
 import { objectUrl, photoStore } from "../lib/photo-store";
 import { enabledSizes, renderDraftSlides } from "../lib/draft-render";
+import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 
 export { setStillRenderer, type CardSize } from "../lib/draft-render";
 
@@ -45,7 +46,7 @@ router.post(
     try {
       const slides = await renderDraftSlides(
         draft,
-        await enabledSizes(tenantId),
+        readQueuedCarousel(input) ? [readQueuedCarousel(input)!.size] : await enabledSizes(tenantId),
         harnessOriginFromHeaders(req.headers),
         req.log,
       );

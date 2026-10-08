@@ -10,7 +10,7 @@ import { gradeMatchKey } from "@/lib/share-card/sponsor-limit";
 export const CLUB_TIME_ZONE = "Australia/Perth";
 export type TeamSlide = { fixture: Fixture; photoId: number | null; transform: PhotoTransform };
 export type CoverPhoto = { photoId: number | null; transform: PhotoTransform };
-export const COVER_PHOTO_UNAVAILABLE = "The selected cover photo is no longer available in Club-wide · Season 2026. Choose another photo or remove it before exporting.";
+export const COVER_PHOTO_UNAVAILABLE = "The selected cover photo is no longer available in Club-wide · Season 2026. Choose another photo or remove it before sending to review.";
 
 export function eligibleCoverPhotos(photos: ClubPhoto[]): ClubPhoto[] {
   return photos.filter(p => p.grade === null && p.season === 2026);

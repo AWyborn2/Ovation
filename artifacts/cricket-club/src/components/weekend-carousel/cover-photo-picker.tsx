@@ -46,11 +46,11 @@ export function CoverPhotoPicker({ s }: { s: WeekendCarouselState }) {
           {s.coverPhotos.length === 0 && (
             <p className="mt-3 text-sm text-muted-foreground" data-testid="text-no-cover-photos">
               No eligible cover photos. In Photo library, put a photo in Club-wide and tag it Season 2026.
-              You can still export with the branded no-photo cover.
+              You can still queue the branded no-photo cover.
             </p>
           )}
           {failed.size > 0 && <p className="mt-2 text-xs text-amber-700 dark:text-amber-400" role="status">
-            A thumbnail could not load. Check the selected photo in the slide preview; if its full image fails, no ZIP will be downloaded.
+            A thumbnail could not load. Check the selected photo in the slide preview before sending to review.
           </p>}
         </div>
         {chosen && <PhotoPlacement label="Cover" disabled={s.exporting}

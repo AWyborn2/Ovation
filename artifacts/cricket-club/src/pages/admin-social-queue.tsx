@@ -1,5 +1,6 @@
 import { planCardSet, type CardSetOptions } from "@/lib/card-sets/plan";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { Link, useLocation, useSearch } from "wouter";
 import {
   useListSocialDrafts,
@@ -65,6 +66,8 @@ function playerIdFromAppPath(appPath?: string | null): number | null {
 
 /** How many slides a draft posts as (a big round is a balanced card set). */
 function slideCount(d: SocialDraft): number {
+  const carousel = readQueuedCarousel(d.cardInput);
+  if (carousel) return carousel.slides.length;
   const input = draftInput(d);
   if (!input) return 1;
   const opts = (d.adjustments as { set?: CardSetOptions } | null | undefined)?.set ?? {};
@@ -122,6 +125,17 @@ export default function AdminSocialQueue() {
   });
 
   const drafts = useMemo(() => (draftsQ.data ?? []) as SocialDraft[], [draftsQ.data]);
+  const openedLink = useRef<number | null>(null);
+  const requestedDraft = Number(new URLSearchParams(search).get("draft"));
+  useEffect(() => {
+    if (!requestedDraft || openedLink.current === requestedDraft) return;
+    const draft = drafts.find(d => d.id === requestedDraft);
+    if (draft) {
+      openedLink.current = requestedDraft;
+      setStatus(draftStatus(draft));
+      setOpen(draft);
+    }
+  }, [requestedDraft, drafts]);
   const counts = useMemo(() => {
     const c: Record<DraftStatus, number> = {
       awaiting_review: 0,
@@ -403,7 +417,8 @@ export default function AdminSocialQueue() {
         </CardContent>
       </Card>
 
-      <DraftDrawer draft={open} onClose={() => setOpen(null)} onPreview={setPreview} />
+      <DraftDrawer draft={open} onClose={() => setOpen(null)}
+        onPreview={d => readQueuedCarousel(d.cardInput) ? setOpen(d) : setPreview(d)} />
 
       <ShareCardModal
         open={!!preview}

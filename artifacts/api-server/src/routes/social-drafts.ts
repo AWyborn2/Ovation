@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import {
   db,
@@ -384,6 +385,21 @@ router.post(
     }
     const tenantId = getTenantId(req);
     let packId = parsed.data.packId ?? null;
+    const carousel = readQueuedCarousel(cardInput);
+    if ("weekendCarousel" in cardInput && (!carousel || cardInput.kind !== "matchDay" ||
+      !parsed.data.caption?.trim() || templateId !== undefined)) {
+      res.status(400).json({ error: "A carousel needs 3–20 valid slides and a match-day caption." });
+      return;
+    }
+    const sourceKey = carousel ? `weekend-carousel:${carousel.submissionId}` : null;
+    if (sourceKey) {
+      const [existing] = await db.select().from(socialDraftsTable).where(and(
+        eq(socialDraftsTable.tenantId, tenantId), eq(socialDraftsTable.sourceKey, sourceKey),
+        sql`${socialDraftsTable.status} != 'dismissed'`,
+      ));
+      if (existing) { res.status(200).json(presentDraft(existing)); return; }
+      packId = "club-kit-v1";
+    }
     let adjustments: unknown = parsed.data.adjustments ?? null;
     if (templateId !== undefined) {
       const template = await loadEditorTemplate(tenantId, templateId);
@@ -398,17 +414,29 @@ router.post(
       .insert(socialDraftsTable)
       .values({
         tenantId,
-        engine: "adhoc",
+        engine: carousel ? "ondemand" : "adhoc",
         status: "awaiting_review",
         cardInput,
+        caption: parsed.data.caption ?? null,
+        sourceKey,
+        ...(carousel ? { photoSource: "none" } : {}),
         family: familyOfKind(cardInput.kind),
         packId,
         adjustments,
         autoReadyAt: null,
-        editedAt: adjustments ? new Date() : null,
+        editedAt: carousel || adjustments ? new Date() : null,
         createdByAdminId: (req as RequestWithAdmin).admin?.id ?? null,
       })
+      .onConflictDoNothing()
       .returning();
+    if (!row && sourceKey) {
+      const [existing] = await db.select().from(socialDraftsTable).where(and(
+        eq(socialDraftsTable.tenantId, tenantId), eq(socialDraftsTable.sourceKey, sourceKey),
+        sql`${socialDraftsTable.status} != 'dismissed'`,
+      ));
+      if (existing) { res.status(200).json(presentDraft(existing)); return; }
+    }
+    if (!row) { res.status(409).json({ error: "Could not create draft. Please retry." }); return; }
     res.status(201).json(presentDraft(row));
   },
 );

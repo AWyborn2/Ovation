@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
+import { CarouselPreview } from "./carousel-preview";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useApproveSocialDraft,
@@ -97,6 +99,7 @@ export function DraftDrawer({
   if (!current) return null;
 
   const status = draftStatus(current);
+  const carousel = readQueuedCarousel(current.cardInput);
   const revisions = revisionsQ.data ?? [];
   // The newest refresh revision holds the corrected data for a stale card.
   const correction = current.staleSince ? revisions.find((r) => r.reason === "refresh") : undefined;
@@ -133,14 +136,14 @@ export function DraftDrawer({
             </Button>
           )}
           <div className="ml-auto flex flex-wrap gap-2">
-            {status !== "dismissed" && (
+            {status !== "dismissed" && !carousel && (
               <Button asChild variant="outline">
                 <Link href={`/admin/social/editor/${current.id}`}>Open in editor</Link>
               </Button>
             )}
-            <Button type="button" variant="outline" onClick={() => onPreview(current)}>
+            {!carousel && <Button type="button" variant="outline" onClick={() => onPreview(current)}>
               Preview & download
-            </Button>
+            </Button>}
             {status === "awaiting_review" && (
               <Button
                 type="button"
@@ -217,6 +220,7 @@ export function DraftDrawer({
           </div>
         )}
 
+        {carousel && <CarouselPreview key={current.id} carousel={carousel} />}
         {status !== "dismissed" && <SchedulePanel key={current.id} draft={current} />}
 
         {status !== "dismissed" && (
@@ -230,7 +234,7 @@ export function DraftDrawer({
           </section>
         )}
 
-        <section className="space-y-2">
+        {!carousel && <section className="space-y-2">
           <h3 className="text-sm font-semibold">Photo</h3>
           {junior ? (
             <p className="text-sm text-muted-foreground">Junior cards don't use photos.</p>
@@ -284,7 +288,7 @@ export function DraftDrawer({
               )}
             </>
           )}
-        </section>
+        </section>}
 
         <section className="space-y-2">
           <label htmlFor="draft-caption" className="text-sm font-semibold">

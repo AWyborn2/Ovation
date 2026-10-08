@@ -1,9 +1,9 @@
 ---
 name: Weekend carousel photo scope
-description: User-required structure and photo eligibility for on-demand weekend match-day carousel exports.
+description: User-required structure, review flow and photo eligibility for weekend match-day carousels.
 ---
 
-Weekend match-day carousel exports from Social Studio must have a title page, cards for the teams playing that weekend, and a sponsors page at the end. Team-card photos must come from that grade's photos and only batting, bowling or fielding categories.
+Weekend match-day carousels from Social Studio must have a title page, cards for the teams playing that weekend, and a sponsors page at the end. Team-card photos must come from that grade's photos and only batting, bowling or fielding categories.
 
 **Why:** The user explicitly requested this structure and restricted photo selection, rather than unrestricted grade-library selection.
 
@@ -20,3 +20,9 @@ Weekend carousel sponsor placement must follow the user's requested roles: one t
 **Why:** The user repeated this requirement after the cover-photo work; generic match-day sponsor filtering does not express the intended placements.
 
 **How to apply:** Keep these carousel-specific roles separate from standalone card rules. Do not fill a missing team assignment with another team's sponsor. “All unassigned” includes the presenting sponsor if it has no team assignment; retain the active-sponsor and sponsors-enabled controls.
+
+The primary action sends the whole carousel to the Social review queue with a match-day caption, rather than immediately exporting it. Preserve the selected photos, crops, sponsor roles and slide order as one review item.
+
+**Why:** The user requested review with a match-day caption instead of exporting the carousel.
+
+**How to apply:** Save the reviewed composition, not instructions to randomly select photos again later. Do not automatically publish a newly submitted carousel.

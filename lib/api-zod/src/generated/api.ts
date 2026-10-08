@@ -8801,7 +8801,12 @@ export const ListSocialDraftsResponse = zod.array(ListSocialDraftsResponseItem)
  * Creates a draft that is awaiting review with no import time, so it never auto-promotes. With templateId, the template's pack and adjustments are applied to the given card input.
  * @summary Start an ad-hoc card (made by hand, a blank canvas, or from a saved template)
  */
+export const createSocialDraftBodyCaptionMax = 5000;
+
+
+
 export const CreateSocialDraftBody = zod.object({
+  "caption": zod.string().max(createSocialDraftBodyCaptionMax).optional().describe('Optional caption supplied with a manually queued card or carousel.'),
   "cardInput": zod.record(zod.string(), zod.unknown()).describe('The card\'s ShareCardInput (validated by shape on the web).'),
   "packId": zod.string().nullish().describe('Design pack; \'blank\' for a blank canvas.'),
   "adjustments": zod.union([zod.object({

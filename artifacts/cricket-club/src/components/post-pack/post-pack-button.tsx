@@ -23,9 +23,9 @@ export function canShareFiles(): boolean {
 
 async function toFiles(pack: PostPack, kind: string): Promise<File[]> {
   return Promise.all(
-    pack.images.map(async (img) => {
+    pack.images.map(async (img, index) => {
       const blob = await (await fetch(img.url, { credentials: "include" })).blob();
-      return new File([blob], `${kind}-${img.size}.png`, { type: "image/png" });
+      return new File([blob], `${String(index + 1).padStart(3, "0")}-${kind}-${img.size}.png`, { type: "image/png" });
     }),
   );
 }
@@ -114,15 +114,15 @@ export function PostPackButton({ draft, onPosted }: { draft: SocialDraft; onPost
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2">
-        {pack.images.map((img) => (
-          <figure key={img.size} className="space-y-1">
+        {pack.images.map((img, index) => (
+          <figure key={img.url} className="space-y-1">
             <img
               src={img.url}
-              alt={`${img.size} card`}
+              alt={`Slide ${index + 1}, ${img.size}`}
               className="w-full rounded-md border border-border"
             />
             <figcaption className="text-center text-xs capitalize text-muted-foreground">
-              {img.size}
+              {index + 1} · {img.size}
             </figcaption>
           </figure>
         ))}

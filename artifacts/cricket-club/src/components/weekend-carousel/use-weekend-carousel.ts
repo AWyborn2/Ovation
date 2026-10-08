@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetWeekendCarouselSources,
   getGetWeekendCarouselSourcesQueryKey,
   useGetSocialSettings,
   getGetSocialSettingsQueryKey,
-  useCreateCardRenderStill,
+  useCreateSocialDraft,
+  getListSocialDraftsQueryKey,
+  getGetPendingSocialDraftCountQueryKey,
   type Fixture,
   type ClubPhoto,
   type WeekendCarouselSources,
@@ -24,7 +27,7 @@ import {
   type TeamSlide,
   type WeekendSlide,
 } from "./model";
-import { downloadWeekendZip } from "./export";
+import { matchDayCaption } from "./caption";
 
 export const WEEKEND_PACK_ID = "club-kit-v1";
 
@@ -52,9 +55,9 @@ export function slideAdjustments(slide: WeekendSlide, size: CardSize): CardAdjus
 }
 
 /**
- * State for the ephemeral weekend match-day exporter: date range, fixture
+ * State for the weekend match-day composer: date range, fixture
  * picks/order, a frozen generated set (photo choices fixed at generate time),
- * per-team photo/crop edits and the ZIP export. Nothing is saved server-side.
+ * per-team photo/crop edits and caption. Sending to review saves a frozen set.
  */
 export function useWeekendCarousel() {
   const initial = useMemo(() => weekendRange(new Date(), CLUB_TIME_ZONE), []);
@@ -72,9 +75,10 @@ export function useWeekendCarousel() {
   const settingsQ = useGetSocialSettings({
     query: { queryKey: getGetSocialSettingsQueryKey() },
   });
-  const still = useCreateCardRenderStill();
-  const stillRef = useRef(still.mutateAsync);
-  stillRef.current = still.mutateAsync;
+  const createDraft = useCreateSocialDraft();
+  const qc = useQueryClient();
+  const submission = useRef<{ key: string; id: string } | null>(null);
+  const submitting = useRef(false);
 
   const fixtures = useMemo(() => (sources?.fixtures ?? []) as Fixture[], [sources]);
   const photos = useMemo(() => (sources?.photos ?? []) as ClubPhoto[], [sources]);
@@ -84,6 +88,8 @@ export function useWeekendCarousel() {
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
 
   const [title, setTitle] = useState("Match day");
+  const [captionEdit, setCaptionEdit] = useState<string | null>(null);
+  const [queued, setQueued] = useState<{ key: string; id: number } | null>(null);
   const [size, setSize] = useState<CardSize>("square");
   const [cover, setCover] = useState<CoverPhoto>({
     photoId: null, transform: { focalX: 0.5, focalY: 0.5, zoom: 1 },
@@ -115,7 +121,7 @@ export function useWeekendCarousel() {
     if (selected.length === 0) return;
     // Photo choices are fixed here, once — never re-picked on re-render.
     setGenerated({ key: selectionKey, from, to, teams: createTeamSlides(selected, photos) });
-    setExportError(null);
+    setQueueError(null);
   };
 
   const slides: WeekendSlide[] = useMemo(() => {
@@ -133,8 +139,12 @@ export function useWeekendCarousel() {
   }, [generated, photos, bundle, title, cover, coverPhotos]);
 
   const [exporting, setExporting] = useState(false);
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
-  const [exportError, setExportError] = useState<string | null>(null);
+  const [queueError, setQueueError] = useState<string | null>(null);
+  const caption = captionEdit ?? matchDayCaption(
+    generated?.teams.map(t => t.fixture) ?? [], title, bundle?.settings.clubHashtag,
+  );
+  const queueKey = JSON.stringify([slides, size, caption]);
+  const queuedId = queued?.key === queueKey ? queued.id : null;
 
   const togglePick = (id: number) =>
     !exporting && setPicks((ps) => ps.map((p) => (p.id === id ? { ...p, included: !p.included } : p)));
@@ -158,46 +168,46 @@ export function useWeekendCarousel() {
     });
   };
 
-  const render = (slide: WeekendSlide, s: CardSize): Promise<Blob> =>
-    stillRef.current({
-      data: {
-        input: slide.input as unknown as Record<string, unknown>,
-        options: {
-          size: s,
-          packId: WEEKEND_PACK_ID,
-          data: slide.data,
-          junior: slide.junior,
-          sponsorsOn: slide.sponsorsOn,
-          strictImages: true,
-          ...(slideAdjustments(slide, s) ? { adjustments: slideAdjustments(slide, s) } : {}),
-        },
-      },
-    }) as Promise<Blob>;
-
-  const canExport = !!generated && !stale && slides.length > 0 && !exporting && !coverUnavailable &&
+  const canQueue = !!generated && !stale && slides.length >= 3 && slides.length <= 20 &&
+    !!caption.trim() && caption.length <= 5000 && !queuedId && !exporting && !coverUnavailable &&
     !sourcesQ.isError && !settingsQ.isError && !sourcesQ.isFetching && !settingsQ.isFetching;
-  const runExport = async () => {
-    if (!canExport) return;
+  const runQueue = async () => {
+    if (!canQueue || submitting.current) return;
+    submitting.current = true;
     setExporting(true);
-    setExportError(null);
-    setProgress({ done: 0, total: slides.length });
+    setQueueError(null);
     try {
       // A second admin may have removed or retagged the photo since preview.
       // Rebuild from fresh server-approved URLs, never silently replace the pick.
-      let exportSlides = slides;
+      let queuedSlides = slides;
       if (cover.photoId !== null) {
         const fresh = await sourcesQ.refetch();
-        if (fresh.isError || !fresh.data) throw new Error("Could not verify the cover photo. Retry before exporting.");
+        if (fresh.isError || !fresh.data) throw new Error("Could not verify the cover photo. Retry before sending to review.");
         const allowed = eligibleCoverPhotos(fresh.data.coverPhotos);
         if (!allowed.some(p => p.id === cover.photoId)) throw new Error(COVER_PHOTO_UNAVAILABLE);
-        exportSlides = buildWeekendSlides(generated!.teams, photos, bundle!,
+        queuedSlides = buildWeekendSlides(generated!.teams, photos, bundle!,
           title.trim() || "Match day", generated!.from, generated!.to, CLUB_TIME_ZONE,
           { selection: cover, photos: allowed });
       }
-      await downloadWeekendZip(exportSlides, size, render, (done, total) => setProgress({ done, total }));
+      if (submission.current?.key !== queueKey) {
+        submission.current = { key: queueKey, id: crypto.randomUUID() };
+      }
+      const draft = await createDraft.mutateAsync({ data: {
+        packId: WEEKEND_PACK_ID,
+        caption: caption.trim(),
+        cardInput: {
+          kind: "matchDay", headline: `${title.trim() || "Match day"} carousel`,
+          roundLabel: `${generated!.from} – ${generated!.to}`,
+          weekendCarousel: { version: 1, submissionId: submission.current.id, size, slides: queuedSlides },
+        },
+      } });
+      setQueued({ key: queueKey, id: draft.id });
+      qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
+      qc.invalidateQueries({ queryKey: getGetPendingSocialDraftCountQueryKey() });
     } catch (e) {
-      setExportError(e instanceof Error ? e.message : "Export failed. Nothing was downloaded.");
+      setQueueError(e instanceof Error ? e.message : "Could not send the carousel to review. Please retry.");
     } finally {
+      submitting.current = false;
       setExporting(false);
     }
   };
@@ -247,10 +257,13 @@ export function useWeekendCarousel() {
     patchTeam,
     moveTeamAt,
     exporting,
-    progress,
-    exportError,
-    canExport,
-    runExport,
+    caption,
+    setCaption: (value: string) => !exporting && setCaptionEdit(value),
+    resetCaption: () => !exporting && setCaptionEdit(null),
+    queueError,
+    queuedId,
+    canQueue,
+    runQueue,
   };
 }
 

@@ -18,6 +18,9 @@ import {
   cardTemplatesTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
+import { randomUUID } from "node:crypto";
+import { renderDraftSlides, setStillRenderer } from "../lib/draft-render";
+import { logger } from "../lib/logger";
 
 const STAMP = Date.now();
 const tenantIds: number[] = [];
@@ -92,6 +95,68 @@ const adjustments = {
 };
 
 describe("POST /social-drafts (ad-hoc)", () => {
+  it("queues an entire match-day carousel once, keeps it private and renders every saved slide", async () => {
+    const slides = ["title", "fixture-11", "sponsors"].map((id, index) => ({
+      id, label: id, junior: false, sponsorsOn: index !== 2, warnings: [],
+      input: { kind: "matchDay", ...(index !== 1 ? { carouselPage: { page: id, title: "Round one", sponsors: [] } } : { grade: "A Grade", oppositionName: "Visitors" }) },
+      data: { photoUrl: "/test-photo.png", photoTransform: { focalX: .3, focalY: .7, zoom: 1.8 }, sponsors: [{ name: "Team sponsor", logoUrl: "/team-logo.png" }] },
+    }));
+    const body = {
+      cardInput: { kind: "matchDay", headline: "Round one carousel", weekendCarousel: {
+        version: 1, submissionId: randomUUID(), size: "portrait", slides,
+      } },
+      caption: "MATCH DAY\nA Grade v Visitors",
+      packId: "club-kit-v1",
+    };
+    const created = await as(0).post("/social-drafts", body);
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({ status: "awaiting_review", autoReadyAt: null, caption: body.caption, family: "matchday" });
+    expect(created.body.cardInput).toEqual(body.cardInput);
+    const retry = await as(0).post("/social-drafts", body);
+    expect(retry.status).toBe(200);
+    expect(retry.body.id).toBe(created.body.id);
+    const queue = await as(0).get("/social-drafts?status=awaiting_review");
+    expect(queue.body.filter((d: { id: number }) => d.id === created.body.id)).toHaveLength(1);
+    const otherQueue = await as(1).get("/social-drafts");
+    expect(otherQueue.body.map((d: { id: number }) => d.id)).not.toContain(created.body.id);
+    const pending = await as(0).get("/social-drafts/pending-count");
+    expect(pending.body.count).toBeGreaterThan(0);
+    const caption = await request(app).patch(`/api/social-drafts/${created.body.id}`)
+      .set("Cookie", cookies[0]).set("x-tenant-id", String(tenantIds[0]))
+      .send({ caption: "Updated match-day caption" });
+    expect(caption.status).toBe(200);
+    const approved = await as(0).post(`/social-drafts/${created.body.id}/approve`);
+    expect(approved.status).toBe(200);
+    expect(approved.body.status).toBe("ready");
+    const [row] = await db.select().from(socialDraftsTable).where(eq(socialDraftsTable.id, created.body.id));
+    expect(row.caption).toBe("Updated match-day caption");
+    const calls: { input: unknown; options: Record<string, unknown> }[] = [];
+    setStillRenderer(async (input, options) => {
+      calls.push({ input, options: options as Record<string, unknown> });
+      return { buffer: Buffer.from("test-png"), contentType: "image/png" };
+    });
+    try {
+      const rendered = await renderDraftSlides(row, ["portrait", "landscape"], null, logger);
+      expect(rendered.map(s => [s.size, s.page, s.of])).toEqual([
+        ["portrait", 1, 3], ["portrait", 2, 3], ["portrait", 3, 3],
+        ["landscape", 1, 3], ["landscape", 2, 3], ["landscape", 3, 3],
+      ]);
+      expect(calls.slice(0, 3).map(c => c.input)).toEqual(slides.map(s => s.input));
+      expect(calls[1].options).toMatchObject({
+        data: slides[1].data, sponsorsOn: true, packId: "club-kit-v1", strictImages: true,
+        adjustments: { photo: { portrait: slides[1].data.photoTransform } },
+      });
+    } finally { setStillRenderer(null); }
+  });
+
+  it("rejects incomplete carousel payloads and blank captions", async () => {
+    const res = await as(0).post("/social-drafts", {
+      cardInput: { kind: "matchDay", weekendCarousel: { version: 1, slides: [] } },
+      caption: "",
+    });
+    expect(res.status).toBe(400);
+  });
+
   it("creates a draft awaiting review that never auto-promotes", async () => {
     const res = await as(0).post("/social-drafts", { cardInput: signing, packId: null });
     expect(res.status).toBe(201);

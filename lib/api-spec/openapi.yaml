@@ -18773,6 +18773,10 @@ components:
       type: object
       required: [cardInput]
       properties:
+        caption:
+          type: string
+          maxLength: 5000
+          description: "Optional caption supplied with a manually queued card or carousel."
         cardInput:
           type: object
           additionalProperties: true
