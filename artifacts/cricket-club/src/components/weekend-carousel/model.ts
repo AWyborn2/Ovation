@@ -101,16 +101,18 @@ export function moveTeam(teams: TeamSlide[], from: number, to: number): TeamSlid
   return next;
 }
 
-/** Do not infer a round from dates or a grade name. Summary titles include
- * their explicit round/stage after " • "; a finals stage takes precedence
- * over a scorecard fixture's numeric round. */
+/** Use explicit source labels, never dates or grade names. Only historical
+ * summary inputs without metadata need the old display-title fallback. */
 export function carouselRoundLabel(teams: TeamSlide[]): string {
   const labels = teams.map(({ fixture, input }) => {
-    const summaryRound = input?.kind === "matchSummary"
+    const summaryRound = input?.kind === "matchSummary" && input.roundLabel == null
       ? input.matchTitle.split(" • ").slice(1).join(" • ")
       : "";
-    const contentRound = input && "roundLabel" in input ? input.roundLabel : "";
-    const raw = (summaryRound.trim() || contentRound?.trim() || fixture.roundLabel?.trim() || "").replace(/\s+/g, " ");
+    const contentRound = input && "roundLabel" in input ? input.roundLabel : undefined;
+    const sourceLabel = input?.kind === "matchSummary" && input.roundLabel != null
+      ? input.roundLabel
+      : summaryRound.trim() || contentRound?.trim() || fixture.roundLabel || "";
+    const raw = sourceLabel.trim().replace(/\s+/g, " ");
     const numeric = raw.match(/^(?:(?:round|r)\s*\.?\s*)?(\d+)$/i);
     return numeric ? `ROUND ${Number(numeric[1])}` : raw.toUpperCase();
   });

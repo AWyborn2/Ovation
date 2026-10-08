@@ -246,6 +246,8 @@ export type ShareCardInput =
   | {
       kind: "matchSummary";
       matchTitle: string; // e.g. "A Grade • Round 5"
+      /** Source round/stage metadata; absent in legacy saved cards. */
+      roundLabel?: string;
       matchType?: string | null; // e.g. "One Day"
       date?: string | null;
       venue?: string | null;

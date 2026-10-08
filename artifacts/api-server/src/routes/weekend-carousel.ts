@@ -88,6 +88,8 @@ router.get("/weekend-carousel/sources", requireAdmin, requireEntitlement("social
     fixtures: fixtures.map(f => ({ ...f, startAt: f.startAt.toISOString(), createdAt: f.createdAt.toISOString() })),
     photos: teamPhotos.filter(p => !p.playerIds.some(id => unsafePlayerIds.has(id))),
     coverPhotos: coverPhotos.filter(p => !p.playerIds.some(id => unsafePlayerIds.has(id))),
+    // Keep the structured roundLabel beside each card input, independent of
+    // its display title. The opaque source payload also accepts legacy inputs.
     content: sources.content,
     warnings: [
       ...(eligibleFixtures.length < rows.length ? [`Excluded ${rows.length - eligibleFixtures.length} bye or cancelled/abandoned fixture(s).`] : []),

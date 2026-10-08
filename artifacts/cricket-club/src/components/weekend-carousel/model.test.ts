@@ -53,6 +53,9 @@ describe("carousel cover round labels", () => {
     list[0].input = { kind: "teamList", gradeRound: "A Grade", competitionLine: "",
       venueDateTime: "", players: [], roundLabel: "R7" };
     expect(carouselRoundLabel(list)).toBe("ROUND 7");
+    list[0].input.roundLabel = "";
+    list[0].fixture.roundLabel = "R8";
+    expect(carouselRoundLabel(list)).toBe("ROUND 8");
   });
   it("freezes the derived label into the cover without changing team inputs", () => {
     const selected = teams("R5", "5");
@@ -62,6 +65,31 @@ describe("carousel cover round labels", () => {
     expect(frozen[0].input.roundLabel).toBe("ROUND 5");
     expect(slides[1].input).toMatchObject({ roundLabel: "R5" });
     expect(slides[2].input).toMatchObject({ roundLabel: "5" });
+  });
+  it("prefers source metadata over reformatted or conflicting display titles", () => {
+    const selected = createTeamSlides([fixture(1, { roundLabel: "14" }), fixture(2, { roundLabel: "14" })], [], {
+      1: { kind: "matchSummary", matchTitle: "A Grade: season decider", roundLabel: "Grand Final", innings: [] },
+      2: { kind: "matchSummary", matchTitle: "Under 14 • Round 14", roundLabel: " grand   final ", innings: [] },
+    });
+    expect(carouselRoundLabel(selected)).toBe("GRAND FINAL");
+    const slides = buildWeekendSlides(selected, [], bundle, "Results", "2026-10-09", "2026-10-11");
+    const frozen = JSON.parse(JSON.stringify(slides));
+    expect(frozen[0].input.roundLabel).toBe("GRAND FINAL");
+    expect(frozen[1].input).toMatchObject({ matchTitle: "A Grade: season decider", roundLabel: "Grand Final" });
+    expect(frozen[1].data).toEqual(JSON.parse(JSON.stringify(slides[1].data)));
+    if (selected[0].input?.kind !== "matchSummary") throw new Error("Expected summary source");
+    selected[0].input.roundLabel = "Round 5";
+    expect(carouselRoundLabel(selected)).toBe("MIXED ROUNDS");
+    expect(frozen[0].input.roundLabel).toBe("GRAND FINAL");
+  });
+  it("uses explicit numeric metadata and does not infer labels for explicitly unknown rounds", () => {
+    const selected = createTeamSlides([fixture(1, { roundLabel: "14" })], [], {
+      1: { kind: "matchSummary", matchTitle: "A Grade • Grand Final", roundLabel: "R05" },
+    });
+    expect(carouselRoundLabel(selected)).toBe("ROUND 5");
+    if (selected[0].input?.kind !== "matchSummary") throw new Error("Expected summary source");
+    selected[0].input.roundLabel = "";
+    expect(carouselRoundLabel(selected)).toBe("");
   });
 });
 

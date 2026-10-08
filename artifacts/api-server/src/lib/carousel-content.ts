@@ -109,7 +109,7 @@ export async function carouselContent(req: Request, tenantId: number, type: Caro
     const fixture = {
       id, tenantId, grade: match.grade, opponentName: match.opponent || "Opponent unknown",
       startAt: clubTimeToUtc(`${day}T00:00`)!, venue: match.venue,
-      roundLabel: match.round == null ? "" : String(match.round),
+      roundLabel: input.roundLabel ?? "",
       isHome: true, source: "scorecard", createdAt: new Date(0),
       playhqMatchId: null, opponentLogoUrl: input.opposition.logoUrl ?? null, notes: null,
     } as FixtureRow;
