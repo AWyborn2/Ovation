@@ -13,7 +13,7 @@ const browser = await puppeteer.launch({
   args: ["--no-sandbox", "--disable-dev-shm-usage"],
   headless: true,
 });
-const origin = "http://127.0.0.1:80";
+const origin = process.argv[2] ?? "http://127.0.0.1:80";
 const member = id => ({
   id, displayName: `Test Player ${id}`, linkedPlayerId: id + 10000,
   status: "yes", note: null, lastGrade: "A Grade", junior: false,
@@ -76,6 +76,7 @@ async function metrics(page) {
     const body = document.querySelector("#pool-search").closest("aside").lastElementChild;
     return {
       teamsHeight: teams.height, poolHeight: pool.height, teamsWidth: teams.width,
+      teamsBottom: teams.bottom, poolBottom: pool.bottom,
       poolTop: pool.top, teamsTop: teams.top, viewport: innerWidth,
       documentWidth: document.documentElement.scrollWidth,
       poolScrollHeight: body.scrollHeight, poolClientHeight: body.clientHeight,
@@ -96,7 +97,13 @@ try {
   const after = await metrics(page);
   assert.ok(after.teamsWidth > before.teamsWidth + 200, JSON.stringify({ before, after }));
   assert.ok(Math.abs(after.teamsHeight - after.poolHeight) < 2, JSON.stringify(after));
+  assert.ok(Math.abs(after.teamsBottom - after.poolBottom) < 2, JSON.stringify(after));
   await page.screenshot({ path: "/tmp/selection-hub-expanded.png" });
+  await page.evaluate(() => {
+    document.querySelector('[aria-label="Teams"]').lastElementChild.scrollIntoView({ block: "end" });
+  });
+  await page.screenshot({ path: "/tmp/selection-hub-last-row.png" });
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.click('[aria-label="Expand side menu"]');
   const restored = await metrics(page);
   assert.equal(restored.teamsWidth, before.teamsWidth);

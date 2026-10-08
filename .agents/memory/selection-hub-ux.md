@@ -3,7 +3,7 @@ name: Selection Hub usability requirements
 description: User-required grade ordering, full-height pool, collapsible navigation and comparison access.
 ---
 
-Selection Hub teams must always follow the Grade order menu. The player-pool container should match the height of all listed teams. Provide a side-menu collapse button to expand selection space, and let captains or selectors access player statistics and performance comparison.
+Selection Hub teams must always follow the Grade order menu. The player-pool container must extend to the bottom of the last row of teams, not just the first row or one viewport. Provide a side-menu collapse button to expand selection space, and let captains or selectors access player statistics and performance comparison.
 
 **Why:** The user explicitly requested these four Selection Hub UI/UX behaviours.
 
