@@ -5,3 +5,5 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 ## Active features
 
 - card-kind-templates (not started)
+
+- [card-kind-templates](card-kind-templates.md)
