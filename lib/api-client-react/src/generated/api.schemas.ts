@@ -3168,6 +3168,11 @@ export const SelectionMemberStatus = {
  */
 export interface SelectionMember {
   id: number;
+  /**
+     * Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.
+     * @nullable
+     */
+  linkedPlayerId?: number | null;
   displayName: string;
   status: SelectionMemberStatus;
   /** @nullable */

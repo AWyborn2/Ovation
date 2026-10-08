@@ -13462,6 +13462,9 @@ components:
       properties:
         id:
           type: integer
+        linkedPlayerId:
+          type: ["integer", "null"]
+          description: Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.
         displayName:
           type: string
         status:

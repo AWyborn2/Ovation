@@ -18,7 +18,8 @@ import {
   type SquadSection,
   type TeamListPlayer,
 } from "@workspace/db";
-import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
+import { FILL_IN_THRESHOLD, sortByGradeOrder } from "@workspace/scorecard";
+import { loadClubGradeOrder } from "./club-grade-order";
 import {
   fixtureSection,
   memberDisplayName,
@@ -156,6 +157,7 @@ export type MemberStatus = AvailabilityStatus | "none";
 
 export type BoardMember = {
   id: number;
+  linkedPlayerId: number | null;
   displayName: string;
   status: MemberStatus;
   note: string | null;
@@ -319,7 +321,7 @@ export async function buildBoard(
   // `replies` the reply details — a row the system recorded (away) is not a
   // reply; `windowFixtures`, `grades` and `lists` give each member's last grade
   // and the dates they were asked about.
-  const [members, sides, statusByDate, replies, windowFixtures, grades, lists] = await Promise.all([
+  const [members, sides, statusByDate, replies, windowFixtures, grades, lists, gradeOrder] = await Promise.all([
     db
       .select(MEMBER_COLUMNS)
       .from(squadMembersTable)
@@ -394,6 +396,7 @@ export async function buildBoard(
           sql`jsonb_array_length(${teamListsTable.players}) > 0`,
         ),
       ),
+    loadClubGradeOrder(tenantId),
   ]);
   const byId = new Map(members.map((m) => [m.id, m]));
   const placed = new Set<number>();
@@ -430,6 +433,9 @@ export async function buildBoard(
     const reply = replyOf.get(m.id);
     return {
       id: m.id,
+      linkedPlayerId: section === "senior" && m.section === "senior" && !m.isPrivate
+        ? m.linkedPlayerId
+        : null,
       displayName: memberDisplayName(m),
       status,
       note: reply?.note ?? null,
@@ -441,7 +447,12 @@ export async function buildBoard(
     };
   };
 
-  const sectionSides = sides.filter((s) => fixtureSection(s.fixture.grade) === section);
+  // Stable sort retains fixture start/id order for multiple sides of the same grade.
+  const sectionSides = sortByGradeOrder(
+    sides.filter((s) => fixtureSection(s.fixture.grade) === section),
+    (s) => s.fixture.grade,
+    gradeOrder,
+  );
   const selections: BoardSide[] = sectionSides.map(({ selection: sel, fixture: f }) => {
     const date = perthDate(f.startAt);
     const right = selectionRight(actor, rule, f.grade);

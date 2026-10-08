@@ -8,7 +8,7 @@ import {
   getListImportsQueryKey,
   type Admin,
 } from "@workspace/api-client-react";
-import { ExternalLink, Menu, Moon, Plus, Search, Sun } from "lucide-react";
+import { ExternalLink, Menu, Moon, PanelLeftClose, PanelLeftOpen, Plus, Search, Sun } from "lucide-react";
 import { useInvalidateAdmin } from "@/lib/admin-auth";
 import { useEntitlements } from "@/lib/entitlements";
 import { useBrand } from "@/lib/brand-context";
@@ -46,6 +46,8 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
   const [location] = useLocation();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [jumpOpen, setJumpOpen] = useState(false);
+  const [menuCollapsed, setMenuCollapsed] = useState(false);
+  const isSelectionHub = location === "/admin/selection";
   const entitlements = useEntitlements();
   const nav = visibleNav(entitlements);
   const pendingQ = useGetPendingSocialDraftCount({
@@ -82,12 +84,28 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r border-border bg-card nav:flex">
+      <aside id="admin-desktop-menu" className={cn(
+        "sticky top-0 hidden h-screen w-64 shrink-0 border-r border-border bg-card",
+        !menuCollapsed && "nav:flex",
+      )}>
         {sidebar(true)}
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-[60px] items-center gap-3 border-b border-border bg-[var(--glass)] px-4 backdrop-blur-xl sm:px-8">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="hidden nav:inline-flex"
+            aria-label={menuCollapsed ? "Expand side menu" : "Collapse side menu"}
+            title={menuCollapsed ? "Expand side menu" : "Collapse side menu"}
+            aria-expanded={!menuCollapsed}
+            aria-controls="admin-desktop-menu"
+            onClick={() => setMenuCollapsed(v => !v)}
+          >
+            {menuCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+          </Button>
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
             <SheetTrigger asChild>
               <Button
@@ -146,7 +164,7 @@ export function AdminLayout({ admin, children }: { admin: Admin; children: React
           )}
         </header>
 
-        <main className="mx-auto w-full min-w-0 max-w-[1360px] flex-1 p-4 sm:p-8">{children}</main>
+        <main className={cn("mx-auto w-full min-w-0 flex-1 p-4 sm:p-8", !isSelectionHub && "max-w-[1360px]")}>{children}</main>
       </div>
 
       <AdminJumpTo nav={nav} open={jumpOpen} onOpenChange={setJumpOpen} />

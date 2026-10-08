@@ -11,6 +11,7 @@ import {
   type SquadSection,
 } from "@workspace/api-client-react";
 import { AddActivePlayer } from "@/components/add-active-player";
+import { SelectionCompareLink } from "@/components/selection/compare-link";
 import { CaptainShell } from "@/components/captain-shell";
 import { EmptyState, LoadingState, QueryError } from "@/components/data-states";
 import {
@@ -227,7 +228,7 @@ export default function SelectionHub() {
   const roundLabel = data?.selections.find((s) => s.fixture.roundLabel)?.fixture.roundLabel;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1360px] flex-col gap-4 pb-12">
+    <div className="mx-auto flex w-full min-w-0 flex-col gap-4 pb-12">
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
@@ -243,7 +244,8 @@ export default function SelectionHub() {
             )}
           </h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+        <SelectionCompareLink junior={junior} />
         <AddActivePlayer section={section} />
         <div
           role="group"
@@ -284,10 +286,10 @@ export default function SelectionHub() {
       ) : (
         <>
           {data.round && <RoundHeader round={data.round} actor={data.actor} junior={junior} />}
-          <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
             <main
               aria-label="Teams"
-              className="grid min-w-0 gap-3.5 [grid-template-columns:repeat(auto-fill,minmax(290px,1fr))]"
+              className="grid min-w-0 content-start gap-3.5 [grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr))]"
             >
               {view.selections.length === 0 ? (
                 <EmptyState
@@ -314,7 +316,7 @@ export default function SelectionHub() {
                 ))
               )}
             </main>
-            <div className="order-first min-w-0 lg:order-none">
+            <div className="relative order-first min-w-0 lg:order-none lg:min-h-[420px]">
               <PlayerPool
                 pool={view.pool}
                 junior={junior}
@@ -335,6 +337,7 @@ export default function SelectionHub() {
 
       {view && (
         <MoveDialog
+          junior={junior}
           state={view}
           memberId={openId}
           busy={busy}
