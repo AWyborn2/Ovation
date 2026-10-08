@@ -256,6 +256,11 @@ export type ShareCardInput =
       innings: MatchSummaryInnings[];
       headline?: string;
       /**
+       * On-demand carousel: render the detailed Club Kit card (every innings,
+       * top batters and bowlers) instead of the concise result card.
+       */
+      carouselDetail?: boolean;
+      /**
        * Marks this as a JUNIOR card: forces the junior brown palette and a
        * "JUNIOR MATCH" eyebrow so junior content reads distinctly from senior.
        */

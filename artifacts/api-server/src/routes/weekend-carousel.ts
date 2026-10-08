@@ -10,6 +10,9 @@ import { getTenantId } from "../middlewares/tenant-context";
 import { CLUB_TIME_ZONE, clubTimeToUtc } from "../lib/round-schedules";
 import { getTenantPlayhqOrgId } from "../lib/tenant";
 import { nonSeniorPlayerIds, presentPhotos } from "../lib/club-photo-library";
+import { carouselContent } from "../lib/carousel-content";
+import { loadClubGradeOrder } from "../lib/club-grade-order";
+import { sortByGradeOrder } from "@workspace/scorecard";
 
 const router: IRouter = Router();
 
@@ -19,7 +22,7 @@ router.get("/weekend-carousel/sources", requireAdmin, requireEntitlement("social
     res.status(400).json({ error: "Choose a valid start and end date." });
     return;
   }
-  const { from, to } = parsed.data;
+  const { from, to, setType = "matchDay" } = parsed.data;
   const validDay = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && Number.isFinite(Date.parse(s))
     && new Date(s).toISOString().slice(0, 10) === s;
   if (!validDay(from) || !validDay(to) || from > to) {
@@ -34,7 +37,8 @@ router.get("/weekend-carousel/sources", requireAdmin, requireEntitlement("social
   const rows = await db.select().from(fixturesTable).where(and(
     eq(fixturesTable.tenantId, tenantId), gte(fixturesTable.startAt, start), lt(fixturesTable.startAt, end),
   )).orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id));
-  const ids = rows.flatMap(f => f.source === "playhq" && f.playhqMatchId ? [f.playhqMatchId] : []);
+  const ids = setType === "results" || setType === "matchSummary" ? []
+    : rows.flatMap(f => f.source === "playhq" && f.playhqMatchId ? [f.playhqMatchId] : []);
   const status = new Map<string, string>();
   if (ids.length) {
     try {
@@ -51,12 +55,22 @@ router.get("/weekend-carousel/sources", requireAdmin, requireEntitlement("social
       return;
     }
   }
-  const fixtures = rows.filter(f =>
+  const eligibleFixtures = rows.filter(f =>
     !/^bye$/i.test(f.opponentName.trim()) &&
     !/cancelled|canceled|abandoned|^bye$/i.test(status.get(f.playhqMatchId ?? "") ?? "") &&
     !/\b(cancelled|canceled|abandoned)\b/i.test(f.notes ?? ""),
   );
-  const grades = [...new Set(fixtures.map(f => f.grade).filter(g => !isJuniorGradeLabel(g)))];
+  let sources;
+  try {
+    sources = await carouselContent(req, tenantId, setType, eligibleFixtures, from, to);
+  } catch (error) {
+    req.log.warn({ err: error, tenantId }, "Carousel source lookup failed");
+    res.status(503).json({ error: "Could not load team lists or scorecards. Retry before generating." });
+    return;
+  }
+  const fixtures = sortByGradeOrder(sources.fixtures, f => f.grade, await loadClubGradeOrder(tenantId));
+  const grades = [...new Set(fixtures.filter(f => sources.content[f.id]?.junior !== true)
+    .map(f => f.grade).filter(g => !isJuniorGradeLabel(g)))];
   const photoRows = grades.length ? await db.select().from(clubPhotosTable).where(and(
     eq(clubPhotosTable.tenantId, tenantId), inArray(clubPhotosTable.grade, grades),
   )) : [];
@@ -67,13 +81,18 @@ router.get("/weekend-carousel/sources", requireAdmin, requireEntitlement("social
     eq(clubPhotosTable.season, 2026),
   )).orderBy(asc(clubPhotosTable.id));
   const coverPhotos = await presentPhotos(tenantId, coverRows);
-  const unsafePlayerIds = new Set(await nonSeniorPlayerIds(tenantId, coverPhotos.flatMap(p => p.playerIds)));
+  const teamPhotos = await presentPhotos(tenantId, eligible);
+  const unsafePlayerIds = new Set(await nonSeniorPlayerIds(tenantId, [...coverPhotos, ...teamPhotos].flatMap(p => p.playerIds)));
   res.json(GetWeekendCarouselSourcesResponse.parse({
     timeZone: CLUB_TIME_ZONE,
     fixtures: fixtures.map(f => ({ ...f, startAt: f.startAt.toISOString(), createdAt: f.createdAt.toISOString() })),
-    photos: await presentPhotos(tenantId, eligible),
+    photos: teamPhotos.filter(p => !p.playerIds.some(id => unsafePlayerIds.has(id))),
     coverPhotos: coverPhotos.filter(p => !p.playerIds.some(id => unsafePlayerIds.has(id))),
-    warnings: fixtures.length < rows.length ? [`Excluded ${rows.length - fixtures.length} bye or cancelled/abandoned fixture(s).`] : [],
+    content: sources.content,
+    warnings: [
+      ...(eligibleFixtures.length < rows.length ? [`Excluded ${rows.length - eligibleFixtures.length} bye or cancelled/abandoned fixture(s).`] : []),
+      ...sources.warnings,
+    ],
   }));
 });
 

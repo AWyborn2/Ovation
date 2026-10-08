@@ -388,7 +388,7 @@ router.post(
     const carousel = readQueuedCarousel(cardInput);
     if ("weekendCarousel" in cardInput && (!carousel || cardInput.kind !== "matchDay" ||
       !parsed.data.caption?.trim() || templateId !== undefined)) {
-      res.status(400).json({ error: "A carousel needs 3–20 valid slides and a match-day caption." });
+      res.status(400).json({ error: "A carousel needs 3–20 valid slides of the selected type and a caption." });
       return;
     }
     const sourceKey = carousel ? `weekend-carousel:${carousel.submissionId}` : null;
@@ -420,7 +420,8 @@ router.post(
         caption: parsed.data.caption ?? null,
         sourceKey,
         ...(carousel ? { photoSource: "none" } : {}),
-        family: familyOfKind(cardInput.kind),
+        family: familyOfKind(carousel?.setType === "teamList" ? "teamList"
+          : carousel?.setType === "results" || carousel?.setType === "matchSummary" ? "matchSummary" : cardInput.kind),
         packId,
         adjustments,
         autoReadyAt: null,

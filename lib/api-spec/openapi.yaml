@@ -4978,6 +4978,7 @@ paths:
       tags: [social]
       summary: Tenant-scoped weekend fixtures and eligible action photos for on-demand export
       parameters:
+        - { name: setType, in: query, schema: { type: string, enum: [matchDay, teamList, results, matchSummary], default: matchDay } }
         - { name: from, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' } }
         - { name: to, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' } }
       responses:
@@ -19069,6 +19070,12 @@ components:
       required: [timeZone, fixtures, photos, coverPhotos, warnings]
       properties:
         timeZone: { type: string }
+        content:
+          type: object
+          description: Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.
+          additionalProperties:
+            type: object
+            additionalProperties: true
         fixtures:
           type: array
           items: { $ref: "#/components/schemas/Fixture" }
@@ -19101,8 +19108,8 @@ components:
         notes: { type: ["string", "null"] }
         source:
           type: string
-          enum: [manual, playhq]
-          description: "Where the row came from: 'manual' (admin CRUD) or 'playhq' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)"
+          enum: [manual, playhq, scorecard]
+          description: "manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture)."
         playhqMatchId:
           type: ["string", "null"]
           description: PlayHQ match GUID for playhq-sourced rows; null for manual rows

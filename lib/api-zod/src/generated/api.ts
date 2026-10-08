@@ -7331,17 +7331,20 @@ export const CompleteMetaConnectResponse = zod.object({
 /**
  * @summary Tenant-scoped weekend fixtures and eligible action photos for on-demand export
  */
+export const getWeekendCarouselSourcesQuerySetTypeDefault = `matchDay`;
 export const getWeekendCarouselSourcesQueryFromRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 export const getWeekendCarouselSourcesQueryToRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 
 
 export const GetWeekendCarouselSourcesQueryParams = zod.object({
+  "setType": zod.enum(['matchDay', 'teamList', 'results', 'matchSummary']).default(getWeekendCarouselSourcesQuerySetTypeDefault),
   "from": zod.coerce.string().regex(getWeekendCarouselSourcesQueryFromRegExp),
   "to": zod.coerce.string().regex(getWeekendCarouselSourcesQueryToRegExp)
 })
 
 export const GetWeekendCarouselSourcesResponse = zod.object({
   "timeZone": zod.string(),
+  "content": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional().describe('Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.'),
   "fixtures": zod.array(zod.object({
   "id": zod.number(),
   "grade": zod.string(),
@@ -7353,7 +7356,7 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "startAt": zod.coerce.date(),
   "isHome": zod.boolean(),
   "notes": zod.string().nullish(),
-  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)'),
+  "source": zod.enum(['manual', 'playhq', 'scorecard']).describe('manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).'),
   "playhqMatchId": zod.string().nullish().describe('PlayHQ match GUID for playhq-sourced rows; null for manual rows'),
   "createdAt": zod.coerce.date()
 })),
@@ -7410,7 +7413,7 @@ export const ListFixturesResponseItem = zod.object({
   "startAt": zod.coerce.date(),
   "isHome": zod.boolean(),
   "notes": zod.string().nullish(),
-  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)'),
+  "source": zod.enum(['manual', 'playhq', 'scorecard']).describe('manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).'),
   "playhqMatchId": zod.string().nullish().describe('PlayHQ match GUID for playhq-sourced rows; null for manual rows'),
   "createdAt": zod.coerce.date()
 })
@@ -7471,7 +7474,7 @@ export const UpdateFixtureResponse = zod.object({
   "startAt": zod.coerce.date(),
   "isHome": zod.boolean(),
   "notes": zod.string().nullish(),
-  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)'),
+  "source": zod.enum(['manual', 'playhq', 'scorecard']).describe('manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).'),
   "playhqMatchId": zod.string().nullish().describe('PlayHQ match GUID for playhq-sourced rows; null for manual rows'),
   "createdAt": zod.coerce.date()
 })

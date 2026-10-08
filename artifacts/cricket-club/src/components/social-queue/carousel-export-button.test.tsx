@@ -22,7 +22,7 @@ describe("queue carousel export", () => {
     render(<div onClick={open}><CarouselExportButton draftId={42} /></div>);
     fireEvent.click(screen.getByRole("button", { name: "Export ZIP" }));
     expect(screen.getByRole("button", { name: "Exporting…" })).toBeDisabled();
-    await waitFor(() => expect(download).toHaveBeenCalledWith(blob, "weekend-carousel-42.zip"));
+    await waitFor(() => expect(download).toHaveBeenCalledWith(blob, "carousel-42.zip"));
     expect(create).toHaveBeenCalledExactlyOnceWith(42);
     expect(fetcher).toHaveBeenCalledWith("/api/storage/carousel.zip", { credentials: "include" });
     expect(open).not.toHaveBeenCalled();

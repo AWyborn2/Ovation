@@ -21,7 +21,7 @@ export function CarouselExportButton({ draftId }: { draftId: number }) {
       if (!response.ok) throw new Error("The ZIP download failed.");
       const blob = await response.blob();
       if (!blob.size) throw new Error("The ZIP was empty.");
-      downloadBlob(blob, `weekend-carousel-${draftId}.zip`);
+      downloadBlob(blob, `carousel-${draftId}.zip`);
     } catch {
       setError("Could not export the carousel. Please try again.");
     } finally {

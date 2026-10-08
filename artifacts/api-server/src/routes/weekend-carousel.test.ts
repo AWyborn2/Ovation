@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { db, tenantsTable, adminsTable, fixturesTable, clubPhotosTable, clubPhotoPlayersTable } from "@workspace/db";
+import { db, tenantsTable, adminsTable, fixturesTable, clubPhotosTable, clubPhotoPlayersTable, teamListsTable, matchDisplaySettingsTable } from "@workspace/db";
 import app from "../app";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
@@ -39,7 +39,17 @@ beforeAll(async () => {
     { ...common, tenantId: other, startAt: new Date("2026-10-10T04:00:00Z") },
     { ...common, grade: "U15", startAt: new Date("2026-10-10T04:00:00Z") },
   ]).returning();
-  expected = [rows[0].id, rows[8].id, rows[1].id];
+  expected = [rows[0].id, rows[1].id, rows[8].id];
+  await db.insert(teamListsTable).values([
+    { tenantId: tenant, fixtureId: rows[0].id, isPublished: true, source: "admin",
+      players: [{ displayName: "Sam Captain", order: 1, role: "C/WK" }, { displayName: "Twelve Extra", order: 12 }] },
+    { tenantId: tenant, fixtureId: rows[1].id, isPublished: false, source: "selection",
+      players: [{ displayName: "Unpublished Person", order: 1 }] },
+    { tenantId: tenant, fixtureId: rows[8].id, isPublished: true,
+      players: [{ displayName: "Private Junior", order: 1 }] },
+    { tenantId: other, fixtureId: rows[7].id, isPublished: true,
+      players: [{ displayName: "Other Tenant", order: 1 }] },
+  ]);
   const p = { tenantId: tenant, objectPath: `/objects/test-${stamp}`, thumbPath: `/objects/test-thumb-${stamp}`, width: 100, height: 100, grade: "A Grade", photoTypes: ["batting"] };
   const photos = await db.insert(clubPhotosTable).values([
     { ...p, photoTypes: ["fielding", "celebrating"] },
@@ -70,6 +80,7 @@ afterAll(async () => {
   for (const id of [tenant, other].filter(Boolean)) {
     await db.delete(clubPhotosTable).where(eq(clubPhotosTable.tenantId, id));
     await db.delete(fixturesTable).where(eq(fixturesTable.tenantId, id));
+    await db.delete(matchDisplaySettingsTable).where(eq(matchDisplaySettingsTable.tenantId, id));
     await db.delete(adminsTable).where(eq(adminsTable.tenantId, id));
     await db.delete(tenantsTable).where(eq(tenantsTable.id, id));
   }
@@ -78,6 +89,26 @@ const fetchSources = (tenantId = tenant) => request(app).get("/api/weekend-carou
   .set("x-tenant-id", String(tenantId)).set("Cookie", cookie);
 
 describe("weekend carousel protected sources", () => {
+  it("uses published lists only, preserves roles/order, masks juniors and excludes other clubs", async () => {
+    const res = await fetchSources().query({ from: "2026-10-09", to: "2026-10-11", setType: "teamList" });
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.fixtures.map((f: { id: number }) => f.id)).toEqual([expected[0], expected[2]]);
+    expect(res.body.content[expected[0]].players).toMatchObject([
+      { surname: "CAPTAIN", order: 1, role: "C/WK" }, { surname: "EXTRA", order: 12 },
+    ]);
+    expect(res.body.content[expected[2]]).toMatchObject({ junior: true, players: [{ surname: "PLAYER" }] });
+    expect(JSON.stringify(res.body)).not.toMatch(/Private Junior|Unpublished Person|Other Tenant/);
+    expect(res.body.warnings.join(" ")).toContain("no published team list");
+  });
+  it("honours saved Grade menu order with chronological fixtures within each grade", async () => {
+    await db.insert(matchDisplaySettingsTable).values({ tenantId: tenant, gradeOrder: ["U15", "A Grade"] });
+    try {
+      const res = await fetchSources().query({ from: "2026-10-09", to: "2026-10-11" });
+      expect(res.body.fixtures.map((f: { id: number }) => f.id)).toEqual([expected[2], expected[0], expected[1]]);
+    } finally {
+      await db.delete(matchDisplaySettingsTable).where(eq(matchDisplaySettingsTable.tenantId, tenant));
+    }
+  });
   it("requires an admin and rejects cross-tenant sessions", async () => {
     expect((await request(app).get("/api/weekend-carousel/sources").set("x-tenant-id", String(tenant))).status).toBe(401);
     expect((await fetchSources(other).query({ from: "2026-10-09", to: "2026-10-11" })).status).toBe(401);

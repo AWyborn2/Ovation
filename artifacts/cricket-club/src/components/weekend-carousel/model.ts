@@ -4,11 +4,12 @@ import type { PhotoTransform, ShareCardInput } from "@/lib/share-card";
 import type { PackCardData } from "@/lib/pack-render";
 import { buildPackData, tenantHashtag } from "@/lib/pack-card-data";
 import { gradeMatchKey } from "@/lib/share-card/sponsor-limit";
+import type { CarouselSetType } from "@workspace/scorecard/queued-carousel";
 
 // Same club-time standard as the fixture and availability engines. Tenants do
 // not yet have a timezone setting; never use the browser/server's local zone.
 export const CLUB_TIME_ZONE = "Australia/Perth";
-export type TeamSlide = { fixture: Fixture; photoId: number | null; transform: PhotoTransform };
+export type TeamSlide = { fixture: Fixture; input?: ShareCardInput; photoId: number | null; transform: PhotoTransform };
 export type CoverPhoto = { photoId: number | null; transform: PhotoTransform };
 export const COVER_PHOTO_UNAVAILABLE = "The selected cover photo is no longer available in Club-wide · Season 2026. Choose another photo or remove it before sending to review.";
 
@@ -41,6 +42,20 @@ export function weekendRange(now = new Date(), timeZone = CLUB_TIME_ZONE) {
   return { from, to: day.toISOString().slice(0, 10) };
 }
 
+export function rangeForSet(type: CarouselSetType, now = new Date()) {
+  const range = weekendRange(now);
+  if (type !== "results" && type !== "matchSummary") return range;
+  // A weekend is complete only after its Sunday in club time.
+  const today = localDay(now);
+  if (range.to < today) return range;
+  const shift = (s: string) => {
+    const d = new Date(`${s}T12:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - 7);
+    return d.toISOString().slice(0, 10);
+  };
+  return { from: shift(range.from), to: shift(range.to) };
+}
+
 export function validRange(from: string, to: string): boolean {
   const validDay = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s)
     && !Number.isNaN(Date.parse(s)) && new Date(s).toISOString().slice(0, 10) === s;
@@ -66,11 +81,12 @@ export function eligiblePhotos(photos: ClubPhoto[], grade: string): ClubPhoto[] 
   return photos.filter(p => p.grade === grade && p.photoTypes.some(t => ["batting", "bowling", "fielding"].includes(t)));
 }
 
-export function createTeamSlides(fixtures: Fixture[], photos: ClubPhoto[]): TeamSlide[] {
+export function createTeamSlides(fixtures: Fixture[], photos: ClubPhoto[], content?: Record<string, Record<string, unknown>>): TeamSlide[] {
   return fixtures.map(fixture => {
-    const eligible = eligiblePhotos(photos, fixture.grade);
+    const eligible = content?.[fixture.id]?.junior === true ? [] : eligiblePhotos(photos, fixture.grade);
     return {
       fixture,
+      ...(content?.[fixture.id] ? { input: content[fixture.id] as ShareCardInput } : {}),
       photoId: eligible.length ? eligible[Math.floor(Math.random() * eligible.length)].id : null,
       transform: { focalX: 0.5, focalY: 0.22, zoom: 1 },
     };
@@ -129,11 +145,11 @@ export function buildWeekendSlides(
   });
   return [
     bookend("title"),
-    ...teams.map(({ fixture: f, photoId, transform }): WeekendSlide => {
-      const junior = isJuniorGradeLabel(f.grade);
+    ...teams.map(({ fixture: f, input, photoId, transform }): WeekendSlide => {
+      const junior = isJuniorGradeLabel(f.grade) || (!!input && "junior" in input && input.junior === true);
       // Revalidate the chosen ID against the CURRENT library. No fallback after
       // deletion/reclassification and no arbitrary URL accepted from UI state.
-      const photo = eligiblePhotos(photos, f.grade).find(p => p.id === photoId);
+      const photo = junior ? undefined : eligiblePhotos(photos, f.grade).find(p => p.id === photoId);
       const warnings: string[] = [];
       const gradeKey = gradeMatchKey(f.grade);
       const assigned = activeSponsors.filter(s => gradeKey && (s.grades ?? []).some(g => gradeMatchKey(g) === gradeKey));
@@ -147,7 +163,7 @@ export function buildWeekendSlides(
       return {
         id: `fixture-${f.id}`, label: `${f.grade} v ${f.opponentName}`, warnings, junior,
         sponsorsOn: !!teamSponsor,
-        input: {
+        input: input ?? {
           kind: "matchDay", grade: f.grade, roundLabel: f.roundLabel ?? "",
           oppositionName: f.opponentName || "Opponent TBC", oppositionLogoUrl: f.opponentLogoUrl,
           homeAway: f.isHome ? "HOME" : "AWAY", venue: f.venue?.trim() || "Venue TBC",

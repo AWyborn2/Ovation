@@ -7,9 +7,12 @@
  */
 import type { ClubPhoto } from './clubPhoto';
 import type { Fixture } from './fixture';
+import type { WeekendCarouselSourcesContent } from './weekendCarouselSourcesContent';
 
 export interface WeekendCarouselSources {
   timeZone: string;
+  /** Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings. */
+  content?: WeekendCarouselSourcesContent;
   fixtures: Fixture[];
   photos: ClubPhoto[];
   /** Current club's Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules. */

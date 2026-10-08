@@ -7299,7 +7299,12 @@ export interface TrackedLink {
 }
 
 /**
- * Where the row came from: 'manual' (admin CRUD) or 'playhq' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)
+ * Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.
+ */
+export type WeekendCarouselSourcesContent = {[key: string]: { [key: string]: unknown }};
+
+/**
+ * manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).
  */
 export type FixtureSource = typeof FixtureSource[keyof typeof FixtureSource];
 
@@ -7307,6 +7312,7 @@ export type FixtureSource = typeof FixtureSource[keyof typeof FixtureSource];
 export const FixtureSource = {
   manual: 'manual',
   playhq: 'playhq',
+  scorecard: 'scorecard',
 } as const;
 
 export interface Fixture {
@@ -7325,7 +7331,7 @@ export interface Fixture {
   isHome: boolean;
   /** @nullable */
   notes?: string | null;
-  /** Where the row came from: 'manual' (admin CRUD) or 'playhq' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list) */
+  /** manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture). */
   source: FixtureSource;
   /**
      * PlayHQ match GUID for playhq-sourced rows; null for manual rows
@@ -7337,6 +7343,8 @@ export interface Fixture {
 
 export interface WeekendCarouselSources {
   timeZone: string;
+  /** Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings. */
+  content?: WeekendCarouselSourcesContent;
   fixtures: Fixture[];
   photos: ClubPhoto[];
   /** Current club's Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules. */
@@ -9127,6 +9135,7 @@ token: string;
 };
 
 export type GetWeekendCarouselSourcesParams = {
+setType?: GetWeekendCarouselSourcesSetType;
 /**
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
@@ -9136,6 +9145,16 @@ from: string;
  */
 to: string;
 };
+
+export type GetWeekendCarouselSourcesSetType = typeof GetWeekendCarouselSourcesSetType[keyof typeof GetWeekendCarouselSourcesSetType];
+
+
+export const GetWeekendCarouselSourcesSetType = {
+  matchDay: 'matchDay',
+  teamList: 'teamList',
+  results: 'results',
+  matchSummary: 'matchSummary',
+} as const;
 
 export type ListFixturesParams = {
 /**

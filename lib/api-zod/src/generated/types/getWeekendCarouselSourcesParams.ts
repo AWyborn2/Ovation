@@ -5,8 +5,10 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { GetWeekendCarouselSourcesSetType } from './getWeekendCarouselSourcesSetType';
 
 export type GetWeekendCarouselSourcesParams = {
+setType?: GetWeekendCarouselSourcesSetType;
 /**
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */

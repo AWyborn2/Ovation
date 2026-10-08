@@ -15,9 +15,11 @@ import {
 } from "@workspace/api-client-react";
 import type { CardSize } from "@/lib/share-card";
 import type { CardAdjustments } from "@/lib/pack-render";
+import { CAROUSEL_LABELS, type CarouselSetType } from "@workspace/scorecard/queued-carousel";
 import {
   CLUB_TIME_ZONE,
   weekendRange,
+  rangeForSet,
   createTeamSlides,
   buildWeekendSlides,
   moveTeam,
@@ -27,7 +29,7 @@ import {
   type TeamSlide,
   type WeekendSlide,
 } from "./model";
-import { matchDayCaption } from "./caption";
+import { carouselCaption } from "./caption";
 
 export const WEEKEND_PACK_ID = "club-kit-v1";
 
@@ -59,15 +61,16 @@ export function slideAdjustments(slide: WeekendSlide, size: CardSize): CardAdjus
  * picks/order, a frozen generated set (photo choices fixed at generate time),
  * per-team photo/crop edits and caption. Sending to review saves a frozen set.
  */
-export function useWeekendCarousel() {
-  const initial = useMemo(() => weekendRange(new Date(), CLUB_TIME_ZONE), []);
+export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
+  const [setType, setSetType] = useState<CarouselSetType>(initialType);
+  const initial = useMemo(() => initialType === "matchDay" ? weekendRange(new Date(), CLUB_TIME_ZONE) : rangeForSet(initialType), [initialType]);
   const [from, setFrom] = useState(initial.from);
   const [to, setTo] = useState(initial.to);
   const rangeValid = !!from && !!to && from <= to;
 
   // Server scopes tenant/grade/categories, live cancellation status and the
   // date range (including already-started games) — no client re-filtering.
-  const params = { from, to };
+  const params = { from, to, setType };
   const sourcesQ = useGetWeekendCarouselSources(params, {
     query: { queryKey: getGetWeekendCarouselSourcesQueryKey(params), enabled: rangeValid },
   });
@@ -87,7 +90,7 @@ export function useWeekendCarousel() {
   const timeZone = sources?.timeZone ?? CLUB_TIME_ZONE;
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
 
-  const [title, setTitle] = useState("Match day");
+  const [title, setTitle] = useState(CAROUSEL_LABELS[initialType]);
   const [captionEdit, setCaptionEdit] = useState<string | null>(null);
   const [queued, setQueued] = useState<{ key: string; id: number } | null>(null);
   const [size, setSize] = useState<CardSize>("square");
@@ -97,7 +100,7 @@ export function useWeekendCarousel() {
   const coverUnavailable = cover.photoId !== null && !coverPhotos.some(p => p.id === cover.photoId);
 
   const inRange = rangeValid ? fixtures : [];
-  const inRangeSig = inRange.map((f) => f.id).join(",");
+  const inRangeSig = `${setType}:` + inRange.map((f) => f.id).join(",");
 
   // Picks reset to "all selected, chronological" whenever the candidate set changes.
   const [picks, setPicks] = useState<Pick[]>([]);
@@ -112,15 +115,16 @@ export function useWeekendCarousel() {
     .filter((p): p is Pick & { fixture: Fixture } => !!p.fixture);
   const selected = orderedPicks.filter((p) => p.included).map((p) => p.fixture);
 
-  const selectionKey = JSON.stringify([from, to, selected]);
+  const selectedContent = Object.fromEntries(selected.map(f => [f.id, sources?.content?.[f.id] ?? null]));
+  const selectionKey = JSON.stringify([setType, from, to, selected, selectedContent]);
 
   const [generated, setGenerated] = useState<Generated | null>(null);
   const stale = !!generated && generated.key !== selectionKey;
 
   const generate = () => {
-    if (selected.length === 0) return;
+    if (selected.length === 0 || selected.length > 18) return;
     // Photo choices are fixed here, once — never re-picked on re-render.
-    setGenerated({ key: selectionKey, from, to, teams: createTeamSlides(selected, photos) });
+    setGenerated({ key: selectionKey, from, to, teams: createTeamSlides(selected, photos, sources?.content) });
     setQueueError(null);
   };
 
@@ -130,18 +134,18 @@ export function useWeekendCarousel() {
       generated.teams,
       photos,
       bundle,
-      title.trim() || "Match day",
+      title.trim() || CAROUSEL_LABELS[setType],
       generated.from,
       generated.to,
       CLUB_TIME_ZONE,
       { selection: cover, photos: coverPhotos },
     );
-  }, [generated, photos, bundle, title, cover, coverPhotos]);
+  }, [generated, photos, bundle, title, cover, coverPhotos, setType]);
 
   const [exporting, setExporting] = useState(false);
   const [queueError, setQueueError] = useState<string | null>(null);
-  const caption = captionEdit ?? matchDayCaption(
-    generated?.teams.map(t => t.fixture) ?? [], title, bundle?.settings.clubHashtag,
+  const caption = captionEdit ?? carouselCaption(
+    setType, generated?.teams ?? [], title, bundle?.settings.clubHashtag,
   );
   const queueKey = JSON.stringify([slides, size, caption]);
   const queuedId = queued?.key === queueKey ? queued.id : null;
@@ -180,13 +184,21 @@ export function useWeekendCarousel() {
       // A second admin may have removed or retagged the photo since preview.
       // Rebuild from fresh server-approved URLs, never silently replace the pick.
       let queuedSlides = slides;
-      if (cover.photoId !== null) {
+      if (cover.photoId !== null || setType !== "matchDay") {
         const fresh = await sourcesQ.refetch();
-        if (fresh.isError || !fresh.data) throw new Error("Could not verify the cover photo. Retry before sending to review.");
-        const allowed = eligibleCoverPhotos(fresh.data.coverPhotos);
-        if (!allowed.some(p => p.id === cover.photoId)) throw new Error(COVER_PHOTO_UNAVAILABLE);
-        queuedSlides = buildWeekendSlides(generated!.teams, photos, bundle!,
-          title.trim() || "Match day", generated!.from, generated!.to, CLUB_TIME_ZONE,
+        if (fresh.isError || !fresh.data) throw new Error("Could not verify source data. Retry before sending to review.");
+        if (setType !== "matchDay" && generated!.teams.some(t =>
+          JSON.stringify(fresh.data.content?.[t.fixture.id]) !== JSON.stringify(t.input))) {
+          throw new Error("A selected team list or scorecard changed or is no longer available. Regenerate the preview before sending to review.");
+        }
+        const allowed = eligibleCoverPhotos(fresh.data.coverPhotos ?? []);
+        if (cover.photoId !== null && !allowed.some(p => p.id === cover.photoId)) throw new Error(COVER_PHOTO_UNAVAILABLE);
+        const freshPhotos = fresh.data.photos ?? photos;
+        if (generated!.teams.some(t => t.photoId !== null && !freshPhotos.some(p => p.id === t.photoId && p.grade === t.fixture.grade))) {
+          throw new Error("A selected team photo is no longer available. Choose another photo and regenerate.");
+        }
+        queuedSlides = buildWeekendSlides(generated!.teams, freshPhotos, bundle!,
+          title.trim() || CAROUSEL_LABELS[setType], generated!.from, generated!.to, CLUB_TIME_ZONE,
           { selection: cover, photos: allowed });
       }
       if (submission.current?.key !== queueKey) {
@@ -196,9 +208,9 @@ export function useWeekendCarousel() {
         packId: WEEKEND_PACK_ID,
         caption: caption.trim(),
         cardInput: {
-          kind: "matchDay", headline: `${title.trim() || "Match day"} carousel`,
+          kind: "matchDay", headline: `${title.trim() || CAROUSEL_LABELS[setType]} carousel`,
           roundLabel: `${generated!.from} – ${generated!.to}`,
-          weekendCarousel: { version: 1, submissionId: submission.current.id, size, slides: queuedSlides },
+          weekendCarousel: { version: 1, setType, submissionId: submission.current.id, size, slides: queuedSlides },
         },
       } });
       setQueued({ key: queueKey, id: draft.id });
@@ -220,6 +232,19 @@ export function useWeekendCarousel() {
   };
 
   return {
+    setType,
+    setTypeLabel: CAROUSEL_LABELS[setType],
+    changeType: (type: CarouselSetType) => {
+      if (exporting) return;
+      setSetType(type);
+      const range = type === "matchDay" ? weekendRange(new Date(), CLUB_TIME_ZONE) : rangeForSet(type);
+      setFrom(range.from);
+      setTo(range.to);
+      setTitle(CAROUSEL_LABELS[type]);
+      setCaptionEdit(null);
+      setGenerated(null);
+      setQueueError(null);
+    },
     loading,
     error,
     retry,
@@ -237,8 +262,9 @@ export function useWeekendCarousel() {
     setTo: (v: string) => !exporting && setTo(v),
     resetRange: () => {
       if (exporting) return;
-      setFrom(initial.from);
-      setTo(initial.to);
+      const range = setType === "matchDay" ? weekendRange(new Date(), CLUB_TIME_ZONE) : rangeForSet(setType);
+      setFrom(range.from);
+      setTo(range.to);
     },
     rangeValid,
     title,

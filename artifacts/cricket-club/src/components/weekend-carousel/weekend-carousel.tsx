@@ -11,6 +11,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import type { Fixture } from "@workspace/api-client-react";
+import { CAROUSEL_LABELS, type CarouselSetType } from "@workspace/scorecard/queued-carousel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,10 +47,10 @@ const fmtWhen = (iso: string) =>
   }).format(new Date(iso));
 
 const fixtureLine = (f: Fixture) =>
-  `${f.grade} ${f.isHome ? "vs" : "at"} ${f.opponentName}`;
+  `${f.grade} ${f.source === "scorecard" || f.isHome ? "vs" : "at"} ${f.opponentName}`;
 
 /** Entry action + dialog. Takes no props; data loads only once opened. */
-export function WeekendCarousel({ className }: { className?: string } = {}) {
+export function WeekendCarousel({ className, initialType = "matchDay" }: { className?: string; initialType?: CarouselSetType } = {}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -57,35 +58,43 @@ export function WeekendCarousel({ className }: { className?: string } = {}) {
         size="sm"
         className={className}
         onClick={() => setOpen(true)}
-        data-testid="button-open-weekend-carousel"
+        data-testid={initialType === "matchDay" ? "button-open-weekend-carousel" : `button-open-carousel-${initialType}`}
       >
-        <Layers className="mr-1 h-3.5 w-3.5" aria-hidden /> Weekend match-day carousel
+        <Layers className="mr-1 h-3.5 w-3.5" aria-hidden /> {CAROUSEL_LABELS[initialType]}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="left-0 top-0 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 sm:rounded-none"
           data-testid="weekend-fullscreen-editor">
-          {open && <WeekendCarouselBody />}
+          {open && <WeekendCarouselBody initialType={initialType} />}
         </DialogContent>
       </Dialog>
     </>
   );
 }
 
-export function WeekendCarouselBody() {
-  const s = useWeekendCarousel();
+export function WeekendCarouselBody({ initialType = "matchDay" }: { initialType?: CarouselSetType } = {}) {
+  const s = useWeekendCarousel(initialType);
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <DialogHeader className="shrink-0 space-y-1 border-b px-5 py-4 pr-12 text-left">
-        <DialogTitle className="text-xl">Weekend match-day carousel</DialogTitle>
+        <DialogTitle className="text-xl">{s.setTypeLabel} carousel</DialogTitle>
         <DialogDescription>
-          Pick the fixtures, check photos and caption, then send the whole carousel to review.
+          Pick the teams or matches, check photos and caption, then send the whole carousel to review.
           Nothing is published until it is approved.
         </DialogDescription>
       </DialogHeader>
       <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto overflow-x-hidden px-5 py-5">
+        <fieldset className="flex flex-wrap items-center gap-2" disabled={s.exporting}>
+          <legend className="mb-2 text-sm font-medium">Set type</legend>
+          {(Object.keys(CAROUSEL_LABELS) as CarouselSetType[]).map(type => (
+            <Button key={type} size="sm" variant={s.setType === type ? "default" : "outline"}
+              aria-pressed={s.setType === type} onClick={() => s.changeType(type)}
+              data-testid={`button-carousel-type-${type}`}>{CAROUSEL_LABELS[type]}</Button>
+          ))}
+        </fieldset>
         {s.error ? (
           <QueryError
-            title="Couldn't load fixtures, photos or settings"
+            title="Couldn't load carousel sources, photos or settings"
             onRetry={s.retry}
           />
         ) : s.loading ? (
@@ -134,7 +143,7 @@ function RangeAndFixtures({ s }: { s: WeekendCarouselState }) {
           />
         </div>
         <Button variant="ghost" size="sm" disabled={lock} onClick={s.resetRange}>
-          <CalendarRange className="mr-1 h-3.5 w-3.5" aria-hidden /> This weekend
+          <CalendarRange className="mr-1 h-3.5 w-3.5" aria-hidden /> {s.setType === "results" || s.setType === "matchSummary" ? "Last completed weekend" : "This weekend"}
         </Button>
         <p className="basis-full text-xs text-muted-foreground" data-testid="text-timezone">
           Dates and start times use Perth time ({s.timeZone}), the app standard.
@@ -157,14 +166,14 @@ function RangeAndFixtures({ s }: { s: WeekendCarouselState }) {
       ) : s.orderedPicks.length === 0 ? (
         <EmptyState
           icon={<CalendarRange className="h-8 w-8" />}
-          title="No fixtures in this range"
-          message="Try another date range, or add fixtures in the Fixtures admin."
+          title={`No ${s.setType === "matchDay" ? "fixtures" : s.setTypeLabel.toLowerCase()} in this range`}
+          message="Try another date range. Only available sources can be included; see any missing-data reasons above."
         />
       ) : (
         <div className="rounded-md border">
           <div className="flex items-center justify-between border-b px-3 py-2">
             <span className="font-serif text-sm font-bold uppercase tracking-wide">
-              Fixtures · {s.selected.length} of {s.orderedPicks.length} selected
+              {s.setType === "matchDay" ? "Fixtures" : s.setTypeLabel} · {s.selected.length} of {s.orderedPicks.length} selected · maximum 18
             </span>
             <div className="flex gap-1">
               <Button size="sm" variant="ghost" disabled={lock} onClick={() => s.setAll(true)}>
@@ -194,7 +203,9 @@ function RangeAndFixtures({ s }: { s: WeekendCarouselState }) {
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{fixtureLine(p.fixture)}</p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {fmtWhen(p.fixture.startAt)}
+                     {p.fixture.source === "scorecard"
+                       ? new Date(p.fixture.startAt).toLocaleDateString("en-AU", { timeZone: CLUB_TIME_ZONE, day: "numeric", month: "short", year: "numeric" })
+                       : fmtWhen(p.fixture.startAt)}
                     {p.fixture.venue ? ` · ${p.fixture.venue}` : ""}
                   </p>
                 </div>
@@ -254,16 +265,18 @@ function OrderButtons({
 }
 
 function GenerateBar({ s }: { s: WeekendCarouselState }) {
-  const disabled = s.exporting || !s.rangeValid || s.selected.length === 0;
+  const disabled = s.exporting || !s.rangeValid || s.selected.length === 0 || s.selected.length > 18;
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 px-3 py-3">
       <Button onClick={s.generate} disabled={disabled} data-testid="button-generate-weekend">
         <RefreshCw className="mr-1 h-3.5 w-3.5" aria-hidden />
         {s.generated ? "Regenerate preview" : "Generate preview"}
       </Button>
-      {s.stale ? (
+      {s.selected.length > 18 ? <p role="alert" className="text-sm text-destructive">
+        Select at most 18 teams or matches ({s.selected.length} selected). The cover and sponsor page bring the limit to 20 slides.
+      </p> : s.stale ? (
         <p className="text-sm text-destructive" role="status" data-testid="text-weekend-stale">
-          Fixture selection changed. Regenerate before sending to review.
+          Source data or selection changed. Regenerate before sending to review.
         </p>
       ) : (
         <p className="text-xs text-muted-foreground">
@@ -350,7 +363,7 @@ function GeneratedSet({ s }: { s: WeekendCarouselState }) {
 
       <section className="space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <Label htmlFor="weekend-caption">Match-day caption</Label>
+          <Label htmlFor="weekend-caption">{s.setTypeLabel} caption</Label>
           <Button variant="ghost" size="sm" disabled={lock} onClick={s.resetCaption}>Reset caption</Button>
         </div>
         <Textarea id="weekend-caption" value={s.caption} maxLength={5000} rows={10}
@@ -391,7 +404,7 @@ function TeamEditor({
   count: number;
 }) {
   const lock = s.exporting;
-  const options = eligiblePhotos(s.photos, team.fixture.grade);
+  const options = team.input && "junior" in team.input && team.input.junior ? [] : eligiblePhotos(s.photos, team.fixture.grade);
   const chosen = options.find((p) => p.id === team.photoId) ?? null;
   const label = fixtureLine(team.fixture);
   const slide = s.slides.find(sl => sl.id === `fixture-${team.fixture.id}`);

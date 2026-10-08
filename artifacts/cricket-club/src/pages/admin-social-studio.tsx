@@ -420,14 +420,19 @@ export default function AdminSocialStudio() {
 
       {/* Weekend match-day carousel entry */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Weekend match day</h2>
+        <h2 className="text-lg font-semibold">On-demand carousel sets</h2>
         <Card>
           <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
-              Turn this weekend's fixtures into a branded carousel: a title slide, one slide per
-              team and a sponsors close, downloaded as one ZIP.
+              Build a branded set with a cover, one slide per team or match and a sponsors close.
+              Send it to review, then export the saved set as one ZIP.
             </p>
-            <WeekendCarousel />
+            <div className="flex flex-wrap gap-2">
+              <WeekendCarousel />
+              <WeekendCarousel initialType="teamList" />
+              <WeekendCarousel initialType="results" />
+              <WeekendCarousel initialType="matchSummary" />
+            </div>
           </CardContent>
         </Card>
       </section>

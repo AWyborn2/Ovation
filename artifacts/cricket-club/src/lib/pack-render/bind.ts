@@ -77,6 +77,16 @@ export function bindInput(input: ShareCardInput): BoundInput {
         set(values, "opposition.oversLabel", `${oppInn.overs} OVERS`);
         set(values, "opposition.performers", inningsPerformers(oppInn));
       }
+      if (typeof input.carouselDetail === "boolean") {
+        // On-demand results include every innings score. Explicit blanks must
+        // override template samples when a completed match has no score.
+        for (const key of ["club", "opposition"] as const) {
+          const innings = input.innings.filter(i => i.teamKey === key);
+          values[`${key}.score`] = innings.map(inningsScore).join(" & ") || "—";
+          values[`${key}.oversLabel`] = innings.map(i => i.overs ? `${i.overs} OVERS` : "").filter(Boolean).join(" / ");
+          values[`${key}.performers`] = input.carouselDetail ? innings.map(inningsPerformers).filter(Boolean).join(" · ") : "";
+        }
+      }
       if (input.resultWinner === "draw") {
         set(values, "resultVerb", "MATCH DRAWN");
         set(values, "resultVerbShort", "DRAW");
@@ -84,6 +94,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
       // One-word headline (Club Kit): WIN / RESULT (a loss) / DRAW, or TIE / NO RESULT
       // when the result line says so. The club always keeps the top bar.
       set(values, "resultWord", resultWord(input.resultWinner, input.result));
+      if (input.carouselDetail === true) bindInningsDetail(input, values);
       break;
     }
     case "player": {
@@ -591,4 +602,36 @@ export function resultWord(winner: "club" | "opposition" | "draw", result: strin
   if (/\btie[d]?\b/i.test(result)) return "TIE";
   if (winner === "draw") return "DRAW";
   return winner === "club" ? "WIN" : "RESULT";
+}
+
+/**
+ * Detailed carousel match card: one value set per innings, in input order,
+ * every innings bound (none dropped). Only real data — empty when absent,
+ * never a sample. Escaping is the renderer's (text fields).
+ */
+function bindInningsDetail(
+  input: Extract<ShareCardInput, { kind: "matchSummary" }>,
+  values: Record<string, string>,
+): void {
+  const multi = input.innings.length > 2;
+  input.innings.forEach((inn, i) => {
+    const team = inn.teamKey === "club" ? input.club : input.opposition;
+    const p = `inn${i}.`;
+    values[`${p}team`] = cardTeamName(team.name);
+    const teamInnings = input.innings.slice(0, i + 1).filter(x => x.teamKey === inn.teamKey).length;
+    values[`${p}label`] = multi ? `${teamInnings === 1 ? "1ST" : "2ND"} INNINGS` : "INNINGS";
+    values[`${p}score`] = inningsScore(inn);
+    values[`${p}overs`] = inn.overs ? `${inn.overs} OV` : "";
+    values[`${p}batters`] =
+      inn.topBatters
+        .slice(0, 3)
+        .map((b) => `${b.name} ${b.runs}${b.notOut ? "*" : ""}${b.balls != null ? ` (${b.balls})` : ""}`)
+        .join(" · ") || "-";
+    // Bowlers who bowled at this innings: the other side.
+    values[`${p}bowlers`] =
+      inn.topBowlers
+        .slice(0, 2)
+        .map((b) => `${b.name} ${b.wickets}/${b.runs} (${b.overs})`)
+        .join(" · ") || "-";
+  });
 }
