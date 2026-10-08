@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { CardTheme as ApiCardTheme } from "@workspace/api-client-react";
 import type { ShareCardInput, CardSize } from "@/lib/share-card";
 import { ensureCardFontsLoaded } from "@/lib/card-fonts";
+import { prepareTeamNames } from "@/lib/pack-render/team-name-fit";
 import {
   renderPackCard,
   packNativeSize,
@@ -48,6 +49,16 @@ export interface PackCardProps {
   width?: number;
   className?: string;
 }
+
+// React must not rewrite fitted DOM when only the outer preview scale changes.
+// Keep the HTML prop boundary stable; fitting is reapplied when the HTML itself
+// changes (including a format/input change), not on viewport resizes.
+const PackMarkup = memo(function PackMarkup({ html, contentRef }: {
+  html: string;
+  contentRef: RefObject<HTMLDivElement | null>;
+}) {
+  return <div ref={contentRef} style={{ width: "100%", height: "100%" }} dangerouslySetInnerHTML={{ __html: html }} />;
+});
 
 export function PackCard({
   input,
@@ -108,6 +119,18 @@ export function PackCard({
 
   const displayWidth = width ?? measured ?? 0;
   const scale = displayWidth > 0 ? displayWidth / native.w : 0;
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [fitError, setFitError] = useState<string | null>(null);
+  const mounted = scale > 0;
+  useEffect(() => {
+    let cancelled = false;
+    setFitError(null);
+    const root = contentRef.current;
+    if (root) void prepareTeamNames(root).catch(error => {
+      if (!cancelled) setFitError(error instanceof Error ? error.message : "Unable to fit team names.");
+    });
+    return () => { cancelled = true; };
+  }, [html, mounted]);
 
   return (
     <div
@@ -132,9 +155,11 @@ export function PackCard({
             transform: `scale(${scale})`,
             transformOrigin: "top left",
           }}
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        >
+          <PackMarkup html={html} contentRef={contentRef} />
+        </div>
       )}
+      {fitError && <div role="alert" style={{ position: "absolute", inset: 0, padding: 16, background: "#10151b", color: "white" }}>{fitError}</div>}
     </div>
   );
 }

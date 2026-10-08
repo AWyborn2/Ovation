@@ -361,8 +361,9 @@ const teamList = design({
               n: "{{row.number}}",
               name: "{{row.surname}}",
               tag: `<span style="color:${C.chalk2}">({{row.role}})</span>`,
-            }),
-            ' data-repeat="players" data-repeat-max="12"',
+            }, true),
+            ' data-repeat="players" data-repeat-max="12" data-xi-fit="1"',
+            true,
           ) +
           `</div>`,
       ),

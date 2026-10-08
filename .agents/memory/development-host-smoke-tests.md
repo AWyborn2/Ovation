@@ -14,3 +14,9 @@ Browser checks must wait for actionable controls, not merely mounted elements, w
 **Why:** Source responses and selection effects can make Generate appear before it is enabled. Immediate Puppeteer clicks intermittently did nothing, falsely reporting a missing preview even though the editor worked.
 
 **How to apply:** Use locator clicks that wait for enabled, stable controls; await dialog closure between carousel types rather than relying on a fixed delay alone.
+
+Scope browser-test tenant headers to the app origin, comparing parsed URL origins rather than strings with explicit default ports.
+
+**Why:** A global tenant header triggered CORS preflights against Google Fonts, making card previews fail font loading while the same export harness loaded correctly. Chromium normalises `:80` away.
+
+**How to apply:** Add test routing headers only to same-origin requests; never send them to font/image providers.

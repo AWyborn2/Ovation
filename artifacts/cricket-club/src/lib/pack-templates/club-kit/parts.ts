@@ -307,19 +307,19 @@ export function gradeRow(
 }
 
 /** One row of the team XI list. */
-export function xiRow(u: Unit, cells: { n: string; name: string; tag: string }): string {
+export function xiRow(u: Unit, cells: { n: string; name: string; tag: string }, fit = false): string {
   return (
-    `<div style="display:flex;align-items:center;gap:${u(1.4)};height:${u(5)};border-bottom:${u(0.15)} solid ${C.line};min-width:0">` +
+    `<div${fit ? ' data-xi-row="1"' : ""} style="display:flex;align-items:center;gap:${u(1.4)};${fit ? `min-height:${u(5)};padding:${u(0.3)} 0;box-sizing:border-box` : `height:${u(5)}`};border-bottom:${u(0.15)} solid ${C.line};min-width:0">` +
     `<span style="flex:none;min-width:${u(3.4)};font-family:${CK_COND};font-weight:900;font-size:${u(3)};color:${C.pt}">${cells.n}</span>` +
-    `<span style="flex:1;min-width:0;font-family:${CK_SANS};font-weight:600;font-size:${u(2.3)};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:${C.chalk}">${cells.name}</span>` +
-    `<span style="flex:none;font-family:${CK_MONO};font-weight:500;font-size:${u(1.5)};color:${C.chalk2}">${cells.tag}</span>` +
+    `<span${fit ? ' data-xi-name="1"' : ""} style="flex:1;min-width:0;font-family:${CK_SANS};font-weight:600;font-size:${fit ? `var(--xi-name-size,${u(2.3)})` : u(2.3)};${fit ? "line-height:1.2;white-space:pre" : "white-space:nowrap;overflow:hidden;text-overflow:ellipsis"};color:${C.chalk}">${cells.name}</span>` +
+    `<span style="flex:none;white-space:nowrap;font-family:${CK_MONO};font-weight:500;font-size:${u(1.5)};color:${C.chalk2}">${cells.tag}</span>` +
     `</div>`
   );
 }
 
 /** Two-column XI list container (`rows` is the row html, repeated or literal). */
-export function xiList(u: Unit, rows: string, attrs = ""): string {
-  return `<div${attrs} style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(6,auto);grid-auto-flow:column;column-gap:${u(2.4)};row-gap:${u(0.7)};width:100%">${rows}</div>`;
+export function xiList(u: Unit, rows: string, attrs = "", fit = false): string {
+  return `<div${attrs} style="display:grid;grid-template-columns:${fit ? "repeat(2,minmax(0,1fr))" : "1fr 1fr"};grid-template-rows:repeat(6,auto);grid-auto-flow:column;column-gap:${u(2.4)};row-gap:${u(0.7)};width:100%">${rows}</div>`;
 }
 
 const STAR =

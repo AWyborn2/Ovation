@@ -11,6 +11,7 @@ import { prepareAnimation } from "@/lib/share-card-animation";
 import { PackCard } from "@/components/pack-card";
 import { packNativeSize, type CardAdjustments, type PackCardData } from "@/lib/pack-render";
 import { ensureCardFontsLoaded } from "@/lib/card-fonts";
+import { prepareTeamNames } from "@/lib/pack-render/team-name-fit";
 import { clipDuration, seekAnimations } from "@/lib/pack-render/animation-clock";
 
 // Metrics returned by init() so the server knows how many frames to capture.
@@ -270,6 +271,7 @@ export default function CardRenderHarness() {
       // photo while the image is still fetching.
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       await waitForImages(stillContainer);
+      await prepareTeamNames(stillContainer);
       if (options.strictImages && Array.from(stillContainer.querySelectorAll("img")).some(img => !img.complete || img.naturalWidth === 0)) {
         throw new Error("A card image could not be loaded. Check the selected photo and club/sponsor logos, then retry.");
       }

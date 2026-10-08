@@ -9,6 +9,7 @@ import { deriveClubKitPalette, mixHex } from "../pack-render/club-kit-vars";
 import { resolveTemplate } from "../pack-render/templates";
 import { resultWord } from "../pack-render/bind";
 import type { CardSize, ShareCardInput } from "../share-card";
+import { cq, xiRow } from "./club-kit/parts";
 
 /**
  * Club Kit (Club Colours handoff): the colour derivation, every design at
@@ -89,6 +90,17 @@ describe("Club Kit palette (handoff §1)", () => {
 });
 
 describe("Club Kit designs", () => {
+  it.each(SIZES)("opts only Team Selection into measured fitting at %s", size => {
+    const base = sampleCardInput("teamList") as Extract<ShareCardInput, { kind: "teamList" }>;
+    const html = render(base, size);
+    expect(html).toContain('data-xi-fit="1"');
+    expect(html).toContain('data-xi-name="1"');
+    expect(html).toContain("repeat(2,minmax(0,1fr))");
+    expect(render({ ...base, design: "starting-xi" }, size)).not.toContain("data-xi-fit");
+    const studioRow = xiRow(cq, { n: "12", name: "Unchanged", tag: "WK" });
+    expect(studioRow).not.toContain("data-xi-name");
+    expect(studioRow).toContain("text-overflow:ellipsis");
+  });
   it("declares its coverage literally for the server parity test", () => {
     expect(new Set(CLUB_KIT_COVERAGE.map((c) => c.kind))).toEqual(
       new Set(CLUB_KIT_PACK.designs.map((d) => d.kind)),

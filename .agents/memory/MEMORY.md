@@ -76,3 +76,4 @@
 - [Weekend carousel photos](weekend-carousel-photo-scope.md) — title → team match-day cards → sponsors; team photos only from the same grade's batting, bowling or fielding categories.
 - [Shared award compatibility](shared-award-compatibility.md) — legacy single-link edits must preserve other recipients; curated winner labels never imply player identities.
 - [Card image audit boundaries](card-image-audit-boundaries.md) — check contained artwork bounds, not decorative oversized crests; intentional watermark clipping is not a sponsor defect.
+- [Team Selection fitting](team-list-fitting.md) — built-in-only scope; preserve fitted DOM on preview resize and check export parity after intended fonts load.
