@@ -329,8 +329,9 @@ const matchDay = design({
           `<div style="display:flex;justify-content:space-between;gap:1cqmin;margin-bottom:1cqmin">` +
           meta(u, "{{homeAway}}") + display(u, "{{startTime}}", 3.2) + `</div>` +
           `<div style="display:flex;align-items:center;gap:1.5cqmin;min-width:0">` +
+          display(u, "v", 3.8, ";line-height:1.05;flex:none") +
           `<div data-drop-if-empty="opposition.logo" style="width:7cqmin;height:7cqmin;flex:none">${slot("opposition.logo", "logo")}</div>` +
-          display(u, "v {{opposition.name}}", 3.8, ";line-height:1.05;overflow-wrap:anywhere;min-width:0") +
+          display(u, "{{opposition.name}}", 3.8, ";line-height:1.05;overflow-wrap:anywhere;min-width:0") +
           `</div>` +
           meta(u, "{{venue}}", ";margin-top:.8cqmin;overflow-wrap:anywhere") +
           `</div>`,

@@ -262,12 +262,16 @@ describe("Club Kit-only kinds", () => {
     expect(html).toContain(">GAME DAY</div>");
     expect(html).not.toContain(">GAME<br>");
     expect(html).toContain('<img src="https://cdn.example/opponent.png"');
-    expect(html).toContain("v Visitors");
+    expect(html.indexOf(">v</div>")).toBeLessThan(html.indexOf('<img src="https://cdn.example/opponent.png"'));
+    expect(html.indexOf('<img src="https://cdn.example/opponent.png"')).toBeLessThan(html.indexOf(">Visitors</div>"));
+    expect(html).toContain(">v</div>");
+    expect(html).toContain(">Visitors</div>");
     expect(html).not.toContain("{{");
     const noLogo = render({ ...input, oppositionLogoUrl: null } as ShareCardInput, size);
     expect(noLogo).not.toContain("https://cdn.example/opponent.png");
     expect(noLogo).not.toContain('data-slot="opposition.logo"');
-    expect(noLogo).toContain("v Visitors");
+    expect(noLogo).toContain(">v</div>");
+    expect(noLogo).toContain(">Visitors</div>");
     const noGrade = render({ ...input, grade: undefined } as ShareCardInput, size);
     expect(noGrade).toMatch(/data-match-day-heading="1"><div[^>]*>GAME DAY<\/div>/);
   });
