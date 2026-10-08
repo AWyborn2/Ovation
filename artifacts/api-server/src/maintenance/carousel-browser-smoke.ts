@@ -17,6 +17,7 @@ import { db, tenantsTable, adminsTable, socialDraftsTable, captionTemplatesTable
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { logger } from "../lib/logger";
 import { TEAM_INPUT, assertTeamNames } from "./team-name-browser-check";
+import { checkCarouselCovers } from "./carousel-cover-browser-check";
 import { renderDraftSlides } from "../lib/draft-render";
 import { closeBrowser } from "../lib/card-video-renderer";
 import { readQueuedCarousel, queuedSlideAdjustments } from "@workspace/scorecard/queued-carousel";
@@ -114,6 +115,8 @@ try {
   await writeFile("/tmp/carousel-browser/saved-team.json", JSON.stringify(saved));
   await page.goto(`${origin}/__card-render`, { waitUntil: "networkidle2" });
   await page.waitForFunction(() => Boolean((globalThis as any).__cardRenderHarness));
+  const coverChecks = await checkCarouselCovers(page, "/tmp/carousel-browser");
+  logger.info({ coverChecks }, "Font-loaded cover bounds and PNG parity passed");
   for (const slide of saved.slides) {
     await page.evaluate(async payload => (globalThis as any).__cardRenderHarness.renderStill(payload), {
       input: slide.input, options: { size: "square", packId: "club-kit-v1", data: slide.data, sponsorsOn: slide.sponsorsOn, junior: slide.junior },

@@ -84,8 +84,8 @@ export function skeletonWeekendTemplate(
             look,
             kEyebrow("{{date}}") +
               `<div style="font-family:${K_DISP};font-size:${tsz}cqmin;line-height:.95;text-transform:uppercase;margin-top:3cqmin;overflow-wrap:anywhere;text-shadow:${K.titleGlow}">{{weekendTitle}}</div>` +
-              kCond("{{roundLabel}}", 11, `;margin-top:3cqmin;color:${K.accText};font-size:calc(11cqmin * var(--fit,1))`)
-                .replace("<div ", '<div data-fit="10" ') +
+              kCond("{{roundLabel}}", 11, `;max-width:100%;overflow-wrap:anywhere;flex-shrink:0;margin-top:3cqmin;color:${K.accText};font-size:calc(11cqmin * var(--fit,1))`)
+                .replace("<div ", '<div data-carousel-cover-label="1" data-fit="10" ') +
               kEyebrow("SWIPE &gt;&gt;", K.muted, ";margin-top:2cqmin"),
             true,
           )

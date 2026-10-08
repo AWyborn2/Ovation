@@ -46,7 +46,7 @@ describe("carousel templates across packs", () => {
     });
     it(`${pack.packId}: frozen covers show mixed rounds, finals or no round in every format`, () => {
       for (const size of SIZES) {
-        for (const roundLabel of ["MIXED ROUNDS", "GRAND FINAL", "ROUND 12", "", undefined]) {
+        for (const roundLabel of ["MIXED ROUNDS", "GRAND FINAL", "ROUND 12", "PRELIMINARY FINAL — WESTERN DISTRICT CHAMPIONSHIP", "WWWWMMMMWWWWMMMMWWWW", "", undefined]) {
           const input = JSON.parse(JSON.stringify({ ...weekend("title"), roundLabel }));
           const html = renderPackCard(input, size, false, tokens, false, null, pack.packId);
           const text = new DOMParser().parseFromString(html, "text/html").body.textContent;
@@ -54,6 +54,12 @@ describe("carousel templates across packs", () => {
           expect(html).not.toContain("{{roundLabel}}");
           if (roundLabel) expect(text).toContain(roundLabel);
           else expect(text).not.toMatch(/\bROUND\b/);
+          const label = new DOMParser().parseFromString(html, "text/html")
+            .querySelector('[data-carousel-cover-label="1"]');
+          expect(label).not.toBeNull();
+          expect(label?.textContent).toBe(roundLabel ?? "");
+          expect(label?.getAttribute("style")).toContain("max-width:100%");
+          expect(label?.getAttribute("style")).toContain("overflow-wrap:anywhere");
           expect(text).toContain("SWIPE");
         }
       }

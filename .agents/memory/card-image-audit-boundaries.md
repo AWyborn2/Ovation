@@ -1,6 +1,6 @@
 ---
 name: Card image audit boundaries
-description: Distinguish functional logos from deliberately clipped decoration when checking card image geometry.
+description: Distinguish functional clipping from intentional decoration and tight typography in card layout audits.
 ---
 
 Logo checks must evaluate the painted artwork under `object-fit: contain`, and distinguish functional header/sponsor logos from decorative crests.
@@ -14,3 +14,9 @@ When mounting real React components from a browser audit, import context provide
 **Why:** A second URL loads a second context object, causing “No QueryClient set” even when an apparently correct provider wraps the component. Also avoid named nested helpers inside tsx-transpiled Puppeteer callbacks: injected naming helpers are unavailable in the browser.
 
 **How to apply:** Read the served module's dependency URL when injecting providers, and keep evaluated browser functions self-contained.
+
+Keep built-in pack typography distinct when auditing carousel labels; do not impose a common two-line limit or normalize tight display line spacing.
+
+**Why:** A long stage can fit cleanly on three lines in Club Kit. Condensed-font metric rectangles can also overlap neighboring line boxes even when the painted capitals have a visible gap. Neither is necessarily an overflow defect.
+
+**How to apply:** Judge actual clipping, painted glyph bounds and neighboring copy after intended fonts load. Compare native PNG pixels with the measured rendering rather than changing a pack's type scale to satisfy an artificial geometry rule.
