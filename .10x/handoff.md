@@ -1,23 +1,18 @@
 # Handoff
 
-**From:** SDE (Phase 4, Milestones A–C done)
-**To:** SDE (Phase 4, Milestone D: U8 template editor, U9 Studio surfaces)
+**From:** SDE (Phase 4 complete — Milestones A–D)
+**To:** QA + Security (Phase 5), then DevOps + SRE (Phase 6)
 **Feature:** card-kind-templates
 
 ## Context
 
-- Source of truth: `docs/plans/2026-10-07-002-feat-card-kind-templates-plan.md` (R1–R23, AE1–AE7, KTD1–KTD20, U1–U10). Built log and deviations: `decisions/sde/card-kind-templates.md`.
-- Server side is complete behind `KIND_TEMPLATES` (off unless "all" or tenant ids): kind-template API, draft copy on create, templated rendering + slide split, layout checks in the hourly sweep, automation gate, publish-time check (auto posts only), revisions restore the design base.
-- `SocialDraft` now carries `templateVersion`, `designEditedAt`, `layoutWarnings` (per size) and `layoutCheckPending` — U9's queue "Needs a look" filter reads these.
-- Migration 0035 is the only schema change; Ash applies it by hand in production before the deploy that ships this (idempotent).
-- Related, uncommitted, in another worktree (`.claude/worktrees/meta-platforms-scheduled-posts-e3d348`): the Posting Plan requirements and the Social Studio ideation doc.
+- Scope: `docs/plans/2026-10-07-002-feat-card-kind-templates-plan.md`. Built log, deviations and browser checks: `decisions/sde/card-kind-templates.md`. Schema: `decisions/dba/card-kind-templates.md`.
+- Everything is behind `KIND_TEMPLATES` (unset = off; "all" or tenant ids). Off means today's Studio, queue, editor and pipeline unchanged.
+- Starter designs are not authored yet (design track D1–D3); kinds fall back to a labelled placeholder. The switch must stay off for real clubs until the starter contract test has no skips.
+- Deviations to review: publish-time abort only for automatic posts; layout checks run in the hourly sweep; `TemplatesCard` kept (it is the uploaded-background feature).
 
 ## Next steps
 
-1. U8: template editor mode at `/admin/social/templates/:kind` (desktop + tablet), apply dialog sending `expectedDrafts`, font picker over the catalogue, field tokens, rows panel, "Export as starter". Browser-verify here (local Vite needs a local config + win32 lightningcss / tailwind-oxide binaries).
-2. T6.2 then U9: Studio Templates section, retired-pack banner, remove the canvas builder and Save as template, queue "Needs a look" + "Mark ready anyway". Colour modes and uploaded-background templates stay.
-3. Then Phase 5 (QA + security) and Phase 6 (DevOps + SRE).
-
-## Local test env
-
-Postgres 16 on port 55433 (scratch data dir). API: `DATABASE_URL` and `CENTRAL_DATABASE_URL` = `postgresql://postgres@localhost:55433/ovation_test`, `SESSION_SECRET`, `CI_SKIP_DATA_TESTS=true`, `NODE_ENV=test`. Web: `NODE_ENV=test` (otherwise suites fail with "No such built-in module: node:").
+1. Phase 5: QA (test coverage vs AE1–AE7 and the Verification Contract) and security (tenant isolation of kind templates and drafts, admin-only routes, switch gating, leak guards, stored-XSS surface of template text/fonts/URLs).
+2. Phase 6: deploy notes (0035 SQL for Ash, `KIND_TEMPLATES`, render harness requirement for layout checks), monitoring (pending layout checks, aborted auto posts), rollback.
+3. Open the PR.
