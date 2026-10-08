@@ -1,6 +1,7 @@
 import type { PackTemplateFormats } from "../types";
 import { CLUB_LOGO_SLOT, skeletonCard, slot, sponsorsOff, sponsorsOn } from "../shared";
 import { treatedPhoto } from "../skeleton-kit";
+import { sponsorLogoFrame } from "./sponsor-logo";
 import {
   C,
   CK_SANS,
@@ -113,7 +114,7 @@ function sponsorLogos(large = false): string {
   return [1, 2, 3]
     .map(
       (n) =>
-        `<div data-sponsor-tile="${n}" style="width:${large ? 18 : 9}cqmin;height:${large ? 8 : 4}cqmin;flex:none;overflow:hidden;background:rgba(255,255,255,.92)">${slot(`sponsor${n}`, "sponsor", "rect")}</div>`,
+        `<div data-sponsor-tile="${n}" style="width:${large ? 18 : 9}cqmin;height:${large ? 8 : 4}cqmin;flex:none;display:flex;align-items:center;justify-content:center;overflow:hidden;background:rgba(255,255,255,.92)">${sponsorLogoFrame(`sponsor${n}`, large ? 8 : 4)}</div>`,
     )
     .join("");
 }

@@ -63,6 +63,20 @@ describe("weekend sponsor placements", () => {
     expect(closing).not.toContain("/a-sponsor.png");
     expect(closing).not.toContain("/b-sponsor.png");
     expect(closing).not.toContain("/other.png");
+    // Cover, team and closing-page sponsors keep a 2:1 frame and never crop.
+    for (const card of html) {
+      const doc = new DOMParser().parseFromString(card, "text/html");
+      const frames = doc.querySelectorAll('[data-sponsor-logo-frame="1"]');
+      for (const frame of frames) {
+        expect(frame.getAttribute("style")).toContain("aspect-ratio:2 / 1");
+        const image = frame.querySelector("img");
+        expect(image).not.toBeNull();
+        expect(image!.getAttribute("style")).toContain("object-fit:contain");
+        expect(image!.getAttribute("style")).not.toContain("scale(");
+      }
+    }
+    expect(new DOMParser().parseFromString(closing, "text/html")
+      .querySelectorAll('[data-sponsor-logo-frame="1"]')).toHaveLength(9);
   });
   it("respects sponsors off everywhere", () => {
     const slides = build({ ...sponsorBundle, settings: { ...sponsorBundle.settings, sponsorsEnabled: false } });
