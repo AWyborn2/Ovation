@@ -352,7 +352,7 @@ const teamList = design({
       "TEAM LIST{{setMarker}}",
       col(
         eyebrow(u, "{{gradeRound}} · {{competitionLine}}") +
-          display(u, `THE <span style="color:${C.pt}">XI</span>`, 12, ";margin-top:1cqmin") +
+          `<div data-team-grade="1" style="font-family:${CK_COND};font-weight:900;font-size:12cqmin;line-height:.95;text-transform:uppercase;color:${C.pt};margin-top:1cqmin;width:100%;height:12cqmin;overflow-wrap:anywhere">{{gradeHeading}}</div>` +
           meta(u, "{{venueDateTime}}", ";margin-top:.8cqmin") +
           `<div style="width:100%;margin-top:1.6cqmin">` +
           xiList(
@@ -360,7 +360,7 @@ const teamList = design({
             xiRow(u, {
               n: "{{row.number}}",
               name: "{{row.surname}}",
-              tag: `<span style="color:${C.chalk2}">({{row.role}})</span>`,
+              tag: `({{row.role}})`,
             }, true),
             ' data-repeat="players" data-repeat-max="12" data-xi-fit="1"',
             true,

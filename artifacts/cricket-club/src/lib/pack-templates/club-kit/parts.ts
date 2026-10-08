@@ -312,7 +312,7 @@ export function xiRow(u: Unit, cells: { n: string; name: string; tag: string }, 
     `<div${fit ? ' data-xi-row="1"' : ""} style="display:flex;align-items:center;gap:${u(1.4)};${fit ? `min-height:${u(5)};padding:${u(0.3)} 0;box-sizing:border-box` : `height:${u(5)}`};border-bottom:${u(0.15)} solid ${C.line};min-width:0">` +
     `<span style="flex:none;min-width:${u(3.4)};font-family:${CK_COND};font-weight:900;font-size:${u(3)};color:${C.pt}">${cells.n}</span>` +
     `<span${fit ? ' data-xi-name="1"' : ""} style="flex:1;min-width:0;font-family:${CK_SANS};font-weight:600;font-size:${fit ? `var(--xi-name-size,${u(2.3)})` : u(2.3)};${fit ? "line-height:1.2;white-space:pre" : "white-space:nowrap;overflow:hidden;text-overflow:ellipsis"};color:${C.chalk}">${cells.name}</span>` +
-    `<span style="flex:none;white-space:nowrap;font-family:${CK_MONO};font-weight:500;font-size:${u(1.5)};color:${C.chalk2}">${cells.tag}</span>` +
+    `<span${fit ? ' data-xi-role="1"' : ""} style="flex:none;white-space:nowrap;${fit ? `margin-left:-${u(0.8)};` : ""}font-family:${CK_MONO};font-weight:500;font-size:${u(1.5)};color:${C.chalk2}">${cells.tag}</span>` +
     `</div>`
   );
 }

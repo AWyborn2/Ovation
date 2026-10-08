@@ -22,7 +22,8 @@ export async function auditCarouselBuilder(page: Page, fixture: {
       const input = type === "teamList"
         ? { kind: "teamList", grade: "A Grade", gradeRound: "A GRADE", venueDateTime: "Test Ground",
             players: [{ order: 1, surname: "Test Full Name", role: "C/WK" }] }
-        : { kind: "matchSummary", club: { name: "Test Club" }, opposition: { name: "Visitors" },
+        : { kind: "matchSummary", matchTitle: "A Grade • Round 1", roundLabel: "Round 1",
+            club: { name: "Test Club" }, opposition: { name: "Visitors" },
             grade: "A Grade", result: "Won by 40 runs", carouselDetail: type === "matchSummary",
             innings: [{ teamKey: "club", inningsNum: 1, totalRuns: "200", wickets: "6", overs: "40",
               topBatters: [{ name: "Test Batter", runs: 80 }], topBowlers: [{ name: "Test Bowler", wickets: 3, runs: 20, overs: "8" }] }] };

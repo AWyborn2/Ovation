@@ -1,5 +1,5 @@
 /**
- * Team Selection only. Measure at native card size, never the transformed
+ * Built-in two-column Team Lists only. Measure at native card size, never the transformed
  * preview's viewport size. This runs after fonts load in BOTH PackCard and the
  * still harness; no character-count estimates or changes to authored templates.
  */
@@ -21,8 +21,8 @@ export function splitTeamName(text: string, width: number, measure: Measure): st
 }
 
 /** Widest permissible list-wide size, bounded by a readable minimum. */
-export function teamNameSize(rows: { text: string; width: number }[], base: number, measure: Measure): number {
-  return Math.max(base * TEAM_NAME_MIN_RATIO, Math.min(base,
+export function teamNameSize(rows: { text: string; width: number }[], base: number, measure: Measure, minRatio = TEAM_NAME_MIN_RATIO): number {
+  return Math.max(base * minRatio, Math.min(base,
     ...rows.map(row => base * row.width / Math.max(1, measure(row.text)))));
 }
 
@@ -42,6 +42,26 @@ export async function prepareTeamNames(root: HTMLElement): Promise<void> {
   }
   await document.fonts.ready;
   for (const list of lists) fitList(list);
+  for (const heading of root.querySelectorAll<HTMLElement>("[data-team-grade]")) fitGrade(heading);
+}
+
+const headingSize = new WeakMap<HTMLElement, number>();
+
+/** A fixed heading band prevents long grades from displacing rows or metadata. */
+function fitGrade(heading: HTMLElement): void {
+  if (!headingSize.has(heading)) headingSize.set(heading, parseFloat(getComputedStyle(heading).fontSize));
+  const base = headingSize.get(heading)!;
+  let size = base;
+  heading.style.fontSize = `${size}px`;
+  while ((heading.scrollWidth > heading.clientWidth + 1 || heading.scrollHeight > heading.clientHeight + 1)
+    && size > base * .18) {
+    size -= .5;
+    heading.style.fontSize = `${size}px`;
+  }
+  if (heading.scrollWidth > heading.clientWidth + 1 || heading.scrollHeight > heading.clientHeight + 1) {
+    throw new Error("The team grade is too long to fit legibly.");
+  }
+  heading.dataset.teamGradeReady = "true";
 }
 
 function fitList(list: HTMLElement): void {
@@ -55,6 +75,8 @@ function fitList(list: HTMLElement): void {
   for (const name of names) {
     if (!originalText.has(name)) originalText.set(name, name.textContent ?? "");
     name.textContent = originalText.get(name)!;
+    name.style.removeProperty("width");
+    name.style.flex = "1";
   }
   const style = getComputedStyle(names[0]);
   const base = parseFloat(style.fontSize);
@@ -69,7 +91,8 @@ function fitList(list: HTMLElement): void {
   // for fractional flex layout and browser rasterisation.
   const widths = () => names.map(name => Math.max(0, name.clientWidth - 1));
   const texts = names.map(name => originalText.get(name)!);
-  const min = base * TEAM_NAME_MIN_RATIO;
+  const minRatio = Number(list.dataset.xiMinRatio) || TEAM_NAME_MIN_RATIO;
+  const min = base * minRatio;
   let available = widths();
   const atMin = measureAt(min);
   const fitsTwo = () => texts.every((text, i) => splitTeamName(text, available[i], atMin));
@@ -95,7 +118,7 @@ function fitList(list: HTMLElement): void {
     }
   }
   if (!fitsTwo()) throw new Error("A team-list name is too long to fit legibly on two lines.");
-  const size = teamNameSize(texts.map((text, i) => ({ text, width: available[i] })), base, measureAt(base));
+  const size = teamNameSize(texts.map((text, i) => ({ text, width: available[i] })), base, measureAt(base), minRatio);
   list.style.setProperty("--xi-name-size", `${size}px`);
   const measure = measureAt(size);
   names.forEach((name, i) => {
@@ -105,6 +128,10 @@ function fitList(list: HTMLElement): void {
       if (index) name.appendChild(document.createElement("br"));
       name.appendChild(document.createTextNode(line));
     });
+    // Use the painted name's width, not the entire remaining row. A short
+    // name's role stays beside it; wrapped names and roles still fit together.
+    name.style.flex = "0 0 auto";
+    name.style.width = `${Math.ceil(Math.max(...lines.map(measure)))}px`;
   });
   list.dataset.xiReady = "true";
 }

@@ -16,6 +16,7 @@ export const teamList: PackCardTemplate = {
     ...clubHeaderFields(),
     textField("setMarker", 'Set page marker (e.g. " · 2/3")', ""),
     textField("gradeRound", "Grade + round", "A GRADE · RD 3"),
+    textField("gradeHeading", "Team grade heading", "TEAM LIST"),
     textField("competitionLine", "Competition line", "PREMIER T20 · ROUND 3 · vs MARINERS"),
     textField("venueDateTime", "Venue / date / time", "RUSHTON PARK · SAT 8 NOV · 12:30 PM"),
     photoField("squadPhoto", "Squad photo", "Squad / team photo"),

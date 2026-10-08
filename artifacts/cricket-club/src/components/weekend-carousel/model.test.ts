@@ -19,6 +19,29 @@ const bundle = {
 } as unknown as SocialSettingsBundle;
 
 describe("carousel cover round labels", () => {
+  it("freezes each selected team grade independently, filling only missing grades from its own fixture", () => {
+    const selected = createTeamSlides([
+      fixture(1, { grade: "A Grade" }), fixture(2, { grade: "Female A Grade" }),
+      fixture(3, { grade: "Western District Female Premier Championship Grade" }),
+    ], [], {
+      1: { kind: "teamList", grade: "A Grade", gradeRound: "Metadata 1", competitionLine: "", venueDateTime: "", players: [] },
+      2: { kind: "teamList", gradeRound: "Do not parse me", competitionLine: "", venueDateTime: "", players: [] },
+      3: { kind: "teamList", grade: " ", gradeRound: "", competitionLine: "", venueDateTime: "", players: [] },
+    });
+    const slides = buildWeekendSlides(selected, [], bundle, "Teams", "2026-10-09", "2026-10-11").slice(1, -1);
+    expect(slides.map(s => (s.input as { grade: string }).grade)).toEqual(selected.map(s => s.fixture.grade));
+    expect(selected[1].input).not.toHaveProperty("grade");
+    const frozen = JSON.parse(JSON.stringify(slides));
+    for (const size of ["square", "portrait", "story", "landscape"] as CardSize[]) {
+      for (const packId of ["club-kit-v1", "broadcast-dark-v1", "gold-foil-v1", "bold-type-v1", "neon-night-v1", "sunset-v1"]) {
+        frozen.forEach((slide: typeof slides[number], i: number) => {
+          const html = renderPackCard(slide.input, size, false, resolveCardTokens({ junior: false, packId }), false, slide.data, packId);
+          expect(new DOMParser().parseFromString(html, "text/html").querySelector("[data-team-grade]")?.textContent)
+            .toBe(selected[i].fixture.grade.toUpperCase());
+        });
+      }
+    }
+  });
   const teams = (...rounds: (string | null | undefined)[]) =>
     createTeamSlides(rounds.map((roundLabel, i) => fixture(i + 1, { roundLabel })), []);
 

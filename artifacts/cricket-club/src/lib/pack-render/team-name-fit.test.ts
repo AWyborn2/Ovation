@@ -12,6 +12,11 @@ describe("Team Selection measured names", () => {
   it("uses the tightest number/badge-adjusted width across the entire list", () => {
     expect(teamNameSize([{ text: "AAAAAA", width: 35 }, { text: "AAAAAA", width: 30 }], 24, measure)).toBe(20);
   });
+  it("lets skeleton packs use their 1.8cqmin floor without changing Club Kit's existing minimum", () => {
+    const rows = [{ text: "W".repeat(16), width: 40 }];
+    expect(teamNameSize(rows, 32, measure, 1.8 / 3.2)).toBe(18);
+    expect(teamNameSize(rows, 23, measure)).toBe(18);
+  });
   it.each([
     "Venkatanarasimharaju", "Smith-Worthington", "van der Westhuizen",
     "O’Shaughnessy", "D'Angelo", "García Márquez", "WWWMMMMWWWW",

@@ -207,6 +207,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
       break;
     }
     case "teamList": {
+      values["gradeHeading"] = input.grade?.trim().toUpperCase() || "TEAM LIST";
       set(values, "gradeRound", input.gradeRound);
       set(values, "competitionLine", input.competitionLine);
       set(values, "venueDateTime", input.venueDateTime);

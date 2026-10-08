@@ -228,7 +228,7 @@ describe("Broadcast Dark landscape summaries (U12)", () => {
     for (const size of SIZES) {
       const html = render(sampleCardInput("teamList"), size);
       expect(html, size).toContain(
-        "grid-template-columns:1fr 1fr;grid-template-rows:repeat(6,auto);grid-auto-flow:column",
+        "grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(6,auto);grid-auto-flow:column",
       );
     }
   });
