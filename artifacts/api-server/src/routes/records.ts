@@ -2,8 +2,9 @@ import { Router, type IRouter } from "express";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { db, awardsTable, awardWinnersTable, clubRolesTable } from "@workspace/db";
 import { GetRecordLeadersQueryParams, GetRecordProgressionQueryParams } from "@workspace/api-zod";
-import { dataSource, shouldReadCentral } from "../lib/tenant";
+import { dataSource } from "../lib/tenant";
 import { getTenantId } from "../middlewares/tenant-context";
+import { awardCreditRows } from "../lib/award-recipients";
 import { buildClubStats, clubRecordLeaders, loadClubOverlay } from "../lib/club-overlay";
 import {
   loadCorrectedMatchLines,
@@ -78,12 +79,14 @@ function buildLeaderboard(
   unit: string,
   records: { name: string; playerId: number | null; season: number }[],
   limit = 10,
+  byIdentity = false,
 ): RecordLeaderboard {
   const byPerson = new Map<string, Tally>();
   for (const r of records) {
     const name = r.name.trim();
     if (!name) continue;
-    const personKey = normalizeName(name);
+    const personKey =
+      byIdentity && r.playerId != null ? `player:${r.playerId}` : normalizeName(name);
     let t = byPerson.get(personKey);
     if (!t) {
       t = { name, playerId: null, playerIdConflict: false, seasons: new Set() };
@@ -119,11 +122,6 @@ router.get("/records-leaderboards", async (req, res): Promise<void> => {
   // These are derived from curated, tenant-side content (office-bearer roles and
   // award winners) — there is no central source. A central tenant gets its own
   // (empty) leaderboards rather than Halls Head's until it adds roles/awards.
-  if (await shouldReadCentral(req)) {
-    res.json({ roleRecords: [], awardRecords: [] });
-    return;
-  }
-
   const tenantId = getTenantId(req);
 
   // --- Role tenure leaderboards (office bearers only: grade is null) ---
@@ -165,6 +163,7 @@ router.get("/records-leaderboards", async (req, res): Promise<void> => {
           season: awardWinnersTable.season,
           name: awardWinnersTable.name,
           playerId: awardWinnersTable.playerId,
+          playerIds: awardWinnersTable.playerIds,
         })
         .from(awardWinnersTable)
         .where(
@@ -177,13 +176,15 @@ router.get("/records-leaderboards", async (req, res): Promise<void> => {
     : [];
 
   const byAward = new Map<number, { name: string; playerId: number | null; season: number }[]>();
-  for (const w of winners) {
+  for (const w of await awardCreditRows(tenantId, winners)) {
     if (!byAward.has(w.awardId)) byAward.set(w.awardId, []);
     byAward.get(w.awardId)!.push({ name: w.name, playerId: w.playerId, season: w.season });
   }
 
   const awardRecords: RecordLeaderboard[] = awards
-    .map((a) => buildLeaderboard(a.key, `Most ${a.title} Wins`, "awards", byAward.get(a.id) ?? []))
+    .map((a) =>
+      buildLeaderboard(a.key, `Most ${a.title} Wins`, "awards", byAward.get(a.id) ?? [], 10, true),
+    )
     .filter((lb) => (lb.entries[0]?.count ?? 0) >= 2);
 
   res.json({ roleRecords, awardRecords });

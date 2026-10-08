@@ -10,6 +10,11 @@ export interface AwardWinnerUpdate {
   season?: number;
   /** @nullable */
   playerId?: number | null;
+  /**
+     * Replaces all links in order; empty removes all. Omit to keep links unchanged.
+     * @maxItems 100
+     */
+  playerIds?: number[];
   name?: string;
   displayOrder?: number;
   published?: boolean;

@@ -4479,6 +4479,11 @@ export const FinaliseVotingConfigResponse = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -4593,6 +4598,11 @@ export const ListAdminAwardsResponseItem = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -4921,6 +4931,11 @@ export const FinalisePointsConfigResponse = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -5098,6 +5113,11 @@ export const ListAwardsResponseItem = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -5154,6 +5174,11 @@ export const UpdateAwardResponse = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -5176,9 +5201,15 @@ export const CreateAwardWinnerParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+export const createAwardWinnerBodyPlayerIdsMax = 100;
+
+
+
 export const CreateAwardWinnerBody = zod.object({
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number().min(1)).max(createAwardWinnerBodyPlayerIdsMax).optional().describe('Ordered links. Overrides playerId; an empty list means free text.'),
   "name": zod.string(),
   "displayOrder": zod.number().optional(),
   "published": zod.boolean().optional()
@@ -5192,9 +5223,15 @@ export const UpdateAwardWinnerParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+export const updateAwardWinnerBodyPlayerIdsMax = 100;
+
+
+
 export const UpdateAwardWinnerBody = zod.object({
   "season": zod.number().optional(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number().min(1)).max(updateAwardWinnerBodyPlayerIdsMax).optional().describe('Replaces all links in order; empty removes all. Omit to keep links unchanged.'),
   "name": zod.string().optional(),
   "displayOrder": zod.number().optional(),
   "published": zod.boolean().optional()
@@ -5205,6 +5242,11 @@ export const UpdateAwardWinnerResponse = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()

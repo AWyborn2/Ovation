@@ -3792,12 +3792,20 @@ export const AwardMechanism = {
   manual: 'manual',
 } as const;
 
+export interface AwardRecipient {
+  playerId: number;
+  name: string;
+}
+
 export interface AwardWinner {
   id: number;
   awardId: number;
   season: number;
   /** @nullable */
   playerId?: number | null;
+  /** Ordered linked players; playerId remains the first link for older clients. */
+  playerIds?: number[];
+  recipients?: AwardRecipient[];
   name: string;
   displayOrder: number;
   published: boolean;
@@ -3845,6 +3853,11 @@ export interface AwardWinnerInput {
   season: number;
   /** @nullable */
   playerId?: number | null;
+  /**
+     * Ordered links. Overrides playerId; an empty list means free text.
+     * @maxItems 100
+     */
+  playerIds?: number[];
   name: string;
   displayOrder?: number;
   published?: boolean;
@@ -3854,6 +3867,11 @@ export interface AwardWinnerUpdate {
   season?: number;
   /** @nullable */
   playerId?: number | null;
+  /**
+     * Replaces all links in order; empty removes all. Omit to keep links unchanged.
+     * @maxItems 100
+     */
+  playerIds?: number[];
   name?: string;
   displayOrder?: number;
   published?: boolean;

@@ -1,0 +1,1 @@
+ALTER TABLE "award_winners" ADD COLUMN IF NOT EXISTS "player_ids" integer[];

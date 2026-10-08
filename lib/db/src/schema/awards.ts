@@ -46,6 +46,9 @@ export const awardWinnersTable = pgTable(
     // the native players table (hybrid stats plan U8, KTD3). Writes are checked
     // by assertPlayerInTenantSpace (api-server/src/lib/curated-player-space.ts).
     playerId: integer("player_id"),
+    // NULL uses the legacy playerId. [] explicitly means no links.
+    // No native FK: these are tenant-scoped native or crosswalk identities.
+    playerIds: integer("player_ids").array(),
     name: text("name").notNull(),
     displayOrder: integer("display_order").notNull().default(0),
     // Public visibility for an individual winner row. Defaults true so a

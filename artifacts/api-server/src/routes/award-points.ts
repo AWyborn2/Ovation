@@ -20,6 +20,7 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { assertPlayerInTenantSpace } from "../lib/curated-player-space";
+import { withAwardRecipients } from "../lib/award-recipients";
 import {
   computeLeaderboard,
   configCategories,
@@ -336,7 +337,7 @@ router.post("/points-configs/:id/finalise", requireAdmin, async (req, res): Prom
       asc(awardWinnersTable.displayOrder),
       asc(awardWinnersTable.id),
     );
-  res.json({ ...award, winners });
+  res.json({ ...award, winners: await withAwardRecipients(award.tenantId, winners) });
 });
 
 // ---- Public: visible leaderboards ----

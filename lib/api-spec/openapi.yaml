@@ -14456,12 +14456,30 @@ components:
           type: integer
         playerId:
           type: ["integer", "null"]
+        playerIds:
+          type: array
+          items:
+            type: integer
+          description: Ordered linked players; playerId remains the first link for older clients.
+        recipients:
+          type: array
+          items:
+            $ref: "#/components/schemas/AwardRecipient"
         name:
           type: string
         displayOrder:
           type: integer
         published:
           type: boolean
+
+    AwardRecipient:
+      type: object
+      required: [playerId, name]
+      properties:
+        playerId:
+          type: integer
+        name:
+          type: string
 
     Award:
       type: object
@@ -14540,6 +14558,14 @@ components:
           type: integer
         playerId:
           type: ["integer", "null"]
+        playerIds:
+          type: array
+          uniqueItems: true
+          maxItems: 100
+          items:
+            type: integer
+            minimum: 1
+          description: Ordered links. Overrides playerId; an empty list means free text.
         name:
           type: string
         displayOrder:
@@ -14554,6 +14580,14 @@ components:
           type: integer
         playerId:
           type: ["integer", "null"]
+        playerIds:
+          type: array
+          uniqueItems: true
+          maxItems: 100
+          items:
+            type: integer
+            minimum: 1
+          description: Replaces all links in order; empty removes all. Omit to keep links unchanged.
         name:
           type: string
         displayOrder:

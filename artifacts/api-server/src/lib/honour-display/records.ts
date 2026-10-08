@@ -6,6 +6,7 @@
  * never on a request object — so every builder is unit-testable.
  */
 import { and, asc, desc, eq, gt, inArray, lt } from "drizzle-orm";
+import { awardCreditRows } from "../award-recipients";
 import {
   db,
   centuriesTable,
@@ -164,12 +165,13 @@ export function tallyEntries(
   records: { name: string; playerId: number | null; season: number }[],
   unit: string,
   limit = 10,
+  byIdentity = false,
 ): BoardEntry[] {
   const byPerson = new Map<string, Tally>();
   for (const r of records) {
     const name = r.name.trim();
     if (!name) continue;
-    const key = normalizeName(name);
+    const key = byIdentity && r.playerId != null ? `player:${r.playerId}` : normalizeName(name);
     let t = byPerson.get(key);
     if (!t) {
       t = { name, playerId: null, playerIdConflict: false, seasons: new Set() };
@@ -260,6 +262,7 @@ export async function buildRecordsLeaderboards(tenantId: number): Promise<Honour
           season: awardWinnersTable.season,
           name: awardWinnersTable.name,
           playerId: awardWinnersTable.playerId,
+          playerIds: awardWinnersTable.playerIds,
         })
         .from(awardWinnersTable)
         .where(
@@ -267,12 +270,12 @@ export async function buildRecordsLeaderboards(tenantId: number): Promise<Honour
         )
     : [];
   const byAward = new Map<number, { name: string; playerId: number | null; season: number }[]>();
-  for (const w of winners) {
+  for (const w of await awardCreditRows(tenantId, winners)) {
     if (!byAward.has(w.awardId)) byAward.set(w.awardId, []);
     byAward.get(w.awardId)!.push({ name: w.name, playerId: w.playerId, season: w.season });
   }
   for (const a of awards) {
-    const entries = tallyEntries(byAward.get(a.id) ?? [], "wins");
+    const entries = tallyEntries(byAward.get(a.id) ?? [], "wins", 10, true);
     if ((entries[0]?.detail ? parseInt(entries[0].detail, 10) : 0) < 2) continue;
     out.push({
       id: `record_lb:award:${a.key}`,

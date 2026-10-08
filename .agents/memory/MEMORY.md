@@ -74,3 +74,4 @@
 - [Publishing constraint checks](publishing-constraint-checks.md) — a “no schema diff” result can miss CHECK-constraint drift; compare live definitions before promising republishing will repair it.
 - [Active roster onboarding](active-roster-onboarding.md) — current-season appearances seed new clubs' active roster; admins and captains can maintain it without repeated participant reports.
 - [Weekend carousel photos](weekend-carousel-photo-scope.md) — title → team match-day cards → sponsors; team photos only from the same grade's batting, bowling or fielding categories.
+- [Shared award compatibility](shared-award-compatibility.md) — legacy single-link edits must preserve other recipients; curated winner labels never imply player identities.

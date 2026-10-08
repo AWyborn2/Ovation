@@ -1,4 +1,5 @@
 import { and, asc, count, eq, inArray, isNull, min, or, sql } from "drizzle-orm";
+import { winnerMatchesPlayers } from "./award-recipients";
 import {
   db,
   awardBallotsTable,
@@ -239,7 +240,10 @@ async function loadCuratedRefs(
       participantId?: string | null;
     }>,
   ) => {
-    for (const r of rows) refs.push({ ...r, table, label: r.label ?? "" });
+    for (const r of rows) {
+      if (table === "award_winners" && r.playerId != null && !ids.includes(r.playerId)) continue;
+      refs.push({ ...r, table, label: r.label ?? "" });
+    }
   };
 
   // Premiership team lists link by player id OR straight by GUID.
@@ -293,15 +297,13 @@ async function loadCuratedRefs(
     await reader
       .select({
         rowId: awardWinnersTable.id,
-        playerId: awardWinnersTable.playerId,
+        playerId: sql<number>`unnest(coalesce(${awardWinnersTable.playerIds}, array_remove(ARRAY[${awardWinnersTable.playerId}], NULL)))`,
         label: sql<string>`${awardsTable.title} || ' (' || ${awardWinnersTable.season} || ')'`,
         personName: awardWinnersTable.name,
       })
       .from(awardWinnersTable)
       .innerJoin(awardsTable, eq(awardsTable.id, awardWinnersTable.awardId))
-      .where(
-        and(eq(awardWinnersTable.tenantId, tenantId), inArray(awardWinnersTable.playerId, ids)),
-      ),
+      .where(and(eq(awardWinnersTable.tenantId, tenantId), winnerMatchesPlayers(ids))),
   );
   // Ballots are tenant-scoped through their award.
   const ballots = await reader

@@ -45,6 +45,7 @@ export * from './award';
 export * from './awardInput';
 export * from './awardMechanism';
 export * from './awardPointsConfig';
+export * from './awardRecipient';
 export * from './awardTally';
 export * from './awardUpdate';
 export * from './awardVotingConfig';
