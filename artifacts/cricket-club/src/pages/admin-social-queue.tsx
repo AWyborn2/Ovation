@@ -28,6 +28,7 @@ import { ShareCardModal, type EngineKey } from "@/components/share-card-modal";
 import { ListSkeleton, EmptyState, QueryError } from "@/components/data-states";
 import { DataTable, StatusPill, type DataTableColumn } from "@/components/admin-ui";
 import { DraftDrawer } from "@/components/social-queue/draft-drawer";
+import { CarouselExportButton } from "@/components/social-queue/carousel-export-button";
 import { GenerateFromDataCard } from "@/components/social-queue/generate-from-data";
 import {
   FAMILIES,
@@ -234,6 +235,14 @@ export default function AdminSocialQueue() {
       ),
     },
   ];
+
+  columns.push({
+    key: "export",
+    header: "Export",
+    cell: (d) => readQueuedCarousel(d.cardInput)
+      ? <CarouselExportButton key={d.id} draftId={d.id} />
+      : null,
+  });
 
   const hasAnyDraft = drafts.length > 0;
   const emptyState = hasAnyDraft ? (

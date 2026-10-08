@@ -27,6 +27,12 @@ The primary action sends the whole carousel to the Social review queue with a ma
 
 **How to apply:** Save the reviewed composition, not instructions to randomly select photos again later. Do not automatically publish a newly submitted carousel.
 
+Sending a carousel to review must not remove the ability to export it: keep an explicit export action in the queue.
+
+**Why:** The user clarified that they still need to export carousels from the queue after the primary action changed to review.
+
+**How to apply:** Export the saved composition and caption without changing review or publication status.
+
 Sponsor closing slides must show logos only, without sponsor-name captions, in equal-sized 2:1 containers. Portrait and story layouts should use their vertical space rather than leaving the large empty photo area above a small grid.
 
 **Why:** The user requested consistency across the square, portrait and story sponsor slides.

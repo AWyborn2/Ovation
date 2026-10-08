@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { CarouselPreview } from "./carousel-preview";
+import { CarouselExportButton } from "./carousel-export-button";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useApproveSocialDraft,
@@ -136,6 +137,7 @@ export function DraftDrawer({
             </Button>
           )}
           <div className="ml-auto flex flex-wrap gap-2">
+            {carousel && <CarouselExportButton key={current.id} draftId={current.id} />}
             {status !== "dismissed" && !carousel && (
               <Button asChild variant="outline">
                 <Link href={`/admin/social/editor/${current.id}`}>Open in editor</Link>
