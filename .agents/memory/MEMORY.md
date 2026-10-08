@@ -75,3 +75,4 @@
 - [Active roster onboarding](active-roster-onboarding.md) — current-season appearances seed new clubs' active roster; admins and captains can maintain it without repeated participant reports.
 - [Weekend carousel photos](weekend-carousel-photo-scope.md) — title → team match-day cards → sponsors; team photos only from the same grade's batting, bowling or fielding categories.
 - [Shared award compatibility](shared-award-compatibility.md) — legacy single-link edits must preserve other recipients; curated winner labels never imply player identities.
+- [Card image audit boundaries](card-image-audit-boundaries.md) — check contained artwork bounds, not decorative oversized crests; intentional watermark clipping is not a sponsor defect.
