@@ -11,6 +11,7 @@ import {
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { norm } from "./name-match";
 import {
+  isInitialOnly,
   isLinkablePlayerId,
   loadInitialIndex,
   matchByInitial,
@@ -384,6 +385,8 @@ export type SquadImportResult = {
   updated: number;
   /** Existing members stood down because their registration is no longer active. */
   deactivated: number;
+  /** Existing members without a Profile ID (added by hand or from this season's games) this import filled in. */
+  adopted: number;
   /** Members newly linked to an app player this import. */
   linked: number;
   /** Members whose contacts were kept: changed from their link, flag not yet cleared. */
@@ -438,6 +441,7 @@ export async function applySquadImport(
   let deactivated = 0;
   let linked = 0;
   let contactsKept = 0;
+  const adopted = new Set<number>();
 
   await db.transaction(async (tx: Tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(72401, ${tenantId})`);
@@ -449,7 +453,6 @@ export async function applySquadImport(
     for (const row of existing) {
       if (row.playhqProfileId) byProfile.set(row.playhqProfileId, row);
     }
-    const adopted = new Set<number>();
 
     const taken = new Set<number>(
       (
@@ -498,17 +501,26 @@ export async function applySquadImport(
         const initialId = matchByInitial(m, initialIndex)?.playerId ?? null;
         const keys = memberNameKeys(m);
         const initials = memberInitialKeys(m);
-        const nameAgrees = (r: SquadMemberRow) =>
-          memberNameKeys(r).some((k) => keys.includes(k) && nameCounts.get(k) === 1) ||
+        const fullNameAgrees = (r: SquadMemberRow) =>
+          memberNameKeys(r).some((k) => keys.includes(k) && nameCounts.get(k) === 1);
+        const initialAgrees = (r: SquadMemberRow) =>
           memberInitialKeys(r).some((k) => initials.includes(k) && initialCounts.get(k) === 1);
+        const nameAgrees = (r: SquadMemberRow) => fullNameAgrees(r) || initialAgrees(r);
+        // A member already linked to a player (e.g. seeded from this season's
+        // games) is the same person when their full name agrees, or when they're
+        // only known by an initial ("J Wyllie") and initial + surname agree. A
+        // differently named member an admin linked by hand never matches.
+        const linkAgrees = (r: SquadMemberRow) =>
+          r.linkedPlayerId === null ||
+          r.linkedPlayerId === initialId ||
+          fullNameAgrees(r) ||
+          (isInitialOnly(r.firstName) && initialAgrees(r));
         const candidates = existing.filter(
           (r) =>
             !r.playhqProfileId &&
             !adopted.has(r.id) &&
             ((profileId !== null && r.linkedPlayerId === profileId) ||
-              (r.section === m.section &&
-                nameAgrees(r) &&
-                (r.linkedPlayerId === null || r.linkedPlayerId === initialId))),
+              (r.section === m.section && nameAgrees(r) && linkAgrees(r))),
         );
         if (candidates.length === 1) {
           prev = candidates[0];
@@ -604,6 +616,7 @@ export async function applySquadImport(
     created,
     updated,
     deactivated,
+    adopted: adopted.size,
     linked,
     contactsKept,
     skipped: plan.skipped,

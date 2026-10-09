@@ -2468,6 +2468,29 @@ paths:
         "401":
           description: Not signed in as this club's admin
 
+  /squad/seed-from-season:
+    post:
+      operationId: seedSquadFromSeason
+      tags: [squad]
+      summary: Add this season's players to the register (admin)
+      description: |
+        Adds everyone who has played for the club in the current cricket season
+        (the club's central scorecards and rosters) and isn't in the register
+        yet, exactly as provisioning seeds a new club: active, with their grade,
+        linked to their club player when known, with no contact details and no
+        PlayHQ profile id; a later participant import fills them in rather than
+        adding them twice. Existing members are never changed, and running it
+        again adds no one twice.
+      responses:
+        "200":
+          description: What was added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadSeasonSeedResult"
+        "401":
+          description: Not signed in as this club's admin
+
   /squad/player-search:
     get:
       operationId: searchSquadPlayers
@@ -13374,7 +13397,8 @@ components:
 
     SquadImportResult:
       type: object
-      required: [season, created, updated, deactivated, linked, contactsKept, skipped, skippedByReason]
+      required:
+        [season, created, updated, deactivated, adopted, linked, contactsKept, skipped, skippedByReason]
       properties:
         season:
           type: ["string", "null"]
@@ -13386,6 +13410,12 @@ components:
         deactivated:
           type: integer
           description: Existing members stood down because their registration is no longer active
+        adopted:
+          type: integer
+          description: |
+            Members without a PlayHQ profile id (added from this season's games
+            or by hand) that a row of the file turned out to be, and filled in
+            instead of added twice. Also counted in `updated`.
         linked:
           type: integer
           description: Members newly linked to a club player record
@@ -13406,6 +13436,17 @@ components:
                 type: string
               count:
                 type: integer
+
+    SquadSeasonSeedResult:
+      type: object
+      required: [added, skipped]
+      properties:
+        added:
+          type: integer
+          description: Members added
+        skipped:
+          type: integer
+          description: This season's players already in the register
 
     AvailabilitySelectionRule:
       type: string

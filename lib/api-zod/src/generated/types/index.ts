@@ -693,6 +693,7 @@ export * from './squadMemberInput';
 export * from './squadMemberUpdate';
 export * from './squadPlayerSearchHit';
 export * from './squadPlayerSearchHitAlreadyLinkedTo';
+export * from './squadSeasonSeedResult';
 export * from './squadSection';
 export * from './startKindTemplateRequest';
 export * from './startKindTemplateRequestStarter';

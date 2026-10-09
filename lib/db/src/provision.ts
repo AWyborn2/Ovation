@@ -20,7 +20,7 @@ import {
 import { centralDb, centralClubsTable, isCentralClubProvisionable } from "./central";
 import { centralClubParticipants, centralCurrentSeasonSquad } from "./central-queries";
 import { seasonStartYearFor } from "./seasons";
-import { seedCurrentSeasonSquad } from "./squad-seed";
+import { markSquadSeasonSeeded, seedCurrentSeasonSquad } from "./squad-seed";
 import { seedTenantPremierships, type SeedTenantPremiershipsResult } from "./premierships-seed";
 
 /**
@@ -237,7 +237,9 @@ export async function provisionTenant(
     // provisioning path and the backfill script (scripts/backfill-player-id-map)
     // mint identically.
     const mint = await mintPlayerIdMap(row.id, row.centralClubId, tx);
-    await seedCurrentSeasonSquad(tx, row.id, currentPlayers);
+    if ((await seedCurrentSeasonSquad(tx, row.id, currentPlayers)) > 0) {
+      await markSquadSeasonSeeded(tx, row.id);
+    }
 
     // First admin in the SAME transaction: if this insert fails, the tenant and
     // its crosswalk roll back with it, so a retry can never hit "already taken"

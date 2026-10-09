@@ -3052,6 +3052,7 @@ export const ImportSquadResponse = zod.object({
   "created": zod.number(),
   "updated": zod.number(),
   "deactivated": zod.number().describe('Existing members stood down because their registration is no longer active'),
+  "adopted": zod.number().describe('Members without a PlayHQ profile id (added from this season\'s games\nor by hand) that a row of the file turned out to be, and filled in\ninstead of added twice. Also counted in `updated`.\n'),
   "linked": zod.number().describe('Members newly linked to a club player record'),
   "contactsKept": zod.number().describe('Members whose contacts were kept because a player or guardian changed them from their link and an admin hasn\'t cleared the flag yet'),
   "skipped": zod.array(zod.object({
@@ -3063,6 +3064,23 @@ export const ImportSquadResponse = zod.object({
   "reason": zod.string(),
   "count": zod.number()
 }))
+})
+
+
+/**
+ * Adds everyone who has played for the club in the current cricket season
+(the club's central scorecards and rosters) and isn't in the register
+yet, exactly as provisioning seeds a new club: active, with their grade,
+linked to their club player when known, with no contact details and no
+PlayHQ profile id; a later participant import fills them in rather than
+adding them twice. Existing members are never changed, and running it
+again adds no one twice.
+
+ * @summary Add this season's players to the register (admin)
+ */
+export const SeedSquadFromSeasonResponse = zod.object({
+  "added": zod.number().describe('Members added'),
+  "skipped": zod.number().describe('This season\'s players already in the register')
 })
 
 

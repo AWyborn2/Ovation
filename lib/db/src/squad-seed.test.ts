@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { seedCurrentSeasonSquad } from "./squad-seed";
+import { markSquadSeasonSeeded, seedCurrentSeasonSquad, splitSeasonName } from "./squad-seed";
 
 function executor(existing: unknown[] = [], mappings: unknown[] = []) {
   const queue = [mappings, existing];
@@ -98,5 +98,39 @@ describe("provisioning current-season active roster", () => {
       await seedCurrentSeasonSquad(tx as never, 77, [senior, { ...senior, participantId: "p2" }]),
     ).toBe(2);
     expect(tx.values).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("markSquadSeasonSeeded", () => {
+  it("upserts the tenant's season_seeded_at marker", async () => {
+    const onConflictDoUpdate = vi.fn(async () => []);
+    const values = vi.fn(() => ({ onConflictDoUpdate }));
+    const tx = { insert: vi.fn(() => ({ values })) };
+    const now = new Date("2026-10-09T03:00:00Z");
+    await markSquadSeasonSeeded(tx as never, 77, now);
+    expect(values).toHaveBeenCalledWith({ tenantId: 77, seasonSeededAt: now });
+    expect(onConflictDoUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ set: { seasonSeededAt: now } }),
+    );
+  });
+});
+
+describe("splitSeasonName", () => {
+  it('reads central\'s "Surname, Firstname" the right way round', () => {
+    expect(splitSeasonName("Barnes, Casey")).toEqual({ firstName: "Casey", lastName: "Barnes" });
+    expect(splitSeasonName("Kelly-Wilson, Montanna")).toEqual({
+      firstName: "Montanna",
+      lastName: "Kelly-Wilson",
+    });
+  });
+
+  it('keeps "Firstname Surname" and initial-only names as they are', () => {
+    expect(splitSeasonName("Jake Wyllie")).toEqual({ firstName: "Jake", lastName: "Wyllie" });
+    expect(splitSeasonName("J Wyllie")).toEqual({ firstName: "J", lastName: "Wyllie" });
+    expect(splitSeasonName("Jason R Davey")).toEqual({ firstName: "Jason", lastName: "R Davey" });
+  });
+
+  it("falls back to space splitting when a comma has nothing on one side", () => {
+    expect(splitSeasonName("Barnes,")).toEqual({ firstName: "Barnes,", lastName: "" });
   });
 });

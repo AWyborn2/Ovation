@@ -1,8 +1,25 @@
 import { eq } from "drizzle-orm";
 import type { Db } from "./index";
 import { playerIdMapTable } from "./schema/player_id_map";
-import { squadMembersTable } from "./schema/availability";
+import { availabilitySettingsTable, squadMembersTable } from "./schema/availability";
 import type { CurrentSeasonSquadPlayer } from "./central/squad-link";
+
+/**
+ * Central display names for PlayHQ-loaded players are "Surname, Firstname"
+ * ("Barnes, Casey"); roster names are "Firstname Surname" or "J Barnes".
+ */
+export function splitSeasonName(name: string): { firstName: string; lastName: string } {
+  const trimmed = name.trim();
+  const comma = trimmed.indexOf(",");
+  if (comma > 0) {
+    const lastName = trimmed.slice(0, comma).trim();
+    const firstName = trimmed.slice(comma + 1).trim();
+    if (firstName && lastName) return { firstName, lastName };
+  }
+  const tokens = trimmed.split(/\s+/);
+  const firstName = tokens.shift() ?? "";
+  return { firstName, lastName: tokens.join(" ") };
+}
 
 /** Inside provisioning's transaction; reruns never undo a staff roster decision. */
 export async function seedCurrentSeasonSquad(
@@ -28,9 +45,7 @@ export async function seedCurrentSeasonSquad(
   let created = 0;
   for (const p of players) {
     const playerId = p.section === "senior" ? (ids.get(p.participantId) ?? null) : null;
-    const tokens = p.name.trim().split(/\s+/);
-    const firstName = tokens.shift()!;
-    const lastName = tokens.join(" ");
+    const { firstName, lastName } = splitSeasonName(p.name);
     if (names.has(nameKey(firstName, lastName)) || (playerId !== null && linked.has(playerId)))
       continue;
     await tx.insert(squadMembersTable).values({
@@ -48,4 +63,23 @@ export async function seedCurrentSeasonSquad(
     created++;
   }
   return created;
+}
+
+/**
+ * Note that a season seed filled the register (`availability_settings.season_seeded_at`),
+ * so the hourly top-up of an empty register never refills a club that later
+ * empties its list on purpose. Called only when a seed added someone.
+ */
+export async function markSquadSeasonSeeded(
+  tx: Pick<Db, "insert">,
+  tenantId: number,
+  now: Date = new Date(),
+): Promise<void> {
+  await tx
+    .insert(availabilitySettingsTable)
+    .values({ tenantId, seasonSeededAt: now })
+    .onConflictDoUpdate({
+      target: availabilitySettingsTable.tenantId,
+      set: { seasonSeededAt: now },
+    });
 }

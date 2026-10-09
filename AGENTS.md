@@ -105,7 +105,11 @@ In short:
 - **Availability and Selection Hub are built, off per club by default**
   (`availability_settings.enabled`; plan `docs/plans/2026-10-06-002-feat-player-availability-selection-plan.md`).
   Admins import the PlayHQ participant CSV into `squad_members` (only whitelisted columns are
-  kept). The scheduled sweep then runs each enabled club's weekly round: SMS (Twilio
+  kept). Provisioning seeds the register from the club's central games this season
+  (`seedCurrentSeasonSquad`, `lib/db/src/squad-seed.ts`); the same seed backs the admin's
+  `POST /squad/seed-from-season` and the scheduled sweep's hourly top-up of an empty, never-seeded
+  register (`api-server/src/lib/squad-season-seed.ts`, marker
+  `availability_settings.season_seeded_at`); a later CSV import adopts those members. The scheduled sweep then runs each enabled club's weekly round: SMS (Twilio
   `TWILIO_*`, or ClickSend `CLICKSEND_*` sending from the club owner's own verified mobile;
   `SMS_PROVIDER` picks, Twilio wins when both are set and it is unset) and email requests with per-recipient hashed links, a reminder, and at cut-off a
   draft `selections` row per fixture seeded from the grade's last team list. Captains and
