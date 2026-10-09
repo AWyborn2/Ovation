@@ -80,3 +80,4 @@
 - [Held team-list identities](held-team-list-identities.md) — Held numbers need no historical profile; recover legacy identity only from a matching finalised side, never a reopened draft.
 - [Parallel migration collisions](parallel-migration-collisions.md) — preserve existing migration history; resequence incoming changes with a combined snapshot and later timestamp.
 - [Browser render verification](browser-render-verification.md) — direct imports of Vite-prebundled React APIs may require their default export.
+- [Mobile store release targets](mobile-store-release.md) — user wants Ovation Mobile released for both iPhone and Android.
