@@ -53,7 +53,7 @@ export async function carouselContent(req: Request, tenantId: number, type: Caro
       const junior = isJuniorGradeLabel(fixture.grade);
       const shirtNumbers = junior ? null : await numbers(teamListSeasonOf(fixture));
       const resolved = shirtNumbers
-        ? await recoverPublishedSelectionIdentities(tenantId, list) : { players: list.players };
+        ? await recoverPublishedSelectionIdentities(tenantId, list, fixture.startAt) : { players: list.players };
       if (resolved.warning) warnings.push(`${fixture.grade} v ${fixture.opponentName}: ${resolved.warning}`);
       // Junior cards never look up senior identities, shirt numbers or debut records.
       const players = resolved.players.map(p => junior && (!p.participantId || privateIds.has(p.participantId))

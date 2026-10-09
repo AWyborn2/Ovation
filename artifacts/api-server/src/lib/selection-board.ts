@@ -49,7 +49,7 @@ import {
 } from "./selection-drafts";
 import type { SelectionActor } from "../middlewares/require-admin-or-captain";
 import { logger as defaultLogger } from "./logger";
-import { PRIVATE_PLAYER, selectionPublishedPlayers } from "./selection-published-players";
+import { PRIVATE_PLAYER, selectionPublishedPlayers, loadSelectionParticipantIds } from "./selection-published-players";
 
 /**
  * The Selection Hub's board.
@@ -257,7 +257,6 @@ const MEMBER_COLUMNS = {
   gradeHint: squadMembersTable.gradeHint,
   isPrivate: squadMembersTable.isPrivate,
   linkedPlayerId: squadMembersTable.linkedPlayerId,
-  playhqProfileId: squadMembersTable.playhqProfileId,
 };
 
 type BoardMemberRow = Pick<SquadMemberRow, keyof typeof MEMBER_COLUMNS>;
@@ -929,7 +928,9 @@ export async function finaliseSelection(
             )
         : [];
     const memberOf = new Map(members.map((m) => [m.id, m]));
-    const players = selectionPublishedPlayers(selection, members);
+    const participantIds = fixtureSection(fixture.grade) === "senior"
+      ? await loadSelectionParticipantIds(tx, tenantId, fixture.startAt) : new Map<number, string>();
+    const players = selectionPublishedPlayers(selection, members, participantIds);
     await tx
       .insert(teamListsTable)
       .values({ tenantId, fixtureId: fixture.id, players, isPublished: true, source: "selection" })

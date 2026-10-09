@@ -8,7 +8,7 @@ import { db, tenantsTable, adminsTable, fixturesTable, teamListsTable, selection
 import app from "../app";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { finaliseSelection } from "../lib/selection-board";
-import { recoverPublishedSelectionIdentities } from "../lib/selection-published-players";
+import { recoverPublishedSelectionIdentities, loadSelectionParticipantIds, selectionPublishedPlayers } from "../lib/selection-published-players";
 import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
 
 // Exercise real publication/storage/HTTP generation, without sending messages.
@@ -20,6 +20,7 @@ vi.mock("../lib/availability-messaging", async original => ({
 
 const stamp = randomUUID();
 const now = new Date("2034-10-05T00:00:00Z");
+const startAt = new Date("2034-10-07T04:00:00Z");
 const profiles = Array.from({ length: 10 }, () => randomUUID());
 const expectedNumbers = ["77", "18", "39", "102", "75", "88", undefined, undefined, undefined, "105"];
 let tenant: number, other: number, fixtureId: number, selectionId: number, cookie: string;
@@ -60,7 +61,7 @@ beforeAll(async () => {
   const [round] = await db.insert(availabilityRoundsTable).values({ tenantId: tenant, weekendDate: "2034-10-07" }).returning();
   const [fixture] = await db.insert(fixturesTable).values({
     tenantId: tenant, grade: "A Grade", opponentName: "Visitors",
-    startAt: new Date("2034-10-07T04:00:00Z"), source: "manual",
+    startAt, source: "manual",
   }).returning();
   fixtureId = fixture.id;
   const [side] = await db.insert(selectionsTable).values({
@@ -168,9 +169,53 @@ describe("Held numbers from Selection Hub to Team List carousel", () => {
   it("does not enrich another club's list or manual/PlayHQ/unpublished sources", async () => {
     await legacy();
     const saved = await list();
-    expect((await recoverPublishedSelectionIdentities(other, saved)).players).toEqual(saved.players);
+    expect((await recoverPublishedSelectionIdentities(other, saved, startAt)).players).toEqual(saved.players);
     for (const overrides of [{ source: "admin" }, { source: "playhq" }, { isPublished: false }]) {
-      expect(await recoverPublishedSelectionIdentities(tenant, { ...saved, ...overrides })).toEqual({ players: saved.players });
+      expect(await recoverPublishedSelectionIdentities(tenant, { ...saved, ...overrides }, startAt)).toEqual({ players: saved.players });
+    }
+  });
+
+  it("does not equate distinct Profile IDs and participant GUIDs or guess a Held identity by name", async () => {
+    await legacy();
+    await db.update(squadMembersTable).set({ playhqProfileId: randomUUID() }).where(eq(squadMembersTable.id, memberIds[0]));
+    try {
+      const verified = await loadSelectionParticipantIds(db, tenant, startAt);
+      expect(verified.has(memberIds[0])).toBe(false);
+      const body = await sources();
+      expect(body.content[fixtureId].players[0]).not.toHaveProperty("shirtNumber");
+      expect(body.warnings.join(" ")).toContain("could not be verified");
+      const [member] = await db.select().from(squadMembersTable).where(eq(squadMembersTable.id, memberIds[0]));
+      expect(selectionPublishedPlayers({ slots: [{ memberId: member.id }], captainMemberId: null, keeperMemberId: null },
+        [member], verified)[0]).not.toHaveProperty("participantId");
+    } finally {
+      await db.update(squadMembersTable).set({ playhqProfileId: profiles[0].toUpperCase() }).where(eq(squadMembersTable.id, memberIds[0]));
+    }
+  });
+
+  it("takes a linked player's participant GUID from the register when their Profile ID is different", async () => {
+    await db.update(squadMembersTable).set({ playhqProfileId: randomUUID() }).where(eq(squadMembersTable.id, memberIds[5]));
+    try {
+      const verified = await loadSelectionParticipantIds(db, tenant, startAt);
+      expect(verified.get(memberIds[5])).toBe(profiles[5]);
+      const [member] = await db.select().from(squadMembersTable).where(eq(squadMembersTable.id, memberIds[5]));
+      expect(selectionPublishedPlayers({ slots: [{ memberId: member.id }], captainMemberId: null, keeperMemberId: null },
+        [member], verified)[0].participantId).toBe(profiles[5]);
+    } finally {
+      await db.update(squadMembersTable).set({ playhqProfileId: profiles[5].toUpperCase() }).where(eq(squadMembersTable.id, memberIds[5]));
+    }
+  });
+
+  it("does not publish a Profile ID merely because it collides with another person's participant GUID", async () => {
+    await legacy();
+    await db.update(squadMembersTable).set({ playhqProfileId: profiles[1] }).where(eq(squadMembersTable.id, memberIds[0]));
+    try {
+      const verified = await loadSelectionParticipantIds(db, tenant, startAt);
+      expect(verified.has(memberIds[0])).toBe(false);
+      const body = await sources();
+      expect(body.content[fixtureId].players[0]).not.toHaveProperty("shirtNumber");
+      expect(body.content[fixtureId].players[1].shirtNumber).toBe("18");
+    } finally {
+      await db.update(squadMembersTable).set({ playhqProfileId: profiles[0].toUpperCase() }).where(eq(squadMembersTable.id, memberIds[0]));
     }
   });
 
