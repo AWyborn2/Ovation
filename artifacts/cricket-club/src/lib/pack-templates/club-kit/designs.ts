@@ -78,6 +78,13 @@ const EXTRA_FIELDS: Record<string, PackTemplateField> = {
   clubMonogram: textField("clubMonogram", "Club monogram (no crest)", "YC"),
   photo: photoField("photo", "Frame photo", "Club photo"),
   grade: textField("grade", "Grade / team", ""),
+  // Broadcast Dark's team list now shows a round label instead; Club Kit's
+  // still sets the competition line out (bound for every team list).
+  competitionLine: textField(
+    "competitionLine",
+    "Competition line",
+    "PREMIER T20 · ROUND 3 · vs MARINERS",
+  ),
   clubHashtag: textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
   resultWord: textField("resultWord", "Result headline", "WIN"),
   setMarker: textField("setMarker", "Set page marker", ""),
@@ -354,10 +361,15 @@ const matchDay = design({
     ),
 });
 
+/** The player row's surname (bound for every team list). */
+const SURNAME_FIELD = textField("surname", "Surname", "MANUEL");
+
 const teamList = design({
   kind: "teamList",
   designKey: "team-list",
   name: "Team Selection",
+  // Club Kit names players by surname; Broadcast Dark now uses broadcastName.
+  rowExtras: { players: [SURNAME_FIELD] },
   build: (f) =>
     card(
       f,
@@ -405,7 +417,7 @@ const startingXi = design({
   kind: "teamList",
   designKey: "starting-xi",
   name: "Starting XI",
-  rowExtras: { players: [textField("debut", "Debut badge", "")] },
+  rowExtras: { players: [SURNAME_FIELD, textField("debut", "Debut badge", "")] },
   build: (f) => {
     const tall = isTall(f);
     // Row height and type from the room the format gives the list.

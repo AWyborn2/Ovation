@@ -79,7 +79,21 @@ const EXTRA_KEY_ALLOWLIST: Record<string, readonly string[]> = {
   // designs have no photo. The slot takes the tenant's selected photo.
   // Club Kit's Starting XI sets the match out in parts (round, opponent,
   // venue, date, time) where the reference runs them together.
-  "club-kit-v1/teamList": ["roundLabel", "opponent", "venue", "date", "startTime"],
+  "club-kit-v1/teamList": [
+    "roundLabel",
+    "opponent",
+    "venue",
+    "date",
+    "startTime",
+    "competitionLine",
+  ],
+  // Broadcast Dark's team list (9 Oct) shows a round label in place of the
+  // competition line; these packs still set the line out. It is bound for
+  // every team list by bindInput, so it never falls back to a sample.
+  "gold-foil-v1/teamList": ["competitionLine"],
+  "bold-type-v1/teamList": ["competitionLine"],
+  "neon-night-v1/teamList": ["competitionLine"],
+  "sunset-v1/teamList": ["competitionLine"],
   "club-kit-v1/clubLeaderboard": ["photo"],
   "club-kit-v1/ladder": ["photo"],
   "club-kit-v1/weekendWrap": ["photo"],

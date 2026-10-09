@@ -224,12 +224,13 @@ describe("Broadcast Dark landscape summaries (U12)", () => {
     expect(count(render(input, "square"), /Team \d+/g)).toBe(10);
   });
 
-  it("sets the XI in two columns on every format", () => {
+  // The Team List sets the XI out as one fitted column of full names (9 Oct
+  // 2026); broadcast-team-list.test.ts checks the names fit.
+  it("sets the XI in one fitted column on every format", () => {
     for (const size of SIZES) {
       const html = render(sampleCardInput("teamList"), size);
-      expect(html, size).toContain(
-        "grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(6,auto);grid-auto-flow:column",
-      );
+      expect(html, size).toContain('data-xi-layout="single-column"');
+      expect(html, size).not.toContain("grid-template-columns:repeat(2,minmax(0,1fr))");
     }
   });
 

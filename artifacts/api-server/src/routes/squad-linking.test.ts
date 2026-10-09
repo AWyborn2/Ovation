@@ -276,8 +276,10 @@ describe.skipIf(!isLocalDb)("squad player linking", () => {
 
   it("links on first initial + surname against the club's central players", async () => {
     const res = await upload(buildParticipantCsv(FILE)).expect(200);
-    // Barnes, Hidden, Jones.
-    expect(res.body).toMatchObject({ created: FILE.length, linked: 3 });
+    // Barnes, Hidden, Jones. D Dup adopts the hand-added member already linked
+    // to its player (508) instead of becoming a second member (squad import
+    // adoption, 7 Oct 2026), so one fewer is created.
+    expect(res.body).toMatchObject({ created: FILE.length - 1, linked: 3 });
     // The more recent of two GUIDs for "J Barnes", whatever the case.
     expect(await linkOf(BARNES)).toBe(503);
     // A private player still links (the link is admin-only).
@@ -295,15 +297,24 @@ describe.skipIf(!isLocalDb)("squad player linking", () => {
     expect(await linkOf(WYLLIE)).toBeNull(); // no crosswalk row yet
   });
 
-  it("never reuses a linked player or links a name shared within the file", async () => {
-    expect(await linkOf(DUP)).toBeNull(); // 508 already belongs to another member
-    expect(await linkOf(SAME_1)).toBeNull();
-    expect(await linkOf(SAME_2)).toBeNull();
+  it("never gives one player to two members, or links a name shared within the file", async () => {
+    // D Dup's crosswalk player (508) is the one an admin hand-linked: the
+    // import adopts that member rather than creating a second one for 508.
     const [holder] = await db
       .select()
       .from(squadMembersTable)
       .where(eq(squadMembersTable.id, dupHolder));
     expect(holder.linkedPlayerId).toBe(508);
+    expect(holder.playhqProfileId).toBe(DUP["Profile ID"]);
+    const with508 = await db
+      .select({ id: squadMembersTable.id })
+      .from(squadMembersTable)
+      .where(
+        and(eq(squadMembersTable.tenantId, tenantA), eq(squadMembersTable.linkedPlayerId, 508)),
+      );
+    expect(with508).toHaveLength(1);
+    expect(await linkOf(SAME_1)).toBeNull();
+    expect(await linkOf(SAME_2)).toBeNull();
   });
 
   it("re-importing the file links members an earlier import couldn't", async () => {

@@ -1177,7 +1177,10 @@ describe("curated player links stay inside the club's own player id space", () =
       const f = fx[T1]!;
       await db
         .update(awardWinnersTable)
-        .set({ playerId: native.A, published: true })
+        // Shared awards (0035): once set, `playerIds` is the winner's link;
+        // the earlier write cases linked this winner through the API, so a
+        // direct write must set both columns as the API does.
+        .set({ playerId: native.A, playerIds: [native.A], published: true })
         .where(eq(awardWinnersTable.id, f.winnerId));
       await db
         .update(teamOfDecadeMembersTable)
