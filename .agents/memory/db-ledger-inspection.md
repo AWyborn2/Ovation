@@ -16,3 +16,9 @@ Migration hashes depend on raw file bytes. Accept only explicitly proven LF/CRLF
 **Why:** A restored ledger's earliest migrations matched the repository SQL exactly after CRLF conversion, despite differing from the files' LF hashes.
 
 **How to apply:** Investigate newline conversion before assuming an unknown hash means different SQL. Do not normalize other whitespace or bypass unmatched hashes.
+
+Production schema changes applied manually may exist without corresponding Drizzle ledger entries. Check actual schema definitions as well as the ledger before deciding which changes are missing.
+
+**Why:** Production already contained later schema additions while its migration ledger still stopped at an earlier point. Recording only the newest migration could cause a future runner to skip older, unverified migrations.
+
+**How to apply:** Keep targeted production SQL schema-only until earlier history is reconciled. Do not advance or rewrite the production ledger merely to match development.
