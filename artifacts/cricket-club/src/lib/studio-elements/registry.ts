@@ -80,6 +80,11 @@ export interface ElementContext {
   rows: Record<string, Array<Record<string, string>>>;
   /** The club's crest url, when it has one. */
   crestUrl?: string | null;
+  /**
+   * The card's photo, for an image prop set to `{{photo}}` (card kind
+   * templates). Null on junior cards, which never show a photo.
+   */
+  photoUrl?: string | null;
 }
 
 export interface ElementDef {
@@ -627,6 +632,9 @@ export const ELEMENTS: readonly ElementDef[] = [
   },
 ];
 
+/** An image prop set to this shows the card's photo (never on junior cards). */
+export const PHOTO_TOKEN = "{{photo}}";
+
 const BY_ID = new Map(ELEMENTS.map((e) => [e.id, e]));
 
 export function getElement(id: string | undefined): ElementDef | undefined {
@@ -672,6 +680,8 @@ export function renderElement(state: ElementLayerState, ctx: ElementContext): st
     } else if (prop.bind && ctx.values[prop.bind]) raw = ctx.values[prop.bind];
     else raw = prop.sample;
     if (prop.kind === "image") {
+      // `{{photo}}` follows the card's own photo (opt-in, set by a template).
+      if (raw.trim() === PHOTO_TOKEN) raw = ctx.photoUrl ?? "";
       p[prop.key] = /^(https?:|data:image\/|\/)/.test(raw) ? escapeHtml(raw) : "";
     } else if (prop.kind === "rows") {
       // Escape each cell but keep the line / cell structure for parseRows.

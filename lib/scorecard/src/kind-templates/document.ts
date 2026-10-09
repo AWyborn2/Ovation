@@ -39,6 +39,8 @@ export type TemplateTextStyle = {
   fontWeight?: number;
   /** Letter spacing in em. */
   letterSpacing?: number;
+  /** Set the text in capitals (the data keeps its own case). */
+  uppercase?: boolean;
   align?: "left" | "center" | "right";
   radius?: number;
   opacity?: number;

@@ -36,6 +36,7 @@ const STYLE_KEYS = new Set([
   "fontSize",
   "fontWeight",
   "letterSpacing",
+  "uppercase",
   "align",
   "radius",
   "opacity",
@@ -118,7 +119,9 @@ function checkStyle(errors: Errors, where: string, v: unknown): void {
     } else if (k === "fontSize") numberIn(errors, at, value, 0.2, 80);
     else if (k === "fontWeight") numberIn(errors, at, value, 100, 1000);
     else if (k === "letterSpacing") numberIn(errors, at, value, -1, 3);
-    else if (k === "radius") numberIn(errors, at, value, 0, 10000);
+    else if (k === "uppercase") {
+      if (typeof value !== "boolean") errors.push(`${at} must be true or false.`);
+    } else if (k === "radius") numberIn(errors, at, value, 0, 10000);
     else if (k === "opacity") numberIn(errors, at, value, 0, 1);
   }
 }

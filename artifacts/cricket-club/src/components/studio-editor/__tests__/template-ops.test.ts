@@ -180,3 +180,54 @@ describe("renderer hardening (security review 2026-10-08)", () => {
     expect(html).toContain("text-align:center");
   });
 });
+
+describe("starter engine additions (Club Kit starters)", () => {
+  const brand = { name: "Seaview", logoUrl: "https://example.test/seaview.png" };
+  const tokens = resolvePackTokens({
+    brand: brandDefaultTokens(brand),
+    theme: null,
+    junior: false,
+  });
+  const render = (layers: FreeLayer[], junior = false) =>
+    renderPackCard(
+      { kind: "century", playerName: "Sam", runs: 104 } as never,
+      "square",
+      true,
+      tokens,
+      junior,
+      buildPackData({
+        brand,
+        hashtag: "#S",
+        sponsors: [],
+        photoUrl: "https://example.test/sam.jpg",
+      }),
+      BLANK_PACK_ID,
+      { layers },
+    );
+  const frame: FreeLayer = {
+    id: "f",
+    kind: "element",
+    element: { id: "ck.frame-side", props: { photo: "{{photo}}" } },
+    geometry: { square: { x: 50, y: 0, w: 50, h: 100 } },
+  };
+
+  it("a photo frame set to {{photo}} shows the card's photo", () => {
+    expect(render([frame])).toContain("https://example.test/sam.jpg");
+  });
+
+  it("never on a junior card", () => {
+    expect(render([frame], true)).not.toContain("https://example.test/sam.jpg");
+  });
+
+  it("a frame left alone still shows no photo (existing drafts unchanged)", () => {
+    const plain = { ...frame, element: { id: "ck.frame-side" } };
+    expect(render([plain])).not.toContain("https://example.test/sam.jpg");
+  });
+
+  it("prints capitals when uppercase is on, and nothing extra when it's off", () => {
+    expect(render([text("a", { style: { uppercase: true } })])).toContain(
+      "text-transform:uppercase",
+    );
+    expect(render([text("a")])).not.toContain("text-transform");
+  });
+});

@@ -28,10 +28,12 @@ function KindRow({
   starter,
   kind,
   variant,
+  scale,
 }: {
   starter: StarterId;
   kind: ShareCardInput["kind"];
   variant: Variant;
+  scale: number;
 }) {
   const { data, clubName } = useKindTemplateData(kind);
   const designed = starterDocument(starter, kind);
@@ -58,7 +60,7 @@ function KindRow({
               data={data}
               packId={BLANK_PACK_ID}
               adjustments={doc}
-              width={size === "landscape" ? 220 : 160}
+              width={(size === "landscape" ? 220 : 160) * scale}
             />
             <figcaption className="mt-1 text-xs text-muted-foreground">{size}</figcaption>
           </figure>
@@ -71,6 +73,8 @@ function KindRow({
 export default function AdminStarterProofs() {
   const [starter, setStarter] = useState<StarterId>("club-kit");
   const [variant, setVariant] = useState<Variant>("sample");
+  const [scale, setScale] = useState(1);
+  const [only, setOnly] = useState<string>("all");
   return (
     <div className="space-y-4">
       <header>
@@ -96,6 +100,33 @@ export default function AdminStarterProofs() {
           </select>
         </label>
         <label className="flex items-center gap-2">
+          Card
+          <select
+            className="rounded border border-border bg-background px-2 py-1"
+            value={only}
+            onChange={(e) => setOnly(e.target.value)}
+          >
+            <option value="all">Every card</option>
+            {TEMPLATE_CARD_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2">
+          Preview size
+          <select
+            className="rounded border border-border bg-background px-2 py-1"
+            value={scale}
+            onChange={(e) => setScale(Number(e.target.value))}
+          >
+            <option value={1}>Small</option>
+            <option value={2}>Medium</option>
+            <option value={3}>Large</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2">
           Data
           <select
             className="rounded border border-border bg-background px-2 py-1"
@@ -110,8 +141,8 @@ export default function AdminStarterProofs() {
           </select>
         </label>
       </div>
-      {TEMPLATE_CARD_KINDS.map((kind) => (
-        <KindRow key={kind} starter={starter} kind={kind} variant={variant} />
+      {TEMPLATE_CARD_KINDS.filter((k) => only === "all" || k === only).map((kind) => (
+        <KindRow key={kind} starter={starter} kind={kind} variant={variant} scale={scale} />
       ))}
     </div>
   );
