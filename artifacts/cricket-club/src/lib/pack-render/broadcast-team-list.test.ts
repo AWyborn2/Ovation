@@ -5,14 +5,24 @@ import type { CardSize, ShareCardInput } from "../share-card";
 
 const sizes: CardSize[] = ["square", "portrait", "story", "landscape"];
 const sampleNames = [
-  "Ashby", "Fairweather", "Lombard", "Morris", "Caldwell", "Whitaker",
-  "Dunstan", "Bennett", "Vickers", "Hollingsworth", "Mackenzie", "Collins",
+  "Ashby",
+  "Fairweather",
+  "Lombard",
+  "Morris",
+  "Caldwell",
+  "Whitaker",
+  "Dunstan",
+  "Bennett",
+  "Vickers",
+  "Hollingsworth",
+  "Mackenzie",
+  "Collins",
 ];
 const players = sampleNames.map((surname, index) => ({
   order: index + 1,
   surname: surname.toUpperCase(),
   ...(index !== 1 ? { firstInitial: "R" } : {}),
-  role: index === 2 ? "C" as const : index === 4 ? "WK" as const : undefined,
+  role: index === 2 ? ("C" as const) : index === 4 ? ("WK" as const) : undefined,
   shirtNumber: String(index + 11),
 }));
 const input = {
@@ -45,41 +55,52 @@ const brandData = {
 };
 
 describe("Broadcast Dark Team List rendering", () => {
-  it.each(sizes)("renders a full single-column lineup for %s without losing names or roles", size => {
-    const html = renderPackCard(
-      input,
-      size,
-      true,
-      resolveCardTokens({ junior: false, packId: "broadcast-dark-v1" }),
-      false,
-      brandData,
-      "broadcast-dark-v1",
-    );
-    const doc = new DOMParser().parseFromString(html, "text/html");
-    const list = doc.querySelector<HTMLElement>('[data-xi-layout="single-column"]');
-    const rows = Array.from(doc.querySelectorAll<HTMLElement>("[data-xi-row]"));
-    expect(list).not.toBeNull();
-    expect(list?.getAttribute("style")).toContain("flex-direction:column");
-    expect(list?.getAttribute("style")).not.toContain("grid-template-columns");
-    expect(rows).toHaveLength(12);
-    expect(Array.from(doc.querySelectorAll("[data-xi-name]")).map(node => node.textContent)).toEqual(
-      players.map(player => player.firstInitial ? `${player.firstInitial}. ${player.surname}` : player.surname),
-    );
-    expect(rows[0].querySelector("[data-xi-row]")).toBeNull();
-    expect(rows[2].querySelector("[data-xi-role]")?.textContent).toBe("(C)");
-    expect(rows[4].querySelector("[data-xi-role]")?.textContent).toBe("(WK)");
-    expect(rows[2].querySelector("[data-xi-role]")?.previousElementSibling?.textContent).toBe("R. LOMBARD");
-    expect(rows.map(row => row.querySelector("span")?.textContent)).toEqual(
-      players.map(player => player.shirtNumber),
-    );
-    expect(doc.querySelector("[data-team-grade]")?.previousElementSibling?.textContent).toBe("ROUND 13");
-    expect(doc.body.textContent).toContain("C GRADE");
-    expect(doc.body.textContent).toContain("Rushton Park · Sat 8 Nov · 12:30 PM");
-    expect(html).toContain("data-skeleton-body");
-    expect(html).toContain("/mockup/partner-1.svg");
-    expect(html).not.toContain("/mockup/partner-2.svg");
-    expect(doc.body.textContent).toContain("#HALLSHEAD");
-  });
+  it.each(sizes)(
+    "renders a full single-column lineup for %s without losing names or roles",
+    (size) => {
+      const html = renderPackCard(
+        input,
+        size,
+        true,
+        resolveCardTokens({ junior: false, packId: "broadcast-dark-v1" }),
+        false,
+        brandData,
+        "broadcast-dark-v1",
+      );
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const list = doc.querySelector<HTMLElement>('[data-xi-layout="single-column"]');
+      const rows = Array.from(doc.querySelectorAll<HTMLElement>("[data-xi-row]"));
+      expect(list).not.toBeNull();
+      expect(list?.getAttribute("style")).toContain("flex-direction:column");
+      expect(list?.getAttribute("style")).not.toContain("grid-template-columns");
+      expect(rows).toHaveLength(12);
+      expect(
+        Array.from(doc.querySelectorAll("[data-xi-name]")).map((node) => node.textContent),
+      ).toEqual(
+        players.map((player) =>
+          player.firstInitial ? `${player.firstInitial}. ${player.surname}` : player.surname,
+        ),
+      );
+      expect(rows[0].querySelector("[data-xi-row]")).toBeNull();
+      expect(rows[2].querySelector("[data-xi-role]")?.textContent).toBe("(C)");
+      expect(rows[4].querySelector("[data-xi-role]")?.textContent).toBe("(WK)");
+      expect(rows[2].querySelector("[data-xi-role]")?.previousElementSibling?.textContent).toBe(
+        "R. LOMBARD",
+      );
+      expect(rows.map((row) => row.querySelector("span")?.textContent)).toEqual(
+        players.map((player) => player.shirtNumber),
+      );
+      expect(doc.querySelector("[data-team-grade]")?.previousElementSibling?.textContent).toBe(
+        "ROUND 13",
+      );
+      expect(doc.body.textContent).toContain("C GRADE");
+      expect(doc.body.textContent).toContain("Rushton Park · Sat 8 Nov · 12:30 PM");
+      expect(html).toContain("data-skeleton-body");
+      expect(html).toContain("/mockup/partner-1.svg");
+      expect(html).not.toContain("/mockup/partner-2.svg");
+      expect(doc.body.textContent).toContain("#HALLSHEAD");
+    },
+  );
 
   it("uses the approved initial only and leaves the original surname binding intact", () => {
     const bound = bindInput(input);

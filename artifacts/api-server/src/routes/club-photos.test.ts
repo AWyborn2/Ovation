@@ -92,8 +92,10 @@ beforeAll(async () => {
   }
   // The populated native sequence includes reserved cap/fill-in ids >= 90000.
   // Photo tags need regular senior ids, not whatever that sequence yields.
-  const [regular] = await db.select({ maxId: max(playersTable.id) })
-    .from(playersTable).where(lt(playersTable.id, 90000));
+  const [regular] = await db
+    .select({ maxId: max(playersTable.id) })
+    .from(playersTable)
+    .where(lt(playersTable.id, 90000));
   const firstPlayerId = (regular.maxId ?? 0) + 1;
   if (firstPlayerId + 1 >= 90000) throw new Error("No regular senior fixture ids available");
   const players = await db
@@ -211,12 +213,15 @@ describe("ingest", () => {
 
   it("distinguishes a library-save failure from a missing upload", async () => {
     const original = await upload("save-failure.jpg", await jpeg());
-    const write = vi.spyOn(memoryStore, "write").mockRejectedValueOnce(new Error("storage unavailable"));
+    const write = vi
+      .spyOn(memoryStore, "write")
+      .mockRejectedValueOnce(new Error("storage unavailable"));
     try {
       const saved = await api("post", "/club-photos/ingest").send({ objectPaths: [original] });
       expect(saved.body.results[0]).toMatchObject({
         ok: false,
-        error: "The photo converted successfully, but could not be saved to the library. Please retry.",
+        error:
+          "The photo converted successfully, but could not be saved to the library. Please retry.",
       });
       expect(objects.has(original)).toBe(true);
     } finally {

@@ -291,7 +291,7 @@ export const KIND_FIELDS: Record<TemplateCardKind, KindFieldCatalogue> = {
       { key: "setMarker", label: 'Set page marker (e.g. " · 2/3")' },
       { key: "gradeRound", label: "Grade + round" },
       { key: "gradeHeading", label: "Team grade heading" },
-      { key: "competitionLine", label: "Competition line" },
+      { key: "broadcastRoundLabel", label: "Round label (explicit round only)" },
       { key: "venueDateTime", label: "Venue / date / time" },
       { key: "hashtags", label: "Hashtag footer" },
     ],
@@ -309,7 +309,7 @@ export const KIND_FIELDS: Record<TemplateCardKind, KindFieldCatalogue> = {
         variants: [],
         fields: [
           { key: "number", label: "Order" },
-          { key: "surname", label: "Surname" },
+          { key: "broadcastName", label: "Initial + surname" },
           { key: "role", label: "Role (C/WK)" },
         ],
       },

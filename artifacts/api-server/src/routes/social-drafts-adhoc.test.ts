@@ -98,64 +98,128 @@ const adjustments = {
 
 describe("POST /social-drafts (ad-hoc)", () => {
   it("accepts exactly the server's registered built-in pack identities", () => {
-    expect([...CAROUSEL_PACK_IDS].sort()).toEqual(PACKS.map(p => p.id).sort());
+    expect([...CAROUSEL_PACK_IDS].sort()).toEqual(PACKS.map((p) => p.id).sort());
   });
-  it.each(CAROUSEL_PACK_IDS)("freezes %s for review and exports instead of the mutable draft default", async packId => {
-    const slides = ["title", "content", "sponsors"].map((id, index) => ({
-      id, label: id, junior: false, sponsorsOn: false, warnings: [],
-      input: { kind: "matchDay", ...(index !== 1 ? { carouselPage: { page: id, title: "Frozen set", sponsors: [] } } : {}) },
-      data: { photoTransform: { focalX: .2, focalY: .6, zoom: 1.4 } },
-    }));
-    const composition = { version: 1, packId, submissionId: randomUUID(), size: "square", slides };
-    const response = await as(0).post("/social-drafts", {
-      packId, caption: "Frozen caption", cardInput: { kind: "matchDay", weekendCarousel: composition },
-    });
-    expect(response.status).toBe(201);
-    expect(response.body.packId).toBe(packId);
-    expect(response.body.cardInput.weekendCarousel).toEqual(composition);
-    const [row] = await db.select().from(socialDraftsTable).where(eq(socialDraftsTable.id, response.body.id));
-    const calls: Record<string, unknown>[] = [];
-    setStillRenderer(async (_input, options) => {
-      calls.push(options as Record<string, unknown>);
-      return { buffer: Buffer.from("png"), contentType: "image/png" };
-    });
-    try {
-      await renderDraftSlides({ ...row, packId: "unrelated-current-default" }, ["square", "portrait", "story", "landscape"], null, logger);
-      expect(calls).toHaveLength(12);
-      expect(calls.every(c => c.packId === packId)).toBe(true);
-      const legacy = structuredClone(row.cardInput) as { weekendCarousel: { packId?: string } };
-      delete legacy.weekendCarousel.packId;
-      calls.length = 0;
-      await renderDraftSlides({ ...row, cardInput: legacy, packId: "sunset-v1" }, ["square"], null, logger);
-      expect(calls.every(c => c.packId === "club-kit-v1")).toBe(true);
-    } finally { setStillRenderer(null); }
-    const invalid = await as(0).post("/social-drafts", {
-      caption: "Invalid pack", cardInput: { kind: "matchDay", weekendCarousel: { ...composition, packId: "uploaded-custom" } },
-    });
-    expect(invalid.status).toBe(400);
-    expect(invalid.body.error).toMatch(/Unknown carousel design pack/);
-    const mismatched = await as(0).post("/social-drafts", {
-      packId: packId === "sunset-v1" ? "club-kit-v1" : "sunset-v1",
-      caption: "Mismatch", cardInput: { kind: "matchDay", weekendCarousel: composition },
-    });
-    expect(mismatched.status).toBe(400);
-  });
+  it.each(CAROUSEL_PACK_IDS)(
+    "freezes %s for review and exports instead of the mutable draft default",
+    async (packId) => {
+      const slides = ["title", "content", "sponsors"].map((id, index) => ({
+        id,
+        label: id,
+        junior: false,
+        sponsorsOn: false,
+        warnings: [],
+        input: {
+          kind: "matchDay",
+          ...(index !== 1 ? { carouselPage: { page: id, title: "Frozen set", sponsors: [] } } : {}),
+        },
+        data: { photoTransform: { focalX: 0.2, focalY: 0.6, zoom: 1.4 } },
+      }));
+      const composition = {
+        version: 1,
+        packId,
+        submissionId: randomUUID(),
+        size: "square",
+        slides,
+      };
+      const response = await as(0).post("/social-drafts", {
+        packId,
+        caption: "Frozen caption",
+        cardInput: { kind: "matchDay", weekendCarousel: composition },
+      });
+      expect(response.status).toBe(201);
+      expect(response.body.packId).toBe(packId);
+      expect(response.body.cardInput.weekendCarousel).toEqual(composition);
+      const [row] = await db
+        .select()
+        .from(socialDraftsTable)
+        .where(eq(socialDraftsTable.id, response.body.id));
+      const calls: Record<string, unknown>[] = [];
+      setStillRenderer(async (_input, options) => {
+        calls.push(options as Record<string, unknown>);
+        return { buffer: Buffer.from("png"), contentType: "image/png" };
+      });
+      try {
+        await renderDraftSlides(
+          { ...row, packId: "unrelated-current-default" },
+          ["square", "portrait", "story", "landscape"],
+          null,
+          logger,
+        );
+        expect(calls).toHaveLength(12);
+        expect(calls.every((c) => c.packId === packId)).toBe(true);
+        const legacy = structuredClone(row.cardInput) as { weekendCarousel: { packId?: string } };
+        delete legacy.weekendCarousel.packId;
+        calls.length = 0;
+        await renderDraftSlides(
+          { ...row, cardInput: legacy, packId: "sunset-v1" },
+          ["square"],
+          null,
+          logger,
+        );
+        expect(calls.every((c) => c.packId === "club-kit-v1")).toBe(true);
+      } finally {
+        setStillRenderer(null);
+      }
+      const invalid = await as(0).post("/social-drafts", {
+        caption: "Invalid pack",
+        cardInput: {
+          kind: "matchDay",
+          weekendCarousel: { ...composition, packId: "uploaded-custom" },
+        },
+      });
+      expect(invalid.status).toBe(400);
+      expect(invalid.body.error).toMatch(/Unknown carousel design pack/);
+      const mismatched = await as(0).post("/social-drafts", {
+        packId: packId === "sunset-v1" ? "club-kit-v1" : "sunset-v1",
+        caption: "Mismatch",
+        cardInput: { kind: "matchDay", weekendCarousel: composition },
+      });
+      expect(mismatched.status).toBe(400);
+    },
+  );
   it("queues an entire match-day carousel once, keeps it private and renders every saved slide", async () => {
     const slides = ["title", "fixture-11", "sponsors"].map((id, index) => ({
-      id, label: id, junior: false, sponsorsOn: index !== 2, warnings: [],
-      input: { kind: "matchDay", ...(index !== 1 ? { carouselPage: { page: id, title: "Round one", sponsors: [] } } : { grade: "A Grade", oppositionName: "Visitors" }) },
-      data: { photoUrl: "/test-photo.png", photoTransform: { focalX: .3, focalY: .7, zoom: 1.8 }, sponsors: [{ name: "Team sponsor", logoUrl: "/team-logo.png" }] },
+      id,
+      label: id,
+      junior: false,
+      sponsorsOn: index !== 2,
+      warnings: [],
+      input: {
+        kind: "matchDay",
+        ...(index !== 1
+          ? { carouselPage: { page: id, title: "Round one", sponsors: [] } }
+          : { grade: "A Grade", oppositionName: "Visitors" }),
+      },
+      data: {
+        photoUrl: "/test-photo.png",
+        photoTransform: { focalX: 0.3, focalY: 0.7, zoom: 1.8 },
+        sponsors: [{ name: "Team sponsor", logoUrl: "/team-logo.png" }],
+      },
     }));
     const body = {
-      cardInput: { kind: "matchDay", headline: "Round one carousel", weekendCarousel: {
-        version: 1, packId: "club-kit-v1", submissionId: randomUUID(), size: "portrait", slides,
-      } },
+      cardInput: {
+        kind: "matchDay",
+        headline: "Round one carousel",
+        weekendCarousel: {
+          version: 1,
+          packId: "club-kit-v1",
+          submissionId: randomUUID(),
+          size: "portrait",
+          slides,
+        },
+      },
       caption: "MATCH DAY\nA Grade v Visitors",
       packId: "club-kit-v1",
     };
     const created = await as(0).post("/social-drafts", body);
     expect(created.status).toBe(201);
-    expect(created.body).toMatchObject({ status: "awaiting_review", autoReadyAt: null, caption: body.caption, family: "matchday" });
+    expect(created.body).toMatchObject({
+      status: "awaiting_review",
+      autoReadyAt: null,
+      caption: body.caption,
+      family: "matchday",
+    });
     expect(created.body.cardInput).toEqual(body.cardInput);
     const retry = await as(0).post("/social-drafts", body);
     expect(retry.status).toBe(200);
@@ -166,14 +230,19 @@ describe("POST /social-drafts (ad-hoc)", () => {
     expect(otherQueue.body.map((d: { id: number }) => d.id)).not.toContain(created.body.id);
     const pending = await as(0).get("/social-drafts/pending-count");
     expect(pending.body.count).toBeGreaterThan(0);
-    const caption = await request(app).patch(`/api/social-drafts/${created.body.id}`)
-      .set("Cookie", cookies[0]).set("x-tenant-id", String(tenantIds[0]))
+    const caption = await request(app)
+      .patch(`/api/social-drafts/${created.body.id}`)
+      .set("Cookie", cookies[0])
+      .set("x-tenant-id", String(tenantIds[0]))
       .send({ caption: "Updated match-day caption" });
     expect(caption.status).toBe(200);
     const approved = await as(0).post(`/social-drafts/${created.body.id}/approve`);
     expect(approved.status).toBe(200);
     expect(approved.body.status).toBe("ready");
-    const [row] = await db.select().from(socialDraftsTable).where(eq(socialDraftsTable.id, created.body.id));
+    const [row] = await db
+      .select()
+      .from(socialDraftsTable)
+      .where(eq(socialDraftsTable.id, created.body.id));
     expect(row.caption).toBe("Updated match-day caption");
     const calls: { input: unknown; options: Record<string, unknown> }[] = [];
     setStillRenderer(async (input, options) => {
@@ -182,16 +251,25 @@ describe("POST /social-drafts (ad-hoc)", () => {
     });
     try {
       const rendered = await renderDraftSlides(row, ["portrait", "landscape"], null, logger);
-      expect(rendered.map(s => [s.size, s.page, s.of])).toEqual([
-        ["portrait", 1, 3], ["portrait", 2, 3], ["portrait", 3, 3],
-        ["landscape", 1, 3], ["landscape", 2, 3], ["landscape", 3, 3],
+      expect(rendered.map((s) => [s.size, s.page, s.of])).toEqual([
+        ["portrait", 1, 3],
+        ["portrait", 2, 3],
+        ["portrait", 3, 3],
+        ["landscape", 1, 3],
+        ["landscape", 2, 3],
+        ["landscape", 3, 3],
       ]);
-      expect(calls.slice(0, 3).map(c => c.input)).toEqual(slides.map(s => s.input));
+      expect(calls.slice(0, 3).map((c) => c.input)).toEqual(slides.map((s) => s.input));
       expect(calls[1].options).toMatchObject({
-        data: slides[1].data, sponsorsOn: true, packId: "club-kit-v1", strictImages: true,
+        data: slides[1].data,
+        sponsorsOn: true,
+        packId: "club-kit-v1",
+        strictImages: true,
         adjustments: { photo: { portrait: slides[1].data.photoTransform } },
       });
-    } finally { setStillRenderer(null); }
+    } finally {
+      setStillRenderer(null);
+    }
   });
 
   it("rejects incomplete carousel payloads and blank captions", async () => {

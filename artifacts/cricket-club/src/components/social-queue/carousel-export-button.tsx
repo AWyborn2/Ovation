@@ -31,14 +31,24 @@ export function CarouselExportButton({ draftId }: { draftId: number }) {
   };
 
   return (
-    <div className="space-y-1" onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+    <div
+      className="space-y-1"
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
       <Button type="button" variant="outline" size="sm" onClick={exportZip} disabled={busy}>
-        {busy
-          ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-          : <Download className="mr-2 h-4 w-4" aria-hidden />}
+        {busy ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+        ) : (
+          <Download className="mr-2 h-4 w-4" aria-hidden />
+        )}
         {busy ? "Exporting…" : "Export ZIP"}
       </Button>
-      {error && <p role="alert" className="max-w-60 text-xs text-destructive">{error}</p>}
+      {error && (
+        <p role="alert" className="max-w-60 text-xs text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

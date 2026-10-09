@@ -424,7 +424,7 @@ describe("bulk upload", () => {
         }),
         put: async () => {},
         ingest: async ({ objectPaths }) => ({
-          results: objectPaths.map(objectPath => ({ objectPath, ok: false, error })),
+          results: objectPaths.map((objectPath) => ({ objectPath, ok: false, error })),
         }),
       });
       expect(states.get(0)).toEqual({

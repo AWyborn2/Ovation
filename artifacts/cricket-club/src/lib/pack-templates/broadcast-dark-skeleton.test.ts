@@ -224,12 +224,14 @@ describe("Broadcast Dark landscape summaries (U12)", () => {
     expect(count(render(input, "square"), /Team \d+/g)).toBe(10);
   });
 
-  it("sets the XI in two columns on every format", () => {
+  // The XI went from two columns to an ordered single-column lineup (5307f5c3;
+  // pinned in detail by pack-render/broadcast-team-list.test.ts).
+  it("sets the XI as a single-column lineup on every format", () => {
     for (const size of SIZES) {
       const html = render(sampleCardInput("teamList"), size);
-      expect(html, size).toContain(
-        "grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(6,auto);grid-auto-flow:column",
-      );
+      expect(html, size).toContain('data-xi-layout="single-column"');
+      expect(html, size).toContain("display:flex;flex-direction:column");
+      expect(html, size).not.toContain("grid-template-columns:repeat(2,minmax(0,1fr))");
     }
   });
 

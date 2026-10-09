@@ -101,14 +101,21 @@ describe("platform self-serve signup", () => {
     expect(signup.body.redirectUrl).toContain(`${SLUG}.`);
     createdTenantId = signup.body.tenantId;
 
-    const source = await centralCurrentSeasonSquad(club.centralClubId, seasonStartYearFor(new Date()));
-    const seeded = await db.select().from(squadMembersTable)
+    const source = await centralCurrentSeasonSquad(
+      club.centralClubId,
+      seasonStartYearFor(new Date()),
+    );
+    const seeded = await db
+      .select()
+      .from(squadMembersTable)
       .where(eq(squadMembersTable.tenantId, createdTenantId!));
     expect(seeded.every((m) => m.active && !m.activeSetByAdmin && !m.playhqProfileId)).toBe(true);
     for (const player of source) {
       const tokens = player.name.trim().split(/\s+/);
       const firstName = tokens.shift()!;
-      expect(seeded.some((m) => m.firstName === firstName && m.lastName === tokens.join(" "))).toBe(true);
+      expect(seeded.some((m) => m.firstName === firstName && m.lastName === tokens.join(" "))).toBe(
+        true,
+      );
     }
 
     // Signup mints a session immediately (U1) — no separate login call needed.

@@ -1,5 +1,8 @@
 import type { Request, RequestHandler, NextFunction, Response } from "express";
 import { timingSafeEqual } from "node:crypto";
+// Type-only: brings in pino-http's `req.log` augmentation so this file type-checks on its own
+// (scripts/ reaches it through lib/tenant.ts without ever loading app.ts).
+import type {} from "pino-http";
 import { db, tenantsTable } from "@workspace/db";
 import { env } from "../config";
 
