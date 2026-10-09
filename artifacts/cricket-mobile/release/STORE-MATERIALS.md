@@ -16,19 +16,19 @@ the app or creating a new identity.
 
 ## Apple App Store draft metadata
 
-| Field | Draft |
-| --- | --- |
-| Name (30 characters max) | Ovation |
-| Subtitle (30 max) | Cricket stats & club history |
-| Primary category suggestion | Sports — owner to confirm |
-| Promotional text (170 max) | Explore your cricket club's players, scorecards and honours. Choose a participating club and discover the records that tell its story. |
-| Keywords (100 max) | cricket,club,scorecard,players,statistics,records,honours,premierships,juniors |
-| Support URL | OWNER TO SUPPLY — public and working |
-| Privacy Policy URL | OWNER TO SUPPLY — see `PRIVACY.md` |
-| Marketing URL (optional) | Omit unless owner supplies an appropriate public page |
-| Copyright | OWNER TO SUPPLY — correct year and rights holder |
-| Review contact | OWNER TO SUPPLY — name, monitored email and phone |
-| Age rating | Complete questionnaire for actual content/audience; not assigned here |
+| Field                       | Draft                                                                                                                                  |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Name (30 characters max)    | Ovation                                                                                                                                |
+| Subtitle (30 max)           | Cricket stats & club history                                                                                                           |
+| Primary category suggestion | Sports — owner to confirm                                                                                                              |
+| Promotional text (170 max)  | Explore your cricket club's players, scorecards and honours. Choose a participating club and discover the records that tell its story. |
+| Keywords (100 max)          | cricket,club,scorecard,players,statistics,records,honours,premierships,juniors                                                         |
+| Support URL                 | OWNER TO SUPPLY — public and working                                                                                                   |
+| Privacy Policy URL          | OWNER TO SUPPLY — see `PRIVACY.md`                                                                                                     |
+| Marketing URL (optional)    | Omit unless owner supplies an appropriate public page                                                                                  |
+| Copyright                   | OWNER TO SUPPLY — correct year and rights holder                                                                                       |
+| Review contact              | OWNER TO SUPPLY — name, monitored email and phone                                                                                      |
+| Age rating                  | Complete questionnaire for actual content/audience; not assigned here                                                                  |
 
 ### Apple description (under 4,000 characters)
 
@@ -56,15 +56,15 @@ export, registration or payments: this audit did not establish those features.
 
 ## Google Play draft metadata
 
-| Field | Draft |
-| --- | --- |
-| App name (30 characters max) | Ovation |
-| Short description (80 max) | Your cricket club's players, scorecards, records and honours in one app. |
-| Category suggestion | Sports — owner to confirm |
-| Support email (required) | OWNER TO SUPPLY — monitored, publishable address |
-| Website/support URL | OWNER TO SUPPLY |
-| Privacy Policy URL | OWNER TO SUPPLY |
-| Developer identity/contact | OWNER TO SUPPLY and complete account verification |
+| Field                        | Draft                                                                    |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| App name (30 characters max) | Ovation                                                                  |
+| Short description (80 max)   | Your cricket club's players, scorecards, records and honours in one app. |
+| Category suggestion          | Sports — owner to confirm                                                |
+| Support email (required)     | OWNER TO SUPPLY — monitored, publishable address                         |
+| Website/support URL          | OWNER TO SUPPLY                                                          |
+| Privacy Policy URL           | OWNER TO SUPPLY                                                          |
+| Developer identity/contact   | OWNER TO SUPPLY and complete account verification                        |
 
 ### Play full description (under 4,000 characters)
 
@@ -99,16 +99,16 @@ set. Do not reuse development previews, fabricate the club picker or present
 web screens as native screenshots. Avoid personal captain credentials, actual
 unpublished votes and private junior names; use authorised review/demo data.
 
-| Order | Screen and suggested caption | Acceptance check / alt-text guidance |
-| --- | --- | --- |
-| 1 | Club selection — “Choose your club” | **Blocked until implemented.** Show real participating clubs with authorised logos; alt text describes selectable club list. |
-| 2 | Selected-club Home — “Your club at a glance” | Correct club brand and populated summary; no neutral loading placeholders. Alt text identifies club summary and recent games. |
-| 3 | Players/profile — “Explore player records” | Authorised public player with statistics fitting the screen; alt text identifies player statistics, not unseen private details. |
-| 4 | Match scorecard — “Every recorded match” | Legible innings, runs/wickets and correct crests; alt text describes match and scorecard. |
-| 5 | Honours/premierships — “Celebrate club history” | Populated genuine honour board; alt text describes achievements displayed. |
-| 6 | Juniors — “Junior cricket, separately” | Only publicly permitted data; private identities not visible. Alt text describes junior records without identifying a private player. |
-| 7 (optional) | Captain ballot — “Captain 3-2-1 voting” | Dedicated demo captain/fixture, no credentials in shot; make clear this is captain-only. Alt text describes three player selection controls. |
-| 8 (optional) | Switch club / second Home | Verify brand/data both change correctly; no prior-club content or session leak. |
+| Order        | Screen and suggested caption                    | Acceptance check / alt-text guidance                                                                                                         |
+| ------------ | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1            | Club selection — “Choose your club”             | **Blocked until implemented.** Show real participating clubs with authorised logos; alt text describes selectable club list.                 |
+| 2            | Selected-club Home — “Your club at a glance”    | Correct club brand and populated summary; no neutral loading placeholders. Alt text identifies club summary and recent games.                |
+| 3            | Players/profile — “Explore player records”      | Authorised public player with statistics fitting the screen; alt text identifies player statistics, not unseen private details.              |
+| 4            | Match scorecard — “Every recorded match”        | Legible innings, runs/wickets and correct crests; alt text describes match and scorecard.                                                    |
+| 5            | Honours/premierships — “Celebrate club history” | Populated genuine honour board; alt text describes achievements displayed.                                                                   |
+| 6            | Juniors — “Junior cricket, separately”          | Only publicly permitted data; private identities not visible. Alt text describes junior records without identifying a private player.        |
+| 7 (optional) | Captain ballot — “Captain 3-2-1 voting”         | Dedicated demo captain/fixture, no credentials in shot; make clear this is captain-only. Alt text describes three player selection controls. |
+| 8 (optional) | Switch club / second Home                       | Verify brand/data both change correctly; no prior-club content or session leak.                                                              |
 
 ### Apple assets
 

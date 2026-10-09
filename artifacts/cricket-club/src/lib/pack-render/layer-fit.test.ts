@@ -162,24 +162,45 @@ describe("fitLayersInDom", () => {
     ]);
   });
 
-  it.each(CAROUSEL_PACK_IDS.flatMap(packId =>
-    (["square", "portrait", "story", "landscape"] as const).map(size => ({ packId, size })),
-  ))(
+  it.each(
+    CAROUSEL_PACK_IDS.flatMap((packId) =>
+      (["square", "portrait", "story", "landscape"] as const).map((size) => ({ packId, size })),
+    ),
+  )(
     "preserves built-in carousel preview typography when exporting $packId $size",
     ({ packId, size }) => {
       const cover: ShareCardInput = {
-        kind: "matchDay", roundLabel: "ROUND 1", oppositionName: "",
-        homeAway: "HOME", venue: "", date: "FRI 9 OCT – SUN 11 OCT", startTime: "",
+        kind: "matchDay",
+        roundLabel: "ROUND 1",
+        oppositionName: "",
+        homeAway: "HOME",
+        venue: "",
+        date: "FRI 9 OCT – SUN 11 OCT",
+        startTime: "",
         carouselPage: {
-          page: "title", title: "TEAM LISTS", fixtureCount: 5,
-          sponsors: [], hasCoverPhoto: true,
+          page: "title",
+          title: "TEAM LISTS",
+          fixtureCount: 5,
+          sponsors: [],
+          hasCoverPhoto: true,
         },
       };
-      const root = mount(renderPackCard(cover, size, false, tokens, false, {
-        brand: { name: "HALLS HEAD", tagline: "CRICKET CLUB · EST 1991" },
-      }, packId), () => false);
+      const root = mount(
+        renderPackCard(
+          cover,
+          size,
+          false,
+          tokens,
+          false,
+          {
+            brand: { name: "HALLS HEAD", tagline: "CRICKET CLUB · EST 1991" },
+          },
+          packId,
+        ),
+        () => false,
+      );
       expect(root.querySelector('[data-fit="26"]')).not.toBeNull();
-      expect(root.querySelector('[data-carousel-cover-label]')).not.toBeNull();
+      expect(root.querySelector("[data-carousel-cover-label]")).not.toBeNull();
       const preview = root.innerHTML;
       expect(fitLayersInDom(root, size)).toEqual([]);
       expect(root.innerHTML).toBe(preview);
