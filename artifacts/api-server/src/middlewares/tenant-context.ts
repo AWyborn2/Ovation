@@ -1,4 +1,8 @@
 import type { Request, RequestHandler, NextFunction, Response } from "express";
+// `req.log` (stamped per club below) comes from pino-http's Express typings;
+// load them here so packages that compile this file without app.ts (scripts)
+// still know it.
+import type {} from "pino-http";
 import { timingSafeEqual } from "node:crypto";
 import { db, tenantsTable } from "@workspace/db";
 import { env } from "../config";

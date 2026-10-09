@@ -307,7 +307,11 @@ export function gradeRow(
 }
 
 /** One row of the team XI list. */
-export function xiRow(u: Unit, cells: { n: string; name: string; tag: string }, fit = false): string {
+export function xiRow(
+  u: Unit,
+  cells: { n: string; name: string; tag: string },
+  fit = false,
+): string {
   return (
     `<div${fit ? ' data-xi-row="1"' : ""} style="display:flex;align-items:center;gap:${u(1.4)};${fit ? `min-height:${u(5)};padding:${u(0.3)} 0;box-sizing:border-box` : `height:${u(5)}`};border-bottom:${u(0.15)} solid ${C.line};min-width:0">` +
     `<span style="flex:none;min-width:${u(3.4)};font-family:${CK_COND};font-weight:900;font-size:${u(3)};color:${C.pt}">${cells.n}</span>` +

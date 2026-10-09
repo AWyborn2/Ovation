@@ -304,7 +304,9 @@ describe("Selection Hub API", () => {
   });
 
   beforeEach(async () => {
-    await db.delete(matchDisplaySettingsTable).where(eq(matchDisplaySettingsTable.tenantId, tenantA));
+    await db
+      .delete(matchDisplaySettingsTable)
+      .where(eq(matchDisplaySettingsTable.tenantId, tenantA));
     await db.delete(selectionsTable).where(eq(selectionsTable.tenantId, tenantA));
     await db.delete(teamListsTable).where(eq(teamListsTable.tenantId, tenantA));
     await db.delete(notificationsTable).where(eq(notificationsTable.tenantId, tenantA));
@@ -409,36 +411,72 @@ describe("Selection Hub API", () => {
   });
 
   it("uses configured grade order for both roles and after a save, with seniority fallback", async () => {
-    await db.insert(matchDisplaySettingsTable).values({ tenantId: tenantA, gradeOrder: ["C Grade"] });
+    await db
+      .insert(matchDisplaySettingsTable)
+      .values({ tenantId: tenantA, gradeOrder: ["C Grade"] });
     for (const who of [asAdmin, asCaptain]) {
-      expect((await board(who)).selections.map(s => s.fixture.grade)).toEqual(["C Grade", "A Grade", "B Grade"]);
+      expect((await board(who)).selections.map((s) => s.fixture.grade)).toEqual([
+        "C Grade",
+        "A Grade",
+        "B Grade",
+      ]);
     }
-    const saved = await put(asAdmin, [await changeFor(sel.A, ids => ids)]);
+    const saved = await put(asAdmin, [await changeFor(sel.A, (ids) => ids)]);
     expect(saved.status).toBe(200);
-    expect(saved.body.selections.map((s: SideBody) => s.fixture.grade)).toEqual(["C Grade", "A Grade", "B Grade"]);
+    expect(saved.body.selections.map((s: SideBody) => s.fixture.grade)).toEqual([
+      "C Grade",
+      "A Grade",
+      "B Grade",
+    ]);
     // A settings change is picked up by the next board load, without restarting.
-    await db.update(matchDisplaySettingsTable).set({ gradeOrder: ["B Grade", "A Grade"] })
+    await db
+      .update(matchDisplaySettingsTable)
+      .set({ gradeOrder: ["B Grade", "A Grade"] })
       .where(eq(matchDisplaySettingsTable.tenantId, tenantA));
-    expect((await board(asCaptain)).selections.map(s => s.fixture.grade)).toEqual(["B Grade", "A Grade", "C Grade"]);
+    expect((await board(asCaptain)).selections.map((s) => s.fixture.grade)).toEqual([
+      "B Grade",
+      "A Grade",
+      "C Grade",
+    ]);
   });
 
   it("exposes linked statistics IDs rather than squad IDs, but hides private and junior links", async () => {
-    const get = async () => (await asCaptain(request(app).get("/api/selection/board?section=senior")).expect(200)).body;
+    const get = async () =>
+      (await asCaptain(request(app).get("/api/selection/board?section=senior")).expect(200)).body;
     const initial = await get();
-    const linked = initial.selections.flatMap((s: SideBody) => s.slots).find((s: { memberId: number }) => s.memberId === m[1]).member;
+    const linked = initial.selections
+      .flatMap((s: SideBody) => s.slots)
+      .find((s: { memberId: number }) => s.memberId === m[1]).member;
     expect(linked.linkedPlayerId).toBe(501);
     expect(linked.linkedPlayerId).not.toBe(linked.id);
-    await db.update(squadMembersTable).set({ isPrivate: true }).where(eq(squadMembersTable.id, m[1]));
-    await db.update(squadMembersTable).set({ linkedPlayerId: 95_001 }).where(eq(squadMembersTable.id, junior));
+    await db
+      .update(squadMembersTable)
+      .set({ isPrivate: true })
+      .where(eq(squadMembersTable.id, m[1]));
+    await db
+      .update(squadMembersTable)
+      .set({ linkedPlayerId: 95_001 })
+      .where(eq(squadMembersTable.id, junior));
     try {
       const hidden = await get();
-      expect(hidden.selections.flatMap((s: SideBody) => s.slots)
-        .find((s: { memberId: number }) => s.memberId === m[1]).member.linkedPlayerId).toBeNull();
-      const jr = (await asCaptain(request(app).get("/api/selection/board?section=junior")).expect(200)).body;
+      expect(
+        hidden.selections
+          .flatMap((s: SideBody) => s.slots)
+          .find((s: { memberId: number }) => s.memberId === m[1]).member.linkedPlayerId,
+      ).toBeNull();
+      const jr = (
+        await asCaptain(request(app).get("/api/selection/board?section=junior")).expect(200)
+      ).body;
       expect(jr.pool.find((p: { id: number }) => p.id === junior).linkedPlayerId).toBeNull();
     } finally {
-      await db.update(squadMembersTable).set({ isPrivate: false }).where(eq(squadMembersTable.id, m[1]));
-      await db.update(squadMembersTable).set({ linkedPlayerId: null }).where(eq(squadMembersTable.id, junior));
+      await db
+        .update(squadMembersTable)
+        .set({ isPrivate: false })
+        .where(eq(squadMembersTable.id, m[1]));
+      await db
+        .update(squadMembersTable)
+        .set({ linkedPlayerId: null })
+        .where(eq(squadMembersTable.id, junior));
     }
   });
 

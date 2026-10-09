@@ -128,7 +128,8 @@ export function resolveTemplate(
 ): PackCardTemplate | null {
   const content = (input as { carouselContent?: boolean }).carouselContent === true;
   const id = packId == null ? CAROUSEL_CLUB_KIT : packId;
-  if (content && !isCarouselPack(id)) throw new Error(`Unknown carousel pack id: ${JSON.stringify(packId)}`);
+  if (content && !isCarouselPack(id))
+    throw new Error(`Unknown carousel pack id: ${JSON.stringify(packId)}`);
   const t = resolveTemplateBase(input, content ? id : packId);
   if (!content || !t) return t;
   const plainMatchDay = input.kind === "matchDay" && !input.carouselPage;
@@ -153,7 +154,9 @@ function resolveTemplateBase(
         : weekendBookendTemplate(c.page, c.sponsors.length, c.title.length, c.hasCoverPhoto);
     }
     if (input.kind === "matchSummary") {
-      return look ? skeletonMatchDetailTemplate(look, input.innings.length) : matchDetailTemplate(input.innings.length);
+      return look
+        ? skeletonMatchDetailTemplate(look, input.innings.length)
+        : matchDetailTemplate(input.innings.length);
     }
   }
   const all = designsByKind(packId).get(input.kind);

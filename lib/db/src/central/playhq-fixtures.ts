@@ -380,3 +380,23 @@ export async function playhqMatchSides(
     };
   });
 }
+
+/**
+ * PlayHQ's status for each of the club's own matches, by PlayHQ match id
+ * (e.g. "CANCELLED"). A match the club isn't playing in is left out, so a
+ * caller can tell a missing or foreign id from a known one. Not cached: a
+ * cancellation must show the moment PlayHQ reports it.
+ */
+export async function playhqClubMatchStatuses(
+  orgId: string,
+  matchIds: readonly string[],
+): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (matchIds.length === 0) return out;
+  const rows = await centralDb
+    .select({ id: playhqMatchesTable.id, status: playhqMatchesTable.status })
+    .from(playhqMatchesTable)
+    .where(and(inList(playhqMatchesTable.id, matchIds), playhqClubInvolvedWhere(orgId)));
+  for (const row of rows) out.set(row.id, row.status ?? "UNKNOWN");
+  return out;
+}

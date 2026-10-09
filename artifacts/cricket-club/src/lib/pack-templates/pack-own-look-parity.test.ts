@@ -99,9 +99,12 @@ const CLUB_ONLY = listPackManifests().filter((m) => m.colourMode === "club-only"
 
 // Explicit opt-in for intentional visual changes; normal runs remain strict.
 if (process.env.PRINT_PACK_BASELINES) {
-  for (const manifest of DUAL_MODE) for (const scenario of Object.keys(SCENARIOS) as Scenario[]) {
-    process.stderr.write(`"${manifest.packId}/${scenario}": "${digest(manifest.packId, scenario, "pack")}",\n`);
-  }
+  for (const manifest of DUAL_MODE)
+    for (const scenario of Object.keys(SCENARIOS) as Scenario[]) {
+      process.stderr.write(
+        `"${manifest.packId}/${scenario}": "${digest(manifest.packId, scenario, "pack")}",\n`,
+      );
+    }
 }
 
 describe("Pack's own look is byte-identical to before club colours", () => {

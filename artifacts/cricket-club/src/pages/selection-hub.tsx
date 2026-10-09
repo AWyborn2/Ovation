@@ -245,28 +245,28 @@ export default function SelectionHub() {
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-        <SelectionCompareLink junior={junior} />
-        <AddActivePlayer section={section} />
-        <div
-          role="group"
-          aria-label="Section"
-          className="inline-flex rounded-lg border border-border bg-muted p-0.5"
-        >
-          {(["senior", "junior"] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={section === s}
-              onClick={() => setSection(s)}
-              className={cn(
-                "min-h-[34px] rounded-md px-3 text-sm font-semibold text-muted-foreground",
-                section === s && "bg-card text-foreground shadow-sm",
-              )}
-            >
-              {s === "senior" ? "Seniors" : "Juniors"}
-            </button>
-          ))}
-        </div>
+          <SelectionCompareLink junior={junior} />
+          <AddActivePlayer section={section} />
+          <div
+            role="group"
+            aria-label="Section"
+            className="inline-flex rounded-lg border border-border bg-muted p-0.5"
+          >
+            {(["senior", "junior"] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={section === s}
+                onClick={() => setSection(s)}
+                className={cn(
+                  "min-h-[34px] rounded-md px-3 text-sm font-semibold text-muted-foreground",
+                  section === s && "bg-card text-foreground shadow-sm",
+                )}
+              >
+                {s === "senior" ? "Seniors" : "Juniors"}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 

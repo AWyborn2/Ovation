@@ -1,7 +1,7 @@
 /**
  * Development-only authenticated smoke check. Uses disposable fixtures and the
  * real session middleware; never changes existing history or auth configuration.
- * Run: pnpm --filter @workspace/api-server exec tsx src/test/shared-award-browser.ts
+ * Run: pnpm --filter @workspace/api-server exec tsx src/maintenance/shared-award-browser.ts
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";

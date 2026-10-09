@@ -30,10 +30,12 @@ export function Updated() {
     const stage = stageRef.current;
     if (!stage) return;
     const resize = () => {
-      setScale(Math.min(
-        (stage.clientWidth - 40) / dimensions.width,
-        (stage.clientHeight - 56) / dimensions.height,
-      ));
+      setScale(
+        Math.min(
+          (stage.clientWidth - 40) / dimensions.width,
+          (stage.clientHeight - 56) / dimensions.height,
+        ),
+      );
     };
     const observer = new ResizeObserver(resize);
     observer.observe(stage);
@@ -52,7 +54,7 @@ export function Updated() {
         <div className="team-list-control-bar">
           <span>Updated · 12 ordered players · approved initials only</span>
           <nav className="team-list-formats" aria-label="Card format">
-            {(Object.keys(DIMENSIONS) as Format[]).map(item => (
+            {(Object.keys(DIMENSIONS) as Format[]).map((item) => (
               <button
                 type="button"
                 key={item}

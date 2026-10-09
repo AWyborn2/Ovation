@@ -455,13 +455,21 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
     expect(round?.sendStartedAt).not.toBeNull();
     expect(round?.sendCompletedAt).not.toBeNull();
     expect(round?.cutoffStartedAt).toBeNull();
-    const sides = await db.select().from(selectionsTable)
+    const sides = await db
+      .select()
+      .from(selectionsTable)
       .where(eq(selectionsTable.tenantId, tenantA));
     expect(sides).toHaveLength(2);
-    expect(sides.every(side => side.state === "draft" && side.roundId === round?.id)).toBe(true);
-    const notices = await db.select().from(notificationsTable)
-      .where(and(eq(notificationsTable.tenantId, tenantA),
-        eq(notificationsTable.kind, "selection_drafts_ready")));
+    expect(sides.every((side) => side.state === "draft" && side.roundId === round?.id)).toBe(true);
+    const notices = await db
+      .select()
+      .from(notificationsTable)
+      .where(
+        and(
+          eq(notificationsTable.tenantId, tenantA),
+          eq(notificationsTable.kind, "selection_drafts_ready"),
+        ),
+      );
     expect(notices).toHaveLength(1);
     expect(notices[0].body).toMatch(/requests are going out/);
     expect(notices[0].body).not.toMatch(/has closed/);
@@ -542,20 +550,35 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
 
   it("cut-off preserves teams drafted since the send and records completion without duplicate notices", async () => {
     clear();
-    const [side] = await db.select().from(selectionsTable)
+    const [side] = await db
+      .select()
+      .from(selectionsTable)
       .where(eq(selectionsTable.tenantId, tenantA));
-    await db.update(selectionsTable).set({
-      version: 7,
-      slots: [{ memberId: null, gap: { name: "Captain's draft", reason: "no_reply" } },
-        ...side.slots.slice(1)],
-    }).where(eq(selectionsTable.id, side.id));
-    const before = await db.select().from(selectionsTable)
-      .where(eq(selectionsTable.tenantId, tenantA)).orderBy(selectionsTable.id);
+    await db
+      .update(selectionsTable)
+      .set({
+        version: 7,
+        slots: [
+          { memberId: null, gap: { name: "Captain's draft", reason: "no_reply" } },
+          ...side.slots.slice(1),
+        ],
+      })
+      .where(eq(selectionsTable.id, side.id));
+    const before = await db
+      .select()
+      .from(selectionsTable)
+      .where(eq(selectionsTable.tenantId, tenantA))
+      .orderBy(selectionsTable.id);
     const summary = await tick(tenantA, "2026-10-15T18:05:00");
     expect(summary.ran).toEqual(["cutoff"]);
     expect(summary.results[0].drafts).toBe(0);
-    expect(await db.select().from(selectionsTable)
-      .where(eq(selectionsTable.tenantId, tenantA)).orderBy(selectionsTable.id)).toEqual(before);
+    expect(
+      await db
+        .select()
+        .from(selectionsTable)
+        .where(eq(selectionsTable.tenantId, tenantA))
+        .orderBy(selectionsTable.id),
+    ).toEqual(before);
     const round = (await roundOf(tenantA))!;
     expect(round.cutoffCompletedAt).not.toBeNull();
     const notes = await db
