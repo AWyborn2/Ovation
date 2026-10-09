@@ -33,7 +33,12 @@ import { getTenantId } from "../middlewares/tenant-context";
 import { NATIVE_STATS_TENANT_ID, tenantIsCentral } from "../lib/tenant";
 import { backfillMatchDrafts } from "../lib/draft-sweep";
 import { recaptionQueuedDrafts } from "../lib/draft-recaption";
-import { effectiveDraftStatus, loadAutoPost, type AutoPost } from "../lib/effective-draft-state";
+import {
+  effectiveDraftStatus,
+  layoutClear,
+  loadAutoPost,
+  type AutoPost,
+} from "../lib/effective-draft-state";
 import { isDraftStatus, normalizeDraftStatus, type DraftStatus } from "../lib/draft-status";
 import {
   listDraftRevisions,
@@ -45,6 +50,7 @@ import {
   draftPublishing,
   publicationsByDraft,
 } from "../lib/publishing/publications";
+import { BLANK_PACK_ID, templatedDesignFor } from "../lib/kind-templates";
 
 const router: IRouter = Router();
 
@@ -151,10 +157,11 @@ router.get("/social-drafts/pending-count", requireAdmin, async (req, res): Promi
     eq(socialDraftsTable.status, "awaiting_review"),
     notAnUntouchedEditorDraft,
   ];
-  // Drafts past their deadline already read as ready while auto-post is on.
+  // Drafts past their deadline already read as ready while auto-post is on —
+  // unless their layout needs a look, which keeps them waiting (KTD10).
   if ((await loadAutoPost(tenantId)).enabled) {
     conditions.push(
-      sql`(${socialDraftsTable.autoReadyAt} IS NULL OR ${socialDraftsTable.autoReadyAt} > now())`,
+      sql`(${socialDraftsTable.autoReadyAt} IS NULL OR ${socialDraftsTable.autoReadyAt} > now() OR NOT ${layoutClear})`,
     );
   }
   const [row] = await db
@@ -394,6 +401,13 @@ router.post(
       packId = template.packId;
       adjustments = template.adjustments;
     }
+    // With card kind templates on, a card started from the club's design
+    // (not a blank canvas, a saved template or a supplied layout) copies the
+    // kind's template (ADR-002).
+    const templated =
+      templateId === undefined && adjustments === null && packId !== BLANK_PACK_ID
+        ? await templatedDesignFor(tenantId, cardInput.kind, packId)
+        : null;
     const [row] = await db
       .insert(socialDraftsTable)
       .values({
@@ -407,6 +421,7 @@ router.post(
         autoReadyAt: null,
         editedAt: adjustments ? new Date() : null,
         createdByAdminId: (req as RequestWithAdmin).admin?.id ?? null,
+        ...(templated ?? {}),
       })
       .returning();
     res.status(201).json(presentDraft(row));
@@ -563,7 +578,14 @@ router.patch(
     if (adjustments !== undefined) {
       // Editor overlay (U15): stored as-is; the web renderer applies it.
       patch.adjustments = adjustments;
-      patch.editedAt = patch.editedAt ?? new Date();
+      if (draft.templateVersion !== null) {
+        // A templated draft's design edit: `editedAt` stays the caption
+        // marker, and the new layout owes a check (KTD10).
+        patch.designEditedAt = new Date();
+        patch.layoutCheckPending = true;
+      } else {
+        patch.editedAt = patch.editedAt ?? new Date();
+      }
     }
     const updated = await db.transaction(async (tx) => {
       await recordDraftRevision(draft, "edit", tx);

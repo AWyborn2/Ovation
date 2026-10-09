@@ -35,6 +35,8 @@ import { draftCentralAchievements } from "./central-achievements";
 import { syncDebutCaps } from "./debut-caps";
 import { matchResultCardsOn, resolveRoundSchedules } from "./round-schedules";
 import { runAvailabilitySchedule } from "./availability-schedule";
+import { runPendingLayoutChecks } from "./draft-render";
+import { logger as appLogger } from "./logger";
 
 type Logger = PostCommitLogger & {
   info: (obj: unknown, msg?: string) => void;
@@ -188,6 +190,15 @@ export async function runDraftSweep(
   }
 
   if (scope.kind === "scheduled") {
+    // Card kind templates (KTD10): check the layout of templated drafts before
+    // anything can promote or post them. A draft whose check hasn't run stays
+    // out of automation, so a failure here only delays it.
+    try {
+      // Renders need the full app logger (sponsor logo migration logs through it).
+      await runPendingLayoutChecks(tenantId, appLogger);
+    } catch (err) {
+      logger.error({ err, tenantId }, "layout checks failed");
+    }
     // Auto-post (KTD4): store what already reads as ready, then tell the club
     // once for the whole batch. With auto-publish on, fresh drafts are
     // scheduled to Facebook / Instagram instead and skip the notice.

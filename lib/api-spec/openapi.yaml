@@ -5631,6 +5631,153 @@ paths:
         "404":
           description: Not found
 
+  /kind-templates:
+    get:
+      operationId: listKindTemplates
+      tags: [socialCards]
+      summary: The club's card kind templates and whether the feature is on
+      description: >-
+        Card kind templates (plan 2026-10-07-002). `enabled` is false until the
+        KIND_TEMPLATES release switch includes this club; the list is then empty.
+      responses:
+        "200":
+          description: Kind templates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplateList"
+
+  /kind-templates/{kind}:
+    parameters:
+      - name: kind
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getKindTemplate
+      tags: [socialCards]
+      summary: One card kind's template
+      responses:
+        "200":
+          description: The template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplate"
+        "404":
+          description: Not enabled for this club, unknown kind, or no template yet (start one from a starter)
+    put:
+      operationId: saveKindTemplate
+      tags: [socialCards]
+      summary: Save a card kind's template (rejected when another admin saved first)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveKindTemplateRequest"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplate"
+        "400":
+          description: Invalid document (e.g. a size with no elements)
+        "404":
+          description: Not enabled for this club, unknown kind, or no template yet
+        "409":
+          description: Another admin saved this template since `baseVersion`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplateConflict"
+
+  /kind-templates/{kind}/start:
+    parameters:
+      - name: kind
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: startKindTemplate
+      tags: [socialCards]
+      summary: Start (or restart) a card kind's template from a starter design
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartKindTemplateRequest"
+      responses:
+        "200":
+          description: The template, now a copy of the starter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplate"
+        "404":
+          description: Not enabled for this club, or unknown kind
+        "409":
+          description: Restarting an existing template whose version moved on since `baseVersion`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplateConflict"
+
+  /kind-templates/{kind}/dismiss-notice:
+    parameters:
+      - name: kind
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: dismissKindTemplateNotice
+      tags: [socialCards]
+      summary: Dismiss the "your retired design pack was replaced" notice for a kind
+      responses:
+        "204":
+          description: Dismissed
+        "404":
+          description: Not enabled for this club, unknown kind, or no template
+
+  /kind-templates/{kind}/apply:
+    parameters:
+      - name: kind
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: applyKindTemplate
+      tags: [socialCards]
+      summary: Apply a saved template version to this kind's unposted drafts
+      description: >-
+        Replaces the design of every unposted draft of the kind, one-off design
+        tweaks included; captions are kept. Each draft's previous design is saved
+        as a revision first. Drafts posted meanwhile are skipped.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplyKindTemplateRequest"
+      responses:
+        "200":
+          description: How many drafts changed and were skipped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplyKindTemplateResult"
+        "404":
+          description: Not enabled for this club, unknown kind, or no template
+        "409":
+          description: The template has been saved again since `version`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplateConflict"
+
   /internal/draft-sweep:
     post:
       operationId: runDraftSweep
@@ -18734,6 +18881,93 @@ components:
         adjustments: {}
         createdAt: { type: string, format: date-time }
 
+    KindTemplateSummary:
+      type: object
+      required: [kind, version, updatedAt, replacedPackId, noticeDismissed, waitingDrafts]
+      properties:
+        kind: { type: string }
+        version: { type: integer }
+        updatedAt: { type: ["string", "null"], format: date-time }
+        replacedPackId:
+          type: ["string", "null"]
+          description: The retired design pack this template replaced, if any (R19).
+        noticeDismissed: { type: boolean }
+        waitingDrafts:
+          type: integer
+          description: Unposted drafts of this kind an apply would change.
+
+    KindTemplateList:
+      type: object
+      required: [enabled, templates]
+      properties:
+        enabled:
+          type: boolean
+          description: Whether card kind templates are switched on for this club.
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/KindTemplateSummary"
+
+    KindTemplate:
+      allOf:
+        - $ref: "#/components/schemas/KindTemplateSummary"
+        - type: object
+          required: [document]
+          properties:
+            document:
+              $ref: "#/components/schemas/CardAdjustments"
+            updatedByName:
+              type: ["string", "null"]
+              description: Who saved the current version.
+
+    SaveKindTemplateRequest:
+      type: object
+      required: [baseVersion, document]
+      properties:
+        baseVersion:
+          type: integer
+          description: The version this edit started from.
+        document:
+          $ref: "#/components/schemas/CardAdjustments"
+
+    StartKindTemplateRequest:
+      type: object
+      required: [starter]
+      properties:
+        starter:
+          type: string
+          enum: [club-kit, broadcast]
+        baseVersion:
+          type: integer
+          description: Required when the kind already has a template.
+
+    ApplyKindTemplateRequest:
+      type: object
+      required: [version]
+      properties:
+        version:
+          type: integer
+          description: The saved template version to apply.
+        expectedDrafts:
+          type: integer
+          description: How many waiting drafts the admin was shown; any shortfall is reported as skipped.
+
+    ApplyKindTemplateResult:
+      type: object
+      required: [changed, skipped]
+      properties:
+        changed: { type: integer }
+        skipped: { type: integer }
+
+    KindTemplateConflict:
+      type: object
+      required: [error, currentVersion]
+      properties:
+        error: { type: string }
+        currentVersion: { type: integer }
+        updatedAt: { type: ["string", "null"], format: date-time }
+        updatedByName: { type: ["string", "null"] }
+
     CardAdjustments:
       type: object
       description: >-
@@ -18761,6 +18995,16 @@ components:
             type: object
             additionalProperties: true
 
+    LayoutWarning:
+      type: object
+      required: [reason, size]
+      properties:
+        reason: { type: string, enum: [overflow, font, slides] }
+        size: { type: string, enum: [square, portrait, story, landscape] }
+        layerId: { type: string }
+        row: { type: integer }
+        field: { type: string }
+        detail: { type: string }
     SocialDraft:
       type: object
       required: [id, engine, status, cardInput, appPath, sourceMatchIsJunior, createdAt]
@@ -18796,6 +19040,26 @@ components:
         photoSource: { type: ["string", "null"] }
         adjustments: {}
         editedAt: { type: ["string", "null"], format: date-time }
+        templateVersion:
+          type: ["integer", "null"]
+          description: >-
+            The card kind template version this draft copied; null for a draft that uses a pack.
+        designEditedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When an admin last edited this templated draft's design by hand.
+        layoutWarnings:
+          type: ["object", "null"]
+          description: >-
+            Layout warnings from the last render, per card size ("needs a look"). A size with an
+            empty list rendered cleanly; a missing size hasn't been rendered.
+          additionalProperties:
+            type: array
+            items: { $ref: "#/components/schemas/LayoutWarning" }
+        layoutCheckPending:
+          type: boolean
+          description: >-
+            True while a templated draft owes a layout check; automation leaves it alone until then.
         createdByAdminId:
           type: ["integer", "null"]
           description: "The admin who made the draft by hand; null for drafts the sweep made."
@@ -18886,7 +19150,7 @@ components:
         photoUrl: { type: ["string", "null"] }
         photoSource: { type: ["string", "null"] }
         adjustments: {}
-        reason: { type: string, enum: [refresh, edit, revert] }
+        reason: { type: string, enum: [refresh, edit, revert, template] }
         createdAt: { type: string, format: date-time }
 
     PendingDraftCount:

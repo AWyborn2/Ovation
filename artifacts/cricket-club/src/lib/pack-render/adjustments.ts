@@ -10,8 +10,10 @@
  * reported as inherited so the editor and post pack can flag it for review.
  */
 
+import type { RowsSpec, TemplateTextStyle } from "@workspace/scorecard/kind-templates";
 import type { CardSize } from "../share-card";
 import { escapeHtml } from "./html-utils";
+import { FIT_ATTR } from "./layer-fit";
 import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
 import { renderElement, type ElementLayerState } from "../studio-elements/registry";
 import { clubKitPaletteFor, clubKitVars } from "./club-kit-vars";
@@ -35,7 +37,11 @@ export type FreeLayerKind =
   | "sticker"
   | "chart"
   /** A Studio library element (`lib/studio-elements`), e.g. Club Kit score bars. */
-  | "element";
+  | "element"
+  /** The card's photo (kind templates, ADR-001); never drawn on junior cards. */
+  | "photo"
+  /** One styled list row repeated per data row (kind templates, ADR-001). */
+  | "rows";
 
 export type FreeLayer = {
   id: string;
@@ -63,18 +69,14 @@ export type FreeLayer = {
   playerId?: number;
   /** A library element's id and edited props (`kind: "element"`). */
   element?: ElementLayerState;
-  style?: {
-    color?: string;
-    background?: string;
-    fontFamily?: string;
-    /** Font size in percent of the artboard width. */
-    fontSize?: number;
-    fontWeight?: number;
-    align?: "left" | "center" | "right";
-    radius?: number;
-    opacity?: number;
-  };
+  /** The list row a `rows` layer repeats. */
+  rows?: RowsSpec;
+  /** The photo's focal point and zoom per size (`kind: "photo"`). */
+  photo?: Partial<Record<CardSize, PhotoAdjust>>;
+  style?: TemplateTextStyle;
   animation?: LayerAnimation;
+  /** The sizes this layer is on; absent means every size (kind templates). */
+  sizes?: CardSize[];
   /** Per-format boxes. */
   geometry: Partial<Record<CardSize, LayerBox>>;
   /** When each format's box was last edited (ms since epoch). */
@@ -249,7 +251,21 @@ export const LAYER_KEYFRAMES =
 
 /** A style value safe to place inside a style attribute. */
 const cssValue = (v: string | undefined): string | undefined =>
-  v == null ? undefined : v.replace(/[";<>{}]/g, "");
+  v == null ? undefined : String(v).replace(/[";<>{}]/g, "");
+
+/**
+ * A number safe to place in markup: documents are admin-authored JSON, so a
+ * "number" may be any value. Non-finite values fall back; valid numbers print
+ * exactly as before.
+ */
+const num = (v: unknown, fallback = 0): number => {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : fallback;
+};
+
+const ALIGN = new Set(["left", "center", "right"]);
+const alignOf = (v: unknown): "left" | "center" | "right" =>
+  typeof v === "string" && ALIGN.has(v) ? (v as "left" | "center" | "right") : "center";
 
 /** Per-render context for library elements (club colours, crest, live rows). */
 export interface FreeLayerContext {
@@ -257,13 +273,116 @@ export interface FreeLayerContext {
   brand?: PackCardData["brand"] | null;
   junior?: boolean;
   rows?: Record<string, Array<Record<string, string>>>;
+  /** Each repeat row's variant, parallel to `rows` (for `rows` layers). */
+  rowVariants?: Record<string, Array<string | undefined>>;
+  /** The card photo for `photo` layers; null/absent draws nothing. */
+  photoUrl?: string | null;
 }
 
+const TOKEN = /\{\{\s*([\w.]+)\s*\}\}/g;
+
+/** Whether text carries `{{field}}` tokens. */
+export const hasFieldTokens = (text: string | undefined): boolean =>
+  !!text && /\{\{\s*[\w.]+\s*\}\}/.test(text);
+
+/** Text with each `{{field}}` token replaced by its card value (empty when absent). */
+export function substituteTokens(text: string, values: Record<string, string>): string {
+  return text.replace(TOKEN, (_all, key: string) => values[key] ?? "");
+}
+
+/** A fittable element's designed size in cqw, for `FIT_ATTR`. */
+const fitBase = (style: TemplateTextStyle | undefined) => num(style?.fontSize, 5).toFixed(2);
+
+/** Inline CSS for a text box (text layers and list-row cells). */
+function textCss(raw: TemplateTextStyle | undefined, extra: string[] = []): string {
+  const s = {
+    ...(raw ?? {}),
+    color: cssValue(raw?.color),
+    background: cssValue(raw?.background),
+    fontFamily: cssValue(raw?.fontFamily),
+  };
+  return [
+    ...extra,
+    "display:flex",
+    "align-items:center",
+    `justify-content:${alignOf(s.align) === "left" ? "flex-start" : alignOf(s.align) === "right" ? "flex-end" : "center"}`,
+    `text-align:${alignOf(s.align)}`,
+    `color:${s.color ?? "inherit"}`,
+    `font-family:${s.fontFamily ?? "var(--disp,'Anton'),sans-serif"}`,
+    `font-size:${num(s.fontSize, 5).toFixed(2)}cqw`,
+    `font-weight:${num(s.fontWeight, 700)}`,
+    "line-height:1.05",
+    "white-space:pre-wrap",
+    s.letterSpacing != null ? `letter-spacing:${num(s.letterSpacing)}em` : "",
+    s.background ? `background:${s.background}` : "",
+    s.radius != null ? `border-radius:${num(s.radius)}px` : "",
+  ]
+    .filter(Boolean)
+    .join(";");
+}
+
+/** A `rows` layer: one positioned row per data row, cells placed across it. */
+function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
+  const spec = layer.rows;
+  if (!spec) return null;
+  const own = (o: object | undefined) =>
+    o && Object.prototype.hasOwnProperty.call(o, spec.repeat)
+      ? (o as Record<string, unknown>)[spec.repeat]
+      : undefined;
+  const rows = own(ctx.rows);
+  if (!Array.isArray(rows) || rows.length === 0 || !Array.isArray(spec.cells)) return null;
+  const listed = own(ctx.rowVariants);
+  const variants: Array<string | undefined> = Array.isArray(listed) ? listed : [];
+  const gap = num(spec.gap);
+  const rowHeight = num(spec.rowHeight, 7);
+  const out = rows.map((row, i) => {
+    const variant = variants[i];
+    const cells = spec.cells.map((cell) => {
+      const style = {
+        ...cell.style,
+        ...(variant ? spec.variants?.[variant]?.[cell.field] : undefined),
+      };
+      // Cells stay on one line so an overflow shows as width, which the fit
+      // step shrinks and, failing that, reports (KTD9).
+      const css = textCss(style, [
+        "position:absolute",
+        `left:${num(cell.x)}%`,
+        `width:${num(cell.w)}%`,
+        "top:0",
+        "height:100%",
+        "overflow:hidden",
+      ]).replace("white-space:pre-wrap", "white-space:nowrap");
+      return `<div data-row-cell="${escapeHtml(cell.field)}" ${FIT_ATTR}="${fitBase(style)}" style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
+    });
+    const top = i * (rowHeight + gap);
+    return `<div data-row-index="${i}"${variant ? ` data-row-variant="${escapeHtml(variant)}"` : ""} style="position:absolute;left:0;right:0;top:${top.toFixed(3)}cqw;height:${rowHeight.toFixed(3)}cqw">${cells.join("")}</div>`;
+  });
+  return `<div style="position:relative;width:100%;height:100%;overflow:hidden">${out.join("")}</div>`;
+}
+
+/** A `photo` layer: the card photo at this size's focal point and zoom. */
+function renderPhoto(layer: FreeLayer, size: CardSize, ctx: FreeLayerContext): string | null {
+  // Junior cards never show a photo, whatever the document holds (KTD14).
+  if (ctx.junior || !ctx.photoUrl) return null;
+  const t = resolveGeometry(layer.photo, undefined, size)?.value ?? {
+    focalX: 50,
+    focalY: 50,
+    zoom: 1,
+  };
+  const radius = layer.style?.radius != null ? `;border-radius:${num(layer.style.radius)}px` : "";
+  const fx = num(t.focalX, 50);
+  const fy = num(t.focalY, 50);
+  const zoom = num(t.zoom, 1);
+  return `<div style="width:100%;height:100%;overflow:hidden${radius}"><img src="${escapeHtml(ctx.photoUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;object-position:${fx}% ${fy}%;transform:scale(${zoom});transform-origin:${fx}% ${fy}%" /></div>`;
+}
+
+/** A layer's inner markup; null when it should not be drawn at all. */
 function layerInner(
   layer: FreeLayer,
   values: Record<string, string>,
   ctx: FreeLayerContext = {},
-): string {
+  size: CardSize = "square",
+): string | null {
   const raw = layer.style ?? {};
   const s = {
     ...raw,
@@ -273,31 +392,39 @@ function layerInner(
   };
   switch (layer.kind) {
     case "text": {
-      const css = [
-        "width:100%",
-        "height:100%",
-        "display:flex",
-        "align-items:center",
-        `justify-content:${s.align === "left" ? "flex-start" : s.align === "right" ? "flex-end" : "center"}`,
-        `text-align:${s.align ?? "center"}`,
-        `color:${s.color ?? "inherit"}`,
-        `font-family:${s.fontFamily ?? "var(--disp,'Anton'),sans-serif"}`,
-        `font-size:${(s.fontSize ?? 5).toFixed(2)}cqw`,
-        `font-weight:${s.fontWeight ?? 700}`,
-        "line-height:1.05",
-        "white-space:pre-wrap",
-        s.background ? `background:${s.background}` : "",
-        s.radius != null ? `border-radius:${s.radius}px` : "",
-      ].filter(Boolean);
-      const text = layer.bind ? (values[layer.bind] ?? "") : (layer.content ?? "");
-      return `<div style="${css.join(";")}">${escapeHtml(text)}</div>`;
+      const tokens = !layer.bind && hasFieldTokens(layer.content);
+      const text = layer.bind
+        ? (values[layer.bind] ?? "")
+        : tokens
+          ? substituteTokens(layer.content ?? "", values)
+          : (layer.content ?? "");
+      // A box made only of live fields that are all empty isn't drawn (KTD15).
+      if (tokens && text.trim() === "") return null;
+      // Live-field text shrinks to fit (KTD9); other text renders as before.
+      const fit = tokens ? ` ${FIT_ATTR}="${fitBase(raw)}"` : "";
+      return `<div${fit} style="${textCss(raw, ["width:100%", "height:100%"])}">${escapeHtml(text)}</div>`;
     }
+    case "photo":
+      return renderPhoto(layer, size, ctx);
+    case "rows":
+      return renderRows(layer, ctx);
     case "shape":
-      return `<div style="width:100%;height:100%;background:${s.background ?? "var(--gold,#fbac27)"};border-radius:${s.radius ?? 0}px"></div>`;
-    case "image":
+      return `<div style="width:100%;height:100%;background:${s.background ?? "var(--gold,#fbac27)"};border-radius:${num(s.radius)}px"></div>`;
+    case "image": {
+      // A template's image can be a field token (the club crest), resolved
+      // from the club's own brand so no template holds a fixed URL (KTD4).
+      if (hasFieldTokens(layer.content)) {
+        const src = substituteTokens(layer.content ?? "", {
+          ...values,
+          clubLogo: ctx.brand?.logoUrl ?? "",
+        }).trim();
+        if (!src) return null;
+        return `<img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:contain;display:block" />`;
+      }
       return layer.content
-        ? `<img src="${escapeHtml(layer.content)}" alt="" style="width:100%;height:100%;object-fit:${layer.style?.radius ? "cover" : "contain"};display:block${layer.style?.radius != null ? `;border-radius:${layer.style.radius}px` : ""}" />`
+        ? `<img src="${escapeHtml(layer.content)}" alt="" style="width:100%;height:100%;object-fit:${layer.style?.radius ? "cover" : "contain"};display:block${layer.style?.radius != null ? `;border-radius:${num(layer.style.radius)}px` : ""}" />`
         : "";
+    }
     case "medal":
       return renderMedal(layer.content ?? "100", layer.sub);
     case "sticker":
@@ -340,22 +467,25 @@ export function renderFreeLayers(
       : "";
   const parts = layers.map((layer) => {
     if (layer.hidden) return "";
+    if (layer.sizes && !layer.sizes.includes(size)) return "";
     const box = resolveGeometry(layer.geometry, layer.editedAt, size);
     if (!box) return "";
+    const inner = layerInner(layer, values, ctx, size);
+    if (inner === null) return "";
     const { x, y, w, h, rotate } = box.value;
     const anim = opts.animate ? ANIMATION[layer.animation?.kind ?? "none"] : null;
     const css = [
       "position:absolute",
-      `left:${x}%`,
-      `top:${y}%`,
-      `width:${w}%`,
-      `height:${h}%`,
-      rotate ? `transform:rotate(${rotate}deg)` : "",
-      layer.style?.opacity != null ? `opacity:${layer.style.opacity}` : "",
+      `left:${num(x)}%`,
+      `top:${num(y)}%`,
+      `width:${num(w)}%`,
+      `height:${num(h)}%`,
+      rotate ? `transform:rotate(${num(rotate)}deg)` : "",
+      layer.style?.opacity != null ? `opacity:${num(layer.style.opacity, 1)}` : "",
       anim ? `animation:${anim}` : "",
-      anim && layer.animation?.delayMs ? `animation-delay:${layer.animation.delayMs}ms` : "",
+      anim && layer.animation?.delayMs ? `animation-delay:${num(layer.animation.delayMs)}ms` : "",
     ].filter(Boolean);
-    return `<div data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${box.from}"` : ""} style="${css.join(";")}">${layerInner(layer, values, ctx)}</div>`;
+    return `<div data-layer-id="${escapeHtml(layer.id)}"${box.inherited ? ` data-inherited-from="${escapeHtml(String(box.from))}"` : ""} style="${css.join(";")}">${inner}</div>`;
   });
   const style = opts.animate ? `<style>${LAYER_KEYFRAMES}</style>` : "";
   return `<div class="pack-free-layers" style="position:absolute;inset:0;pointer-events:none;container-type:inline-size${palette}">${style}${parts.join("")}</div>`;

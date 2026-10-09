@@ -23,6 +23,8 @@ import {
   getListCardThemesQueryKey,
   useListCardTemplates,
   getListCardTemplatesQueryKey,
+  useListKindTemplates,
+  getListKindTemplatesQueryKey,
   type CardTemplate,
   type CardTheme as ApiCardTheme,
   type SocialSettingsBundle,
@@ -98,7 +100,8 @@ import {
   type CardAdjustments,
   type FreeLayer,
 } from "@/lib/pack-render";
-import { isJuniorSlide, isSetKind, slidesForSize } from "@/lib/card-sets/plan";
+import { isJuniorSlide, isSetKind, slidesForSize, type PlannedSlide } from "@/lib/card-sets/plan";
+import { planTemplateSlides, type LayerDocument } from "@workspace/scorecard/kind-templates";
 import { CardSetStrip } from "@/components/card-sets/card-set-strip";
 import { SetOptionsBar } from "@/components/card-sets/set-options";
 import { clubKitPaletteFor, clubKitVars } from "@/lib/pack-render/club-kit-vars";
@@ -197,6 +200,10 @@ function EditorApp({ draftId }: { draftId: number }) {
   const themes = (themesQ.data ?? []) as ApiCardTheme[];
   const theme = themes.find((t) => t.isDefault) ?? themes[0] ?? null;
   const templatesQ = useListCardTemplates({ query: { queryKey: getListCardTemplatesQueryKey() } });
+  // Save as template is retired once card kind templates are on (R20).
+  const kindTemplatesOn =
+    useListKindTemplates({ query: { queryKey: getListKindTemplatesQueryKey() } }).data?.enabled ===
+    true;
   const packId =
     draft.packId ?? resolvePackIdForKind(templatesQ.data as CardTemplate[] | undefined, input.kind);
 
@@ -228,15 +235,26 @@ function EditorApp({ draftId }: { draftId: number }) {
   const [format, setFormat] = useState<CardSize>("square");
   // Balanced card sets (plan 2026-10-01-001): the slides this card posts as
   // at the current format, and the one being edited.
-  const slides = useMemo(
-    () => slidesForSize(input, format, rootDoc.set),
-    [input, format, rootDoc.set],
+  // A templated draft is one design on every slide, its list split by the
+  // design's own row capacity exactly as the server renders it (KTD6, KTD13).
+  const templated = draft.templateVersion != null;
+  const slides = useMemo<PlannedSlide[]>(
+    () =>
+      templated
+        ? planTemplateSlides(
+            input as unknown as Record<string, unknown>,
+            rootDoc as LayerDocument,
+            format,
+          ).slides.map((s) => ({ ...s, role: "single" }) as unknown as PlannedSlide)
+        : slidesForSize(input, format, rootDoc.set),
+    [templated, input, format, rootDoc],
   );
   const [slideKey, setSlideKey] = useState("single");
   const slide = slides.find((s) => s.key === slideKey) ?? slides[0]!;
   const slideKeyRef = useRef(slide.key);
-  slideKeyRef.current = slide.key;
-  const doc: EditorDoc = slideAdjustments(rootDoc, slide.key) ?? {};
+  // Edits to a templated draft always land on its one design.
+  slideKeyRef.current = templated ? "single" : slide.key;
+  const doc: EditorDoc = templated ? rootDoc : (slideAdjustments(rootDoc, slide.key) ?? {});
   const slideInput = slide.input;
   const slideJunior = isJuniorSlide(slide, false);
   const [selection, setSelection] = useState<string[]>([]);
@@ -422,14 +440,16 @@ function EditorApp({ draftId }: { draftId: number }) {
               }}
               baseName={cardBaseFilename(input, bundle?.brand ?? brand)}
             />
-            <SaveTemplateButton
-              draftId={draftId}
-              beforeSave={() =>
-                dirty
-                  ? update.mutateAsync({ id: draftId, data: { adjustments: rootDoc } })
-                  : Promise.resolve()
-              }
-            />
+            {!kindTemplatesOn && (
+              <SaveTemplateButton
+                draftId={draftId}
+                beforeSave={() =>
+                  dirty
+                    ? update.mutateAsync({ id: draftId, data: { adjustments: rootDoc } })
+                    : Promise.resolve()
+                }
+              />
+            )}
           </>
         }
       />
@@ -571,7 +591,27 @@ function EditorApp({ draftId }: { draftId: number }) {
             }}
             onChange={onCanvasChange}
           />
-          {slides.length > 1 || (isSetKind(input.kind) && format !== "landscape") ? (
+          {templated && slides.length > 1 ? (
+            <div
+              className="mt-6 flex items-center gap-2 text-sm text-[var(--ed-ink2)]"
+              role="group"
+              aria-label="Slides"
+            >
+              <span>Slides use one design:</span>
+              {slides.map((s) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  aria-pressed={s.key === slide.key}
+                  onClick={() => setSlideKey(s.key)}
+                  className="h-8 min-w-8 rounded-full border border-[var(--ed-line)] px-2 font-semibold aria-pressed:border-[var(--ed-accent)]"
+                >
+                  {s.page}
+                </button>
+              ))}
+            </div>
+          ) : !templated &&
+            (slides.length > 1 || (isSetKind(input.kind) && format !== "landscape")) ? (
             <div className="mt-6 flex w-full max-w-4xl flex-col gap-3">
               <SetOptionsBar
                 options={rootDoc.set ?? {}}

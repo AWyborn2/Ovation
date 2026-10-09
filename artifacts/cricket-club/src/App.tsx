@@ -51,6 +51,7 @@ const AdminUsers = lazy(() => import("@/pages/admin-users"));
 const AdminImport = lazy(() => import("@/pages/admin-import"));
 const AdminReset = lazy(() => import("@/pages/admin-reset"));
 const AdminStudioEditor = lazy(() => import("@/pages/admin-studio-editor"));
+const AdminKindTemplateEditor = lazy(() => import("@/pages/admin-kind-template-editor"));
 // admin-groups exposes NAMED exports, so map each to a default for lazy().
 function lazyNamed<M extends Record<string, unknown>, K extends keyof M>(
   loader: () => Promise<M>,
@@ -69,6 +70,7 @@ const AdminAvailability = lazy(() => import("@/pages/admin-availability"));
 // The personal availability link a player or parent opens from their SMS/email.
 const AvailabilityRespond = lazy(() => import("@/pages/availability-respond"));
 const CardRenderHarness = lazy(() => import("@/pages/card-render-harness"));
+const AdminStarterProofs = lazy(() => import("@/pages/admin-starter-proofs"));
 const HonoursDisplay = lazy(() => import("@/pages/honours-display"));
 const HonoursKiosk = lazy(() => import("@/pages/honours-kiosk"));
 
@@ -146,6 +148,9 @@ function AdminRoutes() {
             <Route path="/admin/settings/trading-cards">
               <Redirect to="/admin/social/trading-cards" />
             </Route>
+
+            {/* Card kind templates: starter proofs contact sheet (plan U10). */}
+            <Route path="/admin/kind-templates/proofs" component={AdminStarterProofs} />
 
             {/* Consolidated tabbed groups (each tab is a deep-linkable path). */}
             <Route path="/admin/social/:tab?" component={AdminSocialGroup} />
@@ -329,6 +334,12 @@ export function Router() {
         <Route path="/admin/social/editor/:id">
           <AdminShell bare>
             <AdminStudioEditor />
+          </AdminShell>
+        </Route>
+        {/* Card kind template editor (plan U8), full-screen like the Studio editor. */}
+        <Route path="/admin/social/templates/:kind">
+          <AdminShell bare>
+            <AdminKindTemplateEditor />
           </AdminShell>
         </Route>
         <Route path="/admin/*" component={AdminRoutes} />

@@ -15,6 +15,7 @@ import { normalizeDraftStatus } from "./draft-status";
 import { recordDraftRevision } from "./draft-revisions";
 import { enrichDraft, isAutoPhoto } from "./draft-enrich";
 import { autoReadyAtFor } from "./effective-draft-state";
+import { templatedDesignFor } from "./kind-templates";
 
 /**
  * One draft per event (Social Studio automation, KTD3).
@@ -314,6 +315,9 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
   if (!existing) {
     const e = await enrichment();
     const importedAt = input.sourceImportedAt ?? new Date();
+    // With card kind templates on, the draft copies its kind's template
+    // instead of using a pack (ADR-002).
+    const templated = await templatedDesignFor(input.tenantId, input.cardInput.kind, e.packId);
     try {
       const [row] = await db
         .insert(socialDraftsTable)
@@ -340,6 +344,7 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
           caption: e.caption,
           photoUrl: e.photoUrl,
           photoSource: e.photoSource,
+          ...(templated ?? {}),
         })
         .returning();
       return { action: "inserted", draft: row };
@@ -382,7 +387,7 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
   }
 
   const current = existing;
-  // A refresh keeps the draft's pack. It regenerates the caption only if no
+  // A refresh keeps the draft's pack or template copy. It regenerates the caption only if no
   // one has edited the draft, and re-picks the photo only if the current one
   // was picked automatically (KTD6).
   const e = await enrichment();
@@ -393,6 +398,9 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
     ...(isAutoPhoto(current.photoSource)
       ? { photoUrl: e.photoUrl, photoSource: e.photoSource }
       : {}),
+    // New data can change how a templated card lays out: it owes a fresh
+    // layout check before automation can touch it again (KTD10).
+    ...(current.templateVersion !== null ? { layoutCheckPending: true } : {}),
   };
   const row = await db.transaction(async (tx) => {
     await recordDraftRevision(current, "refresh", tx);
