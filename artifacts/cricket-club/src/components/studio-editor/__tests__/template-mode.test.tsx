@@ -78,7 +78,11 @@ function stubApi(api: Api = {}): Req[] {
           templates: [{ ...template(), waitingDrafts: api.waiting ?? 0 }],
         };
       } else if (method === "POST" && /kind-templates\/century\/start$/.test(url)) {
-        payload = template();
+        const base = (body as { baseVersion?: number } | undefined)?.baseVersion;
+        payload = template({
+          version: base ? base + 1 : 1,
+          waitingDrafts: base ? (api.waiting ?? 0) : 0,
+        });
       } else if (method === "POST" && /kind-templates\/century\/apply$/.test(url)) {
         payload = { changed: 2, skipped: 1 };
       } else if (method === "PUT" && /kind-templates\/century$/.test(url)) {
@@ -286,6 +290,25 @@ describe("template editor", () => {
     vi.unstubAllGlobals();
     open({ platformAdmin: true });
     expect(await screen.findByRole("button", { name: "Export as starter" })).toBeTruthy();
+  });
+
+  it("starts the template over from a starter as a new version", async () => {
+    const requests = open({ waiting: 2 });
+    await screen.findByRole("combobox", { name: "Format" });
+    fireEvent.click(screen.getByRole("button", { name: "Start over" }));
+    const dialog = await screen.findByRole("dialog", { name: /Start Century over/i });
+    expect(within(dialog).getByText(/saved as version 2/)).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Start from Broadcast" }));
+    await waitFor(() =>
+      expect(requests.some((r) => r.method === "POST" && /start$/.test(r.url))).toBe(true),
+    );
+    expect(requests.find((r) => /start$/.test(r.url))!.body).toEqual({
+      starter: "broadcast",
+      baseVersion: 1,
+    });
+    // The new version is in place, and waiting cards can take it.
+    expect(await screen.findByText("Template · v2")).toBeTruthy();
+    expect(await screen.findByRole("dialog", { name: /Update 2 waiting cards/ })).toBeTruthy();
   });
 
   it("tells a phone to use a computer or tablet", async () => {

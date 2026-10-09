@@ -27,6 +27,8 @@ export function StarterChooser({
   busy,
   error,
   onPick,
+  title,
+  blurb,
 }: {
   kind: string;
   label: string;
@@ -35,13 +37,18 @@ export function StarterChooser({
   busy: boolean;
   error: string | null;
   onPick: (starter: StarterId) => void;
+  /** Heading and line above the choices (defaults: first-time wording). */
+  title?: string;
+  blurb?: string;
 }) {
   return (
     <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 p-8 text-center">
       <div>
-        <h1 className="font-serif text-2xl font-bold uppercase">Design your {label} card</h1>
+        <h1 className="font-serif text-2xl font-bold uppercase">
+          {title ?? `Design your ${label} card`}
+        </h1>
         <p className="mt-1 text-sm text-[var(--ed-ink2)]">
-          Pick a starting design. You can change everything about it afterwards.
+          {blurb ?? "Pick a starting design. You can change everything about it afterwards."}
         </p>
       </div>
       <div className="grid w-full gap-5 sm:grid-cols-2">

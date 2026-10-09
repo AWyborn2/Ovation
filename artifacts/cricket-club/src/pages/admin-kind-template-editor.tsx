@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Database, Download, Monitor, Shapes, Type } from "lucide-react";
+import { AlertTriangle, Database, Download, Monitor, RotateCcw, Shapes, Type } from "lucide-react";
 import {
   getGetKindTemplateQueryKey,
   getListKindTemplatesQueryKey,
@@ -18,6 +18,7 @@ import {
   kindFields,
   planTemplateSlides,
   type LayerDocument,
+  type StarterId,
   type LayoutWarning,
 } from "@workspace/scorecard/kind-templates";
 import { LoadingState, QueryError } from "@/components/data-states";
@@ -38,6 +39,7 @@ import { RowsPanel } from "@/components/studio-editor/rows-panel";
 import { TextStyleBar } from "@/components/studio-editor/text-style-bar";
 import { StarterChooser } from "@/components/studio-editor/starter-chooser";
 import { ApplyTemplateDialog } from "@/components/studio-editor/apply-template-dialog";
+import { StartOverDialog } from "@/components/studio-editor/start-over-dialog";
 import {
   commit,
   commitFrom,
@@ -407,6 +409,35 @@ function TemplateEditor({
       },
     );
   };
+  // Start over from a starter design: a new version of the template.
+  const [startOverOpen, setStartOverOpen] = useState(false);
+  const startOver = useStartKindTemplate();
+  const onStartOver = (starter: StarterId) =>
+    startOver.mutate(
+      { kind, data: { starter, baseVersion } },
+      {
+        onSuccess: (t) => {
+          const next = (t.document ?? { layers: [] }) as EditorDoc;
+          setHistory(createHistory(next));
+          setSavedJson(JSON.stringify(next));
+          setBaseVersion(t.version);
+          setSelection([]);
+          setConflict(null);
+          setStartOverOpen(false);
+          qc.setQueryData(getGetKindTemplateQueryKey(kind), t);
+          qc.invalidateQueries({ queryKey: getListKindTemplatesQueryKey() });
+          if (t.waitingDrafts > 0) setApplyFor({ version: t.version, waiting: t.waitingDrafts });
+        },
+        onError: (err) => {
+          const c = conflictOf(err);
+          if (c) {
+            setConflict(c);
+            setStartOverOpen(false);
+          }
+        },
+      },
+    );
+
   const reloadTheirs = async () => {
     const res = (await onReload()) as { data?: KindTemplate };
     const t = res?.data;
@@ -472,6 +503,16 @@ function TemplateEditor({
         backHref={STUDIO}
         actions={
           <>
+            <button
+              type="button"
+              onClick={() => {
+                startOver.reset();
+                setStartOverOpen(true);
+              }}
+              className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-[var(--ed-ink2)] hover:bg-[var(--ed-card)]"
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden /> Start over
+            </button>
             {platformAdmin && (
               <button
                 type="button"
@@ -720,6 +761,23 @@ function TemplateEditor({
         onZoom={setZoom}
         layersOpen={layersOpen}
         onToggleLayers={() => setLayersOpen((o) => !o)}
+      />
+      <StartOverDialog
+        open={startOverOpen}
+        kind={kind}
+        label={label}
+        input={previewSample(cardKind, clubName)}
+        data={data}
+        version={baseVersion}
+        dirty={dirty}
+        busy={startOver.isPending}
+        error={
+          startOver.isError && !conflictOf(startOver.error)
+            ? "Couldn't start over. Try again."
+            : null
+        }
+        onPick={onStartOver}
+        onClose={() => setStartOverOpen(false)}
       />
       <ApplyTemplateDialog
         kind={kind}
