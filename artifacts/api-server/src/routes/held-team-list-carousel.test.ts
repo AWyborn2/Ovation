@@ -10,10 +10,11 @@ import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { finaliseSelection } from "../lib/selection-board";
 import { recoverPublishedSelectionIdentities, loadSelectionParticipantIds, selectionPublishedPlayers } from "../lib/selection-published-players";
 import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
+import type * as AvailabilityMessaging from "../lib/availability-messaging";
 
 // Exercise real publication/storage/HTTP generation, without sending messages.
 vi.mock("../lib/availability-messaging", async original => ({
-  ...await original<typeof import("../lib/availability-messaging")>(),
+  ...await original<typeof AvailabilityMessaging>(),
   messageMember: vi.fn(async () => ({ results: [] })),
   notifyStaff: vi.fn(async () => undefined),
 }));

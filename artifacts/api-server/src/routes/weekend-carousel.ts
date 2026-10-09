@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, gte, inArray, isNull, lt, or } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, lt } from "drizzle-orm";
 import { db, fixturesTable, clubPhotosTable } from "@workspace/db";
-import { centralDb, playhqMatchesTable } from "@workspace/db/central";
+import { playhqMatchStatusesForClub } from "@workspace/db/central-queries";
 import { GetWeekendCarouselSourcesQueryParams, GetWeekendCarouselSourcesResponse } from "@workspace/api-zod";
 import { isJuniorGradeLabel } from "@workspace/scorecard";
 import { requireAdmin } from "../middlewares/require-admin";
@@ -39,15 +39,12 @@ router.get("/weekend-carousel/sources", requireAdmin, requireEntitlement("social
   )).orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id));
   const ids = setType === "results" || setType === "matchSummary" ? []
     : rows.flatMap(f => f.source === "playhq" && f.playhqMatchId ? [f.playhqMatchId] : []);
-  const status = new Map<string, string>();
+  let status = new Map<string, string>();
   if (ids.length) {
     try {
       const orgId = await getTenantPlayhqOrgId(tenantId);
       if (!orgId) throw new Error("Missing club organisation mapping");
-      const matches = await centralDb.select({ id: playhqMatchesTable.id, status: playhqMatchesTable.status })
-        .from(playhqMatchesTable).where(and(inArray(playhqMatchesTable.id, ids),
-          or(eq(playhqMatchesTable.homeOrgId, orgId), eq(playhqMatchesTable.awayOrgId, orgId))));
-      for (const match of matches) status.set(match.id, match.status ?? "UNKNOWN");
+      status = await playhqMatchStatusesForClub(orgId, ids);
       if (ids.some(id => !status.has(id))) throw new Error("Missing source fixture");
     } catch (error) {
       req.log.warn({ err: error, tenantId }, "Weekend carousel fixture status lookup failed");

@@ -16,7 +16,7 @@ import { createServer } from "node:http";
 import { execFileSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import puppeteer, { type Page } from "puppeteer-core";
+import puppeteer, { type ElementHandle, type Page } from "puppeteer-core";
 import sharp from "sharp";
 import JSZip from "jszip";
 import request from "supertest";
@@ -221,7 +221,7 @@ try {
           await Promise.all([...host.querySelectorAll("img")].map((img: any) => img.decode()));
           await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
         }, { slide, size, packId, width: meta.width! });
-        const card: import("puppeteer-core").ElementHandle | null = await page.$("#audit-preview [data-testid^=slide-] > div > div");
+        const card: ElementHandle | null = await page.$("#audit-preview [data-testid^=slide-] > div > div");
         assert(card);
         const preview: Buffer = Buffer.from(await card.screenshot());
         await writeFile(`${output}/${name}-preview.png`, preview);

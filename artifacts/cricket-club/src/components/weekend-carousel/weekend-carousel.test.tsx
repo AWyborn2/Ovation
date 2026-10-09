@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-library/react";
 import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
+import type * as Model from "./model";
 
 const fixtures = [
   { id: 1, grade: "A Grade", roundLabel: "5", opponentName: "Mandurah", startAt: "2025-11-08T02:00:00Z", isHome: true, source: "manual", createdAt: "" },
@@ -55,7 +56,7 @@ vi.mock("@workspace/api-client-react", () => ({
 }));
 vi.mock("@/components/pack-card", () => ({ PackCard: ({ data, packId }: { data: unknown; packId: string }) => <div data-testid="pack-card" data-pack={packId} data-card={JSON.stringify(data)} /> }));
 vi.mock("./model", async (importOriginal) => ({
-  ...await importOriginal<typeof import("./model")>(),
+  ...await importOriginal<typeof Model>(),
   weekendRange: () => ({ from: "2025-11-07", to: "2025-11-09" }),
   rangeForSet: () => ({ from: "2025-11-07", to: "2025-11-09" }),
 }));

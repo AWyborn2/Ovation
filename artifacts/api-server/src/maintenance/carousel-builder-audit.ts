@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import type { Page } from "puppeteer-core";
+import type { HTTPRequest, Page } from "puppeteer-core";
 import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 
 /** Browser-only fixture responses. Auth and production routes remain untouched. */
@@ -8,7 +8,7 @@ export async function auditCarouselBuilder(page: Page, fixture: {
 }, output: string) {
   const submissions: Record<string, any>[] = [];
   await page.setRequestInterception(true);
-  const intercept = async (request: import("puppeteer-core").HTTPRequest) => {
+  const intercept = async (request: HTTPRequest) => {
     const url = new URL(request.url());
     let body: unknown;
     if (url.pathname === "/api/social-settings") {

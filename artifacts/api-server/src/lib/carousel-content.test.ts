@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { Request } from "express";
+import type * as DbModule from "@workspace/db";
 import { GetWeekendCarouselSourcesResponse, type MatchDetail, type JuniorMatchDetail } from "@workspace/api-zod";
 import { carouselContent, carouselMatchDay } from "./carousel-content";
 
@@ -7,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   matches: vi.fn(), detail: vi.fn(), source: vi.fn(), juniors: vi.fn(), juniorDetail: vi.fn(),
 }));
 vi.mock("@workspace/db", async original => ({
-  ...await original<typeof import("@workspace/db")>(),
+  ...await original<typeof DbModule>(),
   db: { select: () => ({ from: () => ({ where: mocks.juniors }) }) },
 }));
 vi.mock("@workspace/db/central-queries", () => ({ centralClubMatches: mocks.matches }));

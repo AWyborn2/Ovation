@@ -6,9 +6,10 @@ import { db, tenantsTable, adminsTable, fixturesTable, clubPhotosTable, clubPhot
 import app from "../app";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
+// The route reads PlayHQ statuses through central-queries; stub the pool under it.
 const centralRows = vi.hoisted(() => vi.fn());
 vi.mock("@workspace/db/central", async importOriginal => ({
-  ...await importOriginal<typeof import("@workspace/db/central")>(),
+  ...await importOriginal<Record<string, unknown>>(),
   centralDb: { select: () => ({ from: () => ({ where: centralRows }) }) },
 }));
 const stamp = Date.now();
