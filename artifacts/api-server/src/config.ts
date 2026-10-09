@@ -52,6 +52,7 @@ export const env = {
   SIGNUP_MODE: () => optional("SIGNUP_MODE"),
   REPLIT_DOMAINS: () => optional("REPLIT_DOMAINS"),
   REPLIT_DEV_DOMAIN: () => optional("REPLIT_DEV_DOMAIN"),
+  REPLIT_EXPO_DEV_DOMAIN: () => optional("REPLIT_EXPO_DEV_DOMAIN"),
 
   // ── Central reads / caches ───────────────────────────────────────────────
   /** Incident kill-switch: `CENTRAL_READS=0`. */

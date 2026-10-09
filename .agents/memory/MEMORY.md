@@ -79,5 +79,6 @@
 - [Team Selection fitting](team-list-fitting.md) — built-in-only scope; preserve fitted DOM on preview resize and check export parity after intended fonts load.
 - [Held team-list identities](held-team-list-identities.md) — Held numbers need no historical profile; recover legacy identity only from a matching finalised side, never a reopened draft.
 - [Parallel migration collisions](parallel-migration-collisions.md) — preserve existing migration history; resequence incoming changes with a combined snapshot and later timestamp.
-- [Browser render verification](browser-render-verification.md) — direct imports of Vite-prebundled React APIs may require their default export.
+- [Browser render verification](browser-render-verification.md) — Vite React default-export interop; use direct Chromium checks if the testing runtime rejects its config.
 - [Mobile store release targets](mobile-store-release.md) — user wants Ovation Mobile released for both iPhone and Android.
+- [Environment-triggered workflow restarts](environment-workflow-restarts.md) — setting changes can restart services; avoid racing them with manual restarts.

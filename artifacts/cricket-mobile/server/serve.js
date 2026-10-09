@@ -35,10 +35,7 @@ const MIME_TYPES = {
   ".map": "application/json",
 };
 
-// The app name lives in app.config.ts (per-tenant, from EXPO_PUBLIC_TENANT_NAME)
-// rather than a static app.json, so read it back from the manifest build.js
-// produced — that is exactly the config the bundle was built with. Fall back to
-// the same env var / default the config uses when no build exists yet.
+// Prefer the built manifest; otherwise use the static store configuration.
 function getAppName() {
   for (const platform of ["ios", "android"]) {
     try {
@@ -50,7 +47,7 @@ function getAppName() {
       // Missing/malformed manifest for this platform — try the next.
     }
   }
-  return (process.env.EXPO_PUBLIC_TENANT_NAME || "").trim() || "Ovation";
+  return require("../app.json").expo.name;
 }
 
 function serveManifest(platform, res) {
