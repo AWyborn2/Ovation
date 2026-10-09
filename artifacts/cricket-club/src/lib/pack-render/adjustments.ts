@@ -314,6 +314,7 @@ function textCss(raw: TemplateTextStyle | undefined, extra: string[] = []): stri
     "line-height:1.05",
     "white-space:pre-wrap",
     s.letterSpacing != null ? `letter-spacing:${num(s.letterSpacing)}em` : "",
+    s.uppercase === true ? "text-transform:uppercase" : "",
     s.background ? `background:${s.background}` : "",
     s.radius != null ? `border-radius:${num(s.radius)}px` : "",
   ]
@@ -437,6 +438,8 @@ function layerInner(
             values,
             rows: ctx.rows ?? {},
             crestUrl: ctx.brand?.logoUrl ?? null,
+            // Null on junior cards, so a frame bound to the card photo stays empty.
+            photoUrl: ctx.photoUrl ?? null,
           })
         : "";
   }

@@ -1,7 +1,8 @@
 /**
  * The shared field catalogue (lib/scorecard kind-templates/fields.ts) is
  * static data derived from the packs. This test re-derives it from the live
- * pack registry and fails when the two drift apart (plan U3, KTD4/KTD19).
+ * pack registry (the reference pack plus Club Kit) and fails when the two
+ * drift apart (plan U3, KTD4/KTD19).
  * If it fails after a deliberate pack change, regenerate the catalogue.
  */
 import { describe, expect, it } from "vitest";
@@ -12,12 +13,13 @@ import { CARD_KINDS } from "@/lib/share-card/types";
 function derive(kind: string) {
   const ref = getPackManifest(DEFAULT_PACK_ID);
   const clubKit = getPackManifest("club-kit-v1");
-  let designs = ref.designs.filter((d) => d.kind === kind);
-  let source = ref.packId;
-  if (designs.length === 0) {
-    designs = clubKit.designs.filter((d) => d.kind === kind);
-    source = clubKit.packId;
-  }
+  // The reference pack's fields first (its labels win), then any field only
+  // Club Kit shows (e.g. the result word), so a template can show anything
+  // either starter's pack shows.
+  const refDesigns = ref.designs.filter((d) => d.kind === kind);
+  const ckDesigns = clubKit.designs.filter((d) => d.kind === kind);
+  const designs = [...refDesigns, ...ckDesigns];
+  const source = refDesigns.length > 0 ? ref.packId : clubKit.packId;
   const fields = new Map<string, { label: string; type: string }>();
   const repeats = new Map<
     string,

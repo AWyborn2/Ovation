@@ -234,6 +234,20 @@ export function TextStyleBar({
           </button>
         ))}
       </div>
+      <button
+        type="button"
+        aria-label="Capitals"
+        aria-pressed={s.uppercase === true}
+        title="Set the text in capitals"
+        onClick={() => onStyle({ uppercase: s.uppercase ? undefined : true })}
+        className={cn(
+          iconBtn,
+          "w-auto px-2 text-xs font-bold",
+          s.uppercase && "bg-[var(--ed-card)]",
+        )}
+      >
+        AA
+      </button>
       <label className="flex items-center gap-1 text-xs text-[var(--ed-ink2)]">
         Spacing
         <input
