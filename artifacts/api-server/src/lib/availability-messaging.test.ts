@@ -142,8 +142,9 @@ describe("isUnder18 / recipientsFor (R5)", () => {
   });
 
   it("routes manually added juniors without a birth date through guardians, never their own contact", () => {
-    expect(recipientsFor({ ...base, section: "junior", dateOfBirth: null }, NOW)
-      .map((r) => r.slot)).toEqual(["guardian1", "guardian2"]);
+    expect(
+      recipientsFor({ ...base, section: "junior", dateOfBirth: null }, NOW).map((r) => r.slot),
+    ).toEqual(["guardian1", "guardian2"]);
   });
 
   it("skips a guardian slot with neither a mobile nor an email", () => {

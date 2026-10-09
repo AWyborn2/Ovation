@@ -46,7 +46,9 @@ router.post(
     try {
       const slides = await renderDraftSlides(
         draft,
-        readQueuedCarousel(input) ? [readQueuedCarousel(input)!.size] : await enabledSizes(tenantId),
+        readQueuedCarousel(input)
+          ? [readQueuedCarousel(input)!.size]
+          : await enabledSizes(tenantId),
         harnessOriginFromHeaders(req.headers),
         req.log,
       );

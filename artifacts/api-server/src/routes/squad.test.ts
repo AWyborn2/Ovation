@@ -478,84 +478,173 @@ describe("squad register API", () => {
   });
 
   it("allows admins and captains to add active players without a report, without exposing contacts", async () => {
-    for (const [cookie, name] of [[cookieA, "Adminmanual"], [captainCookieA, "Captainmanual"]]) {
-      const res = await request(app).post("/api/squad")
-        .set("Cookie", cookie).set("x-tenant-id", String(tenantA))
-        .send({ firstName: name, lastName: `Roster${STAMP}`, section: "senior",
-          account: { email: "manual@example.com", mobile: "0412 345 678" } }).expect(201);
-      expect(res.body).toMatchObject({ active: true, activeSetByAdmin: true, linkedPlayerId: null,
-        playhqProfileId: null, account: { hasEmail: true, hasMobile: true } });
+    for (const [cookie, name] of [
+      [cookieA, "Adminmanual"],
+      [captainCookieA, "Captainmanual"],
+    ]) {
+      const res = await request(app)
+        .post("/api/squad")
+        .set("Cookie", cookie)
+        .set("x-tenant-id", String(tenantA))
+        .send({
+          firstName: name,
+          lastName: `Roster${STAMP}`,
+          section: "senior",
+          account: { email: "manual@example.com", mobile: "0412 345 678" },
+        })
+        .expect(201);
+      expect(res.body).toMatchObject({
+        active: true,
+        activeSetByAdmin: true,
+        linkedPlayerId: null,
+        playhqProfileId: null,
+        account: { hasEmail: true, hasMobile: true },
+      });
       expect(JSON.stringify(res.body)).not.toContain("manual@example.com");
-      const repeat = await request(app).post("/api/squad")
-        .set("Cookie", cookie).set("x-tenant-id", String(tenantA))
-        .send({ firstName: name, lastName: `Roster${STAMP}`, section: "senior" }).expect(201);
+      const repeat = await request(app)
+        .post("/api/squad")
+        .set("Cookie", cookie)
+        .set("x-tenant-id", String(tenantA))
+        .send({ firstName: name, lastName: `Roster${STAMP}`, section: "senior" })
+        .expect(201);
       expect(repeat.body.id).toBe(res.body.id);
     }
-    const roster = await request(app).get("/api/selection/roster")
-      .set("Cookie", captainCookieA).set("x-tenant-id", String(tenantA)).expect(200);
-    expect(roster.body.some((m: { firstName: string }) => m.firstName === "Captainmanual")).toBe(true);
+    const roster = await request(app)
+      .get("/api/selection/roster")
+      .set("Cookie", captainCookieA)
+      .set("x-tenant-id", String(tenantA))
+      .expect(200);
+    expect(roster.body.some((m: { firstName: string }) => m.firstName === "Captainmanual")).toBe(
+      true,
+    );
     expect(JSON.stringify(roster.body)).not.toContain("manual@example.com");
   });
 
   it("reactivates a previous player for a captain and preserves all details", async () => {
-    const [prev] = await db.insert(squadMembersTable).values({
-      tenantId: tenantA, firstName: "Returning", lastName: `Player${STAMP}`, active: false,
-      isPrivate: true, accountHolderEmail: "returning@example.com",
-    }).returning();
-    await request(app).post(`/api/squad/${prev.id}/activate`)
-      .set("Cookie", captainCookieA).set("x-tenant-id", String(tenantA)).expect(200);
-    const [row] = await db.select().from(squadMembersTable).where(eq(squadMembersTable.id, prev.id));
-    expect(row).toMatchObject({ active: true, activeSetByAdmin: true,
-      isPrivate: true, accountHolderEmail: "returning@example.com" });
-    await request(app).get(`/api/squad/${prev.id}`)
-      .set("Cookie", captainCookieA).set("x-tenant-id", String(tenantA)).expect(401);
+    const [prev] = await db
+      .insert(squadMembersTable)
+      .values({
+        tenantId: tenantA,
+        firstName: "Returning",
+        lastName: `Player${STAMP}`,
+        active: false,
+        isPrivate: true,
+        accountHolderEmail: "returning@example.com",
+      })
+      .returning();
+    await request(app)
+      .post(`/api/squad/${prev.id}/activate`)
+      .set("Cookie", captainCookieA)
+      .set("x-tenant-id", String(tenantA))
+      .expect(200);
+    const [row] = await db
+      .select()
+      .from(squadMembersTable)
+      .where(eq(squadMembersTable.id, prev.id));
+    expect(row).toMatchObject({
+      active: true,
+      activeSetByAdmin: true,
+      isPrivate: true,
+      accountHolderEmail: "returning@example.com",
+    });
+    await request(app)
+      .get(`/api/squad/${prev.id}`)
+      .set("Cookie", captainCookieA)
+      .set("x-tenant-id", String(tenantA))
+      .expect(401);
   });
 
   it("rejects cross-tenant roster writes and unauthenticated creation", async () => {
-    const [other] = await db.insert(squadMembersTable).values({
-      tenantId: tenantB, firstName: "Other", lastName: "Club", active: false,
-    }).returning();
-    await request(app).post(`/api/squad/${other.id}/activate`)
-      .set("Cookie", captainCookieA).set("x-tenant-id", String(tenantA)).expect(404);
-    await request(app).get("/api/selection/roster")
-      .set("Cookie", captainCookieA).set("x-tenant-id", String(tenantB)).expect(401);
-    await request(app).post("/api/squad").set("x-tenant-id", String(tenantA))
-      .send({ firstName: "No", lastName: "Auth", section: "senior" }).expect(401);
-    await request(app).post("/api/squad").set("Cookie", cookieA)
+    const [other] = await db
+      .insert(squadMembersTable)
+      .values({
+        tenantId: tenantB,
+        firstName: "Other",
+        lastName: "Club",
+        active: false,
+      })
+      .returning();
+    await request(app)
+      .post(`/api/squad/${other.id}/activate`)
+      .set("Cookie", captainCookieA)
       .set("x-tenant-id", String(tenantA))
-      .send({ firstName: "Wrong", lastName: "Club", section: "senior", linkedPlayerId: 89998 }).expect(400);
+      .expect(404);
+    await request(app)
+      .get("/api/selection/roster")
+      .set("Cookie", captainCookieA)
+      .set("x-tenant-id", String(tenantB))
+      .expect(401);
+    await request(app)
+      .post("/api/squad")
+      .set("x-tenant-id", String(tenantA))
+      .send({ firstName: "No", lastName: "Auth", section: "senior" })
+      .expect(401);
+    await request(app)
+      .post("/api/squad")
+      .set("Cookie", cookieA)
+      .set("x-tenant-id", String(tenantA))
+      .send({ firstName: "Wrong", lastName: "Club", section: "senior", linkedPlayerId: 89998 })
+      .expect(400);
   });
 
   it("links a historical player and reactivates an existing linked row instead of duplicating it", async () => {
     await db.insert(playerIdMapTable).values({
-      tenantId: tenantA, participantId: `manual-history-${STAMP}`, playerId: 4499,
+      tenantId: tenantA,
+      participantId: `manual-history-${STAMP}`,
+      playerId: 4499,
     });
-    const create = () => request(app).post("/api/squad").set("Cookie", captainCookieA)
-      .set("x-tenant-id", String(tenantA))
-      .send({ firstName: "Historical", lastName: "Player", section: "senior", linkedPlayerId: 4499 });
+    const create = () =>
+      request(app)
+        .post("/api/squad")
+        .set("Cookie", captainCookieA)
+        .set("x-tenant-id", String(tenantA))
+        .send({
+          firstName: "Historical",
+          lastName: "Player",
+          section: "senior",
+          linkedPlayerId: 4499,
+        });
     const first = await create().expect(201);
-    await db.update(squadMembersTable).set({ active: false }).where(eq(squadMembersTable.id, first.body.id));
+    await db
+      .update(squadMembersTable)
+      .set({ active: false })
+      .where(eq(squadMembersTable.id, first.body.id));
     const second = await create().expect(201);
     expect(second.body).toMatchObject({ id: first.body.id, linkedPlayerId: 4499, active: true });
   });
 
   it("validates blank names, impossible birth dates, and contact details", async () => {
     for (const invalid of [
-      { firstName: "   " }, { dateOfBirth: "2020-02-31" }, { dateOfBirth: "2099-01-01" },
-      { account: { email: "not-an-email" } }, { account: { mobile: "xyz" } },
+      { firstName: "   " },
+      { dateOfBirth: "2020-02-31" },
+      { dateOfBirth: "2099-01-01" },
+      { account: { email: "not-an-email" } },
+      { account: { mobile: "xyz" } },
     ]) {
-      await request(app).post("/api/squad").set("Cookie", cookieA).set("x-tenant-id", String(tenantA))
-        .send({ firstName: "Valid", lastName: "Player", section: "senior", ...invalid }).expect(400);
+      await request(app)
+        .post("/api/squad")
+        .set("Cookie", cookieA)
+        .set("x-tenant-id", String(tenantA))
+        .send({ firstName: "Valid", lastName: "Player", section: "senior", ...invalid })
+        .expect(400);
     }
   });
 
   it("a later participant report adopts a manual row and keeps its staff-set activity", async () => {
-    const manual = participantRow({ "Profile ID": `manual-import-${STAMP}`, "First Name": "Manual",
-      "Last Name": `Import${STAMP}` });
-    const added = await request(app).post("/api/squad").set("Cookie", cookieA)
+    const manual = participantRow({
+      "Profile ID": `manual-import-${STAMP}`,
+      "First Name": "Manual",
+      "Last Name": `Import${STAMP}`,
+    });
+    const added = await request(app)
+      .post("/api/squad")
+      .set("Cookie", cookieA)
       .set("x-tenant-id", String(tenantA))
-      .send({ firstName: "Manual", lastName: `Import${STAMP}`, section: "senior" }).expect(201);
-    await db.update(squadMembersTable).set({ active: false })
+      .send({ firstName: "Manual", lastName: `Import${STAMP}`, section: "senior" })
+      .expect(201);
+    await db
+      .update(squadMembersTable)
+      .set({ active: false })
       .where(eq(squadMembersTable.id, added.body.id));
     const imported = await upload(cookieA, tenantA, buildParticipantCsv([manual])).expect(200);
     expect(imported.body.created).toBe(0);

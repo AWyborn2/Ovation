@@ -25,7 +25,9 @@ async function toFiles(pack: PostPack, kind: string): Promise<File[]> {
   return Promise.all(
     pack.images.map(async (img, index) => {
       const blob = await (await fetch(img.url, { credentials: "include" })).blob();
-      return new File([blob], `${String(index + 1).padStart(3, "0")}-${kind}-${img.size}.png`, { type: "image/png" });
+      return new File([blob], `${String(index + 1).padStart(3, "0")}-${kind}-${img.size}.png`, {
+        type: "image/png",
+      });
     }),
   );
 }

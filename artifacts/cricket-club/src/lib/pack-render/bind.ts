@@ -81,10 +81,15 @@ export function bindInput(input: ShareCardInput): BoundInput {
         // On-demand results include every innings score. Explicit blanks must
         // override template samples when a completed match has no score.
         for (const key of ["club", "opposition"] as const) {
-          const innings = input.innings.filter(i => i.teamKey === key);
+          const innings = input.innings.filter((i) => i.teamKey === key);
           values[`${key}.score`] = innings.map(inningsScore).join(" & ") || "—";
-          values[`${key}.oversLabel`] = innings.map(i => i.overs ? `${i.overs} OVERS` : "").filter(Boolean).join(" / ");
-          values[`${key}.performers`] = input.carouselDetail ? innings.map(inningsPerformers).filter(Boolean).join(" · ") : "";
+          values[`${key}.oversLabel`] = innings
+            .map((i) => (i.overs ? `${i.overs} OVERS` : ""))
+            .filter(Boolean)
+            .join(" / ");
+          values[`${key}.performers`] = input.carouselDetail
+            ? innings.map(inningsPerformers).filter(Boolean).join(" · ")
+            : "";
         }
       }
       if (input.resultWinner === "draw") {
@@ -404,14 +409,19 @@ export function fixtureRoundLabel(...sources: Array<string | null | undefined>):
     const text = source ?? "";
     const round = text.match(/\b(?:round|rd\.?)\s*[-:#]?\s*(\d{1,2})\b/i);
     if (round) return `ROUND ${round[1]}`;
-    const stage = text.match(/\b(?:grand final|preliminary final|semi[- ]final|qualifying final|elimination final|finals)\b/i);
+    const stage = text.match(
+      /\b(?:grand final|preliminary final|semi[- ]final|qualifying final|elimination final|finals)\b/i,
+    );
     if (stage) return stage[0].toUpperCase();
   }
   return "";
 }
 
 /** Use only an approved one-letter initial; older/private rows stay surname-only. */
-export function broadcastPlayerName(firstInitial: string | null | undefined, surname: string): string {
+export function broadcastPlayerName(
+  firstInitial: string | null | undefined,
+  surname: string,
+): string {
   const initial = firstInitial?.trim() ?? "";
   return /^\p{L}$/u.test(initial) ? `${initial}. ${surname}` : surname;
 }
@@ -651,14 +661,19 @@ function bindInningsDetail(
     const team = inn.teamKey === "club" ? input.club : input.opposition;
     const p = `inn${i}.`;
     values[`${p}team`] = cardTeamName(team.name);
-    const teamInnings = input.innings.slice(0, i + 1).filter(x => x.teamKey === inn.teamKey).length;
+    const teamInnings = input.innings
+      .slice(0, i + 1)
+      .filter((x) => x.teamKey === inn.teamKey).length;
     values[`${p}label`] = multi ? `${teamInnings === 1 ? "1ST" : "2ND"} INNINGS` : "INNINGS";
     values[`${p}score`] = inningsScore(inn);
     values[`${p}overs`] = inn.overs ? `${inn.overs} OV` : "";
     values[`${p}batters`] =
       inn.topBatters
         .slice(0, 3)
-        .map((b) => `${b.name} ${b.runs}${b.notOut ? "*" : ""}${b.balls != null ? ` (${b.balls})` : ""}`)
+        .map(
+          (b) =>
+            `${b.name} ${b.runs}${b.notOut ? "*" : ""}${b.balls != null ? ` (${b.balls})` : ""}`,
+        )
         .join(" · ") || "-";
     // Bowlers who bowled at this innings: the other side.
     values[`${p}bowlers`] =

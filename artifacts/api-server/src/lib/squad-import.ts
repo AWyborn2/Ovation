@@ -441,7 +441,9 @@ export async function applySquadImport(
 
   await db.transaction(async (tx: Tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(72401, ${tenantId})`);
-    const existing = await tx.select().from(squadMembersTable)
+    const existing = await tx
+      .select()
+      .from(squadMembersTable)
       .where(eq(squadMembersTable.tenantId, tenantId));
     const byProfile = new Map<string, SquadMemberRow>();
     for (const row of existing) {
@@ -554,7 +556,9 @@ export async function applySquadImport(
 
       const heldByAdmin = prev.activeSetByAdmin && !prev.active;
       const set: Partial<typeof squadMembersTable.$inferInsert> = {
-        ...identity, playhqProfileId: m.playhqProfileId, updatedAt: now,
+        ...identity,
+        playhqProfileId: m.playhqProfileId,
+        updatedAt: now,
       };
       if (!heldByAdmin && prev.contactChangeFlag) {
         set.dateOfBirth = contacts.dateOfBirth;

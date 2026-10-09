@@ -99,7 +99,11 @@ const EXTRA_FIELDS: Record<string, PackTemplateField> = {
   startTime: textField("startTime", "Start time", "12:30 PM"),
   // Team List: Club Kit still shows the competition line, which Broadcast
   // Dark's single-column lineup dropped for an explicit round label.
-  competitionLine: textField("competitionLine", "Competition line", "PREMIER T20 · ROUND 3 · vs MARINERS"),
+  competitionLine: textField(
+    "competitionLine",
+    "Competition line",
+    "PREMIER T20 · ROUND 3 · vs MARINERS",
+  ),
 };
 
 /**
@@ -340,15 +344,27 @@ const matchDay = design({
         eyebrow(u, "{{date}} · {{roundLabel}}") +
           meta(u, "GAME DAY", ";margin-top:1cqmin") +
           `<div data-match-day-heading="1">` +
-          display(u, "{{grade}}", f === "portrait" ? 12 : 14, ";line-height:.95;overflow-wrap:anywhere") +
+          display(
+            u,
+            "{{grade}}",
+            f === "portrait" ? 12 : 14,
+            ";line-height:.95;overflow-wrap:anywhere",
+          ) +
           `</div>` +
           `<div style="width:100%;margin-top:2cqmin;padding:1.5cqmin;background:${C.panel}">` +
           `<div style="display:flex;justify-content:space-between;gap:1cqmin;margin-bottom:1cqmin">` +
-          meta(u, "{{homeAway}}") + display(u, "{{startTime}}", 3.2) + `</div>` +
+          meta(u, "{{homeAway}}") +
+          display(u, "{{startTime}}", 3.2) +
+          `</div>` +
           `<div style="display:flex;align-items:center;gap:1.5cqmin;min-width:0">` +
           display(u, "v", 3.8, ";line-height:1.05;flex:none") +
           `<div data-drop-if-empty="opposition.logo" style="width:7cqmin;height:7cqmin;flex:none">${slot("opposition.logo", "logo")}</div>` +
-          display(u, "{{opposition.name}}", 3.8, ";line-height:1.05;overflow-wrap:anywhere;min-width:0") +
+          display(
+            u,
+            "{{opposition.name}}",
+            3.8,
+            ";line-height:1.05;overflow-wrap:anywhere;min-width:0",
+          ) +
           `</div>` +
           meta(u, "{{venue}}", ";margin-top:.8cqmin;overflow-wrap:anywhere") +
           `</div>`,
@@ -374,11 +390,15 @@ const teamList = design({
           `<div style="width:100%;margin-top:1.6cqmin">` +
           xiList(
             u,
-            xiRow(u, {
-              n: "{{row.number}}",
-              name: "{{row.surname}}",
-              tag: `({{row.role}})`,
-            }, true),
+            xiRow(
+              u,
+              {
+                n: "{{row.number}}",
+                name: "{{row.surname}}",
+                tag: `({{row.role}})`,
+              },
+              true,
+            ),
             ' data-repeat="players" data-repeat-max="12" data-xi-fit="1"',
             true,
           ) +

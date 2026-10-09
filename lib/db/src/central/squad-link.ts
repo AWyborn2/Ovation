@@ -26,25 +26,39 @@ export async function centralCurrentSeasonSquad(
   season: number,
 ): Promise<CurrentSeasonSquadPlayer[]> {
   const lines = (
-    t: typeof centralMatchRostersTable | typeof centralMatchBattingTable | typeof centralMatchBowlingTable,
-  ) => centralDb.selectDistinct({
-    participantId: t.participantId,
-    name: t.playerName,
-    season: centralMatchesTable.season,
-    grade: centralMatchesTable.grade,
-  }).from(t).innerJoin(centralMatchesTable, eq(t.matchId, centralMatchesTable.matchId))
-    .where(and(eq(t.clubId, clubId), isNotNull(t.participantId)));
-  const rows = (await Promise.all([
-    lines(centralMatchRostersTable), lines(centralMatchBattingTable), lines(centralMatchBowlingTable),
-  ])).flat();
+    t:
+      | typeof centralMatchRostersTable
+      | typeof centralMatchBattingTable
+      | typeof centralMatchBowlingTable,
+  ) =>
+    centralDb
+      .selectDistinct({
+        participantId: t.participantId,
+        name: t.playerName,
+        season: centralMatchesTable.season,
+        grade: centralMatchesTable.grade,
+      })
+      .from(t)
+      .innerJoin(centralMatchesTable, eq(t.matchId, centralMatchesTable.matchId))
+      .where(and(eq(t.clubId, clubId), isNotNull(t.participantId)));
+  const rows = (
+    await Promise.all([
+      lines(centralMatchRostersTable),
+      lines(centralMatchBattingTable),
+      lines(centralMatchBowlingTable),
+    ])
+  ).flat();
   const current = rows.filter((r) => parseSeasonStartYear(r.season) === season);
   const ids = [...new Set(current.map((r) => r.participantId!))];
   if (!ids.length) return [];
-  const players = await centralDb.select({
-    participantId: centralPlayersTable.participantId,
-    displayName: centralPlayersTable.displayName,
-    isPrivate: centralPlayersTable.isPrivate,
-  }).from(centralPlayersTable).where(inList(centralPlayersTable.participantId, ids));
+  const players = await centralDb
+    .select({
+      participantId: centralPlayersTable.participantId,
+      displayName: centralPlayersTable.displayName,
+      isPrivate: centralPlayersTable.isPrivate,
+    })
+    .from(centralPlayersTable)
+    .where(inList(centralPlayersTable.participantId, ids));
   const byId = new Map(players.map((p) => [p.participantId, p]));
   const result = new Map<string, CurrentSeasonSquadPlayer>();
   for (const r of current) {
@@ -58,7 +72,8 @@ export async function centralCurrentSeasonSquad(
     // A junior who also plays senior cricket belongs to the senior selection pool.
     if (prev?.section === "senior") continue;
     result.set(r.participantId!, {
-      participantId: r.participantId!, name,
+      participantId: r.participantId!,
+      name,
       section: junior ? "junior" : "senior",
       gradeHint: classification.appGrade ?? r.grade,
       isPrivate: isPrivateRow(p),
