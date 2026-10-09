@@ -77,3 +77,4 @@
 - [Shared award compatibility](shared-award-compatibility.md) — legacy single-link edits must preserve other recipients; curated winner labels never imply player identities.
 - [Card layout audit boundaries](card-image-audit-boundaries.md) — distinguish functional clipping from oversized decoration and tight typography; judge painted glyphs, not generic line limits.
 - [Team Selection fitting](team-list-fitting.md) — built-in-only scope; preserve fitted DOM on preview resize and check export parity after intended fonts load.
+- [Held team-list identities](held-team-list-identities.md) — Held numbers need no historical profile; recover legacy identity only from a matching finalised side, never a reopened draft.

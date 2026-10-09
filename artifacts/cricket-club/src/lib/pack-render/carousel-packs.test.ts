@@ -26,6 +26,20 @@ const weekend = (page: "title" | "sponsors"): ShareCardInput => ({
 } as ShareCardInput);
 
 describe("carousel templates across packs", () => {
+  it("renders the six recovered Held numbers, including the twelfth, across packs and formats", () => {
+    const numbers = ["77", "18", "39", "102", "75", "105"];
+    const input = {
+      kind: "teamList", grade: "A Grade", numbering: "shirt",
+      players: [...numbers.map((shirtNumber, i) => ({
+        order: i === 5 ? 12 : i + 1, surname: `HELD${i}`, shirtNumber,
+      })), { order: 6, surname: "UNNUMBERED" }],
+    } as ShareCardInput;
+    for (const pack of CAROUSEL_PACK_IDS) for (const size of SIZES) {
+      const html = renderPackCard(input, size, false, tokens, false, null, pack);
+      for (const n of numbers) expect(html, `${pack}/${size}`).toContain(`>${n}<`);
+      expect(html).toContain("UNNUMBERED");
+    }
+  });
   it("renders refreshed playing numbers in every carousel pack and export format without changing frozen inputs", () => {
     const frozen = {
       kind: "teamList", grade: "A Grade", numbering: "shirt", venueDateTime: "Oval · Saturday",

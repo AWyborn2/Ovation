@@ -12,6 +12,7 @@ import { getPrivateIds, MASK_NAME } from "./junior-helpers";
 import { getTenantBrand } from "./tenant-brand";
 import { beforeBoundary, loadClubOverlayData } from "./club-overlay";
 import { teamListToCardInput, teamListShirtNumberLoader, teamListSeasonOf, loadAutoDebuts } from "./engines/team-list";
+import { recoverPublishedSelectionIdentities } from "./selection-published-players";
 
 export type CarouselSetType = "matchDay" | "teamList" | "results" | "matchSummary";
 type Content = Record<string, Record<string, unknown>>;
@@ -50,13 +51,17 @@ export async function carouselContent(req: Request, tenantId: number, type: Caro
         continue;
       }
       const junior = isJuniorGradeLabel(fixture.grade);
+      const shirtNumbers = junior ? null : await numbers(teamListSeasonOf(fixture));
+      const resolved = shirtNumbers
+        ? await recoverPublishedSelectionIdentities(tenantId, list) : { players: list.players };
+      if (resolved.warning) warnings.push(`${fixture.grade} v ${fixture.opponentName}: ${resolved.warning}`);
       // Junior cards never look up senior identities, shirt numbers or debut records.
-      const players = list.players.map(p => junior && (!p.participantId || privateIds.has(p.participantId))
+      const players = resolved.players.map(p => junior && (!p.participantId || privateIds.has(p.participantId))
         ? { ...p, displayName: MASK_NAME, playerId: undefined, participantId: undefined, debut: false } : p);
       content[fixture.id] = {
         ...teamListToCardInput(fixture, players,
           junior ? new Set() : await loadAutoDebuts(tenantId, players, fixture.startAt),
-          junior ? null : await numbers(teamListSeasonOf(fixture))),
+          shirtNumbers),
         junior,
       };
       available.push(fixture);

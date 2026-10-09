@@ -60,6 +60,32 @@ describe("fresh playing numbers in carousel previews", () => {
     api.queue.mockResolvedValue({ id: 123 });
   };
 
+  it("carries all recovered Held numbers from fresh sources into every pack and the frozen queue item", async () => {
+    setup();
+    const hook = await mount();
+    const fresh = source(null);
+    const recovered = ["77", "18", "39", "102", "75", "105"];
+    fresh.content![1] = {
+      kind: "teamList", grade: "A Grade", numbering: "shirt",
+      players: [...recovered.map((shirtNumber, i) => ({
+        order: i === 5 ? 12 : i + 1, surname: `HELD${i}`, shirtNumber,
+      })), { order: 6, surname: "UNNUMBERED" }],
+    };
+    api.sources.mockResolvedValue(fresh);
+    await act(() => hook.result.current.generate());
+    for (const pack of CAROUSEL_PACK_IDS) {
+      act(() => hook.result.current.setPackId(pack));
+      expect(teamInput(hook).players.slice(0, 6).map(p => p.shirtNumber)).toEqual(recovered);
+      expect(teamInput(hook).players[6]).not.toHaveProperty("shirtNumber");
+    }
+    await act(() => hook.result.current.runQueue());
+    const saved = api.queue.mock.calls[0][0].data.cardInput.weekendCarousel;
+    expect(saved.slides[1].input).toEqual({ ...fresh.content![1], carouselContent: true });
+    api.sources.mockResolvedValue(source(null));
+    await act(() => hook.result.current.generate());
+    expect(saved.slides[1].input.players.slice(0, 6).map((p: { shirtNumber: string }) => p.shirtNumber)).toEqual(recovered);
+  });
+
   it("fetches another admin's edit even with an infinitely fresh local cache, then queues the same numbers", async () => {
     setup();
     const hook = await mount();
