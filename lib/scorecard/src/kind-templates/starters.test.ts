@@ -1,9 +1,7 @@
 /**
  * Starter contract (plan U6). Both starters must carry a document for every
- * one of the 21 kinds, on all four sizes, using only the kind's live fields.
- * Kinds not designed yet are skipped and listed, so the remaining skips are
- * the design track's checklist; the release switch stays off until none are
- * left (KTD18).
+ * one of the 21 kinds, on all four sizes, using only the kind's live fields
+ * (KTD18: the release switch needs every kind designed).
  */
 import { describe, expect, it } from "vitest";
 import { emptySizes } from "./document";
@@ -69,8 +67,8 @@ describe("placeholder document", () => {
 for (const starter of STARTER_IDS) {
   describe(`${starter} starter contract`, () => {
     const missing = missingStarterKinds(starter);
-    it(`lists kinds still to design (${missing.length} of ${TEMPLATE_CARD_KINDS.length})`, () => {
-      expect(missing.length).toBeLessThanOrEqual(TEMPLATE_CARD_KINDS.length);
+    it("designs every card kind", () => {
+      expect(missing).toEqual([]);
     });
 
     for (const kind of TEMPLATE_CARD_KINDS) {
