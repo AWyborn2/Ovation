@@ -21,4 +21,4 @@ Production schema changes applied manually may exist without corresponding Drizz
 
 **Why:** Production already contained later schema additions while its migration ledger still stopped at an earlier point. Recording only the newest migration could cause a future runner to skip older, unverified migrations.
 
-**How to apply:** Keep targeted production SQL schema-only until earlier history is reconciled. Do not advance or rewrite the production ledger merely to match development.
+**How to apply:** Do not advance or rewrite the production ledger merely to match development. Prefer managed publish-time schema updates; keep Agent production checks read-only.
