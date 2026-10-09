@@ -11,8 +11,9 @@ import {
   resolvePackTokens,
 } from "@/lib/pack-render";
 import type { ShareCardInput } from "@/lib/share-card";
+import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 import type { FreeLayer } from "./adjustments";
-import { fitLayersInDom, fitScales, fitTarget } from "./layer-fit";
+import { FIT_ATTR, fitLayersInDom, fitScales, fitTarget } from "./layer-fit";
 
 /** A target that overflows until its scale drops to `fitsAt`. */
 const fake = (fitsAt: number) => {
@@ -66,7 +67,7 @@ const tokens = resolvePackTokens({ brand: brandDefaultTokens(null), theme: null,
 function mount(html: string, overflowFor: (el: HTMLElement) => boolean): HTMLElement {
   const root = document.createElement("div");
   root.innerHTML = html;
-  for (const el of Array.from(root.querySelectorAll<HTMLElement>("[data-fit]"))) {
+  for (const el of Array.from(root.querySelectorAll<HTMLElement>(`[${FIT_ATTR}]`))) {
     Object.defineProperty(el, "clientWidth", { configurable: true, get: () => 100 });
     Object.defineProperty(el, "clientHeight", { configurable: true, get: () => 20 });
     Object.defineProperty(el, "scrollHeight", { configurable: true, get: () => 20 });
@@ -97,11 +98,11 @@ describe("fitLayersInDom", () => {
   });
 
   it("marks only live-field text as fittable", () => {
-    expect(html).toContain('data-fit="8.00"');
+    expect(html).toContain('data-layer-fit="8.00"');
     const typed = renderPackCard(player, "square", true, tokens, false, null, BLANK_PACK_ID, {
       layers: [{ ...nameLayer, content: "TYPED" }],
     });
-    expect(typed).not.toContain("data-fit");
+    expect(typed).not.toContain(FIT_ATTR);
   });
 
   it("returns no warnings when text fits", () => {
@@ -117,7 +118,7 @@ describe("fitLayersInDom", () => {
     const scaleOf = (el: HTMLElement) => Number(el.getAttribute("data-fit-scale") ?? "1");
     const root = mount(html, (el) => scaleOf(el) > 0.75);
     expect(fitLayersInDom(root, "square")).toEqual([]);
-    expect(root.querySelector<HTMLElement>("[data-fit]")!.getAttribute("data-fit-scale")).toBe(
+    expect(root.querySelector<HTMLElement>(`[${FIT_ATTR}]`)!.getAttribute("data-fit-scale")).toBe(
       "0.75",
     );
   });
@@ -159,5 +160,46 @@ describe("fitLayersInDom", () => {
     expect(fitLayersInDom(root, "square")).toEqual([
       { reason: "overflow", size: "square", layerId: "table", row: 0, field: "team" },
     ]);
+  });
+
+  it.each(CAROUSEL_PACK_IDS.flatMap(packId =>
+    (["square", "portrait", "story", "landscape"] as const).map(size => ({ packId, size })),
+  ))(
+    "preserves built-in carousel preview typography when exporting $packId $size",
+    ({ packId, size }) => {
+      const cover: ShareCardInput = {
+        kind: "matchDay", roundLabel: "ROUND 1", oppositionName: "",
+        homeAway: "HOME", venue: "", date: "FRI 9 OCT – SUN 11 OCT", startTime: "",
+        carouselPage: {
+          page: "title", title: "TEAM LISTS", fixtureCount: 5,
+          sponsors: [], hasCoverPhoto: true,
+        },
+      };
+      const root = mount(renderPackCard(cover, size, false, tokens, false, {
+        brand: { name: "HALLS HEAD", tagline: "CRICKET CLUB · EST 1991" },
+      }, packId), () => false);
+      expect(root.querySelector('[data-fit="26"]')).not.toBeNull();
+      expect(root.querySelector('[data-carousel-cover-label]')).not.toBeNull();
+      const preview = root.innerHTML;
+      expect(fitLayersInDom(root, size)).toEqual([]);
+      expect(root.innerHTML).toBe(preview);
+      // Repeated exports must not progressively alter the saved composition.
+      expect(fitLayersInDom(root, size)).toEqual([]);
+      expect(root.innerHTML).toBe(preview);
+    },
+  );
+
+  it("fits live layers without changing a built-in element's character-count marker", () => {
+    const root = mount(
+      `<div data-layer-id="club-element"><div data-fit="26" style="font-size:4.6cqmin">HALLS HEAD</div></div>${html}`,
+      () => true,
+    );
+    const builtIn = root.querySelector<HTMLElement>('[data-fit="26"]')!;
+    const before = builtIn.outerHTML;
+    expect(fitLayersInDom(root, "square")).toEqual([
+      { reason: "overflow", size: "square", layerId: "name" },
+    ]);
+    expect(builtIn.outerHTML).toBe(before);
+    expect(root.querySelector(`[${FIT_ATTR}]`)?.getAttribute("data-fit-scale")).toBe("0.6");
   });
 });

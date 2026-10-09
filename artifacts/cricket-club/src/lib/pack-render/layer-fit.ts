@@ -45,8 +45,8 @@ export function fitTarget(
   return { scale: floor, fits: false };
 }
 
-/** Attribute marking a fittable element; its value is the designed size in cqw. */
-export const FIT_ATTR = "data-fit";
+/** Layer-only marker: built-in `data-fit` values are character limits, not cqw. */
+export const FIT_ATTR = "data-layer-fit";
 /** Attribute recording the scale the fit step settled on (1 = designed size). */
 export const FIT_SCALE_ATTR = "data-fit-scale";
 
