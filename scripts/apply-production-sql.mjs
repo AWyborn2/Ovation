@@ -4,7 +4,7 @@
  * production in practice (CLAUDE.md: production schema changes are applied
  * by hand, before republishing). Usage, from the repo root:
  *
- *   node scripts/apply-production-sql.mjs lib/db/migrations/0035_kind_templates.sql
+ *   node scripts/apply-production-sql.mjs lib/db/migrations/0036_kind_templates.sql
  *
  * The connection string comes from PROD_DATABASE_URL, or is asked for without
  * echoing it. It is never printed. The workspace's DATABASE_URL is the
@@ -34,42 +34,46 @@ const repoRoot = resolve(fileURLToPath(import.meta.url), "..", "..");
 // pg is a dependency of lib/db; resolve it from there.
 const { Client } = createRequire(resolve(repoRoot, "lib/db/package.json"))("pg");
 
-/** Post-conditions per migration: each query must return a truthy `ok`. */
-const CHECKS = {
-  "0035_kind_templates.sql": [
-    [
-      "social_drafts has template_version, layout_warnings, layout_check_pending, design_edited_at",
-      `select count(*) = 4 as ok from information_schema.columns
+/** What the card kind templates migration adds: each query must return a truthy `ok`. */
+const KIND_TEMPLATES_CHECKS = [
+  [
+    "social_drafts has template_version, layout_warnings, layout_check_pending, design_edited_at",
+    `select count(*) = 4 as ok from information_schema.columns
         where table_schema = 'public' and table_name = 'social_drafts'
           and column_name in ('template_version','layout_warnings','layout_check_pending','design_edited_at')`,
-    ],
-    [
-      "card_templates has version, updated_at, updated_by_admin_id, replaced_pack_id, notice_dismissed_at",
-      `select count(*) = 5 as ok from information_schema.columns
+  ],
+  [
+    "card_templates has version, updated_at, updated_by_admin_id, replaced_pack_id, notice_dismissed_at",
+    `select count(*) = 5 as ok from information_schema.columns
         where table_schema = 'public' and table_name = 'card_templates'
           and column_name in ('version','updated_at','updated_by_admin_id','replaced_pack_id','notice_dismissed_at')`,
-    ],
-    [
-      "social_draft_revisions has pack_id, template_version",
-      `select count(*) = 2 as ok from information_schema.columns
+  ],
+  [
+    "social_draft_revisions has pack_id, template_version",
+    `select count(*) = 2 as ok from information_schema.columns
         where table_schema = 'public' and table_name = 'social_draft_revisions'
           and column_name in ('pack_id','template_version')`,
-    ],
-    [
-      "index card_templates_kind_unique exists",
-      `select to_regclass('public.card_templates_kind_unique') is not null as ok`,
-    ],
-    [
-      "revision reason check allows 'template'",
-      `select coalesce(bool_or(pg_get_constraintdef(oid) like '%template%'), false) as ok
-         from pg_constraint where conname = 'social_draft_revisions_reason_check'`,
-    ],
-    [
-      "foreign key card_templates.updated_by_admin_id → admins exists",
-      `select count(*) = 1 as ok from pg_constraint
-        where conname = 'card_templates_updated_by_admin_id_admins_id_fk'`,
-    ],
   ],
+  [
+    "index card_templates_kind_unique exists",
+    `select to_regclass('public.card_templates_kind_unique') is not null as ok`,
+  ],
+  [
+    "revision reason check allows 'template'",
+    `select coalesce(bool_or(pg_get_constraintdef(oid) like '%template%'), false) as ok
+         from pg_constraint where conname = 'social_draft_revisions_reason_check'`,
+  ],
+  [
+    "foreign key card_templates.updated_by_admin_id → admins exists",
+    `select count(*) = 1 as ok from pg_constraint
+        where conname = 'card_templates_updated_by_admin_id_admins_id_fk'`,
+  ],
+];
+
+/** Post-conditions per migration file. Main renumbered kind templates 0035 → 0036. */
+const CHECKS = {
+  "0035_kind_templates.sql": KIND_TEMPLATES_CHECKS,
+  "0036_kind_templates.sql": KIND_TEMPLATES_CHECKS,
 };
 
 // One reader for the whole run, so answers typed (or piped) ahead aren't lost.
