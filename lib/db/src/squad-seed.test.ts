@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { seedCurrentSeasonSquad } from "./squad-seed";
+import { markSquadSeasonSeeded, seedCurrentSeasonSquad } from "./squad-seed";
 
 function executor(existing: unknown[] = [], mappings: unknown[] = []) {
   const queue = [mappings, existing];
@@ -12,34 +12,71 @@ function executor(existing: unknown[] = [], mappings: unknown[] = []) {
 }
 
 const senior = {
-  participantId: "p1", name: "Alex Example", section: "senior" as const,
-  gradeHint: "A Grade", isPrivate: false,
+  participantId: "p1",
+  name: "Alex Example",
+  section: "senior" as const,
+  gradeHint: "A Grade",
+  isPrivate: false,
 };
 
 describe("provisioning current-season active roster", () => {
   it("seeds senior and junior players, linking seniors without inventing contacts or profile IDs", async () => {
     const tx = executor([], [{ participantId: "p1", playerId: 120 }]);
-    await expect(seedCurrentSeasonSquad(tx as never, 77, [
-      senior, { ...senior, participantId: "j1", name: "Jamie Junior", section: "junior", isPrivate: true },
-    ])).resolves.toBe(2);
-    expect(tx.values).toHaveBeenNthCalledWith(1, expect.objectContaining({
-      tenantId: 77, firstName: "Alex", lastName: "Example", linkedPlayerId: 120, active: true,
-    }));
-    expect(tx.values).toHaveBeenNthCalledWith(2, expect.objectContaining({
-      section: "junior", linkedPlayerId: null, isPrivate: true, active: true,
-    }));
+    await expect(
+      seedCurrentSeasonSquad(tx as never, 77, [
+        senior,
+        {
+          ...senior,
+          participantId: "j1",
+          name: "Jamie Junior",
+          section: "junior",
+          isPrivate: true,
+        },
+      ]),
+    ).resolves.toBe(2);
+    expect(tx.values).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        tenantId: 77,
+        firstName: "Alex",
+        lastName: "Example",
+        linkedPlayerId: 120,
+        active: true,
+      }),
+    );
+    expect(tx.values).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        section: "junior",
+        linkedPlayerId: null,
+        isPrivate: true,
+        active: true,
+      }),
+    );
     expect(tx.values.mock.calls[0][0]).not.toHaveProperty("playhqProfileId");
     expect(tx.values.mock.calls[0][0]).not.toHaveProperty("accountHolderMobile");
   });
 
   it("reruns preserve staff-deactivated members, linked identities and unlinked junior names", async () => {
-    const tx = executor([
-      { linkedPlayerId: 120, firstName: "A", lastName: "Example", active: false, activeSetByAdmin: true },
-      { linkedPlayerId: null, firstName: "Jamie", lastName: "Junior", active: false },
-    ], [{ participantId: "p1", playerId: 120 }]);
-    expect(await seedCurrentSeasonSquad(tx as never, 77, [
-      senior, { ...senior, participantId: "j1", name: "Jamie Junior", section: "junior" },
-    ])).toBe(0);
+    const tx = executor(
+      [
+        {
+          linkedPlayerId: 120,
+          firstName: "A",
+          lastName: "Example",
+          active: false,
+          activeSetByAdmin: true,
+        },
+        { linkedPlayerId: null, firstName: "Jamie", lastName: "Junior", active: false },
+      ],
+      [{ participantId: "p1", playerId: 120 }],
+    );
+    expect(
+      await seedCurrentSeasonSquad(tx as never, 77, [
+        senior,
+        { ...senior, participantId: "j1", name: "Jamie Junior", section: "junior" },
+      ]),
+    ).toBe(0);
     expect(tx.values).not.toHaveBeenCalled();
   });
 
@@ -50,10 +87,30 @@ describe("provisioning current-season active roster", () => {
   });
 
   it("does not collapse two distinct mapped players who share a full name", async () => {
-    const tx = executor([], [
-      { participantId: "p1", playerId: 120 }, { participantId: "p2", playerId: 121 },
-    ]);
-    expect(await seedCurrentSeasonSquad(tx as never, 77, [senior, { ...senior, participantId: "p2" }])).toBe(2);
+    const tx = executor(
+      [],
+      [
+        { participantId: "p1", playerId: 120 },
+        { participantId: "p2", playerId: 121 },
+      ],
+    );
+    expect(
+      await seedCurrentSeasonSquad(tx as never, 77, [senior, { ...senior, participantId: "p2" }]),
+    ).toBe(2);
     expect(tx.values).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("markSquadSeasonSeeded", () => {
+  it("upserts the tenant's season_seeded_at marker", async () => {
+    const onConflictDoUpdate = vi.fn(async () => []);
+    const values = vi.fn(() => ({ onConflictDoUpdate }));
+    const tx = { insert: vi.fn(() => ({ values })) };
+    const now = new Date("2026-10-09T03:00:00Z");
+    await markSquadSeasonSeeded(tx as never, 77, now);
+    expect(values).toHaveBeenCalledWith({ tenantId: 77, seasonSeededAt: now });
+    expect(onConflictDoUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ set: { seasonSeededAt: now } }),
+    );
   });
 });

@@ -3021,10 +3021,8 @@ export interface SquadImportResult {
 export interface SquadSeasonSeedResult {
   /** Members added */
   added: number;
-  /** People left out (a fill-in, or no usable name) */
+  /** This season's players already in the register */
   skipped: number;
-  /** People already in the register */
-  alreadyPresent: number;
 }
 
 /**

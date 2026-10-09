@@ -288,7 +288,7 @@ describe("admin availability", () => {
     };
     const calls = installFetch((url, method) => {
       if (url.includes("/squad/seed-from-season") && method === "POST")
-        return { body: { added: 3, skipped: 1, alreadyPresent: 2 } };
+        return { body: { added: 3, skipped: 2 } };
       if (url.endsWith("/api/squad")) return { body: [MEMBER, seeded] };
       return undefined;
     });
@@ -305,7 +305,6 @@ describe("admin availability", () => {
     const summary = await screen.findByTestId("seed-summary");
     expect(summary.textContent).toMatch(/Added 3 players from this season's games\./);
     expect(summary.textContent).toMatch(/2 players already listed/);
-    expect(summary.textContent).toMatch(/1 fill-in or unnamed player left out/);
     expect(
       calls.some((c) => c.url.includes("/api/squad/seed-from-season") && c.method === "POST"),
     ).toBe(true);

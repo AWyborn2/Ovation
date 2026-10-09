@@ -7810,14 +7810,13 @@ export const getSeedSquadFromSeasonUrl = () => {
 }
 
 /**
- * Adds everyone who has played (or been named) for the club in a senior
-fixture or match of the current cricket season (from 1 July, Perth) and
-isn't in the register yet: the club's published team lists first, then
-the club's central scorecards. Members are added active, senior, linked
-to their club player when known, with no contact details and no PlayHQ
-profile id; a later participant import fills them in rather than adding
-them twice. Fill-ins and junior grades are never read. Existing members
-are never changed, and running it again adds no one twice.
+ * Adds everyone who has played for the club in the current cricket season
+(the club's central scorecards and rosters) and isn't in the register
+yet, exactly as provisioning seeds a new club: active, with their grade,
+linked to their club player when known, with no contact details and no
+PlayHQ profile id; a later participant import fills them in rather than
+adding them twice. Existing members are never changed, and running it
+again adds no one twice.
 
  * @summary Add this season's players to the register (admin)
  */

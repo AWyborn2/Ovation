@@ -7,32 +7,25 @@ import {
   tenantsTable,
   adminsTable,
   availabilitySettingsTable,
-  fixturesTable,
   playerIdMapTable,
   squadMembersTable,
-  teamListsTable,
-  type TeamListPlayer,
 } from "@workspace/db";
+import { seasonStartYearFor } from "@workspace/db/seasons";
 import { SESSION_COOKIE, encodeSession } from "../lib/auth";
-import { autoSeedSquadIfEmpty, seasonWindow, seedSquadFromSeason } from "../lib/squad-season-seed";
+import { autoSeedSquadIfEmpty, seedSquadFromSeason } from "../lib/squad-season-seed";
 import { buildParticipantCsv, participantRow } from "../test/fixtures/playhq-participants";
 
 /**
- * The squad register from this season's games (`POST /squad/seed-from-season`,
- * the automatic seed) and the participant import adopting seeded members.
+ * The squad register from this season's games outside provisioning
+ * (`POST /squad/seed-from-season`, the sweep's hourly top-up), both reusing
+ * provisioning's `seedCurrentSeasonSquad`, and the participant import
+ * adopting seeded members.
  *
- * Tenant A reads central club 9821; tenant B is another club with its own
- * team list; tenants C and D test the automatic seed. This season (from
- * 1 July, Perth) tenant A has:
- *   - a published PlayHQ team list, A Grade: Jack Wyllie (701), Frankie
- *     Fillin (95002), Ezra Existing (702, already a member);
- *   - a later published admin list, B Grade: Jack Wyllie (701), Tara Typed
- *     (no id);
- *   - an unpublished list (Una Published), an Under 15 list (Jun Ior) and a
- *     list from last season (Old Season) — none read;
- *   - central A Grade: J Wyllie (same GUID as 701), Casey Barnes ("Barnes,
- *     Casey", 703, private), K Initial (line name only, 704), F Filler (90001);
- *   - central Under 15: Y Young (705) — never read.
+ * Tenant A reads central club 9821; tenant B reads its opponent 9823; tenants
+ * C and D (clubs 9825 / 9826) test the top-up; tenant E (9827) has no games.
+ * This season, A Grade, club 9821 named: J Wyllie (central "Jack Wyllie",
+ * 701), Casey Barnes (703, private), K Initial (line name only, 704) and Ezra
+ * Existing (702, already a member). Last season's Old Season is never read.
  *
  * Real-DB integration (DATABASE_URL and CENTRAL_DATABASE_URL are the same
  * throwaway Postgres). Central rows are written through the TENANT `db` with
@@ -51,24 +44,23 @@ const isLocalDb = (() => {
 })();
 
 const STAMP = Date.now();
-const CLUB_A = 9821;
-const OPP = 9823;
-const [M1, M2] = [982_101, 982_102];
+const CLUB = { A: 9821, B: 9823, C: 9825, D: 9826, E: 9827 } as const;
+const [M1, M2, M3] = [982_101, 982_102, 982_103];
 const LINE_BASE = 9_821_000;
 const NOW = new Date();
-const SEASON = seasonWindow(NOW);
-/** A date `days` into this season, as `YYYY-MM-DD` and a Perth-afternoon instant. */
-const seasonDay = (days: number) =>
-  new Date(Date.parse(`${SEASON.from}T06:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
-const seasonAt = (days: number) => new Date(`${seasonDay(days)}T05:00:00Z`);
+const YEAR = seasonStartYearFor(NOW);
+const seasonLabel = (y: number) => `${y}/${String((y + 1) % 100).padStart(2, "0")}`;
 
 const guid = (n: number) => `98210000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const P = {
   wyllie: guid(1),
   barnes: guid(2),
   initial: guid(3),
-  filler: guid(4),
-  young: guid(5),
+  ezra: guid(4),
+  other: guid(5),
+  cal: guid(6),
+  dee: guid(7),
+  old: guid(8),
 };
 
 let lineId = LINE_BASE;
@@ -81,67 +73,59 @@ const roster = (m: number, club: number, pid: string, name: string) =>
 async function cleanCentral(): Promise<void> {
   const range = sql`id >= ${LINE_BASE} and id < ${LINE_BASE + 1000}`;
   await db.execute(sql`delete from central.match_rosters where ${range}`);
-  await db.execute(sql`delete from central.matches where match_id in (${M1}, ${M2})`);
-  await db.execute(sql`delete from central.players where participant_id = ${P.barnes}`);
-  await db.execute(sql`delete from central.clubs where club_id in (${CLUB_A}, ${OPP})`);
+  await db.execute(sql`delete from central.matches where match_id in (${M1}, ${M2}, ${M3})`);
+  await db.execute(
+    sql`delete from central.players where participant_id in (${P.wyllie}, ${P.barnes})`,
+  );
+  await db.execute(
+    sql`delete from central.clubs where club_id in (${sql.join(Object.values(CLUB), sql`, `)})`,
+  );
 }
 
 async function seedCentral(): Promise<void> {
-  for (const id of [CLUB_A, OPP]) {
+  for (const id of Object.values(CLUB)) {
     await db.execute(sql`
       insert into central.clubs (club_id, name, short_name, primary_colour, parent_club_id, lineage_role, active_from, active_to)
       values (${id}, ${`Seed CC ${id}`}, ${`S${id}`}, '#123456', null, null, '2002/03', null)
     `);
   }
-  const season = `${SEASON.startYear}/${String((SEASON.startYear + 1) % 100).padStart(2, "0")}`;
-  for (const [m, grade] of [
-    [M1, "A Grade"],
-    [M2, "Under 15"],
+  for (const [m, year, home, away] of [
+    [M1, YEAR, CLUB.A, CLUB.B],
+    [M2, YEAR, CLUB.C, CLUB.D],
+    [M3, YEAR - 1, CLUB.A, CLUB.B],
   ] as const) {
     await db.execute(sql`
       insert into central.matches (match_id, playhq_match_id, season, grade, grade_id, comp_type, round, match_date, venue,
         status, home_club_id, away_club_id, home_team, away_team, home_score, away_score, toss_winner_club_id, winner_club_id, result_text)
-      values (${m}, ${`squad-seed-${m}`}, ${season}, ${grade}, 'g', 'One Day', '1', ${seasonDay(20)}, 'Seed Oval',
-        'Completed', ${CLUB_A}, ${OPP}, 'Home', 'Opp', '5/150', '10/120', ${CLUB_A}, ${CLUB_A}, 'won')
+      values (${m}, ${`squad-seed-${m}`}, ${seasonLabel(year)}, 'A Grade', 'g', 'One Day', '1', ${`${year}-10-01`}, 'Seed Oval',
+        'Completed', ${home}, ${away}, 'Home', 'Opp', '5/150', '10/120', ${home}, ${home}, 'won')
     `);
   }
-  await db.execute(sql`
-    insert into central.players (participant_id, display_name, is_private, current_club_id, first_season, last_season, matches)
-    values (${P.barnes}, 'Barnes, Casey', 1, ${CLUB_A}, ${season}, ${season}, 1)
-  `);
-  await roster(M1, CLUB_A, P.wyllie, "J Wyllie");
-  await roster(M1, CLUB_A, P.barnes, "C Barnes");
-  await roster(M1, CLUB_A, P.initial, "K Initial");
-  await roster(M1, CLUB_A, P.filler, "F Filler");
-  await roster(M2, CLUB_A, P.young, "Y Young");
+  for (const [pid, name, priv] of [
+    [P.wyllie, "Jack Wyllie", 0],
+    [P.barnes, "Casey Barnes", 1],
+  ] as const) {
+    await db.execute(sql`
+      insert into central.players (participant_id, display_name, is_private, current_club_id, first_season, last_season, matches)
+      values (${pid}, ${name}, ${priv}, ${CLUB.A}, ${seasonLabel(YEAR)}, ${seasonLabel(YEAR)}, 1)
+    `);
+  }
+  await roster(M1, CLUB.A, P.wyllie, "J Wyllie");
+  await roster(M1, CLUB.A, P.barnes, "C Barnes");
+  await roster(M1, CLUB.A, P.initial, "K Initial");
+  await roster(M1, CLUB.A, P.ezra, "E Existing");
+  await roster(M1, CLUB.B, P.other, "Bea Other");
+  await roster(M2, CLUB.C, P.cal, "Cal Auto");
+  await roster(M2, CLUB.D, P.dee, "Dee Auto");
+  await roster(M3, CLUB.A, P.old, "Old Season");
 }
 
 describe.skipIf(!isLocalDb)("squad register from this season's games", () => {
-  const tenants: Record<"A" | "B" | "C" | "D", number> = { A: 0, B: 0, C: 0, D: 0 };
+  const tenants: Record<keyof typeof CLUB, number> = { A: 0, B: 0, C: 0, D: 0, E: 0 };
   let cookieA: string;
   let cookieB: string;
   let existingId: number;
   const adminIds: number[] = [];
-
-  async function addList(
-    tenantId: number,
-    grade: string,
-    startAt: Date,
-    players: TeamListPlayer[],
-    opts: { published?: boolean; source?: string } = {},
-  ) {
-    const [fx] = await db
-      .insert(fixturesTable)
-      .values({ tenantId, grade, opponentName: "Opp", startAt })
-      .returning();
-    await db.insert(teamListsTable).values({
-      tenantId,
-      fixtureId: fx.id,
-      players,
-      isPublished: opts.published ?? true,
-      source: opts.source ?? "admin",
-    });
-  }
 
   const members = (tenantId: number) =>
     db
@@ -149,6 +133,12 @@ describe.skipIf(!isLocalDb)("squad register from this season's games", () => {
       .from(squadMembersTable)
       .where(eq(squadMembersTable.tenantId, tenantId))
       .orderBy(asc(squadMembersTable.lastName), asc(squadMembersTable.firstName));
+
+  const settingsOf = (tenantId: number) =>
+    db
+      .select()
+      .from(availabilitySettingsTable)
+      .where(eq(availabilitySettingsTable.tenantId, tenantId));
 
   const seed = (cookie: string | null, tenantId: number) => {
     const r = request(app).post("/api/squad/seed-from-season").set("x-tenant-id", String(tenantId));
@@ -159,17 +149,12 @@ describe.skipIf(!isLocalDb)("squad register from this season's games", () => {
     process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-for-squad-seed";
     await cleanCentral();
     await seedCentral();
-    for (const [key, club] of [
-      ["A", CLUB_A],
-      ["B", 9824],
-      ["C", 9825],
-      ["D", 9826],
-    ] as const) {
+    for (const key of Object.keys(CLUB) as (keyof typeof CLUB)[]) {
       const [t] = await db
         .insert(tenantsTable)
         .values({
           slug: `squad-seed-${key.toLowerCase()}-${STAMP}`,
-          centralClubId: club,
+          centralClubId: CLUB[key],
           readsFromCentral: true,
           name: `Seed ${key}`,
         })
@@ -191,43 +176,17 @@ describe.skipIf(!isLocalDb)("squad register from this season's games", () => {
       (
         [
           [P.wyllie, 701],
+          [P.ezra, 702],
           [P.barnes, 703],
           [P.initial, 704],
-          [P.filler, 90001],
-          [P.young, 705],
         ] as const
       ).map(([participantId, playerId]) => ({ tenantId: tenants.A, participantId, playerId })),
     );
 
-    const A = tenants.A;
-    await addList(
-      A,
-      "A Grade",
-      seasonAt(10),
-      [
-        { order: 1, playerId: 701, displayName: "Jack Wyllie", participantId: P.wyllie },
-        { order: 2, playerId: 95002, displayName: "Frankie Fillin" },
-        { order: 3, playerId: 702, displayName: "Ezra Existing" },
-      ],
-      { source: "playhq" },
-    );
-    await addList(A, "B Grade", seasonAt(40), [
-      { order: 1, playerId: 701, displayName: "Jack Wyllie" },
-      { order: 2, displayName: "Tara Typed" },
-    ]);
-    await addList(A, "A Grade", seasonAt(41), [{ order: 1, displayName: "Una Published" }], {
-      published: false,
-    });
-    await addList(A, "Under 15", seasonAt(42), [{ order: 1, displayName: "Jun Ior" }]);
-    await addList(A, "A Grade", seasonAt(-30), [{ order: 1, displayName: "Old Season" }]);
-    await addList(tenants.B, "A Grade", seasonAt(12), [{ order: 1, displayName: "Bea Other" }]);
-    await addList(tenants.C, "A Grade", seasonAt(12), [{ order: 1, displayName: "Cal Auto" }]);
-    await addList(tenants.D, "A Grade", seasonAt(12), [{ order: 1, displayName: "Dee Auto" }]);
-
     const [existing] = await db
       .insert(squadMembersTable)
       .values({
-        tenantId: A,
+        tenantId: tenants.A,
         firstName: "Ezra",
         lastName: "Existing",
         linkedPlayerId: 702,
@@ -245,8 +204,6 @@ describe.skipIf(!isLocalDb)("squad register from this season's games", () => {
       await db.delete(squadMembersTable).where(eq(squadMembersTable.tenantId, t));
       await db.delete(availabilitySettingsTable).where(eq(availabilitySettingsTable.tenantId, t));
       await db.delete(playerIdMapTable).where(eq(playerIdMapTable.tenantId, t));
-      await db.delete(teamListsTable).where(eq(teamListsTable.tenantId, t));
-      await db.delete(fixturesTable).where(eq(fixturesTable.tenantId, t));
     }
     await db.delete(adminsTable).where(inArray(adminsTable.id, adminIds));
     await db.delete(tenantsTable).where(inArray(tenantsTable.id, Object.values(tenants)));
@@ -257,39 +214,41 @@ describe.skipIf(!isLocalDb)("squad register from this season's games", () => {
     expect((await seed(null, tenants.A)).status).toBe(401);
     // Another club's admin session does not reach this club.
     expect((await seed(cookieB, tenants.A)).status).toBe(401);
+    expect(await members(tenants.A)).toHaveLength(1);
   });
 
-  it("adds this season's senior players with their fullest name, grade and link", async () => {
+  it("adds this season's players through provisioning's seed, linked, without contacts", async () => {
     const res = await seed(cookieA, tenants.A);
     expect(res.status).toBe(200);
-    // Wyllie, Typed, Barnes, Initial added; Ezra already present; the two fill-ins skipped.
-    expect(res.body).toEqual({ added: 4, skipped: 2, alreadyPresent: 1 });
+    // Wyllie, Barnes, Initial added; Ezra (linked to 702) already present.
+    expect(res.body).toEqual({ added: 3, skipped: 1 });
 
     const rows = await members(tenants.A);
-    const view = rows.map((m) => ({
-      name: `${m.firstName} ${m.lastName}`,
-      grade: m.gradeHint,
-      link: m.linkedPlayerId,
-      private: m.isPrivate,
-    }));
-    expect(view).toEqual([
-      { name: "Casey Barnes", grade: "A Grade", link: 703, private: true },
-      { name: "Ezra Existing", grade: null, link: 702, private: false },
-      { name: "K Initial", grade: "A Grade", link: 704, private: false },
-      { name: "Tara Typed", grade: "B Grade", link: null, private: false },
-      // Most recent appearance: the B Grade list on day 40 (central's game was day 20).
-      { name: "Jack Wyllie", grade: "B Grade", link: 701, private: false },
+    expect(
+      rows.map((m) => ({
+        name: `${m.firstName} ${m.lastName}`,
+        link: m.linkedPlayerId,
+        private: m.isPrivate,
+      })),
+    ).toEqual([
+      { name: "Casey Barnes", link: 703, private: true },
+      { name: "Ezra Existing", link: 702, private: false },
+      { name: "K Initial", link: 704, private: false },
+      { name: "Jack Wyllie", link: 701, private: false },
     ]);
     for (const m of rows.filter((r) => r.id !== existingId)) {
       expect(m).toMatchObject({
         section: "senior",
+        gradeHint: "A Grade",
         active: true,
         playhqProfileId: null,
         accountHolderMobile: null,
-        accountHolderEmail: null,
-        guardian1Mobile: null,
       });
     }
+    // Last season's player is not read.
+    expect(rows.map((m) => m.lastName)).not.toContain("Season");
+    // The button marks the register as seeded too.
+    expect((await settingsOf(tenants.A))[0]?.seasonSeededAt).toBeInstanceOf(Date);
   });
 
   it("leaves an existing member untouched and adds no one twice", async () => {
@@ -298,62 +257,56 @@ describe.skipIf(!isLocalDb)("squad register from this season's games", () => {
       .from(squadMembersTable)
       .where(eq(squadMembersTable.id, existingId));
     const res = await seed(cookieA, tenants.A);
-    expect(res.body).toEqual({ added: 0, skipped: 2, alreadyPresent: 5 });
+    expect(res.body).toEqual({ added: 0, skipped: 4 });
     const [after] = await db
       .select()
       .from(squadMembersTable)
       .where(eq(squadMembersTable.id, existingId));
     expect(after).toEqual(before);
-    expect(after).toMatchObject({ active: false, accountHolderMobile: "0400000702" });
-    expect(await members(tenants.A)).toHaveLength(5);
-  });
-
-  it("never reads junior grades, unpublished lists, last season or fill-ins", async () => {
-    const names = (await members(tenants.A)).map((m) => m.lastName);
-    for (const absent of ["Ior", "Young", "Published", "Season", "Fillin", "Filler"]) {
-      expect(names).not.toContain(absent);
-    }
+    expect(await members(tenants.A)).toHaveLength(4);
   });
 
   it("is tenant-isolated", async () => {
-    expect((await members(tenants.B)).map((m) => m.lastName)).toEqual([]);
-    const res = await seed(cookieB, tenants.B);
-    expect(res.body).toEqual({ added: 1, skipped: 0, alreadyPresent: 0 });
+    // Club B played in the same match: only its own side is read.
+    expect(await members(tenants.B)).toEqual([]);
+    expect((await seed(cookieB, tenants.B)).body).toEqual({ added: 1, skipped: 0 });
     expect((await members(tenants.B)).map((m) => m.lastName)).toEqual(["Other"]);
-    expect(await members(tenants.A)).toHaveLength(5);
+    expect((await members(tenants.A)).map((m) => m.lastName)).not.toContain("Other");
   });
 
-  it("auto-seeds once, only while the register is empty and the club was never seeded", async () => {
+  it("tops up once, only while the register is empty and was never seeded", async () => {
     const C = tenants.C;
-    expect(await autoSeedSquadIfEmpty(C, NOW)).toEqual({ added: 1, skipped: 0, alreadyPresent: 0 });
-    const [settings] = await db
-      .select()
-      .from(availabilitySettingsTable)
-      .where(eq(availabilitySettingsTable.tenantId, C));
+    expect(await autoSeedSquadIfEmpty(C, NOW)).toEqual({ added: 1, skipped: 0 });
+    expect((await members(C)).map((m) => m.lastName)).toEqual(["Auto"]);
+    const [settings] = await settingsOf(C);
     expect(settings.seasonSeededAt).toBeInstanceOf(Date);
     expect(settings.enabled).toBe(false);
     expect(await autoSeedSquadIfEmpty(C, NOW)).toBeNull();
 
-    // A club that empties its register on purpose is not re-filled…
+    // A club that empties its register on purpose is not refilled…
     await db.delete(squadMembersTable).where(eq(squadMembersTable.tenantId, C));
     expect(await autoSeedSquadIfEmpty(C, NOW)).toBeNull();
     expect(await members(C)).toHaveLength(0);
     // …but the admin's button still works.
-    expect(await seedSquadFromSeason(C, NOW)).toMatchObject({ added: 1 });
+    expect(await seedSquadFromSeason(C, NOW)).toEqual({ added: 1, skipped: 0 });
   });
 
-  it("does not auto-seed a club whose register already has members", async () => {
+  it("does not top up a register that already has members", async () => {
     const D = tenants.D;
     await db
       .insert(squadMembersTable)
       .values({ tenantId: D, firstName: "Hand", lastName: "Added" });
     expect(await autoSeedSquadIfEmpty(D, NOW)).toBeNull();
     expect((await members(D)).map((m) => m.lastName)).toEqual(["Added"]);
-    const settings = await db
-      .select()
-      .from(availabilitySettingsTable)
-      .where(eq(availabilitySettingsTable.tenantId, D));
-    expect(settings).toEqual([]);
+    expect(await settingsOf(D)).toEqual([]);
+  });
+
+  it("leaves the marker unset for a club with no games yet, so it is tried again", async () => {
+    const E = tenants.E;
+    expect(await autoSeedSquadIfEmpty(E, NOW)).toEqual({ added: 0, skipped: 0 });
+    expect(await settingsOf(E)).toEqual([]);
+    expect(await autoSeedSquadIfEmpty(E, NOW)).toEqual({ added: 0, skipped: 0 });
+    expect(await members(E)).toHaveLength(0);
   });
 
   it("the participant import adopts seeded members instead of adding them twice", async () => {
@@ -366,8 +319,7 @@ describe.skipIf(!isLocalDb)("squad register from this season's games", () => {
         Grade: "A Grade",
         "Account Holder Mobile": mobile,
       });
-    const WYLLIE = row(1, "Jack", "Wyllie", "0400 000 701"); // by link (team-list name → 701)
-    const TYPED = row(2, "Tara", "Typed", "0400 000 799"); // by unique full name
+    const WYLLIE = row(1, "Jack", "Wyllie", "0400 000 701"); // by link + first initial + surname
     const INITIAL = row(3, "Kim", "Initial", "0400 000 704"); // initial-only member
     const NEWBIE = row(4, "Nina", "Newbie", "0400 000 800");
     const res = await request(app)
@@ -376,24 +328,20 @@ describe.skipIf(!isLocalDb)("squad register from this season's games", () => {
       .set("x-tenant-id", String(tenants.A))
       .attach(
         "file",
-        Buffer.from(buildParticipantCsv([WYLLIE, TYPED, INITIAL, NEWBIE]), "utf8"),
+        Buffer.from(buildParticipantCsv([WYLLIE, INITIAL, NEWBIE]), "utf8"),
         "participants.csv",
       );
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ created: 1, updated: 3, adopted: 3 });
+    expect(res.body).toMatchObject({ created: 1, updated: 2, adopted: 2 });
 
     const rows = await members(tenants.A);
-    expect(rows).toHaveLength(6);
+    expect(rows).toHaveLength(5);
     const byProfile = (r: Record<string, string>) =>
       rows.find((m) => m.playhqProfileId === r["Profile ID"]);
     expect(byProfile(WYLLIE)).toMatchObject({
       firstName: "Jack",
       linkedPlayerId: 701,
       accountHolderMobile: "0400000701",
-    });
-    expect(byProfile(TYPED)).toMatchObject({
-      lastName: "Typed",
-      accountHolderMobile: "0400000799",
     });
     expect(byProfile(INITIAL)).toMatchObject({
       firstName: "Kim",
@@ -403,10 +351,10 @@ describe.skipIf(!isLocalDb)("squad register from this season's games", () => {
     });
     expect(byProfile(NEWBIE)).toBeDefined();
     // Casey Barnes wasn't in the file: still there, still without a profile id.
-    const barnes = rows.find((m) => m.lastName === "Barnes");
-    expect(barnes).toMatchObject({ playhqProfileId: null, firstName: "Casey" });
-    const ids = rows.filter((m) => m.lastName === "Wyllie").map((m) => m.id);
-    expect(ids).toHaveLength(1);
+    expect(rows.find((m) => m.lastName === "Barnes")).toMatchObject({
+      playhqProfileId: null,
+      firstName: "Casey",
+    });
     // A re-run of the seed now finds everyone.
     expect((await seed(cookieA, tenants.A)).body).toMatchObject({ added: 0 });
   });

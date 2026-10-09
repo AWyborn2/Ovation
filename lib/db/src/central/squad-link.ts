@@ -1,4 +1,4 @@
-import { and, eq, gte, isNotNull, lt } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import {
   centralDb,
   centralMatchesTable,
@@ -26,39 +26,25 @@ export async function centralCurrentSeasonSquad(
   season: number,
 ): Promise<CurrentSeasonSquadPlayer[]> {
   const lines = (
-    t:
-      | typeof centralMatchRostersTable
-      | typeof centralMatchBattingTable
-      | typeof centralMatchBowlingTable,
-  ) =>
-    centralDb
-      .selectDistinct({
-        participantId: t.participantId,
-        name: t.playerName,
-        season: centralMatchesTable.season,
-        grade: centralMatchesTable.grade,
-      })
-      .from(t)
-      .innerJoin(centralMatchesTable, eq(t.matchId, centralMatchesTable.matchId))
-      .where(and(eq(t.clubId, clubId), isNotNull(t.participantId)));
-  const rows = (
-    await Promise.all([
-      lines(centralMatchRostersTable),
-      lines(centralMatchBattingTable),
-      lines(centralMatchBowlingTable),
-    ])
-  ).flat();
+    t: typeof centralMatchRostersTable | typeof centralMatchBattingTable | typeof centralMatchBowlingTable,
+  ) => centralDb.selectDistinct({
+    participantId: t.participantId,
+    name: t.playerName,
+    season: centralMatchesTable.season,
+    grade: centralMatchesTable.grade,
+  }).from(t).innerJoin(centralMatchesTable, eq(t.matchId, centralMatchesTable.matchId))
+    .where(and(eq(t.clubId, clubId), isNotNull(t.participantId)));
+  const rows = (await Promise.all([
+    lines(centralMatchRostersTable), lines(centralMatchBattingTable), lines(centralMatchBowlingTable),
+  ])).flat();
   const current = rows.filter((r) => parseSeasonStartYear(r.season) === season);
   const ids = [...new Set(current.map((r) => r.participantId!))];
   if (!ids.length) return [];
-  const players = await centralDb
-    .select({
-      participantId: centralPlayersTable.participantId,
-      displayName: centralPlayersTable.displayName,
-      isPrivate: centralPlayersTable.isPrivate,
-    })
-    .from(centralPlayersTable)
-    .where(inList(centralPlayersTable.participantId, ids));
+  const players = await centralDb.select({
+    participantId: centralPlayersTable.participantId,
+    displayName: centralPlayersTable.displayName,
+    isPrivate: centralPlayersTable.isPrivate,
+  }).from(centralPlayersTable).where(inList(centralPlayersTable.participantId, ids));
   const byId = new Map(players.map((p) => [p.participantId, p]));
   const result = new Map<string, CurrentSeasonSquadPlayer>();
   for (const r of current) {
@@ -72,8 +58,7 @@ export async function centralCurrentSeasonSquad(
     // A junior who also plays senior cricket belongs to the senior selection pool.
     if (prev?.section === "senior") continue;
     result.set(r.participantId!, {
-      participantId: r.participantId!,
-      name,
+      participantId: r.participantId!, name,
       section: junior ? "junior" : "senior",
       gradeHint: classification.appGrade ?? r.grade,
       isPrivate: isPrivateRow(p),
@@ -173,120 +158,6 @@ async function centralClubPlayerNamesImpl(clubId: number): Promise<CentralClubPl
       displayName: p?.displayName?.trim() || null,
       isPrivate: isPrivateRow(p),
       lastSeasonYear: e.last,
-    };
-  });
-}
-
-/** One participant's appearances for a club in a window of senior matches. */
-export interface CentralClubSeasonPlayer {
-  participantId: string;
-  /** Every distinct line name in the window, e.g. "J Wyllie". */
-  lineNames: string[];
-  /** `central.players.display_name` ("Surname, Firstname" for PlayHQ-loaded players), or null. */
-  displayName: string | null;
-  isPrivate: boolean;
-  /** The app grade of their most recent appearance in the window. */
-  lastGrade: string | null;
-  /** `YYYY-MM-DD` of that appearance. */
-  lastMatchDate: string | null;
-}
-
-/**
- * Everyone who appeared for a club in a SENIOR match dated `from` (inclusive)
- * to `to` (exclusive), both `YYYY-MM-DD` — the season's played sides that fill
- * a squad register without a PlayHQ participant export (`squad-season-seed.ts`
- * in the API). Junior / pathway / unmapped grades are dropped (juniors
- * isolation). Roster, batting and bowling lines are all read. Private players
- * are included and flagged: the register is admin-only.
- */
-export async function centralClubSeasonPlayers(
-  clubId: number,
-  from: string,
-  to: string,
-): Promise<CentralClubSeasonPlayer[]> {
-  return withCentralCache(cacheKey("centralClubSeasonPlayers", [clubId, from, to]), () =>
-    centralClubSeasonPlayersImpl(clubId, from, to),
-  );
-}
-
-async function centralClubSeasonPlayersImpl(
-  clubId: number,
-  from: string,
-  to: string,
-): Promise<CentralClubSeasonPlayer[]> {
-  const m = centralMatchesTable;
-  const lines = (
-    t:
-      | typeof centralMatchRostersTable
-      | typeof centralMatchBattingTable
-      | typeof centralMatchBowlingTable,
-  ) =>
-    centralDb
-      .selectDistinct({
-        participantId: t.participantId,
-        playerName: t.playerName,
-        grade: m.grade,
-        matchDate: m.matchDate,
-      })
-      .from(t)
-      .innerJoin(m, eq(m.matchId, t.matchId))
-      .where(
-        and(
-          eq(t.clubId, clubId),
-          isNotNull(t.participantId),
-          gte(m.matchDate, from),
-          lt(m.matchDate, to),
-        ),
-      );
-
-  const rows = (
-    await Promise.all([
-      lines(centralMatchRostersTable),
-      lines(centralMatchBattingTable),
-      lines(centralMatchBowlingTable),
-    ])
-  ).flat();
-
-  const byPid = new Map<
-    string,
-    { names: Set<string>; grade: string | null; date: string | null }
-  >();
-  for (const r of rows) {
-    const grade = appGradeFromCentral(r.grade);
-    if (!r.participantId || grade === null) continue;
-    let e = byPid.get(r.participantId);
-    if (!e) {
-      e = { names: new Set(), grade: null, date: null };
-      byPid.set(r.participantId, e);
-    }
-    const name = r.playerName?.trim();
-    if (name) e.names.add(name);
-    if (r.matchDate && (e.date === null || r.matchDate > e.date)) {
-      e.date = r.matchDate;
-      e.grade = grade;
-    }
-  }
-  if (byPid.size === 0) return [];
-
-  const players = await centralDb
-    .select({
-      participantId: centralPlayersTable.participantId,
-      displayName: centralPlayersTable.displayName,
-      isPrivate: centralPlayersTable.isPrivate,
-    })
-    .from(centralPlayersTable)
-    .where(inList(centralPlayersTable.participantId, [...byPid.keys()]));
-  const player = new Map(players.map((p) => [p.participantId, p]));
-
-  return [...byPid].map(([participantId, e]) => {
-    const p = player.get(participantId);
-    return {
-      participantId,
-      lineNames: [...e.names].sort(),
-      displayName: p?.displayName?.trim() || null,
-      isPrivate: isPrivateRow(p),
-      lastGrade: e.grade,
-      lastMatchDate: e.date,
     };
   });
 }

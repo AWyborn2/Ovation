@@ -631,8 +631,9 @@ function SeedSummary({ result }: { result: SquadSeasonSeedResult }) {
       {result.added > 0
         ? `Added ${plural(result.added, "player")} from this season's games.`
         : "No one new: everyone who has played this season is already in the squad."}
-      {result.alreadyPresent > 0 && ` ${plural(result.alreadyPresent, "player")} already listed.`}
-      {result.skipped > 0 && ` ${plural(result.skipped, "fill-in or unnamed player")} left out.`}
+      {result.added > 0 &&
+        result.skipped > 0 &&
+        ` ${plural(result.skipped, "player")} already listed.`}
     </p>
   );
 }
@@ -763,8 +764,8 @@ function SquadCard() {
         {summary && <ImportSummary result={summary} />}
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
-            No export yet? Add everyone who has played or been named in a senior side this season.
-            They join without contact details until you import the export or add them.
+            No export yet? Add everyone who has played for the club this season. They join without
+            contact details until you import the export or add them.
           </p>
           <Button variant="outline" onClick={onSeed} disabled={seedSquad.isPending}>
             {seedSquad.isPending ? "Adding…" : "Add this season's players"}
