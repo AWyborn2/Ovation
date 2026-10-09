@@ -26,6 +26,27 @@ const weekend = (page: "title" | "sponsors"): ShareCardInput => ({
 } as ShareCardInput);
 
 describe("carousel templates across packs", () => {
+  it("renders refreshed playing numbers in every carousel pack and export format without changing frozen inputs", () => {
+    const frozen = {
+      kind: "teamList", grade: "A Grade", numbering: "shirt", venueDateTime: "Oval · Saturday",
+      players: [{ order: 1, surname: "SMITH", role: "C/WK", shirtNumber: "36" },
+        { order: 2, surname: "UNNUMBERED" }],
+    } as ShareCardInput;
+    const refreshed = {
+      ...frozen,
+      players: [{ order: 1, surname: "SMITH", role: "C/WK", shirtNumber: "88" },
+        { order: 2, surname: "UNNUMBERED" }],
+    } as ShareCardInput;
+    for (const pack of CAROUSEL_PACK_IDS) for (const size of SIZES) {
+      const html = renderPackCard(refreshed, size, false, tokens, false, null, pack);
+      expect(html, `${pack}/${size}`).toContain(">88<");
+      expect(html, `${pack}/${size}`).not.toContain(">36<");
+      expect(html, `${pack}/${size}`).toContain("UNNUMBERED");
+      const previous = renderPackCard(frozen, size, false, tokens, false, null, pack);
+      expect(previous, `${pack}/${size} frozen`).toContain(">36<");
+      expect(previous, `${pack}/${size} frozen`).not.toContain(">88<");
+    }
+  });
   it("validates exactly the registered built-in packs", () => {
     expect([...CAROUSEL_PACK_IDS].sort()).toEqual(listPackManifests().map(p => p.packId).sort());
   });

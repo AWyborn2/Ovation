@@ -93,6 +93,39 @@ export function createTeamSlides(fixtures: Fixture[], photos: ClubPhoto[], conte
   });
 }
 
+/** Refresh content without discarding valid photo/crop choices or edited order. */
+export function refreshTeamSlides(
+  fixtures: Fixture[], photos: ClubPhoto[], content: Record<string, Record<string, unknown>>,
+  previous: TeamSlide[] = [], preserveOrder = true,
+): TeamSlide[] {
+  const byId = new Map(fixtures.map(f => [f.id, f]));
+  const oldById = new Map(previous.map(t => [t.fixture.id, t]));
+  const ordered = preserveOrder
+    ? [...previous.flatMap(t => byId.has(t.fixture.id) ? [byId.get(t.fixture.id)!] : []),
+      ...fixtures.filter(f => !oldById.has(f.id))]
+    : fixtures;
+  return ordered.map(fixture => {
+    const old = oldById.get(fixture.id);
+    if (!old) return createTeamSlides([fixture], photos, content)[0];
+    const eligible = content[fixture.id]?.junior === true ? [] : eligiblePhotos(photos, fixture.grade);
+    return {
+      fixture,
+      ...(content[fixture.id] ? { input: content[fixture.id] as ShareCardInput } : {}),
+      // Removed/reclassified photos are cleared, never silently replaced.
+      photoId: eligible.some(p => p.id === old.photoId) ? old.photoId : null,
+      transform: { ...old.transform },
+    };
+  });
+}
+
+export function carouselSelectionKey(
+  type: CarouselSetType, from: string, to: string, fixtures: Fixture[],
+  content: Record<string, Record<string, unknown>> = {},
+): string {
+  return JSON.stringify([type, from, to, fixtures,
+    Object.fromEntries(fixtures.map(f => [f.id, content[f.id] ?? null]))]);
+}
+
 export function moveTeam(teams: TeamSlide[], from: number, to: number): TeamSlide[] {
   const next = [...teams];
   if (from < 0 || to < 0 || from >= next.length || to >= next.length) return next;

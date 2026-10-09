@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { db, tenantsTable, adminsTable, fixturesTable, clubPhotosTable, clubPhotoPlayersTable, teamListsTable, matchDisplaySettingsTable } from "@workspace/db";
+import { db, tenantsTable, adminsTable, fixturesTable, clubPhotosTable, clubPhotoPlayersTable, teamListsTable, matchDisplaySettingsTable, shirtNumbersTable, shirtNumberSettingsTable } from "@workspace/db";
 import app from "../app";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
@@ -42,7 +42,7 @@ beforeAll(async () => {
   expected = [rows[0].id, rows[1].id, rows[8].id];
   await db.insert(teamListsTable).values([
     { tenantId: tenant, fixtureId: rows[0].id, isPublished: true, source: "admin",
-      players: [{ displayName: "Sam Captain", order: 1, role: "C/WK" }, { displayName: "Twelve Extra", order: 12 }] },
+       players: [{ playerId: -18001, displayName: "Sam Captain", order: 1, role: "C/WK" }, { displayName: "Twelve Extra", order: 12 }] },
     { tenantId: tenant, fixtureId: rows[1].id, isPublished: false, source: "selection",
       players: [{ displayName: "Unpublished Person", order: 1 }] },
     { tenantId: tenant, fixtureId: rows[8].id, isPublished: true,
@@ -78,6 +78,8 @@ beforeAll(async () => {
 });
 afterAll(async () => {
   for (const id of [tenant, other].filter(Boolean)) {
+    await db.delete(shirtNumbersTable).where(eq(shirtNumbersTable.tenantId, id));
+    await db.delete(shirtNumberSettingsTable).where(eq(shirtNumberSettingsTable.tenantId, id));
     await db.delete(clubPhotosTable).where(eq(clubPhotosTable.tenantId, id));
     await db.delete(fixturesTable).where(eq(fixturesTable.tenantId, id));
     await db.delete(matchDisplaySettingsTable).where(eq(matchDisplaySettingsTable.tenantId, id));
@@ -89,6 +91,41 @@ const fetchSources = (tenantId = tenant) => request(app).get("/api/weekend-carou
   .set("x-tenant-id", String(tenantId)).set("Cookie", cookie);
 
 describe("weekend carousel protected sources", () => {
+  it("reads manual playing-number changes afresh, scoped to fixture season and club", async () => {
+    await db.insert(shirtNumberSettingsTable).values({ tenantId: tenant, enabled: true })
+      .onConflictDoUpdate({ target: shirtNumberSettingsTable.tenantId, set: { enabled: true } });
+    const entries = await db.insert(shirtNumbersTable).values([
+      { tenantId: tenant, season: 2026, playerId: -18001, name: `Audit Captain ${stamp}`, number: "36", source: "admin" },
+      { tenantId: tenant, season: 2025, playerId: -18001, name: `Past Captain ${stamp}`, number: "99", source: "admin" },
+      { tenantId: other, season: 2026, playerId: -18001, name: `Other Captain ${stamp}`, number: "77", source: "admin" },
+    ]).returning();
+    const load = async () => {
+      const res = await fetchSources().query({ from: "2026-10-09", to: "2026-10-11", setType: "teamList" });
+      expect(res.status, JSON.stringify(res.body)).toBe(200);
+      return res.body.content;
+    };
+    try {
+      const original = await load();
+      expect(original[expected[0]]).toMatchObject({ numbering: "shirt", players: [{ shirtNumber: "36" }, {}] });
+      expect(original[expected[0]].players[1]).not.toHaveProperty("shirtNumber");
+      expect(original[expected[2]]).not.toHaveProperty("numbering");
+      expect(original[expected[2]].players[0]).not.toHaveProperty("shirtNumber");
+      // Same number-only edit used by the register; no real club records touched.
+      const edit = await request(app).patch(`/api/shirt-numbers/${entries[0].id}`)
+        .set("x-tenant-id", String(tenant)).set("Cookie", cookie).send({ number: "88" });
+      expect(edit.status, JSON.stringify(edit.body)).toBe(200);
+      const refreshed = await load();
+      expect(refreshed[expected[0]].players[0].shirtNumber).toBe("88");
+      expect(original[expected[0]].players[0].shirtNumber).toBe("36");
+      await db.update(shirtNumberSettingsTable).set({ enabled: false }).where(eq(shirtNumberSettingsTable.tenantId, tenant));
+      const disabled = await load();
+      expect(disabled[expected[0]]).not.toHaveProperty("numbering");
+      expect(disabled[expected[0]].players[0]).not.toHaveProperty("shirtNumber");
+    } finally {
+      for (const entry of entries) await db.delete(shirtNumbersTable).where(eq(shirtNumbersTable.id, entry.id));
+      await db.update(shirtNumberSettingsTable).set({ enabled: false }).where(eq(shirtNumberSettingsTable.tenantId, tenant));
+    }
+  });
   it("uses published lists only, preserves roles/order, masks juniors and excludes other clubs", async () => {
     const res = await fetchSources().query({ from: "2026-10-09", to: "2026-10-11", setType: "teamList" });
     expect(res.status, JSON.stringify(res.body)).toBe(200);

@@ -27,7 +27,8 @@ const inputFor = (type: string) => type === "teamList"
 let activeType = "matchDay";
 let many = false;
 const content = () => activeType === "matchDay" ? {} : Object.fromEntries(fixtures.map(f => [f.id, inputFor(activeType)]));
-const refetch = vi.fn(async () => ({ data: { coverPhotos, photos: teamPhotos, content: content() }, isError: false }));
+const refetch = vi.fn(async () => ({ data: { fixtures, coverPhotos, photos: teamPhotos, content: content() }, isError: false }));
+const settingsRefetch = vi.fn(async () => ({ data: { settings: {}, activeSponsors: [] }, isError: false }));
 
 vi.mock("@workspace/api-client-react", () => ({
   useGetWeekendCarouselSources: (p: { from: string; setType: string }) => {
@@ -46,7 +47,7 @@ vi.mock("@workspace/api-client-react", () => ({
     refetch,
   }); },
   getGetWeekendCarouselSourcesQueryKey: (p: unknown) => ["sources", p],
-  useGetSocialSettings: () => ({ data: { settings: {}, activeSponsors: [] }, isLoading: false, isError: false }),
+  useGetSocialSettings: () => ({ data: { settings: {}, activeSponsors: [] }, isLoading: false, isError: false, refetch: settingsRefetch }),
   getGetSocialSettingsQueryKey: () => ["settings"],
   useCreateSocialDraft: () => ({ mutateAsync }),
   getListSocialDraftsQueryKey: () => ["drafts"],
@@ -71,6 +72,11 @@ const mount = () =>
     </Dialog>,
   );
 
+const generatePreview = async () => {
+  fireEvent.click(screen.getByTestId("button-generate-weekend"));
+  await waitFor(() => expect(screen.getByTestId("button-generate-weekend")).not.toBeDisabled());
+};
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -85,7 +91,7 @@ describe("WeekendCarousel", () => {
     teamPhotos = [{ id: 20, grade: "A Grade", photoTypes: ["batting"], url: "/team.jpg" }];
     mount();
     fireEvent.click(screen.getByTestId(`button-carousel-type-${type}`));
-    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    await generatePreview();
     fireEvent.click(screen.getByTestId("button-cover-photo-10"));
     fireEvent.change(screen.getByLabelText("Cover zoom"), { target: { value: "1.7" } });
     fireEvent.click(within(screen.getByTestId("team-1")).getByLabelText("Move A Grade vs Mandurah down"));
@@ -114,7 +120,7 @@ describe("WeekendCarousel", () => {
     mount();
     fireEvent.click(screen.getByTestId(`button-carousel-type-${type}`));
     fireEvent.click(screen.getByLabelText("Move B Grade at Rockingham up"));
-    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    await generatePreview();
     const caption = screen.getByTestId("input-weekend-caption") as HTMLTextAreaElement;
     expect(caption.value).toContain(type === "teamList" ? "SMITH (C/WK)" : "Won by 40 runs");
     fireEvent.change(caption, { target: { value: `Edited ${type} caption` } });
@@ -131,8 +137,8 @@ describe("WeekendCarousel", () => {
   it("blocks a changed source at submission rather than queuing stale results", async () => {
     mount();
     fireEvent.click(screen.getByTestId("button-carousel-type-results"));
-    fireEvent.click(screen.getByTestId("button-generate-weekend"));
-    refetch.mockResolvedValueOnce({ data: { coverPhotos, photos: [], content: {} }, isError: false });
+    await generatePreview();
+    refetch.mockResolvedValueOnce({ data: { fixtures, coverPhotos, photos: [], content: {} }, isError: false });
     fireEvent.click(screen.getByTestId("button-queue-weekend"));
     await waitFor(() => expect(screen.getByTestId("text-queue-error")).toHaveTextContent("Regenerate"));
     expect(mutateAsync).not.toHaveBeenCalled();
@@ -144,6 +150,25 @@ describe("WeekendCarousel", () => {
     expect(screen.getByTestId("button-generate-weekend")).toBeDisabled();
     expect(screen.getByRole("alert")).toHaveTextContent("19 selected");
   });
+  it("shows refresh loading and failure without creating a preview from cached data, then allows retry", async () => {
+    mount();
+    let finish!: () => void;
+    refetch.mockImplementationOnce(() => new Promise((_resolve, reject) => {
+      finish = () => reject(new Error("Source refresh unavailable. Retry generating."));
+    }));
+    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    expect(screen.getByTestId("button-generate-weekend")).toHaveTextContent("Refreshing sources");
+    expect(screen.getByTestId("button-generate-weekend")).toBeDisabled();
+    expect(screen.getByTestId("select-carousel-pack")).toBeDisabled();
+    expect(screen.getByTestId("checkbox-fixture-1")).toBeDisabled();
+    finish();
+    await waitFor(() => expect(screen.getByTestId("text-generation-error")).toHaveTextContent("Retry generating"));
+    expect(screen.queryByTestId("pack-card")).toBeNull();
+    expect(screen.queryByTestId("button-queue-weekend")).toBeNull();
+    await generatePreview();
+    expect(screen.queryByTestId("text-generation-error")).toBeNull();
+    expect(screen.getAllByTestId("pack-card")).toHaveLength(4);
+  });
   it("opens a full-screen editor", () => {
     render(<WeekendCarousel />);
     fireEvent.click(screen.getByTestId("button-open-weekend-carousel"));
@@ -153,7 +178,7 @@ describe("WeekendCarousel", () => {
   it("edits each team's photo beside its live preview and queues the same crop", async () => {
     teamPhotos = [{ id: 11, grade: "A Grade", photoTypes: ["batting"], url: "/team.jpg" }];
     mount();
-    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    await generatePreview();
     const editor = within(screen.getByTestId("team-1"));
     expect(editor.getByTestId("slide-fixture-1")).toBeTruthy();
     fireEvent.click(editor.getByTestId("button-photo-1-11"));
@@ -185,7 +210,7 @@ describe("WeekendCarousel", () => {
 
   it("queues one carousel with an editable caption and size, then blocks duplicate submissions", async () => {
     mount();
-    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    await generatePreview();
     expect(screen.getAllByTestId("pack-card")).toHaveLength(4);
     expect(screen.getByTestId("text-no-sponsors")).toBeTruthy();
     fireEvent.click(screen.getByTestId("button-size-story"));
@@ -214,7 +239,7 @@ describe("WeekendCarousel", () => {
   });
   it("keeps cover and crop through title, size, order, regeneration and queueing; supports removal", async () => {
     mount();
-    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    await generatePreview();
     fireEvent.click(screen.getByTestId("button-cover-photo-10"));
     fireEvent.change(screen.getByLabelText("Cover horizontal"), { target: { value: "0.2" } });
     fireEvent.change(screen.getByLabelText("Cover vertical"), { target: { value: "0.7" } });
@@ -222,12 +247,12 @@ describe("WeekendCarousel", () => {
     fireEvent.change(screen.getByTestId("input-weekend-title"), { target: { value: "Our weekend" } });
     fireEvent.click(screen.getByTestId("button-size-story"));
     fireEvent.click(screen.getAllByLabelText("Move B Grade at Rockingham up")[1]);
-    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    await generatePreview();
     const getCover = () => JSON.parse(screen.getAllByTestId("pack-card")[0].getAttribute("data-card")!);
     expect(getCover()).toMatchObject({ photoUrl: "/cover.jpg", photoTransform: { focalX: .2, focalY: .7, zoom: 2 } });
     fireEvent.click(screen.getByTestId("button-queue-weekend"));
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
-    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledTimes(3);
     const slides = queuedRequest().data.cardInput.weekendCarousel.slides;
     expect(slides[0].data).toEqual(getCover());
     await waitFor(() => expect((screen.getByTestId("button-no-cover-photo") as HTMLButtonElement).disabled).toBe(false));
@@ -236,9 +261,9 @@ describe("WeekendCarousel", () => {
   });
   it("stops queueing when fresh source data no longer permits the selected cover", async () => {
     mount();
-    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    await generatePreview();
     fireEvent.click(screen.getByTestId("button-cover-photo-10"));
-    refetch.mockResolvedValueOnce({ data: { coverPhotos: [], photos: [], content: {} }, isError: false });
+    refetch.mockResolvedValueOnce({ data: { fixtures, coverPhotos: [], photos: [], content: {} }, isError: false });
     fireEvent.click(screen.getByTestId("button-queue-weekend"));
     await waitFor(() => expect(screen.getByTestId("text-queue-error").textContent).toContain("no longer available"));
     expect(mutateAsync).not.toHaveBeenCalled();
@@ -246,7 +271,7 @@ describe("WeekendCarousel", () => {
   it("shows an actionable empty state without preventing no-photo queueing", async () => {
     coverPhotos = [];
     mount();
-    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    await generatePreview();
     expect(screen.getByTestId("text-no-cover-photos").textContent).toContain("Season 2026");
     fireEvent.click(screen.getByTestId("button-queue-weekend"));
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(1));
@@ -254,7 +279,7 @@ describe("WeekendCarousel", () => {
   it("keeps selections after an error and reuses the same submission ID on retry", async () => {
     mutateAsync.mockRejectedValueOnce(new Error("Network unavailable"));
     mount();
-    fireEvent.click(screen.getByTestId("button-generate-weekend"));
+    await generatePreview();
     fireEvent.click(screen.getByTestId("button-queue-weekend"));
     await waitFor(() => expect(screen.getByTestId("text-queue-error")).toHaveTextContent("Network unavailable"));
     const firstId = queuedRequest().data.cardInput.weekendCarousel.submissionId;

@@ -85,7 +85,7 @@ export function WeekendCarouselBody({ initialType = "matchDay" }: { initialType?
         </DialogDescription>
       </DialogHeader>
       <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto overflow-x-hidden px-5 py-5">
-        <fieldset className="flex flex-wrap items-center gap-2" disabled={s.exporting}>
+        <fieldset className="flex flex-wrap items-center gap-2" disabled={s.busy}>
           <legend className="mb-2 text-sm font-medium">Set type</legend>
           {(Object.keys(CAROUSEL_LABELS) as CarouselSetType[]).map(type => (
             <Button key={type} size="sm" variant={s.setType === type ? "default" : "outline"}
@@ -95,7 +95,7 @@ export function WeekendCarouselBody({ initialType = "matchDay" }: { initialType?
         </fieldset>
         <div className="space-y-1">
           <Label htmlFor="carousel-pack">Built-in design pack</Label>
-          <select id="carousel-pack" value={s.packId} disabled={s.exporting}
+          <select id="carousel-pack" value={s.packId} disabled={s.busy}
             onChange={e => s.setPackId(e.target.value)} data-testid="select-carousel-pack"
             className="flex h-10 w-full max-w-sm rounded-md border border-input bg-background px-3 text-sm">
             {listPackManifests().map(pack => <option key={pack.packId} value={pack.packId}>{pack.name}</option>)}
@@ -126,7 +126,7 @@ export function WeekendCarouselBody({ initialType = "matchDay" }: { initialType?
 }
 
 function RangeAndFixtures({ s }: { s: WeekendCarouselState }) {
-  const lock = s.exporting;
+  const lock = s.busy;
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-end gap-3">
@@ -275,13 +275,16 @@ function OrderButtons({
 }
 
 function GenerateBar({ s }: { s: WeekendCarouselState }) {
-  const disabled = s.exporting || !s.rangeValid || s.selected.length === 0 || s.selected.length > 18;
+  const disabled = s.busy || s.loading || s.error || !s.rangeValid || s.selected.length === 0 || s.selected.length > 18;
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 px-3 py-3">
       <Button onClick={s.generate} disabled={disabled} data-testid="button-generate-weekend">
         <RefreshCw className="mr-1 h-3.5 w-3.5" aria-hidden />
-        {s.generated ? "Regenerate preview" : "Generate preview"}
+        {s.generating ? "Refreshing sources…" : s.generated ? "Regenerate preview" : "Generate preview"}
       </Button>
+      {s.generationError && <p role="alert" className="text-sm text-destructive" data-testid="text-generation-error">
+        {s.generationError}
+      </p>}
       {s.selected.length > 18 ? <p role="alert" className="text-sm text-destructive">
         Select at most 18 teams or matches ({s.selected.length} selected). The cover and sponsor page bring the limit to 20 slides.
       </p> : s.stale ? (
@@ -290,7 +293,7 @@ function GenerateBar({ s }: { s: WeekendCarouselState }) {
         </p>
       ) : (
         <p className="text-xs text-muted-foreground">
-          Team photos are chosen once when you generate. Regenerating resets team photos and crops, not your cover.
+          Regenerating refreshes team data and keeps your valid photo choices, crops and slide order.
         </p>
       )}
     </div>
@@ -298,7 +301,7 @@ function GenerateBar({ s }: { s: WeekendCarouselState }) {
 }
 
 function GeneratedSet({ s }: { s: WeekendCarouselState }) {
-  const lock = s.exporting;
+  const lock = s.busy;
   const noSponsors = !s.slides.some(sl =>
     (sl.sponsorsOn && (sl.data.sponsors?.length ?? 0) > 0) ||
     (sl.input.kind === "matchDay" && (sl.input.carouselPage?.sponsors.length ?? 0) > 0));
@@ -413,7 +416,7 @@ function TeamEditor({
   index: number;
   count: number;
 }) {
-  const lock = s.exporting;
+  const lock = s.busy;
   const options = team.input && "junior" in team.input && team.input.junior ? [] : eligiblePhotos(s.photos, team.fixture.grade);
   const chosen = options.find((p) => p.id === team.photoId) ?? null;
   const label = fixtureLine(team.fixture);

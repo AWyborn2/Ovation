@@ -20,7 +20,8 @@ import {
   CLUB_TIME_ZONE,
   weekendRange,
   rangeForSet,
-  createTeamSlides,
+  refreshTeamSlides,
+  carouselSelectionKey,
   buildWeekendSlides,
   moveTeam,
   eligibleCoverPhotos,
@@ -34,7 +35,7 @@ import { carouselCaption } from "./caption";
 export const WEEKEND_PACK_ID = "club-kit-v1";
 
 type Pick = { id: number; included: boolean };
-type Generated = { key: string; from: string; to: string; teams: TeamSlide[] };
+type Generated = { key: string; from: string; to: string; pickIds: number[]; teams: TeamSlide[] };
 
 /** Swap-move an item in a plain array (used for the pre-generation pick order). */
 function move<T>(arr: T[], from: number, to: number): T[] {
@@ -82,6 +83,11 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
   const qc = useQueryClient();
   const submission = useRef<{ key: string; id: string } | null>(null);
   const submitting = useRef(false);
+  const generatingRef = useRef(false);
+  const [generating, setGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const busy = exporting || generating;
 
   const fixtures = useMemo(() => (sources?.fixtures ?? []) as Fixture[], [sources]);
   const photos = useMemo(() => (sources?.photos ?? []) as ClubPhoto[], [sources]);
@@ -103,12 +109,21 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
   const inRange = rangeValid ? fixtures : [];
   const inRangeSig = `${setType}:` + inRange.map((f) => f.id).join(",");
 
-  // Picks reset to "all selected, chronological" whenever the candidate set changes.
+  // New ranges/types select all; a source refresh preserves valid user picks.
   const [picks, setPicks] = useState<Pick[]>([]);
+  const pickScope = useRef("");
+  const scope = JSON.stringify([setType, from, to]);
   useEffect(() => {
-    setPicks(inRange.map((f) => ({ id: f.id, included: true })));
+    const reset = pickScope.current !== scope;
+    pickScope.current = scope;
+    setPicks(previous => {
+      if (reset || !previous.length) return inRange.map(f => ({ id: f.id, included: true }));
+      const ids = new Set(inRange.map(f => f.id));
+      return [...previous.filter(p => ids.has(p.id)),
+        ...inRange.filter(f => !previous.some(p => p.id === f.id)).map(f => ({ id: f.id, included: false }))];
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inRangeSig]);
+  }, [inRangeSig, scope]);
 
   const byId = useMemo(() => new Map(fixtures.map((f) => [f.id, f])), [fixtures]);
   const orderedPicks = picks
@@ -116,17 +131,46 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
     .filter((p): p is Pick & { fixture: Fixture } => !!p.fixture);
   const selected = orderedPicks.filter((p) => p.included).map((p) => p.fixture);
 
-  const selectedContent = Object.fromEntries(selected.map(f => [f.id, sources?.content?.[f.id] ?? null]));
-  const selectionKey = JSON.stringify([setType, from, to, selected, selectedContent]);
+  const selectionKey = carouselSelectionKey(setType, from, to, selected, sources?.content);
 
   const [generated, setGenerated] = useState<Generated | null>(null);
-  const stale = !!generated && generated.key !== selectionKey;
+  const stale = !!generated && (generated.key !== selectionKey || !!generationError);
 
-  const generate = () => {
-    if (selected.length === 0 || selected.length > 18) return;
-    // Photo choices are fixed here, once — never re-picked on re-render.
-    setGenerated({ key: selectionKey, from, to, teams: createTeamSlides(selected, photos, sources?.content) });
+  const generate = async () => {
+    if (busy || generatingRef.current || !rangeValid || selected.length === 0 || selected.length > 18) return;
+    generatingRef.current = true;
+    setGenerating(true);
+    setGenerationError(null);
     setQueueError(null);
+    try {
+      // Always re-read: another admin's edits need not invalidate this tab's cache.
+      const [fresh, settings] = await Promise.all([sourcesQ.refetch(), settingsQ.refetch()]);
+      if (fresh.isError || !fresh.data || settings.isError || !settings.data) {
+        throw new Error("Could not refresh carousel sources or settings. Retry generating the preview.");
+      }
+      const freshById = new Map(fresh.data.fixtures.map(f => [f.id, f]));
+      const freshSelected = selected.map(f => freshById.get(f.id));
+      if (freshSelected.some(f => !f || (setType !== "matchDay" && !fresh.data.content?.[f.id]))) {
+        throw new Error("A selected team list or match is no longer available. Check your selection and regenerate.");
+      }
+      const current = freshSelected as Fixture[];
+      const pickIds = current.map(f => f.id);
+      const oldIds = generated?.pickIds ?? [];
+      // Respect explicit changes in the pick order; otherwise retain slide edits.
+      const preserveOrder = JSON.stringify(oldIds.filter(id => pickIds.includes(id))) ===
+        JSON.stringify(pickIds.filter(id => oldIds.includes(id)));
+      setGenerated({
+        key: carouselSelectionKey(setType, from, to, current, fresh.data.content),
+        from, to, pickIds,
+        teams: refreshTeamSlides(current, fresh.data.photos, fresh.data.content ?? {},
+          generated?.teams, preserveOrder),
+      });
+    } catch (e) {
+      setGenerationError(e instanceof Error ? e.message : "Could not refresh carousel sources. Retry generating the preview.");
+    } finally {
+      generatingRef.current = false;
+      setGenerating(false);
+    }
   };
 
   const slides: WeekendSlide[] = useMemo(() => {
@@ -143,7 +187,6 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
     );
   }, [generated, photos, bundle, title, cover, coverPhotos, setType]);
 
-  const [exporting, setExporting] = useState(false);
   const [queueError, setQueueError] = useState<string | null>(null);
   const caption = captionEdit ?? carouselCaption(
     setType, generated?.teams ?? [], title, bundle?.settings.clubHashtag,
@@ -152,19 +195,19 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
   const queuedId = queued?.key === queueKey ? queued.id : null;
 
   const togglePick = (id: number) =>
-    !exporting && setPicks((ps) => ps.map((p) => (p.id === id ? { ...p, included: !p.included } : p)));
+    !busy && setPicks((ps) => ps.map((p) => (p.id === id ? { ...p, included: !p.included } : p)));
   const movePick = (index: number, dir: -1 | 1) =>
-    !exporting && setPicks((ps) => move(ps, index, index + dir));
+    !busy && setPicks((ps) => move(ps, index, index + dir));
   const setAll = (included: boolean) =>
-    !exporting && setPicks((ps) => ps.map((p) => ({ ...p, included })));
+    !busy && setPicks((ps) => ps.map((p) => ({ ...p, included })));
 
   const patchTeam = (index: number, patch: Partial<TeamSlide>) =>
-    !exporting &&
+    !busy &&
     setGenerated((g) =>
       g ? { ...g, teams: g.teams.map((t, i) => (i === index ? { ...t, ...patch } : t)) } : g,
     );
   const moveTeamAt = (index: number, dir: -1 | 1) => {
-    if (exporting) return;
+    if (busy) return;
     setGenerated((g) => {
       if (!g) return g;
       const target = index + dir;
@@ -174,7 +217,7 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
   };
 
   const canQueue = !!generated && !stale && slides.length >= 3 && slides.length <= 20 &&
-    !!caption.trim() && caption.length <= 5000 && !queuedId && !exporting && !coverUnavailable &&
+    !!caption.trim() && caption.length <= 5000 && !queuedId && !busy && !coverUnavailable &&
     !sourcesQ.isError && !settingsQ.isError && !sourcesQ.isFetching && !settingsQ.isFetching;
   const runQueue = async () => {
     if (!canQueue || submitting.current) return;
@@ -236,7 +279,7 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
     setType,
     setTypeLabel: CAROUSEL_LABELS[setType],
     changeType: (type: CarouselSetType) => {
-      if (exporting) return;
+      if (busy) return;
       setSetType(type);
       const range = type === "matchDay" ? weekendRange(new Date(), CLUB_TIME_ZONE) : rangeForSet(type);
       setFrom(range.from);
@@ -244,6 +287,7 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
       setTitle(CAROUSEL_LABELS[type]);
       setCaptionEdit(null);
       setGenerated(null);
+      setGenerationError(null);
       setQueueError(null);
     },
     loading,
@@ -253,32 +297,32 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
     coverPhotos,
     cover,
     coverUnavailable,
-    patchCover: (patch: Partial<CoverPhoto>) => !exporting && setCover(c => ({ ...c, ...patch })),
+    patchCover: (patch: Partial<CoverPhoto>) => !busy && setCover(c => ({ ...c, ...patch })),
     bundle,
     sourceWarnings,
     timeZone,
     from,
     to,
-    setFrom: (v: string) => !exporting && setFrom(v),
-    setTo: (v: string) => !exporting && setTo(v),
+    setFrom: (v: string) => !busy && setFrom(v),
+    setTo: (v: string) => !busy && setTo(v),
     resetRange: () => {
-      if (exporting) return;
+      if (busy) return;
       const range = setType === "matchDay" ? weekendRange(new Date(), CLUB_TIME_ZONE) : rangeForSet(setType);
       setFrom(range.from);
       setTo(range.to);
     },
     rangeValid,
     title,
-    setTitle: (v: string) => !exporting && setTitle(v),
+    setTitle: (v: string) => !busy && setTitle(v),
     size,
     packId,
     setPackId: (value: string) => {
-      if (exporting) return;
+      if (busy) return;
       if (!isCarouselPackId(value)) throw new Error("Choose a registered built-in carousel pack.");
       setPackId(value);
       setQueueError(null);
     },
-    setSize: (v: CardSize) => !exporting && setSize(v),
+    setSize: (v: CardSize) => !busy && setSize(v),
     orderedPicks,
     selected,
     togglePick,
@@ -291,9 +335,12 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
     patchTeam,
     moveTeamAt,
     exporting,
+    generating,
+    generationError,
+    busy,
     caption,
-    setCaption: (value: string) => !exporting && setCaptionEdit(value),
-    resetCaption: () => !exporting && setCaptionEdit(null),
+    setCaption: (value: string) => !busy && setCaptionEdit(value),
+    resetCaption: () => !busy && setCaptionEdit(null),
     queueError,
     queuedId,
     canQueue,

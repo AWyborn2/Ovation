@@ -15,10 +15,12 @@ import {
   type RegisterEntryView,
 } from "@/components/shirt-numbers";
 import { renderAt } from "@/test/render";
+import { QueryClient } from "@tanstack/react-query";
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 type Req = { method: string; url: string; body: unknown };
@@ -80,6 +82,27 @@ const apiEntry = (e: RegisterEntryView) => ({
 const SETTINGS_ON = { enabled: true, duplicatePolicy: "block", rolloverPolicy: "carry" };
 
 describe("Admin shirt numbers page", () => {
+  it("invalidates team-list carousel sources after a manual register number edit", async () => {
+    const invalidate = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+    const row = apiEntry(entry(1, "Carousel Captain", "36"));
+    const requests = stubApi([
+      { match: /\/api\/shirt-numbers\/settings$/, reply: () => SETTINGS_ON },
+      { match: /\/api\/shirt-numbers\?season=/, reply: ({ url }) => ({
+        season: 2026, seasons: [2026], entries: url.includes("season=2026") ? [row] : [],
+      }) },
+      { method: "PATCH", match: /\/api\/shirt-numbers\/1$/, reply: () => ({
+        entry: { ...row, number: "88" }, warnings: [],
+      }) },
+    ]);
+    renderAt(<AdminShirtNumbers />, "/admin/honours/shirt-numbers");
+    fireEvent.click(await screen.findByRole("button", { name: /edit number for carousel captain/i }));
+    fireEvent.change(screen.getByLabelText("Number for Carousel Captain"), { target: { value: "88" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(requests.find(r => r.method === "PATCH")?.body).toEqual({ number: "88" }));
+    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ["/api/weekend-carousel/sources"], predicate: expect.any(Function),
+    }));
+  });
   it("shows only the settings panel while the feature is off", async () => {
     const requests = stubApi([
       {
@@ -97,6 +120,7 @@ describe("Admin shirt numbers page", () => {
   });
 
   it("notes that the register is kept when the feature is turned off", async () => {
+    const invalidate = vi.spyOn(QueryClient.prototype, "invalidateQueries");
     const requests = stubApi([
       { match: /\/api\/shirt-numbers\/settings$/, reply: () => SETTINGS_ON },
       {
@@ -116,6 +140,9 @@ describe("Admin shirt numbers page", () => {
       expect(requests.find((r) => r.method === "PATCH")?.body).toEqual({ enabled: false });
     });
     expect(await screen.findByText(/register is kept/i)).toBeInTheDocument();
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: ["/api/weekend-carousel/sources"], predicate: expect.any(Function),
+    });
   });
 });
 

@@ -41,9 +41,9 @@ Sponsor closing slides must show logos only, without sponsor-name captions, in e
 
 The same on-demand composition, photo and review rules apply to Team lists, Results and Match summaries. Results are concise; summaries include detailed innings and standout performances. Keep the detailed summary variant specific to the on-demand carousel.
 
-**Why:** The user requested those three set types alongside Match day while preserving scheduled and individual-card behaviour. Changing the shared default summary design would change those existing outputs too.
+**Why:** The user requested those three set types alongside Match day while preserving scheduled and individual-card behaviour. Changing the shared default summary design would change those existing outputs too. Admins also need to apply edited playing numbers without rebuilding their chosen composition.
 
-**How to apply:** Reuse existing card builders and the frozen review/export flow, not a separate editor or the manually authored card-set feature. Never refresh a saved composition from live scorecards or reselect photos during export.
+**How to apply:** Reuse existing card builders and the frozen review/export flow, not a separate editor or the manually authored card-set feature. Explicit generation/regeneration refreshes approved live sources while retaining valid team choices, photos, crops, order, pack, size and caption. Never refresh a saved composition from live scorecards or registers, or reselect photos during export.
 
 Carousel pack selection includes every built-in pack, but excludes saved custom backgrounds, layer templates and uploaded designs. One pack applies to the complete set, including cover and closing sponsors.
 

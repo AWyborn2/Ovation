@@ -23,7 +23,7 @@ export function CoverPhotoPicker({ s }: { s: WeekendCarouselState }) {
         <div className="max-h-64 overflow-y-auto p-1">
           <div className="flex flex-wrap gap-2" role="group" aria-label="Cover photo choices">
             <button type="button" aria-pressed={s.cover.photoId === null}
-              disabled={s.exporting} onClick={() => s.patchCover({ photoId: null })}
+              disabled={s.busy} onClick={() => s.patchCover({ photoId: null })}
               className={`flex h-20 w-20 flex-col items-center justify-center rounded border text-xs focus-visible:ring-2 focus-visible:ring-ring ${s.cover.photoId === null ? "ring-2 ring-primary" : ""}`}
               data-testid="button-no-cover-photo">
               <ImageOff className="mb-1 h-4 w-4" aria-hidden /> No photo
@@ -32,7 +32,7 @@ export function CoverPhotoPicker({ s }: { s: WeekendCarouselState }) {
               const src = p.thumbUrl || p.url;
               return (
                 <button key={p.id} type="button" aria-pressed={p.id === s.cover.photoId}
-                  aria-label={`Cover photo ${p.id}`} disabled={s.exporting}
+                  aria-label={`Cover photo ${p.id}`} disabled={s.busy}
                   onClick={() => s.patchCover({ photoId: p.id, transform: { focalX: 0.5, focalY: 0.5, zoom: 1 } })}
                   className={`h-20 w-20 overflow-hidden rounded border focus-visible:ring-2 focus-visible:ring-ring ${p.id === s.cover.photoId ? "ring-2 ring-primary" : ""}`}
                   data-testid={`button-cover-photo-${p.id}`}>
@@ -53,7 +53,7 @@ export function CoverPhotoPicker({ s }: { s: WeekendCarouselState }) {
             A thumbnail could not load. Check the selected photo in the slide preview before sending to review.
           </p>}
         </div>
-        {chosen && <PhotoPlacement label="Cover" disabled={s.exporting}
+        {chosen && <PhotoPlacement label="Cover" disabled={s.busy}
           value={s.cover.transform} onChange={transform => s.patchCover({ transform })} />}
         </div>
       </div>
