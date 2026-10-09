@@ -13,4 +13,5 @@ export const SocialDraftRevisionReason = {
   refresh: 'refresh',
   edit: 'edit',
   revert: 'revert',
+  template: 'template',
 } as const;

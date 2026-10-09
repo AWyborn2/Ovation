@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { EditDrawer, StatusPill } from "@/components/admin-ui";
 import { PostPackButton } from "@/components/post-pack/post-pack-button";
 import { SchedulePanel } from "./schedule-panel";
+import { useConfirm } from "@/components/confirm-dialog";
 import {
   STATUS_LABEL,
   STATUS_TONE,
@@ -34,6 +35,8 @@ import {
   draftStatus,
   draftSubline,
   isJuniorDraft,
+  layoutReasons,
+  layoutState,
   relativeTime,
 } from "./draft-meta";
 
@@ -53,6 +56,7 @@ export function DraftDrawer({
   onPreview: (draft: SocialDraft) => void;
 }) {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [current, setCurrent] = useState<SocialDraft | null>(draft);
   const [caption, setCaption] = useState(draft?.caption ?? "");
   const [picking, setPicking] = useState(false);
@@ -114,6 +118,24 @@ export function DraftDrawer({
     revertM.isPending ||
     dismissM.isPending;
 
+  const layout = layoutState(current);
+  // A card that needs a look can still be marked ready by hand (KTD10), after
+  // the admin confirms they've seen why.
+  const markReady = async () => {
+    if (
+      layout === "needs-look" &&
+      !(await confirm({
+        title: "Mark ready anyway?",
+        description:
+          "Some of this card doesn't fit its design. It will post as it looks now. You can fix the design first instead.",
+        confirmText: "Mark ready anyway",
+      }))
+    ) {
+      return;
+    }
+    approveM.mutate({ id: current.id });
+  };
+
   const markPosted = async () => {
     await markSocialDraftPosted(current.id);
     settle({ ...current, status: "posted" });
@@ -149,12 +171,8 @@ export function DraftDrawer({
               Preview & download
             </Button>}
             {status === "awaiting_review" && (
-              <Button
-                type="button"
-                onClick={() => approveM.mutate({ id: current.id })}
-                disabled={busy}
-              >
-                Mark ready
+              <Button type="button" onClick={markReady} disabled={busy}>
+                {layout === "needs-look" ? "Mark ready anyway" : "Mark ready"}
               </Button>
             )}
             {status === "ready" && (
@@ -197,6 +215,34 @@ export function DraftDrawer({
             </span>
           )}
         </div>
+
+        {layout === "needs-look" && (
+          <div
+            role="status"
+            aria-label="Needs a look"
+            className="flex gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden />
+            <div className="space-y-2">
+              <p className="font-medium">Needs a look before it posts</p>
+              <ul className="list-disc space-y-1 pl-4">
+                {layoutReasons(current).map((r) => (
+                  <li key={r}>{r}</li>
+                ))}
+              </ul>
+              <p className="text-muted-foreground">
+                Automatic posting skips this card until it&apos;s fixed. Shorten the text or change
+                the design, or mark it ready anyway.
+              </p>
+              <Link
+                href={`/admin/social/editor/${current.id}`}
+                className="font-medium text-primary-text underline"
+              >
+                Edit design
+              </Link>
+            </div>
+          </div>
+        )}
 
         {current.staleSince && (
           <div

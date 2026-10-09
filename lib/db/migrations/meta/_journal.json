@@ -253,6 +253,13 @@
       "when": 1791436269537,
       "tag": "0035_shared_award_recipients",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791436269538,
+      "tag": "0036_kind_templates",
+      "breakpoints": true
     }
   ]
 }

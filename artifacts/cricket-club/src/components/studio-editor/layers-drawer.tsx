@@ -4,7 +4,9 @@ import {
   Eye,
   EyeOff,
   Image as ImageIcon,
+  ImagePlus,
   LayoutTemplate,
+  List,
   Lock,
   Shapes,
   Sticker,
@@ -24,6 +26,8 @@ const ICON: Record<FreeLayer["kind"], LucideIcon> = {
   sticker: Sticker,
   chart: BarChart3,
   element: LayoutTemplate,
+  photo: ImagePlus,
+  rows: List,
 };
 
 /**

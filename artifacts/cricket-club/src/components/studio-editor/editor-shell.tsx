@@ -41,6 +41,8 @@ export function EditorTopBar({
   saving,
   onSave,
   actions,
+  backHref = "/admin/social/queue",
+  formatLabel,
 }: {
   title: string;
   status: ReactNode;
@@ -57,11 +59,15 @@ export function EditorTopBar({
   onSave: () => void;
   /** Extra buttons before Save (e.g. Save as template). */
   actions?: ReactNode;
+  /** Where the back link goes (the queue for a draft, the Studio for a template). */
+  backHref?: string;
+  /** A note shown after a format's name (default: " · review" for inherited formats). */
+  formatLabel?: (f: CardSize) => string;
 }) {
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--ed-line)] bg-[var(--ed-panel)] px-3">
       <Link
-        href="/admin/social/queue"
+        href={backHref}
         className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold hover:bg-[var(--ed-card)]"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden /> Studio
@@ -79,7 +85,11 @@ export function EditorTopBar({
           {FORMATS.map((f) => (
             <option key={f.value} value={f.value}>
               {f.label}
-              {inheritedFormats.includes(f.value) ? " · review" : ""}
+              {formatLabel
+                ? formatLabel(f.value)
+                : inheritedFormats.includes(f.value)
+                  ? " · review"
+                  : ""}
             </option>
           ))}
         </select>

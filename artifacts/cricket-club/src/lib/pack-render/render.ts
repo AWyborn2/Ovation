@@ -4,6 +4,7 @@
  * self-contained card html string.
  */
 
+import { kindFields } from "@workspace/scorecard/kind-templates";
 import { isSetKind, planCardSet } from "../card-sets/plan";
 import { getPackManifest } from "../pack-templates/registry";
 import type { ShareCardInput, CardSize } from "../share-card";
@@ -133,6 +134,15 @@ function rowValues(
   return out;
 }
 
+/** Each bound repeat row's variant, parallel to `rowValues` (for `rows` layers). */
+function rowVariantsOf(
+  rows: Record<string, Array<{ variant?: string }>>,
+): Record<string, Array<string | undefined>> {
+  const out: Record<string, Array<string | undefined>> = {};
+  for (const [key, list] of Object.entries(rows)) out[key] = list.map((r) => r.variant);
+  return out;
+}
+
 /** Apply a pack's club-mode markup swaps (e.g. Sunset's club sky). */
 function applyClubSwaps(html: string, packId: string | null | undefined): string {
   const swaps = getPackManifest(packId).clubSwaps;
@@ -187,12 +197,16 @@ export function renderPackCard(
   // club-mode markup swaps. ("pack" leaves the output byte-identical.)
   const mode = packColourModeFor(data, packId);
   if (packId === BLANK_PACK_ID) {
-    // A blank canvas: the club's stage colour and the editor's layers only.
+    // A blank canvas: the club's stage colour and the editor's layers only
+    // (also the base every card kind template renders on, ADR-001).
+    const bound = bindInput(input);
     const layers = renderFreeLayers(adj, size, opts, withMonogram(packFieldValues(input, data)), {
       tokens,
       brand: data?.brand,
       junior,
-      rows: rowValues(bindInput(input).rows),
+      rows: rowValues(bound.rows),
+      rowVariants: rowVariantsOf(bound.rows),
+      photoUrl: junior ? null : (data?.photoUrl ?? null),
     });
     return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest().inkTint, mode)}">${layers}</div>`;
   }
@@ -307,7 +321,11 @@ export function packTextFields(
   input: ShareCardInput,
   packId?: string | null,
 ): { key: string; label: string }[] {
-  if (packId === BLANK_PACK_ID) return [];
+  // A blank canvas (and every card kind template) offers the kind's live
+  // fields from the shared catalogue (KTD4).
+  if (packId === BLANK_PACK_ID) {
+    return (kindFields(input.kind)?.fields ?? []).filter((f) => !LAYOUT_ONLY_FIELD.test(f.key));
+  }
   const template = resolveTemplate(input, packId);
   if (!template) return [];
   return template.fields

@@ -42,6 +42,7 @@ import {
   publicationLabel,
   draftInput,
   draftSource,
+  layoutState,
   draftStatus,
   draftSubline,
   isJuniorDraft,
@@ -105,6 +106,8 @@ export default function AdminSocialQueue() {
   const [status, setStatus] = useState<DraftStatus>(batchIds ? "ready" : "awaiting_review");
   const [family, setFamily] = useState<Family | "all">("all");
   const [grade, setGrade] = useState<string>("all");
+  // Card kind templates (KTD10): drafts whose layout needs a look.
+  const [needsLook, setNeedsLook] = useState(false);
   const [open, setOpen] = useState<SocialDraft | null>(null);
   const [preview, setPreview] = useState<SocialDraft | null>(null);
 
@@ -147,6 +150,10 @@ export default function AdminSocialQueue() {
     for (const d of drafts) c[draftStatus(d)]++;
     return c;
   }, [drafts]);
+  const lookCount = useMemo(
+    () => drafts.filter((d) => draftStatus(d) === status && layoutState(d) === "needs-look").length,
+    [drafts, status],
+  );
   const grades = useMemo(
     () => Array.from(new Set(drafts.map(draftGrade).filter((g): g is string => !!g))).sort(),
     [drafts],
@@ -158,9 +165,10 @@ export default function AdminSocialQueue() {
           (!batchIds || batchIds.has(d.id)) &&
           draftStatus(d) === status &&
           (family === "all" || d.family === family) &&
-          (grade === "all" || draftGrade(d) === grade),
+          (grade === "all" || draftGrade(d) === grade) &&
+          (!needsLook || layoutState(d) === "needs-look"),
       ),
-    [drafts, status, family, grade, batchIds],
+    [drafts, status, family, grade, batchIds, needsLook],
   );
 
   const lastImport = (importsQ.data ?? [])
@@ -224,6 +232,8 @@ export default function AdminSocialQueue() {
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground">{draftSource(d)}</span>
           {d.staleSince && <StatusPill tone="danger">Data changed</StatusPill>}
+          {layoutState(d) === "needs-look" && <StatusPill tone="danger">Needs a look</StatusPill>}
+          {layoutState(d) === "checking" && <StatusPill tone="neutral">Checking layout</StatusPill>}
           {(d.publications ?? [])
             .filter((p) => p.status !== "cancelled")
             .map((p) => (
@@ -366,6 +376,21 @@ export default function AdminSocialQueue() {
             </option>
           ))}
         </select>
+        {(lookCount > 0 || needsLook) && (
+          <button
+            type="button"
+            aria-pressed={needsLook}
+            onClick={() => setNeedsLook((v) => !v)}
+            className={cn(
+              "h-9 rounded-full border px-3 text-sm font-semibold transition-colors",
+              needsLook
+                ? "border-destructive bg-destructive/10 text-destructive"
+                : "border-border bg-card text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Needs a look ({lookCount})
+          </button>
+        )}
       </div>
 
       {draftsQ.isLoading ? (

@@ -4,7 +4,15 @@ import {
   type CardSetOptions,
   type SetInput,
 } from "@workspace/scorecard";
-import type { SocialDraftRow } from "@workspace/db";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { db, socialDraftsTable, type SocialDraftRow } from "@workspace/db";
+import {
+  planTemplateSlides,
+  type DraftLayoutWarnings,
+  type LayerDocument,
+  type LayoutWarning,
+} from "@workspace/scorecard/kind-templates";
+import { env } from "../config";
 import { ensureSettings } from "./social-cards-helpers";
 import { getTenantBrand } from "./tenant-brand";
 import { loadActiveSponsors } from "./active-sponsors";
@@ -26,7 +34,7 @@ type StillRenderer = (
   input: unknown,
   options: unknown,
   harnessOrigin?: string | null,
-) => Promise<{ buffer: Buffer; contentType: string }>;
+) => Promise<{ buffer: Buffer; contentType: string; warnings?: LayoutWarning[] }>;
 
 let renderer: StillRenderer = renderCardStill;
 
@@ -52,7 +60,14 @@ function serialised<T>(job: () => Promise<T>): Promise<T> {
 const sponsorApplies = (cardKinds: string[] | null | undefined, kind: string) =>
   !cardKinds || cardKinds.length === 0 || cardKinds.includes(kind);
 
-export type RenderedSlide = { size: CardSize; png: Buffer; page: number; of: number };
+export type RenderedSlide = {
+  size: CardSize;
+  png: Buffer;
+  page: number;
+  of: number;
+  /** Layout warnings from this render (card kind templates, KTD9/KTD13). */
+  warnings: LayoutWarning[];
+};
 
 type Logger = Parameters<typeof loadActiveSponsors>[1];
 
@@ -82,12 +97,12 @@ export async function renderDraftSlides(
     const rendered: RenderedSlide[] = [];
     for (const size of sizes) {
       for (const [i, slide] of carousel.slides.entries()) {
-        const { buffer } = await serialised(() => renderer(slide.input, {
+        const { buffer, warnings = [] } = await serialised(() => renderer(slide.input, {
           size, packId: carouselPackId(carousel), data: slide.data, junior: slide.junior,
           sponsorsOn: slide.sponsorsOn, strictImages: true,
           adjustments: queuedSlideAdjustments(slide, size),
         }, harnessOrigin));
-        rendered.push({ size, png: buffer, page: i + 1, of: carousel.slides.length });
+        rendered.push({ size, png: buffer, page: i + 1, of: carousel.slides.length, warnings });
       }
     }
     return rendered;
@@ -101,9 +116,14 @@ export async function renderDraftSlides(
     // The pack the club has set for this card type: the Studio preview and
     // editor fall back to it when the draft carries no pack of its own, so
     // the post pack must too (not the renderer's default pack).
-    draft.packId ? Promise.resolve(null) : resolveDraftPack(tenantId, kind),
+    draft.packId || draft.templateVersion !== null
+      ? Promise.resolve(null)
+      : resolveDraftPack(tenantId, kind),
   ]);
-  const packId = draft.packId ?? clubPack;
+  // A card kind template draft renders its own document on the blank base
+  // (ADR-001); a pack draft renders its pack.
+  const templated = draft.templateVersion !== null;
+  const packId = templated ? "blank" : (draft.packId ?? clubPack);
   // "Pack's own look" choices, as the Studio preview passes them; any other
   // pack renders in club colours.
   const modes = Object.fromEntries(
@@ -150,13 +170,20 @@ export async function renderDraftSlides(
   const setOptions = (rootAdj?.set ?? {}) as CardSetOptions;
   // The editor's edits: the card's own for a single card (and the landscape
   // summary), each slide's own for a set.
+  // A templated carousel is one document on every slide (KTD6).
   const adjustmentsFor = (key: string) =>
-    key === "single" ? rootAdj : (rootAdj?.slides?.[key] ?? null);
+    templated || key === "single" ? rootAdj : (rootAdj?.slides?.[key] ?? null);
 
   const rendered: RenderedSlide[] = [];
   for (const size of sizes) {
-    const slides =
-      size === "landscape"
+    // A templated list spills by its rows layer's capacity (KTD13).
+    const templatePlan = templated
+      ? planTemplateSlides(input, (rootAdj ?? {}) as LayerDocument, size)
+      : null;
+    const sizeWarnings: LayoutWarning[] = templatePlan?.warning ? [templatePlan.warning] : [];
+    const slides = templatePlan
+      ? templatePlan.slides
+      : size === "landscape"
         ? [
             {
               key: "single",
@@ -169,7 +196,7 @@ export async function renderDraftSlides(
     for (const slide of slides) {
       const slideJunior = junior || (slide.input as SetInput).junior === true;
       const slideData = slideJunior ? { ...data, photoUrl: null } : data;
-      const { buffer } = await serialised(() =>
+      const { buffer, warnings } = await serialised(() =>
         renderer(
           slide.input,
           {
@@ -184,8 +211,124 @@ export async function renderDraftSlides(
           harnessOrigin,
         ),
       );
-      rendered.push({ size, png: buffer, page: slide.page, of: slide.of });
+      rendered.push({
+        size,
+        png: buffer,
+        page: slide.page,
+        of: slide.of,
+        // The size-level warning (too many slides) rides on the first slide.
+        warnings: [...(slide.page === 1 ? sizeWarnings : []), ...(warnings ?? [])],
+      });
     }
   }
   return rendered;
+}
+
+/** Layout warnings per size from rendered slides (every size in `sizes` gets an entry). */
+export function layoutWarningsFrom(
+  slides: RenderedSlide[],
+  sizes: CardSize[],
+): DraftLayoutWarnings {
+  const out: DraftLayoutWarnings = {};
+  for (const size of sizes)
+    out[size] = slides.filter((s) => s.size === size).flatMap((s) => s.warnings);
+  return out;
+}
+
+/** Whether headless renders can run here (a test renderer, or a configured harness). */
+export function canRenderHeadless(): boolean {
+  return stillRendererOverridden() || !!env.RENDER_HARNESS_URL() || !!env.RENDER_HARNESS_ORIGIN();
+}
+
+/** What one layout check found, and how many images it rendered. */
+export type LayoutCheck = { warnings: DraftLayoutWarnings; renders: number; stored: boolean };
+
+/**
+ * Render a templated draft at every enabled size and store its layout
+ * warnings (KTD10). A full check replaces the stored warnings, so a size the
+ * club has since turned off can't keep the draft blocked. The result is only
+ * stored if the draft is unchanged since it was read — an apply, edit or data
+ * refresh during the render leaves it pending for the next sweep, so a stale
+ * clean result can never clear a design nobody checked.
+ */
+export async function checkDraftLayout(draft: SocialDraftRow, log: Logger): Promise<LayoutCheck> {
+  const sizes = await enabledSizes(draft.tenantId);
+  const slides = await renderDraftSlides(draft, sizes, null, log);
+  const warnings = layoutWarningsFrom(slides, sizes);
+  const updated = await db
+    .update(socialDraftsTable)
+    .set({ layoutWarnings: warnings, layoutCheckPending: false })
+    .where(
+      and(
+        eq(socialDraftsTable.id, draft.id),
+        eq(socialDraftsTable.layoutCheckPending, true),
+        draft.templateVersion === null
+          ? isNull(socialDraftsTable.templateVersion)
+          : eq(socialDraftsTable.templateVersion, draft.templateVersion),
+        sql`${socialDraftsTable.adjustments} is not distinct from ${JSON.stringify(draft.adjustments ?? null)}::jsonb`,
+        sql`${socialDraftsTable.cardInput} is not distinct from ${JSON.stringify(draft.cardInput ?? null)}::jsonb`,
+      ),
+    )
+    .returning({ id: socialDraftsTable.id });
+  return { warnings, renders: slides.length, stored: updated.length > 0 };
+}
+
+/** How many layout checks one sweep runs per club, so a backlog can't stall it. */
+export const LAYOUT_CHECKS_PER_SWEEP = 20;
+
+/**
+ * How many images one club's layout checks may render per sweep. Renders
+ * share one headless browser across clubs, so this — not the draft count —
+ * keeps one club's long lists or repeated applies from delaying everyone.
+ */
+export const LAYOUT_RENDERS_PER_SWEEP = 60;
+
+/**
+ * Run the layout checks templated drafts still owe, oldest first (ADR-003).
+ * A draft whose check fails stays pending — and so stays out of automation —
+ * until a later sweep succeeds. Without a render harness nothing runs and the
+ * drafts stay pending (fail closed). Returns how many were checked.
+ */
+export async function runPendingLayoutChecks(
+  tenantId: number,
+  log: Logger,
+  limit = LAYOUT_CHECKS_PER_SWEEP,
+  renderBudget = LAYOUT_RENDERS_PER_SWEEP,
+): Promise<number> {
+  const pending = await db
+    .select()
+    .from(socialDraftsTable)
+    .where(
+      and(
+        eq(socialDraftsTable.tenantId, tenantId),
+        eq(socialDraftsTable.layoutCheckPending, true),
+        inArray(socialDraftsTable.status, ["awaiting_review", "ready"]),
+      ),
+    )
+    .orderBy(asc(socialDraftsTable.createdAt))
+    .limit(limit);
+  if (pending.length === 0) return 0;
+  if (!canRenderHeadless()) {
+    log.warn(
+      { tenantId, pending: pending.length },
+      "layout checks skipped: no render harness configured",
+    );
+    return 0;
+  }
+  let checked = 0;
+  let renders = 0;
+  for (const draft of pending) {
+    if (renders >= renderBudget) break;
+    try {
+      const result = await checkDraftLayout(draft, log);
+      renders += result.renders;
+      if (result.stored) checked += 1;
+    } catch (err) {
+      log.warn(
+        { err, tenantId, draftId: draft.id },
+        "layout check failed; draft stays out of automation",
+      );
+    }
+  }
+  return checked;
 }

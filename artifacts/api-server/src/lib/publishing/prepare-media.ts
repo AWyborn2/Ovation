@@ -1,9 +1,19 @@
 import sharp from "sharp";
-import type { SocialDraftRow } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { db, socialDraftsTable, type SocialDraftRow } from "@workspace/db";
+import {
+  mergeRenderedWarnings,
+  type DraftLayoutWarnings,
+} from "@workspace/scorecard/kind-templates";
 import { env } from "../../config";
 import { objectUrl, photoStore } from "../photo-store";
 import { renderDraftCaption } from "../draft-enrich";
-import { enabledSizes, renderDraftSlides, stillRendererOverridden } from "../draft-render";
+import {
+  enabledSizes,
+  layoutWarningsFrom,
+  renderDraftSlides,
+  stillRendererOverridden,
+} from "../draft-render";
 import { DestinationError, type Platform, type PostType, type PreparedPost } from "./destination";
 
 /**
@@ -85,6 +95,7 @@ export async function prepareMedia(
   platform: Platform,
   postType: PostType,
   log: Logger,
+  opts: { abortOnWarnings?: boolean } = {},
 ): Promise<PreparedMedia> {
   const origin = publicOrigin();
   const harness = harnessOrigin();
@@ -93,6 +104,28 @@ export async function prepareMedia(
 
   const slides = await renderDraftSlides(draft, [size], harness, log);
   if (slides.length === 0) throw new DestinationError("permanent", "The card rendered nothing.");
+  // A templated card checks its own layout at publish time too (KTD10): the
+  // result is stored, and an automatic post that now needs a look is
+  // stopped. A post an admin scheduled themselves goes ahead — they may
+  // have marked it ready anyway.
+  if (draft.templateVersion !== null) {
+    const warnings = layoutWarningsFrom(slides, [size]);
+    await db
+      .update(socialDraftsTable)
+      .set({
+        layoutWarnings: mergeRenderedWarnings(
+          draft.layoutWarnings as DraftLayoutWarnings | null,
+          warnings,
+        ),
+      })
+      .where(eq(socialDraftsTable.id, draft.id));
+    if (opts.abortOnWarnings && (warnings[size]?.length ?? 0) > 0) {
+      throw new DestinationError(
+        "permanent",
+        "This card needs a look: some text doesn't fit its design. Fix it in the editor, then post it again.",
+      );
+    }
+  }
   if (slides.length > MAX_IMAGES) {
     throw new DestinationError(
       "permanent",

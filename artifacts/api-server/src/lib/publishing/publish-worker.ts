@@ -240,6 +240,7 @@ async function processOne(
         row.platform as Platform,
         row.postType as PostType,
         appLogger,
+        { abortOnWarnings: row.origin === "auto" },
       );
       try {
         mediaIds = await dest.createMedia(account, prepared.post);
