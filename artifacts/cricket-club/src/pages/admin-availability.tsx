@@ -10,6 +10,7 @@ import {
   useListSquadMembers,
   getListSquadMembersQueryKey,
   useImportSquad,
+  useSeedSquadFromSeason,
   useGetSquadMember,
   getGetSquadMemberQueryKey,
   useUpdateSquadMember,
@@ -26,6 +27,7 @@ import type {
   SquadImportResult,
   SquadMember,
   SquadMemberDetail,
+  SquadSeasonSeedResult,
   SquadSection,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -564,6 +566,12 @@ function ImportSummary({ result }: { result: SquadImportResult }) {
           </div>
         ))}
       </dl>
+      {result.adopted > 0 && (
+        <p className="text-sm" data-testid="import-adopted">
+          Filled in {plural(result.adopted, "player")} already in the squad from this season&rsquo;s
+          games instead of adding them twice.
+        </p>
+      )}
       {result.contactsKept > 0 && (
         <p className="text-sm" data-testid="import-contacts-kept">
           Kept the contact details {plural(result.contactsKept, "member")} changed from their own
@@ -596,6 +604,30 @@ function ImportSummary({ result }: { result: SquadImportResult }) {
   );
 }
 
+/** No name, mobile or email for the player or either guardian. */
+function hasNoContact(m: SquadMember): boolean {
+  return [m.account, m.guardian1, m.guardian2].every(
+    (c) => !c.hasName && !c.hasMobile && !c.hasEmail,
+  );
+}
+
+/** No mobile or email anywhere: availability can't reach them. */
+function unreachable(m: SquadMember): boolean {
+  return [m.account, m.guardian1, m.guardian2].every((c) => !c.hasMobile && !c.hasEmail);
+}
+
+function SeedSummary({ result }: { result: SquadSeasonSeedResult }) {
+  return (
+    <p className="rounded-md border p-3 text-sm" data-testid="seed-summary">
+      {result.added > 0
+        ? `Added ${plural(result.added, "player")} from this season's games.`
+        : "No one new: everyone who has played this season is already in the squad."}
+      {result.alreadyPresent > 0 && ` ${plural(result.alreadyPresent, "player")} already listed.`}
+      {result.skipped > 0 && ` ${plural(result.skipped, "fill-in or unnamed player")} left out.`}
+    </p>
+  );
+}
+
 function ContactBadges({ label, c }: { label: string; c: SquadContactPresence }) {
   if (!c.hasName && !c.hasMobile && !c.hasEmail) return null;
   return (
@@ -616,10 +648,12 @@ function SquadCard() {
   const queryClient = useQueryClient();
   const { data: members, isLoading, isError, refetch } = useListSquadMembers();
   const importSquad = useImportSquad();
+  const seedSquad = useSeedSquadFromSeason();
   const updateMember = useUpdateSquadMember();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [summary, setSummary] = useState<SquadImportResult | null>(null);
+  const [seeded, setSeeded] = useState<SquadSeasonSeedResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [section, setSection] = useState<"all" | SquadSection>("all");
@@ -646,6 +680,23 @@ function SquadCard() {
       },
     );
   };
+
+  const onSeed = () => {
+    setError(null);
+    setSeeded(null);
+    seedSquad.mutate(undefined, {
+      onSuccess: (res) => {
+        setSeeded(res);
+        invalidate();
+      },
+      onError: (e) => setError(errorMessage(e)),
+    });
+  };
+
+  const noContactCount = useMemo(
+    () => (members ?? []).filter((m) => m.active && unreachable(m)).length,
+    [members],
+  );
 
   const onToggleActive = (m: SquadMember, active: boolean) => {
     setError(null);
@@ -700,7 +751,23 @@ function SquadCard() {
           </div>
         </div>
         {summary && <ImportSummary result={summary} />}
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            No export yet? Add everyone who has played or been named in a senior side this season.
+            They join without contact details until you import the export or add them.
+          </p>
+          <Button variant="outline" onClick={onSeed} disabled={seedSquad.isPending}>
+            {seedSquad.isPending ? "Adding…" : "Add this season's players"}
+          </Button>
+        </div>
+        {seeded && <SeedSummary result={seeded} />}
         <ErrorBox message={error} testId="squad-error" />
+        {noContactCount > 0 && (
+          <p className="text-sm" data-testid="squad-no-contact-note">
+            {plural(noContactCount, "player")} {noContactCount === 1 ? "has" : "have"} no mobile or
+            email yet — import the PlayHQ participant export or add details to message them.
+          </p>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <Input
@@ -739,7 +806,7 @@ function SquadCard() {
         ) : (members ?? []).length === 0 ? (
           <EmptyState
             title="No squad yet"
-            message="Upload the PlayHQ participant export to add your players."
+            message="Upload the PlayHQ participant export, or add this season's players from your games."
           />
         ) : filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground">No one matches those filters.</p>
@@ -777,6 +844,7 @@ function SquadCard() {
                       />
                     </td>
                     <td className="space-y-1 p-2">
+                      {hasNoContact(m) && <Badge variant="outline">No contact details</Badge>}
                       <ContactBadges label="Player" c={m.account} />
                       <ContactBadges label="Parent 1" c={m.guardian1} />
                       <ContactBadges label="Parent 2" c={m.guardian2} />

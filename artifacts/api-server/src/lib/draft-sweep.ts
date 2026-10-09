@@ -35,6 +35,7 @@ import { draftCentralAchievements } from "./central-achievements";
 import { syncDebutCaps } from "./debut-caps";
 import { matchResultCardsOn, resolveRoundSchedules } from "./round-schedules";
 import { runAvailabilitySchedule } from "./availability-schedule";
+import { autoSeedSquadIfEmpty } from "./squad-season-seed";
 
 type Logger = PostCommitLogger & {
   info: (obj: unknown, msg?: string) => void;
@@ -133,6 +134,9 @@ export async function runDraftSweep(
     } catch (err) {
       logger.error({ err, tenantId }, "debut caps failed");
     }
+    // An empty squad register fills itself once from this season's games, so
+    // a club can use availability without the PlayHQ participant export.
+    await autoSeedSquadIfEmpty(tenantId, now, logger);
     // Player availability: send, remind and cut-off on
     // the club's schedule. A no-op unless the club has switched it on.
     try {

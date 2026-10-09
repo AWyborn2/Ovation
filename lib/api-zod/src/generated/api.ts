@@ -2926,6 +2926,7 @@ export const ImportSquadResponse = zod.object({
   "created": zod.number(),
   "updated": zod.number(),
   "deactivated": zod.number().describe('Existing members stood down because their registration is no longer active'),
+  "adopted": zod.number().describe('Members without a PlayHQ profile id (added from this season\'s games\nor by hand) that a row of the file turned out to be, and filled in\ninstead of added twice. Also counted in `updated`.\n'),
   "linked": zod.number().describe('Members newly linked to a club player record'),
   "contactsKept": zod.number().describe('Members whose contacts were kept because a player or guardian changed them from their link and an admin hasn\'t cleared the flag yet'),
   "skipped": zod.array(zod.object({
@@ -2937,6 +2938,25 @@ export const ImportSquadResponse = zod.object({
   "reason": zod.string(),
   "count": zod.number()
 }))
+})
+
+
+/**
+ * Adds everyone who has played (or been named) for the club in a senior
+fixture or match of the current cricket season (from 1 July, Perth) and
+isn't in the register yet: the club's published team lists first, then
+the club's central scorecards. Members are added active, senior, linked
+to their club player when known, with no contact details and no PlayHQ
+profile id; a later participant import fills them in rather than adding
+them twice. Fill-ins and junior grades are never read. Existing members
+are never changed, and running it again adds no one twice.
+
+ * @summary Add this season's players to the register (admin)
+ */
+export const SeedSquadFromSeasonResponse = zod.object({
+  "added": zod.number().describe('Members added'),
+  "skipped": zod.number().describe('People left out (a fill-in, or no usable name)'),
+  "alreadyPresent": zod.number().describe('People already in the register')
 })
 
 

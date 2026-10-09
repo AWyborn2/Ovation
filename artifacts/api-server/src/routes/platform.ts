@@ -10,6 +10,7 @@ import { signupRateLimiter, signupDiscoveryRateLimiter } from "../middlewares/ra
 import { listAvailableClubs } from "../lib/available-clubs";
 import { env } from "../config";
 import { isEmail, slugTaken } from "../lib/signup-validation";
+import { autoSeedSquadIfEmpty } from "../lib/squad-season-seed";
 
 const router: IRouter = Router();
 
@@ -168,6 +169,9 @@ router.post("/platform/signup", signupRateLimiter, async (req, res): Promise<voi
         "provisioning: premiership honour-board seed failed",
       );
     }
+    // A club that has already played this season gets its squad register
+    // filled from those games. Best effort: never fails provisioning.
+    await autoSeedSquadIfEmpty(result.tenant.id, new Date(), req.log);
     const admin = result.admin;
     if (!admin) {
       // provisionTenant throws (and rolls back) when the insert returns no row,

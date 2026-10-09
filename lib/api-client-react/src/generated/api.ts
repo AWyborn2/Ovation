@@ -354,6 +354,7 @@ import type {
   SquadMemberDetail,
   SquadMemberUpdate,
   SquadPlayerSearchHit,
+  SquadSeasonSeedResult,
   Stat,
   StatInput,
   StatListResponse,
@@ -7570,6 +7571,85 @@ export const useImportSquad = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getImportSquadMutationOptions(options));
+    }
+
+export const getSeedSquadFromSeasonUrl = () => {
+
+
+
+
+  return `/api/squad/seed-from-season`
+}
+
+/**
+ * Adds everyone who has played (or been named) for the club in a senior
+fixture or match of the current cricket season (from 1 July, Perth) and
+isn't in the register yet: the club's published team lists first, then
+the club's central scorecards. Members are added active, senior, linked
+to their club player when known, with no contact details and no PlayHQ
+profile id; a later participant import fills them in rather than adding
+them twice. Fill-ins and junior grades are never read. Existing members
+are never changed, and running it again adds no one twice.
+
+ * @summary Add this season's players to the register (admin)
+ */
+export const seedSquadFromSeason = async ( options?: RequestInit): Promise<SquadSeasonSeedResult> => {
+
+  return customFetch<SquadSeasonSeedResult>(getSeedSquadFromSeasonUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSeedSquadFromSeasonMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof seedSquadFromSeason>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof seedSquadFromSeason>>, TError,void, TContext> => {
+
+const mutationKey = ['seedSquadFromSeason'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof seedSquadFromSeason>>, void> = () => {
+
+
+          return  seedSquadFromSeason(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SeedSquadFromSeasonMutationResult = NonNullable<Awaited<ReturnType<typeof seedSquadFromSeason>>>
+
+    export type SeedSquadFromSeasonMutationError = ErrorType<void>
+
+    /**
+ * @summary Add this season's players to the register (admin)
+ */
+export const useSeedSquadFromSeason = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof seedSquadFromSeason>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof seedSquadFromSeason>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSeedSquadFromSeasonMutationOptions(options));
     }
 
 export const getSearchSquadPlayersUrl = (params: SearchSquadPlayersParams,) => {

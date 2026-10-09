@@ -32,7 +32,7 @@
  *   - partials.ts      (participant, grade, season) partial aggregates + corrected-player lines for the club overlay
  *   - corrections.ts   match search, match lookup and match participants for the corrections admin screen (uncached)
  *   - identity-drift.ts  the participant GUIDs with a line for a club right now, for the identity drift check (uncached)
- *   - squad-link.ts    a club's senior participants with their line names + latest season, for squad player linking
+ *   - squad-link.ts    a club's senior participants with their line names + latest season, for squad player linking, and a season's played players for the squad seed
  * Every central read must stay behind this barrel (eslint `no-restricted-imports`
  * on `@workspace/db/central`) so it is club-filtered, cached and tested in one
  * place. The central DB is READ-ONLY from the app: `select` / `execute` only.

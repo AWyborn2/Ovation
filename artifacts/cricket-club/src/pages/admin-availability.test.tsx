@@ -225,6 +225,7 @@ describe("admin availability", () => {
       created: 12,
       updated: 30,
       deactivated: 2,
+      adopted: 4,
       linked: 5,
       contactsKept: 1,
       skipped: [
@@ -256,10 +257,51 @@ describe("admin availability", () => {
     expect(count("Stood down")).toBe("2");
     expect(count("Skipped")).toBe("3");
     expect(s.getByTestId("import-contacts-kept").textContent).toMatch(/1 member changed/);
+    expect(s.getByTestId("import-adopted").textContent).toMatch(/Filled in 4 players already/);
     expect(s.getByText("Registration not active: 2")).toBeTruthy();
     expect(s.getByText("Not registered as a player: 1")).toBeTruthy();
     expect(s.getByText(/Line 4: Pat Coach/)).toBeTruthy();
     expect(calls.some((c) => c.url.includes("/squad/import") && c.method === "POST")).toBe(true);
+  });
+
+  it("adds this season's players and flags members with no way to reach them", async () => {
+    const seeded: SquadMember = {
+      ...MEMBER,
+      id: 8,
+      playhqProfileId: null,
+      firstName: "Casey",
+      lastName: "Barnes",
+      section: "senior",
+      under18: null,
+      gradeHint: "A Grade",
+      account: none,
+      guardian1: none,
+      guardian2: none,
+      contactChangeFlag: false,
+    };
+    const calls = installFetch((url, method) => {
+      if (url.includes("/squad/seed-from-season") && method === "POST")
+        return { body: { added: 3, skipped: 1, alreadyPresent: 2 } };
+      if (url.endsWith("/api/squad")) return { body: [MEMBER, seeded] };
+      return undefined;
+    });
+    renderAt(<AdminAvailability />, "/admin/availability");
+
+    const row = await screen.findByTestId("squad-row-8");
+    expect(within(row).getByText("No contact details")).toBeTruthy();
+    expect(within(screen.getByTestId("squad-row-7")).queryByText("No contact details")).toBeNull();
+    expect(screen.getByTestId("squad-no-contact-note").textContent).toBe(
+      "1 player has no mobile or email yet — import the PlayHQ participant export or add details to message them.",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Add this season's players" }));
+    const summary = await screen.findByTestId("seed-summary");
+    expect(summary.textContent).toMatch(/Added 3 players from this season's games\./);
+    expect(summary.textContent).toMatch(/2 players already listed/);
+    expect(summary.textContent).toMatch(/1 fill-in or unnamed player left out/);
+    expect(
+      calls.some((c) => c.url.includes("/api/squad/seed-from-season") && c.method === "POST"),
+    ).toBe(true);
   });
 
   it("renders no contact values outside the edit drawer", async () => {

@@ -147,6 +147,11 @@ export const availabilitySettingsTable = pgTable(
       .$type<SelectionRule>()
       .notNull()
       .default("captains_own_grade"),
+    // Set once the register was filled automatically from this season's played
+    // sides (`squad-season-seed.ts`), so a club that later empties its register
+    // on purpose is never re-filled behind its back. The admin's "Add this
+    // season's players" button works regardless.
+    seasonSeededAt: timestamp("season_seeded_at", { withTimezone: true }),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

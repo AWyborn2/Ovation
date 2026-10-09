@@ -50,6 +50,7 @@ import { listAvailableClubs } from "../lib/available-clubs";
 import { isEmail, slugTaken } from "../lib/signup-validation";
 import { platformSyncOverview } from "../lib/playhq-health";
 import { IngestNotConfiguredError } from "@workspace/db/playhq-ingest";
+import { autoSeedSquadIfEmpty } from "../lib/squad-season-seed";
 
 const router: IRouter = Router();
 
@@ -566,6 +567,9 @@ router.post("/platform/admin/tenants", requirePlatformAdmin, async (req, res): P
         "provisioning: premiership honour-board seed failed",
       );
     }
+    // A club that has already played this season gets its squad register
+    // filled from those games. Best effort: never fails provisioning.
+    await autoSeedSquadIfEmpty(result.tenant.id, new Date(), req.log);
     if (adminEmail && parsed.data.password) {
       const passwordHash = await hashPassword(parsed.data.password);
       await db.insert(adminsTable).values({

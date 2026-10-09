@@ -2976,12 +2976,26 @@ export interface SquadImportResult {
   updated: number;
   /** Existing members stood down because their registration is no longer active */
   deactivated: number;
+  /** Members without a PlayHQ profile id (added from this season's games
+  or by hand) that a row of the file turned out to be, and filled in
+  instead of added twice. Also counted in `updated`.
+   */
+  adopted: number;
   /** Members newly linked to a club player record */
   linked: number;
   /** Members whose contacts were kept because a player or guardian changed them from their link and an admin hasn't cleared the flag yet */
   contactsKept: number;
   skipped: SquadImportSkip[];
   skippedByReason: SquadImportResultSkippedByReasonItem[];
+}
+
+export interface SquadSeasonSeedResult {
+  /** Members added */
+  added: number;
+  /** People left out (a fill-in, or no usable name) */
+  skipped: number;
+  /** People already in the register */
+  alreadyPresent: number;
 }
 
 /**

@@ -678,6 +678,7 @@ export * from './squadMemberDetail';
 export * from './squadMemberUpdate';
 export * from './squadPlayerSearchHit';
 export * from './squadPlayerSearchHitAlreadyLinkedTo';
+export * from './squadSeasonSeedResult';
 export * from './squadSection';
 export * from './stat';
 export * from './statInput';

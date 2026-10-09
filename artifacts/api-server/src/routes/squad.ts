@@ -24,6 +24,7 @@ import {
 import { isUnder18OnDate, perthDate } from "../lib/availability-grades";
 import { revokeMemberTokens } from "../lib/availability-tokens";
 import { linkedPlayerNames, searchClubPlayers } from "../lib/squad-link";
+import { seedSquadFromSeason } from "../lib/squad-season-seed";
 
 /**
  * The club's squad register for player availability. Admin only. Contact
@@ -149,6 +150,20 @@ router.post(
       },
       "squad import",
     );
+    res.json(result);
+  },
+);
+
+// Everyone who has played for the club this season and isn't in the register
+// yet (lib/squad-season-seed). Works whether or not the automatic seed ran.
+router.post(
+  "/squad/seed-from-season",
+  requireAdmin,
+  adminWriteRateLimiter,
+  async (req, res): Promise<void> => {
+    const tenantId = getTenantId(req);
+    const result = await seedSquadFromSeason(tenantId);
+    req.log?.info({ tenantId, ...result }, "squad seeded from this season");
     res.json(result);
   },
 );

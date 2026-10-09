@@ -246,6 +246,13 @@
       "when": 1791332095224,
       "tag": "0034_shirt_numbers",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1791511841972,
+      "tag": "0035_squad_season_seed",
+      "breakpoints": true
     }
   ]
 }
