@@ -366,11 +366,9 @@ router.post(
       return created;
     });
     if (!row) {
-      res
-        .status(409)
-        .json({
-          error: "Several roster members have this name. Choose the existing player to reactivate.",
-        });
+      res.status(409).json({
+        error: "Several roster members have this name. Choose the existing player to reactivate.",
+      });
       return;
     }
     res.status(201).json(serializeSummary(row, new Map()));

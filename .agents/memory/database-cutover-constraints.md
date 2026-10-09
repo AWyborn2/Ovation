@@ -77,5 +77,15 @@ the actual client transport; preserve both fail-closed guards.
 **Outcome (6 Oct 2026):** the cut-over is done. Development and production both run on
 Replit-managed Postgres with `public`, `central` and `playhq`; the Supabase project is retired
 and read-only (never write to it). Ash confirmed every connection variable points at the
-intended database. Production schema changes are run by hand in the Production SQL runner
-before republishing — publishing does not migrate production.
+ intended database.
+
+Replit publishing normally compares development and managed production schemas
+and applies their differences; do not claim it never migrates production or
+require manual production SQL as the default.
+
+**Why:** Official Replit documentation confirmed automatic publish-time schema
+migrations. Earlier manual production updates do not establish a general limitation.
+
+**How to apply:** Prefer the publish-time schema update without overwriting
+production data. Verify specific CHECK constraints afterward when relevant:
+the observed constraint-diff gap is documented in publishing-constraint-checks.md.

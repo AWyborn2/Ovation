@@ -7,9 +7,7 @@
   display: grid;
   place-items: center;
   color: #f3f0e7;
-  background:
-    radial-gradient(ellipse at 50% 45%, rgba(57, 64, 69, .46), transparent 57%),
-    #11161a;
+  background: radial-gradient(ellipse at 50% 45%, rgba(57, 64, 69, 0.46), transparent 57%), #11161a;
   font-family: "IBM Plex Sans", sans-serif;
 }
 
@@ -39,9 +37,9 @@
   pointer-events: none;
   font-family: "IBM Plex Mono", monospace;
   font-size: 11px;
-  letter-spacing: .12em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(243, 240, 231, .63);
+  color: rgba(243, 240, 231, 0.63);
 }
 
 .team-list-control-bar > * {
@@ -53,9 +51,9 @@
   flex-wrap: wrap;
   gap: 6px;
   padding: 4px;
-  border: 1px solid rgba(245, 241, 231, .14);
+  border: 1px solid rgba(245, 241, 231, 0.14);
   border-radius: 8px;
-  background: rgba(16, 20, 23, .8);
+  background: rgba(16, 20, 23, 0.8);
   backdrop-filter: blur(12px);
 }
 
@@ -64,13 +62,15 @@
   border: 0;
   border-radius: 5px;
   padding: 8px 10px;
-  color: rgba(243, 240, 231, .68);
+  color: rgba(243, 240, 231, 0.68);
   background: transparent;
   font: inherit;
-  letter-spacing: .08em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background .18s ease, color .18s ease;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
 }
 
 .team-list-formats button:hover,

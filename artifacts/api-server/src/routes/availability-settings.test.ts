@@ -268,14 +268,18 @@ describe("availability settings API", () => {
     const res = await as(cookieA, tenantA).post("/api/availability/rounds/current/send");
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ step: "send", messaged: 2, drafts: 1 });
-    const [side] = await db.select().from(selectionsTable)
+    const [side] = await db
+      .select()
+      .from(selectionsTable)
       .where(eq(selectionsTable.tenantId, tenantA));
     expect(side.state).toBe("draft");
     const editedSlots = [
       { memberId: null, gap: { name: "Saved draft", reason: "no_reply" as const } },
       ...side.slots.slice(1),
     ];
-    await db.update(selectionsTable).set({ slots: editedSlots, version: 3 })
+    await db
+      .update(selectionsTable)
+      .set({ slots: editedSlots, version: 3 })
       .where(eq(selectionsTable.id, side.id));
     expect(email.map((m) => m.to).sort()).toEqual(["alex@example.com", "sam@example.com"]);
     for (let attempt = 0; attempt < 4; attempt++) {
@@ -284,7 +288,9 @@ describe("availability settings API", () => {
       const again = await as(cookieA, tenantA).post("/api/availability/rounds/current/send");
       expect(again.status).toBe(200);
       expect(again.body).toMatchObject({ step: "send", messaged: 2, drafts: 0 });
-      const sides = await db.select().from(selectionsTable)
+      const sides = await db
+        .select()
+        .from(selectionsTable)
         .where(eq(selectionsTable.tenantId, tenantA));
       expect(sides).toHaveLength(1);
       expect(sides[0]).toMatchObject({ id: side.id, slots: editedSlots, version: 3 });
@@ -306,8 +312,9 @@ describe("availability settings API", () => {
     expect(board.body.selections).toHaveLength(1);
     expect(board.body.selections[0]).toMatchObject({ state: "draft", canEdit: true });
     const again = await as(cookieA, tenantA).get("/api/selection/board?section=senior");
-    expect(again.body.selections.map((side: { id: number }) => side.id))
-      .toEqual(board.body.selections.map((side: { id: number }) => side.id));
+    expect(again.body.selections.map((side: { id: number }) => side.id)).toEqual(
+      board.body.selections.map((side: { id: number }) => side.id),
+    );
     expect(email.length + sms.length).toBe(deliveries);
   });
 
@@ -366,12 +373,15 @@ describe("availability settings API", () => {
       opponentName: "Test opposition",
       startAt: new Date(perthDayStart(weekend).getTime() + 13 * 3_600_000),
     });
-    const [member] = await db.insert(squadMembersTable).values({
-      tenantId: tenantB,
-      firstName: "New",
-      lastName: "Contact",
-      gradeHint: "A Grade",
-    }).returning();
+    const [member] = await db
+      .insert(squadMembersTable)
+      .values({
+        tenantId: tenantB,
+        firstName: "New",
+        lastName: "Contact",
+        gradeHint: "A Grade",
+      })
+      .returning();
     email = [];
     sms = [];
     const empty = await as(cookieB, tenantB).post("/api/availability/rounds/current/send");
@@ -379,33 +389,42 @@ describe("availability settings API", () => {
     expect(empty.body.messaged).toBe(0);
     expect(email).toHaveLength(0);
 
-    await db.update(squadMembersTable).set({
-      accountHolderEmail: "new-contact@example.com",
-    }).where(eq(squadMembersTable.id, member.id));
+    await db
+      .update(squadMembersTable)
+      .set({
+        accountHolderEmail: "new-contact@example.com",
+      })
+      .where(eq(squadMembersTable.id, member.id));
     const repeated = await as(cookieB, tenantB).post("/api/availability/rounds/current/send");
     expect(repeated.status).toBe(200);
     expect(repeated.body.messaged).toBe(1);
     expect(email.map((m) => m.to)).toEqual(["new-contact@example.com"]);
 
-    const [added] = await db.insert(squadMembersTable).values({
-      tenantId: tenantB,
-      firstName: "Later",
-      lastName: "Member",
-      gradeHint: "A Grade",
-      accountHolderEmail: "later-member@example.com",
-    }).returning();
+    const [added] = await db
+      .insert(squadMembersTable)
+      .values({
+        tenantId: tenantB,
+        firstName: "Later",
+        lastName: "Member",
+        gradeHint: "A Grade",
+        accountHolderEmail: "later-member@example.com",
+      })
+      .returning();
     email = [];
     const withNewMember = await as(cookieB, tenantB).post("/api/availability/rounds/current/send");
     expect(withNewMember.status).toBe(200);
     expect(withNewMember.body.messaged).toBe(2);
     expect(email.map((m) => m.to).sort()).toEqual([
-      "later-member@example.com", "new-contact@example.com",
+      "later-member@example.com",
+      "new-contact@example.com",
     ]);
     expect(added.tenantId).toBe(tenantB);
   });
 
   it("manual resend claims remain exclusive and automated sends do not repeat", async () => {
-    const [round] = await db.select().from(availabilityRoundsTable)
+    const [round] = await db
+      .select()
+      .from(availabilityRoundsTable)
       .where(eq(availabilityRoundsTable.tenantId, tenantB));
     const now = new Date();
     expect(await claimStep(tenantB, round.id, "send", now)).toBe(false);

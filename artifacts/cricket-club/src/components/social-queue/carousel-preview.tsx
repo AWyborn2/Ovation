@@ -11,14 +11,37 @@ export function CarouselPreview({ carousel }: { carousel: QueuedCarousel }) {
   return (
     <section className="space-y-3" aria-label="Carousel review preview">
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold">Slide {current + 1} of {carousel.slides.length}</h3>
+        <h3 className="text-sm font-semibold">
+          Slide {current + 1} of {carousel.slides.length}
+        </h3>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" disabled={current === 0} onClick={() => setIndex(current - 1)}>Previous slide</Button>
-          <Button variant="outline" size="sm" disabled={current === carousel.slides.length - 1} onClick={() => setIndex(current + 1)}>Next slide</Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={current === 0}
+            onClick={() => setIndex(current - 1)}
+          >
+            Previous slide
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={current === carousel.slides.length - 1}
+            onClick={() => setIndex(current + 1)}
+          >
+            Next slide
+          </Button>
         </div>
       </div>
-       <SlidePreview slide={carousel.slides[current] as unknown as WeekendSlide} size={carousel.size} packId={carouselPackId(carousel)} />
-      <p className="text-xs text-muted-foreground">Saved photos, positioning, sponsor choices and slide order. The caption below applies to the whole carousel.</p>
+      <SlidePreview
+        slide={carousel.slides[current] as unknown as WeekendSlide}
+        size={carousel.size}
+        packId={carouselPackId(carousel)}
+      />
+      <p className="text-xs text-muted-foreground">
+        Saved photos, positioning, sponsor choices and slide order. The caption below applies to the
+        whole carousel.
+      </p>
     </section>
   );
 }

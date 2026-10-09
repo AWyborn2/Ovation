@@ -105,8 +105,11 @@ export function DraftDrawer({
 
   const status = draftStatus(current);
   const carousel = readQueuedCarousel(current.cardInput);
-  const invalidCarousel = !!current.cardInput && typeof current.cardInput === "object" &&
-    "weekendCarousel" in current.cardInput && !carousel;
+  const invalidCarousel =
+    !!current.cardInput &&
+    typeof current.cardInput === "object" &&
+    "weekendCarousel" in current.cardInput &&
+    !carousel;
   const revisions = revisionsQ.data ?? [];
   // The newest refresh revision holds the corrected data for a stale card.
   const correction = current.staleSince ? revisions.find((r) => r.reason === "refresh") : undefined;
@@ -167,9 +170,11 @@ export function DraftDrawer({
                 <Link href={`/admin/social/editor/${current.id}`}>Open in editor</Link>
               </Button>
             )}
-            {!carousel && <Button type="button" variant="outline" onClick={() => onPreview(current)}>
-              Preview & download
-            </Button>}
+            {!carousel && (
+              <Button type="button" variant="outline" onClick={() => onPreview(current)}>
+                Preview & download
+              </Button>
+            )}
             {status === "awaiting_review" && (
               <Button type="button" onClick={markReady} disabled={busy}>
                 {layout === "needs-look" ? "Mark ready anyway" : "Mark ready"}
@@ -271,9 +276,12 @@ export function DraftDrawer({
         )}
 
         {carousel && <CarouselPreview key={current.id} carousel={carousel} />}
-        {invalidCarousel && <p role="alert" className="text-sm text-destructive">
-          This saved carousel has an invalid composition or unknown built-in design pack. It cannot be previewed or exported.
-        </p>}
+        {invalidCarousel && (
+          <p role="alert" className="text-sm text-destructive">
+            This saved carousel has an invalid composition or unknown built-in design pack. It
+            cannot be previewed or exported.
+          </p>
+        )}
         {status !== "dismissed" && <SchedulePanel key={current.id} draft={current} />}
 
         {status !== "dismissed" && (
@@ -287,61 +295,63 @@ export function DraftDrawer({
           </section>
         )}
 
-        {!carousel && <section className="space-y-2">
-          <h3 className="text-sm font-semibold">Photo</h3>
-          {junior ? (
-            <p className="text-sm text-muted-foreground">Junior cards don't use photos.</p>
-          ) : (
-            <>
-              {current.photoUrl ? (
-                <img
-                  src={current.photoUrl}
-                  alt="Chosen for this card"
-                  className="aspect-[4/3] w-full rounded-lg border border-border object-cover"
-                />
-              ) : (
-                <div className="flex aspect-[4/3] w-full items-center justify-center rounded-lg border border-dashed border-border text-muted-foreground">
-                  <ImageIcon className="h-6 w-6" aria-hidden />
-                  <span className="sr-only">No photo</span>
-                </div>
-              )}
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setPicking((p) => !p)}
-              >
-                {picking ? "Close library" : "Swap photo"}
-              </Button>
-              {picking && (
-                <div className="grid grid-cols-3 gap-2" aria-label="Photo library">
-                  {(photosQ.data ?? []).map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        updateM.mutate({ id: current.id, data: { photoUrl: p.url } });
-                        setPicking(false);
-                      }}
-                      className="overflow-hidden rounded-md border border-border hover:ring-2 hover:ring-primary"
-                    >
-                      <img
-                        src={p.thumbUrl}
-                        alt={`Library item ${p.id}`}
-                        className="aspect-square w-full object-cover"
-                      />
-                    </button>
-                  ))}
-                  {photosQ.data?.length === 0 && (
-                    <p className="col-span-3 text-sm text-muted-foreground">
-                      The photo library is empty.
-                    </p>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-        </section>}
+        {!carousel && (
+          <section className="space-y-2">
+            <h3 className="text-sm font-semibold">Photo</h3>
+            {junior ? (
+              <p className="text-sm text-muted-foreground">Junior cards don't use photos.</p>
+            ) : (
+              <>
+                {current.photoUrl ? (
+                  <img
+                    src={current.photoUrl}
+                    alt="Chosen for this card"
+                    className="aspect-[4/3] w-full rounded-lg border border-border object-cover"
+                  />
+                ) : (
+                  <div className="flex aspect-[4/3] w-full items-center justify-center rounded-lg border border-dashed border-border text-muted-foreground">
+                    <ImageIcon className="h-6 w-6" aria-hidden />
+                    <span className="sr-only">No photo</span>
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPicking((p) => !p)}
+                >
+                  {picking ? "Close library" : "Swap photo"}
+                </Button>
+                {picking && (
+                  <div className="grid grid-cols-3 gap-2" aria-label="Photo library">
+                    {(photosQ.data ?? []).map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          updateM.mutate({ id: current.id, data: { photoUrl: p.url } });
+                          setPicking(false);
+                        }}
+                        className="overflow-hidden rounded-md border border-border hover:ring-2 hover:ring-primary"
+                      >
+                        <img
+                          src={p.thumbUrl}
+                          alt={`Library item ${p.id}`}
+                          className="aspect-square w-full object-cover"
+                        />
+                      </button>
+                    ))}
+                    {photosQ.data?.length === 0 && (
+                      <p className="col-span-3 text-sm text-muted-foreground">
+                        The photo library is empty.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </section>
+        )}
 
         <section className="space-y-2">
           <label htmlFor="draft-caption" className="text-sm font-semibold">

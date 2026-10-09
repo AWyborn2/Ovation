@@ -133,7 +133,7 @@ export default function AdminSocialQueue() {
   const requestedDraft = Number(new URLSearchParams(search).get("draft"));
   useEffect(() => {
     if (!requestedDraft || openedLink.current === requestedDraft) return;
-    const draft = drafts.find(d => d.id === requestedDraft);
+    const draft = drafts.find((d) => d.id === requestedDraft);
     if (draft) {
       openedLink.current = requestedDraft;
       setStatus(draftStatus(draft));
@@ -249,9 +249,8 @@ export default function AdminSocialQueue() {
   columns.push({
     key: "export",
     header: "Export",
-    cell: (d) => readQueuedCarousel(d.cardInput)
-      ? <CarouselExportButton key={d.id} draftId={d.id} />
-      : null,
+    cell: (d) =>
+      readQueuedCarousel(d.cardInput) ? <CarouselExportButton key={d.id} draftId={d.id} /> : null,
   });
 
   const hasAnyDraft = drafts.length > 0;
@@ -451,8 +450,11 @@ export default function AdminSocialQueue() {
         </CardContent>
       </Card>
 
-      <DraftDrawer draft={open} onClose={() => setOpen(null)}
-        onPreview={d => readQueuedCarousel(d.cardInput) ? setOpen(d) : setPreview(d)} />
+      <DraftDrawer
+        draft={open}
+        onClose={() => setOpen(null)}
+        onPreview={(d) => (readQueuedCarousel(d.cardInput) ? setOpen(d) : setPreview(d))}
+      />
 
       <ShareCardModal
         open={!!preview}

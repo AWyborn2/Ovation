@@ -11,9 +11,17 @@ import { C, CK_COND, CK_MONO, CK_SANS, cq, eyebrow } from "./parts";
  */
 export function matchDetailTemplate(inningsCount: number): PackCardTemplate {
   const n = Math.max(1, inningsCount);
-  const keys = ["clubHashtag", "sponsorPresentedBy", "clubMonogram", "matchTitle", "result", "resultWord"];
+  const keys = [
+    "clubHashtag",
+    "sponsorPresentedBy",
+    "clubMonogram",
+    "matchTitle",
+    "result",
+    "resultWord",
+  ];
   for (let i = 0; i < n; i++) {
-    for (const k of ["team", "label", "score", "overs", "batters", "bowlers"]) keys.push(`inn${i}.${k}`);
+    for (const k of ["team", "label", "score", "overs", "batters", "bowlers"])
+      keys.push(`inn${i}.${k}`);
   }
   return {
     kind: "matchSummary",
@@ -26,7 +34,10 @@ export function matchDetailTemplate(inningsCount: number): PackCardTemplate {
       const land = f === "landscape";
       // Two columns where width allows and there are 3+ innings.
       const cols = n >= 3 && !tall ? 2 : land && n === 2 ? 2 : 1;
-      const k = (tall ? (f === "story" ? 1.25 : 1.05) : 1) * (n <= 2 ? 1 : n === 3 ? (cols > 1 ? 0.85 : 0.82) : cols > 1 ? 0.8 : 0.72) * (land ? 0.82 : 1);
+      const k =
+        (tall ? (f === "story" ? 1.25 : 1.05) : 1) *
+        (n <= 2 ? 1 : n === 3 ? (cols > 1 ? 0.85 : 0.82) : cols > 1 ? 0.8 : 0.72) *
+        (land ? 0.82 : 1);
       const s = (v: number) => `${+(v * k).toFixed(2)}cqmin`;
       const panel = (i: number) =>
         `<div data-innings="${i}" style="box-sizing:border-box;min-width:0;padding:${s(1.3)} ${s(1.6)};background:${C.panel};border-left:${s(0.6)} solid ${C.p};display:flex;flex-direction:column;gap:${s(0.5)}">` +
