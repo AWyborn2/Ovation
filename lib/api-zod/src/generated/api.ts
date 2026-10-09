@@ -8754,6 +8754,15 @@ export const IngestPlayhqDumpResponse = zod.object({
   "updated": zod.number(),
   "swept": zod.boolean()
 })),
+  "teamLists": zod.array(zod.object({
+  "tenantId": zod.number(),
+  "club": zod.string(),
+  "grade": zod.string(),
+  "opponent": zod.string(),
+  "startAt": zod.coerce.date(),
+  "players": zod.number(),
+  "change": zod.enum(['new', 'changed', 'afterMatch'])
+})).optional().describe('The team lists this ingest wrote from the sides clubs named in PlayHQ (for the sync\'s run log): a new or changed selection ahead of a match, or the played side replacing a Selection Hub list after it.'),
   "warnings": zod.array(zod.string()),
   "centralProjection": zod.object({
   "mode": zod.enum(['dry', 'on']),

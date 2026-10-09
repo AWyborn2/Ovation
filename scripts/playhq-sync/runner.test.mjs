@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { gunzipSync } from "node:zlib";
-import { COLLECTOR, ingestBody, manualPlan, run, runStatus } from "./runner.mjs";
+import { COLLECTOR, ingestBody, manualPlan, run, runStatus, teamListLine } from "./runner.mjs";
 
 const ENV = {
   OVATION_API_URL: "https://ovation.test/api/",
@@ -321,4 +321,66 @@ test("logs the stats-copy summary and grouped skip reasons from the ingest reply
   assert.deepEqual(r.failures, []);
   assert.ok(lines.some((l) => l.includes("4 created, 2 updated, 33 skipped, 5 new players")));
   assert.ok(lines.some((l) => l.includes("skipped 33 × neither side maps")));
+});
+
+test("logs each team list the ingest wrote from PlayHQ", async () => {
+  const lines = [];
+  const server = fakeServer([DUE], {
+    status: "ok",
+    fixtureChanges: 0,
+    tenants: [],
+    warnings: [],
+    teamLists: [
+      {
+        tenantId: 1,
+        club: "Halls Head",
+        grade: "A Grade",
+        opponent: "Pinjarra",
+        startAt: "2026-10-10T03:45:00.000Z",
+        players: 11,
+        change: "new",
+      },
+      {
+        tenantId: 1,
+        club: "Halls Head",
+        grade: "F Grade",
+        opponent: "Waroona",
+        startAt: "2026-10-10T04:00:00.000Z",
+        players: 12,
+        change: "changed",
+      },
+    ],
+  });
+  const browser = fakeBrowser([{ phase: "done", finishedAt: "t" }]);
+  const r = await run({
+    env: ENV,
+    fetchImpl: server.fetchImpl,
+    launch: browser.launch,
+    readHarness: async () => "/* harness */",
+    sleep: async () => {},
+    log: (l) => lines.push(l),
+  });
+  assert.deepEqual(r.failures, []);
+  assert.ok(
+    lines.some((l) =>
+      l.endsWith("Halls Head · A Grade v Pinjarra, Sat 10 Oct: team named (11 players)"),
+    ),
+  );
+  assert.ok(
+    lines.some((l) => l.endsWith("F Grade v Waroona, Sat 10 Oct: team changed (12 players)")),
+  );
+});
+
+test("names a played side recorded after the match, in Perth time", () => {
+  assert.equal(
+    teamListLine({
+      club: "Rockingham-Mandurah",
+      grade: "1st Grade",
+      opponent: "Claremont-Nedlands",
+      startAt: "2026-10-03T17:00:00.000Z",
+      players: 11,
+      change: "afterMatch",
+    }),
+    "Rockingham-Mandurah · 1st Grade v Claremont-Nedlands, Sun 4 Oct: played side recorded (11 players)",
+  );
 });

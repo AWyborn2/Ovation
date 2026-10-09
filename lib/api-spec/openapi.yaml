@@ -16331,6 +16331,32 @@ components:
                 type: integer
               swept:
                 type: boolean
+        teamLists:
+          type: array
+          description: >-
+            The team lists this ingest wrote from the sides clubs named in PlayHQ (for the
+            sync's run log): a new or changed selection ahead of a match, or the played side
+            replacing a Selection Hub list after it.
+          items:
+            type: object
+            required: [tenantId, club, grade, opponent, startAt, players, change]
+            properties:
+              tenantId:
+                type: integer
+              club:
+                type: string
+              grade:
+                type: string
+              opponent:
+                type: string
+              startAt:
+                type: string
+                format: date-time
+              players:
+                type: integer
+              change:
+                type: string
+                enum: [new, changed, afterMatch]
         warnings:
           type: array
           items:
