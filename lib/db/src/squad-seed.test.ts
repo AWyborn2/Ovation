@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { markSquadSeasonSeeded, seedCurrentSeasonSquad } from "./squad-seed";
+import { markSquadSeasonSeeded, seedCurrentSeasonSquad, splitSeasonName } from "./squad-seed";
 
 function executor(existing: unknown[] = [], mappings: unknown[] = []) {
   const queue = [mappings, existing];
@@ -112,5 +112,25 @@ describe("markSquadSeasonSeeded", () => {
     expect(onConflictDoUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ set: { seasonSeededAt: now } }),
     );
+  });
+});
+
+describe("splitSeasonName", () => {
+  it('reads central\'s "Surname, Firstname" the right way round', () => {
+    expect(splitSeasonName("Barnes, Casey")).toEqual({ firstName: "Casey", lastName: "Barnes" });
+    expect(splitSeasonName("Kelly-Wilson, Montanna")).toEqual({
+      firstName: "Montanna",
+      lastName: "Kelly-Wilson",
+    });
+  });
+
+  it('keeps "Firstname Surname" and initial-only names as they are', () => {
+    expect(splitSeasonName("Jake Wyllie")).toEqual({ firstName: "Jake", lastName: "Wyllie" });
+    expect(splitSeasonName("J Wyllie")).toEqual({ firstName: "J", lastName: "Wyllie" });
+    expect(splitSeasonName("Jason R Davey")).toEqual({ firstName: "Jason", lastName: "R Davey" });
+  });
+
+  it("falls back to space splitting when a comma has nothing on one side", () => {
+    expect(splitSeasonName("Barnes,")).toEqual({ firstName: "Barnes,", lastName: "" });
   });
 });
