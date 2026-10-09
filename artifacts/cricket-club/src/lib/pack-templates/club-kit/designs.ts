@@ -97,6 +97,17 @@ const EXTRA_FIELDS: Record<string, PackTemplateField> = {
   venue: textField("venue", "Venue", "RUSHTON PARK"),
   date: textField("date", "Date", "SAT 8 NOV"),
   startTime: textField("startTime", "Start time", "12:30 PM"),
+  // Team List: Club Kit still shows the competition line, which Broadcast
+  // Dark's single-column lineup dropped for an explicit round label.
+  competitionLine: textField("competitionLine", "Competition line", "PREMIER T20 · ROUND 3 · vs MARINERS"),
+};
+
+/**
+ * Row fields Club Kit binds that the reference row may not declare: its Team
+ * Lists show the bare surname where Broadcast Dark shows initial + surname.
+ */
+const EXTRA_ROW_FIELDS: Record<string, PackTemplateField[]> = {
+  players: [textField("surname", "Surname", "MANUEL")],
 };
 
 /** A set's row unit: card cqmin scaled by the set's density (`--rs`, from `{{rowScale}}`). */
@@ -151,7 +162,13 @@ function design(spec: DesignSpec): PackDesignEntry {
     .map((r) => ({
       ...r,
       maxRows: Math.max(r.maxRows, 12),
-      fields: [...r.fields, ...(spec.rowExtras?.[r.key] ?? [])],
+      // Only the row fields this design renders (a reference-only row field
+      // would otherwise be declared but unused).
+      fields: [
+        ...r.fields,
+        ...(spec.rowExtras?.[r.key] ?? []),
+        ...(EXTRA_ROW_FIELDS[r.key] ?? []).filter((f) => !r.fields.some((x) => x.key === f.key)),
+      ].filter((f) => html.includes(`{{row.${f.key}}}`)),
     }));
   const sponsorVariants: PackSponsorVariant[] = [];
   if (html.includes('data-sponsors="on"')) sponsorVariants.push("on");

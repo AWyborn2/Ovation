@@ -22,12 +22,13 @@ import type { CardSize, ShareCardInput } from "../share-card";
  * regenerated when tall cards anchored their copy clear of the photo (Bold
  * Type's wedge grows on story; Sunset's glass hugs the copy). Regenerated for
  * intentional Team List grade headings and name-adjacent role labels.
+ * Broadcast Dark regenerated for its single-column Team List lineup (5307f5c3).
  */
 const BEFORE: Record<string, string> = {
-  "broadcast-dark-v1/themed": "cb431db05d90d46c0bcaccc8ca1321bb0ceae51dc0f69de5a01c4630e0ff6a28",
-  "broadcast-dark-v1/junior": "42c22534c3d79457b198df3af8f8f83f775cd43014a60ed4a2d1906857d13fb2",
-  "broadcast-dark-v1/brandOnly": "6409989e1ab0d03b4980afce6b4e9e6a433b1b47bd26beee8c7c6ae7d983ca01",
-  "broadcast-dark-v1/brandless": "a6ec335930879f732ebc4466abfc1a709ae20cf48788494ff0dfa98f222353f9",
+  "broadcast-dark-v1/themed": "c73b441530f60944687a1ee7403941ada4d19c650373acbb697edad7c932abac",
+  "broadcast-dark-v1/junior": "9d9a44024e5dc752bc651ab15d602141461a965c835004d6363f2b11577bcb84",
+  "broadcast-dark-v1/brandOnly": "8208e85f7fcc112cce39cea8ee5603fdaa9c35f04ca64ddd211b5b18eaa634df",
+  "broadcast-dark-v1/brandless": "cc99ca81db8928dc5311b70ac1b7164fe39ddc30e67c2d3a31deef18c3a1241f",
   "gold-foil-v1/themed": "ec94f57dd02feea1f71bd6ba8d2947d9efc2ff7d0e88e665eb4cc9bb1729b0d1",
   "gold-foil-v1/junior": "976aa1d71788525aa7d5c3b0c1228db4a632141329514b12113e6247e791cad8",
   "gold-foil-v1/brandOnly": "556d55f2fc647320b7e5f02f1e258dd2db426b4076716a93d19702adb75d38b8",
