@@ -207,7 +207,11 @@ export function teamListFormats(look: PackLook): PackTemplateFormats {
     body: kColumn(
       look,
       kEyebrow("{{competitionLine}}") +
-        kTitle("{{gradeHeading}}", 14, ";line-height:.95;width:100%;height:14cqmin;overflow-wrap:anywhere").replace("<div ", '<div data-team-grade="1" ') +
+        kTitle(
+          "{{gradeHeading}}",
+          14,
+          ";line-height:.95;width:100%;height:14cqmin;overflow-wrap:anywhere",
+        ).replace("<div ", '<div data-team-grade="1" ') +
         `<div style="font-family:${SK_MONO};font-weight:500;font-size:2.2cqmin;letter-spacing:.14em;color:${K.muted};margin-top:1.6cqmin">{{venueDateTime}}</div>` +
         `<div data-repeat="players" data-xi-fit="1" data-xi-min-ratio="0.5625" data-repeat-max="12" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(6,auto);grid-auto-flow:column;column-gap:5cqmin;width:100%;max-width:92cqmin;margin-top:3cqmin">${row}</div>`,
     ),

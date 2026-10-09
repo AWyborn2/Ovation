@@ -36,14 +36,22 @@ const renderShell = (path: string, entitlements = ALL_ON) => {
 describe("admin shell v2", () => {
   it("collapses and restores the desktop menu without remounting selection work", async () => {
     installApiMock({ "/api/auth/me": ADMIN, "/api/tenant-plan": { entitlements: ALL_ON } });
-    renderAt(<AdminShell><input aria-label="Selection work" defaultValue="" /></AdminShell>, "/admin/selection");
+    renderAt(
+      <AdminShell>
+        <input aria-label="Selection work" defaultValue="" />
+      </AdminShell>,
+      "/admin/selection",
+    );
     const input = await screen.findByLabelText("Selection work");
     fireEvent.change(input, { target: { value: "Keep my selection" } });
     const menu = document.getElementById("admin-desktop-menu")!;
     expect(menu).toHaveClass("nav:flex");
     fireEvent.click(screen.getByRole("button", { name: "Collapse side menu" }));
     expect(menu).not.toHaveClass("nav:flex");
-    expect(screen.getByRole("button", { name: "Expand side menu" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Expand side menu" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
     expect(screen.getByLabelText("Selection work")).toBe(input);
     expect(input).toHaveValue("Keep my selection");
     expect(input.closest("main")).not.toHaveClass("max-w-[1360px]");

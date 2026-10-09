@@ -1,5 +1,9 @@
 import type { PackCardTemplate } from "./types";
-import { CAROUSEL_PACK_IDS, LEGACY_CAROUSEL_PACK_ID, isCarouselPackId } from "@workspace/scorecard/queued-carousel";
+import {
+  CAROUSEL_PACK_IDS,
+  LEGACY_CAROUSEL_PACK_ID,
+  isCarouselPackId,
+} from "@workspace/scorecard/queued-carousel";
 import { clubHeaderFields, photoField, slot, textField } from "./shared";
 import {
   K,
@@ -59,7 +63,20 @@ export function skeletonWeekendTemplate(
   const build = (land: boolean): string => {
     // Every tile shares one exact 2:1 frame; the grid's width bounds its
     // height so logos are never squashed. Logos only, contained.
-    const cols = count <= 2 ? Math.max(count, 1) : land ? (count === 4 ? 2 : count <= 9 ? 3 : 4) : count <= 10 ? 2 : count <= 18 ? 3 : 4;
+    const cols =
+      count <= 2
+        ? Math.max(count, 1)
+        : land
+          ? count === 4
+            ? 2
+            : count <= 9
+              ? 3
+              : 4
+          : count <= 10
+            ? 2
+            : count <= 18
+              ? 3
+              : 4;
     const rows = Math.max(1, Math.ceil(count / cols));
     const gap = 1.5;
     const gridH = land ? 52 : 74;
@@ -84,8 +101,11 @@ export function skeletonWeekendTemplate(
             look,
             kEyebrow("{{date}}") +
               `<div style="font-family:${K_DISP};font-size:${tsz}cqmin;line-height:.95;text-transform:uppercase;margin-top:3cqmin;overflow-wrap:anywhere;text-shadow:${K.titleGlow}">{{weekendTitle}}</div>` +
-              kCond("{{roundLabel}}", 11, `;max-width:100%;overflow-wrap:anywhere;flex-shrink:0;margin-top:3cqmin;color:${K.accText};font-size:calc(11cqmin * var(--fit,1))`)
-                .replace("<div ", '<div data-carousel-cover-label="1" data-fit="10" ') +
+              kCond(
+                "{{roundLabel}}",
+                11,
+                `;max-width:100%;overflow-wrap:anywhere;flex-shrink:0;margin-top:3cqmin;color:${K.accText};font-size:calc(11cqmin * var(--fit,1))`,
+              ).replace("<div ", '<div data-carousel-cover-label="1" data-fit="10" ') +
               kEyebrow("SWIPE &gt;&gt;", K.muted, ";margin-top:2cqmin"),
             true,
           )
@@ -99,14 +119,24 @@ export function skeletonWeekendTemplate(
       photo: photoKey,
       body,
       footer: kFooterOn("proudly supported by"),
-      deco: { word: page === "title" ? "WEEKEND" : "THANKS", script: page === "title" ? "This weekend" : "Our sponsors" },
+      deco: {
+        word: page === "title" ? "WEEKEND" : "THANKS",
+        script: page === "title" ? "This weekend" : "Our sponsors",
+      },
     });
   };
   const fields = [
     ...clubHeaderFields(),
-    ...["clubHashtag", "sponsorPresentedBy", "weekendTitle", "date", "roundLabel"].map((k) => textField(k, k, "")),
+    ...["clubHashtag", "sponsorPresentedBy", "weekendTitle", "date", "roundLabel"].map((k) =>
+      textField(k, k, ""),
+    ),
     ...(photoKey ? [photoField("photo", "Cover photo", "Club photo")] : []),
-    ...sponsorKeys.map((k) => ({ key: k, label: "Sponsor logo", type: "logo" as const, sample: "" })),
+    ...sponsorKeys.map((k) => ({
+      key: k,
+      label: "Sponsor logo",
+      type: "logo" as const,
+      sample: "",
+    })),
   ];
   return {
     kind: "matchDay",
@@ -118,14 +148,29 @@ export function skeletonWeekendTemplate(
   };
 }
 
-export function skeletonMatchDetailTemplate(look: PackLook, inningsCount: number): PackCardTemplate {
+export function skeletonMatchDetailTemplate(
+  look: PackLook,
+  inningsCount: number,
+): PackCardTemplate {
   const n = Math.max(1, inningsCount);
   const keys = ["clubHashtag", "sponsorPresentedBy", "matchTitle", "result", "resultWord"];
-  for (let i = 0; i < n; i++) for (const k of ["team", "label", "score", "overs", "batters", "bowlers"]) keys.push(`inn${i}.${k}`);
+  for (let i = 0; i < n; i++)
+    for (const k of ["team", "label", "score", "overs", "batters", "bowlers"])
+      keys.push(`inn${i}.${k}`);
   const build = (land: boolean): string => {
     const cols = land && n >= 2 ? 2 : 1;
     const rows = Math.ceil(n / cols);
-    const k = land ? (rows <= 1 ? 0.8 : 0.6) : n <= 2 ? 1 : n === 3 ? 0.82 : n === 4 ? 0.66 : Math.max(0.36, 2.6 / n);
+    const k = land
+      ? rows <= 1
+        ? 0.8
+        : 0.6
+      : n <= 2
+        ? 1
+        : n === 3
+          ? 0.82
+          : n === 4
+            ? 0.66
+            : Math.max(0.36, 2.6 / n);
     const s = (v: number) => `${+(v * k).toFixed(2)}cqmin`;
     const line = (tag: string, key: string) =>
       `<div style="font-weight:600;font-size:${s(2.6)};line-height:1.3;color:${K.panelText};overflow-wrap:anywhere"><span style="font-family:${SK_MONO};font-size:${s(2)};letter-spacing:.12em;color:${K.panelMuted}">${tag} </span>{{${key}}}</div>`;
@@ -161,7 +206,11 @@ export function skeletonMatchDetailTemplate(look: PackLook, inningsCount: number
     designKey: `match-detail-${n}`,
     name: "Match detail",
     sponsorVariants: ["on"],
-    fields: [...clubHeaderFields(), photoField("photo", "Photo", "Club photo"), ...keys.map((x) => textField(x, x, ""))],
+    fields: [
+      ...clubHeaderFields(),
+      photoField("photo", "Photo", "Club photo"),
+      ...keys.map((x) => textField(x, x, "")),
+    ],
     formats: kitFormats((f) => build(f === "landscape")),
   };
 }
@@ -178,7 +227,10 @@ export function containLogoSlots(html: string): string {
       /border-radius:50%;overflow:hidden([^"]*)">(<div data-slot="[^"]*" data-slot-type="logo")/g,
       'border-radius:.6cqmin;overflow:hidden$1">$2',
     )
-    .replace(/(<div data-slot="[^"]*" data-slot-type="logo") data-shape="(?:circle|rounded)"((?: data-radius="[^"]*")?)/g, '$1 data-shape="rect" data-fit="contain"');
+    .replace(
+      /(<div data-slot="[^"]*" data-slot-type="logo") data-shape="(?:circle|rounded)"((?: data-radius="[^"]*")?)/g,
+      '$1 data-shape="rect" data-fit="contain"',
+    );
 }
 
 const PHOTO_BACKDROP =
@@ -192,10 +244,16 @@ function withBackdrop(html: string): string {
   return i < 0 ? html : html.slice(0, i) + PHOTO_BACKDROP + html.slice(i);
 }
 
-export function carouselContentTemplate(t: PackCardTemplate, opts: { photo?: boolean } = {}): PackCardTemplate {
+export function carouselContentTemplate(
+  t: PackCardTemplate,
+  opts: { photo?: boolean } = {},
+): PackCardTemplate {
   const map = (f: (h: string) => string) =>
     Object.fromEntries(
-      Object.entries(t.formats as unknown as Record<string, string>).map(([k, v]) => [k, typeof v === "string" ? f(v) : v]),
+      Object.entries(t.formats as unknown as Record<string, string>).map(([k, v]) => [
+        k,
+        typeof v === "string" ? f(v) : v,
+      ]),
     ) as unknown as PackCardTemplate["formats"];
   const photo = !!opts.photo && !t.fields.some((f) => f.key === "photo");
   return {

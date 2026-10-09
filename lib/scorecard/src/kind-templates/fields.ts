@@ -853,8 +853,8 @@ export const KIND_FIELDS: Record<TemplateCardKind, KindFieldCatalogue> = {
         label: "Team grade heading",
       },
       {
-        key: "competitionLine",
-        label: "Competition line",
+        key: "broadcastRoundLabel",
+        label: "Round label (explicit round only)",
       },
       {
         key: "venueDateTime",
@@ -871,6 +871,10 @@ export const KIND_FIELDS: Record<TemplateCardKind, KindFieldCatalogue> = {
       {
         key: "sponsorPresentedBy",
         label: "Presented-by sponsor",
+      },
+      {
+        key: "competitionLine",
+        label: "Competition line",
       },
       {
         key: "roundLabel",
@@ -931,12 +935,16 @@ export const KIND_FIELDS: Record<TemplateCardKind, KindFieldCatalogue> = {
             label: "Order",
           },
           {
-            key: "surname",
-            label: "Surname",
+            key: "broadcastName",
+            label: "Initial + surname",
           },
           {
             key: "role",
             label: "Role (C/WK)",
+          },
+          {
+            key: "surname",
+            label: "Surname",
           },
           {
             key: "debut",

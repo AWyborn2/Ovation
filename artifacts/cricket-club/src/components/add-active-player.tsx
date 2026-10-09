@@ -112,10 +112,7 @@ function AddForm({ onDone, defaultSection }: { onDone: () => void; defaultSectio
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
 
-  const inactive = useMemo(
-    () => (roster.data ?? []).filter((m) => !m.active),
-    [roster.data],
-  );
+  const inactive = useMemo(() => (roster.data ?? []).filter((m) => !m.active), [roster.data]);
   const matches = useMemo(() => {
     const t = q.toLowerCase();
     if (t.length < 2) return [];
@@ -195,7 +192,10 @@ function AddForm({ onDone, defaultSection }: { onDone: () => void; defaultSectio
     const name = `${body.firstName} ${body.lastName}`;
     create.mutate(
       { data: body },
-      { onSuccess: () => finish(`${name} added to the active squad.`), onError: (e2) => setError(errText(e2)) },
+      {
+        onSuccess: () => finish(`${name} added to the active squad.`),
+        onError: (e2) => setError(errText(e2)),
+      },
     );
   };
 
@@ -237,7 +237,9 @@ function AddForm({ onDone, defaultSection }: { onDone: () => void; defaultSectio
                 <span>
                   {h.displayName}
                   {h.lastSeason && (
-                    <span className="ml-2 text-xs text-muted-foreground">last played {h.lastSeason}</span>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      last played {h.lastSeason}
+                    </span>
                   )}
                 </span>
                 <Button type="button" size="sm" variant="outline" onClick={() => pickHit(h)}>
@@ -248,7 +250,9 @@ function AddForm({ onDone, defaultSection }: { onDone: () => void; defaultSectio
           </ul>
         )}
         {q.length >= 2 && !search.isFetching && matches.length === 0 && hits.length === 0 && (
-          <p className="text-xs text-muted-foreground">No past players matched. Enter them below as new.</p>
+          <p className="text-xs text-muted-foreground">
+            No past players matched. Enter them below as new.
+          </p>
         )}
         {picked && (
           <p className="text-xs" data-testid="add-player-linked">
@@ -294,7 +298,11 @@ function AddForm({ onDone, defaultSection }: { onDone: () => void; defaultSectio
         </div>
       </div>
 
-      <ContactFields legend={section === "junior" ? "Player contact" : "Contact"} value={account} onChange={setAccount} />
+      <ContactFields
+        legend={section === "junior" ? "Player contact" : "Contact"}
+        value={account}
+        onChange={setAccount}
+      />
       <ContactFields legend="Parent or guardian 1" value={g1} onChange={setG1} />
       <ContactFields legend="Parent or guardian 2" value={g2} onChange={setG2} />
       {noContact && (
@@ -305,7 +313,11 @@ function AddForm({ onDone, defaultSection }: { onDone: () => void; defaultSectio
       )}
 
       {error && (
-        <div role="alert" data-testid="add-player-error" className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div
+          role="alert"
+          data-testid="add-player-error"
+          className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"
+        >
           {error}
         </div>
       )}
@@ -345,7 +357,13 @@ export function AddActivePlayer({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button type="button" size="sm" variant={variant} onClick={() => setOpen(true)} data-testid="button-add-active-player">
+      <Button
+        type="button"
+        size="sm"
+        variant={variant}
+        onClick={() => setOpen(true)}
+        data-testid="button-add-active-player"
+      >
         Add active player
       </Button>
       <Sheet open={open} onOpenChange={setOpen}>

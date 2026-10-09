@@ -215,7 +215,10 @@ export async function provisionTenant(
     shortName: values.shortName,
   };
 
-  const currentPlayers = await centralCurrentSeasonSquad(club.clubId, seasonStartYearFor(new Date()));
+  const currentPlayers = await centralCurrentSeasonSquad(
+    club.clubId,
+    seasonStartYearFor(new Date()),
+  );
   // Tenant row + crosswalk mint in ONE transaction: a failure while minting
   // used to leave a tenant with a partial player_id_map.
   const { tenant, admin, minted, totalParticipants } = await db.transaction(async (tx) => {

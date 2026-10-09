@@ -49,7 +49,11 @@ import {
 } from "./selection-drafts";
 import type { SelectionActor } from "../middlewares/require-admin-or-captain";
 import { logger as defaultLogger } from "./logger";
-import { PRIVATE_PLAYER, selectionPublishedPlayers, loadSelectionParticipantIds } from "./selection-published-players";
+import {
+  PRIVATE_PLAYER,
+  selectionPublishedPlayers,
+  loadSelectionParticipantIds,
+} from "./selection-published-players";
 
 /**
  * The Selection Hub's board.
@@ -322,83 +326,86 @@ export async function buildBoard(
   // `replies` the reply details — a row the system recorded (away) is not a
   // reply; `windowFixtures`, `grades` and `lists` give each member's last grade
   // and the dates they were asked about.
-  const [members, sides, statusByDate, replies, windowFixtures, grades, lists, gradeOrder] = await Promise.all([
-    db
-      .select(MEMBER_COLUMNS)
-      .from(squadMembersTable)
-      .where(eq(squadMembersTable.tenantId, tenantId)),
-    round
-      ? db
-          .select({ selection: selectionsTable, fixture: fixturesTable })
-          .from(selectionsTable)
-          .innerJoin(
-            fixturesTable,
-            and(
-              eq(fixturesTable.id, selectionsTable.fixtureId),
-              eq(fixturesTable.tenantId, selectionsTable.tenantId),
-            ),
-          )
-          .where(and(eq(selectionsTable.tenantId, tenantId), eq(selectionsTable.roundId, round.id)))
-          .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id))
-      : [],
-    round
-      ? loadResponses(tenantId, round.id, window.from, window.to)
-      : new Map<number, ReadonlyMap<string, AvailabilityStatus>>(),
-    round
-      ? db
-          .select({
-            memberId: availabilityResponsesTable.memberId,
-            note: availabilityResponsesTable.note,
-            respondedAt: availabilityResponsesTable.respondedAt,
-            respondedBySlot: availabilityResponsesTable.respondedBySlot,
-            late: availabilityResponsesTable.late,
-          })
-          .from(availabilityResponsesTable)
-          .where(
-            and(
-              eq(availabilityResponsesTable.tenantId, tenantId),
-              eq(availabilityResponsesTable.roundId, round.id),
-            ),
-          )
-          .orderBy(asc(availabilityResponsesTable.respondedAt))
-      : [],
-    db
-      .select({ grade: fixturesTable.grade, startAt: fixturesTable.startAt })
-      .from(fixturesTable)
-      .where(
-        and(
-          eq(fixturesTable.tenantId, tenantId),
-          gte(fixturesTable.startAt, window.from),
-          lt(fixturesTable.startAt, window.to),
+  const [members, sides, statusByDate, replies, windowFixtures, grades, lists, gradeOrder] =
+    await Promise.all([
+      db
+        .select(MEMBER_COLUMNS)
+        .from(squadMembersTable)
+        .where(eq(squadMembersTable.tenantId, tenantId)),
+      round
+        ? db
+            .select({ selection: selectionsTable, fixture: fixturesTable })
+            .from(selectionsTable)
+            .innerJoin(
+              fixturesTable,
+              and(
+                eq(fixturesTable.id, selectionsTable.fixtureId),
+                eq(fixturesTable.tenantId, selectionsTable.tenantId),
+              ),
+            )
+            .where(
+              and(eq(selectionsTable.tenantId, tenantId), eq(selectionsTable.roundId, round.id)),
+            )
+            .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id))
+        : [],
+      round
+        ? loadResponses(tenantId, round.id, window.from, window.to)
+        : new Map<number, ReadonlyMap<string, AvailabilityStatus>>(),
+      round
+        ? db
+            .select({
+              memberId: availabilityResponsesTable.memberId,
+              note: availabilityResponsesTable.note,
+              respondedAt: availabilityResponsesTable.respondedAt,
+              respondedBySlot: availabilityResponsesTable.respondedBySlot,
+              late: availabilityResponsesTable.late,
+            })
+            .from(availabilityResponsesTable)
+            .where(
+              and(
+                eq(availabilityResponsesTable.tenantId, tenantId),
+                eq(availabilityResponsesTable.roundId, round.id),
+              ),
+            )
+            .orderBy(asc(availabilityResponsesTable.respondedAt))
+        : [],
+      db
+        .select({ grade: fixturesTable.grade, startAt: fixturesTable.startAt })
+        .from(fixturesTable)
+        .where(
+          and(
+            eq(fixturesTable.tenantId, tenantId),
+            gte(fixturesTable.startAt, window.from),
+            lt(fixturesTable.startAt, window.to),
+          ),
         ),
-      ),
-    db
-      .selectDistinct({ grade: fixturesTable.grade })
-      .from(fixturesTable)
-      .where(eq(fixturesTable.tenantId, tenantId)),
-    db
-      .select({
-        grade: fixturesTable.grade,
-        startAt: fixturesTable.startAt,
-        players: teamListsTable.players,
-      })
-      .from(teamListsTable)
-      .innerJoin(
-        fixturesTable,
-        and(
-          eq(fixturesTable.id, teamListsTable.fixtureId),
-          eq(fixturesTable.tenantId, teamListsTable.tenantId),
+      db
+        .selectDistinct({ grade: fixturesTable.grade })
+        .from(fixturesTable)
+        .where(eq(fixturesTable.tenantId, tenantId)),
+      db
+        .select({
+          grade: fixturesTable.grade,
+          startAt: fixturesTable.startAt,
+          players: teamListsTable.players,
+        })
+        .from(teamListsTable)
+        .innerJoin(
+          fixturesTable,
+          and(
+            eq(fixturesTable.id, teamListsTable.fixtureId),
+            eq(fixturesTable.tenantId, teamListsTable.tenantId),
+          ),
+        )
+        .where(
+          and(
+            eq(teamListsTable.tenantId, tenantId),
+            lt(fixturesTable.startAt, window.from),
+            sql`jsonb_array_length(${teamListsTable.players}) > 0`,
+          ),
         ),
-      )
-      .where(
-        and(
-          eq(teamListsTable.tenantId, tenantId),
-          lt(fixturesTable.startAt, window.from),
-          sql`jsonb_array_length(${teamListsTable.players}) > 0`,
-        ),
-      ),
-    loadClubGradeOrder(tenantId),
-  ]);
+      loadClubGradeOrder(tenantId),
+    ]);
   const byId = new Map(members.map((m) => [m.id, m]));
   const placed = new Set<number>();
   for (const s of sides) {
@@ -434,9 +441,8 @@ export async function buildBoard(
     const reply = replyOf.get(m.id);
     return {
       id: m.id,
-      linkedPlayerId: section === "senior" && m.section === "senior" && !m.isPrivate
-        ? m.linkedPlayerId
-        : null,
+      linkedPlayerId:
+        section === "senior" && m.section === "senior" && !m.isPrivate ? m.linkedPlayerId : null,
       displayName: memberDisplayName(m),
       status,
       note: reply?.note ?? null,
@@ -928,8 +934,10 @@ export async function finaliseSelection(
             )
         : [];
     const memberOf = new Map(members.map((m) => [m.id, m]));
-    const participantIds = fixtureSection(fixture.grade) === "senior"
-      ? await loadSelectionParticipantIds(tx, tenantId, fixture.startAt) : new Map<number, string>();
+    const participantIds =
+      fixtureSection(fixture.grade) === "senior"
+        ? await loadSelectionParticipantIds(tx, tenantId, fixture.startAt)
+        : new Map<number, string>();
     const players = selectionPublishedPlayers(selection, members, participantIds);
     await tx
       .insert(teamListsTable)
