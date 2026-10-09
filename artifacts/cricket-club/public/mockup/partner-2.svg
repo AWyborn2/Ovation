@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120">
+  <rect width="320" height="120" rx="12" fill="#f5f1e7"/>
+  <circle cx="56" cy="60" r="26" fill="none" stroke="#a66e19" stroke-width="6"/>
+  <path d="M44 60h24M56 48v24" stroke="#a66e19" stroke-width="4"/>
+  <text x="96" y="56" fill="#20252a" font-family="Arial,sans-serif" font-size="23" font-weight="700">SOUTH SHORE</text>
+  <text x="96" y="84" fill="#7d7467" font-family="Arial,sans-serif" font-size="15" letter-spacing="3">COMMUNITY CO.</text>
+</svg>

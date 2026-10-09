@@ -106,7 +106,9 @@ describe("weekend carousel protected sources", () => {
     };
     try {
       const original = await load();
-      expect(original[expected[0]]).toMatchObject({ numbering: "shirt", players: [{ shirtNumber: "36" }, {}] });
+      expect(original[expected[0]]).toMatchObject({ numbering: "shirt",
+        players: [{ shirtNumber: "36", firstInitial: "S", surname: "CAPTAIN" },
+          { firstInitial: "T", surname: "EXTRA" }] });
       expect(original[expected[0]].players[1]).not.toHaveProperty("shirtNumber");
       expect(original[expected[2]]).not.toHaveProperty("numbering");
       expect(original[expected[2]].players[0]).not.toHaveProperty("shirtNumber");

@@ -211,6 +211,11 @@ export function bindInput(input: ShareCardInput): BoundInput {
       set(values, "gradeRound", input.gradeRound);
       set(values, "competitionLine", input.competitionLine);
       set(values, "venueDateTime", input.venueDateTime);
+      values["broadcastRoundLabel"] = fixtureRoundLabel(
+        input.roundLabel,
+        input.gradeRound,
+        input.competitionLine,
+      );
       // The match in parts, for designs that set it out separately (Starting XI).
       // Bound even when absent, so a list without them never shows samples.
       values["roundLabel"] = input.roundLabel ?? "";
@@ -227,6 +232,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
         values: {
           number: shirt ? shirtText(p.shirtNumber) : String(p.order),
           surname: p.surname,
+          broadcastName: broadcastPlayerName(p.firstInitial, p.surname),
           role: p.role ?? "",
           debut: p.debut ? "DEBUT" : "",
         },
@@ -384,6 +390,30 @@ export function bindInput(input: ShareCardInput): BoundInput {
   bindShirtNumber(input, values);
   bindSetValues(input, values);
   return { values, images, rows };
+}
+
+/** Broadcast eyebrow: accept only an explicit fixture round; never infer one. */
+export function fixtureRoundLabel(...sources: Array<string | null | undefined>): string {
+  const [fixtureLabel, ...legacyLabels] = sources;
+  const actual = fixtureLabel?.trim();
+  if (actual) {
+    const match = actual.match(/\b(?:round|rd\.?)\s*[-:#]?\s*(\d{1,2})\b/i);
+    return match ? `ROUND ${match[1]}` : actual.toUpperCase();
+  }
+  for (const source of legacyLabels) {
+    const text = source ?? "";
+    const round = text.match(/\b(?:round|rd\.?)\s*[-:#]?\s*(\d{1,2})\b/i);
+    if (round) return `ROUND ${round[1]}`;
+    const stage = text.match(/\b(?:grand final|preliminary final|semi[- ]final|qualifying final|elimination final|finals)\b/i);
+    if (stage) return stage[0].toUpperCase();
+  }
+  return "";
+}
+
+/** Use only an approved one-letter initial; older/private rows stay surname-only. */
+export function broadcastPlayerName(firstInitial: string | null | undefined, surname: string): string {
+  const initial = firstInitial?.trim() ?? "";
+  return /^\p{L}$/u.test(initial) ? `${initial}. ${surname}` : surname;
 }
 
 /**

@@ -19,7 +19,11 @@ describe("built-in team grade headings and attached roles", () => {
         const doc = new DOMParser().parseFromString(html, "text/html");
         expect(doc.querySelector("[data-team-grade]")?.textContent).toBe(grade?.toUpperCase() || "TEAM LIST");
         expect(doc.body.textContent).not.toContain("THE XI");
-        expect(doc.body.textContent).toContain("Unrelated metadata · Round 7");
+        if (packId === "broadcast-dark-v1") {
+          expect(doc.querySelector("[data-team-grade]")?.previousElementSibling?.textContent).toBe("ROUND 8");
+        } else {
+          expect(doc.body.textContent).toContain("Unrelated metadata · Round 7");
+        }
         expect(Array.from(doc.querySelectorAll("[data-xi-name]")).map(n => n.textContent)).toEqual(players.map(p => p.surname));
         const rows = Array.from(doc.querySelectorAll("[data-xi-row]"));
         rows.forEach((row, i) => {

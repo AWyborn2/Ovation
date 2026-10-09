@@ -126,6 +126,8 @@ export interface BdCardParts {
   photo?: string;
   body: string;
   footer: string;
+  /** Keep content directly below the shared club header rather than photo-anchoring it. */
+  topAligned?: boolean;
 }
 
 /** A Broadcast Dark card on the shared skeleton. */
@@ -134,10 +136,10 @@ export function bdCard(parts: BdCardParts): string {
     vars: BD_VARS,
     layers: (parts.photo ? bdPhoto(parts.photo) : "") + BD_SLASHES,
     header: skeletonHeader(parts.chip, parts.tag),
-    body: anchoredBody(parts.photo, parts.body),
+    body: parts.topAligned ? parts.body : anchoredBody(parts.photo, parts.body),
     footer: parts.footer,
     // Over a photo the body type gets a soft shadow for legibility.
-    bodyStyle: parts.photo ? ";text-shadow:0 .3cqmin 1.6cqmin rgba(0,0,0,.45)" : "",
+    bodyStyle: `${parts.topAligned ? ";justify-content:flex-start" : ""}${parts.photo ? ";text-shadow:0 .3cqmin 1.6cqmin rgba(0,0,0,.45)" : ""}`,
   });
 }
 

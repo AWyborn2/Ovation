@@ -70,6 +70,8 @@ export type MatchSummaryInnings = {
 export type TeamListPlayer = {
   order: number;
   surname: string;
+  /** Optional real first-name initial for Broadcast team lists; absent in older snapshots. */
+  firstInitial?: string;
   role?: "C" | "VC" | "WK" | "C/WK" | "VC/WK";
   /** First senior game for the club: a DEBUT badge on designs that show one. */
   debut?: boolean;
