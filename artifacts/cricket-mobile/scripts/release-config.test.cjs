@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const path = require("node:path");
+const { createRequire } = require("node:module");
 const { test } = require("node:test");
 const { getReleaseDomain, verifyTenantApi, checkStaticConfig } = require("./release-config.cjs");
 
@@ -9,6 +10,16 @@ test("Metro ignores replaceable Vite caches without excluding application depend
   assert.equal(blocked("/workspace/artifacts/cricket-club/node_modules/.vite/deps_temp_example"), true);
   assert.equal(blocked("/workspace/artifacts/cricket-mobile/app/index.tsx"), false);
   assert.equal(blocked("/workspace/node_modules/.pnpm/react/index.js"), false);
+});
+
+test("mobile providers and shared API hooks resolve the same React Query and React", () => {
+  const mobileRequire = createRequire(path.resolve(__dirname, "../package.json"));
+  const clientRequire = createRequire(mobileRequire.resolve("@workspace/api-client-react"));
+  const mobileQuery = mobileRequire.resolve("@tanstack/react-query");
+  const clientQuery = clientRequire.resolve("@tanstack/react-query");
+  assert.equal(clientQuery, mobileQuery);
+  const queryRequire = createRequire(clientQuery);
+  assert.equal(queryRequire.resolve("react"), mobileRequire.resolve("react"));
 });
 
 test("static configuration preserves the existing identities on both platforms", () => {

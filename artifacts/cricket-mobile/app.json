@@ -7,12 +7,6 @@
     "icon": "./assets/images/store-icon.png",
     "scheme": "ovation",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/store-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0B0F1A"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.ovation.ovation",
@@ -30,6 +24,12 @@
     },
     "plugins": [
       ["expo-router", { "origin": "https://replit.com/" }],
+      ["expo-splash-screen", {
+        "image": "./assets/images/store-icon.png",
+        "imageWidth": 200,
+        "resizeMode": "contain",
+        "backgroundColor": "#0B0F1A"
+      }],
       "expo-font",
       "expo-web-browser"
     ],

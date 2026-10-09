@@ -82,3 +82,4 @@
 - [Browser render verification](browser-render-verification.md) — Vite React default-export interop; use direct Chromium checks if the testing runtime rejects its config.
 - [Mobile store release targets](mobile-store-release.md) — user wants Ovation Mobile released for both iPhone and Android.
 - [Environment-triggered workflow restarts](environment-workflow-restarts.md) — setting changes can restart services; avoid racing them with manual restarts.
+- [Mobile/web React peers](mobile-web-react-peers.md) — keep per-app React versions; shared API hooks must resolve the same Query instance as each app's provider.
