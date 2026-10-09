@@ -183,7 +183,11 @@ describe("renderer hardening (security review 2026-10-08)", () => {
 
 describe("starter engine additions (Club Kit starters)", () => {
   const brand = { name: "Seaview", logoUrl: "https://example.test/seaview.png" };
-  const tokens = resolvePackTokens({ brand: brandDefaultTokens(brand), theme: null, junior: false });
+  const tokens = resolvePackTokens({
+    brand: brandDefaultTokens(brand),
+    theme: null,
+    junior: false,
+  });
   const render = (layers: FreeLayer[], junior = false) =>
     renderPackCard(
       { kind: "century", playerName: "Sam", runs: 104 } as never,
@@ -191,7 +195,12 @@ describe("starter engine additions (Club Kit starters)", () => {
       true,
       tokens,
       junior,
-      buildPackData({ brand, hashtag: "#S", sponsors: [], photoUrl: "https://example.test/sam.jpg" }),
+      buildPackData({
+        brand,
+        hashtag: "#S",
+        sponsors: [],
+        photoUrl: "https://example.test/sam.jpg",
+      }),
       BLANK_PACK_ID,
       { layers },
     );
@@ -216,7 +225,9 @@ describe("starter engine additions (Club Kit starters)", () => {
   });
 
   it("prints capitals when uppercase is on, and nothing extra when it's off", () => {
-    expect(render([text("a", { style: { uppercase: true } })])).toContain("text-transform:uppercase");
+    expect(render([text("a", { style: { uppercase: true } })])).toContain(
+      "text-transform:uppercase",
+    );
     expect(render([text("a")])).not.toContain("text-transform");
   });
 });
