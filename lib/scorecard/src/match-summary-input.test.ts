@@ -464,7 +464,7 @@ describe("matchToSummaryInput: primary path", () => {
       id: 55,
       season: 2024,
       grade: "A Grade",
-      round: null,
+      round: 14,
       stage: "Grand Final",
       matchDate: "2025-03-22",
       venue: "Test Oval",
@@ -484,6 +484,7 @@ describe("matchToSummaryInput: primary path", () => {
 
     const input = matchToSummaryInput(match);
     expect(input.matchTitle).toBe("A Grade • Grand Final");
+    expect(input.roundLabel).toBe("Grand Final");
   });
 });
 
@@ -523,6 +524,7 @@ describe("matchToSummaryInput: zero-innings guard", () => {
 
     expect(input.kind).toBe("matchSummary");
     expect(input.matchTitle).toBe("A Grade • Round 5");
+    expect(input.roundLabel).toBe("Round 5");
     expect(input.innings).toEqual([]);
     expect(input.result).toBe("Result pending");
     expect(input.resultWinner).toBe("draw");

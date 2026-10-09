@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
 import {
   db,
   availabilityAwayTable,
@@ -439,7 +439,7 @@ export const MANUAL_REMINDER_GAP_MS = 12 * 60 * 60 * 1000;
 
 export type StepOptions = {
   logger?: Logger;
-  /** True for an admin's "Run now"; manual reminders are throttled and stamped. */
+  /** Admin "Run now": sends can repeat; reminders remain throttled and stamped. */
   manual?: boolean;
   /** Overrides the module's pace between members. */
   paceMs?: number;
@@ -524,6 +524,7 @@ export async function findRound(
 /**
  * Claim a step for a round: set its `*_started_at` only while it is NULL, or
  * while it is a stale claim (unfinished and older than {@link STALE_CLAIM_MS}).
+ * Manual sends may reclaim a completed send, but never an in-flight send.
  * True for exactly one caller, however many race.
  */
 export async function claimStep(
@@ -531,16 +532,22 @@ export async function claimStep(
   roundId: number,
   step: ScheduleStep,
   now: Date,
+  repeatCompletedSend = false,
 ): Promise<boolean> {
+  const repeat = step === "send" && repeatCompletedSend;
   const rows = await db
     .update(availabilityRoundsTable)
-    .set({ [STARTED_KEY[step]]: now })
+    .set({
+      [STARTED_KEY[step]]: now,
+      ...(repeat ? { [COMPLETED[step]]: null } : {}),
+    })
     .where(
       and(
         eq(availabilityRoundsTable.id, roundId),
         eq(availabilityRoundsTable.tenantId, tenantId),
         or(
           isNull(availabilityRoundsTable[STARTED_KEY[step]]),
+          ...(repeat ? [isNotNull(availabilityRoundsTable[COMPLETED[step]])] : []),
           and(
             isNull(availabilityRoundsTable[COMPLETED[step]]),
             lt(
@@ -625,7 +632,8 @@ const emptyResult = (step: ScheduleStep): StepResult => ({
  * every date they'd be asked about gets No recorded for those dates instead,
  * and no message. Paced between members. Resumable: a recipient that already
  * has a request row this round was attempted by an earlier run and is left to
- * the retry pass, so a re-run never sends twice.
+ * the retry pass, so an automated re-run never sends twice. An explicit manual
+ * run deliberately re-sends to every eligible recipient, including new contacts.
  */
 async function runSend(
   tenantId: number,
@@ -635,6 +643,9 @@ async function runSend(
   opts: StepOptions,
 ): Promise<StepResult> {
   const result = emptyResult("send");
+  // Open the board before paced delivery, so staff can work while requests go out.
+  // Repeated/resumed sends only create missing sides and never replace edits.
+  result.drafts = await prepareRoundDrafts(tenantId, round, now, opts, true);
   const pace = opts.paceMs ?? sendPaceMs;
   const members = await activeMembers(tenantId);
   const plan = await loadMemberRounds(tenantId, round.weekendDate, members);
@@ -701,8 +712,8 @@ async function runSend(
       result.away++;
       continue;
     }
-    // On a resumed send, only the recipients the earlier run never reached.
-    const done = attempted.get(m.id);
+    // Automated resumes deduplicate; manual runs deliberately send again.
+    const done = opts.manual ? undefined : attempted.get(m.id);
     const slots = done
       ? recipientsFor(m, now)
           .map((r) => r.slot)
@@ -828,16 +839,15 @@ export async function runReminder(
   return result;
 }
 
-/** Cut-off: build the draft sides, then tell captains and admins. */
-async function runCutoff(
+/** Create missing sides, and announce readiness once when they first appear. */
+async function prepareRoundDrafts(
   tenantId: number,
   round: AvailabilityRoundRow,
   now: Date,
   opts: StepOptions,
-): Promise<StepResult> {
-  const result = emptyResult("cutoff");
+  requestsOpening: boolean,
+): Promise<number> {
   const drafts = await buildRoundDrafts(tenantId, round.id, now);
-  result.drafts = drafts.created;
   if (drafts.created > 0) {
     const sides = drafts.created === 1 ? "1 draft side is" : `${drafts.created} draft sides are`;
     await notifyStaff(
@@ -845,7 +855,9 @@ async function runCutoff(
         tenantId,
         kind: "selection_drafts_ready",
         title: "Draft sides are ready",
-        body: `Availability has closed for the weekend of ${round.weekendDate}. ${sides} ready to pick in the Selection Hub.`,
+        body: requestsOpening
+          ? `Availability requests are going out for the weekend of ${round.weekendDate}. ${sides} ready to start drafting in the Selection Hub. Availability replies will continue to update as players respond.`
+          : `Availability has closed for the weekend of ${round.weekendDate}. ${sides} ready to pick in the Selection Hub.`,
         link: "/admin/selection",
         payload: {
           roundId: round.id,
@@ -856,6 +868,18 @@ async function runCutoff(
       opts.logger,
     );
   }
+  return drafts.created;
+}
+
+/** Cut-off marks later replies as late; existing draft edits are preserved. */
+async function runCutoff(
+  tenantId: number,
+  round: AvailabilityRoundRow,
+  now: Date,
+  opts: StepOptions,
+): Promise<StepResult> {
+  const result = emptyResult("cutoff");
+  result.drafts = await prepareRoundDrafts(tenantId, round, now, opts, false);
   return result;
 }
 
@@ -873,7 +897,9 @@ export async function runStep(
   now: Date,
   opts: StepOptions = {},
 ): Promise<StepResult | null> {
-  if (!(await claimStep(tenantId, round.id, step, now))) return null;
+  if (!(await claimStep(tenantId, round.id, step, now, step === "send" && opts.manual === true))) {
+    return null;
+  }
   let result: StepResult;
   try {
     if (step === "send") result = await runSend(tenantId, round, settings.smsEnabled, now, opts);

@@ -163,7 +163,8 @@ function slotContact(member: SquadMemberRow, slot: RecipientSlot): Recipient {
 
 /** The slots a member should be reached through at `now`, contacts or not. */
 export function intendedSlotsFor(member: SquadMemberRow, now: Date): RecipientSlot[] {
-  return isUnder18(member.dateOfBirth, now) ? ["guardian1", "guardian2"] : ["account"];
+  return member.section === "junior" || isUnder18(member.dateOfBirth, now)
+    ? ["guardian1", "guardian2"] : ["account"];
 }
 
 const hasValue = (v: string | null | undefined) => !!v && v.trim() !== "";

@@ -1,5 +1,5 @@
 {
-  "id": "e0e65bfc-3fd7-429e-a713-20866736fcc4",
+  "id": "280add34-40dd-4fcf-9866-8b303a340ddb",
   "prevId": "f7b4e1f1-9d30-441b-8d6a-539bb9302a50",
   "version": "7",
   "dialect": "postgresql",
@@ -2584,6 +2584,12 @@
         "player_id": {
           "name": "player_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "player_ids": {
+          "name": "player_ids",
+          "type": "integer[]",
           "primaryKey": false,
           "notNull": false
         },
@@ -11993,12 +11999,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'captains_own_grade'"
-        },
-        "season_seeded_at": {
-          "name": "season_seeded_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         },
         "updated_at": {
           "name": "updated_at",

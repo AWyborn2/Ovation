@@ -20,29 +20,30 @@ import type { CardSize, ShareCardInput } from "../share-card";
  * only when there are none), never the name as text beside logos. Last
  * regenerated when match result cards went to a single sponsor tile. Last
  * regenerated when tall cards anchored their copy clear of the photo (Bold
- * Type's wedge grows on story; Sunset's glass hugs the copy).
+ * Type's wedge grows on story; Sunset's glass hugs the copy). Regenerated for
+ * intentional Team List grade headings and name-adjacent role labels.
  */
 const BEFORE: Record<string, string> = {
-  "broadcast-dark-v1/themed": "94a804c63184d98fdd51d6a6dc572dab88df817b83d8e5d917f4c976160d65c1",
-  "broadcast-dark-v1/junior": "d23cbac2a6cc71289c1a6a4ae1479bf03a9c114c4a8667b7aa6a2d246e99ad66",
-  "broadcast-dark-v1/brandOnly": "1514e83de447fbd75af4fc8633a08970c0bc9c9ff3502fc3fb39f98e674bdd37",
-  "broadcast-dark-v1/brandless": "08bd161835d7e2921bf101ac9995a1841723c071a5426f65f5f197aac71a6c13",
-  "gold-foil-v1/themed": "42a175cc34a8b67d6dde93b92d5f45c29bdc6e2938f01375380ec2c61cdfc5ac",
-  "gold-foil-v1/junior": "489b85aeec8919379186023e74ccbe3d6f6aa65ad9705bee701ca093ea7153ae",
-  "gold-foil-v1/brandOnly": "78dc65029c8745f5f125591e0078aceb2452efd247df3121bc49bd3321feac2c",
-  "gold-foil-v1/brandless": "6c083e8f3f9b3ba43ecae8250836ebce3560c777e96dc0342cedcd5c000a41b2",
-  "bold-type-v1/themed": "dc62fb501731637c74703925b7b36b69737ad54a37ba59afb0566753dead0803",
-  "bold-type-v1/junior": "bf0f1cbb26cba2c5cd40bc4312c770bd2cec16e2bb4f4b8d7340d659cc32e32f",
-  "bold-type-v1/brandOnly": "d99fd64a480ed3c39eb19b683fc23d5db27aa683c17a7c345cab0f86d01aab9c",
-  "bold-type-v1/brandless": "6b6e5219c96e2e0142c62f2e7c68c8874eb65b01ce1b04354ebbd68a3ac7f802",
-  "neon-night-v1/themed": "e237893a65a777f9a4b2b8dd7d4e25be8b857530767728671a31f38736a93355",
-  "neon-night-v1/junior": "71ed6720a4c8268721fa7a46d3afdafaeae8a3ef7728c0cd6b0d8e2ba37e3615",
-  "neon-night-v1/brandOnly": "f5f73d11206c1a4ddb50b543f3cae92ec5cc71a11c2d0a1d46068bee4b2c9c85",
-  "neon-night-v1/brandless": "8841a6fd3e7512408df404cf8e753a16360811941c05adf9c06d248317e52b19",
-  "sunset-v1/themed": "f41849f7d60f9724aa14ca858a4e8dfe9294c1ff74785c0dcaff800faf9d4863",
-  "sunset-v1/junior": "5e4e4592c39f3c5e551817ccac04b89232b76a1a75cc918d613de331b4bc3a87",
-  "sunset-v1/brandOnly": "5a21f2b4a5e5437e3e6797f51d1891bb04cb6092567366cea274eca7a6079b4e",
-  "sunset-v1/brandless": "689b3ac4d9af744e4663b6fb2fd1f5e125f6d0fb58d3fcb1e2c7b74fc1974867",
+  "broadcast-dark-v1/themed": "cb431db05d90d46c0bcaccc8ca1321bb0ceae51dc0f69de5a01c4630e0ff6a28",
+  "broadcast-dark-v1/junior": "42c22534c3d79457b198df3af8f8f83f775cd43014a60ed4a2d1906857d13fb2",
+  "broadcast-dark-v1/brandOnly": "6409989e1ab0d03b4980afce6b4e9e6a433b1b47bd26beee8c7c6ae7d983ca01",
+  "broadcast-dark-v1/brandless": "a6ec335930879f732ebc4466abfc1a709ae20cf48788494ff0dfa98f222353f9",
+  "gold-foil-v1/themed": "ec94f57dd02feea1f71bd6ba8d2947d9efc2ff7d0e88e665eb4cc9bb1729b0d1",
+  "gold-foil-v1/junior": "976aa1d71788525aa7d5c3b0c1228db4a632141329514b12113e6247e791cad8",
+  "gold-foil-v1/brandOnly": "556d55f2fc647320b7e5f02f1e258dd2db426b4076716a93d19702adb75d38b8",
+  "gold-foil-v1/brandless": "372c5c47024557e25e250530e4c77ea1bfdf04654a01704e138a9375d0337474",
+  "bold-type-v1/themed": "6ab83951d550c0f838dfe287eb7d289fe463e7f0d531b95ee388381b4623cad9",
+  "bold-type-v1/junior": "2d0cbc56759cc884cb82d7088eb8bbab05904d4eb84de9b8e429410ed63fe58e",
+  "bold-type-v1/brandOnly": "940b7c4764a1248af9920549c8b99762e38c01a813c70e536b0bdce5b90f8c28",
+  "bold-type-v1/brandless": "5f1d022300f07243c962117d14c1bd05fa9c47c50a0d1da609400149d60fcdb4",
+  "neon-night-v1/themed": "762254ed5cc69cf256b398ce37d27825902c27451f91cd1f63c0c76a7b330d15",
+  "neon-night-v1/junior": "674cc8141950a9b23207b6b1f7c65aff39e99fb89dde7fcc7a426aa5589c3b28",
+  "neon-night-v1/brandOnly": "a50c4d582de19f3d76453919c279c535f59c8067e6e2f3dfc2d0ade361e12aef",
+  "neon-night-v1/brandless": "f8211d197031d78414127abceb34c83810d0f7cd2272eb66d72d7e96bba9448a",
+  "sunset-v1/themed": "59357eddbf19b4c4e4b40bebb0bb1c3d749f63063874a5eee45b84bb2f34c873",
+  "sunset-v1/junior": "a4e594102040fea5c4a5dc19a97b4ac70ba21c3d9ad7586b56885ecb23a728e4",
+  "sunset-v1/brandOnly": "00339cb0037a0494b0c92ee3e1a864006596e95a5673e12f8b8f784ec738d8ee",
+  "sunset-v1/brandless": "5f84a4328ee17559e94ab6ccdc1b4a69eb519b259c8dd423bd54ba054700d1bf",
 };
 
 const SIZES: CardSize[] = ["square", "portrait", "story", "landscape"];
@@ -95,6 +96,13 @@ function digest(packId: string, scenario: Scenario, mode: "club" | "pack"): stri
 /** Packs with a "Pack's own look" (every pack but the club-only ones). */
 const DUAL_MODE = listPackManifests().filter((m) => m.colourMode !== "club-only");
 const CLUB_ONLY = listPackManifests().filter((m) => m.colourMode === "club-only");
+
+// Explicit opt-in for intentional visual changes; normal runs remain strict.
+if (process.env.PRINT_PACK_BASELINES) {
+  for (const manifest of DUAL_MODE) for (const scenario of Object.keys(SCENARIOS) as Scenario[]) {
+    process.stderr.write(`"${manifest.packId}/${scenario}": "${digest(manifest.packId, scenario, "pack")}",\n`);
+  }
+}
 
 describe("Pack's own look is byte-identical to before club colours", () => {
   it("covers every registered pack with an own look", () => {

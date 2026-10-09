@@ -250,8 +250,22 @@
     {
       "idx": 35,
       "version": "7",
-      "when": 1791511841972,
-      "tag": "0035_squad_season_seed",
+      "when": 1791436269537,
+      "tag": "0035_shared_award_recipients",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791436269538,
+      "tag": "0036_kind_templates",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1791515372554,
+      "tag": "0037_squad_season_seed",
       "breakpoints": true
     }
   ]

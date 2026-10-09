@@ -12,6 +12,16 @@ import type {
 } from "../pack-templates/types";
 import type { ShareCardInput, CardSize } from "../share-card";
 import type { PackImageSlot } from "./types";
+import { weekendBookendTemplate } from "../pack-templates/club-kit/weekend-bookends";
+import {
+  CAROUSEL_CLUB_KIT,
+  carouselContentTemplate,
+  carouselLook,
+  isCarouselPack,
+  skeletonMatchDetailTemplate,
+  skeletonWeekendTemplate,
+} from "../pack-templates/carousel";
+import { matchDetailTemplate } from "../pack-templates/club-kit/match-detail";
 
 /**
  * Slot keys the generic per-slot override PANEL hides — the tenant-branding
@@ -116,6 +126,36 @@ export function resolveTemplate(
   input: ShareCardInput,
   packId?: string | null,
 ): PackCardTemplate | null {
+  const content = (input as { carouselContent?: boolean }).carouselContent === true;
+  const id = packId == null ? CAROUSEL_CLUB_KIT : packId;
+  if (content && !isCarouselPack(id)) throw new Error(`Unknown carousel pack id: ${JSON.stringify(packId)}`);
+  const t = resolveTemplateBase(input, content ? id : packId);
+  if (!content || !t) return t;
+  const plainMatchDay = input.kind === "matchDay" && !input.carouselPage;
+  return carouselContentTemplate(t, { photo: plainMatchDay && id !== CAROUSEL_CLUB_KIT });
+}
+
+function resolveTemplateBase(
+  input: ShareCardInput,
+  packId?: string | null,
+): PackCardTemplate | null {
+  const isCarousel =
+    (input.kind === "matchDay" && !!input.carouselPage) ||
+    (input.kind === "matchSummary" && input.carouselDetail === true);
+  if (isCarousel) {
+    const id = packId == null ? CAROUSEL_CLUB_KIT : packId;
+    if (!isCarouselPack(id)) throw new Error(`Unknown carousel pack id: ${JSON.stringify(packId)}`);
+    const look = carouselLook(id);
+    if (input.kind === "matchDay" && input.carouselPage) {
+      const c = input.carouselPage;
+      return look
+        ? skeletonWeekendTemplate(look, c.page, c.sponsors.length, c.title.length, c.hasCoverPhoto)
+        : weekendBookendTemplate(c.page, c.sponsors.length, c.title.length, c.hasCoverPhoto);
+    }
+    if (input.kind === "matchSummary") {
+      return look ? skeletonMatchDetailTemplate(look, input.innings.length) : matchDetailTemplate(input.innings.length);
+    }
+  }
   const all = designsByKind(packId).get(input.kind);
   if (!all || all.length === 0) return null;
   // A set's cover renders the kind's cover design (none → no cover); every

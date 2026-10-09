@@ -27,6 +27,8 @@ import type {
   AdminTenant,
   AdminTenantDetail,
   AdminUpdate,
+  ApplyKindTemplateRequest,
+  ApplyKindTemplateResult,
   AutoseedCardSetBody,
   AutoseedCardSetResult,
   AvailabilityAnswersInput,
@@ -153,6 +155,7 @@ import type {
   GetSocialClubSeasonTotalsParams,
   GetSocialLadderPrefillParams,
   GetSocialWeekendWrapPrefillParams,
+  GetWeekendCarouselSourcesParams,
   GoogleDriveConfig,
   GradeDistribution,
   GradeSummary,
@@ -209,6 +212,9 @@ import type {
   JuniorShirtNumberWriteResult,
   JuniorSocialMilestone,
   JuniorStatCorrection,
+  KindTemplate,
+  KindTemplateConflict,
+  KindTemplateList,
   KioskTokenInput,
   KioskTokenResponse,
   LadderCardRow,
@@ -312,6 +318,7 @@ import type {
   RoundUpInput,
   SaveCardPhotoRulesRequest,
   SaveDraftTemplateRequest,
+  SaveKindTemplateRequest,
   SchedulePublicationsRequest,
   SearchClubCorrectionMatchesParams,
   SearchSquadPlayersParams,
@@ -352,9 +359,11 @@ import type {
   SquadImportResult,
   SquadMember,
   SquadMemberDetail,
+  SquadMemberInput,
   SquadMemberUpdate,
   SquadPlayerSearchHit,
   SquadSeasonSeedResult,
+  StartKindTemplateRequest,
   Stat,
   StatInput,
   StatListResponse,
@@ -398,6 +407,7 @@ import type {
   UploadUrlRequest,
   UploadUrlResponse,
   VotableAward,
+  WeekendCarouselSources,
   WeekendWrap
 } from './api.schemas';
 
@@ -7411,6 +7421,77 @@ export const useDeleteCaptain = <TError = ErrorType<void>,
       return useMutation(getDeleteCaptainMutationOptions(options));
     }
 
+export const getCreateSquadMemberUrl = () => {
+
+
+
+
+  return `/api/squad`
+}
+
+/**
+ * @summary Add or reactivate an active squad member (admin or captain)
+ */
+export const createSquadMember = async (squadMemberInput: SquadMemberInput, options?: RequestInit): Promise<SquadMember> => {
+
+  return customFetch<SquadMember>(getCreateSquadMemberUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      squadMemberInput,)
+  }
+);}
+
+
+
+
+export const getCreateSquadMemberMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSquadMember>>, TError,{data: BodyType<SquadMemberInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSquadMember>>, TError,{data: BodyType<SquadMemberInput>}, TContext> => {
+
+const mutationKey = ['createSquadMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSquadMember>>, {data: BodyType<SquadMemberInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSquadMember(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSquadMemberMutationResult = NonNullable<Awaited<ReturnType<typeof createSquadMember>>>
+    export type CreateSquadMemberMutationBody = BodyType<SquadMemberInput>
+    export type CreateSquadMemberMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add or reactivate an active squad member (admin or captain)
+ */
+export const useCreateSquadMember = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSquadMember>>, TError,{data: BodyType<SquadMemberInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSquadMember>>,
+        TError,
+        {data: BodyType<SquadMemberInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSquadMemberMutationOptions(options));
+    }
+
 export const getListSquadMembersUrl = () => {
 
 
@@ -7491,6 +7572,153 @@ export function useListSquadMembers<TData = Awaited<ReturnType<typeof listSquadM
 
 
 
+
+export const getListSelectionRosterUrl = () => {
+
+
+
+
+  return `/api/selection/roster`
+}
+
+/**
+ * @summary List roster identities without contact values (admin or captain)
+ */
+export const listSelectionRoster = async ( options?: RequestInit): Promise<SquadMember[]> => {
+
+  return customFetch<SquadMember[]>(getListSelectionRosterUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSelectionRosterQueryKey = () => {
+    return [
+    `/api/selection/roster`
+    ] as const;
+    }
+
+
+export const getListSelectionRosterQueryOptions = <TData = Awaited<ReturnType<typeof listSelectionRoster>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSelectionRoster>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSelectionRosterQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSelectionRoster>>> = ({ signal }) => listSelectionRoster({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSelectionRoster>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSelectionRosterQueryResult = NonNullable<Awaited<ReturnType<typeof listSelectionRoster>>>
+export type ListSelectionRosterQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List roster identities without contact values (admin or captain)
+ */
+
+export function useListSelectionRoster<TData = Awaited<ReturnType<typeof listSelectionRoster>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSelectionRoster>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSelectionRosterQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getActivateSquadMemberUrl = (id: number,) => {
+
+
+
+
+  return `/api/squad/${id}/activate`
+}
+
+/**
+ * @summary Reactivate a previous squad member (admin or captain)
+ */
+export const activateSquadMember = async (id: number, options?: RequestInit): Promise<SquadMember> => {
+
+  return customFetch<SquadMember>(getActivateSquadMemberUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getActivateSquadMemberMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateSquadMember>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof activateSquadMember>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['activateSquadMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activateSquadMember>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  activateSquadMember(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActivateSquadMemberMutationResult = NonNullable<Awaited<ReturnType<typeof activateSquadMember>>>
+
+    export type ActivateSquadMemberMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Reactivate a previous squad member (admin or captain)
+ */
+export const useActivateSquadMember = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateSquadMember>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof activateSquadMember>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getActivateSquadMemberMutationOptions(options));
+    }
 
 export const getImportSquadUrl = () => {
 
@@ -16301,6 +16529,90 @@ export const useCompleteMetaConnect = <TError = ErrorType<void>,
       return useMutation(getCompleteMetaConnectMutationOptions(options));
     }
 
+export const getGetWeekendCarouselSourcesUrl = (params: GetWeekendCarouselSourcesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/weekend-carousel/sources?${stringifiedParams}` : `/api/weekend-carousel/sources`
+}
+
+/**
+ * @summary Tenant-scoped weekend fixtures and eligible action photos for on-demand export
+ */
+export const getWeekendCarouselSources = async (params: GetWeekendCarouselSourcesParams, options?: RequestInit): Promise<WeekendCarouselSources> => {
+
+  return customFetch<WeekendCarouselSources>(getGetWeekendCarouselSourcesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWeekendCarouselSourcesQueryKey = (params?: GetWeekendCarouselSourcesParams,) => {
+    return [
+    `/api/weekend-carousel/sources`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetWeekendCarouselSourcesQueryOptions = <TData = Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError = ErrorType<void>>(params: GetWeekendCarouselSourcesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWeekendCarouselSourcesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWeekendCarouselSources>>> = ({ signal }) => getWeekendCarouselSources(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWeekendCarouselSourcesQueryResult = NonNullable<Awaited<ReturnType<typeof getWeekendCarouselSources>>>
+export type GetWeekendCarouselSourcesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Tenant-scoped weekend fixtures and eligible action photos for on-demand export
+ */
+
+export function useGetWeekendCarouselSources<TData = Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError = ErrorType<void>>(
+ params: GetWeekendCarouselSourcesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWeekendCarouselSourcesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getListFixturesUrl = (params?: ListFixturesParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -18924,6 +19236,448 @@ export const useDeleteEditorTemplate = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteEditorTemplateMutationOptions(options));
+    }
+
+export const getListKindTemplatesUrl = () => {
+
+
+
+
+  return `/api/kind-templates`
+}
+
+/**
+ * Card kind templates (plan 2026-10-07-002). `enabled` is false until the KIND_TEMPLATES release switch includes this club; the list is then empty.
+ * @summary The club's card kind templates and whether the feature is on
+ */
+export const listKindTemplates = async ( options?: RequestInit): Promise<KindTemplateList> => {
+
+  return customFetch<KindTemplateList>(getListKindTemplatesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListKindTemplatesQueryKey = () => {
+    return [
+    `/api/kind-templates`
+    ] as const;
+    }
+
+
+export const getListKindTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listKindTemplates>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listKindTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListKindTemplatesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listKindTemplates>>> = ({ signal }) => listKindTemplates({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listKindTemplates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListKindTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listKindTemplates>>>
+export type ListKindTemplatesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The club's card kind templates and whether the feature is on
+ */
+
+export function useListKindTemplates<TData = Awaited<ReturnType<typeof listKindTemplates>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listKindTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListKindTemplatesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetKindTemplateUrl = (kind: string,) => {
+
+
+
+
+  return `/api/kind-templates/${kind}`
+}
+
+/**
+ * @summary One card kind's template
+ */
+export const getKindTemplate = async (kind: string, options?: RequestInit): Promise<KindTemplate> => {
+
+  return customFetch<KindTemplate>(getGetKindTemplateUrl(kind),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetKindTemplateQueryKey = (kind: string,) => {
+    return [
+    `/api/kind-templates/${kind}`
+    ] as const;
+    }
+
+
+export const getGetKindTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getKindTemplate>>, TError = ErrorType<void>>(kind: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKindTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetKindTemplateQueryKey(kind);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getKindTemplate>>> = ({ signal }) => getKindTemplate(kind, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(kind), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getKindTemplate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetKindTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getKindTemplate>>>
+export type GetKindTemplateQueryError = ErrorType<void>
+
+
+/**
+ * @summary One card kind's template
+ */
+
+export function useGetKindTemplate<TData = Awaited<ReturnType<typeof getKindTemplate>>, TError = ErrorType<void>>(
+ kind: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKindTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetKindTemplateQueryOptions(kind,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveKindTemplateUrl = (kind: string,) => {
+
+
+
+
+  return `/api/kind-templates/${kind}`
+}
+
+/**
+ * @summary Save a card kind's template (rejected when another admin saved first)
+ */
+export const saveKindTemplate = async (kind: string,
+    saveKindTemplateRequest: SaveKindTemplateRequest, options?: RequestInit): Promise<KindTemplate> => {
+
+  return customFetch<KindTemplate>(getSaveKindTemplateUrl(kind),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveKindTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getSaveKindTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveKindTemplate>>, TError,{kind: string;data: BodyType<SaveKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveKindTemplate>>, TError,{kind: string;data: BodyType<SaveKindTemplateRequest>}, TContext> => {
+
+const mutationKey = ['saveKindTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveKindTemplate>>, {kind: string;data: BodyType<SaveKindTemplateRequest>}> = (props) => {
+          const {kind,data} = props ?? {};
+
+          return  saveKindTemplate(kind,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveKindTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof saveKindTemplate>>>
+    export type SaveKindTemplateMutationBody = BodyType<SaveKindTemplateRequest>
+    export type SaveKindTemplateMutationError = ErrorType<void | KindTemplateConflict>
+
+    /**
+ * @summary Save a card kind's template (rejected when another admin saved first)
+ */
+export const useSaveKindTemplate = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveKindTemplate>>, TError,{kind: string;data: BodyType<SaveKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveKindTemplate>>,
+        TError,
+        {kind: string;data: BodyType<SaveKindTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveKindTemplateMutationOptions(options));
+    }
+
+export const getStartKindTemplateUrl = (kind: string,) => {
+
+
+
+
+  return `/api/kind-templates/${kind}/start`
+}
+
+/**
+ * @summary Start (or restart) a card kind's template from a starter design
+ */
+export const startKindTemplate = async (kind: string,
+    startKindTemplateRequest: StartKindTemplateRequest, options?: RequestInit): Promise<KindTemplate> => {
+
+  return customFetch<KindTemplate>(getStartKindTemplateUrl(kind),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      startKindTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getStartKindTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startKindTemplate>>, TError,{kind: string;data: BodyType<StartKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startKindTemplate>>, TError,{kind: string;data: BodyType<StartKindTemplateRequest>}, TContext> => {
+
+const mutationKey = ['startKindTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startKindTemplate>>, {kind: string;data: BodyType<StartKindTemplateRequest>}> = (props) => {
+          const {kind,data} = props ?? {};
+
+          return  startKindTemplate(kind,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartKindTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof startKindTemplate>>>
+    export type StartKindTemplateMutationBody = BodyType<StartKindTemplateRequest>
+    export type StartKindTemplateMutationError = ErrorType<void | KindTemplateConflict>
+
+    /**
+ * @summary Start (or restart) a card kind's template from a starter design
+ */
+export const useStartKindTemplate = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startKindTemplate>>, TError,{kind: string;data: BodyType<StartKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startKindTemplate>>,
+        TError,
+        {kind: string;data: BodyType<StartKindTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getStartKindTemplateMutationOptions(options));
+    }
+
+export const getDismissKindTemplateNoticeUrl = (kind: string,) => {
+
+
+
+
+  return `/api/kind-templates/${kind}/dismiss-notice`
+}
+
+/**
+ * @summary Dismiss the "your retired design pack was replaced" notice for a kind
+ */
+export const dismissKindTemplateNotice = async (kind: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDismissKindTemplateNoticeUrl(kind),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDismissKindTemplateNoticeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissKindTemplateNotice>>, TError,{kind: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof dismissKindTemplateNotice>>, TError,{kind: string}, TContext> => {
+
+const mutationKey = ['dismissKindTemplateNotice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof dismissKindTemplateNotice>>, {kind: string}> = (props) => {
+          const {kind} = props ?? {};
+
+          return  dismissKindTemplateNotice(kind,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DismissKindTemplateNoticeMutationResult = NonNullable<Awaited<ReturnType<typeof dismissKindTemplateNotice>>>
+
+    export type DismissKindTemplateNoticeMutationError = ErrorType<void>
+
+    /**
+ * @summary Dismiss the "your retired design pack was replaced" notice for a kind
+ */
+export const useDismissKindTemplateNotice = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissKindTemplateNotice>>, TError,{kind: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof dismissKindTemplateNotice>>,
+        TError,
+        {kind: string},
+        TContext
+      > => {
+      return useMutation(getDismissKindTemplateNoticeMutationOptions(options));
+    }
+
+export const getApplyKindTemplateUrl = (kind: string,) => {
+
+
+
+
+  return `/api/kind-templates/${kind}/apply`
+}
+
+/**
+ * Replaces the design of every unposted draft of the kind, one-off design tweaks included; captions are kept. Each draft's previous design is saved as a revision first. Drafts posted meanwhile are skipped.
+ * @summary Apply a saved template version to this kind's unposted drafts
+ */
+export const applyKindTemplate = async (kind: string,
+    applyKindTemplateRequest: ApplyKindTemplateRequest, options?: RequestInit): Promise<ApplyKindTemplateResult> => {
+
+  return customFetch<ApplyKindTemplateResult>(getApplyKindTemplateUrl(kind),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      applyKindTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getApplyKindTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyKindTemplate>>, TError,{kind: string;data: BodyType<ApplyKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyKindTemplate>>, TError,{kind: string;data: BodyType<ApplyKindTemplateRequest>}, TContext> => {
+
+const mutationKey = ['applyKindTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyKindTemplate>>, {kind: string;data: BodyType<ApplyKindTemplateRequest>}> = (props) => {
+          const {kind,data} = props ?? {};
+
+          return  applyKindTemplate(kind,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyKindTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof applyKindTemplate>>>
+    export type ApplyKindTemplateMutationBody = BodyType<ApplyKindTemplateRequest>
+    export type ApplyKindTemplateMutationError = ErrorType<void | KindTemplateConflict>
+
+    /**
+ * @summary Apply a saved template version to this kind's unposted drafts
+ */
+export const useApplyKindTemplate = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyKindTemplate>>, TError,{kind: string;data: BodyType<ApplyKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyKindTemplate>>,
+        TError,
+        {kind: string;data: BodyType<ApplyKindTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getApplyKindTemplateMutationOptions(options));
     }
 
 export const getRunDraftSweepUrl = () => {

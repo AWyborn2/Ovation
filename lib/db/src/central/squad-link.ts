@@ -8,9 +8,79 @@ import {
   centralPlayersTable,
 } from "../central";
 import { cacheKey, withCentralCache } from "./cache";
-import { appGradeFromCentral, parseSeasonStartYear } from "./grades";
+import { appGradeFromCentral, classifyCentralGrade, parseSeasonStartYear } from "./grades";
 import { isPrivateRow } from "./privacy";
 import { inList } from "./where";
+
+export interface CurrentSeasonSquadPlayer {
+  participantId: string;
+  name: string;
+  section: "senior" | "junior";
+  gradeHint: string | null;
+  isPrivate: boolean;
+}
+
+/** Roster/scorecard appearances for this club and season, never opponents or past seasons. */
+export async function centralCurrentSeasonSquad(
+  clubId: number,
+  season: number,
+): Promise<CurrentSeasonSquadPlayer[]> {
+  const lines = (
+    t:
+      | typeof centralMatchRostersTable
+      | typeof centralMatchBattingTable
+      | typeof centralMatchBowlingTable,
+  ) =>
+    centralDb
+      .selectDistinct({
+        participantId: t.participantId,
+        name: t.playerName,
+        season: centralMatchesTable.season,
+        grade: centralMatchesTable.grade,
+      })
+      .from(t)
+      .innerJoin(centralMatchesTable, eq(t.matchId, centralMatchesTable.matchId))
+      .where(and(eq(t.clubId, clubId), isNotNull(t.participantId)));
+  const rows = (
+    await Promise.all([
+      lines(centralMatchRostersTable),
+      lines(centralMatchBattingTable),
+      lines(centralMatchBowlingTable),
+    ])
+  ).flat();
+  const current = rows.filter((r) => parseSeasonStartYear(r.season) === season);
+  const ids = [...new Set(current.map((r) => r.participantId!))];
+  if (!ids.length) return [];
+  const players = await centralDb
+    .select({
+      participantId: centralPlayersTable.participantId,
+      displayName: centralPlayersTable.displayName,
+      isPrivate: centralPlayersTable.isPrivate,
+    })
+    .from(centralPlayersTable)
+    .where(inList(centralPlayersTable.participantId, ids));
+  const byId = new Map(players.map((p) => [p.participantId, p]));
+  const result = new Map<string, CurrentSeasonSquadPlayer>();
+  for (const r of current) {
+    const classification = classifyCentralGrade(r.grade);
+    const junior = classification.note?.startsWith("WA junior/pathway") ?? false;
+    if (!junior && classification.appGrade === null) continue;
+    const p = byId.get(r.participantId!);
+    const name = p?.displayName?.trim() || r.name?.trim();
+    if (!name) continue;
+    const prev = result.get(r.participantId!);
+    // A junior who also plays senior cricket belongs to the senior selection pool.
+    if (prev?.section === "senior") continue;
+    result.set(r.participantId!, {
+      participantId: r.participantId!,
+      name,
+      section: junior ? "junior" : "senior",
+      gradeHint: classification.appGrade ?? r.grade,
+      isPrivate: isPrivateRow(p),
+    });
+  }
+  return [...result.values()];
+}
 
 /** One participant who has played for a club, with the names they appear under. */
 export interface CentralClubPlayerName {

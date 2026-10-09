@@ -118,6 +118,41 @@ const post = (id: number) =>
     .set("x-tenant-id", String(tenantId));
 
 describe("POST /social-drafts/:id/post-pack", () => {
+  it.each(["teamList", "results", "matchSummary"])("saves and exports a frozen %s carousel without changing review status", async setType => {
+    const input = setType === "teamList"
+      ? { kind: "teamList", players: [{ order: 1, surname: "KEEPER", role: "C/WK" }] }
+      : { kind: "matchSummary", club: { name: "Club" }, opposition: { name: "Visitors" }, result: "Won",
+        carouselDetail: setType === "matchSummary",
+        innings: [{ teamKey: "club", totalRuns: "200", wickets: "6", topBatters: [], topBowlers: [] }] };
+    const slides = ["title", "team-b", "team-a", "sponsors"].map((id, i) => ({
+      id, label: id, junior: false, sponsorsOn: false, warnings: [],
+      input: i === 0 || i === 3 ? { kind: "matchDay", carouselPage: { page: id, sponsors: [] } } : input,
+      data: { photoUrl: "/frozen-photo.jpg", photoTransform: { focalX: .2, focalY: .8, zoom: 2 } },
+    }));
+    const caption = `Edited ${setType} caption`;
+    const saved = await request(app).post("/api/social-drafts")
+      .set("Cookie", cookie).set("x-tenant-id", String(tenantId))
+      .send({ packId: "club-kit-v1", caption, cardInput: { kind: "matchDay", weekendCarousel: {
+        version: 1, setType, submissionId: crypto.randomUUID(), size: "portrait", slides,
+      } } });
+    expect(saved.status, JSON.stringify(saved.body)).toBe(201);
+    expect(saved.body.status).toBe("awaiting_review");
+    renders.length = 0;
+    const res = await post(saved.body.id);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(renders.map(r => r.input)).toEqual(slides.map(s => s.input));
+    expect(renders.every(r => r.options.size === "portrait")).toBe(true);
+    expect(renders[1].options.data).toEqual(slides[1].data);
+    const zip = await JSZip.loadAsync(objects.get(String(res.body.zipUrl).replace("/api/storage", ""))!);
+    expect(Object.keys(zip.files).filter(f => f.endsWith(".png"))).toHaveLength(4);
+    expect(await zip.file("caption.txt")!.async("string")).toBe(caption);
+    const [after] = await db.select().from(socialDraftsTable).where(eq(socialDraftsTable.id, saved.body.id));
+    expect(after.status).toBe("awaiting_review");
+    expect(after.cardInput).toEqual(saved.body.cardInput);
+    const forbidden = await request(app).post(`/api/social-drafts/${saved.body.id}/post-pack`)
+      .set("x-tenant-id", String(otherTenantId));
+    expect(forbidden.status).toBe(401);
+  });
   it("renders a draft with no pack of its own in the club's pack for the kind, as the preview does", async () => {
     await db.insert(cardTemplatesTable).values({
       tenantId,

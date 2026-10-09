@@ -14,6 +14,8 @@ export type AwardFormValues = {
 export type WinnerFormValues = {
   season: number;
   playerId: number | null;
+  playerIds?: number[];
+  recipients?: { playerId: number; name: string }[];
   name: string;
   displayOrder: number;
   published: boolean;

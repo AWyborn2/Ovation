@@ -410,6 +410,30 @@ describe("selection inside a folder", () => {
 });
 
 describe("bulk upload", () => {
+  it("preserves a library-save error and uses a neutral fallback instead of blaming conversion", async () => {
+    const categoryError =
+      "The photo converted successfully, but the library's database does not yet allow the selected photo category.";
+    for (const error of [categoryError, undefined]) {
+      const states = new Map<number, UploadState>();
+      await uploadLibraryPhotos([new File(["x"], "premiership.jpg")], {
+        photoType: "premiership",
+        onState: (index, state) => states.set(index, state),
+        sign: async () => ({
+          uploadURL: "https://up/test",
+          objectPath: "/objects/uploads/premiership",
+        }),
+        put: async () => {},
+        ingest: async ({ objectPaths }) => ({
+          results: objectPaths.map(objectPath => ({ objectPath, ok: false, error })),
+        }),
+      });
+      expect(states.get(0)).toEqual({
+        phase: "error",
+        message: error ?? "The photo could not be added to the library.",
+      });
+    }
+  });
+
   it("renders at the top level without a folder", async () => {
     stubLibrary([]);
     renderAt(<AdminPhotoLibrary />, "/admin/social/library");

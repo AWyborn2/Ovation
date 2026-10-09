@@ -11,6 +11,10 @@ import { prepareAnimation } from "@/lib/share-card-animation";
 import { PackCard } from "@/components/pack-card";
 import { packNativeSize, type CardAdjustments, type PackCardData } from "@/lib/pack-render";
 import { ensureCardFontsLoaded } from "@/lib/card-fonts";
+import { prepareTeamNames } from "@/lib/pack-render/team-name-fit";
+import { fitLayersInDom } from "@/lib/pack-render/layer-fit";
+import { ensureDocumentFonts } from "@/lib/document-fonts";
+import type { LayoutWarning } from "@workspace/scorecard/kind-templates";
 import { clipDuration, seekAnimations } from "@/lib/pack-render/animation-clock";
 
 // Metrics returned by init() so the server knows how many frames to capture.
@@ -29,6 +33,8 @@ type HarnessMeta = {
 // wire — `CardRenderStillInput.options` is `additionalProperties: true`, so no
 // OpenAPI change was needed to add this field).
 type StillOptions = {
+  /** On-demand sets must not silently export a blank failed image. */
+  strictImages?: boolean;
   size: CardSize;
   sponsorsOn: boolean;
   junior: boolean;
@@ -49,6 +55,11 @@ type StillMeta = {
   height: number;
   /** CSS selector of the mounted card element (stable id). */
   selector: string;
+  /**
+   * Layout warnings for this size (card kind templates, KTD9): live text that
+   * still overflows at the minimum size. Empty when everything fits.
+   */
+  warnings: LayoutWarning[];
 };
 
 type HarnessApi = {
@@ -187,11 +198,22 @@ export default function CardRenderHarness() {
       },
       async renderStill(payload) {
         const native = await mountPack(payload.input, payload.options, false);
+        // Shrink live text that overflows, then repaint before the screenshot.
+        const size = payload.options.size;
+        const warnings: LayoutWarning[] = [
+          // A template font that didn't load would post in a fallback (KTD12).
+          ...lastFontFailures.map((family) => ({ reason: "font" as const, size, detail: family })),
+          ...(stillContainer ? fitLayersInDom(stillContainer, size) : []),
+        ];
+        await new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        );
         setStatus("still");
         return {
           width: native.w,
           height: native.h,
           selector: `#${STILL_CONTAINER_ID}`,
+          warnings,
         };
       },
       dispose() {
@@ -207,6 +229,8 @@ export default function CardRenderHarness() {
 
     // Mount <PackCard> at native px in a fixed top-left container the server
     // screenshots; `animate` plays its layer entrances (for clip export).
+    let lastFontFailures: string[] = [];
+
     async function mountPack(
       input: ShareCardInput,
       options: StillOptions,
@@ -256,6 +280,9 @@ export default function CardRenderHarness() {
       // Settle web fonts, then wait for slot images, then two animation frames
       // so the screenshot is stable and fully painted.
       await ensureCardFontsLoaded();
+      // Card kind templates may use any Google Font: load exactly those faces
+      // before measuring, and remember any that failed (KTD12).
+      lastFontFailures = await ensureDocumentFonts(options.adjustments ?? null);
       try {
         const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
         if (fonts?.ready) await fonts.ready;
@@ -268,6 +295,10 @@ export default function CardRenderHarness() {
       // photo while the image is still fetching.
       await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
       await waitForImages(stillContainer);
+      await prepareTeamNames(stillContainer);
+      if (options.strictImages && Array.from(stillContainer.querySelectorAll("img")).some(img => !img.complete || img.naturalWidth === 0)) {
+        throw new Error("A card image could not be loaded. Check the selected photo and club/sponsor logos, then retry.");
+      }
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       );

@@ -77,6 +77,7 @@ const HEADER_FIELDS: PackTemplateField[] = [
 const EXTRA_FIELDS: Record<string, PackTemplateField> = {
   clubMonogram: textField("clubMonogram", "Club monogram (no crest)", "YC"),
   photo: photoField("photo", "Frame photo", "Club photo"),
+  grade: textField("grade", "Grade / team", ""),
   clubHashtag: textField("clubHashtag", "Club hashtag", "#YOURCLUB"),
   resultWord: textField("resultWord", "Result headline", "WIN"),
   setMarker: textField("setMarker", "Set page marker", ""),
@@ -320,17 +321,22 @@ const matchDay = design({
       "GAME DAY",
       col(
         eyebrow(u, "{{date}} · {{roundLabel}}") +
-          twoLineTitle(u, "GAME", "DAY", f === "portrait" ? 12 : 16) +
-          `<div style="width:100%;margin-top:2cqmin">` +
-          gradeRow(u, {
-            grade: "{{homeAway}}",
-            opponent: "v {{opposition.name}}",
-            venue: "{{venue}}",
-            time: "{{startTime}}",
-          }) +
+          meta(u, "GAME DAY", ";margin-top:1cqmin") +
+          `<div data-match-day-heading="1">` +
+          display(u, "{{grade}}", f === "portrait" ? 12 : 14, ";line-height:.95;overflow-wrap:anywhere") +
+          `</div>` +
+          `<div style="width:100%;margin-top:2cqmin;padding:1.5cqmin;background:${C.panel}">` +
+          `<div style="display:flex;justify-content:space-between;gap:1cqmin;margin-bottom:1cqmin">` +
+          meta(u, "{{homeAway}}") + display(u, "{{startTime}}", 3.2) + `</div>` +
+          `<div style="display:flex;align-items:center;gap:1.5cqmin;min-width:0">` +
+          display(u, "v", 3.8, ";line-height:1.05;flex:none") +
+          `<div data-drop-if-empty="opposition.logo" style="width:7cqmin;height:7cqmin;flex:none">${slot("opposition.logo", "logo")}</div>` +
+          display(u, "{{opposition.name}}", 3.8, ";line-height:1.05;overflow-wrap:anywhere;min-width:0") +
+          `</div>` +
+          meta(u, "{{venue}}", ";margin-top:.8cqmin;overflow-wrap:anywhere") +
           `</div>`,
       ),
-      LOGO_FOOTER,
+      { ...LOGO_FOOTER, largeLogos: true },
       "photo",
       "list",
     ),
@@ -346,7 +352,7 @@ const teamList = design({
       "TEAM LIST{{setMarker}}",
       col(
         eyebrow(u, "{{gradeRound}} · {{competitionLine}}") +
-          display(u, `THE <span style="color:${C.pt}">XI</span>`, 12, ";margin-top:1cqmin") +
+          `<div data-team-grade="1" style="font-family:${CK_COND};font-weight:900;font-size:12cqmin;line-height:.95;text-transform:uppercase;color:${C.pt};margin-top:1cqmin;width:100%;height:12cqmin;overflow-wrap:anywhere">{{gradeHeading}}</div>` +
           meta(u, "{{venueDateTime}}", ";margin-top:.8cqmin") +
           `<div style="width:100%;margin-top:1.6cqmin">` +
           xiList(
@@ -354,9 +360,10 @@ const teamList = design({
             xiRow(u, {
               n: "{{row.number}}",
               name: "{{row.surname}}",
-              tag: `<span style="color:${C.chalk2}">({{row.role}})</span>`,
-            }),
-            ' data-repeat="players" data-repeat-max="12"',
+              tag: `({{row.role}})`,
+            }, true),
+            ' data-repeat="players" data-repeat-max="12" data-xi-fit="1"',
+            true,
           ) +
           `</div>`,
       ),

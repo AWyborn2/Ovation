@@ -1986,6 +1986,7 @@ async function playerReferenced(tx: Tx, tenantId: number, playerId: number): Pro
       sql`EXISTS (SELECT 1 FROM ${sql.identifier(t)} WHERE tenant_id = ${tenantId} AND player_id = ${playerId})`,
   );
   checks.push(
+    sql`EXISTS (SELECT 1 FROM award_winners WHERE tenant_id = ${tenantId} AND ${playerId} = ANY(player_ids))`,
     sql`EXISTS (SELECT 1 FROM junior_participants WHERE tenant_id = ${tenantId} AND senior_player_id = ${playerId})`,
     sql`EXISTS (SELECT 1 FROM award_ballots b JOIN award_voting_config c ON c.id = b.config_id
         JOIN awards a ON a.id = c.award_id

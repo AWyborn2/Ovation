@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { readQueuedCarousel, carouselPackId, isCarouselPackId } from "@workspace/scorecard/queued-carousel";
 import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import {
   db,
@@ -33,7 +34,12 @@ import { getTenantId } from "../middlewares/tenant-context";
 import { NATIVE_STATS_TENANT_ID, tenantIsCentral } from "../lib/tenant";
 import { backfillMatchDrafts } from "../lib/draft-sweep";
 import { recaptionQueuedDrafts } from "../lib/draft-recaption";
-import { effectiveDraftStatus, loadAutoPost, type AutoPost } from "../lib/effective-draft-state";
+import {
+  effectiveDraftStatus,
+  layoutClear,
+  loadAutoPost,
+  type AutoPost,
+} from "../lib/effective-draft-state";
 import { isDraftStatus, normalizeDraftStatus, type DraftStatus } from "../lib/draft-status";
 import {
   listDraftRevisions,
@@ -45,6 +51,7 @@ import {
   draftPublishing,
   publicationsByDraft,
 } from "../lib/publishing/publications";
+import { BLANK_PACK_ID, templatedDesignFor } from "../lib/kind-templates";
 
 const router: IRouter = Router();
 
@@ -151,10 +158,11 @@ router.get("/social-drafts/pending-count", requireAdmin, async (req, res): Promi
     eq(socialDraftsTable.status, "awaiting_review"),
     notAnUntouchedEditorDraft,
   ];
-  // Drafts past their deadline already read as ready while auto-post is on.
+  // Drafts past their deadline already read as ready while auto-post is on —
+  // unless their layout needs a look, which keeps them waiting (KTD10).
   if ((await loadAutoPost(tenantId)).enabled) {
     conditions.push(
-      sql`(${socialDraftsTable.autoReadyAt} IS NULL OR ${socialDraftsTable.autoReadyAt} > now())`,
+      sql`(${socialDraftsTable.autoReadyAt} IS NULL OR ${socialDraftsTable.autoReadyAt} > now() OR NOT ${layoutClear})`,
     );
   }
   const [row] = await db
@@ -384,6 +392,37 @@ router.post(
     }
     const tenantId = getTenantId(req);
     let packId = parsed.data.packId ?? null;
+    if ("weekendCarousel" in cardInput) {
+      const selection = cardInput.weekendCarousel as { packId?: unknown } | null;
+      if ((selection && selection.packId !== undefined && !isCarouselPackId(selection.packId)) ||
+        (parsed.data.packId != null && !isCarouselPackId(parsed.data.packId))) {
+        res.status(400).json({ error: "Unknown carousel design pack. Choose a registered built-in pack." });
+        return;
+      }
+    }
+    const carousel = readQueuedCarousel(cardInput);
+    if ("weekendCarousel" in cardInput && (!carousel || cardInput.kind !== "matchDay" ||
+      !parsed.data.caption?.trim() || templateId !== undefined)) {
+      res.status(400).json({ error: "A carousel needs 3–20 valid slides of the selected type and a caption." });
+      return;
+    }
+    if (carousel) {
+      if (carousel.packId !== undefined && packId !== null && packId !== carousel.packId) {
+        res.status(400).json({ error: "The carousel design pack must match the saved composition." });
+        return;
+      }
+      // Freeze new top-level choices too; absence on historical payloads stays Club Kit.
+      if (carousel.packId === undefined && packId !== null) carousel.packId = packId;
+      packId = carouselPackId(carousel);
+    }
+    const sourceKey = carousel ? `weekend-carousel:${carousel.submissionId}` : null;
+    if (sourceKey) {
+      const [existing] = await db.select().from(socialDraftsTable).where(and(
+        eq(socialDraftsTable.tenantId, tenantId), eq(socialDraftsTable.sourceKey, sourceKey),
+        sql`${socialDraftsTable.status} != 'dismissed'`,
+      ));
+      if (existing) { res.status(200).json(presentDraft(existing)); return; }
+    }
     let adjustments: unknown = parsed.data.adjustments ?? null;
     if (templateId !== undefined) {
       const template = await loadEditorTemplate(tenantId, templateId);
@@ -394,21 +433,42 @@ router.post(
       packId = template.packId;
       adjustments = template.adjustments;
     }
+    // With card kind templates on, a card started from the club's design
+    // (not a blank canvas, a saved template or a supplied layout) copies the
+    // kind's template (ADR-002).
+    const templated =
+      templateId === undefined && adjustments === null && packId !== BLANK_PACK_ID
+        ? await templatedDesignFor(tenantId, cardInput.kind, packId)
+        : null;
     const [row] = await db
       .insert(socialDraftsTable)
       .values({
         tenantId,
-        engine: "adhoc",
+        engine: carousel ? "ondemand" : "adhoc",
         status: "awaiting_review",
         cardInput,
-        family: familyOfKind(cardInput.kind),
+        caption: parsed.data.caption ?? null,
+        sourceKey,
+        ...(carousel ? { photoSource: "none" } : {}),
+        family: familyOfKind(carousel?.setType === "teamList" ? "teamList"
+          : carousel?.setType === "results" || carousel?.setType === "matchSummary" ? "matchSummary" : cardInput.kind),
         packId,
         adjustments,
         autoReadyAt: null,
-        editedAt: adjustments ? new Date() : null,
+        editedAt: carousel || adjustments ? new Date() : null,
         createdByAdminId: (req as RequestWithAdmin).admin?.id ?? null,
+        ...(templated ?? {}),
       })
+      .onConflictDoNothing()
       .returning();
+    if (!row && sourceKey) {
+      const [existing] = await db.select().from(socialDraftsTable).where(and(
+        eq(socialDraftsTable.tenantId, tenantId), eq(socialDraftsTable.sourceKey, sourceKey),
+        sql`${socialDraftsTable.status} != 'dismissed'`,
+      ));
+      if (existing) { res.status(200).json(presentDraft(existing)); return; }
+    }
+    if (!row) { res.status(409).json({ error: "Could not create draft. Please retry." }); return; }
     res.status(201).json(presentDraft(row));
   },
 );
@@ -563,7 +623,14 @@ router.patch(
     if (adjustments !== undefined) {
       // Editor overlay (U15): stored as-is; the web renderer applies it.
       patch.adjustments = adjustments;
-      patch.editedAt = patch.editedAt ?? new Date();
+      if (draft.templateVersion !== null) {
+        // A templated draft's design edit: `editedAt` stays the caption
+        // marker, and the new layout owes a check (KTD10).
+        patch.designEditedAt = new Date();
+        patch.layoutCheckPending = true;
+      } else {
+        patch.editedAt = patch.editedAt ?? new Date();
+      }
     }
     const updated = await db.transaction(async (tx) => {
       await recordDraftRevision(draft, "edit", tx);

@@ -7,6 +7,7 @@ import {
   useGetCurrentAvailabilityRound,
   getGetCurrentAvailabilityRoundQueryKey,
   useRunAvailabilityStep,
+  getGetSelectionBoardQueryKey,
   useListSquadMembers,
   getListSquadMembersQueryKey,
   useImportSquad,
@@ -48,6 +49,7 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { plural } from "@/lib/plural";
 import { useConfirm } from "@/components/confirm-dialog";
+import { AddActivePlayer } from "@/components/add-active-player";
 import { SquadPlayerPicker, type LinkedPlayer } from "@/components/squad-player-picker";
 
 /**
@@ -398,7 +400,8 @@ const STEPS: {
     at: (r) => r.sendAt,
     started: (r) => r.sendStartedAt,
     completed: (r) => r.sendCompletedAt,
-    confirm: "Every active player (or a junior's parents) will be asked about this weekend now.",
+    confirm:
+      "Send availability requests to every eligible active player (or a junior's parents) with contact details for this weekend and open draft teams in the Selection Hub immediately. You can repeat this as often as needed; each run sends again, even to people already contacted. Existing team edits are kept. Scheduled sends still avoid duplicates.",
   },
   {
     key: "remind",
@@ -416,13 +419,17 @@ const STEPS: {
     started: (r) => r.cutoffStartedAt,
     completed: (r) => r.cutoffCompletedAt,
     confirm:
-      "Draft sides will be built from the answers so far and captains told they're ready. Later answers are still accepted and shown as late.",
+      "Mark the availability cut-off now. Existing draft teams and your selection edits will be kept; any missing fixture drafts will be created. Later answers are still accepted and shown as late.",
   },
 ];
 
 function stepState(r: AvailabilityRoundStatus, s: (typeof STEPS)[number]): string {
   const completed = s.completed(r);
-  if (completed) return `Done ${formatPerth(completed)}`;
+  if (completed) {
+    return s.key === "send"
+      ? `Last sent ${formatPerth(completed)} · Run now sends again`
+      : `Done ${formatPerth(completed)}`;
+  }
   const started = s.started(r);
   if (started) return `Started ${formatPerth(started)}`;
   return `Due ${formatPerth(s.at(r))}`;
@@ -433,7 +440,8 @@ function describeResult(r: AvailabilityStepResult): string {
   if (r.away) parts.push(`${r.away} away`);
   if (r.noFixture) parts.push(`${r.noFixture} with no game this round`);
   if (r.throttled) parts.push(`${r.throttled} reminded recently, skipped`);
-  if (r.step === "cutoff") parts.push(`${r.drafts} draft side${r.drafts === 1 ? "" : "s"} built`);
+  if (r.step === "cutoff" || r.step === "send")
+    parts.push(`${r.drafts} draft side${r.drafts === 1 ? "" : "s"} built`);
   return parts.join(" · ");
 }
 
@@ -460,6 +468,7 @@ function RoundCard() {
         onSuccess: (res) => {
           setResult(`${s.label}: ${describeResult(res)}`);
           queryClient.invalidateQueries({ queryKey: getGetCurrentAvailabilityRoundQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetSelectionBoardQueryKey() });
         },
         onError: (e) => setError(errorMessage(e)),
       },
@@ -725,8 +734,9 @@ function SquadCard() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex-row items-center justify-between gap-2">
         <CardTitle>Squad</CardTitle>
+        <AddActivePlayer />
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">

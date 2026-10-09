@@ -13,6 +13,8 @@ import {
   getListCardThemesQueryKey,
   useListClubPhotos,
   getListClubPhotosQueryKey,
+  useListKindTemplates,
+  getListKindTemplatesQueryKey,
   type CardTheme as ApiCardTheme,
   type ClubPhoto,
 } from "@workspace/api-client-react";
@@ -26,6 +28,7 @@ import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import { usePackSelection } from "@/lib/use-pack-selection";
 import { usePackColourModes } from "@/lib/use-pack-colour-modes";
 import { PackPerTypeSection } from "@/components/social-studio/pack-per-type-section";
+import { KindTemplatesSection } from "@/components/social-studio/kind-templates-section";
 import { DesignPacksSection } from "@/components/social-studio/design-packs-section";
 import { MatchSummarySettings } from "@/components/social-studio/match-summary-settings";
 import { THUMB_SIZE, kindLabel, type CardKind } from "@/lib/social-studio";
@@ -42,6 +45,7 @@ import { type PackCardData } from "@/lib/pack-render";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { useConfirm } from "@/components/confirm-dialog";
 import { LoadingState, QueryError } from "@/components/data-states";
+import { WeekendCarousel } from "@/components/weekend-carousel";
 
 // Renders a card preview (built-in body + optional saved layout) to an <img>.
 function CardThumb({
@@ -117,6 +121,12 @@ export default function AdminSocialStudio() {
   const settingsQ = useGetSocialSettings();
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
   const templatesQ = useListCardTemplates();
+  // Card kind templates (plan U9): when switched on for the club, each kind's
+  // design replaces the per-kind pack choice and saved editor templates.
+  const kindTemplatesQ = useListKindTemplates({
+    query: { queryKey: getListKindTemplatesQueryKey() },
+  });
+  const kindTemplatesOn = kindTemplatesQ.data?.enabled === true;
 
   const [error, setError] = useState<string | null>(null);
 
@@ -281,80 +291,93 @@ export default function AdminSocialStudio() {
         colourModes={colourModes}
       />
 
-      {/* Which pack each card type uses */}
-      <PackPerTypeSection
-        selection={packs}
-        inputByKind={galleryInputByKind}
-        dataByKind={galleryDataByKind}
-        theme={galleryTheme}
-        templateByKind={defaultByKind}
-      />
+      {/* Each card kind's design (templates on), else which pack each card type uses */}
+      {kindTemplatesOn ? (
+        <KindTemplatesSection
+          templates={kindTemplatesQ.data?.templates ?? []}
+          packIdByKind={packs.packIdByKind}
+          inputByKind={galleryInputByKind}
+          dataByKind={galleryDataByKind}
+        />
+      ) : (
+        <PackPerTypeSection
+          selection={packs}
+          inputByKind={galleryInputByKind}
+          dataByKind={galleryDataByKind}
+          theme={galleryTheme}
+          templateByKind={defaultByKind}
+        />
+      )}
 
       {/* Templates: new designs are made in the Studio editor (U18). Layer
           templates from the retired layout editor still render and can be
           deleted, but no longer edited. */}
       <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">Templates</h2>
-          <Button size="sm" asChild>
-            <Link href="/admin/social/create">
-              <PenSquare className="mr-1 h-3.5 w-3.5" aria-hidden /> Design in the editor
-            </Link>
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Make a card in the Studio editor and use Save as template to reuse it. Your templates
-          appear under Design it yourself on Create a card.
-        </p>
+        {!kindTemplatesOn && (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold">Templates</h2>
+              <Button size="sm" asChild>
+                <Link href="/admin/social/create">
+                  <PenSquare className="mr-1 h-3.5 w-3.5" aria-hidden /> Design in the editor
+                </Link>
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Make a card in the Studio editor and use Save as template to reuse it. Your templates
+              appear under Design it yourself on Create a card.
+            </p>
 
-        {layerTemplates.length === 0 ? null : (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {layerTemplates.map((t) => {
-              const baseKind = (t.baseKind as CardKind) ?? "milestone";
-              return (
-                <Card key={t.id} className="overflow-hidden">
-                  <CardThumb
-                    input={sampleCardInput(baseKind)}
-                    baseOpts={baseOpts}
-                    layout={t.layers ?? []}
-                  />
-                  <CardContent className="space-y-2 p-3">
-                    <span className="block truncate text-sm font-medium">{t.name}</span>
-                    <div className="flex flex-wrap gap-1">
-                      {(t.cardKinds?.length ?? 0) === 0 ? (
-                        <Badge variant="outline" className="text-[10px]">
-                          All cards
-                        </Badge>
-                      ) : (
-                        t.cardKinds.map((k) => (
-                          <Badge
-                            key={k}
-                            variant={t.defaultForKinds?.includes(k) ? "default" : "outline"}
-                            className="text-[10px]"
+            {layerTemplates.length === 0 ? null : (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                {layerTemplates.map((t) => {
+                  const baseKind = (t.baseKind as CardKind) ?? "milestone";
+                  return (
+                    <Card key={t.id} className="overflow-hidden">
+                      <CardThumb
+                        input={sampleCardInput(baseKind)}
+                        baseOpts={baseOpts}
+                        layout={t.layers ?? []}
+                      />
+                      <CardContent className="space-y-2 p-3">
+                        <span className="block truncate text-sm font-medium">{t.name}</span>
+                        <div className="flex flex-wrap gap-1">
+                          {(t.cardKinds?.length ?? 0) === 0 ? (
+                            <Badge variant="outline" className="text-[10px]">
+                              All cards
+                            </Badge>
+                          ) : (
+                            t.cardKinds.map((k) => (
+                              <Badge
+                                key={k}
+                                variant={t.defaultForKinds?.includes(k) ? "default" : "outline"}
+                                className="text-[10px]"
+                              >
+                                {kindLabel(k)}
+                                {t.defaultForKinds?.includes(k) ? " ★" : ""}
+                              </Badge>
+                            ))
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="flex-1 text-xs text-muted-foreground">Older layout</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs text-destructive"
+                            aria-label={`Delete ${t.name}`}
+                            onClick={() => handleDelete(t)}
                           >
-                            {kindLabel(k)}
-                            {t.defaultForKinds?.includes(k) ? " ★" : ""}
-                          </Badge>
-                        ))
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="flex-1 text-xs text-muted-foreground">Older layout</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 text-xs text-destructive"
-                        aria-label={`Delete ${t.name}`}
-                        onClick={() => handleDelete(t)}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
 
         {bgTemplates.length > 0 && (
@@ -415,6 +438,25 @@ export default function AdminSocialStudio() {
             </div>
           </div>
         )}
+      </section>
+
+      {/* Weekend match-day carousel entry */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">On-demand carousel sets</h2>
+        <Card>
+          <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Build a branded set with a cover, one slide per team or match and a sponsors close.
+              Send it to review, then export the saved set as one ZIP.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <WeekendCarousel />
+              <WeekendCarousel initialType="teamList" />
+              <WeekendCarousel initialType="results" />
+              <WeekendCarousel initialType="matchSummary" />
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       {/* Trading cards entry */}

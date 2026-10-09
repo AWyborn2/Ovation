@@ -32,6 +32,18 @@ export default function AdminAwards() {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: getListAdminAwardsQueryKey() });
+    queryClient.invalidateQueries({
+      predicate: (query) => {
+        const path = String(query.queryKey[0] ?? "");
+        return (
+          path === "/api/awards" ||
+          path.startsWith("/api/players/") ||
+          path === "/api/records-leaderboards" ||
+          path.startsWith("/api/honour-display")
+        );
+      },
+    });
+    setError(null);
   };
 
   const onMutationError = (e: unknown) => {

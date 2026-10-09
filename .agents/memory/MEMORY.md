@@ -68,3 +68,14 @@
 - [Club Kit pack + Studio element library](studio-elements.md) — club-kit-v1 is card-cqmin with per-format markup and `--ck-*` rootVars (club-only colour mode); Studio `element` layers reuse the same parts via a unit fn; props escaped; junior names masked.
 - [Development host smoke tests](development-host-smoke-tests.md) — public dev host and loopback can select different platform/club modes; confirm the mode before browser tests.
 - [Pending Git merges and checkpoints](pending-git-merges.md) — a no-commit pull can still become a merge commit through automatic checkpointing; stop on divergence when Git commits are forbidden.
+- [Availability testing requirement](availability-testing.md) — repeated manual request sends are intentional: the user needs unrestricted repeat testing, not a once-per-round manual action.
+- [Early team drafting](availability-selection-timing.md) — clubs must be able to draft teams as soon as availability requests go out, without waiting for cut-off.
+- [Selection Hub usability](selection-hub-ux.md) — follow Grade menu order, match pool height to all teams, collapse navigation and expose comparison to captains/selectors.
+- [Publishing constraint checks](publishing-constraint-checks.md) — a “no schema diff” result can miss CHECK-constraint drift; compare live definitions before promising republishing will repair it.
+- [Active roster onboarding](active-roster-onboarding.md) — current-season appearances seed new clubs' active roster; admins and captains can maintain it without repeated participant reports.
+- [Weekend carousel photos](weekend-carousel-photo-scope.md) — title → team match-day cards → sponsors; team photos only from the same grade's batting, bowling or fielding categories.
+- [Shared award compatibility](shared-award-compatibility.md) — legacy single-link edits must preserve other recipients; curated winner labels never imply player identities.
+- [Card layout audit boundaries](card-image-audit-boundaries.md) — distinguish functional clipping from oversized decoration and tight typography; judge painted glyphs, not generic line limits.
+- [Team Selection fitting](team-list-fitting.md) — built-in-only scope; preserve fitted DOM on preview resize and check export parity after intended fonts load.
+- [Held team-list identities](held-team-list-identities.md) — Held numbers need no historical profile; recover legacy identity only from a matching finalised side, never a reopened draft.
+- [Parallel migration collisions](parallel-migration-collisions.md) — preserve existing migration history; resequence incoming changes with a combined snapshot and later timestamp.

@@ -2860,6 +2860,43 @@ export const DeleteCaptainParams = zod.object({
 
 
 /**
+ * @summary Add or reactivate an active squad member (admin or captain)
+ */
+export const createSquadMemberBodyFirstNameMax = 100;
+
+export const createSquadMemberBodyLastNameMax = 100;
+
+export const createSquadMemberBodyDateOfBirthRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const createSquadMemberBodyGradeHintMax = 100;
+
+
+
+export const CreateSquadMemberBody = zod.object({
+  "firstName": zod.string().min(1).max(createSquadMemberBodyFirstNameMax),
+  "lastName": zod.string().min(1).max(createSquadMemberBodyLastNameMax),
+  "section": zod.enum(['senior', 'junior']),
+  "linkedPlayerId": zod.number().nullish(),
+  "dateOfBirth": zod.string().regex(createSquadMemberBodyDateOfBirthRegExp).nullish(),
+  "gradeHint": zod.string().max(createSquadMemberBodyGradeHintMax).nullish(),
+  "account": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.'),
+  "guardian1": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.'),
+  "guardian2": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.')
+})
+
+
+/**
  * Every member of the club's squad register. Contact details are reported
 as presence flags only (has a name, mobile or email; SMS opted out) —
 `getSquadMember` returns the values.
@@ -2904,6 +2941,95 @@ export const ListSquadMembersResponseItem = zod.object({
   "updatedAt": zod.string()
 })
 export const ListSquadMembersResponse = zod.array(ListSquadMembersResponseItem)
+
+
+/**
+ * @summary List roster identities without contact values (admin or captain)
+ */
+export const ListSelectionRosterResponseItem = zod.object({
+  "id": zod.number(),
+  "playhqProfileId": zod.string().nullable(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "preferredName": zod.string().nullable(),
+  "section": zod.enum(['senior', 'junior']),
+  "active": zod.boolean(),
+  "activeSetByAdmin": zod.boolean().describe('The admin set `active` by hand; imports never override it.'),
+  "under18": zod.boolean().nullable().describe('From date of birth (Perth today); null when unknown. Under-18s are contacted through their guardians.'),
+  "gradeHint": zod.string().nullable(),
+  "teamName": zod.string().nullable(),
+  "ageGroup": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "linkedPlayerId": zod.number().nullable(),
+  "linkedPlayerName": zod.string().nullable().describe('The linked club player\'s name (admin only); null when unlinked or the name can\'t be resolved.'),
+  "account": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian1": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian2": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "contactChangeFlag": zod.boolean().describe('A player or guardian changed a contact from their link; stays up until an admin clears it.'),
+  "updatedAt": zod.string()
+})
+export const ListSelectionRosterResponse = zod.array(ListSelectionRosterResponseItem)
+
+
+/**
+ * @summary Reactivate a previous squad member (admin or captain)
+ */
+export const ActivateSquadMemberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ActivateSquadMemberResponse = zod.object({
+  "id": zod.number(),
+  "playhqProfileId": zod.string().nullable(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "preferredName": zod.string().nullable(),
+  "section": zod.enum(['senior', 'junior']),
+  "active": zod.boolean(),
+  "activeSetByAdmin": zod.boolean().describe('The admin set `active` by hand; imports never override it.'),
+  "under18": zod.boolean().nullable().describe('From date of birth (Perth today); null when unknown. Under-18s are contacted through their guardians.'),
+  "gradeHint": zod.string().nullable(),
+  "teamName": zod.string().nullable(),
+  "ageGroup": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "linkedPlayerId": zod.number().nullable(),
+  "linkedPlayerName": zod.string().nullable().describe('The linked club player\'s name (admin only); null when unlinked or the name can\'t be resolved.'),
+  "account": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian1": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian2": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "contactChangeFlag": zod.boolean().describe('A player or guardian changed a contact from their link; stays up until an admin clears it.'),
+  "updatedAt": zod.string()
+})
 
 
 /**
@@ -3373,6 +3499,7 @@ export const GetSelectionBoardResponse = zod.object({
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
+  "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
   "note": zod.string().nullable(),
@@ -3402,6 +3529,7 @@ export const GetSelectionBoardResponse = zod.object({
 })),
   "pool": zod.array(zod.object({
   "id": zod.number(),
+  "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
   "note": zod.string().nullable(),
@@ -3518,6 +3646,7 @@ export const SaveSelectionBoardResponse = zod.object({
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
+  "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
   "note": zod.string().nullable(),
@@ -3547,6 +3676,7 @@ export const SaveSelectionBoardResponse = zod.object({
 })),
   "pool": zod.array(zod.object({
   "id": zod.number(),
+  "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
   "note": zod.string().nullable(),
@@ -3620,6 +3750,7 @@ export const FinaliseSelectionResponse = zod.object({
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
+  "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
   "note": zod.string().nullable(),
@@ -3695,6 +3826,7 @@ export const ReopenSelectionResponse = zod.object({
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
+  "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
   "note": zod.string().nullable(),
@@ -4367,6 +4499,11 @@ export const FinaliseVotingConfigResponse = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -4481,6 +4618,11 @@ export const ListAdminAwardsResponseItem = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -4809,6 +4951,11 @@ export const FinalisePointsConfigResponse = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -4986,6 +5133,11 @@ export const ListAwardsResponseItem = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -5042,6 +5194,11 @@ export const UpdateAwardResponse = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -5064,9 +5221,15 @@ export const CreateAwardWinnerParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+export const createAwardWinnerBodyPlayerIdsMax = 100;
+
+
+
 export const CreateAwardWinnerBody = zod.object({
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number().min(1)).max(createAwardWinnerBodyPlayerIdsMax).optional().describe('Ordered links. Overrides playerId; an empty list means free text.'),
   "name": zod.string(),
   "displayOrder": zod.number().optional(),
   "published": zod.boolean().optional()
@@ -5080,9 +5243,15 @@ export const UpdateAwardWinnerParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+export const updateAwardWinnerBodyPlayerIdsMax = 100;
+
+
+
 export const UpdateAwardWinnerBody = zod.object({
   "season": zod.number().optional(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number().min(1)).max(updateAwardWinnerBodyPlayerIdsMax).optional().describe('Replaces all links in order; empty removes all. Omit to keep links unchanged.'),
   "name": zod.string().optional(),
   "displayOrder": zod.number().optional(),
   "published": zod.boolean().optional()
@@ -5093,6 +5262,11 @@ export const UpdateAwardWinnerResponse = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -7217,6 +7391,72 @@ export const CompleteMetaConnectResponse = zod.object({
 
 
 /**
+ * @summary Tenant-scoped weekend fixtures and eligible action photos for on-demand export
+ */
+export const getWeekendCarouselSourcesQuerySetTypeDefault = `matchDay`;
+export const getWeekendCarouselSourcesQueryFromRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getWeekendCarouselSourcesQueryToRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const GetWeekendCarouselSourcesQueryParams = zod.object({
+  "setType": zod.enum(['matchDay', 'teamList', 'results', 'matchSummary']).default(getWeekendCarouselSourcesQuerySetTypeDefault),
+  "from": zod.coerce.string().regex(getWeekendCarouselSourcesQueryFromRegExp),
+  "to": zod.coerce.string().regex(getWeekendCarouselSourcesQueryToRegExp)
+})
+
+export const GetWeekendCarouselSourcesResponse = zod.object({
+  "timeZone": zod.string(),
+  "content": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional().describe('Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.'),
+  "fixtures": zod.array(zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "roundLabel": zod.string().nullish(),
+  "opponentName": zod.string(),
+  "opponentClubId": zod.number().nullish().describe('Optional link into the shared clubs register'),
+  "opponentLogoUrl": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "notes": zod.string().nullish(),
+  "source": zod.enum(['manual', 'playhq', 'scorecard']).describe('manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).'),
+  "playhqMatchId": zod.string().nullish().describe('PlayHQ match GUID for playhq-sourced rows; null for manual rows'),
+  "createdAt": zod.coerce.date()
+})),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number()),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+})),
+  "coverPhotos": zod.array(zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number()),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+})).describe('Current club\'s Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules.'),
+  "warnings": zod.array(zod.string())
+})
+
+
+/**
  * @summary List fixtures (ordered by start time ascending)
  */
 export const ListFixturesQueryParams = zod.object({
@@ -7235,7 +7475,7 @@ export const ListFixturesResponseItem = zod.object({
   "startAt": zod.coerce.date(),
   "isHome": zod.boolean(),
   "notes": zod.string().nullish(),
-  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)'),
+  "source": zod.enum(['manual', 'playhq', 'scorecard']).describe('manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).'),
   "playhqMatchId": zod.string().nullish().describe('PlayHQ match GUID for playhq-sourced rows; null for manual rows'),
   "createdAt": zod.coerce.date()
 })
@@ -7296,7 +7536,7 @@ export const UpdateFixtureResponse = zod.object({
   "startAt": zod.coerce.date(),
   "isHome": zod.boolean(),
   "notes": zod.string().nullish(),
-  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)'),
+  "source": zod.enum(['manual', 'playhq', 'scorecard']).describe('manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).'),
   "playhqMatchId": zod.string().nullish().describe('PlayHQ match GUID for playhq-sourced rows; null for manual rows'),
   "createdAt": zod.coerce.date()
 })
@@ -8608,6 +8848,17 @@ export const ListSocialDraftsResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -8632,7 +8883,12 @@ export const ListSocialDraftsResponse = zod.array(ListSocialDraftsResponseItem)
  * Creates a draft that is awaiting review with no import time, so it never auto-promotes. With templateId, the template's pack and adjustments are applied to the given card input.
  * @summary Start an ad-hoc card (made by hand, a blank canvas, or from a saved template)
  */
+export const createSocialDraftBodyCaptionMax = 5000;
+
+
+
 export const CreateSocialDraftBody = zod.object({
+  "caption": zod.string().max(createSocialDraftBodyCaptionMax).optional().describe('Optional caption supplied with a manually queued card or carousel.'),
   "cardInput": zod.record(zod.string(), zod.unknown()).describe('The card\'s ShareCardInput (validated by shape on the web).'),
   "packId": zod.string().nullish().describe('Design pack; \'blank\' for a blank canvas.'),
   "adjustments": zod.union([zod.object({
@@ -8681,6 +8937,144 @@ export const ListEditorTemplatesResponse = zod.array(ListEditorTemplatesResponse
  */
 export const DeleteEditorTemplateParams = zod.object({
   "id": zod.coerce.number()
+})
+
+
+/**
+ * Card kind templates (plan 2026-10-07-002). `enabled` is false until the KIND_TEMPLATES release switch includes this club; the list is then empty.
+ * @summary The club's card kind templates and whether the feature is on
+ */
+export const ListKindTemplatesResponse = zod.object({
+  "enabled": zod.boolean().describe('Whether card kind templates are switched on for this club.'),
+  "templates": zod.array(zod.object({
+  "kind": zod.string(),
+  "version": zod.number(),
+  "updatedAt": zod.coerce.date().nullable(),
+  "replacedPackId": zod.string().nullable().describe('The retired design pack this template replaced, if any (R19).'),
+  "noticeDismissed": zod.boolean(),
+  "waitingDrafts": zod.number().describe('Unposted drafts of this kind an apply would change.')
+}))
+})
+
+
+/**
+ * @summary One card kind's template
+ */
+export const GetKindTemplateParams = zod.object({
+  "kind": zod.coerce.string()
+})
+
+export const GetKindTemplateResponse = zod.object({
+  "kind": zod.string(),
+  "version": zod.number(),
+  "updatedAt": zod.coerce.date().nullable(),
+  "replacedPackId": zod.string().nullable().describe('The retired design pack this template replaced, if any (R19).'),
+  "noticeDismissed": zod.boolean(),
+  "waitingDrafts": zod.number().describe('Unposted drafts of this kind an apply would change.')
+}).and(zod.object({
+  "document": zod.object({
+  "fields": zod.record(zod.string(), zod.string()).optional(),
+  "hidden": zod.array(zod.string()).optional(),
+  "photo": zod.record(zod.string(), zod.unknown()).optional(),
+  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
+  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),
+  "updatedByName": zod.string().nullish().describe('Who saved the current version.')
+}))
+
+
+/**
+ * @summary Save a card kind's template (rejected when another admin saved first)
+ */
+export const SaveKindTemplateParams = zod.object({
+  "kind": zod.coerce.string()
+})
+
+export const SaveKindTemplateBody = zod.object({
+  "baseVersion": zod.number().describe('The version this edit started from.'),
+  "document": zod.object({
+  "fields": zod.record(zod.string(), zod.string()).optional(),
+  "hidden": zod.array(zod.string()).optional(),
+  "photo": zod.record(zod.string(), zod.unknown()).optional(),
+  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
+  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.')
+})
+
+export const SaveKindTemplateResponse = zod.object({
+  "kind": zod.string(),
+  "version": zod.number(),
+  "updatedAt": zod.coerce.date().nullable(),
+  "replacedPackId": zod.string().nullable().describe('The retired design pack this template replaced, if any (R19).'),
+  "noticeDismissed": zod.boolean(),
+  "waitingDrafts": zod.number().describe('Unposted drafts of this kind an apply would change.')
+}).and(zod.object({
+  "document": zod.object({
+  "fields": zod.record(zod.string(), zod.string()).optional(),
+  "hidden": zod.array(zod.string()).optional(),
+  "photo": zod.record(zod.string(), zod.unknown()).optional(),
+  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
+  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),
+  "updatedByName": zod.string().nullish().describe('Who saved the current version.')
+}))
+
+
+/**
+ * @summary Start (or restart) a card kind's template from a starter design
+ */
+export const StartKindTemplateParams = zod.object({
+  "kind": zod.coerce.string()
+})
+
+export const StartKindTemplateBody = zod.object({
+  "starter": zod.enum(['club-kit', 'broadcast']),
+  "baseVersion": zod.number().optional().describe('Required when the kind already has a template.')
+})
+
+export const StartKindTemplateResponse = zod.object({
+  "kind": zod.string(),
+  "version": zod.number(),
+  "updatedAt": zod.coerce.date().nullable(),
+  "replacedPackId": zod.string().nullable().describe('The retired design pack this template replaced, if any (R19).'),
+  "noticeDismissed": zod.boolean(),
+  "waitingDrafts": zod.number().describe('Unposted drafts of this kind an apply would change.')
+}).and(zod.object({
+  "document": zod.object({
+  "fields": zod.record(zod.string(), zod.string()).optional(),
+  "hidden": zod.array(zod.string()).optional(),
+  "photo": zod.record(zod.string(), zod.unknown()).optional(),
+  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
+  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),
+  "updatedByName": zod.string().nullish().describe('Who saved the current version.')
+}))
+
+
+/**
+ * @summary Dismiss the "your retired design pack was replaced" notice for a kind
+ */
+export const DismissKindTemplateNoticeParams = zod.object({
+  "kind": zod.coerce.string()
+})
+
+
+/**
+ * Replaces the design of every unposted draft of the kind, one-off design tweaks included; captions are kept. Each draft's previous design is saved as a revision first. Drafts posted meanwhile are skipped.
+ * @summary Apply a saved template version to this kind's unposted drafts
+ */
+export const ApplyKindTemplateParams = zod.object({
+  "kind": zod.coerce.string()
+})
+
+export const ApplyKindTemplateBody = zod.object({
+  "version": zod.number().describe('The saved template version to apply.'),
+  "expectedDrafts": zod.number().optional().describe('How many waiting drafts the admin was shown; any shortfall is reported as skipped.')
+})
+
+export const ApplyKindTemplateResponse = zod.object({
+  "changed": zod.number(),
+  "skipped": zod.number()
 })
 
 
@@ -9265,6 +9659,17 @@ export const ApproveSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -9328,6 +9733,17 @@ export const UpdateSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -9492,6 +9908,17 @@ export const SendBackSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -9542,6 +9969,17 @@ export const ReopenSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -9576,7 +10014,7 @@ export const ListSocialDraftRevisionsResponseItem = zod.object({
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
-  "reason": zod.enum(['refresh', 'edit', 'revert']),
+  "reason": zod.enum(['refresh', 'edit', 'revert', 'template']),
   "createdAt": zod.coerce.date()
 })
 export const ListSocialDraftRevisionsResponse = zod.array(ListSocialDraftRevisionsResponseItem)
@@ -9614,6 +10052,17 @@ export const RevertSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -9664,6 +10113,17 @@ export const MarkSocialDraftPostedResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -9720,6 +10180,17 @@ export const GenerateRoundUpResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -9775,6 +10246,17 @@ export const GenerateRecapsResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),

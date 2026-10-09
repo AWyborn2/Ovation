@@ -2919,6 +2919,35 @@ export interface SquadContactUpdate {
   email?: string | null;
 }
 
+export interface SquadMemberInput {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  firstName: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  lastName: string;
+  section: SquadSection;
+  /** @nullable */
+  linkedPlayerId?: number | null;
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  dateOfBirth?: string | null;
+  /**
+     * @maxLength 100
+     * @nullable
+     */
+  gradeHint?: string | null;
+  account?: SquadContactUpdate;
+  guardian1?: SquadContactUpdate;
+  guardian2?: SquadContactUpdate;
+}
+
 export interface SquadMemberUpdate {
   active?: boolean;
   section?: SquadSection;
@@ -3153,6 +3182,11 @@ export const SelectionMemberStatus = {
  */
 export interface SelectionMember {
   id: number;
+  /**
+     * Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.
+     * @nullable
+     */
+  linkedPlayerId?: number | null;
   displayName: string;
   status: SelectionMemberStatus;
   /** @nullable */
@@ -3772,12 +3806,20 @@ export const AwardMechanism = {
   manual: 'manual',
 } as const;
 
+export interface AwardRecipient {
+  playerId: number;
+  name: string;
+}
+
 export interface AwardWinner {
   id: number;
   awardId: number;
   season: number;
   /** @nullable */
   playerId?: number | null;
+  /** Ordered linked players; playerId remains the first link for older clients. */
+  playerIds?: number[];
+  recipients?: AwardRecipient[];
   name: string;
   displayOrder: number;
   published: boolean;
@@ -3825,6 +3867,11 @@ export interface AwardWinnerInput {
   season: number;
   /** @nullable */
   playerId?: number | null;
+  /**
+     * Ordered links. Overrides playerId; an empty list means free text.
+     * @maxItems 100
+     */
+  playerIds?: number[];
   name: string;
   displayOrder?: number;
   published?: boolean;
@@ -3834,6 +3881,11 @@ export interface AwardWinnerUpdate {
   season?: number;
   /** @nullable */
   playerId?: number | null;
+  /**
+     * Replaces all links in order; empty removes all. Omit to keep links unchanged.
+     * @maxItems 100
+     */
+  playerIds?: number[];
   name?: string;
   displayOrder?: number;
   published?: boolean;
@@ -6997,6 +7049,11 @@ export interface UpdateSocialDraftRequest {
 export type CreateSocialDraftRequestCardInput = { [key: string]: unknown };
 
 export interface CreateSocialDraftRequest {
+  /**
+     * Optional caption supplied with a manually queued card or carousel.
+     * @maxLength 5000
+     */
+  caption?: string;
   /** The card's ShareCardInput (validated by shape on the web). */
   cardInput: CreateSocialDraftRequestCardInput;
   /**
@@ -7030,6 +7087,111 @@ export interface EditorTemplate {
   adjustments?: unknown;
   createdAt: string;
 }
+
+export interface KindTemplateSummary {
+  kind: string;
+  version: number;
+  /** @nullable */
+  updatedAt: string | null;
+  /**
+     * The retired design pack this template replaced, if any (R19).
+     * @nullable
+     */
+  replacedPackId: string | null;
+  noticeDismissed: boolean;
+  /** Unposted drafts of this kind an apply would change. */
+  waitingDrafts: number;
+}
+
+export interface KindTemplateList {
+  /** Whether card kind templates are switched on for this club. */
+  enabled: boolean;
+  templates: KindTemplateSummary[];
+}
+
+export type KindTemplate = KindTemplateSummary & ({
+  document: CardAdjustments;
+  /**
+     * Who saved the current version.
+     * @nullable
+     */
+  updatedByName?: string | null;
+});
+
+export interface SaveKindTemplateRequest {
+  /** The version this edit started from. */
+  baseVersion: number;
+  document: CardAdjustments;
+}
+
+export type StartKindTemplateRequestStarter = typeof StartKindTemplateRequestStarter[keyof typeof StartKindTemplateRequestStarter];
+
+
+export const StartKindTemplateRequestStarter = {
+  'club-kit': 'club-kit',
+  broadcast: 'broadcast',
+} as const;
+
+export interface StartKindTemplateRequest {
+  starter: StartKindTemplateRequestStarter;
+  /** Required when the kind already has a template. */
+  baseVersion?: number;
+}
+
+export interface ApplyKindTemplateRequest {
+  /** The saved template version to apply. */
+  version: number;
+  /** How many waiting drafts the admin was shown; any shortfall is reported as skipped. */
+  expectedDrafts?: number;
+}
+
+export interface ApplyKindTemplateResult {
+  changed: number;
+  skipped: number;
+}
+
+export interface KindTemplateConflict {
+  error: string;
+  currentVersion: number;
+  /** @nullable */
+  updatedAt?: string | null;
+  /** @nullable */
+  updatedByName?: string | null;
+}
+
+export type LayoutWarningReason = typeof LayoutWarningReason[keyof typeof LayoutWarningReason];
+
+
+export const LayoutWarningReason = {
+  overflow: 'overflow',
+  font: 'font',
+  slides: 'slides',
+} as const;
+
+export type LayoutWarningSize = typeof LayoutWarningSize[keyof typeof LayoutWarningSize];
+
+
+export const LayoutWarningSize = {
+  square: 'square',
+  portrait: 'portrait',
+  story: 'story',
+  landscape: 'landscape',
+} as const;
+
+export interface LayoutWarning {
+  reason: LayoutWarningReason;
+  size: LayoutWarningSize;
+  layerId?: string;
+  row?: number;
+  field?: string;
+  detail?: string;
+}
+
+/**
+ * Layout warnings from the last render, per card size ("needs a look"). A size with an empty list rendered cleanly; a missing size hasn't been rendered.
+ * @nullable
+ */
+export type SocialDraftLayoutWarnings = {[key: string]: LayoutWarning[]} | null;
 
 export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraftStatus];
 
@@ -7133,6 +7295,23 @@ export interface SocialDraft {
   /** @nullable */
   editedAt?: string | null;
   /**
+     * The card kind template version this draft copied; null for a draft that uses a pack.
+     * @nullable
+     */
+  templateVersion?: number | null;
+  /**
+     * When an admin last edited this templated draft's design by hand.
+     * @nullable
+     */
+  designEditedAt?: string | null;
+  /**
+     * Layout warnings from the last render, per card size ("needs a look"). A size with an empty list rendered cleanly; a missing size hasn't been rendered.
+     * @nullable
+     */
+  layoutWarnings?: SocialDraftLayoutWarnings;
+  /** True while a templated draft owes a layout check; automation leaves it alone until then. */
+  layoutCheckPending?: boolean;
+  /**
      * The admin who made the draft by hand; null for drafts the sweep made.
      * @nullable
      */
@@ -7200,6 +7379,7 @@ export const SocialDraftRevisionReason = {
   refresh: 'refresh',
   edit: 'edit',
   revert: 'revert',
+  template: 'template',
 } as const;
 
 export interface SocialDraftRevision {
@@ -7295,7 +7475,12 @@ export interface TrackedLink {
 }
 
 /**
- * Where the row came from: 'manual' (admin CRUD) or 'playhq' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)
+ * Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.
+ */
+export type WeekendCarouselSourcesContent = {[key: string]: { [key: string]: unknown }};
+
+/**
+ * manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).
  */
 export type FixtureSource = typeof FixtureSource[keyof typeof FixtureSource];
 
@@ -7303,6 +7488,7 @@ export type FixtureSource = typeof FixtureSource[keyof typeof FixtureSource];
 export const FixtureSource = {
   manual: 'manual',
   playhq: 'playhq',
+  scorecard: 'scorecard',
 } as const;
 
 export interface Fixture {
@@ -7321,7 +7507,7 @@ export interface Fixture {
   isHome: boolean;
   /** @nullable */
   notes?: string | null;
-  /** Where the row came from: 'manual' (admin CRUD) or 'playhq' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list) */
+  /** manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture). */
   source: FixtureSource;
   /**
      * PlayHQ match GUID for playhq-sourced rows; null for manual rows
@@ -7329,6 +7515,17 @@ export interface Fixture {
      */
   playhqMatchId?: string | null;
   createdAt: string;
+}
+
+export interface WeekendCarouselSources {
+  timeZone: string;
+  /** Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings. */
+  content?: WeekendCarouselSourcesContent;
+  fixtures: Fixture[];
+  photos: ClubPhoto[];
+  /** Current club's Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules. */
+  coverPhotos: ClubPhoto[];
+  warnings: string[];
 }
 
 /**
@@ -9112,6 +9309,28 @@ section?: SquadSection;
 export type GetMetaConnectPendingParams = {
 token: string;
 };
+
+export type GetWeekendCarouselSourcesParams = {
+setType?: GetWeekendCarouselSourcesSetType;
+/**
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+from: string;
+/**
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+to: string;
+};
+
+export type GetWeekendCarouselSourcesSetType = typeof GetWeekendCarouselSourcesSetType[keyof typeof GetWeekendCarouselSourcesSetType];
+
+
+export const GetWeekendCarouselSourcesSetType = {
+  matchDay: 'matchDay',
+  teamList: 'teamList',
+  results: 'results',
+  matchSummary: 'matchSummary',
+} as const;
 
 export type ListFixturesParams = {
 /**

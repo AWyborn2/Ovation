@@ -50,6 +50,12 @@ export async function detachDeletedNativePlayers(tx: Tx, playerIds: number[]): P
     playerIds.map((id) => sql`${id}`),
     sql`, `,
   );
+  await tx.execute(sql`
+    UPDATE award_winners SET
+      player_ids = ARRAY(SELECT p FROM unnest(player_ids) p WHERE p NOT IN (${ids})),
+      player_id = (ARRAY(SELECT p FROM unnest(player_ids) p WHERE p NOT IN (${ids})))[1]
+    WHERE tenant_id = ${NATIVE_TENANT_ID} AND player_ids IS NOT NULL
+  `);
   for (const table of SET_NULL_TABLES) {
     await tx.execute(sql`
       UPDATE ${sql.identifier(table)} SET player_id = NULL
@@ -113,6 +119,15 @@ export async function reassignMergedNativePlayer(
   keeperId: number,
 ): Promise<MergeDedupeSummary> {
   const deduped: MergeDedupeSummary = {};
+  await tx.execute(sql`
+    UPDATE award_winners SET
+      player_ids = (SELECT array_agg(p ORDER BY first_position) FROM (
+        SELECT CASE WHEN p = ${duplicateId} THEN ${keeperId} ELSE p END AS p, min(pos) AS first_position
+        FROM unnest(player_ids) WITH ORDINALITY AS links(p, pos)
+        GROUP BY 1
+      ) ordered_links)
+    WHERE tenant_id = ${NATIVE_TENANT_ID} AND ${duplicateId} = ANY(player_ids)
+  `);
   for (const { table, scope } of DEDUPE_TABLES) {
     const sameScope = sql.join(
       scope.map((col) => sql`k.${sql.identifier(col)} = d.${sql.identifier(col)}`),

@@ -392,9 +392,12 @@ export type SeasonSeedResult = {
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-/** Serialise seeds for one tenant (the admin button and the hourly sweep). */
+/**
+ * Serialise seeds for one tenant (the admin button and the hourly sweep) with
+ * the participant import and manual additions, which take the same lock.
+ */
 async function lockTenantSeed(tx: Tx, tenantId: number): Promise<void> {
-  await tx.execute(sql`select pg_advisory_xact_lock(hashtext('squad-season-seed'), ${tenantId})`);
+  await tx.execute(sql`select pg_advisory_xact_lock(72401, ${tenantId})`);
 }
 
 async function stampSeeded(tx: Tx, tenantId: number, now: Date): Promise<void> {

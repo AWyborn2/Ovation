@@ -83,7 +83,7 @@ const EXTRA_KEY_ALLOWLIST: Record<string, readonly string[]> = {
   "club-kit-v1/clubLeaderboard": ["photo"],
   "club-kit-v1/ladder": ["photo"],
   "club-kit-v1/weekendWrap": ["photo"],
-  "club-kit-v1/matchDay": ["photo"],
+  "club-kit-v1/matchDay": ["photo", "grade"],
   "club-kit-v1/countdown": ["photo"],
   "club-kit-v1/bigMoment": ["photo"],
 };

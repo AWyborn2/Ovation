@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from "vitest";
 import { and, eq } from "drizzle-orm";
 import {
   db,
@@ -99,6 +99,7 @@ function restoreEnv() {
 afterEach(() => {
   setSmsTransport(null);
   setEmailTransport(null);
+  vi.unstubAllEnvs();
 });
 
 describe("isUnder18 / recipientsFor (R5)", () => {
@@ -138,6 +139,11 @@ describe("isUnder18 / recipientsFor (R5)", () => {
       "guardian1",
       "guardian2",
     ]);
+  });
+
+  it("routes manually added juniors without a birth date through guardians, never their own contact", () => {
+    expect(recipientsFor({ ...base, section: "junior", dateOfBirth: null }, NOW)
+      .map((r) => r.slot)).toEqual(["guardian1", "guardian2"]);
   });
 
   it("skips a guardian slot with neither a mobile nor an email", () => {
@@ -667,6 +673,9 @@ describe("messageMember / notifyStaff (DB)", () => {
   });
 
   it("Twilio env vars missing → SMS disabled, no throw, email still sent", async () => {
+    // This case specifically exercises Twilio, regardless of the workspace's
+    // configured provider (which may legitimately have ClickSend credentials).
+    vi.stubEnv("SMS_PROVIDER", "twilio");
     smsSent = [];
     emailSent = [];
     setSmsTransport(null);

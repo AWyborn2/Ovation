@@ -1,5 +1,5 @@
 import { parse } from "csv-parse/sync";
-import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import {
   db,
   squadMembersTable,
@@ -426,8 +426,9 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  *   (`squad-season-seed.ts`) or by hand — and adopts it (profile id,
  *   identity, contacts) instead of adding a duplicate: the member linked to
  *   the row's player under the row's first initial + surname, else the one
- *   member with the row's full name, else the one initial-only member ("J
- *   Wyllie") with its first initial + surname. A name shared by two rows of
+ *   member of the row's section with the row's full name, else the one
+ *   initial-only member of that section ("J Wyllie") with its first initial
+ *   + surname. A name shared by two rows of
  *   the file, or by two such members, adopts nothing; nor does a member
  *   linked to a different player.
  */
@@ -457,21 +458,15 @@ export async function applySquadImport(
   let contactsKept = 0;
 
   await db.transaction(async (tx: Tx) => {
-    const lookupIds = [...profileIds, ...plan.inactiveProfileIds];
-    const existing =
-      lookupIds.length === 0
-        ? []
-        : await tx
-            .select()
-            .from(squadMembersTable)
-            .where(
-              and(
-                eq(squadMembersTable.tenantId, tenantId),
-                inArray(squadMembersTable.playhqProfileId, lookupIds),
-              ),
-            );
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(72401, ${tenantId})`);
+    const existing = await tx
+      .select()
+      .from(squadMembersTable)
+      .where(eq(squadMembersTable.tenantId, tenantId));
     const byProfile = new Map<string, SquadMemberRow>();
-    for (const row of existing) byProfile.set(row.playhqProfileId!, row);
+    for (const row of existing) {
+      if (row.playhqProfileId) byProfile.set(row.playhqProfileId, row);
+    }
 
     const taken = new Set<number>(
       (
@@ -513,12 +508,7 @@ export async function applySquadImport(
     };
 
     // Members without a profile id a row may turn out to be.
-    const orphans = await tx
-      .select()
-      .from(squadMembersTable)
-      .where(
-        and(eq(squadMembersTable.tenantId, tenantId), isNull(squadMembersTable.playhqProfileId)),
-      );
+    const orphans = existing.filter((r) => !r.playhqProfileId);
     const orphanByLink = new Map<number, SquadMemberRow>();
     const orphanByName = new Map<string, SquadMemberRow[]>();
     const orphanByInitial = new Map<string, SquadMemberRow[]>();
@@ -554,7 +544,9 @@ export async function applySquadImport(
           if (list[0]) hits.add(list[0]);
         }
         const [hit] = [...hits];
-        return hits.size === 1 && fits(hit) ? hit! : null;
+        // By name, only within the row's section: a junior never takes over a
+        // senior of the same name (a father and son), nor the reverse.
+        return hits.size === 1 && fits(hit) && hit!.section === m.section ? hit! : null;
       };
       // A link alone isn't enough: the member must also go by the row's first
       // initial + surname, so an admin's hand-made link to a differently named

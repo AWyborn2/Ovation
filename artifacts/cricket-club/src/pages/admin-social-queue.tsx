@@ -1,5 +1,6 @@
 import { planCardSet, type CardSetOptions } from "@/lib/card-sets/plan";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
 import { Link, useLocation, useSearch } from "wouter";
 import {
   useListSocialDrafts,
@@ -27,6 +28,7 @@ import { ShareCardModal, type EngineKey } from "@/components/share-card-modal";
 import { ListSkeleton, EmptyState, QueryError } from "@/components/data-states";
 import { DataTable, StatusPill, type DataTableColumn } from "@/components/admin-ui";
 import { DraftDrawer } from "@/components/social-queue/draft-drawer";
+import { CarouselExportButton } from "@/components/social-queue/carousel-export-button";
 import { GenerateFromDataCard } from "@/components/social-queue/generate-from-data";
 import {
   FAMILIES,
@@ -40,6 +42,7 @@ import {
   publicationLabel,
   draftInput,
   draftSource,
+  layoutState,
   draftStatus,
   draftSubline,
   isJuniorDraft,
@@ -65,6 +68,8 @@ function playerIdFromAppPath(appPath?: string | null): number | null {
 
 /** How many slides a draft posts as (a big round is a balanced card set). */
 function slideCount(d: SocialDraft): number {
+  const carousel = readQueuedCarousel(d.cardInput);
+  if (carousel) return carousel.slides.length;
   const input = draftInput(d);
   if (!input) return 1;
   const opts = (d.adjustments as { set?: CardSetOptions } | null | undefined)?.set ?? {};
@@ -101,6 +106,8 @@ export default function AdminSocialQueue() {
   const [status, setStatus] = useState<DraftStatus>(batchIds ? "ready" : "awaiting_review");
   const [family, setFamily] = useState<Family | "all">("all");
   const [grade, setGrade] = useState<string>("all");
+  // Card kind templates (KTD10): drafts whose layout needs a look.
+  const [needsLook, setNeedsLook] = useState(false);
   const [open, setOpen] = useState<SocialDraft | null>(null);
   const [preview, setPreview] = useState<SocialDraft | null>(null);
 
@@ -122,6 +129,17 @@ export default function AdminSocialQueue() {
   });
 
   const drafts = useMemo(() => (draftsQ.data ?? []) as SocialDraft[], [draftsQ.data]);
+  const openedLink = useRef<number | null>(null);
+  const requestedDraft = Number(new URLSearchParams(search).get("draft"));
+  useEffect(() => {
+    if (!requestedDraft || openedLink.current === requestedDraft) return;
+    const draft = drafts.find(d => d.id === requestedDraft);
+    if (draft) {
+      openedLink.current = requestedDraft;
+      setStatus(draftStatus(draft));
+      setOpen(draft);
+    }
+  }, [requestedDraft, drafts]);
   const counts = useMemo(() => {
     const c: Record<DraftStatus, number> = {
       awaiting_review: 0,
@@ -132,6 +150,10 @@ export default function AdminSocialQueue() {
     for (const d of drafts) c[draftStatus(d)]++;
     return c;
   }, [drafts]);
+  const lookCount = useMemo(
+    () => drafts.filter((d) => draftStatus(d) === status && layoutState(d) === "needs-look").length,
+    [drafts, status],
+  );
   const grades = useMemo(
     () => Array.from(new Set(drafts.map(draftGrade).filter((g): g is string => !!g))).sort(),
     [drafts],
@@ -143,9 +165,10 @@ export default function AdminSocialQueue() {
           (!batchIds || batchIds.has(d.id)) &&
           draftStatus(d) === status &&
           (family === "all" || d.family === family) &&
-          (grade === "all" || draftGrade(d) === grade),
+          (grade === "all" || draftGrade(d) === grade) &&
+          (!needsLook || layoutState(d) === "needs-look"),
       ),
-    [drafts, status, family, grade, batchIds],
+    [drafts, status, family, grade, batchIds, needsLook],
   );
 
   const lastImport = (importsQ.data ?? [])
@@ -209,6 +232,8 @@ export default function AdminSocialQueue() {
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground">{draftSource(d)}</span>
           {d.staleSince && <StatusPill tone="danger">Data changed</StatusPill>}
+          {layoutState(d) === "needs-look" && <StatusPill tone="danger">Needs a look</StatusPill>}
+          {layoutState(d) === "checking" && <StatusPill tone="neutral">Checking layout</StatusPill>}
           {(d.publications ?? [])
             .filter((p) => p.status !== "cancelled")
             .map((p) => (
@@ -220,6 +245,14 @@ export default function AdminSocialQueue() {
       ),
     },
   ];
+
+  columns.push({
+    key: "export",
+    header: "Export",
+    cell: (d) => readQueuedCarousel(d.cardInput)
+      ? <CarouselExportButton key={d.id} draftId={d.id} />
+      : null,
+  });
 
   const hasAnyDraft = drafts.length > 0;
   const emptyState = hasAnyDraft ? (
@@ -343,6 +376,21 @@ export default function AdminSocialQueue() {
             </option>
           ))}
         </select>
+        {(lookCount > 0 || needsLook) && (
+          <button
+            type="button"
+            aria-pressed={needsLook}
+            onClick={() => setNeedsLook((v) => !v)}
+            className={cn(
+              "h-9 rounded-full border px-3 text-sm font-semibold transition-colors",
+              needsLook
+                ? "border-destructive bg-destructive/10 text-destructive"
+                : "border-border bg-card text-muted-foreground hover:text-foreground",
+            )}
+          >
+            Needs a look ({lookCount})
+          </button>
+        )}
       </div>
 
       {draftsQ.isLoading ? (
@@ -403,7 +451,8 @@ export default function AdminSocialQueue() {
         </CardContent>
       </Card>
 
-      <DraftDrawer draft={open} onClose={() => setOpen(null)} onPreview={setPreview} />
+      <DraftDrawer draft={open} onClose={() => setOpen(null)}
+        onPreview={d => readQueuedCarousel(d.cardInput) ? setOpen(d) : setPreview(d)} />
 
       <ShareCardModal
         open={!!preview}

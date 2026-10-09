@@ -77,6 +77,16 @@ export function bindInput(input: ShareCardInput): BoundInput {
         set(values, "opposition.oversLabel", `${oppInn.overs} OVERS`);
         set(values, "opposition.performers", inningsPerformers(oppInn));
       }
+      if (typeof input.carouselDetail === "boolean") {
+        // On-demand results include every innings score. Explicit blanks must
+        // override template samples when a completed match has no score.
+        for (const key of ["club", "opposition"] as const) {
+          const innings = input.innings.filter(i => i.teamKey === key);
+          values[`${key}.score`] = innings.map(inningsScore).join(" & ") || "—";
+          values[`${key}.oversLabel`] = innings.map(i => i.overs ? `${i.overs} OVERS` : "").filter(Boolean).join(" / ");
+          values[`${key}.performers`] = input.carouselDetail ? innings.map(inningsPerformers).filter(Boolean).join(" · ") : "";
+        }
+      }
       if (input.resultWinner === "draw") {
         set(values, "resultVerb", "MATCH DRAWN");
         set(values, "resultVerbShort", "DRAW");
@@ -84,6 +94,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
       // One-word headline (Club Kit): WIN / RESULT (a loss) / DRAW, or TIE / NO RESULT
       // when the result line says so. The club always keeps the top bar.
       set(values, "resultWord", resultWord(input.resultWinner, input.result));
+      if (input.carouselDetail === true) bindInningsDetail(input, values);
       break;
     }
     case "player": {
@@ -172,7 +183,18 @@ export function bindInput(input: ShareCardInput): BoundInput {
       break;
     }
     case "matchDay": {
-      set(values, "roundLabel", input.roundLabel);
+      set(values, "grade", input.grade?.trim() || "GAME DAY");
+      if (input.carouselPage) {
+        set(values, "weekendTitle", input.carouselPage.title);
+        set(values, "fixtureCount", input.carouselPage.fixtureCount);
+        input.carouselPage.sponsors.forEach((s, i) => {
+          set(values, `weekendSponsorName${i}`, s.name);
+          if (s.logoUrl) images[`weekendSponsor${i}`] = s.logoUrl;
+        });
+      }
+      // Explicitly clear absent labels on historical frozen covers rather than
+      // allowing sample data to supply a made-up round.
+      values["roundLabel"] = input.roundLabel ?? "";
       set(values, "opposition.name", cardTeamName(input.oppositionName));
       set(values, "homeAway", input.homeAway);
       set(values, "oppositionHomeAway", input.homeAway === "HOME" ? "AWAY" : "HOME");
@@ -185,9 +207,15 @@ export function bindInput(input: ShareCardInput): BoundInput {
       break;
     }
     case "teamList": {
+      values["gradeHeading"] = input.grade?.trim().toUpperCase() || "TEAM LIST";
       set(values, "gradeRound", input.gradeRound);
       set(values, "competitionLine", input.competitionLine);
       set(values, "venueDateTime", input.venueDateTime);
+      values["broadcastRoundLabel"] = fixtureRoundLabel(
+        input.roundLabel,
+        input.gradeRound,
+        input.competitionLine,
+      );
       // The match in parts, for designs that set it out separately (Starting XI).
       // Bound even when absent, so a list without them never shows samples.
       values["roundLabel"] = input.roundLabel ?? "";
@@ -204,6 +232,7 @@ export function bindInput(input: ShareCardInput): BoundInput {
         values: {
           number: shirt ? shirtText(p.shirtNumber) : String(p.order),
           surname: p.surname,
+          broadcastName: broadcastPlayerName(p.firstInitial, p.surname),
           role: p.role ?? "",
           debut: p.debut ? "DEBUT" : "",
         },
@@ -361,6 +390,30 @@ export function bindInput(input: ShareCardInput): BoundInput {
   bindShirtNumber(input, values);
   bindSetValues(input, values);
   return { values, images, rows };
+}
+
+/** Broadcast eyebrow: accept only an explicit fixture round; never infer one. */
+export function fixtureRoundLabel(...sources: Array<string | null | undefined>): string {
+  const [fixtureLabel, ...legacyLabels] = sources;
+  const actual = fixtureLabel?.trim();
+  if (actual) {
+    const match = actual.match(/\b(?:round|rd\.?)\s*[-:#]?\s*(\d{1,2})\b/i);
+    return match ? `ROUND ${match[1]}` : actual.toUpperCase();
+  }
+  for (const source of legacyLabels) {
+    const text = source ?? "";
+    const round = text.match(/\b(?:round|rd\.?)\s*[-:#]?\s*(\d{1,2})\b/i);
+    if (round) return `ROUND ${round[1]}`;
+    const stage = text.match(/\b(?:grand final|preliminary final|semi[- ]final|qualifying final|elimination final|finals)\b/i);
+    if (stage) return stage[0].toUpperCase();
+  }
+  return "";
+}
+
+/** Use only an approved one-letter initial; older/private rows stay surname-only. */
+export function broadcastPlayerName(firstInitial: string | null | undefined, surname: string): string {
+  const initial = firstInitial?.trim() ?? "";
+  return /^\p{L}$/u.test(initial) ? `${initial}. ${surname}` : surname;
 }
 
 /**
@@ -582,4 +635,36 @@ export function resultWord(winner: "club" | "opposition" | "draw", result: strin
   if (/\btie[d]?\b/i.test(result)) return "TIE";
   if (winner === "draw") return "DRAW";
   return winner === "club" ? "WIN" : "RESULT";
+}
+
+/**
+ * Detailed carousel match card: one value set per innings, in input order,
+ * every innings bound (none dropped). Only real data — empty when absent,
+ * never a sample. Escaping is the renderer's (text fields).
+ */
+function bindInningsDetail(
+  input: Extract<ShareCardInput, { kind: "matchSummary" }>,
+  values: Record<string, string>,
+): void {
+  const multi = input.innings.length > 2;
+  input.innings.forEach((inn, i) => {
+    const team = inn.teamKey === "club" ? input.club : input.opposition;
+    const p = `inn${i}.`;
+    values[`${p}team`] = cardTeamName(team.name);
+    const teamInnings = input.innings.slice(0, i + 1).filter(x => x.teamKey === inn.teamKey).length;
+    values[`${p}label`] = multi ? `${teamInnings === 1 ? "1ST" : "2ND"} INNINGS` : "INNINGS";
+    values[`${p}score`] = inningsScore(inn);
+    values[`${p}overs`] = inn.overs ? `${inn.overs} OV` : "";
+    values[`${p}batters`] =
+      inn.topBatters
+        .slice(0, 3)
+        .map((b) => `${b.name} ${b.runs}${b.notOut ? "*" : ""}${b.balls != null ? ` (${b.balls})` : ""}`)
+        .join(" · ") || "-";
+    // Bowlers who bowled at this innings: the other side.
+    values[`${p}bowlers`] =
+      inn.topBowlers
+        .slice(0, 2)
+        .map((b) => `${b.name} ${b.wickets}/${b.runs} (${b.overs})`)
+        .join(" · ") || "-";
+  });
 }

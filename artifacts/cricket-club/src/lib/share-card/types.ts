@@ -70,6 +70,8 @@ export type MatchSummaryInnings = {
 export type TeamListPlayer = {
   order: number;
   surname: string;
+  /** Optional real first-name initial for Broadcast team lists; absent in older snapshots. */
+  firstInitial?: string;
   role?: "C" | "VC" | "WK" | "C/WK" | "VC/WK";
   /** First senior game for the club: a DEBUT badge on designs that show one. */
   debut?: boolean;
@@ -246,6 +248,8 @@ export type ShareCardInput =
   | {
       kind: "matchSummary";
       matchTitle: string; // e.g. "A Grade • Round 5"
+      /** Source round/stage metadata; absent in legacy saved cards. */
+      roundLabel?: string;
       matchType?: string | null; // e.g. "One Day"
       date?: string | null;
       venue?: string | null;
@@ -256,6 +260,11 @@ export type ShareCardInput =
       innings: MatchSummaryInnings[];
       headline?: string;
       /**
+       * On-demand carousel: render the detailed Club Kit card (every innings,
+       * top batters and bowlers) instead of the concise result card.
+       */
+      carouselDetail?: boolean;
+      /**
        * Marks this as a JUNIOR card: forces the junior brown palette and a
        * "JUNIOR MATCH" eyebrow so junior content reads distinctly from senior.
        */
@@ -263,6 +272,16 @@ export type ShareCardInput =
     }
   | {
       kind: "matchDay";
+      /** Grade/team label for fixture-based cards. */
+      grade?: string;
+      /** On-demand weekend set bookends, rendered by Club Kit only. */
+      carouselPage?: {
+        page: "title" | "sponsors";
+        title: string;
+        fixtureCount: number;
+        sponsors: { name: string; logoUrl: string }[];
+        hasCoverPhoto?: boolean;
+      };
       roundLabel: string;
       oppositionName: string;
       oppositionLogoUrl?: string | null;

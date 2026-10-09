@@ -27,3 +27,9 @@ added when a player match is confident.
 **How to apply:** the loader is `scripts/src/load-award-history.ts`. Add new
 corrections/expansions to its CORRECTIONS map rather than loosening the matcher.
 Inserted winner rows are `published = true`.
+
+Shared award wins must support linking multiple players within the winner entry, rather than only storing a combined free-text name.
+
+**Why:** The user explicitly requested multiple player links when an award has two winners.
+
+**How to apply:** Preserve historical display names and let admins explicitly identify co-winners; do not infer player identities from slash-separated text.

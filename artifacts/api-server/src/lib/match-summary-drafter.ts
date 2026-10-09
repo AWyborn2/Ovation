@@ -91,7 +91,7 @@ export function shouldDraftGrade(
  * Load a junior match in the JuniorMatchDetail shape needed by
  * `juniorMatchToSummaryInput`. Returns null when the match doesn't exist.
  */
-async function loadJuniorMatchDetail(matchId: number, tenantId: number, privateIds: Set<string>) {
+export async function loadJuniorMatchDetail(matchId: number, tenantId: number, privateIds: Set<string>) {
   const [matchRow] = await db
     .select({
       match: juniorMatchesTable,

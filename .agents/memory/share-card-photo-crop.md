@@ -21,3 +21,15 @@ from the rendered/downloaded card. Defaults (0.5, 0.5, zoom 1) are byte-identica
 to the old centred cover, so headshots and theme backgrounds are unaffected.
 The modal debounces a `renderTransform` for the heavy full-card preview while the
 control gives instant feedback off the authoritative `photoTransform`.
+
+For DOM design packs, use the actual rendered card as the crop reference, not
+the canvas crop widget. Pack photos use CSS object-position and scale, while
+the canvas renderer uses a source-window focal centre; these are different
+crop calculations even though both accept the same transform fields.
+
+**Why:** An approximate separate photo frame can disagree with the exported
+Club Kit card, particularly where the tall-format photo panel is fluid.
+
+**How to apply:** Keep pack photo controls beside the live card and pass the
+same transform to preview and export. Do not assume a canvas-style crop widget
+is an exact preview for a DOM pack.

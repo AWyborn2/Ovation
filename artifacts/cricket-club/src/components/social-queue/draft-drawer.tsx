@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
+import { CarouselPreview } from "./carousel-preview";
+import { CarouselExportButton } from "./carousel-export-button";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useApproveSocialDraft,
@@ -23,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { EditDrawer, StatusPill } from "@/components/admin-ui";
 import { PostPackButton } from "@/components/post-pack/post-pack-button";
 import { SchedulePanel } from "./schedule-panel";
+import { useConfirm } from "@/components/confirm-dialog";
 import {
   STATUS_LABEL,
   STATUS_TONE,
@@ -31,6 +35,8 @@ import {
   draftStatus,
   draftSubline,
   isJuniorDraft,
+  layoutReasons,
+  layoutState,
   relativeTime,
 } from "./draft-meta";
 
@@ -50,6 +56,7 @@ export function DraftDrawer({
   onPreview: (draft: SocialDraft) => void;
 }) {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [current, setCurrent] = useState<SocialDraft | null>(draft);
   const [caption, setCaption] = useState(draft?.caption ?? "");
   const [picking, setPicking] = useState(false);
@@ -97,6 +104,9 @@ export function DraftDrawer({
   if (!current) return null;
 
   const status = draftStatus(current);
+  const carousel = readQueuedCarousel(current.cardInput);
+  const invalidCarousel = !!current.cardInput && typeof current.cardInput === "object" &&
+    "weekendCarousel" in current.cardInput && !carousel;
   const revisions = revisionsQ.data ?? [];
   // The newest refresh revision holds the corrected data for a stale card.
   const correction = current.staleSince ? revisions.find((r) => r.reason === "refresh") : undefined;
@@ -107,6 +117,24 @@ export function DraftDrawer({
     updateM.isPending ||
     revertM.isPending ||
     dismissM.isPending;
+
+  const layout = layoutState(current);
+  // A card that needs a look can still be marked ready by hand (KTD10), after
+  // the admin confirms they've seen why.
+  const markReady = async () => {
+    if (
+      layout === "needs-look" &&
+      !(await confirm({
+        title: "Mark ready anyway?",
+        description:
+          "Some of this card doesn't fit its design. It will post as it looks now. You can fix the design first instead.",
+        confirmText: "Mark ready anyway",
+      }))
+    ) {
+      return;
+    }
+    approveM.mutate({ id: current.id });
+  };
 
   const markPosted = async () => {
     await markSocialDraftPosted(current.id);
@@ -133,21 +161,18 @@ export function DraftDrawer({
             </Button>
           )}
           <div className="ml-auto flex flex-wrap gap-2">
-            {status !== "dismissed" && (
+            {carousel && <CarouselExportButton key={current.id} draftId={current.id} />}
+            {status !== "dismissed" && !carousel && (
               <Button asChild variant="outline">
                 <Link href={`/admin/social/editor/${current.id}`}>Open in editor</Link>
               </Button>
             )}
-            <Button type="button" variant="outline" onClick={() => onPreview(current)}>
+            {!carousel && <Button type="button" variant="outline" onClick={() => onPreview(current)}>
               Preview & download
-            </Button>
+            </Button>}
             {status === "awaiting_review" && (
-              <Button
-                type="button"
-                onClick={() => approveM.mutate({ id: current.id })}
-                disabled={busy}
-              >
-                Mark ready
+              <Button type="button" onClick={markReady} disabled={busy}>
+                {layout === "needs-look" ? "Mark ready anyway" : "Mark ready"}
               </Button>
             )}
             {status === "ready" && (
@@ -191,6 +216,34 @@ export function DraftDrawer({
           )}
         </div>
 
+        {layout === "needs-look" && (
+          <div
+            role="status"
+            aria-label="Needs a look"
+            className="flex gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm"
+          >
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden />
+            <div className="space-y-2">
+              <p className="font-medium">Needs a look before it posts</p>
+              <ul className="list-disc space-y-1 pl-4">
+                {layoutReasons(current).map((r) => (
+                  <li key={r}>{r}</li>
+                ))}
+              </ul>
+              <p className="text-muted-foreground">
+                Automatic posting skips this card until it&apos;s fixed. Shorten the text or change
+                the design, or mark it ready anyway.
+              </p>
+              <Link
+                href={`/admin/social/editor/${current.id}`}
+                className="font-medium text-primary-text underline"
+              >
+                Edit design
+              </Link>
+            </div>
+          </div>
+        )}
+
         {current.staleSince && (
           <div
             role="status"
@@ -217,6 +270,10 @@ export function DraftDrawer({
           </div>
         )}
 
+        {carousel && <CarouselPreview key={current.id} carousel={carousel} />}
+        {invalidCarousel && <p role="alert" className="text-sm text-destructive">
+          This saved carousel has an invalid composition or unknown built-in design pack. It cannot be previewed or exported.
+        </p>}
         {status !== "dismissed" && <SchedulePanel key={current.id} draft={current} />}
 
         {status !== "dismissed" && (
@@ -230,7 +287,7 @@ export function DraftDrawer({
           </section>
         )}
 
-        <section className="space-y-2">
+        {!carousel && <section className="space-y-2">
           <h3 className="text-sm font-semibold">Photo</h3>
           {junior ? (
             <p className="text-sm text-muted-foreground">Junior cards don't use photos.</p>
@@ -284,7 +341,7 @@ export function DraftDrawer({
               )}
             </>
           )}
-        </section>
+        </section>}
 
         <section className="space-y-2">
           <label htmlFor="draft-caption" className="text-sm font-semibold">

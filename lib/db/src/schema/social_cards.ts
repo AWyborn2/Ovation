@@ -15,6 +15,26 @@ import { sql } from "drizzle-orm";
 import { tenantIdColumn } from "./_tenant";
 import { adminsTable } from "./admins";
 
+/**
+ * Layout warnings per card size from a draft's last check render (card kind
+ * templates, KTD10). Structurally the same as `DraftLayoutWarnings` in
+ * `@workspace/scorecard/kind-templates`; declared here so the schema package
+ * keeps no dependency on it.
+ */
+export type DraftLayoutWarningsColumn = Partial<
+  Record<
+    string,
+    Array<{
+      reason: string;
+      size: string;
+      layerId?: string;
+      row?: number;
+      field?: string;
+      detail?: string;
+    }>
+  >
+>;
+
 export const sponsorsTable = pgTable(
   "sponsors",
   {
@@ -187,11 +207,27 @@ export const cardTemplatesTable = pgTable(
     defaultForKinds: text("default_for_kinds").array().notNull().default([]),
     displayOrder: integer("display_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    // Card kind templates (source = "kind", plan 2026-10-07-002, ADR-002): one per
+    // tenant and base_kind. A save sends the version it was based on and is
+    // rejected when another admin saved first; drafts copy a specific version.
+    version: integer("version").notNull().default(1),
+    updatedAt: timestamp("updated_at", { withTimezone: true }),
+    updatedByAdminId: integer("updated_by_admin_id").references(() => adminsTable.id, {
+      onDelete: "set null",
+    }),
+    // The retired pack this kind template replaced (R19), shown as a notice
+    // until an admin dismisses it.
+    replacedPackId: text("replaced_pack_id"),
+    noticeDismissedAt: timestamp("notice_dismissed_at", { withTimezone: true }),
   },
   (t) => ({
     uniqPack: uniqueIndex("card_templates_pack_unique")
       .on(t.tenantId, t.source, t.packId, t.packVariant)
       .where(sql`source = 'pack'`),
+    // One kind template per tenant and card kind; lazy creation inserts or ignores.
+    uniqKind: uniqueIndex("card_templates_kind_unique")
+      .on(t.tenantId, t.baseKind)
+      .where(sql`source = 'kind'`),
   }),
 );
 
@@ -601,6 +637,14 @@ export const socialDraftsTable = pgTable(
     }),
     // Set when a posted draft's source data changed after it was shared.
     staleSince: timestamp("stale_since", { withTimezone: true }),
+    // Card kind templates (ADR-002, ADR-003): the template version this draft's
+    // design was copied from (null = a pack draft), layout warnings per size from
+    // the last check render, whether a check render is still owed, and when an
+    // admin last changed the design by hand (editedAt stays the caption marker).
+    templateVersion: integer("template_version"),
+    layoutWarnings: jsonb("layout_warnings").$type<DraftLayoutWarningsColumn>(),
+    layoutCheckPending: boolean("layout_check_pending").notNull().default(false),
+    designEditedAt: timestamp("design_edited_at", { withTimezone: true }),
   },
   (t) => ({
     // Partial unique index for match summary dedupe. Only enforced when
@@ -636,14 +680,18 @@ export const socialDraftRevisionsTable = pgTable(
     photoUrl: text("photo_url"),
     photoSource: text("photo_source"),
     adjustments: jsonb("adjustments"),
-    reason: text("reason").notNull(), // "refresh" | "edit" | "revert"
+    // The design base the snapshot rendered on (card kind templates): restoring a
+    // revision restores the pack and template version with its adjustments.
+    packId: text("pack_id"),
+    templateVersion: integer("template_version"),
+    reason: text("reason").notNull(), // "refresh" | "edit" | "revert" | "template"
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     idxDraft: index("social_draft_revisions_draft_idx").on(t.draftId, t.createdAt),
     chkReason: check(
       "social_draft_revisions_reason_check",
-      sql`"reason" IN ('refresh', 'edit', 'revert')`,
+      sql`"reason" IN ('refresh', 'edit', 'revert', 'template')`,
     ),
   }),
 );

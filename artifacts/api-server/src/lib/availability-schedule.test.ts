@@ -449,11 +449,22 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
     clear();
     const summary = await tick(tenantA, "2026-10-12T18:05:00");
     expect(summary.ran).toEqual(["send"]);
-    expect(summary.results[0]).toMatchObject({ messaged: 3, away: 1 });
+    expect(summary.results[0]).toMatchObject({ messaged: 3, away: 1, drafts: 2 });
     const round = await roundOf(tenantA);
     expect(round?.weekendDate).toBe("2026-10-17");
     expect(round?.sendStartedAt).not.toBeNull();
     expect(round?.sendCompletedAt).not.toBeNull();
+    expect(round?.cutoffStartedAt).toBeNull();
+    const sides = await db.select().from(selectionsTable)
+      .where(eq(selectionsTable.tenantId, tenantA));
+    expect(sides).toHaveLength(2);
+    expect(sides.every(side => side.state === "draft" && side.roundId === round?.id)).toBe(true);
+    const notices = await db.select().from(notificationsTable)
+      .where(and(eq(notificationsTable.tenantId, tenantA),
+        eq(notificationsTable.kind, "selection_drafts_ready")));
+    expect(notices).toHaveLength(1);
+    expect(notices[0].body).toMatch(/requests are going out/);
+    expect(notices[0].body).not.toMatch(/has closed/);
 
     expect(email.map((m) => m.to).sort()).toEqual(["alex@example.com", "gail@example.com"]);
     expect(sms.map((m) => m.to).sort()).toEqual(["+61412000001", "+61412000003"]);
@@ -529,11 +540,22 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
     expect(email.every((m) => /reminder/i.test(m.subject))).toBe(true);
   });
 
-  it("cut-off drafts each fixture and tells the staff (R19); the round records cut-off completion", async () => {
+  it("cut-off preserves teams drafted since the send and records completion without duplicate notices", async () => {
     clear();
+    const [side] = await db.select().from(selectionsTable)
+      .where(eq(selectionsTable.tenantId, tenantA));
+    await db.update(selectionsTable).set({
+      version: 7,
+      slots: [{ memberId: null, gap: { name: "Captain's draft", reason: "no_reply" } },
+        ...side.slots.slice(1)],
+    }).where(eq(selectionsTable.id, side.id));
+    const before = await db.select().from(selectionsTable)
+      .where(eq(selectionsTable.tenantId, tenantA)).orderBy(selectionsTable.id);
     const summary = await tick(tenantA, "2026-10-15T18:05:00");
     expect(summary.ran).toEqual(["cutoff"]);
-    expect(summary.results[0].drafts).toBe(2);
+    expect(summary.results[0].drafts).toBe(0);
+    expect(await db.select().from(selectionsTable)
+      .where(eq(selectionsTable.tenantId, tenantA)).orderBy(selectionsTable.id)).toEqual(before);
     const round = (await roundOf(tenantA))!;
     expect(round.cutoffCompletedAt).not.toBeNull();
     const notes = await db

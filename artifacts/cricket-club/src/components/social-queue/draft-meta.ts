@@ -169,3 +169,41 @@ export function clubTimeLabel(iso: string): string {
     minute: "2-digit",
   }).format(new Date(iso));
 }
+
+/** A templated draft's layout state for the queue (card kind templates, KTD10). */
+export type LayoutState = "clear" | "checking" | "needs-look";
+
+/** Whether a draft's layout is fine, still being checked, or needs a look. */
+export function layoutState(
+  d: Pick<SocialDraft, "templateVersion" | "layoutCheckPending" | "layoutWarnings">,
+): LayoutState {
+  if (d.templateVersion == null) return "clear";
+  const warnings = Object.values(d.layoutWarnings ?? {});
+  if (warnings.some((list) => (list?.length ?? 0) > 0)) return "needs-look";
+  return d.layoutCheckPending ? "checking" : "clear";
+}
+
+const SIZE_NAME: Record<string, string> = {
+  square: "Square",
+  portrait: "Portrait",
+  story: "Story",
+  landscape: "Landscape",
+};
+
+/** Plain-language reasons a draft needs a look, one per warning. */
+export function layoutReasons(d: Pick<SocialDraft, "layoutWarnings">): string[] {
+  const out: string[] = [];
+  for (const [size, list] of Object.entries(d.layoutWarnings ?? {})) {
+    for (const w of list ?? []) {
+      const where = SIZE_NAME[size] ?? size;
+      out.push(
+        w.reason === "overflow"
+          ? `${where}: some text doesn't fit its box, even shrunk.`
+          : w.reason === "font"
+            ? `${where}: a font didn't load${w.detail ? ` (${w.detail})` : ""}, so a fallback was used.`
+            : `${where}: the list needs more than 10 slides; the rest won't post.`,
+      );
+    }
+  }
+  return out;
+}

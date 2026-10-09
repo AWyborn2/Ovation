@@ -49,8 +49,8 @@ function stubFetch() {
 }
 
 describe("PostPackButton", () => {
-  it("with file sharing, the Share tap shares the PNGs and copies the caption", async () => {
-    stubFetch();
+  it("with file sharing, the Share tap shares ordered PNG files and copies the caption first", async () => {
+    const fetchMock = stubFetch();
     const share = vi.fn(async () => undefined);
     const writeText = vi.fn(async () => undefined);
     vi.stubGlobal("navigator", {
@@ -64,8 +64,17 @@ describe("PostPackButton", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Share" }));
     await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
     const files = (share.mock.calls[0] as unknown as [{ files: File[] }])[0].files;
-    expect(files.map((f) => f.name)).toEqual(["century-square.png", "century-story.png"]);
+    expect(files.map((f) => f.name)).toEqual(["001-century-square.png", "002-century-story.png"]);
+    for (const file of files) {
+      expect(file).toBeInstanceOf(File);
+      expect(file.type).toBe("image/png");
+    }
+    for (const image of PACK.images) {
+      expect(fetchMock).toHaveBeenCalledWith(image.url, { credentials: "include" });
+    }
+    expect(writeText).toHaveBeenCalledTimes(1);
     expect(writeText).toHaveBeenCalledWith(PACK.caption);
+    expect(writeText.mock.invocationCallOrder[0]).toBeLessThan(share.mock.invocationCallOrder[0]);
   });
 
   it("without file sharing, it offers the zip download", async () => {

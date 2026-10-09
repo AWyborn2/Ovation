@@ -186,6 +186,62 @@ function stubApi(board: SelectionBoard, onPut?: (req: Req) => { status: number; 
 
 const renderHub = () => renderAt(<SelectionHub />, "/admin/selection");
 
+describe("comparison from selection", () => {
+  it.each(["admin", "captain"] as const)("lets a %s open comparison without leaving the board", async kind => {
+    const board = makeBoard();
+    board.actor.kind = kind;
+    board.pool[0].linkedPlayerId = 7654;
+    stubApi(board);
+    renderHub();
+    await screen.findByTestId("chip-900");
+    const link = screen.getByRole("link", { name: /Compare players/ });
+    expect(link).toHaveAttribute("href", "/compare");
+    expect(link).toHaveAttribute("target", "_blank");
+    fireEvent.click(screen.getByTestId("chip-900"));
+    const dialog = screen.getByRole("dialog");
+    const playerLink = within(dialog).getByRole("link", { name: /Compare players/ });
+    expect(playerLink).toHaveAttribute("href", "/compare?a=7654");
+    expect(playerLink).toHaveAttribute("target", "_blank");
+    expect(playerLink.getAttribute("href")).not.toContain("900");
+  });
+
+  it("explains missing profile links, private players and unsupported juniors", async () => {
+    const board = makeBoard();
+    board.pool[1].isPrivate = true;
+    board.pool[1].linkedPlayerId = 99;
+    stubApi(board);
+    renderHub();
+    fireEvent.click(await screen.findByTestId("chip-900"));
+    let dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText(/No senior statistics profile is linked/)).toBeInTheDocument();
+    expect(within(dialog).queryByRole("link", { name: /Compare players/ })).toBeNull();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByRole("button", { name: /Unavailable/ }));
+    fireEvent.click(screen.getByTestId("chip-901"));
+    dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText(/unavailable for this private player/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByRole("button", { name: "Juniors" }));
+    await screen.findByText("Player comparison currently supports senior statistics only.");
+    expect(screen.queryByRole("link", { name: /Compare players/ })).toBeNull();
+  });
+
+  it("preserves the server grade order after saving a player move", async () => {
+    const board = makeBoard();
+    board.selections = [board.selections[2], board.selections[0], board.selections[1]];
+    const requests = stubApi(board);
+    renderHub();
+    await screen.findByTestId("side-3");
+    const ids = () => within(screen.getByRole("main", { name: "Teams" }))
+      .getAllByRole("article").map(el => el.getAttribute("data-side-id"));
+    expect(ids()).toEqual(["3", "1", "2"]);
+    fireEvent.click(screen.getByTestId("chip-900"));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Move" }));
+    await waitFor(() => expect(requests.some(r => r.method === "PUT")).toBe(true));
+    expect(ids()).toEqual(["3", "1", "2"]);
+  });
+});
+
 describe("Move dialog destinations", () => {
   it("lists only sides the caller can edit, and disables full and finalised ones", () => {
     const b = makeBoard();

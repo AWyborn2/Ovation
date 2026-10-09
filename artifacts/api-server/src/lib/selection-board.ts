@@ -18,7 +18,8 @@ import {
   type SquadSection,
   type TeamListPlayer,
 } from "@workspace/db";
-import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
+import { FILL_IN_THRESHOLD, sortByGradeOrder } from "@workspace/scorecard";
+import { loadClubGradeOrder } from "./club-grade-order";
 import {
   fixtureSection,
   memberDisplayName,
@@ -41,12 +42,14 @@ import {
   SIDE_SIZE,
   TWELFTH_INDEX,
   XI_SIZE,
+  buildRoundDrafts,
   loadResponses,
   normaliseSlots,
   xiMemberIds,
 } from "./selection-drafts";
 import type { SelectionActor } from "../middlewares/require-admin-or-captain";
 import { logger as defaultLogger } from "./logger";
+import { PRIVATE_PLAYER, selectionPublishedPlayers, loadSelectionParticipantIds } from "./selection-published-players";
 
 /**
  * The Selection Hub's board.
@@ -155,6 +158,7 @@ export type MemberStatus = AvailabilityStatus | "none";
 
 export type BoardMember = {
   id: number;
+  linkedPlayerId: number | null;
   displayName: string;
   status: MemberStatus;
   note: string | null;
@@ -306,6 +310,11 @@ export async function buildBoard(
 ): Promise<Board> {
   const { rule, weekendDate, slots: stepSlots, round } = await currentRound(tenantId, now);
   const window = roundWindow(weekendDate);
+  // Backfill already-sent rounds created before early drafting was supported.
+  // The builder is idempotent and never overwrites a saved or finalised side.
+  if (round && (round.sendStartedAt || round.sendCompletedAt)) {
+    await buildRoundDrafts(tenantId, round.id, now);
+  }
 
   // Independent reads, run together. `sides` is every side of the round (any
   // section), so a member placed anywhere is out of the pool; `statusByDate` is
@@ -313,7 +322,7 @@ export async function buildBoard(
   // `replies` the reply details — a row the system recorded (away) is not a
   // reply; `windowFixtures`, `grades` and `lists` give each member's last grade
   // and the dates they were asked about.
-  const [members, sides, statusByDate, replies, windowFixtures, grades, lists] = await Promise.all([
+  const [members, sides, statusByDate, replies, windowFixtures, grades, lists, gradeOrder] = await Promise.all([
     db
       .select(MEMBER_COLUMNS)
       .from(squadMembersTable)
@@ -388,6 +397,7 @@ export async function buildBoard(
           sql`jsonb_array_length(${teamListsTable.players}) > 0`,
         ),
       ),
+    loadClubGradeOrder(tenantId),
   ]);
   const byId = new Map(members.map((m) => [m.id, m]));
   const placed = new Set<number>();
@@ -424,6 +434,9 @@ export async function buildBoard(
     const reply = replyOf.get(m.id);
     return {
       id: m.id,
+      linkedPlayerId: section === "senior" && m.section === "senior" && !m.isPrivate
+        ? m.linkedPlayerId
+        : null,
       displayName: memberDisplayName(m),
       status,
       note: reply?.note ?? null,
@@ -435,7 +448,12 @@ export async function buildBoard(
     };
   };
 
-  const sectionSides = sides.filter((s) => fixtureSection(s.fixture.grade) === section);
+  // Stable sort retains fixture start/id order for multiple sides of the same grade.
+  const sectionSides = sortByGradeOrder(
+    sides.filter((s) => fixtureSection(s.fixture.grade) === section),
+    (s) => s.fixture.grade,
+    gradeOrder,
+  );
   const selections: BoardSide[] = sectionSides.map(({ selection: sel, fixture: f }) => {
     const date = perthDate(f.startAt);
     const right = selectionRight(actor, rule, f.grade);
@@ -843,11 +861,7 @@ function refuseIfStarted(fixture: FixtureRow, now: Date, action: string): void {
 }
 
 /** The name a team list shows: a private member is "Private Player", as on central. */
-export const PRIVATE_PLAYER = "Private Player";
-
-function publishedName(m: BoardMemberRow): string {
-  return m.isPrivate ? PRIVATE_PLAYER : memberDisplayName(m);
-}
+export { PRIVATE_PLAYER } from "./selection-published-players";
 
 /** The team-list role for a member of the side. */
 function roleOf(
@@ -914,23 +928,9 @@ export async function finaliseSelection(
             )
         : [];
     const memberOf = new Map(members.map((m) => [m.id, m]));
-    // The XI in order, then the 12th player always as order 12.
-    const players: TeamListPlayer[] = [];
-    for (const id of picked) {
-      const m = memberOf.get(id);
-      if (!m) continue;
-      const twelfth = id === twelfthId;
-      const role = twelfth ? undefined : roleOf(id, selection);
-      players.push({
-        order: twelfth ? SIDE_SIZE : players.length + 1,
-        // Fill-in ids never reach a team list, nor does a private member's id.
-        ...(!m.isPrivate && m.linkedPlayerId != null && m.linkedPlayerId < FILL_IN_THRESHOLD
-          ? { playerId: m.linkedPlayerId }
-          : {}),
-        displayName: publishedName(m),
-        ...(role ? { role } : {}),
-      });
-    }
+    const participantIds = fixtureSection(fixture.grade) === "senior"
+      ? await loadSelectionParticipantIds(tx, tenantId, fixture.startAt) : new Map<number, string>();
+    const players = selectionPublishedPlayers(selection, members, participantIds);
     await tx
       .insert(teamListsTable)
       .values({ tenantId, fixtureId: fixture.id, players, isPublished: true, source: "selection" })

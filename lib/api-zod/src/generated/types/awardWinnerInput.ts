@@ -10,6 +10,11 @@ export interface AwardWinnerInput {
   season: number;
   /** @nullable */
   playerId?: number | null;
+  /**
+     * Ordered links. Overrides playerId; an empty list means free text.
+     * @maxItems 100
+     */
+  playerIds?: number[];
   name: string;
   displayOrder?: number;
   published?: boolean;
