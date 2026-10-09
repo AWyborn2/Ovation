@@ -87,21 +87,40 @@ describe("Admin shirt numbers page", () => {
     const row = apiEntry(entry(1, "Carousel Captain", "36"));
     const requests = stubApi([
       { match: /\/api\/shirt-numbers\/settings$/, reply: () => SETTINGS_ON },
-      { match: /\/api\/shirt-numbers\?season=/, reply: ({ url }) => ({
-        season: 2026, seasons: [2026], entries: url.includes("season=2026") ? [row] : [],
-      }) },
-      { method: "PATCH", match: /\/api\/shirt-numbers\/1$/, reply: () => ({
-        entry: { ...row, number: "88" }, warnings: [],
-      }) },
+      {
+        match: /\/api\/shirt-numbers\?season=/,
+        reply: ({ url }) => ({
+          season: 2026,
+          seasons: [2026],
+          entries: url.includes("season=2026") ? [row] : [],
+        }),
+      },
+      {
+        method: "PATCH",
+        match: /\/api\/shirt-numbers\/1$/,
+        reply: () => ({
+          entry: { ...row, number: "88" },
+          warnings: [],
+        }),
+      },
     ]);
     renderAt(<AdminShirtNumbers />, "/admin/honours/shirt-numbers");
-    fireEvent.click(await screen.findByRole("button", { name: /edit number for carousel captain/i }));
-    fireEvent.change(screen.getByLabelText("Number for Carousel Captain"), { target: { value: "88" } });
+    fireEvent.click(
+      await screen.findByRole("button", { name: /edit number for carousel captain/i }),
+    );
+    fireEvent.change(screen.getByLabelText("Number for Carousel Captain"), {
+      target: { value: "88" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() => expect(requests.find(r => r.method === "PATCH")?.body).toEqual({ number: "88" }));
-    await waitFor(() => expect(invalidate).toHaveBeenCalledWith({
-      queryKey: ["/api/weekend-carousel/sources"], predicate: expect.any(Function),
-    }));
+    await waitFor(() =>
+      expect(requests.find((r) => r.method === "PATCH")?.body).toEqual({ number: "88" }),
+    );
+    await waitFor(() =>
+      expect(invalidate).toHaveBeenCalledWith({
+        queryKey: ["/api/weekend-carousel/sources"],
+        predicate: expect.any(Function),
+      }),
+    );
   });
   it("shows only the settings panel while the feature is off", async () => {
     const requests = stubApi([
@@ -141,7 +160,8 @@ describe("Admin shirt numbers page", () => {
     });
     expect(await screen.findByText(/register is kept/i)).toBeInTheDocument();
     expect(invalidate).toHaveBeenCalledWith({
-      queryKey: ["/api/weekend-carousel/sources"], predicate: expect.any(Function),
+      queryKey: ["/api/weekend-carousel/sources"],
+      predicate: expect.any(Function),
     });
   });
 });

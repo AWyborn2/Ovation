@@ -1175,9 +1175,12 @@ describe("curated player links stay inside the club's own player id space", () =
 
     beforeAll(async () => {
       const f = fx[T1]!;
+      // A non-null player_ids is authoritative (shared award recipients); the
+      // write-route cases above already PATCHed this winner into that shape, so
+      // relink both columns the way the routes do.
       await db
         .update(awardWinnersTable)
-        .set({ playerId: native.A, published: true })
+        .set({ playerId: native.A, playerIds: [native.A], published: true })
         .where(eq(awardWinnersTable.id, f.winnerId));
       await db
         .update(teamOfDecadeMembersTable)

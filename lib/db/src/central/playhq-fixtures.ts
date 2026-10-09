@@ -1,4 +1,4 @@
-import { and, asc, eq, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
 import {
   centralDb,
   centralMatchesTable,
@@ -25,6 +25,25 @@ export function playhqClubInvolvedWhere(orgId: string): SQL {
     eq(playhqMatchesTable.homeOrgId, orgId),
     eq(playhqMatchesTable.awayOrgId, orgId),
   ) as SQL;
+}
+
+/**
+ * The PlayHQ status of each of `matchIds` the club (`orgId`) plays in, read
+ * fresh (uncached) because callers check it right before exporting. A match
+ * of another club, or one PlayHQ hasn't sent, is absent from the map.
+ */
+export async function playhqMatchStatusesForClub(
+  orgId: string,
+  matchIds: readonly string[],
+): Promise<Map<string, string>> {
+  const status = new Map<string, string>();
+  if (matchIds.length === 0) return status;
+  const rows = await centralDb
+    .select({ id: playhqMatchesTable.id, status: playhqMatchesTable.status })
+    .from(playhqMatchesTable)
+    .where(and(inArray(playhqMatchesTable.id, [...matchIds]), playhqClubInvolvedWhere(orgId)));
+  for (const row of rows) status.set(row.id, row.status ?? "UNKNOWN");
+  return status;
 }
 
 export interface PlayhqOpponent {

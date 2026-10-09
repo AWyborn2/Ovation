@@ -5,6 +5,7 @@ import { getGetWeekendCarouselSourcesQueryKey } from "@workspace/api-client-reac
 export function invalidateTeamListCarouselSources(client: QueryClient) {
   return client.invalidateQueries({
     queryKey: getGetWeekendCarouselSourcesQueryKey(),
-    predicate: query => (query.queryKey[1] as { setType?: string } | undefined)?.setType === "teamList",
+    predicate: (query) =>
+      (query.queryKey[1] as { setType?: string } | undefined)?.setType === "teamList",
   });
 }

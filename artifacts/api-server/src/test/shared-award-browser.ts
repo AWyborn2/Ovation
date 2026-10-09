@@ -17,6 +17,7 @@ import {
   playersTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
+import { env } from "../config";
 
 // Types for callbacks executed IN Chromium, without adding DOM globals to the
 // API server's Node-only TypeScript project.
@@ -36,8 +37,8 @@ declare const document: {
 };
 declare const innerWidth: number;
 
-if (process.env.NODE_ENV === "production") throw new Error("Development only");
-const host = process.env.REPLIT_DEV_DOMAIN;
+if (env.isProduction()) throw new Error("Development only");
+const host = env.REPLIT_DEV_DOMAIN();
 if (!host || !host.endsWith(".replit.dev"))
   throw new Error("A Replit development host is required");
 const base = `https://${host}`;

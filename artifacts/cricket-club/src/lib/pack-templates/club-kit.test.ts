@@ -90,7 +90,7 @@ describe("Club Kit palette (handoff §1)", () => {
 });
 
 describe("Club Kit designs", () => {
-  it.each(SIZES)("opts only Team Selection into measured fitting at %s", size => {
+  it.each(SIZES)("opts only Team Selection into measured fitting at %s", (size) => {
     const base = sampleCardInput("teamList") as Extract<ShareCardInput, { kind: "teamList" }>;
     const html = render(base, size);
     expect(html).toContain('data-xi-fit="1"');
@@ -252,41 +252,59 @@ describe("Club Kit designs", () => {
 });
 
 describe("Club Kit-only kinds", () => {
-  it.each(SIZES)("doubles match-day sponsor logos without changing other cards in %s", size => {
-    const data = buildPackData({ brand: HALLS, sponsors: [{ name: "Team sponsor", logoUrl: "https://cdn.example/sponsor.png" }] });
+  it.each(SIZES)("doubles match-day sponsor logos without changing other cards in %s", (size) => {
+    const data = buildPackData({
+      brand: HALLS,
+      sponsors: [{ name: "Team sponsor", logoUrl: "https://cdn.example/sponsor.png" }],
+    });
     const tokens = resolveCardTokens({ theme: null, junior: false, data, packId: ID });
     const match = renderPackCard(sampleCardInput("matchDay"), size, true, tokens, false, data, ID);
     expect(match).toContain("width:18cqmin;height:8cqmin");
     expect(match).toContain('src="https://cdn.example/sponsor.png"');
-    const other = renderPackCard(sampleCardInput("roundFixtures"), size, true, tokens, false, data, ID);
+    const other = renderPackCard(
+      sampleCardInput("roundFixtures"),
+      size,
+      true,
+      tokens,
+      false,
+      data,
+      ID,
+    );
     expect(other).toContain("width:9cqmin;height:4cqmin");
     expect(other).not.toContain("width:18cqmin;height:8cqmin");
   });
-  it.each(["square", "portrait", "story", "landscape"] as CardSize[])("makes the grade the game-day heading and shows the opponent crest in %s", size => {
-    const input = {
-      ...sampleCardInput("matchDay"),
-      grade: "A Grade",
-      oppositionName: "Visitors",
-      oppositionLogoUrl: "https://cdn.example/opponent.png",
-    } as ShareCardInput;
-    const html = render(input, size);
-    expect(html).toMatch(/data-match-day-heading="1"><div[^>]*>A Grade<\/div>/);
-    expect(html).toContain(">GAME DAY</div>");
-    expect(html).not.toContain(">GAME<br>");
-    expect(html).toContain('<img src="https://cdn.example/opponent.png"');
-    expect(html.indexOf(">v</div>")).toBeLessThan(html.indexOf('<img src="https://cdn.example/opponent.png"'));
-    expect(html.indexOf('<img src="https://cdn.example/opponent.png"')).toBeLessThan(html.indexOf(">Visitors</div>"));
-    expect(html).toContain(">v</div>");
-    expect(html).toContain(">Visitors</div>");
-    expect(html).not.toContain("{{");
-    const noLogo = render({ ...input, oppositionLogoUrl: null } as ShareCardInput, size);
-    expect(noLogo).not.toContain("https://cdn.example/opponent.png");
-    expect(noLogo).not.toContain('data-slot="opposition.logo"');
-    expect(noLogo).toContain(">v</div>");
-    expect(noLogo).toContain(">Visitors</div>");
-    const noGrade = render({ ...input, grade: undefined } as ShareCardInput, size);
-    expect(noGrade).toMatch(/data-match-day-heading="1"><div[^>]*>GAME DAY<\/div>/);
-  });
+  it.each(["square", "portrait", "story", "landscape"] as CardSize[])(
+    "makes the grade the game-day heading and shows the opponent crest in %s",
+    (size) => {
+      const input = {
+        ...sampleCardInput("matchDay"),
+        grade: "A Grade",
+        oppositionName: "Visitors",
+        oppositionLogoUrl: "https://cdn.example/opponent.png",
+      } as ShareCardInput;
+      const html = render(input, size);
+      expect(html).toMatch(/data-match-day-heading="1"><div[^>]*>A Grade<\/div>/);
+      expect(html).toContain(">GAME DAY</div>");
+      expect(html).not.toContain(">GAME<br>");
+      expect(html).toContain('<img src="https://cdn.example/opponent.png"');
+      expect(html.indexOf(">v</div>")).toBeLessThan(
+        html.indexOf('<img src="https://cdn.example/opponent.png"'),
+      );
+      expect(html.indexOf('<img src="https://cdn.example/opponent.png"')).toBeLessThan(
+        html.indexOf(">Visitors</div>"),
+      );
+      expect(html).toContain(">v</div>");
+      expect(html).toContain(">Visitors</div>");
+      expect(html).not.toContain("{{");
+      const noLogo = render({ ...input, oppositionLogoUrl: null } as ShareCardInput, size);
+      expect(noLogo).not.toContain("https://cdn.example/opponent.png");
+      expect(noLogo).not.toContain('data-slot="opposition.logo"');
+      expect(noLogo).toContain(">v</div>");
+      expect(noLogo).toContain(">Visitors</div>");
+      const noGrade = render({ ...input, grade: undefined } as ShareCardInput, size);
+      expect(noGrade).toMatch(/data-match-day-heading="1"><div[^>]*>GAME DAY<\/div>/);
+    },
+  );
 
   it("game day lists every grade this round", () => {
     const html = render(sampleCardInput("roundFixtures"), "portrait");

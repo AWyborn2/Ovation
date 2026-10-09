@@ -441,7 +441,9 @@ export async function applySquadImport(
 
   await db.transaction(async (tx: Tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(72401, ${tenantId})`);
-    const existing = await tx.select().from(squadMembersTable)
+    const existing = await tx
+      .select()
+      .from(squadMembersTable)
       .where(eq(squadMembersTable.tenantId, tenantId));
     const byProfile = new Map<string, SquadMemberRow>();
     for (const row of existing) {
@@ -487,15 +489,27 @@ export async function applySquadImport(
     for (const m of plan.members) {
       let prev = byProfile.get(m.playhqProfileId);
       if (!prev) {
-        const initial = matchByInitial(m, initialIndex);
-        const knownId = links.byProfile.get(m.playhqProfileId.toLowerCase()) ?? initial?.playerId ?? null;
+        // Adopt a manually added row (no Profile ID) for this member. Only the
+        // crosswalk's Profile ID is proof of identity on its own; a fuzzy
+        // initial + surname match must also agree with the row's name, or an
+        // import would take over (and rename) another member an admin linked
+        // to that player by hand.
+        const profileId = links.byProfile.get(m.playhqProfileId.toLowerCase()) ?? null;
+        const initialId = matchByInitial(m, initialIndex)?.playerId ?? null;
         const keys = memberNameKeys(m);
         const initials = memberInitialKeys(m);
-        const candidates = existing.filter((r) => !r.playhqProfileId && !adopted.has(r.id) &&
-          (knownId !== null && r.linkedPlayerId === knownId ||
-            r.section === m.section && r.linkedPlayerId === null &&
-              (memberNameKeys(r).some((k) => keys.includes(k) && nameCounts.get(k) === 1) ||
-                memberInitialKeys(r).some((k) => initials.includes(k) && initialCounts.get(k) === 1))));
+        const nameAgrees = (r: SquadMemberRow) =>
+          memberNameKeys(r).some((k) => keys.includes(k) && nameCounts.get(k) === 1) ||
+          memberInitialKeys(r).some((k) => initials.includes(k) && initialCounts.get(k) === 1);
+        const candidates = existing.filter(
+          (r) =>
+            !r.playhqProfileId &&
+            !adopted.has(r.id) &&
+            ((profileId !== null && r.linkedPlayerId === profileId) ||
+              (r.section === m.section &&
+                nameAgrees(r) &&
+                (r.linkedPlayerId === null || r.linkedPlayerId === initialId))),
+        );
         if (candidates.length === 1) {
           prev = candidates[0];
           adopted.add(prev.id);
@@ -542,7 +556,9 @@ export async function applySquadImport(
 
       const heldByAdmin = prev.activeSetByAdmin && !prev.active;
       const set: Partial<typeof squadMembersTable.$inferInsert> = {
-        ...identity, playhqProfileId: m.playhqProfileId, updatedAt: now,
+        ...identity,
+        playhqProfileId: m.playhqProfileId,
+        updatedAt: now,
       };
       if (!heldByAdmin && prev.contactChangeFlag) {
         set.dateOfBirth = contacts.dateOfBirth;

@@ -15,7 +15,11 @@ import {
 } from "@workspace/api-client-react";
 import type { CardSize } from "@/lib/share-card";
 import type { CardAdjustments } from "@/lib/pack-render";
-import { CAROUSEL_LABELS, isCarouselPackId, type CarouselSetType } from "@workspace/scorecard/queued-carousel";
+import {
+  CAROUSEL_LABELS,
+  isCarouselPackId,
+  type CarouselSetType,
+} from "@workspace/scorecard/queued-carousel";
 import {
   CLUB_TIME_ZONE,
   weekendRange,
@@ -51,8 +55,9 @@ function move<T>(arr: T[], from: number, to: number): T[] {
  * photoTransform for the active size so preview and still render match.
  */
 export function slideAdjustments(slide: WeekendSlide, size: CardSize): CardAdjustments | null {
-  const t = (slide.data as { photoTransform?: { focalX: number; focalY: number; zoom?: number } | null })
-    .photoTransform;
+  const t = (
+    slide.data as { photoTransform?: { focalX: number; focalY: number; zoom?: number } | null }
+  ).photoTransform;
   if (!t) return null;
   return { photo: { [size]: { focalX: t.focalX, focalY: t.focalY, zoom: t.zoom ?? 1 } } };
 }
@@ -64,7 +69,13 @@ export function slideAdjustments(slide: WeekendSlide, size: CardSize): CardAdjus
  */
 export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
   const [setType, setSetType] = useState<CarouselSetType>(initialType);
-  const initial = useMemo(() => initialType === "matchDay" ? weekendRange(new Date(), CLUB_TIME_ZONE) : rangeForSet(initialType), [initialType]);
+  const initial = useMemo(
+    () =>
+      initialType === "matchDay"
+        ? weekendRange(new Date(), CLUB_TIME_ZONE)
+        : rangeForSet(initialType),
+    [initialType],
+  );
   const [from, setFrom] = useState(initial.from);
   const [to, setTo] = useState(initial.to);
   const rangeValid = !!from && !!to && from <= to;
@@ -102,9 +113,11 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
   const [size, setSize] = useState<CardSize>("square");
   const [packId, setPackId] = useState(WEEKEND_PACK_ID);
   const [cover, setCover] = useState<CoverPhoto>({
-    photoId: null, transform: { focalX: 0.5, focalY: 0.5, zoom: 1 },
+    photoId: null,
+    transform: { focalX: 0.5, focalY: 0.5, zoom: 1 },
   });
-  const coverUnavailable = cover.photoId !== null && !coverPhotos.some(p => p.id === cover.photoId);
+  const coverUnavailable =
+    cover.photoId !== null && !coverPhotos.some((p) => p.id === cover.photoId);
 
   const inRange = rangeValid ? fixtures : [];
   const inRangeSig = `${setType}:` + inRange.map((f) => f.id).join(",");
@@ -116,11 +129,15 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
   useEffect(() => {
     const reset = pickScope.current !== scope;
     pickScope.current = scope;
-    setPicks(previous => {
-      if (reset || !previous.length) return inRange.map(f => ({ id: f.id, included: true }));
-      const ids = new Set(inRange.map(f => f.id));
-      return [...previous.filter(p => ids.has(p.id)),
-        ...inRange.filter(f => !previous.some(p => p.id === f.id)).map(f => ({ id: f.id, included: false }))];
+    setPicks((previous) => {
+      if (reset || !previous.length) return inRange.map((f) => ({ id: f.id, included: true }));
+      const ids = new Set(inRange.map((f) => f.id));
+      return [
+        ...previous.filter((p) => ids.has(p.id)),
+        ...inRange
+          .filter((f) => !previous.some((p) => p.id === f.id))
+          .map((f) => ({ id: f.id, included: false })),
+      ];
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inRangeSig, scope]);
@@ -137,7 +154,14 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
   const stale = !!generated && (generated.key !== selectionKey || !!generationError);
 
   const generate = async () => {
-    if (busy || generatingRef.current || !rangeValid || selected.length === 0 || selected.length > 18) return;
+    if (
+      busy ||
+      generatingRef.current ||
+      !rangeValid ||
+      selected.length === 0 ||
+      selected.length > 18
+    )
+      return;
     generatingRef.current = true;
     setGenerating(true);
     setGenerationError(null);
@@ -146,27 +170,45 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
       // Always re-read: another admin's edits need not invalidate this tab's cache.
       const [fresh, settings] = await Promise.all([sourcesQ.refetch(), settingsQ.refetch()]);
       if (fresh.isError || !fresh.data || settings.isError || !settings.data) {
-        throw new Error("Could not refresh carousel sources or settings. Retry generating the preview.");
+        throw new Error(
+          "Could not refresh carousel sources or settings. Retry generating the preview.",
+        );
       }
-      const freshById = new Map(fresh.data.fixtures.map(f => [f.id, f]));
-      const freshSelected = selected.map(f => freshById.get(f.id));
-      if (freshSelected.some(f => !f || (setType !== "matchDay" && !fresh.data.content?.[f.id]))) {
-        throw new Error("A selected team list or match is no longer available. Check your selection and regenerate.");
+      const freshById = new Map(fresh.data.fixtures.map((f) => [f.id, f]));
+      const freshSelected = selected.map((f) => freshById.get(f.id));
+      if (
+        freshSelected.some((f) => !f || (setType !== "matchDay" && !fresh.data.content?.[f.id]))
+      ) {
+        throw new Error(
+          "A selected team list or match is no longer available. Check your selection and regenerate.",
+        );
       }
       const current = freshSelected as Fixture[];
-      const pickIds = current.map(f => f.id);
+      const pickIds = current.map((f) => f.id);
       const oldIds = generated?.pickIds ?? [];
       // Respect explicit changes in the pick order; otherwise retain slide edits.
-      const preserveOrder = JSON.stringify(oldIds.filter(id => pickIds.includes(id))) ===
-        JSON.stringify(pickIds.filter(id => oldIds.includes(id)));
+      const preserveOrder =
+        JSON.stringify(oldIds.filter((id) => pickIds.includes(id))) ===
+        JSON.stringify(pickIds.filter((id) => oldIds.includes(id)));
       setGenerated({
         key: carouselSelectionKey(setType, from, to, current, fresh.data.content),
-        from, to, pickIds,
-        teams: refreshTeamSlides(current, fresh.data.photos, fresh.data.content ?? {},
-          generated?.teams, preserveOrder),
+        from,
+        to,
+        pickIds,
+        teams: refreshTeamSlides(
+          current,
+          fresh.data.photos,
+          fresh.data.content ?? {},
+          generated?.teams,
+          preserveOrder,
+        ),
       });
     } catch (e) {
-      setGenerationError(e instanceof Error ? e.message : "Could not refresh carousel sources. Retry generating the preview.");
+      setGenerationError(
+        e instanceof Error
+          ? e.message
+          : "Could not refresh carousel sources. Retry generating the preview.",
+      );
     } finally {
       generatingRef.current = false;
       setGenerating(false);
@@ -188,9 +230,9 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
   }, [generated, photos, bundle, title, cover, coverPhotos, setType]);
 
   const [queueError, setQueueError] = useState<string | null>(null);
-  const caption = captionEdit ?? carouselCaption(
-    setType, generated?.teams ?? [], title, bundle?.settings.clubHashtag,
-  );
+  const caption =
+    captionEdit ??
+    carouselCaption(setType, generated?.teams ?? [], title, bundle?.settings.clubHashtag);
   const queueKey = JSON.stringify([slides, size, caption, packId]);
   const queuedId = queued?.key === queueKey ? queued.id : null;
 
@@ -216,9 +258,20 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
     });
   };
 
-  const canQueue = !!generated && !stale && slides.length >= 3 && slides.length <= 20 &&
-    !!caption.trim() && caption.length <= 5000 && !queuedId && !busy && !coverUnavailable &&
-    !sourcesQ.isError && !settingsQ.isError && !sourcesQ.isFetching && !settingsQ.isFetching;
+  const canQueue =
+    !!generated &&
+    !stale &&
+    slides.length >= 3 &&
+    slides.length <= 20 &&
+    !!caption.trim() &&
+    caption.length <= 5000 &&
+    !queuedId &&
+    !busy &&
+    !coverUnavailable &&
+    !sourcesQ.isError &&
+    !settingsQ.isError &&
+    !sourcesQ.isFetching &&
+    !settingsQ.isFetching;
   const runQueue = async () => {
     if (!canQueue || submitting.current) return;
     submitting.current = true;
@@ -230,38 +283,73 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
       let queuedSlides = slides;
       if (cover.photoId !== null || setType !== "matchDay") {
         const fresh = await sourcesQ.refetch();
-        if (fresh.isError || !fresh.data) throw new Error("Could not verify source data. Retry before sending to review.");
-        if (setType !== "matchDay" && generated!.teams.some(t =>
-          JSON.stringify(fresh.data.content?.[t.fixture.id]) !== JSON.stringify(t.input))) {
-          throw new Error("A selected team list or scorecard changed or is no longer available. Regenerate the preview before sending to review.");
+        if (fresh.isError || !fresh.data)
+          throw new Error("Could not verify source data. Retry before sending to review.");
+        if (
+          setType !== "matchDay" &&
+          generated!.teams.some(
+            (t) => JSON.stringify(fresh.data.content?.[t.fixture.id]) !== JSON.stringify(t.input),
+          )
+        ) {
+          throw new Error(
+            "A selected team list or scorecard changed or is no longer available. Regenerate the preview before sending to review.",
+          );
         }
         const allowed = eligibleCoverPhotos(fresh.data.coverPhotos ?? []);
-        if (cover.photoId !== null && !allowed.some(p => p.id === cover.photoId)) throw new Error(COVER_PHOTO_UNAVAILABLE);
+        if (cover.photoId !== null && !allowed.some((p) => p.id === cover.photoId))
+          throw new Error(COVER_PHOTO_UNAVAILABLE);
         const freshPhotos = fresh.data.photos ?? photos;
-        if (generated!.teams.some(t => t.photoId !== null && !freshPhotos.some(p => p.id === t.photoId && p.grade === t.fixture.grade))) {
-          throw new Error("A selected team photo is no longer available. Choose another photo and regenerate.");
+        if (
+          generated!.teams.some(
+            (t) =>
+              t.photoId !== null &&
+              !freshPhotos.some((p) => p.id === t.photoId && p.grade === t.fixture.grade),
+          )
+        ) {
+          throw new Error(
+            "A selected team photo is no longer available. Choose another photo and regenerate.",
+          );
         }
-        queuedSlides = buildWeekendSlides(generated!.teams, freshPhotos, bundle!,
-          title.trim() || CAROUSEL_LABELS[setType], generated!.from, generated!.to, CLUB_TIME_ZONE,
-          { selection: cover, photos: allowed });
+        queuedSlides = buildWeekendSlides(
+          generated!.teams,
+          freshPhotos,
+          bundle!,
+          title.trim() || CAROUSEL_LABELS[setType],
+          generated!.from,
+          generated!.to,
+          CLUB_TIME_ZONE,
+          { selection: cover, photos: allowed },
+        );
       }
       if (submission.current?.key !== queueKey) {
         submission.current = { key: queueKey, id: crypto.randomUUID() };
       }
-      const draft = await createDraft.mutateAsync({ data: {
-        packId,
-        caption: caption.trim(),
-        cardInput: {
-          kind: "matchDay", headline: `${title.trim() || CAROUSEL_LABELS[setType]} carousel`,
-          roundLabel: `${generated!.from} – ${generated!.to}`,
-          weekendCarousel: { version: 1, packId, setType, submissionId: submission.current.id, size, slides: queuedSlides },
+      const draft = await createDraft.mutateAsync({
+        data: {
+          packId,
+          caption: caption.trim(),
+          cardInput: {
+            kind: "matchDay",
+            headline: `${title.trim() || CAROUSEL_LABELS[setType]} carousel`,
+            roundLabel: `${generated!.from} – ${generated!.to}`,
+            weekendCarousel: {
+              version: 1,
+              packId,
+              setType,
+              submissionId: submission.current.id,
+              size,
+              slides: queuedSlides,
+            },
+          },
         },
-      } });
+      });
       setQueued({ key: queueKey, id: draft.id });
       qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
       qc.invalidateQueries({ queryKey: getGetPendingSocialDraftCountQueryKey() });
     } catch (e) {
-      setQueueError(e instanceof Error ? e.message : "Could not send the carousel to review. Please retry.");
+      setQueueError(
+        e instanceof Error ? e.message : "Could not send the carousel to review. Please retry.",
+      );
     } finally {
       submitting.current = false;
       setExporting(false);
@@ -281,7 +369,8 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
     changeType: (type: CarouselSetType) => {
       if (busy) return;
       setSetType(type);
-      const range = type === "matchDay" ? weekendRange(new Date(), CLUB_TIME_ZONE) : rangeForSet(type);
+      const range =
+        type === "matchDay" ? weekendRange(new Date(), CLUB_TIME_ZONE) : rangeForSet(type);
       setFrom(range.from);
       setTo(range.to);
       setTitle(CAROUSEL_LABELS[type]);
@@ -297,7 +386,7 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
     coverPhotos,
     cover,
     coverUnavailable,
-    patchCover: (patch: Partial<CoverPhoto>) => !busy && setCover(c => ({ ...c, ...patch })),
+    patchCover: (patch: Partial<CoverPhoto>) => !busy && setCover((c) => ({ ...c, ...patch })),
     bundle,
     sourceWarnings,
     timeZone,
@@ -307,7 +396,8 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
     setTo: (v: string) => !busy && setTo(v),
     resetRange: () => {
       if (busy) return;
-      const range = setType === "matchDay" ? weekendRange(new Date(), CLUB_TIME_ZONE) : rangeForSet(setType);
+      const range =
+        setType === "matchDay" ? weekendRange(new Date(), CLUB_TIME_ZONE) : rangeForSet(setType);
       setFrom(range.from);
       setTo(range.to);
     },

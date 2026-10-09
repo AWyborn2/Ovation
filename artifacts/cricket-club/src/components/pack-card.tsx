@@ -53,11 +53,20 @@ export interface PackCardProps {
 // React must not rewrite fitted DOM when only the outer preview scale changes.
 // Keep the HTML prop boundary stable; fitting is reapplied when the HTML itself
 // changes (including a format/input change), not on viewport resizes.
-const PackMarkup = memo(function PackMarkup({ html, contentRef }: {
+const PackMarkup = memo(function PackMarkup({
+  html,
+  contentRef,
+}: {
   html: string;
   contentRef: RefObject<HTMLDivElement | null>;
 }) {
-  return <div ref={contentRef} style={{ width: "100%", height: "100%" }} dangerouslySetInnerHTML={{ __html: html }} />;
+  return (
+    <div
+      ref={contentRef}
+      style={{ width: "100%", height: "100%" }}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 });
 
 export function PackCard({
@@ -126,10 +135,14 @@ export function PackCard({
     let cancelled = false;
     setFitError(null);
     const root = contentRef.current;
-    if (root) void prepareTeamNames(root).catch(error => {
-      if (!cancelled) setFitError(error instanceof Error ? error.message : "Unable to fit team names.");
-    });
-    return () => { cancelled = true; };
+    if (root)
+      void prepareTeamNames(root).catch((error) => {
+        if (!cancelled)
+          setFitError(error instanceof Error ? error.message : "Unable to fit team names.");
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [html, mounted]);
 
   return (
@@ -159,7 +172,20 @@ export function PackCard({
           <PackMarkup html={html} contentRef={contentRef} />
         </div>
       )}
-      {fitError && <div role="alert" style={{ position: "absolute", inset: 0, padding: 16, background: "#10151b", color: "white" }}>{fitError}</div>}
+      {fitError && (
+        <div
+          role="alert"
+          style={{
+            position: "absolute",
+            inset: 0,
+            padding: 16,
+            background: "#10151b",
+            color: "white",
+          }}
+        >
+          {fitError}
+        </div>
+      )}
     </div>
   );
 }

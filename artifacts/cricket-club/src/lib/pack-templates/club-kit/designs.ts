@@ -97,6 +97,21 @@ const EXTRA_FIELDS: Record<string, PackTemplateField> = {
   venue: textField("venue", "Venue", "RUSHTON PARK"),
   date: textField("date", "Date", "SAT 8 NOV"),
   startTime: textField("startTime", "Start time", "12:30 PM"),
+  // Team List: Club Kit still shows the competition line, which Broadcast
+  // Dark's single-column lineup dropped for an explicit round label.
+  competitionLine: textField(
+    "competitionLine",
+    "Competition line",
+    "PREMIER T20 · ROUND 3 · vs MARINERS",
+  ),
+};
+
+/**
+ * Row fields Club Kit binds that the reference row may not declare: its Team
+ * Lists show the bare surname where Broadcast Dark shows initial + surname.
+ */
+const EXTRA_ROW_FIELDS: Record<string, PackTemplateField[]> = {
+  players: [textField("surname", "Surname", "MANUEL")],
 };
 
 /** A set's row unit: card cqmin scaled by the set's density (`--rs`, from `{{rowScale}}`). */
@@ -151,7 +166,13 @@ function design(spec: DesignSpec): PackDesignEntry {
     .map((r) => ({
       ...r,
       maxRows: Math.max(r.maxRows, 12),
-      fields: [...r.fields, ...(spec.rowExtras?.[r.key] ?? [])],
+      // Only the row fields this design renders (a reference-only row field
+      // would otherwise be declared but unused).
+      fields: [
+        ...r.fields,
+        ...(spec.rowExtras?.[r.key] ?? []),
+        ...(EXTRA_ROW_FIELDS[r.key] ?? []).filter((f) => !r.fields.some((x) => x.key === f.key)),
+      ].filter((f) => html.includes(`{{row.${f.key}}}`)),
     }));
   const sponsorVariants: PackSponsorVariant[] = [];
   if (html.includes('data-sponsors="on"')) sponsorVariants.push("on");
@@ -323,15 +344,27 @@ const matchDay = design({
         eyebrow(u, "{{date}} · {{roundLabel}}") +
           meta(u, "GAME DAY", ";margin-top:1cqmin") +
           `<div data-match-day-heading="1">` +
-          display(u, "{{grade}}", f === "portrait" ? 12 : 14, ";line-height:.95;overflow-wrap:anywhere") +
+          display(
+            u,
+            "{{grade}}",
+            f === "portrait" ? 12 : 14,
+            ";line-height:.95;overflow-wrap:anywhere",
+          ) +
           `</div>` +
           `<div style="width:100%;margin-top:2cqmin;padding:1.5cqmin;background:${C.panel}">` +
           `<div style="display:flex;justify-content:space-between;gap:1cqmin;margin-bottom:1cqmin">` +
-          meta(u, "{{homeAway}}") + display(u, "{{startTime}}", 3.2) + `</div>` +
+          meta(u, "{{homeAway}}") +
+          display(u, "{{startTime}}", 3.2) +
+          `</div>` +
           `<div style="display:flex;align-items:center;gap:1.5cqmin;min-width:0">` +
           display(u, "v", 3.8, ";line-height:1.05;flex:none") +
           `<div data-drop-if-empty="opposition.logo" style="width:7cqmin;height:7cqmin;flex:none">${slot("opposition.logo", "logo")}</div>` +
-          display(u, "{{opposition.name}}", 3.8, ";line-height:1.05;overflow-wrap:anywhere;min-width:0") +
+          display(
+            u,
+            "{{opposition.name}}",
+            3.8,
+            ";line-height:1.05;overflow-wrap:anywhere;min-width:0",
+          ) +
           `</div>` +
           meta(u, "{{venue}}", ";margin-top:.8cqmin;overflow-wrap:anywhere") +
           `</div>`,
@@ -357,11 +390,15 @@ const teamList = design({
           `<div style="width:100%;margin-top:1.6cqmin">` +
           xiList(
             u,
-            xiRow(u, {
-              n: "{{row.number}}",
-              name: "{{row.surname}}",
-              tag: `({{row.role}})`,
-            }, true),
+            xiRow(
+              u,
+              {
+                n: "{{row.number}}",
+                name: "{{row.surname}}",
+                tag: `({{row.role}})`,
+              },
+              true,
+            ),
             ' data-repeat="players" data-repeat-max="12" data-xi-fit="1"',
             true,
           ) +

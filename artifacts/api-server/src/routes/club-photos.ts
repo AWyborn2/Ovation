@@ -71,10 +71,7 @@ function ingestFailureMessage(err: unknown, stage: IngestStage): string {
     let cause: unknown = err;
     for (let depth = 0; depth < 5 && cause && typeof cause === "object"; depth++) {
       const failure = cause as { code?: unknown; constraint?: unknown; cause?: unknown };
-      if (
-        failure.code === "23514" &&
-        failure.constraint === "club_photos_photo_types_check"
-      ) {
+      if (failure.code === "23514" && failure.constraint === "club_photos_photo_types_check") {
         return "The photo converted successfully, but the library's database does not yet allow the selected photo category. Upload to Unsorted or update the database photo-category rules, then retry.";
       }
       cause = failure.cause;

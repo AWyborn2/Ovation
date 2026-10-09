@@ -19,7 +19,11 @@ describe("queue carousel export", () => {
     const fetcher = vi.fn().mockResolvedValue({ ok: true, blob: async () => blob });
     vi.stubGlobal("fetch", fetcher);
     const open = vi.fn();
-    render(<div onClick={open}><CarouselExportButton draftId={42} /></div>);
+    render(
+      <div onClick={open}>
+        <CarouselExportButton draftId={42} />
+      </div>,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Export ZIP" }));
     expect(screen.getByRole("button", { name: "Exporting…" })).toBeDisabled();
     await waitFor(() => expect(download).toHaveBeenCalledWith(blob, "carousel-42.zip"));
@@ -30,11 +34,16 @@ describe("queue carousel export", () => {
   });
 
   it("reports rendering failure and allows retry", async () => {
-    create.mockRejectedValueOnce(new Error("render failed"))
+    create
+      .mockRejectedValueOnce(new Error("render failed"))
       .mockResolvedValueOnce({ zipUrl: "/api/storage/retry.zip" });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true, blob: async () => new Blob(["zip"]),
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        blob: async () => new Blob(["zip"]),
+      }),
+    );
     render(<CarouselExportButton draftId={7} />);
     fireEvent.click(screen.getByRole("button", { name: "Export ZIP" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Please try again");
@@ -44,7 +53,7 @@ describe("queue carousel export", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it.each([false, true])("does not download a failed or empty response (ok=%s)", async ok => {
+  it.each([false, true])("does not download a failed or empty response (ok=%s)", async (ok) => {
     create.mockResolvedValue({ zipUrl: "/api/storage/broken.zip" });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok, blob: async () => new Blob() }));
     render(<CarouselExportButton draftId={7} />);

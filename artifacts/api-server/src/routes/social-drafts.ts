@@ -1,5 +1,9 @@
 import { Router, type IRouter } from "express";
-import { readQueuedCarousel, carouselPackId, isCarouselPackId } from "@workspace/scorecard/queued-carousel";
+import {
+  readQueuedCarousel,
+  carouselPackId,
+  isCarouselPackId,
+} from "@workspace/scorecard/queued-carousel";
 import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import {
   db,
@@ -394,21 +398,34 @@ router.post(
     let packId = parsed.data.packId ?? null;
     if ("weekendCarousel" in cardInput) {
       const selection = cardInput.weekendCarousel as { packId?: unknown } | null;
-      if ((selection && selection.packId !== undefined && !isCarouselPackId(selection.packId)) ||
-        (parsed.data.packId != null && !isCarouselPackId(parsed.data.packId))) {
-        res.status(400).json({ error: "Unknown carousel design pack. Choose a registered built-in pack." });
+      if (
+        (selection && selection.packId !== undefined && !isCarouselPackId(selection.packId)) ||
+        (parsed.data.packId != null && !isCarouselPackId(parsed.data.packId))
+      ) {
+        res
+          .status(400)
+          .json({ error: "Unknown carousel design pack. Choose a registered built-in pack." });
         return;
       }
     }
     const carousel = readQueuedCarousel(cardInput);
-    if ("weekendCarousel" in cardInput && (!carousel || cardInput.kind !== "matchDay" ||
-      !parsed.data.caption?.trim() || templateId !== undefined)) {
-      res.status(400).json({ error: "A carousel needs 3–20 valid slides of the selected type and a caption." });
+    if (
+      "weekendCarousel" in cardInput &&
+      (!carousel ||
+        cardInput.kind !== "matchDay" ||
+        !parsed.data.caption?.trim() ||
+        templateId !== undefined)
+    ) {
+      res
+        .status(400)
+        .json({ error: "A carousel needs 3–20 valid slides of the selected type and a caption." });
       return;
     }
     if (carousel) {
       if (carousel.packId !== undefined && packId !== null && packId !== carousel.packId) {
-        res.status(400).json({ error: "The carousel design pack must match the saved composition." });
+        res
+          .status(400)
+          .json({ error: "The carousel design pack must match the saved composition." });
         return;
       }
       // Freeze new top-level choices too; absence on historical payloads stays Club Kit.
@@ -417,11 +434,20 @@ router.post(
     }
     const sourceKey = carousel ? `weekend-carousel:${carousel.submissionId}` : null;
     if (sourceKey) {
-      const [existing] = await db.select().from(socialDraftsTable).where(and(
-        eq(socialDraftsTable.tenantId, tenantId), eq(socialDraftsTable.sourceKey, sourceKey),
-        sql`${socialDraftsTable.status} != 'dismissed'`,
-      ));
-      if (existing) { res.status(200).json(presentDraft(existing)); return; }
+      const [existing] = await db
+        .select()
+        .from(socialDraftsTable)
+        .where(
+          and(
+            eq(socialDraftsTable.tenantId, tenantId),
+            eq(socialDraftsTable.sourceKey, sourceKey),
+            sql`${socialDraftsTable.status} != 'dismissed'`,
+          ),
+        );
+      if (existing) {
+        res.status(200).json(presentDraft(existing));
+        return;
+      }
     }
     let adjustments: unknown = parsed.data.adjustments ?? null;
     if (templateId !== undefined) {
@@ -450,8 +476,13 @@ router.post(
         caption: parsed.data.caption ?? null,
         sourceKey,
         ...(carousel ? { photoSource: "none" } : {}),
-        family: familyOfKind(carousel?.setType === "teamList" ? "teamList"
-          : carousel?.setType === "results" || carousel?.setType === "matchSummary" ? "matchSummary" : cardInput.kind),
+        family: familyOfKind(
+          carousel?.setType === "teamList"
+            ? "teamList"
+            : carousel?.setType === "results" || carousel?.setType === "matchSummary"
+              ? "matchSummary"
+              : cardInput.kind,
+        ),
         packId,
         adjustments,
         autoReadyAt: null,
@@ -462,13 +493,25 @@ router.post(
       .onConflictDoNothing()
       .returning();
     if (!row && sourceKey) {
-      const [existing] = await db.select().from(socialDraftsTable).where(and(
-        eq(socialDraftsTable.tenantId, tenantId), eq(socialDraftsTable.sourceKey, sourceKey),
-        sql`${socialDraftsTable.status} != 'dismissed'`,
-      ));
-      if (existing) { res.status(200).json(presentDraft(existing)); return; }
+      const [existing] = await db
+        .select()
+        .from(socialDraftsTable)
+        .where(
+          and(
+            eq(socialDraftsTable.tenantId, tenantId),
+            eq(socialDraftsTable.sourceKey, sourceKey),
+            sql`${socialDraftsTable.status} != 'dismissed'`,
+          ),
+        );
+      if (existing) {
+        res.status(200).json(presentDraft(existing));
+        return;
+      }
     }
-    if (!row) { res.status(409).json({ error: "Could not create draft. Please retry." }); return; }
+    if (!row) {
+      res.status(409).json({ error: "Could not create draft. Please retry." });
+      return;
+    }
     res.status(201).json(presentDraft(row));
   },
 );

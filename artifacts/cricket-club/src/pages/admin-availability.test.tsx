@@ -207,7 +207,12 @@ describe("admin availability", () => {
   it("shows a 409 from a Run now step", async () => {
     installFetch((url, method) => {
       if (url.includes("/availability/rounds/current/send") && method === "POST")
-        return { status: 409, body: { error: "A request send is already running. Wait for it to finish, then try again." } };
+        return {
+          status: 409,
+          body: {
+            error: "A request send is already running. Wait for it to finish, then try again.",
+          },
+        };
       if (url.includes("/availability/rounds/current"))
         return { body: { ...ROUND, enabled: true } };
       return undefined;
@@ -216,7 +221,9 @@ describe("admin availability", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Run Send requests now" }));
     fireEvent.click(await screen.findByRole("button", { name: "Run now" }));
     const alert = await screen.findByTestId("round-error");
-    expect(alert.textContent).toBe("A request send is already running. Wait for it to finish, then try again.");
+    expect(alert.textContent).toBe(
+      "A request send is already running. Wait for it to finish, then try again.",
+    );
   });
 
   it("shows the import summary with counts and skip reasons", async () => {
@@ -266,12 +273,25 @@ describe("admin availability", () => {
     const calls = installFetch((url, method) => {
       if (url.includes("/availability/rounds/current/send") && method === "POST") {
         return {
-          body: { step: "send", roundId: 77, messaged: 1, away: 0, noFixture: 0, throttled: 0, drafts: 2 },
+          body: {
+            step: "send",
+            roundId: 77,
+            messaged: 1,
+            away: 0,
+            noFixture: 0,
+            throttled: 0,
+            drafts: 2,
+          },
         };
       }
       if (url.includes("/availability/rounds/current")) {
         return {
-          body: { ...ROUND, enabled: true, roundId: 77, sendCompletedAt: "2026-10-07T01:00:00.000Z" },
+          body: {
+            ...ROUND,
+            enabled: true,
+            roundId: 77,
+            sendCompletedAt: "2026-10-07T01:00:00.000Z",
+          },
         };
       }
       return undefined;
@@ -279,7 +299,9 @@ describe("admin availability", () => {
     renderAt(<AdminAvailability />, "/admin/availability");
     expect(await screen.findByText(/Run now sends again/)).toBeTruthy();
     for (let attempt = 1; attempt <= 3; attempt++) {
-      const button = screen.getByRole("button", { name: "Run Send requests now" }) as HTMLButtonElement;
+      const button = screen.getByRole("button", {
+        name: "Run Send requests now",
+      }) as HTMLButtonElement;
       await waitFor(() => expect(button.disabled).toBe(false));
       fireEvent.click(button);
       const dialog = await screen.findByRole("alertdialog");
@@ -289,8 +311,11 @@ describe("admin availability", () => {
       expect(dialog.textContent).toMatch(/Existing team edits are kept/i);
       fireEvent.click(within(dialog).getByRole("button", { name: "Run now" }));
       await waitFor(() => {
-        expect(calls.filter(c => c.url.includes("/availability/rounds/current/send") && c.method === "POST"))
-          .toHaveLength(attempt);
+        expect(
+          calls.filter(
+            (c) => c.url.includes("/availability/rounds/current/send") && c.method === "POST",
+          ),
+        ).toHaveLength(attempt);
         expect(screen.getByText("Send requests: 1 messaged · 2 draft sides built")).toBeTruthy();
       });
     }

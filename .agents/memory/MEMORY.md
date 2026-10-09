@@ -18,7 +18,7 @@
 - [Award 3-2-1 voting & captain role](award-voting-321.md) — captain auth under /captain-auth/* (separate cookie), actions under /captain/*; tally visibility + autoHide rule; voting query hooks take positional id, mutations take {id,data}.
 - [api-server testing setup](api-server-testing.md) — vitest runs against the live dev DB (clean up uniquely-suffixed rows); supertest + forged HMAC cookies; build libs before per-package typecheck.
 - [Read-only migration ledger checks](db-ledger-inspection.md) — use the db package for pg queries; accept only proven LF/CRLF hash equivalents, never rewrite ledger history.
-- [Database transition constraints](database-cutover-constraints.md) — cut-over to Replit Postgres done (Oct 2026); Supabase retired read-only; production schema changes run by hand before republishing.
+- [Database transition constraints](database-cutover-constraints.md) — Replit Postgres cut-over complete; Supabase retired read-only; managed schema updates normally apply when publishing.
 - [Share-card photo crop coupling](share-card-photo-crop.md) — feature-photo focal/zoom is size-independent; the CSS reposition control must mirror the canvas cover math or preview/crop diverge.
 - [Backfill peel vs add](backfill-peel-add.md) — previous-season imports reconcile vs the season=NULL baseline; peel keeps career invariant (stores deltas for reversal), add is additive; suppress social, never mint caps.
 - [Trading card export gotchas](trading-card-export.md) — gate card render+export until BOTH player AND caps resolve (cap-number rule); waitForImages must treat img.complete as terminal + add timeout or broken photo URLs hang export.
