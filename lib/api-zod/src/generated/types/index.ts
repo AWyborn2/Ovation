@@ -519,6 +519,8 @@ export * from './playhqIngestResponseCentralProjectionMode';
 export * from './playhqIngestResponseCentralProjectionSkipReasons';
 export * from './playhqIngestResponseCounts';
 export * from './playhqIngestResponseStatus';
+export * from './playhqIngestResponseTeamListsItem';
+export * from './playhqIngestResponseTeamListsItemChange';
 export * from './playhqIngestResponseTenantsItem';
 export * from './playhqLadder';
 export * from './playhqLadderTable';

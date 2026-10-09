@@ -94,6 +94,24 @@ async function api(fetchImpl, base, secret, path, init = {}) {
 }
 
 /** Run one plan in a fresh page; returns { status, timedOut, durationMs, dump }. */
+const TEAM_LIST_CHANGE = {
+  new: "team named",
+  changed: "team changed",
+  afterMatch: "played side recorded",
+};
+
+/** "Halls Head · A Grade v Pinjarra, Sat 10 Oct: team named (11 players)", Perth time. */
+export function teamListLine(t) {
+  const day = new Date(t.startAt).toLocaleDateString("en-AU", {
+    timeZone: "Australia/Perth",
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+  const what = TEAM_LIST_CHANGE[t.change] ?? t.change;
+  return `${t.club} · ${t.grade} v ${t.opponent}, ${day.replace(",", "")}: ${what} (${t.players} players)`;
+}
+
 export async function collect(browser, harness, plan, { timeoutMs, pollMs = 2000, sleep }) {
   const page = await browser.newPage();
   try {
@@ -226,6 +244,7 @@ async function collectAll(
         log(
           `${label}: ingested → ${res.status}, ${res.fixtureChanges} fixture change(s), ${res.tenants?.length ?? 0} tenant(s)`,
         );
+        for (const t of res.teamLists ?? []) log(`${label}: ${teamListLine(t)}`);
         for (const w of res.warnings ?? []) log(`${label}: warning: ${w}`);
         const p = res.centralProjection;
         if (p) {

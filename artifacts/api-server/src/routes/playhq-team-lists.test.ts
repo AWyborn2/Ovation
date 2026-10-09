@@ -248,6 +248,10 @@ describe("PlayHQ named side → team list → Team List draft", () => {
     ]);
     expect(res.status).toBe(200);
     expect(res.body.warnings).toEqual([]);
+    // The run log names the team that came through.
+    expect(res.body.teamLists).toEqual([
+      expect.objectContaining({ tenantId, players: 3, change: "new" }),
+    ]);
     const { list } = await teamList();
     expect(list).toMatchObject({ source: "playhq", isPublished: true });
     expect(list.players).toEqual([
@@ -284,7 +288,13 @@ describe("PlayHQ named side → team list → Team List draft", () => {
   });
 
   it("follows a changed selection, and never overwrites a list the admin has saved", async () => {
-    await post([named(P_CAPTAIN, "Cam Skipper", ["Captain"]), named(P_PHOTO, "Pat Snapped")]);
+    const changed = await post([
+      named(P_CAPTAIN, "Cam Skipper", ["Captain"]),
+      named(P_PHOTO, "Pat Snapped"),
+    ]);
+    expect(changed.body.teamLists).toEqual([
+      expect.objectContaining({ tenantId, players: 2, change: "changed" }),
+    ]);
     expect((await teamList()).list.players).toHaveLength(2);
 
     const { fx } = await teamList();
@@ -449,6 +459,7 @@ describe("after the match: PlayHQ's side replaces a Selection Hub list", () => {
   it("replaces only finished, recent selection lists with PlayHQ's side, as source playhq", async () => {
     const [summary] = await projectTeamLists({ tenantId, central: admin, now: NOW, log: () => {} });
     expect(summary.replacedSelection).toBe(2);
+    expect(summary.updates.map((u) => u.change)).toEqual(["afterMatch", "afterMatch"]);
 
     const played = await listOf(ids.played);
     expect(played).toMatchObject({ source: "playhq", isPublished: true });

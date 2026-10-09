@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db, tenantsTable } from "@workspace/db";
 import {
   PROJECTABLE_STATUSES,
@@ -22,6 +22,7 @@ import {
   type LoadRows,
   type Queryable,
   type RunMeta,
+  type TeamListUpdate,
 } from "@workspace/db/playhq-ingest";
 import type { z } from "zod";
 import type { IngestPlayhqDumpResponse } from "@workspace/api-zod";
@@ -149,6 +150,7 @@ export async function ingestPlayhqDump(
   // A dump with scorecards also runs it: after play, PlayHQ's side replaces a Selection Hub
   // list, and the match-day plan fetches scorecards but no lineups.
   const teamListsWritten = new Map<number, number>();
+  const teamListUpdates: { tenantId: number; update: TeamListUpdate }[] = [];
   if (rows.match_lineups.length || rows.scorecards.length)
     try {
       const lists = await projectTeamLists({
@@ -157,7 +159,10 @@ export async function ingestPlayhqDump(
         central: reader,
         log: (line) => log.info(`playhq team lists: ${line}`),
       });
-      for (const l of lists) teamListsWritten.set(l.tenantId, l.written);
+      for (const l of lists) {
+        teamListsWritten.set(l.tenantId, l.written);
+        for (const update of l.updates) teamListUpdates.push({ tenantId: l.tenantId, update });
+      }
     } catch (err) {
       log.error({ err }, "playhq ingest: team list projection failed");
       warnings.push(`team list projection failed: ${err instanceof Error ? err.message : err}`);
@@ -250,6 +255,7 @@ export async function ingestPlayhqDump(
     fixtureChanges: loaded.counts.fixture_changes ?? 0,
     juniorGradesDropped: droppedGradeIds.length,
     tenants,
+    teamLists: await namedTeamListUpdates(teamListUpdates),
     warnings,
     ...(centralProjection ? { centralProjection } : {}),
   };
@@ -353,4 +359,26 @@ export async function listDuePlans(now: Date): Promise<DuePlansResponse> {
     now: now.toISOString(),
     plans: duePlans(now, orgIds, matches, lastRuns),
   };
+}
+
+/** The run's team-list updates with each club's name, for the sync's run log. */
+async function namedTeamListUpdates(
+  updates: { tenantId: number; update: TeamListUpdate }[],
+): Promise<NonNullable<PlayhqIngestResponse["teamLists"]>> {
+  if (updates.length === 0) return [];
+  const ids = [...new Set(updates.map((u) => u.tenantId))];
+  const clubs = await db
+    .select({ id: tenantsTable.id, name: tenantsTable.name })
+    .from(tenantsTable)
+    .where(inArray(tenantsTable.id, ids));
+  const nameOf = new Map(clubs.map((c) => [c.id, c.name]));
+  return updates.map(({ tenantId, update: u }) => ({
+    tenantId,
+    club: nameOf.get(tenantId) ?? `tenant ${tenantId}`,
+    grade: u.grade,
+    opponent: u.opponent,
+    startAt: new Date(u.startAt),
+    players: u.players,
+    change: u.change,
+  }));
 }

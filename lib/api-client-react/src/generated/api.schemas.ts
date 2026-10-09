@@ -5331,6 +5331,25 @@ export type PlayhqIngestResponseTenantsItem = {
   swept: boolean;
 };
 
+export type PlayhqIngestResponseTeamListsItemChange = typeof PlayhqIngestResponseTeamListsItemChange[keyof typeof PlayhqIngestResponseTeamListsItemChange];
+
+
+export const PlayhqIngestResponseTeamListsItemChange = {
+  new: 'new',
+  changed: 'changed',
+  afterMatch: 'afterMatch',
+} as const;
+
+export type PlayhqIngestResponseTeamListsItem = {
+  tenantId: number;
+  club: string;
+  grade: string;
+  opponent: string;
+  startAt: string;
+  players: number;
+  change: PlayhqIngestResponseTeamListsItemChange;
+};
+
 export type PlayhqIngestResponseCentralProjectionMode = typeof PlayhqIngestResponseCentralProjectionMode[keyof typeof PlayhqIngestResponseCentralProjectionMode];
 
 
@@ -5366,6 +5385,8 @@ export interface PlayhqIngestResponse {
   fixtureChanges: number;
   juniorGradesDropped: number;
   tenants: PlayhqIngestResponseTenantsItem[];
+  /** The team lists this ingest wrote from the sides clubs named in PlayHQ (for the sync's run log): a new or changed selection ahead of a match, or the played side replacing a Selection Hub list after it. */
+  teamLists?: PlayhqIngestResponseTeamListsItem[];
   warnings: string[];
   /** The PlayHQ → central stats projection run after the load (CENTRAL_PROJECTION=dry|on). Absent when projection is off. */
   centralProjection?: PlayhqIngestResponseCentralProjection;
