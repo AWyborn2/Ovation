@@ -19,7 +19,8 @@
 // Manual catch-up: with MANUAL_ORG (a PlayHQ organisation GUID) and MANUAL_SINCE (YYYY-MM-DD),
 // the runner skips the due list and runs one catch-up for that organisation — its matches,
 // ladder, every scorecard since that date and the sides named for its upcoming matches — e.g.
-// to re-fetch a weekend a failed sync missed.
+// to re-fetch a weekend a failed sync missed. With MANUAL_NAMES=true instead of MANUAL_SINCE it
+// runs the one-off names backfill (every season's grade stats reports) for that organisation.
 
 import { readFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
@@ -71,6 +72,33 @@ export function manualPlan(orgId, since, now = new Date()) {
       scorecards: "since",
       lineups: "upcoming",
       since: day,
+      resume: true,
+    },
+  };
+}
+
+/**
+ * The one-off names backfill for an organisation: PlayHQ's batting, bowling and fielding grade
+ * reports for every season it has, which carry each player's full name. The ingest uses them
+ * to replace initials-only names ("C Phelps") in the stats.
+ */
+export function manualNamesPlan(orgId, now = new Date()) {
+  const org = String(orgId ?? "")
+    .trim()
+    .toLowerCase();
+  if (!GUID_RE.test(org))
+    throw new Error(`MANUAL_ORG must be a PlayHQ organisation GUID, got "${orgId}"`);
+  return {
+    orgId: org,
+    planName: "names",
+    slot: now.toISOString(),
+    plan: {
+      orgId: org,
+      seasons: "all",
+      kinds: ["batting", "bowling", "fielding"],
+      balls: "none",
+      scorecards: "none",
+      lineups: "none",
       resume: true,
     },
   };
@@ -157,7 +185,13 @@ export async function run({
   if (!base || !secret) throw new Error("OVATION_API_URL and PLAYHQ_SYNC_SECRET are required");
 
   const { plans } = env.MANUAL_ORG
-    ? { plans: [manualPlan(env.MANUAL_ORG, env.MANUAL_SINCE)] }
+    ? {
+        plans: [
+          env.MANUAL_NAMES === "true"
+            ? manualNamesPlan(env.MANUAL_ORG)
+            : manualPlan(env.MANUAL_ORG, env.MANUAL_SINCE),
+        ],
+      }
     : await api(fetchImpl, base, secret, "/internal/playhq/plans");
   const due = plans.filter(
     (p) =>
@@ -252,6 +286,7 @@ async function collectAll(
             `${label}: stats copy (${p.mode}) → ${p.created} created, ${p.updated} updated, ` +
               `${p.skipped} skipped, ${p.playersInserted} new players`,
           );
+          if (p.namesUpgraded) log(`${label}: ${p.namesUpgraded} player name(s) filled in`);
           for (const [reason, n] of Object.entries(p.skipReasons ?? {}))
             log(`${label}: stats copy skipped ${n} × ${reason}`);
         }

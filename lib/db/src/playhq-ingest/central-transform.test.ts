@@ -7,7 +7,9 @@ import {
   dismissalFielder,
   perthDate,
   scorecardToCentral,
+  initialsOnlyName,
   surnameFirst,
+  upgradedDisplayName,
   type PlayhqMatchRow,
 } from "./central-transform";
 
@@ -238,5 +240,31 @@ describe("centralStatus", () => {
     expect(centralStatus("PENDING")).toBe(IN_PROGRESS);
     expect(centralStatus("IN_PROGRESS")).toBe(IN_PROGRESS);
     expect(centralStatus(null)).toBe(IN_PROGRESS);
+  });
+});
+
+describe("upgradedDisplayName — full names replace initials only", () => {
+  it("replaces an initials-only name with the matching full name", () => {
+    expect(upgradedDisplayName("C Phelps", "Phelps, Chris")).toBe("Phelps, Chris");
+    expect(upgradedDisplayName("C. Phelps", "Phelps, Chris")).toBe("Phelps, Chris");
+    expect(upgradedDisplayName("CJ Phelps", "Phelps, Chris James")).toBe("Phelps, Chris James");
+    expect(upgradedDisplayName("Phelps, C", "Phelps, Chris")).toBe("Phelps, Chris");
+    expect(upgradedDisplayName("M de Vaurno", "de Vaurno, Matt")).toBe("de Vaurno, Matt");
+  });
+
+  it("keeps a full name, a private player and any mismatch", () => {
+    expect(upgradedDisplayName("Phelps, Chris", "Phelps, Christopher")).toBeNull();
+    expect(upgradedDisplayName("Private Player", "Phelps, Chris")).toBeNull();
+    expect(upgradedDisplayName("C Phelps", "Phelps, Daniel")).toBeNull(); // initial differs
+    expect(upgradedDisplayName("C Phelps", "Phillips, Chris")).toBeNull(); // surname differs
+    expect(upgradedDisplayName("C Phelps", "Phelps, C")).toBeNull(); // no given name
+    expect(upgradedDisplayName("C Phelps", null)).toBeNull();
+  });
+
+  it("recognises initials-only names", () => {
+    expect(initialsOnlyName("C Phelps")).toEqual({ initial: "C", surname: "Phelps" });
+    expect(initialsOnlyName("Phelps, C.")).toEqual({ initial: "C", surname: "Phelps" });
+    expect(initialsOnlyName("Chris Phelps")).toBeNull();
+    expect(initialsOnlyName("Phelps, Chris")).toBeNull();
   });
 });

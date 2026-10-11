@@ -9183,7 +9183,8 @@ export const IngestPlayhqDumpResponse = zod.object({
   "updated": zod.number(),
   "skipped": zod.number(),
   "skipReasons": zod.record(zod.string(), zod.number()).optional().describe('Skipped matches counted by reason, with match and organisation ids blanked out so like reasons group together.'),
-  "playersInserted": zod.number()
+  "playersInserted": zod.number(),
+  "namesUpgraded": zod.number().optional().describe('Initials-only player names (\"C Phelps\") replaced by a matching full name, from scorecard team sheets and PlayHQ\'s grade stats reports.')
 }).optional().describe('The PlayHQ → central stats projection run after the load (CENTRAL_PROJECTION=dry|on). Absent when projection is off.')
 })
 

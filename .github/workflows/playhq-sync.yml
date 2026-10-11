@@ -37,6 +37,11 @@ on:
       manual_since:
         description: "Manual catch-up: fetch scorecards since this date (YYYY-MM-DD)"
         required: false
+      manual_names:
+        description: "Names backfill: with manual_org, fetch every season's grade stats reports so initials-only player names get full names"
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -82,4 +87,5 @@ jobs:
           ONLY_ORG: ${{ inputs.only_org }}
           MANUAL_ORG: ${{ inputs.manual_org }}
           MANUAL_SINCE: ${{ inputs.manual_since }}
+          MANUAL_NAMES: ${{ inputs.manual_names }}
         run: node "$GITHUB_WORKSPACE/scripts/playhq-sync/runner.mjs"

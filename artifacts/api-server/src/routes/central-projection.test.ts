@@ -15,6 +15,7 @@ import {
   getCentralProjectorPool,
   inspectProjectorScope,
   projectToCentral,
+  upgradeNamesFromPlayhq,
   type LoadRows,
 } from "@workspace/db/playhq-ingest";
 import { projectDumpToCentral } from "../lib/playhq-ingest";
@@ -440,6 +441,42 @@ describe("projectToCentral", () => {
       )
     ).rows[0];
     expect(r).toEqual({ display_name: "Curated Name", is_private: 1 });
+  });
+
+  it("fills in a full name for an initials-only player, from the team sheet", async () => {
+    const nameOf = async (pid: string) =>
+      (
+        await admin.query(`select display_name from central.players where participant_id = $1`, [
+          pid,
+        ])
+      ).rows[0]?.display_name;
+    await admin.query(
+      `update central.players set display_name = 'C Cole', is_private = 0 where participant_id = $1`,
+      [P[2]],
+    );
+    // A different initial is a different player: left alone.
+    await admin.query(
+      `update central.players set display_name = 'X Ellis', is_private = 0 where participant_id = $1`,
+      [P[4]],
+    );
+    const s = await projectToCentral(projector, { matchIds: [MATCH] });
+    expect(s.namesUpgraded).toBeGreaterThanOrEqual(1);
+    expect(await nameOf(P[2])).toBe("Cole, Carl");
+    expect(await nameOf(P[4])).toBe("X Ellis");
+  });
+
+  it("fills in full names from PlayHQ's grade stats reports", async () => {
+    await admin.query(
+      `update central.players set display_name = 'A Able' where participant_id = $1`,
+      [P[0]],
+    );
+    expect(await upgradeNamesFromPlayhq(projector, { dryRun: true })).toBe(0);
+    expect(await upgradeNamesFromPlayhq(projector)).toBeGreaterThanOrEqual(1);
+    const r = await admin.query(
+      `select display_name from central.players where participant_id = $1`,
+      [P[0]],
+    );
+    expect(r.rows[0].display_name).toBe("Able, Alice");
   });
 
   it("still projects when the role can't read the privacy overrides yet", async () => {

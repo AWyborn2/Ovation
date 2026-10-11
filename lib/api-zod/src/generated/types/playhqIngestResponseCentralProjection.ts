@@ -20,4 +20,6 @@ export type PlayhqIngestResponseCentralProjection = {
   /** Skipped matches counted by reason, with match and organisation ids blanked out so like reasons group together. */
   skipReasons?: PlayhqIngestResponseCentralProjectionSkipReasons;
   playersInserted: number;
+  /** Initials-only player names ("C Phelps") replaced by a matching full name, from scorecard team sheets and PlayHQ's grade stats reports. */
+  namesUpgraded?: number;
 };

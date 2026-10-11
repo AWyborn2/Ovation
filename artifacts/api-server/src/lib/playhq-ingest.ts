@@ -7,6 +7,7 @@ import {
   centralProjectorConfigured,
   getCentralProjectorPool,
   projectToCentral,
+  upgradeNamesFromPlayhq,
   duePlans,
   loadCadenceInputs,
   type DuePlan,
@@ -298,11 +299,16 @@ export async function projectDumpToCentral(
         .map((m) => String(m.id)),
     ]),
   ];
-  if (!matchIds.length)
+  // Full names from PlayHQ's grade stats reports (weekly plan, names backfill).
+  const hasNames = (rows.players ?? []).some((p) => p.full_name);
+  if (!matchIds.length && !hasNames)
     return { mode, considered: 0, created: 0, updated: 0, skipped: 0, playersInserted: 0 };
   try {
     const pool = getCentralProjectorPool();
     await assertProjectorScope(pool);
+    const namesFromReports = hasNames
+      ? await upgradeNamesFromPlayhq(pool, { dryRun: mode === "dry" })
+      : 0;
     const s = await projectToCentral(pool, {
       matchIds,
       dryRun: mode === "dry",
@@ -313,7 +319,8 @@ export async function projectDumpToCentral(
       if (k.reason.startsWith("error:"))
         warnings.push(`central projection failed for PlayHQ match ${k.playhqMatchId}: ${k.reason}`);
     }
-    if (!s.dryRun && s.created + s.updated > 0) {
+    const namesUpgraded = namesFromReports + s.namesUpgraded;
+    if (!s.dryRun && (s.created + s.updated > 0 || namesUpgraded > 0)) {
       // New results must show now, not after the read caches' TTL.
       const { clearCentralQueriesCache } = await import("@workspace/db/central-queries");
       clearCentralQueriesCache();
@@ -327,6 +334,7 @@ export async function projectDumpToCentral(
       skipped: s.skipped.length,
       skipReasons: countSkipReasons(s.skipped.map((k) => k.reason)),
       playersInserted: s.playersInserted,
+      namesUpgraded,
     };
   } catch (err) {
     log.error({ err }, "playhq ingest: central projection failed");

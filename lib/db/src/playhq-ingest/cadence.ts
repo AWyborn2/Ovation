@@ -82,10 +82,12 @@ export function matchDurationMs(matchType: string | null): number {
 export function harnessPlan(orgId: string, name: PlanName, since?: string): HarnessPlan {
   switch (name) {
     case "weekly":
+      // The grade stats reports carry each player's full name ("Surname, Firstname"), which
+      // scorecards don't: they upgrade initials-only names in central (playhq-ingest).
       return {
         orgId,
         seasons: "current",
-        kinds: ["matches", "ladder", "gradeTeams", "rounds"],
+        kinds: ["matches", "ladder", "gradeTeams", "rounds", "batting", "bowling", "fielding"],
         balls: "none",
         scorecards: "none",
         lineups: "upcoming",
