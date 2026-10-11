@@ -5,6 +5,7 @@ import {
   DEFAULT_BOUNDARY_SEASON,
   SEED_LABEL,
   SEED_SOURCE,
+  confirmedMergedAway,
   decisionsCsv,
   deriveBoundaries,
   flagBaselineOverlaps,
@@ -1122,5 +1123,25 @@ describe("safety", () => {
       expect(src).not.toMatch(/draft-sweep|socialDraftsTable|milestoneEventsTable|runDraftSweep/);
       expect(src).not.toMatch(/centralDb\.(insert|update|delete)/);
     }
+  });
+});
+
+describe("confirmedMergedAway", () => {
+  it("counts confirmed merges only: a suggested or rejected merge doesn't block mapping", () => {
+    const merged = confirmedMergedAway([
+      {
+        participantId: "g-confirmed",
+        mergedIntoParticipantId: "g-keeper",
+        mergeStatus: "confirmed",
+      },
+      {
+        participantId: "g-suggested",
+        mergedIntoParticipantId: "g-other",
+        mergeStatus: "suggested",
+      },
+      { participantId: "g-rejected", mergedIntoParticipantId: "g-other", mergeStatus: "rejected" },
+      { participantId: "g-plain", mergedIntoParticipantId: null, mergeStatus: null },
+    ]);
+    expect([...merged]).toEqual(["g-confirmed"]);
   });
 });
