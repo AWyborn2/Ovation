@@ -731,6 +731,24 @@ export function planIdentity(input: IdentityInput): IdentityPlan {
   return plan;
 }
 
+/**
+ * GUIDs folded into a keeper on read: confirmed merges only. A suggested (or rejected) merge
+ * is just a review item and changes no figure, so it must not block mapping that GUID.
+ */
+export function confirmedMergedAway(
+  curation: ReadonlyArray<{
+    participantId: string;
+    mergedIntoParticipantId: string | null;
+    mergeStatus: string | null;
+  }>,
+): Set<string> {
+  return new Set(
+    curation
+      .filter((c) => c.mergedIntoParticipantId && c.mergeStatus === "confirmed")
+      .map((c) => c.participantId),
+  );
+}
+
 // ── Decisions CSV ────────────────────────────────────────────────────────────
 
 /** Minimal RFC 4180 reader (quotes, doubled quotes, CRLF). */
