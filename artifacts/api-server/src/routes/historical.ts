@@ -23,21 +23,18 @@ const router: IRouter = Router();
 //
 // Centuries and five-wicket hauls are derivable from scorecards, so central
 // tenants get theirs computed from the central PCA database. Partnerships are
-// NOT in central (no partnership data), so a central tenant gets an empty list
-// — its own curated partnerships, which it hasn't added — rather than another
-// club's. Native tenants (Halls Head) keep the curated tables in all three.
+// NOT in central (no partnership data), so every tenant reads its OWN curated
+// partnership rows — Halls Head keeps its records after reading central; a club
+// that hasn't added any gets an empty list, never another club's.
 
 router.get("/partnerships", async (req, res): Promise<void> => {
-  // No partnership data in central — central tenants get their own (empty) list.
-  const source = await dataSource(req);
-  if (source.kind === "central") {
-    res.json({ records: [], fiftyPlus: [] });
-    return;
-  }
+  // Curated, tenant-scoped rows whichever source the tenant's stats come from.
+  const tenantId = getTenantId(req);
   const [records, fiftyPlus] = await Promise.all([
     db
       .select()
       .from(partnershipRecordsTable)
+      .where(eq(partnershipRecordsTable.tenantId, tenantId))
       .orderBy(
         asc(partnershipRecordsTable.grade),
         desc(partnershipRecordsTable.runs),
@@ -46,6 +43,7 @@ router.get("/partnerships", async (req, res): Promise<void> => {
     db
       .select()
       .from(partnerships50PlusTable)
+      .where(eq(partnerships50PlusTable.tenantId, tenantId))
       .orderBy(desc(partnerships50PlusTable.runs), asc(partnerships50PlusTable.id)),
   ]);
   res.json({ records, fiftyPlus });
