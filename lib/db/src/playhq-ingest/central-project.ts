@@ -7,6 +7,7 @@ import {
   type CentralProjection,
   type PlayhqMatchRow,
   type RawScorecard,
+  upgradedDisplayName,
 } from "./central-transform";
 
 /**
@@ -55,6 +56,8 @@ export interface ProjectSummary {
   updated: number;
   skipped: Array<{ playhqMatchId: string; reason: string }>;
   playersInserted: number;
+  /** Initials-only player names replaced by the full name on a scorecard's team sheet. */
+  namesUpgraded: number;
   /** Central match ids written (or that would be, in a dry run). */
   matchIds: number[];
 }
@@ -338,6 +341,70 @@ async function insertPlayers(c: pg.PoolClient, p: CentralProjection): Promise<nu
 }
 
 /**
+ * Replace initials-only names ("C Phelps") with a matching full name ("Phelps, Chris") for
+ * these (participant, candidate name) pairs; see `upgradedDisplayName` for the rule. Existing
+ * full names, private players and mismatches are left alone. Returns how many changed.
+ */
+async function upgradeNames(
+  c: Pick<pg.PoolClient, "query">,
+  candidates: ReadonlyArray<readonly [string, string | null]>,
+): Promise<number> {
+  const byId = new Map<string, string>();
+  for (const [id, name] of candidates) if (id && name) byId.set(id, name);
+  if (!byId.size) return 0;
+  const { rows } = await c.query<{ participant_id: string; display_name: string | null }>(
+    `select participant_id, display_name from central.players
+      where participant_id = any($1::text[]) and coalesce(is_private, 0) = 0`,
+    [[...byId.keys()]],
+  );
+  let changed = 0;
+  for (const r of rows) {
+    const next = upgradedDisplayName(r.display_name, byId.get(r.participant_id));
+    if (!next) continue;
+    await c.query(`update central.players set display_name = $2 where participant_id = $1`, [
+      r.participant_id,
+      next,
+    ]);
+    changed++;
+  }
+  return changed;
+}
+
+/**
+ * Upgrade every initials-only central name for which PlayHQ's grade stats reports gave a full
+ * name (`playhq.players`, filled by the weekly plan and the one-off names backfill). One
+ * transaction; idempotent. Returns how many names changed (0 in a dry run).
+ */
+export async function upgradeNamesFromPlayhq(
+  pool: Queryable,
+  opts: { dryRun?: boolean } = {},
+): Promise<number> {
+  const { rows } = await pool.query<{ participant_id: string; full_name: string }>(
+    `select p.participant_id, x.full_name
+       from central.players p
+       join playhq.players x on x.participant_id::text = p.participant_id
+      where x.full_name is not null and coalesce(p.is_private, 0) = 0
+        and p.display_name !~ '^[A-Za-z]{3,} [A-Za-z]'`,
+  );
+  if (!rows.length) return 0;
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    const changed = await upgradeNames(
+      client,
+      rows.map((r) => [r.participant_id, r.full_name] as const),
+    );
+    await client.query(opts.dryRun ? "rollback" : "commit");
+    return opts.dryRun ? 0 : changed;
+  } catch (err) {
+    await client.query("rollback").catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
  * Recompute derived player fields from central for the touched participants: match count
  * (rosters), the club and season of their most recent match, and the earliest season.
  */
@@ -412,6 +479,7 @@ export async function projectToCentral(
     updated: 0,
     skipped: [],
     playersInserted: 0,
+    namesUpgraded: 0,
     matchIds: [],
   };
   if (opts.matchIds && opts.matchIds.length === 0) return summary;
@@ -459,6 +527,10 @@ export async function projectToCentral(
       await client.query("begin");
       const { matchId, created } = await writeMatch(client, projection);
       const inserted = await insertPlayers(client, projection);
+      const renamed = await upgradeNames(
+        client,
+        projection.players.map((pl) => [pl.participant_id, pl.display_name] as const),
+      );
       const touched = [
         ...new Set(projection.rosters.map((r) => r.participant_id).filter((x): x is string => !!x)),
       ];
@@ -468,6 +540,7 @@ export async function projectToCentral(
       else await client.query("commit");
       summary.matchIds.push(matchId);
       summary.playersInserted += inserted;
+      summary.namesUpgraded += renamed;
       if (created) summary.created++;
       else summary.updated++;
       log(

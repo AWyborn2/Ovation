@@ -52,7 +52,7 @@ describe("duePlans — weekly", () => {
     expect(plan.plan).toEqual({
       orgId: ORG,
       seasons: "current",
-      kinds: ["matches", "ladder", "gradeTeams", "rounds"],
+      kinds: ["matches", "ladder", "gradeTeams", "rounds", "batting", "bowling", "fielding"],
       balls: "none",
       scorecards: "none",
       lineups: "upcoming",

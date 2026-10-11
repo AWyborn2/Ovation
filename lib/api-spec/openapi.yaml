@@ -16716,6 +16716,11 @@ components:
                 type: integer
             playersInserted:
               type: integer
+            namesUpgraded:
+              type: integer
+              description: >-
+                Initials-only player names ("C Phelps") replaced by a matching full name, from
+                scorecard team sheets and PlayHQ's grade stats reports.
 
     PlayerPrivacyOverride:
       type: object

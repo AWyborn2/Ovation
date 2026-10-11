@@ -2,7 +2,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { gunzipSync } from "node:zlib";
-import { COLLECTOR, ingestBody, manualPlan, run, runStatus, teamListLine } from "./runner.mjs";
+import {
+  COLLECTOR,
+  ingestBody,
+  manualNamesPlan,
+  manualPlan,
+  run,
+  runStatus,
+  teamListLine,
+} from "./runner.mjs";
 
 const ENV = {
   OVATION_API_URL: "https://ovation.test/api/",
@@ -292,6 +300,19 @@ test("manual catch-up rejects a bad organisation id or date", () => {
   assert.throws(() => manualPlan("2dd0a9a1-86d8-eb11-a7ad-2818780da0cc", "3 Oct"), /date/);
 });
 
+test("the names backfill fetches every season's grade stats reports for one organisation", () => {
+  const p = manualNamesPlan(
+    "4559F1B9-86D8-EB11-A7AD-2818780DA0CC",
+    new Date("2026-10-11T06:00:00Z"),
+  );
+  assert.equal(p.planName, "names");
+  assert.equal(p.orgId, "4559f1b9-86d8-eb11-a7ad-2818780da0cc");
+  assert.deepEqual(p.plan.kinds, ["batting", "bowling", "fielding"]);
+  assert.equal(p.plan.seasons, "all");
+  assert.equal(p.plan.scorecards, "none");
+  assert.throws(() => manualNamesPlan("halls head"), /GUID/);
+});
+
 test("logs the stats-copy summary and grouped skip reasons from the ingest reply", async () => {
   const lines = [];
   const server = fakeServer([DUE], {
@@ -307,6 +328,7 @@ test("logs the stats-copy summary and grouped skip reasons from the ingest reply
       skipped: 33,
       skipReasons: { "neither side maps": 33 },
       playersInserted: 5,
+      namesUpgraded: 12,
     },
   });
   const browser = fakeBrowser([{ phase: "done", finishedAt: "t" }]);
@@ -321,6 +343,7 @@ test("logs the stats-copy summary and grouped skip reasons from the ingest reply
   assert.deepEqual(r.failures, []);
   assert.ok(lines.some((l) => l.includes("4 created, 2 updated, 33 skipped, 5 new players")));
   assert.ok(lines.some((l) => l.includes("skipped 33 × neither side maps")));
+  assert.ok(lines.some((l) => l.includes("12 player name(s) filled in")));
 });
 
 test("logs each team list the ingest wrote from PlayHQ", async () => {

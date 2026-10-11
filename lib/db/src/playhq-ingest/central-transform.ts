@@ -323,6 +323,53 @@ export function surnameFirst(full: string | null | undefined): string | null {
   return i < 0 ? s : `${s.slice(i + 1)}, ${s.slice(0, i)}`;
 }
 
+/** "Phelps, Chris" -> { surname: "Phelps", given: "Chris" }; null when not that shape. */
+function splitSurnameFirst(name: string): { surname: string; given: string } | null {
+  const i = name.indexOf(",");
+  if (i < 0) return null;
+  const surname = name.slice(0, i).trim();
+  const given = name.slice(i + 1).trim();
+  return surname && given ? { surname, given } : null;
+}
+
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
+
+/**
+ * An initials-only central name ("C Phelps", "C. Phelps", "CJ Phelps", "Phelps, C") as
+ * { initial, surname }, or null when the name already carries a given name.
+ */
+export function initialsOnlyName(name: string | null | undefined): {
+  initial: string;
+  surname: string;
+} | null {
+  const s = (name ?? "").trim().replace(/\s+/g, " ");
+  const comma = splitSurnameFirst(s);
+  if (comma) {
+    const g = comma.given.replace(/\./g, "").trim();
+    return /^[A-Za-z]{1,2}$/.test(g) ? { initial: g[0]!, surname: comma.surname } : null;
+  }
+  const m = /^([A-Za-z]{1,2})\.?\s+(.+)$/.exec(s);
+  return m ? { initial: m[1]![0]!, surname: m[2]! } : null;
+}
+
+/**
+ * The full name to show instead of `current`, or null to keep it. Only an initials-only name
+ * is ever replaced, and only by a "Surname, Given" name with the same surname and the same
+ * first initial — a full name already there, a private player or a mismatch stays as is.
+ */
+export function upgradedDisplayName(
+  current: string | null | undefined,
+  candidate: string | null | undefined,
+): string | null {
+  if (!current || !candidate || current === "Private Player") return null;
+  const short = initialsOnlyName(current);
+  const full = splitSurnameFirst(candidate.trim().replace(/\s+/g, " "));
+  if (!short || !full || norm(full.given).length < 2) return null;
+  if (norm(full.surname) !== norm(short.surname)) return null;
+  if (norm(full.given)[0] !== short.initial.toLowerCase()) return null;
+  return `${full.surname}, ${full.given}`;
+}
+
 // ── The transform ───────────────────────────────────────────────────────────────────────────
 
 /** PlayHQ statuses that end a match (PROJECTABLE_STATUSES in central-project.ts). */
