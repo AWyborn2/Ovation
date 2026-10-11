@@ -67,6 +67,11 @@ describe("classifyCentralGrade — PCA behaviour is unchanged", () => {
     expect(appGradeFromCentral("C2 Grade")).toBe("C Grade");
     expect(appGradeFromCentral("T20: B Grade")).toBe("B Grade");
     expect(appGradeFromCentral("Mid-Year T20 C Grade")).toBe("C Grade");
+    // G Grade is new in Peel CA for 2026/27; H Grade leaves room for the next one.
+    expect(appGradeFromCentral("G Grade")).toBe("G Grade");
+    expect(appGradeFromCentral("Senior Men G Grade")).toBe("G Grade");
+    expect(appGradeFromCentral("H Grade")).toBe("H Grade");
+    expect(appGradeFromCentral("Fourth Grade")).toBe("4th Grade");
   });
 
   it("PPL, Colts and female grades", () => {
@@ -129,6 +134,7 @@ describe("isSeniorAppGrade — the club overlay's history-row guard (U10, R8)", 
     for (const g of [
       "A Grade",
       "F Grade",
+      "G Grade",
       "Female A Grade",
       "Female B Grade",
       "PPL",

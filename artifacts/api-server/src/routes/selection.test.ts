@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from "vitest";
 import request from "supertest";
 import { and, eq, inArray } from "drizzle-orm";
 import app from "../app";
@@ -31,6 +31,7 @@ import {
 import { setEmailTransport, type EmailMessage } from "../lib/integrations/email";
 import { setSmsTransport, type SmsMessage } from "../lib/integrations/sms";
 import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
+import { pinClockMidWeek } from "../lib/mid-week-clock.test-helpers";
 import { perthDayStart } from "../lib/availability-grades";
 import { DEFAULT_SCHEDULE, roundWeekendFor, setSendPaceMs } from "../lib/availability-schedule";
 import { normaliseGrade, selectionRight, withdrawFromSelection } from "../lib/selection-board";
@@ -156,6 +157,7 @@ describe("Selection Hub API", () => {
   ];
 
   beforeAll(async () => {
+    pinClockMidWeek();
     setSendPaceMs(0);
     process.env.PLATFORM_BASE_DOMAIN = "ovation.test";
     setSmsTransport(async (msg) => {
@@ -351,6 +353,7 @@ describe("Selection Hub API", () => {
   });
 
   afterAll(async () => {
+    vi.useRealTimers();
     setSmsTransport(null);
     setEmailTransport(null);
     setSendPaceMs(250);

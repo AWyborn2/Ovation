@@ -24,6 +24,7 @@ export const GENERATE_GRADES = [
   "D Grade",
   "E Grade",
   "F Grade",
+  "G Grade",
   "Female A Grade",
   "Female B Grade",
   "PPL",
