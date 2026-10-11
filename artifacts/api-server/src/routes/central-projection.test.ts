@@ -16,6 +16,7 @@ import {
   inspectProjectorScope,
   projectToCentral,
   upgradeNamesFromPlayhq,
+  normaliseCentralNames,
   type LoadRows,
 } from "@workspace/db/playhq-ingest";
 import { projectDumpToCentral } from "../lib/playhq-ingest";
@@ -392,14 +393,14 @@ describe("projectToCentral", () => {
     ).rows;
     expect(players).toHaveLength(6);
     expect(players.find((p) => p.participant_id === P[0])).toMatchObject({
-      display_name: "Able, Alice", // playhq.players full name wins
+      display_name: "Alice Able", // playhq.players full name wins
       is_private: 0,
       current_club_id: CLUB_A,
       first_season: SEASON,
       last_season: SEASON,
       matches: 1,
     });
-    expect(players.find((p) => p.participant_id === P[3])?.display_name).toBe("Dunn, Dan");
+    expect(players.find((p) => p.participant_id === P[3])?.display_name).toBe("Dan Dunn");
   });
 
   it("re-projecting is a no-op on the rows", async () => {
@@ -461,7 +462,7 @@ describe("projectToCentral", () => {
     );
     const s = await projectToCentral(projector, { matchIds: [MATCH] });
     expect(s.namesUpgraded).toBeGreaterThanOrEqual(1);
-    expect(await nameOf(P[2])).toBe("Cole, Carl");
+    expect(await nameOf(P[2])).toBe("Carl Cole");
     expect(await nameOf(P[4])).toBe("X Ellis");
   });
 
@@ -476,7 +477,22 @@ describe("projectToCentral", () => {
       `select display_name from central.players where participant_id = $1`,
       [P[0]],
     );
-    expect(r.rows[0].display_name).toBe("Able, Alice");
+    expect(r.rows[0].display_name).toBe("Alice Able");
+  });
+
+  it("turns names stored surname first round, once", async () => {
+    await admin.query(
+      `update central.players set display_name = 'Able, Alice' where participant_id = $1`,
+      [P[0]],
+    );
+    expect(await normaliseCentralNames(projector, { dryRun: true })).toBe(0);
+    expect(await normaliseCentralNames(projector)).toBeGreaterThanOrEqual(1);
+    const r = await admin.query(
+      `select display_name from central.players where participant_id = $1`,
+      [P[0]],
+    );
+    expect(r.rows[0].display_name).toBe("Alice Able");
+    expect(await normaliseCentralNames(projector)).toBe(0);
   });
 
   it("still projects when the role can't read the privacy overrides yet", async () => {

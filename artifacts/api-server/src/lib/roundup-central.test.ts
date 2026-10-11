@@ -27,7 +27,10 @@ const { centralGradeSeasonSocial, centralMilestones } = vi.hoisted(() => ({
   centralGradeSeasonSocial: vi.fn(),
   centralMilestones: vi.fn(),
 }));
-vi.mock("@workspace/db/central-queries", () => ({ centralGradeSeasonSocial, centralMilestones }));
+vi.mock("@workspace/db/central-queries", async () => {
+  const { splitDisplayName } = await import("../../../../lib/db/src/central/names");
+  return { centralGradeSeasonSocial, centralMilestones, splitDisplayName };
+});
 
 import { loadCentralGradeSeason, loadCentralRecapMilestones } from "./roundup-central";
 import { TIER_THRESHOLDS } from "./milestone-detector";

@@ -315,6 +315,20 @@ function num(v: string | number | null | undefined): number | null {
 const int = (v: number | null | undefined): number => (typeof v === "number" ? v : 0);
 
 /** "Jacob Barnes" → "Barnes, Jacob" (the builder's player display form). */
+/**
+ * A name the way central stores it, given name first: "Phelps, Chris" -> "Chris Phelps";
+ * "Chris Phelps" and "C Phelps" are already right. Null for an empty name.
+ */
+export function givenFirst(name: string | null | undefined): string | null {
+  const s = (name ?? "").trim().replace(/\s+/g, " ");
+  if (!s) return null;
+  const i = s.indexOf(",");
+  if (i < 0) return s;
+  const surname = s.slice(0, i).trim();
+  const given = s.slice(i + 1).trim();
+  return surname && given ? `${given} ${surname}` : s.replace(",", "").trim();
+}
+
 export function surnameFirst(full: string | null | undefined): string | null {
   const s = (full ?? "").trim().replace(/\s+/g, " ");
   if (!s) return null;
@@ -353,9 +367,10 @@ export function initialsOnlyName(name: string | null | undefined): {
 }
 
 /**
- * The full name to show instead of `current`, or null to keep it. Only an initials-only name
- * is ever replaced, and only by a "Surname, Given" name with the same surname and the same
- * first initial — a full name already there, a private player or a mismatch stays as is.
+ * The full name to store instead of `current` ("Chris Phelps", given name first), or null to
+ * keep it. Only an initials-only name is ever replaced, and only by a full name ("Surname,
+ * Given" or "Given Surname") with the same surname and the same first initial — a full name
+ * already there, a private player or a mismatch stays as is.
  */
 export function upgradedDisplayName(
   current: string | null | undefined,
@@ -363,11 +378,11 @@ export function upgradedDisplayName(
 ): string | null {
   if (!current || !candidate || current === "Private Player") return null;
   const short = initialsOnlyName(current);
-  const full = splitSurnameFirst(candidate.trim().replace(/\s+/g, " "));
+  const full = splitSurnameFirst(surnameFirst(candidate) ?? "");
   if (!short || !full || norm(full.given).length < 2) return null;
   if (norm(full.surname) !== norm(short.surname)) return null;
   if (norm(full.given)[0] !== short.initial.toLowerCase()) return null;
-  return `${full.surname}, ${full.given}`;
+  return `${full.given} ${full.surname}`;
 }
 
 // ── The transform ───────────────────────────────────────────────────────────────────────────
@@ -559,8 +574,8 @@ export function scorecardToCentral(
         out.players.push({
           participant_id: p.participantId,
           display_name:
-            ctx.fullNames?.get(p.participantId) ??
-            surnameFirst(p.name) ??
+            givenFirst(ctx.fullNames?.get(p.participantId)) ??
+            givenFirst(p.name) ??
             p.shortName ??
             "Unknown Player",
           club_id: club,

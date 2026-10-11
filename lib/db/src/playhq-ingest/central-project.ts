@@ -7,6 +7,7 @@ import {
   type CentralProjection,
   type PlayhqMatchRow,
   type RawScorecard,
+  givenFirst,
   upgradedDisplayName,
 } from "./central-transform";
 
@@ -368,6 +369,42 @@ async function upgradeNames(
     changed++;
   }
   return changed;
+}
+
+/**
+ * Store every central name given name first: "Phelps, Chris" (the WA load's and PlayHQ's
+ * report format) becomes "Chris Phelps", the way scorecard names and the PCA history are kept.
+ * Idempotent and cheap once done (only names with a comma are read). Returns how many changed.
+ */
+export async function normaliseCentralNames(
+  pool: Queryable,
+  opts: { dryRun?: boolean } = {},
+): Promise<number> {
+  const { rows } = await pool.query<{ participant_id: string; display_name: string }>(
+    `select participant_id, display_name from central.players
+      where display_name like '%,%' and display_name <> 'Private Player'`,
+  );
+  const changes = rows
+    .map((r) => [r.participant_id, givenFirst(r.display_name)] as const)
+    .filter((c, i): c is readonly [string, string] => !!c[1] && c[1] !== rows[i]!.display_name);
+  if (!changes.length || opts.dryRun) return 0;
+  const client = await pool.connect();
+  try {
+    await client.query("begin");
+    await client.query(
+      `update central.players p set display_name = v.name
+         from unnest($1::text[], $2::text[]) as v(id, name)
+        where p.participant_id = v.id`,
+      [changes.map((c) => c[0]), changes.map((c) => c[1])],
+    );
+    await client.query("commit");
+    return changes.length;
+  } catch (err) {
+    await client.query("rollback").catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 /**

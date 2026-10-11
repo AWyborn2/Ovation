@@ -8,6 +8,7 @@ import {
   getCentralProjectorPool,
   projectToCentral,
   upgradeNamesFromPlayhq,
+  normaliseCentralNames,
   duePlans,
   loadCadenceInputs,
   type DuePlan,
@@ -279,6 +280,12 @@ export function countSkipReasons(reasons: string[]): Record<string, number> {
   return out;
 }
 
+async function clearCentralCaches(): Promise<void> {
+  const { clearCentralQueriesCache } = await import("@workspace/db/central-queries");
+  clearCentralQueriesCache();
+  clearMilestonesCache();
+}
+
 export async function projectDumpToCentral(
   rows: LoadRows,
   warnings: string[],
@@ -301,11 +308,23 @@ export async function projectDumpToCentral(
   ];
   // Full names from PlayHQ's grade stats reports (weekly plan, names backfill).
   const hasNames = (rows.players ?? []).some((p) => p.full_name);
-  if (!matchIds.length && !hasNames)
-    return { mode, considered: 0, created: 0, updated: 0, skipped: 0, playersInserted: 0 };
   try {
     const pool = getCentralProjectorPool();
     await assertProjectorScope(pool);
+    // Names stored surname first ("Phelps, Chris") are turned round once; a no-op after.
+    const reordered = await normaliseCentralNames(pool, { dryRun: mode === "dry" });
+    if (!matchIds.length && !hasNames) {
+      if (reordered > 0) await clearCentralCaches();
+      return {
+        mode,
+        considered: 0,
+        created: 0,
+        updated: 0,
+        skipped: 0,
+        playersInserted: 0,
+        ...(reordered ? { namesUpgraded: reordered } : {}),
+      };
+    }
     const namesFromReports = hasNames
       ? await upgradeNamesFromPlayhq(pool, { dryRun: mode === "dry" })
       : 0;
@@ -319,12 +338,10 @@ export async function projectDumpToCentral(
       if (k.reason.startsWith("error:"))
         warnings.push(`central projection failed for PlayHQ match ${k.playhqMatchId}: ${k.reason}`);
     }
-    const namesUpgraded = namesFromReports + s.namesUpgraded;
+    const namesUpgraded = reordered + namesFromReports + s.namesUpgraded;
     if (!s.dryRun && (s.created + s.updated > 0 || namesUpgraded > 0)) {
       // New results must show now, not after the read caches' TTL.
-      const { clearCentralQueriesCache } = await import("@workspace/db/central-queries");
-      clearCentralQueriesCache();
-      clearMilestonesCache();
+      await clearCentralCaches();
     }
     return {
       mode,

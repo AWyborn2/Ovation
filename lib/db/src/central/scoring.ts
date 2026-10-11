@@ -113,19 +113,8 @@ export function tallyFielding(
   return byPid;
 }
 
-export function splitDisplayName(displayName: string): {
-  givenName: string;
-  surname: string;
-} {
-  const parts = displayName.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return { givenName: "", surname: "" };
-  if (parts.length === 1) return { givenName: parts[0] ?? "", surname: "" };
-  return {
-    givenName: parts.slice(0, -1).join(" "),
-    surname: parts[parts.length - 1] ?? "",
-  };
-}
-
 export function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
+
+export { splitDisplayName, displayNameForShow } from "./names";
