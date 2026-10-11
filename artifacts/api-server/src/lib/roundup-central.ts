@@ -1,3 +1,4 @@
+import { splitDisplayName } from "@workspace/db/central-queries";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { getTenantCentralClubId } from "./tenant";
 import { loadClubIdentity } from "./club-overlay";
@@ -66,9 +67,7 @@ export async function loadCentralIdentity(tenantId: number): Promise<CentralIden
 
 /** "M Brown" → { givenName: "M", surname: "Brown" }, so fullName() rebuilds it. */
 function nameParts(name: string): { givenName: string; surname: string } {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length <= 1) return { givenName: parts[0] ?? "", surname: "" };
-  return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] ?? "" };
+  return splitDisplayName(name);
 }
 
 /**

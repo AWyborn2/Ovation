@@ -8,6 +8,7 @@ import {
   perthDate,
   scorecardToCentral,
   initialsOnlyName,
+  givenFirst,
   surnameFirst,
   upgradedDisplayName,
   type PlayhqMatchRow,
@@ -245,11 +246,11 @@ describe("centralStatus", () => {
 
 describe("upgradedDisplayName — full names replace initials only", () => {
   it("replaces an initials-only name with the matching full name", () => {
-    expect(upgradedDisplayName("C Phelps", "Phelps, Chris")).toBe("Phelps, Chris");
-    expect(upgradedDisplayName("C. Phelps", "Phelps, Chris")).toBe("Phelps, Chris");
-    expect(upgradedDisplayName("CJ Phelps", "Phelps, Chris James")).toBe("Phelps, Chris James");
-    expect(upgradedDisplayName("Phelps, C", "Phelps, Chris")).toBe("Phelps, Chris");
-    expect(upgradedDisplayName("M de Vaurno", "de Vaurno, Matt")).toBe("de Vaurno, Matt");
+    expect(upgradedDisplayName("C Phelps", "Phelps, Chris")).toBe("Chris Phelps");
+    expect(upgradedDisplayName("C. Phelps", "Phelps, Chris")).toBe("Chris Phelps");
+    expect(upgradedDisplayName("CJ Phelps", "Phelps, Chris James")).toBe("Chris James Phelps");
+    expect(upgradedDisplayName("Phelps, C", "Phelps, Chris")).toBe("Chris Phelps");
+    expect(upgradedDisplayName("M de Vaurno", "de Vaurno, Matt")).toBe("Matt de Vaurno");
   });
 
   it("keeps a full name, a private player and any mismatch", () => {
@@ -266,5 +267,20 @@ describe("upgradedDisplayName — full names replace initials only", () => {
     expect(initialsOnlyName("Phelps, C.")).toEqual({ initial: "C", surname: "Phelps" });
     expect(initialsOnlyName("Chris Phelps")).toBeNull();
     expect(initialsOnlyName("Phelps, Chris")).toBeNull();
+  });
+});
+
+describe("givenFirst — names read given name first", () => {
+  it("turns a surname-first name round", () => {
+    expect(givenFirst("Phelps, Chris")).toBe("Chris Phelps");
+    expect(givenFirst("de Vaurno,  Matt James")).toBe("Matt James de Vaurno");
+  });
+
+  it("leaves other names alone", () => {
+    expect(givenFirst("Chris Phelps")).toBe("Chris Phelps");
+    expect(givenFirst("C Phelps")).toBe("C Phelps");
+    expect(givenFirst("Phelps,")).toBe("Phelps");
+    expect(givenFirst("")).toBeNull();
+    expect(givenFirst(null)).toBeNull();
   });
 });

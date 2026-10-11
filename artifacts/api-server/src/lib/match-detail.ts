@@ -1,3 +1,4 @@
+import { splitDisplayName } from "@workspace/db/central-queries";
 import type { Request } from "express";
 import { eq, asc } from "drizzle-orm";
 import {
@@ -42,10 +43,7 @@ export function splitCentralName(displayName: string | null): {
   givenName: string;
   surname: string;
 } {
-  const parts = (displayName ?? "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return { givenName: "", surname: "" };
-  if (parts.length === 1) return { givenName: parts[0], surname: "" };
-  return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
+  return splitDisplayName(displayName);
 }
 
 /**
