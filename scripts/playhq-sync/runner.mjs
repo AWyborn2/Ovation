@@ -121,6 +121,37 @@ async function api(fetchImpl, base, secret, path, init = {}) {
   return body;
 }
 
+/**
+ * The server takes at most 50 MB of JSON per ingest. A dump above `maxChars` (a whole
+ * association's every-season names backfill, for one) is sent as consecutive parts, each with
+ * the same metadata and a slice of the records; ordinary plans fit in one.
+ */
+export const MAX_INGEST_CHARS = 30_000_000;
+
+export function splitIngestBody(body, maxChars = MAX_INGEST_CHARS) {
+  const records = body.dump?.records ?? [];
+  if (JSON.stringify(body).length <= maxChars || records.length < 2) return [body];
+  const parts = [];
+  let slice = [];
+  let size = 0;
+  for (const r of records) {
+    const n = JSON.stringify(r).length + 1;
+    if (slice.length && size + n > maxChars) {
+      parts.push(slice);
+      slice = [];
+      size = 0;
+    }
+    slice.push(r);
+    size += n;
+  }
+  if (slice.length) parts.push(slice);
+  return parts.map((recs, i) => ({
+    ...body,
+    sourceName: `${body.sourceName} part ${i + 1}/${parts.length}`,
+    dump: { ...body.dump, records: recs },
+  }));
+}
+
 /** Run one plan in a fresh page; returns { status, timedOut, durationMs, dump }. */
 const TEAM_LIST_CHANGE = {
   new: "team named",
@@ -270,25 +301,30 @@ async function collectAll(
         log(
           `${label}: ${body.status}, ${c.dump?.records?.length ?? 0} records, ${c.durationMs} ms`,
         );
-        const res = await api(fetchImpl, base, secret, "/internal/playhq/ingest", {
-          method: "POST",
-          headers: { "content-type": "application/json", "content-encoding": "gzip" },
-          body: gzipSync(Buffer.from(JSON.stringify(body))),
-        });
-        log(
-          `${label}: ingested → ${res.status}, ${res.fixtureChanges} fixture change(s), ${res.tenants?.length ?? 0} tenant(s)`,
-        );
-        for (const t of res.teamLists ?? []) log(`${label}: ${teamListLine(t)}`);
-        for (const w of res.warnings ?? []) log(`${label}: warning: ${w}`);
-        const p = res.centralProjection;
-        if (p) {
+        const parts = splitIngestBody(body);
+        let res;
+        for (const [i, part] of parts.entries()) {
+          const tag = parts.length > 1 ? `${label} (part ${i + 1}/${parts.length})` : label;
+          res = await api(fetchImpl, base, secret, "/internal/playhq/ingest", {
+            method: "POST",
+            headers: { "content-type": "application/json", "content-encoding": "gzip" },
+            body: gzipSync(Buffer.from(JSON.stringify(part))),
+          });
           log(
-            `${label}: stats copy (${p.mode}) → ${p.created} created, ${p.updated} updated, ` +
-              `${p.skipped} skipped, ${p.playersInserted} new players`,
+            `${tag}: ingested → ${res.status}, ${res.fixtureChanges} fixture change(s), ${res.tenants?.length ?? 0} tenant(s)`,
           );
-          if (p.namesUpgraded) log(`${label}: ${p.namesUpgraded} player name(s) filled in`);
-          for (const [reason, n] of Object.entries(p.skipReasons ?? {}))
-            log(`${label}: stats copy skipped ${n} × ${reason}`);
+          for (const t of res.teamLists ?? []) log(`${tag}: ${teamListLine(t)}`);
+          for (const w of res.warnings ?? []) log(`${tag}: warning: ${w}`);
+          const p = res.centralProjection;
+          if (p) {
+            log(
+              `${tag}: stats copy (${p.mode}) → ${p.created} created, ${p.updated} updated, ` +
+                `${p.skipped} skipped, ${p.playersInserted} new players`,
+            );
+            if (p.namesUpgraded) log(`${tag}: ${p.namesUpgraded} player name(s) filled in`);
+            for (const [reason, n] of Object.entries(p.skipReasons ?? {}))
+              log(`${tag}: stats copy skipped ${n} × ${reason}`);
+          }
         }
         result.uploaded.push({ ...d, status: body.status, ingest: res.status });
         if (body.status === "failed") result.failures.push(`${label}: harness failed`);

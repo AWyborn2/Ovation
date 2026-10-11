@@ -9,6 +9,7 @@ import {
   manualPlan,
   run,
   runStatus,
+  splitIngestBody,
   teamListLine,
 } from "./runner.mjs";
 
@@ -406,4 +407,25 @@ test("names a played side recorded after the match, in Perth time", () => {
     }),
     "Rockingham-Mandurah · 1st Grade v Claremont-Nedlands, Sun 4 Oct: played side recorded (11 players)",
   );
+});
+
+test("an oversized dump is sent in parts that keep every record and the metadata", () => {
+  const records = Array.from({ length: 10 }, (_, i) => ({
+    kind: "batting",
+    id: i,
+    pad: "x".repeat(100),
+  }));
+  const body = { planName: "names", sourceName: "gha names", dump: { version: "2", records } };
+  assert.deepEqual(splitIngestBody(body), [body]); // small: one part, untouched
+  const parts = splitIngestBody(body, 400);
+  assert.ok(parts.length > 1);
+  assert.deepEqual(
+    parts.flatMap((p) => p.dump.records.map((r) => r.id)),
+    records.map((r) => r.id),
+  );
+  for (const [i, p] of parts.entries()) {
+    assert.equal(p.planName, "names");
+    assert.equal(p.dump.version, "2");
+    assert.equal(p.sourceName, `gha names part ${i + 1}/${parts.length}`);
+  }
 });
