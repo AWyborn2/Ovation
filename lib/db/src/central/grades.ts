@@ -12,7 +12,7 @@
  * output so mismatches are explainable.
  *
  * Built from the dump's ground-truth distinct labels. App grades:
- * "A Grade".."F Grade", "Female A Grade", "Female B Grade", "PPL", "Colts".
+ * "A Grade".."H Grade" (G Grade is new in 2026/27), "Female A Grade", "Female B Grade", "PPL", "Colts".
  * `appGrade: null` means deliberately unmapped (charity one-offs, Female C the
  * app doesn't have, junior / pathway grades). "Ladies T20", the Female B
  * predecessor, maps to "Female B Grade".
@@ -164,12 +164,12 @@ export function classifyCentralGrade(centralGrade: string | null): CentralGradeM
 
   // Generic "<letter> Grade", with or without a cup suffix or sponsor prefix
   // ("A Grade", "A Grade: Wyllie Cup", "D Grade Ritchie Cup", "T20: B Grade").
-  const labelled = /\b([a-f])\s*grade\b/.exec(lower);
+  const labelled = /\b([a-h])\s*grade\b/.exec(lower);
   if (labelled) {
     return { appGrade: `${(labelled[1] ?? "").toUpperCase()} Grade`, note: formatNote };
   }
   // Bare single-letter grade code ("A", "B", …) with no "Grade" word.
-  if (/^[a-f]$/.test(lower)) {
+  if (/^[a-h]$/.test(lower)) {
     return { appGrade: `${lower.toUpperCase()} Grade`, note: formatNote };
   }
 

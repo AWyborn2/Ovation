@@ -25,14 +25,9 @@ describe("sortByGradeOrder", () => {
   });
 
   it("puts lettered grades in order, then PPL and Colts", () => {
-    expect(grades(["Colts", "C Grade", "Female A Grade", "A Grade", "PPL", "B Grade"])).toEqual([
-      "A Grade",
-      "B Grade",
-      "C Grade",
-      "Female A Grade",
-      "PPL",
-      "Colts",
-    ]);
+    expect(
+      grades(["Colts", "G Grade", "C Grade", "Female A Grade", "A Grade", "PPL", "B Grade"]),
+    ).toEqual(["A Grade", "B Grade", "C Grade", "G Grade", "Female A Grade", "PPL", "Colts"]);
   });
 
   it("follows the club's own order first, then seniority", () => {

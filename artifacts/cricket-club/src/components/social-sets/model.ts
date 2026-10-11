@@ -22,6 +22,7 @@ export const GRADES = [
   "D Grade",
   "E Grade",
   "F Grade",
+  "G Grade",
   "Female A Grade",
   "Female B Grade",
   "PPL",

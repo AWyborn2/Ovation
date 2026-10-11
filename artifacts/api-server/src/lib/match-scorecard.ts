@@ -140,7 +140,7 @@ export function competitionToGrade(competition: string): string | null {
   const lc = c.toLowerCase();
   const female = lc.match(/female\s+([ab])\s+grade/);
   if (female) return `Female ${female[1].toUpperCase()} Grade`;
-  const g = lc.match(/\b([a-f])\s+grade/);
+  const g = lc.match(/\b([a-h])\s+grade/);
   if (g) return `${g[1].toUpperCase()} Grade`;
   if (/\bppl\b/.test(lc)) return "PPL";
   if (/\bcolts\b/.test(lc)) return "Colts";
