@@ -14,7 +14,6 @@ import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admi
 import { adminWriteRateLimiter } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
 import { snakeToCamel, serializeCorrection, SNAKE_TO_TABLE } from "../lib/junior-admin-helpers";
-import { isCentralTenant } from "../lib/tenant";
 
 /**
  * Juniors admin — the corrections journal: list + revert.
@@ -39,10 +38,6 @@ router.get(
       res.status(400).json({ error: query.error.message });
       return;
     }
-    if (await isCentralTenant(req)) {
-      res.json([]);
-      return;
-    }
     const conds = [eq(juniorStatCorrectionsTable.tenantId, getTenantId(req))];
     if (query.data.matchId !== undefined) {
       conds.push(eq(juniorStatCorrectionsTable.matchId, query.data.matchId));
@@ -64,10 +59,6 @@ router.delete(
     const params = RevertJuniorStatCorrectionParams.safeParse(req.params);
     if (!params.success) {
       res.status(400).json({ error: params.error.message });
-      return;
-    }
-    if (await isCentralTenant(req)) {
-      res.status(404).json({ error: "Correction not found" });
       return;
     }
     const tenantId = getTenantId(req);

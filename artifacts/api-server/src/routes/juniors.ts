@@ -16,6 +16,12 @@ import honoursRouter from "./juniors-honours";
  * (the leaderboard queries inner-join junior_participants and filter is_private,
  * which naturally drops both opposition players and private participants).
  *
+ * Every read and write is scoped to the requesting club by tenant_id (on
+ * junior_matches, junior_participants, junior_premierships and
+ * junior_office_bearers; scorecard lines and rosters through their match). That,
+ * not whether the club reads its senior stats from central, decides what a club
+ * sees: a club with no juniors of its own simply gets empty results.
+ *
  * The handlers are split by concern and mounted here:
  *
  *  - `juniors-players.ts`      players directory, profile, senior link

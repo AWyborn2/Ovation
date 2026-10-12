@@ -20,6 +20,9 @@ import { BALLS_PER_OVER } from "./junior-cricket";
  */
 export type LeaderScope = { season?: string; ageGroup?: string };
 
+/** Every junior read is scoped to one tenant's matches (junior_matches.tenant_id). */
+const ofTenant = (tenantId: number) => eq(juniorMatchesTable.tenantId, tenantId);
+
 /**
  * Canonical "Games" per HH participant: the count of DISTINCT matches the player
  * was named in the team roster. This is the single source of truth for every
@@ -32,9 +35,11 @@ export type LeaderScope = { season?: string; ageGroup?: string };
  * Opposition lines have is_halls_head = false and are excluded.
  */
 export async function rosterGamesByParticipant(
+  tenantId: number,
   scope: LeaderScope = {},
 ): Promise<Map<string, number>> {
   const conds = [
+    ofTenant(tenantId),
     eq(juniorMatchRostersTable.isHallsHead, true),
     isNotNull(juniorMatchRostersTable.participantId),
   ];
@@ -56,8 +61,9 @@ export async function rosterGamesByParticipant(
   );
 }
 
-export async function battingLeaders(limit: number, scope: LeaderScope = {}) {
+export async function battingLeaders(tenantId: number, limit: number, scope: LeaderScope = {}) {
   const conds = [
+    ofTenant(tenantId),
     eq(juniorMatchBattingTable.isHallsHead, true),
     eq(juniorParticipantsTable.isPrivate, false),
   ];
@@ -93,8 +99,9 @@ export async function battingLeaders(limit: number, scope: LeaderScope = {}) {
   }));
 }
 
-export async function bowlingLeaders(limit: number, scope: LeaderScope = {}) {
+export async function bowlingLeaders(tenantId: number, limit: number, scope: LeaderScope = {}) {
   const conds = [
+    ofTenant(tenantId),
     eq(juniorMatchBowlingTable.isHallsHead, true),
     eq(juniorParticipantsTable.isPrivate, false),
   ];
@@ -123,7 +130,7 @@ export async function bowlingLeaders(limit: number, scope: LeaderScope = {}) {
     .limit(limit);
   // Canonical Games (roster appearances) under the same scope — NOT distinct
   // bowling matches, so "Matches" matches every other tab for the same player.
-  const rosterGames = await rosterGamesByParticipant(scope);
+  const rosterGames = await rosterGamesByParticipant(tenantId, scope);
   return rows.map((r) => ({
     participantId: r.participantId,
     displayName: r.displayName ?? "",
@@ -134,7 +141,7 @@ export async function bowlingLeaders(limit: number, scope: LeaderScope = {}) {
   }));
 }
 
-export async function highestScoreInnings(limit: number) {
+export async function highestScoreInnings(tenantId: number, limit: number) {
   const rows = await db
     .select({
       participantId: juniorParticipantsTable.participantId,
@@ -155,6 +162,7 @@ export async function highestScoreInnings(limit: number) {
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
     .where(
       and(
+        ofTenant(tenantId),
         eq(juniorMatchBattingTable.isHallsHead, true),
         eq(juniorParticipantsTable.isPrivate, false),
         isNotNull(juniorMatchBattingTable.runs),
@@ -175,7 +183,7 @@ export async function highestScoreInnings(limit: number) {
   }));
 }
 
-export async function bestBowlingFigures(limit: number) {
+export async function bestBowlingFigures(tenantId: number, limit: number) {
   const rows = await db
     .select({
       participantId: juniorParticipantsTable.participantId,
@@ -196,6 +204,7 @@ export async function bestBowlingFigures(limit: number) {
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
     .where(
       and(
+        ofTenant(tenantId),
         eq(juniorMatchBowlingTable.isHallsHead, true),
         eq(juniorParticipantsTable.isPrivate, false),
         isNotNull(juniorMatchBowlingTable.wickets),
