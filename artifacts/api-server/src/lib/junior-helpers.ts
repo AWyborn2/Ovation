@@ -121,13 +121,18 @@ export function isNotOut(dismissal: string | null): boolean {
 // source as the leaders (HH lines + non-private participants) so a chip never
 // appears for an age group whose matches have no recorded stats. Unions the
 // batting and bowling sides since a player may only appear in one.
-export async function ageGroupsForSeason(season: string | null): Promise<string[]> {
+export async function ageGroupsForSeason(
+  tenantId: number,
+  season: string | null,
+): Promise<string[]> {
   const battingConds = [
+    eq(juniorMatchesTable.tenantId, tenantId),
     isNotNull(juniorMatchesTable.ageGroup),
     eq(juniorMatchBattingTable.isHallsHead, true),
     eq(juniorParticipantsTable.isPrivate, false),
   ];
   const bowlingConds = [
+    eq(juniorMatchesTable.tenantId, tenantId),
     isNotNull(juniorMatchesTable.ageGroup),
     eq(juniorMatchBowlingTable.isHallsHead, true),
     eq(juniorParticipantsTable.isPrivate, false),

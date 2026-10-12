@@ -23,7 +23,7 @@ import {
   ListJuniorLeaderboardQueryParams,
   GetJuniorSeasonTopPerformersQueryParams,
 } from "@workspace/api-zod";
-import { isCentralTenant } from "../lib/tenant";
+import { getTenantId } from "../middlewares/tenant-context";
 import { overlayNativeOpponents } from "../lib/club-brand";
 import { latestByDate } from "../lib/latest-per-grade";
 import {
@@ -47,44 +47,46 @@ const router: IRouter = Router();
 // GET /juniors/overview
 // ---------------------------------------------------------------------------
 router.get("/juniors/overview", async (req, res): Promise<void> => {
-  // Junior data is tenant-local and central is seniors-only, so a central tenant
-  // has no junior history of its own — return the empty overview rather than the
-  // demo tenant's (Halls Head) juniors.
-  if (await isCentralTenant(req)) {
-    res.json({
-      totals: { matches: 0, players: 0, premierships: 0, seasons: 0, ageGroups: 0 },
-      latestSeason: null,
-      recentMatches: [],
-      topRunScorers: [],
-      topWicketTakers: [],
-    });
-    return;
-  }
+  const tenantId = getTenantId(req);
+  const ofTenant = eq(juniorMatchesTable.tenantId, tenantId);
 
   const [[matchCount], [playerCount], [premCount], [seasonCount], [ageCount]] = await Promise.all([
-    db.select({ n: sql<number>`count(*)::int` }).from(juniorMatchesTable),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(juniorMatchesTable)
+      .where(ofTenant),
     db
       .select({ n: sql<number>`count(*)::int` })
       .from(juniorParticipantsTable)
-      .where(eq(juniorParticipantsTable.isPrivate, false)),
-    db.select({ n: sql<number>`count(*)::int` }).from(juniorPremiershipsTable),
+      .where(
+        and(
+          eq(juniorParticipantsTable.tenantId, tenantId),
+          eq(juniorParticipantsTable.isPrivate, false),
+        ),
+      ),
+    db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(juniorPremiershipsTable)
+      .where(eq(juniorPremiershipsTable.tenantId, tenantId)),
     db
       .select({
         n: sql<number>`count(distinct ${juniorMatchesTable.season})::int`,
       })
-      .from(juniorMatchesTable),
+      .from(juniorMatchesTable)
+      .where(ofTenant),
     db
       .select({
         n: sql<number>`count(distinct ${juniorMatchesTable.ageGroup})::int`,
       })
-      .from(juniorMatchesTable),
+      .from(juniorMatchesTable)
+      .where(ofTenant),
   ]);
 
   // Latest season = the season string with the newest parsed start year.
   const [latest] = await db
     .select({ season: juniorMatchesTable.season })
     .from(juniorMatchesTable)
-    .where(isNotNull(juniorMatchesTable.season))
+    .where(and(ofTenant, isNotNull(juniorMatchesTable.season)))
     .orderBy(desc(seasonYear), desc(juniorMatchesTable.id))
     .limit(1);
   const latestSeason = latest?.season ?? null;
@@ -100,7 +102,7 @@ router.get("/juniors/overview", async (req, res): Promise<void> => {
       .select({ match: juniorMatchesTable, ...opponentClubColumns })
       .from(juniorMatchesTable)
       .leftJoin(clubsTable, eq(clubsTable.id, juniorMatchesTable.opponentClubId))
-      .where(eq(juniorMatchesTable.season, latestSeason))
+      .where(and(ofTenant, eq(juniorMatchesTable.season, latestSeason)))
       .orderBy(desc(juniorMatchesTable.id));
     const recentRows = latestByDate(
       seasonRows,
@@ -112,8 +114,8 @@ router.get("/juniors/overview", async (req, res): Promise<void> => {
     recentMatches = recentRows.map((r, i) => toMatchSummary(r.match, recentOpps[i]));
 
     [topRunScorers, topWicketTakers] = await Promise.all([
-      battingLeaders(5, { season: latestSeason }),
-      bowlingLeaders(5, { season: latestSeason }),
+      battingLeaders(tenantId, 5, { season: latestSeason }),
+      bowlingLeaders(tenantId, 5, { season: latestSeason }),
     ]);
   }
 
@@ -146,20 +148,14 @@ router.get("/juniors/top-performers", async (req, res): Promise<void> => {
   const allTime = parsed.data.allTime === true;
   const requestedSeason = parsed.data.season?.trim() || undefined;
 
-  // Junior data is tenant-local (the native junior_* tables hold only the demo
-  // tenant's juniors) — a central tenant gets the empty shape, never another
-  // club's junior players.
-  if (await isCentralTenant(req)) {
-    res.json({ season: null, availableAgeGroups: [], topRunScorers: [], topWicketTakers: [] });
-    return;
-  }
+  const tenantId = getTenantId(req);
 
   // All-time: aggregate across every season.
   if (allTime) {
     const [topRunScorers, topWicketTakers, availableAgeGroups] = await Promise.all([
-      battingLeaders(5, { ageGroup }),
-      bowlingLeaders(5, { ageGroup }),
-      ageGroupsForSeason(null),
+      battingLeaders(tenantId, 5, { ageGroup }),
+      bowlingLeaders(tenantId, 5, { ageGroup }),
+      ageGroupsForSeason(tenantId, null),
     ]);
     res.json({ season: null, availableAgeGroups, topRunScorers, topWicketTakers });
     return;
@@ -171,7 +167,7 @@ router.get("/juniors/top-performers", async (req, res): Promise<void> => {
     const [latest] = await db
       .select({ season: juniorMatchesTable.season })
       .from(juniorMatchesTable)
-      .where(isNotNull(juniorMatchesTable.season))
+      .where(and(eq(juniorMatchesTable.tenantId, tenantId), isNotNull(juniorMatchesTable.season)))
       .orderBy(desc(seasonYear), desc(juniorMatchesTable.id))
       .limit(1);
     season = latest?.season ?? null;
@@ -183,9 +179,9 @@ router.get("/juniors/top-performers", async (req, res): Promise<void> => {
   }
 
   const [topRunScorers, topWicketTakers, availableAgeGroups] = await Promise.all([
-    battingLeaders(5, { season, ageGroup }),
-    bowlingLeaders(5, { season, ageGroup }),
-    ageGroupsForSeason(season),
+    battingLeaders(tenantId, 5, { season, ageGroup }),
+    bowlingLeaders(tenantId, 5, { season, ageGroup }),
+    ageGroupsForSeason(tenantId, season),
   ]);
   res.json({ season, availableAgeGroups, topRunScorers, topWicketTakers });
 });
@@ -194,16 +190,12 @@ router.get("/juniors/top-performers", async (req, res): Promise<void> => {
 // GET /juniors/leaderboards
 // ---------------------------------------------------------------------------
 router.get("/juniors/leaderboards", async (req, res): Promise<void> => {
-  // Central tenants have no native junior lines — empty boards, no leak.
-  if (await isCentralTenant(req)) {
-    res.json({ mostRuns: [], mostWickets: [], highestScores: [], bestBowling: [] });
-    return;
-  }
+  const tenantId = getTenantId(req);
   const [mostRuns, mostWickets, highestScores, bestBowling] = await Promise.all([
-    battingLeaders(25),
-    bowlingLeaders(25),
-    highestScoreInnings(25),
-    bestBowlingFigures(25),
+    battingLeaders(tenantId, 25),
+    bowlingLeaders(tenantId, 25),
+    highestScoreInnings(tenantId, 25),
+    bestBowlingFigures(tenantId, 25),
   ]);
   res.json({ mostRuns, mostWickets, highestScores, bestBowling });
 });
@@ -222,17 +214,19 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
   }
   const { season, ageGroup } = parsed.data;
 
-  // Central tenants have no native junior lines — empty leaderboard, no leak.
-  if (await isCentralTenant(req)) {
-    res.json([]);
-    return;
-  }
+  const tenantId = getTenantId(req);
 
-  const matchConds = [eq(juniorMatchBattingTable.isHallsHead, true)];
+  const matchConds = [
+    eq(juniorMatchesTable.tenantId, tenantId),
+    eq(juniorMatchBattingTable.isHallsHead, true),
+  ];
   if (season) matchConds.push(eq(juniorMatchesTable.season, season));
   if (ageGroup) matchConds.push(eq(juniorMatchesTable.ageGroup, ageGroup));
 
-  const bowlConds = [eq(juniorMatchBowlingTable.isHallsHead, true)];
+  const bowlConds = [
+    eq(juniorMatchesTable.tenantId, tenantId),
+    eq(juniorMatchBowlingTable.isHallsHead, true),
+  ];
   if (season) bowlConds.push(eq(juniorMatchesTable.season, season));
   if (ageGroup) bowlConds.push(eq(juniorMatchesTable.ageGroup, ageGroup));
 
@@ -340,7 +334,7 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
   // Canonical Games (roster appearances) under the same season/age scope, so the
   // "Mat" column matches the directory / Most Games / Most Wickets tabs instead
   // of counting only matches batted (which under-counts roster appearances).
-  const rosterGames = await rosterGamesByParticipant({ season, ageGroup });
+  const rosterGames = await rosterGamesByParticipant(tenantId, { season, ageGroup });
 
   const rows = Array.from(aggByPlayer.values()).map((a) => ({
     participantId: a.participantId,
@@ -373,11 +367,7 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
 // 6 private juniors never surface. Junior data never touches a senior table.
 // ---------------------------------------------------------------------------
 router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
-  // Central tenants have no native junior lines — no milestones, no leak.
-  if (await isCentralTenant(req)) {
-    res.json([]);
-    return;
-  }
+  const tenantId = getTenantId(req);
   const [battingRows, bowlingRows] = await Promise.all([
     db
       .select({
@@ -393,6 +383,7 @@ router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
       )
       .where(
         and(
+          eq(juniorParticipantsTable.tenantId, tenantId),
           eq(juniorParticipantsTable.isPrivate, false),
           eq(juniorMatchBattingTable.isHallsHead, true),
         ),
@@ -411,6 +402,7 @@ router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
       )
       .where(
         and(
+          eq(juniorParticipantsTable.tenantId, tenantId),
           eq(juniorParticipantsTable.isPrivate, false),
           eq(juniorMatchBowlingTable.isHallsHead, true),
         ),

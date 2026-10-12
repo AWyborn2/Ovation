@@ -20,7 +20,6 @@ import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admi
 import { juniorEditRateLimiter, juniorMergeRateLimiter } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
 import { journal, adminName, recomputeParticipantMetadata } from "../lib/junior-admin-helpers";
-import { isCentralTenant } from "../lib/tenant";
 
 /**
  * Juniors admin — participant profile corrections and duplicate merges.
@@ -50,10 +49,6 @@ router.patch(
     const body = UpdateJuniorParticipantBody.safeParse(req.body);
     if (!body.success) {
       res.status(400).json({ error: body.error.message });
-      return;
-    }
-    if (await isCentralTenant(req)) {
-      res.status(404).json({ error: "Participant not found" });
       return;
     }
     const [participant] = await db
@@ -185,10 +180,6 @@ router.post(
     const keeperId = body.data.keeperParticipantId;
     if (duplicateId === keeperId) {
       res.status(400).json({ error: "Cannot merge a profile into itself" });
-      return;
-    }
-    if (await isCentralTenant(req)) {
-      res.status(404).json({ error: "Participant not found" });
       return;
     }
     const tenantId = getTenantId(req);

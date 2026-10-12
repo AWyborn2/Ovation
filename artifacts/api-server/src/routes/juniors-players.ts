@@ -21,7 +21,6 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
-import { isCentralTenant } from "../lib/tenant";
 import { BALLS_PER_OVER, oversToBalls, ballsToOvers } from "../lib/junior-cricket";
 import { rosterGamesByParticipant } from "../lib/junior-leaderboards";
 import { getShirtNumberSettings } from "@workspace/db/shirt-numbers";
@@ -53,18 +52,13 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
   }
   const { search, season, ageGroup, includePrivate } = query.data;
 
-  // Central tenants have no native junior participants — empty list, no leak.
-  if (await isCentralTenant(req)) {
-    res.json([]);
-    return;
-  }
-
   // includePrivate is honoured ONLY for a signed-in admin (the junior players
   // admin needs private rows so the privacy flag can be turned back off);
   // for everyone else the flag is silently ignored and privacy holds.
   const withPrivate = includePrivate === true && !!(await resolveAdmin(req));
 
-  const conds = [eq(juniorParticipantsTable.tenantId, getTenantId(req))];
+  const tenantId = getTenantId(req);
+  const conds = [eq(juniorParticipantsTable.tenantId, tenantId)];
   if (!withPrivate) conds.push(eq(juniorParticipantsTable.isPrivate, false));
   if (search) conds.push(ilike(juniorParticipantsTable.displayName, `%${search}%`));
 
@@ -85,7 +79,7 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
         SELECT participant_id, match_id FROM junior_match_rosters WHERE is_halls_head AND participant_id IS NOT NULL
       ) t
       JOIN junior_matches m ON m.id = t.match_id
-      WHERE ${seasonCond} AND ${ageCond}
+      WHERE m.tenant_id = ${tenantId} AND ${seasonCond} AND ${ageCond}
     `);
     const ids = (appearanceRes.rows as { pid: string | null }[])
       .map((r) => r.pid)
@@ -112,10 +106,12 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
   // runs and wickets all describe the same scope); unfiltered they are all-time,
   // which is what the always-unfiltered Most Games board reads.
   const battingAggConds = [
+    eq(juniorMatchesTable.tenantId, tenantId),
     eq(juniorMatchBattingTable.isHallsHead, true),
     isNotNull(juniorMatchBattingTable.participantId),
   ];
   const bowlingAggConds = [
+    eq(juniorMatchesTable.tenantId, tenantId),
     eq(juniorMatchBowlingTable.isHallsHead, true),
     isNotNull(juniorMatchBowlingTable.participantId),
   ];
@@ -146,7 +142,7 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
       .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
       .where(and(...bowlingAggConds))
       .groupBy(juniorMatchBowlingTable.participantId),
-    rosterGamesByParticipant({ season, ageGroup }),
+    rosterGamesByParticipant(tenantId, { season, ageGroup }),
   ]);
 
   const runsBy = new Map(runsRows.map((r) => [r.pid, r.runs]));
@@ -181,12 +177,6 @@ router.get("/juniors/players/by-senior/:playerId", async (req, res): Promise<voi
   const params = ListJuniorPlayersBySeniorParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
-    return;
-  }
-
-  // Central tenants have no native junior participants — empty list, no leak.
-  if (await isCentralTenant(req)) {
-    res.json([]);
     return;
   }
 
@@ -243,10 +233,6 @@ router.put(
       res.status(400).json({ error: body.error.message });
       return;
     }
-    if (await isCentralTenant(req)) {
-      res.status(404).json({ error: "Participant not found" });
-      return;
-    }
 
     const [senior] = await db
       .select({ id: playersTable.id })
@@ -289,10 +275,6 @@ router.delete(
       res.status(400).json({ error: params.error.message });
       return;
     }
-    if (await isCentralTenant(req)) {
-      res.status(404).json({ error: "Participant not found" });
-      return;
-    }
 
     const [updated] = await db
       .update(juniorParticipantsTable)
@@ -322,12 +304,6 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     return;
   }
   let pid = params.data.id;
-
-  // Central tenants have no native junior participants — 404, never the demo club's.
-  if (await isCentralTenant(req)) {
-    res.status(404).json({ error: "Player not found" });
-    return;
-  }
 
   const tenantId = getTenantId(req);
   const loadParticipant = async (id: string) => {
@@ -390,6 +366,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
     .where(
       and(
+        eq(juniorMatchesTable.tenantId, tenantId),
         eq(juniorMatchBattingTable.participantId, pid),
         eq(juniorMatchBattingTable.isHallsHead, true),
       ),
@@ -403,6 +380,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
     .where(
       and(
+        eq(juniorMatchesTable.tenantId, tenantId),
         eq(juniorMatchBowlingTable.participantId, pid),
         eq(juniorMatchBowlingTable.isHallsHead, true),
       ),
@@ -413,6 +391,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchRostersTable.matchId))
     .where(
       and(
+        eq(juniorMatchesTable.tenantId, tenantId),
         eq(juniorMatchRostersTable.participantId, pid),
         eq(juniorMatchRostersTable.isHallsHead, true),
       ),

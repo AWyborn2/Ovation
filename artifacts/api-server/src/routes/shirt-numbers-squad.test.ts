@@ -128,6 +128,9 @@ describe("shirt numbers: add squad to register", () => {
       { participantId: J.ben, tenantId: tenants.a, displayName: "Ben Bowler" },
       { participantId: J.twinA, tenantId: tenants.a, displayName: "Tia Twin" },
       { participantId: J.twinB, tenantId: tenants.a, displayName: "Tia Twin" },
+      // Tenant B has juniors of its own (so its junior route is open), none named
+      // like its squad member.
+      { participantId: `${J.amy}-b`, tenantId: tenants.b, displayName: "Zed Other-Junior" },
     ]);
 
     const a = tenants.a;
@@ -311,7 +314,7 @@ describe("shirt numbers: add squad to register", () => {
     const senior = await addSenior(SEASON, "b").expect(200);
     expect(senior.body).toMatchObject({ created: 1 });
     expect((await seniorRows(SEASON, tenants.b)).map((r) => r.name)).toEqual(["Bob Other-Club"]);
-    // Tenant B has no junior participants: its junior member is unmatched, and
+    // Tenant B's junior member matches none of its own participants, and
     // tenant A's participants are never matched for it.
     const junior = await addJunior(SEASON, "b").expect(200);
     expect(junior.body).toMatchObject({ created: 0, unmatched: ["Kit Other-Junior"] });

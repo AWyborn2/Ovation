@@ -27,7 +27,6 @@ import {
   ADMIN_JUNIOR_LINE_ID_BASE,
   serializeRosterEntry,
 } from "../lib/junior-admin-helpers";
-import { isCentralTenant } from "../lib/tenant";
 
 /**
  * Juniors admin — match metadata and roster corrections.
@@ -52,10 +51,6 @@ router.patch(
     const body = UpdateJuniorMatchBody.safeParse(req.body);
     if (!body.success) {
       res.status(400).json({ error: body.error.message });
-      return;
-    }
-    if (await isCentralTenant(req)) {
-      res.status(404).json({ error: "Match not found" });
       return;
     }
     const match = await tenantMatch(req, params.data.id);
@@ -120,10 +115,6 @@ router.post(
     const body = AddJuniorRosterEntryBody.safeParse(req.body);
     if (!body.success) {
       res.status(400).json({ error: body.error.message });
-      return;
-    }
-    if (await isCentralTenant(req)) {
-      res.status(404).json({ error: "Match not found" });
       return;
     }
     const match = await tenantMatch(req, params.data.matchId);
@@ -202,10 +193,6 @@ router.delete(
     const params = RemoveJuniorRosterEntryParams.safeParse(req.params);
     if (!params.success) {
       res.status(400).json({ error: params.error.message });
-      return;
-    }
-    if (await isCentralTenant(req)) {
-      res.status(404).json({ error: "Match not found" });
       return;
     }
     const match = await tenantMatch(req, params.data.matchId);
