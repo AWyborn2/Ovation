@@ -37,13 +37,13 @@ with me as (
     from player_grade_season_stats where player_id in (select id from me)
    group by grade, season
 ), central_g as (
-  select m.grade as central_grade, nullif(substring(m.season from 1 for 4), '')::int as season,
+  select m.grade as central_grade, substring(m.season from '[0-9]{4}')::int as season,
          count(distinct r.match_id) as games
     from central.match_rosters r join central.matches m on m.match_id = r.match_id
    where r.club_id = 1 and r.participant_id in (select participant_id from guids)
    group by 1, 2
 ), central_r as (
-  select m.grade as central_grade, nullif(substring(m.season from 1 for 4), '')::int as season,
+  select m.grade as central_grade, substring(m.season from '[0-9]{4}')::int as season,
          sum(b.runs) as runs
     from central.match_batting b join central.matches m on m.match_id = b.match_id
    where b.club_id = 1 and b.participant_id in (select participant_id from guids)
