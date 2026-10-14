@@ -8,8 +8,8 @@ function formatSeason(year: number): string {
   return `${year}/${next.toString().padStart(2, "0")}`;
 }
 
-// Canonical display order for club office-bearer roles. Anything not listed
-// falls to the end, alphabetically.
+// Preserve the traditional order only when the club has given roles equal
+// priority. Explicit display orders take precedence, including custom roles.
 const ROLE_ORDER = [
   "President",
   "Vice President",
@@ -60,8 +60,8 @@ export function CommitteeTab() {
         season,
         roles: [...rs].sort(
           (a, b) =>
-            roleRank(a.role) - roleRank(b.role) ||
             a.displayOrder - b.displayOrder ||
+            roleRank(a.role) - roleRank(b.role) ||
             a.role.localeCompare(b.role),
         ),
       }))
