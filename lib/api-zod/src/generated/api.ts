@@ -460,6 +460,8 @@ export const getMatchResponseClubOneHeroImagesOneJuniorsMax = 2048;
 
 export const getMatchResponseClubOneHeroImagesOneHonoursMax = 2048;
 
+export const getMatchResponseClubOneHeroImagesOneCardsMax = 2048;
+
 export const getMatchResponseClubOneHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const getMatchResponseClubOneHeroImagesOneExploreOnePlayersMax = 2048;
@@ -509,6 +511,7 @@ export const GetMatchResponse = zod.object({
   "home": zod.string().max(getMatchResponseClubOneHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(getMatchResponseClubOneHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(getMatchResponseClubOneHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(getMatchResponseClubOneHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(getMatchResponseClubOneHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(getMatchResponseClubOneHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -593,6 +596,8 @@ export const updateMatchRoundResponseClubOneHeroImagesOneJuniorsMax = 2048;
 
 export const updateMatchRoundResponseClubOneHeroImagesOneHonoursMax = 2048;
 
+export const updateMatchRoundResponseClubOneHeroImagesOneCardsMax = 2048;
+
 export const updateMatchRoundResponseClubOneHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const updateMatchRoundResponseClubOneHeroImagesOneExploreOnePlayersMax = 2048;
@@ -642,6 +647,7 @@ export const UpdateMatchRoundResponse = zod.object({
   "home": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -722,6 +728,8 @@ export const setMatchHatTrickResponseClubOneHeroImagesOneJuniorsMax = 2048;
 
 export const setMatchHatTrickResponseClubOneHeroImagesOneHonoursMax = 2048;
 
+export const setMatchHatTrickResponseClubOneHeroImagesOneCardsMax = 2048;
+
 export const setMatchHatTrickResponseClubOneHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const setMatchHatTrickResponseClubOneHeroImagesOneExploreOnePlayersMax = 2048;
@@ -771,6 +779,7 @@ export const SetMatchHatTrickResponse = zod.object({
   "home": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -11935,6 +11944,8 @@ export const getTenantBrandResponseOneHeroImagesOneJuniorsMax = 2048;
 
 export const getTenantBrandResponseOneHeroImagesOneHonoursMax = 2048;
 
+export const getTenantBrandResponseOneHeroImagesOneCardsMax = 2048;
+
 export const getTenantBrandResponseOneHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const getTenantBrandResponseOneHeroImagesOneExploreOnePlayersMax = 2048;
@@ -11961,6 +11972,7 @@ export const GetTenantBrandResponse = zod.union([zod.object({
   "home": zod.string().max(getTenantBrandResponseOneHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(getTenantBrandResponseOneHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(getTenantBrandResponseOneHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(getTenantBrandResponseOneHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(getTenantBrandResponseOneHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(getTenantBrandResponseOneHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -11984,6 +11996,8 @@ export const updateTenantBrandBodyHeroImagesOneHomeMax = 2048;
 export const updateTenantBrandBodyHeroImagesOneJuniorsMax = 2048;
 
 export const updateTenantBrandBodyHeroImagesOneHonoursMax = 2048;
+
+export const updateTenantBrandBodyHeroImagesOneCardsMax = 2048;
 
 export const updateTenantBrandBodyHeroImagesOneExploreOneHonoursMax = 2048;
 
@@ -12010,6 +12024,7 @@ export const UpdateTenantBrandBody = zod.object({
   "home": zod.string().max(updateTenantBrandBodyHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateTenantBrandBodyHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateTenantBrandBodyHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateTenantBrandBodyHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateTenantBrandBodyHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateTenantBrandBodyHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12023,6 +12038,8 @@ export const updateTenantBrandResponseHeroImagesOneHomeMax = 2048;
 export const updateTenantBrandResponseHeroImagesOneJuniorsMax = 2048;
 
 export const updateTenantBrandResponseHeroImagesOneHonoursMax = 2048;
+
+export const updateTenantBrandResponseHeroImagesOneCardsMax = 2048;
 
 export const updateTenantBrandResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
@@ -12050,6 +12067,7 @@ export const UpdateTenantBrandResponse = zod.object({
   "home": zod.string().max(updateTenantBrandResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateTenantBrandResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateTenantBrandResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateTenantBrandResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateTenantBrandResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateTenantBrandResponseHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12166,6 +12184,8 @@ export const listAllTenantsResponseHeroImagesOneJuniorsMax = 2048;
 
 export const listAllTenantsResponseHeroImagesOneHonoursMax = 2048;
 
+export const listAllTenantsResponseHeroImagesOneCardsMax = 2048;
+
 export const listAllTenantsResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const listAllTenantsResponseHeroImagesOneExploreOnePlayersMax = 2048;
@@ -12198,6 +12218,7 @@ export const ListAllTenantsResponseItem = zod.object({
   "home": zod.string().max(listAllTenantsResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(listAllTenantsResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(listAllTenantsResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(listAllTenantsResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(listAllTenantsResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(listAllTenantsResponseHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12243,6 +12264,8 @@ export const getAdminTenantResponseTenantHeroImagesOneJuniorsMax = 2048;
 
 export const getAdminTenantResponseTenantHeroImagesOneHonoursMax = 2048;
 
+export const getAdminTenantResponseTenantHeroImagesOneCardsMax = 2048;
+
 export const getAdminTenantResponseTenantHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const getAdminTenantResponseTenantHeroImagesOneExploreOnePlayersMax = 2048;
@@ -12276,6 +12299,7 @@ export const GetAdminTenantResponse = zod.object({
   "home": zod.string().max(getAdminTenantResponseTenantHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(getAdminTenantResponseTenantHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(getAdminTenantResponseTenantHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(getAdminTenantResponseTenantHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(getAdminTenantResponseTenantHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(getAdminTenantResponseTenantHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12315,6 +12339,8 @@ export const updateAdminTenantResponseHeroImagesOneJuniorsMax = 2048;
 
 export const updateAdminTenantResponseHeroImagesOneHonoursMax = 2048;
 
+export const updateAdminTenantResponseHeroImagesOneCardsMax = 2048;
+
 export const updateAdminTenantResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const updateAdminTenantResponseHeroImagesOneExploreOnePlayersMax = 2048;
@@ -12347,6 +12373,7 @@ export const UpdateAdminTenantResponse = zod.object({
   "home": zod.string().max(updateAdminTenantResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateAdminTenantResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateAdminTenantResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateAdminTenantResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateAdminTenantResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateAdminTenantResponseHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12378,6 +12405,8 @@ export const updateAdminTenantBrandBodyHeroImagesOneJuniorsMax = 2048;
 
 export const updateAdminTenantBrandBodyHeroImagesOneHonoursMax = 2048;
 
+export const updateAdminTenantBrandBodyHeroImagesOneCardsMax = 2048;
+
 export const updateAdminTenantBrandBodyHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const updateAdminTenantBrandBodyHeroImagesOneExploreOnePlayersMax = 2048;
@@ -12402,6 +12431,7 @@ export const UpdateAdminTenantBrandBody = zod.object({
   "home": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12415,6 +12445,8 @@ export const updateAdminTenantBrandResponseTenantHeroImagesOneHomeMax = 2048;
 export const updateAdminTenantBrandResponseTenantHeroImagesOneJuniorsMax = 2048;
 
 export const updateAdminTenantBrandResponseTenantHeroImagesOneHonoursMax = 2048;
+
+export const updateAdminTenantBrandResponseTenantHeroImagesOneCardsMax = 2048;
 
 export const updateAdminTenantBrandResponseTenantHeroImagesOneExploreOneHonoursMax = 2048;
 
@@ -12449,6 +12481,7 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "home": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12482,6 +12515,8 @@ export const archiveAdminTenantResponseHeroImagesOneJuniorsMax = 2048;
 
 export const archiveAdminTenantResponseHeroImagesOneHonoursMax = 2048;
 
+export const archiveAdminTenantResponseHeroImagesOneCardsMax = 2048;
+
 export const archiveAdminTenantResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const archiveAdminTenantResponseHeroImagesOneExploreOnePlayersMax = 2048;
@@ -12514,6 +12549,7 @@ export const ArchiveAdminTenantResponse = zod.object({
   "home": zod.string().max(archiveAdminTenantResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(archiveAdminTenantResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(archiveAdminTenantResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(archiveAdminTenantResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(archiveAdminTenantResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(archiveAdminTenantResponseHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12540,6 +12576,8 @@ export const restoreAdminTenantResponseHeroImagesOneHomeMax = 2048;
 export const restoreAdminTenantResponseHeroImagesOneJuniorsMax = 2048;
 
 export const restoreAdminTenantResponseHeroImagesOneHonoursMax = 2048;
+
+export const restoreAdminTenantResponseHeroImagesOneCardsMax = 2048;
 
 export const restoreAdminTenantResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
@@ -12573,6 +12611,7 @@ export const RestoreAdminTenantResponse = zod.object({
   "home": zod.string().max(restoreAdminTenantResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(restoreAdminTenantResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(restoreAdminTenantResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(restoreAdminTenantResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(restoreAdminTenantResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(restoreAdminTenantResponseHeroImagesOneExploreOnePlayersMax).nullish(),

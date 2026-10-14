@@ -11573,6 +11573,10 @@ components:
         honours:
           type: ["string", "null"]
           maxLength: 2048
+        cards:
+          type: ["string", "null"]
+          maxLength: 2048
+          description: The club's ground or clubrooms, behind card designs (tinted to the club's colours).
         explore:
           oneOf:
             - $ref: "#/components/schemas/TenantExploreImages"

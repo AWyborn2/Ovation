@@ -33,6 +33,7 @@ import {
 import { resolvePackIdForKind } from "@/lib/card-template";
 import { useBrand } from "@/lib/brand-context";
 import {
+  withGroundPhoto,
   buildPackData,
   tenantHashtag,
   kindSponsors,
@@ -139,7 +140,7 @@ export default function AdminSocialCreate() {
   const packData = useMemo(
     () =>
       buildPackData({
-        brand: bundle?.brand ?? brand,
+        brand: withGroundPhoto(bundle?.brand ?? brand, brand),
         hashtag: tenantHashtag(bundle),
         sponsors: kindSponsors(bundle, kind, sponsorsOn),
         presentingSponsorName: presentingSponsorName(bundle, sponsorsOn),
