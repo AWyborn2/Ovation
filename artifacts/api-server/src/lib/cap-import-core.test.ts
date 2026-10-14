@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
+  CAP_BATCH_TOKEN_RE,
+  capBatchNote,
+  capBatchToken,
+  capImportTemplateCsv,
   capNameKey,
+  capUndoBlockers,
+  groupCapBatches,
+  parseCapBatchNote,
   parseCapCsv,
   parseSeedArgs,
   planCapSeed,
   readCsvRecords,
   type CapCandidate,
   type CapSeedRow,
-} from "./seed-cap-register-core";
+} from "./cap-import-core";
 
 const csv = (body: string) => `category,cap_number,name,games_a_grade\r\n${body}`;
 const cand = (playerId: number, displayName: string | null, isPrivate = false): CapCandidate => ({
@@ -138,5 +145,109 @@ describe("parseSeedArgs", () => {
       commit: true,
     });
     expect(() => parseSeedArgs(["--bogus"])).toThrow(/Unknown/);
+  });
+
+  it("takes an optional batch label", () => {
+    expect(parseSeedArgs(["--tenant=1", "--file=c.csv", "--label=WKBCC caps"]).label).toBe(
+      "WKBCC caps",
+    );
+  });
+});
+
+describe("batch marker", () => {
+  it("makes a UTC second-resolution token", () => {
+    const token = capBatchToken(new Date("2026-10-14T02:32:15.987Z"));
+    expect(token).toBe("20261014T023215Z");
+    expect(CAP_BATCH_TOKEN_RE.test(token)).toBe(true);
+  });
+
+  it("round-trips a note and tidies the label", () => {
+    const note = capBatchNote("20261014T023215Z", "  WKBCC   A Grade caps ");
+    expect(note).toBe("CSV import [20261014T023215Z] WKBCC A Grade caps");
+    expect(parseCapBatchNote(note)).toEqual({
+      token: "20261014T023215Z",
+      label: "WKBCC A Grade caps",
+      createdAt: "2026-10-14T02:32:15Z",
+    });
+  });
+
+  it("caps a long label and rejects other notes", () => {
+    expect(capBatchNote("20261014T023215Z", "x".repeat(300))).toHaveLength(
+      "CSV import [20261014T023215Z] ".length + 100,
+    );
+    expect(parseCapBatchNote("Seeded by hand")).toBeNull();
+    expect(parseCapBatchNote(null)).toBeNull();
+    expect(parseCapBatchNote("CSV import [bad] x")).toBeNull();
+  });
+});
+
+describe("groupCapBatches", () => {
+  const note = (t: string, l: string) => capBatchNote(t, l);
+  it("groups by marker, counts per list and link status, newest first", () => {
+    const batches = groupCapBatches([
+      { category: "male", playerId: 1, capNote: note("20261014T023215Z", "Newer") },
+      { category: "male", playerId: null, capNote: note("20261014T023215Z", "Newer") },
+      { category: "female", playerId: 5, capNote: note("20261014T023215Z", "Newer") },
+      { category: "male", playerId: 2, capNote: note("20251001T000000Z", "Older") },
+      { category: "male", playerId: 3, capNote: "Entered by hand" },
+      { category: "male", playerId: 4, capNote: null },
+    ]);
+    expect(batches).toEqual([
+      {
+        id: "20261014T023215Z",
+        label: "Newer",
+        createdAt: "2026-10-14T02:32:15Z",
+        male: 2,
+        female: 1,
+        linked: 2,
+        unlinked: 1,
+      },
+      {
+        id: "20251001T000000Z",
+        label: "Older",
+        createdAt: "2025-10-01T00:00:00Z",
+        male: 1,
+        female: 0,
+        linked: 1,
+        unlinked: 0,
+      },
+    ]);
+  });
+});
+
+describe("capUndoBlockers", () => {
+  const batch = [
+    { category: "male", capNumber: 1 },
+    { category: "male", capNumber: 213 },
+    { category: "female", capNumber: 32 },
+  ];
+  it("is empty when nothing follows the batch", () => {
+    expect(capUndoBlockers(batch, [])).toEqual([]);
+    expect(capUndoBlockers(batch, [{ category: "male", capNumber: -7 }])).toEqual([]);
+  });
+
+  it("blocks when a later cap exists in a list the batch touched", () => {
+    const blockers = capUndoBlockers(batch, [
+      { category: "male", capNumber: 214 },
+      { category: "male", capNumber: 215 },
+    ]);
+    expect(blockers).toHaveLength(1);
+    expect(blockers[0]).toContain("2 later cap(s)");
+    expect(blockers[0]).toContain("A Grade");
+    expect(blockers[0]).toContain("#214");
+  });
+
+  it("ignores a list the batch did not touch", () => {
+    expect(
+      capUndoBlockers([{ category: "male", capNumber: 5 }], [{ category: "female", capNumber: 9 }]),
+    ).toEqual([]);
+  });
+});
+
+describe("capImportTemplateCsv", () => {
+  it("is a header and two example rows that parse cleanly", () => {
+    const parsed = parseCapCsv(capImportTemplateCsv());
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.rows.map((r) => r.category)).toEqual(["male", "female"]);
   });
 });

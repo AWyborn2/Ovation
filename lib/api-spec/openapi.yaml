@@ -9497,6 +9497,158 @@ paths:
         "503":
           description: The club history tables (migrations 0021 / 0022) are missing.
 
+  /platform/admin/cap-import/template:
+    get:
+      operationId: getCapImportTemplate
+      tags: [platformAdmin]
+      summary: >-
+        Download the cap register CSV template (every column, two example
+        rows): the club's A Grade (male) and Female A Grade cap numbering.
+      responses:
+        "200":
+          description: The CSV template
+          content:
+            text/csv:
+              schema:
+                type: string
+        "401":
+          description: Not authenticated.
+
+  /platform/admin/tenants/{id}/cap-import/preview:
+    post:
+      operationId: previewTenantCapImport
+      tags: [platformAdmin]
+      summary: >-
+        Validate a cap register CSV and preview it. Writes nothing. Reports
+        every problem with its spreadsheet row, and how each cap would link to
+        a player of the club (exact name match only; unmatched caps are still
+        written, unlinked). A category that already has caps is refused.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CapImportPreviewBody"
+      responses:
+        "200":
+          description: The preview (check `errors` and `refusedCategories` before committing)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapImportPreview"
+        "400":
+          description: Missing file.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+
+  /platform/admin/tenants/{id}/cap-import/commit:
+    post:
+      operationId: commitTenantCapImport
+      tags: [platformAdmin]
+      summary: >-
+        Write a cap register CSV as one labelled batch. The file is validated
+        again. Caps are written confirmed, linked where the name matched
+        exactly, and marked with the batch in their note so the batch can be
+        undone. Never drafts social cards.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CapImportCommitBody"
+      responses:
+        "201":
+          description: The batch was written
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapImportCommitResult"
+        "400":
+          description: Missing file or label.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+        "409":
+          description: A category already has caps, or the register changed since the preview.
+        "422":
+          description: The file has errors (the body carries the preview).
+
+  /platform/admin/tenants/{id}/cap-import/batches:
+    get:
+      operationId: listTenantCapImportBatches
+      tags: [platformAdmin]
+      summary: The club's cap import batches, newest first.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The batches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CapImportBatch"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+
+  /platform/admin/tenants/{id}/cap-import/batches/{batchId}:
+    delete:
+      operationId: undoTenantCapImportBatch
+      tags: [platformAdmin]
+      summary: >-
+        Undo a cap import batch: delete the caps it wrote. Refused when a later
+        cap was issued after them in the same list (the sequence would break).
+        A cap an admin edited out of the batch note is left alone.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9]{8}T[0-9]{6}Z$"
+      responses:
+        "200":
+          description: The batch was undone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapImportUndoResult"
+        "400":
+          description: Invalid batch id.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such batch for this tenant.
+        "409":
+          description: A later cap exists, so undoing would break the numbering.
+
   /social-prefill/ladder:
     get:
       operationId: getSocialLadderPrefill
@@ -12556,6 +12708,140 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/HistoryBoundary"
+
+    CapImportPreviewBody:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: "The CSV file: category,cap_number,name,games_a_grade"
+
+    CapImportCommitBody:
+      type: object
+      required: [file, label]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: The same CSV file that was previewed
+        label:
+          type: string
+          description: Admin-facing name for the batch, e.g. "WKBCC A Grade caps (club list)".
+
+    CapImportCategory:
+      type: string
+      enum: [male, female]
+      description: male = A Grade; female = Female A Grade.
+
+    CapImportLinkStatus:
+      type: string
+      enum: [linked, ambiguous, private, unmatched]
+
+    CapImportPlannedCap:
+      type: object
+      required: [row, category, capNumber, name, games, playerId, status, note]
+      properties:
+        row:
+          type: integer
+          description: Spreadsheet row (the header is row 1).
+        category:
+          $ref: "#/components/schemas/CapImportCategory"
+        capNumber:
+          type: integer
+        name:
+          type: string
+        games:
+          type: integer
+        playerId:
+          type: ["integer", "null"]
+          description: The club player the cap would link to; null = written unlinked.
+        status:
+          $ref: "#/components/schemas/CapImportLinkStatus"
+        note:
+          type: string
+          description: Why a cap is not linked (candidate ids, a close name hint).
+
+    CapImportRefusedCategory:
+      type: object
+      required: [category, existing]
+      properties:
+        category:
+          $ref: "#/components/schemas/CapImportCategory"
+        existing:
+          type: integer
+          description: Caps the club's register already holds in this category.
+
+    CapImportPreview:
+      type: object
+      required: [rowCount, errors, refusedCategories, caps, centralUnavailable]
+      properties:
+        rowCount:
+          type: integer
+          description: Caps the commit would write.
+        errors:
+          type: array
+          items:
+            type: string
+          description: Problems, each naming its row. Nothing can be committed while any remain.
+        refusedCategories:
+          type: array
+          items:
+            $ref: "#/components/schemas/CapImportRefusedCategory"
+        caps:
+          type: array
+          items:
+            $ref: "#/components/schemas/CapImportPlannedCap"
+        centralUnavailable:
+          type: ["string", "null"]
+          description: Set when central couldn't be read, so only pre-digital players could be linked.
+
+    CapImportCommitResult:
+      type: object
+      required: [batchId, label, written, linked, unlinked]
+      properties:
+        batchId:
+          type: string
+          description: The batch token (also in each cap's note).
+        label:
+          type: string
+        written:
+          type: integer
+        linked:
+          type: integer
+        unlinked:
+          type: integer
+
+    CapImportBatch:
+      type: object
+      required: [id, label, createdAt, male, female, linked, unlinked]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        createdAt:
+          type: string
+        male:
+          type: integer
+          description: Caps remaining in the A Grade list.
+        female:
+          type: integer
+          description: Caps remaining in the Female A Grade list.
+        linked:
+          type: integer
+        unlinked:
+          type: integer
+
+    CapImportUndoResult:
+      type: object
+      required: [batchId, capsRemoved]
+      properties:
+        batchId:
+          type: string
+        capsRemoved:
+          type: integer
 
     PasswordResetInfo:
       type: object

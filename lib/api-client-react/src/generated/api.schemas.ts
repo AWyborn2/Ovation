@@ -2357,6 +2357,102 @@ export interface ReplaceHistoryBoundariesBody {
   boundaries: HistoryBoundary[];
 }
 
+export interface CapImportPreviewBody {
+  /** The CSV file: category,cap_number,name,games_a_grade */
+  file: Blob;
+}
+
+export interface CapImportCommitBody {
+  /** The same CSV file that was previewed */
+  file: Blob;
+  /** Admin-facing name for the batch, e.g. "WKBCC A Grade caps (club list)". */
+  label: string;
+}
+
+/**
+ * male = A Grade; female = Female A Grade.
+ */
+export type CapImportCategory = typeof CapImportCategory[keyof typeof CapImportCategory];
+
+
+export const CapImportCategory = {
+  male: 'male',
+  female: 'female',
+} as const;
+
+export type CapImportLinkStatus = typeof CapImportLinkStatus[keyof typeof CapImportLinkStatus];
+
+
+export const CapImportLinkStatus = {
+  linked: 'linked',
+  ambiguous: 'ambiguous',
+  private: 'private',
+  unmatched: 'unmatched',
+} as const;
+
+export interface CapImportPlannedCap {
+  /** Spreadsheet row (the header is row 1). */
+  row: number;
+  category: CapImportCategory;
+  capNumber: number;
+  name: string;
+  games: number;
+  /**
+     * The club player the cap would link to; null = written unlinked.
+     * @nullable
+     */
+  playerId: number | null;
+  status: CapImportLinkStatus;
+  /** Why a cap is not linked (candidate ids, a close name hint). */
+  note: string;
+}
+
+export interface CapImportRefusedCategory {
+  category: CapImportCategory;
+  /** Caps the club's register already holds in this category. */
+  existing: number;
+}
+
+export interface CapImportPreview {
+  /** Caps the commit would write. */
+  rowCount: number;
+  /** Problems, each naming its row. Nothing can be committed while any remain. */
+  errors: string[];
+  refusedCategories: CapImportRefusedCategory[];
+  caps: CapImportPlannedCap[];
+  /**
+     * Set when central couldn't be read, so only pre-digital players could be linked.
+     * @nullable
+     */
+  centralUnavailable: string | null;
+}
+
+export interface CapImportCommitResult {
+  /** The batch token (also in each cap's note). */
+  batchId: string;
+  label: string;
+  written: number;
+  linked: number;
+  unlinked: number;
+}
+
+export interface CapImportBatch {
+  id: string;
+  label: string;
+  createdAt: string;
+  /** Caps remaining in the A Grade list. */
+  male: number;
+  /** Caps remaining in the Female A Grade list. */
+  female: number;
+  linked: number;
+  unlinked: number;
+}
+
+export interface CapImportUndoResult {
+  batchId: string;
+  capsRemoved: number;
+}
+
 export interface PasswordResetInfo {
   username: string;
   displayName: string;

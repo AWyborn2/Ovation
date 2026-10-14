@@ -67,6 +67,12 @@ import type {
   CapEntryInput,
   CapEntryUpdate,
   CapIdsBody,
+  CapImportBatch,
+  CapImportCommitBody,
+  CapImportCommitResult,
+  CapImportPreview,
+  CapImportPreviewBody,
+  CapImportUndoResult,
   CapRecomputeSummary,
   CapReorderBody,
   CapReviewResult,
@@ -30268,6 +30274,381 @@ export const useReplaceTenantHistoryBoundaries = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getReplaceTenantHistoryBoundariesMutationOptions(options));
+    }
+
+export const getGetCapImportTemplateUrl = () => {
+
+
+
+
+  return `/api/platform/admin/cap-import/template`
+}
+
+/**
+ * @summary Download the cap register CSV template (every column, two example rows): the club's A Grade (male) and Female A Grade cap numbering.
+ */
+export const getCapImportTemplate = async ( options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getGetCapImportTemplateUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCapImportTemplateQueryKey = () => {
+    return [
+    `/api/platform/admin/cap-import/template`
+    ] as const;
+    }
+
+
+export const getGetCapImportTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getCapImportTemplate>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCapImportTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCapImportTemplateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCapImportTemplate>>> = ({ signal }) => getCapImportTemplate({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapImportTemplate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCapImportTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getCapImportTemplate>>>
+export type GetCapImportTemplateQueryError = ErrorType<void>
+
+
+/**
+ * @summary Download the cap register CSV template (every column, two example rows): the club's A Grade (male) and Female A Grade cap numbering.
+ */
+
+export function useGetCapImportTemplate<TData = Awaited<ReturnType<typeof getCapImportTemplate>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCapImportTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCapImportTemplateQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPreviewTenantCapImportUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/cap-import/preview`
+}
+
+/**
+ * @summary Validate a cap register CSV and preview it. Writes nothing. Reports every problem with its spreadsheet row, and how each cap would link to a player of the club (exact name match only; unmatched caps are still written, unlinked). A category that already has caps is refused.
+ */
+export const previewTenantCapImport = async (id: number,
+    capImportPreviewBody: CapImportPreviewBody, options?: RequestInit): Promise<CapImportPreview> => {
+    const formData = new FormData();
+formData.append(`file`, capImportPreviewBody.file);
+
+  return customFetch<CapImportPreview>(getPreviewTenantCapImportUrl(id),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getPreviewTenantCapImportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewTenantCapImport>>, TError,{id: number;data: BodyType<CapImportPreviewBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewTenantCapImport>>, TError,{id: number;data: BodyType<CapImportPreviewBody>}, TContext> => {
+
+const mutationKey = ['previewTenantCapImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewTenantCapImport>>, {id: number;data: BodyType<CapImportPreviewBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  previewTenantCapImport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewTenantCapImportMutationResult = NonNullable<Awaited<ReturnType<typeof previewTenantCapImport>>>
+    export type PreviewTenantCapImportMutationBody = BodyType<CapImportPreviewBody>
+    export type PreviewTenantCapImportMutationError = ErrorType<void>
+
+    /**
+ * @summary Validate a cap register CSV and preview it. Writes nothing. Reports every problem with its spreadsheet row, and how each cap would link to a player of the club (exact name match only; unmatched caps are still written, unlinked). A category that already has caps is refused.
+ */
+export const usePreviewTenantCapImport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewTenantCapImport>>, TError,{id: number;data: BodyType<CapImportPreviewBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewTenantCapImport>>,
+        TError,
+        {id: number;data: BodyType<CapImportPreviewBody>},
+        TContext
+      > => {
+      return useMutation(getPreviewTenantCapImportMutationOptions(options));
+    }
+
+export const getCommitTenantCapImportUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/cap-import/commit`
+}
+
+/**
+ * @summary Write a cap register CSV as one labelled batch. The file is validated again. Caps are written confirmed, linked where the name matched exactly, and marked with the batch in their note so the batch can be undone. Never drafts social cards.
+ */
+export const commitTenantCapImport = async (id: number,
+    capImportCommitBody: CapImportCommitBody, options?: RequestInit): Promise<CapImportCommitResult> => {
+    const formData = new FormData();
+formData.append(`file`, capImportCommitBody.file);
+formData.append(`label`, capImportCommitBody.label);
+
+  return customFetch<CapImportCommitResult>(getCommitTenantCapImportUrl(id),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getCommitTenantCapImportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitTenantCapImport>>, TError,{id: number;data: BodyType<CapImportCommitBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof commitTenantCapImport>>, TError,{id: number;data: BodyType<CapImportCommitBody>}, TContext> => {
+
+const mutationKey = ['commitTenantCapImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof commitTenantCapImport>>, {id: number;data: BodyType<CapImportCommitBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  commitTenantCapImport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CommitTenantCapImportMutationResult = NonNullable<Awaited<ReturnType<typeof commitTenantCapImport>>>
+    export type CommitTenantCapImportMutationBody = BodyType<CapImportCommitBody>
+    export type CommitTenantCapImportMutationError = ErrorType<void>
+
+    /**
+ * @summary Write a cap register CSV as one labelled batch. The file is validated again. Caps are written confirmed, linked where the name matched exactly, and marked with the batch in their note so the batch can be undone. Never drafts social cards.
+ */
+export const useCommitTenantCapImport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitTenantCapImport>>, TError,{id: number;data: BodyType<CapImportCommitBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof commitTenantCapImport>>,
+        TError,
+        {id: number;data: BodyType<CapImportCommitBody>},
+        TContext
+      > => {
+      return useMutation(getCommitTenantCapImportMutationOptions(options));
+    }
+
+export const getListTenantCapImportBatchesUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/cap-import/batches`
+}
+
+/**
+ * @summary The club's cap import batches, newest first.
+ */
+export const listTenantCapImportBatches = async (id: number, options?: RequestInit): Promise<CapImportBatch[]> => {
+
+  return customFetch<CapImportBatch[]>(getListTenantCapImportBatchesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTenantCapImportBatchesQueryKey = (id: number,) => {
+    return [
+    `/api/platform/admin/tenants/${id}/cap-import/batches`
+    ] as const;
+    }
+
+
+export const getListTenantCapImportBatchesQueryOptions = <TData = Awaited<ReturnType<typeof listTenantCapImportBatches>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTenantCapImportBatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTenantCapImportBatchesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTenantCapImportBatches>>> = ({ signal }) => listTenantCapImportBatches(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTenantCapImportBatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTenantCapImportBatchesQueryResult = NonNullable<Awaited<ReturnType<typeof listTenantCapImportBatches>>>
+export type ListTenantCapImportBatchesQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club's cap import batches, newest first.
+ */
+
+export function useListTenantCapImportBatches<TData = Awaited<ReturnType<typeof listTenantCapImportBatches>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTenantCapImportBatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTenantCapImportBatchesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUndoTenantCapImportBatchUrl = (id: number,
+    batchId: string,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/cap-import/batches/${batchId}`
+}
+
+/**
+ * @summary Undo a cap import batch: delete the caps it wrote. Refused when a later cap was issued after them in the same list (the sequence would break). A cap an admin edited out of the batch note is left alone.
+ */
+export const undoTenantCapImportBatch = async (id: number,
+    batchId: string, options?: RequestInit): Promise<CapImportUndoResult> => {
+
+  return customFetch<CapImportUndoResult>(getUndoTenantCapImportBatchUrl(id,batchId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getUndoTenantCapImportBatchMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof undoTenantCapImportBatch>>, TError,{id: number;batchId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof undoTenantCapImportBatch>>, TError,{id: number;batchId: string}, TContext> => {
+
+const mutationKey = ['undoTenantCapImportBatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof undoTenantCapImportBatch>>, {id: number;batchId: string}> = (props) => {
+          const {id,batchId} = props ?? {};
+
+          return  undoTenantCapImportBatch(id,batchId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UndoTenantCapImportBatchMutationResult = NonNullable<Awaited<ReturnType<typeof undoTenantCapImportBatch>>>
+
+    export type UndoTenantCapImportBatchMutationError = ErrorType<void>
+
+    /**
+ * @summary Undo a cap import batch: delete the caps it wrote. Refused when a later cap was issued after them in the same list (the sequence would break). A cap an admin edited out of the batch note is left alone.
+ */
+export const useUndoTenantCapImportBatch = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof undoTenantCapImportBatch>>, TError,{id: number;batchId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof undoTenantCapImportBatch>>,
+        TError,
+        {id: number;batchId: string},
+        TContext
+      > => {
+      return useMutation(getUndoTenantCapImportBatchMutationOptions(options));
     }
 
 export const getGetSocialLadderPrefillUrl = (params: GetSocialLadderPrefillParams,) => {
