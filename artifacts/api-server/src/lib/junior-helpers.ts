@@ -9,6 +9,7 @@ import {
   clubsTable,
   type JuniorMatchDisplaySettingsRow,
 } from "@workspace/db";
+import { juniorParticipantJoin } from "./junior-participant-scope";
 
 const MASK_NAME = "Private Player";
 
@@ -147,7 +148,7 @@ export async function ageGroupsForSeason(
       .from(juniorMatchBattingTable)
       .innerJoin(
         juniorParticipantsTable,
-        eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
+        juniorParticipantJoin(juniorMatchBattingTable.participantId, tenantId),
       )
       .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
       .where(and(...battingConds)),
@@ -156,7 +157,7 @@ export async function ageGroupsForSeason(
       .from(juniorMatchBowlingTable)
       .innerJoin(
         juniorParticipantsTable,
-        eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
+        juniorParticipantJoin(juniorMatchBowlingTable.participantId, tenantId),
       )
       .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
       .where(and(...bowlingConds)),

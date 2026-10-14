@@ -14,6 +14,7 @@ import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admi
 import { adminWriteRateLimiter } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
 import { snakeToCamel, serializeCorrection, SNAKE_TO_TABLE } from "../lib/junior-admin-helpers";
+import { juniorParticipantKey } from "../lib/junior-participant-scope";
 
 /**
  * Juniors admin — the corrections journal: list + revert.
@@ -114,7 +115,7 @@ router.delete(
             await tx
               .update(juniorParticipantsTable)
               .set(set)
-              .where(eq(juniorParticipantsTable.participantId, correction.targetId));
+              .where(juniorParticipantKey(tenantId, correction.targetId));
           } else {
             await tx
               .update(table)

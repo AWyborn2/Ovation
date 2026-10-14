@@ -8,6 +8,7 @@ import {
   juniorMatchesTable,
 } from "@workspace/db";
 import { BALLS_PER_OVER } from "./junior-cricket";
+import { juniorParticipantJoin } from "./junior-participant-scope";
 
 /**
  * Junior leaderboard query helpers, extracted from routes/juniors.ts.
@@ -39,7 +40,6 @@ export async function rosterGamesByParticipant(
   scope: LeaderScope = {},
 ): Promise<Map<string, number>> {
   const conds = [
-    ofTenant(tenantId),
     eq(juniorMatchRostersTable.isHallsHead, true),
     isNotNull(juniorMatchRostersTable.participantId),
   ];
@@ -52,7 +52,7 @@ export async function rosterGamesByParticipant(
     })
     .from(juniorMatchRostersTable)
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchRostersTable.matchId))
-    .where(and(...conds))
+    .where(and(ofTenant(tenantId), ...conds))
     .groupBy(juniorMatchRostersTable.participantId);
   return new Map(
     rows
@@ -81,7 +81,7 @@ export async function battingLeaders(tenantId: number, limit: number, scope: Lea
     .from(juniorMatchBattingTable)
     .innerJoin(
       juniorParticipantsTable,
-      eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
+      juniorParticipantJoin(juniorMatchBattingTable.participantId, tenantId),
     )
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
     .where(and(...conds))
@@ -120,7 +120,7 @@ export async function bowlingLeaders(tenantId: number, limit: number, scope: Lea
     .from(juniorMatchBowlingTable)
     .innerJoin(
       juniorParticipantsTable,
-      eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
+      juniorParticipantJoin(juniorMatchBowlingTable.participantId, tenantId),
     )
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
     .where(and(...conds))
@@ -157,7 +157,7 @@ export async function highestScoreInnings(tenantId: number, limit: number) {
     .from(juniorMatchBattingTable)
     .innerJoin(
       juniorParticipantsTable,
-      eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
+      juniorParticipantJoin(juniorMatchBattingTable.participantId, tenantId),
     )
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
     .where(
@@ -199,7 +199,7 @@ export async function bestBowlingFigures(tenantId: number, limit: number) {
     .from(juniorMatchBowlingTable)
     .innerJoin(
       juniorParticipantsTable,
-      eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
+      juniorParticipantJoin(juniorMatchBowlingTable.participantId, tenantId),
     )
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
     .where(

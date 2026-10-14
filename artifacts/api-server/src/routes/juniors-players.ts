@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ilike, inArray, isNotNull, sql } from "drizzle-orm";
+import { eq, and, ilike, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
 import {
   db,
   juniorMatchesTable,
@@ -26,6 +26,7 @@ import { rosterGamesByParticipant } from "../lib/junior-leaderboards";
 import { getShirtNumberSettings } from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import { loadJuniorProfileShirtNumbers } from "../lib/junior-shirt-numbers";
+import { juniorParticipantKey } from "../lib/junior-participant-scope";
 
 /**
  * Junior players directory, player profile, and the senior-link
@@ -58,7 +59,7 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
   const withPrivate = includePrivate === true && !!(await resolveAdmin(req));
 
   const tenantId = getTenantId(req);
-  const conds = [eq(juniorParticipantsTable.tenantId, tenantId)];
+  const conds: SQL[] = [];
   if (!withPrivate) conds.push(eq(juniorParticipantsTable.isPrivate, false));
   if (search) conds.push(ilike(juniorParticipantsTable.displayName, `%${search}%`));
 
@@ -94,7 +95,7 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
   const participants = await db
     .select()
     .from(juniorParticipantsTable)
-    .where(and(...conds))
+    .where(and(eq(juniorParticipantsTable.tenantId, tenantId), ...conds))
     .orderBy(juniorParticipantsTable.displayName);
 
   // Aggregate runs / wickets / games across HH appearances, keyed by pid. The
@@ -106,12 +107,10 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
   // runs and wickets all describe the same scope); unfiltered they are all-time,
   // which is what the always-unfiltered Most Games board reads.
   const battingAggConds = [
-    eq(juniorMatchesTable.tenantId, tenantId),
     eq(juniorMatchBattingTable.isHallsHead, true),
     isNotNull(juniorMatchBattingTable.participantId),
   ];
   const bowlingAggConds = [
-    eq(juniorMatchesTable.tenantId, tenantId),
     eq(juniorMatchBowlingTable.isHallsHead, true),
     isNotNull(juniorMatchBowlingTable.participantId),
   ];
@@ -131,7 +130,7 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
       })
       .from(juniorMatchBattingTable)
       .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
-      .where(and(...battingAggConds))
+      .where(and(eq(juniorMatchesTable.tenantId, tenantId), ...battingAggConds))
       .groupBy(juniorMatchBattingTable.participantId),
     db
       .select({
@@ -140,7 +139,7 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
       })
       .from(juniorMatchBowlingTable)
       .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
-      .where(and(...bowlingAggConds))
+      .where(and(eq(juniorMatchesTable.tenantId, tenantId), ...bowlingAggConds))
       .groupBy(juniorMatchBowlingTable.participantId),
     rosterGamesByParticipant(tenantId, { season, ageGroup }),
   ]);
@@ -246,12 +245,7 @@ router.put(
     const [updated] = await db
       .update(juniorParticipantsTable)
       .set({ seniorPlayerId: body.data.seniorPlayerId })
-      .where(
-        and(
-          eq(juniorParticipantsTable.participantId, params.data.id),
-          eq(juniorParticipantsTable.tenantId, getTenantId(req)),
-        ),
-      )
+      .where(juniorParticipantKey(getTenantId(req), params.data.id))
       .returning();
     if (!updated) {
       res.status(404).json({ error: "Participant not found" });
@@ -279,12 +273,7 @@ router.delete(
     const [updated] = await db
       .update(juniorParticipantsTable)
       .set({ seniorPlayerId: null })
-      .where(
-        and(
-          eq(juniorParticipantsTable.participantId, params.data.id),
-          eq(juniorParticipantsTable.tenantId, getTenantId(req)),
-        ),
-      )
+      .where(juniorParticipantKey(getTenantId(req), params.data.id))
       .returning();
     if (!updated) {
       res.status(404).json({ error: "Participant not found" });
@@ -310,12 +299,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     const [row] = await db
       .select()
       .from(juniorParticipantsTable)
-      .where(
-        and(
-          eq(juniorParticipantsTable.participantId, id),
-          eq(juniorParticipantsTable.tenantId, tenantId),
-        ),
-      );
+      .where(juniorParticipantKey(tenantId, id));
     return row;
   };
 

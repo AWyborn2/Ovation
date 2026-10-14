@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
   juniorMatchBattingTable,
@@ -19,7 +19,17 @@ import {
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { juniorEditRateLimiter, juniorMergeRateLimiter } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
-import { journal, adminName, recomputeParticipantMetadata } from "../lib/junior-admin-helpers";
+import {
+  journal,
+  adminName,
+  recomputeParticipantMetadata,
+  type Tx,
+} from "../lib/junior-admin-helpers";
+import {
+  juniorParticipantKey,
+  tenantJuniorMatchIds,
+  tenantJuniorPremiershipIds,
+} from "../lib/junior-participant-scope";
 
 /**
  * Juniors admin — participant profile corrections and duplicate merges.
@@ -31,6 +41,49 @@ import { journal, adminName, recomputeParticipantMetadata } from "../lib/junior-
  * there.
  */
 const router: IRouter = Router();
+
+/**
+ * Set a participant's stored name on the club's own (HH) lines in this club's
+ * matches. Lines reach their tenant through their match; another club's junior
+ * with the same GUID keeps its own name.
+ */
+async function renameClubLines(
+  tx: Tx,
+  tenantId: number,
+  participantId: string,
+  playerName: string,
+): Promise<void> {
+  await tx
+    .update(juniorMatchBattingTable)
+    .set({ playerName })
+    .where(
+      and(
+        inArray(juniorMatchBattingTable.matchId, tenantJuniorMatchIds(tenantId)),
+        eq(juniorMatchBattingTable.participantId, participantId),
+        eq(juniorMatchBattingTable.isHallsHead, true),
+      ),
+    );
+  await tx
+    .update(juniorMatchBowlingTable)
+    .set({ playerName })
+    .where(
+      and(
+        inArray(juniorMatchBowlingTable.matchId, tenantJuniorMatchIds(tenantId)),
+        eq(juniorMatchBowlingTable.participantId, participantId),
+        eq(juniorMatchBowlingTable.isHallsHead, true),
+      ),
+    );
+  await tx
+    .update(juniorMatchRostersTable)
+    .set({ playerName })
+    .where(
+      and(
+        inArray(juniorMatchRostersTable.matchId, tenantJuniorMatchIds(tenantId)),
+        eq(juniorMatchRostersTable.participantId, participantId),
+        eq(juniorMatchRostersTable.isHallsHead, true),
+      ),
+    );
+}
 
 // ---------------------------------------------------------------------------
 // PATCH /juniors/participants/:id — display name / privacy corrections
@@ -51,15 +104,11 @@ router.patch(
       res.status(400).json({ error: body.error.message });
       return;
     }
+    const tenantId = getTenantId(req);
     const [participant] = await db
       .select()
       .from(juniorParticipantsTable)
-      .where(
-        and(
-          eq(juniorParticipantsTable.participantId, params.data.id),
-          eq(juniorParticipantsTable.tenantId, getTenantId(req)),
-        ),
-      );
+      .where(juniorParticipantKey(tenantId, params.data.id));
     if (!participant) {
       res.status(404).json({ error: "Participant not found" });
       return;
@@ -91,43 +140,18 @@ router.patch(
       const [row] = await tx
         .update(juniorParticipantsTable)
         .set(set)
-        .where(eq(juniorParticipantsTable.participantId, participant.participantId))
+        .where(juniorParticipantKey(tenantId, participant.participantId))
         .returning();
       // A display-name change flows onto the participant's stored line names
-      // so scorecards/rosters keep matching the directory. Journalled via the
-      // participant patch only — the ETL re-apply refreshes line names from
-      // the participant row the same way.
+      // so scorecards/rosters keep matching the directory — on this club's
+      // matches only (another club's junior with the same GUID keeps theirs).
+      // Journalled via the participant patch only — the ETL re-apply refreshes
+      // line names from the participant row the same way.
       if (body.data.displayName !== undefined) {
-        await tx
-          .update(juniorMatchBattingTable)
-          .set({ playerName: body.data.displayName })
-          .where(
-            and(
-              eq(juniorMatchBattingTable.participantId, participant.participantId),
-              eq(juniorMatchBattingTable.isHallsHead, true),
-            ),
-          );
-        await tx
-          .update(juniorMatchBowlingTable)
-          .set({ playerName: body.data.displayName })
-          .where(
-            and(
-              eq(juniorMatchBowlingTable.participantId, participant.participantId),
-              eq(juniorMatchBowlingTable.isHallsHead, true),
-            ),
-          );
-        await tx
-          .update(juniorMatchRostersTable)
-          .set({ playerName: body.data.displayName })
-          .where(
-            and(
-              eq(juniorMatchRostersTable.participantId, participant.participantId),
-              eq(juniorMatchRostersTable.isHallsHead, true),
-            ),
-          );
+        await renameClubLines(tx, tenantId, participant.participantId, body.data.displayName);
       }
       await journal(tx, {
-        tenantId: getTenantId(req),
+        tenantId,
         targetTable: "junior_participants",
         targetId: participant.participantId,
         op: "update",
@@ -189,22 +213,12 @@ router.post(
         const [dup] = await tx
           .select()
           .from(juniorParticipantsTable)
-          .where(
-            and(
-              eq(juniorParticipantsTable.participantId, duplicateId),
-              eq(juniorParticipantsTable.tenantId, tenantId),
-            ),
-          );
+          .where(juniorParticipantKey(tenantId, duplicateId));
         if (!dup) throw new Error("__DUP_NOT_FOUND__");
         const [keeper] = await tx
           .select()
           .from(juniorParticipantsTable)
-          .where(
-            and(
-              eq(juniorParticipantsTable.participantId, keeperId),
-              eq(juniorParticipantsTable.tenantId, tenantId),
-            ),
-          );
+          .where(juniorParticipantKey(tenantId, keeperId));
         if (!keeper) {
           // A missing keeper that is a recorded duplicate means the client is
           // stale — refuse with the canonical keeper instead of silently
@@ -230,34 +244,53 @@ router.post(
           throw new Error("__KEEPER_NOT_FOUND__");
         }
 
-        // Reassign every junior line from the duplicate to the keeper. The
-        // HH flag is untouched — a line carrying this GUID is the same human
-        // whichever side of the card it sits on.
+        // Reassign every junior line from the duplicate to the keeper, on
+        // this club's matches only: another club's junior with the same GUID
+        // is a different row and is never touched. The HH flag is untouched —
+        // a line carrying this GUID is the same human whichever side of the
+        // card it sits on.
         const batting = await tx
           .update(juniorMatchBattingTable)
           .set({ participantId: keeperId })
-          .where(eq(juniorMatchBattingTable.participantId, duplicateId))
+          .where(
+            and(
+              inArray(juniorMatchBattingTable.matchId, tenantJuniorMatchIds(tenantId)),
+              eq(juniorMatchBattingTable.participantId, duplicateId),
+            ),
+          )
           .returning({ id: juniorMatchBattingTable.id });
         const bowling = await tx
           .update(juniorMatchBowlingTable)
           .set({ participantId: keeperId })
-          .where(eq(juniorMatchBowlingTable.participantId, duplicateId))
+          .where(
+            and(
+              inArray(juniorMatchBowlingTable.matchId, tenantJuniorMatchIds(tenantId)),
+              eq(juniorMatchBowlingTable.participantId, duplicateId),
+            ),
+          )
           .returning({ id: juniorMatchBowlingTable.id });
         const rosters = await tx
           .update(juniorMatchRostersTable)
           .set({ participantId: keeperId })
-          .where(eq(juniorMatchRostersTable.participantId, duplicateId))
+          .where(
+            and(
+              inArray(juniorMatchRostersTable.matchId, tenantJuniorMatchIds(tenantId)),
+              eq(juniorMatchRostersTable.participantId, duplicateId),
+            ),
+          )
           .returning({ id: juniorMatchRostersTable.id });
 
         // Same-match roster duplicates cannot double-count Games (canonical
         // figure is COUNT(DISTINCT match_id)) but are deduped for tidiness.
         const dedupedRes = await tx.execute(sql`
           DELETE FROM junior_match_rosters a
-          USING junior_match_rosters b
+          USING junior_match_rosters b, junior_matches m
           WHERE a.participant_id = ${keeperId}
             AND b.participant_id = ${keeperId}
             AND a.match_id = b.match_id
             AND a.id > b.id
+            AND m.id = a.match_id
+            AND m.tenant_id = ${tenantId}
         `);
         const rostersDeduped = Number(
           (dedupedRes as unknown as { rowCount?: number }).rowCount ?? 0,
@@ -266,15 +299,25 @@ router.post(
         const premPlayers = await tx
           .update(juniorPremiershipPlayersTable)
           .set({ participantId: keeperId })
-          .where(eq(juniorPremiershipPlayersTable.participantId, duplicateId))
+          .where(
+            and(
+              inArray(
+                juniorPremiershipPlayersTable.premiershipId,
+                tenantJuniorPremiershipIds(tenantId),
+              ),
+              eq(juniorPremiershipPlayersTable.participantId, duplicateId),
+            ),
+          )
           .returning({ id: juniorPremiershipPlayersTable.id });
         await tx.execute(sql`
           DELETE FROM junior_premiership_players a
-          USING junior_premiership_players b
+          USING junior_premiership_players b, junior_premierships pr
           WHERE a.participant_id = ${keeperId}
             AND b.participant_id = ${keeperId}
             AND a.premiership_id = b.premiership_id
             AND a.id > b.id
+            AND pr.id = a.premiership_id
+            AND pr.tenant_id = ${tenantId}
         `);
         const officeBearers = await tx
           .update(juniorOfficeBearersTable)
@@ -291,33 +334,7 @@ router.post(
         // scorecards keep matching the directory — mirrors the rename
         // propagation in PATCH /juniors/participants/:id.
         if (keeper.displayName) {
-          await tx
-            .update(juniorMatchBattingTable)
-            .set({ playerName: keeper.displayName })
-            .where(
-              and(
-                eq(juniorMatchBattingTable.participantId, keeperId),
-                eq(juniorMatchBattingTable.isHallsHead, true),
-              ),
-            );
-          await tx
-            .update(juniorMatchBowlingTable)
-            .set({ playerName: keeper.displayName })
-            .where(
-              and(
-                eq(juniorMatchBowlingTable.participantId, keeperId),
-                eq(juniorMatchBowlingTable.isHallsHead, true),
-              ),
-            );
-          await tx
-            .update(juniorMatchRostersTable)
-            .set({ playerName: keeper.displayName })
-            .where(
-              and(
-                eq(juniorMatchRostersTable.participantId, keeperId),
-                eq(juniorMatchRostersTable.isHallsHead, true),
-              ),
-            );
+          await renameClubLines(tx, tenantId, keeperId, keeper.displayName);
         }
 
         // Carry the senior cross-link (keeper's own wins) and privacy
@@ -328,15 +345,13 @@ router.post(
             seniorPlayerId: keeper.seniorPlayerId ?? dup.seniorPlayerId,
             isPrivate: keeper.isPrivate || dup.isPrivate,
           })
-          .where(eq(juniorParticipantsTable.participantId, keeperId))
+          .where(juniorParticipantKey(tenantId, keeperId))
           .returning();
 
-        await recomputeParticipantMetadata(tx, keeperId);
+        await recomputeParticipantMetadata(tx, tenantId, keeperId);
 
-        // Snapshot then delete the absorbed profile row.
-        await tx
-          .delete(juniorParticipantsTable)
-          .where(eq(juniorParticipantsTable.participantId, duplicateId));
+        // Snapshot then delete the absorbed profile row (this club's only).
+        await tx.delete(juniorParticipantsTable).where(juniorParticipantKey(tenantId, duplicateId));
 
         // Keep the map flat: earlier merges that pointed at the duplicate now
         // point at the new keeper.

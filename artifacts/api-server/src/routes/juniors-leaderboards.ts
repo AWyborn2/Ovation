@@ -24,6 +24,7 @@ import {
   GetJuniorSeasonTopPerformersQueryParams,
 } from "@workspace/api-zod";
 import { getTenantId } from "../middlewares/tenant-context";
+import { juniorParticipantJoin } from "../lib/junior-participant-scope";
 import { overlayNativeOpponents } from "../lib/club-brand";
 import { latestByDate } from "../lib/latest-per-grade";
 import {
@@ -241,7 +242,7 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
       .from(juniorMatchBattingTable)
       .innerJoin(
         juniorParticipantsTable,
-        eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
+        juniorParticipantJoin(juniorMatchBattingTable.participantId, tenantId),
       )
       .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
       .where(and(eq(juniorParticipantsTable.isPrivate, false), ...matchConds)),
@@ -255,7 +256,7 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
       .from(juniorMatchBowlingTable)
       .innerJoin(
         juniorParticipantsTable,
-        eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
+        juniorParticipantJoin(juniorMatchBowlingTable.participantId, tenantId),
       )
       .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
       .where(and(eq(juniorParticipantsTable.isPrivate, false), ...bowlConds)),
@@ -379,11 +380,12 @@ router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
       .from(juniorMatchBattingTable)
       .innerJoin(
         juniorParticipantsTable,
-        eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
+        juniorParticipantJoin(juniorMatchBattingTable.participantId, tenantId),
       )
+      .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
       .where(
         and(
-          eq(juniorParticipantsTable.tenantId, tenantId),
+          eq(juniorMatchesTable.tenantId, tenantId),
           eq(juniorParticipantsTable.isPrivate, false),
           eq(juniorMatchBattingTable.isHallsHead, true),
         ),
@@ -398,11 +400,12 @@ router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
       .from(juniorMatchBowlingTable)
       .innerJoin(
         juniorParticipantsTable,
-        eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
+        juniorParticipantJoin(juniorMatchBowlingTable.participantId, tenantId),
       )
+      .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
       .where(
         and(
-          eq(juniorParticipantsTable.tenantId, tenantId),
+          eq(juniorMatchesTable.tenantId, tenantId),
           eq(juniorParticipantsTable.isPrivate, false),
           eq(juniorMatchBowlingTable.isHallsHead, true),
         ),
