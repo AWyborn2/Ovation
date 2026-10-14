@@ -2806,6 +2806,76 @@ paths:
         "409":
           description: Already finalised, changed since the caller loaded it, or the match has started
 
+  /selection/{id}/team-sheet:
+    get:
+      operationId: getTeamSheetPreview
+      tags: [selection]
+      summary: What the print dialog needs for a finalised side's team sheet (admin or captain)
+      description: |
+        The side's grade, PlayHQ format and competition, the overs to offer
+        (the grade's remembered value, else one read from a T20-style format),
+        and — for a senior side — which competition rules set the Junior Aged
+        Player bowling limits and how many listed players have no birth date.
+        Refused until the side is finalised.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Print details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamSheetPreview"
+        "401":
+          description: Not signed in as this club's admin or captain
+        "404":
+          description: Side not found
+        "409":
+          description: The side is not finalised
+    post:
+      operationId: printTeamSheet
+      tags: [selection]
+      summary: The finalised side's printable A4 team sheet as a PDF (admin or captain)
+      description: |
+        Match details (both teams, grade or age group, round, date, start time,
+        format, overs, venue, competition), the 12 in batting-list order with
+        shirt numbers and (C)/(WK) tags, and on a senior sheet each Junior Aged
+        Player's age group and bowling limits from their date of birth under the
+        competition's rules. The overs sent are printed and remembered for the
+        grade. Generated clients should treat the response as a `Blob`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamSheetPrintBody"
+      responses:
+        "200":
+          description: The team sheet
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Invalid overs
+        "401":
+          description: Not signed in as this club's admin or captain
+        "404":
+          description: Side not found
+        "409":
+          description: The side is not finalised
+
   /selection/{id}/reopen:
     post:
       operationId: reopenSelection
@@ -13973,6 +14043,45 @@ components:
           minItems: 1
           items:
             $ref: "#/components/schemas/SelectionChange"
+
+    TeamSheetPreview:
+      type: object
+      required: [selectionId, section, grade, format, competition, overs, bowlingRulesSource, missingBirthDates]
+      properties:
+        selectionId:
+          type: integer
+        section:
+          type: string
+          enum: [senior, junior]
+        grade:
+          type: string
+        format:
+          type: string
+          nullable: true
+          description: PlayHQ's match type ("One Day", "T20"); null for a manual fixture
+        competition:
+          type: string
+          nullable: true
+          description: PlayHQ's grade name ("A Grade Wyllie Cup")
+        overs:
+          type: string
+          nullable: true
+        bowlingRulesSource:
+          type: string
+          nullable: true
+          description: Where the Junior Aged Player limits come from ("PCA Bylaw 5.9"); null when unknown or junior
+        missingBirthDates:
+          type: integer
+          description: Listed players with no birth date (senior sheet only)
+
+    TeamSheetPrintBody:
+      type: object
+      properties:
+        overs:
+          type: string
+          nullable: true
+          maxLength: 20
+          description: Overs per innings to print; remembered for the side's grade
 
     SelectionFinaliseBody:
       type: object
