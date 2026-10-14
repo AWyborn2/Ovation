@@ -6,16 +6,29 @@ import {
   dismissKindTemplateNotice,
   getGetKindTemplateQueryKey,
   getListKindTemplatesQueryKey,
+  startKindTemplate,
   useGetKindTemplate,
   type KindTemplateSummary,
 } from "@workspace/api-client-react";
 import {
   placeholderDocument,
+  STARTER_IDS,
   STARTER_NAMES,
   starterDocument,
   starterForPack,
   TEMPLATE_CARD_KINDS,
+  type StarterId,
 } from "@workspace/scorecard/kind-templates";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PackCard } from "@/components/pack-card";
 import { Button } from "@/components/ui/button";
 import { BLANK_PACK_ID, type CardAdjustments, type PackCardData } from "@/lib/pack-render";
@@ -92,6 +105,88 @@ function KindRow({
         </Link>
       </Button>
     </li>
+  );
+}
+
+/**
+ * Start every card kind from one look (a club adopting Clubhouse, say): each
+ * kind's design is replaced by that starter, saved as its next version. Cards
+ * already waiting keep their design until it is applied to them from the
+ * kind's editor. Kinds are started one at a time; any that fail (another admin
+ * saved first) are named so they can be redone.
+ */
+function UseLookForEveryCard({ byKind }: { byKind: Map<string, KindTemplateSummary> }) {
+  const qc = useQueryClient();
+  const [starter, setStarter] = useState<StarterId>("clubhouse");
+  const [confirming, setConfirming] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; failed: string[] } | null>(null);
+  const running = progress !== null && progress.done < TEMPLATE_CARD_KINDS.length;
+
+  const run = async () => {
+    setConfirming(false);
+    const failed: string[] = [];
+    setProgress({ done: 0, failed });
+    for (const [i, kind] of TEMPLATE_CARD_KINDS.entries()) {
+      const version = byKind.get(kind)?.version;
+      try {
+        await startKindTemplate(kind, version ? { starter, baseVersion: version } : { starter });
+      } catch {
+        failed.push(kindLabel(kind));
+      }
+      setProgress({ done: i + 1, failed: [...failed] });
+    }
+    await qc.invalidateQueries({ queryKey: getListKindTemplatesQueryKey() });
+    for (const kind of TEMPLATE_CARD_KINDS)
+      qc.invalidateQueries({ queryKey: getGetKindTemplateQueryKey(kind) });
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-3 text-sm">
+      <label htmlFor="look-for-every-card" className="font-medium">
+        Use one look for every card
+      </label>
+      <select
+        id="look-for-every-card"
+        className="h-9 rounded-md border border-input bg-background px-2"
+        value={starter}
+        disabled={running}
+        onChange={(e) => setStarter(e.target.value as StarterId)}
+      >
+        {STARTER_IDS.map((id) => (
+          <option key={id} value={id}>
+            {STARTER_NAMES[id]}
+          </option>
+        ))}
+      </select>
+      <Button size="sm" variant="outline" disabled={running} onClick={() => setConfirming(true)}>
+        {running
+          ? `Starting… ${progress?.done ?? 0} of ${TEMPLATE_CARD_KINDS.length}`
+          : `Start every card from ${STARTER_NAMES[starter]}`}
+      </Button>
+      {progress && !running && (
+        <span role="status" className="text-muted-foreground">
+          {progress.failed.length === 0
+            ? `Every card now starts from ${STARTER_NAMES[starter]}.`
+            : `Done, except ${progress.failed.join(", ")} — start ${progress.failed.length === 1 ? "it" : "them"} over from the editor.`}
+        </span>
+      )}
+      <AlertDialog open={confirming} onOpenChange={setConfirming}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Start every card from {STARTER_NAMES[starter]}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Every card type's design is replaced by the {STARTER_NAMES[starter]} design, saved as
+              a new version you can change afterwards. Cards already waiting keep their design until
+              you apply the new one to them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={run}>Start every card</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }
 
@@ -174,6 +269,8 @@ export function KindTemplatesSection({
           </Button>
         </div>
       )}
+
+      <UseLookForEveryCard byKind={byKind} />
 
       <ul className="grid gap-2 lg:grid-cols-2">
         {TEMPLATE_CARD_KINDS.map((kind) => (
