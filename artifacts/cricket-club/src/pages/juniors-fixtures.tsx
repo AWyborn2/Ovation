@@ -8,7 +8,7 @@ import {
 } from "@workspace/api-client-react";
 import { CalendarDays, MapPin, ArrowLeft, Users } from "lucide-react";
 import { JUNIOR_ACCENT } from "@/lib/juniors";
-import { fixtureAgeGroups, fmtJuniorStart } from "@/lib/junior-fixtures";
+import { fixtureAgeGroups, fmtJuniorStart, juniorFixtureTitle } from "@/lib/junior-fixtures";
 import { CardGridSkeleton, ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 
 /**
@@ -120,7 +120,7 @@ export default function JuniorsFixtures() {
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="font-serif font-bold text-primary-text truncate">
-                      {f.teamName ? `${f.teamName} ` : ""}vs {f.opponentName ?? "TBC"}
+                      {juniorFixtureTitle(f)}
                     </div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wider">
                       {f.grade ?? ""}
@@ -174,9 +174,7 @@ export function JuniorsFixtureDetail() {
       {back}
       <div>
         <Kicker />
-        <h1 className="text-[clamp(32px,4vw,52px)] leading-none">
-          {f.teamName ? `${f.teamName} ` : ""}vs {f.opponentName ?? "TBC"}
-        </h1>
+        <h1 className="text-[clamp(32px,4vw,52px)] leading-none">{juniorFixtureTitle(f)}</h1>
         <p className="text-muted-foreground mt-1">
           {[f.ageGroup, f.grade].filter(Boolean).join(" · ")}
         </p>

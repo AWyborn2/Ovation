@@ -15,7 +15,6 @@ import {
 import { juniorParticipantJoin } from "./junior-participant-scope";
 import { getOrCreateSettings } from "./settings";
 import {
-  WITHHELD_JUNIOR_NAME,
   makeJuniorNaming,
   parseJuniorNameStyle,
   parseJuniorTeamPublishing,
@@ -31,13 +30,9 @@ export {
   juniorPublicName,
   isJuniorWithheld,
   makeJuniorNaming,
-  WITHHELD_JUNIOR_NAME,
+  JUNIOR_WITHHELD_NAME,
   type JuniorNaming,
 } from "./junior-names";
-
-const MASK_NAME = WITHHELD_JUNIOR_NAME;
-
-export { MASK_NAME };
 
 /**
  * SQL condition: a participant whose name may appear publicly — not private, or

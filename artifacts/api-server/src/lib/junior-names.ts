@@ -1,4 +1,5 @@
 import type { JuniorNameStyle, JuniorTeamPublishing, JuniorTeamPublishMode } from "@workspace/db";
+import { JUNIOR_WITHHELD_NAME } from "@workspace/db/schema";
 
 /**
  * Public junior names (junior PlayHQ sync plan U7; KTD12, R15, R16, R22).
@@ -18,7 +19,7 @@ import type { JuniorNameStyle, JuniorTeamPublishing, JuniorTeamPublishMode } fro
  * Admin responses never go through this — they carry full names.
  */
 
-export const WITHHELD_JUNIOR_NAME = "Private Player";
+export { JUNIOR_WITHHELD_NAME };
 
 export const JUNIOR_NAME_STYLES: readonly JuniorNameStyle[] = ["full", "first_initial", "first"];
 
@@ -61,7 +62,7 @@ export type JuniorNameInput = {
 
 /** The single public name for a junior player on any public surface. */
 export function juniorPublicName(p: JuniorNameInput, style: JuniorNameStyle): string {
-  if (isJuniorWithheld(p)) return WITHHELD_JUNIOR_NAME;
+  if (isJuniorWithheld(p)) return JUNIOR_WITHHELD_NAME;
   if (!p.isOwnClub) return juniorInitials(p.displayName);
   return formatJuniorName(p.displayName, style);
 }

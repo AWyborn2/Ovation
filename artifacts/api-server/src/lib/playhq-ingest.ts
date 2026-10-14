@@ -42,7 +42,7 @@ import {
 import type { z } from "zod";
 import type { IngestPlayhqDumpResponse } from "@workspace/api-zod";
 import { runDraftSweep } from "./draft-sweep";
-import { loadJuniorSyncTenants } from "./junior-sync";
+import { juniorOrgIdsOf, loadJuniorSyncTenants } from "./junior-sync";
 import { recomputeParticipantMetadata } from "./junior-admin-helpers";
 import { clearMilestonesCache } from "./milestones-cache";
 import { env } from "../config";
@@ -113,7 +113,7 @@ export async function ingestPlayhqDump(
   // except those of organisations with junior sync enabled (junior sync plan U4, KTD1/KTD2).
   // The gate is decided once, here; with no club enabled the drop is exactly as before.
   const juniorSyncTenants = await loadJuniorSyncTenants();
-  const juniorOrgIds = new Set(juniorSyncTenants.map((t) => t.orgId.toLowerCase()));
+  const juniorOrgIds = new Set(juniorOrgIdsOf(juniorSyncTenants));
   const gradeIds = referencedGradeIds(parsed);
   const known = gradeIds.length
     ? await reader.query<{
@@ -256,7 +256,7 @@ export async function ingestPlayhqDump(
   // in playhq.*) of the enabled tenants go to their `junior_*` tables only, after the senior
   // projections. Every senior step above filters `is_junior = false`, so it never sees them.
   if (juniorSyncTenants.length)
-    await projectDumpJuniors(rows, juniorSyncTenants, reader, warnings, log);
+    await projectDumpJuniors(rows, juniorSyncTenants, reader, warnings, log, keptJuniorGradeIds);
 
   // Grades an enabled club's organisation has that are neither junior nor senior are
   // reported to the platform admin, never guessed (KTD4). Names and seasons only.
@@ -317,8 +317,12 @@ export async function ingestPlayhqDump(
   };
 }
 
-/** Every PlayHQ match a dump's rows mention (fixtures, scorecards, lineups). */
-function dumpMatchIds(rows: LoadRows): string[] {
+/**
+ * Every PlayHQ match a dump's rows mention (fixtures, scorecards, lineups). With
+ * `juniorGradeIds`, a match the dump places in any other grade is left out: only junior
+ * grades are projected, and a match with no grade in the dump (a lineup) stays in.
+ */
+function dumpMatchIds(rows: LoadRows, juniorGradeIds?: readonly string[]): string[] {
   const ids = new Set<string>();
   for (const table of [
     rows.matches.map((m) => ({ match_id: m.id })),
@@ -326,6 +330,21 @@ function dumpMatchIds(rows: LoadRows): string[] {
     rows.match_lineups,
   ])
     for (const r of table) if (typeof r.match_id === "string") ids.add(r.match_id.toLowerCase());
+  if (juniorGradeIds) {
+    const junior = new Set(juniorGradeIds.map((g) => g.toLowerCase()));
+    const otherGrade = new Set<string>();
+    for (const r of [
+      ...rows.matches.map((m) => ({ match_id: m.id, grade_id: m.grade_id })),
+      ...rows.scorecards,
+    ])
+      if (
+        typeof r.match_id === "string" &&
+        typeof r.grade_id === "string" &&
+        !junior.has(r.grade_id.toLowerCase())
+      )
+        otherGrade.add(r.match_id.toLowerCase());
+    for (const id of otherGrade) ids.delete(id);
+  }
   return [...ids];
 }
 
@@ -342,8 +361,10 @@ export async function projectDumpJuniors(
   reader: Queryable,
   warnings: string[],
   log: Logger,
+  /** The dump's kept junior grades: a match the dump places in another grade is skipped. */
+  juniorGradeIds?: readonly string[],
 ): Promise<JuniorProjectionSummary[]> {
-  const matchIds = dumpMatchIds(rows);
+  const matchIds = dumpMatchIds(rows, juniorGradeIds);
   if (!tenants.length || !matchIds.length) return [];
   let summaries: JuniorProjectionSummary[] = [];
   try {
@@ -600,9 +621,7 @@ export async function listDuePlans(now: Date): Promise<DuePlansResponse> {
         eq(tenantsTable.playhqSyncEnabled, true),
       ),
     );
-  const juniorOrgIds = [
-    ...new Set((await loadJuniorSyncTenants()).map((t) => t.orgId.toLowerCase())),
-  ];
+  const juniorOrgIds = juniorOrgIdsOf(await loadJuniorSyncTenants());
   const orgIds = [...new Set([...linked.map((t) => t.orgId!.toLowerCase()), ...juniorOrgIds])];
   const { matches, lastRuns } = await loadCadenceInputs(
     pool as unknown as Queryable,

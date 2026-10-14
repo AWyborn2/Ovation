@@ -219,7 +219,6 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
   const { season, ageGroup } = parsed.data;
 
   const tenantId = getTenantId(req);
-  const style = await getJuniorNameStyle(tenantId);
 
   const matchConds = [
     eq(juniorMatchesTable.tenantId, tenantId),
@@ -235,7 +234,8 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
   if (season) bowlConds.push(eq(juniorMatchesTable.season, season));
   if (ageGroup) bowlConds.push(eq(juniorMatchesTable.ageGroup, ageGroup));
 
-  const [battingRows, bowlingRows] = await Promise.all([
+  const [style, battingRows, bowlingRows] = await Promise.all([
+    getJuniorNameStyle(tenantId),
     db
       .select({
         participantId: juniorParticipantsTable.participantId,
@@ -374,8 +374,8 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
 // ---------------------------------------------------------------------------
 router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
   const tenantId = getTenantId(req);
-  const style = await getJuniorNameStyle(tenantId);
-  const [battingRows, bowlingRows] = await Promise.all([
+  const [style, battingRows, bowlingRows] = await Promise.all([
+    getJuniorNameStyle(tenantId),
     db
       .select({
         participantId: juniorParticipantsTable.participantId,

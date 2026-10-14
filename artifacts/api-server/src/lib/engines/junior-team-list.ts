@@ -13,7 +13,7 @@ import { logger } from "../logger";
 import { resolveFamilyConfig } from "../social-families";
 import { upsertDraftByKey } from "../draft-upsert";
 import { loadJuniorNaming, loadJuniorTeamPublishing } from "../junior-helpers";
-import { WITHHELD_JUNIOR_NAME, type JuniorNaming } from "../junior-names";
+import { JUNIOR_WITHHELD_NAME, type JuniorNaming } from "../junior-names";
 import { loadJuniorSeasonShirtNumbers } from "../junior-shirt-numbers";
 import { juniorFamilyAllows, juniorTeamListKey, juniorTeamPublishMode } from "../junior-publishing";
 import { formatFixtureDate, formatFixtureTime } from "./match-day";
@@ -57,7 +57,7 @@ type CardRow = { order: number; surname: string; firstInitial?: string; role?: s
  * their public name whole ("OLLIE G", "OLLIE") so no more of the name appears.
  */
 function cardName(named: ReturnType<JuniorCardNamer>): Pick<CardRow, "surname" | "firstInitial"> {
-  if (!named) return { surname: WITHHELD_JUNIOR_NAME.toUpperCase() };
+  if (!named) return { surname: JUNIOR_WITHHELD_NAME.toUpperCase() };
   const parts = named.name.trim().split(/\s+/).filter(Boolean);
   if (named.style === "full" && parts.length >= 2) {
     const initial = parts[0]!.match(/\p{L}/u)?.[0]?.toUpperCase();

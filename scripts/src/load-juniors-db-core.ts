@@ -8,14 +8,16 @@
  * the sync made, never show up as the loader's changes.
  */
 
+import { JUNIOR_SYNC_FIRST_SEASON, JUNIOR_SYNC_ID_START } from "@workspace/db/schema";
+
 /** The only tenant the juniors loader writes. */
 export const LOADER_TENANT_ID = 1;
 
 /** First season (start year) the junior PlayHQ sync owns; the loader stays below it. */
-export const LOADER_SEASON_LIMIT = 2026;
+export const LOADER_SEASON_LIMIT = JUNIOR_SYNC_FIRST_SEASON;
 
 /** First id of the junior sync id band (`junior_sync_id_seq`); the loader stays below it. */
-export const SYNC_ID_START = 200_000_000;
+export const SYNC_ID_START = JUNIOR_SYNC_ID_START;
 
 /** Public junior tables the loader writes, reported before and after a run. */
 export const TRACKED_TABLES = [

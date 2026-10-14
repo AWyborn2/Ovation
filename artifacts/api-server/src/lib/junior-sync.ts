@@ -65,20 +65,55 @@ export function selectJuniorSyncTenants(
   return out;
 }
 
+/** The PlayHQ organisations of these junior-sync tenants, lowercased, once each, in order. */
+export function juniorOrgIdsOf(tenants: readonly JuniorSyncTenant[]): string[] {
+  return [...new Set(tenants.map((t) => t.orgId.toLowerCase()))];
+}
+
+/** The tenant columns the gate reads, plus the suspension the scheduled paths honour. */
+const GATE_COLUMNS = {
+  id: tenantsTable.id,
+  plan: tenantsTable.plan,
+  playhqOrgId: tenantsTable.playhqOrgId,
+  playhqSyncEnabled: tenantsTable.playhqSyncEnabled,
+  juniorSyncEnabled: tenantsTable.juniorSyncEnabled,
+  playhqJuniorOrgId: tenantsTable.playhqJuniorOrgId,
+  suspendedAt: tenantsTable.suspendedAt,
+};
+
+/** One tenant's gate columns, or undefined when there is no such tenant. */
+export async function loadJuniorSyncTenantInput(
+  tenantId: number,
+): Promise<(JuniorSyncTenantInput & { suspendedAt: Date | null }) | undefined> {
+  const [t] = await db
+    .select(GATE_COLUMNS)
+    .from(tenantsTable)
+    .where(eq(tenantsTable.id, tenantId))
+    .limit(1);
+  return t;
+}
+
+/**
+ * Whether junior sync is on for one tenant (the three-part gate). `requireActive` also
+ * treats a suspended tenant as off, as the scheduled sync does.
+ */
+export async function isJuniorSyncOn(
+  tenantId: number,
+  opts: { requireActive: boolean },
+): Promise<boolean> {
+  const t = await loadJuniorSyncTenantInput(tenantId);
+  if (!t) return false;
+  if (opts.requireActive && t.suspendedAt != null) return false;
+  return juniorSyncEnabledFor(t);
+}
+
 /**
  * Read the tenants register and return the tenants junior sync is enabled for. A suspended
  * tenant is never synced (the same rule the senior plans use).
  */
 export async function loadJuniorSyncTenants(): Promise<JuniorSyncTenant[]> {
   const rows = await db
-    .select({
-      id: tenantsTable.id,
-      plan: tenantsTable.plan,
-      playhqOrgId: tenantsTable.playhqOrgId,
-      playhqSyncEnabled: tenantsTable.playhqSyncEnabled,
-      juniorSyncEnabled: tenantsTable.juniorSyncEnabled,
-      playhqJuniorOrgId: tenantsTable.playhqJuniorOrgId,
-    })
+    .select(GATE_COLUMNS)
     .from(tenantsTable)
     // Cheap pre-filter; the full decision (entitlement, organisation) is the pure one.
     .where(and(eq(tenantsTable.juniorSyncEnabled, true), isNull(tenantsTable.suspendedAt)))

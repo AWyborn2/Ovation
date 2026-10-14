@@ -16,6 +16,11 @@ export function fmtJuniorStart(iso: string | null | undefined): string | null {
   });
 }
 
+/** "Year 4 Blue vs Mandurah" — the club's team (when known) against the opposition. */
+export function juniorFixtureTitle(f: Pick<JuniorFixture, "teamName" | "opponentName">): string {
+  return `${f.teamName ? `${f.teamName} ` : ""}vs ${f.opponentName ?? "TBC"}`;
+}
+
 /** Distinct age groups across the fixtures, in natural order ("Year 4" before "Year 10"). */
 export function fixtureAgeGroups(fixtures: readonly JuniorFixture[]): string[] {
   const out: string[] = [];

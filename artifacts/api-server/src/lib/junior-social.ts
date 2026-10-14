@@ -4,11 +4,11 @@ import {
   juniorFixturesTable,
   juniorMatchesTable,
   socialDraftsTable,
-  tenantsTable,
   JUNIOR_SYNC_ID_START,
   type SocialDraftRow,
 } from "@workspace/db";
-import { juniorSyncEnabledFor } from "./junior-sync";
+import { perthDate } from "@workspace/db/playhq-ingest";
+import { isJuniorSyncOn } from "./junior-sync";
 import { loadJuniorTeamPublishing } from "./junior-helpers";
 import {
   JUNIOR_TEAM_LIST_KEY_PREFIX,
@@ -66,20 +66,8 @@ type Logger = {
 };
 
 /** Whether junior sync (the three-part gate, KTD1) is on for one tenant. */
-export async function tenantJuniorSyncEnabled(tenantId: number): Promise<boolean> {
-  const [t] = await db
-    .select({
-      id: tenantsTable.id,
-      plan: tenantsTable.plan,
-      playhqOrgId: tenantsTable.playhqOrgId,
-      playhqSyncEnabled: tenantsTable.playhqSyncEnabled,
-      juniorSyncEnabled: tenantsTable.juniorSyncEnabled,
-      playhqJuniorOrgId: tenantsTable.playhqJuniorOrgId,
-      suspendedAt: tenantsTable.suspendedAt,
-    })
-    .from(tenantsTable)
-    .where(eq(tenantsTable.id, tenantId));
-  return !!t && t.suspendedAt == null && juniorSyncEnabledFor(t);
+export function tenantJuniorSyncEnabled(tenantId: number): Promise<boolean> {
+  return isJuniorSyncOn(tenantId, { requireActive: true });
 }
 
 /** The tenant's unposted synced junior drafts (team lists and synced result cards). */
@@ -240,7 +228,9 @@ export async function retimeJuniorDrafts(
 
 /** The Perth calendar date (YYYY-MM-DD) of an instant — junior match dates are Perth dates. */
 function perthDay(t: Date): string {
-  return new Date(t.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const day = perthDate(t);
+  if (day === null) throw new RangeError("Invalid time value");
+  return day;
 }
 
 /**

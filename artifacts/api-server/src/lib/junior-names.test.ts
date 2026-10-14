@@ -7,7 +7,7 @@ import {
   makeJuniorNaming,
   parseJuniorNameStyle,
   parseJuniorTeamPublishing,
-  WITHHELD_JUNIOR_NAME,
+  JUNIOR_WITHHELD_NAME,
 } from "./junior-names";
 
 /** Junior naming (junior PlayHQ sync plan U7; KTD12, R15, R16, R22). */
@@ -68,10 +68,10 @@ describe("juniorPublicName", () => {
   it("AE3: a private player is withheld whatever the style", () => {
     for (const style of ["full", "first_initial", "first"] as const) {
       expect(juniorPublicName({ ...ollie, isPrivate: true, privacyOverride: false }, style)).toBe(
-        WITHHELD_JUNIOR_NAME,
+        JUNIOR_WITHHELD_NAME,
       );
     }
-    expect(WITHHELD_JUNIOR_NAME).toBe("Private Player");
+    expect(JUNIOR_WITHHELD_NAME).toBe("Private Player");
   });
 
   it("AE3: an overridden private player shows in the club's style ('Ollie G')", () => {
@@ -109,7 +109,7 @@ describe("juniorPublicName", () => {
         { displayName: "Ollie Gallash", isPrivate: true, privacyOverride: false, isOwnClub: false },
         "full",
       ),
-    ).toBe(WITHHELD_JUNIOR_NAME);
+    ).toBe(JUNIOR_WITHHELD_NAME);
   });
 });
 

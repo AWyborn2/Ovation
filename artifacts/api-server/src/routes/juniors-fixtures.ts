@@ -3,11 +3,9 @@ import { and, asc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
 import {
   db,
   juniorFixturesTable,
-  juniorParticipantMergesTable,
   juniorParticipantsTable,
   juniorShirtNumbersTable,
   juniorTeamListsTable,
-  tenantsTable,
   type JuniorFixtureRow,
 } from "@workspace/db";
 import { getShirtNumberSettings } from "@workspace/db/shirt-numbers";
@@ -21,10 +19,10 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
-import { juniorSyncEnabledFor } from "../lib/junior-sync";
+import { isJuniorSyncOn } from "../lib/junior-sync";
 import { getJuniorNameStyle } from "../lib/junior-helpers";
 import { makeJuniorNaming, type JuniorNameFacts } from "../lib/junior-names";
-import { juniorCanonicalizer } from "../lib/junior-shirt-numbers";
+import { juniorCanonicalizer, loadJuniorIdentity } from "../lib/junior-shirt-numbers";
 import {
   juniorFixtureListFrom,
   serializeJuniorFixture,
@@ -58,21 +56,8 @@ const router: IRouter = Router();
 const NOT_FOUND = "Junior fixture not found";
 
 /** Whether the club's junior sync is on (the U1 three-part gate) — public reads need it. */
-async function juniorSyncOn(tenantId: number): Promise<boolean> {
-  const [t] = await db
-    .select({
-      id: tenantsTable.id,
-      plan: tenantsTable.plan,
-      playhqOrgId: tenantsTable.playhqOrgId,
-      playhqSyncEnabled: tenantsTable.playhqSyncEnabled,
-      juniorSyncEnabled: tenantsTable.juniorSyncEnabled,
-      playhqJuniorOrgId: tenantsTable.playhqJuniorOrgId,
-    })
-    .from(tenantsTable)
-    .where(eq(tenantsTable.id, tenantId))
-    .limit(1);
-  return !!t && juniorSyncEnabledFor(t);
-}
+const juniorSyncOn = (tenantId: number): Promise<boolean> =>
+  isJuniorSyncOn(tenantId, { requireActive: false });
 
 /** The tenant's junior fixture with this id, or undefined (never another tenant's). */
 async function findFixture(tenantId: number, id: number): Promise<JuniorFixtureRow | undefined> {
@@ -228,14 +213,17 @@ router.get("/juniors/fixtures/:id", async (req, res): Promise<void> => {
     return;
   }
   const tenantId = getTenantId(req);
-  const fixture = (await juniorSyncOn(tenantId))
-    ? await findFixture(tenantId, params.data.id)
-    : undefined;
+  // Read together; nothing is served unless the sync is on and the fixture is the tenant's.
+  const [syncOn, found, list] = await Promise.all([
+    juniorSyncOn(tenantId),
+    findFixture(tenantId, params.data.id),
+    findTeamList(tenantId, params.data.id),
+  ]);
+  const fixture = syncOn ? found : undefined;
   if (!fixture) {
     res.status(404).json({ error: NOT_FOUND });
     return;
   }
-  const list = await findTeamList(tenantId, fixture.id);
   const published = list?.isPublished && list.players.length > 0 ? list : null;
   if (!published) {
     res.json({ fixture: serializeJuniorFixture(fixture, false), teamList: null });
@@ -297,19 +285,7 @@ router.put(
     // Only this club's own junior participants (merged-away ids follow to the
     // keeper): an opposition child has no participant row of ours, and another
     // club's child is a different tenant's row.
-    const [participants, merges] = await Promise.all([
-      db
-        .select({ participantId: juniorParticipantsTable.participantId })
-        .from(juniorParticipantsTable)
-        .where(eq(juniorParticipantsTable.tenantId, tenantId)),
-      db
-        .select({
-          duplicateParticipantId: juniorParticipantMergesTable.duplicateParticipantId,
-          keeperParticipantId: juniorParticipantMergesTable.keeperParticipantId,
-        })
-        .from(juniorParticipantMergesTable)
-        .where(eq(juniorParticipantMergesTable.tenantId, tenantId)),
-    ]);
+    const { participants, merges } = await loadJuniorIdentity(db, tenantId);
     const checked = validateJuniorTeamList(
       body.data.players,
       juniorCanonicalizer(participants, merges),

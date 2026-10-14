@@ -24,10 +24,6 @@ import { juniorParticipantJoin } from "./junior-participant-scope";
  */
 export type LeaderScope = { season?: string; ageGroup?: string };
 
-// Leaders include every public participant — not private, or private with an
-// admin's override (KTD12) — and name them in the club's style (`style`, default
-// `full`). Withheld participants are left out entirely.
-
 /** Every junior read is scoped to one tenant's matches (junior_matches.tenant_id). */
 const ofTenant = (tenantId: number) => eq(juniorMatchesTable.tenantId, tenantId);
 

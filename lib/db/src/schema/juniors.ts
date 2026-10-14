@@ -25,6 +25,13 @@ import type { TeamListRole } from "./fixtures";
  * rows sit below 100,000,000 and admin-added lines in 100,000,000-199,999,999.
  */
 export const JUNIOR_SYNC_ID_START = 200_000_000;
+
+/** The first season the junior sync owns (2026/27). Earlier seasons belong to the one-off loader. */
+export const JUNIOR_SYNC_FIRST_SEASON = 2026;
+
+/** The name shown for a withheld (private) junior, and stored when PlayHQ gives none. */
+export const JUNIOR_WITHHELD_NAME = "Private Player";
+
 export const juniorSyncIdSeq = pgSequence("junior_sync_id_seq", {
   startWith: JUNIOR_SYNC_ID_START,
   minValue: JUNIOR_SYNC_ID_START,

@@ -42,7 +42,9 @@ export const juniorAutoPostClear: SQL = sql`((${socialDraftsTable.sourceMatchIsJ
   join (
     select f.tenant_id, f.age_group, f.team_name
     from junior_fixtures f
-    where "social_drafts"."source_key" = 'juniorteamlist:' || f.id::text
+    where f.tenant_id = "social_drafts"."tenant_id"
+      and f.id = case when "social_drafts"."source_key" ~ '^juniorteamlist:(0|[1-9][0-9]{0,17})$'
+                      then substr("social_drafts"."source_key", 16)::bigint end
     union all
     select m.tenant_id, m.age_group, m.team_name
     from junior_matches m

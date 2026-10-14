@@ -7,7 +7,6 @@ import {
   getGetJuniorFixtureTeamListQueryKey,
   getListJuniorFixturesQueryKey,
   getGetJuniorFixtureQueryKey,
-  type JuniorFixture,
   type JuniorTeamListCandidate,
 } from "@workspace/api-client-react";
 import { AlertTriangle, ArrowDown, ArrowUp, Search, X } from "lucide-react";
@@ -28,7 +27,7 @@ import {
   type JuniorEditorRow,
   type JuniorRoleKey,
 } from "@/lib/junior-team-list";
-import { fmtJuniorStart } from "@/lib/junior-fixtures";
+import { fmtJuniorStart, juniorFixtureTitle } from "@/lib/junior-fixtures";
 
 /**
  * Junior fixtures admin (junior PlayHQ sync plan U6; KTD9, R8, R9, R17). Lists the
@@ -40,10 +39,6 @@ import { fmtJuniorStart } from "@/lib/junior-fixtures";
  */
 
 const MAX_MATCHES = 8;
-
-function fixtureTitle(f: JuniorFixture): string {
-  return `${f.teamName ? `${f.teamName} ` : ""}vs ${f.opponentName ?? "TBC"}`;
-}
 
 export default function AdminJuniorFixtures() {
   const listQ = useListJuniorFixtures();
@@ -72,7 +67,7 @@ export default function AdminJuniorFixtures() {
             <Card key={f.id} data-testid={`admin-junior-fixture-${f.id}`}>
               <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
                 <div>
-                  <CardTitle className="text-base">{fixtureTitle(f)}</CardTitle>
+                  <CardTitle className="text-base">{juniorFixtureTitle(f)}</CardTitle>
                   <p className="text-xs text-muted-foreground">
                     {[f.ageGroup, f.grade, fmtJuniorStart(f.startAt), f.venue]
                       .filter(Boolean)

@@ -31,31 +31,40 @@
  */
 import { sql } from "drizzle-orm";
 import type { Queryable } from "./load";
-import { lineupEntries, PLAYED_LOOKBACK_DAYS, TEAM_LIST_LOOKAHEAD_DAYS } from "./team-lists";
+import {
+  lineupEntries,
+  lineupRole,
+  PLAYED_LOOKBACK_DAYS,
+  TEAM_LIST_LOOKAHEAD_DAYS,
+} from "./team-lists";
 import {
   centralScore,
   centralStatus,
   givenFirst,
   initialsOnlyName,
   IN_PROGRESS,
+  num,
   perthDate,
   type RawScorecard,
 } from "./central-transform";
 import { isWithheldName } from "./central-project";
+import { loadClubIdByOrg } from "./project";
 import { juniorAgeBand, normaliseJuniorAge } from "../juniors/age-groups";
+import { seasonStartYearFor } from "../seasons";
+import { seasonLabelFromStartYear } from "../central/grades";
 import {
+  JUNIOR_SYNC_FIRST_SEASON,
   JUNIOR_SYNC_ID_START,
+  JUNIOR_WITHHELD_NAME,
   type JuniorTeamListPlayer,
   type JuniorTeamListSource,
 } from "../schema/juniors";
 // Types only: the module itself is imported lazily inside `projectJuniors`.
 import type * as DbModuleNs from "../index";
 
-/** The first season the sync owns (2026/27). Earlier seasons belong to the one-off loader. */
-export const JUNIOR_SYNC_FIRST_SEASON = 2026;
-
-/** The label stored for a participant PlayHQ withholds and the club has no name for. */
-export const JUNIOR_WITHHELD_NAME = "Private Player";
+// The first season the sync owns, and the label stored for a participant PlayHQ withholds
+// and the club has no name for (defined with the junior schema, re-exported here).
+export { JUNIOR_SYNC_FIRST_SEASON, JUNIOR_WITHHELD_NAME };
 
 // ---------------------------------------------------------------------------
 // Inputs
@@ -217,12 +226,6 @@ export interface JuniorMatchPlan {
 
 const lc = (s: string | null | undefined): string | null => (s ? s.toLowerCase() : null);
 
-function num(v: string | number | null | undefined): number | null {
-  if (v === null || v === undefined || v === "") return null;
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
 const intOrNull = (v: number | null | undefined): number | null =>
   typeof v === "number" && Number.isFinite(v) ? v : null;
 
@@ -261,13 +264,12 @@ export function juniorSeason(
   const m = /(\d{4})\s*\/\s*(\d{2}|\d{4})\b/.exec(seasonName ?? "");
   let startYear: number | null = m ? Number(m[1]) : null;
   if (startYear === null) {
-    const d = perthDate(startAt ?? null);
-    if (!d) return null;
-    const year = Number(d.slice(0, 4));
-    const month = Number(d.slice(5, 7));
-    startYear = month >= 7 ? year : year - 1;
+    if (!startAt) return null;
+    const at = new Date(startAt);
+    if (Number.isNaN(at.getTime())) return null;
+    startYear = seasonStartYearFor(at);
   }
-  return { season: `${startYear}/${String((startYear + 1) % 100).padStart(2, "0")}`, startYear };
+  return { season: seasonLabelFromStartYear(startYear), startYear };
 }
 
 /** The enabled tenants whose junior organisation plays in this match (junior grades only). */
@@ -321,7 +323,7 @@ interface Scope {
   sideOfTeam: Map<string, Side>;
 }
 
-function scopeOf(m: JuniorSourceMatch, ctx: JuniorPlanContext): Scope | null {
+function scopeOf(m: JuniorSourceMatch, ctx: Pick<JuniorPlanContext, "orgId">): Scope | null {
   if (!m.isJunior) return null;
   const season = juniorSeason(m.seasonName, m.startAt);
   if (!season || season.startYear < JUNIOR_SYNC_FIRST_SEASON) return null;
@@ -366,7 +368,7 @@ function ageGroups(grade: string | null): { ageGroup: string | null; ageGroupRaw
 /** The club's junior fixture for an in-scope match; null when out of scope. */
 export function planJuniorFixture(
   m: JuniorSourceMatch,
-  ctx: JuniorPlanContext,
+  ctx: Pick<JuniorPlanContext, "tenantId" | "orgId">,
 ): JuniorFixturePlan | null {
   const s = scopeOf(m, ctx);
   if (!s) return null;
@@ -740,8 +742,14 @@ export function syncIdentityParticipant(
   return lc(current);
 }
 
-export type JuniorLineTable =
-  "junior_match_batting" | "junior_match_bowling" | "junior_match_rosters";
+/** The junior scorecard line tables, in the order the sync writes them. */
+export const JUNIOR_LINE_TABLES = [
+  "junior_match_batting",
+  "junior_match_bowling",
+  "junior_match_rosters",
+] as const;
+
+export type JuniorLineTable = (typeof JUNIOR_LINE_TABLES)[number];
 
 /**
  * Identities of synced lines an admin deleted (journal `op = 'delete'`, `prev_values` = the
@@ -795,14 +803,7 @@ export function planJuniorTeamList(
       (a, b) => (a.position ?? Number.MAX_SAFE_INTEGER) - (b.position ?? Number.MAX_SAFE_INTEGER),
     );
   return entries.map((e, i) => {
-    const role: JuniorTeamListPlayer["role"] =
-      e.isCaptain && e.isWicketKeeper
-        ? "C/WK"
-        : e.isCaptain
-          ? "C"
-          : e.isWicketKeeper
-            ? "WK"
-            : undefined;
+    const role = lineupRole(e);
     return { order: i + 1, participantId: e.participantId!, ...(role ? { role } : {}) };
   });
 }
@@ -1013,15 +1014,8 @@ export async function projectJuniors(
   const log = opts.log ?? ((line: string) => console.log(line));
   const now = opts.now ?? new Date();
   if (opts.tenants.length === 0 || (opts.matchIds && opts.matchIds.length === 0)) return [];
-  const { db, clubsTable } = await import("../index");
-  const { isNotNull } = await import("drizzle-orm");
-
-  const clubs = await db
-    .select({ id: clubsTable.id, orgId: clubsTable.playhqOrgId })
-    .from(clubsTable)
-    .where(isNotNull(clubsTable.playhqOrgId));
-  const clubIdByOrg = new Map<string, number>();
-  for (const c of clubs) if (c.orgId) clubIdByOrg.set(c.orgId.toLowerCase(), c.id);
+  const { db } = await import("../index");
+  const clubIdByOrg = await loadClubIdByOrg();
 
   const summaries: JuniorProjectionSummary[] = [];
   for (const t of opts.tenants) {
@@ -1080,16 +1074,27 @@ async function projectTenant(
   const tenantId = t.tenantId;
   const all = await loadSourceMatches(central, t.orgId, matchIds);
   const ref = { tenantId, orgId: t.orgId.toLowerCase() };
-  const lineups = all.length
-    ? (
-        await central.query<{ match_id: string; team_id: string; players: unknown }>(
-          `select lower(match_id::text) as match_id, lower(team_id::text) as team_id, players
-             from playhq.match_lineups where match_id = any($1::uuid[])`,
-          [all.map((m) => m.id)],
-        )
-      ).rows
-    : [];
-  const guids = guidsIn(all, lineups);
+
+  // This tenant's in-scope matches and their fixture plans (scope needs only the tenant
+  // and its organisation, so nothing else is read when there are none).
+  const fixturePlans = new Map<string, JuniorFixturePlan>();
+  for (const m of all) {
+    if (juniorTenantsForMatch(m, [ref]).length === 0) continue;
+    const f = planJuniorFixture(m, ref);
+    if (f) fixturePlans.set(m.id, f);
+  }
+  const inScope = all.filter((m) => fixturePlans.has(m.id));
+  summary.matches = inScope.length;
+  if (inScope.length === 0) return;
+
+  const lineups = (
+    await central.query<{ match_id: string; team_id: string; players: unknown }>(
+      `select lower(match_id::text) as match_id, lower(team_id::text) as team_id, players
+         from playhq.match_lineups where match_id = any($1::uuid[])`,
+      [inScope.map((m) => m.id)],
+    )
+  ).rows;
+  const guids = guidsIn(inScope, lineups);
   const fullNames = new Map<string, string>();
   if (guids.length) {
     const { rows } = await central.query<{ participant_id: string; full_name: string }>(
@@ -1113,12 +1118,6 @@ async function projectTenant(
     merges.set(r.dup, r.keeper);
   const ctx: JuniorPlanContext = { tenantId, orgId: ref.orgId, fullNames, merges, clubIdByOrg };
 
-  // Plans for this tenant's in-scope matches.
-  const inScope = all.filter(
-    (m) => juniorTenantsForMatch(m, [ref]).length > 0 && planJuniorFixture(m, ctx) !== null,
-  );
-  summary.matches = inScope.length;
-  if (inScope.length === 0) return;
   const lineupOf = new Map<string, unknown>();
   for (const l of lineups) lineupOf.set(`${l.match_id}|${l.team_id}`, l.players);
   const ownTeamIds = (m: JuniorSourceMatch) =>
@@ -1149,7 +1148,7 @@ async function projectTenant(
   // 2. Fixtures: unscored matches upserted; a scored match only refreshes an existing status.
   try {
     for (const m of inScope) {
-      const f = planJuniorFixture(m, ctx)!;
+      const f = fixturePlans.get(m.id)!;
       const written = matchPlans.has(m.id)
         ? await rowsOf<{ id: number }>(
             db,
@@ -1379,16 +1378,44 @@ async function writeMatch(
   const kind = juniorMatchWriteTarget(existing?.id ?? null);
   if (kind === "skip") return { kind, participants: [] };
 
-  const cols = sql`season = ${f.season}, season_start_year = ${f.seasonStartYear},
-    grade = ${f.grade}, age_group = ${f.ageGroup}, age_group_raw = ${f.ageGroupRaw},
-    team_name = ${f.teamName}, competition = ${f.competition}, association = ${f.association},
-    round = ${f.round}, match_date = ${f.matchDate}, venue = ${f.venue},
-    venue_oval = ${f.venueOval}, venue_address = ${f.venueAddress},
-    venue_suburb = ${f.venueSuburb}, status = ${f.status}, team1 = ${f.team1},
-    team1_score = ${f.team1Score}, team2 = ${f.team2}, team2_score = ${f.team2Score},
-    hh_team_id = ${f.hhTeamId}, hh_result = ${f.hhResult}, winner = ${f.winner},
-    toss_winner = ${f.tossWinner}, hh_batted_first = ${f.hhBattedFirst},
-    opponent_name = ${f.opponentName}, opponent_club_id = ${f.opponentClubId}`;
+  // Column, value and SQL type of every field the sync owns on the match row.
+  const fields: [string, string | number | boolean | null, "text" | "int" | "boolean"][] = [
+    ["season", f.season, "text"],
+    ["season_start_year", f.seasonStartYear, "int"],
+    ["grade", f.grade, "text"],
+    ["age_group", f.ageGroup, "text"],
+    ["age_group_raw", f.ageGroupRaw, "text"],
+    ["team_name", f.teamName, "text"],
+    ["competition", f.competition, "text"],
+    ["association", f.association, "text"],
+    ["round", f.round, "text"],
+    ["match_date", f.matchDate, "text"],
+    ["venue", f.venue, "text"],
+    ["venue_oval", f.venueOval, "text"],
+    ["venue_address", f.venueAddress, "text"],
+    ["venue_suburb", f.venueSuburb, "text"],
+    ["status", f.status, "text"],
+    ["team1", f.team1, "text"],
+    ["team1_score", f.team1Score, "text"],
+    ["team2", f.team2, "text"],
+    ["team2_score", f.team2Score, "text"],
+    ["hh_team_id", f.hhTeamId, "text"],
+    ["hh_result", f.hhResult, "text"],
+    ["winner", f.winner, "text"],
+    ["toss_winner", f.tossWinner, "text"],
+    ["hh_batted_first", f.hhBattedFirst, "boolean"],
+    ["opponent_name", f.opponentName, "text"],
+    ["opponent_club_id", f.opponentClubId, "int"],
+  ];
+  const cols = sql.join(
+    fields.map(([col, v]) => sql`${sql.raw(col)} = ${v}`),
+    sql`, `,
+  );
+  // An unchanged row is not rewritten (its corrections are re-applied below either way).
+  const changed = sql`(${sql.raw(fields.map(([col]) => col).join(", "))}) is distinct from (${sql.join(
+    fields.map(([, v, type]) => sql`${v}::${sql.raw(type)}`),
+    sql`, `,
+  )})`;
   let matchId: number;
   if (kind === "insert") {
     const [row] = await rowsOf<{ id: number }>(
@@ -1400,7 +1427,8 @@ async function writeMatch(
     matchId = row!.id;
   } else matchId = existing!.id;
   await tx.execute(
-    sql`update junior_matches set ${cols} where id = ${matchId} and tenant_id = ${tenantId}`,
+    sql`update junior_matches set ${cols}
+         where id = ${matchId} and tenant_id = ${tenantId} and ${changed}`,
   );
 
   // Journal entries that shape line identity: participant re-points and deletions.
@@ -1414,7 +1442,7 @@ async function writeMatch(
     tx,
     sql`select id, target_table, target_id, op, prev_values from junior_stat_corrections
          where tenant_id = ${tenantId}
-           and target_table in ('junior_match_batting', 'junior_match_bowling', 'junior_match_rosters')
+           and target_table = any(${sql.param([...JUNIOR_LINE_TABLES])}::text[])
            and (match_id = ${matchId} or playhq_match_id = ${f.playhqMatchId}
                 or prev_values->>'match_id' = ${String(matchId)})
            and (op = 'delete' or (op = 'update' and patch ? 'participant_id'))
@@ -1490,8 +1518,16 @@ async function writeMatch(
     for (const row of r.inserts) await writeLine(tx, table, matchId, row, null);
   }
 
-  await reapplyCorrections(tx, tenantId, matchId);
-  await reapplyMerges(tx, tenantId, matchId);
+  // Nothing to re-apply when the tenant has no corrections journalled for a match or its
+  // lines (checked here, inside the match's transaction, like the re-apply reads).
+  const [journalled] = await rowsOf<{ has_any: boolean }>(
+    tx,
+    sql`select exists (select 1 from junior_stat_corrections
+         where tenant_id = ${tenantId}
+           and target_table = any(${sql.param(["junior_matches", ...JUNIOR_LINE_TABLES])}::text[])) as has_any`,
+  );
+  if (journalled?.has_any) await reapplyCorrections(tx, tenantId, matchId);
+  await reapplyMerges(tx, tenantId, matchId, merges.size > 0);
 
   const own = new Set<string>();
   for (const l of [...plan.batting, ...plan.bowling, ...plan.rosters])
@@ -1530,7 +1566,18 @@ async function writeLine(
             runs = excluded.runs, balls = excluded.balls, fours = excluded.fours,
             sixes = excluded.sixes, strike_rate = excluded.strike_rate,
             dismissal = excluded.dismissal
-          where junior_match_batting.match_id = ${matchId}`,
+          where junior_match_batting.match_id = ${matchId}
+            and (junior_match_batting.innings, junior_match_batting.batting_team,
+                 junior_match_batting.is_halls_head, junior_match_batting.bat_order,
+                 junior_match_batting.participant_id, junior_match_batting.player_name,
+                 junior_match_batting.runs, junior_match_batting.balls, junior_match_batting.fours,
+                 junior_match_batting.sixes, junior_match_batting.strike_rate,
+                 junior_match_batting.dismissal)
+              is distinct from
+                (excluded.innings, excluded.batting_team, excluded.is_halls_head,
+                 excluded.bat_order, excluded.participant_id, excluded.player_name, excluded.runs,
+                 excluded.balls, excluded.fours, excluded.sixes, excluded.strike_rate,
+                 excluded.dismissal)`,
     );
   } else if (table === "junior_match_bowling") {
     const w = row as unknown as JuniorBowlingPlan;
@@ -1547,7 +1594,18 @@ async function writeLine(
             player_name = excluded.player_name, overs = excluded.overs,
             maidens = excluded.maidens, runs = excluded.runs, wickets = excluded.wickets,
             economy = excluded.economy, wides = excluded.wides, no_balls = excluded.no_balls
-          where junior_match_bowling.match_id = ${matchId}`,
+          where junior_match_bowling.match_id = ${matchId}
+            and (junior_match_bowling.innings, junior_match_bowling.bowling_team,
+                 junior_match_bowling.is_halls_head, junior_match_bowling.participant_id,
+                 junior_match_bowling.player_name, junior_match_bowling.overs,
+                 junior_match_bowling.maidens, junior_match_bowling.runs,
+                 junior_match_bowling.wickets, junior_match_bowling.economy,
+                 junior_match_bowling.wides, junior_match_bowling.no_balls)
+              is distinct from
+                (excluded.innings, excluded.bowling_team, excluded.is_halls_head,
+                 excluded.participant_id, excluded.player_name, excluded.overs, excluded.maidens,
+                 excluded.runs, excluded.wickets, excluded.economy, excluded.wides,
+                 excluded.no_balls)`,
     );
   } else {
     const r = row as unknown as JuniorRosterPlan;
@@ -1559,7 +1617,12 @@ async function writeLine(
           on conflict (id) do update set
             team_name = excluded.team_name, is_halls_head = excluded.is_halls_head,
             participant_id = excluded.participant_id, player_name = excluded.player_name
-          where junior_match_rosters.match_id = ${matchId}`,
+          where junior_match_rosters.match_id = ${matchId}
+            and (junior_match_rosters.team_name, junior_match_rosters.is_halls_head,
+                 junior_match_rosters.participant_id, junior_match_rosters.player_name)
+              is distinct from
+                (excluded.team_name, excluded.is_halls_head, excluded.participant_id,
+                 excluded.player_name)`,
     );
   }
 }
@@ -1669,7 +1732,7 @@ async function reapplyCorrections(tx: Tx, tenantId: number, matchId: number): Pr
     where t.match_id = ${matchId} and t.id = u.target_id::int and ${uAnchor}`);
 
   // 6c. Deletions last.
-  for (const table of ["junior_match_batting", "junior_match_bowling", "junior_match_rosters"]) {
+  for (const table of JUNIOR_LINE_TABLES) {
     await tx.execute(sql`
       delete from ${sql.raw(table)} t
       using junior_stat_corrections c
@@ -1683,14 +1746,21 @@ async function reapplyCorrections(tx: Tx, tenantId: number, matchId: number): Pr
  * one tenant and one synced match), then put the club's directory names on its own lines
  * (7d, and the rename propagation of 6b).
  */
-async function reapplyMerges(tx: Tx, tenantId: number, matchId: number): Promise<void> {
+async function reapplyMerges(
+  tx: Tx,
+  tenantId: number,
+  matchId: number,
+  hasMerges: boolean,
+): Promise<void> {
   const map = sql`(select m.duplicate_participant_id as dup, m.keeper_participant_id as keeper
       from junior_participant_merges m
      where m.tenant_id = ${tenantId}
        and exists (select 1 from junior_participants k
                     where k.tenant_id = ${tenantId} and k.participant_id = m.keeper_participant_id))`;
-  for (const table of ["junior_match_batting", "junior_match_bowling", "junior_match_rosters"])
-    await tx.execute(sql`
+  // The tenant's merge map was read in this transaction: with none, nothing re-points.
+  if (hasMerges)
+    for (const table of JUNIOR_LINE_TABLES)
+      await tx.execute(sql`
       update ${sql.raw(table)} t set participant_id = jpm.keeper
       from ${map} jpm
       where lower(t.participant_id) = lower(jpm.dup) and t.match_id = ${matchId}`);
@@ -1700,7 +1770,7 @@ async function reapplyMerges(tx: Tx, tenantId: number, matchId: number): Promise
     where a.match_id = ${matchId} and b.match_id = ${matchId}
       and a.participant_id is not null and a.participant_id = b.participant_id
       and a.id > b.id`);
-  for (const table of ["junior_match_batting", "junior_match_bowling", "junior_match_rosters"])
+  for (const table of JUNIOR_LINE_TABLES)
     await tx.execute(sql`
       update ${sql.raw(table)} t set player_name = p.display_name
       from junior_participants p

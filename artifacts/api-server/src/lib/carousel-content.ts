@@ -18,7 +18,8 @@ import { loadMatchDetail, loadCentralMatchDetail } from "./match-detail";
 import { loadJuniorMatchDetail } from "./match-summary-drafter";
 import { parseMatchDate } from "./match-date";
 import { clubTimeToUtc } from "./round-schedules";
-import { getPrivateIds, MASK_NAME } from "./junior-helpers";
+import { getPrivateIds } from "./junior-helpers";
+import { JUNIOR_WITHHELD_NAME } from "./junior-names";
 import { getTenantBrand } from "./tenant-brand";
 import { beforeBoundary, loadClubOverlayData } from "./club-overlay";
 import {
@@ -99,7 +100,7 @@ export async function carouselContent(
         junior && (!p.participantId || privateIds.has(p.participantId))
           ? {
               ...p,
-              displayName: MASK_NAME,
+              displayName: JUNIOR_WITHHELD_NAME,
               playerId: undefined,
               participantId: undefined,
               debut: false,

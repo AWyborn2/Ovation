@@ -18,7 +18,7 @@ import {
   type Queryable,
 } from "@workspace/db/playhq-ingest";
 import { sendEmail } from "./integrations/email";
-import { loadJuniorSyncTenants } from "./junior-sync";
+import { juniorOrgIdsOf, loadJuniorSyncTenants } from "./junior-sync";
 import { env } from "../config";
 
 /**
@@ -93,7 +93,7 @@ export async function computeHealth(now: Date): Promise<HealthSnapshot> {
     const club = tenants.find((t) => t.id === j.tenantId);
     if (club && club.orgId !== org) tenants.push({ ...club, orgId: org });
   }
-  const juniorOrgIds = [...new Set(juniors.map((j) => j.orgId.toLowerCase()))];
+  const juniorOrgIds = juniorOrgIdsOf(juniors);
   const orgIds = [...new Set([...tenants.map((t) => t.orgId), ...juniorOrgIds])];
   const [{ matches, lastRuns }, runs] = await Promise.all([
     loadCadenceInputs(reader, orgIds, juniorOrgIds),
