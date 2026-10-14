@@ -16,6 +16,8 @@ import { recordDraftRevision } from "./draft-revisions";
 import { enrichDraft, isAutoPhoto } from "./draft-enrich";
 import { autoReadyAtFor } from "./effective-draft-state";
 import { templatedDesignFor } from "./kind-templates";
+import { placeDraft } from "./posting-writer";
+import { cancelDraftPublications } from "./publishing/publications";
 
 /**
  * One draft per event (Social Studio automation, KTD3).
@@ -347,7 +349,7 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
           ...(templated ?? {}),
         })
         .returning();
-      return { action: "inserted", draft: row };
+      return { action: "inserted", draft: await placeNewDraft(row) };
     } catch (err) {
       // A concurrent sweep inserted the same key first: fall through to update.
       if ((err as { code?: string }).code !== "23505") throw err;
@@ -415,6 +417,27 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
 }
 
 /**
+ * A calendar club's new draft gets its planned time right after the insert
+ * (posting calendar, KTD7), in its own short transaction. Placement never
+ * fails the ingest: on error the card stays unscheduled and the hourly sweep
+ * places it.
+ */
+async function placeNewDraft(row: SocialDraftRow): Promise<SocialDraftRow> {
+  try {
+    const at = await placeDraft(row.tenantId, row.id);
+    if (!at) return row;
+    const [placed] = await db
+      .select()
+      .from(socialDraftsTable)
+      .where(eq(socialDraftsTable.id, row.id));
+    return placed ?? row;
+  } catch (err) {
+    logger.error({ err, tenantId: row.tenantId, draftId: row.id }, "draft placement failed");
+    return row;
+  }
+}
+
+/**
  * The event behind a key no longer holds (e.g. a century corrected to 98):
  * dismiss the unposted draft, or mark a posted one stale.
  */
@@ -430,6 +453,8 @@ export async function withdrawDraft(draft: SocialDraftRow): Promise<"dismissed" 
     .update(socialDraftsTable)
     .set({ status: "dismissed", reviewedAt: new Date() })
     .where(eq(socialDraftsTable.id, draft.id));
+  // A planned card can sit days ahead: its scheduled posts must not go out.
+  await cancelDraftPublications(draft.tenantId, draft.id, "The card's event no longer holds.");
   return "dismissed";
 }
 
