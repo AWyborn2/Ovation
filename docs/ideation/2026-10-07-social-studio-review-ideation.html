@@ -1,0 +1,666 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ideation: Social Studio Review</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap"
+    />
+    <style>
+      :root {
+        --bg: #f7f6f3;
+        --card: #ffffff;
+        --ink: #1c1a17;
+        --muted: #6b675f;
+        --line: #e4e1da;
+        --accent: #b06000;
+        --accent-soft: #fdf3e4;
+        --accent-text: #8a4b00;
+        --good: #1d6b3a;
+        --good-soft: #e8f4ec;
+        --info: #1f5a8a;
+        --info-soft: #e9f1f8;
+        --danger: #a3352b;
+        --danger-soft: #faeae8;
+        --code-bg: #efede8;
+        --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #151412;
+          --card: #1f1d1a;
+          --ink: #ece9e3;
+          --muted: #a8a399;
+          --line: #35322d;
+          --accent: #e39a3b;
+          --accent-soft: #2e2416;
+          --accent-text: #f0b765;
+          --good: #6cc48d;
+          --good-soft: #17281d;
+          --info: #7fb4e0;
+          --info-soft: #172431;
+          --danger: #ec8a80;
+          --danger-soft: #2f1a18;
+          --code-bg: #2a2723;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 16px/1.6 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      .page { max-width: 920px; margin-inline: auto; padding: 48px 20px 80px; }
+      p, li, dd { max-width: 72ch; }
+      h1 { font-size: 2rem; line-height: 1.2; margin: 0.2em 0 0.3em; font-weight: 800; letter-spacing: -0.02em; }
+      h2 { font-size: 1.35rem; margin: 2.2em 0 0.6em; font-weight: 700; border-bottom: 2px solid var(--line); padding-bottom: 0.35em; }
+      h3 { font-size: 1.12rem; margin: 0 0 0.4em; font-weight: 700; }
+      h4 { font-size: 0.8rem; margin: 1.2em 0 0.3em; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+      a { color: var(--info); }
+      strong { color: inherit; }
+      code { font-family: var(--mono); font-size: 0.85em; background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+      .eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-text); }
+      .meta { display: flex; flex-wrap: wrap; gap: 0.4em 1.6em; color: var(--muted); font-size: 0.9rem; margin: 0.4em 0 0; }
+      .meta b { color: var(--ink); font-weight: 600; }
+      .stats { display: flex; flex-wrap: wrap; gap: 12px; margin: 26px 0 4px; }
+      .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 18px; min-width: 118px; }
+      .stat .n { font-size: 1.5rem; font-weight: 800; }
+      .stat .l { font-size: 0.8rem; color: var(--muted); }
+      .callout { background: var(--info-soft); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin: 20px 0; }
+      .callout .eyebrow { color: var(--info); }
+      .jump { columns: 2; column-gap: 28px; padding-left: 1.2em; margin: 0 0 18px; }
+      .jump li { margin: 0.15em 0; break-inside: avoid; }
+      article.idea { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; margin: 18px 0; }
+      .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+      .chip { font-size: 0.75rem; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--code-bg); color: var(--ink); border: 1px solid var(--line); }
+      .chip.id { background: var(--accent-soft); color: var(--accent-text); }
+      .chip.hi { background: var(--good-soft); color: var(--good); }
+      .chip.md { background: var(--info-soft); color: var(--info); }
+      dl.fields { margin: 0; }
+      dl.fields dt { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 0.9em; }
+      dl.fields dd { margin: 0.2em 0 0; }
+      dl.fields dd ul { margin: 0.2em 0; padding-left: 1.2em; }
+      figure { margin: 16px 0 6px; }
+      figure svg { width: 100%; height: auto; display: block; }
+      figcaption { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+      .svg-box { fill: var(--card); stroke: var(--line); stroke-width: 1.5; }
+      .svg-bad { fill: var(--danger-soft); stroke: var(--danger); stroke-width: 1.5; }
+      .svg-good { fill: var(--good-soft); stroke: var(--good); stroke-width: 1.5; }
+      .svg-acc { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+      .svg-t { fill: var(--ink); font: 600 13px "Inter", system-ui, sans-serif; }
+      .svg-s { fill: var(--muted); font: 12px "Inter", system-ui, sans-serif; }
+      .svg-tb { fill: var(--danger); font: 700 12px "Inter", system-ui, sans-serif; }
+      .svg-tg { fill: var(--good); font: 700 12px "Inter", system-ui, sans-serif; }
+      .svg-line { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+      .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0 4px; }
+      .col { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 0.92rem; }
+      .col.before { background: var(--danger-soft); }
+      .col.after { background: var(--good-soft); }
+      .col .eyebrow { display: block; margin-bottom: 4px; }
+      .col.before .eyebrow { color: var(--danger); }
+      .col.after .eyebrow { color: var(--good); }
+      table { width: 100%; border-collapse: collapse; font-size: 0.92rem; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+      th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+      .table-wrap { overflow-x: auto; }
+      footer.composition-signal { margin-top: 48px; font-size: 0.82rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+      @media (max-width: 640px) {
+        .jump { columns: 1; }
+        .cols { grid-template-columns: 1fr; }
+        article.idea { padding: 18px 16px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <div class="eyebrow">Ideation</div>
+        <h1>Ideation: Social Studio Review</h1>
+        <p class="meta">
+          <span><b>Date</b> <time datetime="2026-10-07">2026-10-07</time></span>
+          <span><b>Topic</b> social-studio-review</span>
+          <span><b>Focus</b> conduct a complete review of the social media studio — I am not happy with it (too many options; limited template editing; no control over packaging cards as individual posts or groups; no control over automation scheduling; poor UI/UX)</span>
+          <span><b>Mode</b> repo-grounded</span>
+        </p>
+        <div class="stats">
+          <div class="stat"><div class="n">~90</div><div class="l">controls across Cards tab + editor modal</div></div>
+          <div class="stat"><div class="n">9</div><div class="l">Studio tabs</div></div>
+          <div class="stat"><div class="n">3</div><div class="l">places auto-drafting is set</div></div>
+          <div class="stat"><div class="n">0</div><div class="l">ways to merge or split drafts in the queue</div></div>
+        </div>
+        <div class="callout">
+          <div class="eyebrow">Reading this review</div>
+          <p>
+            The ranking is driven by the five complaints, each traced to the code in <a href="#owner-complaints">Owner
+            complaints</a>. Ideas 1–3 replace the scattered settings with one model: per card kind, decide whether it
+            drafts, how it is packaged and when it goes out, then adjust any of that on the drafts themselves. Idea 4
+            makes design edits stick. Idea 5 rebuilds the screens around the weekly job. Ideas 6–7 are not in your list
+            but are found defects that must be fixed before auto-posting is trusted.
+          </p>
+        </div>
+      </header>
+
+      <section id="owner-complaints">
+        <h2>Owner complaints</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Complaint</th><th>What the code shows</th><th>Ideas</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><strong>Too many options</strong></td>
+                <td>The Cards tab stacks ten settings cards (roughly 60–70 controls); the share-card modal adds another 25–30. The same idea is set in several places: content "engines" (On-demand, Auto-milestone, Round-up, Season recap) <em>and</em> automation "families" (results, achievements, roundup, matchday); auto-drafting in Automation, Round cards <em>and</em> Studio's Match-summary auto-draft; a design default at four levels; sponsors toggled in three places.</td>
+                <td><a href="#idea-1">1</a>, <a href="#idea-5">5</a></td>
+              </tr>
+              <tr>
+                <td><strong>Limited template editing</strong></td>
+                <td>Pack layouts are fixed, code-rendered HTML. The Studio editor is rich (free layers, fonts, geometry, photo focal point), but edits apply to one card only. "Save as template" (<code>social-drafts.ts:455-470</code>) does not set <code>defaultForKinds</code>, so a saved design is something you pick by hand, never the default for that card kind. Two template systems sit side by side: legacy canvas "background" templates on the Cards tab and editor templates. The style panel offers 5 fonts.</td>
+                <td><a href="#idea-4">4</a></td>
+              </tr>
+              <tr>
+                <td><strong>No packaging control (individual vs grouped)</strong></td>
+                <td>Packaging is set before drafting: Round cards modes (Each match / Whole round / Both or Off), with hard-coded set caps <code>SET_CAPS = { roundFixtures: 5, weekendWrap: 4, teamListRound: 1 }</code>. Per-draft cover and grouping options exist only inside the Studio editor. The queue has no multi-select, merge or split. Carousel sets are a separate system built from source data, not from queue drafts.</td>
+                <td><a href="#idea-1">1</a>, <a href="#idea-2">2</a></td>
+              </tr>
+              <tr>
+                <td><strong>No control over automation scheduling</strong></td>
+                <td>The day and hour can be set only for whole-round modes, in Perth time. Hard-coded: 48h match-day lead (<code>MATCH_DAY_LEAD_MS</code>), hourly sweep, 21-day recency, cap of 40, 7-day round window. The review window is one global value. Auto-publish puts every card at the same "now". No calendar shows what posts when.</td>
+                <td><a href="#idea-1">1</a>, <a href="#idea-3">3</a></td>
+              </tr>
+              <tr>
+                <td><strong>Poor UI/UX</strong></td>
+                <td>Nine tabs, with the queue 8th. Settings depend on other settings, which only helper text explains ("Switch on Round-up in Automation above first"). The approve path is split across drawer buttons, a Publish panel and Share by hand. Failures are invisible.</td>
+                <td><a href="#idea-5">5</a>, <a href="#idea-6">6</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="grounding-context">
+        <h2>Grounding Context</h2>
+        <h3>Codebase Context</h3>
+        <ul>
+          <li><strong>Surface.</strong> One "Social Media Studio" tab bar with nine tabs — Studio, Cards, Create a card, Carousel sets, Fixtures, Junior cards, Trading cards, Queue, Photo library. The Queue (the weekly job) is the 8th tab; the Cards tab stacks ten settings cards; Studio repeats some of them.</li>
+          <li><strong>Render.</strong> 6 design packs × 17 card kinds × 4 sizes, rendered by the HTML pack renderer (headless Chromium, server-side). A legacy canvas renderer (<code>share-card.ts</code>) is still used by the card forms, sponsors card and export modal. Client and server pack registries are kept in step by <code>pack-coverage-parity.test.ts</code>; sample-text leakage is linted in <code>pack-lint.test.ts</code> against sample data only.</li>
+          <li><strong>Automation.</strong> <code>draft-sweep.ts</code> runs hourly from the PlayHQ runner: drafts results, achievements, round-ups and debut caps from central matches (last 21 days, cap 40), then promotes drafts when auto-post is on (off by default). Round carousels and a <code>perRound</code> weekend wrap already exist.</li>
+          <li><strong>Publishing.</strong> Meta publishing (connect, schedule, worker, auto-publish, health) is built but off behind <code>META_PUBLISHING_ENABLED</code>, waiting on App Review; never run against a live Page. Today's path is Preview &amp; download → Share by hand (zip or phone share sheet, caption copied) → Mark posted. Video is a manual MP4 download.</li>
+          <li><strong>Media.</strong> Photo pick order: club rule → library photo tagged with the player → headshot → grade photo → no-photo layout. Background removal (Photoroom) is manual, per photo. Juniors never get photos. Captions are fixed templates with name/stat tokens.</li>
+        </ul>
+        <h3>Past learnings</h3>
+        <ul>
+          <li>Earlier owner complaints (Jul 2026 — hard-coded Halls Head, ignored photos, carousels bypassing the pack) traced to two render paths plus opt-in tenant-data threading; fixed in waves, but the structure that produced them remains.</li>
+          <li>Open product decision F3: should a re-ingest overwrite an approved draft? Still unresolved.</li>
+          <li>Deferred in the automation and Meta plans: roles and approval workflow, analytics/insights, Reels/video, Stories auto-publish, weekly posting slots, junior photo consent.</li>
+          <li>No club feedback on Social Studio exists in the repo.</li>
+        </ul>
+        <h3>External context</h3>
+        <ul>
+          <li>Cricket tools (CrickPro) export one-shot result/fixture images; generic schedulers (Buffer, Later, Meta Business Suite) have queues but no match-data awareness; the volunteer status quo is re-keying scores into Canva.</li>
+          <li>The volunteer social admin is unpaid, ad hoc, ideally shared by 2–3 people, and turns over.</li>
+          <li>Community-club engagement guidance (AFL / Sport England via SEN, Sep 2026): people, not logos — milestones, action shots, throwbacks.</li>
+          <li>AP + Automated Insights: automate the long tail humans never cover, with accuracy as the non-negotiable gate; humans spend effort on the one best story.</li>
+        </ul>
+      </section>
+
+      <section id="topic-axes">
+        <h2>Topic Axes</h2>
+        <ol>
+          <li>Admin operating flow &amp; information architecture</li>
+          <li>Card visual quality &amp; render architecture</li>
+          <li>Automation engine &amp; content selection</li>
+          <li>Publishing &amp; distribution</li>
+          <li>Media &amp; player-centric storytelling</li>
+        </ol>
+      </section>
+
+      <section id="ranked-ideas">
+        <h2>Ranked Ideas</h2>
+        <ul class="jump">
+          <li><a href="#idea-1">1. One Posting Plan per card kind</a></li>
+          <li><a href="#idea-2">2. Package in the queue: combine, split, reorder</a></li>
+          <li><a href="#idea-3">3. Posting calendar you can drag</a></li>
+          <li><a href="#idea-4">4. Edit the design once, for every card of that kind</a></li>
+          <li><a href="#idea-5">5. Inbox-first Studio with three areas</a></li>
+          <li><a href="#idea-6">6. Trustworthy autopilot</a></li>
+          <li><a href="#idea-7">7. Preflight every real draft</a></li>
+        </ul>
+
+        <article class="idea" id="idea-1">
+          <h3>1. One Posting Plan per card kind</h3>
+          <div class="chips">
+            <span class="chip id">Idea 1</span>
+            <span class="chip">Axis 3 · Automation &amp; content selection</span>
+            <span class="chip">Complaints: too many options, packaging, scheduling</span>
+            <span class="chip hi">Confidence 80%</span>
+            <span class="chip md">Complexity Medium–High</span>
+          </div>
+          <dl class="fields">
+            <dt>Description</dt>
+            <dd>
+              Replace the Automation card, Round cards card, Engines/sizes switches, Auto-post card and Studio's
+              Match-summary auto-draft with one table: one row per card kind (results, milestones, debut caps, team
+              lists, game day, round-up, weekend wrap…). Each row answers the same four questions in plain words:
+              <strong>Draft it?</strong> (off / on / on for these grades), <strong>Package as</strong> (each one on its
+              own / one set per round / both / fold into the weekend wrap), <strong>Post when</strong> (a fixed day and
+              time, or "N hours after the match" / "N hours before"), and <strong>Who approves</strong> (me / goes
+              automatically after N hours). A row's design is a fifth column linking to idea 4. Global switches shrink to
+              one master "Autopilot on/off". Dependencies disappear: a round set can't be "switched on in Automation
+              above first" because the row is the switch.
+            </dd>
+            <dt>Axis</dt>
+            <dd>Automation engine &amp; content selection</dd>
+            <dt>Basis</dt>
+            <dd>
+              <ul>
+                <li><code>direct:</code> the Cards tab stacks ten cards (<code>admin-social.tsx:74-83</code>), about 60–70 controls; content engines (<code>admin-social/constants.ts:5-28</code>) overlap automation families (<code>automation-card.tsx:14-20</code>) — Round-up is in both.</li>
+                <li><code>direct:</code> auto-drafting is configured in three places — Automation, Round cards, and Studio's <code>match-summary-settings.tsx</code> (with the <code>autoseedCarousels</code> toggle).</li>
+                <li><code>direct:</code> cross-card dependency explained only in copy: "Switch on Round-up / Match day in Automation above first." (<code>round-schedules-card.tsx:140</code>).</li>
+                <li><code>direct:</code> packaging lives in Round cards modes (Each match / Whole round / Both or Off, <code>:55-83</code>); review window is one global value (<code>auto-post-card.tsx:116</code>); the 48h match-day lead is hard-coded (<code>engines/match-day.ts:8</code>).</li>
+                <li><code>external:</code> the volunteer admin is unpaid, part-time and changes over — one readable table is learnable; ten interlocking cards are not.</li>
+              </ul>
+            </dd>
+            <dt>Rationale</dt>
+            <dd>This one change answers three of your five complaints at once. The settings already exist, scattered over four cards and two tabs with overlapping vocabulary. Putting them on one row per kind makes "what happens to a milestone card?" answerable at a glance, and adds the per-kind controls (packaging, timing, approval) that are missing today.</dd>
+            <dt>Downsides</dt>
+            <dd>Settings migration: existing rows in social settings, round schedules and auto-post must map onto the new model without changing any club's behaviour. A wide table needs a stacked phone layout. Advanced knobs (freshness cut-off, sizes, tone) still need a home — an "Advanced" drawer, not a separate card.</dd>
+            <dt>Confidence</dt>
+            <dd>80%</dd>
+            <dt>Complexity</dt>
+            <dd>Medium–High</dd>
+          </dl>
+          <figure>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Card kind</th><th>Draft it?</th><th>Package as</th><th>Post when</th><th>Who approves</th><th>Design</th></tr></thead>
+                <tbody>
+                  <tr><td>Results</td><td>A–C Grade</td><td>Each match + round set</td><td>Sun 7:00pm</td><td>Auto after 12h</td><td>Club Kit</td></tr>
+                  <tr><td>Milestones</td><td>All senior</td><td>Each one on its own</td><td>2h after match</td><td>Me</td><td>Club milestone (custom)</td></tr>
+                  <tr><td>Team lists</td><td>On</td><td>One set per round</td><td>Fri 12:00pm</td><td>Auto after 2h</td><td>Club Kit</td></tr>
+                  <tr><td>Game day</td><td>On</td><td>Fold into weekend preview</td><td>36h before</td><td>Me</td><td>Gold Foil</td></tr>
+                  <tr><td>Round-up</td><td>Off</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <figcaption>Directional only — illustrates the intended shape. Exact columns, values and copy are placeholders for review, not requirements.</figcaption>
+          </figure>
+        </article>
+
+        <article class="idea" id="idea-2">
+          <h3>2. Package in the queue: combine, split, reorder</h3>
+          <div class="chips">
+            <span class="chip id">Idea 2</span>
+            <span class="chip">Axis 4 · Publishing &amp; distribution</span>
+            <span class="chip">Complaint: packaging</span>
+            <span class="chip hi">Confidence 80%</span>
+            <span class="chip md">Complexity Medium</span>
+          </div>
+          <dl class="fields">
+            <dt>Description</dt>
+            <dd>
+              The Posting Plan sets the default; the queue lets you change your mind after drafting. Tick several
+              drafts and choose <strong>Combine into one post</strong> (a carousel, with the cover card optional and
+              slide order draggable). On any set, choose <strong>Split into separate posts</strong>. Cover on/off,
+              grouping and slide order sit on the queue card itself, not buried in the Studio editor, and the queue
+              previews exactly what will post. This also folds the separate Carousel sets page into the queue:
+              a carousel is just a post with several slides.
+            </dd>
+            <dt>Axis</dt>
+            <dd>Publishing &amp; distribution</dd>
+            <dt>Basis</dt>
+            <dd>
+              <ul>
+                <li><code>direct:</code> the queue (<code>admin-social-queue.tsx</code>) has no multi-select, merge or split; it only reads <code>adjustments.set</code> to show a slide count (<code>:66-71</code>).</li>
+                <li><code>direct:</code> per-draft set options — "Cover card" Automatic / Always / Never and the men's/women's grouping checkbox — live only in the Studio editor (<code>card-sets/set-options.tsx:20-45</code>, mounted at <code>admin-studio-editor.tsx:265</code>).</li>
+                <li><code>direct:</code> set size is fixed by planner caps, not admin choice: <code>SET_CAPS = { roundFixtures: 5, weekendWrap: 4, teamListRound: 1 }</code> (<code>lib/scorecard/src/card-sets.ts:213-217</code>); "The set is derived from the card's input, never stored".</li>
+                <li><code>direct:</code> Carousel sets are a separate system (<code>admin-social-sets.tsx</code>, ~1,365 lines; <code>social-cards-sets.ts</code>) built from source data, 2–10 slides, with autoseed off by default.</li>
+              </ul>
+            </dd>
+            <dt>Rationale</dt>
+            <dd>Packaging is an editorial decision you often only know you want after seeing the week's cards ("these three milestones would be better as one post"). Today that decision is locked in by settings and caps before the cards exist. Moving it into the queue gives direct control and removes a whole page.</dd>
+            <dt>Downsides</dt>
+            <dd>Sets are currently derived from one draft's input, never stored; combining separate drafts needs a stored "post" grouping above drafts (a schema change and a hand-applied migration). Juniors must never combine with seniors — the merge action has to enforce that.</dd>
+            <dt>Confidence</dt>
+            <dd>80%</dd>
+            <dt>Complexity</dt>
+            <dd>Medium</dd>
+          </dl>
+          <figure>
+            <svg viewBox="0 0 760 160" role="img" aria-label="Three separate drafts combine into one carousel post, and a carousel splits back into separate posts">
+              <rect x="10" y="20" width="110" height="34" rx="6" class="svg-box" /><text x="65" y="42" text-anchor="middle" class="svg-s">Milestone · Smith</text>
+              <rect x="10" y="62" width="110" height="34" rx="6" class="svg-box" /><text x="65" y="84" text-anchor="middle" class="svg-s">Milestone · Jones</text>
+              <rect x="10" y="104" width="110" height="34" rx="6" class="svg-box" /><text x="65" y="126" text-anchor="middle" class="svg-s">Debut · Brown</text>
+              <path d="M120 37 L230 72 M120 79 L230 79 M120 121 L230 86" class="svg-line" />
+              <rect x="230" y="56" width="180" height="46" rx="8" class="svg-acc" />
+              <text x="320" y="76" text-anchor="middle" class="svg-t">Combine into one post</text>
+              <text x="320" y="92" text-anchor="middle" class="svg-s">cover · drag order</text>
+              <path d="M410 79 H460" class="svg-line" />
+              <rect x="460" y="44" width="290" height="70" rx="8" class="svg-good" />
+              <text x="605" y="70" text-anchor="middle" class="svg-tg">1 carousel post · 4 slides</text>
+              <text x="605" y="90" text-anchor="middle" class="svg-s">"Split into separate posts" reverses it</text>
+            </svg>
+            <figcaption>Illustrative: packaging chosen on the drafts themselves, after drafting.</figcaption>
+          </figure>
+        </article>
+
+        <article class="idea" id="idea-3">
+          <h3>3. Posting calendar you can drag</h3>
+          <div class="chips">
+            <span class="chip id">Idea 3</span>
+            <span class="chip">Axis 4 · Publishing &amp; distribution</span>
+            <span class="chip">Complaint: scheduling</span>
+            <span class="chip md">Confidence 75%</span>
+            <span class="chip md">Complexity Medium</span>
+          </div>
+          <dl class="fields">
+            <dt>Description</dt>
+            <dd>
+              A week view of everything that will post: drafted cards sit in their Posting Plan slots, and future
+              cards appear as placeholders ("Results — after Saturday's games"). Drag a card to move it; the change
+              applies to that post only, with "make this the usual time for results" one click away. Club guard rails
+              live here: a daily cap, minimum spacing between posts, and quiet hours. When several cards land in one
+              slot they are spaced out, strongest story first, instead of all posting at the same moment. The same
+              calendar drives Meta auto-publish later and, before then, "post these now" reminders for sharing by hand.
+            </dd>
+            <dt>Axis</dt>
+            <dd>Publishing &amp; distribution</dd>
+            <dt>Basis</dt>
+            <dd>
+              <ul>
+                <li><code>direct:</code> auto-publish loops candidates with <code>at: now</code>, no <code>orderBy</code>, no spacing or cap (<code>publishing/auto-publish.ts</code>, verified).</li>
+                <li><code>direct:</code> day/hour control exists only for whole-round modes, in Perth time ("Times are Perth time.", <code>round-schedules-card.tsx:128,158-185</code>); "Each match" modes have none.</li>
+                <li><code>direct:</code> hard-coded timing — <code>MATCH_DAY_LEAD_MS = 48h</code>, <code>ROUND_WINDOW_MS = 7 days</code>, default slots Thu 18:00 / Fri 12:00 / Sun 19:00 (<code>round-schedules.ts:36-41,140</code>).</li>
+                <li><code>direct:</code> the per-draft schedule panel takes one <code>datetime-local</code> per draft (<code>schedule-panel.tsx:267</code>) — there is no view across drafts; the Meta plan defers "weekly posting slots".</li>
+                <li><code>external:</code> Buffer, Later and Meta Business Suite all centre on a calendar; Instagram limits API posts per 24h.</li>
+              </ul>
+            </dd>
+            <dt>Rationale</dt>
+            <dd>"Control over scheduling" means seeing and changing when things go out. Today timing is scattered across a hard-coded lead, per-mode selects and a per-draft date picker, with no single place showing the week. A calendar is the familiar model every scheduler uses.</dd>
+            <dt>Downsides</dt>
+            <dd>Placeholders for not-yet-drafted cards depend on fixtures and team lists being current. A drag-and-drop calendar is real front-end work and needs a usable phone layout (a day list rather than a grid).</dd>
+            <dt>Confidence</dt>
+            <dd>75%</dd>
+            <dt>Complexity</dt>
+            <dd>Medium</dd>
+          </dl>
+          <figure>
+            <svg viewBox="0 0 760 150" role="img" aria-label="Today every card is scheduled at the same instant; proposed, cards are spread across a week calendar">
+              <text x="10" y="20" class="svg-tb">TODAY — auto-publish puts everything at "now"</text>
+              <path d="M10 50 H740" class="svg-line" />
+              <rect x="300" y="32" width="10" height="36" class="svg-bad" />
+              <rect x="312" y="32" width="10" height="36" class="svg-bad" />
+              <rect x="324" y="32" width="10" height="36" class="svg-bad" />
+              <rect x="336" y="32" width="10" height="36" class="svg-bad" />
+              <rect x="348" y="32" width="10" height="36" class="svg-bad" />
+              <text x="370" y="56" class="svg-s">5 posts, same minute</text>
+              <text x="10" y="96" class="svg-tg">PROPOSED — week calendar, drag to move</text>
+              <path d="M10 126 H740" class="svg-line" />
+              <rect x="40" y="108" width="70" height="36" rx="4" class="svg-box" /><text x="75" y="131" text-anchor="middle" class="svg-s">Thu lists</text>
+              <rect x="190" y="108" width="70" height="36" rx="4" class="svg-box" /><text x="225" y="131" text-anchor="middle" class="svg-s">Sat 2h+</text>
+              <rect x="340" y="108" width="80" height="36" rx="4" class="svg-good" /><text x="380" y="131" text-anchor="middle" class="svg-tg">Sun lead</text>
+              <rect x="470" y="108" width="80" height="36" rx="4" class="svg-box" /><text x="510" y="131" text-anchor="middle" class="svg-s">Sun set</text>
+              <rect x="620" y="108" width="80" height="36" rx="4" class="svg-box" /><text x="660" y="131" text-anchor="middle" class="svg-s">Mon</text>
+            </svg>
+            <figcaption>Illustrative: one weekend's posts, before and after a calendar with spacing.</figcaption>
+          </figure>
+        </article>
+
+        <article class="idea" id="idea-4">
+          <h3>4. Edit the design once, for every card of that kind</h3>
+          <div class="chips">
+            <span class="chip id">Idea 4</span>
+            <span class="chip">Axis 2 · Card visual quality</span>
+            <span class="chip">Complaint: template editing</span>
+            <span class="chip hi">Confidence 80%</span>
+            <span class="chip md">Complexity Medium</span>
+          </div>
+          <dl class="fields">
+            <dt>Description</dt>
+            <dd>
+              The Studio editor can already move, restyle and add elements, but only on one card. Make it a template
+              editor: open any card kind ("Milestone"), start from a pack, change it (text, colours, fonts, photo
+              position, add your own layers, hide pack elements), then <strong>Use for all Milestone cards</strong>.
+              Future drafts of that kind render from the club's template; existing drafts offer "apply new design".
+              Edits are made per size with a "same for all sizes" link where layouts allow. Retire the legacy
+              background-template builder on the Cards tab, so there is one design system, and allow a club font upload
+              alongside the five built-in display fonts.
+            </dd>
+            <dt>Axis</dt>
+            <dd>Card visual quality &amp; render architecture</dd>
+            <dt>Basis</dt>
+            <dd>
+              <ul>
+                <li><code>direct:</code> the editor's adjustment model already supports field overrides, hidden elements, free text/shape/image layers with font, size, colour and per-format geometry, and photo focal point and zoom (<code>lib/pack-render/adjustments.ts:1-80</code>).</li>
+                <li><code>direct:</code> "Save as template" inserts a row with <code>source: "editor"</code>, <code>packId</code> and <code>adjustments</code> but does not set <code>defaultForKinds</code> (<code>social-drafts.ts:455-470</code>); the gallery copy says saved templates "appear under Design it yourself on Create a card" — a manual pick, not a default (<code>admin-social-studio.tsx:305-308</code>).</li>
+                <li><code>direct:</code> <code>card_templates.defaultForKinds</code> already exists ("a kind appears in at most one template", <code>schema/social_cards.ts:142-190</code>), so the schema hook for "default for this kind" is in place.</li>
+                <li><code>direct:</code> two template systems: legacy canvas <code>card-template-builder.tsx</code> mounted as <code>&lt;TemplatesCard /&gt;</code> on the Cards tab, and editor templates; older "layers" templates are delete-only and retired. The style panel offers 5 fonts (<code>style-panel.tsx:7-13</code>).</li>
+              </ul>
+            </dd>
+            <dt>Rationale</dt>
+            <dd>Most of the editing power exists; the gap is that it doesn't carry over to the next card. Every automated card arrives in the stock pack design, so a club's customisations are lost every week. Wiring the editor to <code>defaultForKinds</code> turns "limited editing" into "your own designs on autopilot".</dd>
+            <dt>Downsides</dt>
+            <dd>The automated render path (draft-enrich and the server-side render) must apply tenant adjustments for every kind. A freely edited layout can break when the data differs (a long name, no photo), which makes idea 7's checks more important. Per-size editing multiplies effort unless sizes share layouts sensibly.</dd>
+            <dt>Confidence</dt>
+            <dd>80%</dd>
+            <dt>Complexity</dt>
+            <dd>Medium</dd>
+          </dl>
+          <div class="cols">
+            <div class="col before">
+              <span class="eyebrow">Today</span>
+              Edit a milestone card in the Studio editor → that one card changes. Next week's automated milestone card
+              arrives in the stock pack design again. "Save as template" only adds an option under Create a card.
+            </div>
+            <div class="col after">
+              <span class="eyebrow">Proposed</span>
+              Edit the Milestone template once → "Use for all Milestone cards" → every future milestone draft uses the
+              club's design; waiting drafts offer "apply new design".
+            </div>
+          </div>
+        </article>
+
+        <article class="idea" id="idea-5">
+          <h3>5. Inbox-first Studio with three areas</h3>
+          <div class="chips">
+            <span class="chip id">Idea 5</span>
+            <span class="chip">Axis 1 · Admin flow &amp; IA</span>
+            <span class="chip">Complaints: poor UI/UX, too many options</span>
+            <span class="chip md">Confidence 75%</span>
+            <span class="chip md">Complexity Medium</span>
+          </div>
+          <dl class="fields">
+            <dt>Description</dt>
+            <dd>
+              Nine tabs become three. <strong>Inbox</strong> is the home page: the week's drafts with approve, package
+              (idea 2), schedule (idea 3), share and mark-posted inline, plus "needs attention" from idea 6. Its phone
+              layout shows one card at a time with the share sheet and caption ready. <strong>Designs</strong> holds the
+              per-kind templates (idea 4), the photo library, and the one-off maker (Create a card, Fixtures, Trading
+              cards as modes; junior cards stay walled off). <strong>Plan</strong> holds the Posting Plan (idea 1), the
+              calendar (idea 3), connections and sponsors. Every setting appears once, and each draft links to the row
+              that produced it ("why didn't this auto-post?").
+            </dd>
+            <dt>Axis</dt>
+            <dd>Admin operating flow &amp; information architecture</dd>
+            <dt>Basis</dt>
+            <dd>
+              <ul>
+                <li><code>direct:</code> <code>lib/admin-nav.ts</code> lists nine social tabs, with Queue 8th (verified).</li>
+                <li><code>direct:</code> duplication across surfaces: sponsors toggled in the Sponsors card, in <code>settings-card.tsx:118-129</code> and in the modal; sizes switched on in settings and again as modal preview tabs; platform chosen in caption tabs and again in the schedule panel.</li>
+                <li><code>direct:</code> the empty queue sends people to <code>/admin/social/cards#automation</code>; the approve path spans drawer buttons, a Publish panel and Share by hand.</li>
+                <li><code>direct:</code> the phone share path already exists (<code>post-pack-button.tsx</code>, <code>navigator.share</code> with the caption on the clipboard).</li>
+              </ul>
+            </dd>
+            <dt>Rationale</dt>
+            <dd>Ideas 1–4 remove settings and add direct controls; this is the shell that makes the result feel like one product. It is the change a volunteer notices first, and it removes most of the "where do I go?" load.</dd>
+            <dt>Downsides</dt>
+            <dd>A broad UI change across large pages; deep links and admin muscle memory need a redirect map. It works best after ideas 1–4 have reduced what has to be shown; done first, it would only rearrange the clutter.</dd>
+            <dt>Confidence</dt>
+            <dd>75%</dd>
+            <dt>Complexity</dt>
+            <dd>Medium</dd>
+          </dl>
+          <figure>
+            <svg viewBox="0 0 760 230" role="img" aria-label="Nine current tabs map into three areas: Inbox, Designs and Plan">
+              <text x="10" y="18" class="svg-s">Today: 9 tabs + 10 settings cards</text>
+              <rect x="10" y="28" width="150" height="20" rx="5" class="svg-box" /><text x="18" y="42" class="svg-s">Queue (8th)</text>
+              <rect x="10" y="52" width="150" height="20" rx="5" class="svg-box" /><text x="18" y="66" class="svg-s">Create a card</text>
+              <rect x="10" y="76" width="150" height="20" rx="5" class="svg-box" /><text x="18" y="90" class="svg-s">Carousel sets</text>
+              <rect x="10" y="100" width="150" height="20" rx="5" class="svg-box" /><text x="18" y="114" class="svg-s">Fixtures · Trading</text>
+              <rect x="10" y="124" width="150" height="20" rx="5" class="svg-box" /><text x="18" y="138" class="svg-s">Junior cards</text>
+              <rect x="10" y="148" width="150" height="20" rx="5" class="svg-box" /><text x="18" y="162" class="svg-s">Studio · Photo library</text>
+              <rect x="10" y="172" width="150" height="20" rx="5" class="svg-box" /><text x="18" y="186" class="svg-s">Cards (10 settings)</text>
+              <rect x="470" y="28" width="270" height="44" rx="8" class="svg-good" />
+              <text x="605" y="48" text-anchor="middle" class="svg-t">Inbox (home)</text>
+              <text x="605" y="64" text-anchor="middle" class="svg-s">review · package · schedule · post</text>
+              <rect x="470" y="96" width="270" height="44" rx="8" class="svg-acc" />
+              <text x="605" y="116" text-anchor="middle" class="svg-t">Designs</text>
+              <text x="605" y="132" text-anchor="middle" class="svg-s">templates per kind · photos · one-offs</text>
+              <rect x="470" y="164" width="270" height="44" rx="8" class="svg-box" />
+              <text x="605" y="184" text-anchor="middle" class="svg-t">Plan</text>
+              <text x="605" y="200" text-anchor="middle" class="svg-s">posting plan · calendar · connections</text>
+              <path d="M160 38 C 320 38, 320 50, 470 50" class="svg-line" />
+              <path d="M160 86 C 320 86, 320 60, 470 60" class="svg-line" />
+              <path d="M160 134 C 320 134, 320 118, 470 118" class="svg-line" />
+              <path d="M160 182 C 320 182, 320 186, 470 186" class="svg-line" />
+            </svg>
+            <figcaption>Illustrative mapping (lines show groups, not every tab): nine tabs fold into three areas.</figcaption>
+          </figure>
+        </article>
+
+        <article class="idea" id="idea-6">
+          <h3>6. Trustworthy autopilot</h3>
+          <div class="chips">
+            <span class="chip id">Idea 6</span>
+            <span class="chip">Axis 3 · Automation &amp; content selection</span>
+            <span class="chip">Found in review (not on your list)</span>
+            <span class="chip hi">Confidence 85%</span>
+            <span class="chip md">Complexity Medium</span>
+          </div>
+          <dl class="fields">
+            <dt>Description</dt>
+            <dd>
+              Two defects to fix before automatic posting is trusted. <strong>Approval is a promise:</strong> when a
+              re-import changes a Ready card's numbers, the card goes back to review with the change highlighted
+              ("102* → 98 — century withdrawn") and loses auto-publish eligibility until re-approved; a withdrawn event
+              leaves a visible "retracted" entry. <strong>Visible sweep:</strong> each sweep records each stage's outcome
+              and skip reasons, a failed stage stops the watermark advancing, and a "coverage" check lists card-worthy
+              events with no draft ("2 milestones missed — draft now?"). Both feed the Inbox's "needs attention".
+            </dd>
+            <dt>Axis</dt>
+            <dd>Automation engine &amp; content selection</dd>
+            <dt>Basis</dt>
+            <dd>
+              <ul>
+                <li><code>direct:</code> a changed unposted draft takes the refresh path in <code>draft-upsert.ts</code> (~355–395), which updates card data, caption and photo but not <code>status</code> or <code>autoReadyAt</code>; <code>autoReadyAt</code> is set only on insert (<code>:336</code>); the auto-publish candidate is "ready, with <code>auto_ready_at</code> still set" within a 24h freshness window (<code>auto-publish.ts:15,37</code>) (verified).</li>
+                <li><code>direct:</code> sweep stages log and continue; <code>SweepSummary</code> has no error field; <code>lastSweepAt</code> is written at <code>draft-sweep.ts:224</code> regardless, and <code>setWatermark(tenantId, hold ?? lastSeenId)</code> at <code>:375</code> runs after a swallowed failure (verified).</li>
+                <li><code>direct:</code> open product decision F3 (re-ingest overwriting approved drafts) in the residual review findings.</li>
+              </ul>
+            </dd>
+            <dt>Rationale</dt>
+            <dd>More control (ideas 1–3) means admins will switch automation on. When they do, an auto-approved card whose numbers changed could post unseen, and a failed sweep looks exactly like a quiet weekend. Visible failures and kept promises are what let a volunteer trust the plan they set.</dd>
+            <dt>Downsides</dt>
+            <dd>Score corrections early in the week bounce more cards back to review; accepting the change must be one tap. The run log needs a small table and a migration applied by hand in production. Holding the watermark needs a give-up rule so a permanently failing stage doesn't retry forever.</dd>
+            <dt>Confidence</dt>
+            <dd>85%</dd>
+            <dt>Complexity</dt>
+            <dd>Medium</dd>
+          </dl>
+          <figure>
+            <svg viewBox="0 0 760 170" role="img" aria-label="A Ready draft that is changed by a re-import stays Ready and can auto-publish today; proposed, it returns to review with a redline">
+              <rect x="10" y="62" width="120" height="44" rx="8" class="svg-box" />
+              <text x="70" y="88" text-anchor="middle" class="svg-t">Ready draft</text>
+              <rect x="170" y="62" width="150" height="44" rx="8" class="svg-acc" />
+              <text x="245" y="82" text-anchor="middle" class="svg-t">Re-import changes</text>
+              <text x="245" y="98" text-anchor="middle" class="svg-s">102* → 98</text>
+              <path d="M130 84 H170" class="svg-line" />
+              <path d="M320 76 L380 36" class="svg-line" />
+              <path d="M320 92 L380 132" class="svg-line" />
+              <rect x="380" y="14" width="360" height="44" rx="8" class="svg-bad" />
+              <text x="560" y="34" text-anchor="middle" class="svg-tb">TODAY: stays Ready, still auto-publish eligible</text>
+              <text x="560" y="50" text-anchor="middle" class="svg-s">changed card can post unseen</text>
+              <rect x="380" y="110" width="360" height="44" rx="8" class="svg-good" />
+              <text x="560" y="130" text-anchor="middle" class="svg-tg">PROPOSED: back to review, with redline</text>
+              <text x="560" y="146" text-anchor="middle" class="svg-s">auto-publish cleared until re-approved</text>
+            </svg>
+            <figcaption>Illustrative: what happens to an approved card when its source data changes.</figcaption>
+          </figure>
+        </article>
+
+        <article class="idea" id="idea-7">
+          <h3>7. Preflight every real draft</h3>
+          <div class="chips">
+            <span class="chip id">Idea 7</span>
+            <span class="chip">Axis 2 · Card visual quality</span>
+            <span class="chip">Found in review; guards idea 4</span>
+            <span class="chip md">Confidence 70%</span>
+            <span class="chip md">Complexity Medium</span>
+          </div>
+          <dl class="fields">
+            <dt>Description</dt>
+            <dd>
+              Like a print shop's preflight, render each draft from its real data (including the club's own template
+              from idea 4) and check for leftover sample text, a name squeezed below the minimum fit, a photo-led card
+              with no photo, a letterboxed landscape, more than 10 slides, or a private player's name. A failing card
+              can't become Ready or auto-post without a one-click override, and the Inbox says why. When editing a
+              template, a preview strip shows it with awkward real data (longest name, no photo) before saving.
+            </dd>
+            <dt>Axis</dt>
+            <dd>Card visual quality &amp; render architecture</dd>
+            <dt>Basis</dt>
+            <dd>
+              <ul>
+                <li><code>direct:</code> <code>name-fit.ts</code> defines <code>MIN_FIT = 0.6</code> but nothing gates a draft on it; <code>pack-lint.test.ts</code> checks sample-text leakage only against test samples (verified).</li>
+                <li><code>direct:</code> <code>ensurePackTemplates</code> "fails SILENTLY … produces no error, no log" (<code>design-packs.ts</code>).</li>
+                <li><code>direct:</code> past learning — layout collapse without a photo was caught only by rendering a real PNG; the Meta runbook's "Meta allows at most 10" failure surfaces only at publish time.</li>
+              </ul>
+            </dd>
+            <dt>Rationale</dt>
+            <dd>Freely editable templates (idea 4) multiply the ways a card can break with real data. Preflight is what makes "edit once, use for every card" safe to switch on.</dd>
+            <dt>Downsides</dt>
+            <dd>Server-side renders are serialised Chromium work; checking every draft adds sweep load. Heuristics will raise false alarms at first.</dd>
+            <dt>Confidence</dt>
+            <dd>70%</dd>
+            <dt>Complexity</dt>
+            <dd>Medium</dd>
+          </dl>
+        </article>
+      </section>
+
+      <section id="rejection-summary">
+        <h2>Rejection Summary</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Idea</th><th>Reason Rejected</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td>Storylines from club history (context facts, milestone watchlist)</td><td>Deferred: strong for engagement but answers none of the stated complaints; revisit once the controls are fixed. Its "on the cusp" card would become one more row in the Posting Plan.</td></tr>
+              <tr><td>2</td><td>Photo supply loop (shot list, auto cut-out, preferred photo types)</td><td>Deferred for the same reason; the small fix (preferred photo types for debut cards) can ride along with idea 4.</td></tr>
+              <tr><td>3</td><td>Weekend run sheet: ranked and paced posting</td><td>Merged into idea 3; the calendar carries spacing, caps and strongest-story-first.</td></tr>
+              <tr><td>4</td><td>Phone-first review-and-post loop by SMS link</td><td>Merged into idea 5 as the Inbox's phone layout; the SMS-link-to-approval step is unproven.</td></tr>
+              <tr><td>5</td><td>One render engine: retire the canvas path, parametric layout masters</td><td>Large refactor rather than a product move. Idea 4 retires the canvas-based template builder from the admin's view; the deeper engine work can follow where preflight (idea 7) shows failures cluster.</td></tr>
+              <tr><td>6</td><td>Earned autonomy (per family × grade trust ladder)</td><td>Superseded: the Posting Plan's "Who approves" column gives that control directly; automatic promotion can come later on top of idea 6.</td></tr>
+              <tr><td>7</td><td>Weekly edition replacing per-event drafts</td><td>Partly exists (round sets, <code>perRound</code> weekend wrap); "fold into the weekend wrap" becomes a packaging choice in idea 1.</td></tr>
+              <tr><td>8</td><td>Ask the player for a photo via a signed upload link</td><td>High consent and privacy design cost; not among the stated complaints.</td></tr>
+              <tr><td>9</td><td>Engagement feedback loop from Meta insights</td><td>No data yet: Meta isn't live and insights are deferred.</td></tr>
+              <tr><td>10</td><td>Club story archive and throwbacks</td><td>Generic without the history-storylines work; not among the stated complaints.</td></tr>
+              <tr><td>11</td><td>Player share kit (text each player their own card)</td><td>Consent, SMS volume and cost; not grounded in the complaints.</td></tr>
+              <tr><td>12</td><td>Card permalinks on the club site</td><td>Adds a new public surface; not tied to the complaints.</td></tr>
+              <tr><td>13</td><td>Stories carry the long tail, feed carries headlines</td><td>Depends on deferred Stories auto-publish.</td></tr>
+              <tr><td>14</td><td>Automatic weekly round reel (MP4)</td><td>Video is download-only and Reels are deferred.</td></tr>
+              <tr><td>15</td><td>Draft for both clubs from the same central match</td><td>Opposition private-name redaction unverified; needs more tenants in one grade first.</td></tr>
+              <tr><td>16</td><td>Fix the "Perth +8h hard-code" as a scheduling bug</td><td>Basis refuted: <code>perthDay</code> is a date helper (WA has no daylight saving). A per-tenant time zone is folded into idea 3 for non-WA clubs.</td></tr>
+              <tr><td>-</td><td>axis: Media &amp; player-centric storytelling</td><td>No survivors by choice: both candidates were deferred in favour of the stated complaints.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="composition-signal">
+        Composed 2026-10-07 by ce-ideate from the prompt "conduct a complete review of the social media studio — I am not happy with it", revised the same day around the owner's five stated complaints; grounded in this repository (branch <code>claude/social-media-studio-review-1c5503</code>, commit <code>ec73e031</code>).
+      </footer>
+    </main>
+  </body>
+</html>
