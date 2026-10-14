@@ -193,6 +193,19 @@ describe("rows layer", () => {
   });
 });
 
+describe("kinds the reference pack has no design for", () => {
+  it("still show their own data on the blank base (a Club Kit-only kind)", () => {
+    const fixtures = {
+      kind: "roundFixtures",
+      roundLabel: "ROUND 15",
+      date: "SATURDAY 14 FEB",
+      fixtures: [{ grade: "A", opponent: "Baldivis", venue: "Oval", startTime: "1:00" }],
+    } as ShareCardInput;
+    const html = render(fixtures, { layers: [text({ content: "{{roundLabel}} · {{date}}" })] });
+    expect(html).toContain("ROUND 15 · SATURDAY 14 FEB");
+  });
+});
+
 describe("club ground photo", () => {
   const ground: FreeLayer = {
     id: "g1",

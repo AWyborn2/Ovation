@@ -204,6 +204,24 @@ export const CARD_FIELD_CATALOG: Record<CardKind, TemplateFieldDef[]> = {
     { key: "roundLabel", label: "Round", type: "text" },
     { key: "date", label: "Date", type: "text" },
   ],
+  announcement: [
+    { key: "eyebrow", label: "Small line above", type: "text" },
+    { key: "headline", label: "Headline", type: "text" },
+    { key: "subline", label: "Supporting line", type: "text" },
+  ],
+  sponsor: [
+    { key: "seasonLabel", label: "Season", type: "text" },
+    { key: "sponsorName", label: "Sponsor name", type: "text" },
+    { key: "tagline", label: "About them", type: "text" },
+  ],
+  resultsSummary: [
+    { key: "dateLabel", label: "Date", type: "text" },
+    { key: "roundLabel", label: "Round", type: "text" },
+  ],
+  teamOfWeek: [
+    { key: "title", label: "Title", type: "text" },
+    { key: "dateLabel", label: "Date", type: "text" },
+  ],
 };
 
 // All bindable fields for a kind, common fields first.
@@ -652,6 +670,33 @@ export const resolveTextField = (
     }
     case "teamListRound": {
       const map: Record<string, string> = { roundLabel: input.roundLabel, date: input.date };
+      return map[key] ?? "";
+    }
+    case "announcement": {
+      const map: Record<string, string> = {
+        eyebrow: input.eyebrow ?? "",
+        headline: input.headline,
+        subline: input.subline ?? "",
+      };
+      return map[key] ?? "";
+    }
+    case "sponsor": {
+      const map: Record<string, string> = {
+        seasonLabel: input.seasonLabel,
+        sponsorName: input.sponsorName,
+        tagline: input.tagline ?? "",
+      };
+      return map[key] ?? "";
+    }
+    case "resultsSummary": {
+      const map: Record<string, string> = {
+        dateLabel: input.dateLabel,
+        roundLabel: input.roundLabel ?? "",
+      };
+      return map[key] ?? "";
+    }
+    case "teamOfWeek": {
+      const map: Record<string, string> = { title: input.title, dateLabel: input.dateLabel };
       return map[key] ?? "";
     }
   }

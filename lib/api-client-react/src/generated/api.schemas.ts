@@ -850,6 +850,62 @@ export interface WeekendWrap {
   matches: WeekendWrapMatch[];
 }
 
+export interface RoundFigure {
+  name: string;
+  /** "32* (34)" for a batter, "3/28 (10)" for a bowler. */
+  figure: string;
+}
+
+export type RoundResultOutcome = typeof RoundResultOutcome[keyof typeof RoundResultOutcome];
+
+
+export const RoundResultOutcome = {
+  WON: 'WON',
+  LOST: 'LOST',
+  '': '',
+} as const;
+
+/**
+ * One grade's result in a round, from the club's side.
+ */
+export interface RoundResult {
+  matchId: number;
+  grade: string;
+  clubScore: string;
+  oppName: string;
+  oppScore: string;
+  outcome: RoundResultOutcome;
+  /** Set when the match had no result (e.g. "WASHED OUT"); scores are empty then. */
+  note: string;
+  /** The club's best two batters. */
+  batters: RoundFigure[];
+  /** The club's best two bowlers. */
+  bowlers: RoundFigure[];
+}
+
+export interface TeamOfWeekPick {
+  name: string;
+  grade: string;
+  /** "110*", "5/28", "4/21 & 16". */
+  figure: string;
+  /**
+     * The player's library photo, else headshot; null when the club has neither.
+     * @nullable
+     */
+  photoUrl: string | null;
+}
+
+/**
+ * Results summary and team of the week prefill: a round's senior results per grade with the best players, and its standout performers.
+ */
+export interface RoundResults {
+  roundLabel: string;
+  /** "SATURDAY 10TH OCTOBER 2026" — the round's first match date. */
+  dateLabel: string;
+  results: RoundResult[];
+  teamOfWeek: TeamOfWeekPick[];
+}
+
 export interface ImportRecord {
   id: number;
   filename: string;
@@ -4229,6 +4285,10 @@ export const CardKind = {
   tradingCard: 'tradingCard',
   juniorHighlights: 'juniorHighlights',
   teamListRound: 'teamListRound',
+  announcement: 'announcement',
+  sponsor: 'sponsor',
+  resultsSummary: 'resultsSummary',
+  teamOfWeek: 'teamOfWeek',
 } as const;
 
 export interface Sponsor {
@@ -9551,6 +9611,14 @@ season: number;
 /**
  * Round number to wrap.
  */
+round: number;
+};
+
+export type GetSocialRoundResultsPrefillParams = {
+/**
+ * Season start year (e.g. 2026 for "2026/27").
+ */
+season: number;
 round: number;
 };
 

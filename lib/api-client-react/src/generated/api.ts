@@ -154,6 +154,7 @@ import type {
   GetSeniorSeasonTopPerformersParams,
   GetSocialClubSeasonTotalsParams,
   GetSocialLadderPrefillParams,
+  GetSocialRoundResultsPrefillParams,
   GetSocialWeekendWrapPrefillParams,
   GetWeekendCarouselSourcesParams,
   GoogleDriveConfig,
@@ -315,6 +316,7 @@ import type {
   RemovePhotoBackgroundRequest,
   ReplaceHistoryBoundariesBody,
   ReschedulePublicationRequest,
+  RoundResults,
   RoundUpInput,
   SaveCardPhotoRulesRequest,
   SaveDraftTemplateRequest,
@@ -30126,6 +30128,91 @@ export function useGetSocialWeekendWrapPrefill<TData = Awaited<ReturnType<typeof
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSocialWeekendWrapPrefillQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSocialRoundResultsPrefillUrl = (params: GetSocialRoundResultsPrefillParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/social-prefill/round-results?${stringifiedParams}` : `/api/social-prefill/round-results`
+}
+
+/**
+ * Seniors only (central data). Private players are never named. Every field is editable in the builder.
+ * @summary Results summary and team of the week prefill — a round's results per grade with the best batters and bowlers, and its standout performers. Admin + socialStudio entitlement.
+ */
+export const getSocialRoundResultsPrefill = async (params: GetSocialRoundResultsPrefillParams, options?: RequestInit): Promise<RoundResults> => {
+
+  return customFetch<RoundResults>(getGetSocialRoundResultsPrefillUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialRoundResultsPrefillQueryKey = (params?: GetSocialRoundResultsPrefillParams,) => {
+    return [
+    `/api/social-prefill/round-results`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSocialRoundResultsPrefillQueryOptions = <TData = Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError = ErrorType<unknown>>(params: GetSocialRoundResultsPrefillParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialRoundResultsPrefillQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>> = ({ signal }) => getSocialRoundResultsPrefill(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialRoundResultsPrefillQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>>
+export type GetSocialRoundResultsPrefillQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Results summary and team of the week prefill — a round's results per grade with the best batters and bowlers, and its standout performers. Admin + socialStudio entitlement.
+ */
+
+export function useGetSocialRoundResultsPrefill<TData = Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError = ErrorType<unknown>>(
+ params: GetSocialRoundResultsPrefillParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialRoundResultsPrefillQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

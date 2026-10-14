@@ -54,6 +54,16 @@ export type RowsCell = {
   x: number;
   /** Width, in percent of the layer width. */
   w: number;
+  /** Top edge and height, in percent of the row (default: the whole row). */
+  y?: number;
+  h?: number;
+  /**
+   * How the cell shows its field: as text (default), as an image whose URL
+   * the field holds (a player photo; never on a junior card), or as a
+   * backdrop — the cell's background only, no content (a panel behind
+   * other cells).
+   */
+  show?: "text" | "image" | "backdrop";
   style?: TemplateTextStyle;
 };
 
@@ -183,10 +193,10 @@ export function rowsCapacity(layer: TemplateLayerBase, size: TemplateSize): numb
   return perColumn * rowsColumns(rows);
 }
 
-/** How many columns a list flows down (1–4; anything else counts as 1). */
+/** How many columns a list flows down (1–6; anything else counts as 1). */
 export function rowsColumns(rows: Pick<RowsSpec, "columns">): number {
   const n = rows.columns;
-  return typeof n === "number" && Number.isInteger(n) && n >= 1 && n <= 4 ? n : 1;
+  return typeof n === "number" && Number.isInteger(n) && n >= 1 && n <= 6 ? n : 1;
 }
 
 /** A document's row capacity on `size`: the first rows layer bound to `repeat`. */

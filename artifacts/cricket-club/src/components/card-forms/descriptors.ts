@@ -61,6 +61,8 @@ export type PrefillSource =
   | "stats"
   | "milestone"
   | "premiership"
+  /** A round's results from the club's matches (results summary, team of the week). */
+  | "results"
   | "none";
 
 export interface KindDescriptor {
@@ -103,6 +105,14 @@ const TEAM_ROLE = [
 const TEAM_LIST_DESIGN = [
   { value: "", label: "Team Selection" },
   { value: "starting-xi", label: "Starting XI" },
+] as const;
+
+/** A results-summary grade's result; "no result" shows its note instead of scores. */
+const RESULT_OUTCOME = [
+  { value: "won", label: "Won" },
+  { value: "lost", label: "Lost" },
+  { value: "draw", label: "Draw" },
+  { value: "noResult", label: "No result" },
 ] as const;
 
 const WRAP_OUTCOME = [
@@ -476,6 +486,106 @@ export const DESCRIPTORS: Record<CardKind, KindDescriptor> = {
         { key: "figure", label: "Figure", type: "text", width: "w-20" },
       ],
       newRow: () => ({ name: "", note: "", figure: "" }),
+    },
+  },
+
+  announcement: {
+    prefill: "none",
+    fields: [
+      { key: "eyebrow", label: "Small line above", type: "text", placeholder: "CLUB NEWS" },
+      {
+        key: "headline",
+        label: "Headline",
+        type: "textarea",
+        placeholder: "Senior registration now open",
+        full: true,
+      },
+      {
+        key: "subline",
+        label: "Supporting line",
+        type: "text",
+        placeholder: "Register online before the first training session",
+        full: true,
+      },
+    ],
+  },
+
+  sponsor: {
+    prefill: "none",
+    fields: [
+      { key: "seasonLabel", label: "Season", type: "text", placeholder: "2026/27" },
+      { key: "sponsorName", label: "Sponsor name", type: "text" },
+      {
+        key: "tagline",
+        label: "About them",
+        type: "text",
+        placeholder: "Supporting our community",
+        full: true,
+      },
+      { key: "sponsorLogoUrl", label: "Sponsor artwork", type: "image", full: true },
+    ],
+  },
+
+  resultsSummary: {
+    prefill: "results",
+    fields: [
+      {
+        key: "dateLabel",
+        label: "Date",
+        type: "text",
+        placeholder: "SATURDAY 10TH OCTOBER 2026",
+      },
+      { key: "roundLabel", label: "Round", type: "text", placeholder: "ROUND 2" },
+    ],
+    repeat: {
+      key: "results",
+      label: "Grades",
+      addLabel: "Add grade",
+      columns: [
+        { key: "grade", label: "Grade", type: "text", width: "w-24" },
+        { key: "clubScore", label: "Our score", type: "text", width: "w-28" },
+        { key: "oppName", label: "Opposition", type: "text" },
+        { key: "oppScore", label: "Their score", type: "text", width: "w-28" },
+        { key: "outcome", label: "Result", type: "select", options: RESULT_OUTCOME, width: "w-28" },
+        { key: "note", label: "Note", type: "text", width: "w-28" },
+        { key: "bat1Name", label: "Batter 1", type: "text" },
+        { key: "bat1Figure", label: "Score", type: "text", width: "w-24" },
+        { key: "bat2Name", label: "Batter 2", type: "text" },
+        { key: "bat2Figure", label: "Score", type: "text", width: "w-24" },
+        { key: "bowl1Name", label: "Bowler 1", type: "text" },
+        { key: "bowl1Figure", label: "Figures", type: "text", width: "w-24" },
+        { key: "bowl2Name", label: "Bowler 2", type: "text" },
+        { key: "bowl2Figure", label: "Figures", type: "text", width: "w-24" },
+      ],
+      newRow: () => ({
+        grade: "",
+        clubName: "",
+        clubScore: "",
+        oppName: "",
+        oppScore: "",
+        outcome: "won",
+      }),
+    },
+  },
+
+  teamOfWeek: {
+    prefill: "results",
+    fields: [
+      { key: "title", label: "Title", type: "text", placeholder: "SENIOR TEAM OF THE WEEK" },
+      { key: "dateLabel", label: "Date", type: "text", placeholder: "10 OCTOBER 2026" },
+    ],
+    repeat: {
+      key: "players",
+      label: "Players (up to 12)",
+      addLabel: "Add player",
+      columns: [
+        { key: "name", label: "Name", type: "text" },
+        { key: "figure", label: "Figure", type: "text", width: "w-28" },
+        { key: "grade", label: "Grade", type: "text", width: "w-28" },
+        { key: "role", label: "Role", type: "text", width: "w-16" },
+        { key: "photoUrl", label: "Photo URL", type: "text" },
+      ],
+      newRow: () => ({ name: "", figure: "", grade: "" }),
     },
   },
 };

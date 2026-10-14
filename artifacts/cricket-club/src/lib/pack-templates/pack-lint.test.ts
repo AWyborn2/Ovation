@@ -120,7 +120,15 @@ const SHIRT_NUMBER_BADGE_RE = /<div data-shirt-number="1"[^>]*>#\{\{shirtNumber\
 
 /** Kinds a single pack introduces, with no reference design (by pack id). */
 const PACK_ONLY_KINDS: Record<string, readonly string[]> = {
-  "club-kit-v1": ["roundFixtures", "tradingCard", "juniorHighlights"],
+  "club-kit-v1": [
+    "roundFixtures",
+    "tradingCard",
+    "juniorHighlights",
+    "announcement",
+    "sponsor",
+    "resultsSummary",
+    "teamOfWeek",
+  ],
 };
 
 /**

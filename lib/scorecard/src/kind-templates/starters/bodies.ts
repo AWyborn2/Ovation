@@ -1,6 +1,7 @@
 import type { TemplateSize } from "../document";
 import type { TemplateCardKind } from "../fields";
-import { tall, type Design, type Kit } from "./kit";
+import { fixed, tall, type Design, type Kit } from "./kit";
+import { image, shape, type Box, type PerSize } from "./layout";
 
 /**
  * Each card kind's body (plan U6), shared by every look: the blocks down the
@@ -678,6 +679,226 @@ export const BODIES: Record<TemplateCardKind, (k: Kit) => Body> = {
       ),
       k.dashLabel("label", "{{coverLabel}}", 1, 4.6),
       k.metaLine("list", "{{coverList}}", 2, "Summary line"),
+    ],
+  }),
+  announcement: (k) => ({
+    chip: "NEWS",
+    blocks: [
+      k.eyebrow("eyebrow", "{{eyebrow}}"),
+      k.displayLine(
+        "headline",
+        "Headline",
+        "{{headline}}",
+        (s) => (s === "square" ? 7.5 : tall(s) ? 10 : 8.5),
+        3,
+        1.2,
+      ),
+      k.metaLine("subline", "{{subline}}", 0.6, "Supporting line"),
+    ],
+  }),
+
+  sponsor: (k) => ({
+    chip: "SPONSOR",
+    blocks: [
+      k.eyebrow("season", "{{seasonLabel}} SEASON"),
+      ...k.twoLine("title", "PROUDLY", "SUPPORTED BY", (s) => (s === "square" ? 6 : 7.5)),
+      {
+        key: "art",
+        h: (s) => (tall(s) ? 22 : 17),
+        gap: fixed(2),
+        make: (b) => {
+          const inner: PerSize<Box> = {};
+          for (const [s, box] of Object.entries(b) as Array<[keyof PerSize<Box>, Box]>)
+            inner[s] = { x: box.x + 1.6, y: box.y + 1.6, w: box.w - 3.2, h: box.h - 3.2 };
+          return [
+            shape("art-panel", "Artwork panel", b, "#FFFFFF"),
+            image("art", "Sponsor artwork", "{{sponsorArt}}", inner),
+          ];
+        },
+      },
+      k.displayLine("name", "Sponsor name", "{{sponsorName}}", 5, 2, 1.6),
+      k.metaLine("tagline", "{{tagline}}", 0.4, "About them"),
+    ],
+  }),
+
+  resultsSummary: (k) => {
+    const band = { fontSize: 2.4, fontWeight: 900, uppercase: true };
+    const team = { fontSize: 2.1, fontWeight: 800, uppercase: true, color: k.C.panelInk };
+    const person = { fontFamily: k.F.sans, fontSize: 1.5, fontWeight: 500, color: k.C.panelInk };
+    const figure = { ...person, fontWeight: 700, align: "right" as const };
+    const label = {
+      fontFamily: k.F.mono,
+      fontSize: 1.2,
+      fontWeight: 600,
+      letterSpacing: 0.12,
+      color: k.C.panelAccent,
+    };
+    return {
+      chip: "RESULTS",
+      depth: "list",
+      plain: true,
+      blocks: [
+        k.eyebrow("eyebrow", "{{dateLabel}} · {{roundLabel}}"),
+        ...k.twoLine("title", "WEEKLY", "RESULTS", (s) => (s === "square" ? 6.5 : 8)),
+        k.list(
+          "results",
+          "Results",
+          "results",
+          (s) => (s === "story" ? 4 : s === "portrait" ? 3 : 2),
+          19,
+          1.2,
+          [
+            // The plate, then the grade band across its top.
+            {
+              field: "grade",
+              x: 0,
+              w: 100,
+              show: "backdrop",
+              style: { fontSize: 1, background: k.C.panel },
+            },
+            {
+              field: "grade",
+              x: 0,
+              w: 100,
+              y: 0,
+              h: 17,
+              style: { ...band, color: k.C.onFill, background: k.C.fill, align: "left" },
+            },
+            { field: "clubName", x: 2, w: 40, y: 20, h: 14, style: { ...team, align: "center" } },
+            {
+              field: "clubScore",
+              x: 6,
+              w: 32,
+              y: 35,
+              h: 17,
+              style: {
+                fontSize: 2.6,
+                fontWeight: 900,
+                color: k.C.onFill,
+                background: k.C.fill,
+                align: "center",
+              },
+            },
+            {
+              field: "verb",
+              x: 42,
+              w: 16,
+              y: 28,
+              h: 14,
+              style: { ...label, color: k.C.panelMuted, align: "center" },
+            },
+            { field: "oppName", x: 58, w: 40, y: 20, h: 14, style: { ...team, align: "center" } },
+            {
+              field: "oppScore",
+              x: 62,
+              w: 32,
+              y: 35,
+              h: 17,
+              style: { fontSize: 2.6, fontWeight: 900, color: k.C.panelInk, align: "center" },
+            },
+            {
+              field: "note",
+              x: 0,
+              w: 100,
+              y: 24,
+              h: 30,
+              style: { fontSize: 3.4, fontWeight: 900, color: k.C.panelInk, align: "center" },
+            },
+            { field: "batLabel", x: 4, w: 42, y: 55, h: 11, style: label },
+            { field: "bat1", x: 4, w: 30, y: 67, h: 14, style: person },
+            { field: "bat1Figure", x: 32, w: 16, y: 67, h: 14, style: figure },
+            { field: "bat2", x: 4, w: 30, y: 82, h: 14, style: person },
+            { field: "bat2Figure", x: 32, w: 16, y: 82, h: 14, style: figure },
+            { field: "bowlLabel", x: 54, w: 42, y: 55, h: 11, style: label },
+            { field: "bowl1", x: 54, w: 30, y: 67, h: 14, style: person },
+            { field: "bowl1Figure", x: 82, w: 16, y: 67, h: 14, style: figure },
+            { field: "bowl2", x: 54, w: 30, y: 82, h: 14, style: person },
+            { field: "bowl2Figure", x: 82, w: 16, y: 82, h: 14, style: figure },
+          ],
+          {
+            gap: 1.4,
+            variants: {
+              // Lost: the opposition's score takes the highlight.
+              lost: {
+                clubScore: { background: k.C.panel, color: k.C.panelInk },
+                oppScore: { background: k.C.fill, color: k.C.onFill },
+              },
+              // No result: no score highlights; the note says why.
+              noResult: {
+                clubScore: { background: k.C.panel },
+                oppScore: { background: k.C.panel },
+              },
+            },
+          },
+        ),
+      ],
+    };
+  },
+
+  teamOfWeek: (k) => ({
+    chip: "TEAM OF THE WEEK",
+    depth: "list",
+    plain: true,
+    photo: false,
+    blocks: [
+      k.eyebrow("date", "{{dateLabel}}"),
+      k.displayLine("title", "Title", "{{title}}", (s) => (s === "square" ? 5.5 : 7), 1, 1),
+      k.list(
+        "players",
+        "Players",
+        "players",
+        () => 12,
+        24,
+        1.4,
+        [
+          {
+            field: "photo",
+            x: 20,
+            w: 60,
+            y: 0,
+            h: 46,
+            show: "image",
+            style: { fontSize: 1, radius: 9999 },
+          },
+          {
+            field: "figure",
+            x: 0,
+            w: 100,
+            y: 48,
+            h: 20,
+            style: { fontSize: 3, fontWeight: 900, color: k.C.accent, align: "center" },
+          },
+          {
+            field: "name",
+            x: 0,
+            w: 100,
+            y: 68,
+            h: 16,
+            style: { fontSize: 2, fontWeight: 800, uppercase: true, align: "center" },
+          },
+          {
+            field: "grade",
+            x: 0,
+            w: 100,
+            y: 85,
+            h: 13,
+            style: {
+              fontFamily: k.F.mono,
+              fontSize: 1.2,
+              fontWeight: 600,
+              letterSpacing: 0.1,
+              uppercase: true,
+              color: k.C.muted,
+              align: "center",
+            },
+          },
+        ],
+        {
+          gap: 1.6,
+          columns: (s) => (s === "story" ? 3 : s === "portrait" ? 4 : 6),
+          columnGap: 3,
+        },
+      ),
     ],
   }),
 };
