@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
 import { matchToSummaryInput, seasonLabel } from "@/lib/match-summary";
 import type { ShareCardInput } from "@/lib/share-card";
-import { GRADES, selectClass } from "../model";
+import { selectClass } from "../model";
+import { useGradeOptions } from "@/hooks/use-club-grades";
 
 /** Pick one match (or every match in a round) as match-summary slides. */
 export function MatchSource({
@@ -22,7 +23,9 @@ export function MatchSource({
   onAddMany: (inputs: ShareCardInput[]) => void;
 }) {
   const qc = useQueryClient();
-  const [grade, setGrade] = useState(GRADES[0]);
+  const { grades: gradeOptions } = useGradeOptions();
+  const [pickedGrade, setGrade] = useState<string | null>(null);
+  const grade = pickedGrade ?? gradeOptions[0] ?? "A Grade";
   const [season, setSeason] = useState<number | null>(null);
   const [matchId, setMatchId] = useState<number | null>(null);
   const [round, setRound] = useState<number | null>(null);
@@ -100,7 +103,7 @@ export function MatchSource({
             setMatchId(null);
           }}
         >
-          {GRADES.map((g) => (
+          {gradeOptions.map((g) => (
             <option key={g} value={g}>
               {g}
             </option>

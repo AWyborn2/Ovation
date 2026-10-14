@@ -23,6 +23,7 @@ router.get("/admin/playhq-sync/status", requireAdmin, async (req, res): Promise<
         lastRefreshedAt: null,
         stale: false,
         staleSince: null,
+        unclassifiedGrades: [],
       });
       return;
     }

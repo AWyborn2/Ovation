@@ -133,19 +133,6 @@ export function buildFileResolutions(
   return out;
 }
 
-export const GRADES = [
-  "A Grade",
-  "B Grade",
-  "C Grade",
-  "D Grade",
-  "E Grade",
-  "F Grade",
-  "Female A Grade",
-  "Female B Grade",
-  "PPL",
-  "Colts",
-];
-
 export const SEASON_OPTIONS = (() => {
   const out: { value: number; label: string }[] = [];
   for (let y = 2030; y >= 1991; y--) {

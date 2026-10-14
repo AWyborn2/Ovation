@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { db, lifeMembersTable, playerGradeStatsTable } from "@workspace/db";
+import { gradeSeniorityRank } from "@workspace/scorecard";
 import {
   CreateLifeMemberBody,
   UpdateLifeMemberBody,
@@ -31,19 +32,6 @@ interface AggregatedStats {
   runOuts: number;
   gradesPlayed: string[];
 }
-
-const GRADE_ORDER = [
-  "A Grade",
-  "B Grade",
-  "C Grade",
-  "D Grade",
-  "E Grade",
-  "F Grade",
-  "Female A Grade",
-  "Female B Grade",
-  "PPL",
-  "Colts",
-];
 
 const parseHighScore = (hs: string | null | undefined): number => {
   if (!hs) return 0;
@@ -131,11 +119,7 @@ router.get("/life-members", async (req, res): Promise<void> => {
     }
 
     for (const agg of statsByPlayer.values()) {
-      agg.gradesPlayed.sort((a, b) => {
-        const ai = GRADE_ORDER.indexOf(a);
-        const bi = GRADE_ORDER.indexOf(b);
-        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-      });
+      agg.gradesPlayed.sort((a, b) => gradeSeniorityRank(a) - gradeSeniorityRank(b));
     }
   }
 

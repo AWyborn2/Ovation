@@ -29,6 +29,10 @@ export const GENERATE_GRADES = [
   "Female B Grade",
   "PPL",
   "Colts",
+  "Over 40s",
+  "Over 45s",
+  "Over 50s",
+  "Over 60s",
 ] as const;
 
 export type LeaderCategory = "Runs" | "Wickets";

@@ -12,7 +12,8 @@
  * output so mismatches are explainable.
  *
  * Built from the dump's ground-truth distinct labels. App grades:
- * "A Grade".."H Grade" (G Grade is new in 2026/27), "Female A Grade", "Female B Grade", "PPL", "Colts".
+ * "A Grade".."H Grade" (G Grade is new in 2026/27), "Female A Grade", "Female B Grade", "PPL", "Colts", and the age-based "Over 40s"/"Over 45s"/"Over 50s"/…
+ * grades (non-PCA veterans competitions, counted as senior).
  * `appGrade: null` means deliberately unmapped (charity one-offs, Female C the
  * app doesn't have, junior / pathway grades). "Ladies T20", the Female B
  * predecessor, maps to "Female B Grade".
@@ -40,6 +41,12 @@ const WA_ORDINAL_WORDS: Record<string, number> = {
   ninth: 9,
   tenth: 10,
 };
+/**
+ * "Over 40s" / "over 45's" / "Over 50" → age 35–79 in capture 1. The optional
+ * trailing "s" (with or without an apostrophe) is what the plain `over \d{2}`
+ * Masters rule missed. Does not match "40 Over" (a 40-over format) or "30 OVERS".
+ */
+const OVER_AGE_RE = /\bover\s*(3[5-9]|[4-7]\d)\s*(?:['’]?s)?\b/;
 const WA_WOMENS_RE = /\bwomen'?s?\b|\bfemale\b|\bladies\b|\bgirls\b/;
 
 /** 1 → "1st", 2 → "2nd", 11 → "11th". */
@@ -99,6 +106,17 @@ export function classifyCentralGrade(centralGrade: string | null): CentralGradeM
     return {
       appGrade: null,
       note: "WA junior/pathway grade — excluded from the senior central read",
+    };
+  }
+  // Age-based veterans competitions ("Over 40s A Grade", "Focus Cup Over 45s",
+  // "Over 45's - Focus Cup"). Each is its own app grade ("Over 40s"…), matched
+  // BEFORE the generic "<letter> Grade" rule — which would otherwise file
+  // "Over 40s A Grade" under A Grade — and before the Masters catch-all below.
+  const overAge = OVER_AGE_RE.exec(lower);
+  if (overAge) {
+    return {
+      appGrade: `Over ${overAge[1]}s`,
+      note: "age-based veterans competition — its own grade, not the lettered grade in its name",
     };
   }
   const waNumbered = waNumberedGrade(lower);

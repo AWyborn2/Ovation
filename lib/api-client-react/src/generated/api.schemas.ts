@@ -5697,6 +5697,16 @@ export interface PlatformPlayhqSync {
   orgs: PlatformPlayhqSyncOrgsItem[];
 }
 
+export interface UnclassifiedGrade {
+  /** The competition name as PlayHQ spells it. */
+  gradeName: string;
+  /** @nullable */
+  seasonName: string | null;
+  /** PlayHQ matches the club has in this competition. */
+  matches: number;
+  reason: string;
+}
+
 export interface TenantPlayhqSyncStatus {
   /** The club is linked to a PlayHQ organisation. */
   linked: boolean;
@@ -5710,6 +5720,8 @@ export interface TenantPlayhqSyncStatus {
   stale: boolean;
   /** @nullable */
   staleSince?: string | null;
+  /** Competitions this club's PlayHQ organisation plays in that Ovation can't place in a grade, so their matches are not shown. Empty when everything is recognised. */
+  unclassifiedGrades?: UnclassifiedGrade[];
 }
 
 export type SocialFamilySettingUpdateGrades = {[key: string]: boolean};

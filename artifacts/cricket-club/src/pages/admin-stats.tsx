@@ -21,25 +21,14 @@ import { TableSkeleton, EmptyState, QueryError } from "@/components/data-states"
 import { useConfirm } from "@/components/confirm-dialog";
 import { DataTable, EditDrawer, type DataTableColumn } from "@/components/admin-ui";
 import { Plus, Search } from "lucide-react";
+import { useGradeOptions } from "@/hooks/use-club-grades";
 
 const selectClass =
   "h-10 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
-const GRADES = [
-  "A Grade",
-  "B Grade",
-  "C Grade",
-  "D Grade",
-  "E Grade",
-  "F Grade",
-  "Female A Grade",
-  "Female B Grade",
-  "PPL",
-  "Colts",
-];
-
 export default function AdminStats() {
   const qc = useQueryClient();
+  const { grades: gradeOptions } = useGradeOptions();
   const confirm = useConfirm();
   const [search, setSearch] = useState("");
   const [grade, setGrade] = useState<string>("");
@@ -156,7 +145,7 @@ export default function AdminStats() {
             className={selectClass}
           >
             <option value="">All</option>
-            {GRADES.map((g) => (
+            {gradeOptions.map((g) => (
               <option key={g} value={g}>
                 {g}
               </option>
@@ -326,7 +315,10 @@ function NewStatForm({
   onCancel: () => void;
 }) {
   const [player, setPlayer] = useState<SelectedPlayer | null>(null);
-  const [grade, setGrade] = useState("A Grade");
+  // Creating a stat row may be for a grade with no matches yet, so offer the fallback grades too.
+  const { grades: gradeOptions } = useGradeOptions({ addFallback: true });
+  const [pickedGrade, setGrade] = useState<string | null>(null);
+  const grade = pickedGrade ?? gradeOptions[0] ?? "A Grade";
   const [games, setGames] = useState("");
   const [runs, setRuns] = useState("");
   const [wickets, setWickets] = useState("");
@@ -345,7 +337,7 @@ function NewStatForm({
           onChange={(e) => setGrade(e.target.value)}
           className="block h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
         >
-          {GRADES.map((g) => (
+          {gradeOptions.map((g) => (
             <option key={g} value={g}>
               {g}
             </option>

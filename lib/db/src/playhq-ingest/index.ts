@@ -3,6 +3,7 @@ export * from "./project";
 export * from "./pool";
 export * from "./cadence";
 export * from "./health";
+export * from "./unclassified-grades";
 export * from "./projector-pool";
 export * from "./central-transform";
 export * from "./central-project";

@@ -13,6 +13,7 @@ import {
   getPlayhqIngestPool,
   loadCadenceInputs,
   loadRunSummaries,
+  loadUnclassifiedGrades,
   type OrgHealth,
   type Queryable,
 } from "@workspace/db/playhq-ingest";
@@ -249,7 +250,14 @@ export async function tenantSyncStatus(tenantId: number) {
   const linked = !!t?.orgId;
   const enabled = linked && !!t?.enabled;
   if (!linked || !enabled)
-    return { linked, syncEnabled: enabled, lastRefreshedAt: null, stale: false, staleSince: null };
+    return {
+      linked,
+      syncEnabled: enabled,
+      lastRefreshedAt: null,
+      stale: false,
+      staleSince: null,
+      unclassifiedGrades: [],
+    };
   const orgId = t!.orgId!.toLowerCase();
   const pool = getPlayhqIngestPool();
   await assertIngestScope(pool);
@@ -263,11 +271,18 @@ export async function tenantSyncStatus(tenantId: number) {
         isNull(playhqSyncIncidentsTable.resolvedAt),
       ),
     );
+  // Competitions PlayHQ has for this club that Ovation can't place (their matches are skipped).
+  // Best-effort: a failure here must not hide the rest of the status.
+  const unclassifiedGrades = await loadUnclassifiedGrades(
+    pool as unknown as Queryable,
+    orgId,
+  ).catch(() => []);
   return {
     linked,
     syncEnabled: enabled,
     lastRefreshedAt: iso(summary?.lastSuccessAt ?? null),
     stale: !!incident,
     staleSince: incident ? incident.openedAt.toISOString() : null,
+    unclassifiedGrades,
   };
 }

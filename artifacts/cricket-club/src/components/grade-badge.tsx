@@ -1,4 +1,6 @@
 import { useContext } from "react";
+import { sortByGradeOrder } from "@workspace/scorecard";
+import { gradeCode } from "@/lib/grade-code";
 import { BadgeStyleContext, useBrand } from "@/lib/brand-context";
 
 interface GradeMeta {
@@ -6,7 +8,6 @@ interface GradeMeta {
   abbr: string;
   bannerShort: string;
   bannerLong: string;
-  sortOrder: number;
 }
 
 const META: Record<string, GradeMeta> = {
@@ -15,75 +16,83 @@ const META: Record<string, GradeMeta> = {
     abbr: "A",
     bannerShort: "A GRADE",
     bannerLong: "A GRADE",
-    sortOrder: 1,
   },
   "B Grade": {
     full: "B Grade",
     abbr: "B",
     bannerShort: "B GRADE",
     bannerLong: "B GRADE",
-    sortOrder: 2,
   },
   "C Grade": {
     full: "C Grade",
     abbr: "C",
     bannerShort: "C GRADE",
     bannerLong: "C GRADE",
-    sortOrder: 3,
   },
   "D Grade": {
     full: "D Grade",
     abbr: "D",
     bannerShort: "D GRADE",
     bannerLong: "D GRADE",
-    sortOrder: 4,
   },
   "E Grade": {
     full: "E Grade",
     abbr: "E",
     bannerShort: "E GRADE",
     bannerLong: "E GRADE",
-    sortOrder: 5,
   },
   "F Grade": {
     full: "F Grade",
     abbr: "F",
     bannerShort: "F GRADE",
     bannerLong: "F GRADE",
-    sortOrder: 6,
   },
   "Female A Grade": {
     full: "Female A Grade",
     abbr: "FA",
     bannerShort: "FEM A",
     bannerLong: "FEMALE A",
-    sortOrder: 7,
   },
   "Female B Grade": {
     full: "Female B Grade",
     abbr: "FB",
     bannerShort: "FEM B",
     bannerLong: "FEMALE B",
-    sortOrder: 8,
   },
-  PPL: { full: "PPL", abbr: "PPL", bannerShort: "PPL", bannerLong: "PPL", sortOrder: 9 },
-  Colts: { full: "Colts", abbr: "Co", bannerShort: "COLTS", bannerLong: "COLTS", sortOrder: 10 },
+  PPL: { full: "PPL", abbr: "PPL", bannerShort: "PPL", bannerLong: "PPL" },
+  Colts: { full: "Colts", abbr: "Co", bannerShort: "COLTS", bannerLong: "COLTS" },
 };
 
-const getMeta = (grade: string): GradeMeta => {
-  return (
-    META[grade] ?? {
-      full: grade,
-      abbr: grade.slice(0, 2).toUpperCase(),
-      bannerShort: grade.toUpperCase().slice(0, 8),
-      bannerLong: grade.toUpperCase(),
-      sortOrder: 99,
-    }
-  );
+/**
+ * Badge text for a grade with no hand-written entry above, derived from its name so a grade
+ * the sync discovers (G Grade, Over 55s, 1st Grade …) shows sensibly without a code change.
+ */
+export const deriveGradeMeta = (grade: string): GradeMeta => {
+  const g = grade.trim();
+  const letter = /^([a-h])\s*grade$/i.exec(g)?.[1]?.toUpperCase();
+  if (letter)
+    return { full: g, abbr: letter, bannerShort: `${letter} GRADE`, bannerLong: `${letter} GRADE` };
+  const over = /^over\s*(\d{2})s?$/i.exec(g)?.[1];
+  if (over)
+    return {
+      full: g,
+      abbr: `${over}+`,
+      bannerShort: `OVER ${over}S`,
+      bannerLong: `OVER ${over}S`,
+    };
+  return {
+    full: g,
+    abbr: gradeCode(g).slice(0, 3),
+    bannerShort: g.toUpperCase().slice(0, 8),
+    bannerLong: g.toUpperCase(),
+  };
 };
 
+const getMeta = (grade: string): GradeMeta => META[grade] ?? deriveGradeMeta(grade);
+
+/** Grades most senior first (A Grade → … → Colts → Over 40s …); unknown names keep their order. */
 export const sortGradesBySeniority = (grades: Iterable<string>): string[] =>
-  Array.from(grades).sort((a, b) => getMeta(a).sortOrder - getMeta(b).sortOrder);
+  sortByGradeOrder(Array.from(grades), (g) => g);
 
 type Size = "sm" | "md" | "lg";
 

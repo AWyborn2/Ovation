@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
 import { SeasonRolesBoard, formatSeason } from "@/components/season-roles-board";
+import { useGradeOptions } from "@/hooks/use-club-grades";
 
 const OFFICE_ROLES = [
   "President",
@@ -25,19 +26,6 @@ const OFFICE_ROLES = [
   "Director of Cricket",
   "Club Captain",
   "Coach",
-];
-
-const GRADES = [
-  "A Grade",
-  "B Grade",
-  "C Grade",
-  "D Grade",
-  "E Grade",
-  "F Grade",
-  "Female A Grade",
-  "Female B Grade",
-  "PPL",
-  "Colts",
 ];
 
 const GRADE_CAPTAIN_ROLE = "Grade Captain";
@@ -244,6 +232,7 @@ function RoleForm({
 }) {
   const roleInputId = useId();
   const [values, setValues] = useState<RoleFormValues>(initial);
+  const { grades: gradeOptions } = useGradeOptions({ include: [initial.grade] });
   const { data: people } = useListPeople();
   const selectedPlayer: SelectedPlayer | null =
     values.playerId != null ? splitName(values.playerId, values.name) : null;
@@ -256,7 +245,7 @@ function RoleForm({
       ...prev,
       kind,
       role: kind === "captain" ? GRADE_CAPTAIN_ROLE : OFFICE_ROLES[0],
-      grade: kind === "captain" ? (prev.grade ?? GRADES[0]) : null,
+      grade: kind === "captain" ? (prev.grade ?? gradeOptions[0] ?? null) : null,
     }));
   };
 
@@ -309,10 +298,10 @@ function RoleForm({
             <Label className="text-xs">Grade</Label>
             <select
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={values.grade ?? GRADES[0]}
+              value={values.grade ?? gradeOptions[0] ?? ""}
               onChange={(e) => set("grade", e.target.value)}
             >
-              {GRADES.map((g) => (
+              {gradeOptions.map((g) => (
                 <option key={g} value={g}>
                   {g}
                 </option>

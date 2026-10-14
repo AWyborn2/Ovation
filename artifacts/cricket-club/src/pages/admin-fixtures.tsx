@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useGradeOptions } from "@/hooks/use-club-grades";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListFixtures,
@@ -40,19 +41,6 @@ import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeah
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 
-const GRADES = [
-  "A Grade",
-  "B Grade",
-  "C Grade",
-  "D Grade",
-  "E Grade",
-  "F Grade",
-  "Female A Grade",
-  "Female B Grade",
-  "PPL",
-  "Colts",
-];
-
 const selectClass =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
@@ -90,8 +78,9 @@ function formatStart(iso: string): string {
 
 /**
  * "Last refreshed from PlayHQ" for clubs on scheduled sync, and a warning while the
- * watchdog has an incident open for the club's organisation (sync plan U9). Renders nothing
- * for clubs that aren't linked or synced.
+ * watchdog has an incident open for the club's organisation (sync plan U9). Also lists any
+ * PlayHQ competitions Ovation can't place in a grade, whose matches would otherwise be missing
+ * without explanation. Renders nothing for clubs that aren't linked or synced.
  */
 function PlayhqSyncLine() {
   const { data } = useGetTenantPlayhqSyncStatus();
@@ -102,14 +91,43 @@ function PlayhqSyncLine() {
         timeStyle: "short",
       })
     : "not yet";
-  if (data.stale)
-    return (
-      <div className="mt-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
-        PlayHQ fixtures aren&rsquo;t updating right now (last refreshed {last}). Ovation has been
-        alerted; there&rsquo;s nothing you need to do.
-      </div>
-    );
-  return <p className="mt-1 text-xs text-muted-foreground">Last refreshed from PlayHQ: {last}</p>;
+  const unclassified = data.unclassifiedGrades ?? [];
+  return (
+    <>
+      {data.stale ? (
+        <div className="mt-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
+          PlayHQ fixtures aren&rsquo;t updating right now (last refreshed {last}). Ovation has been
+          alerted; there&rsquo;s nothing you need to do.
+        </div>
+      ) : (
+        <p className="mt-1 text-xs text-muted-foreground">Last refreshed from PlayHQ: {last}</p>
+      )}
+      {unclassified.length > 0 && (
+        <div
+          className="mt-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-3 text-sm"
+          data-testid="unclassified-grades"
+        >
+          <p>
+            PlayHQ lists {unclassified.length === 1 ? "a competition" : "competitions"} Ovation
+            doesn&rsquo;t recognise yet, so {unclassified.length === 1 ? "its" : "their"} matches
+            aren&rsquo;t shown:
+          </p>
+          <ul className="mt-1 list-disc pl-5">
+            {unclassified.map((g) => (
+              <li key={`${g.gradeName}|${g.seasonName ?? ""}`}>
+                {g.gradeName}
+                {g.seasonName ? ` (${g.seasonName})` : ""} — {g.matches}{" "}
+                {g.matches === 1 ? "match" : "matches"}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Send these names to Ovation support and we&rsquo;ll map them to a grade.
+          </p>
+        </div>
+      )}
+    </>
+  );
 }
 
 export default function AdminFixtures() {
@@ -123,6 +141,9 @@ export default function AdminFixtures() {
   const [teamListId, setTeamListId] = useState<number | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A fixture can be created for a grade with no matches yet, so offer the
+  // fallback grades alongside the ones the club plays.
+  const { grades: gradeOptions } = useGradeOptions({ addFallback: true });
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: getListFixturesQueryKey() });
@@ -192,7 +213,7 @@ export default function AdminFixtures() {
           <CardContent>
             <FixtureForm
               initial={{
-                grade: GRADES[0],
+                grade: gradeOptions[0] ?? "",
                 roundLabel: "",
                 opponentName: "",
                 venue: "",
@@ -419,6 +440,7 @@ function FixtureForm({
   submitLabel: string;
 }) {
   const [grade, setGrade] = useState(initial.grade);
+  const { grades: gradeOptions } = useGradeOptions({ include: [initial.grade], addFallback: true });
   const [roundLabel, setRoundLabel] = useState(initial.roundLabel);
   const [opponentName, setOpponentName] = useState(initial.opponentName);
   const [venue, setVenue] = useState(initial.venue);
@@ -438,7 +460,7 @@ function FixtureForm({
         <div className="space-y-2">
           <Label>Grade</Label>
           <select className={selectClass} value={grade} onChange={(e) => setGrade(e.target.value)}>
-            {GRADES.map((g) => (
+            {gradeOptions.map((g) => (
               <option key={g} value={g}>
                 {g}
               </option>
