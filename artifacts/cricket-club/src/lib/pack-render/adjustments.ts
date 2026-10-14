@@ -10,13 +10,22 @@
  * reported as inherited so the editor and post pack can flag it for review.
  */
 
-import type { RowsSpec, TemplateTextStyle } from "@workspace/scorecard/kind-templates";
+import {
+  rowsColumns,
+  type RowsSpec,
+  type TemplateTextStyle,
+} from "@workspace/scorecard/kind-templates";
 import type { CardSize } from "../share-card";
 import { escapeHtml } from "./html-utils";
 import { FIT_ATTR } from "./layer-fit";
 import { renderChart, renderMedal, renderSticker, type ChartSpec } from "./layer-kinds";
 import { renderElement, type ElementLayerState } from "../studio-elements/registry";
-import { clubKitPaletteFor, clubKitVars } from "./club-kit-vars";
+import {
+  clubKitPaletteFor,
+  clubKitVars,
+  clubStageVars,
+  type ClubKitPalette,
+} from "./club-kit-vars";
 import type { PackCardData, PackTokens } from "./types";
 
 export type PhotoAdjust = { focalX: number; focalY: number; zoom: number };
@@ -267,6 +276,9 @@ const ALIGN = new Set(["left", "center", "right"]);
 const alignOf = (v: unknown): "left" | "center" | "right" =>
   typeof v === "string" && ALIGN.has(v) ? (v as "left" | "center" | "right") : "center";
 
+/** The palette a template overlay carries: Club Kit's, plus the club stage. */
+const templatePaletteVars = (p: ClubKitPalette) => `${clubKitVars(p)};${clubStageVars(p)}`;
+
 /** Per-render context for library elements (club colours, crest, live rows). */
 export interface FreeLayerContext {
   tokens?: PackTokens;
@@ -336,6 +348,11 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
   const variants: Array<string | undefined> = Array.isArray(listed) ? listed : [];
   const gap = num(spec.gap);
   const rowHeight = num(spec.rowHeight, 7);
+  // Several columns: rows fill the first column, then the next, evenly.
+  const columns = rowsColumns(spec);
+  const perColumn = Math.ceil(rows.length / columns);
+  const colGap = columns > 1 ? Math.min(50, Math.max(0, num(spec.columnGap, 4))) : 0;
+  const colW = (100 - colGap * (columns - 1)) / columns;
   const out = rows.map((row, i) => {
     const variant = variants[i];
     const cells = spec.cells.map((cell) => {
@@ -355,8 +372,13 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
       ]).replace("white-space:pre-wrap", "white-space:nowrap");
       return `<div data-row-cell="${escapeHtml(cell.field)}" ${FIT_ATTR}="${fitBase(style)}" style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
     });
-    const top = i * (rowHeight + gap);
-    return `<div data-row-index="${i}"${variant ? ` data-row-variant="${escapeHtml(variant)}"` : ""} style="position:absolute;left:0;right:0;top:${top.toFixed(3)}cqw;height:${rowHeight.toFixed(3)}cqw">${cells.join("")}</div>`;
+    const col = Math.floor(i / perColumn);
+    const top = (i % perColumn) * (rowHeight + gap);
+    const across =
+      columns > 1
+        ? `left:${(col * (colW + colGap)).toFixed(3)}%;width:${colW.toFixed(3)}%`
+        : "left:0;right:0";
+    return `<div data-row-index="${i}"${variant ? ` data-row-variant="${escapeHtml(variant)}"` : ""} style="position:absolute;${across};top:${top.toFixed(3)}cqw;height:${rowHeight.toFixed(3)}cqw">${cells.join("")}</div>`;
   });
   return `<div style="position:relative;width:100%;height:100%;overflow:hidden">${out.join("")}</div>`;
 }
@@ -412,15 +434,21 @@ function layerInner(
     case "shape":
       return `<div style="width:100%;height:100%;background:${s.background ?? "var(--gold,#fbac27)"};border-radius:${num(s.radius)}px"></div>`;
     case "image": {
-      // A template's image can be a field token (the club crest), resolved
-      // from the club's own brand so no template holds a fixed URL (KTD4).
+      // A template's image can be a field token (the club crest, the club's
+      // ground photo), resolved from the club's own brand so no template holds
+      // a fixed URL (KTD4).
       if (hasFieldTokens(layer.content)) {
         const src = substituteTokens(layer.content ?? "", {
           ...values,
           clubLogo: ctx.brand?.logoUrl ?? "",
+          groundPhoto: ctx.brand?.groundPhotoUrl ?? "",
         }).trim();
         if (!src) return null;
-        return `<img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:contain;display:block" />`;
+        // The club's ground photo fills its box; a crest keeps its shape.
+        const objectFit = /\{\{\s*groundPhoto\s*\}\}/.test(layer.content ?? "")
+          ? "cover"
+          : "contain";
+        return `<img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:${objectFit};display:block" />`;
       }
       return layer.content
         ? `<img src="${escapeHtml(layer.content)}" alt="" style="width:100%;height:100%;object-fit:${layer.style?.radius ? "cover" : "contain"};display:block${layer.style?.radius != null ? `;border-radius:${num(layer.style.radius)}px` : ""}" />`
@@ -462,11 +490,15 @@ export function renderFreeLayers(
   const layers = adj?.layers ?? [];
   if (layers.length === 0) return "";
   // Library elements read the Club Kit palette, derived from the club's
-  // brand; only an overlay that carries one gets the extra declarations.
-  const hasElement = layers.some((l) => l.kind === "element" && !l.hidden);
+  // brand; only an overlay that uses it gets the extra declarations.
+  // Template styles may name the palette directly (`var(--ck-stage)`), with
+  // or without an element on the card.
+  const hasElement =
+    layers.some((l) => l.kind === "element" && !l.hidden) ||
+    JSON.stringify(layers).includes("var(--ck-");
   const palette =
     hasElement && ctx.tokens
-      ? `;${clubKitVars(clubKitPaletteFor(ctx.tokens, ctx.brand, ctx.junior ?? false))}`
+      ? `;${templatePaletteVars(clubKitPaletteFor(ctx.tokens, ctx.brand, ctx.junior ?? false))}`
       : "";
   const parts = layers.map((layer) => {
     if (layer.hidden) return "";

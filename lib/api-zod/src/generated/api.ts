@@ -9026,7 +9026,7 @@ export const StartKindTemplateParams = zod.object({
 })
 
 export const StartKindTemplateBody = zod.object({
-  "starter": zod.enum(['club-kit', 'broadcast']),
+  "starter": zod.enum(['club-kit', 'broadcast', 'clubhouse']),
   "baseVersion": zod.number().optional().describe('Required when the kind already has a template.')
 })
 

@@ -19126,7 +19126,7 @@ components:
       properties:
         starter:
           type: string
-          enum: [club-kit, broadcast]
+          enum: [club-kit, broadcast, clubhouse]
         baseVersion:
           type: integer
           description: Required when the kind already has a template.

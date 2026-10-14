@@ -139,11 +139,12 @@ function checkBox(errors: Errors, where: string, v: unknown): void {
   if (v.rotate !== undefined) numberIn(errors, `${where}.rotate`, v.rotate, -360, 360);
 }
 
-/** The field keys a kind's text can show, plus the club crest. */
+/** The field keys a kind's text can show, plus the club crest and ground photo. */
 function tokenKeys(kind: string): Set<string> {
   const cat = kindFields(kind);
   return new Set([
     "clubLogo",
+    "groundPhoto",
     ...(cat?.fields.map((f) => f.key) ?? []),
     ...(cat?.images.map((i) => i.key) ?? []),
   ]);
@@ -169,6 +170,12 @@ function checkRows(errors: Errors, where: string, v: unknown, kind: string): voi
   }
   numberIn(errors, `${where}.rowHeight`, v.rowHeight, 0.5, 100);
   if (v.gap !== undefined) numberIn(errors, `${where}.gap`, v.gap, 0, 50);
+  if (
+    v.columns !== undefined &&
+    (!Number.isInteger(v.columns) || (v.columns as number) < 1 || (v.columns as number) > 4)
+  )
+    errors.push(`${where}.columns must be a whole number from 1 to 4.`);
+  if (v.columnGap !== undefined) numberIn(errors, `${where}.columnGap`, v.columnGap, 0, 50);
   const fields = new Set(repeat.fields.map((f) => f.key));
   if (!Array.isArray(v.cells) || v.cells.length > MAX_CELLS) {
     errors.push(`${where}.cells must be a list of at most ${MAX_CELLS} cells.`);

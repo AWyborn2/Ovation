@@ -66,6 +66,13 @@ export type RowsSpec = {
   /** Gap between rows, in percent of the artboard width. */
   gap?: number;
   cells: RowsCell[];
+  /**
+   * Columns the rows flow down, side by side (default 1): an XI as two
+   * columns of six. Rows fill the first column, then the next.
+   */
+  columns?: number;
+  /** Gap between columns, in percent of the layer width. */
+  columnGap?: number;
   /** Per-variant cell style overrides (e.g. the club's own ladder row). */
   variants?: Record<string, Partial<Record<string, TemplateTextStyle>>>;
 };
@@ -172,7 +179,14 @@ export function rowsCapacity(layer: TemplateLayerBase, size: TemplateSize): numb
   const boxPx = (box.h / 100) * dims.h;
   const rowPx = (rows.rowHeight / 100) * dims.w;
   const gapPx = ((rows.gap ?? 0) / 100) * dims.w;
-  return Math.max(0, Math.floor((boxPx + gapPx) / (rowPx + gapPx)));
+  const perColumn = Math.max(0, Math.floor((boxPx + gapPx) / (rowPx + gapPx)));
+  return perColumn * rowsColumns(rows);
+}
+
+/** How many columns a list flows down (1–4; anything else counts as 1). */
+export function rowsColumns(rows: Pick<RowsSpec, "columns">): number {
+  const n = rows.columns;
+  return typeof n === "number" && Number.isInteger(n) && n >= 1 && n <= 4 ? n : 1;
 }
 
 /** A document's row capacity on `size`: the first rows layer bound to `repeat`. */

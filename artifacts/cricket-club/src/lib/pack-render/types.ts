@@ -80,6 +80,8 @@ export interface PackCardData {
     /** Short club tagline → the `clubTagline` header sub-line. Empty when unset. */
     tagline?: string | null;
     logoUrl?: string | null;
+    /** The club's ground photo for card backgrounds (`{{groundPhoto}}` in templates). */
+    groundPhotoUrl?: string | null;
     primaryColour?: string | null;
     backgroundColour?: string | null;
     juniorsColour?: string | null;
