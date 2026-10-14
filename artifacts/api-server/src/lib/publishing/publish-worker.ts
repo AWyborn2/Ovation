@@ -16,7 +16,7 @@ import { captionFor, prepareMedia, removeImages } from "./prepare-media";
 import { postDraftIfDone } from "./publications";
 import { logger as appLogger } from "../logger";
 import { draftMayAutoPost } from "../effective-draft-state";
-import { isJuniorDraft } from "../junior-publishing";
+import { isSyncedJuniorDraft } from "../junior-publishing";
 import type { Platform, PostType } from "./destination";
 
 /**
@@ -219,12 +219,13 @@ async function processOne(
     await removeImages(row.imagePaths);
     return "cancelled";
   }
-  // An automatic post of a junior card goes out only for a team set to auto-post
-  // (junior PlayHQ sync plan KTD14); an admin's own scheduling is their approval.
+  // An automatic post of a synced junior card goes out only for a team set to auto-post
+  // (junior PlayHQ sync plan KTD14); an admin's own scheduling is their approval. The
+  // same scope as promotion (`juniorAutoPostClear`): other drafts are never held here.
   if (
     row.origin === "auto" &&
     !row.mediaIds.length &&
-    isJuniorDraft(draft) &&
+    isSyncedJuniorDraft(draft) &&
     !(await draftMayAutoPost(row.tenantId, draft.id))
   ) {
     await update(row, {

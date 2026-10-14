@@ -229,6 +229,14 @@ In short:
   `references/`); ingest `api-server/src/lib/playhq-ingest.ts`; loader, cadence, health,
   fixtures/team-list/central projections in `lib/db/src/playhq-ingest/`; landing schema
   `scripts/sql/playhq-schema.sql` (+ `playhq-ingest-role.sql`, `central-projector.sql`)
+- Junior PlayHQ sync (2026/27 onward, ids >= 200,000,000): gate
+  `api-server/src/lib/junior-sync.ts` (`playhq_sync_enabled` + platform-admin
+  `junior_sync_enabled` + `juniors` entitlement; optional `playhq_junior_org_id`); grade
+  classifier `lib/db/src/playhq-ingest/grade-classes.ts`; projection
+  `lib/db/src/playhq-ingest/junior-project.ts` (planners `junior-plan.ts`, writers
+  `junior-write.ts`); junior cards `api-server/src/lib/junior-social.ts`, naming
+  `lib/junior-names.ts`, publishing modes `lib/junior-publishing.ts`. Migrations 0038/0039 are
+  applied by hand in production.
 - Social drafting: `api-server/src/lib/draft-sweep.ts` (entry), `lib/engines/*` (per card
   kind), `lib/draft-enrich.ts` (pack, caption and photo pick)
 - Meta publishing: `api-server/src/lib/publishing/` (destination boundary + Meta adapter,

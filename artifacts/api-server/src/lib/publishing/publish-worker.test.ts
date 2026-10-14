@@ -18,6 +18,8 @@ import {
   socialPublicationsTable,
   notificationsTable,
   captionTemplatesTable,
+  juniorFixturesTable,
+  juniorMatchDisplaySettingsTable,
 } from "@workspace/db";
 import { seal } from "../secret-box";
 import { setStillRenderer } from "../draft-render";
@@ -122,6 +124,10 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  await db
+    .delete(juniorMatchDisplaySettingsTable)
+    .where(eq(juniorMatchDisplaySettingsTable.tenantId, tenantId));
+  await db.delete(juniorFixturesTable).where(eq(juniorFixturesTable.tenantId, tenantId));
   await db.delete(notificationsTable).where(eq(notificationsTable.tenantId, tenantId));
   await db.delete(socialPublicationsTable).where(eq(socialPublicationsTable.tenantId, tenantId));
   await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId));
@@ -367,5 +373,101 @@ describe("publish worker", () => {
     await run();
     expect((await pub(pubs[0].id)).status).toBe("cancelled");
     expect(calls).toHaveLength(0);
+  });
+});
+
+/**
+ * The publish path's own junior guard (junior PlayHQ sync plan KTD14; testing review P2):
+ * an automatic post of a synced junior card goes out only for a team set to auto-post,
+ * whatever promoted it. An admin's own scheduling, a team set to auto and senior drafts
+ * are untouched.
+ */
+describe("publish worker junior guard", () => {
+  const AGE = "Year 7";
+  let fixtureIds: { approval: number; auto: number };
+
+  beforeAll(async () => {
+    const fixture = async (teamName: string) =>
+      (
+        await db
+          .insert(juniorFixturesTable)
+          .values({
+            tenantId,
+            playhqMatchId: `worker-junior-${STAMP}-${teamName}`,
+            seasonStartYear: 2026,
+            ageGroup: AGE,
+            teamName,
+            status: "UPCOMING",
+          })
+          .returning()
+      )[0]!.id;
+    fixtureIds = { approval: await fixture("Hawks"), auto: await fixture("Eagles") };
+    await db
+      .insert(juniorMatchDisplaySettingsTable)
+      .values({ tenantId, teamPublishing: { [AGE]: { Hawks: "approval", Eagles: "auto" } } })
+      .onConflictDoUpdate({
+        target: juniorMatchDisplaySettingsTable.tenantId,
+        set: { teamPublishing: { [AGE]: { Hawks: "approval", Eagles: "auto" } } },
+      });
+  });
+
+  async function juniorTeamListPost(fixtureId: number, origin: "auto" | "manual") {
+    const at = new Date(Date.now() - 1000);
+    const [d] = await db
+      .insert(socialDraftsTable)
+      .values({
+        tenantId,
+        engine: "teamlist",
+        status: "ready",
+        sourceKey: `juniorteamlist:${fixtureId}`,
+        sourceMatchIsJunior: true,
+        cardInput: { kind: "teamList", junior: true },
+        caption: "Junior side",
+      })
+      .returning();
+    const [p] = await db
+      .insert(socialPublicationsTable)
+      .values({
+        tenantId,
+        draftId: d!.id,
+        platform: "facebook",
+        origin,
+        scheduledFor: at,
+        nextAttemptAt: at,
+      })
+      .returning();
+    return { draft: d!, pub: p! };
+  }
+
+  it("cancels an automatic post of an approval team's junior card, with no Meta call", async () => {
+    const { pub: p } = await juniorTeamListPost(fixtureIds.approval, "auto");
+    await run();
+    const row = await pub(p.id);
+    expect(row.status).toBe("cancelled");
+    expect(row.lastError).toMatch(/approval/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("lets an automatic post of an auto team's junior card through", async () => {
+    const { pub: p } = await juniorTeamListPost(fixtureIds.auto, "auto");
+    await run();
+    expect((await pub(p.id)).status).toBe("published");
+    expect(calls.map((c) => c.op)).toContain("publish");
+  });
+
+  it("lets an admin's own scheduling of an approval team's junior card through", async () => {
+    const { pub: p } = await juniorTeamListPost(fixtureIds.approval, "manual");
+    await run();
+    expect((await pub(p.id)).status).toBe("published");
+  });
+
+  it("never holds a senior draft's automatic post", async () => {
+    const { pubs } = await draftWith(["facebook"]);
+    await db
+      .update(socialPublicationsTable)
+      .set({ origin: "auto" })
+      .where(eq(socialPublicationsTable.id, pubs[0].id));
+    await run();
+    expect((await pub(pubs[0].id)).status).toBe("published");
   });
 });

@@ -85,3 +85,46 @@ export function formatDismissal(raw: string | null | undefined, notOut: boolean)
 
   return text;
 }
+
+/** Word-only dismissal modes that never carry a name, kept as written (lower case). */
+const NAMELESS_MODES = new Set([
+  "retired",
+  "retired hurt",
+  "retired out",
+  "retired not out",
+  "timed out",
+  "handled the ball",
+  "obstructing the field",
+  "hit the ball twice",
+  "absent",
+  "absent hurt",
+  "out",
+]);
+
+/**
+ * The mode of a dismissal with every name removed, in the stored colon grammar
+ * `formatDismissal` reads ("c: b:" renders "caught", "st: b:" renders "st", and so
+ * on). Public junior scorecards serve this instead of PlayHQ's raw text, which
+ * names the fielder and bowler ("c: O Green b: S Taylor") and so bypasses the
+ * club's naming style, opposition initials and privacy.
+ *
+ * Fails closed: a shape it does not recognise becomes "out", never the raw text.
+ * A missing or blank dismissal stays as it was (it reads as not out).
+ */
+export function dismissalWithoutNames(raw: string | null | undefined): string | null {
+  if (raw == null) return null;
+  const lower = raw.trim().toLowerCase().replace(/\s+/g, " ");
+  if (!lower) return "";
+
+  if (lower === "did not bat" || lower === "dnb") return "did not bat";
+  if (lower.startsWith("not out")) return "not out";
+  if (NAMELESS_MODES.has(lower)) return lower;
+  if (lower.startsWith("run out")) return "run out";
+  if (/^(c ?& ?b|caught (and|&) bowled)\b/.test(lower)) return "c&b:";
+  if (/^(st\b|st:|stumped\b)/.test(lower)) return "st: b:";
+  if (/^(c\b|c:|caught\b)/.test(lower)) return "c: b:";
+  if (/^lbw\b/.test(lower)) return "lbw:";
+  if (/^(hw\b|hw:|hit wicket\b)/.test(lower)) return "hit wicket";
+  if (/^(b\b|b:|bowled\b)/.test(lower)) return "b:";
+  return "out";
+}

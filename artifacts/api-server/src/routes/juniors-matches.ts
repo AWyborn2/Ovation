@@ -146,6 +146,8 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
     ...rosterRows.map((r) => r.participantId),
   ]);
   const nameLine = adminView ? naming.adminLine : naming.line;
+  // PlayHQ's dismissal text names the fielder and bowler; the public view keeps the mode only.
+  const nameDismissal = adminView ? naming.adminDismissal : naming.dismissal;
 
   const battingLine = (b: typeof juniorMatchBattingTable.$inferSelect) => {
     return {
@@ -158,7 +160,7 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
       fours: b.fours,
       sixes: b.sixes,
       strikeRate: b.strikeRate,
-      dismissal: b.dismissal,
+      dismissal: nameDismissal(b.dismissal),
     };
   };
   const bowlingLine = (b: typeof juniorMatchBowlingTable.$inferSelect) => {

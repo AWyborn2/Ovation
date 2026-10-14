@@ -1,7 +1,8 @@
 import { and, eq, isNotNull, lte, sql, type SQL } from "drizzle-orm";
-import { db, socialDraftsTable, socialSettingsTable } from "@workspace/db";
+import { db, socialDraftsTable, socialSettingsTable, JUNIOR_SYNC_ID_START } from "@workspace/db";
 import { layoutBlocksAutomation } from "@workspace/scorecard/kind-templates";
 import { normalizeDraftStatus, type DraftStatus } from "./draft-status";
+import { isSyncedJuniorDraft } from "./junior-publishing";
 
 /**
  * Auto-post deadlines (Social Studio KTD4). An auto-draft stores
@@ -28,15 +29,25 @@ type LayoutFields = {
 export const layoutClear: SQL = sql`(${socialDraftsTable.templateVersion} is null or (${socialDraftsTable.layoutCheckPending} = false and not coalesce((select bool_or(jsonb_typeof(w.value) = 'array' and jsonb_array_length(w.value) > 0) from jsonb_each(coalesce(${socialDraftsTable.layoutWarnings}, '{}'::jsonb)) w), false)))`;
 
 /**
+ * SQL for "this is one of the junior sync's own drafts": a junior team-list card
+ * (`juniorteamlist:<id>`) or the result card of a junior match in the sync id band
+ * (`matchSummary:junior:<id>`, `id >= JUNIOR_SYNC_ID_START`). Mirrors
+ * `isSyncedJuniorDraft`. Never null.
+ */
+export const syncedJuniorDraft: SQL = sql`coalesce((${socialDraftsTable.sourceKey} ~ '^juniorteamlist:[0-9]+$' or (${socialDraftsTable.sourceKey} ~ '^matchSummary:junior:[0-9]{1,18}$' and substr(${socialDraftsTable.sourceKey}, 21)::bigint >= ${JUNIOR_SYNC_ID_START})), false)`;
+
+/**
  * SQL for "the junior publishing rule lets automation touch this draft" (junior PlayHQ
- * sync plan KTD14): a senior draft always; a junior draft (either marker) only when its
- * team — resolved through its junior team-list fixture (`juniorteamlist:<id>`) or its
- * junior match — is explicitly `auto` in the club's `team_publishing`. A junior draft
- * whose team cannot be resolved never qualifies. Mirrors `juniorDraftMayAutoPost`.
+ * sync plan KTD14): any draft that is not a synced junior draft (senior drafts,
+ * loader-era junior summaries and junior round sets keep their previous behaviour at
+ * every club); a synced junior draft only when its team — resolved through its junior
+ * team-list fixture (`juniorteamlist:<id>`) or its junior match — is explicitly `auto` in
+ * the club's `team_publishing`. A synced junior draft whose team cannot be resolved never
+ * qualifies. Mirrors `juniorDraftMayAutoPost`.
  * Correlated on the outer `social_drafts` row, so it is only valid in a statement whose
  * target is `social_drafts` with no alias.
  */
-export const juniorAutoPostClear: SQL = sql`((${socialDraftsTable.sourceMatchIsJunior} = false and coalesce(${socialDraftsTable.cardInput}->>'junior', 'false') <> 'true') or exists (
+export const juniorAutoPostClear: SQL = sql`(not ${syncedJuniorDraft} or exists (
   select 1
   from junior_match_display_settings s
   join (
@@ -73,14 +84,25 @@ export async function draftMayAutoPost(tenantId: number, draftId: number): Promi
   return rows.length > 0;
 }
 
+/**
+ * The status a draft reads as. A synced junior draft never reads as ready ahead of the
+ * sweep: whether it may be promoted depends on its team's publishing mode, which only
+ * `persistDueDrafts` (via `juniorAutoPostClear`) resolves, so the read model waits for
+ * the stored status rather than show a card as ready that promotion will refuse.
+ */
 export function effectiveDraftStatus(
-  draft: { status: string; autoReadyAt: Date | string | null } & LayoutFields,
+  draft: {
+    status: string;
+    autoReadyAt: Date | string | null;
+    sourceKey: string | null;
+  } & LayoutFields,
   autoPost: AutoPost,
   now: Date = new Date(),
 ): DraftStatus {
   const stored = normalizeDraftStatus(draft.status);
   if (
     stored === "awaiting_review" &&
+    !isSyncedJuniorDraft(draft) &&
     autoPost.enabled &&
     draft.autoReadyAt != null &&
     new Date(draft.autoReadyAt).getTime() <= now.getTime() &&

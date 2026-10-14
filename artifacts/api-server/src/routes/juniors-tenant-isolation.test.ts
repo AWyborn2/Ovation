@@ -18,6 +18,10 @@ import {
   juniorShirtNumbersTable,
   juniorStatCorrectionsTable,
   shirtNumberSettingsTable,
+  playersTable,
+  importsTable,
+  matchesTable,
+  matchPlayerLinesTable,
 } from "@workspace/db";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
@@ -601,5 +605,125 @@ describe("juniors tenant isolation: one participant id at two clubs", () => {
       .body;
     expect(profileD).toMatchObject({ participantId: SHARED, displayName: "Shared AtD" });
     expect(profileD.batting.runs).toBe(520);
+  });
+});
+
+/**
+ * AE6, the non-blending half (junior PlayHQ sync plan R14, AE6; testing review P3): a
+ * Year 10-11 player linked to a senior player keeps two separate records. Their junior
+ * innings never reach senior stats, and their senior innings never reach junior stats;
+ * the profile cross-reference is the only junction. Native read path, default tenant.
+ */
+describe("juniors never blend with senior stats (AE6)", () => {
+  const TENANT = 1;
+  const PID = `test-jti-ae6-${STAMP}`;
+  const JUNIOR_MATCH = 906_000_000 + (STAMP % 1_000_000);
+  const SEASON3 = "2095/96";
+  const GRADE = `AE6 Senior Grade ${STAMP}`;
+  let seniorId = 0;
+  let importId = 0;
+  let seniorMatchId = 0;
+  const asT = (r: request.Test) => r.set("x-tenant-id", String(TENANT));
+
+  beforeAll(async () => {
+    const [p] = await db
+      .insert(playersTable)
+      .values({ surname: `Ae6Senior${STAMP}`, givenName: "Linked" })
+      .returning();
+    seniorId = p!.id;
+    const [imp] = await db
+      .insert(importsTable)
+      .values({ filename: `ae6-${STAMP}.xlsx`, kind: "match", grade: GRADE, season: 2095 })
+      .returning();
+    importId = imp!.id;
+    const [m] = await db
+      .insert(matchesTable)
+      .values({ importId, grade: GRADE, season: 2095, round: 1, opponent: "Seniors Opp" })
+      .returning();
+    seniorMatchId = m!.id;
+    await db.insert(matchPlayerLinesTable).values({
+      matchId: seniorMatchId,
+      playerId: seniorId,
+      batted: true,
+      battingPos: 4,
+      runs: 77,
+      balls: 90,
+      notOut: false,
+    });
+
+    await db.insert(juniorParticipantsTable).values({
+      tenantId: TENANT,
+      participantId: PID,
+      displayName: "Ae6 Junior",
+      seniorPlayerId: seniorId,
+    });
+    await db.insert(juniorMatchesTable).values({
+      id: JUNIOR_MATCH,
+      tenantId: TENANT,
+      season: SEASON3,
+      seasonStartYear: 2095,
+      ageGroup: "Year 10-11",
+      team1: "AE6 Juniors",
+      team2: "Opponents",
+      opponentName: "Opponents",
+    });
+    await db.insert(juniorMatchBattingTable).values({
+      id: JUNIOR_MATCH,
+      matchId: JUNIOR_MATCH,
+      innings: 1,
+      participantId: PID,
+      playerName: "Ae6 Junior",
+      isHallsHead: true,
+      batOrder: 1,
+      runs: 33,
+      dismissal: "b:",
+    });
+  });
+
+  afterAll(async () => {
+    await db.delete(juniorMatchesTable).where(eq(juniorMatchesTable.id, JUNIOR_MATCH));
+    await db
+      .delete(juniorParticipantsTable)
+      .where(
+        and(
+          eq(juniorParticipantsTable.tenantId, TENANT),
+          eq(juniorParticipantsTable.participantId, PID),
+        ),
+      );
+    if (seniorMatchId)
+      await db
+        .delete(matchPlayerLinesTable)
+        .where(eq(matchPlayerLinesTable.matchId, seniorMatchId));
+    if (seniorMatchId) await db.delete(matchesTable).where(eq(matchesTable.id, seniorMatchId));
+    if (importId) await db.delete(importsTable).where(eq(importsTable.id, importId));
+    if (seniorId) await db.delete(playersTable).where(eq(playersTable.id, seniorId));
+  });
+
+  it("the junior profile and leaderboard carry junior runs only", async () => {
+    const profile = (await asT(request(app).get(`/api/juniors/players/${PID}`)).expect(200)).body;
+    expect(profile.batting.runs).toBe(33);
+    expect(profile.matches.map((m: { matchId: number }) => m.matchId)).toEqual([JUNIOR_MATCH]);
+    const board = (
+      await asT(request(app).get(`/api/juniors/leaderboard?season=${SEASON3}`)).expect(200)
+    ).body as { participantId: string; runs: number }[];
+    expect(board.find((r) => r.participantId === PID)).toMatchObject({ runs: 33 });
+  });
+
+  it("the senior record carries senior runs only", async () => {
+    const matches = (await asT(request(app).get(`/api/players/${seniorId}/matches`)).expect(200))
+      .body as { matchId: number; runs: number | null }[];
+    expect(matches.map((m) => m.matchId)).toEqual([seniorMatchId]);
+    expect(matches.reduce((sum, m) => sum + (m.runs ?? 0), 0)).toBe(77);
+    const seasons = (await asT(request(app).get(`/api/players/${seniorId}/seasons`)).expect(200))
+      .body as { grade: string; runs: number | null }[];
+    expect(seasons.some((r) => /year|junior/i.test(r.grade))).toBe(false);
+    expect(JSON.stringify(seasons)).not.toContain(SEASON3);
+  });
+
+  it("the profile cross-reference is the only junction", async () => {
+    const linked = (
+      await asT(request(app).get(`/api/juniors/players/by-senior/${seniorId}`)).expect(200)
+    ).body as { participantId: string }[];
+    expect(linked.map((r) => r.participantId)).toEqual([PID]);
   });
 });

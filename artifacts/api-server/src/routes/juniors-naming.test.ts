@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import app from "../app";
 import {
   db,
@@ -292,5 +292,57 @@ describe("junior naming and privacy override", () => {
       .send({ teamPublishing: { "Year 6": { Hawks: "auto" } } })
       .expect(200);
     expect(ok.body.teamPublishing).toEqual({ "Year 6": { Hawks: "auto" } });
+  });
+  it("public scorecards show the dismissal mode only; the admin view keeps PlayHQ's text", async () => {
+    await setStyle("first").expect(200);
+    await db
+      .update(juniorMatchBattingTable)
+      .set({ dismissal: "c: Kai Wilson b: Lee Brown" })
+      .where(eq(juniorMatchBattingTable.id, MATCH_ID + 1));
+    await db
+      .update(juniorMatchBattingTable)
+      .set({ dismissal: "st: Sam Taylor b: Ollie Gallash" })
+      .where(eq(juniorMatchBattingTable.id, MATCH_ID + 2));
+    const pub = await asPublic(request(app).get(`/api/juniors/matches/${MATCH_ID}`)).expect(200);
+    const body = JSON.stringify(pub.body.innings);
+    expect(body).not.toMatch(/wilson|brown|taylor|gallash/i);
+    const lines = pub.body.innings.flatMap(
+      (i: { batting: { id: number; dismissal: string | null }[] }) => i.batting,
+    );
+    expect(lines.find((l: { id: number }) => l.id === MATCH_ID + 1).dismissal).toBe("c: b:");
+    expect(lines.find((l: { id: number }) => l.id === MATCH_ID + 2).dismissal).toBe("st: b:");
+    const admin = await asAdminA(
+      request(app).get(`/api/juniors/matches/${MATCH_ID}?includePrivate=true`),
+    ).expect(200);
+    expect(JSON.stringify(admin.body.innings)).toContain("c: Kai Wilson b: Lee Brown");
+  });
+
+  it("making an overridden player public clears the override, so re-privating withholds them", async () => {
+    await setOverride(true).expect(200);
+    const pub = await asAdminA(request(app).patch(`/api/juniors/participants/${OLLIE}`))
+      .send({ isPrivate: false })
+      .expect(200);
+    expect(pub.body.privacyOverride).toBe(false);
+    expect(pub.body.privacyOverrideBy).toBeNull();
+    const [journalled] = await db
+      .select()
+      .from(juniorStatCorrectionsTable)
+      .where(
+        and(
+          eq(juniorStatCorrectionsTable.tenantId, tenantA),
+          eq(juniorStatCorrectionsTable.targetId, OLLIE),
+        ),
+      )
+      .orderBy(juniorStatCorrectionsTable.id)
+      .then((rows) => rows.slice(-1));
+    expect(journalled.patch).toMatchObject({ is_private: false, privacy_override: false });
+    expect(journalled.prevValues).toMatchObject({ is_private: true, privacy_override: true });
+
+    await asAdminA(request(app).patch(`/api/juniors/participants/${OLLIE}`))
+      .send({ isPrivate: true })
+      .expect(200);
+    const ollie = (await ourLines()).find((l) => l.isPrivate);
+    expect(ollie?.playerName).toBe("Private Player");
+    expect(ollie?.participantId).toBeNull();
   });
 });

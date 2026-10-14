@@ -14,12 +14,15 @@ import { join, relative } from "node:path";
  *      matches tenant AND participant id);
  *   2. reads, updates, deletes or inserts `juniorParticipantsTable` without a tenant
  *      condition (`juniorParticipantsTable.tenantId` or `juniorParticipantKey(...)`);
- *   3. runs raw SQL naming `junior_participants`, or selecting a participant-carrying
- *      junior table by `participant_id`, without a `tenant_id` predicate;
+ *   3. runs raw SQL naming `junior_participants` without binding THAT reference's own
+ *      `tenant_id` to a value (`p.tenant_id = ${tenantId}` for `junior_participants p`;
+ *      a correlation such as `m.tenant_id = p.tenant_id` does not count, since it holds
+ *      for every club), or selects a participant-carrying junior table by
+ *      `participant_id` without a `tenant_id` predicate;
  *   4. selects rows of a participant-carrying junior table (lines, premiership players,
  *      office bearers, shirt numbers, merges, corrections) by participant id without a
- *      tenant scope — its own `tenantId`, the tenant's matches / premierships, or a
- *      match already resolved in the tenant (`.matchId, match.id`).
+ *      tenant scope — that table's own `tenantId`, the tenant's matches / premierships,
+ *      or a match already resolved in the tenant (`.matchId, match.id`).
  *
  * A query that is safe for a reason the scanner cannot see goes in `ALLOWLIST` with
  * the reason. It also checks the one-off juniors loader (`scripts/sql/juniors-etl.sql`)
@@ -47,8 +50,63 @@ const PARTICIPANT_TABLES = [
 const RAW_PARTICIPANT_TABLES =
   /\bjunior_(match_batting|match_bowling|match_rosters|premiership_players|office_bearers|shirt_numbers|participant_merges|stat_corrections)\b/;
 
-const LINE_SCOPE_MARKER =
-  /tenantId|tenantJuniorMatchIds\(|tenantJuniorPremiershipIds\(|\.matchId,\s*match\.id\b/;
+/**
+ * Rule 4's accepted scopes for `table`: its own tenant column, a joined junior match or
+ * premiership's tenant column (`ofTenant(…)` is junior-leaderboards' wrapper for the match
+ * one), a tenant-checked participant join, or a tenant-resolved id set. Another table's
+ * `tenantId` (or a bare `tenantId` variable) is not a scope.
+ */
+const lineScopeMarker = (table: string) =>
+  new RegExp(
+    String.raw`${table}\.tenantId\b|juniorMatchesTable\.tenantId\b|juniorPremiershipsTable\.tenantId\b|\bofTenant\(|juniorParticipantJoin\(|tenantJuniorMatchIds\(|tenantJuniorPremiershipIds\(|\.matchId,\s*match\.id\b`,
+  );
+
+/** Words that can follow a table name where an alias would otherwise stand. */
+const SQL_KEYWORDS = new Set([
+  "where",
+  "set",
+  "on",
+  "join",
+  "inner",
+  "left",
+  "right",
+  "full",
+  "cross",
+  "using",
+  "values",
+  "select",
+  "group",
+  "order",
+  "limit",
+  "union",
+  "returning",
+  "and",
+  "or",
+]);
+
+/**
+ * Whether every `junior_participants` reference in a raw SQL body binds its own tenant to a
+ * value: `<alias>.tenant_id = ${…}` for an aliased reference, `tenant_id = ${…}` (or
+ * `junior_participants.tenant_id = ${…}`) for an unaliased one, and the `tenant_id` column
+ * for an insert. A correlation to another table's tenant does not count.
+ */
+function participantsTenantBound(body: string): boolean {
+  const ref = /\bjunior_participants\b(?:\s+(?:as\s+)?([a-z_]\w*))?/gi;
+  let m: RegExpExecArray | null;
+  while ((m = ref.exec(body))) {
+    if (/\binsert\s+into\s*$/i.test(body.slice(0, m.index))) {
+      if (!/\btenant_id\b/.test(body)) return false;
+      continue;
+    }
+    const alias = m[1] && !SQL_KEYWORDS.has(m[1].toLowerCase()) ? m[1] : null;
+    const col = alias
+      ? String.raw`\b${alias}\.tenant_id`
+      : String.raw`(?:(?<![\w.])|\bjunior_participants\.)tenant_id`;
+    const bound = new RegExp(String.raw`${col}\s*=\s*(?:any\s*\(\s*)?\$\{`, "i");
+    if (!bound.test(body)) return false;
+  }
+  return true;
+}
 
 type Violation = { line: number; rule: string; snippet: string };
 
@@ -188,10 +246,14 @@ function scanSource(source: string): Violation[] {
 
   // Rule 3: raw SQL.
   for (const t of sqlTemplates(text)) {
-    const touchesParticipants =
-      /\bjunior_participants\b/.test(t.body) ||
-      (RAW_PARTICIPANT_TABLES.test(t.body) && /\bparticipant_id\b/.test(t.body));
-    if (touchesParticipants && !/\btenant_id\b/.test(t.body)) {
+    if (/\bjunior_participants\b/.test(t.body)) {
+      if (!participantsTenantBound(t.body))
+        add(t.index, "raw junior SQL without tenant_id", t.body);
+    } else if (
+      RAW_PARTICIPANT_TABLES.test(t.body) &&
+      /\bparticipant_id\b/.test(t.body) &&
+      !/\btenant_id\b/.test(t.body)
+    ) {
       add(t.index, "raw junior SQL without tenant_id", t.body);
     }
   }
@@ -204,7 +266,7 @@ function scanSource(source: string): Violation[] {
     );
     while ((m = re.exec(text))) {
       const window = chainWindow(text, m.index);
-      if (byParticipant.test(window) && !LINE_SCOPE_MARKER.test(window)) {
+      if (byParticipant.test(window) && !lineScopeMarker(table).test(window)) {
         add(m.index, `${table} by participant without tenant scope`, window);
       }
     }
@@ -306,6 +368,61 @@ describe("junior participant queries are tenant-scoped (scanner self-test)", () 
     expect(
       scanSource(
         "await tx.execute(sql`DELETE FROM junior_match_rosters a USING junior_matches m WHERE m.tenant_id = ${t} AND a.participant_id = ${k}`);",
+      ),
+    ).toEqual([]);
+  });
+
+  it("flags raw participant SQL whose only tenant_id is a correlation (testing review P2)", () => {
+    // The mutant of recomputeParticipantMetadata with its final tenant predicate removed:
+    // its sub-selects still say `m.tenant_id = p.tenant_id`, which holds for every club.
+    const mutant =
+      "await tx.execute(sql`UPDATE junior_participants p SET scorecard_lines = (SELECT count(*) FROM junior_match_batting b JOIN junior_matches m ON m.id = b.match_id AND m.tenant_id = p.tenant_id WHERE b.participant_id = p.participant_id) WHERE p.participant_id = ${participantId}`);";
+    expect(scanSource(mutant).map((x) => x.rule)).toEqual(["raw junior SQL without tenant_id"]);
+    const fixed = mutant.replace(
+      "WHERE p.participant_id",
+      "WHERE p.tenant_id = ${tenantId} AND p.participant_id",
+    );
+    expect(scanSource(fixed)).toEqual([]);
+  });
+
+  it("the real recomputeParticipantMetadata passes, and fails once its tenant predicate is cut", () => {
+    const source = readFileSync(join(SRC_ROOT, "lib", "junior-admin-helpers.ts"), "utf8");
+    expect(scanSource(source)).toEqual([]);
+    const predicate = /p\.tenant_id\s*=\s*\$\{tenantId\}\s*AND\s*/i;
+    expect(source).toMatch(predicate);
+    expect(scanSource(source.replace(predicate, "")).map((x) => x.rule)).toContain(
+      "raw junior SQL without tenant_id",
+    );
+  });
+
+  it("checks every participants reference in a raw statement, aliased or not", () => {
+    expect(
+      scanSource(
+        "sql`EXISTS (SELECT 1 FROM junior_participants WHERE tenant_id = ${tenantId} AND senior_player_id = ${id})`;",
+      ),
+    ).toEqual([]);
+    expect(
+      scanSource(
+        "sql`select 1 from junior_participants k where k.tenant_id = ${t} and exists (select 1 from junior_participants j where j.participant_id = k.participant_id)`;",
+      ),
+    ).toHaveLength(1);
+    expect(
+      scanSource(
+        "sql`insert into junior_participants (tenant_id, participant_id) values (${t}, ${id})`;",
+      ),
+    ).toEqual([]);
+  });
+
+  it("does not accept another table's tenantId as a line table's scope", () => {
+    // testing review P2: any `tenantId` token used to satisfy rule 4.
+    expect(
+      scanSource(
+        `await tx.select().from(juniorParticipantMergesTable).where(and(eq(juniorParticipantMergesTable.duplicateParticipantId, d), eq(otherTable.tenantId, tenantId)));`,
+      ),
+    ).toHaveLength(1);
+    expect(
+      scanSource(
+        `await tx.select().from(juniorParticipantMergesTable).where(and(eq(juniorParticipantMergesTable.tenantId, tenantId), eq(juniorParticipantMergesTable.duplicateParticipantId, d)));`,
       ),
     ).toEqual([]);
   });

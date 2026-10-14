@@ -31,6 +31,19 @@ export function classifyGrade(name: string | null | undefined): GradeClass {
   return "unclassified";
 }
 
+/**
+ * Stored grades (`playhq.grades`) marked senior (`is_junior = false`) that the classifier now
+ * calls junior, e.g. "Peel Girls League", stored before the classifier learned the loader's
+ * age banding. The ingest flips them to junior so the senior projections stop reading them,
+ * and reports what was already projected from them. Only ever senior → junior: a junior
+ * grade is never reclassified back, and an unclassified one is never guessed (KTD4).
+ */
+export function juniorReclassifications<T extends { name: string | null; isJunior: boolean }>(
+  stored: readonly T[],
+): T[] {
+  return stored.filter((g) => !g.isJunior && classifyGrade(g.name) === "junior");
+}
+
 /** One unclassified grade as the platform admin sees it: names and seasons, never players. */
 export interface UnclassifiedGrade {
   grade: string;

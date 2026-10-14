@@ -214,3 +214,61 @@ describe("makeJuniorNaming admin lines", () => {
     ).toEqual({ playerName: "Kai Wilson", participantId: "opp-1", isPrivate: false });
   });
 });
+
+describe("makeJuniorNaming dismissals (security review P1)", () => {
+  // PlayHQ's dismissal text names the fielder and bowler: "c: O Green b: S Taylor".
+  const participants = new Map([
+    ["p-sam", { displayName: "Sam Taylor", isPrivate: false, privacyOverride: false }],
+  ]);
+  const raw = "c: Olivia Green b: Sam Taylor";
+
+  it.each(["full", "first_initial", "first"] as const)(
+    "a public %s-style line shows the dismissal mode only, never a name",
+    (style) => {
+      const n = makeJuniorNaming(style, participants);
+      const own = {
+        ...n.line({ participantId: "p-sam", playerName: "Sam Taylor", isHallsHead: true }),
+        dismissal: n.dismissal(raw),
+      };
+      const opp = {
+        ...n.line({ participantId: "opp-1", playerName: "Kai Wilson", isHallsHead: false }),
+        dismissal: n.dismissal("st: Sam Taylor b: Olivia Green"),
+      };
+      expect(own.dismissal).toBe("c: b:");
+      expect(opp.dismissal).toBe("st: b:");
+      expect(JSON.stringify(opp)).not.toMatch(/green|taylor|wilson/i);
+      if (style !== "full") expect(JSON.stringify(own)).not.toMatch(/green|taylor/i);
+    },
+  );
+
+  it("keeps not-out and blank dismissals so not-out counting is unchanged", () => {
+    const n = makeJuniorNaming("first", participants);
+    expect(n.dismissal("not out")).toBe("not out");
+    expect(n.dismissal(null)).toBeNull();
+  });
+
+  it("the admin view keeps the raw text", () => {
+    const n = makeJuniorNaming("first", participants);
+    expect(n.adminDismissal(raw)).toBe(raw);
+  });
+});
+
+describe("makeJuniorNaming participant ids are case-insensitive (security review P2)", () => {
+  // A legacy participant row kept its mixed-case GUID (migration 0038 only reports
+  // those); synced lines carry the lowercased id. The lookup must still find the
+  // row, or a private child would be named from the line's stored copy.
+  const participants = new Map([
+    ["ABCD-Ollie-0001", { displayName: "Ollie Gallash", isPrivate: true, privacyOverride: false }],
+  ]);
+
+  it("withholds a private participant whose stored id differs only by case", () => {
+    const n = makeJuniorNaming("full", participants);
+    expect(
+      n.line({ participantId: "abcd-ollie-0001", playerName: "Ollie Gallash", isHallsHead: true }),
+    ).toEqual({ playerName: "Private Player", participantId: null, isPrivate: true });
+    expect(
+      n.line({ participantId: "ABCD-OLLIE-0001", playerName: "Ollie Gallash", isHallsHead: true })
+        .isPrivate,
+    ).toBe(true);
+  });
+});

@@ -16,6 +16,7 @@
  */
 import { and, eq, isNull } from "drizzle-orm";
 import { db, tenantsTable } from "@workspace/db";
+import type { JuniorSyncTenantRef } from "@workspace/db/playhq-ingest";
 import { hasEntitlement, planFromString } from "./entitlements";
 
 /** The tenant columns the gate reads. */
@@ -28,11 +29,11 @@ export interface JuniorSyncTenantInput {
   playhqJuniorOrgId: string | null;
 }
 
-/** An enabled tenant and the PlayHQ organisation its junior grades come from. */
-export interface JuniorSyncTenant {
-  tenantId: number;
-  orgId: string;
-}
+/**
+ * An enabled tenant and the PlayHQ organisation its junior grades come from: the very
+ * shape `projectJuniors` takes, so the gate's output and the projection's input can't drift.
+ */
+export type JuniorSyncTenant = JuniorSyncTenantRef;
 
 function clean(v: string | null | undefined): string | null {
   const s = v?.trim();

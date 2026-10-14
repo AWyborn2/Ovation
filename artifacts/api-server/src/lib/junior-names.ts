@@ -1,5 +1,6 @@
 import type { JuniorNameStyle, JuniorTeamPublishing, JuniorTeamPublishMode } from "@workspace/db";
 import { JUNIOR_WITHHELD_NAME } from "@workspace/db/schema";
+import { dismissalWithoutNames } from "@workspace/scorecard";
 
 /**
  * Public junior names (junior PlayHQ sync plan U7; KTD12, R15, R16, R22).
@@ -122,6 +123,13 @@ export type JuniorNaming = {
   line: (l: JuniorStoredLine) => JuniorNamedLine;
   /** Admin view of a line: the full name and id, with `isPrivate` marking a withheld player. */
   adminLine: (l: JuniorStoredLine) => JuniorNamedLine;
+  /**
+   * Public dismissal: the mode only ("c: b:", "lbw:", "run out"…). PlayHQ's text names
+   * the fielder and bowler, which would bypass the naming style, initials and privacy.
+   */
+  dismissal: (raw: string | null) => string | null;
+  /** Admin view of a dismissal: the stored text unchanged. */
+  adminDismissal: (raw: string | null) => string | null;
 };
 
 /**
@@ -129,13 +137,24 @@ export type JuniorNaming = {
  * used by every public scorecard / roster surface. An own-club line takes its name
  * from the participant row (the stored line copy is only a fallback); an opposition
  * line has no row of ours and keeps its stored name, rendered as initials.
+ *
+ * Participant ids match case-insensitively: synced lines carry lowercased GUIDs while
+ * a legacy participant row may keep its original spelling, and a missed lookup would
+ * treat a private child as public (fail closed).
  */
 export function makeJuniorNaming(
   style: JuniorNameStyle,
   participants: ReadonlyMap<string, JuniorNameFacts>,
 ): JuniorNaming {
+  const byId = new Map<string, JuniorNameFacts>();
+  for (const [id, facts] of participants) {
+    const key = id.toLowerCase();
+    const prev = byId.get(key);
+    // Two spellings of one id: the stricter privacy facts win.
+    byId.set(key, prev && isJuniorWithheld(prev) ? prev : facts);
+  }
   const resolve = (l: JuniorStoredLine) => {
-    const p = l.participantId ? participants.get(l.participantId) : undefined;
+    const p = l.participantId ? byId.get(l.participantId.toLowerCase()) : undefined;
     const facts = {
       isPrivate: p?.isPrivate ?? false,
       privacyOverride: p?.privacyOverride ?? false,
@@ -162,5 +181,7 @@ export function makeJuniorNaming(
         isPrivate: withheld,
       };
     },
+    dismissal: (raw) => dismissalWithoutNames(raw),
+    adminDismissal: (raw) => raw,
   };
 }

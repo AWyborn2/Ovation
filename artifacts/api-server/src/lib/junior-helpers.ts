@@ -83,7 +83,11 @@ export async function loadJuniorNaming(
   const ids =
     participantIds === undefined
       ? undefined
-      : [...new Set([...participantIds].filter((id): id is string => !!id))];
+      : [
+          ...new Set(
+            [...participantIds].filter((id): id is string => !!id).map((id) => id.toLowerCase()),
+          ),
+        ];
   const [style, rows] = await Promise.all([
     getJuniorNameStyle(tenantId),
     ids !== undefined && ids.length === 0
@@ -99,7 +103,11 @@ export async function loadJuniorNaming(
           .where(
             and(
               eq(juniorParticipantsTable.tenantId, tenantId),
-              ids === undefined ? undefined : inArray(juniorParticipantsTable.participantId, ids),
+              // Case-insensitive: a legacy row may keep a mixed-case GUID (makeJuniorNaming
+              // matches the same way, so a private child is never missed).
+              ids === undefined
+                ? undefined
+                : inArray(sql`lower(${juniorParticipantsTable.participantId})`, ids),
             ),
           ),
   ]);

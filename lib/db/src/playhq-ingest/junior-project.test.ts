@@ -9,6 +9,7 @@ import {
   juniorProjectionErrorText,
   juniorSeason,
   juniorTenantsForMatch,
+  lineIdentityParticipant,
   mergeParticipantSeeds,
   planJuniorFixture,
   planJuniorMatch,
@@ -536,6 +537,54 @@ describe("corrections survive a re-sync", () => {
     ]);
     expect([...keys]).toEqual([`1|p|${P3}`]);
   });
+
+  it("a line's identity undoes re-points, then follows the merge map", () => {
+    const merges = new Map([["dup-guid", "keeper-guid"]]);
+    expect(lineIdentityParticipant("B-Guid", [{ participantId: "A-Guid" }], merges)).toBe("a-guid");
+    expect(lineIdentityParticipant("Dup-Guid", [], merges)).toBe("keeper-guid");
+    expect(lineIdentityParticipant("x", [{ participantId: "dup-guid" }], merges)).toBe(
+      "keeper-guid",
+    );
+    expect(lineIdentityParticipant(null, [], merges)).toBeNull();
+  });
+
+  it("tombstones key like live lines: re-pointed then deleted, or deleted then merged (adversarial P2)", () => {
+    const A = "aaaaaaaa-0000-4000-8000-000000000001";
+    const B = "bbbbbbbb-0000-4000-8000-000000000002";
+    const KEEPER = "cccccccc-0000-4000-8000-000000000003";
+    const repointed = String(JUNIOR_SYNC_ID_START + 7);
+    const merged = String(JUNIOR_SYNC_ID_START + 8);
+    // Line 7: PlayHQ said A, an admin re-pointed it to B, then deleted it (prev = B);
+    // A has since been merged into KEEPER. Line 8: a line of A, deleted, A merged later.
+    const repoints: Record<string, { participantId: string }[]> = {
+      [repointed]: [{ participantId: A }],
+    };
+    const merges = new Map([[A, KEEPER]]);
+    const deletions = [
+      {
+        targetId: repointed,
+        prevValues: { innings: 1, participant_id: B, bat_order: 3, is_halls_head: true },
+      },
+      {
+        targetId: merged,
+        prevValues: { innings: 2, participant_id: A, bat_order: 4, is_halls_head: true },
+      },
+    ];
+    // Without the resolver the tombstones miss the planned lines (the old behaviour).
+    const naive = deletedLineKeys("junior_match_batting", deletions);
+    expect(naive.has(`1|p|${KEEPER}`)).toBe(false);
+    expect(naive.has(`2|p|${KEEPER}`)).toBe(false);
+    // With it they match the planned lines, which the planners key through the merge map.
+    const keys = deletedLineKeys("junior_match_batting", deletions, (targetId, pid) =>
+      lineIdentityParticipant(pid, repoints[targetId] ?? [], merges),
+    );
+    expect([...keys].sort()).toEqual([`1|p|${KEEPER}`, `2|p|${KEEPER}`]);
+    const planned = [
+      { innings: 1, participantId: KEEPER, batOrder: 3, isHallsHead: true, playerName: "x" },
+      { innings: 2, participantId: KEEPER, batOrder: 4, isHallsHead: true, playerName: "y" },
+    ];
+    expect(reconcileLines([], planned, battingLineKey, keys).inserts).toEqual([]);
+  });
 });
 
 describe("participants", () => {
@@ -596,7 +645,25 @@ describe("participants", () => {
         { participantId: P1, name: null, isPrivate: true },
         false,
       ),
-    ).toEqual({ kind: "update", isPrivate: true });
+    ).toEqual({ kind: "update", isPrivate: true, clearOverride: true });
+  });
+
+  it("tightening privacy clears any stale override (adversarial review P1)", () => {
+    // An override left from an earlier private spell must not name the child the
+    // moment PlayHQ withholds them again: a fresh admin decision is needed.
+    const w = planParticipantWrite(
+      { displayName: "Ollie Green", isPrivate: false },
+      { participantId: P1, name: "Ollie Green", isPrivate: true },
+      false,
+    );
+    expect(w).toMatchObject({ kind: "update", isPrivate: true, clearOverride: true });
+    // A participant who is already private keeps the admin's override.
+    const kept = planParticipantWrite(
+      { displayName: "Ollie Green", isPrivate: true },
+      { participantId: P1, name: null, isPrivate: true },
+      false,
+    );
+    expect(kept).toEqual({ kind: "none" });
   });
 
   it("privacy never loosens automatically", () => {

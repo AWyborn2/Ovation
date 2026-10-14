@@ -15,6 +15,7 @@ import { adminWriteRateLimiter } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
 import { snakeToCamel, serializeCorrection, SNAKE_TO_TABLE } from "../lib/junior-admin-helpers";
 import { juniorParticipantKey } from "../lib/junior-participant-scope";
+import { guardRevertedPrivacy } from "../lib/junior-privacy";
 
 /**
  * Juniors admin — the corrections journal: list + revert.
@@ -114,9 +115,17 @@ router.delete(
         }
         if (Object.keys(set).length > 0) {
           if (correction.targetTable === "junior_participants") {
+            // Never restore a privacy override onto a participant who ends up public.
+            const [current] = await tx
+              .select({
+                isPrivate: juniorParticipantsTable.isPrivate,
+                privacyOverride: juniorParticipantsTable.privacyOverride,
+              })
+              .from(juniorParticipantsTable)
+              .where(juniorParticipantKey(tenantId, correction.targetId));
             await tx
               .update(juniorParticipantsTable)
-              .set(set)
+              .set(current ? guardRevertedPrivacy(set, current) : set)
               .where(juniorParticipantKey(tenantId, correction.targetId));
           } else {
             await tx

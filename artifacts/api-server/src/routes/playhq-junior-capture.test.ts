@@ -18,6 +18,7 @@ import app from "../app";
 import {
   db,
   fixturesTable,
+  juniorFixturesTable,
   notificationsTable,
   platformAdminsTable,
   playhqSyncIncidentsTable,
@@ -221,6 +222,7 @@ afterAll(async () => {
   await closePlayhqIngestPool();
   for (const id of [tenantId, secondTenantId]) {
     await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, id));
+    await db.delete(juniorFixturesTable).where(eq(juniorFixturesTable.tenantId, id));
     await db.delete(fixturesTable).where(eq(fixturesTable.tenantId, id));
     await db.delete(notificationsTable).where(eq(notificationsTable.tenantId, id));
     await db.delete(tenantsTable).where(eq(tenantsTable.id, id));
@@ -251,6 +253,16 @@ const storedGrades = async () =>
     )
   ).rows as { id: string; is_junior: boolean }[];
 
+const juniorFixtureMatches = async (id: number) =>
+  (
+    await db
+      .select({ matchId: juniorFixturesTable.playhqMatchId })
+      .from(juniorFixturesTable)
+      .where(eq(juniorFixturesTable.tenantId, id))
+  )
+    .map((r) => r.matchId)
+    .sort();
+
 const openUnclassified = () =>
   db
     .select()
@@ -277,6 +289,8 @@ describe("junior capture — junior sync off (AE1, R2)", () => {
     const kid = await admin.query(`select 1 from playhq.players where participant_id = $1`, [KID]);
     expect(kid.rowCount).toBe(0);
     expect(await openUnclassified()).toEqual([]);
+    // Nothing reaches the junior tables of a club without junior sync.
+    expect(await juniorFixtureMatches(tenantId)).toEqual([]);
   });
 
   it("plans the club without asking the harness for junior grades", async () => {
@@ -307,6 +321,16 @@ describe("junior capture — junior sync on (AE1, R4-R7)", () => {
     expect(m.rows.map((r) => r.id).sort()).toEqual([...MATCHES].sort());
     const kid = await admin.query(`select 1 from playhq.players where participant_id = $1`, [KID]);
     expect(kid.rowCount).toBe(1);
+  });
+
+  it("projects the kept junior matches into the club's junior fixtures (AE1, ingest → projection)", async () => {
+    // The ingest builds the enabled set from tenants, passes its kept junior grades and
+    // runs the junior projection: both upcoming junior matches become junior fixtures.
+    expect(await juniorFixtureMatches(tenantId)).toEqual(
+      [JUNIOR_MATCH, GIRLS_MATCH].map((m) => m.toLowerCase()).sort(),
+    );
+    // The other enabled club (its own junior organisation, not in this dump) gets none.
+    expect(await juniorFixtureMatches(secondTenantId)).toEqual([]);
   });
 
   it("never lets a junior match (incl. Peel Girls League) reach public.fixtures", async () => {
@@ -361,5 +385,42 @@ describe("junior capture — junior sync on (AE1, R4-R7)", () => {
     expect(res.status).toBe(200);
     // Already known junior in playhq: dropped from this dump, and never re-flagged senior.
     expect(res.body.juniorGradesDropped).toBe(2);
+  });
+
+  it("projects nothing junior for a club once its junior sync is off", async () => {
+    await db.delete(juniorFixturesTable).where(eq(juniorFixturesTable.tenantId, tenantId));
+    const res = await ingest();
+    expect(res.status).toBe(200);
+    expect(await juniorFixtureMatches(tenantId)).toEqual([]);
+  });
+});
+
+describe("junior capture — a grade stored as senior before the classifier knew it (adversarial P2)", () => {
+  it("flips it to junior at the next ingest and reports what was projected as senior, deleting nothing", async () => {
+    // As stored before the classifier learned the loader's age banding, with a senior
+    // fixture already projected from it.
+    await admin.query(`update playhq.grades set is_junior = false where id = $1`, [GIRLS_GRADE]);
+    const [planted] = await db
+      .insert(fixturesTable)
+      .values({
+        tenantId,
+        grade: "Peel Girls League",
+        opponentName: "Opposition CC",
+        startAt: new Date(START),
+        source: "playhq",
+        playhqMatchId: GIRLS_MATCH,
+      })
+      .returning();
+    const res = await ingest(); // junior sync is off: the dump's Girls League grade is dropped
+    expect(res.status).toBe(200);
+    const stored = new Map((await storedGrades()).map((g) => [g.id, g.is_junior]));
+    expect(stored.get(GIRLS_GRADE)).toBe(true);
+    expect(stored.get(SENIOR_GRADE)).toBe(false);
+    const warnings = (res.body.warnings ?? []) as string[];
+    expect(warnings.some((w) => /reclassified as junior \(Peel Girls League\)/.test(w))).toBe(true);
+    expect(JSON.stringify(warnings)).not.toMatch(/Kid|Junior,/);
+    // Left in place for the operator to review.
+    const still = await db.select().from(fixturesTable).where(eq(fixturesTable.id, planted!.id));
+    expect(still).toHaveLength(1);
   });
 });

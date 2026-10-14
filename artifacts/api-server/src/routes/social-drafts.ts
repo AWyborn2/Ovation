@@ -41,6 +41,7 @@ import { recaptionQueuedDrafts } from "../lib/draft-recaption";
 import {
   effectiveDraftStatus,
   layoutClear,
+  syncedJuniorDraft,
   loadAutoPost,
   type AutoPost,
 } from "../lib/effective-draft-state";
@@ -67,7 +68,9 @@ const randomSlug = (): string =>
  * and — while auto-post is on — a draft past its deadline reads as ready even
  * before the sweep stores it (KTD4).
  */
-function presentDraft<T extends { status: string; autoReadyAt: Date | null }>(
+function presentDraft<
+  T extends { status: string; autoReadyAt: Date | null; sourceKey: string | null },
+>(
   row: T,
   autoPost: AutoPost = { enabled: false },
   now: Date = new Date(),
@@ -166,7 +169,8 @@ router.get("/social-drafts/pending-count", requireAdmin, async (req, res): Promi
   // unless their layout needs a look, which keeps them waiting (KTD10).
   if ((await loadAutoPost(tenantId)).enabled) {
     conditions.push(
-      sql`(${socialDraftsTable.autoReadyAt} IS NULL OR ${socialDraftsTable.autoReadyAt} > now() OR NOT ${layoutClear})`,
+      // A synced junior draft waits for the sweep (effectiveDraftStatus), so it stays pending.
+      sql`(${socialDraftsTable.autoReadyAt} IS NULL OR ${socialDraftsTable.autoReadyAt} > now() OR NOT ${layoutClear} OR ${syncedJuniorDraft})`,
     );
   }
   const [row] = await db

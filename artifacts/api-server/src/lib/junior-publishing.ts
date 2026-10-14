@@ -77,16 +77,36 @@ export function isJuniorDraft(d: { sourceMatchIsJunior: boolean; cardInput: unkn
 }
 
 /**
- * The promotion guard (KTD14): a junior draft may be auto-promoted or auto-posted only
- * when its team is explicitly `auto`. `mode` is the draft's team's mode, or null when
- * the team cannot be resolved (a junior draft with no resolvable team never auto-posts).
- * Senior drafts are untouched by this guard.
+ * True for the junior sync's own drafts: a junior team-list card (`juniorteamlist:<id>`)
+ * or a result card of a junior match in the sync id band. Loader-era junior summaries
+ * and junior round sets are not synced drafts.
+ */
+export function isSyncedJuniorDraft(d: { sourceKey: string | null | undefined }): boolean {
+  return (
+    juniorTeamListFixtureIdOf(d.sourceKey) !== null || syncedJuniorMatchIdOf(d.sourceKey) !== null
+  );
+}
+
+/**
+ * The promotion guard (KTD14): a SYNCED junior draft may be auto-promoted or auto-posted
+ * only when its team is explicitly `auto`. `mode` is the draft's team's mode, or null when
+ * the team cannot be resolved (a synced junior draft with no resolvable team never
+ * auto-posts). Senior drafts, loader-era junior summaries and junior round sets keep their
+ * previous behaviour at every club.
  */
 export function juniorDraftMayAutoPost(
-  d: { sourceMatchIsJunior: boolean; cardInput: unknown },
+  d: { sourceKey: string | null | undefined },
   mode: JuniorTeamPublishMode | null,
 ): boolean {
-  return !isJuniorDraft(d) || mode === "auto";
+  return !isSyncedJuniorDraft(d) || mode === "auto";
+}
+
+/**
+ * Whether a junior result card (`matchSummary:junior:<matchId>`) gets an auto-ready time:
+ * a synced card only for a team set to `auto` (KTD14); a loader-era card as before.
+ */
+export function juniorResultAutoReady(matchId: number, mode: JuniorTeamPublishMode): boolean {
+  return juniorDraftMayAutoPost({ sourceKey: `matchSummary:junior:${matchId}` }, mode);
 }
 
 /**
@@ -96,7 +116,8 @@ export function juniorDraftMayAutoPost(
  *  - `clear`: still in review, drop its auto-ready time (team on approval);
  *  - `set`: give an untouched draft of an `auto` team its auto-ready time;
  *  - `keep`: nothing to change. A draft an admin acted on keeps no auto-ready time, and
- *    an admin-approved draft (ready without an auto-ready time) stays ready.
+ *    an admin-approved draft (ready and touched — the approve route sets `reviewedAt` but
+ *    may leave `autoReadyAt`) stays ready while sync is on.
  */
 export type JuniorRetimeAction = "hold" | "clear" | "set" | "keep";
 
@@ -112,7 +133,9 @@ export function juniorRetimeAction(d: {
   // Switched off: every unposted synced junior draft goes back to review (R23).
   if (!d.syncEnabled) return "hold";
   if (d.mode !== "auto") {
-    if (ready) return d.autoReadyAt != null ? "hold" : "keep";
+    // Only an untouched, auto-promoted draft is held: approving a draft sets reviewedAt
+    // but leaves its auto-ready time in place, and an admin's approval stands.
+    if (ready) return d.autoReadyAt != null && d.untouched ? "hold" : "keep";
     return d.autoReadyAt != null ? "clear" : "keep";
   }
   if (!ready && d.autoReadyAt == null && d.untouched) return "set";

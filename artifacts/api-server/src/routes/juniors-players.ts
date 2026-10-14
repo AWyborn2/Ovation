@@ -33,6 +33,7 @@ import { getShirtNumberSettings } from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import { loadJuniorProfileShirtNumbers } from "../lib/junior-shirt-numbers";
 import { juniorParticipantKey } from "../lib/junior-participant-scope";
+import { dismissalWithoutNames } from "@workspace/scorecard";
 
 /**
  * Junior players directory, player profile, and the senior-link
@@ -510,7 +511,8 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
             fours: b.line.fours,
             sixes: b.line.sixes,
             strikeRate: b.line.strikeRate,
-            dismissal: b.line.dismissal,
+            // Mode only: PlayHQ's text names the fielder and bowler (public route).
+            dismissal: dismissalWithoutNames(b.line.dismissal),
           }
         : null,
       bowling: bw

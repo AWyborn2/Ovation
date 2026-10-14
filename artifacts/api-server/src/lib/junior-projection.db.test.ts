@@ -27,7 +27,7 @@ import {
   juniorParticipantMergesTable,
   JUNIOR_SYNC_ID_START,
 } from "@workspace/db";
-import { type LoadRows, type Queryable } from "@workspace/db/playhq-ingest";
+import { projectJuniors, type LoadRows, type Queryable } from "@workspace/db/playhq-ingest";
 import { projectDumpJuniors } from "./playhq-ingest";
 
 const isLocalDb = (() => {
@@ -641,7 +641,7 @@ describe.skipIf(!isLocalDb)("junior projection (DB)", () => {
     );
   });
 
-  it("privacy tightens from PlayHQ; an admin override is never touched", async () => {
+  it("privacy tightens from PlayHQ and clears a stale override; a live override is kept", async () => {
     await db
       .update(juniorParticipantsTable)
       .set({ isPrivate: false, privacyOverride: true, privacyOverrideBy: "admin" })
@@ -662,12 +662,55 @@ describe.skipIf(!isLocalDb)("junior projection (DB)", () => {
       ],
     );
     expect(await sync()).toEqual([]);
-    const [p4] = (await participants(tenantId)).filter((p) => p.participantId === P4.toLowerCase());
-    expect(p4).toMatchObject({
+    const p4 = async () =>
+      (await participants(tenantId)).filter((p) => p.participantId === P4.toLowerCase())[0];
+    // The override was left from when the player was public: tightening privacy clears it,
+    // so the child is withheld until an admin decides again (adversarial review P1).
+    expect(await p4()).toMatchObject({
       isPrivate: true,
-      privacyOverride: true,
+      privacyOverride: false,
+      privacyOverrideBy: null,
+      privacyOverrideAt: null,
       displayName: "Nova Newcomer",
     });
+    // An override an admin sets on a private player is never touched by the sync.
+    await db
+      .update(juniorParticipantsTable)
+      .set({ privacyOverride: true, privacyOverrideBy: "admin", privacyOverrideAt: new Date() })
+      .where(
+        and(
+          eq(juniorParticipantsTable.tenantId, tenantId),
+          eq(juniorParticipantsTable.participantId, P4.toLowerCase()),
+        ),
+      );
+    expect(await sync()).toEqual([]);
+    expect(await p4()).toMatchObject({ isPrivate: true, privacyOverride: true });
+  });
+
+  it("one tenant's read failure never stops another's projection (reliability review P2)", async () => {
+    // Tenant B's playhq reads throw; tenant A, listed after it, is still projected and its
+    // summary (with the participants to recompute) is still returned.
+    const failing = {
+      query: (text: string, params?: unknown[]) =>
+        Array.isArray(params) && params[0] === ORG_B.toLowerCase()
+          ? Promise.reject(new Error("boom for B"))
+          : reader.query(text, params),
+    } as unknown as Queryable;
+    const summaries = await projectJuniors({
+      tenants: [
+        { tenantId: tenantBId, orgId: ORG_B },
+        { tenantId, orgId: ORG },
+      ],
+      central: failing,
+      matchIds: allMatchIds,
+      log: () => {},
+    });
+    const b = summaries.find((x) => x.tenantId === tenantBId)!;
+    const a = summaries.find((x) => x.tenantId === tenantId)!;
+    expect(b.errors).toEqual([{ stage: "read", message: "boom for B" }]);
+    expect(a.errors).toEqual([]);
+    expect(a.matches).toBeGreaterThan(0);
+    expect(a.touchedParticipantIds.length).toBeGreaterThan(0);
   });
 
   it("a disabled tenant gets no junior writes", async () => {

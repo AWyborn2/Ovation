@@ -233,8 +233,16 @@ Run by hand when you need to:
   suffix).
 - **IndexedDB survives reloads, `window` does not.** Everything collected is in db `ov-playhq`;
   re-paste the harness after a reload and the store is still there (`__ov.count()`).
-- **Junior grades** ("Year 6 Boys", "Year 10-11 Boys South West", owner MJCC) sit beside senior
-  ones in a club's team list; the default `JUNIOR_RE` drops them. Their names are never published.
+- **Junior grades** ("Year 6 Boys", "Year 10-11 Boys South West", "Peel Girls League", owner
+  MJCC) sit beside senior ones in a club's team list. The default `JUNIOR_RE` drops them, and so
+  does the ingest, except for a club with **junior sync** on (`playhq_sync_enabled` + the
+  platform-admin `junior_sync_enabled` switch + the `juniors` entitlement): its plans ask for
+  junior grades (`includeJuniors`), and the ingest keeps them in `playhq.*` (`is_junior = true`,
+  never read by a senior projection) and projects 2026/27 onward into that club's `junior_*`
+  tables (ids >= 200,000,000). A club may name a separate junior organisation
+  (`playhq_junior_org_id`). Junior names are published only in the club's naming style,
+  opposition juniors as initials, private players withheld; dismissals show the mode only.
+  Migrations 0038/0039 must be applied by hand in production before republishing.
 - **`fallOfWickets` is incomplete at the source** (present on 40 of 48 innings; 311 rows vs 372
   ball-level wickets), while the ball-level wicket count matched the scorecard's wickets in
   every innings. Trust `balls.is_wicket` for wicket analysis. Run-outs dismiss the non-striker

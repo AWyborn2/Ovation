@@ -34,7 +34,11 @@ import {
   splitScores,
   type JuniorNaming,
 } from "./junior-helpers";
-import { juniorFamilyAllows, juniorTeamPublishMode } from "./junior-publishing";
+import {
+  juniorFamilyAllows,
+  juniorResultAutoReady,
+  juniorTeamPublishMode,
+} from "./junior-publishing";
 import {
   draftKeys,
   findDraftByKey,
@@ -175,7 +179,8 @@ export async function loadJuniorMatchDetail(
       fours: b.fours,
       sixes: b.sixes,
       strikeRate: b.strikeRate,
-      dismissal: b.dismissal,
+      // Mode only: the card JSON never carries the fielder or bowler PlayHQ names.
+      dismissal: naming.dismissal(b.dismissal),
     };
   };
   const bowlingLine = (b: typeof juniorMatchBowlingTable.$inferSelect) => {
@@ -476,8 +481,9 @@ export async function generateCentralStumpsDrafts(
  * `synced` (the scheduled sweep's junior PlayHQ sync matches, plan U8): within an
  * enabled results family an age group drafts unless the club turned it off.
  *
- * Every junior result card follows its team's publishing setting (KTD14): only a
- * team explicitly set to auto-post gets an auto-ready time.
+ * Every synced junior result card follows its team's publishing setting (KTD14): only a
+ * team explicitly set to auto-post gets an auto-ready time. Loader-era cards keep the
+ * previous behaviour.
  */
 export async function generateJuniorMatchSummaryDrafts(
   tenantId: number,
@@ -527,7 +533,8 @@ export async function generateJuniorMatchSummaryDrafts(
           true,
           cardInput as Record<string, unknown>,
           `/juniors/matches/${matchId}`,
-          { autoReady: mode === "auto" },
+          // A synced card follows its team's mode; a loader-era card keeps auto-ready.
+          { autoReady: juniorResultAutoReady(matchId, mode) },
         );
         if (outcome === "drafted") result.drafted++;
         else result.skipped++;

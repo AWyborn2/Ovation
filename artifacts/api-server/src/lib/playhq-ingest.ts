@@ -1,6 +1,8 @@
-import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import {
   db,
+  fixturesTable,
+  teamListsTable,
   playhqSyncIncidentsTable,
   tenantsTable,
   UNCLASSIFIED_GRADES_INCIDENT_KIND,
@@ -20,6 +22,7 @@ import {
   dropJuniorGrades,
   getPlayhqIngestPool,
   loadRows,
+  juniorReclassifications,
   mergeUnclassifiedGrades,
   unclassifiedGradesByOrg,
   type KnownJuniorGrade,
@@ -112,26 +115,38 @@ export async function ingestPlayhqDump(
   // Juniors isolation: drop junior/pathway grades by name, and by what playhq already knows,
   // except those of organisations with junior sync enabled (junior sync plan U4, KTD1/KTD2).
   // The gate is decided once, here; with no club enabled the drop is exactly as before.
+  const warnings: string[] = [];
   const juniorSyncTenants = await loadJuniorSyncTenants();
   const juniorOrgIds = new Set(juniorOrgIdsOf(juniorSyncTenants));
   const gradeIds = referencedGradeIds(parsed);
-  const known = gradeIds.length
-    ? await reader.query<{
-        id: string;
-        owner_org_id: string | null;
-        source_org_id: string | null;
-      }>(
-        `select id::text as id, owner_org_id::text as owner_org_id,
-                source_org_id::text as source_org_id
-           from playhq.grades where id = any($1::uuid[]) and is_junior`,
-        [gradeIds],
-      )
-    : { rows: [] };
-  const knownJunior: KnownJuniorGrade[] = known.rows.map((r) => ({
-    id: r.id,
-    ownerOrgId: r.owner_org_id,
-    sourceOrgId: r.source_org_id,
-  }));
+  const stored = gradeIds.length
+    ? (
+        await reader.query<{
+          id: string;
+          name: string | null;
+          is_junior: boolean;
+          owner_org_id: string | null;
+          source_org_id: string | null;
+        }>(
+          `select id::text as id, name, is_junior, owner_org_id::text as owner_org_id,
+                  source_org_id::text as source_org_id
+             from playhq.grades where id = any($1::uuid[])`,
+          [gradeIds],
+        )
+      ).rows.map((r) => ({ ...r, isJunior: r.is_junior === true }))
+    : [];
+  // Stored grades the classifier now calls junior (e.g. "Peel Girls League", stored as senior
+  // before it learned the loader's age banding) are junior from this run on, stored too, so
+  // every senior projection stops reading them (adversarial review P2).
+  const reclassified = juniorReclassifications(stored);
+  if (reclassified.length) await reclassifyStoredJuniorGrades(reader, reclassified, warnings, log);
+  const knownJunior: KnownJuniorGrade[] = stored
+    .filter((g) => g.isJunior || reclassified.includes(g))
+    .map((r) => ({
+      id: r.id,
+      ownerOrgId: r.owner_org_id,
+      sourceOrgId: r.source_org_id,
+    }));
   const { rows, droppedGradeIds, keptJuniorGradeIds } = dropJuniorGrades(
     parsed,
     knownJunior,
@@ -163,7 +178,6 @@ export async function ingestPlayhqDump(
     client.release();
   }
 
-  const warnings: string[] = [];
   const orgIds = [
     ...new Set(
       rows.matches
@@ -411,6 +425,87 @@ export async function projectDumpJuniors(
     }
   }
   return summaries;
+}
+
+/**
+ * Flip stored senior grades the classifier now calls junior to `is_junior = true` (idempotent:
+ * only rows still false change), then report what the senior projections already wrote from
+ * them — `public.fixtures` / `team_lists` rows and `central.matches` rows — for the operator to
+ * review. Nothing is deleted: removing projected senior rows is an operator decision. The
+ * report carries grade names, ids and counts only. A failure is a warning, never fatal.
+ */
+export async function reclassifyStoredJuniorGrades(
+  reader: Queryable,
+  grades: readonly { id: string; name: string | null }[],
+  warnings: string[],
+  log: Logger,
+): Promise<void> {
+  const ids = grades.map((g) => g.id);
+  const names = [...new Set(grades.map((g) => g.name ?? g.id))].join(", ");
+  try {
+    await reader.query(
+      `update playhq.grades set is_junior = true where id = any($1::uuid[]) and is_junior = false`,
+      [ids],
+    );
+    const matchIds = (
+      await reader.query<{ id: string }>(
+        `select lower(id::text) as id from playhq.matches where grade_id = any($1::uuid[])`,
+        [ids],
+      )
+    ).rows.map((r) => r.id);
+    let fixtures = 0;
+    let teamLists = 0;
+    let centralMatches: number | null = null;
+    if (matchIds.length) {
+      const [f] = await db
+        .select({
+          fixtures: sql<number>`count(*)::int`,
+          teamLists: sql<number>`count(${teamListsTable.id})::int`,
+        })
+        .from(fixturesTable)
+        .leftJoin(
+          teamListsTable,
+          and(
+            eq(teamListsTable.fixtureId, fixturesTable.id),
+            eq(teamListsTable.tenantId, fixturesTable.tenantId),
+          ),
+        )
+        .where(inArray(sql`lower(${fixturesTable.playhqMatchId})`, matchIds));
+      fixtures = f?.fixtures ?? 0;
+      teamLists = f?.teamLists ?? 0;
+      if (centralProjectorConfigured()) {
+        const { rows } = await getCentralProjectorPool().query<{ n: number }>(
+          `select count(*)::int as n from central.matches
+            where lower(playhq_match_id::text) = any($1::text[])`,
+          [matchIds],
+        );
+        centralMatches = rows[0]?.n ?? 0;
+      }
+    }
+    const projected = fixtures + teamLists + (centralMatches ?? 0);
+    log.warn(
+      {
+        gradeIds: ids,
+        grades: names,
+        matches: matchIds.length,
+        fixtures,
+        teamLists,
+        centralMatches,
+      },
+      "playhq ingest: stored grades reclassified as junior",
+    );
+    if (projected > 0)
+      warnings.push(
+        `grades reclassified as junior (${names}): already projected as senior — ` +
+          `${fixtures} fixture(s), ${teamLists} team list(s)` +
+          (centralMatches === null ? "" : `, ${centralMatches} central match(es)`) +
+          `; left in place for review`,
+      );
+  } catch (err) {
+    const text = juniorProjectionErrorText(err);
+    log.error({ gradeIds: ids, err: text }, "playhq ingest: grade reclassification failed");
+    warnings.push(`grade reclassification failed (${names}): ${text}`);
+  }
 }
 
 /**

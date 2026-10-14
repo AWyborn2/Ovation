@@ -7,7 +7,7 @@ import {
   JUNIOR_SYNC_ID_START,
   type SocialDraftRow,
 } from "@workspace/db";
-import { perthDate } from "@workspace/db/playhq-ingest";
+import { juniorProjectionErrorText, perthDate } from "@workspace/db/playhq-ingest";
 import { isJuniorSyncOn } from "./junior-sync";
 import { loadJuniorTeamPublishing } from "./junior-helpers";
 import {
@@ -96,22 +96,60 @@ export async function unpostedSyncedJuniorDrafts(tenantId: number): Promise<Soci
   );
 }
 
-/** Back to review with no auto-ready time; a ready draft's scheduled posts are cancelled. */
+/**
+ * An error as safe log text: code and first line, no key values or failing rows (which can
+ * hold card JSON or a child's name). The projection's rule, shared.
+ */
+const safeError = juniorProjectionErrorText;
+
+/**
+ * Run `step` for each draft; a draft that throws is logged with its tenant and id and a
+ * safe error text only, and the rest still run (one bad draft never stalls the sweep).
+ * Returns how many failed.
+ */
+export async function eachJuniorDraft<D extends { id: number; tenantId: number }>(
+  list: readonly D[],
+  step: (d: D) => Promise<void>,
+  logger?: Logger,
+): Promise<number> {
+  let failures = 0;
+  for (const d of list) {
+    try {
+      await step(d);
+    } catch (err) {
+      failures++;
+      logger?.error(
+        { tenantId: d.tenantId, draftId: d.id, error: safeError(err) },
+        "junior draft re-timing failed",
+      );
+    }
+  }
+  return failures;
+}
+
+/**
+ * Back to review with no auto-ready time, with the draft's scheduled posts cancelled, in
+ * one transaction: either both commit or neither does, so a failed cancel never leaves a
+ * live scheduled post behind a draft already back in review (which later sweeps skip).
+ * A draft already posted (or otherwise gone from the unposted states) is left alone.
+ */
 async function holdDraft(d: SocialDraftRow, reason: string): Promise<boolean> {
-  const [updated] = await db
-    .update(socialDraftsTable)
-    .set({ status: "awaiting_review", autoReadyAt: null })
-    .where(
-      and(
-        eq(socialDraftsTable.id, d.id),
-        eq(socialDraftsTable.tenantId, d.tenantId),
-        inArray(socialDraftsTable.status, UNPOSTED),
-      ),
-    )
-    .returning({ id: socialDraftsTable.id });
-  if (!updated) return false;
-  if (d.status === "ready") await cancelDraftPublications(d.tenantId, d.id, reason);
-  return true;
+  return db.transaction(async (tx) => {
+    const [updated] = await tx
+      .update(socialDraftsTable)
+      .set({ status: "awaiting_review", autoReadyAt: null })
+      .where(
+        and(
+          eq(socialDraftsTable.id, d.id),
+          eq(socialDraftsTable.tenantId, d.tenantId),
+          inArray(socialDraftsTable.status, UNPOSTED),
+        ),
+      )
+      .returning({ id: socialDraftsTable.id });
+    if (!updated) return false;
+    await cancelDraftPublications(d.tenantId, d.id, reason, undefined, tx);
+    return true;
+  });
 }
 
 /** Each draft's team (age group, team name), from its junior fixture or junior match. */
@@ -176,6 +214,7 @@ export async function retimeJuniorDrafts(
   tenantId: number,
   syncEnabled: boolean,
   drafts?: readonly SocialDraftRow[],
+  logger?: Logger,
 ): Promise<{ held: number; retimed: number }> {
   const list = drafts ?? (await unpostedSyncedJuniorDrafts(tenantId));
   const out = { held: 0, retimed: 0 };
@@ -183,46 +222,56 @@ export async function retimeJuniorDrafts(
   const [publishing, teams] = syncEnabled
     ? await Promise.all([loadJuniorTeamPublishing(tenantId), draftTeams(tenantId, list)])
     : [{}, new Map<number, { ageGroup: string | null; teamName: string | null }>()];
-  for (const d of list) {
-    const team = teams.get(d.id);
-    const action = juniorRetimeAction({
-      syncEnabled,
-      mode: juniorTeamPublishMode(publishing, team?.ageGroup, team?.teamName),
-      status: d.status,
-      autoReadyAt: d.autoReadyAt,
-      untouched:
-        d.reviewedAt == null &&
-        d.editedAt == null &&
-        d.designEditedAt == null &&
-        d.createdByAdminId == null,
-    });
-    if (action === "hold") {
-      // Already in review with no deadline: nothing to write.
-      if (d.status !== "ready" && d.autoReadyAt == null) continue;
-      if (
-        await holdDraft(
-          d,
-          syncEnabled ? "This junior team needs an admin's approval." : "Junior sync is off.",
+  await eachJuniorDraft(
+    list,
+    async (d) => {
+      const team = teams.get(d.id);
+      const action = juniorRetimeAction({
+        syncEnabled,
+        mode: juniorTeamPublishMode(publishing, team?.ageGroup, team?.teamName),
+        status: d.status,
+        autoReadyAt: d.autoReadyAt,
+        untouched:
+          d.reviewedAt == null &&
+          d.editedAt == null &&
+          d.designEditedAt == null &&
+          d.createdByAdminId == null,
+      });
+      if (action === "hold") {
+        // Already in review with no deadline: nothing to write on the draft, but with sync
+        // switched off its scheduled posts are still cancelled (R23).
+        if (d.status !== "ready" && d.autoReadyAt == null) {
+          if (!syncEnabled) await cancelDraftPublications(d.tenantId, d.id, "Junior sync is off.");
+          return;
+        }
+        if (
+          await holdDraft(
+            d,
+            syncEnabled ? "This junior team needs an admin's approval." : "Junior sync is off.",
+          )
         )
-      )
-        out.held++;
-    } else if (action === "clear" || action === "set") {
-      const autoReadyAt =
-        action === "set" ? await autoReadyAtFor(tenantId, d.sourceImportedAt ?? d.createdAt) : null;
-      const updated = await db
-        .update(socialDraftsTable)
-        .set({ autoReadyAt })
-        .where(
-          and(
-            eq(socialDraftsTable.id, d.id),
-            eq(socialDraftsTable.tenantId, tenantId),
-            eq(socialDraftsTable.status, "awaiting_review"),
-          ),
-        )
-        .returning({ id: socialDraftsTable.id });
-      out.retimed += updated.length;
-    }
-  }
+          out.held++;
+      } else if (action === "clear" || action === "set") {
+        const autoReadyAt =
+          action === "set"
+            ? await autoReadyAtFor(tenantId, d.sourceImportedAt ?? d.createdAt)
+            : null;
+        const updated = await db
+          .update(socialDraftsTable)
+          .set({ autoReadyAt })
+          .where(
+            and(
+              eq(socialDraftsTable.id, d.id),
+              eq(socialDraftsTable.tenantId, tenantId),
+              eq(socialDraftsTable.status, "awaiting_review"),
+            ),
+          )
+          .returning({ id: socialDraftsTable.id });
+        out.retimed += updated.length;
+      }
+    },
+    logger,
+  );
   return out;
 }
 
@@ -275,11 +324,11 @@ export async function runJuniorSocialSweep(
   const drafts = await unpostedSyncedJuniorDrafts(tenantId);
 
   try {
-    const timing = await retimeJuniorDrafts(tenantId, summary.enabled, drafts);
+    const timing = await retimeJuniorDrafts(tenantId, summary.enabled, drafts, logger);
     summary.held = timing.held;
     summary.retimed = timing.retimed;
   } catch (err) {
-    logger.error({ err, tenantId }, "junior draft re-timing failed");
+    logger.error({ tenantId, error: safeError(err) }, "junior draft re-timing failed");
   }
   if (!summary.enabled) return summary;
 
@@ -287,7 +336,7 @@ export async function runJuniorSocialSweep(
     const rerender = drafts.flatMap((d) => juniorTeamListFixtureIdOf(d.sourceKey) ?? []);
     summary.teamLists = (await generateJuniorTeamListDrafts(tenantId, now, rerender)).drafted;
   } catch (err) {
-    logger.error({ err, tenantId }, "junior team-list drafts failed");
+    logger.error({ tenantId, error: safeError(err) }, "junior team-list drafts failed");
   }
 
   if (kind === "scheduled") {
@@ -300,10 +349,13 @@ export async function runJuniorSocialSweep(
       const result = await generateJuniorMatchSummaryDrafts(tenantId, [...ids], { synced: true });
       summary.results = result.drafted;
       if (result.errors.length) {
-        logger.warn({ tenantId, errors: result.errors }, "junior result drafts had errors");
+        logger.warn(
+          { tenantId, errors: result.errors.map((e) => safeError(new Error(e))) },
+          "junior result drafts had errors",
+        );
       }
     } catch (err) {
-      logger.error({ err, tenantId }, "junior result drafts failed");
+      logger.error({ tenantId, error: safeError(err) }, "junior result drafts failed");
     }
   }
   return summary;

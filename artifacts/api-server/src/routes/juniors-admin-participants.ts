@@ -30,6 +30,7 @@ import {
   tenantJuniorMatchIds,
   tenantJuniorPremiershipIds,
 } from "../lib/junior-participant-scope";
+import { planJuniorParticipantPatch } from "../lib/junior-privacy";
 
 /**
  * Juniors admin — participant profile corrections and duplicate merges.
@@ -126,7 +127,8 @@ router.get(
 // privacy override (KTD12): an admin may name a private player publicly. The
 // override records who set it and when, and is journalled like every correction.
 // It can only be switched ON for a player who is currently private — an override
-// set in advance would silently name a child the moment PlayHQ marks them private.
+// set in advance would silently name a child the moment PlayHQ marks them private —
+// and making the player public clears it in the same journalled patch.
 // ---------------------------------------------------------------------------
 
 router.patch(
@@ -154,39 +156,14 @@ router.patch(
       return;
     }
 
-    const set: Record<string, unknown> = {};
-    const patch: Record<string, unknown> = {};
-    const prev: Record<string, unknown> = {};
-    if (body.data.displayName !== undefined) {
-      set.displayName = body.data.displayName;
-      patch.display_name = body.data.displayName;
-      prev.display_name = participant.displayName;
+    // An override is only ever switched on for a private player, and is cleared in the
+    // same journalled patch when the player becomes public (junior-privacy.ts).
+    const plan = planJuniorParticipantPatch(participant, body.data, adminName(req), new Date());
+    if (!plan.ok) {
+      res.status(400).json({ error: plan.error });
+      return;
     }
-    if (body.data.isPrivate !== undefined) {
-      set.isPrivate = body.data.isPrivate;
-      patch.is_private = body.data.isPrivate;
-      prev.is_private = participant.isPrivate;
-    }
-    if (body.data.privacyOverride !== undefined) {
-      const willBePrivate = body.data.isPrivate ?? participant.isPrivate;
-      if (body.data.privacyOverride && !willBePrivate) {
-        res.status(400).json({ error: "Only a private player's name can be overridden" });
-        return;
-      }
-      if (body.data.privacyOverride !== participant.privacyOverride) {
-        const by = body.data.privacyOverride ? adminName(req) : null;
-        const at = body.data.privacyOverride ? new Date() : null;
-        set.privacyOverride = body.data.privacyOverride;
-        set.privacyOverrideBy = by;
-        set.privacyOverrideAt = at;
-        patch.privacy_override = body.data.privacyOverride;
-        patch.privacy_override_by = by;
-        patch.privacy_override_at = at?.toISOString() ?? null;
-        prev.privacy_override = participant.privacyOverride;
-        prev.privacy_override_by = participant.privacyOverrideBy;
-        prev.privacy_override_at = participant.privacyOverrideAt?.toISOString() ?? null;
-      }
-    }
+    const { set, patch, prev } = plan;
     if (Object.keys(set).length === 0) {
       res.json(adminParticipant(participant));
       return;

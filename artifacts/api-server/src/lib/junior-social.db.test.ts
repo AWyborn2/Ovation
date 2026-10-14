@@ -416,8 +416,20 @@ describe("junior social drafting (DB)", () => {
   });
 
   it("after junior sync is switched off, unposted junior drafts return to review with no auto-ready time", async () => {
-    // The auto team's card was promoted to ready above.
-    expect((await draftByKey(tenantId, juniorTeamListKey(fixtures.y1011)))!.status).toBe("ready");
+    // The auto team's card was promoted to ready above, and has a queued Meta post.
+    const ready = await draftByKey(tenantId, juniorTeamListKey(fixtures.y1011));
+    expect(ready!.status).toBe("ready");
+    const [queued] = await db
+      .insert(socialPublicationsTable)
+      .values({
+        tenantId,
+        draftId: ready!.id,
+        platform: "facebook",
+        origin: "auto",
+        scheduledFor: new Date(NOW.getTime() + DAY),
+        nextAttemptAt: new Date(NOW.getTime() + DAY),
+      })
+      .returning();
     await db
       .update(tenantsTable)
       .set({ juniorSyncEnabled: false })
@@ -432,5 +444,31 @@ describe("junior social drafting (DB)", () => {
       expect(d.autoReadyAt).toBeNull();
     }
     expect(await persistDueDrafts(tenantId, new Date(NOW.getTime() + 30 * DAY))).toEqual([]);
+    // The queued post is cancelled with the hold (testing review P2).
+    const [pub] = await db
+      .select()
+      .from(socialPublicationsTable)
+      .where(eq(socialPublicationsTable.id, queued!.id));
+    expect(pub!.status).toBe("cancelled");
+  });
+
+  it("a club without junior sync keeps auto-promoting its loader-era junior result cards", async () => {
+    // correctness review P2: the junior auto-post guard covers synced drafts only.
+    const loaderMatchId = 1_000 + (STAMP % 100_000);
+    const [d] = await db
+      .insert(socialDraftsTable)
+      .values({
+        tenantId: tenantBId,
+        engine: "matchSummary",
+        status: "awaiting_review",
+        sourceKind: "matchSummary",
+        sourceKey: draftKeys.matchSummary(loaderMatchId, true),
+        sourceMatchId: loaderMatchId,
+        sourceMatchIsJunior: true,
+        cardInput: { kind: "matchSummary", junior: true },
+        autoReadyAt: new Date(NOW.getTime() - DAY),
+      })
+      .returning();
+    expect(await persistDueDrafts(tenantBId, NOW)).toContain(d!.id);
   });
 });
