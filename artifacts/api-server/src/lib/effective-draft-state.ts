@@ -27,6 +27,50 @@ type LayoutFields = {
  */
 export const layoutClear: SQL = sql`(${socialDraftsTable.templateVersion} is null or (${socialDraftsTable.layoutCheckPending} = false and not coalesce((select bool_or(jsonb_typeof(w.value) = 'array' and jsonb_array_length(w.value) > 0) from jsonb_each(coalesce(${socialDraftsTable.layoutWarnings}, '{}'::jsonb)) w), false)))`;
 
+/**
+ * SQL for "the junior publishing rule lets automation touch this draft" (junior PlayHQ
+ * sync plan KTD14): a senior draft always; a junior draft (either marker) only when its
+ * team — resolved through its junior team-list fixture (`juniorteamlist:<id>`) or its
+ * junior match — is explicitly `auto` in the club's `team_publishing`. A junior draft
+ * whose team cannot be resolved never qualifies. Mirrors `juniorDraftMayAutoPost`.
+ * Correlated on the outer `social_drafts` row, so it is only valid in a statement whose
+ * target is `social_drafts` with no alias.
+ */
+export const juniorAutoPostClear: SQL = sql`((${socialDraftsTable.sourceMatchIsJunior} = false and coalesce(${socialDraftsTable.cardInput}->>'junior', 'false') <> 'true') or exists (
+  select 1
+  from junior_match_display_settings s
+  join (
+    select f.tenant_id, f.age_group, f.team_name
+    from junior_fixtures f
+    where "social_drafts"."source_key" = 'juniorteamlist:' || f.id::text
+    union all
+    select m.tenant_id, m.age_group, m.team_name
+    from junior_matches m
+    where "social_drafts"."source_kind" = 'matchSummary'
+      and "social_drafts"."source_match_is_junior" = true
+      and "social_drafts"."source_match_id" = m.id
+  ) t on t.tenant_id = s.tenant_id
+  where s.tenant_id = "social_drafts"."tenant_id"
+    and t.age_group is not null
+    and t.team_name is not null
+    and s.team_publishing -> t.age_group ->> t.team_name = 'auto'
+))`;
+
+/** Whether automation may auto-post this draft under the junior publishing rule. */
+export async function draftMayAutoPost(tenantId: number, draftId: number): Promise<boolean> {
+  const rows = await db
+    .select({ id: socialDraftsTable.id })
+    .from(socialDraftsTable)
+    .where(
+      and(
+        eq(socialDraftsTable.tenantId, tenantId),
+        eq(socialDraftsTable.id, draftId),
+        juniorAutoPostClear,
+      ),
+    );
+  return rows.length > 0;
+}
+
 export function effectiveDraftStatus(
   draft: { status: string; autoReadyAt: Date | string | null } & LayoutFields,
   autoPost: AutoPost,
@@ -71,7 +115,8 @@ export async function autoReadyAtFor(tenantId: number, importedAt: Date): Promis
  * Store every draft that reads as ready. The WHERE clause re-checks the
  * stored state, so two concurrent sweeps can never promote the same draft
  * twice — the second finds nothing to update. A templated draft that needs a
- * look (or hasn't been checked) stays awaiting review. Returns the promoted ids.
+ * look (or hasn't been checked) stays awaiting review, and so does a junior draft
+ * whose team is not set to auto-post. Returns the promoted ids.
  */
 export async function persistDueDrafts(
   tenantId: number,
@@ -87,6 +132,9 @@ export async function persistDueDrafts(
         isNotNull(socialDraftsTable.autoReadyAt),
         lte(socialDraftsTable.autoReadyAt, now),
         layoutClear,
+        // A junior draft is promoted only for a team set to auto-post, even if a stray
+        // auto-ready time slipped through (KTD14).
+        juniorAutoPostClear,
       ),
     )
     .returning({ id: socialDraftsTable.id });

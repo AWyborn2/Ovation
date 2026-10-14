@@ -10,6 +10,7 @@ import {
   juniorMatchDisplaySettingsTable,
   type JuniorMatchDisplaySettingsRow,
   type JuniorNameStyle,
+  type JuniorTeamPublishing,
 } from "@workspace/db";
 import { juniorParticipantJoin } from "./junior-participant-scope";
 import { getOrCreateSettings } from "./settings";
@@ -67,6 +68,12 @@ export async function getPrivateIds(tenantId: number): Promise<Set<string>> {
 export async function getJuniorNameStyle(tenantId: number): Promise<JuniorNameStyle> {
   const settings = await getOrCreateSettings(juniorMatchDisplaySettingsTable, tenantId);
   return parseJuniorNameStyle(settings.nameStyle);
+}
+
+/** The club's per-team junior social publishing map (KTD14); a missing team is `approval`. */
+export async function loadJuniorTeamPublishing(tenantId: number): Promise<JuniorTeamPublishing> {
+  const settings = await getOrCreateSettings(juniorMatchDisplaySettingsTable, tenantId);
+  return parseJuniorTeamPublishing(settings.teamPublishing);
 }
 
 /**

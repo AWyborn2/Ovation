@@ -28,7 +28,13 @@ import { getTenantBrand } from "./tenant-brand";
 import { familyAllows, resolveFamilyConfig } from "./social-families";
 import { loadMatchDetail, loadCentralMatchDetail } from "./match-detail";
 import { overlayNativeOpponents } from "./club-brand";
-import { loadJuniorNaming, splitScores, type JuniorNaming } from "./junior-helpers";
+import {
+  loadJuniorNaming,
+  loadJuniorTeamPublishing,
+  splitScores,
+  type JuniorNaming,
+} from "./junior-helpers";
+import { juniorFamilyAllows, juniorTeamPublishMode } from "./junior-publishing";
 import {
   draftKeys,
   findDraftByKey,
@@ -270,9 +276,11 @@ async function upsertDraft(
     central?: { seenAt: Date };
     grade?: string | null;
     featuredPlayerId?: number | null;
+    /** `false`: never auto-ready (a junior team not set to auto-post, KTD14). */
+    autoReady?: boolean;
   } = {},
 ): Promise<"drafted" | "skipped"> {
-  const { central, grade, featuredPlayerId } = opts;
+  const { central, grade, featuredPlayerId, autoReady } = opts;
   // Re-ingest refreshes the existing draft (keeping a revision), a posted draft
   // is only marked stale, and unchanged input is a no-op (KTD3).
   if (central) {
@@ -305,6 +313,7 @@ async function upsertDraft(
     sourceMatchIsJunior: junior,
     grade,
     featuredPlayerId,
+    ...(autoReady === false ? { autoReady: false } : {}),
     // Drafts from before source keys existed: find them by match and backfill.
     findLegacy: async () => {
       const [legacy] = await db
@@ -463,10 +472,17 @@ export async function generateCentralStumpsDrafts(
  *
  * Same flow as senior but uses the junior scorecard builder, defaults to OFF
  * per grade (juniors are opt-in), and links to the /juniors/matches/:id page.
+ *
+ * `synced` (the scheduled sweep's junior PlayHQ sync matches, plan U8): within an
+ * enabled results family an age group drafts unless the club turned it off.
+ *
+ * Every junior result card follows its team's publishing setting (KTD14): only a
+ * team explicitly set to auto-post gets an auto-ready time.
  */
 export async function generateJuniorMatchSummaryDrafts(
   tenantId: number,
   matchIds: number[],
+  opts: { synced?: boolean } = {},
 ): Promise<DraftResult> {
   const result: DraftResult = { drafted: 0, skipped: 0, errors: [] };
   if (matchIds.length === 0) return result;
@@ -477,9 +493,13 @@ export async function generateJuniorMatchSummaryDrafts(
     return result;
   }
 
+  const families = resolveFamilyConfig(settings);
   const brand = await getTenantBrand(tenantId);
-  // Club-wide naming loaded once for the batch (KTD12).
-  const naming = await loadJuniorNaming(tenantId);
+  // Club-wide naming loaded once for the batch (KTD12), and the per-team publishing map.
+  const [naming, publishing] = await Promise.all([
+    loadJuniorNaming(tenantId),
+    loadJuniorTeamPublishing(tenantId),
+  ]);
 
   const BATCH = 10;
   for (let i = 0; i < matchIds.length; i += BATCH) {
@@ -492,17 +512,22 @@ export async function generateJuniorMatchSummaryDrafts(
           return;
         }
         const grade = detail.ageGroup ?? detail.grade;
-        if (!shouldDraftGrade(settings, grade, true)) {
+        const allowed = opts.synced
+          ? juniorFamilyAllows(families, "results", grade)
+          : shouldDraftGrade(settings, grade, true);
+        if (!allowed) {
           result.skipped++;
           return;
         }
         const cardInput = juniorMatchToSummaryInput(detail as JuniorMatchDetail, brand);
+        const mode = juniorTeamPublishMode(publishing, detail.ageGroup, detail.teamName);
         const outcome = await upsertDraft(
           tenantId,
           matchId,
           true,
           cardInput as Record<string, unknown>,
           `/juniors/matches/${matchId}`,
+          { autoReady: mode === "auto" },
         );
         if (outcome === "drafted") result.drafted++;
         else result.skipped++;

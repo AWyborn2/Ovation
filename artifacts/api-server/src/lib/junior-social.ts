@@ -1,0 +1,320 @@
+import { and, eq, gte, inArray, lte, ne, or, like } from "drizzle-orm";
+import {
+  db,
+  juniorFixturesTable,
+  juniorMatchesTable,
+  socialDraftsTable,
+  tenantsTable,
+  JUNIOR_SYNC_ID_START,
+  type SocialDraftRow,
+} from "@workspace/db";
+import { juniorSyncEnabledFor } from "./junior-sync";
+import { loadJuniorTeamPublishing } from "./junior-helpers";
+import {
+  JUNIOR_TEAM_LIST_KEY_PREFIX,
+  juniorRetimeAction,
+  juniorTeamListFixtureIdOf,
+  juniorTeamPublishMode,
+  syncedJuniorMatchIdOf,
+} from "./junior-publishing";
+import { autoReadyAtFor } from "./effective-draft-state";
+import { cancelDraftPublications } from "./publishing/publications";
+import { generateJuniorTeamListDrafts } from "./engines/junior-team-list";
+import { generateJuniorMatchSummaryDrafts } from "./match-summary-drafter";
+
+/**
+ * Junior social in the drafting sweep (junior PlayHQ sync plan U8; KTD13-KTD15, R17-R21,
+ * R23, F2, F3).
+ *
+ * For a club with junior sync enabled:
+ *   1. re-time its unposted synced junior drafts to their team's publishing setting
+ *      (KTD14), BEFORE anything can promote them;
+ *   2. draft junior team-list cards (both sweep kinds), re-rendering any unposted one
+ *      outside the seven-day window too, so a naming-style or privacy change reaches
+ *      every queued card (KTD15);
+ *   3. on the scheduled sweep, draft junior result cards for synced, scored matches
+ *      finished in the last 21 days, plus any unposted synced result card (re-render).
+ * For a club with junior sync switched off, its unposted synced junior drafts go back
+ * to review with no auto-ready time, and nothing junior is drafted (R23).
+ *
+ * "Synced" drafts are the junior sync's own: `juniorteamlist:<fixture>` and the result
+ * cards of junior matches in the sync id band (`id >= JUNIOR_SYNC_ID_START`). Loader-era
+ * junior drafts are left alone. Junior drafts never mix with senior ones: every engine
+ * here reads `junior_*` tables only and writes `sourceMatchIsJunior` drafts under
+ * junior keys.
+ */
+
+/** A synced junior result card is drafted for matches dated within this window. */
+export const JUNIOR_RESULTS_RECENT_MS = 21 * 24 * 60 * 60 * 1000;
+
+const UNPOSTED = ["awaiting_review", "ready"];
+
+export type JuniorSweepSummary = {
+  enabled: boolean;
+  teamLists: number;
+  results: number;
+  /** Drafts sent back to review (switch-off, or auto-promoted for an approval team). */
+  held: number;
+  /** Drafts whose auto-ready time was cleared or set. */
+  retimed: number;
+};
+
+type Logger = {
+  error: (obj: unknown, msg?: string) => void;
+  warn: (obj: unknown, msg?: string) => void;
+  info: (obj: unknown, msg?: string) => void;
+};
+
+/** Whether junior sync (the three-part gate, KTD1) is on for one tenant. */
+export async function tenantJuniorSyncEnabled(tenantId: number): Promise<boolean> {
+  const [t] = await db
+    .select({
+      id: tenantsTable.id,
+      plan: tenantsTable.plan,
+      playhqOrgId: tenantsTable.playhqOrgId,
+      playhqSyncEnabled: tenantsTable.playhqSyncEnabled,
+      juniorSyncEnabled: tenantsTable.juniorSyncEnabled,
+      playhqJuniorOrgId: tenantsTable.playhqJuniorOrgId,
+      suspendedAt: tenantsTable.suspendedAt,
+    })
+    .from(tenantsTable)
+    .where(eq(tenantsTable.id, tenantId));
+  return !!t && t.suspendedAt == null && juniorSyncEnabledFor(t);
+}
+
+/** The tenant's unposted synced junior drafts (team lists and synced result cards). */
+export async function unpostedSyncedJuniorDrafts(tenantId: number): Promise<SocialDraftRow[]> {
+  const rows = await db
+    .select()
+    .from(socialDraftsTable)
+    .where(
+      and(
+        eq(socialDraftsTable.tenantId, tenantId),
+        eq(socialDraftsTable.sourceMatchIsJunior, true),
+        inArray(socialDraftsTable.status, UNPOSTED),
+        or(
+          like(socialDraftsTable.sourceKey, `${JUNIOR_TEAM_LIST_KEY_PREFIX}%`),
+          and(
+            like(socialDraftsTable.sourceKey, "matchSummary:junior:%"),
+            gte(socialDraftsTable.sourceMatchId, JUNIOR_SYNC_ID_START),
+          ),
+        ),
+      ),
+    );
+  return rows.filter(
+    (d) =>
+      juniorTeamListFixtureIdOf(d.sourceKey) !== null ||
+      syncedJuniorMatchIdOf(d.sourceKey) !== null,
+  );
+}
+
+/** Back to review with no auto-ready time; a ready draft's scheduled posts are cancelled. */
+async function holdDraft(d: SocialDraftRow, reason: string): Promise<boolean> {
+  const [updated] = await db
+    .update(socialDraftsTable)
+    .set({ status: "awaiting_review", autoReadyAt: null })
+    .where(
+      and(
+        eq(socialDraftsTable.id, d.id),
+        eq(socialDraftsTable.tenantId, d.tenantId),
+        inArray(socialDraftsTable.status, UNPOSTED),
+      ),
+    )
+    .returning({ id: socialDraftsTable.id });
+  if (!updated) return false;
+  if (d.status === "ready") await cancelDraftPublications(d.tenantId, d.id, reason);
+  return true;
+}
+
+/** Each draft's team (age group, team name), from its junior fixture or junior match. */
+async function draftTeams(
+  tenantId: number,
+  drafts: readonly SocialDraftRow[],
+): Promise<Map<number, { ageGroup: string | null; teamName: string | null }>> {
+  const fixtureIds = drafts.flatMap((d) => juniorTeamListFixtureIdOf(d.sourceKey) ?? []);
+  const matchIds = drafts.flatMap((d) => syncedJuniorMatchIdOf(d.sourceKey) ?? []);
+  const [fixtures, matches] = await Promise.all([
+    fixtureIds.length
+      ? db
+          .select({
+            id: juniorFixturesTable.id,
+            ageGroup: juniorFixturesTable.ageGroup,
+            teamName: juniorFixturesTable.teamName,
+          })
+          .from(juniorFixturesTable)
+          .where(
+            and(
+              eq(juniorFixturesTable.tenantId, tenantId),
+              inArray(juniorFixturesTable.id, fixtureIds),
+            ),
+          )
+      : Promise.resolve([]),
+    matchIds.length
+      ? db
+          .select({
+            id: juniorMatchesTable.id,
+            ageGroup: juniorMatchesTable.ageGroup,
+            teamName: juniorMatchesTable.teamName,
+          })
+          .from(juniorMatchesTable)
+          .where(
+            and(
+              eq(juniorMatchesTable.tenantId, tenantId),
+              inArray(juniorMatchesTable.id, matchIds),
+            ),
+          )
+      : Promise.resolve([]),
+  ]);
+  const fixtureTeam = new Map(fixtures.map((f) => [f.id, f]));
+  const matchTeam = new Map(matches.map((m) => [m.id, m]));
+  const out = new Map<number, { ageGroup: string | null; teamName: string | null }>();
+  for (const d of drafts) {
+    const fixtureId = juniorTeamListFixtureIdOf(d.sourceKey);
+    const matchId = syncedJuniorMatchIdOf(d.sourceKey);
+    const team =
+      (fixtureId !== null ? fixtureTeam.get(fixtureId) : undefined) ??
+      (matchId !== null ? matchTeam.get(matchId) : undefined);
+    if (team) out.set(d.id, { ageGroup: team.ageGroup, teamName: team.teamName });
+  }
+  return out;
+}
+
+/**
+ * Bring each unposted synced junior draft's timing in line with junior sync and its
+ * team's publishing setting (KTD14, KTD15). Runs every sweep, so a changed team setting
+ * reaches that team's queued drafts on the next one.
+ */
+export async function retimeJuniorDrafts(
+  tenantId: number,
+  syncEnabled: boolean,
+  drafts?: readonly SocialDraftRow[],
+): Promise<{ held: number; retimed: number }> {
+  const list = drafts ?? (await unpostedSyncedJuniorDrafts(tenantId));
+  const out = { held: 0, retimed: 0 };
+  if (list.length === 0) return out;
+  const [publishing, teams] = syncEnabled
+    ? await Promise.all([loadJuniorTeamPublishing(tenantId), draftTeams(tenantId, list)])
+    : [{}, new Map<number, { ageGroup: string | null; teamName: string | null }>()];
+  for (const d of list) {
+    const team = teams.get(d.id);
+    const action = juniorRetimeAction({
+      syncEnabled,
+      mode: juniorTeamPublishMode(publishing, team?.ageGroup, team?.teamName),
+      status: d.status,
+      autoReadyAt: d.autoReadyAt,
+      untouched:
+        d.reviewedAt == null &&
+        d.editedAt == null &&
+        d.designEditedAt == null &&
+        d.createdByAdminId == null,
+    });
+    if (action === "hold") {
+      // Already in review with no deadline: nothing to write.
+      if (d.status !== "ready" && d.autoReadyAt == null) continue;
+      if (
+        await holdDraft(
+          d,
+          syncEnabled ? "This junior team needs an admin's approval." : "Junior sync is off.",
+        )
+      )
+        out.held++;
+    } else if (action === "clear" || action === "set") {
+      const autoReadyAt =
+        action === "set" ? await autoReadyAtFor(tenantId, d.sourceImportedAt ?? d.createdAt) : null;
+      const updated = await db
+        .update(socialDraftsTable)
+        .set({ autoReadyAt })
+        .where(
+          and(
+            eq(socialDraftsTable.id, d.id),
+            eq(socialDraftsTable.tenantId, tenantId),
+            eq(socialDraftsTable.status, "awaiting_review"),
+          ),
+        )
+        .returning({ id: socialDraftsTable.id });
+      out.retimed += updated.length;
+    }
+  }
+  return out;
+}
+
+/** The Perth calendar date (YYYY-MM-DD) of an instant — junior match dates are Perth dates. */
+function perthDay(t: Date): string {
+  return new Date(t.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/**
+ * Synced junior matches due a result card: scored (only scored matches become
+ * `junior_matches` rows, KTD10), finished (not in progress), dated within the last 21
+ * days. Tenant-scoped; the sync id band only.
+ */
+export async function recentSyncedJuniorMatchIds(tenantId: number, now: Date): Promise<number[]> {
+  const rows = await db
+    .select({ id: juniorMatchesTable.id })
+    .from(juniorMatchesTable)
+    .where(
+      and(
+        eq(juniorMatchesTable.tenantId, tenantId),
+        gte(juniorMatchesTable.id, JUNIOR_SYNC_ID_START),
+        ne(juniorMatchesTable.status, "IN_PROGRESS"),
+        gte(
+          juniorMatchesTable.matchDate,
+          perthDay(new Date(now.getTime() - JUNIOR_RESULTS_RECENT_MS)),
+        ),
+        lte(juniorMatchesTable.matchDate, perthDay(now)),
+      ),
+    );
+  return rows.map((r) => r.id);
+}
+
+/** The junior part of one tenant's drafting sweep. Each step's failure is logged, never thrown. */
+export async function runJuniorSocialSweep(
+  tenantId: number,
+  kind: "scheduled" | "fixtures",
+  now: Date,
+  logger: Logger,
+): Promise<JuniorSweepSummary> {
+  const summary: JuniorSweepSummary = {
+    enabled: false,
+    teamLists: 0,
+    results: 0,
+    held: 0,
+    retimed: 0,
+  };
+  summary.enabled = await tenantJuniorSyncEnabled(tenantId);
+  const drafts = await unpostedSyncedJuniorDrafts(tenantId);
+
+  try {
+    const timing = await retimeJuniorDrafts(tenantId, summary.enabled, drafts);
+    summary.held = timing.held;
+    summary.retimed = timing.retimed;
+  } catch (err) {
+    logger.error({ err, tenantId }, "junior draft re-timing failed");
+  }
+  if (!summary.enabled) return summary;
+
+  try {
+    const rerender = drafts.flatMap((d) => juniorTeamListFixtureIdOf(d.sourceKey) ?? []);
+    summary.teamLists = (await generateJuniorTeamListDrafts(tenantId, now, rerender)).drafted;
+  } catch (err) {
+    logger.error({ err, tenantId }, "junior team-list drafts failed");
+  }
+
+  if (kind === "scheduled") {
+    try {
+      const ids = new Set(await recentSyncedJuniorMatchIds(tenantId, now));
+      for (const d of drafts) {
+        const id = syncedJuniorMatchIdOf(d.sourceKey);
+        if (id !== null) ids.add(id);
+      }
+      const result = await generateJuniorMatchSummaryDrafts(tenantId, [...ids], { synced: true });
+      summary.results = result.drafted;
+      if (result.errors.length) {
+        logger.warn({ tenantId, errors: result.errors }, "junior result drafts had errors");
+      }
+    } catch (err) {
+      logger.error({ err, tenantId }, "junior result drafts failed");
+    }
+  }
+  return summary;
+}
