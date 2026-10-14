@@ -84,3 +84,4 @@
 - [Mobile release scope](mobile-release-scope.md) — owner chose one Ovation app with club selection, not a Halls Head-only or per-club release.
 - [Environment-triggered workflow restarts](environment-workflow-restarts.md) — setting changes can restart services; avoid racing them with manual restarts.
 - [Mobile/web React peers](mobile-web-react-peers.md) — keep per-app React versions; shared API hooks must resolve the same Query instance as each app's provider.
+- [Tenant committee roles](tenant-committee-roles.md) — clubs define their own committee titles and relative display priority; avoid a fixed platform-wide hierarchy.
