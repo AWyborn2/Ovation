@@ -7485,12 +7485,25 @@ paths:
       operationId: getJuniorMatch
       tags: [juniors]
       summary: Get a single junior match with its full scorecard
+      description: >-
+        Public lines are named by the club's junior naming rules: a private,
+        non-overridden player is "Private Player" with no participant id; the
+        club's own players follow its naming style; opposition players show as
+        initials ("O. G.").
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: integer
+        - name: includePrivate
+          in: query
+          schema:
+            type: boolean
+          description: >-
+            Return full names and participant ids on every line (honoured only
+            for a signed-in admin of this club — silently ignored otherwise).
+            Used by the admin scorecard editor.
       responses:
         "200":
           description: Junior match detail with both innings
@@ -7741,7 +7754,9 @@ paths:
     patch:
       operationId: updateJuniorParticipant
       tags: [juniors]
-      summary: Correct a junior participant's display name or privacy flag (admin, journalled)
+      summary: >-
+        Correct a junior participant's display name, privacy flag or privacy
+        override (admin, journalled)
       parameters:
         - name: id
           in: path
@@ -7762,8 +7777,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/JuniorAdminParticipant"
+        "400":
+          description: Invalid body, or an override requested for a player who is not private
         "404":
           description: Participant not found
+
+  /juniors/privacy-overrides:
+    get:
+      operationId: listJuniorPrivacyOverrides
+      tags: [juniors]
+      summary: >-
+        The club's private junior players whose names an admin has chosen to
+        show publicly (admin only)
+      responses:
+        "200":
+          description: Active privacy overrides, by name
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorAdminParticipant"
 
   /juniors/corrections:
     get:
@@ -20550,6 +20584,16 @@ components:
         isPrivate:
           type: boolean
           description: Only present/true on admin requests with includePrivate.
+        privacyOverride:
+          type: boolean
+          description: Admin requests with includePrivate only. A private player an admin names publicly.
+        privacyOverrideBy:
+          type: ["string", "null"]
+          description: Admin requests with includePrivate only. The admin who set the override.
+        privacyOverrideAt:
+          type: ["string", "null"]
+          format: date-time
+          description: Admin requests with includePrivate only. When the override was set.
 
     JuniorSeniorLinkSummary:
       type: object
@@ -20855,10 +20899,37 @@ components:
           minLength: 1
         isPrivate:
           type: boolean
+        privacyOverride:
+          type: boolean
+          description: >-
+            Show a private player's name publicly anyway (true) or withhold it
+            again (false). Can only be switched on for a private player.
+
+    JuniorNameStyle:
+      type: string
+      enum: [full, first_initial, first]
+      description: >-
+        How public junior surfaces name the club's players: full name, first
+        name and surname initial ("Ollie G"), or first name only.
+
+    JuniorTeamPublishMode:
+      type: string
+      enum: [approval, auto]
+
+    JuniorTeamPublishing:
+      type: object
+      description: >-
+        Per-team social publishing, keyed by age group then team name. A team
+        not listed needs approval; only "auto" lets its cards post themselves.
+      additionalProperties:
+        type: object
+        additionalProperties:
+          $ref: "#/components/schemas/JuniorTeamPublishMode"
 
     JuniorAdminParticipant:
       type: object
-      required: [participantId, displayName, isPrivate]
+      required:
+        [participantId, displayName, isPrivate, privacyOverride, privacyOverrideBy, privacyOverrideAt]
       properties:
         participantId:
           type: string
@@ -20866,6 +20937,16 @@ components:
           type: string
         isPrivate:
           type: boolean
+        privacyOverride:
+          type: boolean
+          description: An admin has chosen to show this private player's name publicly.
+        privacyOverrideBy:
+          type: ["string", "null"]
+          description: The admin who set the override.
+        privacyOverrideAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When the override was set.
 
     JuniorStatCorrection:
       type: object
@@ -21208,7 +21289,7 @@ components:
 
     JuniorMatchDisplaySettings:
       type: object
-      required: [defaultAgeGroup, defaultSeasonMode, ageGroupOrder]
+      required: [defaultAgeGroup, defaultSeasonMode, ageGroupOrder, nameStyle, teamPublishing]
       properties:
         defaultAgeGroup:
           type: string
@@ -21229,6 +21310,10 @@ components:
           description: >-
             Ordered age-group tokens for the age-group menu. Tokens not listed
             fall back to the natural order, appended after the configured ones.
+        nameStyle:
+          $ref: "#/components/schemas/JuniorNameStyle"
+        teamPublishing:
+          $ref: "#/components/schemas/JuniorTeamPublishing"
 
     JuniorMatchDisplaySettingsUpdate:
       type: object
@@ -21244,6 +21329,10 @@ components:
           type: array
           items:
             type: string
+        nameStyle:
+          $ref: "#/components/schemas/JuniorNameStyle"
+        teamPublishing:
+          $ref: "#/components/schemas/JuniorTeamPublishing"
 
     JuniorPremiershipPlayer:
       type: object

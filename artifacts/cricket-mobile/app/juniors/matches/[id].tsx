@@ -46,7 +46,7 @@ export default function JuniorMatchDetailScreen() {
     data: match,
     isLoading,
     isError,
-  } = useGetJuniorMatch(matchId, {
+  } = useGetJuniorMatch(matchId, undefined, {
     query: {
       enabled: Number.isFinite(matchId),
       queryKey: getGetJuniorMatchQueryKey(matchId),

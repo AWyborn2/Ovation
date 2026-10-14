@@ -10940,10 +10940,15 @@ export const ListJuniorMatchesResponse = zod.array(ListJuniorMatchesResponseItem
 
 
 /**
+ * Public lines are named by the club's junior naming rules: a private, non-overridden player is "Private Player" with no participant id; the club's own players follow its naming style; opposition players show as initials ("O. G.").
  * @summary Get a single junior match with its full scorecard
  */
 export const GetJuniorMatchParams = zod.object({
   "id": zod.coerce.number()
+})
+
+export const GetJuniorMatchQueryParams = zod.object({
+  "includePrivate": zod.coerce.boolean().optional().describe('Return full names and participant ids on every line (honoured only for a signed-in admin of this club — silently ignored otherwise). Used by the admin scorecard editor.')
 })
 
 export const GetJuniorMatchResponse = zod.object({
@@ -11209,7 +11214,7 @@ export const RemoveJuniorRosterEntryParams = zod.object({
 
 
 /**
- * @summary Correct a junior participant's display name or privacy flag (admin, journalled)
+ * @summary Correct a junior participant's display name, privacy flag or privacy override (admin, journalled)
  */
 export const UpdateJuniorParticipantParams = zod.object({
   "id": zod.coerce.string().describe('PlayHQ participant_id')
@@ -11220,14 +11225,32 @@ export const UpdateJuniorParticipantParams = zod.object({
 
 export const UpdateJuniorParticipantBody = zod.object({
   "displayName": zod.string().min(1).optional(),
-  "isPrivate": zod.boolean().optional()
+  "isPrivate": zod.boolean().optional(),
+  "privacyOverride": zod.boolean().optional().describe('Show a private player\'s name publicly anyway (true) or withhold it again (false). Can only be switched on for a private player.')
 })
 
 export const UpdateJuniorParticipantResponse = zod.object({
   "participantId": zod.string(),
   "displayName": zod.string(),
-  "isPrivate": zod.boolean()
+  "isPrivate": zod.boolean(),
+  "privacyOverride": zod.boolean().describe('An admin has chosen to show this private player\'s name publicly.'),
+  "privacyOverrideBy": zod.string().nullable().describe('The admin who set the override.'),
+  "privacyOverrideAt": zod.coerce.date().nullable().describe('When the override was set.')
 })
+
+
+/**
+ * @summary The club's private junior players whose names an admin has chosen to show publicly (admin only)
+ */
+export const ListJuniorPrivacyOverridesResponseItem = zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "isPrivate": zod.boolean(),
+  "privacyOverride": zod.boolean().describe('An admin has chosen to show this private player\'s name publicly.'),
+  "privacyOverrideBy": zod.string().nullable().describe('The admin who set the override.'),
+  "privacyOverrideAt": zod.coerce.date().nullable().describe('When the override was set.')
+})
+export const ListJuniorPrivacyOverridesResponse = zod.array(ListJuniorPrivacyOverridesResponseItem)
 
 
 /**
@@ -11282,7 +11305,10 @@ export const ListJuniorPlayersResponseItem = zod.object({
   "runs": zod.number().optional(),
   "wickets": zod.number().optional(),
   "seniorPlayerId": zod.number().nullish().describe('Optional cross-reference to a senior player record. For profile linking only; never combines stats.'),
-  "isPrivate": zod.boolean().optional().describe('Only present\/true on admin requests with includePrivate.')
+  "isPrivate": zod.boolean().optional().describe('Only present\/true on admin requests with includePrivate.'),
+  "privacyOverride": zod.boolean().optional().describe('Admin requests with includePrivate only. A private player an admin names publicly.'),
+  "privacyOverrideBy": zod.string().nullish().describe('Admin requests with includePrivate only. The admin who set the override.'),
+  "privacyOverrideAt": zod.coerce.date().nullish().describe('Admin requests with includePrivate only. When the override was set.')
 })
 export const ListJuniorPlayersResponse = zod.array(ListJuniorPlayersResponseItem)
 
@@ -11846,7 +11872,9 @@ export const GetJuniorMatchDisplaySettingsResponse = zod.object({
   "defaultAgeGroup": zod.string().describe('Age group pre-selected on first load. Empty string = All age groups.'),
   "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).describe('How the default season is chosen: latest available season, a specific season, or all seasons.'),
   "defaultSeason": zod.string().nullish().describe('Specific season string (e.g. \"2024\/25\") used when defaultSeasonMode = specific.'),
-  "ageGroupOrder": zod.array(zod.string()).describe('Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones.')
+  "ageGroupOrder": zod.array(zod.string()).describe('Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones.'),
+  "nameStyle": zod.enum(['full', 'first_initial', 'first']).describe('How public junior surfaces name the club\'s players: full name, first name and surname initial (\"Ollie G\"), or first name only.'),
+  "teamPublishing": zod.record(zod.string(), zod.record(zod.string(), zod.enum(['approval', 'auto']))).describe('Per-team social publishing, keyed by age group then team name. A team not listed needs approval; only \"auto\" lets its cards post themselves.')
 })
 
 
@@ -11857,14 +11885,18 @@ export const UpdateJuniorMatchDisplaySettingsBody = zod.object({
   "defaultAgeGroup": zod.string().optional(),
   "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).optional(),
   "defaultSeason": zod.string().nullish(),
-  "ageGroupOrder": zod.array(zod.string()).optional()
+  "ageGroupOrder": zod.array(zod.string()).optional(),
+  "nameStyle": zod.enum(['full', 'first_initial', 'first']).optional().describe('How public junior surfaces name the club\'s players: full name, first name and surname initial (\"Ollie G\"), or first name only.'),
+  "teamPublishing": zod.record(zod.string(), zod.record(zod.string(), zod.enum(['approval', 'auto']))).optional().describe('Per-team social publishing, keyed by age group then team name. A team not listed needs approval; only \"auto\" lets its cards post themselves.')
 })
 
 export const UpdateJuniorMatchDisplaySettingsResponse = zod.object({
   "defaultAgeGroup": zod.string().describe('Age group pre-selected on first load. Empty string = All age groups.'),
   "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).describe('How the default season is chosen: latest available season, a specific season, or all seasons.'),
   "defaultSeason": zod.string().nullish().describe('Specific season string (e.g. \"2024\/25\") used when defaultSeasonMode = specific.'),
-  "ageGroupOrder": zod.array(zod.string()).describe('Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones.')
+  "ageGroupOrder": zod.array(zod.string()).describe('Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones.'),
+  "nameStyle": zod.enum(['full', 'first_initial', 'first']).describe('How public junior surfaces name the club\'s players: full name, first name and surname initial (\"Ollie G\"), or first name only.'),
+  "teamPublishing": zod.record(zod.string(), zod.record(zod.string(), zod.enum(['approval', 'auto']))).describe('Per-team social publishing, keyed by age group then team name. A team not listed needs approval; only \"auto\" lets its cards post themselves.')
 })
 
 

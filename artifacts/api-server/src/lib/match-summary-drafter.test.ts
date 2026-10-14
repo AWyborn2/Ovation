@@ -28,9 +28,8 @@ vi.mock("./club-brand", () => ({
   overlayNativeOpponents: vi.fn(),
 }));
 vi.mock("./junior-helpers", () => ({
-  getPrivateIds: vi.fn(),
+  loadJuniorNaming: vi.fn(),
   splitScores: vi.fn(),
-  MASK_NAME: "Private Player",
 }));
 
 import { shouldDraftGrade } from "./match-summary-drafter";

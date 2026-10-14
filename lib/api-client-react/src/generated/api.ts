@@ -142,6 +142,7 @@ import type {
   GetFixturesResultsLadderParams,
   GetGradeDistributionParams,
   GetGradeLeaderboardParams,
+  GetJuniorMatchParams,
   GetJuniorSeasonTopPerformersParams,
   GetKioskDisplayParams,
   GetMetaConnectPendingParams,
@@ -24445,20 +24446,30 @@ export function useListJuniorMatches<TData = Awaited<ReturnType<typeof listJunio
 
 
 
-export const getGetJuniorMatchUrl = (id: number,) => {
+export const getGetJuniorMatchUrl = (id: number,
+    params?: GetJuniorMatchParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/juniors/matches/${id}`
+  return stringifiedParams.length > 0 ? `/api/juniors/matches/${id}?${stringifiedParams}` : `/api/juniors/matches/${id}`
 }
 
 /**
+ * Public lines are named by the club's junior naming rules: a private, non-overridden player is "Private Player" with no participant id; the club's own players follow its naming style; opposition players show as initials ("O. G.").
  * @summary Get a single junior match with its full scorecard
  */
-export const getJuniorMatch = async (id: number, options?: RequestInit): Promise<JuniorMatchDetail> => {
+export const getJuniorMatch = async (id: number,
+    params?: GetJuniorMatchParams, options?: RequestInit): Promise<JuniorMatchDetail> => {
 
-  return customFetch<JuniorMatchDetail>(getGetJuniorMatchUrl(id),
+  return customFetch<JuniorMatchDetail>(getGetJuniorMatchUrl(id,params),
   {
     ...options,
     method: 'GET'
@@ -24471,23 +24482,25 @@ export const getJuniorMatch = async (id: number, options?: RequestInit): Promise
 
 
 
-export const getGetJuniorMatchQueryKey = (id: number,) => {
+export const getGetJuniorMatchQueryKey = (id: number,
+    params?: GetJuniorMatchParams,) => {
     return [
-    `/api/juniors/matches/${id}`
+    `/api/juniors/matches/${id}`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetJuniorMatchQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorMatch>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorMatch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetJuniorMatchQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorMatch>>, TError = ErrorType<void>>(id: number,
+    params?: GetJuniorMatchParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorMatch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetJuniorMatchQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorMatchQueryKey(id,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorMatch>>> = ({ signal }) => getJuniorMatch(id, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorMatch>>> = ({ signal }) => getJuniorMatch(id,params, { signal, ...requestOptions });
 
 
 
@@ -24505,11 +24518,12 @@ export type GetJuniorMatchQueryError = ErrorType<void>
  */
 
 export function useGetJuniorMatch<TData = Awaited<ReturnType<typeof getJuniorMatch>>, TError = ErrorType<void>>(
- id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorMatch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: number,
+    params?: GetJuniorMatchParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorMatch>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetJuniorMatchQueryOptions(id,options)
+  const queryOptions = getGetJuniorMatchQueryOptions(id,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -25183,7 +25197,7 @@ export const getUpdateJuniorParticipantUrl = (id: string,) => {
 }
 
 /**
- * @summary Correct a junior participant's display name or privacy flag (admin, journalled)
+ * @summary Correct a junior participant's display name, privacy flag or privacy override (admin, journalled)
  */
 export const updateJuniorParticipant = async (id: string,
     updateJuniorParticipantBody: UpdateJuniorParticipantBody, options?: RequestInit): Promise<JuniorAdminParticipant> => {
@@ -25233,7 +25247,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type UpdateJuniorParticipantMutationError = ErrorType<void>
 
     /**
- * @summary Correct a junior participant's display name or privacy flag (admin, journalled)
+ * @summary Correct a junior participant's display name, privacy flag or privacy override (admin, journalled)
  */
 export const useUpdateJuniorParticipant = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJuniorParticipant>>, TError,{id: string;data: BodyType<UpdateJuniorParticipantBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -25245,6 +25259,83 @@ export const useUpdateJuniorParticipant = <TError = ErrorType<void>,
       > => {
       return useMutation(getUpdateJuniorParticipantMutationOptions(options));
     }
+
+export const getListJuniorPrivacyOverridesUrl = () => {
+
+
+
+
+  return `/api/juniors/privacy-overrides`
+}
+
+/**
+ * @summary The club's private junior players whose names an admin has chosen to show publicly (admin only)
+ */
+export const listJuniorPrivacyOverrides = async ( options?: RequestInit): Promise<JuniorAdminParticipant[]> => {
+
+  return customFetch<JuniorAdminParticipant[]>(getListJuniorPrivacyOverridesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorPrivacyOverridesQueryKey = () => {
+    return [
+    `/api/juniors/privacy-overrides`
+    ] as const;
+    }
+
+
+export const getListJuniorPrivacyOverridesQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorPrivacyOverrides>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorPrivacyOverrides>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorPrivacyOverridesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorPrivacyOverrides>>> = ({ signal }) => listJuniorPrivacyOverrides({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorPrivacyOverrides>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorPrivacyOverridesQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorPrivacyOverrides>>>
+export type ListJuniorPrivacyOverridesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The club's private junior players whose names an admin has chosen to show publicly (admin only)
+ */
+
+export function useListJuniorPrivacyOverrides<TData = Awaited<ReturnType<typeof listJuniorPrivacyOverrides>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorPrivacyOverrides>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorPrivacyOverridesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListJuniorStatCorrectionsUrl = (params?: ListJuniorStatCorrectionsParams,) => {
   const normalizedParams = new URLSearchParams();

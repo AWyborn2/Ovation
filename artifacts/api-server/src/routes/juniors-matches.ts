@@ -10,9 +10,8 @@ import {
   clubsTable,
 } from "@workspace/db";
 import {
-  getPrivateIds,
+  loadJuniorNaming,
   splitScores,
-  MASK_NAME,
   opponentClubColumns,
   toOpponentClub,
   seasonYear,
@@ -22,12 +21,14 @@ import {
 import {
   ListJuniorMatchesQueryParams,
   GetJuniorMatchParams,
+  GetJuniorMatchQueryParams,
   UpdateJuniorMatchDisplaySettingsBody,
 } from "@workspace/api-zod";
-import { requireAdmin } from "../middlewares/require-admin";
+import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
 import { overlayNativeOpponents } from "../lib/club-brand";
 import { getOrCreateSettings } from "../lib/settings";
+import { parseJuniorTeamPublishing } from "../lib/junior-names";
 
 /**
  * Junior matches: filters, match list, scorecard detail, and the Matches
@@ -113,7 +114,6 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
   // junior scorecard + junior match-summary share card show its crest/colours.
   const [opponentClub] = await overlayNativeOpponents([toOpponentClub(matchRow)]);
 
-  const privateIds = await getPrivateIds(getTenantId(req));
   const [battingRows, bowlingRows, rosterRows] = await Promise.all([
     db
       .select()
@@ -132,16 +132,26 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
       .orderBy(juniorMatchRostersTable.id),
   ]);
 
-  const isPriv = (pid: string | null) => !!pid && privateIds.has(pid);
+  // One public namer for every line (KTD12): withheld private players, the club's
+  // naming style for its own side, initials for the opposition — names derived
+  // from the participant rows, never the stored line copies.
+  // includePrivate (honoured only for a signed-in admin of this club) returns full
+  // names and ids for the admin scorecard editor, as on the junior players admin.
+  const query = GetJuniorMatchQueryParams.safeParse(req.query);
+  const adminView =
+    query.success && query.data.includePrivate === true && !!(await resolveAdmin(req));
+  const naming = await loadJuniorNaming(getTenantId(req), [
+    ...battingRows.map((r) => r.participantId),
+    ...bowlingRows.map((r) => r.participantId),
+    ...rosterRows.map((r) => r.participantId),
+  ]);
+  const nameLine = adminView ? naming.adminLine : naming.line;
 
   const battingLine = (b: typeof juniorMatchBattingTable.$inferSelect) => {
-    const priv = isPriv(b.participantId);
     return {
       id: b.id,
-      participantId: priv ? null : b.participantId,
-      playerName: priv ? MASK_NAME : (b.playerName ?? ""),
+      ...nameLine(b),
       isHallsHead: b.isHallsHead,
-      isPrivate: priv,
       batOrder: b.batOrder,
       runs: b.runs,
       balls: b.balls,
@@ -152,13 +162,10 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
     };
   };
   const bowlingLine = (b: typeof juniorMatchBowlingTable.$inferSelect) => {
-    const priv = isPriv(b.participantId);
     return {
       id: b.id,
-      participantId: priv ? null : b.participantId,
-      playerName: priv ? MASK_NAME : (b.playerName ?? ""),
+      ...nameLine(b),
       isHallsHead: b.isHallsHead,
-      isPrivate: priv,
       overs: b.overs,
       maidens: b.maidens,
       runs: b.runs,
@@ -185,17 +192,12 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
     };
   });
 
-  const rosters = rosterRows.map((r) => {
-    const priv = isPriv(r.participantId);
-    return {
-      id: r.id,
-      participantId: priv ? null : r.participantId,
-      playerName: priv ? MASK_NAME : (r.playerName ?? ""),
-      teamName: r.teamName,
-      isHallsHead: r.isHallsHead,
-      isPrivate: priv,
-    };
-  });
+  const rosters = rosterRows.map((r) => ({
+    id: r.id,
+    ...nameLine(r),
+    teamName: r.teamName,
+    isHallsHead: r.isHallsHead,
+  }));
 
   const { hhScore, opponentScore } = splitScores(match);
   res.json({
@@ -258,6 +260,12 @@ router.patch("/juniors/match-display-settings", requireAdmin, async (req, res): 
     patch.defaultSeasonMode = parsed.data.defaultSeasonMode;
   if (parsed.data.defaultSeason !== undefined) patch.defaultSeason = parsed.data.defaultSeason;
   if (parsed.data.ageGroupOrder !== undefined) patch.ageGroupOrder = parsed.data.ageGroupOrder;
+  // Naming style (KTD12) is enum-validated by the generated body schema.
+  if (parsed.data.nameStyle !== undefined) patch.nameStyle = parsed.data.nameStyle;
+  // Per-team publishing (KTD14): the body schema checks each mode is approval|auto;
+  // the sanitiser also drops emptied age groups so the stored map stays tidy.
+  if (parsed.data.teamPublishing !== undefined)
+    patch.teamPublishing = parseJuniorTeamPublishing(parsed.data.teamPublishing);
   const [updated] = await db
     .update(juniorMatchDisplaySettingsTable)
     .set(patch)

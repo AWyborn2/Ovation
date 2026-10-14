@@ -1,4 +1,4 @@
-import { eq, and, asc, desc, isNotNull, sql } from "drizzle-orm";
+import { eq, and, asc, desc, inArray, isNotNull, or, sql, type SQL } from "drizzle-orm";
 import {
   db,
   juniorParticipantsTable,
@@ -7,14 +7,48 @@ import {
   juniorMatchBowlingTable,
   juniorOfficeBearersTable,
   clubsTable,
+  juniorMatchDisplaySettingsTable,
   type JuniorMatchDisplaySettingsRow,
+  type JuniorNameStyle,
 } from "@workspace/db";
 import { juniorParticipantJoin } from "./junior-participant-scope";
+import { getOrCreateSettings } from "./settings";
+import {
+  WITHHELD_JUNIOR_NAME,
+  makeJuniorNaming,
+  parseJuniorNameStyle,
+  parseJuniorTeamPublishing,
+  type JuniorNameFacts,
+  type JuniorNaming,
+} from "./junior-names";
 
-const MASK_NAME = "Private Player";
+// The pure naming rules (KTD12) live in junior-names.ts so they unit-test without a
+// database; re-exported here as the one place junior routes import them from.
+export {
+  formatJuniorName,
+  juniorInitials,
+  juniorPublicName,
+  isJuniorWithheld,
+  makeJuniorNaming,
+  WITHHELD_JUNIOR_NAME,
+  type JuniorNaming,
+} from "./junior-names";
+
+const MASK_NAME = WITHHELD_JUNIOR_NAME;
 
 export { MASK_NAME };
 
+/**
+ * SQL condition: a participant whose name may appear publicly — not private, or
+ * private with an admin's privacy override (KTD12). Directories, leaderboards and
+ * profiles filter on this; a withheld participant is left out entirely.
+ */
+export const juniorParticipantIsPublic: SQL = or(
+  eq(juniorParticipantsTable.isPrivate, false),
+  eq(juniorParticipantsTable.privacyOverride, true),
+) as SQL;
+
+/** Participant ids whose names are withheld publicly (private and not overridden). */
 export async function getPrivateIds(tenantId: number): Promise<Set<string>> {
   const rows = await db
     .select({ id: juniorParticipantsTable.participantId })
@@ -23,9 +57,57 @@ export async function getPrivateIds(tenantId: number): Promise<Set<string>> {
       and(
         eq(juniorParticipantsTable.tenantId, tenantId),
         eq(juniorParticipantsTable.isPrivate, true),
+        eq(juniorParticipantsTable.privacyOverride, false),
       ),
     );
   return new Set(rows.map((r) => r.id));
+}
+
+/** The club's public junior name style (`full` until an admin picks another). */
+export async function getJuniorNameStyle(tenantId: number): Promise<JuniorNameStyle> {
+  const settings = await getOrCreateSettings(juniorMatchDisplaySettingsTable, tenantId);
+  return parseJuniorNameStyle(settings.nameStyle);
+}
+
+/**
+ * Load the club's naming style and its participants' privacy facts, bound into the
+ * one public line namer (KTD12). Pass the participant ids on the surface being
+ * rendered to load just those rows; omit them to load the whole club (batch use).
+ */
+export async function loadJuniorNaming(
+  tenantId: number,
+  participantIds?: Iterable<string | null | undefined>,
+): Promise<JuniorNaming> {
+  const ids =
+    participantIds === undefined
+      ? undefined
+      : [...new Set([...participantIds].filter((id): id is string => !!id))];
+  const [style, rows] = await Promise.all([
+    getJuniorNameStyle(tenantId),
+    ids !== undefined && ids.length === 0
+      ? Promise.resolve([])
+      : db
+          .select({
+            participantId: juniorParticipantsTable.participantId,
+            displayName: juniorParticipantsTable.displayName,
+            isPrivate: juniorParticipantsTable.isPrivate,
+            privacyOverride: juniorParticipantsTable.privacyOverride,
+          })
+          .from(juniorParticipantsTable)
+          .where(
+            and(
+              eq(juniorParticipantsTable.tenantId, tenantId),
+              ids === undefined ? undefined : inArray(juniorParticipantsTable.participantId, ids),
+            ),
+          ),
+  ]);
+  const facts = new Map<string, JuniorNameFacts>(
+    rows.map((r) => [
+      r.participantId,
+      { displayName: r.displayName, isPrivate: r.isPrivate, privacyOverride: r.privacyOverride },
+    ]),
+  );
+  return makeJuniorNaming(style, facts);
 }
 
 type MatchRow = typeof juniorMatchesTable.$inferSelect;
@@ -130,13 +212,13 @@ export async function ageGroupsForSeason(
     eq(juniorMatchesTable.tenantId, tenantId),
     isNotNull(juniorMatchesTable.ageGroup),
     eq(juniorMatchBattingTable.isHallsHead, true),
-    eq(juniorParticipantsTable.isPrivate, false),
+    juniorParticipantIsPublic,
   ];
   const bowlingConds = [
     eq(juniorMatchesTable.tenantId, tenantId),
     isNotNull(juniorMatchesTable.ageGroup),
     eq(juniorMatchBowlingTable.isHallsHead, true),
-    eq(juniorParticipantsTable.isPrivate, false),
+    juniorParticipantIsPublic,
   ];
   if (season !== null) {
     battingConds.push(eq(juniorMatchesTable.season, season));
@@ -183,6 +265,8 @@ export function serializeJuniorMatchDisplaySettings(s: JuniorMatchDisplaySetting
     defaultSeasonMode: s.defaultSeasonMode ?? "latest",
     defaultSeason: s.defaultSeason ?? null,
     ageGroupOrder: s.ageGroupOrder ?? [],
+    nameStyle: parseJuniorNameStyle(s.nameStyle),
+    teamPublishing: parseJuniorTeamPublishing(s.teamPublishing),
   };
 }
 

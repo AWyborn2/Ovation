@@ -18,7 +18,10 @@ import {
   ageGroupsForSeason,
   JUNIOR_MILESTONE_TIERS,
   JUNIOR_STAT_SINGULAR,
+  getJuniorNameStyle,
+  juniorParticipantIsPublic,
 } from "../lib/junior-helpers";
+import { formatJuniorName } from "../lib/junior-names";
 import {
   ListJuniorLeaderboardQueryParams,
   GetJuniorSeasonTopPerformersQueryParams,
@@ -59,12 +62,7 @@ router.get("/juniors/overview", async (req, res): Promise<void> => {
     db
       .select({ n: sql<number>`count(*)::int` })
       .from(juniorParticipantsTable)
-      .where(
-        and(
-          eq(juniorParticipantsTable.tenantId, tenantId),
-          eq(juniorParticipantsTable.isPrivate, false),
-        ),
-      ),
+      .where(and(eq(juniorParticipantsTable.tenantId, tenantId), juniorParticipantIsPublic)),
     db
       .select({ n: sql<number>`count(*)::int` })
       .from(juniorPremiershipsTable)
@@ -114,9 +112,10 @@ router.get("/juniors/overview", async (req, res): Promise<void> => {
     const recentOpps = await overlayNativeOpponents(recentRows.map(toOpponentClub));
     recentMatches = recentRows.map((r, i) => toMatchSummary(r.match, recentOpps[i]));
 
+    const style = await getJuniorNameStyle(tenantId);
     [topRunScorers, topWicketTakers] = await Promise.all([
-      battingLeaders(tenantId, 5, { season: latestSeason }),
-      bowlingLeaders(tenantId, 5, { season: latestSeason }),
+      battingLeaders(tenantId, 5, { season: latestSeason }, style),
+      bowlingLeaders(tenantId, 5, { season: latestSeason }, style),
     ]);
   }
 
@@ -150,12 +149,13 @@ router.get("/juniors/top-performers", async (req, res): Promise<void> => {
   const requestedSeason = parsed.data.season?.trim() || undefined;
 
   const tenantId = getTenantId(req);
+  const style = await getJuniorNameStyle(tenantId);
 
   // All-time: aggregate across every season.
   if (allTime) {
     const [topRunScorers, topWicketTakers, availableAgeGroups] = await Promise.all([
-      battingLeaders(tenantId, 5, { ageGroup }),
-      bowlingLeaders(tenantId, 5, { ageGroup }),
+      battingLeaders(tenantId, 5, { ageGroup }, style),
+      bowlingLeaders(tenantId, 5, { ageGroup }, style),
       ageGroupsForSeason(tenantId, null),
     ]);
     res.json({ season: null, availableAgeGroups, topRunScorers, topWicketTakers });
@@ -180,8 +180,8 @@ router.get("/juniors/top-performers", async (req, res): Promise<void> => {
   }
 
   const [topRunScorers, topWicketTakers, availableAgeGroups] = await Promise.all([
-    battingLeaders(tenantId, 5, { season, ageGroup }),
-    bowlingLeaders(tenantId, 5, { season, ageGroup }),
+    battingLeaders(tenantId, 5, { season, ageGroup }, style),
+    bowlingLeaders(tenantId, 5, { season, ageGroup }, style),
     ageGroupsForSeason(tenantId, season),
   ]);
   res.json({ season, availableAgeGroups, topRunScorers, topWicketTakers });
@@ -192,11 +192,12 @@ router.get("/juniors/top-performers", async (req, res): Promise<void> => {
 // ---------------------------------------------------------------------------
 router.get("/juniors/leaderboards", async (req, res): Promise<void> => {
   const tenantId = getTenantId(req);
+  const style = await getJuniorNameStyle(tenantId);
   const [mostRuns, mostWickets, highestScores, bestBowling] = await Promise.all([
-    battingLeaders(tenantId, 25),
-    bowlingLeaders(tenantId, 25),
-    highestScoreInnings(tenantId, 25),
-    bestBowlingFigures(tenantId, 25),
+    battingLeaders(tenantId, 25, {}, style),
+    bowlingLeaders(tenantId, 25, {}, style),
+    highestScoreInnings(tenantId, 25, style),
+    bestBowlingFigures(tenantId, 25, style),
   ]);
   res.json({ mostRuns, mostWickets, highestScores, bestBowling });
 });
@@ -204,8 +205,10 @@ router.get("/juniors/leaderboards", async (req, res): Promise<void> => {
 // ---------------------------------------------------------------------------
 // GET /juniors/leaderboard — rich combined batting + bowling aggregate, one row
 // per HH junior, filterable by age group + season. Aggregated in JS from
-// Halls Head lines only (inner-join participants is_private=false excludes
-// opposition AND private players). Junior data never touches a senior table.
+// Halls Head lines only (the inner join on public participants excludes
+// opposition AND withheld private players; an overridden player is included,
+// KTD12). Names follow the club's naming style. Junior data never touches a
+// senior table.
 // ---------------------------------------------------------------------------
 router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
   const parsed = ListJuniorLeaderboardQueryParams.safeParse(req.query);
@@ -216,6 +219,7 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
   const { season, ageGroup } = parsed.data;
 
   const tenantId = getTenantId(req);
+  const style = await getJuniorNameStyle(tenantId);
 
   const matchConds = [
     eq(juniorMatchesTable.tenantId, tenantId),
@@ -245,7 +249,7 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
         juniorParticipantJoin(juniorMatchBattingTable.participantId, tenantId),
       )
       .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
-      .where(and(eq(juniorParticipantsTable.isPrivate, false), ...matchConds)),
+      .where(and(juniorParticipantIsPublic, ...matchConds)),
     db
       .select({
         participantId: juniorParticipantsTable.participantId,
@@ -259,7 +263,7 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
         juniorParticipantJoin(juniorMatchBowlingTable.participantId, tenantId),
       )
       .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
-      .where(and(eq(juniorParticipantsTable.isPrivate, false), ...bowlConds)),
+      .where(and(juniorParticipantIsPublic, ...bowlConds)),
   ]);
 
   type Agg = {
@@ -285,7 +289,7 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
     if (!a) {
       a = {
         participantId,
-        displayName: displayName ?? "",
+        displayName: formatJuniorName(displayName, style),
         innings: 0,
         notOuts: 0,
         runs: 0,
@@ -363,12 +367,14 @@ router.get("/juniors/leaderboard", async (req, res): Promise<void> => {
 // ---------------------------------------------------------------------------
 // GET /juniors/social-milestones — career run/wicket/games tallies per HH
 // junior that have crossed a celebratory threshold, for the admin junior social
-// downloads. Aggregated in JS from Halls Head lines only (inner-join
-// participants is_private=false excludes opposition AND private players), so the
-// 6 private juniors never surface. Junior data never touches a senior table.
+// downloads. Aggregated in JS from Halls Head lines only (the inner join on
+// public participants excludes opposition AND withheld private players; an
+// overridden player is included, KTD12), named in the club's style. Junior data
+// never touches a senior table.
 // ---------------------------------------------------------------------------
 router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
   const tenantId = getTenantId(req);
+  const style = await getJuniorNameStyle(tenantId);
   const [battingRows, bowlingRows] = await Promise.all([
     db
       .select({
@@ -386,7 +392,7 @@ router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
       .where(
         and(
           eq(juniorMatchesTable.tenantId, tenantId),
-          eq(juniorParticipantsTable.isPrivate, false),
+          juniorParticipantIsPublic,
           eq(juniorMatchBattingTable.isHallsHead, true),
         ),
       ),
@@ -406,7 +412,7 @@ router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
       .where(
         and(
           eq(juniorMatchesTable.tenantId, tenantId),
-          eq(juniorParticipantsTable.isPrivate, false),
+          juniorParticipantIsPublic,
           eq(juniorMatchBowlingTable.isHallsHead, true),
         ),
       ),
@@ -425,7 +431,7 @@ router.get("/juniors/social-milestones", async (req, res): Promise<void> => {
     if (!c) {
       c = {
         participantId,
-        displayName: displayName ?? "",
+        displayName: formatJuniorName(displayName, style),
         runs: 0,
         wickets: 0,
         matchIds: new Set(),

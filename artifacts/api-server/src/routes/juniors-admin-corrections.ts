@@ -108,7 +108,9 @@ router.delete(
         const prev = (correction.prevValues ?? {}) as Record<string, unknown>;
         const set: Record<string, unknown> = {};
         for (const [snake, value] of Object.entries(prev)) {
-          set[snakeToCamel(snake)] = value;
+          // Journalled timestamps (e.g. privacy_override_at) are ISO strings in JSON.
+          set[snakeToCamel(snake)] =
+            snake.endsWith("_at") && typeof value === "string" ? new Date(value) : value;
         }
         if (Object.keys(set).length > 0) {
           if (correction.targetTable === "junior_participants") {

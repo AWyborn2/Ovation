@@ -8421,6 +8421,18 @@ export interface JuniorPlayerSummary {
   seniorPlayerId?: number | null;
   /** Only present/true on admin requests with includePrivate. */
   isPrivate?: boolean;
+  /** Admin requests with includePrivate only. A private player an admin names publicly. */
+  privacyOverride?: boolean;
+  /**
+     * Admin requests with includePrivate only. The admin who set the override.
+     * @nullable
+     */
+  privacyOverrideBy?: string | null;
+  /**
+     * Admin requests with includePrivate only. When the override was set.
+     * @nullable
+     */
+  privacyOverrideAt?: string | null;
 }
 
 export interface JuniorSeniorLinkSummary {
@@ -8668,12 +8680,51 @@ export interface UpdateJuniorParticipantBody {
   /** @minLength 1 */
   displayName?: string;
   isPrivate?: boolean;
+  /** Show a private player's name publicly anyway (true) or withhold it again (false). Can only be switched on for a private player. */
+  privacyOverride?: boolean;
 }
+
+/**
+ * How public junior surfaces name the club's players: full name, first name and surname initial ("Ollie G"), or first name only.
+ */
+export type JuniorNameStyle = typeof JuniorNameStyle[keyof typeof JuniorNameStyle];
+
+
+export const JuniorNameStyle = {
+  full: 'full',
+  first_initial: 'first_initial',
+  first: 'first',
+} as const;
+
+export type JuniorTeamPublishMode = typeof JuniorTeamPublishMode[keyof typeof JuniorTeamPublishMode];
+
+
+export const JuniorTeamPublishMode = {
+  approval: 'approval',
+  auto: 'auto',
+} as const;
+
+/**
+ * Per-team social publishing, keyed by age group then team name. A team not listed needs approval; only "auto" lets its cards post themselves.
+ */
+export interface JuniorTeamPublishing {[key: string]: {[key: string]: JuniorTeamPublishMode}}
 
 export interface JuniorAdminParticipant {
   participantId: string;
   displayName: string;
   isPrivate: boolean;
+  /** An admin has chosen to show this private player's name publicly. */
+  privacyOverride: boolean;
+  /**
+     * The admin who set the override.
+     * @nullable
+     */
+  privacyOverrideBy: string | null;
+  /**
+     * When the override was set.
+     * @nullable
+     */
+  privacyOverrideAt: string | null;
 }
 
 export type JuniorStatCorrectionTargetTable = typeof JuniorStatCorrectionTargetTable[keyof typeof JuniorStatCorrectionTargetTable];
@@ -8953,6 +9004,8 @@ export interface JuniorMatchDisplaySettings {
   defaultSeason?: string | null;
   /** Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones. */
   ageGroupOrder: string[];
+  nameStyle: JuniorNameStyle;
+  teamPublishing: JuniorTeamPublishing;
 }
 
 export type JuniorMatchDisplaySettingsUpdateDefaultSeasonMode = typeof JuniorMatchDisplaySettingsUpdateDefaultSeasonMode[keyof typeof JuniorMatchDisplaySettingsUpdateDefaultSeasonMode];
@@ -8970,6 +9023,8 @@ export interface JuniorMatchDisplaySettingsUpdate {
   /** @nullable */
   defaultSeason?: string | null;
   ageGroupOrder?: string[];
+  nameStyle?: JuniorNameStyle;
+  teamPublishing?: JuniorTeamPublishing;
 }
 
 export interface JuniorPremiershipPlayer {
@@ -9489,6 +9544,13 @@ season?: string;
  * Filter by age group (e.g. "U14")
  */
 ageGroup?: string;
+};
+
+export type GetJuniorMatchParams = {
+/**
+ * Return full names and participant ids on every line (honoured only for a signed-in admin of this club — silently ignored otherwise). Used by the admin scorecard editor.
+ */
+includePrivate?: boolean;
 };
 
 export type ListJuniorStatCorrectionsParams = {

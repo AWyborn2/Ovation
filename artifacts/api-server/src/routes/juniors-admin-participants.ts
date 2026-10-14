@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
   juniorMatchBattingTable,
@@ -34,7 +34,8 @@ import {
 /**
  * Juniors admin — participant profile corrections and duplicate merges.
  *
- * `PATCH /juniors/participants/:id` (display name / privacy) and
+ * `PATCH /juniors/participants/:id` (display name / privacy / privacy override),
+ * `GET /juniors/privacy-overrides` (the club's active overrides) and
  * `POST /juniors/participants/:id/merge` (absorb a duplicate PlayHQ GUID into
  * its keeper, recorded in junior_participant_merges so the ETL re-applies it).
  * See routes/juniors-admin.ts for the write-through + journal model. Mounted
@@ -85,8 +86,47 @@ async function renameClubLines(
     );
 }
 
+/** Admin shape of a participant: full name and every privacy fact (KTD12). */
+function adminParticipant(p: typeof juniorParticipantsTable.$inferSelect) {
+  return {
+    participantId: p.participantId,
+    displayName: p.displayName ?? "",
+    isPrivate: p.isPrivate,
+    privacyOverride: p.privacyOverride,
+    privacyOverrideBy: p.privacyOverrideBy,
+    privacyOverrideAt: p.privacyOverrideAt?.toISOString() ?? null,
+  };
+}
+
 // ---------------------------------------------------------------------------
-// PATCH /juniors/participants/:id — display name / privacy corrections
+// GET /juniors/privacy-overrides — the club's players named publicly although
+// PlayHQ (or an admin) marked them private. Admin only, this tenant only.
+// ---------------------------------------------------------------------------
+router.get(
+  "/juniors/privacy-overrides",
+  requireAdmin,
+  async (req: RequestWithAdmin, res): Promise<void> => {
+    const rows = await db
+      .select()
+      .from(juniorParticipantsTable)
+      .where(
+        and(
+          eq(juniorParticipantsTable.tenantId, getTenantId(req)),
+          eq(juniorParticipantsTable.isPrivate, true),
+          eq(juniorParticipantsTable.privacyOverride, true),
+        ),
+      )
+      .orderBy(asc(juniorParticipantsTable.displayName));
+    res.json(rows.map(adminParticipant));
+  },
+);
+
+// ---------------------------------------------------------------------------
+// PATCH /juniors/participants/:id — display name / privacy corrections, and the
+// privacy override (KTD12): an admin may name a private player publicly. The
+// override records who set it and when, and is journalled like every correction.
+// It can only be switched ON for a player who is currently private — an override
+// set in advance would silently name a child the moment PlayHQ marks them private.
 // ---------------------------------------------------------------------------
 
 router.patch(
@@ -127,12 +167,28 @@ router.patch(
       patch.is_private = body.data.isPrivate;
       prev.is_private = participant.isPrivate;
     }
+    if (body.data.privacyOverride !== undefined) {
+      const willBePrivate = body.data.isPrivate ?? participant.isPrivate;
+      if (body.data.privacyOverride && !willBePrivate) {
+        res.status(400).json({ error: "Only a private player's name can be overridden" });
+        return;
+      }
+      if (body.data.privacyOverride !== participant.privacyOverride) {
+        const by = body.data.privacyOverride ? adminName(req) : null;
+        const at = body.data.privacyOverride ? new Date() : null;
+        set.privacyOverride = body.data.privacyOverride;
+        set.privacyOverrideBy = by;
+        set.privacyOverrideAt = at;
+        patch.privacy_override = body.data.privacyOverride;
+        patch.privacy_override_by = by;
+        patch.privacy_override_at = at?.toISOString() ?? null;
+        prev.privacy_override = participant.privacyOverride;
+        prev.privacy_override_by = participant.privacyOverrideBy;
+        prev.privacy_override_at = participant.privacyOverrideAt?.toISOString() ?? null;
+      }
+    }
     if (Object.keys(set).length === 0) {
-      res.json({
-        participantId: participant.participantId,
-        displayName: participant.displayName ?? "",
-        isPrivate: participant.isPrivate,
-      });
+      res.json(adminParticipant(participant));
       return;
     }
 
@@ -163,11 +219,7 @@ router.patch(
       return row;
     });
 
-    res.json({
-      participantId: updated.participantId,
-      displayName: updated.displayName ?? "",
-      isPrivate: updated.isPrivate,
-    });
+    res.json(adminParticipant(updated));
   },
 );
 

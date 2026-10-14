@@ -3,6 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useListJuniorPlayers,
   getListJuniorPlayersQueryKey,
+  useListJuniorPrivacyOverrides,
+  getListJuniorPrivacyOverridesQueryKey,
   useUpdateJuniorParticipant,
   useSetJuniorSeniorLink,
   useClearJuniorSeniorLink,
@@ -28,7 +30,22 @@ import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeah
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { DataTable, EditDrawer, StatusPill, type DataTableColumn } from "@/components/admin-ui";
-import { Info, Search } from "lucide-react";
+import { AlertTriangle, Info, Search } from "lucide-react";
+
+/** "1 Oct 2026" for an override timestamp; empty when unknown. */
+function overrideDate(at: string | null | undefined): string {
+  if (!at) return "";
+  const d = new Date(at);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : d.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** "Set by ash on 1 Oct 2026", tolerating a missing admin or date. */
+function overrideSetBy(by: string | null | undefined, at: string | null | undefined): string {
+  const when = overrideDate(at);
+  return ["Set", by ? `by ${by}` : "", when ? `on ${when}` : ""].filter(Boolean).join(" ");
+}
 
 /**
  * Junior players admin: the identity-management home for junior participants.
@@ -38,6 +55,11 @@ import { Info, Search } from "lucide-react";
  * every junior line to the keeper, and survive juniors data reloads via the
  * junior_participant_merges map; the absorbed profile's URL aliases to the
  * keeper. Junior and senior stats remain completely separate throughout.
+ *
+ * A player PlayHQ marks private is withheld from every public junior page; an
+ * admin can override that per player (junior PlayHQ sync plan KTD12, R16). While
+ * an override is on, the editor warns that a private player is being named, and
+ * the page lists every active override with who set it and when.
  */
 export default function AdminJuniorPlayers() {
   const qc = useQueryClient();
@@ -55,6 +77,9 @@ export default function AdminJuniorPlayers() {
     query: { queryKey: getListJuniorPlayersQueryKey(listParams) },
   });
   const editing = (data ?? []).find((p) => p.participantId === editingId) ?? null;
+  const overridesQ = useListJuniorPrivacyOverrides({
+    query: { queryKey: getListJuniorPrivacyOverridesQueryKey() },
+  });
 
   const invalidateAll = () => {
     // Junior aggregates are computed live from the line tables, so a merge or
@@ -63,6 +88,7 @@ export default function AdminJuniorPlayers() {
     qc.invalidateQueries({ queryKey: getListJuniorLeaderboardQueryKey() });
     qc.invalidateQueries({ queryKey: getGetJuniorLeaderboardsQueryKey() });
     qc.invalidateQueries({ queryKey: getListJuniorMatchesQueryKey() });
+    qc.invalidateQueries({ queryKey: getListJuniorPrivacyOverridesQueryKey() });
   };
   const onErr = (e: unknown) => setError(handleAdminMutationError(e));
 
@@ -98,7 +124,9 @@ export default function AdminJuniorPlayers() {
       header: "Status",
       cell: (p) => (
         <span className="flex flex-wrap gap-1.5">
-          {p.isPrivate ? (
+          {p.isPrivate && p.privacyOverride ? (
+            <StatusPill tone="attention">Private, named</StatusPill>
+          ) : p.isPrivate ? (
             <StatusPill tone="danger">Private</StatusPill>
           ) : (
             <StatusPill>Public</StatusPill>
@@ -121,10 +149,31 @@ export default function AdminJuniorPlayers() {
       <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary-text" aria-hidden />
         <p>
-          Public junior pages show each player by the display name set here. A private player is
-          hidden from every public junior page, and junior stats never mix with senior stats.
+          Public junior pages show each player by the display name set here, in the club&apos;s
+          naming style. A private player is hidden from every public junior page unless you choose
+          to show their name, and junior stats never mix with senior stats.
         </p>
       </div>
+
+      {(overridesQ.data ?? []).length > 0 && (
+        <section
+          className="space-y-2 rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm"
+          data-testid="privacy-overrides"
+          aria-label="Private players named publicly"
+        >
+          <p className="font-semibold">Private players named publicly</p>
+          <ul className="space-y-1">
+            {(overridesQ.data ?? []).map((o) => (
+              <li key={o.participantId} className="flex flex-wrap items-baseline gap-x-2">
+                <strong>{o.displayName}</strong>
+                <em className="not-italic text-muted-foreground">
+                  {overrideSetBy(o.privacyOverrideBy, o.privacyOverrideAt)}
+                </em>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {error && (
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -263,6 +312,26 @@ function JuniorPlayerEditor({
     );
   };
 
+  const toggleOverride = async () => {
+    const naming = !player.privacyOverride;
+    if (
+      !(await confirm({
+        title: naming ? "Show this private player's name?" : "Withhold this player's name?",
+        description: naming
+          ? `${player.displayName} is marked private. Their name will appear on public junior pages and cards, in the club's naming style. Only do this with the family's permission.`
+          : `${player.displayName} will be hidden from public junior pages again.`,
+        confirmText: naming ? "Show name" : "Withhold name",
+        destructive: naming,
+      }))
+    )
+      return;
+    clearError();
+    update.mutate(
+      { id: player.participantId, data: { privacyOverride: naming } },
+      { onSuccess: onChanged, onError },
+    );
+  };
+
   return (
     <div className="space-y-5">
       <div className="space-y-1">
@@ -290,15 +359,57 @@ function JuniorPlayerEditor({
             {player.isPrivate ? "Private profile" : "Public profile"}
           </p>
           <p className="text-xs text-muted-foreground">
-            {player.isPrivate
-              ? "Hidden from every public junior page."
-              : "Shown on public junior pages."}
+            {player.isPrivate && player.privacyOverride
+              ? "Marked private, but named on public junior pages."
+              : player.isPrivate
+                ? "Hidden from every public junior page."
+                : "Shown on public junior pages."}
           </p>
         </div>
         <Button size="sm" variant="outline" disabled={update.isPending} onClick={togglePrivate}>
           {player.isPrivate ? "Make public" : "Make private"}
         </Button>
       </div>
+
+      {player.isPrivate &&
+        (player.privacyOverride ? (
+          <div
+            className="space-y-2 rounded-lg border border-amber-500/60 bg-amber-500/10 px-4 py-3 text-sm"
+            data-testid="privacy-override-warning"
+            role="alert"
+          >
+            <p className="flex items-start gap-2 font-semibold">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />A private player is
+              being named on public pages and cards.
+            </p>
+            <p className="text-muted-foreground">
+              {overrideSetBy(player.privacyOverrideBy, player.privacyOverrideAt)}.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={update.isPending}
+              onClick={toggleOverride}
+            >
+              Withhold name again
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-4 py-3">
+            <p className="text-xs text-muted-foreground">
+              With the family&apos;s permission you can show this private player&apos;s name
+              publicly.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={update.isPending}
+              onClick={toggleOverride}
+            >
+              Show name publicly
+            </Button>
+          </div>
+        ))}
 
       <div className="space-y-2 border-t border-border pt-4">
         <p className="text-sm font-semibold">More</p>

@@ -10,7 +10,13 @@ import {
   juniorParticipantMergesTable,
   playersTable,
 } from "@workspace/db";
-import { isNotOut } from "../lib/junior-helpers";
+import {
+  isNotOut,
+  getJuniorNameStyle,
+  juniorParticipantIsPublic,
+  isJuniorWithheld,
+  formatJuniorName,
+} from "../lib/junior-helpers";
 import {
   ListJuniorPlayersQueryParams,
   GetJuniorPlayerParams,
@@ -59,9 +65,16 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
   const withPrivate = includePrivate === true && !!(await resolveAdmin(req));
 
   const tenantId = getTenantId(req);
+  // Public reads name players in the club's style (KTD12); admins see full names.
+  const style = withPrivate ? "full" : await getJuniorNameStyle(tenantId);
   const conds: SQL[] = [];
-  if (!withPrivate) conds.push(eq(juniorParticipantsTable.isPrivate, false));
-  if (search) conds.push(ilike(juniorParticipantsTable.displayName, `%${search}%`));
+  // Withheld players (private, not overridden) are left out of the public
+  // directory; an overridden player is listed like any other.
+  if (!withPrivate) conds.push(juniorParticipantIsPublic);
+  // With a shortened style the search runs on the public name only (below), so a
+  // surname the style hides cannot be used to find a child.
+  if (search && style === "full")
+    conds.push(ilike(juniorParticipantsTable.displayName, `%${search}%`));
 
   // Season / age-group filters restrict to participants who actually appeared in
   // a matching match. Appearance = ANY HH line (batting OR bowling OR roster);
@@ -147,19 +160,30 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
   const runsBy = new Map(runsRows.map((r) => [r.pid, r.runs]));
   const wktsBy = new Map(wktsRows.map((r) => [r.pid, r.wickets]));
 
+  const needle = search && style !== "full" ? search.toLowerCase() : null;
   res.json(
-    participants.map((p) => ({
-      participantId: p.participantId,
-      displayName: p.displayName ?? "",
-      firstSeason: p.firstSeason,
-      lastSeason: p.lastSeason,
-      teams: p.teams,
-      matches: matchesBy.get(p.participantId) ?? 0,
-      runs: runsBy.get(p.participantId) ?? 0,
-      wickets: wktsBy.get(p.participantId) ?? 0,
-      seniorPlayerId: p.seniorPlayerId,
-      ...(withPrivate ? { isPrivate: p.isPrivate } : {}),
-    })),
+    participants
+      .map((p) => ({ p, name: formatJuniorName(p.displayName, style) }))
+      .filter(({ name }) => needle === null || name.toLowerCase().includes(needle))
+      .map(({ p, name }) => ({
+        participantId: p.participantId,
+        displayName: name,
+        firstSeason: p.firstSeason,
+        lastSeason: p.lastSeason,
+        teams: p.teams,
+        matches: matchesBy.get(p.participantId) ?? 0,
+        runs: runsBy.get(p.participantId) ?? 0,
+        wickets: wktsBy.get(p.participantId) ?? 0,
+        seniorPlayerId: p.seniorPlayerId,
+        ...(withPrivate
+          ? {
+              isPrivate: p.isPrivate,
+              privacyOverride: p.privacyOverride,
+              privacyOverrideBy: p.privacyOverrideBy,
+              privacyOverrideAt: p.privacyOverrideAt?.toISOString() ?? null,
+            }
+          : {}),
+      })),
   );
 });
 
@@ -191,15 +215,16 @@ router.get("/juniors/players/by-senior/:playerId", async (req, res): Promise<voi
       and(
         eq(juniorParticipantsTable.seniorPlayerId, params.data.playerId),
         eq(juniorParticipantsTable.tenantId, getTenantId(req)),
-        eq(juniorParticipantsTable.isPrivate, false),
+        juniorParticipantIsPublic,
       ),
     )
     .orderBy(juniorParticipantsTable.displayName);
+  const style = await getJuniorNameStyle(getTenantId(req));
 
   res.json(
     rows.map((r) => ({
       participantId: r.participantId,
-      displayName: r.displayName ?? "",
+      displayName: formatJuniorName(r.displayName, style),
       firstSeason: r.firstSeason,
       lastSeason: r.lastSeason,
     })),
@@ -335,10 +360,12 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
     }
   }
 
-  if (!participant || participant.isPrivate) {
+  // A withheld player has no public profile; an overridden one does (KTD12).
+  if (!participant || isJuniorWithheld(participant)) {
     res.status(404).json({ error: "Player not found" });
     return;
   }
+  const publicName = formatJuniorName(participant.displayName, await getJuniorNameStyle(tenantId));
 
   // All HH batting/bowling lines for this player, joined to their match context.
   const battingRows = await db
@@ -474,7 +501,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
         ? {
             id: b.line.id,
             participantId: pid,
-            playerName: participant.displayName ?? "",
+            playerName: publicName,
             isHallsHead: true,
             isPrivate: false,
             batOrder: b.line.batOrder,
@@ -490,7 +517,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
         ? {
             id: bw.line.id,
             participantId: pid,
-            playerName: participant.displayName ?? "",
+            playerName: publicName,
             isHallsHead: true,
             isPrivate: false,
             overs: bw.line.overs,
@@ -546,7 +573,7 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
 
   res.json({
     participantId: participant.participantId,
-    displayName: participant.displayName ?? "",
+    displayName: publicName,
     firstSeason: participant.firstSeason,
     lastSeason: participant.lastSeason,
     teams: participant.teams,

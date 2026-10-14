@@ -6,8 +6,11 @@ import {
   juniorMatchRostersTable,
   juniorParticipantsTable,
   juniorMatchesTable,
+  type JuniorNameStyle,
 } from "@workspace/db";
 import { BALLS_PER_OVER } from "./junior-cricket";
+import { juniorParticipantIsPublic } from "./junior-helpers";
+import { formatJuniorName } from "./junior-names";
 import { juniorParticipantJoin } from "./junior-participant-scope";
 
 /**
@@ -20,6 +23,10 @@ import { juniorParticipantJoin } from "./junior-participant-scope";
  * cycle. Same shared-core-first pattern as junior-admin-helpers.ts.
  */
 export type LeaderScope = { season?: string; ageGroup?: string };
+
+// Leaders include every public participant — not private, or private with an
+// admin's override (KTD12) — and name them in the club's style (`style`, default
+// `full`). Withheld participants are left out entirely.
 
 /** Every junior read is scoped to one tenant's matches (junior_matches.tenant_id). */
 const ofTenant = (tenantId: number) => eq(juniorMatchesTable.tenantId, tenantId);
@@ -61,11 +68,16 @@ export async function rosterGamesByParticipant(
   );
 }
 
-export async function battingLeaders(tenantId: number, limit: number, scope: LeaderScope = {}) {
+export async function battingLeaders(
+  tenantId: number,
+  limit: number,
+  scope: LeaderScope = {},
+  style: JuniorNameStyle = "full",
+) {
   const conds = [
     ofTenant(tenantId),
     eq(juniorMatchBattingTable.isHallsHead, true),
-    eq(juniorParticipantsTable.isPrivate, false),
+    juniorParticipantIsPublic,
   ];
   if (scope.season) conds.push(eq(juniorMatchesTable.season, scope.season));
   if (scope.ageGroup) conds.push(eq(juniorMatchesTable.ageGroup, scope.ageGroup));
@@ -91,7 +103,7 @@ export async function battingLeaders(tenantId: number, limit: number, scope: Lea
     .limit(limit);
   return rows.map((r) => ({
     participantId: r.participantId,
-    displayName: r.displayName ?? "",
+    displayName: formatJuniorName(r.displayName, style),
     runs: r.runs,
     innings: r.innings,
     highScore: r.highScore,
@@ -99,11 +111,16 @@ export async function battingLeaders(tenantId: number, limit: number, scope: Lea
   }));
 }
 
-export async function bowlingLeaders(tenantId: number, limit: number, scope: LeaderScope = {}) {
+export async function bowlingLeaders(
+  tenantId: number,
+  limit: number,
+  scope: LeaderScope = {},
+  style: JuniorNameStyle = "full",
+) {
   const conds = [
     ofTenant(tenantId),
     eq(juniorMatchBowlingTable.isHallsHead, true),
-    eq(juniorParticipantsTable.isPrivate, false),
+    juniorParticipantIsPublic,
   ];
   if (scope.season) conds.push(eq(juniorMatchesTable.season, scope.season));
   if (scope.ageGroup) conds.push(eq(juniorMatchesTable.ageGroup, scope.ageGroup));
@@ -133,7 +150,7 @@ export async function bowlingLeaders(tenantId: number, limit: number, scope: Lea
   const rosterGames = await rosterGamesByParticipant(tenantId, scope);
   return rows.map((r) => ({
     participantId: r.participantId,
-    displayName: r.displayName ?? "",
+    displayName: formatJuniorName(r.displayName, style),
     wickets: r.wickets,
     matches: rosterGames.get(r.participantId) ?? 0,
     bestWickets: r.bestWickets,
@@ -141,7 +158,11 @@ export async function bowlingLeaders(tenantId: number, limit: number, scope: Lea
   }));
 }
 
-export async function highestScoreInnings(tenantId: number, limit: number) {
+export async function highestScoreInnings(
+  tenantId: number,
+  limit: number,
+  style: JuniorNameStyle = "full",
+) {
   const rows = await db
     .select({
       participantId: juniorParticipantsTable.participantId,
@@ -164,7 +185,7 @@ export async function highestScoreInnings(tenantId: number, limit: number) {
       and(
         ofTenant(tenantId),
         eq(juniorMatchBattingTable.isHallsHead, true),
-        eq(juniorParticipantsTable.isPrivate, false),
+        juniorParticipantIsPublic,
         isNotNull(juniorMatchBattingTable.runs),
       ),
     )
@@ -172,7 +193,7 @@ export async function highestScoreInnings(tenantId: number, limit: number) {
     .limit(limit);
   return rows.map((r) => ({
     participantId: r.participantId,
-    displayName: r.displayName ?? "",
+    displayName: formatJuniorName(r.displayName, style),
     runs: r.runs ?? 0,
     balls: r.balls,
     season: r.season,
@@ -183,7 +204,11 @@ export async function highestScoreInnings(tenantId: number, limit: number) {
   }));
 }
 
-export async function bestBowlingFigures(tenantId: number, limit: number) {
+export async function bestBowlingFigures(
+  tenantId: number,
+  limit: number,
+  style: JuniorNameStyle = "full",
+) {
   const rows = await db
     .select({
       participantId: juniorParticipantsTable.participantId,
@@ -206,7 +231,7 @@ export async function bestBowlingFigures(tenantId: number, limit: number) {
       and(
         ofTenant(tenantId),
         eq(juniorMatchBowlingTable.isHallsHead, true),
-        eq(juniorParticipantsTable.isPrivate, false),
+        juniorParticipantIsPublic,
         isNotNull(juniorMatchBowlingTable.wickets),
       ),
     )
@@ -214,7 +239,7 @@ export async function bestBowlingFigures(tenantId: number, limit: number) {
     .limit(limit);
   return rows.map((r) => ({
     participantId: r.participantId,
-    displayName: r.displayName ?? "",
+    displayName: formatJuniorName(r.displayName, style),
     wickets: r.wickets ?? 0,
     runs: r.runs ?? 0,
     season: r.season,

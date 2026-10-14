@@ -131,7 +131,6 @@ export async function carouselContent(
     .select()
     .from(juniorMatchesTable)
     .where(eq(juniorMatchesTable.tenantId, tenantId));
-  const privateIds = await getPrivateIds(tenantId);
   const brand = await getTenantBrand(tenantId);
   const available: FixtureRow[] = [];
   let undated = 0;
@@ -173,7 +172,7 @@ export async function carouselContent(
     ]);
     if (seen.has(identity)) continue;
     const detail = match.junior
-      ? await loadJuniorMatchDetail(match.id, tenantId, privateIds)
+      ? await loadJuniorMatchDetail(match.id, tenantId)
       : source.kind === "central"
         ? await loadCentralMatchDetail(source, match.id)
         : await loadMatchDetail(match.id, tenantId);

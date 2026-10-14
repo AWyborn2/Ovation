@@ -28,7 +28,7 @@ import { getTenantBrand } from "./tenant-brand";
 import { familyAllows, resolveFamilyConfig } from "./social-families";
 import { loadMatchDetail, loadCentralMatchDetail } from "./match-detail";
 import { overlayNativeOpponents } from "./club-brand";
-import { getPrivateIds, splitScores, MASK_NAME } from "./junior-helpers";
+import { loadJuniorNaming, splitScores, type JuniorNaming } from "./junior-helpers";
 import {
   draftKeys,
   findDraftByKey,
@@ -90,11 +90,16 @@ export function shouldDraftGrade(
 /**
  * Load a junior match in the JuniorMatchDetail shape needed by
  * `juniorMatchToSummaryInput`. Returns null when the match doesn't exist.
+ *
+ * Card names use the club's public naming (KTD12): withheld private players,
+ * the club's style for its own side, initials for the opposition. A batch caller
+ * may pass a club-wide `naming` loaded once; otherwise it is loaded for the
+ * match's participants.
  */
 export async function loadJuniorMatchDetail(
   matchId: number,
   tenantId: number,
-  privateIds: Set<string>,
+  preloadedNaming?: JuniorNaming,
 ) {
   const [matchRow] = await db
     .select({
@@ -128,8 +133,6 @@ export async function loadJuniorMatchDetail(
       : null;
   const [opponentClub] = await overlayNativeOpponents([opponentClubRaw]);
 
-  const isPriv = (pid: string | null) => !!pid && privateIds.has(pid);
-
   const [battingRows, bowlingRows, rosterRows] = await Promise.all([
     db
       .select()
@@ -147,15 +150,19 @@ export async function loadJuniorMatchDetail(
       .where(eq(juniorMatchRostersTable.matchId, matchId))
       .orderBy(juniorMatchRostersTable.id),
   ]);
+  const naming =
+    preloadedNaming ??
+    (await loadJuniorNaming(tenantId, [
+      ...battingRows.map((r) => r.participantId),
+      ...bowlingRows.map((r) => r.participantId),
+      ...rosterRows.map((r) => r.participantId),
+    ]));
 
   const battingLine = (b: typeof juniorMatchBattingTable.$inferSelect) => {
-    const priv = isPriv(b.participantId);
     return {
       id: b.id,
-      participantId: priv ? null : b.participantId,
-      playerName: priv ? MASK_NAME : (b.playerName ?? ""),
+      ...naming.line(b),
       isHallsHead: b.isHallsHead,
-      isPrivate: priv,
       batOrder: b.batOrder,
       runs: b.runs,
       balls: b.balls,
@@ -166,13 +173,10 @@ export async function loadJuniorMatchDetail(
     };
   };
   const bowlingLine = (b: typeof juniorMatchBowlingTable.$inferSelect) => {
-    const priv = isPriv(b.participantId);
     return {
       id: b.id,
-      participantId: priv ? null : b.participantId,
-      playerName: priv ? MASK_NAME : (b.playerName ?? ""),
+      ...naming.line(b),
       isHallsHead: b.isHallsHead,
-      isPrivate: priv,
       overs: b.overs,
       maidens: b.maidens,
       runs: b.runs,
@@ -199,17 +203,12 @@ export async function loadJuniorMatchDetail(
     };
   });
 
-  const rosters = rosterRows.map((r) => {
-    const priv = isPriv(r.participantId);
-    return {
-      id: r.id,
-      participantId: priv ? null : r.participantId,
-      playerName: priv ? MASK_NAME : (r.playerName ?? ""),
-      teamName: r.teamName,
-      isHallsHead: r.isHallsHead,
-      isPrivate: priv,
-    };
-  });
+  const rosters = rosterRows.map((r) => ({
+    id: r.id,
+    ...naming.line(r),
+    teamName: r.teamName,
+    isHallsHead: r.isHallsHead,
+  }));
 
   const { hhScore, opponentScore } = splitScores(match);
 
@@ -479,14 +478,15 @@ export async function generateJuniorMatchSummaryDrafts(
   }
 
   const brand = await getTenantBrand(tenantId);
-  const privateIds = await getPrivateIds(tenantId);
+  // Club-wide naming loaded once for the batch (KTD12).
+  const naming = await loadJuniorNaming(tenantId);
 
   const BATCH = 10;
   for (let i = 0; i < matchIds.length; i += BATCH) {
     const batch = matchIds.slice(i, i + BATCH);
     const outcomes = await Promise.allSettled(
       batch.map(async (matchId) => {
-        const detail = await loadJuniorMatchDetail(matchId, tenantId, privateIds);
+        const detail = await loadJuniorMatchDetail(matchId, tenantId, naming);
         if (!detail) {
           result.skipped++;
           return;
