@@ -12,6 +12,7 @@ import type { ShareCardInput } from "@/lib/share-card";
 const BLURB: Record<StarterId, string> = {
   "club-kit": "Bold club colours, big type, the crest up front.",
   broadcast: "A dark, TV-graphics look with crisp panels.",
+  clubhouse: "Your ground behind, slab titles and brush-lettered heroes.",
 };
 
 /**
@@ -42,7 +43,7 @@ export function StarterChooser({
   blurb?: string;
 }) {
   return (
-    <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 p-8 text-center">
+    <div className="mx-auto flex max-w-5xl flex-col items-center gap-6 p-8 text-center">
       <div>
         <h1 className="font-serif text-2xl font-bold uppercase">
           {title ?? `Design your ${label} card`}
@@ -51,7 +52,7 @@ export function StarterChooser({
           {blurb ?? "Pick a starting design. You can change everything about it afterwards."}
         </p>
       </div>
-      <div className="grid w-full gap-5 sm:grid-cols-2">
+      <div className="grid w-full gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {STARTER_IDS.map((id) => {
           const doc = (starterDocument(id, kind) ?? placeholderDocument(kind)) as CardAdjustments;
           return (

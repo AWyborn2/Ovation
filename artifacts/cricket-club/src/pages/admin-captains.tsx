@@ -16,19 +16,7 @@ import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { DataTable, EditDrawer, StatusPill, type DataTableColumn } from "@/components/admin-ui";
 import { Plus } from "lucide-react";
-
-const GRADES = [
-  "A Grade",
-  "B Grade",
-  "C Grade",
-  "D Grade",
-  "E Grade",
-  "F Grade",
-  "Female A Grade",
-  "Female B Grade",
-  "PPL",
-  "Colts",
-];
+import { useGradeOptions } from "@/hooks/use-club-grades";
 
 type CaptainFormValues = {
   username: string;
@@ -266,6 +254,7 @@ function CaptainForm({
   requirePassword?: boolean;
   passwordHint?: string;
 }) {
+  const { grades: gradeOptions } = useGradeOptions({ include: initial.grades });
   const [username, setUsername] = useState(initial.username);
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [password, setPassword] = useState("");
@@ -325,7 +314,7 @@ function CaptainForm({
       <div className="space-y-2">
         <Label>Grades this captain votes for</Label>
         <div className="grid grid-cols-2 gap-2">
-          {GRADES.map((g) => (
+          {gradeOptions.map((g) => (
             <label key={g} className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={grades.includes(g)} onChange={() => toggleGrade(g)} />
               {g}

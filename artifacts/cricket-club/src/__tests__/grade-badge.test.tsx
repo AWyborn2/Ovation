@@ -4,7 +4,13 @@
  */
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
-import { GradeBadge, BADGE_STYLE_ORDER, BADGE_STYLE_LABELS } from "@/components/grade-badge";
+import {
+  GradeBadge,
+  BADGE_STYLE_ORDER,
+  BADGE_STYLE_LABELS,
+  deriveGradeMeta,
+  sortGradesBySeniority,
+} from "@/components/grade-badge";
 import { DEFAULT_BRAND } from "@workspace/scorecard";
 
 afterEach(() => cleanup());
@@ -34,5 +40,32 @@ describe("GradeBadge", () => {
   it("offers Club logo in the Branding style picker", () => {
     expect(BADGE_STYLE_ORDER).toContain("logo");
     expect(BADGE_STYLE_LABELS.logo).toBe("Club logo");
+  });
+});
+
+describe("grades without a hand-written badge entry", () => {
+  it("derives sensible text from the grade name", () => {
+    expect(deriveGradeMeta("G Grade")).toMatchObject({ abbr: "G", bannerShort: "G GRADE" });
+    expect(deriveGradeMeta("Over 55s")).toMatchObject({ abbr: "55+", bannerShort: "OVER 55S" });
+    expect(deriveGradeMeta("Over 40s").abbr).toBe("40+");
+    expect(deriveGradeMeta("1st Grade").abbr.length).toBeLessThanOrEqual(3);
+  });
+
+  it("renders a grade the app has never heard of", () => {
+    render(<GradeBadge grade="Over 55s" badgeStyle="logo" />);
+    expect(screen.getByRole("img", { name: "Over 55s" }).textContent).toBe("OVER 55S");
+  });
+
+  it("sorts known grades by seniority and new ones where their name says", () => {
+    expect(
+      sortGradesBySeniority([
+        "Over 50s",
+        "Colts",
+        "G Grade",
+        "Female A Grade",
+        "Over 40s",
+        "A Grade",
+      ]),
+    ).toEqual(["A Grade", "G Grade", "Female A Grade", "Colts", "Over 40s", "Over 50s"]);
   });
 });

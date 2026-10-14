@@ -850,6 +850,62 @@ export interface WeekendWrap {
   matches: WeekendWrapMatch[];
 }
 
+export interface RoundFigure {
+  name: string;
+  /** "32* (34)" for a batter, "3/28 (10)" for a bowler. */
+  figure: string;
+}
+
+export type RoundResultOutcome = typeof RoundResultOutcome[keyof typeof RoundResultOutcome];
+
+
+export const RoundResultOutcome = {
+  WON: 'WON',
+  LOST: 'LOST',
+  '': '',
+} as const;
+
+/**
+ * One grade's result in a round, from the club's side.
+ */
+export interface RoundResult {
+  matchId: number;
+  grade: string;
+  clubScore: string;
+  oppName: string;
+  oppScore: string;
+  outcome: RoundResultOutcome;
+  /** Set when the match had no result (e.g. "WASHED OUT"); scores are empty then. */
+  note: string;
+  /** The club's best two batters. */
+  batters: RoundFigure[];
+  /** The club's best two bowlers. */
+  bowlers: RoundFigure[];
+}
+
+export interface TeamOfWeekPick {
+  name: string;
+  grade: string;
+  /** "110*", "5/28", "4/21 & 16". */
+  figure: string;
+  /**
+     * The player's library photo, else headshot; null when the club has neither.
+     * @nullable
+     */
+  photoUrl: string | null;
+}
+
+/**
+ * Results summary and team of the week prefill: a round's senior results per grade with the best players, and its standout performers.
+ */
+export interface RoundResults {
+  roundLabel: string;
+  /** "SATURDAY 10TH OCTOBER 2026" — the round's first match date. */
+  dateLabel: string;
+  results: RoundResult[];
+  teamOfWeek: TeamOfWeekPick[];
+}
+
 export interface ImportRecord {
   id: number;
   filename: string;
@@ -1605,6 +1661,12 @@ export interface TenantHeroImages {
      * @nullable
      */
   honours?: string | null;
+  /**
+     * The club's ground or clubrooms, behind card designs (tinted to the club's colours).
+     * @maxLength 2048
+     * @nullable
+     */
+  cards?: string | null;
   explore?: TenantExploreImages | null;
 }
 
@@ -3487,6 +3549,37 @@ export interface SelectionBoardSave {
   changes: SelectionChange[];
 }
 
+export type TeamSheetPreviewSection = typeof TeamSheetPreviewSection[keyof typeof TeamSheetPreviewSection];
+
+
+export const TeamSheetPreviewSection = {
+  senior: 'senior',
+  junior: 'junior',
+} as const;
+
+export interface TeamSheetPreview {
+  selectionId: number;
+  section: TeamSheetPreviewSection;
+  grade: string;
+  /** PlayHQ's match type ("One Day", "T20"); null for a manual fixture */
+  format: string | null;
+  /** PlayHQ's grade name ("A Grade Wyllie Cup") */
+  competition: string | null;
+  overs: string | null;
+  /** Where the Junior Aged Player limits come from ("PCA Bylaw 5.9"); null when unknown or junior */
+  bowlingRulesSource: string | null;
+  /** Listed players with no birth date (senior sheet only) */
+  missingBirthDates: number;
+}
+
+export interface TeamSheetPrintBody {
+  /**
+     * Overs per innings to print; remembered for the side's grade
+     * @maxLength 20
+     */
+  overs?: string | null;
+}
+
 export interface SelectionFinaliseBody {
   /** The side's version as the caller loaded it */
   version: number;
@@ -4325,6 +4418,10 @@ export const CardKind = {
   tradingCard: 'tradingCard',
   juniorHighlights: 'juniorHighlights',
   teamListRound: 'teamListRound',
+  announcement: 'announcement',
+  sponsor: 'sponsor',
+  resultsSummary: 'resultsSummary',
+  teamOfWeek: 'teamOfWeek',
 } as const;
 
 export interface Sponsor {
@@ -5696,6 +5793,97 @@ export interface PlatformPlayhqSync {
   orgs: PlatformPlayhqSyncOrgsItem[];
 }
 
+export interface GradeDecisionTenant {
+  id: number;
+  name: string;
+}
+
+export interface PendingGradeCompetition {
+  /** The normalised competition name decisions are keyed by (seasons removed). */
+  gradeKey: string;
+  gradeName: string;
+  /** PlayHQ matches across every club playing in it. */
+  matches: number;
+  seasons: string[];
+  tenants: GradeDecisionTenant[];
+  reason: string;
+}
+
+export type GradeDecisionAction = typeof GradeDecisionAction[keyof typeof GradeDecisionAction];
+
+
+export const GradeDecisionAction = {
+  map: 'map',
+  ignore: 'ignore',
+} as const;
+
+export interface GradeDecision {
+  gradeKey: string;
+  gradeName: string;
+  action: GradeDecisionAction;
+  /**
+     * The app grade a mapped competition is projected under; null when ignored.
+     * @nullable
+     */
+  centralGrade: string | null;
+  /** @nullable */
+  reason: string | null;
+  setAt: string;
+}
+
+export interface GradeDecisionList {
+  /** A saved mapping is projected immediately only when this is true. */
+  projectorConfigured: boolean;
+  mappableGrades: string[];
+  pending: PendingGradeCompetition[];
+  decisions: GradeDecision[];
+}
+
+export type SetGradeDecisionBodyAction = typeof SetGradeDecisionBodyAction[keyof typeof SetGradeDecisionBodyAction];
+
+
+export const SetGradeDecisionBodyAction = {
+  map: 'map',
+  ignore: 'ignore',
+} as const;
+
+export interface SetGradeDecisionBody {
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  gradeName: string;
+  action: SetGradeDecisionBodyAction;
+  /**
+     * Required for map (one of mappableGrades); must be absent for ignore.
+     * @nullable
+     */
+  centralGrade?: string | null;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  reason?: string | null;
+}
+
+export type GradeDecisionResult = GradeDecision & {
+  /** The competition's matches were projected now. */
+  applied: boolean;
+  created: number;
+  updated: number;
+  skipped: number;
+};
+
+export interface UnclassifiedGrade {
+  /** The competition name as PlayHQ spells it. */
+  gradeName: string;
+  /** @nullable */
+  seasonName: string | null;
+  /** PlayHQ matches the club has in this competition. */
+  matches: number;
+  reason: string;
+}
+
 export interface TenantPlayhqSyncStatus {
   /** The club is linked to a PlayHQ organisation. */
   linked: boolean;
@@ -5709,6 +5897,8 @@ export interface TenantPlayhqSyncStatus {
   stale: boolean;
   /** @nullable */
   staleSince?: string | null;
+  /** Competitions this club's PlayHQ organisation plays in that Ovation can't place in a grade, so their matches are not shown. Empty when everything is recognised. */
+  unclassifiedGrades?: UnclassifiedGrade[];
 }
 
 export type SocialFamilySettingUpdateGrades = {[key: string]: boolean};
@@ -7226,6 +7416,7 @@ export type StartKindTemplateRequestStarter = typeof StartKindTemplateRequestSta
 export const StartKindTemplateRequestStarter = {
   'club-kit': 'club-kit',
   broadcast: 'broadcast',
+  clubhouse: 'clubhouse',
 } as const;
 
 export interface StartKindTemplateRequest {
@@ -9646,6 +9837,14 @@ season: number;
 /**
  * Round number to wrap.
  */
+round: number;
+};
+
+export type GetSocialRoundResultsPrefillParams = {
+/**
+ * Season start year (e.g. 2026 for "2026/27").
+ */
+season: number;
 round: number;
 };
 

@@ -33,6 +33,10 @@ export const CARD_KIND_FAMILY = {
   tradingCard: "achievements",
   juniorHighlights: "roundup",
   teamListRound: "matchday",
+  announcement: "matchday",
+  sponsor: "matchday",
+  resultsSummary: "results",
+  teamOfWeek: "roundup",
 } as const satisfies Record<string, SocialFamily>;
 
 export type CardKind = keyof typeof CARD_KIND_FAMILY;

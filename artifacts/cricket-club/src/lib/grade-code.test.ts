@@ -11,6 +11,8 @@ describe("gradeCode", () => {
     ["U15 Boys", "U15"],
     ["Year 9 Boys", "Y9"],
     ["PPL", "PPL"],
+    ["Over 40s", "O40"],
+    ["Over 50s", "O50"],
     ["Colts", "COL"],
     ["", ""],
   ])("%s → %s", (input, out) => {

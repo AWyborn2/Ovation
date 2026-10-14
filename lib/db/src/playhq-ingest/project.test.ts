@@ -51,6 +51,34 @@ describe("toFixtureRow", () => {
       isHome: false,
       source: "playhq",
       playhqMatchId: base.id,
+      matchFormat: null,
+      competitionName: "A Grade Wyllie Cup",
+      associationOrgId: null,
+      associationName: null,
+      homeTeamName: "SBCC A Grade",
+      awayTeamName: "Halls Head A Grade",
+    });
+  });
+
+  it("copies the format and the association that runs the grade for the team sheet", () => {
+    const row = toFixtureRow(
+      {
+        ...base,
+        matchType: "One Day",
+        ownerOrgId: "C65C0BB8-87D8-EB11-A7AD-2818780DA0CC",
+        ownerOrgName: "Peel Cricket Association Inc.",
+      },
+      HH,
+      1,
+      orgs,
+      new Map(),
+      gradeOf,
+    );
+    expect(row).toMatchObject({
+      matchFormat: "One Day",
+      competitionName: "A Grade Wyllie Cup",
+      associationOrgId: "c65c0bb8-87d8-eb11-a7ad-2818780da0cc",
+      associationName: "Peel Cricket Association Inc.",
     });
   });
 

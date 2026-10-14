@@ -16,6 +16,8 @@ export interface TenantHeroImages {
   home?: string | null;
   juniors?: string | null;
   honours?: string | null;
+  /** The club's ground, behind card designs (`{{groundPhoto}}`). */
+  cards?: string | null;
   explore?: {
     honours?: string | null;
     players?: string | null;

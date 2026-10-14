@@ -108,6 +108,7 @@ import { clubKitPaletteFor, clubKitVars } from "@/lib/pack-render/club-kit-vars"
 import { resolvePackIdForKind } from "@/lib/card-template";
 import { useBrand } from "@/lib/brand-context";
 import {
+  withGroundPhoto,
   buildPackData,
   kindSponsors,
   cardGrade,
@@ -212,7 +213,7 @@ function EditorApp({ draftId }: { draftId: number }) {
   const data = useMemo(
     () => ({
       ...buildPackData({
-        brand: bundle?.brand ?? brand,
+        brand: withGroundPhoto(bundle?.brand ?? brand, brand),
         hashtag: tenantHashtag(bundle),
         sponsors: kindSponsors(bundle, input.kind, true, grade),
         presentingSponsorName: presentingSponsorName(bundle, true),

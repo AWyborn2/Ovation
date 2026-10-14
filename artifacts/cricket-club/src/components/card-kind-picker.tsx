@@ -30,6 +30,10 @@ export const CARD_KIND_OPTIONS: { value: CardKind; label: string }[] = [
   { value: "tradingCard", label: "Trading Card" },
   { value: "juniorHighlights", label: "Junior Highlights" },
   { value: "teamListRound", label: "Round Team Lists" },
+  { value: "announcement", label: "Announcement" },
+  { value: "sponsor", label: "Sponsor" },
+  { value: "resultsSummary", label: "Results" },
+  { value: "teamOfWeek", label: "Team of the Week" },
 ];
 
 // Chip picker for the card types a sponsor or template applies to.

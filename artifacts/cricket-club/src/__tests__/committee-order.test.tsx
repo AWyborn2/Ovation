@@ -11,9 +11,23 @@ vi.mock("@workspace/api-client-react", () => ({
     isLoading: false,
     data: [
       { id: 1, season: 2025, role: "President", name: "Jo", grade: null, displayOrder: 0 },
-      { id: 2, season: 2025, role: "Volunteer Coordinator", name: "Pat", grade: null, displayOrder: -10 },
+      {
+        id: 2,
+        season: 2025,
+        role: "Volunteer Coordinator",
+        name: "Pat",
+        grade: null,
+        displayOrder: -10,
+      },
       { id: 3, season: 2025, role: "Secretary", name: "Sam", grade: null, displayOrder: 0 },
-      { id: 4, season: 2025, role: "Grade Captain", name: "Ali", grade: "A Grade", displayOrder: -20 },
+      {
+        id: 4,
+        season: 2025,
+        role: "Grade Captain",
+        name: "Ali",
+        grade: "A Grade",
+        displayOrder: -20,
+      },
     ],
   }),
 }));
@@ -24,7 +38,9 @@ describe("Committee role priority", () => {
   it("puts a higher-priority custom role first and excludes grade captains", () => {
     const { container } = renderAt(<CommitteeTab />);
     expect([...container.querySelectorAll("dt")].map((el) => el.textContent)).toEqual([
-      "Volunteer Coordinator", "President", "Secretary",
+      "Volunteer Coordinator",
+      "President",
+      "Secretary",
     ]);
     expect(screen.queryByText("Grade Captain")).toBeNull();
   });

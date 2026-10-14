@@ -397,6 +397,25 @@ export async function renderCardStill(
   }
 }
 
+// Print a self-contained HTML page (the team sheet) to an A4 PDF on the shared
+// browser. Images are allowed a few seconds to load; a slow or missing one
+// prints as empty rather than failing the sheet.
+export async function renderHtmlToPdf(html: string): Promise<Buffer> {
+  const browser = await getBrowser();
+  let page: Page | null = null;
+  try {
+    page = await browser.newPage();
+    await page.setJavaScriptEnabled(false);
+    await page
+      .setContent(html, { waitUntil: "load", timeout: 8_000 })
+      .catch((err: unknown) => logger.warn({ err: String(err) }, "html-to-pdf content load"));
+    const pdf = await page.pdf({ format: "A4", printBackground: true, preferCSSPageSize: true });
+    return Buffer.isBuffer(pdf) ? pdf : Buffer.from(pdf);
+  } finally {
+    await page?.close().catch(() => {});
+  }
+}
+
 // Best-effort shutdown (used in tests / graceful exit).
 export async function closeBrowser(): Promise<void> {
   if (!browserPromise) return;

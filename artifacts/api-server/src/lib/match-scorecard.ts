@@ -138,6 +138,10 @@ export function competitionToGrade(competition: string): string | null {
   const c = competition.trim();
   if (PLAYCRICKET_GRADE_MAP[c]) return PLAYCRICKET_GRADE_MAP[c];
   const lc = c.toLowerCase();
+  // Age-based veterans comps are their own grade; check before the "<letter> grade"
+  // rule or "Over 40s A Grade" would be filed under A Grade.
+  const over = lc.match(/\bover\s*(3[5-9]|[4-7]\d)\s*(?:['’]?s)?\b/);
+  if (over) return `Over ${over[1]}s`;
   const female = lc.match(/female\s+([ab])\s+grade/);
   if (female) return `Female ${female[1].toUpperCase()} Grade`;
   const g = lc.match(/\b([a-h])\s+grade/);

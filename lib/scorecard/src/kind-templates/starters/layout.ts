@@ -110,6 +110,16 @@ export function element(
   };
 }
 
+/** An image the card supplies by token (`{{sponsorArt}}`, `{{clubLogo}}`). */
+export function image(
+  id: string,
+  name: string,
+  content: string,
+  boxes: PerSize<Box | null>,
+): StarterLayer {
+  return { id, kind: "image", name, content, ...placed(boxes) };
+}
+
 /** A filled shape. */
 export function shape(
   id: string,
@@ -140,9 +150,15 @@ export function rows(
       field: string;
       x: number;
       w: number;
+      y?: number;
+      h?: number;
+      show?: "text" | "image" | "backdrop";
       style: TemplateTextStyle & { fontSize: number };
     }>;
     variants?: Record<string, Record<string, TemplateTextStyle>>;
+    /** Columns the rows flow down (percent gap of the layer's width). */
+    columns?: number;
+    columnGap?: number;
   },
 ): StarterLayer[] {
   const groups = new Map<string, { rows: unknown; boxes: PerSize<Box> }>();
@@ -157,6 +173,7 @@ export function rows(
       rowHeight: vw(raw.rowHeight, s),
       gap: vw(raw.gap, s),
       cells: raw.cells.map((c) => ({ ...c, style: conv(c.style) })),
+      ...(raw.columns ? { columns: raw.columns, columnGap: raw.columnGap ?? 4 } : {}),
       ...(raw.variants
         ? {
             variants: Object.fromEntries(

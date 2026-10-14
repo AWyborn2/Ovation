@@ -184,22 +184,33 @@ describe("Committee (season roles board)", () => {
     await table("Role records");
     fireEvent.click(screen.getByRole("button", { name: "Add role" }));
     const form = within(drawer());
-    fireEvent.change(form.getByLabelText("Role"), { target: { value: "  Volunteer Coordinator  " } });
+    fireEvent.change(form.getByLabelText("Role"), {
+      target: { value: "  Volunteer Coordinator  " },
+    });
     fireEvent.change(form.getByLabelText("Name (as displayed)"), { target: { value: "Jo Smith" } });
     fireEvent.change(form.getByLabelText("Display order"), { target: { value: "-10" } });
     fireEvent.click(form.getByRole("button", { name: "Add role" }));
     await waitFor(() => {
       expect(requests.find((r) => r.method === "POST")?.body).toMatchObject({
-        role: "Volunteer Coordinator", grade: null, name: "Jo Smith", displayOrder: -10,
+        role: "Volunteer Coordinator",
+        grade: null,
+        name: "Jo Smith",
+        displayOrder: -10,
       });
       expect(screen.queryByRole("dialog")).toBeNull();
     });
   });
 
   it("reuses custom roles from this club's records and preserves them when editing", async () => {
-    stubApi([{ match: /\/api\/club-roles\/all/, reply: () => [
-      ...ROLES, { ...ROLES[0], id: 3, role: "Volunteer Coordinator", name: "Pat Jones" },
-    ] }]);
+    stubApi([
+      {
+        match: /\/api\/club-roles\/all/,
+        reply: () => [
+          ...ROLES,
+          { ...ROLES[0], id: 3, role: "Volunteer Coordinator", name: "Pat Jones" },
+        ],
+      },
+    ]);
     renderAt(<AdminCommittee />, "/admin/people/committee");
     const t = await table("Role records");
     fireEvent.click(within(t).getByText("Pat Jones"));

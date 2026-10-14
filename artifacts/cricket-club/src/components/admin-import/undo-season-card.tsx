@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useConfirm } from "@/components/confirm-dialog";
-import { GRADES, SEASON_OPTIONS, seasonLabel } from "./resolution";
+import { SEASON_OPTIONS, seasonLabel } from "./resolution";
+import { useGradeOptions } from "@/hooks/use-club-grades";
 
 /** Destructive card: roll back every per-match scorecard for one grade + season. */
 export function UndoSeasonCard({
@@ -14,7 +15,9 @@ export function UndoSeasonCard({
   onUndo: (grade: string, season: number) => Promise<string>;
 }) {
   const confirm = useConfirm();
-  const [grade, setGrade] = useState<string>(GRADES[0]);
+  const { grades: gradeOptions } = useGradeOptions({ addFallback: true });
+  const [pickedGrade, setGrade] = useState<string | null>(null);
+  const grade = pickedGrade ?? gradeOptions[0] ?? "A Grade";
   const [season, setSeason] = useState<number>(new Date().getFullYear());
   const [result, setResult] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -58,7 +61,7 @@ export function UndoSeasonCard({
               onChange={(e) => setGrade(e.target.value)}
               className="block w-48 rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
-              {GRADES.map((g) => (
+              {gradeOptions.map((g) => (
                 <option key={g} value={g}>
                   {g}
                 </option>
