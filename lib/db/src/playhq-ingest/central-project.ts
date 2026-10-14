@@ -69,6 +69,8 @@ interface CandidateRow extends PlayhqMatchRow {
   grade_name: string | null;
   season_name: string | null;
   central_grade: string | null;
+  /** A platform decision for this grade name: "map" (central_grade already reflects it) or "ignore". */
+  grade_decision: string | null;
   raw: RawScorecard | null;
 }
 
@@ -78,7 +80,26 @@ export function isWithheldName(name: string | null | undefined): boolean {
   return !s || /\bprivate\b|\bwithheld\b|\bhidden\b|\bunknown player\b/i.test(s);
 }
 
+/**
+ * Whether platform grade decisions (public.playhq_grade_decisions, migration 0039) can be read by
+ * this role. Production schema changes and the projector's SELECT grant are applied by hand, so a
+ * database without them must project exactly as before rather than fail every match.
+ */
+async function decisionsReadable(c: Queryable): Promise<boolean> {
+  try {
+    const { rows } = await c.query<{ ok: boolean }>(
+      `select case when to_regclass('public.playhq_grade_decisions') is null then false
+              else has_table_privilege(current_user, 'public.playhq_grade_decisions', 'select')
+              end as ok`,
+    );
+    return rows[0]?.ok === true;
+  } catch {
+    return false;
+  }
+}
+
 async function loadCandidates(c: Queryable, o: ProjectOptions): Promise<CandidateRow[]> {
+  const decisions = await decisionsReadable(c);
   // Finished matches, plus any with a scorecard: the scraper fetches one only once a match has
   // started, so an unfinished match with a scorecard is in progress (a two-day game between its
   // days) and is projected as IN_PROGRESS, then re-projected as it goes on (D2 follow-up).
@@ -109,11 +130,24 @@ async function loadCandidates(c: Queryable, o: ProjectOptions): Promise<Candidat
             m.home_org_id::text as home_org_id, m.away_org_id::text as away_org_id,
             m.home_score, m.away_score, m.grade_id::text as grade_id,
             g.name as grade_name, g.season_name,
-            gm.central_grade, s.raw
+            ${
+              decisions
+                ? "coalesce(d.central_grade, gm.central_grade) as central_grade, d.action as grade_decision"
+                : "gm.central_grade as central_grade, null::text as grade_decision"
+            }, s.raw
        from playhq.matches m
        join playhq.grades g on g.id = m.grade_id
        left join playhq.scorecards s on s.match_id = m.id
        left join central.grade_playhq_map gm on gm.grade_key = central.playhq_grade_key(g.name)
+       ${
+         decisions
+           ? `left join lateral (
+                select x.action, x.central_grade from public.playhq_grade_decisions x
+                 where central.playhq_grade_key(x.grade_name) = central.playhq_grade_key(g.name)
+                 order by x.set_at desc limit 1
+              ) d on true`
+           : ""
+       }
       where ${where.join(" and ")}
       order by m.start_at, m.id`,
     params,
@@ -536,6 +570,13 @@ export async function projectToCentral(
 
   for (const m of candidates) {
     const centralGrade = m.central_grade ?? m.grade_name;
+    if (m.grade_decision === "ignore") {
+      summary.skipped.push({
+        playhqMatchId: m.id,
+        reason: `grade "${centralGrade}" ignored by platform decision`,
+      });
+      continue;
+    }
     const cls = classifyCentralGrade(centralGrade);
     if (!cls.appGrade) {
       summary.skipped.push({

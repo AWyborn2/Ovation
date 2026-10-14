@@ -12726,6 +12726,73 @@ export const DeleteProvisioningExclusionParams = zod.object({
 
 
 /**
+ * @summary PlayHQ competitions no club's sync can place in a grade (their matches are skipped until someone decides), and the decisions made so far.
+ */
+export const GetPlatformGradeDecisionsResponse = zod.object({
+  "projectorConfigured": zod.boolean().describe('A saved mapping is projected immediately only when this is true.'),
+  "mappableGrades": zod.array(zod.string()),
+  "pending": zod.array(zod.object({
+  "gradeKey": zod.string().describe('The normalised competition name decisions are keyed by (seasons removed).'),
+  "gradeName": zod.string(),
+  "matches": zod.number().describe('PlayHQ matches across every club playing in it.'),
+  "seasons": zod.array(zod.string()),
+  "tenants": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
+  "reason": zod.string()
+})),
+  "decisions": zod.array(zod.object({
+  "gradeKey": zod.string(),
+  "gradeName": zod.string(),
+  "action": zod.enum(['map', 'ignore']),
+  "centralGrade": zod.string().nullable().describe('The app grade a mapped competition is projected under; null when ignored.'),
+  "reason": zod.string().nullable(),
+  "setAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Map a PlayHQ competition to an app grade, or mark it as not tracked. A mapping is projected straight away when the central projector is configured, otherwise on the next sync that touches the competition.
+ */
+export const setPlatformGradeDecisionBodyGradeNameMax = 300;
+
+export const setPlatformGradeDecisionBodyReasonMax = 500;
+
+
+
+export const SetPlatformGradeDecisionBody = zod.object({
+  "gradeName": zod.string().min(1).max(setPlatformGradeDecisionBodyGradeNameMax),
+  "action": zod.enum(['map', 'ignore']),
+  "centralGrade": zod.string().nullish().describe('Required for map (one of mappableGrades); must be absent for ignore.'),
+  "reason": zod.string().max(setPlatformGradeDecisionBodyReasonMax).nullish()
+})
+
+export const SetPlatformGradeDecisionResponse = zod.object({
+  "gradeKey": zod.string(),
+  "gradeName": zod.string(),
+  "action": zod.enum(['map', 'ignore']),
+  "centralGrade": zod.string().nullable().describe('The app grade a mapped competition is projected under; null when ignored.'),
+  "reason": zod.string().nullable(),
+  "setAt": zod.string()
+}).and(zod.object({
+  "applied": zod.boolean().describe('The competition\'s matches were projected now.'),
+  "created": zod.number(),
+  "updated": zod.number(),
+  "skipped": zod.number()
+}))
+
+
+/**
+ * @summary Remove a decision. Matches already projected stay as they are; the competition goes back to being unrecognised for future syncs.
+ */
+export const DeletePlatformGradeDecisionParams = zod.object({
+  "gradeKey": zod.coerce.string()
+})
+
+
+/**
  * @summary Every player privacy override, plus a central player search (by name or PlayHQ participant GUID) for setting new ones. Private players' names are shown here — this is platform-admin only.
  */
 export const GetPlatformPlayerPrivacyQueryParams = zod.object({

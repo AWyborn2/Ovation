@@ -9051,6 +9051,70 @@ paths:
         "404":
           description: No such exclusion.
 
+  /platform/admin/grade-decisions:
+    get:
+      operationId: getPlatformGradeDecisions
+      tags: [platformAdmin]
+      summary: >-
+        PlayHQ competitions no club's sync can place in a grade (their matches are
+        skipped until someone decides), and the decisions made so far.
+      responses:
+        "200":
+          description: Pending competitions and decisions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GradeDecisionList"
+        "401":
+          description: Not authenticated.
+        "503":
+          description: Ingest database not configured.
+    put:
+      operationId: setPlatformGradeDecision
+      tags: [platformAdmin]
+      summary: >-
+        Map a PlayHQ competition to an app grade, or mark it as not tracked. A mapping is
+        projected straight away when the central projector is configured, otherwise on the
+        next sync that touches the competition.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetGradeDecisionBody"
+      responses:
+        "200":
+          description: Decision saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GradeDecisionResult"
+        "400":
+          description: Invalid competition name, action or grade.
+        "401":
+          description: Not authenticated.
+
+  /platform/admin/grade-decisions/{gradeKey}:
+    delete:
+      operationId: deletePlatformGradeDecision
+      tags: [platformAdmin]
+      summary: >-
+        Remove a decision. Matches already projected stay as they are; the competition
+        goes back to being unrecognised for future syncs.
+      parameters:
+        - name: gradeKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Decision removed
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such decision.
+
   /platform/admin/player-privacy:
     get:
       operationId: getPlatformPlayerPrivacy
@@ -17150,6 +17214,102 @@ components:
                       openedAt:
                         type: string
                   - type: "null"
+
+    GradeDecisionTenant:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+
+    PendingGradeCompetition:
+      type: object
+      required: [gradeKey, gradeName, matches, seasons, tenants, reason]
+      properties:
+        gradeKey:
+          type: string
+          description: The normalised competition name decisions are keyed by (seasons removed).
+        gradeName:
+          type: string
+        matches:
+          type: integer
+          description: PlayHQ matches across every club playing in it.
+        seasons:
+          type: array
+          items: { type: string }
+        tenants:
+          type: array
+          items:
+            $ref: "#/components/schemas/GradeDecisionTenant"
+        reason:
+          type: string
+
+    GradeDecision:
+      type: object
+      required: [gradeKey, gradeName, action, centralGrade, reason, setAt]
+      properties:
+        gradeKey: { type: string }
+        gradeName: { type: string }
+        action:
+          type: string
+          enum: [map, ignore]
+        centralGrade:
+          type: ["string", "null"]
+          description: The app grade a mapped competition is projected under; null when ignored.
+        reason:
+          type: ["string", "null"]
+        setAt:
+          type: string
+
+    GradeDecisionList:
+      type: object
+      required: [projectorConfigured, mappableGrades, pending, decisions]
+      properties:
+        projectorConfigured:
+          type: boolean
+          description: A saved mapping is projected immediately only when this is true.
+        mappableGrades:
+          type: array
+          items: { type: string }
+        pending:
+          type: array
+          items:
+            $ref: "#/components/schemas/PendingGradeCompetition"
+        decisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/GradeDecision"
+
+    SetGradeDecisionBody:
+      type: object
+      required: [gradeName, action]
+      properties:
+        gradeName:
+          type: string
+          minLength: 1
+          maxLength: 300
+        action:
+          type: string
+          enum: [map, ignore]
+        centralGrade:
+          type: ["string", "null"]
+          description: Required for map (one of mappableGrades); must be absent for ignore.
+        reason:
+          type: ["string", "null"]
+          maxLength: 500
+
+    GradeDecisionResult:
+      allOf:
+        - $ref: "#/components/schemas/GradeDecision"
+        - type: object
+          required: [applied, created, updated, skipped]
+          properties:
+            applied:
+              type: boolean
+              description: The competition's matches were projected now.
+            created: { type: integer }
+            updated: { type: integer }
+            skipped: { type: integer }
 
     TenantPlayhqSyncStatus:
       type: object

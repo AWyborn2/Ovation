@@ -5697,6 +5697,87 @@ export interface PlatformPlayhqSync {
   orgs: PlatformPlayhqSyncOrgsItem[];
 }
 
+export interface GradeDecisionTenant {
+  id: number;
+  name: string;
+}
+
+export interface PendingGradeCompetition {
+  /** The normalised competition name decisions are keyed by (seasons removed). */
+  gradeKey: string;
+  gradeName: string;
+  /** PlayHQ matches across every club playing in it. */
+  matches: number;
+  seasons: string[];
+  tenants: GradeDecisionTenant[];
+  reason: string;
+}
+
+export type GradeDecisionAction = typeof GradeDecisionAction[keyof typeof GradeDecisionAction];
+
+
+export const GradeDecisionAction = {
+  map: 'map',
+  ignore: 'ignore',
+} as const;
+
+export interface GradeDecision {
+  gradeKey: string;
+  gradeName: string;
+  action: GradeDecisionAction;
+  /**
+     * The app grade a mapped competition is projected under; null when ignored.
+     * @nullable
+     */
+  centralGrade: string | null;
+  /** @nullable */
+  reason: string | null;
+  setAt: string;
+}
+
+export interface GradeDecisionList {
+  /** A saved mapping is projected immediately only when this is true. */
+  projectorConfigured: boolean;
+  mappableGrades: string[];
+  pending: PendingGradeCompetition[];
+  decisions: GradeDecision[];
+}
+
+export type SetGradeDecisionBodyAction = typeof SetGradeDecisionBodyAction[keyof typeof SetGradeDecisionBodyAction];
+
+
+export const SetGradeDecisionBodyAction = {
+  map: 'map',
+  ignore: 'ignore',
+} as const;
+
+export interface SetGradeDecisionBody {
+  /**
+     * @minLength 1
+     * @maxLength 300
+     */
+  gradeName: string;
+  action: SetGradeDecisionBodyAction;
+  /**
+     * Required for map (one of mappableGrades); must be absent for ignore.
+     * @nullable
+     */
+  centralGrade?: string | null;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  reason?: string | null;
+}
+
+export type GradeDecisionResult = GradeDecision & {
+  /** The competition's matches were projected now. */
+  applied: boolean;
+  created: number;
+  updated: number;
+  skipped: number;
+};
+
 export interface UnclassifiedGrade {
   /** The competition name as PlayHQ spells it. */
   gradeName: string;
