@@ -29,6 +29,10 @@ export const CLUB_KIT_COVERAGE: ReadonlyArray<{ kind: string }> = [
   { kind: "tradingCard" },
   { kind: "juniorHighlights" },
   { kind: "teamListRound" },
+  { kind: "announcement" },
+  { kind: "sponsor" },
+  { kind: "resultsSummary" },
+  { kind: "teamOfWeek" },
 ];
 
 /**

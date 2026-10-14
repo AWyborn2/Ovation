@@ -126,6 +126,14 @@ describe("rows capacity", () => {
     expect(rowsCapacity(l, "square")).toBe(4);
   });
 
+  it("multiplies by the columns the rows flow down", () => {
+    const l = rowsLayer(50);
+    l.rows!.columns = 2;
+    expect(rowsCapacity(l, "square")).toBe(10);
+    l.rows!.columns = 9; // out of range counts as one column
+    expect(rowsCapacity(l, "square")).toBe(5);
+  });
+
   it("is zero on a size without a box or when the layer isn't on that size", () => {
     expect(rowsCapacity(rowsLayer(50), "story")).toBe(0);
     expect(rowsCapacity({ ...rowsLayer(50), sizes: ["portrait"] }, "square")).toBe(0);

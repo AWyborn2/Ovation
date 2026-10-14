@@ -114,3 +114,25 @@ export function clubKitVars(p: ClubKitPalette): string {
     `--ck-p-22:${rgbaHex(p.p, 0.22)}`,
   ].join(";");
 }
+
+/**
+ * The stage colour for template designs that sit on the club's own colour
+ * (the Clubhouse starter): the club's secondary (background) colour, darkened
+ * until white type clears 4.5:1 on it, plus a deeper shade and translucent
+ * tints for laying over a photo. Only template overlays carry these, so pack
+ * renders stay byte-identical.
+ */
+export function clubStageVars(p: ClubKitPalette): string {
+  let stage = p.s;
+  for (let i = 0; i < 8 && contrastRatio(stage, "#FFFFFF") < MIN_TEXT_CONTRAST; i++) {
+    stage = mixHex(stage, "#000000", 0.18);
+  }
+  const deep = mixHex(stage, "#000000", 0.4);
+  return [
+    `--ck-stage:${stage}`,
+    `--ck-stage-deep:${deep}`,
+    `--ck-stage-80:${rgbaHex(stage, 0.8)}`,
+    `--ck-stage-55:${rgbaHex(stage, 0.55)}`,
+    `--ck-stage-0:${rgbaHex(stage, 0)}`,
+  ].join(";");
+}

@@ -76,6 +76,14 @@ export const headlineFor = (input: ShareCardInput): string => {
       return `${input.grade} • Juniors`;
     case "teamListRound":
       return `${input.roundLabel} • Team Lists`;
+    case "announcement":
+      return input.eyebrow || "Club News";
+    case "sponsor":
+      return `${input.seasonLabel} • Sponsor`;
+    case "resultsSummary":
+      return `${input.roundLabel || input.dateLabel} • Results`;
+    case "teamOfWeek":
+      return input.title;
   }
 };
 

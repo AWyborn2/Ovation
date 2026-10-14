@@ -4,6 +4,7 @@ import {
   tenantHashtag,
   kindSponsors,
   presentingSponsorName,
+  withGroundPhoto,
 } from "./pack-card-data";
 import type { CardKind } from "./share-card";
 
@@ -185,5 +186,20 @@ describe("presentingSponsorName", () => {
   it("(R5) returns null when none is designated", () => {
     expect(presentingSponsorName({ activeSponsors: [] }, true)).toBeNull();
     expect(presentingSponsorName(undefined, true)).toBeNull();
+  });
+});
+
+describe("the club's ground photo", () => {
+  const brand = { name: "Seaview", heroImages: { cards: "/api/storage/objects/ground.jpg" } };
+
+  it("reaches card data from the brand's card background slot", () => {
+    expect(buildPackData({ brand }).brand?.groundPhotoUrl).toBe("/api/storage/objects/ground.jpg");
+    expect(buildPackData({ brand: { name: "Seaview" } }).brand?.groundPhotoUrl).toBeUndefined();
+  });
+
+  it("is merged onto a settings brand that lacks the hero slots", () => {
+    const merged = withGroundPhoto({ name: "Seaview" }, brand);
+    expect(merged?.heroImages?.cards).toBe("/api/storage/objects/ground.jpg");
+    expect(withGroundPhoto({ name: "Seaview" }, null)).toEqual({ name: "Seaview" });
   });
 });

@@ -156,6 +156,8 @@ export async function renderDraftSlides(
       name: brand.name,
       tagline: brand.tagline ?? null,
       logoUrl: brand.logoUrl ?? null,
+      // The club's ground photo, behind card designs ({{groundPhoto}}).
+      ...(brand.heroImages?.cards ? { groundPhotoUrl: brand.heroImages.cards } : {}),
       primaryColour: brand.primaryColour ?? null,
       backgroundColour: brand.backgroundColour ?? null,
       juniorsColour: brand.juniorsColour ?? null,

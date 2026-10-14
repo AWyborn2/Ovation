@@ -15,8 +15,9 @@ import {
 import { kindFields, TEMPLATE_CARD_KINDS, type TemplateCardKind } from "./fields";
 import { BROADCAST_STARTERS } from "./starters/broadcast";
 import { CLUB_KIT_STARTERS } from "./starters/club-kit";
+import { CLUBHOUSE_STARTERS } from "./starters/clubhouse";
 
-export const STARTER_IDS = ["club-kit", "broadcast"] as const;
+export const STARTER_IDS = ["club-kit", "broadcast", "clubhouse"] as const;
 export type StarterId = (typeof STARTER_IDS)[number];
 
 /**
@@ -34,12 +35,14 @@ export type StarterSet = Partial<Record<TemplateCardKind, StarterDocument>>;
 const STARTERS: Record<StarterId, StarterSet> = {
   "club-kit": CLUB_KIT_STARTERS,
   broadcast: BROADCAST_STARTERS,
+  clubhouse: CLUBHOUSE_STARTERS,
 };
 
 /** Display names, for the starter chooser. */
 export const STARTER_NAMES: Record<StarterId, string> = {
   "club-kit": "Club Kit",
   broadcast: "Broadcast",
+  clubhouse: "Clubhouse",
 };
 
 /**

@@ -47,11 +47,35 @@ describe("templateDocumentErrors (security review 2026-10-08)", () => {
             gap: 1,
             cells: [{ field: "team", x: 0, w: 60, style: { fontSize: 3 } }],
             variants: { club: { team: { color: "var(--gold)" } } },
+            columns: 2,
+            columnGap: 4,
+          },
+        },
+        { id: "g1", kind: "image", content: "{{groundPhoto}}", geometry: { square: box } },
+      ],
+    };
+    expect(templateDocumentErrors(doc, "ladder")).toEqual([]);
+  });
+
+  it("rejects a list with columns out of range", () => {
+    const doc = {
+      layers: [
+        {
+          id: "r1",
+          kind: "rows",
+          geometry: { square: box },
+          rows: {
+            repeat: "rows",
+            rowHeight: 7,
+            cells: [{ field: "team", x: 0, w: 60 }],
+            columns: 7,
           },
         },
       ],
     };
-    expect(templateDocumentErrors(doc, "ladder")).toEqual([]);
+    expect(templateDocumentErrors(doc, "ladder")).toEqual([
+      "Layer 1.rows.columns must be a whole number from 1 to 6.",
+    ]);
   });
 
   it.each([

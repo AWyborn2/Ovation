@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useListAllClubRoles,
@@ -65,6 +65,15 @@ type RoleFormValues = {
 export default function AdminCommittee() {
   const queryClient = useQueryClient();
   const { data: roles, isLoading, isError, refetch } = useListAllClubRoles();
+  const officeRoles = useMemo(
+    () => [
+      ...new Set([
+        ...OFFICE_ROLES,
+        ...(roles ?? []).filter((r) => r.grade == null).map((r) => r.role),
+      ]),
+    ],
+    [roles],
+  );
   const createRole = useCreateClubRole();
   const updateRole = useUpdateClubRole();
   const deleteRole = useDeleteClubRole();
@@ -103,7 +112,8 @@ export default function AdminCommittee() {
         <>
           Record club office bearers and grade captains for each season. Office bearers appear on
           the public Committee board; grade captains appear on each grade's page. Only published
-          records are shown publicly.
+          records are shown publicly. Enter any committee role your club needs; saved roles are
+          available to reuse for this club. Lower display-order numbers appear first.
         </>
       }
       addLabel="Add role"
@@ -128,6 +138,7 @@ export default function AdminCommittee() {
       }}
       renderNewForm={(close) => (
         <RoleForm
+          officeRoles={officeRoles}
           initial={{
             season: new Date().getFullYear(),
             kind: "office",
@@ -170,6 +181,7 @@ export default function AdminCommittee() {
       )}
       renderEditForm={(r, close) => (
         <RoleForm
+          officeRoles={officeRoles}
           initial={{
             season: r.season,
             kind: r.grade != null ? "captain" : "office",
@@ -216,18 +228,21 @@ export default function AdminCommittee() {
 }
 
 function RoleForm({
+  officeRoles,
   initial,
   pending,
   onSubmit,
   onCancel,
   submitLabel,
 }: {
+  officeRoles: string[];
   initial: RoleFormValues;
   pending: boolean;
   onSubmit: (values: RoleFormValues) => void;
   onCancel: () => void;
   submitLabel: string;
 }) {
+  const roleInputId = useId();
   const [values, setValues] = useState<RoleFormValues>(initial);
   const { data: people } = useListPeople();
   const selectedPlayer: SelectedPlayer | null =
@@ -269,18 +284,25 @@ function RoleForm({
         </div>
         {values.kind === "office" ? (
           <div className="space-y-1">
-            <Label className="text-xs">Role</Label>
-            <select
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            <Label htmlFor={roleInputId} className="text-xs">
+              Role
+            </Label>
+            <Input
+              id={roleInputId}
+              list={`${roleInputId}-options`}
               value={values.role}
               onChange={(e) => set("role", e.target.value)}
-            >
-              {OFFICE_ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
+              placeholder="Choose or type a new committee role"
+              maxLength={200}
+            />
+            <datalist id={`${roleInputId}-options`}>
+              {officeRoles.map((r) => (
+                <option key={r} value={r} />
               ))}
-            </select>
+            </datalist>
+            <p className="text-xs text-muted-foreground">
+              Type a new role name, or choose an existing one. Saved with this club's record only.
+            </p>
           </div>
         ) : (
           <div className="space-y-1">
@@ -299,18 +321,27 @@ function RoleForm({
           </div>
         )}
         <div className="space-y-1">
-          <Label className="text-xs">Display order</Label>
+          <Label htmlFor={`${roleInputId}-order`} className="text-xs">
+            Display order
+          </Label>
           <Input
+            id={`${roleInputId}-order`}
             type="number"
             value={values.displayOrder}
             onChange={(e) => set("displayOrder", parseInt(e.target.value, 10) || 0)}
           />
+          <p className="text-xs text-muted-foreground">
+            Lower numbers appear first on the committee board.
+          </p>
         </div>
       </div>
 
       <div className="space-y-1">
-        <Label className="text-xs">Name (as displayed)</Label>
+        <Label htmlFor={`${roleInputId}-name`} className="text-xs">
+          Name (as displayed)
+        </Label>
         <Input
+          id={`${roleInputId}-name`}
           value={values.name}
           placeholder="e.g. John Smith, or D. Patterson / R. Smedley"
           onChange={(e) => set("name", e.target.value)}
@@ -383,7 +414,10 @@ function RoleForm({
       </label>
 
       <div className="flex gap-2">
-        <Button disabled={pending || !values.name.trim()} onClick={() => onSubmit(values)}>
+        <Button
+          disabled={pending || !values.name.trim() || !values.role.trim()}
+          onClick={() => onSubmit({ ...values, role: values.role.trim() })}
+        >
           {pending ? "Saving…" : submitLabel}
         </Button>
         <Button variant="outline" onClick={onCancel}>

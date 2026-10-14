@@ -9,8 +9,8 @@ import {
 } from "./fields";
 
 describe("kind field catalogue", () => {
-  it("covers all 21 card kinds", () => {
-    expect(TEMPLATE_CARD_KINDS).toHaveLength(21);
+  it("covers all 25 card kinds", () => {
+    expect(TEMPLATE_CARD_KINDS).toHaveLength(25);
     expect(Object.keys(KIND_FIELDS).sort()).toEqual([...TEMPLATE_CARD_KINDS].sort());
   });
 
@@ -20,10 +20,14 @@ describe("kind field catalogue", () => {
     }
   });
 
-  it("takes the three Club-Kit-only kinds from Club Kit", () => {
+  it("takes the Club-Kit-only kinds from Club Kit", () => {
     expect([...CLUB_KIT_ONLY_KINDS].sort()).toEqual([
+      "announcement",
       "juniorHighlights",
+      "resultsSummary",
       "roundFixtures",
+      "sponsor",
+      "teamOfWeek",
       "tradingCard",
     ]);
     for (const kind of CLUB_KIT_ONLY_KINDS) expect(KIND_FIELDS[kind].source).toBe("club-kit-v1");
