@@ -9282,7 +9282,13 @@ export const GetTenantPlayhqSyncStatusResponse = zod.object({
   "syncEnabled": zod.boolean(),
   "lastRefreshedAt": zod.string().nullish().describe('When fixtures\/results last loaded from PlayHQ (ISO), or null.'),
   "stale": zod.boolean().describe('An incident is open for this club\'s organisation.'),
-  "staleSince": zod.string().nullish()
+  "staleSince": zod.string().nullish(),
+  "unclassifiedGrades": zod.array(zod.object({
+  "gradeName": zod.string().describe('The competition name as PlayHQ spells it.'),
+  "seasonName": zod.string().nullable(),
+  "matches": zod.number().describe('PlayHQ matches the club has in this competition.'),
+  "reason": zod.string()
+})).optional().describe('Competitions this club\'s PlayHQ organisation plays in that Ovation can\'t place in a grade, so their matches are not shown. Empty when everything is recognised.')
 })
 
 

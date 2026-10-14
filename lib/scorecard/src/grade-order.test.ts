@@ -30,6 +30,16 @@ describe("sortByGradeOrder", () => {
     ).toEqual(["A Grade", "B Grade", "C Grade", "G Grade", "Female A Grade", "PPL", "Colts"]);
   });
 
+  it("puts the age-based Over grades after Colts, youngest first", () => {
+    expect(grades(["Over 50s", "Colts", "Over 40s", "A Grade", "Over 45s"])).toEqual([
+      "A Grade",
+      "Colts",
+      "Over 40s",
+      "Over 45s",
+      "Over 50s",
+    ]);
+  });
+
   it("follows the club's own order first, then seniority", () => {
     expect(
       grades(["2nd Grade", "Female A Grade", "1st Grade"], ["female a grade", "2nd Grade"]),

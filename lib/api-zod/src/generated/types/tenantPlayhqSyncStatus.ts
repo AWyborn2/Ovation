@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { UnclassifiedGrade } from './unclassifiedGrade';
 
 export interface TenantPlayhqSyncStatus {
   /** The club is linked to a PlayHQ organisation. */
@@ -19,4 +20,6 @@ export interface TenantPlayhqSyncStatus {
   stale: boolean;
   /** @nullable */
   staleSince?: string | null;
+  /** Competitions this club's PlayHQ organisation plays in that Ovation can't place in a grade, so their matches are not shown. Empty when everything is recognised. */
+  unclassifiedGrades?: UnclassifiedGrade[];
 }

@@ -3,9 +3,9 @@ import type { AwardMechanism } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { GRADES } from "./constants";
 import { slugify } from "./helpers";
 import type { AwardFormValues } from "./types";
+import { useGradeOptions } from "@/hooks/use-club-grades";
 
 export function AwardForm({
   initial,
@@ -29,7 +29,9 @@ export function AwardForm({
   const [displayOrder, setDisplayOrder] = useState(initial.displayOrder);
   const [mechanism, setMechanism] = useState<AwardMechanism>(initial.mechanism);
   const [published, setPublished] = useState(initial.published);
-  const [pointsGrade, setPointsGrade] = useState<string>(initial.pointsGrade ?? GRADES[0]);
+  const { grades: gradeOptions } = useGradeOptions({ include: [initial.pointsGrade] });
+  const [pickedPointsGrade, setPointsGrade] = useState<string | null>(initial.pointsGrade ?? null);
+  const pointsGrade = pickedPointsGrade ?? gradeOptions[0] ?? "A Grade";
 
   const effectiveKey = autoKey && !keyTouched ? slugify(title) : key;
   // 3-2-1 voting attaches only to voted awards.
@@ -117,7 +119,7 @@ export function AwardForm({
             onChange={(e) => setPointsGrade(e.target.value)}
             className="block w-full rounded-md border border-input bg-background px-3 py-2 text-sm md:w-64"
           >
-            {GRADES.map((g) => (
+            {gradeOptions.map((g) => (
               <option key={g} value={g}>
                 {g}
               </option>

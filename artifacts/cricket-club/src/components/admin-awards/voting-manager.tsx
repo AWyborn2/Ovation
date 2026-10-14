@@ -22,8 +22,8 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
 import { LoadingState, QueryError } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeahead";
-import { GRADES } from "./constants";
 import { formatSeasonRange, splitName, invalidateBallotsAndTally } from "./helpers";
+import { useGradeOptions } from "@/hooks/use-club-grades";
 
 export function VotingManager({
   award,
@@ -147,6 +147,7 @@ function VotingConfigCard({
   const remove = useDeleteAwardVotingConfig();
   const finalise = useFinaliseVotingConfig();
   const confirm = useConfirm();
+  const { grades: gradeOptions } = useGradeOptions({ include: config.grades });
   const [grades, setGrades] = useState<string[]>(config.grades);
   const [autoHide, setAutoHide] = useState<string>(
     config.autoHideAfterRounds != null ? String(config.autoHideAfterRounds) : "",
@@ -217,7 +218,7 @@ function VotingConfigCard({
       <div className="space-y-2">
         <Label className="text-xs">Grades tracked for this award</Label>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
-          {GRADES.map((g) => (
+          {gradeOptions.map((g) => (
             <label key={g} className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"

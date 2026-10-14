@@ -7,26 +7,12 @@
  */
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { db, lifeMembersTable, clubRolesTable, playerGradeStatsTable } from "@workspace/db";
+import { gradeSeniorityRank } from "@workspace/scorecard";
 
 import { curatedIdsAreNative } from "../curated-player-space";
 import { seasonLabel } from "./premierships";
 import { composeSeasonGrid, gradeRank } from "./shared";
 import { type GridColumnOptionOut, type HonourBoardOut, type LifeMemberStatsOut } from "./types";
-
-// Grade sort order for a life member's "grades played" chips (mirrors the
-// /life-members endpoint so the kiosk lists grades in the same order).
-const LIFE_MEMBER_GRADE_ORDER = [
-  "A Grade",
-  "B Grade",
-  "C Grade",
-  "D Grade",
-  "E Grade",
-  "F Grade",
-  "Female A Grade",
-  "Female B Grade",
-  "PPL",
-  "Colts",
-];
 
 const lmParseHighScore = (hs: string | null | undefined): number => {
   if (!hs) return 0;
@@ -99,11 +85,8 @@ async function aggregateLifeMemberStats(
     if (!agg.gradesPlayed.includes(s.grade)) agg.gradesPlayed.push(s.grade);
   }
   for (const agg of byPlayer.values()) {
-    agg.gradesPlayed.sort((a, b) => {
-      const ai = LIFE_MEMBER_GRADE_ORDER.indexOf(a);
-      const bi = LIFE_MEMBER_GRADE_ORDER.indexOf(b);
-      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-    });
+    // Same seniority order as the /life-members endpoint, so the kiosk lists grades alike.
+    agg.gradesPlayed.sort((a, b) => gradeSeniorityRank(a) - gradeSeniorityRank(b));
   }
   return byPlayer;
 }

@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Plus } from "lucide-react";
 import { LoadingState } from "@/components/data-states";
 import type { ShareCardInput } from "@/lib/share-card";
-import { GRADES, selectClass } from "../model";
+import { selectClass } from "../model";
+import { useGradeOptions } from "@/hooks/use-club-grades";
 
 /** Grade leaderboard leaders (runs / wickets), singly or one per grade. */
 export function GradeLeaderSource({
@@ -21,7 +22,9 @@ export function GradeLeaderSource({
   onAddMany: (inputs: ShareCardInput[]) => void;
 }) {
   const qc = useQueryClient();
-  const [grade, setGrade] = useState(GRADES[0]);
+  const { grades: gradeOptions } = useGradeOptions();
+  const [pickedGrade, setGrade] = useState<string | null>(null);
+  const grade = pickedGrade ?? gradeOptions[0] ?? "A Grade";
   const [category, setCategory] = useState<"Runs" | "Wickets">("Runs");
   const [batching, setBatching] = useState(false);
   const [batchError, setBatchError] = useState<string | null>(null);
@@ -54,10 +57,12 @@ export function GradeLeaderSource({
     setBatchError(null);
     try {
       const boards = await Promise.all(
-        GRADES.map((g) => qc.fetchQuery(getGetGradeLeaderboardQueryOptions(g)) as Promise<Stat[]>),
+        gradeOptions.map(
+          (g) => qc.fetchQuery(getGetGradeLeaderboardQueryOptions(g)) as Promise<Stat[]>,
+        ),
       );
       const inputs: ShareCardInput[] = [];
-      GRADES.forEach((g, i) => {
+      gradeOptions.forEach((g, i) => {
         const top = [...(boards[i] ?? [])]
           .filter((s) => statValue(s, category) > 0)
           .sort((a, b) => statValue(b, category) - statValue(a, category))[0];
@@ -76,7 +81,7 @@ export function GradeLeaderSource({
     <div className="space-y-3">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <select className={selectClass} value={grade} onChange={(e) => setGrade(e.target.value)}>
-          {GRADES.map((g) => (
+          {gradeOptions.map((g) => (
             <option key={g} value={g}>
               {g}
             </option>

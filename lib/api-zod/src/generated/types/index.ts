@@ -730,6 +730,7 @@ export * from './tradingCardSettings';
 export * from './tradingCardSettingsStatKeysByRole';
 export * from './tradingCardSettingsUpdate';
 export * from './tradingCardSettingsUpdateStatKeysByRole';
+export * from './unclassifiedGrade';
 export * from './undoSeasonInput';
 export * from './undoSeasonResult';
 export * from './updateAdminTenantBrandBody';

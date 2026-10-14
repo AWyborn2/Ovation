@@ -16944,6 +16944,28 @@ components:
           description: An incident is open for this club's organisation.
         staleSince:
           type: ["string", "null"]
+        unclassifiedGrades:
+          type: array
+          description: >-
+            Competitions this club's PlayHQ organisation plays in that Ovation can't place in a
+            grade, so their matches are not shown. Empty when everything is recognised.
+          items:
+            $ref: "#/components/schemas/UnclassifiedGrade"
+
+    UnclassifiedGrade:
+      type: object
+      required: [gradeName, seasonName, matches, reason]
+      properties:
+        gradeName:
+          type: string
+          description: The competition name as PlayHQ spells it.
+        seasonName:
+          type: ["string", "null"]
+        matches:
+          type: integer
+          description: PlayHQ matches the club has in this competition.
+        reason:
+          type: string
 
     SocialFamilySetting:
       type: object
