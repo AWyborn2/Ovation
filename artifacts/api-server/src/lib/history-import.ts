@@ -1529,7 +1529,7 @@ export async function loadBoundaries(
 }
 
 /** Pre-digital players earlier imports minted for this tenant, with their history seasons. */
-async function loadHistoryCandidates(tenantId: number): Promise<SpanCandidate[]> {
+export async function loadHistoryCandidates(tenantId: number): Promise<SpanCandidate[]> {
   const rows = await db
     .select({
       participantId: playerIdMapTable.participantId,
@@ -1586,7 +1586,7 @@ async function loadHistoryCandidates(tenantId: number): Promise<SpanCandidate[]>
  * senior central season. Read through the same club-cached partials the club
  * overlay uses; never writes central.
  */
-async function loadCentralCandidates(
+export async function loadCentralCandidates(
   tenantId: number,
   centralClubId: number,
 ): Promise<SpanCandidate[]> {
