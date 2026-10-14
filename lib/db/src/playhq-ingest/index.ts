@@ -9,3 +9,4 @@ export * from "./central-transform";
 export * from "./central-project";
 export * from "./team-lists";
 export * from "./shirt-number-sync";
+export * from "./junior-project";
