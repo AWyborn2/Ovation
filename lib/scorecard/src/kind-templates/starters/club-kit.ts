@@ -36,7 +36,16 @@ const HEADER_BOTTOM = 19;
 const FOOTER_TOP = (s: TemplateSize) => CARD[s].h - 14;
 
 /** Where the body copy sits: beside the frame (flat sizes) or under it (tall). */
-function column(s: TemplateSize) {
+function column(s: TemplateSize, d?: Design) {
+  // A card without the photo frame takes the whole width.
+  if (d?.photo === false) {
+    return {
+      x: 6,
+      w: CARD[s].w - 12,
+      at: (HEADER_BOTTOM + FOOTER_TOP(s)) / 2,
+      anchor: "center" as const,
+    };
+  }
   if (s === "square")
     return { x: 6, w: 44, at: (HEADER_BOTTOM + FOOTER_TOP(s)) / 2, anchor: "center" as const };
   if (s === "landscape")

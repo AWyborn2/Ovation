@@ -31,4 +31,8 @@ export const CardKind = {
   tradingCard: 'tradingCard',
   juniorHighlights: 'juniorHighlights',
   teamListRound: 'teamListRound',
+  announcement: 'announcement',
+  sponsor: 'sponsor',
+  resultsSummary: 'resultsSummary',
+  teamOfWeek: 'teamOfWeek',
 } as const;

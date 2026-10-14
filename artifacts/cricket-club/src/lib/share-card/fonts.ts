@@ -60,6 +60,9 @@ const CARD_FONT_FAMILIES = [
   "Teko",
   "Archivo Black",
   "Kaushan Script",
+  // Clubhouse card designs: slab titles and brush-lettered heroes.
+  "Alfa Slab One",
+  "Permanent Marker",
 ];
 
 // Force-load every card font (at light + bold) before drawing. Canvas text does

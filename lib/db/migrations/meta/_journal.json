@@ -267,6 +267,13 @@
       "when": 1791515372554,
       "tag": "0037_squad_season_seed",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1791515372555,
+      "tag": "0038_team_sheet",
+      "breakpoints": true
     }
   ]
 }

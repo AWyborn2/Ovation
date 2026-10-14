@@ -441,6 +441,20 @@ describe.skipIf(!isLocalDb)("duplicate-player suggestions and review", () => {
       expect(res.body.matches[0].outcome).toBe("WON");
     });
 
+    it("social prefill: round results and the team of the week name the keeper", async () => {
+      const res = await request(app)
+        .get("/api/social-prefill/round-results?season=2024&round=2")
+        .set("x-tenant-id", String(t1))
+        .set("Cookie", cookieT1)
+        .expect(200);
+      expect(res.body.results[0].outcome).toBe("WON");
+      expect(res.body.results[0].batters[0]).toMatchObject({ name: "Chris Phelps" });
+      expect(res.body.results[0].batters[0].figure).toMatch(/^60/);
+      const team = res.body.teamOfWeek as { name: string; photoUrl: string | null }[];
+      expect(team.map((p) => p.name)).toContain("Chris Phelps");
+      expect(team.every((p) => p.photoUrl === null)).toBe(true);
+    });
+
     it("a confirmed pair can't be rejected or reopened (only undone)", async () => {
       await act(t1, cookieT1, P2, "reject").expect(409);
       await act(t1, cookieT1, P2, "reopen").expect(409);

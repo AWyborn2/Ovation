@@ -7,6 +7,7 @@ import { plural } from "@/lib/plural";
 import { TWELFTH_INDEX, XI_SIZE, sideEditable, sideLabel } from "./apply-move";
 import { GAP_REASON, perthDateTime } from "./labels";
 import { PlayerChip, type ChipRole } from "./player-chip";
+import { TeamSheetButton } from "./team-sheet-button";
 
 export function roleOf(side: SelectionSide, memberId: number | null): ChipRole {
   if (memberId == null) return null;
@@ -231,6 +232,7 @@ export function TeamCard({
               Finalised and published as the team list. {plural(picked.length, "player")} notified
               by SMS and email.
             </div>
+            <TeamSheetButton selectionId={side.id} label={label} />
             {side.canFinalise && (
               <Button variant="ghost" className="w-full" disabled={busy} onClick={onReopen}>
                 Re-open for changes

@@ -11,6 +11,7 @@ import type {
   WeekendWrapMatch,
   LadderRow,
   ClubLeaderboardLeader,
+  GradeResult,
 } from "../share-card";
 import type { BoundInput, PackCardData, PackRow } from "./types";
 import { cardTeamName } from "./name-fit";
@@ -390,11 +391,84 @@ export function bindInput(input: ShareCardInput): BoundInput {
       }));
       break;
     }
+    case "announcement": {
+      set(values, "eyebrow", input.eyebrow);
+      set(values, "headline", input.headline);
+      set(values, "subline", input.subline);
+      break;
+    }
+    case "sponsor": {
+      set(values, "seasonLabel", input.seasonLabel);
+      set(values, "sponsorName", input.sponsorName);
+      set(values, "tagline", input.tagline);
+      if (input.sponsorLogoUrl) images["sponsorArt"] = input.sponsorLogoUrl;
+      break;
+    }
+    case "resultsSummary": {
+      set(values, "dateLabel", input.dateLabel);
+      set(values, "roundLabel", input.roundLabel);
+      rows["results"] = (input.results ?? []).map((r) => resultRow(r));
+      break;
+    }
+    case "teamOfWeek": {
+      set(values, "title", input.title);
+      set(values, "dateLabel", input.dateLabel);
+      rows["players"] = (input.players ?? []).slice(0, 12).map((p) => ({
+        values: {
+          name: p.name ?? "",
+          figure: p.figure ?? "",
+          grade: p.grade ?? "",
+          role: p.role ?? "",
+          photo: p.photoUrl ?? "",
+        },
+      }));
+      break;
+    }
   }
 
   bindShirtNumber(input, values);
   bindSetValues(input, values);
   return { values, images, rows };
+}
+
+const RESULT_VERB: Record<GradeResult["outcome"], string> = {
+  won: "DEF",
+  lost: "DEF BY",
+  draw: "DREW",
+  noResult: "",
+};
+
+/**
+ * One grade on a results summary: both sides and scores, the verb between
+ * them, and the best two batters and bowlers under labels that only show when
+ * there are players to list. A grade with no result shows its note instead.
+ */
+function resultRow(r: GradeResult): PackRow {
+  const noResult = r.outcome === "noResult";
+  const bat = !noResult && !!(r.bat1Name || r.bat2Name);
+  const bowl = !noResult && !!(r.bowl1Name || r.bowl2Name);
+  return {
+    variant: noResult ? "noResult" : r.outcome === "lost" ? "lost" : undefined,
+    values: {
+      grade: r.grade ?? "",
+      clubName: cardTeamName(r.clubName ?? ""),
+      clubScore: noResult ? "" : (r.clubScore ?? ""),
+      verb: RESULT_VERB[r.outcome] ?? "",
+      oppName: cardTeamName(r.oppName ?? ""),
+      oppScore: noResult ? "" : (r.oppScore ?? ""),
+      note: noResult ? (r.note?.trim() || "NO RESULT").toUpperCase() : "",
+      batLabel: bat ? "BEST BATTERS" : "",
+      bowlLabel: bowl ? "BEST BOWLERS" : "",
+      bat1: bat ? (r.bat1Name ?? "") : "",
+      bat1Figure: bat ? (r.bat1Figure ?? "") : "",
+      bat2: bat ? (r.bat2Name ?? "") : "",
+      bat2Figure: bat ? (r.bat2Figure ?? "") : "",
+      bowl1: bowl ? (r.bowl1Name ?? "") : "",
+      bowl1Figure: bowl ? (r.bowl1Figure ?? "") : "",
+      bowl2: bowl ? (r.bowl2Name ?? "") : "",
+      bowl2Figure: bowl ? (r.bowl2Figure ?? "") : "",
+    },
+  };
 }
 
 /** Broadcast eyebrow: accept only an explicit fixture round; never infer one. */
@@ -520,6 +594,17 @@ function bindSetValues(input: ShareCardInput, values: Record<string, string>): v
       const named = n === 1 ? "TEAM NAMED" : "TEAMS NAMED";
       values["coverLabel"] = input.audience ? `${input.audience} ${named}` : named;
       values["coverList"] = dotList((input.teams ?? []).map((t) => t.grade));
+      break;
+    }
+    case "resultsSummary": {
+      const rs = input.results ?? [];
+      const won = rs.filter((r) => r.outcome === "won").length;
+      values["coverDate"] = input.dateLabel ?? "";
+      values["coverCount"] = String(rs.length);
+      values["coverLabel"] = rs.length === 1 ? "GRADE PLAYED" : "GRADES PLAYED";
+      values["coverList"] = rs.length
+        ? `${won} ${won === 1 ? "WIN" : "WINS"} · ${dotList(rs.map((r) => r.grade))}`
+        : "";
       break;
     }
   }

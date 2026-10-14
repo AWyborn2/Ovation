@@ -57,6 +57,10 @@ export const KIND_BLURB: Record<CardKind, string> = {
   tradingCard: "Collectable player cards (Club Kit)",
   juniorHighlights: "Junior stars of the round (Club Kit)",
   teamListRound: "Every team named this round, as one post",
+  announcement: "Club news and notices, made by hand",
+  sponsor: "Thank a sponsor with its artwork",
+  resultsSummary: "Every grade's result with the best players",
+  teamOfWeek: "The round's best performers, with photos",
 };
 
 /**
@@ -101,6 +105,10 @@ const KIND_KEYWORDS: Record<CardKind, string[]> = {
   tradingCard: ["trading card", "collectable", "player card", "footy card"],
   juniorHighlights: ["juniors", "junior highlights", "kids", "juniors shine"],
   teamListRound: ["team lists", "all teams", "selections", "round teams", "sides named"],
+  announcement: ["announcement", "news", "update", "notice", "registration", "merch"],
+  sponsor: ["sponsor", "partner", "supporter", "thank you"],
+  resultsSummary: ["results", "results summary", "scores", "best batters", "best bowlers"],
+  teamOfWeek: ["team of the week", "totw", "best performers", "honour roll"],
 };
 
 /**

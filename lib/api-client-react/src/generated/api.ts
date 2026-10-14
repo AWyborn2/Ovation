@@ -154,6 +154,7 @@ import type {
   GetSeniorSeasonTopPerformersParams,
   GetSocialClubSeasonTotalsParams,
   GetSocialLadderPrefillParams,
+  GetSocialRoundResultsPrefillParams,
   GetSocialWeekendWrapPrefillParams,
   GetWeekendCarouselSourcesParams,
   GoogleDriveConfig,
@@ -315,6 +316,7 @@ import type {
   RemovePhotoBackgroundRequest,
   ReplaceHistoryBoundariesBody,
   ReschedulePublicationRequest,
+  RoundResults,
   RoundUpInput,
   SaveCardPhotoRulesRequest,
   SaveDraftTemplateRequest,
@@ -379,6 +381,8 @@ import type {
   TeamOfDecadeMember,
   TeamOfDecadeMemberInput,
   TeamOfDecadeMemberUpdate,
+  TeamSheetPreview,
+  TeamSheetPrintBody,
   TenantBrand,
   TenantPlan,
   TenantPlayhqSyncStatus,
@@ -8765,6 +8769,168 @@ export const useFinaliseSelection = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getFinaliseSelectionMutationOptions(options));
+    }
+
+export const getGetTeamSheetPreviewUrl = (id: number,) => {
+
+
+
+
+  return `/api/selection/${id}/team-sheet`
+}
+
+/**
+ * The side's grade, PlayHQ format and competition, the overs to offer
+(the grade's remembered value, else one read from a T20-style format),
+and — for a senior side — which competition rules set the Junior Aged
+Player bowling limits and how many listed players have no birth date.
+Refused until the side is finalised.
+
+ * @summary What the print dialog needs for a finalised side's team sheet (admin or captain)
+ */
+export const getTeamSheetPreview = async (id: number, options?: RequestInit): Promise<TeamSheetPreview> => {
+
+  return customFetch<TeamSheetPreview>(getGetTeamSheetPreviewUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTeamSheetPreviewQueryKey = (id: number,) => {
+    return [
+    `/api/selection/${id}/team-sheet`
+    ] as const;
+    }
+
+
+export const getGetTeamSheetPreviewQueryOptions = <TData = Awaited<ReturnType<typeof getTeamSheetPreview>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamSheetPreview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTeamSheetPreviewQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTeamSheetPreview>>> = ({ signal }) => getTeamSheetPreview(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTeamSheetPreview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTeamSheetPreviewQueryResult = NonNullable<Awaited<ReturnType<typeof getTeamSheetPreview>>>
+export type GetTeamSheetPreviewQueryError = ErrorType<void>
+
+
+/**
+ * @summary What the print dialog needs for a finalised side's team sheet (admin or captain)
+ */
+
+export function useGetTeamSheetPreview<TData = Awaited<ReturnType<typeof getTeamSheetPreview>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamSheetPreview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTeamSheetPreviewQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPrintTeamSheetUrl = (id: number,) => {
+
+
+
+
+  return `/api/selection/${id}/team-sheet`
+}
+
+/**
+ * Match details (both teams, grade or age group, round, date, start time,
+format, overs, venue, competition), the 12 in batting-list order with
+shirt numbers and (C)/(WK) tags, and on a senior sheet each Junior Aged
+Player's age group and bowling limits from their date of birth under the
+competition's rules. The overs sent are printed and remembered for the
+grade. Generated clients should treat the response as a `Blob`.
+
+ * @summary The finalised side's printable A4 team sheet as a PDF (admin or captain)
+ */
+export const printTeamSheet = async (id: number,
+    teamSheetPrintBody: TeamSheetPrintBody, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getPrintTeamSheetUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      teamSheetPrintBody,)
+  }
+);}
+
+
+
+
+export const getPrintTeamSheetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof printTeamSheet>>, TError,{id: number;data: BodyType<TeamSheetPrintBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof printTeamSheet>>, TError,{id: number;data: BodyType<TeamSheetPrintBody>}, TContext> => {
+
+const mutationKey = ['printTeamSheet'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof printTeamSheet>>, {id: number;data: BodyType<TeamSheetPrintBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  printTeamSheet(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PrintTeamSheetMutationResult = NonNullable<Awaited<ReturnType<typeof printTeamSheet>>>
+    export type PrintTeamSheetMutationBody = BodyType<TeamSheetPrintBody>
+    export type PrintTeamSheetMutationError = ErrorType<void>
+
+    /**
+ * @summary The finalised side's printable A4 team sheet as a PDF (admin or captain)
+ */
+export const usePrintTeamSheet = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof printTeamSheet>>, TError,{id: number;data: BodyType<TeamSheetPrintBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof printTeamSheet>>,
+        TError,
+        {id: number;data: BodyType<TeamSheetPrintBody>},
+        TContext
+      > => {
+      return useMutation(getPrintTeamSheetMutationOptions(options));
     }
 
 export const getReopenSelectionUrl = (id: number,) => {
@@ -30126,6 +30292,91 @@ export function useGetSocialWeekendWrapPrefill<TData = Awaited<ReturnType<typeof
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSocialWeekendWrapPrefillQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSocialRoundResultsPrefillUrl = (params: GetSocialRoundResultsPrefillParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/social-prefill/round-results?${stringifiedParams}` : `/api/social-prefill/round-results`
+}
+
+/**
+ * Seniors only (central data). Private players are never named. Every field is editable in the builder.
+ * @summary Results summary and team of the week prefill — a round's results per grade with the best batters and bowlers, and its standout performers. Admin + socialStudio entitlement.
+ */
+export const getSocialRoundResultsPrefill = async (params: GetSocialRoundResultsPrefillParams, options?: RequestInit): Promise<RoundResults> => {
+
+  return customFetch<RoundResults>(getGetSocialRoundResultsPrefillUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialRoundResultsPrefillQueryKey = (params?: GetSocialRoundResultsPrefillParams,) => {
+    return [
+    `/api/social-prefill/round-results`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSocialRoundResultsPrefillQueryOptions = <TData = Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError = ErrorType<unknown>>(params: GetSocialRoundResultsPrefillParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialRoundResultsPrefillQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>> = ({ signal }) => getSocialRoundResultsPrefill(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialRoundResultsPrefillQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>>
+export type GetSocialRoundResultsPrefillQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Results summary and team of the week prefill — a round's results per grade with the best batters and bowlers, and its standout performers. Admin + socialStudio entitlement.
+ */
+
+export function useGetSocialRoundResultsPrefill<TData = Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError = ErrorType<unknown>>(
+ params: GetSocialRoundResultsPrefillParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialRoundResultsPrefillQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

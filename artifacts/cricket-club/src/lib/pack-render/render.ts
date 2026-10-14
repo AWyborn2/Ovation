@@ -200,14 +200,20 @@ export function renderPackCard(
     // A blank canvas: the club's stage colour and the editor's layers only
     // (also the base every card kind template renders on, ADR-001).
     const bound = bindInput(input);
-    const layers = renderFreeLayers(adj, size, opts, withMonogram(packFieldValues(input, data)), {
-      tokens,
-      brand: data?.brand,
-      junior,
-      rows: rowValues(bound.rows),
-      rowVariants: rowVariantsOf(bound.rows),
-      photoUrl: junior ? null : (data?.photoUrl ?? null),
-    });
+    const layers = renderFreeLayers(
+      adj,
+      size,
+      opts,
+      withMonogram(packFieldValues(input, data, BLANK_PACK_ID)),
+      {
+        tokens,
+        brand: data?.brand,
+        junior,
+        rows: rowValues(bound.rows),
+        rowVariants: rowVariantsOf(bound.rows),
+        photoUrl: junior ? null : (data?.photoUrl ?? null),
+      },
+    );
     return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest().inkTint, mode)}">${layers}</div>`;
   }
   const template = resolveTemplate(input, packId);
@@ -341,10 +347,12 @@ export function packFieldValues(
 ): Record<string, string> {
   // A blank canvas still binds the card's data, for live-stat layers.
   const template = resolveTemplate(input, packId === BLANK_PACK_ID ? null : packId);
-  if (!template) return {};
+  if (!template && packId !== BLANK_PACK_ID) return {};
   const bound = bindInput(input);
   if (data) applyPackData(bound, data, input.kind);
-  return { ...fieldDefaults(template), ...bound.values };
+  // A kind the reference pack has no design for (a Club Kit-only kind) still
+  // binds its own data on the blank base — with no sample defaults to fill in.
+  return template ? { ...fieldDefaults(template), ...bound.values } : bound.values;
 }
 
 /** Wrap a rendered square card in a 1200×630 frame, scaled and centred. */

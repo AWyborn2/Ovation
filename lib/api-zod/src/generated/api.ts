@@ -460,6 +460,8 @@ export const getMatchResponseClubOneHeroImagesOneJuniorsMax = 2048;
 
 export const getMatchResponseClubOneHeroImagesOneHonoursMax = 2048;
 
+export const getMatchResponseClubOneHeroImagesOneCardsMax = 2048;
+
 export const getMatchResponseClubOneHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const getMatchResponseClubOneHeroImagesOneExploreOnePlayersMax = 2048;
@@ -509,6 +511,7 @@ export const GetMatchResponse = zod.object({
   "home": zod.string().max(getMatchResponseClubOneHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(getMatchResponseClubOneHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(getMatchResponseClubOneHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(getMatchResponseClubOneHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(getMatchResponseClubOneHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(getMatchResponseClubOneHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -593,6 +596,8 @@ export const updateMatchRoundResponseClubOneHeroImagesOneJuniorsMax = 2048;
 
 export const updateMatchRoundResponseClubOneHeroImagesOneHonoursMax = 2048;
 
+export const updateMatchRoundResponseClubOneHeroImagesOneCardsMax = 2048;
+
 export const updateMatchRoundResponseClubOneHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const updateMatchRoundResponseClubOneHeroImagesOneExploreOnePlayersMax = 2048;
@@ -642,6 +647,7 @@ export const UpdateMatchRoundResponse = zod.object({
   "home": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -722,6 +728,8 @@ export const setMatchHatTrickResponseClubOneHeroImagesOneJuniorsMax = 2048;
 
 export const setMatchHatTrickResponseClubOneHeroImagesOneHonoursMax = 2048;
 
+export const setMatchHatTrickResponseClubOneHeroImagesOneCardsMax = 2048;
+
 export const setMatchHatTrickResponseClubOneHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const setMatchHatTrickResponseClubOneHeroImagesOneExploreOnePlayersMax = 2048;
@@ -771,6 +779,7 @@ export const SetMatchHatTrickResponse = zod.object({
   "home": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -3785,6 +3794,54 @@ export const FinaliseSelectionResponse = zod.object({
 
 
 /**
+ * The side's grade, PlayHQ format and competition, the overs to offer
+(the grade's remembered value, else one read from a T20-style format),
+and — for a senior side — which competition rules set the Junior Aged
+Player bowling limits and how many listed players have no birth date.
+Refused until the side is finalised.
+
+ * @summary What the print dialog needs for a finalised side's team sheet (admin or captain)
+ */
+export const GetTeamSheetPreviewParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetTeamSheetPreviewResponse = zod.object({
+  "selectionId": zod.number(),
+  "section": zod.enum(['senior', 'junior']),
+  "grade": zod.string(),
+  "format": zod.string().nullable().describe('PlayHQ\'s match type (\"One Day\", \"T20\"); null for a manual fixture'),
+  "competition": zod.string().nullable().describe('PlayHQ\'s grade name (\"A Grade Wyllie Cup\")'),
+  "overs": zod.string().nullable(),
+  "bowlingRulesSource": zod.string().nullable().describe('Where the Junior Aged Player limits come from (\"PCA Bylaw 5.9\"); null when unknown or junior'),
+  "missingBirthDates": zod.number().describe('Listed players with no birth date (senior sheet only)')
+})
+
+
+/**
+ * Match details (both teams, grade or age group, round, date, start time,
+format, overs, venue, competition), the 12 in batting-list order with
+shirt numbers and (C)/(WK) tags, and on a senior sheet each Junior Aged
+Player's age group and bowling limits from their date of birth under the
+competition's rules. The overs sent are printed and remembered for the
+grade. Generated clients should treat the response as a `Blob`.
+
+ * @summary The finalised side's printable A4 team sheet as a PDF (admin or captain)
+ */
+export const PrintTeamSheetParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const printTeamSheetBodyOversMax = 20;
+
+
+
+export const PrintTeamSheetBody = zod.object({
+  "overs": zod.string().max(printTeamSheetBodyOversMax).nullish().describe('Overs per innings to print; remembered for the side\'s grade')
+})
+
+
+/**
  * Returns the side to draft and logs it. The published team list stays as
 last finalised until the side is finalised again. Refused once the match
 has started.
@@ -5809,7 +5866,7 @@ export const ListSponsorsResponseItem = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
@@ -5826,7 +5883,7 @@ export const CreateSponsorBody = zod.object({
   "link": zod.string().optional(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).optional(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).optional(),
   "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional()
@@ -5846,7 +5903,7 @@ export const UpdateSponsorBody = zod.object({
   "link": zod.string().optional(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).optional(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).optional(),
   "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional()
@@ -5859,7 +5916,7 @@ export const UpdateSponsorResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
@@ -7124,7 +7181,7 @@ export const GetSocialSettingsResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
@@ -8139,7 +8196,7 @@ export const GetHonourDisplayResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
@@ -8410,7 +8467,7 @@ export const GetKioskDisplayResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
@@ -9026,7 +9083,7 @@ export const StartKindTemplateParams = zod.object({
 })
 
 export const StartKindTemplateBody = zod.object({
-  "starter": zod.enum(['club-kit', 'broadcast']),
+  "starter": zod.enum(['club-kit', 'broadcast', 'clubhouse']),
   "baseVersion": zod.number().optional().describe('Required when the kind already has a template.')
 })
 
@@ -11941,6 +11998,8 @@ export const getTenantBrandResponseOneHeroImagesOneJuniorsMax = 2048;
 
 export const getTenantBrandResponseOneHeroImagesOneHonoursMax = 2048;
 
+export const getTenantBrandResponseOneHeroImagesOneCardsMax = 2048;
+
 export const getTenantBrandResponseOneHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const getTenantBrandResponseOneHeroImagesOneExploreOnePlayersMax = 2048;
@@ -11967,6 +12026,7 @@ export const GetTenantBrandResponse = zod.union([zod.object({
   "home": zod.string().max(getTenantBrandResponseOneHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(getTenantBrandResponseOneHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(getTenantBrandResponseOneHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(getTenantBrandResponseOneHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(getTenantBrandResponseOneHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(getTenantBrandResponseOneHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -11990,6 +12050,8 @@ export const updateTenantBrandBodyHeroImagesOneHomeMax = 2048;
 export const updateTenantBrandBodyHeroImagesOneJuniorsMax = 2048;
 
 export const updateTenantBrandBodyHeroImagesOneHonoursMax = 2048;
+
+export const updateTenantBrandBodyHeroImagesOneCardsMax = 2048;
 
 export const updateTenantBrandBodyHeroImagesOneExploreOneHonoursMax = 2048;
 
@@ -12016,6 +12078,7 @@ export const UpdateTenantBrandBody = zod.object({
   "home": zod.string().max(updateTenantBrandBodyHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateTenantBrandBodyHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateTenantBrandBodyHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateTenantBrandBodyHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateTenantBrandBodyHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateTenantBrandBodyHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12029,6 +12092,8 @@ export const updateTenantBrandResponseHeroImagesOneHomeMax = 2048;
 export const updateTenantBrandResponseHeroImagesOneJuniorsMax = 2048;
 
 export const updateTenantBrandResponseHeroImagesOneHonoursMax = 2048;
+
+export const updateTenantBrandResponseHeroImagesOneCardsMax = 2048;
 
 export const updateTenantBrandResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
@@ -12056,6 +12121,7 @@ export const UpdateTenantBrandResponse = zod.object({
   "home": zod.string().max(updateTenantBrandResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateTenantBrandResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateTenantBrandResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateTenantBrandResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateTenantBrandResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateTenantBrandResponseHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12172,6 +12238,8 @@ export const listAllTenantsResponseHeroImagesOneJuniorsMax = 2048;
 
 export const listAllTenantsResponseHeroImagesOneHonoursMax = 2048;
 
+export const listAllTenantsResponseHeroImagesOneCardsMax = 2048;
+
 export const listAllTenantsResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const listAllTenantsResponseHeroImagesOneExploreOnePlayersMax = 2048;
@@ -12204,6 +12272,7 @@ export const ListAllTenantsResponseItem = zod.object({
   "home": zod.string().max(listAllTenantsResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(listAllTenantsResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(listAllTenantsResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(listAllTenantsResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(listAllTenantsResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(listAllTenantsResponseHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12249,6 +12318,8 @@ export const getAdminTenantResponseTenantHeroImagesOneJuniorsMax = 2048;
 
 export const getAdminTenantResponseTenantHeroImagesOneHonoursMax = 2048;
 
+export const getAdminTenantResponseTenantHeroImagesOneCardsMax = 2048;
+
 export const getAdminTenantResponseTenantHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const getAdminTenantResponseTenantHeroImagesOneExploreOnePlayersMax = 2048;
@@ -12282,6 +12353,7 @@ export const GetAdminTenantResponse = zod.object({
   "home": zod.string().max(getAdminTenantResponseTenantHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(getAdminTenantResponseTenantHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(getAdminTenantResponseTenantHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(getAdminTenantResponseTenantHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(getAdminTenantResponseTenantHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(getAdminTenantResponseTenantHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12321,6 +12393,8 @@ export const updateAdminTenantResponseHeroImagesOneJuniorsMax = 2048;
 
 export const updateAdminTenantResponseHeroImagesOneHonoursMax = 2048;
 
+export const updateAdminTenantResponseHeroImagesOneCardsMax = 2048;
+
 export const updateAdminTenantResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const updateAdminTenantResponseHeroImagesOneExploreOnePlayersMax = 2048;
@@ -12353,6 +12427,7 @@ export const UpdateAdminTenantResponse = zod.object({
   "home": zod.string().max(updateAdminTenantResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateAdminTenantResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateAdminTenantResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateAdminTenantResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateAdminTenantResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateAdminTenantResponseHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12384,6 +12459,8 @@ export const updateAdminTenantBrandBodyHeroImagesOneJuniorsMax = 2048;
 
 export const updateAdminTenantBrandBodyHeroImagesOneHonoursMax = 2048;
 
+export const updateAdminTenantBrandBodyHeroImagesOneCardsMax = 2048;
+
 export const updateAdminTenantBrandBodyHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const updateAdminTenantBrandBodyHeroImagesOneExploreOnePlayersMax = 2048;
@@ -12408,6 +12485,7 @@ export const UpdateAdminTenantBrandBody = zod.object({
   "home": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12421,6 +12499,8 @@ export const updateAdminTenantBrandResponseTenantHeroImagesOneHomeMax = 2048;
 export const updateAdminTenantBrandResponseTenantHeroImagesOneJuniorsMax = 2048;
 
 export const updateAdminTenantBrandResponseTenantHeroImagesOneHonoursMax = 2048;
+
+export const updateAdminTenantBrandResponseTenantHeroImagesOneCardsMax = 2048;
 
 export const updateAdminTenantBrandResponseTenantHeroImagesOneExploreOneHonoursMax = 2048;
 
@@ -12455,6 +12535,7 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "home": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12488,6 +12569,8 @@ export const archiveAdminTenantResponseHeroImagesOneJuniorsMax = 2048;
 
 export const archiveAdminTenantResponseHeroImagesOneHonoursMax = 2048;
 
+export const archiveAdminTenantResponseHeroImagesOneCardsMax = 2048;
+
 export const archiveAdminTenantResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const archiveAdminTenantResponseHeroImagesOneExploreOnePlayersMax = 2048;
@@ -12520,6 +12603,7 @@ export const ArchiveAdminTenantResponse = zod.object({
   "home": zod.string().max(archiveAdminTenantResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(archiveAdminTenantResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(archiveAdminTenantResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(archiveAdminTenantResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(archiveAdminTenantResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(archiveAdminTenantResponseHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12546,6 +12630,8 @@ export const restoreAdminTenantResponseHeroImagesOneHomeMax = 2048;
 export const restoreAdminTenantResponseHeroImagesOneJuniorsMax = 2048;
 
 export const restoreAdminTenantResponseHeroImagesOneHonoursMax = 2048;
+
+export const restoreAdminTenantResponseHeroImagesOneCardsMax = 2048;
 
 export const restoreAdminTenantResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
@@ -12579,6 +12665,7 @@ export const RestoreAdminTenantResponse = zod.object({
   "home": zod.string().max(restoreAdminTenantResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(restoreAdminTenantResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(restoreAdminTenantResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(restoreAdminTenantResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(restoreAdminTenantResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(restoreAdminTenantResponseHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12993,5 +13080,43 @@ export const GetSocialWeekendWrapPrefillResponse = zod.object({
   "outcome": zod.enum(['WON', 'LOST', ''])
 }).describe('One grade\'s line in the Weekend Wrap card (A6).'))
 }).describe('Weekend Wrap card (A6) prefill — a round\'s senior results, one per grade.')
+
+
+/**
+ * Seniors only (central data). Private players are never named. Every field is editable in the builder.
+ * @summary Results summary and team of the week prefill — a round's results per grade with the best batters and bowlers, and its standout performers. Admin + socialStudio entitlement.
+ */
+export const GetSocialRoundResultsPrefillQueryParams = zod.object({
+  "season": zod.coerce.number().describe('Season start year (e.g. 2026 for \"2026\/27\").'),
+  "round": zod.coerce.number()
+})
+
+export const GetSocialRoundResultsPrefillResponse = zod.object({
+  "roundLabel": zod.string(),
+  "dateLabel": zod.string().describe('\"SATURDAY 10TH OCTOBER 2026\" — the round\'s first match date.'),
+  "results": zod.array(zod.object({
+  "matchId": zod.number(),
+  "grade": zod.string(),
+  "clubScore": zod.string(),
+  "oppName": zod.string(),
+  "oppScore": zod.string(),
+  "outcome": zod.enum(['WON', 'LOST', '']),
+  "note": zod.string().describe('Set when the match had no result (e.g. \"WASHED OUT\"); scores are empty then.'),
+  "batters": zod.array(zod.object({
+  "name": zod.string(),
+  "figure": zod.string().describe('\"32\* (34)\" for a batter, \"3\/28 (10)\" for a bowler.')
+})).describe('The club\'s best two batters.'),
+  "bowlers": zod.array(zod.object({
+  "name": zod.string(),
+  "figure": zod.string().describe('\"32\* (34)\" for a batter, \"3\/28 (10)\" for a bowler.')
+})).describe('The club\'s best two bowlers.')
+}).describe('One grade\'s result in a round, from the club\'s side.')),
+  "teamOfWeek": zod.array(zod.object({
+  "name": zod.string(),
+  "grade": zod.string(),
+  "figure": zod.string().describe('\"110\*\", \"5\/28\", \"4\/21 & 16\".'),
+  "photoUrl": zod.string().nullable().describe('The player\'s library photo, else headshot; null when the club has neither.')
+}))
+}).describe('Results summary and team of the week prefill: a round\'s senior results per grade with the best players, and its standout performers.')
 
 

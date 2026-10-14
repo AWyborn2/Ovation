@@ -36,6 +36,11 @@ export interface PlayhqMatchLite {
   awayOrgId: string | null;
   homeTeamName: string | null;
   awayTeamName: string | null;
+  /** PlayHQ's match type: "One Day", "Two Day", "T20" … */
+  matchType?: string | null;
+  /** The organisation that runs the grade (the association) and its name. */
+  ownerOrgId?: string | null;
+  ownerOrgName?: string | null;
 }
 
 export interface OrgLite {
@@ -58,6 +63,12 @@ export interface FixtureUpsert {
   isHome: boolean;
   source: "playhq";
   playhqMatchId: string;
+  matchFormat: string | null;
+  competitionName: string | null;
+  associationOrgId: string | null;
+  associationName: string | null;
+  homeTeamName: string | null;
+  awayTeamName: string | null;
 }
 
 /** Shape one PlayHQ match as the tenant's fixture row (the club's perspective). */
@@ -88,6 +99,12 @@ export function toFixtureRow(
     isHome,
     source: "playhq",
     playhqMatchId: m.id,
+    matchFormat: m.matchType ?? null,
+    competitionName: m.gradeName,
+    associationOrgId: m.ownerOrgId ? m.ownerOrgId.toLowerCase() : null,
+    associationName: m.ownerOrgName ?? null,
+    homeTeamName: m.homeTeamName,
+    awayTeamName: m.awayTeamName,
   };
 }
 
@@ -270,11 +287,16 @@ export async function projectFixtures(opts: ProjectionOpts = {}): Promise<Projec
         away_org_id: string | null;
         home_team_name: string | null;
         away_team_name: string | null;
+        match_type: string | null;
+        owner_org_id: string | null;
+        owner_org_name: string | null;
       }>(
         `select m.id, g.name as grade_name, m.round_name, m.start_at, m.venue_name, m.surface_name,
-                m.latitude, m.longitude, m.status, m.home_org_id, m.away_org_id, m.home_team_name, m.away_team_name
+                m.latitude, m.longitude, m.status, m.home_org_id, m.away_org_id, m.home_team_name, m.away_team_name,
+                m.match_type, g.owner_org_id, o.name as owner_org_name
            from playhq.matches m
            join playhq.grades g on g.id = m.grade_id
+           left join playhq.organisations o on o.id = g.owner_org_id
           where (m.home_org_id = $1 or m.away_org_id = $1)
             and g.is_junior = false
             and m.start_at is not null
@@ -296,6 +318,9 @@ export async function projectFixtures(opts: ProjectionOpts = {}): Promise<Projec
         awayOrgId: r.away_org_id,
         homeTeamName: r.home_team_name,
         awayTeamName: r.away_team_name,
+        matchType: r.match_type,
+        ownerOrgId: r.owner_org_id,
+        ownerOrgName: r.owner_org_name,
       }));
 
       const oppIds = [
@@ -365,6 +390,12 @@ export async function projectFixtures(opts: ProjectionOpts = {}): Promise<Projec
               startAt: sql`excluded.start_at`,
               isHome: sql`excluded.is_home`,
               source: sql`excluded.source`,
+              matchFormat: sql`excluded.match_format`,
+              competitionName: sql`excluded.competition_name`,
+              associationOrgId: sql`excluded.association_org_id`,
+              associationName: sql`excluded.association_name`,
+              homeTeamName: sql`excluded.home_team_name`,
+              awayTeamName: sql`excluded.away_team_name`,
             },
           });
       }

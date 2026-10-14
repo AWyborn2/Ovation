@@ -122,6 +122,19 @@ describe("Studio with card kind templates on", () => {
     );
   });
 
+  it("starts every card from one look, after a confirm", async () => {
+    const writes = open({ enabled: true, templates: [summary("century")] });
+    fireEvent.click(await screen.findByRole("button", { name: "Start every card from Clubhouse" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Start every card" }));
+    await waitFor(() =>
+      expect(writes.filter((w) => /kind-templates\/\w+\/start$/.test(w.url))).toHaveLength(
+        TEMPLATE_CARD_KINDS.length,
+      ),
+    );
+    expect(writes.every((w) => w.method === "POST")).toBe(true);
+    expect(await screen.findByRole("status")).toBeTruthy();
+  });
+
   it("retires saved editor templates but keeps uploaded backgrounds", async () => {
     open({ enabled: true, templates: [] });
     await screen.findByRole("heading", { name: "Card designs" });
