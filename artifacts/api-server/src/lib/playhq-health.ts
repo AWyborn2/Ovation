@@ -18,6 +18,7 @@ import {
   type Queryable,
 } from "@workspace/db/playhq-ingest";
 import { sendEmail } from "./integrations/email";
+import { withoutDecidedGrades } from "./playhq-grade-decisions";
 import { env } from "../config";
 
 /**
@@ -43,9 +44,9 @@ type Logger = {
 export const STALE_NOTIFICATION_KIND = "playhq_sync_stale";
 const FIXTURES_LINK = "/admin/social/fixtures";
 
-type LinkedTenant = { id: number; slug: string; name: string; orgId: string };
+export type LinkedTenant = { id: number; slug: string; name: string; orgId: string };
 
-async function syncTenants(): Promise<LinkedTenant[]> {
+export async function syncTenants(): Promise<LinkedTenant[]> {
   const rows = await db
     .select({
       id: tenantsTable.id,
@@ -273,10 +274,9 @@ export async function tenantSyncStatus(tenantId: number) {
     );
   // Competitions PlayHQ has for this club that Ovation can't place (their matches are skipped).
   // Best-effort: a failure here must not hide the rest of the status.
-  const unclassifiedGrades = await loadUnclassifiedGrades(
-    pool as unknown as Queryable,
-    orgId,
-  ).catch(() => []);
+  const unclassifiedGrades = await loadUnclassifiedGrades(pool as unknown as Queryable, orgId)
+    .then(withoutDecidedGrades)
+    .catch(() => []);
   return {
     linked,
     syncEnabled: enabled,

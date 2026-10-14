@@ -158,6 +158,8 @@ import type {
   GetSocialWeekendWrapPrefillParams,
   GetWeekendCarouselSourcesParams,
   GoogleDriveConfig,
+  GradeDecisionList,
+  GradeDecisionResult,
   GradeDistribution,
   GradeSummary,
   HealthStatus,
@@ -332,6 +334,7 @@ import type {
   SelectionRemindBody,
   SelectionSide,
   SeniorOverview,
+  SetGradeDecisionBody,
   SetJuniorSeniorLinkBody,
   SetPlayerPrivacyBody,
   ShirtNumberConflict,
@@ -29069,6 +29072,224 @@ export const useDeleteProvisioningExclusion = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteProvisioningExclusionMutationOptions(options));
+    }
+
+export const getGetPlatformGradeDecisionsUrl = () => {
+
+
+
+
+  return `/api/platform/admin/grade-decisions`
+}
+
+/**
+ * @summary PlayHQ competitions no club's sync can place in a grade (their matches are skipped until someone decides), and the decisions made so far.
+ */
+export const getPlatformGradeDecisions = async ( options?: RequestInit): Promise<GradeDecisionList> => {
+
+  return customFetch<GradeDecisionList>(getGetPlatformGradeDecisionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlatformGradeDecisionsQueryKey = () => {
+    return [
+    `/api/platform/admin/grade-decisions`
+    ] as const;
+    }
+
+
+export const getGetPlatformGradeDecisionsQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformGradeDecisions>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformGradeDecisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlatformGradeDecisionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformGradeDecisions>>> = ({ signal }) => getPlatformGradeDecisions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformGradeDecisions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlatformGradeDecisionsQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformGradeDecisions>>>
+export type GetPlatformGradeDecisionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary PlayHQ competitions no club's sync can place in a grade (their matches are skipped until someone decides), and the decisions made so far.
+ */
+
+export function useGetPlatformGradeDecisions<TData = Awaited<ReturnType<typeof getPlatformGradeDecisions>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformGradeDecisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlatformGradeDecisionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSetPlatformGradeDecisionUrl = () => {
+
+
+
+
+  return `/api/platform/admin/grade-decisions`
+}
+
+/**
+ * @summary Map a PlayHQ competition to an app grade, or mark it as not tracked. A mapping is projected straight away when the central projector is configured, otherwise on the next sync that touches the competition.
+ */
+export const setPlatformGradeDecision = async (setGradeDecisionBody: SetGradeDecisionBody, options?: RequestInit): Promise<GradeDecisionResult> => {
+
+  return customFetch<GradeDecisionResult>(getSetPlatformGradeDecisionUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setGradeDecisionBody,)
+  }
+);}
+
+
+
+
+export const getSetPlatformGradeDecisionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPlatformGradeDecision>>, TError,{data: BodyType<SetGradeDecisionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setPlatformGradeDecision>>, TError,{data: BodyType<SetGradeDecisionBody>}, TContext> => {
+
+const mutationKey = ['setPlatformGradeDecision'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setPlatformGradeDecision>>, {data: BodyType<SetGradeDecisionBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setPlatformGradeDecision(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetPlatformGradeDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof setPlatformGradeDecision>>>
+    export type SetPlatformGradeDecisionMutationBody = BodyType<SetGradeDecisionBody>
+    export type SetPlatformGradeDecisionMutationError = ErrorType<void>
+
+    /**
+ * @summary Map a PlayHQ competition to an app grade, or mark it as not tracked. A mapping is projected straight away when the central projector is configured, otherwise on the next sync that touches the competition.
+ */
+export const useSetPlatformGradeDecision = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPlatformGradeDecision>>, TError,{data: BodyType<SetGradeDecisionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setPlatformGradeDecision>>,
+        TError,
+        {data: BodyType<SetGradeDecisionBody>},
+        TContext
+      > => {
+      return useMutation(getSetPlatformGradeDecisionMutationOptions(options));
+    }
+
+export const getDeletePlatformGradeDecisionUrl = (gradeKey: string,) => {
+
+
+
+
+  return `/api/platform/admin/grade-decisions/${gradeKey}`
+}
+
+/**
+ * @summary Remove a decision. Matches already projected stay as they are; the competition goes back to being unrecognised for future syncs.
+ */
+export const deletePlatformGradeDecision = async (gradeKey: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePlatformGradeDecisionUrl(gradeKey),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeletePlatformGradeDecisionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePlatformGradeDecision>>, TError,{gradeKey: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePlatformGradeDecision>>, TError,{gradeKey: string}, TContext> => {
+
+const mutationKey = ['deletePlatformGradeDecision'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePlatformGradeDecision>>, {gradeKey: string}> = (props) => {
+          const {gradeKey} = props ?? {};
+
+          return  deletePlatformGradeDecision(gradeKey,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePlatformGradeDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof deletePlatformGradeDecision>>>
+
+    export type DeletePlatformGradeDecisionMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a decision. Matches already projected stay as they are; the competition goes back to being unrecognised for future syncs.
+ */
+export const useDeletePlatformGradeDecision = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePlatformGradeDecision>>, TError,{gradeKey: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePlatformGradeDecision>>,
+        TError,
+        {gradeKey: string},
+        TContext
+      > => {
+      return useMutation(getDeletePlatformGradeDecisionMutationOptions(options));
     }
 
 export const getGetPlatformPlayerPrivacyUrl = (params?: GetPlatformPlayerPrivacyParams,) => {
