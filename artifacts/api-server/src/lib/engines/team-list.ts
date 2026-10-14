@@ -77,7 +77,7 @@ export function buildTeamListShirtNumbers(
 }
 
 /** A selected player's number: their linked entry first, else a participant match. */
-function shirtNumberOf(p: TeamListPlayer, numbers: TeamListShirtNumbers): string | null {
+export function shirtNumberOf(p: TeamListPlayer, numbers: TeamListShirtNumbers): string | null {
   if (p.playerId != null) {
     const linked = numbers.byPlayerId.get(p.playerId);
     if (linked) return linked;

@@ -3453,6 +3453,37 @@ export interface SelectionBoardSave {
   changes: SelectionChange[];
 }
 
+export type TeamSheetPreviewSection = typeof TeamSheetPreviewSection[keyof typeof TeamSheetPreviewSection];
+
+
+export const TeamSheetPreviewSection = {
+  senior: 'senior',
+  junior: 'junior',
+} as const;
+
+export interface TeamSheetPreview {
+  selectionId: number;
+  section: TeamSheetPreviewSection;
+  grade: string;
+  /** PlayHQ's match type ("One Day", "T20"); null for a manual fixture */
+  format: string | null;
+  /** PlayHQ's grade name ("A Grade Wyllie Cup") */
+  competition: string | null;
+  overs: string | null;
+  /** Where the Junior Aged Player limits come from ("PCA Bylaw 5.9"); null when unknown or junior */
+  bowlingRulesSource: string | null;
+  /** Listed players with no birth date (senior sheet only) */
+  missingBirthDates: number;
+}
+
+export interface TeamSheetPrintBody {
+  /**
+     * Overs per innings to print; remembered for the side's grade
+     * @maxLength 20
+     */
+  overs?: string | null;
+}
+
 export interface SelectionFinaliseBody {
   /** The side's version as the caller loaded it */
   version: number;

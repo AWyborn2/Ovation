@@ -3794,6 +3794,54 @@ export const FinaliseSelectionResponse = zod.object({
 
 
 /**
+ * The side's grade, PlayHQ format and competition, the overs to offer
+(the grade's remembered value, else one read from a T20-style format),
+and — for a senior side — which competition rules set the Junior Aged
+Player bowling limits and how many listed players have no birth date.
+Refused until the side is finalised.
+
+ * @summary What the print dialog needs for a finalised side's team sheet (admin or captain)
+ */
+export const GetTeamSheetPreviewParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetTeamSheetPreviewResponse = zod.object({
+  "selectionId": zod.number(),
+  "section": zod.enum(['senior', 'junior']),
+  "grade": zod.string(),
+  "format": zod.string().nullable().describe('PlayHQ\'s match type (\"One Day\", \"T20\"); null for a manual fixture'),
+  "competition": zod.string().nullable().describe('PlayHQ\'s grade name (\"A Grade Wyllie Cup\")'),
+  "overs": zod.string().nullable(),
+  "bowlingRulesSource": zod.string().nullable().describe('Where the Junior Aged Player limits come from (\"PCA Bylaw 5.9\"); null when unknown or junior'),
+  "missingBirthDates": zod.number().describe('Listed players with no birth date (senior sheet only)')
+})
+
+
+/**
+ * Match details (both teams, grade or age group, round, date, start time,
+format, overs, venue, competition), the 12 in batting-list order with
+shirt numbers and (C)/(WK) tags, and on a senior sheet each Junior Aged
+Player's age group and bowling limits from their date of birth under the
+competition's rules. The overs sent are printed and remembered for the
+grade. Generated clients should treat the response as a `Blob`.
+
+ * @summary The finalised side's printable A4 team sheet as a PDF (admin or captain)
+ */
+export const PrintTeamSheetParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const printTeamSheetBodyOversMax = 20;
+
+
+
+export const PrintTeamSheetBody = zod.object({
+  "overs": zod.string().max(printTeamSheetBodyOversMax).nullish().describe('Overs per innings to print; remembered for the side\'s grade')
+})
+
+
+/**
  * Returns the side to draft and logs it. The published team list stays as
 last finalised until the side is finalised again. Refused once the match
 has started.
