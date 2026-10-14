@@ -40,6 +40,7 @@ const TARGET_GROUPS: Record<Section, [prefix: string, group: NavGroupKey | "top"
   juniors: [
     ["/juniors/matches", "stats"],
     ["/juniors/players", "stats"],
+    ["/juniors/fixtures", "stats"],
     ["/juniors/premierships", "history"],
     ["/juniors/office-bearers", "history"],
   ],
@@ -57,6 +58,7 @@ const DEFAULT_DESCRIPTIONS: Record<string, string> = {
   "/fixtures": "Upcoming games and results",
   "/juniors/matches": "Junior results and scorecards",
   "/juniors/players": "Every junior player's record",
+  "/juniors/fixtures": "Upcoming junior games and team lists",
   "/juniors/premierships": "Junior premiership sides",
   "/juniors/office-bearers": "Junior committee and coordinators",
 };

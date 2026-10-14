@@ -60,6 +60,16 @@ describe("groupNavItems (Broadcast AE3)", () => {
     ]);
   });
 
+  it("puts junior fixtures beside junior matches (the juniors menu has no Club group)", () => {
+    const g = groupNavItems(
+      [item("/juniors"), item("/juniors/matches"), item("/juniors/fixtures")],
+      "juniors",
+    );
+    expect(g.groups.map((x) => [x.key, x.items.map((i) => i.target)])).toEqual([
+      ["stats", ["/juniors/matches", "/juniors/fixtures"]],
+    ]);
+  });
+
   it("omits groups with no visible children", () => {
     const g = groupNavItems([item("/players")], "seniors");
     expect(g.groups.map((x) => x.key)).toEqual(["stats"]);

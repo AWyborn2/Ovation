@@ -8297,6 +8297,118 @@ export interface JuniorInnings {
   bowling: JuniorBowlingLine[];
 }
 
+export interface JuniorFixture {
+  id: number;
+  seasonStartYear: number;
+  ageGroup: string | null;
+  grade: string | null;
+  /** The club's own junior team */
+  teamName: string | null;
+  opponentName: string | null;
+  venue: string | null;
+  startAt: string | null;
+  isHome: boolean | null;
+  /** PlayHQ match status as last synced (e.g. UPCOMING) */
+  status: string | null;
+  /** A published team list exists for this fixture */
+  hasTeamList: boolean;
+}
+
+/**
+ * Captain / vice-captain / wicket-keeper marker
+ */
+export type JuniorTeamListRole = typeof JuniorTeamListRole[keyof typeof JuniorTeamListRole];
+
+
+export const JuniorTeamListRole = {
+  C: 'C',
+  VC: 'VC',
+  WK: 'WK',
+  'C/WK': 'C/WK',
+  'VC/WK': 'VC/WK',
+} as const;
+
+export interface JuniorPublicTeamListPlayer {
+  order: number;
+  /** Public name in the club's style, or "Private Player" */
+  name: string;
+  /** Null when the player is withheld */
+  participantId: string | null;
+  role: JuniorTeamListRole | null;
+  /** Junior shirt number for the fixture's season (null when withheld or none) */
+  shirtNumber: string | null;
+}
+
+export interface JuniorFixtureDetail {
+  fixture: JuniorFixture;
+  /** The published team list in order, or null when none is published */
+  teamList: JuniorPublicTeamListPlayer[] | null;
+}
+
+export interface JuniorAdminTeamListPlayer {
+  order: number;
+  participantId: string;
+  /** Full name */
+  name: string;
+  role: JuniorTeamListRole | null;
+  shirtNumber: string | null;
+  /** Withheld on public pages (private in PlayHQ, not overridden) */
+  isPrivate: boolean;
+  /** Still one of the club's junior participants */
+  isKnown: boolean;
+}
+
+export interface JuniorTeamListCandidate {
+  participantId: string;
+  name: string;
+  isPrivate: boolean;
+  shirtNumber: string | null;
+  teams: string | null;
+  lastSeason: string | null;
+}
+
+/**
+ * Who wrote the list; an admin's list is never overwritten by the sync
+ */
+export type JuniorAdminTeamListSavedSource = typeof JuniorAdminTeamListSavedSource[keyof typeof JuniorAdminTeamListSavedSource];
+
+
+export const JuniorAdminTeamListSavedSource = {
+  playhq: 'playhq',
+  admin: 'admin',
+} as const;
+
+export interface JuniorAdminTeamListSaved {
+  players: JuniorAdminTeamListPlayer[];
+  isPublished: boolean;
+  /** Who wrote the list; an admin's list is never overwritten by the sync */
+  source: JuniorAdminTeamListSavedSource;
+  updatedAt: string;
+}
+
+export interface JuniorAdminTeamList {
+  fixture: JuniorFixture;
+  /** Season start year whose shirt numbers are shown */
+  season: number;
+  shirtNumbersEnabled: boolean;
+  teamList: JuniorAdminTeamListSaved | null;
+  candidates: JuniorTeamListCandidate[];
+}
+
+export interface PutJuniorTeamListPlayer {
+  /** @minimum 1 */
+  order: number;
+  /** @minLength 1 */
+  participantId: string;
+  role?: JuniorTeamListRole | null;
+}
+
+export interface PutJuniorTeamListBody {
+  /** @maxItems 30 */
+  players: PutJuniorTeamListPlayer[];
+  isPublished?: boolean;
+}
+
 export interface JuniorMatchSummary {
   id: number;
   /** @nullable */
@@ -9533,6 +9645,13 @@ season?: string;
  * When true, aggregate across every season (ignores season).
  */
 allTime?: boolean;
+};
+
+export type ListJuniorFixturesParams = {
+/**
+ * Filter by age group (e.g. "Year 6")
+ */
+ageGroup?: string;
 };
 
 export type ListJuniorMatchesParams = {

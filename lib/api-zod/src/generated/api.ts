@@ -10901,6 +10901,175 @@ export const GetJuniorsFiltersResponse = zod.object({
 
 
 /**
+ * The club's junior fixtures synced from PlayHQ that start from 12 hours ago onward (so match-day games stay listed), ordered by start time. Empty when the club's junior sync is switched off (R23).
+ * @summary Upcoming junior games for the club, soonest first
+ */
+export const ListJuniorFixturesQueryParams = zod.object({
+  "ageGroup": zod.coerce.string().optional().describe('Filter by age group (e.g. \"Year 6\")')
+})
+
+export const ListJuniorFixturesResponseItem = zod.object({
+  "id": zod.number(),
+  "seasonStartYear": zod.number(),
+  "ageGroup": zod.string().nullable(),
+  "grade": zod.string().nullable(),
+  "teamName": zod.string().nullable().describe('The club\'s own junior team'),
+  "opponentName": zod.string().nullable(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date().nullable(),
+  "isHome": zod.boolean().nullable(),
+  "status": zod.string().nullable().describe('PlayHQ match status as last synced (e.g. UPCOMING)'),
+  "hasTeamList": zod.boolean().describe('A published team list exists for this fixture')
+})
+export const ListJuniorFixturesResponse = zod.array(ListJuniorFixturesResponseItem)
+
+
+/**
+ * Team-list players are named by the club's junior naming rules; a private, non-overridden player is "Private Player" with no participant id or shirt number. 404 when the fixture is another club's, or the club's junior sync is switched off.
+ * @summary One junior fixture with its published team list
+ */
+export const GetJuniorFixtureParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetJuniorFixtureResponse = zod.object({
+  "fixture": zod.object({
+  "id": zod.number(),
+  "seasonStartYear": zod.number(),
+  "ageGroup": zod.string().nullable(),
+  "grade": zod.string().nullable(),
+  "teamName": zod.string().nullable().describe('The club\'s own junior team'),
+  "opponentName": zod.string().nullable(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date().nullable(),
+  "isHome": zod.boolean().nullable(),
+  "status": zod.string().nullable().describe('PlayHQ match status as last synced (e.g. UPCOMING)'),
+  "hasTeamList": zod.boolean().describe('A published team list exists for this fixture')
+}),
+  "teamList": zod.array(zod.object({
+  "order": zod.number(),
+  "name": zod.string().describe('Public name in the club\'s style, or \"Private Player\"'),
+  "participantId": zod.string().nullable().describe('Null when the player is withheld'),
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).describe('Captain \/ vice-captain \/ wicket-keeper marker').nullable(),
+  "shirtNumber": zod.string().nullable().describe('Junior shirt number for the fixture\'s season (null when withheld or none)')
+})).nullable().describe('The published team list in order, or null when none is published')
+})
+
+
+/**
+ * Full names, each player's junior shirt number for the fixture's season, and the club's junior players to pick from.
+ * @summary A junior fixture's team list for the admin editor (admin only)
+ */
+export const GetJuniorFixtureTeamListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetJuniorFixtureTeamListResponse = zod.object({
+  "fixture": zod.object({
+  "id": zod.number(),
+  "seasonStartYear": zod.number(),
+  "ageGroup": zod.string().nullable(),
+  "grade": zod.string().nullable(),
+  "teamName": zod.string().nullable().describe('The club\'s own junior team'),
+  "opponentName": zod.string().nullable(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date().nullable(),
+  "isHome": zod.boolean().nullable(),
+  "status": zod.string().nullable().describe('PlayHQ match status as last synced (e.g. UPCOMING)'),
+  "hasTeamList": zod.boolean().describe('A published team list exists for this fixture')
+}),
+  "season": zod.number().describe('Season start year whose shirt numbers are shown'),
+  "shirtNumbersEnabled": zod.boolean(),
+  "teamList": zod.object({
+  "players": zod.array(zod.object({
+  "order": zod.number(),
+  "participantId": zod.string(),
+  "name": zod.string().describe('Full name'),
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).describe('Captain \/ vice-captain \/ wicket-keeper marker').nullable(),
+  "shirtNumber": zod.string().nullable(),
+  "isPrivate": zod.boolean().describe('Withheld on public pages (private in PlayHQ, not overridden)'),
+  "isKnown": zod.boolean().describe('Still one of the club\'s junior participants')
+})),
+  "isPublished": zod.boolean(),
+  "source": zod.enum(['playhq', 'admin']).describe('Who wrote the list; an admin\'s list is never overwritten by the sync'),
+  "updatedAt": zod.coerce.date()
+}).nullable(),
+  "candidates": zod.array(zod.object({
+  "participantId": zod.string(),
+  "name": zod.string(),
+  "isPrivate": zod.boolean(),
+  "shirtNumber": zod.string().nullable(),
+  "teams": zod.string().nullable(),
+  "lastSeason": zod.string().nullable()
+}))
+})
+
+
+/**
+ * Saves the list as `admin`, so the PlayHQ sync never overwrites it. Every player must be one of the club's own junior participants (never an opposition player or another club's); orders must be unique and at most one captain, vice-captain and wicket-keeper may be named. The list is stored in order, renumbered from 1.
+ * @summary Save a junior fixture's team list (admin only)
+ */
+export const PutJuniorFixtureTeamListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+export const putJuniorFixtureTeamListBodyPlayersMax = 30;
+
+
+
+export const PutJuniorFixtureTeamListBody = zod.object({
+  "players": zod.array(zod.object({
+  "order": zod.number().min(1),
+  "participantId": zod.string().min(1),
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).describe('Captain \/ vice-captain \/ wicket-keeper marker').nullish()
+})).max(putJuniorFixtureTeamListBodyPlayersMax),
+  "isPublished": zod.boolean().optional()
+})
+
+export const PutJuniorFixtureTeamListResponse = zod.object({
+  "fixture": zod.object({
+  "id": zod.number(),
+  "seasonStartYear": zod.number(),
+  "ageGroup": zod.string().nullable(),
+  "grade": zod.string().nullable(),
+  "teamName": zod.string().nullable().describe('The club\'s own junior team'),
+  "opponentName": zod.string().nullable(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date().nullable(),
+  "isHome": zod.boolean().nullable(),
+  "status": zod.string().nullable().describe('PlayHQ match status as last synced (e.g. UPCOMING)'),
+  "hasTeamList": zod.boolean().describe('A published team list exists for this fixture')
+}),
+  "season": zod.number().describe('Season start year whose shirt numbers are shown'),
+  "shirtNumbersEnabled": zod.boolean(),
+  "teamList": zod.object({
+  "players": zod.array(zod.object({
+  "order": zod.number(),
+  "participantId": zod.string(),
+  "name": zod.string().describe('Full name'),
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).describe('Captain \/ vice-captain \/ wicket-keeper marker').nullable(),
+  "shirtNumber": zod.string().nullable(),
+  "isPrivate": zod.boolean().describe('Withheld on public pages (private in PlayHQ, not overridden)'),
+  "isKnown": zod.boolean().describe('Still one of the club\'s junior participants')
+})),
+  "isPublished": zod.boolean(),
+  "source": zod.enum(['playhq', 'admin']).describe('Who wrote the list; an admin\'s list is never overwritten by the sync'),
+  "updatedAt": zod.coerce.date()
+}).nullable(),
+  "candidates": zod.array(zod.object({
+  "participantId": zod.string(),
+  "name": zod.string(),
+  "isPrivate": zod.boolean(),
+  "shirtNumber": zod.string().nullable(),
+  "teams": zod.string().nullable(),
+  "lastSeason": zod.string().nullable()
+}))
+})
+
+
+/**
  * @summary List junior matches, filterable by season and age group
  */
 export const ListJuniorMatchesQueryParams = zod.object({

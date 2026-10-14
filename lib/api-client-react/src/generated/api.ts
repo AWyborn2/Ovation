@@ -188,7 +188,10 @@ import type {
   JuniorAdminMatchMeta,
   JuniorAdminParticipant,
   JuniorAdminRosterEntry,
+  JuniorAdminTeamList,
   JuniorFilters,
+  JuniorFixture,
+  JuniorFixtureDetail,
   JuniorLeaderboardRow,
   JuniorLeaderboards,
   JuniorMatchDetail,
@@ -225,6 +228,7 @@ import type {
   ListClubPhotosParams,
   ListFixturesParams,
   ListFixturesResultsParams,
+  ListJuniorFixturesParams,
   ListJuniorLeaderboardParams,
   ListJuniorMatchesParams,
   ListJuniorPlayersParams,
@@ -304,6 +308,7 @@ import type {
   ProvisionTenantBody,
   ProvisioningExclusion,
   PublishSweepSummary,
+  PutJuniorTeamListBody,
   PutTeamListBody,
   ReadinessStatus,
   RecapInput,
@@ -24361,6 +24366,320 @@ export function useGetJuniorsFilters<TData = Awaited<ReturnType<typeof getJunior
 
 
 
+
+export const getListJuniorFixturesUrl = (params?: ListJuniorFixturesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/juniors/fixtures?${stringifiedParams}` : `/api/juniors/fixtures`
+}
+
+/**
+ * The club's junior fixtures synced from PlayHQ that start from 12 hours ago onward (so match-day games stay listed), ordered by start time. Empty when the club's junior sync is switched off (R23).
+ * @summary Upcoming junior games for the club, soonest first
+ */
+export const listJuniorFixtures = async (params?: ListJuniorFixturesParams, options?: RequestInit): Promise<JuniorFixture[]> => {
+
+  return customFetch<JuniorFixture[]>(getListJuniorFixturesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorFixturesQueryKey = (params?: ListJuniorFixturesParams,) => {
+    return [
+    `/api/juniors/fixtures`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListJuniorFixturesQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorFixtures>>, TError = ErrorType<unknown>>(params?: ListJuniorFixturesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorFixtures>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorFixturesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorFixtures>>> = ({ signal }) => listJuniorFixtures(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorFixtures>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorFixturesQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorFixtures>>>
+export type ListJuniorFixturesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Upcoming junior games for the club, soonest first
+ */
+
+export function useListJuniorFixtures<TData = Awaited<ReturnType<typeof listJuniorFixtures>>, TError = ErrorType<unknown>>(
+ params?: ListJuniorFixturesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorFixtures>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorFixturesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetJuniorFixtureUrl = (id: number,) => {
+
+
+
+
+  return `/api/juniors/fixtures/${id}`
+}
+
+/**
+ * Team-list players are named by the club's junior naming rules; a private, non-overridden player is "Private Player" with no participant id or shirt number. 404 when the fixture is another club's, or the club's junior sync is switched off.
+ * @summary One junior fixture with its published team list
+ */
+export const getJuniorFixture = async (id: number, options?: RequestInit): Promise<JuniorFixtureDetail> => {
+
+  return customFetch<JuniorFixtureDetail>(getGetJuniorFixtureUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJuniorFixtureQueryKey = (id: number,) => {
+    return [
+    `/api/juniors/fixtures/${id}`
+    ] as const;
+    }
+
+
+export const getGetJuniorFixtureQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorFixture>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorFixture>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorFixtureQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorFixture>>> = ({ signal }) => getJuniorFixture(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJuniorFixture>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJuniorFixtureQueryResult = NonNullable<Awaited<ReturnType<typeof getJuniorFixture>>>
+export type GetJuniorFixtureQueryError = ErrorType<void>
+
+
+/**
+ * @summary One junior fixture with its published team list
+ */
+
+export function useGetJuniorFixture<TData = Awaited<ReturnType<typeof getJuniorFixture>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorFixture>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJuniorFixtureQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetJuniorFixtureTeamListUrl = (id: number,) => {
+
+
+
+
+  return `/api/juniors/fixtures/${id}/team-list`
+}
+
+/**
+ * Full names, each player's junior shirt number for the fixture's season, and the club's junior players to pick from.
+ * @summary A junior fixture's team list for the admin editor (admin only)
+ */
+export const getJuniorFixtureTeamList = async (id: number, options?: RequestInit): Promise<JuniorAdminTeamList> => {
+
+  return customFetch<JuniorAdminTeamList>(getGetJuniorFixtureTeamListUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJuniorFixtureTeamListQueryKey = (id: number,) => {
+    return [
+    `/api/juniors/fixtures/${id}/team-list`
+    ] as const;
+    }
+
+
+export const getGetJuniorFixtureTeamListQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorFixtureTeamList>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorFixtureTeamList>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorFixtureTeamListQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorFixtureTeamList>>> = ({ signal }) => getJuniorFixtureTeamList(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJuniorFixtureTeamList>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJuniorFixtureTeamListQueryResult = NonNullable<Awaited<ReturnType<typeof getJuniorFixtureTeamList>>>
+export type GetJuniorFixtureTeamListQueryError = ErrorType<void>
+
+
+/**
+ * @summary A junior fixture's team list for the admin editor (admin only)
+ */
+
+export function useGetJuniorFixtureTeamList<TData = Awaited<ReturnType<typeof getJuniorFixtureTeamList>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorFixtureTeamList>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJuniorFixtureTeamListQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPutJuniorFixtureTeamListUrl = (id: number,) => {
+
+
+
+
+  return `/api/juniors/fixtures/${id}/team-list`
+}
+
+/**
+ * Saves the list as `admin`, so the PlayHQ sync never overwrites it. Every player must be one of the club's own junior participants (never an opposition player or another club's); orders must be unique and at most one captain, vice-captain and wicket-keeper may be named. The list is stored in order, renumbered from 1.
+ * @summary Save a junior fixture's team list (admin only)
+ */
+export const putJuniorFixtureTeamList = async (id: number,
+    putJuniorTeamListBody: PutJuniorTeamListBody, options?: RequestInit): Promise<JuniorAdminTeamList> => {
+
+  return customFetch<JuniorAdminTeamList>(getPutJuniorFixtureTeamListUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      putJuniorTeamListBody,)
+  }
+);}
+
+
+
+
+export const getPutJuniorFixtureTeamListMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putJuniorFixtureTeamList>>, TError,{id: number;data: BodyType<PutJuniorTeamListBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof putJuniorFixtureTeamList>>, TError,{id: number;data: BodyType<PutJuniorTeamListBody>}, TContext> => {
+
+const mutationKey = ['putJuniorFixtureTeamList'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof putJuniorFixtureTeamList>>, {id: number;data: BodyType<PutJuniorTeamListBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  putJuniorFixtureTeamList(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PutJuniorFixtureTeamListMutationResult = NonNullable<Awaited<ReturnType<typeof putJuniorFixtureTeamList>>>
+    export type PutJuniorFixtureTeamListMutationBody = BodyType<PutJuniorTeamListBody>
+    export type PutJuniorFixtureTeamListMutationError = ErrorType<void>
+
+    /**
+ * @summary Save a junior fixture's team list (admin only)
+ */
+export const usePutJuniorFixtureTeamList = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof putJuniorFixtureTeamList>>, TError,{id: number;data: BodyType<PutJuniorTeamListBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof putJuniorFixtureTeamList>>,
+        TError,
+        {id: number;data: BodyType<PutJuniorTeamListBody>},
+        TContext
+      > => {
+      return useMutation(getPutJuniorFixtureTeamListMutationOptions(options));
+    }
 
 export const getListJuniorMatchesUrl = (params?: ListJuniorMatchesParams,) => {
   const normalizedParams = new URLSearchParams();

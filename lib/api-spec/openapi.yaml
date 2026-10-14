@@ -7454,6 +7454,114 @@ paths:
               schema:
                 $ref: "#/components/schemas/JuniorFilters"
 
+  /juniors/fixtures:
+    get:
+      operationId: listJuniorFixtures
+      tags: [juniors]
+      summary: Upcoming junior games for the club, soonest first
+      description: >-
+        The club's junior fixtures synced from PlayHQ that start from 12 hours
+        ago onward (so match-day games stay listed), ordered by start time.
+        Empty when the club's junior sync is switched off (R23).
+      parameters:
+        - name: ageGroup
+          in: query
+          schema:
+            type: string
+          description: Filter by age group (e.g. "Year 6")
+      responses:
+        "200":
+          description: Upcoming junior fixtures
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorFixture"
+
+  /juniors/fixtures/{id}:
+    get:
+      operationId: getJuniorFixture
+      tags: [juniors]
+      summary: One junior fixture with its published team list
+      description: >-
+        Team-list players are named by the club's junior naming rules; a
+        private, non-overridden player is "Private Player" with no participant
+        id or shirt number. 404 when the fixture is another club's, or the
+        club's junior sync is switched off.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The fixture and its published team list (null when none)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorFixtureDetail"
+        "404":
+          description: Not found
+
+  /juniors/fixtures/{id}/team-list:
+    get:
+      operationId: getJuniorFixtureTeamList
+      tags: [juniors]
+      summary: A junior fixture's team list for the admin editor (admin only)
+      description: >-
+        Full names, each player's junior shirt number for the fixture's season,
+        and the club's junior players to pick from.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The editor's view of the fixture's team list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorAdminTeamList"
+        "404":
+          description: Fixture not found
+    put:
+      operationId: putJuniorFixtureTeamList
+      tags: [juniors]
+      summary: Save a junior fixture's team list (admin only)
+      description: >-
+        Saves the list as `admin`, so the PlayHQ sync never overwrites it. Every
+        player must be one of the club's own junior participants (never an
+        opposition player or another club's); orders must be unique and at
+        most one captain, vice-captain and wicket-keeper may be named. The list
+        is stored in order, renumbered from 1.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PutJuniorTeamListBody"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorAdminTeamList"
+        "400":
+          description: Invalid list
+        "404":
+          description: Fixture not found
+
   /juniors/matches:
     get:
       operationId: listJuniorMatches
@@ -20431,6 +20539,170 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/JuniorBowlingLine"
+
+    JuniorFixture:
+      type: object
+      required:
+        - id
+        - seasonStartYear
+        - ageGroup
+        - grade
+        - teamName
+        - opponentName
+        - venue
+        - startAt
+        - isHome
+        - status
+        - hasTeamList
+      properties:
+        id: { type: integer }
+        seasonStartYear: { type: integer }
+        ageGroup: { type: string, nullable: true }
+        grade: { type: string, nullable: true }
+        teamName:
+          type: string
+          nullable: true
+          description: The club's own junior team
+        opponentName: { type: string, nullable: true }
+        venue: { type: string, nullable: true }
+        startAt: { type: string, format: date-time, nullable: true }
+        isHome: { type: boolean, nullable: true }
+        status:
+          type: string
+          nullable: true
+          description: PlayHQ match status as last synced (e.g. UPCOMING)
+        hasTeamList:
+          type: boolean
+          description: A published team list exists for this fixture
+
+    JuniorTeamListRole:
+      type: string
+      enum: ["C", "VC", "WK", "C/WK", "VC/WK"]
+      description: Captain / vice-captain / wicket-keeper marker
+
+    JuniorPublicTeamListPlayer:
+      type: object
+      required: [order, name, participantId, role, shirtNumber]
+      properties:
+        order: { type: integer }
+        name:
+          type: string
+          description: Public name in the club's style, or "Private Player"
+        participantId:
+          type: string
+          nullable: true
+          description: Null when the player is withheld
+        role:
+          allOf:
+            - $ref: "#/components/schemas/JuniorTeamListRole"
+          nullable: true
+        shirtNumber:
+          type: string
+          nullable: true
+          description: Junior shirt number for the fixture's season (null when withheld or none)
+
+    JuniorFixtureDetail:
+      type: object
+      required: [fixture, teamList]
+      properties:
+        fixture:
+          $ref: "#/components/schemas/JuniorFixture"
+        teamList:
+          type: array
+          nullable: true
+          description: The published team list in order, or null when none is published
+          items:
+            $ref: "#/components/schemas/JuniorPublicTeamListPlayer"
+
+    JuniorAdminTeamListPlayer:
+      type: object
+      required: [order, participantId, name, role, shirtNumber, isPrivate, isKnown]
+      properties:
+        order: { type: integer }
+        participantId: { type: string }
+        name:
+          type: string
+          description: Full name
+        role:
+          allOf:
+            - $ref: "#/components/schemas/JuniorTeamListRole"
+          nullable: true
+        shirtNumber: { type: string, nullable: true }
+        isPrivate:
+          type: boolean
+          description: Withheld on public pages (private in PlayHQ, not overridden)
+        isKnown:
+          type: boolean
+          description: Still one of the club's junior participants
+
+    JuniorTeamListCandidate:
+      type: object
+      required: [participantId, name, isPrivate, shirtNumber, teams, lastSeason]
+      properties:
+        participantId: { type: string }
+        name: { type: string }
+        isPrivate: { type: boolean }
+        shirtNumber: { type: string, nullable: true }
+        teams: { type: string, nullable: true }
+        lastSeason: { type: string, nullable: true }
+
+    JuniorAdminTeamListSaved:
+      type: object
+      required: [players, isPublished, source, updatedAt]
+      properties:
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorAdminTeamListPlayer"
+        isPublished: { type: boolean }
+        source:
+          type: string
+          enum: [playhq, admin]
+          description: Who wrote the list; an admin's list is never overwritten by the sync
+        updatedAt: { type: string, format: date-time }
+
+    JuniorAdminTeamList:
+      type: object
+      required: [fixture, season, shirtNumbersEnabled, teamList, candidates]
+      properties:
+        fixture:
+          $ref: "#/components/schemas/JuniorFixture"
+        season:
+          type: integer
+          description: Season start year whose shirt numbers are shown
+        shirtNumbersEnabled: { type: boolean }
+        teamList:
+          allOf:
+            - $ref: "#/components/schemas/JuniorAdminTeamListSaved"
+          nullable: true
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorTeamListCandidate"
+
+    PutJuniorTeamListPlayer:
+      type: object
+      required: [order, participantId]
+      properties:
+        order: { type: integer, minimum: 1 }
+        participantId:
+          type: string
+          minLength: 1
+        role:
+          allOf:
+            - $ref: "#/components/schemas/JuniorTeamListRole"
+          nullable: true
+
+    PutJuniorTeamListBody:
+      type: object
+      required: [players]
+      properties:
+        players:
+          type: array
+          maxItems: 30
+          items:
+            $ref: "#/components/schemas/PutJuniorTeamListPlayer"
+        isPublished: { type: boolean }
 
     JuniorMatchSummary:
       type: object
