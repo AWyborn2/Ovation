@@ -341,13 +341,14 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
           ON "fixtures" ("tenant_id", "playhq_match_id")
           WHERE "playhq_match_id" IS NOT NULL`,
   },
-  // PlayHQ sync watchdog (migration 0025): at most one open incident per organisation,
-  // which is what makes alerts fire once per incident.
+  // PlayHQ sync incidents (migration 0025, widened in 0039): at most one open incident per
+  // organisation and kind, which is what makes alerts fire once per incident.
   {
-    name: "playhq_sync_incidents_open_org_uidx",
-    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "playhq_sync_incidents_open_org_uidx"
-          ON "playhq_sync_incidents" ("org_id")
+    name: "playhq_sync_incidents_open_org_kind_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "playhq_sync_incidents_open_org_kind_uidx"
+          ON "playhq_sync_incidents" ("org_id", "kind")
           WHERE "resolved_at" IS NULL`,
+    dropIndexes: ["playhq_sync_incidents_open_org_uidx"],
   },
   // Admin per-match uploads (source_key IS NULL): one match per identity. Lives
   // only in the reconcile migration + here: Drizzle's index builder cannot

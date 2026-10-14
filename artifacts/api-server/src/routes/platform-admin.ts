@@ -49,6 +49,7 @@ import { hasEntitlement, planFromString } from "../lib/entitlements";
 import { listAvailableClubs } from "../lib/available-clubs";
 import { isEmail, slugTaken } from "../lib/signup-validation";
 import { platformSyncOverview } from "../lib/playhq-health";
+import { unclassifiedGradesForTenant } from "../lib/playhq-ingest";
 import { IngestNotConfiguredError } from "@workspace/db/playhq-ingest";
 
 const router: IRouter = Router();
@@ -254,6 +255,8 @@ router.get("/platform/admin/tenants/:id", requirePlatformAdmin, async (req, res)
   res.json({
     tenant: toAdminTenant(tenant, names.get(tenant.centralClubId) ?? null, admins.length),
     admins,
+    // Junior sync (plan U4, KTD4): grades the sync couldn't classify, for the platform admin.
+    unclassifiedGrades: await unclassifiedGradesForTenant(tenant),
   });
 });
 

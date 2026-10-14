@@ -2092,9 +2092,20 @@ export interface AdminTenantAdmin {
   displayName: string;
 }
 
+export interface AdminUnclassifiedGrade {
+  /** The PlayHQ organisation the grade was found under. */
+  orgId: string;
+  grade: string;
+  season: string | null;
+  /** ISO-8601 instant the organisation's unclassified-grades report opened. */
+  since: string;
+}
+
 export interface AdminTenantDetail {
   tenant: AdminTenant;
   admins: AdminTenantAdmin[];
+  /** Junior sync: grades of this club's PlayHQ organisations that the sync could not classify as junior or senior (reported, never guessed). Names and seasons only. Present on the tenant detail read; empty when there are none. */
+  unclassifiedGrades?: AdminUnclassifiedGrade[];
 }
 
 /**

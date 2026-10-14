@@ -12297,7 +12297,13 @@ export const GetAdminTenantResponse = zod.object({
   "id": zod.number(),
   "username": zod.string(),
   "displayName": zod.string()
-}))
+})),
+  "unclassifiedGrades": zod.array(zod.object({
+  "orgId": zod.string().describe('The PlayHQ organisation the grade was found under.'),
+  "grade": zod.string(),
+  "season": zod.string().nullable(),
+  "since": zod.string().describe('ISO-8601 instant the organisation\'s unclassified-grades report opened.')
+})).optional().describe('Junior sync: grades of this club\'s PlayHQ organisations that the sync could not classify as junior or senior (reported, never guessed). Names and seasons only. Present on the tenant detail read; empty when there are none.')
 })
 
 
@@ -12476,7 +12482,13 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "id": zod.number(),
   "username": zod.string(),
   "displayName": zod.string()
-}))
+})),
+  "unclassifiedGrades": zod.array(zod.object({
+  "orgId": zod.string().describe('The PlayHQ organisation the grade was found under.'),
+  "grade": zod.string(),
+  "season": zod.string().nullable(),
+  "since": zod.string().describe('ISO-8601 instant the organisation\'s unclassified-grades report opened.')
+})).optional().describe('Junior sync: grades of this club\'s PlayHQ organisations that the sync could not classify as junior or senior (reported, never guessed). Names and seasons only. Present on the tenant detail read; empty when there are none.')
 })
 
 

@@ -11,6 +11,7 @@ import {
   getGetAdminTenantQueryKey,
   getListAllTenantsQueryKey,
   type AdminResetIssued,
+  type AdminUnclassifiedGrade,
   type UpdateTenantBodyPlan,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -184,6 +185,7 @@ export default function TenantDetail() {
           playhqSyncEnabled={tenant.playhqSyncEnabled ?? false}
           enabled={tenant.juniorSyncEnabled ?? false}
           juniorOrgId={tenant.playhqJuniorOrgId ?? null}
+          unclassifiedGrades={data.unclassifiedGrades ?? []}
         />
       </div>
     </div>
@@ -249,7 +251,8 @@ function PlayhqSyncCard({
 /**
  * Junior PlayHQ sync (junior sync plan U1). Platform admin only: junior grades sync for
  * this club only while PlayHQ sync is also on. The junior organisation is optional;
- * blank means the club's juniors run under its senior PlayHQ organisation.
+ * blank means the club's juniors run under its senior PlayHQ organisation. Grades the sync
+ * couldn't classify as junior or senior are listed here (plan U4, KTD4), never guessed.
  */
 function JuniorSyncCard({
   tenantId,
@@ -257,12 +260,14 @@ function JuniorSyncCard({
   playhqSyncEnabled,
   enabled,
   juniorOrgId,
+  unclassifiedGrades,
 }: {
   tenantId: number;
   orgId: string | null;
   playhqSyncEnabled: boolean;
   enabled: boolean;
   juniorOrgId: string | null;
+  unclassifiedGrades: AdminUnclassifiedGrade[];
 }) {
   const qc = useQueryClient();
   const [org, setOrg] = useState(juniorOrgId ?? "");
@@ -342,6 +347,23 @@ function JuniorSyncCard({
             Leave blank when the club&rsquo;s juniors are in its senior PlayHQ organisation.
           </p>
         </div>
+        {unclassifiedGrades.length > 0 && (
+          <div className="space-y-1" data-testid="unclassified-grades">
+            <p className="text-sm font-medium">Unclassified grades ({unclassifiedGrades.length})</p>
+            <p className="text-xs text-muted-foreground">
+              The sync couldn&rsquo;t tell whether these grades are junior or senior. They are kept
+              out of the junior sync and handled as they were before.
+            </p>
+            <ul className="text-sm">
+              {unclassifiedGrades.map((g) => (
+                <li key={`${g.orgId}|${g.grade}|${g.season ?? ""}`}>
+                  {g.grade}
+                  {g.season ? <span className="text-muted-foreground"> · {g.season}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {error && <p className="text-sm text-destructive">{error}</p>}
       </CardContent>
     </Card>

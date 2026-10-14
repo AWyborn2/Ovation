@@ -15,6 +15,7 @@ export * from './adminTenantAdmin';
 export * from './adminTenantDetail';
 export * from './adminTenantPlan';
 export * from './adminTenantThemeOverrides';
+export * from './adminUnclassifiedGrade';
 export * from './adminUpdate';
 export * from './applyKindTemplateRequest';
 export * from './applyKindTemplateResult';

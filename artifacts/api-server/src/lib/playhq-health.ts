@@ -3,6 +3,7 @@ import {
   db,
   notificationsTable,
   playhqSyncIncidentsTable,
+  PLAYHQ_WATCHDOG_INCIDENT_KINDS,
   socialSettingsTable,
   tenantsTable,
 } from "@workspace/db";
@@ -17,6 +18,7 @@ import {
   type Queryable,
 } from "@workspace/db/playhq-ingest";
 import { sendEmail } from "./integrations/email";
+import { loadJuniorSyncTenants } from "./junior-sync";
 import { env } from "../config";
 
 /**
@@ -43,6 +45,13 @@ export const STALE_NOTIFICATION_KIND = "playhq_sync_stale";
 const FIXTURES_LINK = "/admin/social/fixtures";
 
 type LinkedTenant = { id: number; slug: string; name: string; orgId: string };
+
+/**
+ * Only the watchdog's own incident kinds: an organisation's open `unclassified_grades` entry
+ * (junior sync plan U4) is a report for the platform admin, not a sync incident.
+ */
+const watchdogKind = () =>
+  inArray(playhqSyncIncidentsTable.kind, [...PLAYHQ_WATCHDOG_INCIDENT_KINDS]);
 
 async function syncTenants(): Promise<LinkedTenant[]> {
   const rows = await db
@@ -75,12 +84,22 @@ export async function computeHealth(now: Date): Promise<HealthSnapshot> {
   await assertIngestScope(pool);
   const reader = pool as unknown as Queryable;
   const tenants = await syncTenants();
-  const orgIds = [...new Set(tenants.map((t) => t.orgId))];
+  // Junior-sync clubs' junior organisations are planned too (junior sync plan U4), so health
+  // judges the same plans the runner is given; a separate junior organisation is listed
+  // under its club.
+  const juniors = await loadJuniorSyncTenants();
+  for (const j of juniors) {
+    const org = j.orgId.toLowerCase();
+    const club = tenants.find((t) => t.id === j.tenantId);
+    if (club && club.orgId !== org) tenants.push({ ...club, orgId: org });
+  }
+  const juniorOrgIds = [...new Set(juniors.map((j) => j.orgId.toLowerCase()))];
+  const orgIds = [...new Set([...tenants.map((t) => t.orgId), ...juniorOrgIds])];
   const [{ matches, lastRuns }, runs] = await Promise.all([
-    loadCadenceInputs(reader, orgIds),
+    loadCadenceInputs(reader, orgIds, juniorOrgIds),
     loadRunSummaries(reader, orgIds),
   ]);
-  const due = duePlans(now, orgIds, matches, lastRuns);
+  const due = duePlans(now, orgIds, matches, lastRuns, juniorOrgIds);
   return { now, tenants, health: assessHealth(now, orgIds, due, runs) };
 }
 
@@ -108,7 +127,7 @@ export async function runWatchdog(now: Date, log: Logger): Promise<WatchdogResul
   const open = await db
     .select()
     .from(playhqSyncIncidentsTable)
-    .where(isNull(playhqSyncIncidentsTable.resolvedAt));
+    .where(and(isNull(playhqSyncIncidentsTable.resolvedAt), watchdogKind()));
   const openByOrg = new Map(open.map((i) => [i.orgId, i]));
   const result: WatchdogResult = { checked: snap.health.length, opened: [], resolved: [], open: 0 };
 
@@ -168,7 +187,7 @@ export async function runWatchdog(now: Date, log: Logger): Promise<WatchdogResul
     await db
       .select({ id: playhqSyncIncidentsTable.id })
       .from(playhqSyncIncidentsTable)
-      .where(isNull(playhqSyncIncidentsTable.resolvedAt))
+      .where(and(isNull(playhqSyncIncidentsTable.resolvedAt), watchdogKind()))
   ).length;
   log.info(result, "playhq sync watchdog");
   return result;
@@ -212,7 +231,7 @@ export async function platformSyncOverview(now: Date) {
   const open = await db
     .select()
     .from(playhqSyncIncidentsTable)
-    .where(isNull(playhqSyncIncidentsTable.resolvedAt));
+    .where(and(isNull(playhqSyncIncidentsTable.resolvedAt), watchdogKind()));
   const openByOrg = new Map(open.map((i) => [i.orgId, i]));
   return {
     now: now.toISOString(),
@@ -261,6 +280,7 @@ export async function tenantSyncStatus(tenantId: number) {
       and(
         inArray(playhqSyncIncidentsTable.orgId, [orgId]),
         isNull(playhqSyncIncidentsTable.resolvedAt),
+        watchdogKind(),
       ),
     );
   return {

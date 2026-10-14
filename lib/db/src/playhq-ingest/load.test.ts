@@ -349,6 +349,21 @@ describe("rowsFromDump", () => {
     ]);
   });
 
+  it("flags junior grades with the shared classifier, including Girls League", () => {
+    const named = (gradeName: string) => {
+      const d = dump();
+      const g = d.records.find((r) => r.kind === "grade")!;
+      g.data = { ...(g.data as Record<string, unknown>), gradeName };
+      return rowsFromDump(d, "test.json").grades[0]!.is_junior;
+    };
+    expect(named("Peel Girls League")).toBe(true);
+    expect(named("Year 7 Gold")).toBe(true);
+    expect(named("U13 Boys")).toBe(true);
+    expect(named("A Grade Wyllie Cup")).toBe(false);
+    // Unclassified grades are not junior: senior handling stays as it was.
+    expect(named("Mixed Social Twilight")).toBe(false);
+  });
+
   it("flattens a match into home/away columns with UTC timestamps", () => {
     expect(rows.matches).toHaveLength(1);
     const m = rows.matches[0];
@@ -578,11 +593,19 @@ describe("dropJuniorGrades", () => {
     match_lineups: [],
     runs: [{ org_id: "org" }],
   });
+  const CLUB = "4559f1b9-86d8-eb11-a7ad-2818780da0cc";
+  const ASSOC = "c65c0bb8-87d8-eb11-a7ad-2818780da0cc";
   const rows = (): LoadRows => ({
     ...empty(),
     grades: [
-      { id: "gs", name: "A Grade", is_junior: false },
-      { id: "gj", name: "Year 8 Boys", is_junior: true },
+      { id: "gs", name: "A Grade", is_junior: false, owner_org_id: ASSOC, source_org_id: CLUB },
+      {
+        id: "gj",
+        name: "Year 8 Boys",
+        is_junior: true,
+        owner_org_id: ASSOC,
+        source_org_id: CLUB,
+      },
     ],
     teams: [
       { id: "ts", grade_id: "gs" },
@@ -615,6 +638,7 @@ describe("dropJuniorGrades", () => {
     match_fielding: [{ innings_id: "ij" }],
     fall_of_wickets: [{ innings_id: "is" }, { innings_id: "ij" }],
     balls: [{ match_id: "ms" }, { match_id: "mj" }],
+    match_lineups: [{ match_id: "ms" }, { match_id: "mj" }],
   });
 
   it("drops a junior grade and everything hanging off it", () => {
@@ -641,9 +665,87 @@ describe("dropJuniorGrades", () => {
   });
 
   it("also drops grades already known to be junior that this dump has no grade record for", () => {
-    const { rows: out, droppedGradeIds } = dropJuniorGrades(rows(), ["gk"]);
+    const { rows: out, droppedGradeIds } = dropJuniorGrades(rows(), [
+      { id: "gk", ownerOrgId: ASSOC, sourceOrgId: CLUB },
+    ]);
     expect(droppedGradeIds.sort()).toEqual(["gj", "gk"]);
     expect(out.matches.map((m) => m.id)).toEqual(["ms"]);
+  });
+
+  it("drops exactly as before when no organisation is enabled (AE1)", () => {
+    const before = dropJuniorGrades(rows(), [{ id: "gk", ownerOrgId: ASSOC, sourceOrgId: CLUB }]);
+    const other = dropJuniorGrades(
+      rows(),
+      [{ id: "gk", ownerOrgId: ASSOC, sourceOrgId: CLUB }],
+      new Set(["99999999-0000-0000-0000-000000000000"]),
+    );
+    expect(other).toEqual(before);
+    expect(other.keptJuniorGradeIds).toEqual([]);
+  });
+
+  it("keeps an enabled organisation's junior grade with its matches, lineups and scorecards (AE1)", () => {
+    const {
+      rows: out,
+      droppedGradeIds,
+      keptJuniorGradeIds,
+    } = dropJuniorGrades(rows(), [], new Set([CLUB]));
+    expect(droppedGradeIds).toEqual([]);
+    expect(keptJuniorGradeIds).toEqual(["gj"]);
+    expect(out.grades.map((g) => g.id)).toEqual(["gs", "gj"]);
+    expect(out.teams.map((t) => t.id)).toEqual(["ts", "tj", "tx"]);
+    expect(out.matches.map((m) => m.id)).toEqual(["ms", "mj", "mk"]);
+    expect(out.scorecards.map((r) => r.match_id)).toEqual(["ms", "mj"]);
+    expect(out.match_innings.map((r) => r.innings_id)).toEqual(["is", "ij"]);
+    expect(out.match_bowling).toEqual([{ innings_id: "ij" }]);
+    expect(out.match_fielding).toEqual([{ innings_id: "ij" }]);
+    expect(out.balls).toEqual([{ match_id: "ms" }, { match_id: "mj" }]);
+    expect(out.match_lineups).toEqual([{ match_id: "ms" }, { match_id: "mj" }]);
+  });
+
+  it("matches the enabled organisation case-insensitively, by owner or source", () => {
+    expect(dropJuniorGrades(rows(), [], new Set([CLUB.toUpperCase()])).keptJuniorGradeIds).toEqual([
+      "gj",
+    ]);
+    expect(dropJuniorGrades(rows(), [], new Set([ASSOC])).keptJuniorGradeIds).toEqual(["gj"]);
+  });
+
+  it("keeps an enabled organisation's junior-only players; drops a disabled one's", () => {
+    expect(dropJuniorGrades(rows()).rows.players.map((p) => p.participant_id)).toEqual([
+      "senior",
+      "both",
+    ]);
+    expect(
+      dropJuniorGrades(rows(), [], new Set([CLUB])).rows.players.map((p) => p.participant_id),
+    ).toEqual(["senior", "both", "kid"]);
+  });
+
+  it("keeps a scorecard-only dump for a known junior grade of an enabled organisation", () => {
+    const scorecardOnly: LoadRows = {
+      ...empty(),
+      scorecards: [{ match_id: "mk", grade_id: "gk" }],
+      match_innings: [{ innings_id: "ik", match_id: "mk" }],
+      match_batting: [{ innings_id: "ik" }],
+    };
+    const known = [{ id: "gk", ownerOrgId: ASSOC, sourceOrgId: CLUB }];
+    const kept = dropJuniorGrades(scorecardOnly, known, new Set([CLUB]));
+    expect(kept.droppedGradeIds).toEqual([]);
+    expect(kept.keptJuniorGradeIds).toEqual(["gk"]);
+    expect(kept.rows.scorecards).toEqual(scorecardOnly.scorecards);
+    expect(kept.rows.match_batting).toEqual([{ innings_id: "ik" }]);
+
+    const dropped = dropJuniorGrades(scorecardOnly, known);
+    expect(dropped.droppedGradeIds).toEqual(["gk"]);
+    expect(dropped.rows.scorecards).toEqual([]);
+    expect(dropped.rows.match_batting).toEqual([]);
+  });
+
+  it("drops a known junior grade whose organisations are unknown, even with others enabled", () => {
+    const { droppedGradeIds } = dropJuniorGrades(
+      rows(),
+      [{ id: "gk", ownerOrgId: null, sourceOrgId: null }],
+      new Set([CLUB]),
+    );
+    expect(droppedGradeIds).toEqual(["gk"]);
   });
 
   it("returns the rows untouched when nothing is junior", () => {

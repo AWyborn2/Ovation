@@ -1,5 +1,10 @@
 import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
-import { db, tenantsTable } from "@workspace/db";
+import {
+  db,
+  playhqSyncIncidentsTable,
+  tenantsTable,
+  UNCLASSIFIED_GRADES_INCIDENT_KIND,
+} from "@workspace/db";
 import {
   PROJECTABLE_STATUSES,
   assertIngestScope,
@@ -15,6 +20,10 @@ import {
   dropJuniorGrades,
   getPlayhqIngestPool,
   loadRows,
+  mergeUnclassifiedGrades,
+  unclassifiedGradesByOrg,
+  type KnownJuniorGrade,
+  type UnclassifiedGrade,
   projectFixtures,
   projectTeamLists,
   linkHeldShirtNumbers,
@@ -29,6 +38,7 @@ import {
 import type { z } from "zod";
 import type { IngestPlayhqDumpResponse } from "@workspace/api-zod";
 import { runDraftSweep } from "./draft-sweep";
+import { loadJuniorSyncTenants } from "./junior-sync";
 import { clearMilestonesCache } from "./milestones-cache";
 import { env } from "../config";
 
@@ -94,18 +104,38 @@ export async function ingestPlayhqDump(
       harness_version: input.dump.version,
     });
 
-  // Juniors isolation: drop junior/pathway grades by name, and by what playhq already knows.
+  // Juniors isolation: drop junior/pathway grades by name, and by what playhq already knows,
+  // except those of organisations with junior sync enabled (junior sync plan U4, KTD1/KTD2).
+  // The gate is decided once, here; with no club enabled the drop is exactly as before.
+  const juniorOrgIds = new Set((await loadJuniorSyncTenants()).map((t) => t.orgId.toLowerCase()));
   const gradeIds = referencedGradeIds(parsed);
   const known = gradeIds.length
-    ? await reader.query<{ id: string }>(
-        `select id from playhq.grades where id = any($1::uuid[]) and is_junior`,
+    ? await reader.query<{
+        id: string;
+        owner_org_id: string | null;
+        source_org_id: string | null;
+      }>(
+        `select id::text as id, owner_org_id::text as owner_org_id,
+                source_org_id::text as source_org_id
+           from playhq.grades where id = any($1::uuid[]) and is_junior`,
         [gradeIds],
       )
     : { rows: [] };
-  const { rows, droppedGradeIds } = dropJuniorGrades(
+  const knownJunior: KnownJuniorGrade[] = known.rows.map((r) => ({
+    id: r.id,
+    ownerOrgId: r.owner_org_id,
+    sourceOrgId: r.source_org_id,
+  }));
+  const { rows, droppedGradeIds, keptJuniorGradeIds } = dropJuniorGrades(
     parsed,
-    known.rows.map((r) => r.id),
+    knownJunior,
+    juniorOrgIds,
   );
+  if (keptJuniorGradeIds.length)
+    log.info(
+      { juniorGrades: keptJuniorGradeIds.length },
+      "playhq ingest: junior grades kept for junior-sync clubs",
+    );
 
   const meta: RunMeta = {
     collector: input.collector,
@@ -216,6 +246,23 @@ export async function ingestPlayhqDump(
 
   const centralProjection = await projectDumpToCentral(rows, warnings, log);
 
+  // Junior projection seam (junior sync plan U5): the kept junior grades
+  // (`keptJuniorGradeIds`, `is_junior = true` in playhq.*) are projected into `junior_*`
+  // tables for the enabled tenants here, after the senior projections. Every senior step
+  // above filters `is_junior = false`, so they never see those rows.
+
+  // Grades an enabled club's organisation has that are neither junior nor senior are
+  // reported to the platform admin, never guessed (KTD4). Names and seasons only.
+  if (juniorOrgIds.size)
+    try {
+      await recordUnclassifiedGrades(unclassifiedGradesByOrg(rows.grades, juniorOrgIds));
+    } catch (err) {
+      log.error({ err }, "playhq ingest: recording unclassified grades failed");
+      warnings.push(
+        `recording unclassified grades failed: ${err instanceof Error ? err.message : err}`,
+      );
+    }
+
   // Held shirt-number entries link once their player has played for the club in central
   // (F2): after the projection, so this sync's results count. Reads central only.
   if (orgIds.length)
@@ -261,6 +308,97 @@ export async function ingestPlayhqDump(
     warnings,
     ...(centralProjection ? { centralProjection } : {}),
   };
+}
+
+/**
+ * Keep one open `unclassified_grades` incident per organisation listing every grade (name and
+ * season) no classifier recognises: new grades are added to the open row, never removed, and
+ * the watchdog never touches the kind. Lives in the app database, like every incident.
+ */
+export async function recordUnclassifiedGrades(
+  byOrg: Map<string, UnclassifiedGrade[]>,
+): Promise<void> {
+  for (const [orgId, incoming] of byOrg) {
+    if (!incoming.length) continue;
+    const openRow = () =>
+      db
+        .select({ id: playhqSyncIncidentsTable.id, detail: playhqSyncIncidentsTable.detail })
+        .from(playhqSyncIncidentsTable)
+        .where(
+          and(
+            eq(playhqSyncIncidentsTable.orgId, orgId),
+            eq(playhqSyncIncidentsTable.kind, UNCLASSIFIED_GRADES_INCIDENT_KIND),
+            isNull(playhqSyncIncidentsTable.resolvedAt),
+          ),
+        );
+    let [open] = await openRow();
+    if (!open) {
+      const { grades } = mergeUnclassifiedGrades([], incoming);
+      const [inserted] = await db
+        .insert(playhqSyncIncidentsTable)
+        .values({
+          orgId,
+          kind: UNCLASSIFIED_GRADES_INCIDENT_KIND,
+          detail: { reasons: grades.map(describeGrade), grades },
+        })
+        .onConflictDoNothing()
+        .returning({ id: playhqSyncIncidentsTable.id });
+      if (inserted) continue;
+      [open] = await openRow(); // a concurrent ingest opened it first
+      if (!open) continue;
+    }
+    const { grades, changed } = mergeUnclassifiedGrades(open.detail?.grades, incoming);
+    if (!changed) continue;
+    await db
+      .update(playhqSyncIncidentsTable)
+      .set({ detail: { reasons: grades.map(describeGrade), grades } })
+      .where(eq(playhqSyncIncidentsTable.id, open.id));
+  }
+}
+
+/**
+ * The platform-admin tenant page's list: the open unclassified-grades reports of a tenant's
+ * senior and junior PlayHQ organisations, one entry per grade and season.
+ */
+export async function unclassifiedGradesForTenant(t: {
+  playhqOrgId: string | null;
+  playhqJuniorOrgId: string | null;
+}): Promise<{ orgId: string; grade: string; season: string | null; since: string }[]> {
+  const orgs = [
+    ...new Set(
+      [t.playhqOrgId, t.playhqJuniorOrgId]
+        .map((o) => o?.trim().toLowerCase())
+        .filter((o): o is string => !!o),
+    ),
+  ];
+  if (!orgs.length) return [];
+  const open = await db
+    .select({
+      orgId: playhqSyncIncidentsTable.orgId,
+      detail: playhqSyncIncidentsTable.detail,
+      openedAt: playhqSyncIncidentsTable.openedAt,
+    })
+    .from(playhqSyncIncidentsTable)
+    .where(
+      and(
+        inArray(playhqSyncIncidentsTable.orgId, orgs),
+        eq(playhqSyncIncidentsTable.kind, UNCLASSIFIED_GRADES_INCIDENT_KIND),
+        isNull(playhqSyncIncidentsTable.resolvedAt),
+      ),
+    )
+    .orderBy(playhqSyncIncidentsTable.orgId);
+  return open.flatMap((row) =>
+    mergeUnclassifiedGrades(row.detail?.grades, []).grades.map((g) => ({
+      orgId: row.orgId,
+      grade: g.grade,
+      season: g.season,
+      since: row.openedAt.toISOString(),
+    })),
+  );
+}
+
+function describeGrade(g: UnclassifiedGrade): string {
+  return g.season ? `${g.grade} (${g.season})` : g.grade;
 }
 
 /**
@@ -362,8 +500,10 @@ export async function projectDumpToCentral(
 
 /**
  * The plans due now for every PlayHQ organisation linked to an active tenant with sync
- * switched on (U5, U4). Reads
- * `playhq.*` through the ingest pool: sync is either fully configured or answers 503.
+ * switched on (U5, U4), plus each junior-sync club's junior organisation (junior sync plan
+ * U4, KTD2): those organisations' plans ask the harness for junior grades too, their junior
+ * match days are scheduled, and a separate junior organisation is planned as its own org.
+ * Reads `playhq.*` through the ingest pool: sync is either fully configured or answers 503.
  */
 export async function listDuePlans(now: Date): Promise<DuePlansResponse> {
   const pool = getPlayhqIngestPool();
@@ -378,11 +518,18 @@ export async function listDuePlans(now: Date): Promise<DuePlansResponse> {
         eq(tenantsTable.playhqSyncEnabled, true),
       ),
     );
-  const orgIds = linked.map((t) => t.orgId!.toLowerCase());
-  const { matches, lastRuns } = await loadCadenceInputs(pool as unknown as Queryable, orgIds);
+  const juniorOrgIds = [
+    ...new Set((await loadJuniorSyncTenants()).map((t) => t.orgId.toLowerCase())),
+  ];
+  const orgIds = [...new Set([...linked.map((t) => t.orgId!.toLowerCase()), ...juniorOrgIds])];
+  const { matches, lastRuns } = await loadCadenceInputs(
+    pool as unknown as Queryable,
+    orgIds,
+    juniorOrgIds,
+  );
   return {
     now: now.toISOString(),
-    plans: duePlans(now, orgIds, matches, lastRuns),
+    plans: duePlans(now, orgIds, matches, lastRuns, juniorOrgIds),
   };
 }
 

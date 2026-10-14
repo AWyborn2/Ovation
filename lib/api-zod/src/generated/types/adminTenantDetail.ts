@@ -7,8 +7,11 @@
  */
 import type { AdminTenant } from './adminTenant';
 import type { AdminTenantAdmin } from './adminTenantAdmin';
+import type { AdminUnclassifiedGrade } from './adminUnclassifiedGrade';
 
 export interface AdminTenantDetail {
   tenant: AdminTenant;
   admins: AdminTenantAdmin[];
+  /** Junior sync: grades of this club's PlayHQ organisations that the sync could not classify as junior or senior (reported, never guessed). Names and seasons only. Present on the tenant detail read; empty when there are none. */
+  unclassifiedGrades?: AdminUnclassifiedGrade[];
 }

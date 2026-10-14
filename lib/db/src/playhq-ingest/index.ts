@@ -1,4 +1,5 @@
 export * from "./load";
+export * from "./grade-classes";
 export * from "./project";
 export * from "./pool";
 export * from "./cadence";

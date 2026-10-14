@@ -14,7 +14,7 @@
  * A club's junior organisation is `playhq_junior_org_id` when set, otherwise its
  * senior `playhq_org_id`. A tenant with neither is never enabled.
  */
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db, tenantsTable } from "@workspace/db";
 import { hasEntitlement, planFromString } from "./entitlements";
 
@@ -65,7 +65,10 @@ export function selectJuniorSyncTenants(
   return out;
 }
 
-/** Read the tenants register and return the tenants junior sync is enabled for. */
+/**
+ * Read the tenants register and return the tenants junior sync is enabled for. A suspended
+ * tenant is never synced (the same rule the senior plans use).
+ */
 export async function loadJuniorSyncTenants(): Promise<JuniorSyncTenant[]> {
   const rows = await db
     .select({
@@ -78,7 +81,7 @@ export async function loadJuniorSyncTenants(): Promise<JuniorSyncTenant[]> {
     })
     .from(tenantsTable)
     // Cheap pre-filter; the full decision (entitlement, organisation) is the pure one.
-    .where(eq(tenantsTable.juniorSyncEnabled, true))
+    .where(and(eq(tenantsTable.juniorSyncEnabled, true), isNull(tenantsTable.suspendedAt)))
     .orderBy(tenantsTable.id);
   return selectJuniorSyncTenants(rows);
 }
