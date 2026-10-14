@@ -24,7 +24,8 @@ SplashScreen.preventAutoHideAsync();
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (domain) {
-  setBaseUrl(`https://${domain}`);
+  // Accept either the hostname injected by Replit or an explicit HTTPS origin.
+  setBaseUrl(/^https:\/\//i.test(domain) ? domain.replace(/\/$/, "") : `https://${domain}`);
 }
 
 // Which tenant this build talks to. In production EXPO_PUBLIC_DOMAIN is the

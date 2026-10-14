@@ -31,6 +31,13 @@ function surnameOf(displayName: string): string {
   return (parts[parts.length - 1] ?? "").toUpperCase();
 }
 
+/** Presentation metadata only; never derive player identity from a name. */
+function firstInitialOf(displayName: string): string | undefined {
+  const parts = displayName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2 || displayName.trim().toLowerCase() === "private player") return undefined;
+  return parts[0].match(/\p{L}/u)?.[0].toUpperCase();
+}
+
 // ---------------------------------------------------------------------------
 // Season shirt numbers (docs/plans/2026-10-06-001-feat-season-shirt-numbers-plan.md,
 // U7 / KTD10)
@@ -70,7 +77,7 @@ export function buildTeamListShirtNumbers(
 }
 
 /** A selected player's number: their linked entry first, else a participant match. */
-function shirtNumberOf(p: TeamListPlayer, numbers: TeamListShirtNumbers): string | null {
+export function shirtNumberOf(p: TeamListPlayer, numbers: TeamListShirtNumbers): string | null {
   if (p.playerId != null) {
     const linked = numbers.byPlayerId.get(p.playerId);
     if (linked) return linked;
@@ -167,9 +174,11 @@ export function teamListToCardInput(
       .filter((p) => p.playerId == null || p.playerId < 90000)
       .sort((a, b) => a.order - b.order)
       .map((p) => {
+        const firstInitial = firstInitialOf(p.displayName);
         const row = {
           order: p.order,
           surname: surnameOf(p.displayName),
+          ...(firstInitial ? { firstInitial } : {}),
           role: p.role,
           ...(isDebut(p, autoDebuts) ? { debut: true } : {}),
         };

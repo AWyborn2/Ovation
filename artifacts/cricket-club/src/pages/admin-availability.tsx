@@ -7,9 +7,11 @@ import {
   useGetCurrentAvailabilityRound,
   getGetCurrentAvailabilityRoundQueryKey,
   useRunAvailabilityStep,
+  getGetSelectionBoardQueryKey,
   useListSquadMembers,
   getListSquadMembersQueryKey,
   useImportSquad,
+  useSeedSquadFromSeason,
   useGetSquadMember,
   getGetSquadMemberQueryKey,
   useUpdateSquadMember,
@@ -26,6 +28,7 @@ import type {
   SquadImportResult,
   SquadMember,
   SquadMemberDetail,
+  SquadSeasonSeedResult,
   SquadSection,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +49,7 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { plural } from "@/lib/plural";
 import { useConfirm } from "@/components/confirm-dialog";
+import { AddActivePlayer } from "@/components/add-active-player";
 import { SquadPlayerPicker, type LinkedPlayer } from "@/components/squad-player-picker";
 
 /**
@@ -396,7 +400,8 @@ const STEPS: {
     at: (r) => r.sendAt,
     started: (r) => r.sendStartedAt,
     completed: (r) => r.sendCompletedAt,
-    confirm: "Every active player (or a junior's parents) will be asked about this weekend now.",
+    confirm:
+      "Send availability requests to every eligible active player (or a junior's parents) with contact details for this weekend and open draft teams in the Selection Hub immediately. You can repeat this as often as needed; each run sends again, even to people already contacted. Existing team edits are kept. Scheduled sends still avoid duplicates.",
   },
   {
     key: "remind",
@@ -414,13 +419,17 @@ const STEPS: {
     started: (r) => r.cutoffStartedAt,
     completed: (r) => r.cutoffCompletedAt,
     confirm:
-      "Draft sides will be built from the answers so far and captains told they're ready. Later answers are still accepted and shown as late.",
+      "Mark the availability cut-off now. Existing draft teams and your selection edits will be kept; any missing fixture drafts will be created. Later answers are still accepted and shown as late.",
   },
 ];
 
 function stepState(r: AvailabilityRoundStatus, s: (typeof STEPS)[number]): string {
   const completed = s.completed(r);
-  if (completed) return `Done ${formatPerth(completed)}`;
+  if (completed) {
+    return s.key === "send"
+      ? `Last sent ${formatPerth(completed)} · Run now sends again`
+      : `Done ${formatPerth(completed)}`;
+  }
   const started = s.started(r);
   if (started) return `Started ${formatPerth(started)}`;
   return `Due ${formatPerth(s.at(r))}`;
@@ -431,7 +440,8 @@ function describeResult(r: AvailabilityStepResult): string {
   if (r.away) parts.push(`${r.away} away`);
   if (r.noFixture) parts.push(`${r.noFixture} with no game this round`);
   if (r.throttled) parts.push(`${r.throttled} reminded recently, skipped`);
-  if (r.step === "cutoff") parts.push(`${r.drafts} draft side${r.drafts === 1 ? "" : "s"} built`);
+  if (r.step === "cutoff" || r.step === "send")
+    parts.push(`${r.drafts} draft side${r.drafts === 1 ? "" : "s"} built`);
   return parts.join(" · ");
 }
 
@@ -458,6 +468,7 @@ function RoundCard() {
         onSuccess: (res) => {
           setResult(`${s.label}: ${describeResult(res)}`);
           queryClient.invalidateQueries({ queryKey: getGetCurrentAvailabilityRoundQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetSelectionBoardQueryKey() });
         },
         onError: (e) => setError(errorMessage(e)),
       },
@@ -564,6 +575,12 @@ function ImportSummary({ result }: { result: SquadImportResult }) {
           </div>
         ))}
       </dl>
+      {result.adopted > 0 && (
+        <p className="text-sm" data-testid="import-adopted">
+          Filled in {plural(result.adopted, "player")} already in the squad from this season&rsquo;s
+          games instead of adding them twice.
+        </p>
+      )}
       {result.contactsKept > 0 && (
         <p className="text-sm" data-testid="import-contacts-kept">
           Kept the contact details {plural(result.contactsKept, "member")} changed from their own
@@ -596,6 +613,31 @@ function ImportSummary({ result }: { result: SquadImportResult }) {
   );
 }
 
+/** No name, mobile or email for the player or either guardian. */
+function hasNoContact(m: SquadMember): boolean {
+  return [m.account, m.guardian1, m.guardian2].every(
+    (c) => !c.hasName && !c.hasMobile && !c.hasEmail,
+  );
+}
+
+/** No mobile or email anywhere: availability can't reach them. */
+function unreachable(m: SquadMember): boolean {
+  return [m.account, m.guardian1, m.guardian2].every((c) => !c.hasMobile && !c.hasEmail);
+}
+
+function SeedSummary({ result }: { result: SquadSeasonSeedResult }) {
+  return (
+    <p className="rounded-md border p-3 text-sm" data-testid="seed-summary">
+      {result.added > 0
+        ? `Added ${plural(result.added, "player")} from this season's games.`
+        : "No one new: everyone who has played this season is already in the squad."}
+      {result.added > 0 &&
+        result.skipped > 0 &&
+        ` ${plural(result.skipped, "player")} already listed.`}
+    </p>
+  );
+}
+
 function ContactBadges({ label, c }: { label: string; c: SquadContactPresence }) {
   if (!c.hasName && !c.hasMobile && !c.hasEmail) return null;
   return (
@@ -616,10 +658,12 @@ function SquadCard() {
   const queryClient = useQueryClient();
   const { data: members, isLoading, isError, refetch } = useListSquadMembers();
   const importSquad = useImportSquad();
+  const seedSquad = useSeedSquadFromSeason();
   const updateMember = useUpdateSquadMember();
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [summary, setSummary] = useState<SquadImportResult | null>(null);
+  const [seeded, setSeeded] = useState<SquadSeasonSeedResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [section, setSection] = useState<"all" | SquadSection>("all");
@@ -646,6 +690,23 @@ function SquadCard() {
       },
     );
   };
+
+  const onSeed = () => {
+    setError(null);
+    setSeeded(null);
+    seedSquad.mutate(undefined, {
+      onSuccess: (res) => {
+        setSeeded(res);
+        invalidate();
+      },
+      onError: (e) => setError(errorMessage(e)),
+    });
+  };
+
+  const noContactCount = useMemo(
+    () => (members ?? []).filter((m) => m.active && unreachable(m)).length,
+    [members],
+  );
 
   const onToggleActive = (m: SquadMember, active: boolean) => {
     setError(null);
@@ -674,8 +735,9 @@ function SquadCard() {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex-row items-center justify-between gap-2">
         <CardTitle>Squad</CardTitle>
+        <AddActivePlayer />
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -700,7 +762,23 @@ function SquadCard() {
           </div>
         </div>
         {summary && <ImportSummary result={summary} />}
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            No export yet? Add everyone who has played for the club this season. They join without
+            contact details until you import the export or add them.
+          </p>
+          <Button variant="outline" onClick={onSeed} disabled={seedSquad.isPending}>
+            {seedSquad.isPending ? "Adding…" : "Add this season's players"}
+          </Button>
+        </div>
+        {seeded && <SeedSummary result={seeded} />}
         <ErrorBox message={error} testId="squad-error" />
+        {noContactCount > 0 && (
+          <p className="text-sm" data-testid="squad-no-contact-note">
+            {plural(noContactCount, "player")} {noContactCount === 1 ? "has" : "have"} no mobile or
+            email yet — import the PlayHQ participant export or add details to message them.
+          </p>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <Input
@@ -739,7 +817,7 @@ function SquadCard() {
         ) : (members ?? []).length === 0 ? (
           <EmptyState
             title="No squad yet"
-            message="Upload the PlayHQ participant export to add your players."
+            message="Upload the PlayHQ participant export, or add this season's players from your games."
           />
         ) : filtered.length === 0 ? (
           <p className="text-sm text-muted-foreground">No one matches those filters.</p>
@@ -777,6 +855,7 @@ function SquadCard() {
                       />
                     </td>
                     <td className="space-y-1 p-2">
+                      {hasNoContact(m) && <Badge variant="outline">No contact details</Badge>}
                       <ContactBadges label="Player" c={m.account} />
                       <ContactBadges label="Parent 1" c={m.guardian1} />
                       <ContactBadges label="Parent 2" c={m.guardian2} />

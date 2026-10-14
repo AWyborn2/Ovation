@@ -26,7 +26,6 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
-import { isCentralTenant } from "../lib/tenant";
 import { overlayNativeOpponents } from "../lib/club-brand";
 import { getOrCreateSettings } from "../lib/settings";
 
@@ -43,20 +42,16 @@ const router: IRouter = Router();
 // GET /juniors/filters
 // ---------------------------------------------------------------------------
 router.get("/juniors/filters", async (req, res): Promise<void> => {
-  // Central tenants have no native junior history — empty filters, no leak.
-  if (await isCentralTenant(req)) {
-    res.json({ seasons: [], ageGroups: [] });
-    return;
-  }
+  const ofTenant = eq(juniorMatchesTable.tenantId, getTenantId(req));
   const seasonRows = await db
     .selectDistinct({ season: juniorMatchesTable.season })
     .from(juniorMatchesTable)
-    .where(isNotNull(juniorMatchesTable.season))
+    .where(and(ofTenant, isNotNull(juniorMatchesTable.season)))
     .orderBy(desc(juniorMatchesTable.season));
   const ageRows = await db
     .selectDistinct({ ageGroup: juniorMatchesTable.ageGroup })
     .from(juniorMatchesTable)
-    .where(isNotNull(juniorMatchesTable.ageGroup))
+    .where(and(ofTenant, isNotNull(juniorMatchesTable.ageGroup)))
     .orderBy(juniorMatchesTable.ageGroup);
 
   res.json({
@@ -74,13 +69,8 @@ router.get("/juniors/matches", async (req, res): Promise<void> => {
     res.status(400).json({ error: query.error.message });
     return;
   }
-  // Central tenants have no native junior matches — empty list, no leak.
-  if (await isCentralTenant(req)) {
-    res.json([]);
-    return;
-  }
   const { season, ageGroup } = query.data;
-  const conds = [];
+  const conds = [eq(juniorMatchesTable.tenantId, getTenantId(req))];
   if (season) conds.push(eq(juniorMatchesTable.season, season));
   if (ageGroup) conds.push(eq(juniorMatchesTable.ageGroup, ageGroup));
 
@@ -88,7 +78,7 @@ router.get("/juniors/matches", async (req, res): Promise<void> => {
     .select({ match: juniorMatchesTable, ...opponentClubColumns })
     .from(juniorMatchesTable)
     .leftJoin(clubsTable, eq(clubsTable.id, juniorMatchesTable.opponentClubId))
-    .where(conds.length ? and(...conds) : undefined)
+    .where(and(...conds))
     .orderBy(desc(seasonYear), desc(juniorMatchesTable.id));
 
   const opps = await overlayNativeOpponents(rows.map(toOpponentClub));
@@ -106,17 +96,14 @@ router.get("/juniors/matches/:id", async (req, res): Promise<void> => {
   }
   const matchId = params.data.id;
 
-  // Central tenants have no native junior matches — 404, never the demo club's.
-  if (await isCentralTenant(req)) {
-    res.status(404).json({ error: "Match not found" });
-    return;
-  }
-
   const [matchRow] = await db
     .select({ match: juniorMatchesTable, ...opponentClubColumns })
     .from(juniorMatchesTable)
     .leftJoin(clubsTable, eq(clubsTable.id, juniorMatchesTable.opponentClubId))
-    .where(eq(juniorMatchesTable.id, matchId));
+    // Another club's junior match is "not found", never shown.
+    .where(
+      and(eq(juniorMatchesTable.id, matchId), eq(juniorMatchesTable.tenantId, getTenantId(req))),
+    );
   if (!matchRow) {
     res.status(404).json({ error: "Match not found" });
     return;

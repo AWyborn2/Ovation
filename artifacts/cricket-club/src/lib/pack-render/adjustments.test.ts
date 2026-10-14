@@ -189,7 +189,9 @@ describe("blank canvas (U18)", () => {
     expect(html).toContain("Sam Keeper");
   });
 
-  it("exposes no pack text fields", () => {
-    expect(packTextFields(player, BLANK_PACK_ID)).toEqual([]);
+  it("exposes the kind's live fields from the shared catalogue", () => {
+    const keys = packTextFields(player, BLANK_PACK_ID).map((f) => f.key);
+    expect(keys).toContain("playerName");
+    expect(keys).not.toContain("rowScale");
   });
 });

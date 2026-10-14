@@ -33,3 +33,11 @@ vitest lives in `artifacts/api-server` (config `vitest.config.ts`, scripts
   "no exported member" errors from `@workspace/db` / `@workspace/api-zod` unless
   the composite libs are built first. Run root `pnpm run typecheck` (it does
   `tsc --build` on libs first) when those errors appear.
+
+## Interrupted browser audits
+
+Run DB-backed carousel image audits serially and give them enough time to finish cleanup; a random tenant slug alone does not make concurrent runs isolated.
+
+**Why:** The audit also reserves a fixed upstream club identity, which is unique. A hard shell timeout can bypass its cleanup and leave that reservation behind, blocking later runs. Slow browser startup/rendering can make a previously fast full matrix exceed the shell time limit.
+
+**How to apply:** Prefer bounded subsets or an uninterrupted background run. After interruption, confirm the process has stopped and clean up only fixture rows whose ownership is proven from that run; never broadly delete matching test tenants or interrupt another agent's audit.

@@ -9,6 +9,11 @@ import type { CardAdjustments } from './cardAdjustments';
 import type { CreateSocialDraftRequestCardInput } from './createSocialDraftRequestCardInput';
 
 export interface CreateSocialDraftRequest {
+  /**
+     * Optional caption supplied with a manually queued card or carousel.
+     * @maxLength 5000
+     */
+  caption?: string;
   /** The card's ShareCardInput (validated by shape on the web). */
   cardInput: CreateSocialDraftRequestCardInput;
   /**

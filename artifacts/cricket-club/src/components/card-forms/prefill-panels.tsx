@@ -23,6 +23,8 @@ import {
   getGetSocialClubSeasonTotalsQueryKey,
   useGetSocialWeekendWrapPrefill,
   getGetSocialWeekendWrapPrefillQueryKey,
+  useGetSocialRoundResultsPrefill,
+  getGetSocialRoundResultsPrefillQueryKey,
   useGetMilestonesBoard,
   useListPremierships,
   type MatchSummary as MatchSummaryDto,
@@ -31,6 +33,7 @@ import {
   type Fixture,
 } from "@workspace/api-client-react";
 import { useClubGrades } from "@/hooks/use-club-grades";
+import { useClubShortName } from "@/lib/brand-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -54,6 +57,8 @@ import {
   ladderRowsToState,
   clubSeasonTotalsToState,
   weekendWrapToState,
+  roundResultsToResultsState,
+  roundResultsToTeamOfWeekState,
   milestoneItemToState,
   premiershipToState,
   premiershipSeasonYear,
@@ -84,6 +89,7 @@ export function PrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply
     if (kind === "clubLeaderboard") return <ClubTotalsPrefillPanel onApply={onApply} />;
     if (kind === "weekendWrap") return <WeekendWrapPrefillPanel onApply={onApply} />;
   }
+  if (source === "results") return <RoundResultsPrefillPanel kind={kind} onApply={onApply} />;
   return null;
 }
 
@@ -483,6 +489,55 @@ function WeekendWrapPrefillPanel({ onApply }: { onApply: Apply }) {
 
   return (
     <PrefillCard title="Prefill the weekend wrap" hint="Loads each grade's result for the round.">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <YearField value={seasonYear} onChange={setSeasonYear} />
+        <div className="space-y-1">
+          <Label>Round</Label>
+          <Input
+            type="number"
+            value={String(round)}
+            onChange={(e) => setRound(Number(e.target.value) || 1)}
+          />
+        </div>
+      </div>
+      <ApplyButton onClick={apply} disabled={q.isFetching} loading={q.isFetching} />
+    </PrefillCard>
+  );
+}
+
+/**
+ * A round's results (results summary) or its standout performers (team of the
+ * week), from the club's matches in that round. Seniors only.
+ */
+function RoundResultsPrefillPanel({ kind, onApply }: { kind: CardKind; onApply: Apply }) {
+  const [seasonYear, setSeasonYear] = useState<number>(defaultSeasonYear());
+  const [round, setRound] = useState<number>(1);
+  const clubName = useClubShortName();
+
+  const params = useMemo(() => ({ season: seasonYear, round }), [seasonYear, round]);
+  const q = useGetSocialRoundResultsPrefill(params, {
+    query: { enabled: false, queryKey: getGetSocialRoundResultsPrefillQueryKey(params) },
+  });
+
+  const apply = async () => {
+    const res = await q.refetch();
+    if (!res.data) return;
+    onApply(
+      kind === "teamOfWeek"
+        ? roundResultsToTeamOfWeekState(res.data)
+        : roundResultsToResultsState(res.data, clubName.toUpperCase()),
+    );
+  };
+
+  return (
+    <PrefillCard
+      title={kind === "teamOfWeek" ? "Pick the team of the week" : "Prefill the round's results"}
+      hint={
+        kind === "teamOfWeek"
+          ? "Ranks the round's best performances across your grades; edit before posting."
+          : "Loads each grade's scores and its best batters and bowlers."
+      }
+    >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <YearField value={seasonYear} onChange={setSeasonYear} />
         <div className="space-y-1">

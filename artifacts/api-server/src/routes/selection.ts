@@ -3,6 +3,9 @@ import {
   FinaliseSelectionBody,
   FinaliseSelectionParams,
   GetSelectionBoardQueryParams,
+  GetTeamSheetPreviewParams,
+  PrintTeamSheetBody,
+  PrintTeamSheetParams,
   ReopenSelectionParams,
   RemindSelectionNonRespondersBody,
   SaveSelectionBoardBody,
@@ -19,6 +22,15 @@ import {
   saveBoard,
 } from "../lib/selection-board";
 import { loadAvailabilitySettings, runReminder } from "../lib/availability-schedule";
+import {
+  TeamSheetError,
+  absoluteLogoUrl,
+  buildTeamSheet,
+  loadTeamSheetPreview,
+  normaliseOvers,
+  renderTeamSheetHtml,
+} from "../lib/team-sheet";
+import { harnessOriginFromHeaders, renderHtmlToPdf } from "../lib/card-video-renderer";
 
 /**
  * The Selection Hub API: the
@@ -31,7 +43,7 @@ const router: IRouter = Router();
 
 /** Send a refused board action as its status; anything else is a 500. */
 function refuse(res: Response, err: unknown): boolean {
-  if (err instanceof SelectionError) {
+  if (err instanceof SelectionError || err instanceof TeamSheetError) {
     res.status(err.status).json({ error: err.message });
     return true;
   }
@@ -97,6 +109,59 @@ router.post("/selection/:id/finalise", requireAdminOrCaptain, async (req, res): 
     const board = await buildBoard(tenantId, actor, result.section);
     const selection = board.selections.find((s) => s.id === params.data.id);
     res.json({ selection, messaged: result.messaged });
+  } catch (err) {
+    if (!refuse(res, err)) throw err;
+  }
+});
+
+// The printable team sheet of a finalised side. Any admin or captain who can
+// see the board may print it; the overs sent are remembered for the grade.
+router.get("/selection/:id/team-sheet", requireAdminOrCaptain, async (req, res): Promise<void> => {
+  const params = GetTeamSheetPreviewParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid side id" });
+    return;
+  }
+  try {
+    res.json(await loadTeamSheetPreview(getTenantId(req), params.data.id));
+  } catch (err) {
+    if (!refuse(res, err)) throw err;
+  }
+});
+
+router.post("/selection/:id/team-sheet", requireAdminOrCaptain, async (req, res): Promise<void> => {
+  const params = PrintTeamSheetParams.safeParse(req.params);
+  const body = PrintTeamSheetBody.safeParse(req.body ?? {});
+  if (!params.success || !body.success) {
+    res.status(400).json({ error: "Invalid side id or overs" });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  try {
+    const sheet = await buildTeamSheet(tenantId, params.data.id, {
+      overs: normaliseOvers(body.data.overs),
+    });
+    const html = renderTeamSheetHtml(
+      sheet,
+      absoluteLogoUrl(sheet.logoUrl, harnessOriginFromHeaders(req.headers)),
+    );
+    const pdf = await renderHtmlToPdf(html);
+    req.log?.info(
+      { tenantId, selectionId: params.data.id, players: sheet.players.length },
+      "team sheet printed",
+    );
+    const name = `team-sheet-${sheet.grade}-${sheet.round ?? ""}`
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    res
+      .status(200)
+      .set({
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${name}.pdf"`,
+        "Cache-Control": "no-store",
+      })
+      .send(pdf);
   } catch (err) {
     if (!refuse(res, err)) throw err;
   }

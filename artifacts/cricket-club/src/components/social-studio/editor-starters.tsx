@@ -10,6 +10,8 @@ import {
   useDeleteEditorTemplate,
   useListEditorTemplates,
   getListEditorTemplatesQueryKey,
+  useListKindTemplates,
+  getListKindTemplatesQueryKey,
   type EditorTemplate,
 } from "@workspace/api-client-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
@@ -93,7 +95,12 @@ export function EditorStarters({ input, packId, inputFor, data = null, theme = n
   const templatesQ = useListEditorTemplates({
     query: { queryKey: getListEditorTemplatesQueryKey() },
   });
-  const templates = (templatesQ.data ?? []) as EditorTemplate[];
+  // Saved editor templates are retired once card kind templates are on (R20).
+  const kindTemplatesQ = useListKindTemplates({
+    query: { queryKey: getListKindTemplatesQueryKey() },
+  });
+  const templates =
+    kindTemplatesQ.data?.enabled === true ? [] : ((templatesQ.data ?? []) as EditorTemplate[]);
   const create = useCreateSocialDraft();
   const remove = useDeleteEditorTemplate();
 

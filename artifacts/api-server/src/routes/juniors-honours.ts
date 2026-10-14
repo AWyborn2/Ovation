@@ -17,7 +17,6 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
-import { isCentralTenant } from "../lib/tenant";
 
 /**
  * Junior curated honours: premierships and office bearers — tenant-scoped
@@ -32,20 +31,25 @@ const router: IRouter = Router();
 // GET /juniors/premierships
 // ---------------------------------------------------------------------------
 router.get("/juniors/premierships", async (req, res): Promise<void> => {
-  // Junior data is tenant-local / seniors-only in central — empty for central tenants.
-  if (await isCentralTenant(req)) {
-    res.json([]);
-    return;
-  }
-  const privateIds = await getPrivateIds(getTenantId(req));
+  const tenantId = getTenantId(req);
+  const privateIds = await getPrivateIds(tenantId);
   const prems = await db
     .select()
     .from(juniorPremiershipsTable)
+    .where(eq(juniorPremiershipsTable.tenantId, tenantId))
     .orderBy(desc(juniorPremiershipsTable.season), desc(juniorPremiershipsTable.id));
-  const players = await db
-    .select()
-    .from(juniorPremiershipPlayersTable)
-    .orderBy(juniorPremiershipPlayersTable.id);
+  const players = prems.length
+    ? await db
+        .select()
+        .from(juniorPremiershipPlayersTable)
+        .where(
+          inArray(
+            juniorPremiershipPlayersTable.premiershipId,
+            prems.map((p) => p.id),
+          ),
+        )
+        .orderBy(juniorPremiershipPlayersTable.id)
+    : [];
 
   const byPrem = new Map<number, typeof players>();
   for (const p of players) {
@@ -105,7 +109,12 @@ router.patch("/juniors/premierships/:id", requireAdmin, async (req, res): Promis
   const [prem] = await db
     .select()
     .from(juniorPremiershipsTable)
-    .where(eq(juniorPremiershipsTable.id, id));
+    .where(
+      and(
+        eq(juniorPremiershipsTable.id, id),
+        eq(juniorPremiershipsTable.tenantId, getTenantId(req)),
+      ),
+    );
   if (!prem) {
     res.status(404).json({ error: "Premiership not found" });
     return;
@@ -208,6 +217,7 @@ router.post("/juniors/office-bearers", requireAdmin, async (req, res): Promise<v
   const [row] = await db
     .insert(juniorOfficeBearersTable)
     .values({
+      tenantId: getTenantId(req),
       season: parsed.data.season,
       role: parsed.data.role,
       name: parsed.data.name,
@@ -233,7 +243,12 @@ router.patch("/juniors/office-bearers/:id", requireAdmin, async (req, res): Prom
   const [row] = await db
     .update(juniorOfficeBearersTable)
     .set(body.data)
-    .where(eq(juniorOfficeBearersTable.id, params.data.id))
+    .where(
+      and(
+        eq(juniorOfficeBearersTable.id, params.data.id),
+        eq(juniorOfficeBearersTable.tenantId, getTenantId(req)),
+      ),
+    )
     .returning();
   if (!row) {
     res.status(404).json({ error: "Junior office bearer not found" });
@@ -250,7 +265,12 @@ router.delete("/juniors/office-bearers/:id", requireAdmin, async (req, res): Pro
   }
   const [row] = await db
     .delete(juniorOfficeBearersTable)
-    .where(eq(juniorOfficeBearersTable.id, params.data.id))
+    .where(
+      and(
+        eq(juniorOfficeBearersTable.id, params.data.id),
+        eq(juniorOfficeBearersTable.tenantId, getTenantId(req)),
+      ),
+    )
     .returning();
   if (!row) {
     res.status(404).json({ error: "Junior office bearer not found" });

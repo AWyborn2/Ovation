@@ -1,18 +1,5 @@
 import type { AwardMechanism, PointsCategories } from "@workspace/api-client-react";
 
-export const GRADES = [
-  "A Grade",
-  "B Grade",
-  "C Grade",
-  "D Grade",
-  "E Grade",
-  "F Grade",
-  "Female A Grade",
-  "Female B Grade",
-  "PPL",
-  "Colts",
-];
-
 export const MECHANISM_LABEL: Record<AwardMechanism, string> = {
   manual: "Manual",
   voted: "Voted (3-2-1)",

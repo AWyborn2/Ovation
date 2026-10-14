@@ -27,6 +27,8 @@ import type {
   AdminTenant,
   AdminTenantDetail,
   AdminUpdate,
+  ApplyKindTemplateRequest,
+  ApplyKindTemplateResult,
   AutoseedCardSetBody,
   AutoseedCardSetResult,
   AvailabilityAnswersInput,
@@ -65,6 +67,12 @@ import type {
   CapEntryInput,
   CapEntryUpdate,
   CapIdsBody,
+  CapImportBatch,
+  CapImportCommitBody,
+  CapImportCommitResult,
+  CapImportPreview,
+  CapImportPreviewBody,
+  CapImportUndoResult,
   CapRecomputeSummary,
   CapReorderBody,
   CapReviewResult,
@@ -152,8 +160,12 @@ import type {
   GetSeniorSeasonTopPerformersParams,
   GetSocialClubSeasonTotalsParams,
   GetSocialLadderPrefillParams,
+  GetSocialRoundResultsPrefillParams,
   GetSocialWeekendWrapPrefillParams,
+  GetWeekendCarouselSourcesParams,
   GoogleDriveConfig,
+  GradeDecisionList,
+  GradeDecisionResult,
   GradeDistribution,
   GradeSummary,
   HealthStatus,
@@ -209,6 +221,9 @@ import type {
   JuniorShirtNumberWriteResult,
   JuniorSocialMilestone,
   JuniorStatCorrection,
+  KindTemplate,
+  KindTemplateConflict,
+  KindTemplateList,
   KioskTokenInput,
   KioskTokenResponse,
   LadderCardRow,
@@ -309,9 +324,11 @@ import type {
   RemovePhotoBackgroundRequest,
   ReplaceHistoryBoundariesBody,
   ReschedulePublicationRequest,
+  RoundResults,
   RoundUpInput,
   SaveCardPhotoRulesRequest,
   SaveDraftTemplateRequest,
+  SaveKindTemplateRequest,
   SchedulePublicationsRequest,
   SearchClubCorrectionMatchesParams,
   SearchSquadPlayersParams,
@@ -323,6 +340,7 @@ import type {
   SelectionRemindBody,
   SelectionSide,
   SeniorOverview,
+  SetGradeDecisionBody,
   SetJuniorSeniorLinkBody,
   SetPlayerPrivacyBody,
   ShirtNumberConflict,
@@ -352,8 +370,11 @@ import type {
   SquadImportResult,
   SquadMember,
   SquadMemberDetail,
+  SquadMemberInput,
   SquadMemberUpdate,
   SquadPlayerSearchHit,
+  SquadSeasonSeedResult,
+  StartKindTemplateRequest,
   Stat,
   StatInput,
   StatListResponse,
@@ -369,6 +390,8 @@ import type {
   TeamOfDecadeMember,
   TeamOfDecadeMemberInput,
   TeamOfDecadeMemberUpdate,
+  TeamSheetPreview,
+  TeamSheetPrintBody,
   TenantBrand,
   TenantPlan,
   TenantPlayhqSyncStatus,
@@ -397,6 +420,7 @@ import type {
   UploadUrlRequest,
   UploadUrlResponse,
   VotableAward,
+  WeekendCarouselSources,
   WeekendWrap
 } from './api.schemas';
 
@@ -7410,6 +7434,77 @@ export const useDeleteCaptain = <TError = ErrorType<void>,
       return useMutation(getDeleteCaptainMutationOptions(options));
     }
 
+export const getCreateSquadMemberUrl = () => {
+
+
+
+
+  return `/api/squad`
+}
+
+/**
+ * @summary Add or reactivate an active squad member (admin or captain)
+ */
+export const createSquadMember = async (squadMemberInput: SquadMemberInput, options?: RequestInit): Promise<SquadMember> => {
+
+  return customFetch<SquadMember>(getCreateSquadMemberUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      squadMemberInput,)
+  }
+);}
+
+
+
+
+export const getCreateSquadMemberMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSquadMember>>, TError,{data: BodyType<SquadMemberInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSquadMember>>, TError,{data: BodyType<SquadMemberInput>}, TContext> => {
+
+const mutationKey = ['createSquadMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSquadMember>>, {data: BodyType<SquadMemberInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSquadMember(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSquadMemberMutationResult = NonNullable<Awaited<ReturnType<typeof createSquadMember>>>
+    export type CreateSquadMemberMutationBody = BodyType<SquadMemberInput>
+    export type CreateSquadMemberMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add or reactivate an active squad member (admin or captain)
+ */
+export const useCreateSquadMember = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSquadMember>>, TError,{data: BodyType<SquadMemberInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSquadMember>>,
+        TError,
+        {data: BodyType<SquadMemberInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSquadMemberMutationOptions(options));
+    }
+
 export const getListSquadMembersUrl = () => {
 
 
@@ -7491,6 +7586,153 @@ export function useListSquadMembers<TData = Awaited<ReturnType<typeof listSquadM
 
 
 
+export const getListSelectionRosterUrl = () => {
+
+
+
+
+  return `/api/selection/roster`
+}
+
+/**
+ * @summary List roster identities without contact values (admin or captain)
+ */
+export const listSelectionRoster = async ( options?: RequestInit): Promise<SquadMember[]> => {
+
+  return customFetch<SquadMember[]>(getListSelectionRosterUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSelectionRosterQueryKey = () => {
+    return [
+    `/api/selection/roster`
+    ] as const;
+    }
+
+
+export const getListSelectionRosterQueryOptions = <TData = Awaited<ReturnType<typeof listSelectionRoster>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSelectionRoster>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSelectionRosterQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSelectionRoster>>> = ({ signal }) => listSelectionRoster({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSelectionRoster>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSelectionRosterQueryResult = NonNullable<Awaited<ReturnType<typeof listSelectionRoster>>>
+export type ListSelectionRosterQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List roster identities without contact values (admin or captain)
+ */
+
+export function useListSelectionRoster<TData = Awaited<ReturnType<typeof listSelectionRoster>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSelectionRoster>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSelectionRosterQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getActivateSquadMemberUrl = (id: number,) => {
+
+
+
+
+  return `/api/squad/${id}/activate`
+}
+
+/**
+ * @summary Reactivate a previous squad member (admin or captain)
+ */
+export const activateSquadMember = async (id: number, options?: RequestInit): Promise<SquadMember> => {
+
+  return customFetch<SquadMember>(getActivateSquadMemberUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getActivateSquadMemberMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateSquadMember>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof activateSquadMember>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['activateSquadMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof activateSquadMember>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  activateSquadMember(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ActivateSquadMemberMutationResult = NonNullable<Awaited<ReturnType<typeof activateSquadMember>>>
+
+    export type ActivateSquadMemberMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Reactivate a previous squad member (admin or captain)
+ */
+export const useActivateSquadMember = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof activateSquadMember>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof activateSquadMember>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getActivateSquadMemberMutationOptions(options));
+    }
+
 export const getImportSquadUrl = () => {
 
 
@@ -7570,6 +7812,84 @@ export const useImportSquad = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getImportSquadMutationOptions(options));
+    }
+
+export const getSeedSquadFromSeasonUrl = () => {
+
+
+
+
+  return `/api/squad/seed-from-season`
+}
+
+/**
+ * Adds everyone who has played for the club in the current cricket season
+(the club's central scorecards and rosters) and isn't in the register
+yet, exactly as provisioning seeds a new club: active, with their grade,
+linked to their club player when known, with no contact details and no
+PlayHQ profile id; a later participant import fills them in rather than
+adding them twice. Existing members are never changed, and running it
+again adds no one twice.
+
+ * @summary Add this season's players to the register (admin)
+ */
+export const seedSquadFromSeason = async ( options?: RequestInit): Promise<SquadSeasonSeedResult> => {
+
+  return customFetch<SquadSeasonSeedResult>(getSeedSquadFromSeasonUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSeedSquadFromSeasonMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof seedSquadFromSeason>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof seedSquadFromSeason>>, TError,void, TContext> => {
+
+const mutationKey = ['seedSquadFromSeason'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof seedSquadFromSeason>>, void> = () => {
+
+
+          return  seedSquadFromSeason(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SeedSquadFromSeasonMutationResult = NonNullable<Awaited<ReturnType<typeof seedSquadFromSeason>>>
+
+    export type SeedSquadFromSeasonMutationError = ErrorType<void>
+
+    /**
+ * @summary Add this season's players to the register (admin)
+ */
+export const useSeedSquadFromSeason = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof seedSquadFromSeason>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof seedSquadFromSeason>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSeedSquadFromSeasonMutationOptions(options));
     }
 
 export const getSearchSquadPlayersUrl = (params: SearchSquadPlayersParams,) => {
@@ -8458,6 +8778,168 @@ export const useFinaliseSelection = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getFinaliseSelectionMutationOptions(options));
+    }
+
+export const getGetTeamSheetPreviewUrl = (id: number,) => {
+
+
+
+
+  return `/api/selection/${id}/team-sheet`
+}
+
+/**
+ * The side's grade, PlayHQ format and competition, the overs to offer
+(the grade's remembered value, else one read from a T20-style format),
+and — for a senior side — which competition rules set the Junior Aged
+Player bowling limits and how many listed players have no birth date.
+Refused until the side is finalised.
+
+ * @summary What the print dialog needs for a finalised side's team sheet (admin or captain)
+ */
+export const getTeamSheetPreview = async (id: number, options?: RequestInit): Promise<TeamSheetPreview> => {
+
+  return customFetch<TeamSheetPreview>(getGetTeamSheetPreviewUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTeamSheetPreviewQueryKey = (id: number,) => {
+    return [
+    `/api/selection/${id}/team-sheet`
+    ] as const;
+    }
+
+
+export const getGetTeamSheetPreviewQueryOptions = <TData = Awaited<ReturnType<typeof getTeamSheetPreview>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamSheetPreview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTeamSheetPreviewQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTeamSheetPreview>>> = ({ signal }) => getTeamSheetPreview(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTeamSheetPreview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTeamSheetPreviewQueryResult = NonNullable<Awaited<ReturnType<typeof getTeamSheetPreview>>>
+export type GetTeamSheetPreviewQueryError = ErrorType<void>
+
+
+/**
+ * @summary What the print dialog needs for a finalised side's team sheet (admin or captain)
+ */
+
+export function useGetTeamSheetPreview<TData = Awaited<ReturnType<typeof getTeamSheetPreview>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTeamSheetPreview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTeamSheetPreviewQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPrintTeamSheetUrl = (id: number,) => {
+
+
+
+
+  return `/api/selection/${id}/team-sheet`
+}
+
+/**
+ * Match details (both teams, grade or age group, round, date, start time,
+format, overs, venue, competition), the 12 in batting-list order with
+shirt numbers and (C)/(WK) tags, and on a senior sheet each Junior Aged
+Player's age group and bowling limits from their date of birth under the
+competition's rules. The overs sent are printed and remembered for the
+grade. Generated clients should treat the response as a `Blob`.
+
+ * @summary The finalised side's printable A4 team sheet as a PDF (admin or captain)
+ */
+export const printTeamSheet = async (id: number,
+    teamSheetPrintBody: TeamSheetPrintBody, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getPrintTeamSheetUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      teamSheetPrintBody,)
+  }
+);}
+
+
+
+
+export const getPrintTeamSheetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof printTeamSheet>>, TError,{id: number;data: BodyType<TeamSheetPrintBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof printTeamSheet>>, TError,{id: number;data: BodyType<TeamSheetPrintBody>}, TContext> => {
+
+const mutationKey = ['printTeamSheet'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof printTeamSheet>>, {id: number;data: BodyType<TeamSheetPrintBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  printTeamSheet(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PrintTeamSheetMutationResult = NonNullable<Awaited<ReturnType<typeof printTeamSheet>>>
+    export type PrintTeamSheetMutationBody = BodyType<TeamSheetPrintBody>
+    export type PrintTeamSheetMutationError = ErrorType<void>
+
+    /**
+ * @summary The finalised side's printable A4 team sheet as a PDF (admin or captain)
+ */
+export const usePrintTeamSheet = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof printTeamSheet>>, TError,{id: number;data: BodyType<TeamSheetPrintBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof printTeamSheet>>,
+        TError,
+        {id: number;data: BodyType<TeamSheetPrintBody>},
+        TContext
+      > => {
+      return useMutation(getPrintTeamSheetMutationOptions(options));
     }
 
 export const getReopenSelectionUrl = (id: number,) => {
@@ -16221,6 +16703,90 @@ export const useCompleteMetaConnect = <TError = ErrorType<void>,
       return useMutation(getCompleteMetaConnectMutationOptions(options));
     }
 
+export const getGetWeekendCarouselSourcesUrl = (params: GetWeekendCarouselSourcesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/weekend-carousel/sources?${stringifiedParams}` : `/api/weekend-carousel/sources`
+}
+
+/**
+ * @summary Tenant-scoped weekend fixtures and eligible action photos for on-demand export
+ */
+export const getWeekendCarouselSources = async (params: GetWeekendCarouselSourcesParams, options?: RequestInit): Promise<WeekendCarouselSources> => {
+
+  return customFetch<WeekendCarouselSources>(getGetWeekendCarouselSourcesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWeekendCarouselSourcesQueryKey = (params?: GetWeekendCarouselSourcesParams,) => {
+    return [
+    `/api/weekend-carousel/sources`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetWeekendCarouselSourcesQueryOptions = <TData = Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError = ErrorType<void>>(params: GetWeekendCarouselSourcesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWeekendCarouselSourcesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWeekendCarouselSources>>> = ({ signal }) => getWeekendCarouselSources(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWeekendCarouselSourcesQueryResult = NonNullable<Awaited<ReturnType<typeof getWeekendCarouselSources>>>
+export type GetWeekendCarouselSourcesQueryError = ErrorType<void>
+
+
+/**
+ * @summary Tenant-scoped weekend fixtures and eligible action photos for on-demand export
+ */
+
+export function useGetWeekendCarouselSources<TData = Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError = ErrorType<void>>(
+ params: GetWeekendCarouselSourcesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWeekendCarouselSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWeekendCarouselSourcesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getListFixturesUrl = (params?: ListFixturesParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -18844,6 +19410,448 @@ export const useDeleteEditorTemplate = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteEditorTemplateMutationOptions(options));
+    }
+
+export const getListKindTemplatesUrl = () => {
+
+
+
+
+  return `/api/kind-templates`
+}
+
+/**
+ * Card kind templates (plan 2026-10-07-002). `enabled` is false until the KIND_TEMPLATES release switch includes this club; the list is then empty.
+ * @summary The club's card kind templates and whether the feature is on
+ */
+export const listKindTemplates = async ( options?: RequestInit): Promise<KindTemplateList> => {
+
+  return customFetch<KindTemplateList>(getListKindTemplatesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListKindTemplatesQueryKey = () => {
+    return [
+    `/api/kind-templates`
+    ] as const;
+    }
+
+
+export const getListKindTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listKindTemplates>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listKindTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListKindTemplatesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listKindTemplates>>> = ({ signal }) => listKindTemplates({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listKindTemplates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListKindTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listKindTemplates>>>
+export type ListKindTemplatesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The club's card kind templates and whether the feature is on
+ */
+
+export function useListKindTemplates<TData = Awaited<ReturnType<typeof listKindTemplates>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listKindTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListKindTemplatesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetKindTemplateUrl = (kind: string,) => {
+
+
+
+
+  return `/api/kind-templates/${kind}`
+}
+
+/**
+ * @summary One card kind's template
+ */
+export const getKindTemplate = async (kind: string, options?: RequestInit): Promise<KindTemplate> => {
+
+  return customFetch<KindTemplate>(getGetKindTemplateUrl(kind),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetKindTemplateQueryKey = (kind: string,) => {
+    return [
+    `/api/kind-templates/${kind}`
+    ] as const;
+    }
+
+
+export const getGetKindTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getKindTemplate>>, TError = ErrorType<void>>(kind: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKindTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetKindTemplateQueryKey(kind);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getKindTemplate>>> = ({ signal }) => getKindTemplate(kind, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(kind), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getKindTemplate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetKindTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getKindTemplate>>>
+export type GetKindTemplateQueryError = ErrorType<void>
+
+
+/**
+ * @summary One card kind's template
+ */
+
+export function useGetKindTemplate<TData = Awaited<ReturnType<typeof getKindTemplate>>, TError = ErrorType<void>>(
+ kind: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKindTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetKindTemplateQueryOptions(kind,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveKindTemplateUrl = (kind: string,) => {
+
+
+
+
+  return `/api/kind-templates/${kind}`
+}
+
+/**
+ * @summary Save a card kind's template (rejected when another admin saved first)
+ */
+export const saveKindTemplate = async (kind: string,
+    saveKindTemplateRequest: SaveKindTemplateRequest, options?: RequestInit): Promise<KindTemplate> => {
+
+  return customFetch<KindTemplate>(getSaveKindTemplateUrl(kind),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveKindTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getSaveKindTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveKindTemplate>>, TError,{kind: string;data: BodyType<SaveKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveKindTemplate>>, TError,{kind: string;data: BodyType<SaveKindTemplateRequest>}, TContext> => {
+
+const mutationKey = ['saveKindTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveKindTemplate>>, {kind: string;data: BodyType<SaveKindTemplateRequest>}> = (props) => {
+          const {kind,data} = props ?? {};
+
+          return  saveKindTemplate(kind,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveKindTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof saveKindTemplate>>>
+    export type SaveKindTemplateMutationBody = BodyType<SaveKindTemplateRequest>
+    export type SaveKindTemplateMutationError = ErrorType<void | KindTemplateConflict>
+
+    /**
+ * @summary Save a card kind's template (rejected when another admin saved first)
+ */
+export const useSaveKindTemplate = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveKindTemplate>>, TError,{kind: string;data: BodyType<SaveKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveKindTemplate>>,
+        TError,
+        {kind: string;data: BodyType<SaveKindTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getSaveKindTemplateMutationOptions(options));
+    }
+
+export const getStartKindTemplateUrl = (kind: string,) => {
+
+
+
+
+  return `/api/kind-templates/${kind}/start`
+}
+
+/**
+ * @summary Start (or restart) a card kind's template from a starter design
+ */
+export const startKindTemplate = async (kind: string,
+    startKindTemplateRequest: StartKindTemplateRequest, options?: RequestInit): Promise<KindTemplate> => {
+
+  return customFetch<KindTemplate>(getStartKindTemplateUrl(kind),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      startKindTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getStartKindTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startKindTemplate>>, TError,{kind: string;data: BodyType<StartKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startKindTemplate>>, TError,{kind: string;data: BodyType<StartKindTemplateRequest>}, TContext> => {
+
+const mutationKey = ['startKindTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startKindTemplate>>, {kind: string;data: BodyType<StartKindTemplateRequest>}> = (props) => {
+          const {kind,data} = props ?? {};
+
+          return  startKindTemplate(kind,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartKindTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof startKindTemplate>>>
+    export type StartKindTemplateMutationBody = BodyType<StartKindTemplateRequest>
+    export type StartKindTemplateMutationError = ErrorType<void | KindTemplateConflict>
+
+    /**
+ * @summary Start (or restart) a card kind's template from a starter design
+ */
+export const useStartKindTemplate = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startKindTemplate>>, TError,{kind: string;data: BodyType<StartKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startKindTemplate>>,
+        TError,
+        {kind: string;data: BodyType<StartKindTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getStartKindTemplateMutationOptions(options));
+    }
+
+export const getDismissKindTemplateNoticeUrl = (kind: string,) => {
+
+
+
+
+  return `/api/kind-templates/${kind}/dismiss-notice`
+}
+
+/**
+ * @summary Dismiss the "your retired design pack was replaced" notice for a kind
+ */
+export const dismissKindTemplateNotice = async (kind: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDismissKindTemplateNoticeUrl(kind),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDismissKindTemplateNoticeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissKindTemplateNotice>>, TError,{kind: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof dismissKindTemplateNotice>>, TError,{kind: string}, TContext> => {
+
+const mutationKey = ['dismissKindTemplateNotice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof dismissKindTemplateNotice>>, {kind: string}> = (props) => {
+          const {kind} = props ?? {};
+
+          return  dismissKindTemplateNotice(kind,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DismissKindTemplateNoticeMutationResult = NonNullable<Awaited<ReturnType<typeof dismissKindTemplateNotice>>>
+
+    export type DismissKindTemplateNoticeMutationError = ErrorType<void>
+
+    /**
+ * @summary Dismiss the "your retired design pack was replaced" notice for a kind
+ */
+export const useDismissKindTemplateNotice = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof dismissKindTemplateNotice>>, TError,{kind: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof dismissKindTemplateNotice>>,
+        TError,
+        {kind: string},
+        TContext
+      > => {
+      return useMutation(getDismissKindTemplateNoticeMutationOptions(options));
+    }
+
+export const getApplyKindTemplateUrl = (kind: string,) => {
+
+
+
+
+  return `/api/kind-templates/${kind}/apply`
+}
+
+/**
+ * Replaces the design of every unposted draft of the kind, one-off design tweaks included; captions are kept. Each draft's previous design is saved as a revision first. Drafts posted meanwhile are skipped.
+ * @summary Apply a saved template version to this kind's unposted drafts
+ */
+export const applyKindTemplate = async (kind: string,
+    applyKindTemplateRequest: ApplyKindTemplateRequest, options?: RequestInit): Promise<ApplyKindTemplateResult> => {
+
+  return customFetch<ApplyKindTemplateResult>(getApplyKindTemplateUrl(kind),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      applyKindTemplateRequest,)
+  }
+);}
+
+
+
+
+export const getApplyKindTemplateMutationOptions = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyKindTemplate>>, TError,{kind: string;data: BodyType<ApplyKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applyKindTemplate>>, TError,{kind: string;data: BodyType<ApplyKindTemplateRequest>}, TContext> => {
+
+const mutationKey = ['applyKindTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applyKindTemplate>>, {kind: string;data: BodyType<ApplyKindTemplateRequest>}> = (props) => {
+          const {kind,data} = props ?? {};
+
+          return  applyKindTemplate(kind,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplyKindTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof applyKindTemplate>>>
+    export type ApplyKindTemplateMutationBody = BodyType<ApplyKindTemplateRequest>
+    export type ApplyKindTemplateMutationError = ErrorType<void | KindTemplateConflict>
+
+    /**
+ * @summary Apply a saved template version to this kind's unposted drafts
+ */
+export const useApplyKindTemplate = <TError = ErrorType<void | KindTemplateConflict>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applyKindTemplate>>, TError,{kind: string;data: BodyType<ApplyKindTemplateRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applyKindTemplate>>,
+        TError,
+        {kind: string;data: BodyType<ApplyKindTemplateRequest>},
+        TContext
+      > => {
+      return useMutation(getApplyKindTemplateMutationOptions(options));
     }
 
 export const getRunDraftSweepUrl = () => {
@@ -28072,6 +29080,224 @@ export const useDeleteProvisioningExclusion = <TError = ErrorType<void>,
       return useMutation(getDeleteProvisioningExclusionMutationOptions(options));
     }
 
+export const getGetPlatformGradeDecisionsUrl = () => {
+
+
+
+
+  return `/api/platform/admin/grade-decisions`
+}
+
+/**
+ * @summary PlayHQ competitions no club's sync can place in a grade (their matches are skipped until someone decides), and the decisions made so far.
+ */
+export const getPlatformGradeDecisions = async ( options?: RequestInit): Promise<GradeDecisionList> => {
+
+  return customFetch<GradeDecisionList>(getGetPlatformGradeDecisionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlatformGradeDecisionsQueryKey = () => {
+    return [
+    `/api/platform/admin/grade-decisions`
+    ] as const;
+    }
+
+
+export const getGetPlatformGradeDecisionsQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformGradeDecisions>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformGradeDecisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlatformGradeDecisionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformGradeDecisions>>> = ({ signal }) => getPlatformGradeDecisions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformGradeDecisions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlatformGradeDecisionsQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformGradeDecisions>>>
+export type GetPlatformGradeDecisionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary PlayHQ competitions no club's sync can place in a grade (their matches are skipped until someone decides), and the decisions made so far.
+ */
+
+export function useGetPlatformGradeDecisions<TData = Awaited<ReturnType<typeof getPlatformGradeDecisions>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformGradeDecisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlatformGradeDecisionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSetPlatformGradeDecisionUrl = () => {
+
+
+
+
+  return `/api/platform/admin/grade-decisions`
+}
+
+/**
+ * @summary Map a PlayHQ competition to an app grade, or mark it as not tracked. A mapping is projected straight away when the central projector is configured, otherwise on the next sync that touches the competition.
+ */
+export const setPlatformGradeDecision = async (setGradeDecisionBody: SetGradeDecisionBody, options?: RequestInit): Promise<GradeDecisionResult> => {
+
+  return customFetch<GradeDecisionResult>(getSetPlatformGradeDecisionUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setGradeDecisionBody,)
+  }
+);}
+
+
+
+
+export const getSetPlatformGradeDecisionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPlatformGradeDecision>>, TError,{data: BodyType<SetGradeDecisionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setPlatformGradeDecision>>, TError,{data: BodyType<SetGradeDecisionBody>}, TContext> => {
+
+const mutationKey = ['setPlatformGradeDecision'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setPlatformGradeDecision>>, {data: BodyType<SetGradeDecisionBody>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setPlatformGradeDecision(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetPlatformGradeDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof setPlatformGradeDecision>>>
+    export type SetPlatformGradeDecisionMutationBody = BodyType<SetGradeDecisionBody>
+    export type SetPlatformGradeDecisionMutationError = ErrorType<void>
+
+    /**
+ * @summary Map a PlayHQ competition to an app grade, or mark it as not tracked. A mapping is projected straight away when the central projector is configured, otherwise on the next sync that touches the competition.
+ */
+export const useSetPlatformGradeDecision = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setPlatformGradeDecision>>, TError,{data: BodyType<SetGradeDecisionBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setPlatformGradeDecision>>,
+        TError,
+        {data: BodyType<SetGradeDecisionBody>},
+        TContext
+      > => {
+      return useMutation(getSetPlatformGradeDecisionMutationOptions(options));
+    }
+
+export const getDeletePlatformGradeDecisionUrl = (gradeKey: string,) => {
+
+
+
+
+  return `/api/platform/admin/grade-decisions/${gradeKey}`
+}
+
+/**
+ * @summary Remove a decision. Matches already projected stay as they are; the competition goes back to being unrecognised for future syncs.
+ */
+export const deletePlatformGradeDecision = async (gradeKey: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePlatformGradeDecisionUrl(gradeKey),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeletePlatformGradeDecisionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePlatformGradeDecision>>, TError,{gradeKey: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePlatformGradeDecision>>, TError,{gradeKey: string}, TContext> => {
+
+const mutationKey = ['deletePlatformGradeDecision'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePlatformGradeDecision>>, {gradeKey: string}> = (props) => {
+          const {gradeKey} = props ?? {};
+
+          return  deletePlatformGradeDecision(gradeKey,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePlatformGradeDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof deletePlatformGradeDecision>>>
+
+    export type DeletePlatformGradeDecisionMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a decision. Matches already projected stay as they are; the competition goes back to being unrecognised for future syncs.
+ */
+export const useDeletePlatformGradeDecision = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePlatformGradeDecision>>, TError,{gradeKey: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePlatformGradeDecision>>,
+        TError,
+        {gradeKey: string},
+        TContext
+      > => {
+      return useMutation(getDeletePlatformGradeDecisionMutationOptions(options));
+    }
+
 export const getGetPlatformPlayerPrivacyUrl = (params?: GetPlatformPlayerPrivacyParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -29050,6 +30276,381 @@ export const useReplaceTenantHistoryBoundaries = <TError = ErrorType<void>,
       return useMutation(getReplaceTenantHistoryBoundariesMutationOptions(options));
     }
 
+export const getGetCapImportTemplateUrl = () => {
+
+
+
+
+  return `/api/platform/admin/cap-import/template`
+}
+
+/**
+ * @summary Download the cap register CSV template (every column, two example rows): the club's A Grade (male) and Female A Grade cap numbering.
+ */
+export const getCapImportTemplate = async ( options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getGetCapImportTemplateUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCapImportTemplateQueryKey = () => {
+    return [
+    `/api/platform/admin/cap-import/template`
+    ] as const;
+    }
+
+
+export const getGetCapImportTemplateQueryOptions = <TData = Awaited<ReturnType<typeof getCapImportTemplate>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCapImportTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCapImportTemplateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCapImportTemplate>>> = ({ signal }) => getCapImportTemplate({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCapImportTemplate>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCapImportTemplateQueryResult = NonNullable<Awaited<ReturnType<typeof getCapImportTemplate>>>
+export type GetCapImportTemplateQueryError = ErrorType<void>
+
+
+/**
+ * @summary Download the cap register CSV template (every column, two example rows): the club's A Grade (male) and Female A Grade cap numbering.
+ */
+
+export function useGetCapImportTemplate<TData = Awaited<ReturnType<typeof getCapImportTemplate>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCapImportTemplate>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCapImportTemplateQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getPreviewTenantCapImportUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/cap-import/preview`
+}
+
+/**
+ * @summary Validate a cap register CSV and preview it. Writes nothing. Reports every problem with its spreadsheet row, and how each cap would link to a player of the club (exact name match only; unmatched caps are still written, unlinked). A category that already has caps is refused.
+ */
+export const previewTenantCapImport = async (id: number,
+    capImportPreviewBody: CapImportPreviewBody, options?: RequestInit): Promise<CapImportPreview> => {
+    const formData = new FormData();
+formData.append(`file`, capImportPreviewBody.file);
+
+  return customFetch<CapImportPreview>(getPreviewTenantCapImportUrl(id),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getPreviewTenantCapImportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewTenantCapImport>>, TError,{id: number;data: BodyType<CapImportPreviewBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewTenantCapImport>>, TError,{id: number;data: BodyType<CapImportPreviewBody>}, TContext> => {
+
+const mutationKey = ['previewTenantCapImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewTenantCapImport>>, {id: number;data: BodyType<CapImportPreviewBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  previewTenantCapImport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewTenantCapImportMutationResult = NonNullable<Awaited<ReturnType<typeof previewTenantCapImport>>>
+    export type PreviewTenantCapImportMutationBody = BodyType<CapImportPreviewBody>
+    export type PreviewTenantCapImportMutationError = ErrorType<void>
+
+    /**
+ * @summary Validate a cap register CSV and preview it. Writes nothing. Reports every problem with its spreadsheet row, and how each cap would link to a player of the club (exact name match only; unmatched caps are still written, unlinked). A category that already has caps is refused.
+ */
+export const usePreviewTenantCapImport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewTenantCapImport>>, TError,{id: number;data: BodyType<CapImportPreviewBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewTenantCapImport>>,
+        TError,
+        {id: number;data: BodyType<CapImportPreviewBody>},
+        TContext
+      > => {
+      return useMutation(getPreviewTenantCapImportMutationOptions(options));
+    }
+
+export const getCommitTenantCapImportUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/cap-import/commit`
+}
+
+/**
+ * @summary Write a cap register CSV as one labelled batch. The file is validated again. Caps are written confirmed, linked where the name matched exactly, and marked with the batch in their note so the batch can be undone. Never drafts social cards.
+ */
+export const commitTenantCapImport = async (id: number,
+    capImportCommitBody: CapImportCommitBody, options?: RequestInit): Promise<CapImportCommitResult> => {
+    const formData = new FormData();
+formData.append(`file`, capImportCommitBody.file);
+formData.append(`label`, capImportCommitBody.label);
+
+  return customFetch<CapImportCommitResult>(getCommitTenantCapImportUrl(id),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body:
+      formData,
+  }
+);}
+
+
+
+
+export const getCommitTenantCapImportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitTenantCapImport>>, TError,{id: number;data: BodyType<CapImportCommitBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof commitTenantCapImport>>, TError,{id: number;data: BodyType<CapImportCommitBody>}, TContext> => {
+
+const mutationKey = ['commitTenantCapImport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof commitTenantCapImport>>, {id: number;data: BodyType<CapImportCommitBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  commitTenantCapImport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CommitTenantCapImportMutationResult = NonNullable<Awaited<ReturnType<typeof commitTenantCapImport>>>
+    export type CommitTenantCapImportMutationBody = BodyType<CapImportCommitBody>
+    export type CommitTenantCapImportMutationError = ErrorType<void>
+
+    /**
+ * @summary Write a cap register CSV as one labelled batch. The file is validated again. Caps are written confirmed, linked where the name matched exactly, and marked with the batch in their note so the batch can be undone. Never drafts social cards.
+ */
+export const useCommitTenantCapImport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof commitTenantCapImport>>, TError,{id: number;data: BodyType<CapImportCommitBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof commitTenantCapImport>>,
+        TError,
+        {id: number;data: BodyType<CapImportCommitBody>},
+        TContext
+      > => {
+      return useMutation(getCommitTenantCapImportMutationOptions(options));
+    }
+
+export const getListTenantCapImportBatchesUrl = (id: number,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/cap-import/batches`
+}
+
+/**
+ * @summary The club's cap import batches, newest first.
+ */
+export const listTenantCapImportBatches = async (id: number, options?: RequestInit): Promise<CapImportBatch[]> => {
+
+  return customFetch<CapImportBatch[]>(getListTenantCapImportBatchesUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTenantCapImportBatchesQueryKey = (id: number,) => {
+    return [
+    `/api/platform/admin/tenants/${id}/cap-import/batches`
+    ] as const;
+    }
+
+
+export const getListTenantCapImportBatchesQueryOptions = <TData = Awaited<ReturnType<typeof listTenantCapImportBatches>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTenantCapImportBatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTenantCapImportBatchesQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTenantCapImportBatches>>> = ({ signal }) => listTenantCapImportBatches(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTenantCapImportBatches>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTenantCapImportBatchesQueryResult = NonNullable<Awaited<ReturnType<typeof listTenantCapImportBatches>>>
+export type ListTenantCapImportBatchesQueryError = ErrorType<void>
+
+
+/**
+ * @summary The club's cap import batches, newest first.
+ */
+
+export function useListTenantCapImportBatches<TData = Awaited<ReturnType<typeof listTenantCapImportBatches>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTenantCapImportBatches>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTenantCapImportBatchesQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUndoTenantCapImportBatchUrl = (id: number,
+    batchId: string,) => {
+
+
+
+
+  return `/api/platform/admin/tenants/${id}/cap-import/batches/${batchId}`
+}
+
+/**
+ * @summary Undo a cap import batch: delete the caps it wrote. Refused when a later cap was issued after them in the same list (the sequence would break). A cap an admin edited out of the batch note is left alone.
+ */
+export const undoTenantCapImportBatch = async (id: number,
+    batchId: string, options?: RequestInit): Promise<CapImportUndoResult> => {
+
+  return customFetch<CapImportUndoResult>(getUndoTenantCapImportBatchUrl(id,batchId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getUndoTenantCapImportBatchMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof undoTenantCapImportBatch>>, TError,{id: number;batchId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof undoTenantCapImportBatch>>, TError,{id: number;batchId: string}, TContext> => {
+
+const mutationKey = ['undoTenantCapImportBatch'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof undoTenantCapImportBatch>>, {id: number;batchId: string}> = (props) => {
+          const {id,batchId} = props ?? {};
+
+          return  undoTenantCapImportBatch(id,batchId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UndoTenantCapImportBatchMutationResult = NonNullable<Awaited<ReturnType<typeof undoTenantCapImportBatch>>>
+
+    export type UndoTenantCapImportBatchMutationError = ErrorType<void>
+
+    /**
+ * @summary Undo a cap import batch: delete the caps it wrote. Refused when a later cap was issued after them in the same list (the sequence would break). A cap an admin edited out of the batch note is left alone.
+ */
+export const useUndoTenantCapImportBatch = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof undoTenantCapImportBatch>>, TError,{id: number;batchId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof undoTenantCapImportBatch>>,
+        TError,
+        {id: number;batchId: string},
+        TContext
+      > => {
+      return useMutation(getUndoTenantCapImportBatchMutationOptions(options));
+    }
+
 export const getGetSocialLadderPrefillUrl = (params: GetSocialLadderPrefillParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -29293,6 +30894,91 @@ export function useGetSocialWeekendWrapPrefill<TData = Awaited<ReturnType<typeof
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSocialWeekendWrapPrefillQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetSocialRoundResultsPrefillUrl = (params: GetSocialRoundResultsPrefillParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/social-prefill/round-results?${stringifiedParams}` : `/api/social-prefill/round-results`
+}
+
+/**
+ * Seniors only (central data). Private players are never named. Every field is editable in the builder.
+ * @summary Results summary and team of the week prefill — a round's results per grade with the best batters and bowlers, and its standout performers. Admin + socialStudio entitlement.
+ */
+export const getSocialRoundResultsPrefill = async (params: GetSocialRoundResultsPrefillParams, options?: RequestInit): Promise<RoundResults> => {
+
+  return customFetch<RoundResults>(getGetSocialRoundResultsPrefillUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialRoundResultsPrefillQueryKey = (params?: GetSocialRoundResultsPrefillParams,) => {
+    return [
+    `/api/social-prefill/round-results`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSocialRoundResultsPrefillQueryOptions = <TData = Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError = ErrorType<unknown>>(params: GetSocialRoundResultsPrefillParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialRoundResultsPrefillQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>> = ({ signal }) => getSocialRoundResultsPrefill(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialRoundResultsPrefillQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>>
+export type GetSocialRoundResultsPrefillQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Results summary and team of the week prefill — a round's results per grade with the best batters and bowlers, and its standout performers. Admin + socialStudio entitlement.
+ */
+
+export function useGetSocialRoundResultsPrefill<TData = Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError = ErrorType<unknown>>(
+ params: GetSocialRoundResultsPrefillParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialRoundResultsPrefill>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialRoundResultsPrefillQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

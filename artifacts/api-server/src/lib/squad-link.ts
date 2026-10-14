@@ -129,6 +129,11 @@ export function matchByInitial(
   return picks.size === 1 ? [...picks][0]! : null;
 }
 
+/** True when a given name is just an initial ("J", "J.") — central's line names. */
+export function isInitialOnly(givenName: string): boolean {
+  return /^\p{L}\.?$/u.test(givenName.trim());
+}
+
 /** A real club player id: positive and below the fill-in range. */
 export function isLinkablePlayerId(id: number | null | undefined): id is number {
   return id != null && id > 0 && id < FILL_IN_THRESHOLD;

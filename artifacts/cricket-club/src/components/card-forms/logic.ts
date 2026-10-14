@@ -56,6 +56,8 @@ export const ROW_CAPS: Partial<Record<CardKind, { key: string; cap: number; min:
   roundFixtures: { key: "fixtures", cap: SET_ROW_CAP, min: 1 },
   tradingCard: { key: "stats", cap: 4, min: 1 },
   juniorHighlights: { key: "highlights", cap: 3, min: 1 },
+  resultsSummary: { key: "results", cap: SET_ROW_CAP, min: 1 },
+  teamOfWeek: { key: "players", cap: 12, min: 1 },
 };
 
 /**

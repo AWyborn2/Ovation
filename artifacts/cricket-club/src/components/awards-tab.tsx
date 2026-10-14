@@ -31,8 +31,32 @@ function groupBySeason(winners: AwardWinner[]): SeasonGroup[] {
     .sort((a, b) => b.season - a.season);
 }
 
-const WinnerName = ({ winner }: { winner: AwardWinner }) =>
-  winner.playerId != null ? (
+export const WinnerName = ({ winner }: { winner: AwardWinner }) =>
+  winner.recipients?.length === 1 && winner.recipients[0].name === winner.name ? (
+    <Link
+      href={`/players/${winner.recipients[0].playerId}`}
+      className="font-semibold text-primary-text hover:underline"
+    >
+      {winner.name}
+    </Link>
+  ) : winner.recipients !== undefined ? (
+    <span className="inline-flex flex-col gap-1 min-w-0 break-words">
+      <span className="font-semibold">{winner.name}</span>
+      {winner.recipients.length > 0 && (
+        <span className="flex flex-wrap gap-x-3 gap-y-1">
+          {winner.recipients.map((p) => (
+            <Link
+              key={p.playerId}
+              href={`/players/${p.playerId}`}
+              className="font-semibold text-primary-text hover:underline"
+            >
+              {p.name}
+            </Link>
+          ))}
+        </span>
+      )}
+    </span>
+  ) : winner.playerId != null ? (
     <Link
       href={`/players/${winner.playerId}`}
       className="font-semibold text-primary-text hover:underline"

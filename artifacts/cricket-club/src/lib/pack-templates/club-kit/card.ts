@@ -1,6 +1,7 @@
 import type { PackTemplateFormats } from "../types";
 import { CLUB_LOGO_SLOT, skeletonCard, slot, sponsorsOff, sponsorsOn } from "../shared";
 import { treatedPhoto } from "../skeleton-kit";
+import { sponsorLogoFrame } from "./sponsor-logo";
 import {
   C,
   CK_SANS,
@@ -105,13 +106,15 @@ export interface CkFooter {
   label?: string;
   /** Emit a sponsors-off branch (the strip simply disappears). */
   off?: boolean;
+  /** Larger tiles for match-day team sponsors; other designs keep their size. */
+  largeLogos?: boolean;
 }
 
-function sponsorLogos(): string {
+function sponsorLogos(large = false): string {
   return [1, 2, 3]
     .map(
       (n) =>
-        `<div data-sponsor-tile="${n}" style="width:9cqmin;height:4cqmin;flex:none;overflow:hidden;background:rgba(255,255,255,.92)">${slot(`sponsor${n}`, "sponsor", "rect")}</div>`,
+        `<div data-sponsor-tile="${n}" style="width:${large ? 18 : 9}cqmin;height:${large ? 8 : 4}cqmin;flex:none;display:flex;align-items:center;justify-content:center;overflow:hidden;background:rgba(255,255,255,.92)">${sponsorLogoFrame(`sponsor${n}`, large ? 8 : 4)}</div>`,
     )
     .join("");
 }
@@ -122,7 +125,7 @@ export function footer(f: CkFooter): string {
   const strip =
     f.sponsors === "logos"
       ? // Logos; the presenting sponsor's name only when the club has no logos.
-        `<div data-sponsor-strip="1" style="display:flex;align-items:center;gap:1.2cqmin;min-width:0">${supportedBy(cq, f.label)}${sponsorLogos()}</div>` +
+        `<div data-sponsor-strip="1" style="display:flex;${f.largeLogos ? "flex-direction:column;align-items:flex-start" : "align-items:center"};gap:1.2cqmin;min-width:0">${supportedBy(cq, f.label)}${f.largeLogos ? `<div style="display:flex;gap:1.2cqmin">${sponsorLogos(true)}</div>` : sponsorLogos()}</div>` +
         `<div data-sponsor-fallback="1"><div style="display:flex;align-items:center;gap:1.4cqmin;min-width:0">${supportedBy(cq, f.label)} <span data-sponsor-name="1" style="font-family:${CK_SANS};font-weight:700;font-size:2cqmin;white-space:nowrap;color:${C.chalk}">{{sponsorPresentedBy}}</span></div></div>`
       : `<div style="display:flex;align-items:center;gap:1.4cqmin;min-width:0">${supportedBy(cq, f.label)} <span data-sponsor-name="1" style="font-family:${CK_SANS};font-weight:700;font-size:2cqmin;white-space:nowrap;color:${C.chalk}">{{sponsorPresentedBy}}</span></div>`;
   return (
@@ -154,6 +157,10 @@ export interface CkCardParts {
   footer: CkFooter;
   /** Body spans the full width even beside the side frame (trading card). */
   wide?: boolean;
+  /** Centre logo-only boards rather than reserving the tall photo area. */
+  centerBody?: boolean;
+  /** Full-card photo with a contrast scrim; used by the weekend cover only. */
+  backdropPhoto?: string;
 }
 
 /** One Club Kit card at one format. */
@@ -166,11 +173,15 @@ export function ckCard(parts: CkCardParts): string {
     parts.photo && tall ? fluidTopFrame(format, parts.depth ?? "hero", photo) : "";
   const layers =
     background() +
+    (parts.backdropPhoto
+      ? `<div data-drop-if-empty="${parts.backdropPhoto}" style="position:absolute;inset:0">${slot(parts.backdropPhoto, "photo", "rect")}` +
+        `<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.76),rgba(0,0,0,.60) 40%,rgba(0,0,0,.78))"></div></div>`
+      : "") +
     `<div data-drop-if-empty="clubLogo" style="position:absolute;inset:0;pointer-events:none">${watermark(cq, CLUB_LOGO_SLOT)}</div>` +
     sideFrameHtml;
   const maxW = !tall && parts.photo && !parts.wide ? "52%" : "100%";
   const bodyStyle =
-    `;container-type:normal;justify-content:${tall ? "flex-end" : "center"}` +
+    `;container-type:normal;justify-content:${tall && !parts.centerBody ? "flex-end" : "center"}` +
     `;position:relative;max-width:${maxW}`;
   return skeletonCard({
     vars: `color:${C.chalk}`,

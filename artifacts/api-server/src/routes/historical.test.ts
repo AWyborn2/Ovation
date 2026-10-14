@@ -7,6 +7,7 @@ import {
   partnerships50PlusTable,
   centuriesTable,
   fiveWicketHaulsTable,
+  tenantsTable,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
@@ -168,5 +169,56 @@ describe("historical records routes (integration)", () => {
       const xrays = mine.filter((r: { bowler: string }) => r.bowler === "Xray");
       expect(xrays[0].id).toBeLessThan(xrays[1].id);
     });
+  });
+});
+
+describe("GET /api/partnerships is tenant-scoped (curated rows)", () => {
+  const STAMP = Date.now();
+  const GRADE = `ZZTEST_${STAMP}_PSHIP_SCOPE`;
+  let centralTenantId: number;
+
+  beforeAll(async () => {
+    const [t] = await db
+      .insert(tenantsTable)
+      .values({
+        slug: `pship-central-${STAMP}`,
+        centralClubId: 999998,
+        readsFromCentral: true,
+        name: "Partnership Scope Club",
+        plan: "pilot",
+      })
+      .returning();
+    centralTenantId = t.id;
+    await db.insert(partnershipRecordsTable).values([
+      { tenantId: 1, grade: GRADE, wicket: "1st", runs: 150, batsmen: "Club One Pair" },
+      { tenantId: centralTenantId, grade: GRADE, wicket: "2nd", runs: 120, batsmen: "Other Pair" },
+    ]);
+    await db
+      .insert(partnerships50PlusTable)
+      .values([{ tenantId: 1, grade: GRADE, wicket: "1st", runs: 150, batsmen: "Club One Pair" }]);
+  });
+
+  afterAll(async () => {
+    await db.delete(partnershipRecordsTable).where(eq(partnershipRecordsTable.grade, GRADE));
+    await db.delete(partnerships50PlusTable).where(eq(partnerships50PlusTable.grade, GRADE));
+    await db.delete(tenantsTable).where(eq(tenantsTable.id, centralTenantId));
+  });
+
+  const mine = (rows: Array<{ grade: string; batsmen: string }>) =>
+    rows.filter((r) => r.grade === GRADE).map((r) => r.batsmen);
+
+  it("a club reading central still gets its own curated partnerships", async () => {
+    const res = await request(app)
+      .get("/api/partnerships")
+      .set("x-tenant-id", String(centralTenantId));
+    expect(res.status).toBe(200);
+    expect(mine(res.body.records)).toEqual(["Other Pair"]);
+    expect(mine(res.body.fiftyPlus)).toEqual([]);
+  });
+
+  it("each club sees only its own rows", async () => {
+    const res = await request(app).get("/api/partnerships").set("x-tenant-id", "1");
+    expect(mine(res.body.records)).toEqual(["Club One Pair"]);
+    expect(mine(res.body.fiftyPlus)).toEqual(["Club One Pair"]);
   });
 });

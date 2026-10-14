@@ -246,6 +246,41 @@
       "when": 1791332095224,
       "tag": "0034_shirt_numbers",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1791436269537,
+      "tag": "0035_shared_award_recipients",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791436269538,
+      "tag": "0036_kind_templates",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1791515372554,
+      "tag": "0037_squad_season_seed",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1791515372555,
+      "tag": "0038_team_sheet",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1791968483393,
+      "tag": "0039_playhq_grade_decisions",
+      "breakpoints": true
     }
   ]
 }

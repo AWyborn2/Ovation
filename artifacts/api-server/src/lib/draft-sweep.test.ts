@@ -18,6 +18,8 @@ import {
   socialSettingsTable,
   socialDraftsTable,
   captionTemplatesTable,
+  squadMembersTable,
+  availabilitySettingsTable,
 } from "@workspace/db";
 import { invalidateTenantConfigCache } from "./tenant";
 import { runDraftSweep } from "./draft-sweep";
@@ -98,6 +100,11 @@ afterAll(async () => {
   await db.delete(captionTemplatesTable).where(eq(captionTemplatesTable.tenantId, tenantId));
   await db.delete(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId));
   await db.delete(playerIdMapTable).where(eq(playerIdMapTable.tenantId, tenantId));
+  // The scheduled sweep fills the empty squad register from the season's games.
+  await db.delete(squadMembersTable).where(eq(squadMembersTable.tenantId, tenantId));
+  await db
+    .delete(availabilitySettingsTable)
+    .where(eq(availabilitySettingsTable.tenantId, tenantId));
   await db.delete(tenantsTable).where(eq(tenantsTable.id, tenantId));
 });
 

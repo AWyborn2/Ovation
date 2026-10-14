@@ -30,6 +30,7 @@ import { requireCaptain, type RequestWithCaptain } from "../middlewares/require-
 import { getTenantId } from "../middlewares/tenant-context";
 import { assertPlayerInTenantSpace } from "../lib/curated-player-space";
 import { normaliseGrades } from "../lib/normalise-grades";
+import { withAwardRecipients } from "../lib/award-recipients";
 import {
   computeTally,
   isTallyVisible,
@@ -505,7 +506,11 @@ router.post("/voting-configs/:id/finalise", requireAdmin, async (req, res): Prom
       asc(awardWinnersTable.displayOrder),
       asc(awardWinnersTable.id),
     );
-  res.json({ ...award, votingEnabled: award.votingEnabled, winners });
+  res.json({
+    ...award,
+    votingEnabled: award.votingEnabled,
+    winners: await withAwardRecipients(award.tenantId, winners),
+  });
 });
 
 // ---- Public: visible tallies ----

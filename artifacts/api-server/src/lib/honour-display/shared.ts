@@ -6,6 +6,7 @@
  * never on a request object — so every builder is unit-testable.
  */
 import { type BoardDisplayConfigJson } from "@workspace/db";
+import { gradeSeniorityRank } from "@workspace/scorecard";
 import {
   type BoardDisplayOut,
   type BoardGridOut,
@@ -16,22 +17,10 @@ import {
 } from "./types";
 
 // Seniority order for grade-grouped boards (captains, records-by-grade) so they
-// roll A Grade → Colts.
-export const GRADE_ORDER = [
-  "A Grade",
-  "B Grade",
-  "C Grade",
-  "D Grade",
-  "E Grade",
-  "F Grade",
-  "Female A Grade",
-  "Female B Grade",
-  "PPL",
-  "Colts",
-];
+// roll A Grade → Colts → Over 40s. Derived from the grade's name, so a grade the
+// sync discovers sorts correctly without being added to a list.
 export function gradeRank(g: string): number {
-  const i = GRADE_ORDER.indexOf(g);
-  return i === -1 ? GRADE_ORDER.length : i;
+  return gradeSeniorityRank(g);
 }
 
 // Generic season-grid composer. Rows are seasons (newest first); columns are

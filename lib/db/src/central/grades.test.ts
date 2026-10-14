@@ -43,9 +43,30 @@ describe("classifyCentralGrade — WA Premier Cricket labels", () => {
 
   it("maps One-Day grades and Masters", () => {
     expect(appGradeFromCentral("One Day Grade 2")).toBe("One Day Grade 2");
-    expect(appGradeFromCentral("Over 50 Men")).toBe("Masters");
     expect(appGradeFromCentral("Masters")).toBe("Masters");
+    expect(appGradeFromCentral("Masters Competition")).toBe("Masters");
     expect(appGradeFromCentral("Veterans Cup")).toBe("Masters");
+  });
+
+  it("gives age-based veterans comps their own grade, never the lettered grade in the name", () => {
+    for (const [label, grade] of [
+      ["Over 40s A Grade", "Over 40s"],
+      ["Over 50s A Grade", "Over 50s"],
+      ["Over 40s", "Over 40s"],
+      ["Over 50 Men", "Over 50s"],
+      ["Over 50s Focus Cricket Cup", "Over 50s"],
+      ["Focus Cup Over 45s", "Over 45s"],
+      ["Over 45's - Focus Cup", "Over 45s"],
+      ["Over 60s Horsley/Ramponi/Elliot Cup", "Over 60s"],
+    ] as const) {
+      expect([label, appGradeFromCentral(label)]).toEqual([label, grade]);
+    }
+  });
+
+  it("does not mistake 40-over formats or 30-over juniors for age grades", () => {
+    expect(appGradeFromCentral("Female B Grade 40 Over")).toBe("Female B Grade");
+    expect(appGradeFromCentral("Female A Grade 50 Over")).toBe("Female A Grade");
+    expect(appGradeFromCentral("Year 6 - 30 OVERS")).toBeNull();
   });
 
   it("maps WA senior T20 divisions to 'T20' without touching PCA T20 labels", () => {
@@ -67,6 +88,11 @@ describe("classifyCentralGrade — PCA behaviour is unchanged", () => {
     expect(appGradeFromCentral("C2 Grade")).toBe("C Grade");
     expect(appGradeFromCentral("T20: B Grade")).toBe("B Grade");
     expect(appGradeFromCentral("Mid-Year T20 C Grade")).toBe("C Grade");
+    // G Grade is new in Peel CA for 2026/27; H Grade leaves room for the next one.
+    expect(appGradeFromCentral("G Grade")).toBe("G Grade");
+    expect(appGradeFromCentral("Senior Men G Grade")).toBe("G Grade");
+    expect(appGradeFromCentral("H Grade")).toBe("H Grade");
+    expect(appGradeFromCentral("Fourth Grade")).toBe("4th Grade");
   });
 
   it("PPL, Colts and female grades", () => {
@@ -129,6 +155,7 @@ describe("isSeniorAppGrade — the club overlay's history-row guard (U10, R8)", 
     for (const g of [
       "A Grade",
       "F Grade",
+      "G Grade",
       "Female A Grade",
       "Female B Grade",
       "PPL",
@@ -137,6 +164,10 @@ describe("isSeniorAppGrade — the club overlay's history-row guard (U10, R8)", 
       "Women's 1st Grade",
       "One Day Grade 1",
       "Masters",
+      "Over 40s",
+      "Over 45s",
+      "Over 50s",
+      "Over 60s",
       "T20",
     ]) {
       expect([g, isSeniorAppGrade(g)]).toEqual([g, true]);

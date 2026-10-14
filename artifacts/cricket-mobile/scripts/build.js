@@ -3,6 +3,7 @@ const path = require("path");
 const { spawn } = require("child_process");
 const { Readable } = require("stream");
 const { pipeline } = require("stream/promises");
+const { getReleaseDomain, checkStaticConfig } = require("./release-config.cjs");
 
 let metroProcess = null;
 
@@ -59,16 +60,12 @@ function getDeploymentDomain() {
     return stripProtocol(process.env.REPLIT_INTERNAL_APP_DOMAIN);
   }
 
-  if (process.env.REPLIT_DEV_DOMAIN) {
-    return stripProtocol(process.env.REPLIT_DEV_DOMAIN);
-  }
-
   if (process.env.EXPO_PUBLIC_DOMAIN) {
     return stripProtocol(process.env.EXPO_PUBLIC_DOMAIN);
   }
 
   console.error(
-    "ERROR: No deployment domain found. Set REPLIT_INTERNAL_APP_DOMAIN, REPLIT_DEV_DOMAIN, or EXPO_PUBLIC_DOMAIN",
+    "ERROR: No production hosting domain found. Set REPLIT_INTERNAL_APP_DOMAIN or EXPO_PUBLIC_DOMAIN",
   );
   process.exit(1);
 }
@@ -487,6 +484,11 @@ async function main() {
   setupSignalHandlers();
 
   const domain = getDeploymentDomain();
+  checkStaticConfig(projectRoot);
+  const apiDomain = getReleaseDomain();
+  // This also runs during ordinary WEBSITE publishes to host an Expo Go
+  // preview. Club selection is mandatory for store releases (release:check),
+  // not a reason to block publishing the Ovation platform website.
   const expoPublicReplId = getExpoPublicReplId();
   const baseUrl = `https://${domain}`;
   const timestamp = `${Date.now()}-${process.pid}`;
@@ -494,7 +496,7 @@ async function main() {
   prepareDirectories(timestamp);
   clearMetroCache();
 
-  await startMetro(domain, expoPublicReplId);
+  await startMetro(apiDomain, expoPublicReplId);
 
   const downloadTimeout = 600000;
   const downloadPromise = downloadBundlesAndManifests(timestamp);

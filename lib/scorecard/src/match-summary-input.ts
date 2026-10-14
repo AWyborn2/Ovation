@@ -151,20 +151,16 @@ export function deriveWinner(
 /** Map a stored match into a `matchSummary` share-card input. */
 export function matchToSummaryInput(match: MatchDetail): MatchSummaryInput {
   const sc: Scorecard = buildScorecard(match);
+  const roundLabel = match.stage?.trim() || (match.round != null ? `Round ${match.round}` : "");
+  const matchTitle = [match.grade, roundLabel].filter(Boolean).join(" • ");
 
   // Guard: match exists but no scorecard data yet (thin data).
   const first = sc.innings[0];
   if (!first) {
-    const roundLabel = match.stage
-      ? match.stage
-      : match.round != null
-        ? `Round ${match.round}`
-        : "";
-    const matchTitle = [match.grade, roundLabel].filter(Boolean).join(" • ");
-
     return {
       kind: "matchSummary" as const,
       matchTitle,
+      roundLabel,
       matchType: match.competition ?? seasonLabel(match.season),
       date: match.matchDate ? formatMatchDate(match.matchDate) : null,
       venue: match.venue ?? null,
@@ -205,12 +201,10 @@ export function matchToSummaryInput(match: MatchDetail): MatchSummaryInput {
       topBowlers: topBowlers(inn.bowlers),
     }));
 
-  const roundLabel = match.stage ? match.stage : match.round != null ? `Round ${match.round}` : "";
-  const matchTitle = [match.grade, roundLabel].filter(Boolean).join(" • ");
-
   return {
     kind: "matchSummary",
     matchTitle,
+    roundLabel,
     matchType: match.competition ?? seasonLabel(match.season),
     date: match.matchDate ? formatMatchDate(match.matchDate) : null,
     venue: match.venue ?? null,
@@ -331,6 +325,7 @@ export function juniorMatchToSummaryInput(
     kind: "matchSummary",
     junior: true,
     matchTitle,
+    roundLabel: match.round?.trim() ?? "",
     matchType: match.competition ?? match.season ?? null,
     date: match.matchDate ? fmtJuniorDate(match.matchDate) : null,
     venue: match.venue ?? null,

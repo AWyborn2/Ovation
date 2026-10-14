@@ -12,3 +12,9 @@ description: Naming collision rules for Orval codegen in this project — what c
 - If you must have query params on a GET, verify the Orval-generated name won't collide before adding them.
 - For request bodies: always use entity-shaped names in `components/schemas` (e.g. `StatInput`, not `CreateStatBody`) and `$ref` them — never inline bodies.
 - After any spec change, always run `pnpm --filter @workspace/api-spec run codegen` and check for TS errors.
+
+**Date-only query parameters:** Use a string with a YYYY-MM-DD pattern and validate the calendar date in the route, rather than OpenAPI `format: date`.
+
+**Why:** This project's Orval configuration emits `zod.date()` (not coercing) for that format. Express supplies query strings, so every valid date request is rejected.
+
+**How to apply:** Preserve local date-only strings through query parsing; convert to UTC only after validating them, using the club timezone.

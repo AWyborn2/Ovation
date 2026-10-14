@@ -38,6 +38,41 @@ function groupBySeason(winners: AwardWinner[]): SeasonGroup[] {
 
 function WinnerRow({ winner }: { winner: AwardWinner }) {
   const colors = useColors();
+  if (winner.recipients?.length === 1 && winner.recipients[0].name === winner.name) {
+    return (
+      <Link href={`/players/${winner.recipients[0].playerId}` as never} asChild>
+        <TouchableOpacity activeOpacity={0.7}>
+          <Body bold size={13} style={{ color: colors.primary }}>
+            {winner.name}
+          </Body>
+        </TouchableOpacity>
+      </Link>
+    );
+  }
+  if (winner.recipients !== undefined) {
+    return (
+      <View style={{ gap: 4, flexShrink: 1 }}>
+        <Body bold size={13}>
+          {winner.name}
+        </Body>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+          {winner.recipients.map((p) => (
+            <Link key={p.playerId} href={`/players/${p.playerId}` as never} asChild>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                accessibilityRole="link"
+                accessibilityLabel={p.name}
+              >
+                <Body bold size={13} style={{ color: colors.primary }}>
+                  {p.name}
+                </Body>
+              </TouchableOpacity>
+            </Link>
+          ))}
+        </View>
+      </View>
+    );
+  }
   const content = (
     <Body
       bold

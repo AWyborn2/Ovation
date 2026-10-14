@@ -24,10 +24,15 @@ export const GENERATE_GRADES = [
   "D Grade",
   "E Grade",
   "F Grade",
+  "G Grade",
   "Female A Grade",
   "Female B Grade",
   "PPL",
   "Colts",
+  "Over 40s",
+  "Over 45s",
+  "Over 50s",
+  "Over 60s",
 ] as const;
 
 export type LeaderCategory = "Runs" | "Wickets";

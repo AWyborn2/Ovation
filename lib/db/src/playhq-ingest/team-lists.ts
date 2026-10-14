@@ -149,8 +149,23 @@ export interface TeamListProjectionOpts {
   log?: (line: string) => void;
 }
 
+/** One team list the projection wrote, for the sync's run log. */
+export interface TeamListUpdate {
+  fixtureId: number;
+  grade: string;
+  opponent: string;
+  /** Fixture start, ISO. */
+  startAt: string;
+  players: number;
+  /** "new": first list for the fixture; "changed": PlayHQ's side changed; "afterMatch": the
+   *  played side replaced a Selection Hub list. */
+  change: "new" | "changed" | "afterMatch";
+}
+
 export interface TeamListProjectionSummary {
   tenantId: number;
+  /** The lists written this run, newest information first in fixture order. */
+  updates: TeamListUpdate[];
   /** Fixtures with a PlayHQ selection for the club's side. */
   selections: number;
   written: number;
@@ -205,10 +220,16 @@ async function replacePlayedSelections(
   tenantId: number,
   orgId: string,
   now: Date,
-): Promise<number> {
+): Promise<TeamListUpdate[]> {
   const { fixturesTable, teamListsTable } = tables;
   const played = await db
-    .select({ id: fixturesTable.id, matchId: fixturesTable.playhqMatchId })
+    .select({
+      id: fixturesTable.id,
+      matchId: fixturesTable.playhqMatchId,
+      grade: fixturesTable.grade,
+      opponent: fixturesTable.opponentName,
+      startAt: fixturesTable.startAt,
+    })
     .from(fixturesTable)
     .innerJoin(
       teamListsTable,
@@ -229,7 +250,7 @@ async function replacePlayedSelections(
         ),
       ),
     );
-  if (played.length === 0) return 0;
+  if (played.length === 0) return [];
 
   // The club's side of each COMPLETED match (statusId 3, as the harness reads it): the
   // scorecard's, else the last lineup named before the match.
@@ -259,10 +280,10 @@ async function replacePlayedSelections(
     const entries = lineupEntries(r.players);
     if (entries.length) byMatch.set(r.match_id.toLowerCase(), entries);
   }
-  if (byMatch.size === 0) return 0;
+  if (byMatch.size === 0) return [];
   const playerIdOf = await registerIds(db, tables, tenantId, byMatch.values());
 
-  let replaced = 0;
+  const replaced: TeamListUpdate[] = [];
   for (const f of played) {
     const entries = f.matchId ? byMatch.get(f.matchId.toLowerCase()) : undefined;
     if (!entries?.length) continue;
@@ -283,7 +304,15 @@ async function replacePlayedSelections(
         ),
       )
       .returning({ id: teamListsTable.id });
-    replaced += rows.length;
+    if (rows.length)
+      replaced.push({
+        fixtureId: f.id,
+        grade: f.grade,
+        opponent: f.opponent,
+        startAt: f.startAt.toISOString(),
+        players: players.length,
+        change: "afterMatch",
+      });
   }
   return replaced;
 }
@@ -315,19 +344,26 @@ export async function projectTeamLists(
     const orgId = (t.orgId ?? "").toLowerCase();
     // Best-effort: a failure here (a bad jsonb row, a non-UUID match id) is
     // logged and must not stop this tenant's future-fixture projection.
-    let replacedSelection = 0;
+    let afterMatch: TeamListUpdate[] = [];
     try {
-      replacedSelection = await replacePlayedSelections(db, tables, opts.central, t.id, orgId, now);
+      afterMatch = await replacePlayedSelections(db, tables, opts.central, t.id, orgId, now);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       log(`tenant ${t.id}: played-selection replacement failed, skipped: ${message}`);
     }
+    const replacedSelection = afterMatch.length;
     if (replacedSelection)
       log(
         `tenant ${t.id}: ${replacedSelection} played fixture(s): Selection Hub list replaced by PlayHQ's side`,
       );
     const fixtures = await db
-      .select({ id: fixturesTable.id, matchId: fixturesTable.playhqMatchId })
+      .select({
+        id: fixturesTable.id,
+        matchId: fixturesTable.playhqMatchId,
+        grade: fixturesTable.grade,
+        opponent: fixturesTable.opponentName,
+        startAt: fixturesTable.startAt,
+      })
       .from(fixturesTable)
       .where(
         and(
@@ -342,6 +378,7 @@ export async function projectTeamLists(
       );
     const summary: TeamListProjectionSummary = {
       tenantId: t.id,
+      updates: [...afterMatch],
       selections: 0,
       written: 0,
       keptAdmin: 0,
@@ -405,6 +442,14 @@ export async function projectTeamLists(
           setWhere: sql`${teamListsTable.source} = 'playhq'`,
         });
       summary.written++;
+      summary.updates.push({
+        fixtureId: f.id,
+        grade: f.grade,
+        opponent: f.opponent,
+        startAt: f.startAt.toISOString(),
+        players: players.length,
+        change: current ? "changed" : "new",
+      });
     }
     log(
       `tenant ${t.id}: ${summary.selections} PlayHQ team selection(s) → ${summary.written} written, ${summary.keptAdmin} kept (admin's list)`,

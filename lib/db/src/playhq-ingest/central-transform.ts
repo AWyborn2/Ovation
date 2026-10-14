@@ -315,12 +315,74 @@ function num(v: string | number | null | undefined): number | null {
 const int = (v: number | null | undefined): number => (typeof v === "number" ? v : 0);
 
 /** "Jacob Barnes" → "Barnes, Jacob" (the builder's player display form). */
+/**
+ * A name the way central stores it, given name first: "Phelps, Chris" -> "Chris Phelps";
+ * "Chris Phelps" and "C Phelps" are already right. Null for an empty name.
+ */
+export function givenFirst(name: string | null | undefined): string | null {
+  const s = (name ?? "").trim().replace(/\s+/g, " ");
+  if (!s) return null;
+  const i = s.indexOf(",");
+  if (i < 0) return s;
+  const surname = s.slice(0, i).trim();
+  const given = s.slice(i + 1).trim();
+  return surname && given ? `${given} ${surname}` : s.replace(",", "").trim();
+}
+
 export function surnameFirst(full: string | null | undefined): string | null {
   const s = (full ?? "").trim().replace(/\s+/g, " ");
   if (!s) return null;
   if (s.includes(",")) return s;
   const i = s.lastIndexOf(" ");
   return i < 0 ? s : `${s.slice(i + 1)}, ${s.slice(0, i)}`;
+}
+
+/** "Phelps, Chris" -> { surname: "Phelps", given: "Chris" }; null when not that shape. */
+function splitSurnameFirst(name: string): { surname: string; given: string } | null {
+  const i = name.indexOf(",");
+  if (i < 0) return null;
+  const surname = name.slice(0, i).trim();
+  const given = name.slice(i + 1).trim();
+  return surname && given ? { surname, given } : null;
+}
+
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
+
+/**
+ * An initials-only central name ("C Phelps", "C. Phelps", "CJ Phelps", "Phelps, C") as
+ * { initial, surname }, or null when the name already carries a given name.
+ */
+export function initialsOnlyName(name: string | null | undefined): {
+  initial: string;
+  surname: string;
+} | null {
+  const s = (name ?? "").trim().replace(/\s+/g, " ");
+  const comma = splitSurnameFirst(s);
+  if (comma) {
+    const g = comma.given.replace(/\./g, "").trim();
+    return /^[A-Za-z]{1,2}$/.test(g) ? { initial: g[0]!, surname: comma.surname } : null;
+  }
+  const m = /^([A-Za-z]{1,2})\.?\s+(.+)$/.exec(s);
+  return m ? { initial: m[1]![0]!, surname: m[2]! } : null;
+}
+
+/**
+ * The full name to store instead of `current` ("Chris Phelps", given name first), or null to
+ * keep it. Only an initials-only name is ever replaced, and only by a full name ("Surname,
+ * Given" or "Given Surname") with the same surname and the same first initial — a full name
+ * already there, a private player or a mismatch stays as is.
+ */
+export function upgradedDisplayName(
+  current: string | null | undefined,
+  candidate: string | null | undefined,
+): string | null {
+  if (!current || !candidate || current === "Private Player") return null;
+  const short = initialsOnlyName(current);
+  const full = splitSurnameFirst(surnameFirst(candidate) ?? "");
+  if (!short || !full || norm(full.given).length < 2) return null;
+  if (norm(full.surname) !== norm(short.surname)) return null;
+  if (norm(full.given)[0] !== short.initial.toLowerCase()) return null;
+  return `${full.given} ${full.surname}`;
 }
 
 // ── The transform ───────────────────────────────────────────────────────────────────────────
@@ -512,8 +574,8 @@ export function scorecardToCentral(
         out.players.push({
           participant_id: p.participantId,
           display_name:
-            ctx.fullNames?.get(p.participantId) ??
-            surnameFirst(p.name) ??
+            givenFirst(ctx.fullNames?.get(p.participantId)) ??
+            givenFirst(p.name) ??
             p.shortName ??
             "Unknown Player",
           club_id: club,

@@ -18,7 +18,7 @@
 - [Award 3-2-1 voting & captain role](award-voting-321.md) — captain auth under /captain-auth/* (separate cookie), actions under /captain/*; tally visibility + autoHide rule; voting query hooks take positional id, mutations take {id,data}.
 - [api-server testing setup](api-server-testing.md) — vitest runs against the live dev DB (clean up uniquely-suffixed rows); supertest + forged HMAC cookies; build libs before per-package typecheck.
 - [Read-only migration ledger checks](db-ledger-inspection.md) — use the db package for pg queries; accept only proven LF/CRLF hash equivalents, never rewrite ledger history.
-- [Database transition constraints](database-cutover-constraints.md) — cut-over to Replit Postgres done (Oct 2026); Supabase retired read-only; production schema changes run by hand before republishing.
+- [Database transition constraints](database-cutover-constraints.md) — Replit Postgres cut-over complete; Supabase retired read-only; managed schema updates normally apply when publishing.
 - [Share-card photo crop coupling](share-card-photo-crop.md) — feature-photo focal/zoom is size-independent; the CSS reposition control must mirror the canvas cover math or preview/crop diverge.
 - [Backfill peel vs add](backfill-peel-add.md) — previous-season imports reconcile vs the season=NULL baseline; peel keeps career invariant (stores deltas for reversal), add is additive; suppress social, never mint caps.
 - [Trading card export gotchas](trading-card-export.md) — gate card render+export until BOTH player AND caps resolve (cap-number rule); waitForImages must treat img.complete as terminal + add timeout or broken photo URLs hang export.
@@ -68,3 +68,20 @@
 - [Club Kit pack + Studio element library](studio-elements.md) — club-kit-v1 is card-cqmin with per-format markup and `--ck-*` rootVars (club-only colour mode); Studio `element` layers reuse the same parts via a unit fn; props escaped; junior names masked.
 - [Development host smoke tests](development-host-smoke-tests.md) — public dev host and loopback can select different platform/club modes; confirm the mode before browser tests.
 - [Pending Git merges and checkpoints](pending-git-merges.md) — a no-commit pull can still become a merge commit through automatic checkpointing; stop on divergence when Git commits are forbidden.
+- [Availability testing requirement](availability-testing.md) — repeated manual request sends are intentional: the user needs unrestricted repeat testing, not a once-per-round manual action.
+- [Early team drafting](availability-selection-timing.md) — clubs must be able to draft teams as soon as availability requests go out, without waiting for cut-off.
+- [Selection Hub usability](selection-hub-ux.md) — follow Grade menu order, match pool height to all teams, collapse navigation and expose comparison to captains/selectors.
+- [Publishing constraint checks](publishing-constraint-checks.md) — a “no schema diff” result can miss CHECK-constraint drift; compare live definitions before promising republishing will repair it.
+- [Active roster onboarding](active-roster-onboarding.md) — current-season appearances seed new clubs' active roster; admins and captains can maintain it without repeated participant reports.
+- [Weekend carousel photos](weekend-carousel-photo-scope.md) — title → team match-day cards → sponsors; team photos only from the same grade's batting, bowling or fielding categories.
+- [Shared award compatibility](shared-award-compatibility.md) — legacy single-link edits must preserve other recipients; curated winner labels never imply player identities.
+- [Card layout audit boundaries](card-image-audit-boundaries.md) — distinguish functional clipping from oversized decoration and tight typography; judge painted glyphs, not generic line limits.
+- [Team Selection fitting](team-list-fitting.md) — built-in-only scope; preserve fitted DOM on preview resize and check export parity after intended fonts load.
+- [Held team-list identities](held-team-list-identities.md) — Held numbers need no historical profile; recover legacy identity only from a matching finalised side, never a reopened draft.
+- [Parallel migration collisions](parallel-migration-collisions.md) — preserve existing migration history; resequence incoming changes with a combined snapshot and later timestamp.
+- [Browser render verification](browser-render-verification.md) — Vite React default-export interop; use direct Chromium checks if the testing runtime rejects its config.
+- [Mobile store release targets](mobile-store-release.md) — user wants Ovation Mobile released for both iPhone and Android.
+- [Mobile release scope](mobile-release-scope.md) — owner chose one Ovation app with club selection, not a Halls Head-only or per-club release.
+- [Environment-triggered workflow restarts](environment-workflow-restarts.md) — setting changes can restart services; avoid racing them with manual restarts.
+- [Mobile/web React peers](mobile-web-react-peers.md) — keep per-app React versions; shared API hooks must resolve the same Query instance as each app's provider.
+- [Tenant committee roles](tenant-committee-roles.md) — clubs define their own committee titles and relative display priority; avoid a fixed platform-wide hierarchy.

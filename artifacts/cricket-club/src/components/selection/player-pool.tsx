@@ -123,9 +123,9 @@ export function PlayerPool({
   return (
     <aside
       aria-label="Player pool"
-      className="flex min-w-0 flex-col rounded-lg border border-border bg-card lg:sticky lg:top-[calc(var(--header-h,60px)+12px)] lg:max-h-[calc(100vh-96px)]"
+      className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card lg:absolute lg:inset-0"
     >
-      <div className="flex flex-col gap-2 border-b border-border px-3.5 py-3">
+      <div className="flex shrink-0 flex-col gap-2 border-b border-border px-3.5 py-3">
         <h2 className="font-serif text-[22px] font-extrabold leading-none">Player pool</h2>
         <p className="text-[12.5px] text-muted-foreground">
           Drag players onto a team. Drag a team player back here to drop them. On a phone, hold the
@@ -145,7 +145,7 @@ export function PlayerPool({
       </div>
       <div
         ref={scrollRef}
-        className="flex max-h-[60vh] flex-col gap-1.5 overflow-auto overscroll-contain px-2.5 pb-3 pt-1.5 lg:max-h-none"
+        className="flex min-h-0 max-h-[60vh] flex-col gap-1.5 overflow-auto overscroll-contain px-2.5 pb-3 pt-1.5 lg:max-h-none lg:flex-1"
       >
         <section data-drop="pool" className={zoneClass} aria-label="Available, not picked">
           <div className={headClass}>

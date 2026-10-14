@@ -76,3 +76,4 @@ export const pool: pg.Pool = lazyProxy(getPool);
 
 export * from "./schema";
 export * from "./player-id-mint";
+export * from "./squad-seed";

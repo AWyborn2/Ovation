@@ -2,7 +2,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { gunzipSync } from "node:zlib";
-import { COLLECTOR, ingestBody, manualPlan, run, runStatus } from "./runner.mjs";
+import {
+  COLLECTOR,
+  ingestBody,
+  manualNamesPlan,
+  manualPlan,
+  run,
+  runStatus,
+  splitIngestBody,
+  teamListLine,
+} from "./runner.mjs";
 
 const ENV = {
   OVATION_API_URL: "https://ovation.test/api/",
@@ -292,6 +301,19 @@ test("manual catch-up rejects a bad organisation id or date", () => {
   assert.throws(() => manualPlan("2dd0a9a1-86d8-eb11-a7ad-2818780da0cc", "3 Oct"), /date/);
 });
 
+test("the names backfill fetches every season's grade stats reports for one organisation", () => {
+  const p = manualNamesPlan(
+    "4559F1B9-86D8-EB11-A7AD-2818780DA0CC",
+    new Date("2026-10-11T06:00:00Z"),
+  );
+  assert.equal(p.planName, "names");
+  assert.equal(p.orgId, "4559f1b9-86d8-eb11-a7ad-2818780da0cc");
+  assert.deepEqual(p.plan.kinds, ["batting", "bowling", "fielding"]);
+  assert.equal(p.plan.seasons, "all");
+  assert.equal(p.plan.scorecards, "none");
+  assert.throws(() => manualNamesPlan("halls head"), /GUID/);
+});
+
 test("logs the stats-copy summary and grouped skip reasons from the ingest reply", async () => {
   const lines = [];
   const server = fakeServer([DUE], {
@@ -307,6 +329,7 @@ test("logs the stats-copy summary and grouped skip reasons from the ingest reply
       skipped: 33,
       skipReasons: { "neither side maps": 33 },
       playersInserted: 5,
+      namesUpgraded: 12,
     },
   });
   const browser = fakeBrowser([{ phase: "done", finishedAt: "t" }]);
@@ -321,4 +344,88 @@ test("logs the stats-copy summary and grouped skip reasons from the ingest reply
   assert.deepEqual(r.failures, []);
   assert.ok(lines.some((l) => l.includes("4 created, 2 updated, 33 skipped, 5 new players")));
   assert.ok(lines.some((l) => l.includes("skipped 33 × neither side maps")));
+  assert.ok(lines.some((l) => l.includes("12 player name(s) filled in")));
+});
+
+test("logs each team list the ingest wrote from PlayHQ", async () => {
+  const lines = [];
+  const server = fakeServer([DUE], {
+    status: "ok",
+    fixtureChanges: 0,
+    tenants: [],
+    warnings: [],
+    teamLists: [
+      {
+        tenantId: 1,
+        club: "Halls Head",
+        grade: "A Grade",
+        opponent: "Pinjarra",
+        startAt: "2026-10-10T03:45:00.000Z",
+        players: 11,
+        change: "new",
+      },
+      {
+        tenantId: 1,
+        club: "Halls Head",
+        grade: "F Grade",
+        opponent: "Waroona",
+        startAt: "2026-10-10T04:00:00.000Z",
+        players: 12,
+        change: "changed",
+      },
+    ],
+  });
+  const browser = fakeBrowser([{ phase: "done", finishedAt: "t" }]);
+  const r = await run({
+    env: ENV,
+    fetchImpl: server.fetchImpl,
+    launch: browser.launch,
+    readHarness: async () => "/* harness */",
+    sleep: async () => {},
+    log: (l) => lines.push(l),
+  });
+  assert.deepEqual(r.failures, []);
+  assert.ok(
+    lines.some((l) =>
+      l.endsWith("Halls Head · A Grade v Pinjarra, Sat 10 Oct: team named (11 players)"),
+    ),
+  );
+  assert.ok(
+    lines.some((l) => l.endsWith("F Grade v Waroona, Sat 10 Oct: team changed (12 players)")),
+  );
+});
+
+test("names a played side recorded after the match, in Perth time", () => {
+  assert.equal(
+    teamListLine({
+      club: "Rockingham-Mandurah",
+      grade: "1st Grade",
+      opponent: "Claremont-Nedlands",
+      startAt: "2026-10-03T17:00:00.000Z",
+      players: 11,
+      change: "afterMatch",
+    }),
+    "Rockingham-Mandurah · 1st Grade v Claremont-Nedlands, Sun 4 Oct: played side recorded (11 players)",
+  );
+});
+
+test("an oversized dump is sent in parts that keep every record and the metadata", () => {
+  const records = Array.from({ length: 10 }, (_, i) => ({
+    kind: "batting",
+    id: i,
+    pad: "x".repeat(100),
+  }));
+  const body = { planName: "names", sourceName: "gha names", dump: { version: "2", records } };
+  assert.deepEqual(splitIngestBody(body), [body]); // small: one part, untouched
+  const parts = splitIngestBody(body, 400);
+  assert.ok(parts.length > 1);
+  assert.deepEqual(
+    parts.flatMap((p) => p.dump.records.map((r) => r.id)),
+    records.map((r) => r.id),
+  );
+  for (const [i, p] of parts.entries()) {
+    assert.equal(p.planName, "names");
+    assert.equal(p.dump.version, "2");
+    assert.equal(p.sourceName, `gha names part ${i + 1}/${parts.length}`);
+  }
 });

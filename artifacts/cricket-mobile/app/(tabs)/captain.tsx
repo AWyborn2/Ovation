@@ -104,6 +104,7 @@ function LoginGate() {
             Username
           </Body>
           <TextInput
+            accessibilityLabel="Username"
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
@@ -119,6 +120,7 @@ function LoginGate() {
             Password
           </Body>
           <TextInput
+            accessibilityLabel="Password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -136,6 +138,8 @@ function LoginGate() {
           </Body>
         ) : null}
         <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Sign in"
           onPress={submit}
           disabled={login.isPending}
           activeOpacity={0.8}

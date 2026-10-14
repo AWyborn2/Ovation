@@ -11,6 +11,7 @@ import {
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { norm } from "./name-match";
 import {
+  isInitialOnly,
   isLinkablePlayerId,
   loadInitialIndex,
   matchByInitial,
@@ -384,6 +385,8 @@ export type SquadImportResult = {
   updated: number;
   /** Existing members stood down because their registration is no longer active. */
   deactivated: number;
+  /** Existing members without a Profile ID (added by hand or from this season's games) this import filled in. */
+  adopted: number;
   /** Members newly linked to an app player this import. */
   linked: number;
   /** Members whose contacts were kept: changed from their link, flag not yet cleared. */
@@ -438,23 +441,18 @@ export async function applySquadImport(
   let deactivated = 0;
   let linked = 0;
   let contactsKept = 0;
+  const adopted = new Set<number>();
 
   await db.transaction(async (tx: Tx) => {
-    const lookupIds = [...profileIds, ...plan.inactiveProfileIds];
-    const existing =
-      lookupIds.length === 0
-        ? []
-        : await tx
-            .select()
-            .from(squadMembersTable)
-            .where(
-              and(
-                eq(squadMembersTable.tenantId, tenantId),
-                inArray(squadMembersTable.playhqProfileId, lookupIds),
-              ),
-            );
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(72401, ${tenantId})`);
+    const existing = await tx
+      .select()
+      .from(squadMembersTable)
+      .where(eq(squadMembersTable.tenantId, tenantId));
     const byProfile = new Map<string, SquadMemberRow>();
-    for (const row of existing) byProfile.set(row.playhqProfileId!, row);
+    for (const row of existing) {
+      if (row.playhqProfileId) byProfile.set(row.playhqProfileId, row);
+    }
 
     const taken = new Set<number>(
       (
@@ -492,7 +490,44 @@ export async function applySquadImport(
 
     const now = new Date();
     for (const m of plan.members) {
-      const prev = byProfile.get(m.playhqProfileId);
+      let prev = byProfile.get(m.playhqProfileId);
+      if (!prev) {
+        // Adopt a manually added row (no Profile ID) for this member. Only the
+        // crosswalk's Profile ID is proof of identity on its own; a fuzzy
+        // initial + surname match must also agree with the row's name, or an
+        // import would take over (and rename) another member an admin linked
+        // to that player by hand.
+        const profileId = links.byProfile.get(m.playhqProfileId.toLowerCase()) ?? null;
+        const initialId = matchByInitial(m, initialIndex)?.playerId ?? null;
+        const keys = memberNameKeys(m);
+        const initials = memberInitialKeys(m);
+        const fullNameAgrees = (r: SquadMemberRow) =>
+          memberNameKeys(r).some((k) => keys.includes(k) && nameCounts.get(k) === 1);
+        const initialAgrees = (r: SquadMemberRow) =>
+          memberInitialKeys(r).some((k) => initials.includes(k) && initialCounts.get(k) === 1);
+        const nameAgrees = (r: SquadMemberRow) => fullNameAgrees(r) || initialAgrees(r);
+        // A member already linked to a player (e.g. seeded from this season's
+        // games) is the same person when their full name agrees, or when they're
+        // only known by an initial ("J Wyllie") and initial + surname agree. A
+        // differently named member an admin linked by hand never matches.
+        const linkAgrees = (r: SquadMemberRow) =>
+          r.linkedPlayerId === null ||
+          r.linkedPlayerId === initialId ||
+          fullNameAgrees(r) ||
+          (isInitialOnly(r.firstName) && initialAgrees(r));
+        const candidates = existing.filter(
+          (r) =>
+            !r.playhqProfileId &&
+            !adopted.has(r.id) &&
+            ((profileId !== null && r.linkedPlayerId === profileId) ||
+              (r.section === m.section && nameAgrees(r) && linkAgrees(r))),
+        );
+        if (candidates.length === 1) {
+          prev = candidates[0];
+          adopted.add(prev.id);
+          byProfile.set(m.playhqProfileId, prev);
+        }
+      }
       const identity = {
         firstName: m.firstName,
         lastName: m.lastName,
@@ -532,7 +567,11 @@ export async function applySquadImport(
       }
 
       const heldByAdmin = prev.activeSetByAdmin && !prev.active;
-      const set: Partial<typeof squadMembersTable.$inferInsert> = { ...identity, updatedAt: now };
+      const set: Partial<typeof squadMembersTable.$inferInsert> = {
+        ...identity,
+        playhqProfileId: m.playhqProfileId,
+        updatedAt: now,
+      };
       if (!heldByAdmin && prev.contactChangeFlag) {
         set.dateOfBirth = contacts.dateOfBirth;
         contactsKept++;
@@ -577,6 +616,7 @@ export async function applySquadImport(
     created,
     updated,
     deactivated,
+    adopted: adopted.size,
     linked,
     contactsKept,
     skipped: plan.skipped,

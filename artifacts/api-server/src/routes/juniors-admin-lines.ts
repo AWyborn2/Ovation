@@ -33,7 +33,6 @@ import {
   serializeBowlingLine,
   BOWLING_STAT_COLS,
 } from "../lib/junior-admin-helpers";
-import { isCentralTenant } from "../lib/tenant";
 import { isValidOversNotation, strikeRateOf, economyOf } from "../lib/junior-cricket";
 
 /**
@@ -64,10 +63,6 @@ router.post(
     const body = CreateJuniorBattingLineBody.safeParse(req.body);
     if (!body.success) {
       res.status(400).json({ error: body.error.message });
-      return;
-    }
-    if (await isCentralTenant(req)) {
-      res.status(404).json({ error: "Match not found" });
       return;
     }
     const match = await tenantMatch(req, params.data.matchId);
@@ -159,10 +154,6 @@ router.patch(
     const body = UpdateJuniorBattingLineBody.safeParse(req.body);
     if (!body.success) {
       res.status(400).json({ error: body.error.message });
-      return;
-    }
-    if (await isCentralTenant(req)) {
-      res.status(404).json({ error: "Match not found" });
       return;
     }
     const match = await tenantMatch(req, params.data.matchId);
@@ -261,10 +252,6 @@ router.delete(
       res.status(400).json({ error: params.error.message });
       return;
     }
-    if (await isCentralTenant(req)) {
-      res.status(404).json({ error: "Match not found" });
-      return;
-    }
     const match = await tenantMatch(req, params.data.matchId);
     if (!match) {
       res.status(404).json({ error: "Match not found" });
@@ -337,10 +324,6 @@ router.post(
       res.status(400).json({
         error: "overs must be cricket ball notation (fractional digit 0-5)",
       });
-      return;
-    }
-    if (await isCentralTenant(req)) {
-      res.status(404).json({ error: "Match not found" });
       return;
     }
     const match = await tenantMatch(req, params.data.matchId);
@@ -438,10 +421,6 @@ router.patch(
       });
       return;
     }
-    if (await isCentralTenant(req)) {
-      res.status(404).json({ error: "Match not found" });
-      return;
-    }
     const match = await tenantMatch(req, params.data.matchId);
     if (!match) {
       res.status(404).json({ error: "Match not found" });
@@ -532,10 +511,6 @@ router.delete(
     const params = DeleteJuniorBowlingLineParams.safeParse(req.params);
     if (!params.success) {
       res.status(400).json({ error: params.error.message });
-      return;
-    }
-    if (await isCentralTenant(req)) {
-      res.status(404).json({ error: "Match not found" });
       return;
     }
     const match = await tenantMatch(req, params.data.matchId);

@@ -460,6 +460,8 @@ export const getMatchResponseClubOneHeroImagesOneJuniorsMax = 2048;
 
 export const getMatchResponseClubOneHeroImagesOneHonoursMax = 2048;
 
+export const getMatchResponseClubOneHeroImagesOneCardsMax = 2048;
+
 export const getMatchResponseClubOneHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const getMatchResponseClubOneHeroImagesOneExploreOnePlayersMax = 2048;
@@ -509,6 +511,7 @@ export const GetMatchResponse = zod.object({
   "home": zod.string().max(getMatchResponseClubOneHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(getMatchResponseClubOneHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(getMatchResponseClubOneHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(getMatchResponseClubOneHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(getMatchResponseClubOneHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(getMatchResponseClubOneHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -593,6 +596,8 @@ export const updateMatchRoundResponseClubOneHeroImagesOneJuniorsMax = 2048;
 
 export const updateMatchRoundResponseClubOneHeroImagesOneHonoursMax = 2048;
 
+export const updateMatchRoundResponseClubOneHeroImagesOneCardsMax = 2048;
+
 export const updateMatchRoundResponseClubOneHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const updateMatchRoundResponseClubOneHeroImagesOneExploreOnePlayersMax = 2048;
@@ -642,6 +647,7 @@ export const UpdateMatchRoundResponse = zod.object({
   "home": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateMatchRoundResponseClubOneHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -722,6 +728,8 @@ export const setMatchHatTrickResponseClubOneHeroImagesOneJuniorsMax = 2048;
 
 export const setMatchHatTrickResponseClubOneHeroImagesOneHonoursMax = 2048;
 
+export const setMatchHatTrickResponseClubOneHeroImagesOneCardsMax = 2048;
+
 export const setMatchHatTrickResponseClubOneHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const setMatchHatTrickResponseClubOneHeroImagesOneExploreOnePlayersMax = 2048;
@@ -771,6 +779,7 @@ export const SetMatchHatTrickResponse = zod.object({
   "home": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(setMatchHatTrickResponseClubOneHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -2860,6 +2869,43 @@ export const DeleteCaptainParams = zod.object({
 
 
 /**
+ * @summary Add or reactivate an active squad member (admin or captain)
+ */
+export const createSquadMemberBodyFirstNameMax = 100;
+
+export const createSquadMemberBodyLastNameMax = 100;
+
+export const createSquadMemberBodyDateOfBirthRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const createSquadMemberBodyGradeHintMax = 100;
+
+
+
+export const CreateSquadMemberBody = zod.object({
+  "firstName": zod.string().min(1).max(createSquadMemberBodyFirstNameMax),
+  "lastName": zod.string().min(1).max(createSquadMemberBodyLastNameMax),
+  "section": zod.enum(['senior', 'junior']),
+  "linkedPlayerId": zod.number().nullish(),
+  "dateOfBirth": zod.string().regex(createSquadMemberBodyDateOfBirthRegExp).nullish(),
+  "gradeHint": zod.string().max(createSquadMemberBodyGradeHintMax).nullish(),
+  "account": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.'),
+  "guardian1": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.'),
+  "guardian2": zod.object({
+  "name": zod.string().nullish(),
+  "mobile": zod.string().nullish(),
+  "email": zod.string().nullish()
+}).optional().describe('Omitted fields are unchanged; null or \"\" clears a value.')
+})
+
+
+/**
  * Every member of the club's squad register. Contact details are reported
 as presence flags only (has a name, mobile or email; SMS opted out) —
 `getSquadMember` returns the values.
@@ -2907,6 +2953,95 @@ export const ListSquadMembersResponse = zod.array(ListSquadMembersResponseItem)
 
 
 /**
+ * @summary List roster identities without contact values (admin or captain)
+ */
+export const ListSelectionRosterResponseItem = zod.object({
+  "id": zod.number(),
+  "playhqProfileId": zod.string().nullable(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "preferredName": zod.string().nullable(),
+  "section": zod.enum(['senior', 'junior']),
+  "active": zod.boolean(),
+  "activeSetByAdmin": zod.boolean().describe('The admin set `active` by hand; imports never override it.'),
+  "under18": zod.boolean().nullable().describe('From date of birth (Perth today); null when unknown. Under-18s are contacted through their guardians.'),
+  "gradeHint": zod.string().nullable(),
+  "teamName": zod.string().nullable(),
+  "ageGroup": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "linkedPlayerId": zod.number().nullable(),
+  "linkedPlayerName": zod.string().nullable().describe('The linked club player\'s name (admin only); null when unlinked or the name can\'t be resolved.'),
+  "account": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian1": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian2": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "contactChangeFlag": zod.boolean().describe('A player or guardian changed a contact from their link; stays up until an admin clears it.'),
+  "updatedAt": zod.string()
+})
+export const ListSelectionRosterResponse = zod.array(ListSelectionRosterResponseItem)
+
+
+/**
+ * @summary Reactivate a previous squad member (admin or captain)
+ */
+export const ActivateSquadMemberParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ActivateSquadMemberResponse = zod.object({
+  "id": zod.number(),
+  "playhqProfileId": zod.string().nullable(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "preferredName": zod.string().nullable(),
+  "section": zod.enum(['senior', 'junior']),
+  "active": zod.boolean(),
+  "activeSetByAdmin": zod.boolean().describe('The admin set `active` by hand; imports never override it.'),
+  "under18": zod.boolean().nullable().describe('From date of birth (Perth today); null when unknown. Under-18s are contacted through their guardians.'),
+  "gradeHint": zod.string().nullable(),
+  "teamName": zod.string().nullable(),
+  "ageGroup": zod.string().nullable(),
+  "isPrivate": zod.boolean(),
+  "linkedPlayerId": zod.number().nullable(),
+  "linkedPlayerName": zod.string().nullable().describe('The linked club player\'s name (admin only); null when unlinked or the name can\'t be resolved.'),
+  "account": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian1": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "guardian2": zod.object({
+  "hasName": zod.boolean(),
+  "hasMobile": zod.boolean(),
+  "hasEmail": zod.boolean(),
+  "smsOptedOut": zod.boolean()
+}).describe('Which contact details a recipient slot has — never the values.'),
+  "contactChangeFlag": zod.boolean().describe('A player or guardian changed a contact from their link; stays up until an admin clears it.'),
+  "updatedAt": zod.string()
+})
+
+
+/**
  * Upserts the register from the PlayHQ participant CSV by (club, Profile
 ID). Only the identity, eligibility, grade and contact columns are read;
 every other column is discarded unread and never stored. Players with an
@@ -2926,6 +3061,7 @@ export const ImportSquadResponse = zod.object({
   "created": zod.number(),
   "updated": zod.number(),
   "deactivated": zod.number().describe('Existing members stood down because their registration is no longer active'),
+  "adopted": zod.number().describe('Members without a PlayHQ profile id (added from this season\'s games\nor by hand) that a row of the file turned out to be, and filled in\ninstead of added twice. Also counted in `updated`.\n'),
   "linked": zod.number().describe('Members newly linked to a club player record'),
   "contactsKept": zod.number().describe('Members whose contacts were kept because a player or guardian changed them from their link and an admin hasn\'t cleared the flag yet'),
   "skipped": zod.array(zod.object({
@@ -2937,6 +3073,23 @@ export const ImportSquadResponse = zod.object({
   "reason": zod.string(),
   "count": zod.number()
 }))
+})
+
+
+/**
+ * Adds everyone who has played for the club in the current cricket season
+(the club's central scorecards and rosters) and isn't in the register
+yet, exactly as provisioning seeds a new club: active, with their grade,
+linked to their club player when known, with no contact details and no
+PlayHQ profile id; a later participant import fills them in rather than
+adding them twice. Existing members are never changed, and running it
+again adds no one twice.
+
+ * @summary Add this season's players to the register (admin)
+ */
+export const SeedSquadFromSeasonResponse = zod.object({
+  "added": zod.number().describe('Members added'),
+  "skipped": zod.number().describe('This season\'s players already in the register')
 })
 
 
@@ -3353,6 +3506,7 @@ export const GetSelectionBoardResponse = zod.object({
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
+  "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
   "note": zod.string().nullable(),
@@ -3382,6 +3536,7 @@ export const GetSelectionBoardResponse = zod.object({
 })),
   "pool": zod.array(zod.object({
   "id": zod.number(),
+  "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
   "note": zod.string().nullable(),
@@ -3498,6 +3653,7 @@ export const SaveSelectionBoardResponse = zod.object({
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
+  "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
   "note": zod.string().nullable(),
@@ -3527,6 +3683,7 @@ export const SaveSelectionBoardResponse = zod.object({
 })),
   "pool": zod.array(zod.object({
   "id": zod.number(),
+  "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
   "note": zod.string().nullable(),
@@ -3600,6 +3757,7 @@ export const FinaliseSelectionResponse = zod.object({
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
+  "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
   "note": zod.string().nullable(),
@@ -3632,6 +3790,54 @@ export const FinaliseSelectionResponse = zod.object({
   "deselected": zod.number().describe('Members dropped since the last finalise who were told'),
   "failed": zod.number().describe('Members every delivery failed for; the next finalise tries them again')
 })
+})
+
+
+/**
+ * The side's grade, PlayHQ format and competition, the overs to offer
+(the grade's remembered value, else one read from a T20-style format),
+and — for a senior side — which competition rules set the Junior Aged
+Player bowling limits and how many listed players have no birth date.
+Refused until the side is finalised.
+
+ * @summary What the print dialog needs for a finalised side's team sheet (admin or captain)
+ */
+export const GetTeamSheetPreviewParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetTeamSheetPreviewResponse = zod.object({
+  "selectionId": zod.number(),
+  "section": zod.enum(['senior', 'junior']),
+  "grade": zod.string(),
+  "format": zod.string().nullable().describe('PlayHQ\'s match type (\"One Day\", \"T20\"); null for a manual fixture'),
+  "competition": zod.string().nullable().describe('PlayHQ\'s grade name (\"A Grade Wyllie Cup\")'),
+  "overs": zod.string().nullable(),
+  "bowlingRulesSource": zod.string().nullable().describe('Where the Junior Aged Player limits come from (\"PCA Bylaw 5.9\"); null when unknown or junior'),
+  "missingBirthDates": zod.number().describe('Listed players with no birth date (senior sheet only)')
+})
+
+
+/**
+ * Match details (both teams, grade or age group, round, date, start time,
+format, overs, venue, competition), the 12 in batting-list order with
+shirt numbers and (C)/(WK) tags, and on a senior sheet each Junior Aged
+Player's age group and bowling limits from their date of birth under the
+competition's rules. The overs sent are printed and remembered for the
+grade. Generated clients should treat the response as a `Blob`.
+
+ * @summary The finalised side's printable A4 team sheet as a PDF (admin or captain)
+ */
+export const PrintTeamSheetParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const printTeamSheetBodyOversMax = 20;
+
+
+
+export const PrintTeamSheetBody = zod.object({
+  "overs": zod.string().max(printTeamSheetBodyOversMax).nullish().describe('Overs per innings to print; remembered for the side\'s grade')
 })
 
 
@@ -3675,6 +3881,7 @@ export const ReopenSelectionResponse = zod.object({
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
+  "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
   "note": zod.string().nullable(),
@@ -4347,6 +4554,11 @@ export const FinaliseVotingConfigResponse = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -4461,6 +4673,11 @@ export const ListAdminAwardsResponseItem = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -4789,6 +5006,11 @@ export const FinalisePointsConfigResponse = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -4966,6 +5188,11 @@ export const ListAwardsResponseItem = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -5022,6 +5249,11 @@ export const UpdateAwardResponse = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -5044,9 +5276,15 @@ export const CreateAwardWinnerParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+export const createAwardWinnerBodyPlayerIdsMax = 100;
+
+
+
 export const CreateAwardWinnerBody = zod.object({
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number().min(1)).max(createAwardWinnerBodyPlayerIdsMax).optional().describe('Ordered links. Overrides playerId; an empty list means free text.'),
   "name": zod.string(),
   "displayOrder": zod.number().optional(),
   "published": zod.boolean().optional()
@@ -5060,9 +5298,15 @@ export const UpdateAwardWinnerParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+export const updateAwardWinnerBodyPlayerIdsMax = 100;
+
+
+
 export const UpdateAwardWinnerBody = zod.object({
   "season": zod.number().optional(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number().min(1)).max(updateAwardWinnerBodyPlayerIdsMax).optional().describe('Replaces all links in order; empty removes all. Omit to keep links unchanged.'),
   "name": zod.string().optional(),
   "displayOrder": zod.number().optional(),
   "published": zod.boolean().optional()
@@ -5073,6 +5317,11 @@ export const UpdateAwardWinnerResponse = zod.object({
   "awardId": zod.number(),
   "season": zod.number(),
   "playerId": zod.number().nullish(),
+  "playerIds": zod.array(zod.number()).optional().describe('Ordered linked players; playerId remains the first link for older clients.'),
+  "recipients": zod.array(zod.object({
+  "playerId": zod.number(),
+  "name": zod.string()
+})).optional(),
   "name": zod.string(),
   "displayOrder": zod.number(),
   "published": zod.boolean()
@@ -5617,7 +5866,7 @@ export const ListSponsorsResponseItem = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
@@ -5634,7 +5883,7 @@ export const CreateSponsorBody = zod.object({
   "link": zod.string().optional(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).optional(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).optional(),
   "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional()
@@ -5654,7 +5903,7 @@ export const UpdateSponsorBody = zod.object({
   "link": zod.string().optional(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).optional(),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).optional(),
   "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
   "displayOrder": zod.number().optional()
@@ -5667,7 +5916,7 @@ export const UpdateSponsorResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
@@ -6932,7 +7181,7 @@ export const GetSocialSettingsResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
@@ -7197,6 +7446,72 @@ export const CompleteMetaConnectResponse = zod.object({
 
 
 /**
+ * @summary Tenant-scoped weekend fixtures and eligible action photos for on-demand export
+ */
+export const getWeekendCarouselSourcesQuerySetTypeDefault = `matchDay`;
+export const getWeekendCarouselSourcesQueryFromRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getWeekendCarouselSourcesQueryToRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const GetWeekendCarouselSourcesQueryParams = zod.object({
+  "setType": zod.enum(['matchDay', 'teamList', 'results', 'matchSummary']).default(getWeekendCarouselSourcesQuerySetTypeDefault),
+  "from": zod.coerce.string().regex(getWeekendCarouselSourcesQueryFromRegExp),
+  "to": zod.coerce.string().regex(getWeekendCarouselSourcesQueryToRegExp)
+})
+
+export const GetWeekendCarouselSourcesResponse = zod.object({
+  "timeZone": zod.string(),
+  "content": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional().describe('Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.'),
+  "fixtures": zod.array(zod.object({
+  "id": zod.number(),
+  "grade": zod.string(),
+  "roundLabel": zod.string().nullish(),
+  "opponentName": zod.string(),
+  "opponentClubId": zod.number().nullish().describe('Optional link into the shared clubs register'),
+  "opponentLogoUrl": zod.string().nullish(),
+  "venue": zod.string().nullish(),
+  "startAt": zod.coerce.date(),
+  "isHome": zod.boolean(),
+  "notes": zod.string().nullish(),
+  "source": zod.enum(['manual', 'playhq', 'scorecard']).describe('manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).'),
+  "playhqMatchId": zod.string().nullish().describe('PlayHQ match GUID for playhq-sourced rows; null for manual rows'),
+  "createdAt": zod.coerce.date()
+})),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number()),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+})),
+  "coverPhotos": zod.array(zod.object({
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number()),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+})).describe('Current club\'s Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules.'),
+  "warnings": zod.array(zod.string())
+})
+
+
+/**
  * @summary List fixtures (ordered by start time ascending)
  */
 export const ListFixturesQueryParams = zod.object({
@@ -7215,7 +7530,7 @@ export const ListFixturesResponseItem = zod.object({
   "startAt": zod.coerce.date(),
   "isHome": zod.boolean(),
   "notes": zod.string().nullish(),
-  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)'),
+  "source": zod.enum(['manual', 'playhq', 'scorecard']).describe('manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).'),
   "playhqMatchId": zod.string().nullish().describe('PlayHQ match GUID for playhq-sourced rows; null for manual rows'),
   "createdAt": zod.coerce.date()
 })
@@ -7276,7 +7591,7 @@ export const UpdateFixtureResponse = zod.object({
   "startAt": zod.coerce.date(),
   "isHome": zod.boolean(),
   "notes": zod.string().nullish(),
-  "source": zod.enum(['manual', 'playhq']).describe('Where the row came from: \'manual\' (admin CRUD) or \'playhq\' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)'),
+  "source": zod.enum(['manual', 'playhq', 'scorecard']).describe('manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).'),
   "playhqMatchId": zod.string().nullish().describe('PlayHQ match GUID for playhq-sourced rows; null for manual rows'),
   "createdAt": zod.coerce.date()
 })
@@ -7881,7 +8196,7 @@ export const GetHonourDisplayResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
@@ -8152,7 +8467,7 @@ export const GetKioskDisplayResponse = zod.object({
   "link": zod.string(),
   "activeFrom": zod.string().nullish(),
   "activeTo": zod.string().nullish(),
-  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
+  "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
   "displayOrder": zod.number()
@@ -8588,6 +8903,17 @@ export const ListSocialDraftsResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -8612,7 +8938,12 @@ export const ListSocialDraftsResponse = zod.array(ListSocialDraftsResponseItem)
  * Creates a draft that is awaiting review with no import time, so it never auto-promotes. With templateId, the template's pack and adjustments are applied to the given card input.
  * @summary Start an ad-hoc card (made by hand, a blank canvas, or from a saved template)
  */
+export const createSocialDraftBodyCaptionMax = 5000;
+
+
+
 export const CreateSocialDraftBody = zod.object({
+  "caption": zod.string().max(createSocialDraftBodyCaptionMax).optional().describe('Optional caption supplied with a manually queued card or carousel.'),
   "cardInput": zod.record(zod.string(), zod.unknown()).describe('The card\'s ShareCardInput (validated by shape on the web).'),
   "packId": zod.string().nullish().describe('Design pack; \'blank\' for a blank canvas.'),
   "adjustments": zod.union([zod.object({
@@ -8661,6 +8992,144 @@ export const ListEditorTemplatesResponse = zod.array(ListEditorTemplatesResponse
  */
 export const DeleteEditorTemplateParams = zod.object({
   "id": zod.coerce.number()
+})
+
+
+/**
+ * Card kind templates (plan 2026-10-07-002). `enabled` is false until the KIND_TEMPLATES release switch includes this club; the list is then empty.
+ * @summary The club's card kind templates and whether the feature is on
+ */
+export const ListKindTemplatesResponse = zod.object({
+  "enabled": zod.boolean().describe('Whether card kind templates are switched on for this club.'),
+  "templates": zod.array(zod.object({
+  "kind": zod.string(),
+  "version": zod.number(),
+  "updatedAt": zod.coerce.date().nullable(),
+  "replacedPackId": zod.string().nullable().describe('The retired design pack this template replaced, if any (R19).'),
+  "noticeDismissed": zod.boolean(),
+  "waitingDrafts": zod.number().describe('Unposted drafts of this kind an apply would change.')
+}))
+})
+
+
+/**
+ * @summary One card kind's template
+ */
+export const GetKindTemplateParams = zod.object({
+  "kind": zod.coerce.string()
+})
+
+export const GetKindTemplateResponse = zod.object({
+  "kind": zod.string(),
+  "version": zod.number(),
+  "updatedAt": zod.coerce.date().nullable(),
+  "replacedPackId": zod.string().nullable().describe('The retired design pack this template replaced, if any (R19).'),
+  "noticeDismissed": zod.boolean(),
+  "waitingDrafts": zod.number().describe('Unposted drafts of this kind an apply would change.')
+}).and(zod.object({
+  "document": zod.object({
+  "fields": zod.record(zod.string(), zod.string()).optional(),
+  "hidden": zod.array(zod.string()).optional(),
+  "photo": zod.record(zod.string(), zod.unknown()).optional(),
+  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
+  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),
+  "updatedByName": zod.string().nullish().describe('Who saved the current version.')
+}))
+
+
+/**
+ * @summary Save a card kind's template (rejected when another admin saved first)
+ */
+export const SaveKindTemplateParams = zod.object({
+  "kind": zod.coerce.string()
+})
+
+export const SaveKindTemplateBody = zod.object({
+  "baseVersion": zod.number().describe('The version this edit started from.'),
+  "document": zod.object({
+  "fields": zod.record(zod.string(), zod.string()).optional(),
+  "hidden": zod.array(zod.string()).optional(),
+  "photo": zod.record(zod.string(), zod.unknown()).optional(),
+  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
+  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.')
+})
+
+export const SaveKindTemplateResponse = zod.object({
+  "kind": zod.string(),
+  "version": zod.number(),
+  "updatedAt": zod.coerce.date().nullable(),
+  "replacedPackId": zod.string().nullable().describe('The retired design pack this template replaced, if any (R19).'),
+  "noticeDismissed": zod.boolean(),
+  "waitingDrafts": zod.number().describe('Unposted drafts of this kind an apply would change.')
+}).and(zod.object({
+  "document": zod.object({
+  "fields": zod.record(zod.string(), zod.string()).optional(),
+  "hidden": zod.array(zod.string()).optional(),
+  "photo": zod.record(zod.string(), zod.unknown()).optional(),
+  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
+  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),
+  "updatedByName": zod.string().nullish().describe('Who saved the current version.')
+}))
+
+
+/**
+ * @summary Start (or restart) a card kind's template from a starter design
+ */
+export const StartKindTemplateParams = zod.object({
+  "kind": zod.coerce.string()
+})
+
+export const StartKindTemplateBody = zod.object({
+  "starter": zod.enum(['club-kit', 'broadcast', 'clubhouse']),
+  "baseVersion": zod.number().optional().describe('Required when the kind already has a template.')
+})
+
+export const StartKindTemplateResponse = zod.object({
+  "kind": zod.string(),
+  "version": zod.number(),
+  "updatedAt": zod.coerce.date().nullable(),
+  "replacedPackId": zod.string().nullable().describe('The retired design pack this template replaced, if any (R19).'),
+  "noticeDismissed": zod.boolean(),
+  "waitingDrafts": zod.number().describe('Unposted drafts of this kind an apply would change.')
+}).and(zod.object({
+  "document": zod.object({
+  "fields": zod.record(zod.string(), zod.string()).optional(),
+  "hidden": zod.array(zod.string()).optional(),
+  "photo": zod.record(zod.string(), zod.unknown()).optional(),
+  "photoEditedAt": zod.record(zod.string(), zod.number()).optional(),
+  "layers": zod.array(zod.record(zod.string(), zod.unknown())).optional()
+}).describe('Editor overlay applied over a pack template (KTD12). Content (field overrides, hidden elements, free-layer content) is shared across formats; geometry (photo transform, layer boxes) is keyed by format. The web renderer owns the detailed shape; the server stores it as-is.'),
+  "updatedByName": zod.string().nullish().describe('Who saved the current version.')
+}))
+
+
+/**
+ * @summary Dismiss the "your retired design pack was replaced" notice for a kind
+ */
+export const DismissKindTemplateNoticeParams = zod.object({
+  "kind": zod.coerce.string()
+})
+
+
+/**
+ * Replaces the design of every unposted draft of the kind, one-off design tweaks included; captions are kept. Each draft's previous design is saved as a revision first. Drafts posted meanwhile are skipped.
+ * @summary Apply a saved template version to this kind's unposted drafts
+ */
+export const ApplyKindTemplateParams = zod.object({
+  "kind": zod.coerce.string()
+})
+
+export const ApplyKindTemplateBody = zod.object({
+  "version": zod.number().describe('The saved template version to apply.'),
+  "expectedDrafts": zod.number().optional().describe('How many waiting drafts the admin was shown; any shortfall is reported as skipped.')
+})
+
+export const ApplyKindTemplateResponse = zod.object({
+  "changed": zod.number(),
+  "skipped": zod.number()
 })
 
 
@@ -8754,6 +9223,15 @@ export const IngestPlayhqDumpResponse = zod.object({
   "updated": zod.number(),
   "swept": zod.boolean()
 })),
+  "teamLists": zod.array(zod.object({
+  "tenantId": zod.number(),
+  "club": zod.string(),
+  "grade": zod.string(),
+  "opponent": zod.string(),
+  "startAt": zod.coerce.date(),
+  "players": zod.number(),
+  "change": zod.enum(['new', 'changed', 'afterMatch'])
+})).optional().describe('The team lists this ingest wrote from the sides clubs named in PlayHQ (for the sync\'s run log): a new or changed selection ahead of a match, or the played side replacing a Selection Hub list after it.'),
   "warnings": zod.array(zod.string()),
   "centralProjection": zod.object({
   "mode": zod.enum(['dry', 'on']),
@@ -8762,7 +9240,8 @@ export const IngestPlayhqDumpResponse = zod.object({
   "updated": zod.number(),
   "skipped": zod.number(),
   "skipReasons": zod.record(zod.string(), zod.number()).optional().describe('Skipped matches counted by reason, with match and organisation ids blanked out so like reasons group together.'),
-  "playersInserted": zod.number()
+  "playersInserted": zod.number(),
+  "namesUpgraded": zod.number().optional().describe('Initials-only player names (\"C Phelps\") replaced by a matching full name, from scorecard team sheets and PlayHQ\'s grade stats reports.')
 }).optional().describe('The PlayHQ → central stats projection run after the load (CENTRAL_PROJECTION=dry|on). Absent when projection is off.')
 })
 
@@ -8860,7 +9339,13 @@ export const GetTenantPlayhqSyncStatusResponse = zod.object({
   "syncEnabled": zod.boolean(),
   "lastRefreshedAt": zod.string().nullish().describe('When fixtures\/results last loaded from PlayHQ (ISO), or null.'),
   "stale": zod.boolean().describe('An incident is open for this club\'s organisation.'),
-  "staleSince": zod.string().nullish()
+  "staleSince": zod.string().nullish(),
+  "unclassifiedGrades": zod.array(zod.object({
+  "gradeName": zod.string().describe('The competition name as PlayHQ spells it.'),
+  "seasonName": zod.string().nullable(),
+  "matches": zod.number().describe('PlayHQ matches the club has in this competition.'),
+  "reason": zod.string()
+})).optional().describe('Competitions this club\'s PlayHQ organisation plays in that Ovation can\'t place in a grade, so their matches are not shown. Empty when everything is recognised.')
 })
 
 
@@ -9236,6 +9721,17 @@ export const ApproveSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -9299,6 +9795,17 @@ export const UpdateSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -9463,6 +9970,17 @@ export const SendBackSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -9513,6 +10031,17 @@ export const ReopenSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -9547,7 +10076,7 @@ export const ListSocialDraftRevisionsResponseItem = zod.object({
   "photoUrl": zod.string().nullish(),
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
-  "reason": zod.enum(['refresh', 'edit', 'revert']),
+  "reason": zod.enum(['refresh', 'edit', 'revert', 'template']),
   "createdAt": zod.coerce.date()
 })
 export const ListSocialDraftRevisionsResponse = zod.array(ListSocialDraftRevisionsResponseItem)
@@ -9585,6 +10114,17 @@ export const RevertSocialDraftResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -9635,6 +10175,17 @@ export const MarkSocialDraftPostedResponse = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -9691,6 +10242,17 @@ export const GenerateRoundUpResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -9746,6 +10308,17 @@ export const GenerateRecapsResponseItem = zod.object({
   "photoSource": zod.string().nullish(),
   "adjustments": zod.unknown().optional(),
   "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
@@ -11425,6 +11998,8 @@ export const getTenantBrandResponseOneHeroImagesOneJuniorsMax = 2048;
 
 export const getTenantBrandResponseOneHeroImagesOneHonoursMax = 2048;
 
+export const getTenantBrandResponseOneHeroImagesOneCardsMax = 2048;
+
 export const getTenantBrandResponseOneHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const getTenantBrandResponseOneHeroImagesOneExploreOnePlayersMax = 2048;
@@ -11451,6 +12026,7 @@ export const GetTenantBrandResponse = zod.union([zod.object({
   "home": zod.string().max(getTenantBrandResponseOneHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(getTenantBrandResponseOneHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(getTenantBrandResponseOneHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(getTenantBrandResponseOneHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(getTenantBrandResponseOneHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(getTenantBrandResponseOneHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -11474,6 +12050,8 @@ export const updateTenantBrandBodyHeroImagesOneHomeMax = 2048;
 export const updateTenantBrandBodyHeroImagesOneJuniorsMax = 2048;
 
 export const updateTenantBrandBodyHeroImagesOneHonoursMax = 2048;
+
+export const updateTenantBrandBodyHeroImagesOneCardsMax = 2048;
 
 export const updateTenantBrandBodyHeroImagesOneExploreOneHonoursMax = 2048;
 
@@ -11500,6 +12078,7 @@ export const UpdateTenantBrandBody = zod.object({
   "home": zod.string().max(updateTenantBrandBodyHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateTenantBrandBodyHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateTenantBrandBodyHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateTenantBrandBodyHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateTenantBrandBodyHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateTenantBrandBodyHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -11513,6 +12092,8 @@ export const updateTenantBrandResponseHeroImagesOneHomeMax = 2048;
 export const updateTenantBrandResponseHeroImagesOneJuniorsMax = 2048;
 
 export const updateTenantBrandResponseHeroImagesOneHonoursMax = 2048;
+
+export const updateTenantBrandResponseHeroImagesOneCardsMax = 2048;
 
 export const updateTenantBrandResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
@@ -11540,6 +12121,7 @@ export const UpdateTenantBrandResponse = zod.object({
   "home": zod.string().max(updateTenantBrandResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateTenantBrandResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateTenantBrandResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateTenantBrandResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateTenantBrandResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateTenantBrandResponseHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -11656,6 +12238,8 @@ export const listAllTenantsResponseHeroImagesOneJuniorsMax = 2048;
 
 export const listAllTenantsResponseHeroImagesOneHonoursMax = 2048;
 
+export const listAllTenantsResponseHeroImagesOneCardsMax = 2048;
+
 export const listAllTenantsResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const listAllTenantsResponseHeroImagesOneExploreOnePlayersMax = 2048;
@@ -11688,6 +12272,7 @@ export const ListAllTenantsResponseItem = zod.object({
   "home": zod.string().max(listAllTenantsResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(listAllTenantsResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(listAllTenantsResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(listAllTenantsResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(listAllTenantsResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(listAllTenantsResponseHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -11733,6 +12318,8 @@ export const getAdminTenantResponseTenantHeroImagesOneJuniorsMax = 2048;
 
 export const getAdminTenantResponseTenantHeroImagesOneHonoursMax = 2048;
 
+export const getAdminTenantResponseTenantHeroImagesOneCardsMax = 2048;
+
 export const getAdminTenantResponseTenantHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const getAdminTenantResponseTenantHeroImagesOneExploreOnePlayersMax = 2048;
@@ -11766,6 +12353,7 @@ export const GetAdminTenantResponse = zod.object({
   "home": zod.string().max(getAdminTenantResponseTenantHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(getAdminTenantResponseTenantHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(getAdminTenantResponseTenantHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(getAdminTenantResponseTenantHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(getAdminTenantResponseTenantHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(getAdminTenantResponseTenantHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -11805,6 +12393,8 @@ export const updateAdminTenantResponseHeroImagesOneJuniorsMax = 2048;
 
 export const updateAdminTenantResponseHeroImagesOneHonoursMax = 2048;
 
+export const updateAdminTenantResponseHeroImagesOneCardsMax = 2048;
+
 export const updateAdminTenantResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const updateAdminTenantResponseHeroImagesOneExploreOnePlayersMax = 2048;
@@ -11837,6 +12427,7 @@ export const UpdateAdminTenantResponse = zod.object({
   "home": zod.string().max(updateAdminTenantResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateAdminTenantResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateAdminTenantResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateAdminTenantResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateAdminTenantResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateAdminTenantResponseHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -11868,6 +12459,8 @@ export const updateAdminTenantBrandBodyHeroImagesOneJuniorsMax = 2048;
 
 export const updateAdminTenantBrandBodyHeroImagesOneHonoursMax = 2048;
 
+export const updateAdminTenantBrandBodyHeroImagesOneCardsMax = 2048;
+
 export const updateAdminTenantBrandBodyHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const updateAdminTenantBrandBodyHeroImagesOneExploreOnePlayersMax = 2048;
@@ -11892,6 +12485,7 @@ export const UpdateAdminTenantBrandBody = zod.object({
   "home": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateAdminTenantBrandBodyHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -11905,6 +12499,8 @@ export const updateAdminTenantBrandResponseTenantHeroImagesOneHomeMax = 2048;
 export const updateAdminTenantBrandResponseTenantHeroImagesOneJuniorsMax = 2048;
 
 export const updateAdminTenantBrandResponseTenantHeroImagesOneHonoursMax = 2048;
+
+export const updateAdminTenantBrandResponseTenantHeroImagesOneCardsMax = 2048;
 
 export const updateAdminTenantBrandResponseTenantHeroImagesOneExploreOneHonoursMax = 2048;
 
@@ -11939,6 +12535,7 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "home": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(updateAdminTenantBrandResponseTenantHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -11972,6 +12569,8 @@ export const archiveAdminTenantResponseHeroImagesOneJuniorsMax = 2048;
 
 export const archiveAdminTenantResponseHeroImagesOneHonoursMax = 2048;
 
+export const archiveAdminTenantResponseHeroImagesOneCardsMax = 2048;
+
 export const archiveAdminTenantResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
 export const archiveAdminTenantResponseHeroImagesOneExploreOnePlayersMax = 2048;
@@ -12004,6 +12603,7 @@ export const ArchiveAdminTenantResponse = zod.object({
   "home": zod.string().max(archiveAdminTenantResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(archiveAdminTenantResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(archiveAdminTenantResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(archiveAdminTenantResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(archiveAdminTenantResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(archiveAdminTenantResponseHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12030,6 +12630,8 @@ export const restoreAdminTenantResponseHeroImagesOneHomeMax = 2048;
 export const restoreAdminTenantResponseHeroImagesOneJuniorsMax = 2048;
 
 export const restoreAdminTenantResponseHeroImagesOneHonoursMax = 2048;
+
+export const restoreAdminTenantResponseHeroImagesOneCardsMax = 2048;
 
 export const restoreAdminTenantResponseHeroImagesOneExploreOneHonoursMax = 2048;
 
@@ -12063,6 +12665,7 @@ export const RestoreAdminTenantResponse = zod.object({
   "home": zod.string().max(restoreAdminTenantResponseHeroImagesOneHomeMax).nullish(),
   "juniors": zod.string().max(restoreAdminTenantResponseHeroImagesOneJuniorsMax).nullish(),
   "honours": zod.string().max(restoreAdminTenantResponseHeroImagesOneHonoursMax).nullish(),
+  "cards": zod.string().max(restoreAdminTenantResponseHeroImagesOneCardsMax).nullish().describe('The club\'s ground or clubrooms, behind card designs (tinted to the club\'s colours).'),
   "explore": zod.union([zod.object({
   "honours": zod.string().max(restoreAdminTenantResponseHeroImagesOneExploreOneHonoursMax).nullish(),
   "players": zod.string().max(restoreAdminTenantResponseHeroImagesOneExploreOnePlayersMax).nullish(),
@@ -12119,6 +12722,73 @@ export const CreateProvisioningExclusionBody = zod.object({
  */
 export const DeleteProvisioningExclusionParams = zod.object({
   "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary PlayHQ competitions no club's sync can place in a grade (their matches are skipped until someone decides), and the decisions made so far.
+ */
+export const GetPlatformGradeDecisionsResponse = zod.object({
+  "projectorConfigured": zod.boolean().describe('A saved mapping is projected immediately only when this is true.'),
+  "mappableGrades": zod.array(zod.string()),
+  "pending": zod.array(zod.object({
+  "gradeKey": zod.string().describe('The normalised competition name decisions are keyed by (seasons removed).'),
+  "gradeName": zod.string(),
+  "matches": zod.number().describe('PlayHQ matches across every club playing in it.'),
+  "seasons": zod.array(zod.string()),
+  "tenants": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})),
+  "reason": zod.string()
+})),
+  "decisions": zod.array(zod.object({
+  "gradeKey": zod.string(),
+  "gradeName": zod.string(),
+  "action": zod.enum(['map', 'ignore']),
+  "centralGrade": zod.string().nullable().describe('The app grade a mapped competition is projected under; null when ignored.'),
+  "reason": zod.string().nullable(),
+  "setAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Map a PlayHQ competition to an app grade, or mark it as not tracked. A mapping is projected straight away when the central projector is configured, otherwise on the next sync that touches the competition.
+ */
+export const setPlatformGradeDecisionBodyGradeNameMax = 300;
+
+export const setPlatformGradeDecisionBodyReasonMax = 500;
+
+
+
+export const SetPlatformGradeDecisionBody = zod.object({
+  "gradeName": zod.string().min(1).max(setPlatformGradeDecisionBodyGradeNameMax),
+  "action": zod.enum(['map', 'ignore']),
+  "centralGrade": zod.string().nullish().describe('Required for map (one of mappableGrades); must be absent for ignore.'),
+  "reason": zod.string().max(setPlatformGradeDecisionBodyReasonMax).nullish()
+})
+
+export const SetPlatformGradeDecisionResponse = zod.object({
+  "gradeKey": zod.string(),
+  "gradeName": zod.string(),
+  "action": zod.enum(['map', 'ignore']),
+  "centralGrade": zod.string().nullable().describe('The app grade a mapped competition is projected under; null when ignored.'),
+  "reason": zod.string().nullable(),
+  "setAt": zod.string()
+}).and(zod.object({
+  "applied": zod.boolean().describe('The competition\'s matches were projected now.'),
+  "created": zod.number(),
+  "updated": zod.number(),
+  "skipped": zod.number()
+}))
+
+
+/**
+ * @summary Remove a decision. Matches already projected stay as they are; the competition goes back to being unrecognised for future syncs.
+ */
+export const DeletePlatformGradeDecisionParams = zod.object({
+  "gradeKey": zod.coerce.string()
 })
 
 
@@ -12408,6 +13078,87 @@ export const ReplaceTenantHistoryBoundariesResponse = zod.array(ReplaceTenantHis
 
 
 /**
+ * @summary Validate a cap register CSV and preview it. Writes nothing. Reports every problem with its spreadsheet row, and how each cap would link to a player of the club (exact name match only; unmatched caps are still written, unlinked). A category that already has caps is refused.
+ */
+export const PreviewTenantCapImportParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const PreviewTenantCapImportBody = zod.object({
+  "file": zod.instanceof(File).describe('The CSV file: category,cap_number,name,games_a_grade')
+})
+
+export const PreviewTenantCapImportResponse = zod.object({
+  "rowCount": zod.number().describe('Caps the commit would write.'),
+  "errors": zod.array(zod.string()).describe('Problems, each naming its row. Nothing can be committed while any remain.'),
+  "refusedCategories": zod.array(zod.object({
+  "category": zod.enum(['male', 'female']).describe('male = A Grade; female = Female A Grade.'),
+  "existing": zod.number().describe('Caps the club\'s register already holds in this category.')
+})),
+  "caps": zod.array(zod.object({
+  "row": zod.number().describe('Spreadsheet row (the header is row 1).'),
+  "category": zod.enum(['male', 'female']).describe('male = A Grade; female = Female A Grade.'),
+  "capNumber": zod.number(),
+  "name": zod.string(),
+  "games": zod.number(),
+  "playerId": zod.number().nullable().describe('The club player the cap would link to; null = written unlinked.'),
+  "status": zod.enum(['linked', 'ambiguous', 'private', 'unmatched']),
+  "note": zod.string().describe('Why a cap is not linked (candidate ids, a close name hint).')
+})),
+  "centralUnavailable": zod.string().nullable().describe('Set when central couldn\'t be read, so only pre-digital players could be linked.')
+})
+
+
+/**
+ * @summary Write a cap register CSV as one labelled batch. The file is validated again. Caps are written confirmed, linked where the name matched exactly, and marked with the batch in their note so the batch can be undone. Never drafts social cards.
+ */
+export const CommitTenantCapImportParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CommitTenantCapImportBody = zod.object({
+  "file": zod.instanceof(File).describe('The same CSV file that was previewed'),
+  "label": zod.string().describe('Admin-facing name for the batch, e.g. \"WKBCC A Grade caps (club list)\".')
+})
+
+
+/**
+ * @summary The club's cap import batches, newest first.
+ */
+export const ListTenantCapImportBatchesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListTenantCapImportBatchesResponseItem = zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "createdAt": zod.string(),
+  "male": zod.number().describe('Caps remaining in the A Grade list.'),
+  "female": zod.number().describe('Caps remaining in the Female A Grade list.'),
+  "linked": zod.number(),
+  "unlinked": zod.number()
+})
+export const ListTenantCapImportBatchesResponse = zod.array(ListTenantCapImportBatchesResponseItem)
+
+
+/**
+ * @summary Undo a cap import batch: delete the caps it wrote. Refused when a later cap was issued after them in the same list (the sequence would break). A cap an admin edited out of the batch note is left alone.
+ */
+export const undoTenantCapImportBatchPathBatchIdRegExp = new RegExp('^[0-9]{8}T[0-9]{6}Z$');
+
+
+export const UndoTenantCapImportBatchParams = zod.object({
+  "id": zod.coerce.number(),
+  "batchId": zod.coerce.string().regex(undoTenantCapImportBatchPathBatchIdRegExp)
+})
+
+export const UndoTenantCapImportBatchResponse = zod.object({
+  "batchId": zod.string(),
+  "capsRemoved": zod.number()
+})
+
+
+/**
  * Reads the central `ladder` table (all-time cumulative per grade; it has no season/points/position columns, so `points` and `pos` are derived and `season` does not currently filter). One row per club (folded grade labels deduped). Empty grade returns [].
  * @summary Ladder card (A7) prefill — grade standings from the central PCA ladder, with the tenant's own club row flagged. Admin + socialStudio entitlement.
  */
@@ -12477,5 +13228,43 @@ export const GetSocialWeekendWrapPrefillResponse = zod.object({
   "outcome": zod.enum(['WON', 'LOST', ''])
 }).describe('One grade\'s line in the Weekend Wrap card (A6).'))
 }).describe('Weekend Wrap card (A6) prefill — a round\'s senior results, one per grade.')
+
+
+/**
+ * Seniors only (central data). Private players are never named. Every field is editable in the builder.
+ * @summary Results summary and team of the week prefill — a round's results per grade with the best batters and bowlers, and its standout performers. Admin + socialStudio entitlement.
+ */
+export const GetSocialRoundResultsPrefillQueryParams = zod.object({
+  "season": zod.coerce.number().describe('Season start year (e.g. 2026 for \"2026\/27\").'),
+  "round": zod.coerce.number()
+})
+
+export const GetSocialRoundResultsPrefillResponse = zod.object({
+  "roundLabel": zod.string(),
+  "dateLabel": zod.string().describe('\"SATURDAY 10TH OCTOBER 2026\" — the round\'s first match date.'),
+  "results": zod.array(zod.object({
+  "matchId": zod.number(),
+  "grade": zod.string(),
+  "clubScore": zod.string(),
+  "oppName": zod.string(),
+  "oppScore": zod.string(),
+  "outcome": zod.enum(['WON', 'LOST', '']),
+  "note": zod.string().describe('Set when the match had no result (e.g. \"WASHED OUT\"); scores are empty then.'),
+  "batters": zod.array(zod.object({
+  "name": zod.string(),
+  "figure": zod.string().describe('\"32\* (34)\" for a batter, \"3\/28 (10)\" for a bowler.')
+})).describe('The club\'s best two batters.'),
+  "bowlers": zod.array(zod.object({
+  "name": zod.string(),
+  "figure": zod.string().describe('\"32\* (34)\" for a batter, \"3\/28 (10)\" for a bowler.')
+})).describe('The club\'s best two bowlers.')
+}).describe('One grade\'s result in a round, from the club\'s side.')),
+  "teamOfWeek": zod.array(zod.object({
+  "name": zod.string(),
+  "grade": zod.string(),
+  "figure": zod.string().describe('\"110\*\", \"5\/28\", \"4\/21 & 16\".'),
+  "photoUrl": zod.string().nullable().describe('The player\'s library photo, else headshot; null when the club has neither.')
+}))
+}).describe('Results summary and team of the week prefill: a round\'s senior results per grade with the best players, and its standout performers.')
 
 

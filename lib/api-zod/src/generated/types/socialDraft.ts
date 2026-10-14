@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { SocialDraftLayoutWarnings } from './socialDraftLayoutWarnings';
 import type { SocialDraftStatus } from './socialDraftStatus';
 import type { SocialPublication } from './socialPublication';
 
@@ -48,6 +49,23 @@ export interface SocialDraft {
   adjustments?: unknown;
   /** @nullable */
   editedAt?: Date | null;
+  /**
+     * The card kind template version this draft copied; null for a draft that uses a pack.
+     * @nullable
+     */
+  templateVersion?: number | null;
+  /**
+     * When an admin last edited this templated draft's design by hand.
+     * @nullable
+     */
+  designEditedAt?: Date | null;
+  /**
+     * Layout warnings from the last render, per card size ("needs a look"). A size with an empty list rendered cleanly; a missing size hasn't been rendered.
+     * @nullable
+     */
+  layoutWarnings?: SocialDraftLayoutWarnings;
+  /** True while a templated draft owes a layout check; automation leaves it alone until then. */
+  layoutCheckPending?: boolean;
   /**
      * The admin who made the draft by hand; null for drafts the sweep made.
      * @nullable

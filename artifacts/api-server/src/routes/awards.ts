@@ -15,26 +15,30 @@ import {
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { getTenantId } from "../middlewares/tenant-context";
-import { assertPlayerInTenantSpace } from "../lib/curated-player-space";
+import {
+  patchWinnerLinks,
+  validateWinnerLinks,
+  withAwardRecipients,
+} from "../lib/award-recipients";
 
 const router: IRouter = Router();
 
-async function loadWinners(awardIds: number[], publishedOnly: boolean) {
-  if (awardIds.length === 0) return new Map<number, (typeof awardWinnersTable.$inferSelect)[]>();
+async function loadWinners(tenantId: number, awardIds: number[], publishedOnly: boolean) {
   const where = publishedOnly
     ? and(inArray(awardWinnersTable.awardId, awardIds), eq(awardWinnersTable.published, true))
     : inArray(awardWinnersTable.awardId, awardIds);
   const rows = await db
     .select()
     .from(awardWinnersTable)
-    .where(where)
+    .where(and(eq(awardWinnersTable.tenantId, tenantId), where))
     .orderBy(
       desc(awardWinnersTable.season),
       asc(awardWinnersTable.displayOrder),
       asc(awardWinnersTable.id),
     );
-  const byAward = new Map<number, typeof rows>();
-  for (const r of rows) {
+  const enriched = await withAwardRecipients(tenantId, rows, publishedOnly);
+  const byAward = new Map<number, typeof enriched>();
+  for (const r of enriched) {
     if (!byAward.has(r.awardId)) byAward.set(r.awardId, []);
     byAward.get(r.awardId)!.push(r);
   }
@@ -50,6 +54,7 @@ router.get("/awards", async (req, res): Promise<void> => {
     .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
 
   const byAward = await loadWinners(
+    getTenantId(req),
     awards.map((a) => a.id),
     true,
   );
@@ -66,6 +71,7 @@ router.get("/admin/awards", requireAdmin, async (req, res): Promise<void> => {
     .orderBy(asc(awardsTable.displayOrder), asc(awardsTable.id));
 
   const byAward = await loadWinners(
+    getTenantId(req),
     awards.map((a) => a.id),
     false,
   );
@@ -124,7 +130,7 @@ router.patch(
       res.status(404).json({ error: "Award not found" });
       return;
     }
-    const byAward = await loadWinners([row.id], false);
+    const byAward = await loadWinners(getTenantId(req), [row.id], false);
     res.json({ ...row, winners: byAward.get(row.id) ?? [] });
   },
 );
@@ -175,20 +181,22 @@ router.post(
       res.status(404).json({ error: "Award not found" });
       return;
     }
-    await assertPlayerInTenantSpace(tenantId, body.data.playerId);
+    const ids = patchWinnerLinks(body.data) ?? [];
+    await validateWinnerLinks(tenantId, ids);
     const [row] = await db
       .insert(awardWinnersTable)
       .values({
         tenantId,
         awardId: params.data.id,
         season: body.data.season,
-        playerId: body.data.playerId ?? null,
+        playerId: ids[0] ?? null,
+        playerIds: ids,
         name: body.data.name,
         displayOrder: body.data.displayOrder ?? 0,
         published: body.data.published ?? true,
       })
       .returning();
-    res.status(201).json(row);
+    res.status(201).json((await withAwardRecipients(tenantId, [row]))[0]);
   },
 );
 
@@ -207,22 +215,32 @@ router.patch(
       res.status(400).json({ error: body.error.message });
       return;
     }
-    await assertPlayerInTenantSpace(getTenantId(req), body.data.playerId);
-    const [row] = await db
-      .update(awardWinnersTable)
-      .set(body.data)
-      .where(
-        and(
-          eq(awardWinnersTable.tenantId, getTenantId(req)),
-          eq(awardWinnersTable.id, params.data.id),
-        ),
-      )
-      .returning();
+    const tenantId = getTenantId(req);
+    const where = and(
+      eq(awardWinnersTable.tenantId, tenantId),
+      eq(awardWinnersTable.id, params.data.id),
+    );
+    const row = await db.transaction(async (tx) => {
+      const [current] = await tx.select().from(awardWinnersTable).where(where).for("update");
+      if (!current) return undefined;
+      const ids = patchWinnerLinks(body.data, current);
+      if (ids !== undefined) await validateWinnerLinks(tenantId, ids);
+      const { playerId: _legacy, playerIds: _links, ...fields } = body.data;
+      const [updated] = await tx
+        .update(awardWinnersTable)
+        .set({
+          ...fields,
+          ...(ids === undefined ? {} : { playerIds: ids, playerId: ids[0] ?? null }),
+        })
+        .where(where)
+        .returning();
+      return updated;
+    });
     if (!row) {
       res.status(404).json({ error: "Winner not found" });
       return;
     }
-    res.json(row);
+    res.json((await withAwardRecipients(tenantId, [row]))[0]);
   },
 );
 

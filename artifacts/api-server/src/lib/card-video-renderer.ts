@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import puppeteer, { type Browser, type Page } from "puppeteer-core";
+import type { LayoutWarning } from "@workspace/scorecard/kind-templates";
 import { logger } from "./logger";
 import { env } from "../config";
 
@@ -174,6 +175,8 @@ type StillMeta = {
   width: number;
   height: number;
   selector: string;
+  /** Layout warnings from the harness fit step (card kind templates); absent on older harnesses. */
+  warnings?: LayoutWarning[];
 };
 type HarnessApi = {
   ready: boolean;
@@ -308,6 +311,8 @@ export type StillRenderResult = {
   ext: StillFormat;
   width: number;
   height: number;
+  /** Layout warnings for this size (KTD9); empty when everything fits. */
+  warnings: LayoutWarning[];
 };
 
 const STILL_TYPES = {
@@ -380,6 +385,7 @@ export async function renderCardStill(
       ext: format,
       width: meta.width,
       height: meta.height,
+      warnings: meta.warnings ?? [],
     };
   } finally {
     try {
@@ -387,6 +393,25 @@ export async function renderCardStill(
     } catch {
       // page may already be gone
     }
+    await page?.close().catch(() => {});
+  }
+}
+
+// Print a self-contained HTML page (the team sheet) to an A4 PDF on the shared
+// browser. Images are allowed a few seconds to load; a slow or missing one
+// prints as empty rather than failing the sheet.
+export async function renderHtmlToPdf(html: string): Promise<Buffer> {
+  const browser = await getBrowser();
+  let page: Page | null = null;
+  try {
+    page = await browser.newPage();
+    await page.setJavaScriptEnabled(false);
+    await page
+      .setContent(html, { waitUntil: "load", timeout: 8_000 })
+      .catch((err: unknown) => logger.warn({ err: String(err) }, "html-to-pdf content load"));
+    const pdf = await page.pdf({ format: "A4", printBackground: true, preferCSSPageSize: true });
+    return Buffer.isBuffer(pdf) ? pdf : Buffer.from(pdf);
+  } finally {
     await page?.close().catch(() => {});
   }
 }

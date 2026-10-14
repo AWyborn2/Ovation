@@ -7,6 +7,7 @@ import {
 } from "@workspace/api-client-react";
 import type { ShirtNumberSettingsUpdate } from "@workspace/api-client-react";
 import { LoadingState, QueryError } from "@/components/data-states";
+import { invalidateTeamListCarouselSources } from "@/lib/team-list-carousel-cache";
 import {
   ShirtNumberRegister,
   ShirtNumberSettingsPanel,
@@ -32,6 +33,7 @@ export default function AdminShirtNumbers() {
       {
         onSuccess: (next) => {
           queryClient.setQueryData(getGetShirtNumberSettingsQueryKey(), next);
+          void invalidateTeamListCarouselSources(queryClient);
         },
         onError: (e) => setError(errorMessage(e)),
       },

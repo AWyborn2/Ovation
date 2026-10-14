@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120">
+  <rect width="320" height="120" rx="12" fill="#f5f1e7"/>
+  <path d="M32 80 54 34l22 46M42 60h24" fill="none" stroke="#a66e19" stroke-width="6"/>
+  <text x="96" y="56" fill="#20252a" font-family="Arial,sans-serif" font-size="24" font-weight="700">NORTHLINE</text>
+  <text x="96" y="84" fill="#7d7467" font-family="Arial,sans-serif" font-size="15" letter-spacing="3">SUPPLY CO.</text>
+</svg>

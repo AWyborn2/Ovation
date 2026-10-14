@@ -12,7 +12,9 @@ export default defineConfig({
       "@": path.resolve(import.meta.dirname, "src"),
       "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
     },
-    dedupe: ["react", "react-dom"],
+    // Same as vite.config.ts: web and Expo use different React peer contexts, so the
+    // shared API hooks must resolve this app's React Query (and React) instance.
+    dedupe: ["react", "react-dom", "@tanstack/react-query"],
   },
   test: {
     environment: "jsdom",

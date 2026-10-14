@@ -67,7 +67,7 @@ export function EditorToolbar({
     <div
       role="toolbar"
       aria-label="Layer tools"
-      className="flex h-11 items-center gap-1 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] px-1.5 shadow-[0_24px_48px_-16px_rgba(0,0,0,.7)]"
+      className="flex min-h-11 max-w-full flex-wrap items-center gap-1 rounded-xl border border-[var(--ed-line)] bg-[var(--ed-panel)] px-1.5 py-1 shadow-[0_24px_48px_-16px_rgba(0,0,0,.7)]"
     >
       {single ? (
         <>

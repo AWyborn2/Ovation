@@ -8,6 +8,7 @@
 import type { PlayhqIngestResponseCentralProjection } from './playhqIngestResponseCentralProjection';
 import type { PlayhqIngestResponseCounts } from './playhqIngestResponseCounts';
 import type { PlayhqIngestResponseStatus } from './playhqIngestResponseStatus';
+import type { PlayhqIngestResponseTeamListsItem } from './playhqIngestResponseTeamListsItem';
 import type { PlayhqIngestResponseTenantsItem } from './playhqIngestResponseTenantsItem';
 
 export interface PlayhqIngestResponse {
@@ -18,6 +19,8 @@ export interface PlayhqIngestResponse {
   fixtureChanges: number;
   juniorGradesDropped: number;
   tenants: PlayhqIngestResponseTenantsItem[];
+  /** The team lists this ingest wrote from the sides clubs named in PlayHQ (for the sync's run log): a new or changed selection ahead of a match, or the played side replacing a Selection Hub list after it. */
+  teamLists?: PlayhqIngestResponseTeamListsItem[];
   warnings: string[];
   /** The PlayHQ → central stats projection run after the load (CENTRAL_PROJECTION=dry|on). Absent when projection is off. */
   centralProjection?: PlayhqIngestResponseCentralProjection;

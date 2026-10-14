@@ -1,3 +1,4 @@
+import { splitDisplayName } from "@workspace/db/central-queries";
 import { Router, type IRouter } from "express";
 import { eq, and, desc, sum, count, gt, sql } from "drizzle-orm";
 import {
@@ -166,12 +167,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
       ? clubDashboard(stats)
       : await centralDashboard(source.clubId, overlay.identity.merges);
     const intByGuid = stats ? stats.intByGuid : overlay.identity.intByGuid;
-    const splitName = (dn: string | null) => {
-      const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
-      if (parts.length === 0) return { givenName: "", surname: "" };
-      if (parts.length === 1) return { givenName: parts[0], surname: "" };
-      return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
-    };
+    const splitName = (dn: string | null) => splitDisplayName(dn);
     const toPerformer = (
       p: { participantId: string; displayName: string | null; value: number } | null,
     ) =>
@@ -279,12 +275,7 @@ router.get("/overview", async (req, res): Promise<void> => {
       // a tenant — central.clubs has no logo, so this is its source.
       const overlaid = await overlayCentralOpponents(recentMatches.map((m) => m.opponentClub));
       recentMatches = recentMatches.map((m, i) => ({ ...m, opponentClub: overlaid[i] }));
-      const splitName = (dn: string | null) => {
-        const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
-        if (parts.length === 0) return { givenName: "", surname: "" };
-        if (parts.length === 1) return { givenName: parts[0], surname: "" };
-        return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
-      };
+      const splitName = (dn: string | null) => splitDisplayName(dn);
       const toLeader = (l: {
         participantId: string;
         displayName: string | null;
@@ -440,12 +431,7 @@ router.get("/overview/top-performers", async (req, res): Promise<void> => {
     // club layer (history before the boundary, corrections).
     const stats = overlay.active ? await buildClubStats(overlay, tenantId, clubId) : null;
     const intByGuid = stats ? stats.intByGuid : overlay.identity.intByGuid;
-    const splitName = (dn: string | null) => {
-      const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
-      if (parts.length === 0) return { givenName: "", surname: "" };
-      if (parts.length === 1) return { givenName: parts[0], surname: "" };
-      return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1] };
-    };
+    const splitName = (dn: string | null) => splitDisplayName(dn);
     const toLeader = (l: { participantId: string; displayName: string | null; value: number }) => ({
       playerId: intByGuid.get(l.participantId) ?? 0,
       ...splitName(l.displayName),

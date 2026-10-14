@@ -10,3 +10,4 @@ lib/api-spec/openapi.yaml
 lib/db/migrations/
 docs/design-handoffs/
 scripts/exports/
+artifacts/cricket-club/src/lib/google-fonts-catalogue.json

@@ -25,13 +25,18 @@ describe("sortByGradeOrder", () => {
   });
 
   it("puts lettered grades in order, then PPL and Colts", () => {
-    expect(grades(["Colts", "C Grade", "Female A Grade", "A Grade", "PPL", "B Grade"])).toEqual([
+    expect(
+      grades(["Colts", "G Grade", "C Grade", "Female A Grade", "A Grade", "PPL", "B Grade"]),
+    ).toEqual(["A Grade", "B Grade", "C Grade", "G Grade", "Female A Grade", "PPL", "Colts"]);
+  });
+
+  it("puts the age-based Over grades after Colts, youngest first", () => {
+    expect(grades(["Over 50s", "Colts", "Over 40s", "A Grade", "Over 45s"])).toEqual([
       "A Grade",
-      "B Grade",
-      "C Grade",
-      "Female A Grade",
-      "PPL",
       "Colts",
+      "Over 40s",
+      "Over 45s",
+      "Over 50s",
     ]);
   });
 

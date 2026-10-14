@@ -10,6 +10,7 @@ import {
 import { locate, sideEditable, sideLabel, type BoardState, type DropTarget } from "./apply-move";
 import { STATUS, perthDateTime } from "./labels";
 import { StatusMark } from "./player-chip";
+import { SelectionCompareLink } from "./compare-link";
 
 type Option = { value: string; label: string; disabled: boolean };
 
@@ -61,6 +62,7 @@ function lockedReason(state: BoardState, memberId: number): string | null {
  * contact value.
  */
 export function MoveDialog({
+  junior = false,
   state,
   memberId,
   busy,
@@ -68,6 +70,7 @@ export function MoveDialog({
   onMove,
   onRole,
 }: {
+  junior?: boolean;
   state: BoardState;
   memberId: number | null;
   busy: boolean;
@@ -133,6 +136,7 @@ export function MoveDialog({
             <dt className="text-muted-foreground">Now in</dt>
             <dd>{side ? sideLabel(side) : "the pool"}</dd>
           </dl>
+          <SelectionCompareLink junior={junior} member={member} />
 
           {canRole && side && (
             <div className="flex flex-wrap gap-2">

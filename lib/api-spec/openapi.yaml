@@ -2360,6 +2360,23 @@ paths:
           description: Not found
 
   /squad:
+    post:
+      operationId: createSquadMember
+      tags: [squad]
+      summary: Add or reactivate an active squad member (admin or captain)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SquadMemberInput"
+      responses:
+        "201":
+          description: Active squad member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadMember"
     get:
       operationId: listSquadMembers
       tags: [squad]
@@ -2379,6 +2396,40 @@ paths:
                   $ref: "#/components/schemas/SquadMember"
         "401":
           description: Not signed in as this club's admin
+
+  /selection/roster:
+    get:
+      operationId: listSelectionRoster
+      tags: [squad]
+      summary: List roster identities without contact values (admin or captain)
+      responses:
+        "200":
+          description: Club roster
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SquadMember"
+
+  /squad/{id}/activate:
+    post:
+      operationId: activateSquadMember
+      tags: [squad]
+      summary: Reactivate a previous squad member (admin or captain)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Active member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadMember"
 
   /squad/import:
     post:
@@ -2414,6 +2465,29 @@ paths:
                 $ref: "#/components/schemas/SquadImportResult"
         "400":
           description: Missing file, unreadable CSV or a missing required column
+        "401":
+          description: Not signed in as this club's admin
+
+  /squad/seed-from-season:
+    post:
+      operationId: seedSquadFromSeason
+      tags: [squad]
+      summary: Add this season's players to the register (admin)
+      description: |
+        Adds everyone who has played for the club in the current cricket season
+        (the club's central scorecards and rosters) and isn't in the register
+        yet, exactly as provisioning seeds a new club: active, with their grade,
+        linked to their club player when known, with no contact details and no
+        PlayHQ profile id; a later participant import fills them in rather than
+        adding them twice. Existing members are never changed, and running it
+        again adds no one twice.
+      responses:
+        "200":
+          description: What was added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquadSeasonSeedResult"
         "401":
           description: Not signed in as this club's admin
 
@@ -2731,6 +2805,76 @@ paths:
           description: Side not found
         "409":
           description: Already finalised, changed since the caller loaded it, or the match has started
+
+  /selection/{id}/team-sheet:
+    get:
+      operationId: getTeamSheetPreview
+      tags: [selection]
+      summary: What the print dialog needs for a finalised side's team sheet (admin or captain)
+      description: |
+        The side's grade, PlayHQ format and competition, the overs to offer
+        (the grade's remembered value, else one read from a T20-style format),
+        and — for a senior side — which competition rules set the Junior Aged
+        Player bowling limits and how many listed players have no birth date.
+        Refused until the side is finalised.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Print details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamSheetPreview"
+        "401":
+          description: Not signed in as this club's admin or captain
+        "404":
+          description: Side not found
+        "409":
+          description: The side is not finalised
+    post:
+      operationId: printTeamSheet
+      tags: [selection]
+      summary: The finalised side's printable A4 team sheet as a PDF (admin or captain)
+      description: |
+        Match details (both teams, grade or age group, round, date, start time,
+        format, overs, venue, competition), the 12 in batting-list order with
+        shirt numbers and (C)/(WK) tags, and on a senior sheet each Junior Aged
+        Player's age group and bowling limits from their date of birth under the
+        competition's rules. The overs sent are printed and remembered for the
+        grade. Generated clients should treat the response as a `Blob`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamSheetPrintBody"
+      responses:
+        "200":
+          description: The team sheet
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Invalid overs
+        "401":
+          description: Not signed in as this club's admin or captain
+        "404":
+          description: Side not found
+        "409":
+          description: The side is not finalised
 
   /selection/{id}/reopen:
     post:
@@ -4921,6 +5065,29 @@ paths:
         "409":
           description: Already connected and `replace` was not confirmed
 
+  /weekend-carousel/sources:
+    get:
+      operationId: getWeekendCarouselSources
+      tags: [social]
+      summary: Tenant-scoped weekend fixtures and eligible action photos for on-demand export
+      parameters:
+        - { name: setType, in: query, schema: { type: string, enum: [matchDay, teamList, results, matchSummary], default: matchDay } }
+        - { name: from, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' } }
+        - { name: to, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' } }
+      responses:
+        "200":
+          description: Sources, with cancelled fixtures and ineligible photos excluded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WeekendCarouselSources" }
+        "400":
+          description: Invalid date range
+        "401":
+          description: Admin sign-in required
+        "403":
+          description: Social Studio entitlement required
+        "503":
+          description: Fixture status could not be verified
   /fixtures:
     get:
       operationId: listFixtures
@@ -5630,6 +5797,153 @@ paths:
           description: Deleted
         "404":
           description: Not found
+
+  /kind-templates:
+    get:
+      operationId: listKindTemplates
+      tags: [socialCards]
+      summary: The club's card kind templates and whether the feature is on
+      description: >-
+        Card kind templates (plan 2026-10-07-002). `enabled` is false until the
+        KIND_TEMPLATES release switch includes this club; the list is then empty.
+      responses:
+        "200":
+          description: Kind templates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplateList"
+
+  /kind-templates/{kind}:
+    parameters:
+      - name: kind
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getKindTemplate
+      tags: [socialCards]
+      summary: One card kind's template
+      responses:
+        "200":
+          description: The template
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplate"
+        "404":
+          description: Not enabled for this club, unknown kind, or no template yet (start one from a starter)
+    put:
+      operationId: saveKindTemplate
+      tags: [socialCards]
+      summary: Save a card kind's template (rejected when another admin saved first)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveKindTemplateRequest"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplate"
+        "400":
+          description: Invalid document (e.g. a size with no elements)
+        "404":
+          description: Not enabled for this club, unknown kind, or no template yet
+        "409":
+          description: Another admin saved this template since `baseVersion`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplateConflict"
+
+  /kind-templates/{kind}/start:
+    parameters:
+      - name: kind
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: startKindTemplate
+      tags: [socialCards]
+      summary: Start (or restart) a card kind's template from a starter design
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartKindTemplateRequest"
+      responses:
+        "200":
+          description: The template, now a copy of the starter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplate"
+        "404":
+          description: Not enabled for this club, or unknown kind
+        "409":
+          description: Restarting an existing template whose version moved on since `baseVersion`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplateConflict"
+
+  /kind-templates/{kind}/dismiss-notice:
+    parameters:
+      - name: kind
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: dismissKindTemplateNotice
+      tags: [socialCards]
+      summary: Dismiss the "your retired design pack was replaced" notice for a kind
+      responses:
+        "204":
+          description: Dismissed
+        "404":
+          description: Not enabled for this club, unknown kind, or no template
+
+  /kind-templates/{kind}/apply:
+    parameters:
+      - name: kind
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: applyKindTemplate
+      tags: [socialCards]
+      summary: Apply a saved template version to this kind's unposted drafts
+      description: >-
+        Replaces the design of every unposted draft of the kind, one-off design
+        tweaks included; captions are kept. Each draft's previous design is saved
+        as a revision first. Drafts posted meanwhile are skipped.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplyKindTemplateRequest"
+      responses:
+        "200":
+          description: How many drafts changed and were skipped
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplyKindTemplateResult"
+        "404":
+          description: Not enabled for this club, unknown kind, or no template
+        "409":
+          description: The template has been saved again since `version`
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KindTemplateConflict"
 
   /internal/draft-sweep:
     post:
@@ -8737,6 +9051,70 @@ paths:
         "404":
           description: No such exclusion.
 
+  /platform/admin/grade-decisions:
+    get:
+      operationId: getPlatformGradeDecisions
+      tags: [platformAdmin]
+      summary: >-
+        PlayHQ competitions no club's sync can place in a grade (their matches are
+        skipped until someone decides), and the decisions made so far.
+      responses:
+        "200":
+          description: Pending competitions and decisions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GradeDecisionList"
+        "401":
+          description: Not authenticated.
+        "503":
+          description: Ingest database not configured.
+    put:
+      operationId: setPlatformGradeDecision
+      tags: [platformAdmin]
+      summary: >-
+        Map a PlayHQ competition to an app grade, or mark it as not tracked. A mapping is
+        projected straight away when the central projector is configured, otherwise on the
+        next sync that touches the competition.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetGradeDecisionBody"
+      responses:
+        "200":
+          description: Decision saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GradeDecisionResult"
+        "400":
+          description: Invalid competition name, action or grade.
+        "401":
+          description: Not authenticated.
+
+  /platform/admin/grade-decisions/{gradeKey}:
+    delete:
+      operationId: deletePlatformGradeDecision
+      tags: [platformAdmin]
+      summary: >-
+        Remove a decision. Matches already projected stay as they are; the competition
+        goes back to being unrecognised for future syncs.
+      parameters:
+        - name: gradeKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Decision removed
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such decision.
+
   /platform/admin/player-privacy:
     get:
       operationId: getPlatformPlayerPrivacy
@@ -9119,6 +9497,158 @@ paths:
         "503":
           description: The club history tables (migrations 0021 / 0022) are missing.
 
+  /platform/admin/cap-import/template:
+    get:
+      operationId: getCapImportTemplate
+      tags: [platformAdmin]
+      summary: >-
+        Download the cap register CSV template (every column, two example
+        rows): the club's A Grade (male) and Female A Grade cap numbering.
+      responses:
+        "200":
+          description: The CSV template
+          content:
+            text/csv:
+              schema:
+                type: string
+        "401":
+          description: Not authenticated.
+
+  /platform/admin/tenants/{id}/cap-import/preview:
+    post:
+      operationId: previewTenantCapImport
+      tags: [platformAdmin]
+      summary: >-
+        Validate a cap register CSV and preview it. Writes nothing. Reports
+        every problem with its spreadsheet row, and how each cap would link to
+        a player of the club (exact name match only; unmatched caps are still
+        written, unlinked). A category that already has caps is refused.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CapImportPreviewBody"
+      responses:
+        "200":
+          description: The preview (check `errors` and `refusedCategories` before committing)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapImportPreview"
+        "400":
+          description: Missing file.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+
+  /platform/admin/tenants/{id}/cap-import/commit:
+    post:
+      operationId: commitTenantCapImport
+      tags: [platformAdmin]
+      summary: >-
+        Write a cap register CSV as one labelled batch. The file is validated
+        again. Caps are written confirmed, linked where the name matched
+        exactly, and marked with the batch in their note so the batch can be
+        undone. Never drafts social cards.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CapImportCommitBody"
+      responses:
+        "201":
+          description: The batch was written
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapImportCommitResult"
+        "400":
+          description: Missing file or label.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+        "409":
+          description: A category already has caps, or the register changed since the preview.
+        "422":
+          description: The file has errors (the body carries the preview).
+
+  /platform/admin/tenants/{id}/cap-import/batches:
+    get:
+      operationId: listTenantCapImportBatches
+      tags: [platformAdmin]
+      summary: The club's cap import batches, newest first.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The batches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CapImportBatch"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+
+  /platform/admin/tenants/{id}/cap-import/batches/{batchId}:
+    delete:
+      operationId: undoTenantCapImportBatch
+      tags: [platformAdmin]
+      summary: >-
+        Undo a cap import batch: delete the caps it wrote. Refused when a later
+        cap was issued after them in the same list (the sequence would break).
+        A cap an admin edited out of the batch note is left alone.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9]{8}T[0-9]{6}Z$"
+      responses:
+        "200":
+          description: The batch was undone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapImportUndoResult"
+        "400":
+          description: Invalid batch id.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such batch for this tenant.
+        "409":
+          description: A later cap exists, so undoing would break the numbering.
+
   /social-prefill/ladder:
     get:
       operationId: getSocialLadderPrefill
@@ -9216,6 +9746,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WeekendWrap"
+
+  /social-prefill/round-results:
+    get:
+      operationId: getSocialRoundResultsPrefill
+      tags: [socialCards]
+      summary: >-
+        Results summary and team of the week prefill — a round's results per
+        grade with the best batters and bowlers, and its standout performers.
+        Admin + socialStudio entitlement.
+      description: >-
+        Seniors only (central data). Private players are never named. Every
+        field is editable in the builder.
+      parameters:
+        - name: season
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: Season start year (e.g. 2026 for "2026/27").
+        - name: round
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Round results prefill
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoundResults"
 
 components:
   schemas:
@@ -10282,6 +10843,84 @@ components:
           items:
             $ref: "#/components/schemas/WeekendWrapMatch"
 
+    RoundFigure:
+      type: object
+      required: [name, figure]
+      properties:
+        name:
+          type: string
+        figure:
+          type: string
+          description: '"32* (34)" for a batter, "3/28 (10)" for a bowler.'
+
+    RoundResult:
+      type: object
+      description: One grade's result in a round, from the club's side.
+      required: [matchId, grade, clubScore, oppName, oppScore, outcome, note, batters, bowlers]
+      properties:
+        matchId:
+          type: integer
+        grade:
+          type: string
+        clubScore:
+          type: string
+        oppName:
+          type: string
+        oppScore:
+          type: string
+        outcome:
+          type: string
+          enum: [WON, LOST, ""]
+        note:
+          type: string
+          description: Set when the match had no result (e.g. "WASHED OUT"); scores are empty then.
+        batters:
+          type: array
+          description: The club's best two batters.
+          items:
+            $ref: "#/components/schemas/RoundFigure"
+        bowlers:
+          type: array
+          description: The club's best two bowlers.
+          items:
+            $ref: "#/components/schemas/RoundFigure"
+
+    TeamOfWeekPick:
+      type: object
+      required: [name, grade, figure, photoUrl]
+      properties:
+        name:
+          type: string
+        grade:
+          type: string
+        figure:
+          type: string
+          description: '"110*", "5/28", "4/21 & 16".'
+        photoUrl:
+          type: ["string", "null"]
+          description: The player's library photo, else headshot; null when the club has neither.
+
+    RoundResults:
+      type: object
+      description: >-
+        Results summary and team of the week prefill: a round's senior results
+        per grade with the best players, and its standout performers.
+      required: [roundLabel, dateLabel, results, teamOfWeek]
+      properties:
+        roundLabel:
+          type: string
+        dateLabel:
+          type: string
+          description: '"SATURDAY 10TH OCTOBER 2026" — the round''s first match date.'
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoundResult"
+        teamOfWeek:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamOfWeekPick"
+
     ImportRecord:
       type: object
       required: [id, filename, status, rowCount, importedAt, kind]
@@ -11220,6 +11859,10 @@ components:
         honours:
           type: ["string", "null"]
           maxLength: 2048
+        cards:
+          type: ["string", "null"]
+          maxLength: 2048
+          description: The club's ground or clubrooms, behind card designs (tinted to the club's colours).
         explore:
           oneOf:
             - $ref: "#/components/schemas/TenantExploreImages"
@@ -12065,6 +12708,140 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/HistoryBoundary"
+
+    CapImportPreviewBody:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: "The CSV file: category,cap_number,name,games_a_grade"
+
+    CapImportCommitBody:
+      type: object
+      required: [file, label]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: The same CSV file that was previewed
+        label:
+          type: string
+          description: Admin-facing name for the batch, e.g. "WKBCC A Grade caps (club list)".
+
+    CapImportCategory:
+      type: string
+      enum: [male, female]
+      description: male = A Grade; female = Female A Grade.
+
+    CapImportLinkStatus:
+      type: string
+      enum: [linked, ambiguous, private, unmatched]
+
+    CapImportPlannedCap:
+      type: object
+      required: [row, category, capNumber, name, games, playerId, status, note]
+      properties:
+        row:
+          type: integer
+          description: Spreadsheet row (the header is row 1).
+        category:
+          $ref: "#/components/schemas/CapImportCategory"
+        capNumber:
+          type: integer
+        name:
+          type: string
+        games:
+          type: integer
+        playerId:
+          type: ["integer", "null"]
+          description: The club player the cap would link to; null = written unlinked.
+        status:
+          $ref: "#/components/schemas/CapImportLinkStatus"
+        note:
+          type: string
+          description: Why a cap is not linked (candidate ids, a close name hint).
+
+    CapImportRefusedCategory:
+      type: object
+      required: [category, existing]
+      properties:
+        category:
+          $ref: "#/components/schemas/CapImportCategory"
+        existing:
+          type: integer
+          description: Caps the club's register already holds in this category.
+
+    CapImportPreview:
+      type: object
+      required: [rowCount, errors, refusedCategories, caps, centralUnavailable]
+      properties:
+        rowCount:
+          type: integer
+          description: Caps the commit would write.
+        errors:
+          type: array
+          items:
+            type: string
+          description: Problems, each naming its row. Nothing can be committed while any remain.
+        refusedCategories:
+          type: array
+          items:
+            $ref: "#/components/schemas/CapImportRefusedCategory"
+        caps:
+          type: array
+          items:
+            $ref: "#/components/schemas/CapImportPlannedCap"
+        centralUnavailable:
+          type: ["string", "null"]
+          description: Set when central couldn't be read, so only pre-digital players could be linked.
+
+    CapImportCommitResult:
+      type: object
+      required: [batchId, label, written, linked, unlinked]
+      properties:
+        batchId:
+          type: string
+          description: The batch token (also in each cap's note).
+        label:
+          type: string
+        written:
+          type: integer
+        linked:
+          type: integer
+        unlinked:
+          type: integer
+
+    CapImportBatch:
+      type: object
+      required: [id, label, createdAt, male, female, linked, unlinked]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        createdAt:
+          type: string
+        male:
+          type: integer
+          description: Caps remaining in the A Grade list.
+        female:
+          type: integer
+          description: Caps remaining in the Female A Grade list.
+        linked:
+          type: integer
+        unlinked:
+          type: integer
+
+    CapImportUndoResult:
+      type: object
+      required: [batchId, capsRemoved]
+      properties:
+        batchId:
+          type: string
+        capsRemoved:
+          type: integer
 
     PasswordResetInfo:
       type: object
@@ -13065,6 +13842,35 @@ components:
         email:
           type: ["string", "null"]
 
+    SquadMemberInput:
+      type: object
+      required: [firstName, lastName, section]
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        section:
+          $ref: "#/components/schemas/SquadSection"
+        linkedPlayerId:
+          type: ["integer", "null"]
+        dateOfBirth:
+          type: ["string", "null"]
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+        gradeHint:
+          type: ["string", "null"]
+          maxLength: 100
+        account:
+          $ref: "#/components/schemas/SquadContactUpdate"
+        guardian1:
+          $ref: "#/components/schemas/SquadContactUpdate"
+        guardian2:
+          $ref: "#/components/schemas/SquadContactUpdate"
+
     SquadMemberUpdate:
       type: object
       properties:
@@ -13124,7 +13930,8 @@ components:
 
     SquadImportResult:
       type: object
-      required: [season, created, updated, deactivated, linked, contactsKept, skipped, skippedByReason]
+      required:
+        [season, created, updated, deactivated, adopted, linked, contactsKept, skipped, skippedByReason]
       properties:
         season:
           type: ["string", "null"]
@@ -13136,6 +13943,12 @@ components:
         deactivated:
           type: integer
           description: Existing members stood down because their registration is no longer active
+        adopted:
+          type: integer
+          description: |
+            Members without a PlayHQ profile id (added from this season's games
+            or by hand) that a row of the file turned out to be, and filled in
+            instead of added twice. Also counted in `updated`.
         linked:
           type: integer
           description: Members newly linked to a club player record
@@ -13156,6 +13969,17 @@ components:
                 type: string
               count:
                 type: integer
+
+    SquadSeasonSeedResult:
+      type: object
+      required: [added, skipped]
+      properties:
+        added:
+          type: integer
+          description: Members added
+        skipped:
+          type: integer
+          description: This season's players already in the register
 
     AvailabilitySelectionRule:
       type: string
@@ -13360,6 +14184,9 @@ components:
       properties:
         id:
           type: integer
+        linkedPlayerId:
+          type: ["integer", "null"]
+          description: Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.
         displayName:
           type: string
         status:
@@ -13679,6 +14506,45 @@ components:
           minItems: 1
           items:
             $ref: "#/components/schemas/SelectionChange"
+
+    TeamSheetPreview:
+      type: object
+      required: [selectionId, section, grade, format, competition, overs, bowlingRulesSource, missingBirthDates]
+      properties:
+        selectionId:
+          type: integer
+        section:
+          type: string
+          enum: [senior, junior]
+        grade:
+          type: string
+        format:
+          type: string
+          nullable: true
+          description: PlayHQ's match type ("One Day", "T20"); null for a manual fixture
+        competition:
+          type: string
+          nullable: true
+          description: PlayHQ's grade name ("A Grade Wyllie Cup")
+        overs:
+          type: string
+          nullable: true
+        bowlingRulesSource:
+          type: string
+          nullable: true
+          description: Where the Junior Aged Player limits come from ("PCA Bylaw 5.9"); null when unknown or junior
+        missingBirthDates:
+          type: integer
+          description: Listed players with no birth date (senior sheet only)
+
+    TeamSheetPrintBody:
+      type: object
+      properties:
+        overs:
+          type: string
+          nullable: true
+          maxLength: 20
+          description: Overs per innings to print; remembered for the side's grade
 
     SelectionFinaliseBody:
       type: object
@@ -14350,12 +15216,30 @@ components:
           type: integer
         playerId:
           type: ["integer", "null"]
+        playerIds:
+          type: array
+          items:
+            type: integer
+          description: Ordered linked players; playerId remains the first link for older clients.
+        recipients:
+          type: array
+          items:
+            $ref: "#/components/schemas/AwardRecipient"
         name:
           type: string
         displayOrder:
           type: integer
         published:
           type: boolean
+
+    AwardRecipient:
+      type: object
+      required: [playerId, name]
+      properties:
+        playerId:
+          type: integer
+        name:
+          type: string
 
     Award:
       type: object
@@ -14434,6 +15318,14 @@ components:
           type: integer
         playerId:
           type: ["integer", "null"]
+        playerIds:
+          type: array
+          uniqueItems: true
+          maxItems: 100
+          items:
+            type: integer
+            minimum: 1
+          description: Ordered links. Overrides playerId; an empty list means free text.
         name:
           type: string
         displayOrder:
@@ -14448,6 +15340,14 @@ components:
           type: integer
         playerId:
           type: ["integer", "null"]
+        playerIds:
+          type: array
+          uniqueItems: true
+          maxItems: 100
+          items:
+            type: integer
+            minimum: 1
+          description: Replaces all links in order; empty removes all. Omit to keep links unchanged.
         name:
           type: string
         displayOrder:
@@ -14995,8 +15895,10 @@ components:
       type: string
       # roundFixtures / tradingCard / juniorHighlights are the Club Kit card
       # types (game day across all grades, a collectable player card, junior
-      # highlights).
-      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard, roundFixtures, tradingCard, juniorHighlights, teamListRound]
+      # highlights). announcement / sponsor / resultsSummary / teamOfWeek came
+      # with the Clubhouse look (club news, a sponsor thank-you, every grade's
+      # result with its best players, the round's standout performers).
+      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard, roundFixtures, tradingCard, juniorHighlights, teamListRound, announcement, sponsor, resultsSummary, teamOfWeek]
 
     Sponsor:
       type: object
@@ -16331,6 +17233,32 @@ components:
                 type: integer
               swept:
                 type: boolean
+        teamLists:
+          type: array
+          description: >-
+            The team lists this ingest wrote from the sides clubs named in PlayHQ (for the
+            sync's run log): a new or changed selection ahead of a match, or the played side
+            replacing a Selection Hub list after it.
+          items:
+            type: object
+            required: [tenantId, club, grade, opponent, startAt, players, change]
+            properties:
+              tenantId:
+                type: integer
+              club:
+                type: string
+              grade:
+                type: string
+              opponent:
+                type: string
+              startAt:
+                type: string
+                format: date-time
+              players:
+                type: integer
+              change:
+                type: string
+                enum: [new, changed, afterMatch]
         warnings:
           type: array
           items:
@@ -16362,6 +17290,11 @@ components:
                 type: integer
             playersInserted:
               type: integer
+            namesUpgraded:
+              type: integer
+              description: >-
+                Initials-only player names ("C Phelps") replaced by a matching full name, from
+                scorecard team sheets and PlayHQ's grade stats reports.
 
     PlayerPrivacyOverride:
       type: object
@@ -16568,6 +17501,102 @@ components:
                         type: string
                   - type: "null"
 
+    GradeDecisionTenant:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+
+    PendingGradeCompetition:
+      type: object
+      required: [gradeKey, gradeName, matches, seasons, tenants, reason]
+      properties:
+        gradeKey:
+          type: string
+          description: The normalised competition name decisions are keyed by (seasons removed).
+        gradeName:
+          type: string
+        matches:
+          type: integer
+          description: PlayHQ matches across every club playing in it.
+        seasons:
+          type: array
+          items: { type: string }
+        tenants:
+          type: array
+          items:
+            $ref: "#/components/schemas/GradeDecisionTenant"
+        reason:
+          type: string
+
+    GradeDecision:
+      type: object
+      required: [gradeKey, gradeName, action, centralGrade, reason, setAt]
+      properties:
+        gradeKey: { type: string }
+        gradeName: { type: string }
+        action:
+          type: string
+          enum: [map, ignore]
+        centralGrade:
+          type: ["string", "null"]
+          description: The app grade a mapped competition is projected under; null when ignored.
+        reason:
+          type: ["string", "null"]
+        setAt:
+          type: string
+
+    GradeDecisionList:
+      type: object
+      required: [projectorConfigured, mappableGrades, pending, decisions]
+      properties:
+        projectorConfigured:
+          type: boolean
+          description: A saved mapping is projected immediately only when this is true.
+        mappableGrades:
+          type: array
+          items: { type: string }
+        pending:
+          type: array
+          items:
+            $ref: "#/components/schemas/PendingGradeCompetition"
+        decisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/GradeDecision"
+
+    SetGradeDecisionBody:
+      type: object
+      required: [gradeName, action]
+      properties:
+        gradeName:
+          type: string
+          minLength: 1
+          maxLength: 300
+        action:
+          type: string
+          enum: [map, ignore]
+        centralGrade:
+          type: ["string", "null"]
+          description: Required for map (one of mappableGrades); must be absent for ignore.
+        reason:
+          type: ["string", "null"]
+          maxLength: 500
+
+    GradeDecisionResult:
+      allOf:
+        - $ref: "#/components/schemas/GradeDecision"
+        - type: object
+          required: [applied, created, updated, skipped]
+          properties:
+            applied:
+              type: boolean
+              description: The competition's matches were projected now.
+            created: { type: integer }
+            updated: { type: integer }
+            skipped: { type: integer }
+
     TenantPlayhqSyncStatus:
       type: object
       required: [linked, syncEnabled, stale]
@@ -16585,6 +17614,28 @@ components:
           description: An incident is open for this club's organisation.
         staleSince:
           type: ["string", "null"]
+        unclassifiedGrades:
+          type: array
+          description: >-
+            Competitions this club's PlayHQ organisation plays in that Ovation can't place in a
+            grade, so their matches are not shown. Empty when everything is recognised.
+          items:
+            $ref: "#/components/schemas/UnclassifiedGrade"
+
+    UnclassifiedGrade:
+      type: object
+      required: [gradeName, seasonName, matches, reason]
+      properties:
+        gradeName:
+          type: string
+          description: The competition name as PlayHQ spells it.
+        seasonName:
+          type: ["string", "null"]
+        matches:
+          type: integer
+          description: PlayHQ matches the club has in this competition.
+        reason:
+          type: string
 
     SocialFamilySetting:
       type: object
@@ -18671,6 +19722,10 @@ components:
       type: object
       required: [cardInput]
       properties:
+        caption:
+          type: string
+          maxLength: 5000
+          description: "Optional caption supplied with a manually queued card or carousel."
         cardInput:
           type: object
           additionalProperties: true
@@ -18708,6 +19763,93 @@ components:
         adjustments: {}
         createdAt: { type: string, format: date-time }
 
+    KindTemplateSummary:
+      type: object
+      required: [kind, version, updatedAt, replacedPackId, noticeDismissed, waitingDrafts]
+      properties:
+        kind: { type: string }
+        version: { type: integer }
+        updatedAt: { type: ["string", "null"], format: date-time }
+        replacedPackId:
+          type: ["string", "null"]
+          description: The retired design pack this template replaced, if any (R19).
+        noticeDismissed: { type: boolean }
+        waitingDrafts:
+          type: integer
+          description: Unposted drafts of this kind an apply would change.
+
+    KindTemplateList:
+      type: object
+      required: [enabled, templates]
+      properties:
+        enabled:
+          type: boolean
+          description: Whether card kind templates are switched on for this club.
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/KindTemplateSummary"
+
+    KindTemplate:
+      allOf:
+        - $ref: "#/components/schemas/KindTemplateSummary"
+        - type: object
+          required: [document]
+          properties:
+            document:
+              $ref: "#/components/schemas/CardAdjustments"
+            updatedByName:
+              type: ["string", "null"]
+              description: Who saved the current version.
+
+    SaveKindTemplateRequest:
+      type: object
+      required: [baseVersion, document]
+      properties:
+        baseVersion:
+          type: integer
+          description: The version this edit started from.
+        document:
+          $ref: "#/components/schemas/CardAdjustments"
+
+    StartKindTemplateRequest:
+      type: object
+      required: [starter]
+      properties:
+        starter:
+          type: string
+          enum: [club-kit, broadcast, clubhouse]
+        baseVersion:
+          type: integer
+          description: Required when the kind already has a template.
+
+    ApplyKindTemplateRequest:
+      type: object
+      required: [version]
+      properties:
+        version:
+          type: integer
+          description: The saved template version to apply.
+        expectedDrafts:
+          type: integer
+          description: How many waiting drafts the admin was shown; any shortfall is reported as skipped.
+
+    ApplyKindTemplateResult:
+      type: object
+      required: [changed, skipped]
+      properties:
+        changed: { type: integer }
+        skipped: { type: integer }
+
+    KindTemplateConflict:
+      type: object
+      required: [error, currentVersion]
+      properties:
+        error: { type: string }
+        currentVersion: { type: integer }
+        updatedAt: { type: ["string", "null"], format: date-time }
+        updatedByName: { type: ["string", "null"] }
+
     CardAdjustments:
       type: object
       description: >-
@@ -18735,6 +19877,16 @@ components:
             type: object
             additionalProperties: true
 
+    LayoutWarning:
+      type: object
+      required: [reason, size]
+      properties:
+        reason: { type: string, enum: [overflow, font, slides] }
+        size: { type: string, enum: [square, portrait, story, landscape] }
+        layerId: { type: string }
+        row: { type: integer }
+        field: { type: string }
+        detail: { type: string }
     SocialDraft:
       type: object
       required: [id, engine, status, cardInput, appPath, sourceMatchIsJunior, createdAt]
@@ -18770,6 +19922,26 @@ components:
         photoSource: { type: ["string", "null"] }
         adjustments: {}
         editedAt: { type: ["string", "null"], format: date-time }
+        templateVersion:
+          type: ["integer", "null"]
+          description: >-
+            The card kind template version this draft copied; null for a draft that uses a pack.
+        designEditedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When an admin last edited this templated draft's design by hand.
+        layoutWarnings:
+          type: ["object", "null"]
+          description: >-
+            Layout warnings from the last render, per card size ("needs a look"). A size with an
+            empty list rendered cleanly; a missing size hasn't been rendered.
+          additionalProperties:
+            type: array
+            items: { $ref: "#/components/schemas/LayoutWarning" }
+        layoutCheckPending:
+          type: boolean
+          description: >-
+            True while a templated draft owes a layout check; automation leaves it alone until then.
         createdByAdminId:
           type: ["integer", "null"]
           description: "The admin who made the draft by hand; null for drafts the sweep made."
@@ -18860,7 +20032,7 @@ components:
         photoUrl: { type: ["string", "null"] }
         photoSource: { type: ["string", "null"] }
         adjustments: {}
-        reason: { type: string, enum: [refresh, edit, revert] }
+        reason: { type: string, enum: [refresh, edit, revert, template] }
         createdAt: { type: string, format: date-time }
 
     PendingDraftCount:
@@ -18955,6 +20127,30 @@ components:
         lastClickedAt: { type: ["string", "null"], format: date-time }
         createdAt: { type: string, format: date-time }
 
+    WeekendCarouselSources:
+      type: object
+      required: [timeZone, fixtures, photos, coverPhotos, warnings]
+      properties:
+        timeZone: { type: string }
+        content:
+          type: object
+          description: Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        fixtures:
+          type: array
+          items: { $ref: "#/components/schemas/Fixture" }
+        photos:
+          type: array
+          items: { $ref: "#/components/schemas/ClubPhoto" }
+        coverPhotos:
+          type: array
+          description: "Current club's Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules."
+          items: { $ref: "#/components/schemas/ClubPhoto" }
+        warnings:
+          type: array
+          items: { type: string }
     Fixture:
       type: object
       required: [id, grade, opponentName, startAt, isHome, source, createdAt]
@@ -18974,8 +20170,8 @@ components:
         notes: { type: ["string", "null"] }
         source:
           type: string
-          enum: [manual, playhq]
-          description: "Where the row came from: 'manual' (admin CRUD) or 'playhq' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)"
+          enum: [manual, playhq, scorecard]
+          description: "manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture)."
         playhqMatchId:
           type: ["string", "null"]
           description: PlayHQ match GUID for playhq-sourced rows; null for manual rows

@@ -61,8 +61,13 @@ import { oversToBalls } from "@workspace/scorecard";
 import { resolveOpponentClub } from "../lib/opponent-club";
 import { DEFAULT_VS_CLUB_MIN_INNINGS, loadVsClub } from "../lib/vs-club";
 import { shapePlayerShirtNumbers, type PlayerShirtNumbers } from "../lib/player-shirt-numbers";
+import { winnerMatchesPlayers } from "../lib/award-recipients";
 
 const router: IRouter = Router();
+
+function dedupeAwards<T extends { key: string; season: number }>(rows: T[]): T[] {
+  return [...new Map(rows.map((r) => [`${r.key}:${r.season}`, r])).values()];
+}
 
 /**
  * Every write below touches the native `players` register, its merges or its
@@ -318,7 +323,7 @@ async function capOnlyPlayerDetail(tenantId: number, playerId: number) {
         and(
           eq(awardWinnersTable.tenantId, tenantId),
           eq(awardsTable.tenantId, tenantId),
-          eq(awardWinnersTable.playerId, playerId),
+          winnerMatchesPlayers([playerId]),
           eq(awardWinnersTable.published, true),
           eq(awardsTable.published, true),
         ),
@@ -334,7 +339,7 @@ async function capOnlyPlayerDetail(tenantId: number, playerId: number) {
     seasonsPlayed: null,
     stats: [],
     premierships: premRows,
-    awards: awardRows,
+    awards: dedupeAwards(awardRows),
   };
 }
 
@@ -452,7 +457,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
           and(
             eq(awardWinnersTable.tenantId, tenantId),
             eq(awardsTable.tenantId, tenantId),
-            inArray(awardWinnersTable.playerId, groupIds),
+            winnerMatchesPlayers(groupIds),
             eq(awardWinnersTable.published, true),
             eq(awardsTable.published, true),
           ),
@@ -493,7 +498,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
         givenName: name.givenName,
       })),
       premierships: premRows,
-      awards: awardRows,
+      awards: dedupeAwards(awardRows),
       ...(await profileShirtNumbers(tenantId, groupIds, playerId)),
     });
     return;
@@ -565,7 +570,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
         and(
           eq(awardWinnersTable.tenantId, source.tenantId),
           eq(awardsTable.tenantId, source.tenantId),
-          eq(awardWinnersTable.playerId, params.data.id),
+          winnerMatchesPlayers([params.data.id]),
           eq(awardWinnersTable.published, true),
           eq(awardsTable.published, true),
         ),
@@ -596,7 +601,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     seasonsPlayed,
     stats,
     premierships: premRows,
-    awards: awardRows,
+    awards: dedupeAwards(awardRows),
     ...(await profileShirtNumbers(source.tenantId, [params.data.id], params.data.id)),
   });
 });

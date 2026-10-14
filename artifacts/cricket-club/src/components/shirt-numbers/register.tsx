@@ -26,6 +26,7 @@ import { AddSquadDialog, squadAddSummary } from "./add-squad-dialog";
 import { countSeasonStart, currentSeasonStartYear, seasonLabel, seasonOptions } from "./season";
 import { isValidShirtNumber } from "./values";
 import type { PersonPickerProps } from "./person-picker";
+import { invalidateTeamListCarouselSources } from "@/lib/team-list-carousel-cache";
 
 /**
  * A side's whole register screen (R4, R5, R7–R9, R11, F1, F4): season picker
@@ -79,6 +80,7 @@ export function ShirtNumberRegister({
     for (const s of seasons.length ? seasons : [season]) {
       void queryClient.invalidateQueries({ queryKey: api.registerQueryKey(s) });
     }
+    if (api.side === "senior") void invalidateTeamListCarouselSources(queryClient);
   };
   const report = (message: string | null, w: ShirtNumberWarning[] = []) => {
     setError(null);

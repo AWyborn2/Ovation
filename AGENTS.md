@@ -105,7 +105,11 @@ In short:
 - **Availability and Selection Hub are built, off per club by default**
   (`availability_settings.enabled`; plan `docs/plans/2026-10-06-002-feat-player-availability-selection-plan.md`).
   Admins import the PlayHQ participant CSV into `squad_members` (only whitelisted columns are
-  kept). The scheduled sweep then runs each enabled club's weekly round: SMS (Twilio
+  kept). Provisioning seeds the register from the club's central games this season
+  (`seedCurrentSeasonSquad`, `lib/db/src/squad-seed.ts`); the same seed backs the admin's
+  `POST /squad/seed-from-season` and the scheduled sweep's hourly top-up of an empty, never-seeded
+  register (`api-server/src/lib/squad-season-seed.ts`, marker
+  `availability_settings.season_seeded_at`); a later CSV import adopts those members. The scheduled sweep then runs each enabled club's weekly round: SMS (Twilio
   `TWILIO_*`, or ClickSend `CLICKSEND_*` sending from the club owner's own verified mobile;
   `SMS_PROVIDER` picks, Twilio wins when both are set and it is unset) and email requests with per-recipient hashed links, a reminder, and at cut-off a
   draft `selections` row per fixture seeded from the grade's last team list. Captains and
@@ -117,6 +121,14 @@ In short:
   replies (STOP included) go to the owner's phone, so SMS end "Stop texts at the link." and the
   player page's Stop/Start text messages control (`POST /availability/respond/{token}/texts`)
   is the opt-out; it sets the same `*_sms_opt_out` flags Twilio's STOP (21610) does.
+  A finalised side has **Print team sheet** (`GET`/`POST /selection/{id}/team-sheet`,
+  `api-server/src/lib/team-sheet.ts`): an A4 PDF from the side itself (not `team_lists`),
+  printed by the shared Chromium (`renderHtmlToPdf`). Format, competition, both team names and
+  the association come from PlayHQ via the fixture projector (`fixtures.match_format` …
+  `association_org_id`); PlayHQ has no overs limit, so the overs entered are remembered per
+  grade in `availability_settings.team_sheet_overs`. Senior sheets add Junior Aged Player
+  bowling limits from each member's date of birth under the association's rules
+  (`team-sheet-rules.ts`; PCA Bylaw 5.9 so far — other associations print blank columns).
 - **Meta publishing is built but switched off** (`META_PUBLISHING_ENABLED`): clubs connect a
   Facebook Page + Instagram account and drafts publish on a schedule or automatically at the
   auto-post deadline. Waits on Meta App Review; runbook `docs/runbooks/meta-publishing.md`.

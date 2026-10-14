@@ -7,7 +7,7 @@
  */
 
 /**
- * Where the row came from: 'manual' (admin CRUD) or 'playhq' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list)
+ * manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).
  */
 export type FixtureSource = typeof FixtureSource[keyof typeof FixtureSource];
 
@@ -15,4 +15,5 @@ export type FixtureSource = typeof FixtureSource[keyof typeof FixtureSource];
 export const FixtureSource = {
   manual: 'manual',
   playhq: 'playhq',
+  scorecard: 'scorecard',
 } as const;

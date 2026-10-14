@@ -1,12 +1,13 @@
 /**
  * Grade seniority for lists of grades on cards (results, round sets): lettered men's grades
- * first (A Grade → F Grade), then numbered (1st Grade → 10th Grade), then women's (Female A,
- * Female B, Women's 1st…), then PPL and Colts, then anything else.
+ * first (A Grade → H Grade), then numbered (1st Grade → 10th Grade), then women's (Female A,
+ * Female B, Women's 1st…), then PPL and Colts, then the age-based Over 40s/45s/50s…, then
+ * anything else.
  */
 export function gradeSeniorityRank(grade: string | null | undefined): number {
   const g = (grade ?? "").trim().toLowerCase().replace(/\s+/g, " ");
   const women = /\b(female|women'?s?|womens|ladies|girls?)\b/.test(g);
-  const letter = /\b([a-f]) grade\b/.exec(g)?.[1];
+  const letter = /\b([a-h]) grade\b/.exec(g)?.[1];
   const nth = /\b(\d{1,2})(?:st|nd|rd|th)\b/.exec(g)?.[1];
   const base = women ? 100 : 0;
   if (letter) return base + (letter.charCodeAt(0) - 97);
@@ -14,6 +15,9 @@ export function gradeSeniorityRank(grade: string | null | undefined): number {
   if (women) return base + 50;
   if (/\bppl\b/.test(g)) return 200;
   if (/\bcolts\b/.test(g)) return 201;
+  // Age-based veterans grades, youngest first: "Over 40s" → 240, "Over 45s" → 245 …
+  const over = /\bover (\d{2})s?\b/.exec(g)?.[1];
+  if (over) return 200 + Number(over);
   return 300;
 }
 

@@ -44,6 +44,17 @@ export const fixturesTable = pgTable(
     source: text("source").notNull().default("manual"), // "manual" | "playhq"
     // PlayHQ match GUID for `source = "playhq"` rows; NULL for manual rows.
     playhqMatchId: text("playhq_match_id"),
+    // Match details PlayHQ publishes, copied by the projector for the printed
+    // team sheet; NULL on manual rows and on rows not re-synced since.
+    // `competition_name` is PlayHQ's own grade name ("A Grade Wyllie Cup");
+    // `association_org_id` is the PlayHQ organisation that runs the grade and
+    // picks the competition's junior bowling rules (`team-sheet-rules.ts`).
+    matchFormat: text("match_format"),
+    competitionName: text("competition_name"),
+    associationOrgId: text("association_org_id"),
+    associationName: text("association_name"),
+    homeTeamName: text("home_team_name"),
+    awayTeamName: text("away_team_name"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

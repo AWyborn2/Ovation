@@ -25,13 +25,23 @@ export function WinnersManager({
   const confirm = useConfirm();
   const [showNew, setShowNew] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState("");
 
   const winners = award.winners;
 
   const moveWinner = (index: number, dir: -1 | 1) => {
     const a = winners[index];
     const b = winners[index + dir];
-    if (!a || !b) return;
+    if (!a || !b || a.season !== b.season) return;
+    // Equal sort orders are common in imported history. Move across the
+    // neighbour instead of swapping equal values (which would do nothing).
+    if (a.displayOrder === b.displayOrder) {
+      updateWinner.mutate(
+        { id: a.id, data: { displayOrder: b.displayOrder + dir } },
+        { onSuccess: onChanged, onError },
+      );
+      return;
+    }
     updateWinner.mutate(
       { id: a.id, data: { displayOrder: b.displayOrder } },
       {
@@ -48,6 +58,11 @@ export function WinnersManager({
 
   return (
     <div className="space-y-3">
+      {feedback && (
+        <p role="status" className="text-sm text-muted-foreground">
+          {feedback}
+        </p>
+      )}
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
           Past winners
@@ -78,6 +93,7 @@ export function WinnersManager({
                 {
                   onSuccess: () => {
                     setShowNew(false);
+                    setFeedback("Winner saved.");
                     onChanged();
                   },
                   onError,
@@ -101,6 +117,8 @@ export function WinnersManager({
                   initial={{
                     season: w.season,
                     playerId: w.playerId ?? null,
+                    playerIds: w.playerIds,
+                    recipients: w.recipients,
                     name: w.name,
                     displayOrder: w.displayOrder,
                     published: w.published,
@@ -113,6 +131,7 @@ export function WinnersManager({
                       {
                         onSuccess: () => {
                           setEditingId(null);
+                          setFeedback("Winner saved.");
                           onChanged();
                         },
                         onError,
@@ -124,14 +143,16 @@ export function WinnersManager({
                 />
               </div>
             ) : (
-              <div key={w.id} className="flex items-center justify-between gap-3 p-3">
+              <div key={w.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
                 <div className="min-w-0">
                   <span className="tabular-nums font-bold text-primary-text">
                     {formatSeason(w.season)}
                   </span>
                   <span className="ml-3 font-semibold">{w.name}</span>
-                  {w.playerId != null ? (
-                    <span className="ml-2 text-xs text-muted-foreground">linked #{w.playerId}</span>
+                  {(w.playerIds?.length ?? (w.playerId == null ? 0 : 1)) > 0 ? (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {w.playerIds?.length ?? 1} linked player(s)
+                    </span>
                   ) : (
                     <span className="ml-2 text-xs text-muted-foreground italic">free text</span>
                   )}
@@ -145,7 +166,11 @@ export function WinnersManager({
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={index === 0 || updateWinner.isPending}
+                    disabled={
+                      index === 0 ||
+                      winners[index - 1]?.season !== w.season ||
+                      updateWinner.isPending
+                    }
                     onClick={() => moveWinner(index, -1)}
                   >
                     ↑
@@ -153,7 +178,11 @@ export function WinnersManager({
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={index === winners.length - 1 || updateWinner.isPending}
+                    disabled={
+                      index === winners.length - 1 ||
+                      winners[index + 1]?.season !== w.season ||
+                      updateWinner.isPending
+                    }
                     onClick={() => moveWinner(index, 1)}
                   >
                     ↓

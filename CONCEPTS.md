@@ -90,3 +90,11 @@ The club's single table of automation choices, one row per card kind: whether it
 ### Posting style
 
 A named preset that fills every row of a Posting Plan in one choice (for example "Round carousels + individual highlights"). Changing any row afterwards makes the plan custom.
+
+### Card kind template
+
+A club's one design for a card kind, made of editable elements (the starter's own parts plus anything the admin adds) with a separate canvas per size. Automated drafts of that kind render from it; a single draft can still be tweaked without changing it.
+
+### Starter design
+
+A ready-made design (Club Kit or Broadcast) that a club copies into a card kind template as its starting point. The copy has no live link back to the starter.

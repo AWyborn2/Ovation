@@ -42,6 +42,8 @@ export type MatchSummaryInnings = {
 export type MatchSummaryInput = {
   kind: "matchSummary";
   matchTitle: string;
+  /** Explicit round or finals stage; optional for historical saved inputs. */
+  roundLabel?: string;
   matchType?: string | null;
   date?: string | null;
   venue?: string | null;

@@ -15,19 +15,6 @@ export const MAX_SLIDES = 10;
 export const selectClass =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
-export const GRADES = [
-  "A Grade",
-  "B Grade",
-  "C Grade",
-  "D Grade",
-  "E Grade",
-  "F Grade",
-  "Female A Grade",
-  "Female B Grade",
-  "PPL",
-  "Colts",
-];
-
 // Working copy of a slide. The persisted `CardSetSlide.input` is opaque jsonb;
 // in the editor we treat it as a concrete `ShareCardInput` so the renderer,
 // studio editor and pickers can all share one type.

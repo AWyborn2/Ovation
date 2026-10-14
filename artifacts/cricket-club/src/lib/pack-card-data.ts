@@ -36,9 +36,25 @@ export interface PackBrandSource {
   name?: string | null;
   tagline?: string | null;
   logoUrl?: string | null;
+  /** Hero image slots; `cards` is the club's ground behind card designs. */
+  heroImages?: { cards?: string | null } | null;
   primaryColour?: string | null;
   backgroundColour?: string | null;
   juniorsColour?: string | null;
+}
+
+/**
+ * A card brand with the club's ground photo (Admin → Branding → Card
+ * background) taken from `club` — the social settings bundle's brand doesn't
+ * carry the hero image slots.
+ */
+export function withGroundPhoto<B extends PackBrandSource>(
+  brand: B | null | undefined,
+  club: { heroImages?: { cards?: string | null } | null } | null | undefined,
+): (B & PackBrandSource) | null | undefined {
+  const cards = club?.heroImages?.cards;
+  if (!brand || !cards) return brand;
+  return { ...brand, heroImages: { ...(brand.heroImages ?? {}), cards } };
 }
 
 export interface BuildPackDataOptions {
@@ -103,6 +119,9 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
           // Club tagline (A9) → the pack header sub-line; empty when unset.
           tagline: brand.tagline,
           logoUrl: brand.logoUrl,
+          // The club's ground photo, behind card designs ({{groundPhoto}});
+          // absent for a club without one, so its card data is unchanged.
+          ...(brand.heroImages?.cards ? { groundPhotoUrl: brand.heroImages.cards } : {}),
           // Colours seed the pack's DEFAULT token palette via
           // `brandDefaultTokens`: primary → accent always; background → panel
           // and deep stage in "Club colours", juniors → panel in "Pack's own look".

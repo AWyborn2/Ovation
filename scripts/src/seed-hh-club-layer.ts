@@ -74,6 +74,7 @@ import { planPersistence } from "./persist-hh-crosswalk-core";
 import { writeSeedPlan } from "./seed-hh-club-layer-write";
 import {
   SEED_SOURCE,
+  confirmedMergedAway,
   decisionsCsv,
   flagBaselineOverlaps,
   parseDecisionsCsv,
@@ -447,9 +448,7 @@ async function main(): Promise<void> {
       },
       existing: {
         map: state.map,
-        mergedAway: new Set(
-          state.curation.filter((c) => c.mergedIntoParticipantId).map((c) => c.participantId),
-        ),
+        mergedAway: confirmedMergedAway(state.curation),
         boundaries: state.boundaries,
         seedBatches: state.seedBatches,
         storeMissing: state.storeMissing,

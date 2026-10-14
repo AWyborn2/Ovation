@@ -23,7 +23,7 @@ export interface Fixture {
   isHome: boolean;
   /** @nullable */
   notes?: string | null;
-  /** Where the row came from: 'manual' (admin CRUD) or 'playhq' (projected from the PlayHQ landing schema; re-syncs refresh the fixture-facing fields, never notes or the team list) */
+  /** manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture). */
   source: FixtureSource;
   /**
      * PlayHQ match GUID for playhq-sourced rows; null for manual rows

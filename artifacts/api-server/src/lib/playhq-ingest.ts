@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db, tenantsTable } from "@workspace/db";
 import {
   PROJECTABLE_STATUSES,
@@ -7,6 +7,8 @@ import {
   centralProjectorConfigured,
   getCentralProjectorPool,
   projectToCentral,
+  upgradeNamesFromPlayhq,
+  normaliseCentralNames,
   duePlans,
   loadCadenceInputs,
   type DuePlan,
@@ -22,6 +24,7 @@ import {
   type LoadRows,
   type Queryable,
   type RunMeta,
+  type TeamListUpdate,
 } from "@workspace/db/playhq-ingest";
 import type { z } from "zod";
 import type { IngestPlayhqDumpResponse } from "@workspace/api-zod";
@@ -149,6 +152,7 @@ export async function ingestPlayhqDump(
   // A dump with scorecards also runs it: after play, PlayHQ's side replaces a Selection Hub
   // list, and the match-day plan fetches scorecards but no lineups.
   const teamListsWritten = new Map<number, number>();
+  const teamListUpdates: { tenantId: number; update: TeamListUpdate }[] = [];
   if (rows.match_lineups.length || rows.scorecards.length)
     try {
       const lists = await projectTeamLists({
@@ -157,7 +161,10 @@ export async function ingestPlayhqDump(
         central: reader,
         log: (line) => log.info(`playhq team lists: ${line}`),
       });
-      for (const l of lists) teamListsWritten.set(l.tenantId, l.written);
+      for (const l of lists) {
+        teamListsWritten.set(l.tenantId, l.written);
+        for (const update of l.updates) teamListUpdates.push({ tenantId: l.tenantId, update });
+      }
     } catch (err) {
       log.error({ err }, "playhq ingest: team list projection failed");
       warnings.push(`team list projection failed: ${err instanceof Error ? err.message : err}`);
@@ -250,6 +257,7 @@ export async function ingestPlayhqDump(
     fixtureChanges: loaded.counts.fixture_changes ?? 0,
     juniorGradesDropped: droppedGradeIds.length,
     tenants,
+    teamLists: await namedTeamListUpdates(teamListUpdates),
     warnings,
     ...(centralProjection ? { centralProjection } : {}),
   };
@@ -272,6 +280,12 @@ export function countSkipReasons(reasons: string[]): Record<string, number> {
   return out;
 }
 
+async function clearCentralCaches(): Promise<void> {
+  const { clearCentralQueriesCache } = await import("@workspace/db/central-queries");
+  clearCentralQueriesCache();
+  clearMilestonesCache();
+}
+
 export async function projectDumpToCentral(
   rows: LoadRows,
   warnings: string[],
@@ -292,11 +306,28 @@ export async function projectDumpToCentral(
         .map((m) => String(m.id)),
     ]),
   ];
-  if (!matchIds.length)
-    return { mode, considered: 0, created: 0, updated: 0, skipped: 0, playersInserted: 0 };
+  // Full names from PlayHQ's grade stats reports (weekly plan, names backfill).
+  const hasNames = (rows.players ?? []).some((p) => p.full_name);
   try {
     const pool = getCentralProjectorPool();
     await assertProjectorScope(pool);
+    // Names stored surname first ("Phelps, Chris") are turned round once; a no-op after.
+    const reordered = await normaliseCentralNames(pool, { dryRun: mode === "dry" });
+    if (!matchIds.length && !hasNames) {
+      if (reordered > 0) await clearCentralCaches();
+      return {
+        mode,
+        considered: 0,
+        created: 0,
+        updated: 0,
+        skipped: 0,
+        playersInserted: 0,
+        ...(reordered ? { namesUpgraded: reordered } : {}),
+      };
+    }
+    const namesFromReports = hasNames
+      ? await upgradeNamesFromPlayhq(pool, { dryRun: mode === "dry" })
+      : 0;
     const s = await projectToCentral(pool, {
       matchIds,
       dryRun: mode === "dry",
@@ -307,11 +338,10 @@ export async function projectDumpToCentral(
       if (k.reason.startsWith("error:"))
         warnings.push(`central projection failed for PlayHQ match ${k.playhqMatchId}: ${k.reason}`);
     }
-    if (!s.dryRun && s.created + s.updated > 0) {
+    const namesUpgraded = reordered + namesFromReports + s.namesUpgraded;
+    if (!s.dryRun && (s.created + s.updated > 0 || namesUpgraded > 0)) {
       // New results must show now, not after the read caches' TTL.
-      const { clearCentralQueriesCache } = await import("@workspace/db/central-queries");
-      clearCentralQueriesCache();
-      clearMilestonesCache();
+      await clearCentralCaches();
     }
     return {
       mode,
@@ -321,6 +351,7 @@ export async function projectDumpToCentral(
       skipped: s.skipped.length,
       skipReasons: countSkipReasons(s.skipped.map((k) => k.reason)),
       playersInserted: s.playersInserted,
+      namesUpgraded,
     };
   } catch (err) {
     log.error({ err }, "playhq ingest: central projection failed");
@@ -353,4 +384,26 @@ export async function listDuePlans(now: Date): Promise<DuePlansResponse> {
     now: now.toISOString(),
     plans: duePlans(now, orgIds, matches, lastRuns),
   };
+}
+
+/** The run's team-list updates with each club's name, for the sync's run log. */
+async function namedTeamListUpdates(
+  updates: { tenantId: number; update: TeamListUpdate }[],
+): Promise<NonNullable<PlayhqIngestResponse["teamLists"]>> {
+  if (updates.length === 0) return [];
+  const ids = [...new Set(updates.map((u) => u.tenantId))];
+  const clubs = await db
+    .select({ id: tenantsTable.id, name: tenantsTable.name })
+    .from(tenantsTable)
+    .where(inArray(tenantsTable.id, ids));
+  const nameOf = new Map(clubs.map((c) => [c.id, c.name]));
+  return updates.map(({ tenantId, update: u }) => ({
+    tenantId,
+    club: nameOf.get(tenantId) ?? `tenant ${tenantId}`,
+    grade: u.grade,
+    opponent: u.opponent,
+    startAt: new Date(u.startAt),
+    players: u.players,
+    change: u.change,
+  }));
 }

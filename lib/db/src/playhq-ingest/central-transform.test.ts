@@ -7,7 +7,10 @@ import {
   dismissalFielder,
   perthDate,
   scorecardToCentral,
+  initialsOnlyName,
+  givenFirst,
   surnameFirst,
+  upgradedDisplayName,
   type PlayhqMatchRow,
 } from "./central-transform";
 
@@ -238,5 +241,46 @@ describe("centralStatus", () => {
     expect(centralStatus("PENDING")).toBe(IN_PROGRESS);
     expect(centralStatus("IN_PROGRESS")).toBe(IN_PROGRESS);
     expect(centralStatus(null)).toBe(IN_PROGRESS);
+  });
+});
+
+describe("upgradedDisplayName — full names replace initials only", () => {
+  it("replaces an initials-only name with the matching full name", () => {
+    expect(upgradedDisplayName("C Phelps", "Phelps, Chris")).toBe("Chris Phelps");
+    expect(upgradedDisplayName("C. Phelps", "Phelps, Chris")).toBe("Chris Phelps");
+    expect(upgradedDisplayName("CJ Phelps", "Phelps, Chris James")).toBe("Chris James Phelps");
+    expect(upgradedDisplayName("Phelps, C", "Phelps, Chris")).toBe("Chris Phelps");
+    expect(upgradedDisplayName("M de Vaurno", "de Vaurno, Matt")).toBe("Matt de Vaurno");
+  });
+
+  it("keeps a full name, a private player and any mismatch", () => {
+    expect(upgradedDisplayName("Phelps, Chris", "Phelps, Christopher")).toBeNull();
+    expect(upgradedDisplayName("Private Player", "Phelps, Chris")).toBeNull();
+    expect(upgradedDisplayName("C Phelps", "Phelps, Daniel")).toBeNull(); // initial differs
+    expect(upgradedDisplayName("C Phelps", "Phillips, Chris")).toBeNull(); // surname differs
+    expect(upgradedDisplayName("C Phelps", "Phelps, C")).toBeNull(); // no given name
+    expect(upgradedDisplayName("C Phelps", null)).toBeNull();
+  });
+
+  it("recognises initials-only names", () => {
+    expect(initialsOnlyName("C Phelps")).toEqual({ initial: "C", surname: "Phelps" });
+    expect(initialsOnlyName("Phelps, C.")).toEqual({ initial: "C", surname: "Phelps" });
+    expect(initialsOnlyName("Chris Phelps")).toBeNull();
+    expect(initialsOnlyName("Phelps, Chris")).toBeNull();
+  });
+});
+
+describe("givenFirst — names read given name first", () => {
+  it("turns a surname-first name round", () => {
+    expect(givenFirst("Phelps, Chris")).toBe("Chris Phelps");
+    expect(givenFirst("de Vaurno,  Matt James")).toBe("Matt James de Vaurno");
+  });
+
+  it("leaves other names alone", () => {
+    expect(givenFirst("Chris Phelps")).toBe("Chris Phelps");
+    expect(givenFirst("C Phelps")).toBe("C Phelps");
+    expect(givenFirst("Phelps,")).toBe("Phelps");
+    expect(givenFirst("")).toBeNull();
+    expect(givenFirst(null)).toBeNull();
   });
 });

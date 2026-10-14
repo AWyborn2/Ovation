@@ -1,5 +1,6 @@
-import { and, eq, isNotNull, lte } from "drizzle-orm";
+import { and, eq, isNotNull, lte, sql, type SQL } from "drizzle-orm";
 import { db, socialDraftsTable, socialSettingsTable } from "@workspace/db";
+import { layoutBlocksAutomation } from "@workspace/scorecard/kind-templates";
 import { normalizeDraftStatus, type DraftStatus } from "./draft-status";
 
 /**
@@ -11,8 +12,23 @@ import { normalizeDraftStatus, type DraftStatus } from "./draft-status";
  */
 export type AutoPost = { enabled: boolean };
 
+/** The layout fields a templated draft carries (card kind templates, KTD10). */
+type LayoutFields = {
+  templateVersion?: number | null;
+  layoutCheckPending?: boolean;
+  layoutWarnings?: unknown;
+};
+
+/**
+ * SQL for "automation may touch this draft": a pack draft always, a templated
+ * draft only once its layout check has run and found nothing (KTD10). Mirrors
+ * `layoutBlocksAutomation`; every automated promotion and auto-post query uses
+ * it so a card that needs a look is never posted unseen.
+ */
+export const layoutClear: SQL = sql`(${socialDraftsTable.templateVersion} is null or (${socialDraftsTable.layoutCheckPending} = false and not coalesce((select bool_or(jsonb_typeof(w.value) = 'array' and jsonb_array_length(w.value) > 0) from jsonb_each(coalesce(${socialDraftsTable.layoutWarnings}, '{}'::jsonb)) w), false)))`;
+
 export function effectiveDraftStatus(
-  draft: { status: string; autoReadyAt: Date | string | null },
+  draft: { status: string; autoReadyAt: Date | string | null } & LayoutFields,
   autoPost: AutoPost,
   now: Date = new Date(),
 ): DraftStatus {
@@ -21,7 +37,12 @@ export function effectiveDraftStatus(
     stored === "awaiting_review" &&
     autoPost.enabled &&
     draft.autoReadyAt != null &&
-    new Date(draft.autoReadyAt).getTime() <= now.getTime()
+    new Date(draft.autoReadyAt).getTime() <= now.getTime() &&
+    !layoutBlocksAutomation({
+      templateVersion: draft.templateVersion ?? null,
+      layoutCheckPending: draft.layoutCheckPending ?? false,
+      layoutWarnings: (draft.layoutWarnings ?? null) as Partial<Record<string, unknown[]>> | null,
+    })
   ) {
     return "ready";
   }
@@ -49,7 +70,8 @@ export async function autoReadyAtFor(tenantId: number, importedAt: Date): Promis
 /**
  * Store every draft that reads as ready. The WHERE clause re-checks the
  * stored state, so two concurrent sweeps can never promote the same draft
- * twice — the second finds nothing to update. Returns the promoted ids.
+ * twice — the second finds nothing to update. A templated draft that needs a
+ * look (or hasn't been checked) stays awaiting review. Returns the promoted ids.
  */
 export async function persistDueDrafts(
   tenantId: number,
@@ -64,6 +86,7 @@ export async function persistDueDrafts(
         eq(socialDraftsTable.status, "awaiting_review"),
         isNotNull(socialDraftsTable.autoReadyAt),
         lte(socialDraftsTable.autoReadyAt, now),
+        layoutClear,
       ),
     )
     .returning({ id: socialDraftsTable.id });

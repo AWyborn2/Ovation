@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import type { Request } from "express";
 import { and, eq, gt, inArray, isNull, ne } from "drizzle-orm";
 import {
@@ -14,7 +15,7 @@ import {
   type SquadMemberRow,
   type TenantRow,
 } from "@workspace/db";
-import { generateResetToken, hashResetToken } from "./auth";
+import { hashResetToken } from "./auth";
 import { tenantUrl } from "./tenant-url";
 import { addDays, perthDayStart } from "./availability-grades";
 
@@ -28,9 +29,49 @@ import { addDays, perthDayStart } from "./availability-grades";
  * else. Raw tokens are never logged.
  */
 
-/** The player page path for a raw token (the web route is `/availability/:token`). */
-export function availabilityPath(token: string): string {
-  return `/availability/${encodeURIComponent(token)}`;
+const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+const TOKEN_LENGTH = 12;
+
+/**
+ * A fresh raw token: 12 base62 characters from the CSPRNG (about 71 bits).
+ * Short enough that the personal request fits one SMS, and enough here: a
+ * token reaches one recipient slot of one member in one round, it expires
+ * after the round's weekend, only its hash is stored, and the public endpoints
+ * are rate-limited by IP, so guessing one live token is out of reach. Tokens
+ * minted before (43-character base64url) still resolve: lookup is by hash,
+ * whatever the length.
+ */
+export function generateAvailabilityToken(): string {
+  let out = "";
+  while (out.length < TOKEN_LENGTH) {
+    for (const b of randomBytes(TOKEN_LENGTH * 2)) {
+      // Rejection sampling: 248 = 4 × 62, so every character is equally likely.
+      if (b < 248) out += BASE62[b % 62];
+      if (out.length === TOKEN_LENGTH) break;
+    }
+  }
+  return out;
+}
+
+/**
+ * The decorative round tag for a link ("Round 6" → "r6"), from a numbered
+ * round label only; null for "Semi Final", a blank label and the like.
+ */
+export function roundTag(roundLabel: string | null | undefined): string | null {
+  const m = /^(?:round|rnd|rd|r)\s*0*(\d{1,5})$/i.exec(roundLabel?.trim() ?? "");
+  return m ? `r${m[1]}` : null;
+}
+
+/**
+ * The player page path for a raw token: `/a/{tag}/{token}`, or `/a/{token}`
+ * without a tag. The tag only tells the reader which round the link is for —
+ * it is never read back or trusted; the token alone finds the request. A tag
+ * that isn't 1-6 letters or digits is left out. (`/availability/:token`, the
+ * older long form, still opens the same page.)
+ */
+export function availabilityPath(token: string, tag?: string | null): string {
+  const t = tag && /^[a-z0-9]{1,6}$/i.test(tag) ? `${tag}/` : "";
+  return `/a/${t}${encodeURIComponent(token)}`;
 }
 
 /**
@@ -42,9 +83,10 @@ export function availabilityLink(
   tenant: Pick<TenantRow, "slug" | "customDomain">,
   token: string,
   req?: Request,
+  tag?: string | null,
 ): string {
   const r = req ?? ({ headers: {} } as unknown as Request);
-  return tenantUrl(r, tenant, availabilityPath(token));
+  return tenantUrl(r, tenant, availabilityPath(token, tag));
 }
 
 /**
@@ -62,7 +104,8 @@ export async function mintRequestToken(args: {
   requestId: number;
   expiresAt: Date;
 }): Promise<{ token: string; tokenId: number }> {
-  const { token, tokenHash } = generateResetToken();
+  const token = generateAvailabilityToken();
+  const tokenHash = hashResetToken(token);
   const [row] = await db
     .insert(availabilityTokensTable)
     .values({

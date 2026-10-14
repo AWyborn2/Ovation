@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120">
+  <rect width="320" height="120" rx="12" fill="#f5f1e7"/>
+  <path d="M34 60h36M52 42v36" stroke="#a66e19" stroke-width="8"/>
+  <text x="88" y="56" fill="#20252a" font-family="Arial,sans-serif" font-size="24" font-weight="700">COASTAL</text>
+  <text x="88" y="84" fill="#7d7467" font-family="Arial,sans-serif" font-size="15" letter-spacing="3">FIELDWORKS</text>
+</svg>

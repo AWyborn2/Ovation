@@ -14,6 +14,7 @@ import { goRedirectRouter } from "./routes/social-drafts";
 import { logger } from "./lib/logger";
 import { ensureSeedAdmin, ensureSeedPlatformAdmin } from "./lib/auth";
 import { env } from "./config";
+import { buildAllowedOrigins } from "./lib/cors-origins";
 
 const app: Express = express();
 
@@ -25,21 +26,12 @@ app.set("trust proxy", 1);
 // published domains (derived from the platform env vars). Requests with no
 // Origin header (same-origin browser requests, native mobile fetches, curl)
 // are allowed through.
-function buildAllowedOrigins(): Set<string> {
-  const origins = new Set<string>();
-  const addHosts = (value: string | undefined): void => {
-    if (!value) return;
-    for (const host of value.split(",")) {
-      const trimmed = host.trim();
-      if (trimmed) origins.add(`https://${trimmed}`);
-    }
-  };
-  addHosts(env.REPLIT_DOMAINS());
-  addHosts(env.REPLIT_DEV_DOMAIN());
-  return origins;
-}
-
-const allowedOrigins = buildAllowedOrigins();
+const allowedOrigins = buildAllowedOrigins({
+  domains: env.REPLIT_DOMAINS(),
+  devDomain: env.REPLIT_DEV_DOMAIN(),
+  expoDevDomain: env.REPLIT_EXPO_DEV_DOMAIN(),
+  production: env.isProduction(),
+});
 
 /**
  * The request path as logged: the query string dropped, and the personal-link

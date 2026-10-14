@@ -53,7 +53,9 @@ export default defineConfig(async ({ command }) => {
         "@": path.resolve(import.meta.dirname, "src"),
         "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
       },
-      dedupe: ["react", "react-dom"],
+      // Web and Expo use different React peer contexts. Shared API hooks must
+      // use this app's QueryClient context, not a second pnpm peer installation.
+      dedupe: ["react", "react-dom", "@tanstack/react-query"],
     },
     root: path.resolve(import.meta.dirname),
     build: {

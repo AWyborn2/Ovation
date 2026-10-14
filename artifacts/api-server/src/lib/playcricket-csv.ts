@@ -16,6 +16,10 @@ export const PLAYCRICKET_GRADE_MAP: Record<string, string> = {
   "Female B Grade": "Female B Grade",
   PPL: "PPL",
   Colts: "Colts",
+  "Over 40s": "Over 40s",
+  "Over 45s": "Over 45s",
+  "Over 50s": "Over 50s",
+  "Over 60s": "Over 60s",
 };
 
 const EXPECTED_HEADERS = [

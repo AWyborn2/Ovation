@@ -7,7 +7,7 @@
  * leak onto another tenant's build.
  *
  * Store identity (app name, slug, bundle id) is separate and comes from the
- * `EXPO_PUBLIC_TENANT_*` build-time variables read by `app.config.ts`.
+ * the static `app.json` required by Replit's mobile publishing flow.
  */
 export const DEFAULT_BRAND = {
   /** Full display name. */

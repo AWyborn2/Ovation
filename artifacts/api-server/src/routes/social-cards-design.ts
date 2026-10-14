@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, asc, eq, ne } from "drizzle-orm";
+import { and, asc, eq, ne, notInArray } from "drizzle-orm";
 import { db, cardTemplatesTable, cardLayoutsTable, cardEffectPresetsTable } from "@workspace/db";
 import {
   CreateCardTemplateBody,
@@ -46,9 +46,15 @@ router.get("/card-templates", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(cardTemplatesTable)
-    // Studio editor templates (U18) have their own list; they aren't layouts
-    // or backgrounds, so they stay out of this one.
-    .where(and(eq(cardTemplatesTable.tenantId, tenantId), ne(cardTemplatesTable.source, "editor")))
+    // Studio editor templates (U18) and card kind templates (plan 2026-10-07-002)
+    // have their own APIs; they aren't layouts or backgrounds, so they stay out
+    // of this one (and out of the share-card modal's layout pre-selection).
+    .where(
+      and(
+        eq(cardTemplatesTable.tenantId, tenantId),
+        notInArray(cardTemplatesTable.source, ["editor", "kind"]),
+      ),
+    )
     .orderBy(asc(cardTemplatesTable.displayOrder), asc(cardTemplatesTable.id));
   res.json(rows);
 });
@@ -135,7 +141,12 @@ router.patch(
         .update(cardTemplatesTable)
         .set(body.data)
         .where(
-          and(eq(cardTemplatesTable.id, params.data.id), eq(cardTemplatesTable.tenantId, tenantId)),
+          and(
+            eq(cardTemplatesTable.id, params.data.id),
+            eq(cardTemplatesTable.tenantId, tenantId),
+            // Kind templates change only through their own versioned API.
+            ne(cardTemplatesTable.source, "kind"),
+          ),
         )
         .returning();
       return updated;
@@ -164,6 +175,7 @@ router.delete(
         and(
           eq(cardTemplatesTable.id, params.data.id),
           eq(cardTemplatesTable.tenantId, getTenantId(req)),
+          ne(cardTemplatesTable.source, "kind"),
         ),
       )
       .returning({ id: cardTemplatesTable.id });

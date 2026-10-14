@@ -58,11 +58,11 @@ describe("teamListToCardInput with season shirt numbers", () => {
     const input = teamListToCardInput(fixture, players, NO_DEBUTS, numbers);
     expect(input.numbering).toBe("shirt");
     expect(cardPlayers(input)).toEqual([
-      { order: 1, surname: "OPENER", role: "C", shirtNumber: "7" },
-      { order: 2, surname: "NUMBERED", shirtNumber: "23" },
-      { order: 3, surname: "UNNUMBERED" },
-      { order: 4, surname: "DEBUTANT", shirtNumber: "31" },
-      { order: 6, surname: "NAME", role: "WK" },
+      { order: 1, surname: "OPENER", firstInitial: "A", role: "C", shirtNumber: "7" },
+      { order: 2, surname: "NUMBERED", firstInitial: "S", shirtNumber: "23" },
+      { order: 3, surname: "UNNUMBERED", firstInitial: "P" },
+      { order: 4, surname: "DEBUTANT", firstInitial: "H", shirtNumber: "31" },
+      { order: 6, surname: "NAME", firstInitial: "T", role: "WK" },
     ]);
   });
 
@@ -120,5 +120,28 @@ describe("teamListToCardInput with season shirt numbers", () => {
       both,
     );
     expect(cardPlayers(input)[0].shirtNumber).toBe("7");
+  });
+
+  it("carries the round of each team's actual fixture, not a shared current-round counter", () => {
+    for (const roundLabel of ["Round 1", "Round 7", "Grand Final", null]) {
+      const input = teamListToCardInput({ ...fixture, grade: "C Grade", roundLabel }, players);
+      expect(input.roundLabel).toBe((roundLabel ?? "").toUpperCase());
+      expect(input.grade).toBe("C Grade");
+    }
+  });
+
+  it("provides genuine initials without guessing for single names or private players", () => {
+    const input = teamListToCardInput(fixture, [
+      { order: 1, displayName: "Émile Smith" },
+      { order: 2, displayName: "A. Knight" },
+      { order: 3, displayName: "Jones" },
+      { order: 4, displayName: "Private Player" },
+    ]);
+    expect(input.players).toEqual([
+      { order: 1, surname: "SMITH", firstInitial: "É" },
+      { order: 2, surname: "KNIGHT", firstInitial: "A" },
+      { order: 3, surname: "JONES" },
+      { order: 4, surname: "PLAYER" },
+    ]);
   });
 });

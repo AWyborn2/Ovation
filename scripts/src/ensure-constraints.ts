@@ -154,7 +154,7 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
   {
     table: "social_draft_revisions",
     name: "social_draft_revisions_reason_check",
-    sql: `"reason" IN ('refresh', 'edit', 'revert')`,
+    sql: `"reason" IN ('refresh', 'edit', 'revert', 'template')`,
   },
   {
     table: "awards",
@@ -316,6 +316,13 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
     sql: `CREATE UNIQUE INDEX IF NOT EXISTS "social_drafts_source_key_dedupe"
           ON "social_drafts" ("tenant_id", "source_key")
           WHERE source_key IS NOT NULL AND status != 'dismissed'`,
+  },
+  // Card kind templates (migration 0035): one kind template per tenant and card kind.
+  {
+    name: "card_templates_kind_unique",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "card_templates_kind_unique"
+          ON "card_templates" ("tenant_id", "base_kind")
+          WHERE source = 'kind'`,
   },
   {
     name: "fixtures_tenant_playhq_match_uidx",

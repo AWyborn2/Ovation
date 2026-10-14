@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { AwardRecipient } from './awardRecipient';
 
 export interface AwardWinner {
   id: number;
@@ -12,6 +13,9 @@ export interface AwardWinner {
   season: number;
   /** @nullable */
   playerId?: number | null;
+  /** Ordered linked players; playerId remains the first link for older clients. */
+  playerIds?: number[];
+  recipients?: AwardRecipient[];
   name: string;
   displayOrder: number;
   published: boolean;

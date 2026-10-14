@@ -86,7 +86,7 @@ async function defaultConvertHeic(file: File): Promise<{ src: string; size: Size
   const res = await ingestClubPhotos({ objectPaths: [objectPath] });
   const result = res.results[0];
   if (!result?.ok || !result.photo)
-    throw new Error(result?.error ?? "Couldn't convert that photo.");
+    throw new Error(result?.error ?? "The photo could not be added to the library.");
   return {
     src: result.photo.url,
     size: { width: result.photo.width, height: result.photo.height },

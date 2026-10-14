@@ -1529,7 +1529,7 @@ export async function loadBoundaries(
 }
 
 /** Pre-digital players earlier imports minted for this tenant, with their history seasons. */
-async function loadHistoryCandidates(tenantId: number): Promise<SpanCandidate[]> {
+export async function loadHistoryCandidates(tenantId: number): Promise<SpanCandidate[]> {
   const rows = await db
     .select({
       participantId: playerIdMapTable.participantId,
@@ -1586,7 +1586,7 @@ async function loadHistoryCandidates(tenantId: number): Promise<SpanCandidate[]>
  * senior central season. Read through the same club-cached partials the club
  * overlay uses; never writes central.
  */
-async function loadCentralCandidates(
+export async function loadCentralCandidates(
   tenantId: number,
   centralClubId: number,
 ): Promise<SpanCandidate[]> {
@@ -1986,6 +1986,7 @@ async function playerReferenced(tx: Tx, tenantId: number, playerId: number): Pro
       sql`EXISTS (SELECT 1 FROM ${sql.identifier(t)} WHERE tenant_id = ${tenantId} AND player_id = ${playerId})`,
   );
   checks.push(
+    sql`EXISTS (SELECT 1 FROM award_winners WHERE tenant_id = ${tenantId} AND ${playerId} = ANY(player_ids))`,
     sql`EXISTS (SELECT 1 FROM junior_participants WHERE tenant_id = ${tenantId} AND senior_player_id = ${playerId})`,
     sql`EXISTS (SELECT 1 FROM award_ballots b JOIN award_voting_config c ON c.id = b.config_id
         JOIN awards a ON a.id = c.award_id

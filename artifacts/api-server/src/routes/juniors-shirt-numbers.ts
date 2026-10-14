@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db } from "@workspace/db";
+import { db, juniorParticipantsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { isValidShirtNumber } from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import {
@@ -18,7 +19,6 @@ import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
 import { adminWriteRateLimiter, registerEditRateLimiter } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
-import { isCentralTenant } from "../lib/tenant";
 import { loadSeasonEntries } from "../lib/shirt-numbers";
 import { shirtNumberFileUpload, type MulterRequest } from "../lib/import-upload";
 import {
@@ -61,9 +61,19 @@ const router: IRouter = Router();
 
 const NO_JUNIORS = "Juniors are not available for this club.";
 
-/** True (and a 404 sent) when the tenant has no native junior data. */
-async function refuseCentral(req: Request, res: Response): Promise<boolean> {
-  if (!(await isCentralTenant(req))) return false;
+/** Whether this club has any juniors of its own (junior_participants rows). */
+async function hasJuniors(tenantId: number): Promise<boolean> {
+  const [row] = await db
+    .select({ id: juniorParticipantsTable.participantId })
+    .from(juniorParticipantsTable)
+    .where(eq(juniorParticipantsTable.tenantId, tenantId))
+    .limit(1);
+  return !!row;
+}
+
+/** True (and a 404 sent) when the club has no junior data. */
+async function refuseNoJuniors(req: Request, res: Response): Promise<boolean> {
+  if (await hasJuniors(getTenantId(req))) return false;
   res.status(404).json({ error: NO_JUNIORS });
   return true;
 }
@@ -81,12 +91,12 @@ router.get("/juniors/shirt-numbers", requireAdmin, async (req, res): Promise<voi
     res.status(400).json({ error: "Invalid season" });
     return;
   }
-  // Central tenants have no native junior participants — an empty register, no leak.
-  if (await isCentralTenant(req)) {
+  const tenantId = getTenantId(req);
+  // A club with no juniors of its own gets an empty register.
+  if (!(await hasJuniors(tenantId))) {
     res.json({ season, seasons: [], entries: [] });
     return;
   }
-  const tenantId = getTenantId(req);
   const [entries, seasons] = await Promise.all([
     listJuniorEntries(tenantId, season),
     juniorRegisterSeasons(tenantId),
@@ -114,7 +124,7 @@ router.post(
       res.status(400).json({ error: "A shirt number is 1 to 3 digits" });
       return;
     }
-    if (await refuseCentral(req, res)) return;
+    if (await refuseNoJuniors(req, res)) return;
     const settings = await enabledSettings(req, res);
     if (!settings) return;
     const tenantId = getTenantId(req);
@@ -168,7 +178,7 @@ router.patch(
       res.status(400).json({ error: "A shirt number is 1 to 3 digits" });
       return;
     }
-    if (await refuseCentral(req, res)) return;
+    if (await refuseNoJuniors(req, res)) return;
     const settings = await enabledSettings(req, res);
     if (!settings) return;
     const outcome = await updateJuniorEntry(
@@ -192,7 +202,7 @@ router.delete(
       res.status(400).json({ error: params.error.message });
       return;
     }
-    if (await refuseCentral(req, res)) return;
+    if (await refuseNoJuniors(req, res)) return;
     if (!(await enabledSettings(req, res))) return;
     if (!(await deleteJuniorEntry(getTenantId(req), params.data.id))) {
       res.status(404).json({ error: "Entry not found" });
@@ -213,7 +223,7 @@ router.post(
       res.status(400).json({ error: "Invalid season" });
       return;
     }
-    if (await refuseCentral(req, res)) return;
+    if (await refuseNoJuniors(req, res)) return;
     const settings = await enabledSettings(req, res);
     if (!settings) return;
     res.json(await startJuniorSeason(getTenantId(req), params.data.season, settings));
@@ -235,7 +245,7 @@ router.post(
       res.status(400).json({ error: "Invalid season" });
       return;
     }
-    if (await refuseCentral(req, res)) return;
+    if (await refuseNoJuniors(req, res)) return;
     const settings = await enabledSettings(req, res);
     if (!settings) return;
     res.json(await addSquadToJuniorRegister(getTenantId(req), params.data.season, settings));
@@ -267,7 +277,7 @@ router.post(
       res.status(400).json({ error: "Invalid season" });
       return;
     }
-    if (await refuseCentral(req, res)) return;
+    if (await refuseNoJuniors(req, res)) return;
     if (!(await enabledSettings(req, res))) return;
 
     let parsed;
@@ -322,7 +332,7 @@ router.post(
       res.status(400).json({ error: parsed.error.message });
       return;
     }
-    if (await refuseCentral(req, res)) return;
+    if (await refuseNoJuniors(req, res)) return;
     const settings = await enabledSettings(req, res);
     if (!settings) return;
     const outcome = await commitJuniorUpload(
@@ -350,7 +360,7 @@ router.delete(
       res.status(400).json({ error: params.error.message });
       return;
     }
-    if (await refuseCentral(req, res)) return;
+    if (await refuseNoJuniors(req, res)) return;
     // Discarding only clears a preview, so it works with the feature off too.
     if (!(await discardUpload(getTenantId(req), "junior", params.data.id))) {
       res.status(404).json({ error: "Upload not found" });

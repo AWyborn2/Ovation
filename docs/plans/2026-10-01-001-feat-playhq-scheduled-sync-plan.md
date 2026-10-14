@@ -35,19 +35,33 @@ execution: code
   applying them to prod. Secrets, the Supabase role and the API-key application are Ash's to
   provision (listed under "Ash to provision").
 
-## Status (1 Oct 2026)
+## Status (1 Oct 2026, spikes updated 10 Oct 2026)
 
 Ash's decisions: unattended (D1); apply for the public API key (D2); pre-fill lineups once we can
 show they are published (D3); alerts to both Ash and tenant admins (D4); stale doc fixed (D5, in
 PR #261).
 
-**S1 (in progress).** Three passing runs on 1 Oct from GitHub-hosted runners: 39/39 calls, no
-retries, with both the headless and a desktop user agent. That counts as day 1; the 8, 9 and
-10 Oct re-runs complete the "three days" criterion.
+**S1 (passed, 10 Oct 2026).** The headless harness passed on four days from GitHub-hosted runners:
+1, 8, 9 and 10 Oct. Every run made 39/39 calls with no retries or failures and exported 46
+records. Both the headless and the desktop user agent passed, and the page and the raw API probe
+returned 200 every time, so GitHub's IP addresses aren't blocked. The "three days" criterion is
+met. The live runner (M2) has run hourly on the same basis since 1 Oct.
 
-**S2 (partly answered).** `/scores/matches/{id}` already carries `teams[].players` (empty 9
-days out). The guessed `/lineups`, `/players` and `/teams` paths don't exist. The 8–10 Oct
-re-runs will show when the list fills.
+**S2 (answered, 10 Oct 2026).**
+
+- Endpoint and shape: `GET /scores/matches/{id}` with no modifier. Each side is in
+  `teams[].players[]` as `{participantId, name, shortName, roles}`. It is empty until the club
+  names its side. Sides were 11 or 12 players (the XI plus a twelfth). The guessed `/lineups`,
+  `/players`, `/teams` and `/squads` paths don't exist.
+- When lineups appeared, from Halls Head's three Round 1 matches on Sat 10 Oct (A v Pinjarra,
+  B v WSCC, D v White Knights Baldivis), probed at 18:07 Perth time each day:
+  - Thu 8 Oct: every side empty (0 players).
+  - Fri 9 Oct: every side named (Halls Head 12/12/12; opponents 11/12/12).
+  - Sat 10 Oct, 07:05: unchanged from Friday.
+- So sides go up during Friday, the day before the match. The Friday 18:00 `preweekend` plan
+  catches them. In its first run with team-list logging (9 Oct, 18:00) it logged 29 named sides
+  across 7 organisations. The match-morning plans catch any late changes.
+- M4 (lineup pre-fill) is built and live: Team Lists (`source = 'playhq'`).
 
 **M3 (U8, U9): built.**
 

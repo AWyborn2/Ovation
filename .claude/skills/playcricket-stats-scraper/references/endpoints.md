@@ -188,6 +188,12 @@ PlayHQ's. `roles` is empty for most players. The harness fetches these with
 `/scores/matches/{id}/lineups|teams|players|squads` do not exist, and the
 `IncludeLineups`-style response modifiers add nothing.
 
+When sides appear (S2, Oct 2026): Halls Head's three Round 1 matches (Sat 10 Oct) were probed at
+18:07 Perth time on Thu 8 Oct, when every side was empty. At the same time on Fri 9 Oct every
+side was named: 11–12 players, opponents too. At 07:05 on Sat 10 Oct nothing had changed. Clubs
+publish during the day before the match, so the Thursday and Friday 18:00 `preweekend` plans
+pick sides up. The match-morning plans catch late changes.
+
 ### `GET /scores/matches/{matchId}/balls` — ball-by-ball
 
 436 KB / 546 deliveries for a completed one-day match (gzips ~12:1, so an export of many matches

@@ -3,6 +3,7 @@ import { db, socialDraftsTable, socialPublicationsTable, socialSettingsTable } f
 import { loadConnection, publishingAvailable } from "./connections";
 import { ScheduleConflictError, schedulePublications } from "./publications";
 import type { Platform } from "./destination";
+import { layoutClear } from "../effective-draft-state";
 
 /**
  * Auto-publish at the deadline (plan 2026-10-06-001 U7, R4–R6, KTD11).
@@ -56,6 +57,8 @@ export async function autoPublishCandidates(
         eq(socialDraftsTable.sourceMatchIsJunior, false),
         sql`coalesce(${socialDraftsTable.cardInput}->>'junior', 'false') <> 'true'`,
         ne(socialDraftsTable.engine, "adhoc"),
+        // A templated card that needs a look is never auto-posted (KTD10).
+        layoutClear,
         sql`not exists (select 1 from ${socialPublicationsTable} p where p.draft_id = ${socialDraftsTable.id})`,
       ),
     );

@@ -22,6 +22,7 @@ import {
 import { setEmailTransport, type EmailMessage } from "../lib/integrations/email";
 import { setSmsTransport, normaliseAuMobile, type SmsMessage } from "../lib/integrations/sms";
 import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
+import { pinClockMidWeek } from "../lib/mid-week-clock.test-helpers";
 import { addDays, perthDayStart } from "../lib/availability-grades";
 import {
   DEFAULT_SCHEDULE,
@@ -160,6 +161,7 @@ describe("availability respond API", () => {
   }
 
   beforeAll(async () => {
+    pinClockMidWeek();
     setSendPaceMs(0);
     process.env.PLATFORM_BASE_DOMAIN = "ovation.test";
     setSmsTransport(async (msg) => {
@@ -268,6 +270,7 @@ describe("availability respond API", () => {
   });
 
   afterAll(async () => {
+    vi.useRealTimers();
     setSmsTransport(null);
     setEmailTransport(null);
     setSendPaceMs(250);

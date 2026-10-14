@@ -154,10 +154,7 @@ export function rankLeaders<T extends { value: number }>(
 
 /** "First Middle Last" → given "First Middle", surname "Last" (central display names). */
 export function splitDisplayName(dn: string | null): { givenName: string; surname: string } {
-  const parts = (dn ?? "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return { givenName: "", surname: "" };
-  if (parts.length === 1) return { givenName: parts[0]!, surname: "" };
-  return { givenName: parts.slice(0, -1).join(" "), surname: parts[parts.length - 1]! };
+  return splitCentralDisplayName(dn);
 }
 
 /** Optional grade / span filter shared by `/records` and `/records/leaders`. */
@@ -179,3 +176,4 @@ export function recordsFilterFrom(q: {
   if (q.toSeason !== undefined) f.toSeason = Math.trunc(q.toSeason);
   return Object.keys(f).length ? f : undefined;
 }
+import { splitDisplayName as splitCentralDisplayName } from "@workspace/db/central-queries";
