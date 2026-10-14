@@ -45,7 +45,7 @@ export function StartOverDialog({
     <Dialog open={open} onOpenChange={(o) => !o && !busy && onClose()}>
       {/* The chooser's own heading and line describe the dialog on screen. */}
       <DialogContent
-        className="studio-editor max-h-[92vh] max-w-3xl overflow-auto"
+        className="studio-editor max-h-[92vh] max-w-5xl overflow-auto"
         aria-describedby={undefined}
       >
         <DialogTitle className="sr-only">Start {label} over</DialogTitle>

@@ -66,10 +66,12 @@ export default function AdminCommittee() {
   const queryClient = useQueryClient();
   const { data: roles, isLoading, isError, refetch } = useListAllClubRoles();
   const officeRoles = useMemo(
-    () => [...new Set([
-      ...OFFICE_ROLES,
-      ...(roles ?? []).filter((r) => r.grade == null).map((r) => r.role),
-    ])],
+    () => [
+      ...new Set([
+        ...OFFICE_ROLES,
+        ...(roles ?? []).filter((r) => r.grade == null).map((r) => r.role),
+      ]),
+    ],
     [roles],
   );
   const createRole = useCreateClubRole();
@@ -282,7 +284,9 @@ function RoleForm({
         </div>
         {values.kind === "office" ? (
           <div className="space-y-1">
-            <Label htmlFor={roleInputId} className="text-xs">Role</Label>
+            <Label htmlFor={roleInputId} className="text-xs">
+              Role
+            </Label>
             <Input
               id={roleInputId}
               list={`${roleInputId}-options`}
@@ -317,7 +321,9 @@ function RoleForm({
           </div>
         )}
         <div className="space-y-1">
-          <Label htmlFor={`${roleInputId}-order`} className="text-xs">Display order</Label>
+          <Label htmlFor={`${roleInputId}-order`} className="text-xs">
+            Display order
+          </Label>
           <Input
             id={`${roleInputId}-order`}
             type="number"
@@ -331,7 +337,9 @@ function RoleForm({
       </div>
 
       <div className="space-y-1">
-        <Label htmlFor={`${roleInputId}-name`} className="text-xs">Name (as displayed)</Label>
+        <Label htmlFor={`${roleInputId}-name`} className="text-xs">
+          Name (as displayed)
+        </Label>
         <Input
           id={`${roleInputId}-name`}
           value={values.name}

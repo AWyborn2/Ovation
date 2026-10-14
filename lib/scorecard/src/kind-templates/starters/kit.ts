@@ -66,6 +66,10 @@ export type Theme = {
     ink: string;
     muted: string;
     panel: string;
+    /** Type on a panel (default: ink, muted, accent). A light panel takes dark type. */
+    panelInk?: string;
+    panelMuted?: string;
+    panelAccent?: string;
   };
   /** The accent mark before a label (a tricolour dash, an accent bar). */
   dash: (id: string, boxes: PerSize<Box>) => StarterLayer[];
@@ -85,7 +89,12 @@ const each = (b: PerSize<Box>) => Object.entries(b) as Array<[TemplateSize, Box]
 /** The blocks of one look. Every block keeps its key as its layer id. */
 export function makeKit(t: Theme) {
   const F = t.font;
-  const C = t.color;
+  const C = {
+    ...t.color,
+    panelInk: t.color.panelInk ?? t.color.ink,
+    panelMuted: t.color.panelMuted ?? t.color.muted,
+    panelAccent: t.color.panelAccent ?? t.color.accent,
+  };
   /** A display size in this look. */
   const ds = (n: number) => +(n * (F.displayScale ?? 1)).toFixed(2);
   /** Room a display line of `size` needs: its line, plus any glyph overhang. */
@@ -366,7 +375,7 @@ export function makeKit(t: Theme) {
       gap: fixed(gap),
       make: (b) => [
         ...bar("club", b, 0, C.fill, C.onFill),
-        ...bar("opposition", b, BAR + 1.2, C.panel, C.ink),
+        ...bar("opposition", b, BAR + 1.2, C.panel, C.panelInk),
       ],
     };
   }
@@ -401,7 +410,7 @@ export function makeKit(t: Theme) {
               fontFamily: F.display,
               fontSize: ds(5.6),
               fontWeight: F.displayWeight,
-              color: C.accent,
+              color: C.panelAccent,
               align: "left",
             })),
             ...text(`${key}-${n}-label`, `Stat ${n} label`, cell.label, label, () => ({
@@ -410,7 +419,7 @@ export function makeKit(t: Theme) {
               fontWeight: 600,
               letterSpacing: 0.14,
               uppercase: true,
-              color: C.muted,
+              color: C.panelMuted,
               align: "left",
             })),
           ];
@@ -473,7 +482,8 @@ export function makeKit(t: Theme) {
               fontSize: l.font === "display" ? ds(l.size) : l.size,
               fontWeight: l.weight ?? (l.font === "display" ? F.displayWeight : 700),
               uppercase: l.font !== "sans",
-              color: l.color ?? (l.font === "sans" || l.font === "mono" ? C.muted : C.ink),
+              color:
+                l.color ?? (l.font === "sans" || l.font === "mono" ? C.panelMuted : C.panelInk),
               align: l.right ? "right" : "left",
             })),
           ),
@@ -512,6 +522,10 @@ export function makeKit(t: Theme) {
       /** Rows, gaps and type scaled per size (bigger rows where there's room). */
       scale?: (s: TemplateSize) => number;
       maxW?: number;
+      /** Columns the rows flow down, side by side. */
+      columns?: number;
+      /** Gap between columns, in percent of the list's width. */
+      columnGap?: number;
       variants?: Record<string, Record<string, Partial<Style>>>;
     } = {},
   ): Block {
@@ -533,7 +547,7 @@ export function makeKit(t: Theme) {
       data: true,
       maxW: opts.maxW,
       // A little slack so rounding never costs a row.
-      h: (s) => count(s) * pitch(s) - rowGap * k(s) + 0.3,
+      h: (s) => Math.ceil(count(s) / (opts.columns ?? 1)) * pitch(s) - rowGap * k(s) + 0.3,
       gap: fixed(opts.gap ?? 1.6),
       make: (b) => {
         const out: StarterLayer[] = [];
@@ -562,6 +576,9 @@ export function makeKit(t: Theme) {
               rowHeight: +h(s).toFixed(3),
               gap: +(pitch(s) - h(s)).toFixed(3),
               cells: lineCells.map((c) => ({ field: c.field, x: c.x, w: c.w, style: style(c, s) })),
+              ...(opts.columns && opts.columns > 1
+                ? { columns: opts.columns, columnGap: opts.columnGap ?? 4 }
+                : {}),
               ...(variants
                 ? { variants: variants as Record<string, Record<string, TemplateTextStyle>> }
                 : {}),

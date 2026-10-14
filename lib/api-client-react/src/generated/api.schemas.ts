@@ -7130,6 +7130,7 @@ export type StartKindTemplateRequestStarter = typeof StartKindTemplateRequestSta
 export const StartKindTemplateRequestStarter = {
   'club-kit': 'club-kit',
   broadcast: 'broadcast',
+  clubhouse: 'clubhouse',
 } as const;
 
 export interface StartKindTemplateRequest {

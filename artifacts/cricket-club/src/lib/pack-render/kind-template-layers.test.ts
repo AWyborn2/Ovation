@@ -179,4 +179,44 @@ describe("rows layer", () => {
   it("draws nothing when the card has no rows for the repeat", () => {
     expect(render(player, { layers: [rows] })).not.toContain('data-layer-id="r1"');
   });
+
+  it("flows rows down columns side by side, the first column first", () => {
+    const two: FreeLayer = { ...rows, rows: { ...rows.rows!, columns: 2, columnGap: 10 } };
+    const html = render(ladder, { layers: [two] });
+    // Two rows, two columns: one row each, both at the top.
+    expect(html).toMatch(/data-row-index="0"[^>]*left:0\.000%;width:45\.000%;top:0\.000cqw/);
+    expect(html).toMatch(/data-row-index="1"[^>]*left:55\.000%;width:45\.000%;top:0\.000cqw/);
+  });
+
+  it("keeps a single-column list's markup as it was", () => {
+    expect(render(ladder, { layers: [rows] })).toContain("left:0;right:0;top:0.000cqw");
+  });
+});
+
+describe("club ground photo", () => {
+  const ground: FreeLayer = {
+    id: "g1",
+    kind: "image",
+    content: "{{groundPhoto}}",
+    geometry: { square: { x: 0, y: 0, w: 100, h: 60 } },
+  };
+
+  it("fills its box with the club's ground photo", () => {
+    const html = renderPackCard(
+      player,
+      "square",
+      true,
+      tokens,
+      false,
+      { brand: { groundPhotoUrl: "https://example.test/ground.jpg" } },
+      BLANK_PACK_ID,
+      { layers: [ground] },
+    );
+    expect(html).toContain('src="https://example.test/ground.jpg"');
+    expect(html).toContain("object-fit:cover");
+  });
+
+  it("draws nothing for a club without one", () => {
+    expect(render(player, { layers: [ground] })).not.toContain('data-layer-id="g1"');
+  });
 });

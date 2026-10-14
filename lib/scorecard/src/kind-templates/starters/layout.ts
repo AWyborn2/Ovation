@@ -143,6 +143,9 @@ export function rows(
       style: TemplateTextStyle & { fontSize: number };
     }>;
     variants?: Record<string, Record<string, TemplateTextStyle>>;
+    /** Columns the rows flow down (percent gap of the layer's width). */
+    columns?: number;
+    columnGap?: number;
   },
 ): StarterLayer[] {
   const groups = new Map<string, { rows: unknown; boxes: PerSize<Box> }>();
@@ -157,6 +160,7 @@ export function rows(
       rowHeight: vw(raw.rowHeight, s),
       gap: vw(raw.gap, s),
       cells: raw.cells.map((c) => ({ ...c, style: conv(c.style) })),
+      ...(raw.columns ? { columns: raw.columns, columnGap: raw.columnGap ?? 4 } : {}),
       ...(raw.variants
         ? {
             variants: Object.fromEntries(

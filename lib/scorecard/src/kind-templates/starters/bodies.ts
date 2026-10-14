@@ -108,20 +108,20 @@ export const BODIES: Record<TemplateCardKind, (k: Kit) => Body> = {
           fontFamily: k.F.cond,
           fontWeight: 900,
           fontSize: 2.8,
-          color: k.C.accent,
+          color: k.C.panelAccent,
           align: "center" as const,
         };
-      if (field === "team") return { ...base, color: k.C.ink, align: "left" as const };
+      if (field === "team") return { ...base, color: k.C.panelInk, align: "left" as const };
       if (field === "points")
         return {
           ...base,
           fontFamily: k.F.cond,
           fontWeight: 900,
           fontSize: 2.8,
-          color: k.C.ink,
+          color: k.C.panelInk,
           align: "center" as const,
         };
-      return { ...base, color: k.C.muted, align: "center" as const };
+      return { ...base, color: k.C.panelMuted, align: "center" as const };
     };
     return {
       chip: "LADDER",
@@ -374,7 +374,7 @@ export const BODIES: Record<TemplateCardKind, (k: Kit) => Body> = {
             style: {
               fontSize: 3,
               fontWeight: 900,
-              color: k.C.accent,
+              color: k.C.panelAccent,
               background: k.C.panel,
               align: "right",
               uppercase: true,
@@ -385,21 +385,21 @@ export const BODIES: Record<TemplateCardKind, (k: Kit) => Body> = {
             x: 17,
             w: 66,
             line: 1,
-            style: { fontSize: 2.6, fontWeight: 800, uppercase: true },
+            style: { fontSize: 2.6, fontWeight: 800, uppercase: true, color: k.C.panelInk },
           },
           {
             field: "performers",
             x: 17,
             w: 66,
             line: 2,
-            style: { fontFamily: k.F.sans, fontSize: 1.6, fontWeight: 500, color: k.C.muted },
+            style: { fontFamily: k.F.sans, fontSize: 1.6, fontWeight: 500, color: k.C.panelMuted },
           },
         ],
         {
           variants: {
             lost: {
-              gradeLabel: { background: k.C.panel, color: k.C.ink },
-              outcome: { color: k.C.muted },
+              gradeLabel: { background: k.C.panel, color: k.C.panelInk },
+              outcome: { color: k.C.panelMuted },
             },
           },
         },
@@ -518,7 +518,7 @@ export const BODIES: Record<TemplateCardKind, (k: Kit) => Body> = {
               fontFamily: k.F.display,
               fontWeight: k.F.displayWeight,
               fontSize: 3.4,
-              color: k.C.accent,
+              color: k.C.panelAccent,
               background: k.C.panel,
               align: "right",
             },
@@ -527,7 +527,7 @@ export const BODIES: Record<TemplateCardKind, (k: Kit) => Body> = {
             field: "playerName",
             x: 18,
             w: 62,
-            style: { fontSize: 2.8, fontWeight: 800, uppercase: true },
+            style: { fontSize: 2.8, fontWeight: 800, uppercase: true, color: k.C.panelInk },
           },
         ],
       ),
@@ -571,7 +571,7 @@ export const BODIES: Record<TemplateCardKind, (k: Kit) => Body> = {
             style: {
               fontSize: 3,
               fontWeight: 900,
-              color: k.C.accent,
+              color: k.C.panelAccent,
               background: k.C.panel,
               align: "right",
             },
@@ -581,14 +581,14 @@ export const BODIES: Record<TemplateCardKind, (k: Kit) => Body> = {
             x: 17,
             w: 64,
             line: 1,
-            style: { fontSize: 2.6, fontWeight: 800, uppercase: true },
+            style: { fontSize: 2.6, fontWeight: 800, uppercase: true, color: k.C.panelInk },
           },
           {
             field: "venue",
             x: 17,
             w: 64,
             line: 2,
-            style: { fontFamily: k.F.sans, fontSize: 1.6, fontWeight: 500, color: k.C.muted },
+            style: { fontFamily: k.F.sans, fontSize: 1.6, fontWeight: 500, color: k.C.panelMuted },
           },
         ],
       ),
@@ -633,7 +633,7 @@ export const BODIES: Record<TemplateCardKind, (k: Kit) => Body> = {
               fontFamily: k.F.display,
               fontWeight: k.F.displayWeight,
               fontSize: 3.6,
-              color: k.C.accent,
+              color: k.C.panelAccent,
               background: k.C.panel,
               align: "right",
             },
@@ -642,13 +642,13 @@ export const BODIES: Record<TemplateCardKind, (k: Kit) => Body> = {
             field: "name",
             x: 3,
             w: 40,
-            style: { fontSize: 3, fontWeight: 800, uppercase: true },
+            style: { fontSize: 3, fontWeight: 800, uppercase: true, color: k.C.panelInk },
           },
           {
             field: "note",
             x: 44,
             w: 38,
-            style: { fontFamily: k.F.sans, fontSize: 1.8, fontWeight: 500, color: k.C.muted },
+            style: { fontFamily: k.F.sans, fontSize: 1.8, fontWeight: 500, color: k.C.panelMuted },
           },
         ],
         { gap: 1.8 },
