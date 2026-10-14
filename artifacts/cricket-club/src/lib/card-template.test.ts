@@ -58,8 +58,8 @@ const EXISTING_KINDS = [
 ] as const;
 
 describe("card kind coverage", () => {
-  it("CARD_KINDS covers all 21 kinds", () => {
-    expect(CARD_KINDS).toHaveLength(21);
+  it("CARD_KINDS covers all 25 kinds", () => {
+    expect(CARD_KINDS).toHaveLength(25);
     for (const kind of [...EXISTING_KINDS, ...NEW_KINDS, ...CLUB_KIT_KINDS, ...SET_KINDS]) {
       expect(CARD_KINDS).toContain(kind);
     }

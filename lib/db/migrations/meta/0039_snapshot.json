@@ -1,6 +1,6 @@
 {
-  "id": "4ea3270a-a8b4-4c4e-964d-88f40fe8fdd4",
-  "prevId": "de1afac9-aa97-4f34-9d32-72ad1fcf199e",
+  "id": "76b3f537-bb0d-423a-b61f-735369467776",
+  "prevId": "e7fadfd1-f7e0-4934-a984-bdfd5941db25",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -5529,6 +5529,42 @@
           "primaryKey": false,
           "notNull": false
         },
+        "match_format": {
+          "name": "match_format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "competition_name": {
+          "name": "competition_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "association_org_id": {
+          "name": "association_org_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "association_name": {
+          "name": "association_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "home_team_name": {
+          "name": "home_team_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "away_team_name": {
+          "name": "away_team_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -7519,178 +7555,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.junior_fixtures": {
-      "name": "junior_fixtures",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "tenant_id": {
-          "name": "tenant_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "playhq_match_id": {
-          "name": "playhq_match_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "season_start_year": {
-          "name": "season_start_year",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "age_group": {
-          "name": "age_group",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "grade": {
-          "name": "grade",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "team_name": {
-          "name": "team_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "opponent_name": {
-          "name": "opponent_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "venue": {
-          "name": "venue",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "start_at": {
-          "name": "start_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "is_home": {
-          "name": "is_home",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "junior_fixtures_tenant_idx": {
-          "name": "junior_fixtures_tenant_idx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "junior_fixtures_tenant_start_idx": {
-          "name": "junior_fixtures_tenant_start_idx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "start_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "junior_fixtures_tenant_playhq_match_uidx": {
-          "name": "junior_fixtures_tenant_playhq_match_uidx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "playhq_match_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "junior_fixtures_tenant_id_tenants_id_fk": {
-          "name": "junior_fixtures_tenant_id_tenants_id_fk",
-          "tableFrom": "junior_fixtures",
-          "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.junior_match_batting": {
       "name": "junior_match_batting",
       "schema": "",
@@ -7991,20 +7855,6 @@
           "notNull": true,
           "default": "'{}'"
         },
-        "name_style": {
-          "name": "name_style",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'full'"
-        },
-        "team_publishing": {
-          "name": "team_publishing",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::jsonb"
-        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp with time zone",
@@ -8048,12 +7898,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {
-        "junior_match_display_settings_name_style_check": {
-          "name": "junior_match_display_settings_name_style_check",
-          "value": "\"name_style\" IN ('full', 'first_initial', 'first')"
-        }
-      },
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.junior_match_rosters": {
@@ -8331,28 +8176,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "junior_matches_tenant_playhq_match_uidx": {
-          "name": "junior_matches_tenant_playhq_match_uidx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "playhq_match_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"playhq_match_id\" IS NOT NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -8505,7 +8328,7 @@
         "participant_id": {
           "name": "participant_id",
           "type": "text",
-          "primaryKey": false,
+          "primaryKey": true,
           "notNull": true
         },
         "tenant_id": {
@@ -8527,25 +8350,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "privacy_override": {
-          "name": "privacy_override",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "privacy_override_by": {
-          "name": "privacy_override_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "privacy_override_at": {
-          "name": "privacy_override_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         },
         "scorecard_lines": {
           "name": "scorecard_lines",
@@ -8616,15 +8420,7 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "junior_participants_tenant_participant_pk": {
-          "name": "junior_participants_tenant_participant_pk",
-          "columns": [
-            "tenant_id",
-            "participant_id"
-          ]
-        }
-      },
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -8851,127 +8647,6 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.junior_team_lists": {
-      "name": "junior_team_lists",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "tenant_id": {
-          "name": "tenant_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "junior_fixture_id": {
-          "name": "junior_fixture_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "players": {
-          "name": "players",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'[]'::jsonb"
-        },
-        "is_published": {
-          "name": "is_published",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "source": {
-          "name": "source",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'admin'"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "junior_team_lists_tenant_fixture_uidx": {
-          "name": "junior_team_lists_tenant_fixture_uidx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "junior_fixture_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "junior_team_lists_tenant_id_tenants_id_fk": {
-          "name": "junior_team_lists_tenant_id_tenants_id_fk",
-          "tableFrom": "junior_team_lists",
-          "tableTo": "tenants",
-          "columnsFrom": [
-            "tenant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "junior_team_lists_junior_fixture_id_junior_fixtures_id_fk": {
-          "name": "junior_team_lists_junior_fixture_id_junior_fixtures_id_fk",
-          "tableFrom": "junior_team_lists",
-          "tableTo": "junior_fixtures",
-          "columnsFrom": [
-            "junior_fixture_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "junior_team_lists_source_check": {
-          "name": "junior_team_lists_source_check",
-          "value": "\"source\" IN ('playhq', 'admin')"
-        }
-      },
       "isRLSEnabled": false
     },
     "public.junior_stat_corrections": {
@@ -9387,19 +9062,6 @@
           "notNull": true,
           "default": false
         },
-        "junior_sync_enabled": {
-          "name": "junior_sync_enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "playhq_junior_org_id": {
-          "name": "playhq_junior_org_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "hero_images": {
           "name": "hero_images",
           "type": "jsonb",
@@ -9458,22 +9120,6 @@
           ],
           "isUnique": true,
           "where": "\"playhq_org_id\" IS NOT NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "tenants_playhq_junior_org_id_uidx": {
-          "name": "tenants_playhq_junior_org_id_uidx",
-          "columns": [
-            {
-              "expression": "playhq_junior_org_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "where": "\"playhq_junior_org_id\" IS NOT NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -10213,17 +9859,11 @@
         }
       },
       "indexes": {
-        "playhq_sync_incidents_open_org_kind_uidx": {
-          "name": "playhq_sync_incidents_open_org_kind_uidx",
+        "playhq_sync_incidents_open_org_uidx": {
+          "name": "playhq_sync_incidents_open_org_uidx",
           "columns": [
             {
               "expression": "org_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "kind",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -11342,6 +10982,71 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.playhq_grade_decisions": {
+      "name": "playhq_grade_decisions",
+      "schema": "",
+      "columns": {
+        "grade_key": {
+          "name": "grade_key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "grade_name": {
+          "name": "grade_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "central_grade": {
+          "name": "central_grade",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "set_by_platform_admin_id": {
+          "name": "set_by_platform_admin_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "set_at": {
+          "name": "set_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "playhq_grade_decisions_action_check": {
+          "name": "playhq_grade_decisions_action_check",
+          "value": "\"playhq_grade_decisions\".\"action\" in ('map', 'ignore')"
+        },
+        "playhq_grade_decisions_map_needs_grade": {
+          "name": "playhq_grade_decisions_map_needs_grade",
+          "value": "(\"playhq_grade_decisions\".\"action\" = 'map') = (\"playhq_grade_decisions\".\"central_grade\" is not null)"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.social_connection_pending": {
@@ -12504,6 +12209,13 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
+        },
+        "team_sheet_overs": {
+          "name": "team_sheet_overs",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
         },
         "updated_at": {
           "name": "updated_at",
@@ -13800,18 +13512,7 @@
   },
   "enums": {},
   "schemas": {},
-  "sequences": {
-    "public.junior_sync_id_seq": {
-      "name": "junior_sync_id_seq",
-      "schema": "public",
-      "increment": "1",
-      "startWith": "200000000",
-      "minValue": "200000000",
-      "maxValue": "9223372036854775807",
-      "cache": "1",
-      "cycle": false
-    }
-  },
+  "sequences": {},
   "roles": {},
   "policies": {},
   "views": {},

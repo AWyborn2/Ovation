@@ -172,6 +172,14 @@ do $$ begin
   end if;
 end $$;
 
+-- Platform-admin PlayHQ grade decisions (migration 0039) are read, never written, by the projector.
+do $$ begin
+  if to_regclass('public.playhq_grade_decisions') is not null then
+    grant usage on schema public to central_projector;
+    grant select on public.playhq_grade_decisions to central_projector;
+  end if;
+end $$;
+
 -- Defensive: nothing else is writable (a broad grant made earlier is undone here).
 revoke insert, update, delete, truncate on
   central.clubs, central.premiers, central.ladder, central.club_name_history,

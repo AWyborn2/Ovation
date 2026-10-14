@@ -121,6 +121,14 @@ In short:
   replies (STOP included) go to the owner's phone, so SMS end "Stop texts at the link." and the
   player page's Stop/Start text messages control (`POST /availability/respond/{token}/texts`)
   is the opt-out; it sets the same `*_sms_opt_out` flags Twilio's STOP (21610) does.
+  A finalised side has **Print team sheet** (`GET`/`POST /selection/{id}/team-sheet`,
+  `api-server/src/lib/team-sheet.ts`): an A4 PDF from the side itself (not `team_lists`),
+  printed by the shared Chromium (`renderHtmlToPdf`). Format, competition, both team names and
+  the association come from PlayHQ via the fixture projector (`fixtures.match_format` …
+  `association_org_id`); PlayHQ has no overs limit, so the overs entered are remembered per
+  grade in `availability_settings.team_sheet_overs`. Senior sheets add Junior Aged Player
+  bowling limits from each member's date of birth under the association's rules
+  (`team-sheet-rules.ts`; PCA Bylaw 5.9 so far — other associations print blank columns).
 - **Meta publishing is built but switched off** (`META_PUBLISHING_ENABLED`): clubs connect a
   Facebook Page + Instagram account and drafts publish on a schedule or automatically at the
   auto-post deadline. Waits on Meta App Review; runbook `docs/runbooks/meta-publishing.md`.
@@ -235,8 +243,10 @@ In short:
   classifier `lib/db/src/playhq-ingest/grade-classes.ts`; projection
   `lib/db/src/playhq-ingest/junior-project.ts` (planners `junior-plan.ts`, writers
   `junior-write.ts`); junior cards `api-server/src/lib/junior-social.ts`, naming
-  `lib/junior-names.ts`, publishing modes `lib/junior-publishing.ts`. Migrations 0038/0039 are
-  applied by hand in production.
+  `lib/junior-names.ts`, publishing modes `lib/junior-publishing.ts`. Migration 0040 (`0040_junior_sync.sql`) is
+  applied by hand in production. Grades the classifier can call neither junior nor senior are
+  not reported separately: they surface on the platform Competitions screen (PlayHQ grade
+  decisions, `unclassified-grades.ts`), which also never lists a junior grade.
 - Social drafting: `api-server/src/lib/draft-sweep.ts` (entry), `lib/engines/*` (per card
   kind), `lib/draft-enrich.ts` (pack, caption and photo pick)
 - Meta publishing: `api-server/src/lib/publishing/` (destination boundary + Meta adapter,

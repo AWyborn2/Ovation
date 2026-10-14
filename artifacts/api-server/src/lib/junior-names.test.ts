@@ -254,7 +254,7 @@ describe("makeJuniorNaming dismissals (security review P1)", () => {
 });
 
 describe("makeJuniorNaming participant ids are case-insensitive (security review P2)", () => {
-  // A legacy participant row kept its mixed-case GUID (migration 0038 only reports
+  // A legacy participant row kept its mixed-case GUID (migration 0040 only reports
   // those); synced lines carry the lowercased id. The lookup must still find the
   // row, or a private child would be named from the line's stored copy.
   const participants = new Map([

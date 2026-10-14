@@ -3,7 +3,6 @@ import {
   db,
   notificationsTable,
   playhqSyncIncidentsTable,
-  PLAYHQ_WATCHDOG_INCIDENT_KINDS,
   socialSettingsTable,
   tenantsTable,
 } from "@workspace/db";
@@ -14,11 +13,13 @@ import {
   getPlayhqIngestPool,
   loadCadenceInputs,
   loadRunSummaries,
+  loadUnclassifiedGrades,
   type OrgHealth,
   type Queryable,
 } from "@workspace/db/playhq-ingest";
 import { sendEmail } from "./integrations/email";
 import { juniorOrgIdsOf, loadJuniorSyncTenants } from "./junior-sync";
+import { withoutDecidedGrades } from "./playhq-grade-decisions";
 import { env } from "../config";
 
 /**
@@ -44,16 +45,9 @@ type Logger = {
 export const STALE_NOTIFICATION_KIND = "playhq_sync_stale";
 const FIXTURES_LINK = "/admin/social/fixtures";
 
-type LinkedTenant = { id: number; slug: string; name: string; orgId: string };
+export type LinkedTenant = { id: number; slug: string; name: string; orgId: string };
 
-/**
- * Only the watchdog's own incident kinds: an organisation's open `unclassified_grades` entry
- * (junior sync plan U4) is a report for the platform admin, not a sync incident.
- */
-const watchdogKind = () =>
-  inArray(playhqSyncIncidentsTable.kind, [...PLAYHQ_WATCHDOG_INCIDENT_KINDS]);
-
-async function syncTenants(): Promise<LinkedTenant[]> {
+export async function syncTenants(): Promise<LinkedTenant[]> {
   const rows = await db
     .select({
       id: tenantsTable.id,
@@ -127,7 +121,7 @@ export async function runWatchdog(now: Date, log: Logger): Promise<WatchdogResul
   const open = await db
     .select()
     .from(playhqSyncIncidentsTable)
-    .where(and(isNull(playhqSyncIncidentsTable.resolvedAt), watchdogKind()));
+    .where(isNull(playhqSyncIncidentsTable.resolvedAt));
   const openByOrg = new Map(open.map((i) => [i.orgId, i]));
   const result: WatchdogResult = { checked: snap.health.length, opened: [], resolved: [], open: 0 };
 
@@ -187,7 +181,7 @@ export async function runWatchdog(now: Date, log: Logger): Promise<WatchdogResul
     await db
       .select({ id: playhqSyncIncidentsTable.id })
       .from(playhqSyncIncidentsTable)
-      .where(and(isNull(playhqSyncIncidentsTable.resolvedAt), watchdogKind()))
+      .where(isNull(playhqSyncIncidentsTable.resolvedAt))
   ).length;
   log.info(result, "playhq sync watchdog");
   return result;
@@ -231,7 +225,7 @@ export async function platformSyncOverview(now: Date) {
   const open = await db
     .select()
     .from(playhqSyncIncidentsTable)
-    .where(and(isNull(playhqSyncIncidentsTable.resolvedAt), watchdogKind()));
+    .where(isNull(playhqSyncIncidentsTable.resolvedAt));
   const openByOrg = new Map(open.map((i) => [i.orgId, i]));
   return {
     now: now.toISOString(),
@@ -268,7 +262,14 @@ export async function tenantSyncStatus(tenantId: number) {
   const linked = !!t?.orgId;
   const enabled = linked && !!t?.enabled;
   if (!linked || !enabled)
-    return { linked, syncEnabled: enabled, lastRefreshedAt: null, stale: false, staleSince: null };
+    return {
+      linked,
+      syncEnabled: enabled,
+      lastRefreshedAt: null,
+      stale: false,
+      staleSince: null,
+      unclassifiedGrades: [],
+    };
   const orgId = t!.orgId!.toLowerCase();
   const pool = getPlayhqIngestPool();
   await assertIngestScope(pool);
@@ -280,14 +281,19 @@ export async function tenantSyncStatus(tenantId: number) {
       and(
         inArray(playhqSyncIncidentsTable.orgId, [orgId]),
         isNull(playhqSyncIncidentsTable.resolvedAt),
-        watchdogKind(),
       ),
     );
+  // Competitions PlayHQ has for this club that Ovation can't place (their matches are skipped).
+  // Best-effort: a failure here must not hide the rest of the status.
+  const unclassifiedGrades = await loadUnclassifiedGrades(pool as unknown as Queryable, orgId)
+    .then(withoutDecidedGrades)
+    .catch(() => []);
   return {
     linked,
     syncEnabled: enabled,
     lastRefreshedAt: iso(summary?.lastSuccessAt ?? null),
     stale: !!incident,
     staleSince: incident ? incident.openedAt.toISOString() : null,
+    unclassifiedGrades,
   };
 }

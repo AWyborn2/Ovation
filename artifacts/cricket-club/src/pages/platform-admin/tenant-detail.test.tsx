@@ -1,7 +1,7 @@
 /**
- * Platform-admin tenant page: the junior sync card lists the grades the sync couldn't
- * classify as junior or senior (junior sync plan U4, KTD4), and shows nothing when there
- * are none.
+ * Platform-admin tenant page: grades the junior sync can classify as neither junior nor senior
+ * (junior sync plan U4, KTD4) are resolved on the platform Competitions screen (PlayHQ grade
+ * decisions), which the junior sync card points to rather than keeping a second list.
  */
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { Route } from "wouter";
@@ -47,28 +47,16 @@ const renderPage = () =>
   );
 
 describe("tenant detail — unclassified grades", () => {
-  it("lists each unclassified grade with its season", async () => {
-    stubApi({
-      tenant: TENANT,
-      admins: [],
-      unclassifiedGrades: [
-        {
-          orgId: "4559f1b9-86d8-eb11-a7ad-2818780da0cc",
-          grade: "Mixed Social Twilight",
-          season: "Summer 2026/27",
-          since: "2026-10-14T00:00:00.000Z",
-        },
-      ],
-    });
+  it("points the junior sync card at the Competitions screen", async () => {
+    stubApi({ tenant: TENANT, admins: [] });
     renderPage();
-    const list = await screen.findByTestId("unclassified-grades");
-    expect(within(list).getByText("Unclassified grades (1)")).toBeTruthy();
-    expect(within(list).getByText(/Mixed Social Twilight/)).toBeTruthy();
-    expect(within(list).getByText(/Summer 2026\/27/)).toBeTruthy();
+    const note = await screen.findByTestId("junior-unclassified-note");
+    const link = within(note).getByRole("link", { name: "Competitions" });
+    expect(link.getAttribute("href")).toBe("/platform-admin/grade-decisions");
   });
 
-  it("shows no list when every grade was classified", async () => {
-    stubApi({ tenant: TENANT, admins: [], unclassifiedGrades: [] });
+  it("keeps no second list of unclassified grades", async () => {
+    stubApi({ tenant: TENANT, admins: [] });
     renderPage();
     await screen.findByText("Junior sync");
     expect(screen.queryByTestId("unclassified-grades")).toBeNull();

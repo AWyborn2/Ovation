@@ -1,12 +1,5 @@
 import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
-import {
-  db,
-  fixturesTable,
-  teamListsTable,
-  playhqSyncIncidentsTable,
-  tenantsTable,
-  UNCLASSIFIED_GRADES_INCIDENT_KIND,
-} from "@workspace/db";
+import { db, fixturesTable, teamListsTable, tenantsTable } from "@workspace/db";
 import {
   PROJECTABLE_STATUSES,
   assertIngestScope,
@@ -23,10 +16,7 @@ import {
   getPlayhqIngestPool,
   loadRows,
   juniorReclassifications,
-  mergeUnclassifiedGrades,
-  unclassifiedGradesByOrg,
   type KnownJuniorGrade,
-  type UnclassifiedGrade,
   projectFixtures,
   projectJuniors,
   juniorProjectionErrorText,
@@ -272,18 +262,6 @@ export async function ingestPlayhqDump(
   if (juniorSyncTenants.length)
     await projectDumpJuniors(rows, juniorSyncTenants, reader, warnings, log, keptJuniorGradeIds);
 
-  // Grades an enabled club's organisation has that are neither junior nor senior are
-  // reported to the platform admin, never guessed (KTD4). Names and seasons only.
-  if (juniorOrgIds.size)
-    try {
-      await recordUnclassifiedGrades(unclassifiedGradesByOrg(rows.grades, juniorOrgIds));
-    } catch (err) {
-      log.error({ err }, "playhq ingest: recording unclassified grades failed");
-      warnings.push(
-        `recording unclassified grades failed: ${err instanceof Error ? err.message : err}`,
-      );
-    }
-
   // Held shirt-number entries link once their player has played for the club in central
   // (F2): after the projection, so this sync's results count. Reads central only.
   if (orgIds.length)
@@ -506,97 +484,6 @@ export async function reclassifyStoredJuniorGrades(
     log.error({ gradeIds: ids, err: text }, "playhq ingest: grade reclassification failed");
     warnings.push(`grade reclassification failed (${names}): ${text}`);
   }
-}
-
-/**
- * Keep one open `unclassified_grades` incident per organisation listing every grade (name and
- * season) no classifier recognises: new grades are added to the open row, never removed, and
- * the watchdog never touches the kind. Lives in the app database, like every incident.
- */
-export async function recordUnclassifiedGrades(
-  byOrg: Map<string, UnclassifiedGrade[]>,
-): Promise<void> {
-  for (const [orgId, incoming] of byOrg) {
-    if (!incoming.length) continue;
-    const openRow = () =>
-      db
-        .select({ id: playhqSyncIncidentsTable.id, detail: playhqSyncIncidentsTable.detail })
-        .from(playhqSyncIncidentsTable)
-        .where(
-          and(
-            eq(playhqSyncIncidentsTable.orgId, orgId),
-            eq(playhqSyncIncidentsTable.kind, UNCLASSIFIED_GRADES_INCIDENT_KIND),
-            isNull(playhqSyncIncidentsTable.resolvedAt),
-          ),
-        );
-    let [open] = await openRow();
-    if (!open) {
-      const { grades } = mergeUnclassifiedGrades([], incoming);
-      const [inserted] = await db
-        .insert(playhqSyncIncidentsTable)
-        .values({
-          orgId,
-          kind: UNCLASSIFIED_GRADES_INCIDENT_KIND,
-          detail: { reasons: grades.map(describeGrade), grades },
-        })
-        .onConflictDoNothing()
-        .returning({ id: playhqSyncIncidentsTable.id });
-      if (inserted) continue;
-      [open] = await openRow(); // a concurrent ingest opened it first
-      if (!open) continue;
-    }
-    const { grades, changed } = mergeUnclassifiedGrades(open.detail?.grades, incoming);
-    if (!changed) continue;
-    await db
-      .update(playhqSyncIncidentsTable)
-      .set({ detail: { reasons: grades.map(describeGrade), grades } })
-      .where(eq(playhqSyncIncidentsTable.id, open.id));
-  }
-}
-
-/**
- * The platform-admin tenant page's list: the open unclassified-grades reports of a tenant's
- * senior and junior PlayHQ organisations, one entry per grade and season.
- */
-export async function unclassifiedGradesForTenant(t: {
-  playhqOrgId: string | null;
-  playhqJuniorOrgId: string | null;
-}): Promise<{ orgId: string; grade: string; season: string | null; since: string }[]> {
-  const orgs = [
-    ...new Set(
-      [t.playhqOrgId, t.playhqJuniorOrgId]
-        .map((o) => o?.trim().toLowerCase())
-        .filter((o): o is string => !!o),
-    ),
-  ];
-  if (!orgs.length) return [];
-  const open = await db
-    .select({
-      orgId: playhqSyncIncidentsTable.orgId,
-      detail: playhqSyncIncidentsTable.detail,
-      openedAt: playhqSyncIncidentsTable.openedAt,
-    })
-    .from(playhqSyncIncidentsTable)
-    .where(
-      and(
-        inArray(playhqSyncIncidentsTable.orgId, orgs),
-        eq(playhqSyncIncidentsTable.kind, UNCLASSIFIED_GRADES_INCIDENT_KIND),
-        isNull(playhqSyncIncidentsTable.resolvedAt),
-      ),
-    )
-    .orderBy(playhqSyncIncidentsTable.orgId);
-  return open.flatMap((row) =>
-    mergeUnclassifiedGrades(row.detail?.grades, []).grades.map((g) => ({
-      orgId: row.orgId,
-      grade: g.grade,
-      season: g.season,
-      since: row.openedAt.toISOString(),
-    })),
-  );
-}
-
-function describeGrade(g: UnclassifiedGrade): string {
-  return g.season ? `${g.grade} (${g.season})` : g.grade;
 }
 
 /**

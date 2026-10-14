@@ -242,7 +242,8 @@ Run by hand when you need to:
   tables (ids >= 200,000,000). A club may name a separate junior organisation
   (`playhq_junior_org_id`). Junior names are published only in the club's naming style,
   opposition juniors as initials, private players withheld; dismissals show the mode only.
-  Migrations 0038/0039 must be applied by hand in production before republishing.
+  Migration 0040 (`0040_junior_sync.sql`) must be applied by hand in production before
+  republishing.
 - **`fallOfWickets` is incomplete at the source** (present on 40 of 48 innings; 311 rows vs 372
   ball-level wickets), while the ball-level wicket count matched the scorecard's wickets in
   every innings. Trust `balls.is_wicket` for wicket analysis. Run-outs dismiss the non-striker

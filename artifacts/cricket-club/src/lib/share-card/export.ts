@@ -155,5 +155,13 @@ export const cardBaseFilename = (input: ShareCardInput, brand?: ClubBrand | null
       return `${clubSlug}-teamlists-${slugify(input.roundLabel)}`;
     case "juniorHighlights":
       return `${clubSlug}-juniors-${slugify(input.grade)}-${slugify(input.roundLabel)}`;
+    case "announcement":
+      return `${clubSlug}-announcement-${slugify(input.headline).slice(0, 40)}`;
+    case "sponsor":
+      return `${clubSlug}-sponsor-${slugify(input.sponsorName)}`;
+    case "resultsSummary":
+      return `${clubSlug}-${jr}results-${slugify(input.roundLabel || input.dateLabel)}`;
+    case "teamOfWeek":
+      return `${clubSlug}-team-of-the-week-${slugify(input.dateLabel)}`;
   }
 };

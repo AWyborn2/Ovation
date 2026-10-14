@@ -80,7 +80,13 @@ for (const starter of STARTER_IDS) {
         expect(emptySizes(doc!)).toEqual([]);
       });
       it.skipIf(!doc)(`${kind} uses only the kind's fields`, () => {
-        const tokens = new Set((kindFields(kind)?.fields ?? []).map((f) => f.key));
+        // Text shows the kind's fields; images may show the club's crest and ground.
+        const tokens = new Set([
+          ...(kindFields(kind)?.fields ?? []).map((f) => f.key),
+          ...(kindFields(kind)?.images ?? []).map((i) => i.key),
+          "clubLogo",
+          "groundPhoto",
+        ]);
         for (const layer of doc!.layers) {
           for (const [, key] of String(layer.content ?? "").matchAll(TOKEN)) {
             expect(tokens.has(key), `${kind}: {{${key}}}`).toBe(true);
@@ -98,8 +104,15 @@ for (const starter of STARTER_IDS) {
         const json = JSON.stringify(doc);
         expect(json).not.toMatch(CLUB_LITERALS);
         for (const layer of doc!.layers) {
-          if (layer.kind === "image")
-            expect(String(layer.content ?? "")).not.toMatch(/photo|player/i);
+          // Images come from the club or the card (crest, ground photo, a
+          // sponsor's artwork) by token, never a fixed file.
+          if (layer.kind === "image") {
+            const key = /^\{\{\s*([\w.]+)\s*\}\}$/.exec(String(layer.content ?? ""))?.[1];
+            const images = (kindFields(kind)?.images ?? []).map((i) => i.key);
+            expect([...images, "clubLogo", "groundPhoto"], `${kind}: ${layer.content}`).toContain(
+              key,
+            );
+          }
         }
       });
     }

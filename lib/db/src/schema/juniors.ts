@@ -101,7 +101,7 @@ export const juniorMatchesTable = pgTable(
   (t) => ({
     idxTenant: index("junior_matches_tenant_idx").on(t.tenantId),
     // One junior match per PlayHQ match per tenant: the junior projection's upsert
-    // key (junior PlayHQ sync plan U2). Migration 0038 builds it only when existing
+    // key (junior PlayHQ sync plan U2). Migration 0040 builds it only when existing
     // rows have no duplicates, so it can never fail half-way.
     uqTenantPlayhqMatch: uniqueIndex("junior_matches_tenant_playhq_match_uidx")
       .on(t.tenantId, t.playhqMatchId)
@@ -187,7 +187,7 @@ export type JuniorMatchRosterRow = typeof juniorMatchRostersTable.$inferSelect;
 /**
  * One row per junior player per club, keyed by (tenant_id, PlayHQ participant_id)
  * so a child registered at two clubs is two independent rows (junior PlayHQ sync
- * plan KTD8; migration 0038 replaced the global participant_id key). `isPrivate` marks
+ * plan KTD8; migration 0040 replaced the global participant_id key). `isPrivate` marks
  * the handful of participants the club wants hidden everywhere — the API masks
  * their scorecard lines and omits them from every directory / leaderboard.
  * `seniorPlayerId` is an OPTIONAL cross-reference to a senior player record for

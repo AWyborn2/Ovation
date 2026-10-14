@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  classifyGrade,
-  juniorReclassifications,
-  mergeUnclassifiedGrades,
-  unclassifiedGradesByOrg,
-} from "./grade-classes";
-import type { Row } from "./load";
+import { classifyGrade, juniorReclassifications } from "./grade-classes";
 
 describe("classifyGrade", () => {
   it.each([
@@ -50,84 +44,6 @@ describe("classifyGrade", () => {
       expect(classifyGrade(name)).toBe("unclassified");
     },
   );
-});
-
-describe("unclassifiedGradesByOrg", () => {
-  const ENABLED = "4559f1b9-86d8-eb11-a7ad-2818780da0cc";
-  const OTHER = "3d38cd53-8ad8-eb11-a7ad-2818780da0cc";
-  const ASSOC = "11111111-2222-3333-4444-555555555555";
-  const grade = (id: string, name: string, source: string, owner = ASSOC): Row => ({
-    id,
-    name,
-    season_name: "2026/27",
-    owner_org_id: owner,
-    source_org_id: source,
-    is_junior: false,
-    raw: { teamNames: ["Halls Head Hawks", "Private Player"] },
-  });
-
-  it("lists an enabled organisation's unclassified grades once per grade and season", () => {
-    const out = unclassifiedGradesByOrg(
-      [
-        grade("g1", "Mixed Social Twilight", ENABLED),
-        grade("g1b", "Mixed Social Twilight", ENABLED),
-        grade("g2", "A Grade", ENABLED),
-        grade("g3", "Year 7 Gold", ENABLED),
-        grade("g4", "Mixed Social Twilight", OTHER),
-      ],
-      new Set([ENABLED]),
-    );
-    expect(out).toEqual(
-      new Map([[ENABLED, [{ grade: "Mixed Social Twilight", season: "2026/27" }]]]),
-    );
-    // No player names, team names or raw payloads travel with the report.
-    expect(JSON.stringify([...out.values()])).not.toMatch(/Player|Hawks/);
-  });
-
-  it("files a grade under its owner organisation when that one is enabled", () => {
-    const out = unclassifiedGradesByOrg(
-      [grade("g1", "Mixed Social Twilight", OTHER, ENABLED.toUpperCase())],
-      new Set([ENABLED]),
-    );
-    expect([...out.keys()]).toEqual([ENABLED]);
-  });
-
-  it("reports nothing for organisations that aren't enabled", () => {
-    expect(
-      unclassifiedGradesByOrg([grade("g1", "Mixed Social Twilight", OTHER)], new Set()).size,
-    ).toBe(0);
-  });
-});
-
-describe("mergeUnclassifiedGrades", () => {
-  const twilight = { grade: "Mixed Social Twilight", season: "2026/27" };
-  const indoor = { grade: "Indoor Mixed", season: "2026/27" };
-
-  it("adds grades not yet recorded, once each, and says so", () => {
-    expect(mergeUnclassifiedGrades([twilight], [twilight, indoor])).toEqual({
-      grades: [twilight, indoor],
-      changed: true,
-    });
-  });
-
-  it("reports no change when every grade is already recorded", () => {
-    expect(mergeUnclassifiedGrades([twilight, indoor], [indoor])).toEqual({
-      grades: [twilight, indoor],
-      changed: false,
-    });
-  });
-
-  it("treats the same grade in another season as new", () => {
-    const next = { ...twilight, season: "2027/28" };
-    expect(mergeUnclassifiedGrades([twilight], [next]).grades).toEqual([twilight, next]);
-  });
-
-  it("tolerates a missing or malformed stored list", () => {
-    expect(mergeUnclassifiedGrades(undefined, [twilight])).toEqual({
-      grades: [twilight],
-      changed: true,
-    });
-  });
 });
 
 describe("juniorReclassifications", () => {

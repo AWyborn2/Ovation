@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useConfirm } from "@/components/confirm-dialog";
+import { CapImportCard } from "./cap-import";
 
 /**
  * Concierge club history import (hybrid stats plan U11; R13, R14, R18). The
@@ -142,6 +143,7 @@ export default function HistoryImportPage() {
         <BoundaryCard tenantId={id} />
         <ImportCard tenantId={id} />
         <BatchesCard tenantId={id} />
+        <CapImportCard tenantId={id} />
       </div>
     </div>
   );

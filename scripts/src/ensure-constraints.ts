@@ -273,7 +273,7 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     name: "shirt_number_uploads_status_check",
     sql: `"status" IN ('pending', 'committed', 'discarded')`,
   },
-  // Junior PlayHQ sync (migration 0038): team-list source and public name style.
+  // Junior PlayHQ sync (migration 0040): team-list source and public name style.
   {
     table: "junior_team_lists",
     name: "junior_team_lists_source_check",
@@ -341,14 +341,13 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
           ON "fixtures" ("tenant_id", "playhq_match_id")
           WHERE "playhq_match_id" IS NOT NULL`,
   },
-  // PlayHQ sync incidents (migration 0025, widened in 0039): at most one open incident per
-  // organisation and kind, which is what makes alerts fire once per incident.
+  // PlayHQ sync watchdog (migration 0025): at most one open incident per organisation,
+  // which is what makes alerts fire once per incident.
   {
-    name: "playhq_sync_incidents_open_org_kind_uidx",
-    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "playhq_sync_incidents_open_org_kind_uidx"
-          ON "playhq_sync_incidents" ("org_id", "kind")
+    name: "playhq_sync_incidents_open_org_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "playhq_sync_incidents_open_org_uidx"
+          ON "playhq_sync_incidents" ("org_id")
           WHERE "resolved_at" IS NULL`,
-    dropIndexes: ["playhq_sync_incidents_open_org_uidx"],
   },
   // Admin per-match uploads (source_key IS NULL): one match per identity. Lives
   // only in the reconcile migration + here: Drizzle's index builder cannot
@@ -403,7 +402,7 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
     sql: `CREATE UNIQUE INDEX IF NOT EXISTS "shirt_number_settings_tenant_unique"
           ON "shirt_number_settings" ("tenant_id")`,
   },
-  // Junior PlayHQ sync (migration 0038): one tenant per junior PlayHQ organisation,
+  // Junior PlayHQ sync (migration 0040): one tenant per junior PlayHQ organisation,
   // one junior fixture / junior match per PlayHQ match per tenant (the junior
   // projection's upsert keys), one team list per junior fixture. The junior_matches
   // index is skipped by the migration when existing rows hold duplicates; this

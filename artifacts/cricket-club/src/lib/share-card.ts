@@ -42,6 +42,8 @@ export {
   type RoundFixture,
   type RoundTeam,
   type JuniorHighlight,
+  type GradeResult,
+  type TeamOfWeekPlayer,
   type SetDensity,
   type SetSlideFields,
   type ShareCardInput,

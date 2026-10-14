@@ -2806,6 +2806,76 @@ paths:
         "409":
           description: Already finalised, changed since the caller loaded it, or the match has started
 
+  /selection/{id}/team-sheet:
+    get:
+      operationId: getTeamSheetPreview
+      tags: [selection]
+      summary: What the print dialog needs for a finalised side's team sheet (admin or captain)
+      description: |
+        The side's grade, PlayHQ format and competition, the overs to offer
+        (the grade's remembered value, else one read from a T20-style format),
+        and — for a senior side — which competition rules set the Junior Aged
+        Player bowling limits and how many listed players have no birth date.
+        Refused until the side is finalised.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Print details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamSheetPreview"
+        "401":
+          description: Not signed in as this club's admin or captain
+        "404":
+          description: Side not found
+        "409":
+          description: The side is not finalised
+    post:
+      operationId: printTeamSheet
+      tags: [selection]
+      summary: The finalised side's printable A4 team sheet as a PDF (admin or captain)
+      description: |
+        Match details (both teams, grade or age group, round, date, start time,
+        format, overs, venue, competition), the 12 in batting-list order with
+        shirt numbers and (C)/(WK) tags, and on a senior sheet each Junior Aged
+        Player's age group and bowling limits from their date of birth under the
+        competition's rules. The overs sent are printed and remembered for the
+        grade. Generated clients should treat the response as a `Blob`.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamSheetPrintBody"
+      responses:
+        "200":
+          description: The team sheet
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Invalid overs
+        "401":
+          description: Not signed in as this club's admin or captain
+        "404":
+          description: Side not found
+        "409":
+          description: The side is not finalised
+
   /selection/{id}/reopen:
     post:
       operationId: reopenSelection
@@ -9123,6 +9193,70 @@ paths:
         "404":
           description: No such exclusion.
 
+  /platform/admin/grade-decisions:
+    get:
+      operationId: getPlatformGradeDecisions
+      tags: [platformAdmin]
+      summary: >-
+        PlayHQ competitions no club's sync can place in a grade (their matches are
+        skipped until someone decides), and the decisions made so far.
+      responses:
+        "200":
+          description: Pending competitions and decisions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GradeDecisionList"
+        "401":
+          description: Not authenticated.
+        "503":
+          description: Ingest database not configured.
+    put:
+      operationId: setPlatformGradeDecision
+      tags: [platformAdmin]
+      summary: >-
+        Map a PlayHQ competition to an app grade, or mark it as not tracked. A mapping is
+        projected straight away when the central projector is configured, otherwise on the
+        next sync that touches the competition.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetGradeDecisionBody"
+      responses:
+        "200":
+          description: Decision saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GradeDecisionResult"
+        "400":
+          description: Invalid competition name, action or grade.
+        "401":
+          description: Not authenticated.
+
+  /platform/admin/grade-decisions/{gradeKey}:
+    delete:
+      operationId: deletePlatformGradeDecision
+      tags: [platformAdmin]
+      summary: >-
+        Remove a decision. Matches already projected stay as they are; the competition
+        goes back to being unrecognised for future syncs.
+      parameters:
+        - name: gradeKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Decision removed
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such decision.
+
   /platform/admin/player-privacy:
     get:
       operationId: getPlatformPlayerPrivacy
@@ -9505,6 +9639,158 @@ paths:
         "503":
           description: The club history tables (migrations 0021 / 0022) are missing.
 
+  /platform/admin/cap-import/template:
+    get:
+      operationId: getCapImportTemplate
+      tags: [platformAdmin]
+      summary: >-
+        Download the cap register CSV template (every column, two example
+        rows): the club's A Grade (male) and Female A Grade cap numbering.
+      responses:
+        "200":
+          description: The CSV template
+          content:
+            text/csv:
+              schema:
+                type: string
+        "401":
+          description: Not authenticated.
+
+  /platform/admin/tenants/{id}/cap-import/preview:
+    post:
+      operationId: previewTenantCapImport
+      tags: [platformAdmin]
+      summary: >-
+        Validate a cap register CSV and preview it. Writes nothing. Reports
+        every problem with its spreadsheet row, and how each cap would link to
+        a player of the club (exact name match only; unmatched caps are still
+        written, unlinked). A category that already has caps is refused.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CapImportPreviewBody"
+      responses:
+        "200":
+          description: The preview (check `errors` and `refusedCategories` before committing)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapImportPreview"
+        "400":
+          description: Missing file.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+
+  /platform/admin/tenants/{id}/cap-import/commit:
+    post:
+      operationId: commitTenantCapImport
+      tags: [platformAdmin]
+      summary: >-
+        Write a cap register CSV as one labelled batch. The file is validated
+        again. Caps are written confirmed, linked where the name matched
+        exactly, and marked with the batch in their note so the batch can be
+        undone. Never drafts social cards.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CapImportCommitBody"
+      responses:
+        "201":
+          description: The batch was written
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapImportCommitResult"
+        "400":
+          description: Missing file or label.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+        "409":
+          description: A category already has caps, or the register changed since the preview.
+        "422":
+          description: The file has errors (the body carries the preview).
+
+  /platform/admin/tenants/{id}/cap-import/batches:
+    get:
+      operationId: listTenantCapImportBatches
+      tags: [platformAdmin]
+      summary: The club's cap import batches, newest first.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The batches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CapImportBatch"
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such tenant.
+
+  /platform/admin/tenants/{id}/cap-import/batches/{batchId}:
+    delete:
+      operationId: undoTenantCapImportBatch
+      tags: [platformAdmin]
+      summary: >-
+        Undo a cap import batch: delete the caps it wrote. Refused when a later
+        cap was issued after them in the same list (the sequence would break).
+        A cap an admin edited out of the batch note is left alone.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9]{8}T[0-9]{6}Z$"
+      responses:
+        "200":
+          description: The batch was undone
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CapImportUndoResult"
+        "400":
+          description: Invalid batch id.
+        "401":
+          description: Not authenticated.
+        "404":
+          description: No such batch for this tenant.
+        "409":
+          description: A later cap exists, so undoing would break the numbering.
+
   /social-prefill/ladder:
     get:
       operationId: getSocialLadderPrefill
@@ -9602,6 +9888,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WeekendWrap"
+
+  /social-prefill/round-results:
+    get:
+      operationId: getSocialRoundResultsPrefill
+      tags: [socialCards]
+      summary: >-
+        Results summary and team of the week prefill — a round's results per
+        grade with the best batters and bowlers, and its standout performers.
+        Admin + socialStudio entitlement.
+      description: >-
+        Seniors only (central data). Private players are never named. Every
+        field is editable in the builder.
+      parameters:
+        - name: season
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: Season start year (e.g. 2026 for "2026/27").
+        - name: round
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Round results prefill
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoundResults"
 
 components:
   schemas:
@@ -10668,6 +10985,84 @@ components:
           items:
             $ref: "#/components/schemas/WeekendWrapMatch"
 
+    RoundFigure:
+      type: object
+      required: [name, figure]
+      properties:
+        name:
+          type: string
+        figure:
+          type: string
+          description: '"32* (34)" for a batter, "3/28 (10)" for a bowler.'
+
+    RoundResult:
+      type: object
+      description: One grade's result in a round, from the club's side.
+      required: [matchId, grade, clubScore, oppName, oppScore, outcome, note, batters, bowlers]
+      properties:
+        matchId:
+          type: integer
+        grade:
+          type: string
+        clubScore:
+          type: string
+        oppName:
+          type: string
+        oppScore:
+          type: string
+        outcome:
+          type: string
+          enum: [WON, LOST, ""]
+        note:
+          type: string
+          description: Set when the match had no result (e.g. "WASHED OUT"); scores are empty then.
+        batters:
+          type: array
+          description: The club's best two batters.
+          items:
+            $ref: "#/components/schemas/RoundFigure"
+        bowlers:
+          type: array
+          description: The club's best two bowlers.
+          items:
+            $ref: "#/components/schemas/RoundFigure"
+
+    TeamOfWeekPick:
+      type: object
+      required: [name, grade, figure, photoUrl]
+      properties:
+        name:
+          type: string
+        grade:
+          type: string
+        figure:
+          type: string
+          description: '"110*", "5/28", "4/21 & 16".'
+        photoUrl:
+          type: ["string", "null"]
+          description: The player's library photo, else headshot; null when the club has neither.
+
+    RoundResults:
+      type: object
+      description: >-
+        Results summary and team of the week prefill: a round's senior results
+        per grade with the best players, and its standout performers.
+      required: [roundLabel, dateLabel, results, teamOfWeek]
+      properties:
+        roundLabel:
+          type: string
+        dateLabel:
+          type: string
+          description: '"SATURDAY 10TH OCTOBER 2026" — the round''s first match date.'
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoundResult"
+        teamOfWeek:
+          type: array
+          items:
+            $ref: "#/components/schemas/TeamOfWeekPick"
+
     ImportRecord:
       type: object
       required: [id, filename, status, rowCount, importedAt, kind]
@@ -11606,6 +12001,10 @@ components:
         honours:
           type: ["string", "null"]
           maxLength: 2048
+        cards:
+          type: ["string", "null"]
+          maxLength: 2048
+          description: The club's ground or clubrooms, behind card designs (tinted to the club's colours).
         explore:
           oneOf:
             - $ref: "#/components/schemas/TenantExploreImages"
@@ -12142,30 +12541,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AdminTenantAdmin"
-        unclassifiedGrades:
-          type: array
-          description: >-
-            Junior sync: grades of this club's PlayHQ organisations that the sync could not
-            classify as junior or senior (reported, never guessed). Names and seasons only.
-            Present on the tenant detail read; empty when there are none.
-          items:
-            $ref: "#/components/schemas/AdminUnclassifiedGrade"
-
-    AdminUnclassifiedGrade:
-      type: object
-      required: [orgId, grade, season, since]
-      properties:
-        orgId:
-          type: string
-          description: The PlayHQ organisation the grade was found under.
-        grade:
-          type: string
-        season:
-          type: string
-          nullable: true
-        since:
-          type: string
-          description: ISO-8601 instant the organisation's unclassified-grades report opened.
 
     IssueAdminResetBody:
       type: object
@@ -12491,6 +12866,140 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/HistoryBoundary"
+
+    CapImportPreviewBody:
+      type: object
+      required: [file]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: "The CSV file: category,cap_number,name,games_a_grade"
+
+    CapImportCommitBody:
+      type: object
+      required: [file, label]
+      properties:
+        file:
+          type: string
+          format: binary
+          description: The same CSV file that was previewed
+        label:
+          type: string
+          description: Admin-facing name for the batch, e.g. "WKBCC A Grade caps (club list)".
+
+    CapImportCategory:
+      type: string
+      enum: [male, female]
+      description: male = A Grade; female = Female A Grade.
+
+    CapImportLinkStatus:
+      type: string
+      enum: [linked, ambiguous, private, unmatched]
+
+    CapImportPlannedCap:
+      type: object
+      required: [row, category, capNumber, name, games, playerId, status, note]
+      properties:
+        row:
+          type: integer
+          description: Spreadsheet row (the header is row 1).
+        category:
+          $ref: "#/components/schemas/CapImportCategory"
+        capNumber:
+          type: integer
+        name:
+          type: string
+        games:
+          type: integer
+        playerId:
+          type: ["integer", "null"]
+          description: The club player the cap would link to; null = written unlinked.
+        status:
+          $ref: "#/components/schemas/CapImportLinkStatus"
+        note:
+          type: string
+          description: Why a cap is not linked (candidate ids, a close name hint).
+
+    CapImportRefusedCategory:
+      type: object
+      required: [category, existing]
+      properties:
+        category:
+          $ref: "#/components/schemas/CapImportCategory"
+        existing:
+          type: integer
+          description: Caps the club's register already holds in this category.
+
+    CapImportPreview:
+      type: object
+      required: [rowCount, errors, refusedCategories, caps, centralUnavailable]
+      properties:
+        rowCount:
+          type: integer
+          description: Caps the commit would write.
+        errors:
+          type: array
+          items:
+            type: string
+          description: Problems, each naming its row. Nothing can be committed while any remain.
+        refusedCategories:
+          type: array
+          items:
+            $ref: "#/components/schemas/CapImportRefusedCategory"
+        caps:
+          type: array
+          items:
+            $ref: "#/components/schemas/CapImportPlannedCap"
+        centralUnavailable:
+          type: ["string", "null"]
+          description: Set when central couldn't be read, so only pre-digital players could be linked.
+
+    CapImportCommitResult:
+      type: object
+      required: [batchId, label, written, linked, unlinked]
+      properties:
+        batchId:
+          type: string
+          description: The batch token (also in each cap's note).
+        label:
+          type: string
+        written:
+          type: integer
+        linked:
+          type: integer
+        unlinked:
+          type: integer
+
+    CapImportBatch:
+      type: object
+      required: [id, label, createdAt, male, female, linked, unlinked]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        createdAt:
+          type: string
+        male:
+          type: integer
+          description: Caps remaining in the A Grade list.
+        female:
+          type: integer
+          description: Caps remaining in the Female A Grade list.
+        linked:
+          type: integer
+        unlinked:
+          type: integer
+
+    CapImportUndoResult:
+      type: object
+      required: [batchId, capsRemoved]
+      properties:
+        batchId:
+          type: string
+        capsRemoved:
+          type: integer
 
     PasswordResetInfo:
       type: object
@@ -14170,6 +14679,45 @@ components:
           items:
             $ref: "#/components/schemas/SelectionChange"
 
+    TeamSheetPreview:
+      type: object
+      required: [selectionId, section, grade, format, competition, overs, bowlingRulesSource, missingBirthDates]
+      properties:
+        selectionId:
+          type: integer
+        section:
+          type: string
+          enum: [senior, junior]
+        grade:
+          type: string
+        format:
+          type: string
+          nullable: true
+          description: PlayHQ's match type ("One Day", "T20"); null for a manual fixture
+        competition:
+          type: string
+          nullable: true
+          description: PlayHQ's grade name ("A Grade Wyllie Cup")
+        overs:
+          type: string
+          nullable: true
+        bowlingRulesSource:
+          type: string
+          nullable: true
+          description: Where the Junior Aged Player limits come from ("PCA Bylaw 5.9"); null when unknown or junior
+        missingBirthDates:
+          type: integer
+          description: Listed players with no birth date (senior sheet only)
+
+    TeamSheetPrintBody:
+      type: object
+      properties:
+        overs:
+          type: string
+          nullable: true
+          maxLength: 20
+          description: Overs per innings to print; remembered for the side's grade
+
     SelectionFinaliseBody:
       type: object
       required: [version]
@@ -15519,8 +16067,10 @@ components:
       type: string
       # roundFixtures / tradingCard / juniorHighlights are the Club Kit card
       # types (game day across all grades, a collectable player card, junior
-      # highlights).
-      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard, roundFixtures, tradingCard, juniorHighlights, teamListRound]
+      # highlights). announcement / sponsor / resultsSummary / teamOfWeek came
+      # with the Clubhouse look (club news, a sponsor thank-you, every grade's
+      # result with its best players, the round's standout performers).
+      enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard, roundFixtures, tradingCard, juniorHighlights, teamListRound, announcement, sponsor, resultsSummary, teamOfWeek]
 
     Sponsor:
       type: object
@@ -17123,6 +17673,102 @@ components:
                         type: string
                   - type: "null"
 
+    GradeDecisionTenant:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+
+    PendingGradeCompetition:
+      type: object
+      required: [gradeKey, gradeName, matches, seasons, tenants, reason]
+      properties:
+        gradeKey:
+          type: string
+          description: The normalised competition name decisions are keyed by (seasons removed).
+        gradeName:
+          type: string
+        matches:
+          type: integer
+          description: PlayHQ matches across every club playing in it.
+        seasons:
+          type: array
+          items: { type: string }
+        tenants:
+          type: array
+          items:
+            $ref: "#/components/schemas/GradeDecisionTenant"
+        reason:
+          type: string
+
+    GradeDecision:
+      type: object
+      required: [gradeKey, gradeName, action, centralGrade, reason, setAt]
+      properties:
+        gradeKey: { type: string }
+        gradeName: { type: string }
+        action:
+          type: string
+          enum: [map, ignore]
+        centralGrade:
+          type: ["string", "null"]
+          description: The app grade a mapped competition is projected under; null when ignored.
+        reason:
+          type: ["string", "null"]
+        setAt:
+          type: string
+
+    GradeDecisionList:
+      type: object
+      required: [projectorConfigured, mappableGrades, pending, decisions]
+      properties:
+        projectorConfigured:
+          type: boolean
+          description: A saved mapping is projected immediately only when this is true.
+        mappableGrades:
+          type: array
+          items: { type: string }
+        pending:
+          type: array
+          items:
+            $ref: "#/components/schemas/PendingGradeCompetition"
+        decisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/GradeDecision"
+
+    SetGradeDecisionBody:
+      type: object
+      required: [gradeName, action]
+      properties:
+        gradeName:
+          type: string
+          minLength: 1
+          maxLength: 300
+        action:
+          type: string
+          enum: [map, ignore]
+        centralGrade:
+          type: ["string", "null"]
+          description: Required for map (one of mappableGrades); must be absent for ignore.
+        reason:
+          type: ["string", "null"]
+          maxLength: 500
+
+    GradeDecisionResult:
+      allOf:
+        - $ref: "#/components/schemas/GradeDecision"
+        - type: object
+          required: [applied, created, updated, skipped]
+          properties:
+            applied:
+              type: boolean
+              description: The competition's matches were projected now.
+            created: { type: integer }
+            updated: { type: integer }
+            skipped: { type: integer }
+
     TenantPlayhqSyncStatus:
       type: object
       required: [linked, syncEnabled, stale]
@@ -17140,6 +17786,28 @@ components:
           description: An incident is open for this club's organisation.
         staleSince:
           type: ["string", "null"]
+        unclassifiedGrades:
+          type: array
+          description: >-
+            Competitions this club's PlayHQ organisation plays in that Ovation can't place in a
+            grade, so their matches are not shown. Empty when everything is recognised.
+          items:
+            $ref: "#/components/schemas/UnclassifiedGrade"
+
+    UnclassifiedGrade:
+      type: object
+      required: [gradeName, seasonName, matches, reason]
+      properties:
+        gradeName:
+          type: string
+          description: The competition name as PlayHQ spells it.
+        seasonName:
+          type: ["string", "null"]
+        matches:
+          type: integer
+          description: PlayHQ matches the club has in this competition.
+        reason:
+          type: string
 
     SocialFamilySetting:
       type: object
@@ -19322,7 +19990,7 @@ components:
       properties:
         starter:
           type: string
-          enum: [club-kit, broadcast]
+          enum: [club-kit, broadcast, clubhouse]
         baseVersion:
           type: integer
           description: Required when the kind already has a template.

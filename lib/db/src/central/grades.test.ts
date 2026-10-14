@@ -43,9 +43,30 @@ describe("classifyCentralGrade — WA Premier Cricket labels", () => {
 
   it("maps One-Day grades and Masters", () => {
     expect(appGradeFromCentral("One Day Grade 2")).toBe("One Day Grade 2");
-    expect(appGradeFromCentral("Over 50 Men")).toBe("Masters");
     expect(appGradeFromCentral("Masters")).toBe("Masters");
+    expect(appGradeFromCentral("Masters Competition")).toBe("Masters");
     expect(appGradeFromCentral("Veterans Cup")).toBe("Masters");
+  });
+
+  it("gives age-based veterans comps their own grade, never the lettered grade in the name", () => {
+    for (const [label, grade] of [
+      ["Over 40s A Grade", "Over 40s"],
+      ["Over 50s A Grade", "Over 50s"],
+      ["Over 40s", "Over 40s"],
+      ["Over 50 Men", "Over 50s"],
+      ["Over 50s Focus Cricket Cup", "Over 50s"],
+      ["Focus Cup Over 45s", "Over 45s"],
+      ["Over 45's - Focus Cup", "Over 45s"],
+      ["Over 60s Horsley/Ramponi/Elliot Cup", "Over 60s"],
+    ] as const) {
+      expect([label, appGradeFromCentral(label)]).toEqual([label, grade]);
+    }
+  });
+
+  it("does not mistake 40-over formats or 30-over juniors for age grades", () => {
+    expect(appGradeFromCentral("Female B Grade 40 Over")).toBe("Female B Grade");
+    expect(appGradeFromCentral("Female A Grade 50 Over")).toBe("Female A Grade");
+    expect(appGradeFromCentral("Year 6 - 30 OVERS")).toBeNull();
   });
 
   it("maps WA senior T20 divisions to 'T20' without touching PCA T20 labels", () => {
@@ -143,6 +164,10 @@ describe("isSeniorAppGrade — the club overlay's history-row guard (U10, R8)", 
       "Women's 1st Grade",
       "One Day Grade 1",
       "Masters",
+      "Over 40s",
+      "Over 45s",
+      "Over 50s",
+      "Over 60s",
       "T20",
     ]) {
       expect([g, isSeniorAppGrade(g)]).toEqual([g, true]);

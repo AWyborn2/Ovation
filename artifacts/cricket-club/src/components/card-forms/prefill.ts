@@ -18,11 +18,14 @@ import type {
   WeekendWrapMatch,
   ClubLeaderboardLeader,
   ClubLeaderboardCategory,
+  GradeResult,
+  TeamOfWeekPlayer,
 } from "@/lib/share-card";
 import type {
   LadderCardRow,
   ClubSeasonGradeLeaders,
   WeekendWrap,
+  RoundResults,
   Fixture,
   MilestoneItem,
   Premiership,
@@ -446,6 +449,55 @@ export function weekendWrapToState(wrap: WeekendWrap): {
       resultLine: m.resultLine,
       performers: m.performers,
       outcome: WRAP_OUTCOME[m.outcome] ?? "draw",
+    })),
+  };
+}
+
+/** A round's results → a results-summary card's state, speaking as `clubName`. */
+export function roundResultsToResultsState(
+  round: RoundResults,
+  clubName: string,
+): { dateLabel: string; roundLabel: string; results: GradeResult[] } {
+  return {
+    dateLabel: round.dateLabel,
+    roundLabel: round.roundLabel.toUpperCase(),
+    results: round.results.map((r) => {
+      const [bat1, bat2] = r.batters;
+      const [bowl1, bowl2] = r.bowlers;
+      return {
+        grade: r.grade.toUpperCase(),
+        clubName,
+        clubScore: r.clubScore,
+        oppName: r.oppName,
+        oppScore: r.oppScore,
+        outcome: r.note ? "noResult" : (WRAP_OUTCOME[r.outcome] ?? "draw"),
+        ...(r.note ? { note: r.note } : {}),
+        bat1Name: bat1?.name ?? "",
+        bat1Figure: bat1?.figure ?? "",
+        bat2Name: bat2?.name ?? "",
+        bat2Figure: bat2?.figure ?? "",
+        bowl1Name: bowl1?.name ?? "",
+        bowl1Figure: bowl1?.figure ?? "",
+        bowl2Name: bowl2?.name ?? "",
+        bowl2Figure: bowl2?.figure ?? "",
+      };
+    }),
+  };
+}
+
+/** A round's standout performers → a team-of-the-week card's state. */
+export function roundResultsToTeamOfWeekState(round: RoundResults): {
+  dateLabel: string;
+  players: TeamOfWeekPlayer[];
+} {
+  return {
+    // "SATURDAY 10TH OCTOBER 2026" → "10TH OCTOBER 2026" (the card names the week).
+    dateLabel: round.dateLabel.replace(/^[A-Z]+DAY\s+/, ""),
+    players: round.teamOfWeek.map((p) => ({
+      name: p.name,
+      figure: p.figure,
+      grade: p.grade.toUpperCase(),
+      photoUrl: p.photoUrl ?? null,
     })),
   };
 }

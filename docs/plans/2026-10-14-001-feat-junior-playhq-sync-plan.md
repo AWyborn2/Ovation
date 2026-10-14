@@ -107,7 +107,7 @@ New junior players never reach the app, which also means the juniors shirt-numbe
 - F1. Club enables juniors
   - **Trigger:** Platform admin switches juniors on for a club.
   - **Actors:** A1, A3
-  - **Steps:** The next sync captures that club's junior grades. Unclassified grades are reported. Fixtures, team lists and any finished scored matches for 2026/27 are loaded. Junior players are created. The juniors area appears.
+  - **Steps:** The next sync captures that club's junior grades. Unclassified grades are left to the Competitions screen. Fixtures, team lists and any finished scored matches for 2026/27 are loaded. Junior players are created. The juniors area appears.
   - **Covered by:** R1, R3–R8, R11
 - F2. Match week
   - **Trigger:** A junior team is named in PlayHQ before its game.
@@ -179,7 +179,7 @@ New junior players never reach the app, which also means the juniors shirt-numbe
 - KTD1. **Three-part gate, decided once in the API layer.** Junior sync runs for a tenant only when PlayHQ sync is on, a new platform-admin switch `tenants.junior_sync_enabled` is on (default off), and the tenant's entitlements include `juniors`. While billing is dormant the entitlement reads as on, so the switch is the effective control (R1, R24). The helper lives in `artifacts/api-server/src/lib/junior-sync.ts` beside `entitlementsFor`. It produces the enabled tenant and organisation set, and every `lib/db` step (cadence, junior drop, junior projection) takes that set as a parameter.
 - KTD2. **Capture junior grades only for enabled organisations.** A club's junior organisation is `tenants.playhq_junior_org_id` when set, otherwise its senior `playhq_org_id`. The plans endpoint adds `includeJuniors: true` to plans for enabled organisations, and plans a separate junior organisation as its own org. The cadence planner counts junior match days for enabled organisations. Ingest keeps a junior grade when its owner or source organisation is enabled; the known-junior lookup for grades without a record in the dump also returns their organisations, so scorecard-only dumps are kept too. All other junior grades are dropped exactly as today (R2, R4, R7).
 - KTD3. **One grade classifier sets `is_junior`.** A new `grade-classes.ts` recognises every junior label the existing age-group banding maps, including "Girls League", and every senior label the central classifier maps. `load.ts` writes `playhq.grades.is_junior` from it. Every existing senior reader filters `is_junior = false`, so senior fixtures, team lists, central projection and stats cannot see junior rows (R13).
-- KTD4. **Unclassified grades: reported, excluded only from the junior pipeline.** A grade from an enabled organisation that is neither junior nor classifiable as senior is recorded as a `playhq_sync_incidents` entry of kind `unclassified_grades` (names, seasons, counts; no player names) and listed on the platform-admin tenant page. Senior handling of such grades stays exactly as today (R5, R6).
+- KTD4. **Unclassified grades: reported, excluded only from the junior pipeline.** A grade from an enabled organisation that is neither junior nor classifiable as senior is kept out of the junior pipeline and never guessed. Senior handling of such grades stays exactly as today (R5, R6). _Revised at the merge of main (15 Oct 2026):_ main shipped the senior "competitions Ovation can't place" report (`lib/db/src/playhq-ingest/unclassified-grades.ts`) with platform grade decisions (`playhq_grade_decisions`, map or ignore) on the platform Competitions screen, across every synced club. That is the one report: the `unclassified_grades` incident kind, its migration (index on `(org_id, kind)`) and the tenant-page list were dropped before merge, and the senior report now uses this plan's `classifyGrade`, so it never lists a grade the classifier calls junior. The tenant page's junior sync card links to the Competitions screen. Known gap: that screen scans clubs' senior PlayHQ organisations only, so an unclassified grade under a separate junior organisation is not listed.
 - KTD5. **One junior projection, separate from the senior ones.** A new projection reads junior grades from `playhq.*` for enabled tenants and writes only `junior_*` tables. It runs in `ingestPlayhqDump` after the senior projections, and failures become warnings with ids and counts, never player names. It never writes `public.fixtures`, `public.team_lists`, `central.*` or senior player tables (R8–R11, R13).
 - KTD6. **The sync owns 2026/27 onward, marked by id band.** `JUNIOR_SYNC_FIRST_SEASON = 2026`. Synced rows take ids from `junior_sync_id_seq` starting at 200,000,000, so "sync origin" is `id >= 200,000,000`. The projection only creates or updates synced rows of seasons from 2026, and never touches loader rows or the admin-line band (100,000,000–199,999,999). The one-off loader is limited to tenant 1, seasons before 2026, and participant upserts that never delete (R12, AE2).
 - KTD7. **Stable lines, re-applied corrections.** Synced batting, bowling and roster lines are updated in place, matched on match, innings and participant (or batting order when there is no participant); only new lines get new ids. After each synced match is written, that match's `junior_stat_corrections` are re-applied and participant ids are mapped through `junior_participant_merges`, mirroring loader steps 6–7. Admin corrections, admin-added lines and merges survive every re-sync.
@@ -290,7 +290,7 @@ stateDiagram-v2
 
 - `lib/db/src/schema/juniors.ts` (`junior_fixtures`, `junior_team_lists`; participants composite key, `privacy_override`, `privacy_override_by`, `privacy_override_at`; display settings `name_style`, `team_publishing`; partial unique `(tenant_id, playhq_match_id)` on matches)
 - `lib/db/src/schema/_tenant.ts` (INVENTORY)
-- migration (next free number): new tables, `junior_sync_id_seq` from 200,000,000, participants key change (lowercasing ids first if needed), new columns, duplicate check then index
+- migration (next free number; landed as `0040_junior_sync.sql` after main took 0038/0039): new tables, `junior_sync_id_seq` from 200,000,000, participants key change (lowercasing ids first if needed), new columns, duplicate check then index
 - `scripts/src/ensure-constraints.ts`
 
 **Approach:** Idempotent DDL as in recent migrations. The key change runs in one transaction. Line tables keep no tenant column (scoped through their match).
@@ -343,8 +343,9 @@ stateDiagram-v2
 - `lib/db/src/playhq-ingest/grade-classes.ts` (new) and `grade-classes.test.ts`
 - `lib/db/src/playhq-ingest/load.ts` (`is_junior` from the classifier; `dropJuniorGrades` takes the enabled organisation set and known-junior grades with their organisations)
 - `lib/db/src/playhq-ingest/cadence.ts` (`HarnessPlan.includeJuniors`; junior match days for enabled organisations)
-- `artifacts/api-server/src/lib/playhq-ingest.ts` (`listDuePlans`, the known-junior lookup with organisations, unclassified-grade incidents)
-- `artifacts/api-server/src/routes/platform-admin.ts`, `artifacts/cricket-club/src/pages/platform-admin/tenant-detail.tsx` (unclassified grades list)
+- `artifacts/api-server/src/lib/playhq-ingest.ts` (`listDuePlans`, the known-junior lookup with organisations)
+- `artifacts/cricket-club/src/pages/platform-admin/tenant-detail.tsx` (junior sync card; links to the Competitions screen for unclassified grades — see KTD4)
+- `lib/db/src/playhq-ingest/unclassified-grades.ts` (from main: skips grades `classifyGrade` calls junior)
 - `lib/db/src/playhq-ingest/load.test.ts`, `cadence.test.ts`
 
 **Approach:** The runner passes the plan object verbatim, so `includeJuniors` on the plan is the only capture change. Keep the drop path identical for organisations that aren't enabled. Before enabling Halls Head, check which PlayHQ organisation its junior teams are under, and set the junior organisation if it differs. Measure an enabled organisation's weekly and match-day run time against the 55-minute workflow limit.
@@ -358,7 +359,7 @@ stateDiagram-v2
 - Junior-only players of a disabled organisation are dropped; those of an enabled organisation are kept.
 - Matchday plans are scheduled for an enabled organisation's junior match day, not for a disabled one's; `includeJuniors` appears only on enabled organisations' plans.
 - A separate junior organisation gets its own plans.
-- Classifier: "Year 7 Gold", "U13 Boys" and "Peel Girls League" are junior; "A Grade" is senior; "Mixed Social Twilight" is unclassified and recorded once per organisation and season, without player names.
+- Classifier: "Year 7 Gold", "U13 Boys" and "Peel Girls League" are junior; "A Grade" is senior; "Mixed Social Twilight" is unclassified, stays senior-handled and opens no incident; the Competitions report never lists a junior grade.
 - "Peel Girls League" never reaches `public.fixtures`.
 
 **Verification:** `pnpm run test:libs` passes; a manual catch-up for an enabled organisation stores junior grades with `is_junior = true`.

@@ -4,8 +4,9 @@
 // With junior sync off a club's junior grades are dropped at ingest exactly as before; once
 // the platform admin switches it on, the next ingest keeps them in `playhq.*` (is_junior =
 // true) without any reaching `public.fixtures`, the plans endpoint asks the harness for
-// junior grades, and grades no classifier recognises are reported once on the platform-admin
-// tenant page (names and seasons only). Same setup as internal-playhq-ingest.test.ts: the
+// junior grades, and grades no classifier recognises are left to the senior "can't place this
+// competition" report (platform Competitions screen, PlayHQ grade decisions) — the ingest opens
+// no incident for them and that report never lists a junior grade. Same setup as internal-playhq-ingest.test.ts: the
 // playhq schema and the playhq_ingest role are applied to the central database, and ingest
 // connects as that role. CI only (needs Postgres).
 import { randomUUID } from "node:crypto";
@@ -13,7 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import app from "../app";
 import {
   db,
@@ -263,16 +264,9 @@ const juniorFixtureMatches = async (id: number) =>
     .map((r) => r.matchId)
     .sort();
 
-const openUnclassified = () =>
-  db
-    .select()
-    .from(playhqSyncIncidentsTable)
-    .where(
-      and(
-        eq(playhqSyncIncidentsTable.orgId, ORG),
-        eq(playhqSyncIncidentsTable.kind, "unclassified_grades"),
-      ),
-    );
+/** Any sync incident for the club's organisation (the ingest itself opens none). */
+const clubIncidents = () =>
+  db.select().from(playhqSyncIncidentsTable).where(eq(playhqSyncIncidentsTable.orgId, ORG));
 
 describe("junior capture — junior sync off (AE1, R2)", () => {
   it("drops the club's junior grades exactly as before and reports nothing", async () => {
@@ -288,7 +282,7 @@ describe("junior capture — junior sync off (AE1, R2)", () => {
     expect(m.rows.map((r) => r.id)).toEqual([SENIOR_MATCH]);
     const kid = await admin.query(`select 1 from playhq.players where participant_id = $1`, [KID]);
     expect(kid.rowCount).toBe(0);
-    expect(await openUnclassified()).toEqual([]);
+    expect(await clubIncidents()).toEqual([]);
     // Nothing reaches the junior tables of a club without junior sync.
     expect(await juniorFixtureMatches(tenantId)).toEqual([]);
   });
@@ -341,29 +335,19 @@ describe("junior capture — junior sync on (AE1, R4-R7)", () => {
     expect(rows.map((r) => r.matchId)).toEqual([SENIOR_MATCH]);
   });
 
-  it("records the unclassified grade once, with its season and no player names", async () => {
-    await ingest(); // a second sync adds nothing new
-    const open = await openUnclassified();
-    expect(open).toHaveLength(1);
-    expect(open[0]!.resolvedAt).toBeNull();
-    expect(open[0]!.detail.grades).toEqual([
-      { grade: "Mixed Social Twilight", season: "Summer 2026/27" },
-    ]);
-    expect(JSON.stringify(open[0]!.detail)).not.toMatch(/Kid|Junior,/);
+  it("opens no incident for the unclassified grade (the Competitions screen reports it)", async () => {
+    await ingest(); // a second sync changes nothing
+    expect(await clubIncidents()).toEqual([]);
   });
 
-  it("lists the unclassified grade on the platform-admin tenant page", async () => {
+  it("never lists the club's junior grades among the competitions Ovation can't place", async () => {
     const res = await request(app)
-      .get(`/api/platform/admin/tenants/${tenantId}`)
+      .get("/api/platform/admin/grade-decisions")
       .set("Cookie", platformCookie);
     expect(res.status).toBe(200);
-    expect(res.body.unclassifiedGrades).toEqual([
-      expect.objectContaining({
-        orgId: ORG,
-        grade: "Mixed Social Twilight",
-        season: "Summer 2026/27",
-      }),
-    ]);
+    const names = (res.body.pending as { gradeName: string }[]).map((p) => p.gradeName);
+    expect(names).not.toContain("Year 7 Gold");
+    expect(names).not.toContain("Peel Girls League");
   });
 
   it("asks the harness for junior grades on the club's plans, and plans a separate junior organisation", async () => {

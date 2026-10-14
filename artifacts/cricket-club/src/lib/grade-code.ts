@@ -1,7 +1,7 @@
 /**
  * Compact grade code for tight Broadcast surfaces (ticker, junior tiles):
  * "A Grade" → "A", "Female A" → "FA", "Female" → "F", "Under 17s" / "U17 Boys"
- * → "U17", "Year 9 Boys" → "Y9", "PPL" → "PPL", anything else → its first word, up to 3 letters.
+ * → "U17", "Year 9 Boys" → "Y9", "Over 40s" → "O40", "PPL" → "PPL", anything else → its first word, up to 3 letters.
  */
 export function gradeCode(grade: string | null | undefined): string {
   const g = (grade ?? "").trim();
@@ -14,6 +14,8 @@ export function gradeCode(grade: string | null | undefined): string {
   if (m) return `U${m[1]}`;
   m = /\byear\s*(\d{1,2})/i.exec(g);
   if (m) return `Y${m[1]}`;
+  m = /^over\s*(\d{2})/i.exec(g);
+  if (m) return `O${m[1]}`;
   const first = g.split(/\s+/)[0];
   return first.slice(0, 3).toUpperCase();
 }

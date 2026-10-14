@@ -8,6 +8,7 @@ import PlatformBrand from "./platform-brand";
 import ProvisioningExclusions from "./provisioning-exclusions";
 import PlayhqSyncPage from "./playhq-sync";
 import PlayerPrivacyPage from "./player-privacy";
+import GradeDecisionsPage from "./grade-decisions";
 
 /**
  * The platform-admin (super-admin) console, mounted on the apex host inside
@@ -24,6 +25,7 @@ export function PlatformAdminRoutes() {
         <Route path="/platform-admin/provisioning-exclusions" component={ProvisioningExclusions} />
         <Route path="/platform-admin/playhq-sync" component={PlayhqSyncPage} />
         <Route path="/platform-admin/player-privacy" component={PlayerPrivacyPage} />
+        <Route path="/platform-admin/grade-decisions" component={GradeDecisionsPage} />
         <Route path="/platform-admin/tenants/:id/history-import" component={HistoryImportPage} />
         <Route path="/platform-admin/tenants/:id" component={TenantDetail} />
       </Switch>

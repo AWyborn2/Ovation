@@ -1,0 +1,482 @@
+import { and, eq, inArray, sql } from "drizzle-orm";
+import {
+  db,
+  availabilitySettingsTable,
+  fixturesTable,
+  juniorShirtNumbersTable,
+  selectionsTable,
+  squadMembersTable,
+  type FixtureRow,
+  type SelectionRow,
+  type SquadMemberRow,
+  type SquadSection,
+} from "@workspace/db";
+import { normaliseParticipantId } from "@workspace/db/shirt-numbers";
+import { seasonStartYearFor } from "@workspace/db/seasons";
+import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
+import { fixtureSection, memberDisplayName } from "./availability-grades";
+import { loadSelectionParticipantIds } from "./selection-published-players";
+import { normaliseSlots, SIDE_SIZE, TWELFTH_INDEX } from "./selection-drafts";
+import { shirtNumberOf, teamListShirtNumberLoader } from "./engines/team-list";
+import { getTenantBrand } from "./tenant-brand";
+import {
+  bowlingRulesFor,
+  juniorBowlingLimit,
+  oversFromFormat,
+  type JuniorBowlingLimit,
+} from "./team-sheet-rules";
+
+/**
+ * The printable A4 team sheet for a finalised Selection Hub side: match
+ * details, the 12 in batting-list order with shirt numbers and (C)/(WK) tags,
+ * and — on a senior sheet only — each Junior Aged Player's bowling limits under
+ * the competition's own rules. Built from the side itself, not the fixture's
+ * team list (a PlayHQ-supplied list is never replaced by a finalise). Names
+ * print in full, private members included: the sheet goes to the umpire and
+ * the opposition captain, and only admins and captains can make it.
+ */
+
+export class TeamSheetError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+export type TeamSheetRole = "C" | "WK" | "C/WK";
+
+export type TeamSheetPlayer = {
+  /** 1–11, or 12 for the 12th player. */
+  order: number;
+  name: string;
+  role: TeamSheetRole | null;
+  shirtNumber: string | null;
+  /** Senior sheet only: the player's limits when they are a Junior Aged Player. */
+  junior: JuniorBowlingLimit | null;
+};
+
+export type TeamSheet = {
+  section: SquadSection;
+  clubName: string;
+  logoUrl: string | null;
+  homeTeam: string;
+  awayTeam: string;
+  /** App grade (senior) or the junior side's grade text (its age group). */
+  grade: string;
+  round: string | null;
+  /** Perth date and time, e.g. "Saturday 17 October 2026", "12:00 pm". */
+  date: string;
+  startTime: string;
+  format: string | null;
+  overs: string | null;
+  venue: string | null;
+  competition: string | null;
+  /** Where the junior bowling limits come from; null when the rules aren't known. */
+  bowlingRulesSource: string | null;
+  /** The competition's other team-sheet lines (senior, known rules only). */
+  ruleNotes: string[];
+  players: TeamSheetPlayer[];
+  generatedAt: string;
+};
+
+/** What the print dialog needs before the PDF is made. */
+export type TeamSheetPreview = {
+  selectionId: number;
+  section: SquadSection;
+  grade: string;
+  format: string | null;
+  competition: string | null;
+  /** The overs to offer: the grade's remembered value, else one read from the format. */
+  overs: string | null;
+  bowlingRulesSource: string | null;
+  /** Senior sheet: how many listed players have no birth date (limits can't be shown). */
+  missingBirthDates: number;
+};
+
+const PERTH = "Australia/Perth";
+
+export function formatSheetDate(at: Date): { date: string; startTime: string } {
+  const date = new Intl.DateTimeFormat("en-AU", {
+    timeZone: PERTH,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(at);
+  const startTime = new Intl.DateTimeFormat("en-AU", {
+    timeZone: PERTH,
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  })
+    .format(at)
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+  return { date, startTime };
+}
+
+type SheetMember = Pick<
+  SquadMemberRow,
+  | "id"
+  | "firstName"
+  | "lastName"
+  | "preferredName"
+  | "dateOfBirth"
+  | "linkedPlayerId"
+  | "playhqProfileId"
+>;
+
+/**
+ * The sheet's rows, pure: the side's members in slot order (the 12th last),
+ * roles never on the 12th, and limits only when `rules` apply to a senior sheet.
+ */
+export function teamSheetPlayers(input: {
+  side: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId">;
+  members: readonly SheetMember[];
+  shirtNumberOf: (m: SheetMember) => string | null;
+  juniorLimitOf: ((m: SheetMember) => JuniorBowlingLimit | null) | null;
+}): TeamSheetPlayer[] {
+  const byId = new Map(input.members.map((m) => [m.id, m]));
+  const players: TeamSheetPlayer[] = [];
+  let order = 0;
+  normaliseSlots(input.side.slots).forEach((slot, index) => {
+    const m = slot.memberId == null ? undefined : byId.get(slot.memberId);
+    if (!m) return;
+    const twelfth = index === TWELFTH_INDEX;
+    const c = !twelfth && input.side.captainMemberId === m.id;
+    const wk = !twelfth && input.side.keeperMemberId === m.id;
+    players.push({
+      order: twelfth ? SIDE_SIZE : ++order,
+      name: memberDisplayName(m),
+      role: c && wk ? "C/WK" : c ? "C" : wk ? "WK" : null,
+      shirtNumber: input.shirtNumberOf(m),
+      junior: input.juniorLimitOf ? input.juniorLimitOf(m) : null,
+    });
+  });
+  return players;
+}
+
+/** "50" from "50", "50 overs" or " 50 "; null when blank. Up to 3 digits, or free text up to 20 chars. */
+export function normaliseOvers(value: unknown): string | null {
+  if (typeof value !== "string" && typeof value !== "number") return null;
+  const text = String(value).trim().replace(/\s+/g, " ");
+  if (!text) return null;
+  const plain = /^(\d{1,3})(?:\s*overs?)?$/i.exec(text);
+  if (plain) return String(Number(plain[1]));
+  return text.slice(0, 20);
+}
+
+type Loaded = {
+  selection: SelectionRow;
+  fixture: FixtureRow;
+  section: SquadSection;
+  members: SheetMember[];
+  remembered: Record<string, string>;
+};
+
+async function loadSide(tenantId: number, selectionId: number): Promise<Loaded> {
+  const [row] = await db
+    .select({ selection: selectionsTable, fixture: fixturesTable })
+    .from(selectionsTable)
+    .innerJoin(
+      fixturesTable,
+      and(eq(fixturesTable.id, selectionsTable.fixtureId), eq(fixturesTable.tenantId, tenantId)),
+    )
+    .where(and(eq(selectionsTable.id, selectionId), eq(selectionsTable.tenantId, tenantId)));
+  if (!row) throw new TeamSheetError(404, "Side not found.");
+  if (row.selection.state !== "final") {
+    throw new TeamSheetError(409, "Finalise the side to print its team sheet.");
+  }
+  const ids = normaliseSlots(row.selection.slots).flatMap((s) =>
+    s.memberId == null ? [] : [s.memberId],
+  );
+  const members =
+    ids.length > 0
+      ? await db
+          .select({
+            id: squadMembersTable.id,
+            firstName: squadMembersTable.firstName,
+            lastName: squadMembersTable.lastName,
+            preferredName: squadMembersTable.preferredName,
+            dateOfBirth: squadMembersTable.dateOfBirth,
+            linkedPlayerId: squadMembersTable.linkedPlayerId,
+            playhqProfileId: squadMembersTable.playhqProfileId,
+          })
+          .from(squadMembersTable)
+          .where(and(eq(squadMembersTable.tenantId, tenantId), inArray(squadMembersTable.id, ids)))
+      : [];
+  const [settings] = await db
+    .select({ overs: availabilitySettingsTable.teamSheetOvers })
+    .from(availabilitySettingsTable)
+    .where(eq(availabilitySettingsTable.tenantId, tenantId));
+  return {
+    selection: row.selection,
+    fixture: row.fixture,
+    section: fixtureSection(row.fixture.grade),
+    members,
+    remembered: settings?.overs ?? {},
+  };
+}
+
+function rulesOf(loaded: Loaded) {
+  return loaded.section === "senior" ? bowlingRulesFor(loaded.fixture.associationOrgId) : null;
+}
+
+export async function loadTeamSheetPreview(
+  tenantId: number,
+  selectionId: number,
+): Promise<TeamSheetPreview> {
+  const loaded = await loadSide(tenantId, selectionId);
+  const { fixture, section } = loaded;
+  const rules = rulesOf(loaded);
+  return {
+    selectionId,
+    section,
+    grade: fixture.grade,
+    format: fixture.matchFormat,
+    competition: fixture.competitionName,
+    overs: loaded.remembered[fixture.grade] ?? oversFromFormat(fixture.matchFormat),
+    bowlingRulesSource: rules?.source ?? null,
+    missingBirthDates:
+      section === "senior" ? loaded.members.filter((m) => !m.dateOfBirth).length : 0,
+  };
+}
+
+/** Senior: the season register (feature on), linked player first. Junior: the juniors register. */
+async function shirtNumbersFor(
+  tenantId: number,
+  loaded: Loaded,
+): Promise<(m: SheetMember) => string | null> {
+  const season = seasonStartYearFor(loaded.fixture.startAt);
+  if (loaded.section === "senior") {
+    const numbers = await teamListShirtNumberLoader(tenantId)(season);
+    if (!numbers) return () => null;
+    const participants = await loadSelectionParticipantIds(db, tenantId, loaded.fixture.startAt);
+    return (m) => {
+      const linked =
+        m.linkedPlayerId != null && m.linkedPlayerId < FILL_IN_THRESHOLD
+          ? m.linkedPlayerId
+          : undefined;
+      return shirtNumberOf(
+        { order: 0, displayName: "", playerId: linked, participantId: participants.get(m.id) },
+        numbers,
+      );
+    };
+  }
+  const profiles = loaded.members.flatMap((m) => normaliseParticipantId(m.playhqProfileId) ?? []);
+  if (profiles.length === 0) return () => null;
+  const rows = await db
+    .select({
+      participantId: juniorShirtNumbersTable.participantId,
+      number: juniorShirtNumbersTable.number,
+    })
+    .from(juniorShirtNumbersTable)
+    .where(
+      and(
+        eq(juniorShirtNumbersTable.tenantId, tenantId),
+        eq(juniorShirtNumbersTable.season, season),
+        inArray(juniorShirtNumbersTable.participantId, profiles),
+      ),
+    );
+  const byProfile = new Map(rows.filter((r) => r.number).map((r) => [r.participantId, r.number!]));
+  return (m) => {
+    const id = normaliseParticipantId(m.playhqProfileId);
+    return id ? (byProfile.get(id) ?? null) : null;
+  };
+}
+
+/**
+ * The sheet for a finalised side. `overs` (when given) is printed and
+ * remembered for the side's grade; otherwise the remembered or format value is used.
+ */
+export async function buildTeamSheet(
+  tenantId: number,
+  selectionId: number,
+  opts: { overs?: string | null; now?: Date } = {},
+): Promise<TeamSheet> {
+  const loaded = await loadSide(tenantId, selectionId);
+  const { fixture, section, selection } = loaded;
+  const rules = rulesOf(loaded);
+  const season = seasonStartYearFor(fixture.startAt);
+
+  const overs =
+    opts.overs ?? loaded.remembered[fixture.grade] ?? oversFromFormat(fixture.matchFormat);
+  if (opts.overs && loaded.remembered[fixture.grade] !== opts.overs) {
+    // Upsert the one key; a club with no settings row gets one with the defaults.
+    await db
+      .insert(availabilitySettingsTable)
+      .values({ tenantId, teamSheetOvers: { [fixture.grade]: opts.overs } })
+      .onConflictDoUpdate({
+        target: availabilitySettingsTable.tenantId,
+        set: {
+          teamSheetOvers: sql`${availabilitySettingsTable.teamSheetOvers} || ${JSON.stringify({ [fixture.grade]: opts.overs })}::jsonb`,
+        },
+      });
+  }
+
+  const [brand, shirtOf] = await Promise.all([
+    getTenantBrand(tenantId),
+    shirtNumbersFor(tenantId, loaded),
+  ]);
+  const clubName = brand.name;
+  const ourTeam = fixture.isHome ? fixture.homeTeamName : fixture.awayTeamName;
+  const theirTeam = fixture.isHome ? fixture.awayTeamName : fixture.homeTeamName;
+  const us = ourTeam ?? `${clubName} ${fixture.grade}`;
+  const them = theirTeam ?? fixture.opponentName;
+  const { date, startTime } = formatSheetDate(fixture.startAt);
+
+  return {
+    section,
+    clubName,
+    logoUrl: brand.logoUrl ?? null,
+    homeTeam: fixture.isHome ? us : them,
+    awayTeam: fixture.isHome ? them : us,
+    grade: fixture.grade,
+    round: fixture.roundLabel,
+    date,
+    startTime,
+    format: fixture.matchFormat,
+    overs,
+    venue: fixture.venue,
+    competition: fixture.competitionName,
+    bowlingRulesSource: rules?.source ?? null,
+    ruleNotes: [...(rules?.sheetNotes ?? [])],
+    players: teamSheetPlayers({
+      side: selection,
+      members: loaded.members,
+      shirtNumberOf: shirtOf,
+      juniorLimitOf: rules ? (m) => juniorBowlingLimit(rules, m.dateOfBirth, season) : null,
+    }),
+    generatedAt: formatSheetDate(opts.now ?? new Date()).date,
+  };
+}
+
+// --- HTML (printed to PDF by the shared Chromium) ---
+
+const esc = (s: string | number | null | undefined): string =>
+  String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+/** Only http(s) and same-origin paths reach the page; anything else is dropped. */
+export function absoluteLogoUrl(url: string | null, origin: string | null): string | null {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("/") && !url.startsWith("//") && origin) return `${origin}${url}`;
+  return null;
+}
+
+/** The sheet as a self-contained A4 HTML page (no script, one optional logo image). */
+export function renderTeamSheetHtml(sheet: TeamSheet, logoSrc: string | null): string {
+  const senior = sheet.section === "senior";
+  const rows = Array.from({ length: SIDE_SIZE }, (_, i) => {
+    const order = i + 1;
+    const p = sheet.players.find((x) => x.order === order);
+    const label = order === SIDE_SIZE ? "12th" : String(order);
+    const role = p?.role ? ` <b class="role">(${esc(p.role)})</b>` : "";
+    const jap = senior
+      ? `<td class="c small">${p?.junior ? `${esc(p.junior.band)}<br><span class="age">age ${esc(p.junior.age)}</span>` : ""}</td>
+         <td class="c small">${p?.junior ? esc(p.junior.maxOversPerDay) : ""}</td>
+         <td class="c small">${p?.junior ? esc(p.junior.maxSpell) : ""}</td>
+         <td></td>`
+      : "";
+    return `<tr class="${order === SIDE_SIZE ? "twelfth" : ""}">
+      <td class="c no">${label}</td>
+      <td class="c shirt">${esc(p?.shirtNumber)}</td>
+      <td class="name">${esc(p?.name)}${role}</td>${jap}
+    </tr>`;
+  }).join("");
+
+  const pair = (label: string, value: string | null) =>
+    `<th>${esc(label)}</th><td>${esc(value) || "&nbsp;"}</td>`;
+  const rulesNote = senior
+    ? `<p class="note">Junior Aged Players: their age group and limits are worked out from their date of birth${
+        sheet.bowlingRulesSource ? ` under ${esc(sheet.bowlingRulesSource)}` : ""
+      }. Write in the overs each has already bowled in a junior match today.${
+        sheet.bowlingRulesSource ? "" : " Check your competition's rules for the limits."
+      }</p>`
+    : "";
+
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Team sheet</title>
+<style>
+  @page { size: A4; margin: 12mm 15mm 10mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #1F2933; font-size: 10pt; }
+  table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+  .head td { vertical-align: middle; border: 0; }
+  .logo { width: 34mm; height: 23mm; text-align: center; }
+  .logo img { max-width: 34mm; max-height: 23mm; object-fit: contain; }
+  .title { text-align: right; }
+  .title h1 { margin: 0; font-size: 24pt; color: #1F3A5F; letter-spacing: .5px; }
+  .title .club { font-size: 13pt; font-weight: bold; margin-top: 2mm; }
+  .teams { margin-top: 4mm; }
+  .teams td { background: #EEF1F3; border: 1px solid #9AA5AD; padding: 2mm 3mm; }
+  .teams td.v { background: none; border: 0; text-align: center; font-size: 14pt; font-weight: bold; color: #1F3A5F; width: 12mm; }
+  .teams .lbl { font-size: 7pt; font-weight: bold; color: #5B6770; }
+  .teams .team { font-size: 13pt; font-weight: bold; margin-top: 1mm; }
+  .details { margin-top: 4mm; }
+  .details th, .details td { border: 1px solid #9AA5AD; padding: 1.2mm 2mm; text-align: left; }
+  .details th { background: #EEF1F3; font-size: 8pt; color: #5B6770; width: 17%; }
+  .details td { width: 33%; }
+  .players { margin-top: 4mm; }
+  .players th { background: #1F3A5F; color: #fff; font-size: 8pt; padding: 1.5mm 1mm; border: 1px solid #9AA5AD; }
+  .players th.group { font-size: 7.5pt; }
+  .players td { border: 1px solid #9AA5AD; height: 9.2mm; padding: 0 2mm; font-size: 11pt; }
+  .players td.c { text-align: center; padding: 0 1mm; }
+  .players td.no { font-weight: bold; color: #5B6770; }
+  .players td.small { font-size: 9pt; color: #1F2933; }
+  .players .age { font-size: 7pt; color: #5B6770; }
+  .players tr.twelfth td { background: #EEF1F3; }
+  .role { color: #1F3A5F; }
+  .key { margin: 2mm 0 0; font-size: 8pt; color: #5B6770; }
+  .note { margin: 1mm 0 0; font-size: 8pt; color: #5B6770; }
+  .notes { margin-top: 3mm; font-size: 8pt; color: #5B6770; font-style: italic; }
+  .sign { margin-top: 9mm; }
+  .sign td { border: 0; padding: 0 4mm 0 0; }
+  .sign div { border-top: 1px solid #1F2933; padding-top: 1mm; font-size: 8pt; color: #5B6770; }
+  .foot { margin-top: 3mm; text-align: right; font-size: 7pt; color: #5B6770; }
+</style></head><body>
+<table class="head"><tr>
+  <td class="logo">${logoSrc ? `<img src="${esc(logoSrc)}" alt="">` : ""}</td>
+  <td class="title"><h1>TEAM SHEET</h1><div class="club">${esc(sheet.clubName)}</div></td>
+</tr></table>
+<table class="teams"><tr>
+  <td><div class="lbl">HOME</div><div class="team">${esc(sheet.homeTeam)}</div></td>
+  <td class="v">v</td>
+  <td><div class="lbl">AWAY</div><div class="team">${esc(sheet.awayTeam)}</div></td>
+</tr></table>
+<table class="details">
+  <tr>${pair(senior ? "Grade" : "Age group", sheet.grade)}${pair("Round", sheet.round)}</tr>
+  <tr>${pair("Date", sheet.date)}${pair("Start time", sheet.startTime)}</tr>
+  <tr>${pair("Format", sheet.format)}${pair("Overs", sheet.overs)}</tr>
+  <tr>${pair("Venue", sheet.venue)}${pair("Competition", sheet.competition)}</tr>
+</table>
+<table class="players">
+  <colgroup><col style="width:7%"><col style="width:11%"><col>${
+    senior
+      ? `<col style="width:11%"><col style="width:9%"><col style="width:9%"><col style="width:12%">`
+      : ""
+  }</colgroup>
+  <thead>${
+    senior
+      ? `<tr><th colspan="3" style="background:#1F3A5F"></th><th class="group" colspan="4">Junior Aged Players only – bowling restrictions</th></tr>`
+      : ""
+  }<tr><th>#</th><th>Shirt No.</th><th style="text-align:left">Player</th>${
+    senior
+      ? `<th>Age group</th><th>Max overs / day</th><th>Max spell</th><th>Overs bowled in juniors today</th>`
+      : ""
+  }</tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<p class="key">(C) captain &nbsp; (WK) wicketkeeper${sheet.ruleNotes.map((n) => ` &nbsp; ${esc(n)}`).join("")}</p>
+${rulesNote}
+<div class="notes">Notes:</div>
+<table class="sign"><tr><td><div>Captain's signature</div></td><td><div>Opposition captain / umpire</div></td></tr></table>
+<div class="foot">Generated by Ovation · ${esc(sheet.generatedAt)}</div>
+</body></html>`;
+}

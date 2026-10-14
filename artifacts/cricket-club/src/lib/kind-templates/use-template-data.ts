@@ -12,6 +12,7 @@ import {
 } from "@workspace/api-client-react";
 import { useBrand } from "@/lib/brand-context";
 import {
+  withGroundPhoto,
   buildPackData,
   kindSponsors,
   presentingSponsorName,
@@ -38,7 +39,7 @@ export function useKindTemplateData(
   const data = useMemo(
     () => ({
       ...buildPackData({
-        brand: bundle?.brand ?? brand,
+        brand: withGroundPhoto(bundle?.brand ?? brand, brand),
         hashtag: tenantHashtag(bundle),
         sponsors: kindSponsors(bundle, kind, true, null),
         presentingSponsorName: presentingSponsorName(bundle, true),

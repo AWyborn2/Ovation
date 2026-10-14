@@ -272,6 +272,34 @@ const tokensFor = (input: CaptionCardInput): Record<string, string> | null => {
         "round.label": text(f.roundLabel),
       };
     }
+    case "announcement":
+      return { "stat.tier": text(f.eyebrow) || "Club News", "stat.label": text(f.headline) };
+    case "sponsor":
+      return {
+        "stat.tier": "Sponsor",
+        "stat.label": text(f.sponsorName),
+        date: text(f.seasonLabel),
+      };
+    case "resultsSummary": {
+      const rs = listOf<{ outcome?: string }>(f.results);
+      const wins = rs.filter((r) => r.outcome === "won").length;
+      return {
+        "stat.value": String(wins),
+        "stat.label": plural(wins, "win", "wins"),
+        "stat.tier": "Results",
+        "round.label": text(f.roundLabel),
+        date: text(f.dateLabel),
+      };
+    }
+    case "teamOfWeek": {
+      const top = listOf<{ name?: string; figure?: string }>(f.players)[0];
+      return {
+        "player.name": text(top?.name),
+        "stat.value": text(top?.figure),
+        "stat.tier": text(f.title) || "Team of the Week",
+        date: text(f.dateLabel),
+      };
+    }
     default:
       return null;
   }
