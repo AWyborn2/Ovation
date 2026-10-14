@@ -39,7 +39,9 @@ function fakeServer(
         ? WATCHDOG_OK
         : url.endsWith("/sweep")
           ? SWEEP_OK
-          : ingestReply;
+          : url.endsWith("/posting-slots")
+            ? { results: [] }
+            : ingestReply;
     return { ok: true, status: 200, text: async () => JSON.stringify(body) };
   };
   return { calls, fetchImpl };
@@ -137,7 +139,9 @@ test("one plan: runs the harness with the server's plan and posts a gzip dump", 
   assert.ok(b.seen.evaluated.includes(`start ${JSON.stringify(DUE.plan)}`));
   assert.equal(b.seen.closed, true);
 
-  const post = calls[1];
+  // calls[1] is the posting-slots step that runs before the scrapes.
+  assert.equal(calls[1].url, "https://ovation.test/api/internal/playhq/posting-slots");
+  const post = calls[2];
   assert.equal(post.url, "https://ovation.test/api/internal/playhq/ingest");
   assert.equal(post.init.method, "POST");
   assert.equal(post.init.headers["content-encoding"], "gzip");
@@ -159,7 +163,7 @@ test("a timeout still uploads what was collected, marked partial", async () => {
     log: () => {},
   });
   assert.deepEqual(r.failures, []);
-  const body = JSON.parse(gunzipSync(calls[1].init.body).toString());
+  const body = JSON.parse(gunzipSync(calls[2].init.body).toString());
   assert.equal(body.status, "partial");
 });
 
@@ -176,6 +180,8 @@ test("a failed upload is reported and the remaining plans still run", async () =
       return { ok: true, status: 200, text: async () => JSON.stringify(WATCHDOG_OK) };
     if (url.endsWith("/sweep"))
       return { ok: true, status: 200, text: async () => JSON.stringify(SWEEP_OK) };
+    if (url.endsWith("/posting-slots"))
+      return { ok: true, status: 200, text: async () => '{"results":[]}' };
     n++;
     return n === 1
       ? { ok: false, status: 503, text: async () => '{"error":"not configured"}' }
@@ -428,4 +434,24 @@ test("an oversized dump is sent in parts that keep every record and the metadata
     assert.equal(p.dump.version, "2");
     assert.equal(p.sourceName, `gha names part ${i + 1}/${parts.length}`);
   }
+});
+
+test("posting slots run before the scrapes, and a failure there doesn't fail the run", async () => {
+  const order = [];
+  const fetchImpl = async (url) => {
+    order.push(url.split("/").pop());
+    if (url.endsWith("/plans"))
+      return { ok: true, status: 200, text: async () => JSON.stringify({ plans: [DUE] }) };
+    if (url.endsWith("/posting-slots"))
+      return { ok: false, status: 500, text: async () => '{"error":"posting slots failed"}' };
+    if (url.endsWith("/sweep"))
+      return { ok: true, status: 200, text: async () => JSON.stringify(SWEEP_OK) };
+    if (url.endsWith("/watchdog"))
+      return { ok: true, status: 200, text: async () => JSON.stringify(WATCHDOG_OK) };
+    return { ok: true, status: 200, text: async () => '{"status":"ok","fixtureChanges":0,"tenants":[]}' };
+  };
+  const b = fakeBrowser([done]);
+  const r = await run({ env: ENV, fetchImpl, launch: b.launch, readHarness: async () => "H", sleep, log: () => {} });
+  assert.deepEqual(order, ["plans", "posting-slots", "ingest", "sweep", "watchdog"]);
+  assert.deepEqual(r.failures, []);
 });

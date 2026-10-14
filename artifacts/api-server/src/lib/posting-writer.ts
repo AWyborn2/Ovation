@@ -89,6 +89,8 @@ export async function computePlacement(
   draft: Pick<SocialDraftRow, "id" | "tenantId" | "cardInput" | "sourceImportedAt" | "createdAt">,
   schedule: PostingSchedule,
   now: Date,
+  /** A roll passes 0: the slot the card just missed is never reused. */
+  graceMinutes?: number,
 ): Promise<Date | null> {
   const kind = slotKindOf((draft.cardInput as { kind?: unknown } | null)?.kind);
   const others = (await plannedCards(tx, draft.tenantId)).filter((r) => r.id !== draft.id);
@@ -104,6 +106,7 @@ export async function computePlacement(
     sameKindTaken: others.filter((r) => slotKindOf(r.kind) === kind).map((r) => r.plannedAt),
     now,
     horizonEnd: new Date(horizon),
+    graceMinutes,
   });
 }
 

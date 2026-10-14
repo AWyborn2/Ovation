@@ -11,6 +11,7 @@ import { IngestNotConfiguredError, type Dump } from "@workspace/db/playhq-ingest
 import { ingestPlayhqDump, listDuePlans } from "../lib/playhq-ingest";
 import { runWatchdog } from "../lib/playhq-health";
 import { sweepTenants } from "../lib/draft-sweep";
+import { runPostingSlotsForAll } from "../lib/posting-slots";
 import { env } from "../config";
 
 /**
@@ -89,6 +90,22 @@ router.post("/sweep", requireSyncSecret, async (req, res): Promise<void> => {
   } catch (err) {
     req.log.error({ err }, "playhq scheduled sweep failed");
     res.status(500).json({ error: "sweep failed" });
+  }
+});
+
+/**
+ * `POST /api/internal/playhq/posting-slots` — the posting calendar only (plan
+ * 2026-10-07-003): cards whose planned time arrived are published or nudged,
+ * unapproved ones roll. The runner calls it first, before any scrape, so a
+ * slot is never held up by a long match-day scrape; the full sweep at the end
+ * runs it again. Cheap and idempotent.
+ */
+router.post("/posting-slots", requireSyncSecret, async (req, res): Promise<void> => {
+  try {
+    res.json({ results: await runPostingSlotsForAll(new Date(), req.log) });
+  } catch (err) {
+    req.log.error({ err }, "posting slots failed");
+    res.status(500).json({ error: "posting slots failed" });
   }
 });
 

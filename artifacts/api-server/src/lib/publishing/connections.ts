@@ -12,6 +12,7 @@ import { hasEntitlement } from "../entitlements";
 import { getTenantPlan } from "../tenant";
 import { open } from "../secret-box";
 import type { DestinationAccount } from "./destination";
+import { resolvePostingSchedule } from "../posting-schedule";
 
 /**
  * A club's Meta connection: reading it, presenting it (never the token), and
@@ -112,11 +113,21 @@ export async function holdScheduled(tenantId: number): Promise<number> {
   return rows.length;
 }
 
+/**
+ * How old a held post may be and still go out after a reconnect: the
+ * auto-publish cut-off, or for a club on the posting calendar its age limit
+ * (posting calendar KTD9), which replaces the cut-off there.
+ */
 export async function freshnessHours(tenantId: number): Promise<number> {
   const [row] = await db
-    .select({ hours: socialSettingsTable.autoPublishFreshnessHours })
+    .select({
+      hours: socialSettingsTable.autoPublishFreshnessHours,
+      schedule: socialSettingsTable.postingSchedule,
+    })
     .from(socialSettingsTable)
     .where(eq(socialSettingsTable.tenantId, tenantId));
+  const schedule = resolvePostingSchedule(row?.schedule ?? null);
+  if (schedule.enabled) return schedule.ageLimitDays * 24;
   return row?.hours ?? 24;
 }
 

@@ -1,9 +1,10 @@
-import { and, eq, gte, isNotNull, ne, sql } from "drizzle-orm";
+import { and, eq, gte, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { db, socialDraftsTable, socialPublicationsTable, socialSettingsTable } from "@workspace/db";
 import { loadConnection, publishingAvailable } from "./connections";
 import { ScheduleConflictError, schedulePublications } from "./publications";
 import type { Platform } from "./destination";
 import { layoutClear } from "../effective-draft-state";
+import { resolvePostingSchedule } from "../posting-schedule";
 
 /**
  * Auto-publish at the deadline (plan 2026-10-06-001 U7, R4–R6, KTD11).
@@ -24,7 +25,7 @@ import { layoutClear } from "../effective-draft-state";
  * Each gets a feed post on every connected platform, scheduled now.
  */
 
-type AutoPublishSettings = { enabled: boolean; freshnessHours: number };
+type AutoPublishSettings = { enabled: boolean; freshnessHours: number; calendar: boolean };
 
 async function loadSettings(tenantId: number): Promise<AutoPublishSettings> {
   const [row] = await db
@@ -32,10 +33,15 @@ async function loadSettings(tenantId: number): Promise<AutoPublishSettings> {
       autoPost: socialSettingsTable.autoPostEnabled,
       autoPublish: socialSettingsTable.autoPublishEnabled,
       hours: socialSettingsTable.autoPublishFreshnessHours,
+      schedule: socialSettingsTable.postingSchedule,
     })
     .from(socialSettingsTable)
     .where(eq(socialSettingsTable.tenantId, tenantId));
-  return { enabled: !!row?.autoPost && !!row?.autoPublish, freshnessHours: row?.hours ?? 24 };
+  return {
+    enabled: !!row?.autoPost && !!row?.autoPublish,
+    freshnessHours: row?.hours ?? 24,
+    calendar: resolvePostingSchedule(row?.schedule ?? null).enabled,
+  };
 }
 
 /** The ids of drafts that may auto-publish now. */
@@ -57,6 +63,7 @@ export async function autoPublishCandidates(
         eq(socialDraftsTable.sourceMatchIsJunior, false),
         sql`coalesce(${socialDraftsTable.cardInput}->>'junior', 'false') <> 'true'`,
         ne(socialDraftsTable.engine, "adhoc"),
+        isNull(socialDraftsTable.expiredAt),
         // A templated card that needs a look is never auto-posted (KTD10).
         layoutClear,
         sql`not exists (select 1 from ${socialPublicationsTable} p where p.draft_id = ${socialDraftsTable.id})`,
@@ -72,7 +79,10 @@ export async function autoPublishCandidates(
 export async function scheduleAutoPublish(tenantId: number, now: Date): Promise<Set<number>> {
   const scheduled = new Set<number>();
   const settings = await loadSettings(tenantId);
-  if (!settings.enabled || !(await publishingAvailable(tenantId))) return scheduled;
+  // A club on the posting calendar publishes at each card's planned time
+  // instead (posting-slots.ts), never "now".
+  if (!settings.enabled || settings.calendar) return scheduled;
+  if (!(await publishingAvailable(tenantId))) return scheduled;
   const connection = await loadConnection(tenantId);
   if (connection?.status !== "connected") return scheduled;
   const platforms: Platform[] = connection.igUserId ? ["facebook", "instagram"] : ["facebook"];
