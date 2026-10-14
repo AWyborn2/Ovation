@@ -1661,6 +1661,12 @@ export interface TenantHeroImages {
      * @nullable
      */
   honours?: string | null;
+  /**
+     * The club's ground or clubrooms, behind card designs (tinted to the club's colours).
+     * @maxLength 2048
+     * @nullable
+     */
+  cards?: string | null;
   explore?: TenantExploreImages | null;
 }
 

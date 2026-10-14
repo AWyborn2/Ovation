@@ -9,7 +9,7 @@ import {
 } from "@/components/admin-ui/image-crop-dialog";
 import { CARD_MAX_WIDTH, HERO_MAX_WIDTH, compressImage } from "@/lib/compress-image";
 
-type TopSlot = "home" | "juniors" | "honours";
+type TopSlot = "home" | "juniors" | "honours" | "cards";
 type ExploreSlot = "honours" | "players" | "premierships";
 type SlotKey = TopSlot | `explore.${ExploreSlot}`;
 
@@ -37,6 +37,12 @@ const SLOTS: SlotDef[] = [
     key: "honours",
     label: "Honour boards hero",
     hint: "Your honour-board wall.",
+    maxWidth: HERO_MAX_WIDTH,
+  },
+  {
+    key: "cards",
+    label: "Card background",
+    hint: "Your ground or clubrooms, wide. Sits behind card designs, tinted to your colours.",
     maxWidth: HERO_MAX_WIDTH,
   },
   {
