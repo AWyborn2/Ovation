@@ -111,10 +111,44 @@ Importing history never drafts Social Studio cards or milestones.
   4,578 and wickets 327 / 314 / 284 / 313 for 2001/02–2004/05).
 - Check no one appears twice in the player list (a missed link shows as two entries).
 
+## 7. Honours (early centuries and five-fors)
+
+Same page, **Import a file** card: Template **Honours and records**, file
+`WKBCC_early-seasons_honours.csv` (7 centuries, 13 five-wicket hauls, 2001/02–2004/05; Kade
+Storer's 263 in 2003/04 is held out until the club confirms it). Preview, then commit with a label
+such as `WKBCC early centuries and five-fors`.
+
+## 8. Cap register (A Grade and Female A Grade)
+
+Do this after step 5, so the pre-digital players exist and caps can link to them.
+
+On the same page, **Cap register** card:
+
+1. **Download template** shows the columns (`category,cap_number,name,games_a_grade`;
+   category is `male` for A Grade, `female` for Female A Grade).
+2. Choose `WKBCC_A-grade-caps.csv` (213 men's caps, 32 female caps, the club's own numbering) and
+   click **Preview caps**.
+3. Read the summary per list and the **Unlinked caps** table. A cap links to a player only on an
+   exact name match; the rest are still written, unlinked, and can be linked in Admin → Caps. A
+   nickname ("Mitch" for "Mitchell") will show here with a "close name" hint.
+4. Enter a batch label and click **Import N caps**. Caps are written confirmed.
+
+A list that already has caps is refused, so this can only be done once per list. The same import
+is available from a terminal as `pnpm --filter @workspace/scripts run seed-cap-register`.
+
+Why linking matters: the hourly debut-cap sweep treats any uncapped A Grade player as a new
+debutant, so check `unlinked` carefully before relying on it. New debutants are numbered from #214
+(men) and #33 (female), as pending caps an admin confirms.
+
 ## Undo
 
 **Imported batches → Undo** removes this batch's rows and any pre-digital player only it used.
 It leaves the boundary alone.
+
+**Cap register → Imported cap batches → Undo** deletes the caps the import wrote. It is refused
+if a later cap has been issued after them in the same list (the numbering would break), so undo
+a wrong cap import straight away. A cap whose note was edited by hand is no longer part of the
+batch and is left alone.
 
 ## Not in this file
 

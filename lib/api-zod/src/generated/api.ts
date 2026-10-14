@@ -12918,6 +12918,87 @@ export const ReplaceTenantHistoryBoundariesResponse = zod.array(ReplaceTenantHis
 
 
 /**
+ * @summary Validate a cap register CSV and preview it. Writes nothing. Reports every problem with its spreadsheet row, and how each cap would link to a player of the club (exact name match only; unmatched caps are still written, unlinked). A category that already has caps is refused.
+ */
+export const PreviewTenantCapImportParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const PreviewTenantCapImportBody = zod.object({
+  "file": zod.instanceof(File).describe('The CSV file: category,cap_number,name,games_a_grade')
+})
+
+export const PreviewTenantCapImportResponse = zod.object({
+  "rowCount": zod.number().describe('Caps the commit would write.'),
+  "errors": zod.array(zod.string()).describe('Problems, each naming its row. Nothing can be committed while any remain.'),
+  "refusedCategories": zod.array(zod.object({
+  "category": zod.enum(['male', 'female']).describe('male = A Grade; female = Female A Grade.'),
+  "existing": zod.number().describe('Caps the club\'s register already holds in this category.')
+})),
+  "caps": zod.array(zod.object({
+  "row": zod.number().describe('Spreadsheet row (the header is row 1).'),
+  "category": zod.enum(['male', 'female']).describe('male = A Grade; female = Female A Grade.'),
+  "capNumber": zod.number(),
+  "name": zod.string(),
+  "games": zod.number(),
+  "playerId": zod.number().nullable().describe('The club player the cap would link to; null = written unlinked.'),
+  "status": zod.enum(['linked', 'ambiguous', 'private', 'unmatched']),
+  "note": zod.string().describe('Why a cap is not linked (candidate ids, a close name hint).')
+})),
+  "centralUnavailable": zod.string().nullable().describe('Set when central couldn\'t be read, so only pre-digital players could be linked.')
+})
+
+
+/**
+ * @summary Write a cap register CSV as one labelled batch. The file is validated again. Caps are written confirmed, linked where the name matched exactly, and marked with the batch in their note so the batch can be undone. Never drafts social cards.
+ */
+export const CommitTenantCapImportParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CommitTenantCapImportBody = zod.object({
+  "file": zod.instanceof(File).describe('The same CSV file that was previewed'),
+  "label": zod.string().describe('Admin-facing name for the batch, e.g. \"WKBCC A Grade caps (club list)\".')
+})
+
+
+/**
+ * @summary The club's cap import batches, newest first.
+ */
+export const ListTenantCapImportBatchesParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListTenantCapImportBatchesResponseItem = zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "createdAt": zod.string(),
+  "male": zod.number().describe('Caps remaining in the A Grade list.'),
+  "female": zod.number().describe('Caps remaining in the Female A Grade list.'),
+  "linked": zod.number(),
+  "unlinked": zod.number()
+})
+export const ListTenantCapImportBatchesResponse = zod.array(ListTenantCapImportBatchesResponseItem)
+
+
+/**
+ * @summary Undo a cap import batch: delete the caps it wrote. Refused when a later cap was issued after them in the same list (the sequence would break). A cap an admin edited out of the batch note is left alone.
+ */
+export const undoTenantCapImportBatchPathBatchIdRegExp = new RegExp('^[0-9]{8}T[0-9]{6}Z$');
+
+
+export const UndoTenantCapImportBatchParams = zod.object({
+  "id": zod.coerce.number(),
+  "batchId": zod.coerce.string().regex(undoTenantCapImportBatchPathBatchIdRegExp)
+})
+
+export const UndoTenantCapImportBatchResponse = zod.object({
+  "batchId": zod.string(),
+  "capsRemoved": zod.number()
+})
+
+
+/**
  * Reads the central `ladder` table (all-time cumulative per grade; it has no season/points/position columns, so `points` and `pos` are derived and `season` does not currently filter). One row per club (folded grade labels deduped). Empty grade returns [].
  * @summary Ladder card (A7) prefill — grade standings from the central PCA ladder, with the tenant's own club row flagged. Admin + socialStudio entitlement.
  */

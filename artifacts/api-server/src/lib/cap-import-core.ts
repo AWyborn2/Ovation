@@ -1,6 +1,7 @@
 /**
- * seed-cap-register-core.ts — pure rules for seeding a club's A Grade / Female A
- * Grade cap register from the club's own list (seed-cap-register.ts is the runner).
+ * cap-import-core.ts — pure rules for seeding a club's A Grade / Female A
+ * Grade cap register from the club's own list. Shared by the platform-admin
+ * console import (cap-import.ts) and scripts/seed-cap-register.ts.
  *
  * Input is a CSV with the columns `category,cap_number,name,games_a_grade`
  * (category `male` = A Grade, `female` = Female A Grade). The plan links each cap
@@ -264,11 +265,12 @@ export interface SeedArgs {
   file: string;
   commit: boolean;
   out: string | null;
+  label: string | null;
   help: boolean;
 }
 
 export function parseSeedArgs(argv: readonly string[]): SeedArgs {
-  const out: SeedArgs = { tenant: 0, file: "", commit: false, out: null, help: false };
+  const out: SeedArgs = { tenant: 0, file: "", commit: false, out: null, label: null, help: false };
   for (const a of argv) {
     const [flag, value] = a.split("=", 2) as [string, string | undefined];
     if (flag === "--help") out.help = true;
@@ -276,10 +278,128 @@ export function parseSeedArgs(argv: readonly string[]): SeedArgs {
     else if (flag === "--tenant" && value && /^[1-9]\d*$/.test(value)) out.tenant = Number(value);
     else if (flag === "--file" && value) out.file = value;
     else if (flag === "--out" && value) out.out = value;
+    else if (flag === "--label" && value) out.label = value;
     else throw new Error(`Unknown or malformed argument: ${a}`);
   }
   if (!out.help && (out.tenant === 0 || out.file === "")) {
     throw new Error("--tenant=<id> and --file=<csv> are required.");
+  }
+  return out;
+}
+
+// ── Console import: template, batch marker, batch list, undo guard ──────────
+
+export const CAP_CATEGORY_LABEL: Record<CapCategory, string> = {
+  male: "A Grade",
+  female: "Female A Grade",
+};
+
+/** The CSV template: every column, two example rows. */
+export function capImportTemplateCsv(): string {
+  return (
+    [
+      "category,cap_number,name,games_a_grade",
+      "male,1,John Smith,120",
+      "female,1,Jane Citizen,41",
+    ].join("\r\n") + "\r\n"
+  );
+}
+
+/** A batch token is the commit time, "20261014T023215Z" (UTC, second resolution). */
+export const CAP_BATCH_TOKEN_RE = /^\d{8}T\d{6}Z$/;
+
+const CAP_BATCH_NOTE_RE = /^CSV import \[(\d{8}T\d{6}Z)\] (.+)$/;
+
+export function capBatchToken(at: Date): string {
+  return at
+    .toISOString()
+    .replace(/\.\d{3}Z$/, "Z")
+    .replace(/[-:]/g, "");
+}
+
+/** The note every cap of a batch carries. The label is single-spaced and capped at 100 characters. */
+export function capBatchNote(token: string, label: string): string {
+  return `CSV import [${token}] ${label.replace(/\s+/g, " ").trim().slice(0, 100)}`;
+}
+
+export function parseCapBatchNote(
+  note: string | null | undefined,
+): { token: string; label: string; createdAt: string } | null {
+  const m = CAP_BATCH_NOTE_RE.exec(note ?? "");
+  if (!m) return null;
+  const t = m[1]!;
+  const createdAt = `${t.slice(0, 4)}-${t.slice(4, 6)}-${t.slice(6, 8)}T${t.slice(9, 11)}:${t.slice(11, 13)}:${t.slice(13, 15)}Z`;
+  return { token: t, label: m[2]!, createdAt };
+}
+
+export interface CapBatchSummary {
+  id: string;
+  label: string;
+  createdAt: string;
+  /** Caps still carrying the batch marker, per list. */
+  male: number;
+  female: number;
+  linked: number;
+  unlinked: number;
+}
+
+/** Group caps by their batch marker, newest batch first. Caps with any other note are not batches. */
+export function groupCapBatches(
+  rows: ReadonlyArray<{
+    category: string;
+    playerId: number | null;
+    capNote: string | null;
+  }>,
+): CapBatchSummary[] {
+  const byToken = new Map<string, CapBatchSummary>();
+  for (const r of rows) {
+    const parsed = parseCapBatchNote(r.capNote);
+    if (!parsed) continue;
+    let b = byToken.get(parsed.token);
+    if (!b) {
+      b = {
+        id: parsed.token,
+        label: parsed.label,
+        createdAt: parsed.createdAt,
+        male: 0,
+        female: 0,
+        linked: 0,
+        unlinked: 0,
+      };
+      byToken.set(parsed.token, b);
+    }
+    if (r.category === "male") b.male++;
+    else if (r.category === "female") b.female++;
+    if (r.playerId === null) b.unlinked++;
+    else b.linked++;
+  }
+  return [...byToken.values()].sort((a, b) => b.id.localeCompare(a.id));
+}
+
+/**
+ * Why a batch can't be undone: a cap outside the batch, in a list the batch
+ * touched, numbered after the batch's highest cap there. Deleting the batch
+ * would leave the later caps stranded after a gap. Empty = safe.
+ */
+export function capUndoBlockers(
+  batch: ReadonlyArray<{ category: string; capNumber: number }>,
+  others: ReadonlyArray<{ category: string; capNumber: number }>,
+): string[] {
+  const out: string[] = [];
+  for (const category of ["male", "female"] as const) {
+    const mine = batch.filter((c) => c.category === category);
+    if (mine.length === 0) continue;
+    const top = Math.max(...mine.map((c) => c.capNumber));
+    const later = others
+      .filter((c) => c.category === category && c.capNumber > top)
+      .map((c) => c.capNumber)
+      .sort((a, b) => a - b);
+    if (later.length > 0) {
+      out.push(
+        `${later.length} later cap(s) exist in the ${CAP_CATEGORY_LABEL[category]} list ` +
+          `(from #${later[0]}, after this batch's #${top}).`,
+      );
+    }
   }
   return out;
 }
