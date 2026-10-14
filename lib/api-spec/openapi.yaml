@@ -8799,7 +8799,7 @@ paths:
         "404":
           description: No such tenant.
         "409":
-          description: That custom domain is already in use.
+          description: That custom domain or junior PlayHQ organisation is already in use.
 
   /platform/admin/tenants/{id}/brand:
     patch:
@@ -11648,7 +11648,8 @@ components:
     Entitlements:
       type: object
       description: Per-feature flags resolved from the tenant's plan.
-      required: [customDomain, mobileApp, socialStudio, socialPublishing, clubroomTv, curation]
+      required:
+        [customDomain, mobileApp, socialStudio, socialPublishing, clubroomTv, curation, juniors]
       properties:
         customDomain:
           type: boolean
@@ -11663,6 +11664,11 @@ components:
           type: boolean
         curation:
           type: boolean
+        juniors:
+          type: boolean
+          description: >-
+            Junior PlayHQ sync. On the club and pro plans; not enforced while billing is
+            dormant, when the platform-admin junior sync switch is the effective control.
 
     MetaConnection:
       type: object
@@ -11957,6 +11963,16 @@ components:
         playhqSyncEnabled:
           type: boolean
           description: Whether scheduled PlayHQ sync runs for this tenant.
+        juniorSyncEnabled:
+          type: boolean
+          description: >-
+            Whether junior PlayHQ sync is switched on for this tenant (platform admin
+            only). Junior grades sync only when PlayHQ sync is also on.
+        playhqJuniorOrgId:
+          type: ["string", "null"]
+          description: >-
+            The tenant's junior PlayHQ organisation GUID, or null when its juniors run
+            under playhqOrgId.
         brandingComplete:
           type: boolean
           description: >-
@@ -12333,7 +12349,10 @@ components:
 
     UpdateTenantBody:
       type: object
-      description: Partial update of a tenant's plan, custom domain and/or PlayHQ sync switch.
+      description: >-
+        Partial update of a tenant's plan, custom domain, PlayHQ sync switch and/or junior
+        sync settings. Platform admin only; the club-admin brand update and signup schemas
+        carry none of these.
       properties:
         plan:
           type: string
@@ -12345,6 +12364,17 @@ components:
           description: >-
             Scheduled PlayHQ sync for this tenant. When false the hourly runner plans
             nothing for its organisation and ingest does not project its fixtures.
+        juniorSyncEnabled:
+          type: boolean
+          description: >-
+            Junior PlayHQ sync for this tenant. Takes effect only while PlayHQ sync is on
+            and the plan includes juniors; when off, junior grades are dropped at ingest.
+        playhqJuniorOrgId:
+          type: ["string", "null"]
+          description: >-
+            The tenant's junior PlayHQ organisation GUID when its juniors run under a
+            separate organisation. Null or blank clears it (juniors then use playhqOrgId).
+            Unique across tenants.
 
     ProvisionTenantBody:
       type: object

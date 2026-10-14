@@ -8,7 +8,7 @@
 import type { UpdateTenantBodyPlan } from './updateTenantBodyPlan';
 
 /**
- * Partial update of a tenant's plan, custom domain and/or PlayHQ sync switch.
+ * Partial update of a tenant's plan, custom domain, PlayHQ sync switch and/or junior sync settings. Platform admin only; the club-admin brand update and signup schemas carry none of these.
  */
 export interface UpdateTenantBody {
   plan?: UpdateTenantBodyPlan;
@@ -16,4 +16,11 @@ export interface UpdateTenantBody {
   customDomain?: string | null;
   /** Scheduled PlayHQ sync for this tenant. When false the hourly runner plans nothing for its organisation and ingest does not project its fixtures. */
   playhqSyncEnabled?: boolean;
+  /** Junior PlayHQ sync for this tenant. Takes effect only while PlayHQ sync is on and the plan includes juniors; when off, junior grades are dropped at ingest. */
+  juniorSyncEnabled?: boolean;
+  /**
+     * The tenant's junior PlayHQ organisation GUID when its juniors run under a separate organisation. Null or blank clears it (juniors then use playhqOrgId). Unique across tenants.
+     * @nullable
+     */
+  playhqJuniorOrgId?: string | null;
 }

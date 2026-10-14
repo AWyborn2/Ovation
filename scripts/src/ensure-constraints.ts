@@ -273,6 +273,17 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     name: "shirt_number_uploads_status_check",
     sql: `"status" IN ('pending', 'committed', 'discarded')`,
   },
+  // Junior PlayHQ sync (migration 0038): team-list source and public name style.
+  {
+    table: "junior_team_lists",
+    name: "junior_team_lists_source_check",
+    sql: `"source" IN ('playhq', 'admin')`,
+  },
+  {
+    table: "junior_match_display_settings",
+    name: "junior_match_display_settings_name_style_check",
+    sql: `"name_style" IN ('full', 'first_initial', 'first')`,
+  },
 ];
 
 /**
@@ -391,6 +402,33 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
     sql: `CREATE UNIQUE INDEX IF NOT EXISTS "shirt_number_settings_tenant_unique"
           ON "shirt_number_settings" ("tenant_id")`,
   },
+  // Junior PlayHQ sync (migration 0038): one tenant per junior PlayHQ organisation,
+  // one junior fixture / junior match per PlayHQ match per tenant (the junior
+  // projection's upsert keys), one team list per junior fixture. The junior_matches
+  // index is skipped by the migration when existing rows hold duplicates; this
+  // verifier then reports it missing.
+  {
+    name: "tenants_playhq_junior_org_id_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "tenants_playhq_junior_org_id_uidx"
+          ON "tenants" ("playhq_junior_org_id")
+          WHERE "playhq_junior_org_id" IS NOT NULL`,
+  },
+  {
+    name: "junior_matches_tenant_playhq_match_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "junior_matches_tenant_playhq_match_uidx"
+          ON "junior_matches" ("tenant_id", "playhq_match_id")
+          WHERE "playhq_match_id" IS NOT NULL`,
+  },
+  {
+    name: "junior_fixtures_tenant_playhq_match_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "junior_fixtures_tenant_playhq_match_uidx"
+          ON "junior_fixtures" ("tenant_id", "playhq_match_id")`,
+  },
+  {
+    name: "junior_team_lists_tenant_fixture_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "junior_team_lists_tenant_fixture_uidx"
+          ON "junior_team_lists" ("tenant_id", "junior_fixture_id")`,
+  },
   // Bulk master-DB load: unique on the master source key.
   {
     name: "matches_source_key_uidx",
@@ -474,6 +512,7 @@ const INDEXES: { name: string; table: string; columns: string[] }[] = [
     "shirt_numbers",
     "junior_shirt_numbers",
     "shirt_number_uploads",
+    "junior_fixtures",
   ].map((table) => ({ name: `${table}_tenant_idx`, table, columns: ["tenant_id"] })),
 ];
 

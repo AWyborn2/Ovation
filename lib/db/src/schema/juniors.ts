@@ -1,16 +1,34 @@
+import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgSequence,
   serial,
   integer,
   text,
   boolean,
   real,
   index,
+  jsonb,
   timestamp,
   uniqueIndex,
+  primaryKey,
+  check,
 } from "drizzle-orm/pg-core";
 import { clubsTable } from "./clubs";
 import { tenantIdColumn } from "./_tenant";
+import type { TeamListRole } from "./fixtures";
+
+/**
+ * Ids for rows the junior PlayHQ sync creates in the explicit-id junior tables
+ * (junior_matches and its line tables). Junior PlayHQ sync plan KTD6: the sync owns
+ * seasons from 2026/27, and "sync origin" is `id >= JUNIOR_SYNC_ID_START`. Loader
+ * rows sit below 100,000,000 and admin-added lines in 100,000,000-199,999,999.
+ */
+export const JUNIOR_SYNC_ID_START = 200_000_000;
+export const juniorSyncIdSeq = pgSequence("junior_sync_id_seq", {
+  startWith: JUNIOR_SYNC_ID_START,
+  minValue: JUNIOR_SYNC_ID_START,
+});
 
 /**
  * Halls Head JUNIORS data — kept COMPLETELY SEPARATE from the senior tables by
@@ -75,6 +93,12 @@ export const juniorMatchesTable = pgTable(
   },
   (t) => ({
     idxTenant: index("junior_matches_tenant_idx").on(t.tenantId),
+    // One junior match per PlayHQ match per tenant: the junior projection's upsert
+    // key (junior PlayHQ sync plan U2). Migration 0038 builds it only when existing
+    // rows have no duplicates, so it can never fail half-way.
+    uqTenantPlayhqMatch: uniqueIndex("junior_matches_tenant_playhq_match_uidx")
+      .on(t.tenantId, t.playhqMatchId)
+      .where(sql`"playhq_match_id" IS NOT NULL`),
   }),
 );
 
@@ -154,7 +178,9 @@ export const juniorMatchRostersTable = pgTable(
 export type JuniorMatchRosterRow = typeof juniorMatchRostersTable.$inferSelect;
 
 /**
- * One row per junior player, keyed by PlayHQ participant_id. `isPrivate` marks
+ * One row per junior player per club, keyed by (tenant_id, PlayHQ participant_id)
+ * so a child registered at two clubs is two independent rows (junior PlayHQ sync
+ * plan KTD8; migration 0038 replaced the global participant_id key). `isPrivate` marks
  * the handful of participants the club wants hidden everywhere — the API masks
  * their scorecard lines and omits them from every directory / leaderboard.
  * `seniorPlayerId` is an OPTIONAL cross-reference to a senior player record for
@@ -166,10 +192,15 @@ export type JuniorMatchRosterRow = typeof juniorMatchRostersTable.$inferSelect;
 export const juniorParticipantsTable = pgTable(
   "junior_participants",
   {
-    participantId: text("participant_id").primaryKey(),
+    participantId: text("participant_id").notNull(),
     tenantId: tenantIdColumn(),
     displayName: text("display_name"),
     isPrivate: boolean("is_private").notNull().default(false),
+    // Admin override that shows a private player's name anyway (KTD12). The sync
+    // never writes it; privacy only ever tightens automatically (KTD8).
+    privacyOverride: boolean("privacy_override").notNull().default(false),
+    privacyOverrideBy: text("privacy_override_by"),
+    privacyOverrideAt: timestamp("privacy_override_at", { withTimezone: true }),
     scorecardLines: integer("scorecard_lines"),
     rosterAppearances: integer("roster_appearances"),
     firstSeason: text("first_season"),
@@ -178,6 +209,10 @@ export const juniorParticipantsTable = pgTable(
     seniorPlayerId: integer("senior_player_id"),
   },
   (t) => ({
+    pk: primaryKey({
+      name: "junior_participants_tenant_participant_pk",
+      columns: [t.tenantId, t.participantId],
+    }),
     idxTenant: index("junior_participants_tenant_idx").on(t.tenantId),
   }),
 );
@@ -266,6 +301,19 @@ export const juniorOfficeBearersTable = pgTable(
 
 export type JuniorOfficeBearerRow = typeof juniorOfficeBearersTable.$inferSelect;
 
+/** Public junior name style (KTD12). */
+export type JuniorNameStyle = "full" | "first_initial" | "first";
+
+/** Social publishing mode for one junior team (KTD14). */
+export type JuniorTeamPublishMode = "approval" | "auto";
+
+/**
+ * Per-team publishing map keyed by age group, then team name:
+ * `{ "Year 6": { "Halls Head Hawks": "auto" } }`. A missing age group or team means
+ * `approval`; only an explicit `auto` lets a junior draft be auto-posted.
+ */
+export type JuniorTeamPublishing = Record<string, Record<string, JuniorTeamPublishMode>>;
+
 /**
  * Singleton settings controlling how the public Juniors Matches page behaves by
  * default: which age group + season load first and the order age groups appear
@@ -290,11 +338,110 @@ export const juniorMatchDisplaySettingsTable = pgTable(
     // Ordered list of age-group tokens for the menu. Tokens not listed fall back
     // to the natural order, appended after the configured ones.
     ageGroupOrder: text("age_group_order").array().notNull().default([]),
+    // How public junior surfaces render a player's name (KTD12): `full`,
+    // `first_initial` ("Sam T") or `first` ("Sam"). Admin responses always carry
+    // full names; withheld players stay "Private Player" whatever the style.
+    nameStyle: text("name_style").$type<JuniorNameStyle>().notNull().default("full"),
+    // Per-team social publishing (KTD14), see `JuniorTeamPublishing`. A team absent
+    // from the map is `approval`.
+    teamPublishing: jsonb("team_publishing").$type<JuniorTeamPublishing>().notNull().default({}),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     uniqTenant: uniqueIndex("junior_match_display_settings_tenant_unique").on(t.tenantId),
+    chkNameStyle: check(
+      "junior_match_display_settings_name_style_check",
+      sql`"name_style" IN ('full', 'first_initial', 'first')`,
+    ),
   }),
 );
 
 export type JuniorMatchDisplaySettingsRow = typeof juniorMatchDisplaySettingsTable.$inferSelect;
+
+/**
+ * Junior fixtures projected from PlayHQ by the junior sync (junior PlayHQ sync plan
+ * KTD9): matches not yet started, plus started or finished matches without a
+ * published scorecard, whose `status` the sync keeps current. A scored match also
+ * becomes a `junior_matches` row; an unscored one only ever lives here and never
+ * reaches match pages or stats (KTD10). Junior-only: nothing here is written to the
+ * senior `fixtures` table, and nothing senior is written here.
+ *
+ * Upsert key `(tenant_id, playhq_match_id)`. `teamName` is the club's own junior
+ * team; `opponentName` the other side as PlayHQ names it.
+ */
+export const juniorFixturesTable = pgTable(
+  "junior_fixtures",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    playhqMatchId: text("playhq_match_id").notNull(),
+    seasonStartYear: integer("season_start_year").notNull(),
+    // Unified school-year band, as on junior_matches.age_group.
+    ageGroup: text("age_group"),
+    grade: text("grade"),
+    teamName: text("team_name"),
+    opponentName: text("opponent_name"),
+    venue: text("venue"),
+    startAt: timestamp("start_at", { withTimezone: true }),
+    isHome: boolean("is_home"),
+    // PlayHQ match status as last synced (e.g. UPCOMING, IN_PROGRESS, COMPLETED).
+    status: text("status"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    idxTenant: index("junior_fixtures_tenant_idx").on(t.tenantId),
+    idxTenantStart: index("junior_fixtures_tenant_start_idx").on(t.tenantId, t.startAt),
+    uqTenantPlayhqMatch: uniqueIndex("junior_fixtures_tenant_playhq_match_uidx").on(
+      t.tenantId,
+      t.playhqMatchId,
+    ),
+  }),
+);
+
+export type JuniorFixtureRow = typeof juniorFixturesTable.$inferSelect;
+
+/**
+ * One entry in a junior team list. Names are never stored: public reads derive them
+ * from `junior_participants` through the club's name style (KTD12). `participantId`
+ * is the lowercased PlayHQ participant GUID.
+ */
+export type JuniorTeamListPlayer = {
+  order: number;
+  participantId: string;
+  role?: TeamListRole;
+};
+
+/** Who wrote a junior team list (KTD9). */
+export type JuniorTeamListSource = "playhq" | "admin";
+
+/**
+ * The team list for a junior fixture, one per fixture (KTD9). `source` is `playhq`
+ * (the side the club named in PlayHQ, written published by the sync) or `admin`
+ * (saved by a club admin, never overwritten by the sync). Deleting the fixture
+ * cascades.
+ */
+export const juniorTeamListsTable = pgTable(
+  "junior_team_lists",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    juniorFixtureId: integer("junior_fixture_id")
+      .notNull()
+      .references(() => juniorFixturesTable.id, { onDelete: "cascade" }),
+    players: jsonb("players").$type<JuniorTeamListPlayer[]>().notNull().default([]),
+    isPublished: boolean("is_published").notNull().default(false),
+    source: text("source").$type<JuniorTeamListSource>().notNull().default("admin"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uqTenantFixture: uniqueIndex("junior_team_lists_tenant_fixture_uidx").on(
+      t.tenantId,
+      t.juniorFixtureId,
+    ),
+    chkSource: check("junior_team_lists_source_check", sql`"source" IN ('playhq', 'admin')`),
+  }),
+);
+
+export type JuniorTeamListRow = typeof juniorTeamListsTable.$inferSelect;

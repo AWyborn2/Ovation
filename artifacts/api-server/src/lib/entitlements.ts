@@ -15,7 +15,12 @@ export type Feature =
   | "socialStudio" // social-card / video studio
   | "socialPublishing" // publishing drafts to Facebook / Instagram (plan 2026-10-06-001)
   | "clubroomTv" // rotating clubroom-TV kiosk
-  | "curation"; // honour boards, premierships, awards, ToD, committee, life members, caps
+  | "curation" // honour boards, premierships, awards, ToD, committee, life members, caps
+  // Junior PlayHQ sync (plan 2026-10-14-001, KTD16). Recorded for later billing work
+  // only: BILLING_ENABLED must not be switched on with `juniors` enforced until PlayHQ
+  // licence or partner access covers junior data (R24). Until then the platform-admin
+  // switch `tenants.junior_sync_enabled` is the effective control (lib/junior-sync.ts).
+  | "juniors";
 
 export type Entitlements = Record<Feature, boolean>;
 
@@ -26,6 +31,7 @@ const ALL_ON: Entitlements = {
   socialPublishing: true,
   clubroomTv: true,
   curation: true,
+  juniors: true,
 };
 
 const ALL_OFF: Entitlements = {
@@ -35,17 +41,24 @@ const ALL_OFF: Entitlements = {
   socialPublishing: false,
   clubroomTv: false,
   curation: false,
+  juniors: false,
 };
 
 /**
  * Recommended tier split:
  *  - free: the hook — full branded stats site (handled elsewhere, not gated here).
- *  - club: the curation moat + social/video studio.
+ *  - club: the curation moat + social/video studio + junior sync.
  *  - pro:  everything (custom domain, mobile app, clubroom TV).
  */
 const PLAN_FEATURES: Record<Plan, Entitlements> = {
   free: { ...ALL_OFF },
-  club: { ...ALL_OFF, curation: true, socialStudio: true, socialPublishing: true },
+  club: {
+    ...ALL_OFF,
+    curation: true,
+    socialStudio: true,
+    socialPublishing: true,
+    juniors: true,
+  },
   pro: { ...ALL_ON },
 };
 

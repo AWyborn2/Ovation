@@ -1824,6 +1824,8 @@ export interface Entitlements {
   socialPublishing: boolean;
   clubroomTv: boolean;
   curation: boolean;
+  /** Junior PlayHQ sync. On the club and pro plans; not enforced while billing is dormant, when the platform-admin junior sync switch is the effective control. */
+  juniors: boolean;
 }
 
 export type MetaConnectionStatus = typeof MetaConnectionStatus[keyof typeof MetaConnectionStatus];
@@ -2073,6 +2075,13 @@ export interface AdminTenant {
   playhqOrgId?: string | null;
   /** Whether scheduled PlayHQ sync runs for this tenant. */
   playhqSyncEnabled?: boolean;
+  /** Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on. */
+  juniorSyncEnabled?: boolean;
+  /**
+     * The tenant's junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.
+     * @nullable
+     */
+  playhqJuniorOrgId?: string | null;
   /** True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults). */
   brandingComplete: boolean;
 }
@@ -2317,7 +2326,7 @@ export const UpdateTenantBodyPlan = {
 } as const;
 
 /**
- * Partial update of a tenant's plan, custom domain and/or PlayHQ sync switch.
+ * Partial update of a tenant's plan, custom domain, PlayHQ sync switch and/or junior sync settings. Platform admin only; the club-admin brand update and signup schemas carry none of these.
  */
 export interface UpdateTenantBody {
   plan?: UpdateTenantBodyPlan;
@@ -2325,6 +2334,13 @@ export interface UpdateTenantBody {
   customDomain?: string | null;
   /** Scheduled PlayHQ sync for this tenant. When false the hourly runner plans nothing for its organisation and ingest does not project its fixtures. */
   playhqSyncEnabled?: boolean;
+  /** Junior PlayHQ sync for this tenant. Takes effect only while PlayHQ sync is on and the plan includes juniors; when off, junior grades are dropped at ingest. */
+  juniorSyncEnabled?: boolean;
+  /**
+     * The tenant's junior PlayHQ organisation GUID when its juniors run under a separate organisation. Null or blank clears it (juniors then use playhqOrgId). Unique across tenants.
+     * @nullable
+     */
+  playhqJuniorOrgId?: string | null;
 }
 
 export type ProvisionTenantBodyPlan = typeof ProvisionTenantBodyPlan[keyof typeof ProvisionTenantBodyPlan];

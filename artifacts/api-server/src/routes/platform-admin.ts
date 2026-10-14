@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { and, eq, ne, isNull, isNotNull, sql } from "drizzle-orm";
+import { and, eq, ne, or, isNull, isNotNull, sql } from "drizzle-orm";
 import {
   db,
   tenantsTable,
@@ -282,11 +282,45 @@ router.patch(
       return;
     }
 
-    const updates: Partial<Pick<TenantRow, "plan" | "customDomain" | "playhqSyncEnabled">> = {};
+    const updates: Partial<
+      Pick<
+        TenantRow,
+        "plan" | "customDomain" | "playhqSyncEnabled" | "juniorSyncEnabled" | "playhqJuniorOrgId"
+      >
+    > = {};
     if (parsed.data.plan !== undefined) updates.plan = parsed.data.plan;
     // Scheduled PlayHQ sync switch (U4). Not plan-gated: sync is platform-operated.
     if (parsed.data.playhqSyncEnabled !== undefined)
       updates.playhqSyncEnabled = parsed.data.playhqSyncEnabled;
+    // Junior PlayHQ sync (junior sync plan U1, KTD1/KTD2). Platform admin only -- the
+    // club-admin brand update and signup schemas carry neither field. The `juniors`
+    // entitlement is applied by the gate (lib/junior-sync.ts), not here, so the switch
+    // can be set ahead of a plan change.
+    if (parsed.data.juniorSyncEnabled !== undefined)
+      updates.juniorSyncEnabled = parsed.data.juniorSyncEnabled;
+    if (parsed.data.playhqJuniorOrgId !== undefined) {
+      const org = parsed.data.playhqJuniorOrgId?.trim().toLowerCase() || null;
+      if (org) {
+        // One tenant per organisation: a junior organisation may not be another
+        // tenant's junior or senior organisation (its own senior one is allowed).
+        const [clash] = await db
+          .select({ id: tenantsTable.id })
+          .from(tenantsTable)
+          .where(
+            and(
+              ne(tenantsTable.id, id),
+              or(eq(tenantsTable.playhqJuniorOrgId, org), eq(tenantsTable.playhqOrgId, org)),
+            ),
+          );
+        if (clash) {
+          res
+            .status(409)
+            .json({ error: "That PlayHQ organisation is already linked to another tenant." });
+          return;
+        }
+      }
+      updates.playhqJuniorOrgId = org;
+    }
 
     // Custom domain is plan-gated (always enforced, independent of the
     // dormant BILLING_ENABLED flag — see entitlements.ts). Evaluate the

@@ -177,6 +177,14 @@ export default function TenantDetail() {
           orgId={tenant.playhqOrgId ?? null}
           enabled={tenant.playhqSyncEnabled ?? false}
         />
+        <JuniorSyncCard
+          key={`junior-${tenant.id}-${tenant.playhqJuniorOrgId ?? ""}`}
+          tenantId={id}
+          orgId={tenant.playhqOrgId ?? null}
+          playhqSyncEnabled={tenant.playhqSyncEnabled ?? false}
+          enabled={tenant.juniorSyncEnabled ?? false}
+          juniorOrgId={tenant.playhqJuniorOrgId ?? null}
+        />
       </div>
     </div>
   );
@@ -231,6 +239,108 @@ function PlayhqSyncCard({
             onCheckedChange={(v) => update.mutate({ id: tenantId, data: { playhqSyncEnabled: v } })}
           />
           <Label htmlFor="playhq-sync">Scheduled sync {enabled ? "on" : "off"}</Label>
+        </div>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Junior PlayHQ sync (junior sync plan U1). Platform admin only: junior grades sync for
+ * this club only while PlayHQ sync is also on. The junior organisation is optional;
+ * blank means the club's juniors run under its senior PlayHQ organisation.
+ */
+function JuniorSyncCard({
+  tenantId,
+  orgId,
+  playhqSyncEnabled,
+  enabled,
+  juniorOrgId,
+}: {
+  tenantId: number;
+  orgId: string | null;
+  playhqSyncEnabled: boolean;
+  enabled: boolean;
+  juniorOrgId: string | null;
+}) {
+  const qc = useQueryClient();
+  const [org, setOrg] = useState(juniorOrgId ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const update = useUpdateAdminTenant({
+    mutation: {
+      onSuccess: () => {
+        setError(null);
+        qc.invalidateQueries({ queryKey: getGetAdminTenantQueryKey(tenantId) });
+        qc.invalidateQueries({ queryKey: getListAllTenantsQueryKey() });
+      },
+      onError: (e) => {
+        const status = (e as { status?: number })?.status;
+        setError(
+          status === 409
+            ? "That PlayHQ organisation is already linked to another club."
+            : "Couldn't change the junior sync settings.",
+        );
+      },
+    },
+  });
+  const effectiveOrg = juniorOrgId ?? orgId;
+  const orgChanged = org.trim().toLowerCase() !== (juniorOrgId ?? "");
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Junior sync</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          When on, this club&rsquo;s junior fixtures, team lists, results and scorecards sync from
+          PlayHQ
+          {effectiveOrg ? (
+            <>
+              {" "}
+              organisation <span className="font-mono text-xs">{effectiveOrg}</span>
+            </>
+          ) : null}
+          . Junior data only syncs while PlayHQ sync is on.
+        </p>
+        <div className="flex items-center gap-3">
+          <Switch
+            id="junior-sync"
+            checked={enabled}
+            disabled={update.isPending}
+            onCheckedChange={(v) => update.mutate({ id: tenantId, data: { juniorSyncEnabled: v } })}
+          />
+          <Label htmlFor="junior-sync">Junior sync {enabled ? "on" : "off"}</Label>
+        </div>
+        {enabled && !playhqSyncEnabled && (
+          <p className="text-sm text-muted-foreground">
+            PlayHQ sync is off, so nothing junior syncs yet.
+          </p>
+        )}
+        <div className="space-y-1">
+          <Label htmlFor="junior-org">Junior PlayHQ organisation (optional)</Label>
+          <div className="flex gap-2">
+            <Input
+              id="junior-org"
+              value={org}
+              placeholder={orgId ?? "Organisation GUID"}
+              onChange={(e) => setOrg(e.target.value)}
+              className="font-mono text-xs"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!orgChanged || update.isPending}
+              onClick={() =>
+                update.mutate({ id: tenantId, data: { playhqJuniorOrgId: org.trim() || null } })
+              }
+            >
+              Save
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Leave blank when the club&rsquo;s juniors are in its senior PlayHQ organisation.
+          </p>
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
       </CardContent>
