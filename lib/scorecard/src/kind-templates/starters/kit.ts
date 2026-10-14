@@ -500,6 +500,11 @@ export function makeKit(t: Theme) {
     style: Partial<Style> & { fontSize: number };
     /** 0 = the full row (default), 1 = its upper line, 2 = its lower line. */
     line?: 0 | 1 | 2;
+    /** Top edge and height in percent of the row (full-row cells only). */
+    y?: number;
+    h?: number;
+    /** Show the field as text (default), an image URL, or a backdrop only. */
+    show?: "text" | "image" | "backdrop";
   };
 
   /**
@@ -522,14 +527,16 @@ export function makeKit(t: Theme) {
       /** Rows, gaps and type scaled per size (bigger rows where there's room). */
       scale?: (s: TemplateSize) => number;
       maxW?: number;
-      /** Columns the rows flow down, side by side. */
-      columns?: number;
+      /** Columns the rows flow down, side by side (per size, or the same on all). */
+      columns?: number | ((s: TemplateSize) => number);
       /** Gap between columns, in percent of the list's width. */
       columnGap?: number;
       variants?: Record<string, Record<string, Partial<Style>>>;
     } = {},
   ): Block {
     const k = (s: TemplateSize) => (opts.scale?.(s) ?? 1) * (t.listScale?.(s) ?? 1);
+    const cols = (s: TemplateSize) =>
+      typeof opts.columns === "function" ? opts.columns(s) : (opts.columns ?? 1);
     const pitch = (s: TemplateSize) => (rowHeight + rowGap) * k(s);
     const upper = (s: TemplateSize) => rowHeight * k(s) * (opts.split ?? 0.56);
     const style = (c: Cell, s: TemplateSize): Style => ({
@@ -547,7 +554,7 @@ export function makeKit(t: Theme) {
       data: true,
       maxW: opts.maxW,
       // A little slack so rounding never costs a row.
-      h: (s) => Math.ceil(count(s) / (opts.columns ?? 1)) * pitch(s) - rowGap * k(s) + 0.3,
+      h: (s) => Math.ceil(count(s) / cols(s)) * pitch(s) - rowGap * k(s) + 0.3,
       gap: fixed(opts.gap ?? 1.6),
       make: (b) => {
         const out: StarterLayer[] = [];
@@ -575,10 +582,16 @@ export function makeKit(t: Theme) {
               repeat,
               rowHeight: +h(s).toFixed(3),
               gap: +(pitch(s) - h(s)).toFixed(3),
-              cells: lineCells.map((c) => ({ field: c.field, x: c.x, w: c.w, style: style(c, s) })),
-              ...(opts.columns && opts.columns > 1
-                ? { columns: opts.columns, columnGap: opts.columnGap ?? 4 }
-                : {}),
+              cells: lineCells.map((c) => ({
+                field: c.field,
+                x: c.x,
+                w: c.w,
+                ...(c.y !== undefined ? { y: c.y } : {}),
+                ...(c.h !== undefined ? { h: c.h } : {}),
+                ...(c.show && c.show !== "text" ? { show: c.show } : {}),
+                style: style(c, s),
+              })),
+              ...(cols(s) > 1 ? { columns: cols(s), columnGap: opts.columnGap ?? 4 } : {}),
               ...(variants
                 ? { variants: variants as Record<string, Record<string, TemplateTextStyle>> }
                 : {}),

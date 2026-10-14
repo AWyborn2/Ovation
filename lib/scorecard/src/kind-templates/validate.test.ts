@@ -74,7 +74,7 @@ describe("templateDocumentErrors (security review 2026-10-08)", () => {
       ],
     };
     expect(templateDocumentErrors(doc, "ladder")).toEqual([
-      "Layer 1.rows.columns must be a whole number from 1 to 4.",
+      "Layer 1.rows.columns must be a whole number from 1 to 6.",
     ]);
   });
 

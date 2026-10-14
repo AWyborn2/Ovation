@@ -44,6 +44,10 @@ export const TEMPLATE_CARD_KINDS = [
   "tradingCard",
   "juniorHighlights",
   "teamListRound",
+  "announcement",
+  "sponsor",
+  "resultsSummary",
+  "teamOfWeek",
 ] as const;
 
 export type TemplateCardKind = (typeof TEMPLATE_CARD_KINDS)[number];
@@ -53,6 +57,10 @@ export const CLUB_KIT_ONLY_KINDS: readonly TemplateCardKind[] = [
   "roundFixtures",
   "tradingCard",
   "juniorHighlights",
+  "announcement",
+  "sponsor",
+  "resultsSummary",
+  "teamOfWeek",
 ];
 
 export const KIND_FIELDS: Record<TemplateCardKind, KindFieldCatalogue> = {
@@ -1766,6 +1774,121 @@ export const KIND_FIELDS: Record<TemplateCardKind, KindFieldCatalogue> = {
       },
     ],
     repeats: [],
+  },
+  announcement: {
+    source: "club-kit-v1",
+    fields: [
+      { key: "eyebrow", label: "Small line above" },
+      { key: "headline", label: "Headline" },
+      { key: "subline", label: "Supporting line" },
+      { key: "clubName", label: "Club name" },
+      { key: "clubTagline", label: "Club tagline" },
+      { key: "clubHashtag", label: "Club hashtag" },
+      { key: "sponsorPresentedBy", label: "Presented-by sponsor" },
+      { key: "clubMonogram", label: "Club monogram (no crest)" },
+    ],
+    images: [
+      { key: "photo", label: "Frame photo", type: "photo" },
+      { key: "clubLogo", label: "Club logo", type: "logo" },
+    ],
+    repeats: [],
+  },
+  sponsor: {
+    source: "club-kit-v1",
+    fields: [
+      { key: "seasonLabel", label: "Season" },
+      { key: "sponsorName", label: "Sponsor name" },
+      { key: "tagline", label: "About them" },
+      { key: "clubName", label: "Club name" },
+      { key: "clubTagline", label: "Club tagline" },
+      { key: "clubHashtag", label: "Club hashtag" },
+      { key: "sponsorPresentedBy", label: "Presented-by sponsor" },
+      { key: "clubMonogram", label: "Club monogram (no crest)" },
+    ],
+    images: [
+      { key: "sponsorArt", label: "Sponsor artwork", type: "logo" },
+      { key: "photo", label: "Frame photo", type: "photo" },
+      { key: "clubLogo", label: "Club logo", type: "logo" },
+    ],
+    repeats: [],
+  },
+  resultsSummary: {
+    source: "club-kit-v1",
+    fields: [
+      { key: "dateLabel", label: "Date" },
+      { key: "roundLabel", label: "Round" },
+      { key: "clubName", label: "Club name" },
+      { key: "clubTagline", label: "Club tagline" },
+      { key: "clubHashtag", label: "Club hashtag" },
+      { key: "sponsorPresentedBy", label: "Presented-by sponsor" },
+      { key: "clubMonogram", label: "Club monogram (no crest)" },
+      { key: "setMarker", label: "Set page marker" },
+      { key: "rowScale", label: "Set row size" },
+      { key: "coverDate", label: "Date" },
+      { key: "coverCount", label: "Headline number" },
+      { key: "coverLabel", label: "Headline label" },
+      { key: "coverList", label: "Summary line" },
+    ],
+    images: [
+      { key: "photo", label: "Frame photo", type: "photo" },
+      { key: "clubLogo", label: "Club logo", type: "logo" },
+    ],
+    repeats: [
+      {
+        key: "results",
+        label: "Grades",
+        variants: ["lost", "noResult"],
+        fields: [
+          { key: "grade", label: "Grade" },
+          { key: "clubName", label: "Club" },
+          { key: "clubScore", label: "Club score" },
+          { key: "verb", label: "Result word" },
+          { key: "oppName", label: "Opposition" },
+          { key: "oppScore", label: "Opposition score" },
+          { key: "note", label: "No-result note" },
+          { key: "batLabel", label: "Batters heading" },
+          { key: "bat1", label: "Batter 1" },
+          { key: "bat1Figure", label: "Batter 1 score" },
+          { key: "bat2", label: "Batter 2" },
+          { key: "bat2Figure", label: "Batter 2 score" },
+          { key: "bowlLabel", label: "Bowlers heading" },
+          { key: "bowl1", label: "Bowler 1" },
+          { key: "bowl1Figure", label: "Bowler 1 figures" },
+          { key: "bowl2", label: "Bowler 2" },
+          { key: "bowl2Figure", label: "Bowler 2 figures" },
+        ],
+      },
+    ],
+  },
+  teamOfWeek: {
+    source: "club-kit-v1",
+    fields: [
+      { key: "title", label: "Title" },
+      { key: "dateLabel", label: "Date" },
+      { key: "clubName", label: "Club name" },
+      { key: "clubTagline", label: "Club tagline" },
+      { key: "clubHashtag", label: "Club hashtag" },
+      { key: "sponsorPresentedBy", label: "Presented-by sponsor" },
+      { key: "clubMonogram", label: "Club monogram (no crest)" },
+    ],
+    images: [
+      { key: "clubLogo", label: "Club logo", type: "logo" },
+      { key: "photo", label: "Frame photo", type: "photo" },
+    ],
+    repeats: [
+      {
+        key: "players",
+        label: "Players",
+        variants: [],
+        fields: [
+          { key: "photo", label: "Photo" },
+          { key: "figure", label: "Figure" },
+          { key: "name", label: "Name" },
+          { key: "role", label: "Role" },
+          { key: "grade", label: "Grade" },
+        ],
+      },
+    ],
   },
 };
 

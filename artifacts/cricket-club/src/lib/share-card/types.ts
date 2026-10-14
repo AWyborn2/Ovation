@@ -430,7 +430,81 @@ export type ShareCardInput =
       grade: string;
       roundLabel: string;
       highlights: JuniorHighlight[];
+    }
+  | {
+      /** A club announcement: a headline the admin writes (no stats). */
+      kind: "announcement";
+      headline: string;
+      /** Small line over the headline ("CLUB NEWS", "REGISTRATIONS"). */
+      eyebrow?: string;
+      /** One supporting line under it (dates, a link, who to contact). */
+      subline?: string;
+    }
+  | {
+      /** Thanks a sponsor: its artwork, name and a line about it. */
+      kind: "sponsor";
+      /** "2026/27" — the season the sponsorship is for. */
+      seasonLabel: string;
+      sponsorName: string;
+      /** e.g. "Supporting our community". */
+      tagline?: string;
+      /** The sponsor's logo or artwork. */
+      sponsorLogoUrl?: string | null;
+    }
+  | ({
+      /**
+       * A round's results with both scores and the best players per grade
+       * (after the White Knights results summary).
+       */
+      kind: "resultsSummary";
+      /** "SATURDAY 10TH OCTOBER 2026". */
+      dateLabel: string;
+      roundLabel?: string;
+      results: GradeResult[];
+      junior?: boolean;
+    } & SetSlideFields)
+  | {
+      /** The round's best performers across the club's grades, with photos. */
+      kind: "teamOfWeek";
+      /** "SENIOR TEAM OF THE WEEK". */
+      title: string;
+      /** "10 OCTOBER 2026". */
+      dateLabel: string;
+      players: TeamOfWeekPlayer[];
     };
+
+/** One grade's result on a results-summary card. */
+export type GradeResult = {
+  grade: string;
+  clubName: string;
+  clubScore: string;
+  oppName: string;
+  oppScore: string;
+  /** "won" | "lost" | "draw" | "noResult" (washed out, abandoned, forfeit). */
+  outcome: "won" | "lost" | "draw" | "noResult";
+  /** Shown instead of the scores when there's no result ("WASHED OUT"). */
+  note?: string;
+  /** The club's best two batters and bowlers: "A. Bremner" / "32* (34)". */
+  bat1Name?: string;
+  bat1Figure?: string;
+  bat2Name?: string;
+  bat2Figure?: string;
+  bowl1Name?: string;
+  bowl1Figure?: string;
+  bowl2Name?: string;
+  bowl2Figure?: string;
+};
+
+/** One player in a team of the week. */
+export type TeamOfWeekPlayer = {
+  name: string;
+  /** "110*", "5/28", "46 & 2/12". */
+  figure: string;
+  grade: string;
+  /** "(C)", "(WK)". */
+  role?: string;
+  photoUrl?: string | null;
+};
 
 /**
  * One team in a round of team lists: exactly a `teamList` card's fields plus
@@ -493,6 +567,10 @@ export const CARD_KINDS: CardKind[] = [
   "tradingCard",
   "juniorHighlights",
   "teamListRound",
+  "announcement",
+  "sponsor",
+  "resultsSummary",
+  "teamOfWeek",
 ];
 
 // A sponsor with an empty cardKinds list applies to every card type; otherwise

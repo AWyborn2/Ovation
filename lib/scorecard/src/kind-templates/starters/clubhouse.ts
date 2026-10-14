@@ -410,7 +410,158 @@ const brushHero = (flat: number, tallSize: number) => (s: TemplateSize) =>
   tall(s) ? tallSize : s === "landscape" ? flat * 1.1 : flat;
 const MATCH_LINE = "{{grade}} · vs {{opponent}} · RD {{round}}";
 
+/** A shape on the sizes `boxes` names, turned `rotate` degrees. */
+function turned(
+  id: string,
+  name: string,
+  boxes: PerSize<Box>,
+  background: string,
+  rotate: number,
+  radius?: number,
+): StarterLayer {
+  const geometry: Record<string, unknown> = {};
+  for (const [s, b] of Object.entries(boxes) as Array<[TemplateSize, Box]>)
+    geometry[s] = { ...pct(b, s), rotate };
+  return {
+    id,
+    kind: "shape",
+    name,
+    style: radius === undefined ? { background } : { background, radius },
+    geometry,
+  } as StarterLayer;
+}
+
+/**
+ * The announcement's speech bubble (after the White Knights notices): a white
+ * bubble with a deep shadow and a tail, the headline set inside it in slab
+ * type, with club-colour sparkles and a sun-burst of strokes around it.
+ */
+function speechBubble(key: string): Block {
+  return {
+    key,
+    h: (s) => (s === "story" ? 80 : s === "portrait" ? 64 : s === "landscape" ? 58 : 52),
+    gap: fixed(1.6),
+    make: (b) => {
+      const at = (f: (box: Box, s: TemplateSize) => Box): PerSize<Box> => {
+        const out: PerSize<Box> = {};
+        for (const [s, box] of Object.entries(b) as Array<[TemplateSize, Box]>) out[s] = f(box, s);
+        return out;
+      };
+      const bubble = (box: Box): Box => {
+        const w = Math.min(box.w * 0.84, box.h * 1.7);
+        return { x: box.x + (box.w - w) / 2, y: box.y + 6, w, h: box.h - 14 };
+      };
+      const sparkle = (id: string, dx: number, dy: number, size: number) =>
+        text(
+          `${key}-${id}`,
+          "Sparkle",
+          "✦",
+          at((box) => {
+            const bb = bubble(box);
+            return {
+              x: bb.x + bb.w * dx - size / 2,
+              y: bb.y + bb.h * dy - size / 2,
+              w: size,
+              h: size,
+            };
+          }),
+          () => ({
+            fontFamily: SANS,
+            fontSize: size * 0.9,
+            fontWeight: 400,
+            color: GOLD,
+            align: "center",
+          }),
+        );
+      const ray = (id: string, dx: number, dy: number, len: number, rotate: number) =>
+        turned(
+          `${key}-${id}`,
+          "Sun-burst stroke",
+          at((box) => {
+            const bb = bubble(box);
+            return { x: bb.x + bb.w * dx - len / 2, y: bb.y + bb.h * dy, w: len, h: 1.4 };
+          }),
+          GOLD,
+          rotate,
+          2,
+        );
+      return [
+        ray("ray-1", -0.04, -0.08, 9, 35),
+        ray("ray-2", 0.06, -0.2, 8, 62),
+        ray("ray-3", 1.03, 0.98, 9, 35),
+        ray("ray-4", 0.94, 1.12, 8, 62),
+        // Shadow, tail and bubble.
+        turned(
+          `${key}-shadow`,
+          "Bubble shadow",
+          at((box) => {
+            const bb = bubble(box);
+            return { ...bb, x: bb.x + 2.2, y: bb.y + 2.2 };
+          }),
+          "var(--ck-stage-deep,#0C1240)",
+          -2,
+          36,
+        ),
+        turned(
+          `${key}-tail`,
+          "Bubble tail",
+          at((box) => {
+            const bb = bubble(box);
+            return { x: bb.x + bb.w * 0.16, y: bb.y + bb.h - 7, w: 12, h: 12 };
+          }),
+          "#FFFFFF",
+          38,
+        ),
+        turned(`${key}-bubble`, "Speech bubble", at(bubble), "#FFFFFF", -2, 36),
+        ...text(
+          `${key}-headline`,
+          "Headline",
+          "{{headline}}",
+          at((box) => {
+            const bb = bubble(box);
+            return { x: bb.x + 5, y: bb.y + 4, w: bb.w - 10, h: bb.h - 8 };
+          }),
+          (s) => ({
+            fontFamily: SLAB,
+            fontSize: s === "square" ? 7.4 : s === "landscape" ? 7 : 9,
+            fontWeight: 400,
+            uppercase: true,
+            color: STAGE,
+            align: "center",
+          }),
+        ),
+        ...sparkle("sparkle-1", 0.08, 0.14, 5),
+        ...sparkle("sparkle-2", 0.93, 0.1, 4),
+        ...sparkle("sparkle-3", 0.88, 0.86, 3),
+      ];
+    },
+  };
+}
+
 const OWN_BODIES: Partial<Record<TemplateCardKind, (k: Kit) => ClubhouseBody>> = {
+  announcement: (k) => ({
+    chip: "NEWS",
+    plain: true,
+    blocks: [
+      k.eyebrow("eyebrow", "{{eyebrow}}", WHITE),
+      speechBubble("bubble"),
+      {
+        key: "subline",
+        h: fixed(6),
+        gap: fixed(1),
+        make: (b) =>
+          text("subline", "Supporting line", "{{subline}}", b, () => ({
+            fontFamily: COND,
+            fontSize: 3,
+            fontWeight: 700,
+            uppercase: true,
+            color: WHITE,
+            align: "center",
+          })),
+      },
+    ],
+  }),
+
   milestone: (k) => ({
     chip: "MILESTONE",
     blocks: [

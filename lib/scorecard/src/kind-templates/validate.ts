@@ -12,7 +12,7 @@ import { TEMPLATE_SIZE_ORDER } from "./document";
 import { kindFields } from "./fields";
 
 export const MAX_DOCUMENT_LAYERS = 300;
-const MAX_CELLS = 16;
+const MAX_CELLS = 24;
 const MAX_TEXT = 1000;
 const MAX_SHORT = 120;
 
@@ -172,9 +172,9 @@ function checkRows(errors: Errors, where: string, v: unknown, kind: string): voi
   if (v.gap !== undefined) numberIn(errors, `${where}.gap`, v.gap, 0, 50);
   if (
     v.columns !== undefined &&
-    (!Number.isInteger(v.columns) || (v.columns as number) < 1 || (v.columns as number) > 4)
+    (!Number.isInteger(v.columns) || (v.columns as number) < 1 || (v.columns as number) > 6)
   )
-    errors.push(`${where}.columns must be a whole number from 1 to 4.`);
+    errors.push(`${where}.columns must be a whole number from 1 to 6.`);
   if (v.columnGap !== undefined) numberIn(errors, `${where}.columnGap`, v.columnGap, 0, 50);
   const fields = new Set(repeat.fields.map((f) => f.key));
   if (!Array.isArray(v.cells) || v.cells.length > MAX_CELLS) {
@@ -190,6 +190,10 @@ function checkRows(errors: Errors, where: string, v: unknown, kind: string): voi
         errors.push(`${at}.field isn't a field of ${repeat.label}.`);
       numberIn(errors, `${at}.x`, cell.x, 0, 100);
       numberIn(errors, `${at}.w`, cell.w, 0, 100);
+      if (cell.y !== undefined) numberIn(errors, `${at}.y`, cell.y, 0, 100);
+      if (cell.h !== undefined) numberIn(errors, `${at}.h`, cell.h, 0, 100);
+      if (cell.show !== undefined && !["text", "image", "backdrop"].includes(cell.show as string))
+        errors.push(`${at}.show must be text, image or backdrop.`);
       checkStyle(errors, `${at}.style`, cell.style);
     });
   }

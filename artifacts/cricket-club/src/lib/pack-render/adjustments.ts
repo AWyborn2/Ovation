@@ -360,16 +360,28 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
         ...cell.style,
         ...(variant ? spec.variants?.[variant]?.[cell.field] : undefined),
       };
-      // Cells stay on one line so an overflow shows as width, which the fit
-      // step shrinks and, failing that, reports (KTD9).
-      const css = textCss(style, [
+      const place = [
         "position:absolute",
         `left:${num(cell.x)}%`,
         `width:${num(cell.w)}%`,
-        "top:0",
-        "height:100%",
+        cell.y === undefined ? "top:0" : `top:${num(cell.y)}%`,
+        cell.h === undefined ? "height:100%" : `height:${num(cell.h, 100)}%`,
         "overflow:hidden",
-      ]).replace("white-space:pre-wrap", "white-space:nowrap");
+      ];
+      if (cell.show === "backdrop") {
+        const bg = cssValue(style.background);
+        return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${bg ? `;background:${bg}` : ""}${style.radius != null ? `;border-radius:${num(style.radius)}px` : ""}"></div>`;
+      }
+      if (cell.show === "image") {
+        // A photo the row carries (e.g. a player's); junior cards never show one.
+        const src = ctx.junior ? "" : (row[cell.field] ?? "").trim();
+        if (!src) return "";
+        const radius = style.radius != null ? `;border-radius:${num(style.radius)}px` : "";
+        return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${radius}"><img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" /></div>`;
+      }
+      // Cells stay on one line so an overflow shows as width, which the fit
+      // step shrinks and, failing that, reports (KTD9).
+      const css = textCss(style, place).replace("white-space:pre-wrap", "white-space:nowrap");
       return `<div data-row-cell="${escapeHtml(cell.field)}" ${FIT_ATTR}="${fitBase(style)}" style="${css}">${escapeHtml(row[cell.field] ?? "")}</div>`;
     });
     const col = Math.floor(i / perColumn);

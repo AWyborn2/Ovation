@@ -110,6 +110,16 @@ export function element(
   };
 }
 
+/** An image the card supplies by token (`{{sponsorArt}}`, `{{clubLogo}}`). */
+export function image(
+  id: string,
+  name: string,
+  content: string,
+  boxes: PerSize<Box | null>,
+): StarterLayer {
+  return { id, kind: "image", name, content, ...placed(boxes) };
+}
+
 /** A filled shape. */
 export function shape(
   id: string,
@@ -140,6 +150,9 @@ export function rows(
       field: string;
       x: number;
       w: number;
+      y?: number;
+      h?: number;
+      show?: "text" | "image" | "backdrop";
       style: TemplateTextStyle & { fontSize: number };
     }>;
     variants?: Record<string, Record<string, TemplateTextStyle>>;

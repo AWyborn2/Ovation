@@ -187,6 +187,7 @@ export interface SetInput {
 
 type FixtureRow = { grade: string };
 type MatchRow = { gradeLabel: string };
+type ResultRow = { grade: string };
 type TeamRow = {
   grade: string;
   gradeRound: string;
@@ -214,6 +215,7 @@ export const SET_CAPS = {
   roundFixtures: 5,
   weekendWrap: 4,
   teamListRound: 1,
+  resultsSummary: 3,
 } as const;
 
 export type SetKind = keyof typeof SET_CAPS;
@@ -341,6 +343,32 @@ function planSet(input: SetInput, opts: CardSetOptions): PlannedSlide[] {
           build: (page, density) => ({
             ...input,
             matches: rows,
+            setPage: page,
+            density,
+            ...(p.section === "junior" ? { junior: true } : {}),
+          }),
+        };
+      });
+      break;
+    }
+    case "resultsSummary": {
+      cap = SET_CAPS.resultsSummary;
+      const parts = balanced(
+        (input.results as ResultRow[]) ?? [],
+        cap,
+        (r) => r.grade,
+        !!input.junior,
+        opts.grouping,
+      );
+      details = parts.map((p) => {
+        const rows = p.rows as ResultRow[];
+        return {
+          section: p.section,
+          firstKey: rows[0]?.grade ?? "",
+          count: rows.length,
+          build: (page, density) => ({
+            ...input,
+            results: rows,
             setPage: page,
             density,
             ...(p.section === "junior" ? { junior: true } : {}),
