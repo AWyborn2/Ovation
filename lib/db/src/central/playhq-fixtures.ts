@@ -293,61 +293,73 @@ export async function playhqGradeLadder(
   gradeId: string,
   orgId: string,
 ): Promise<PlayhqLadder | null> {
-  return withCentralCache(cacheKey("playhqGradeLadder", [gradeId, orgId]), async () => {
-    const [grade] = await centralDb
-      .select({
-        id: playhqGradesTable.id,
-        name: playhqGradesTable.name,
-        season: playhqGradesTable.seasonName,
-        isJunior: playhqGradesTable.isJunior,
-      })
-      .from(playhqGradesTable)
-      .where(eq(playhqGradesTable.id, gradeId));
-    if (!grade || grade.isJunior) return null;
+  return withCentralCache(cacheKey("playhqGradeLadder", [gradeId, orgId]), () =>
+    playhqGradeLadderUncached(gradeId, orgId),
+  );
+}
 
-    const l = playhqLaddersTable;
-    const rows = await centralDb
-      .select()
-      .from(l)
-      .where(eq(l.gradeId, gradeId))
-      .orderBy(asc(l.ladderName), sql`${l.rank} asc nulls last`, asc(l.teamName));
+/**
+ * {@link playhqGradeLadder} without the cache: the Posting Plan's ladder
+ * carousel (plan 2026-10-07-001 KTD7) must see a ladder the sync loaded
+ * minutes ago, not a five-minute-old copy.
+ */
+export async function playhqGradeLadderUncached(
+  gradeId: string,
+  orgId: string,
+): Promise<PlayhqLadder | null> {
+  const [grade] = await centralDb
+    .select({
+      id: playhqGradesTable.id,
+      name: playhqGradesTable.name,
+      season: playhqGradesTable.seasonName,
+      isJunior: playhqGradesTable.isJunior,
+    })
+    .from(playhqGradesTable)
+    .where(eq(playhqGradesTable.id, gradeId));
+  if (!grade || grade.isJunior) return null;
 
-    const tables = new Map<string, PlayhqLadderTeam[]>();
-    for (const r of rows) {
-      const teams = tables.get(r.ladderName) ?? [];
-      teams.push({
-        teamId: r.teamId,
-        teamName: r.teamName ?? "",
-        orgId: r.orgId,
-        isClub: r.orgId === orgId,
-        rank: r.rank,
-        played: r.played,
-        won: r.won,
-        lost: r.lost,
-        ties: r.ties,
-        noResults: r.noResults,
-        byes: r.byes,
-        forfeits: r.forfeits,
-        points: num(r.competitionPoints),
-        bonusPoints: num(r.bonusPoints),
-        quotient: num(r.quotient),
-        netRunRate: num(r.netRunRate),
-        runsFor: r.runsFor,
-        wicketsLost: r.wicketsLost,
-        oversFaced: num(r.oversFaced),
-        runsAgainst: r.runsAgainst,
-        wicketsTaken: r.wicketsTaken,
-        oversBowled: num(r.oversBowled),
-      });
-      tables.set(r.ladderName, teams);
-    }
-    return {
-      gradeId: grade.id,
-      gradeName: grade.name ?? "",
-      season: grade.season,
-      ladders: [...tables.entries()].map(([name, teams]) => ({ name, teams })),
-    };
-  });
+  const l = playhqLaddersTable;
+  const rows = await centralDb
+    .select()
+    .from(l)
+    .where(eq(l.gradeId, gradeId))
+    .orderBy(asc(l.ladderName), sql`${l.rank} asc nulls last`, asc(l.teamName));
+
+  const tables = new Map<string, PlayhqLadderTeam[]>();
+  for (const r of rows) {
+    const teams = tables.get(r.ladderName) ?? [];
+    teams.push({
+      teamId: r.teamId,
+      teamName: r.teamName ?? "",
+      orgId: r.orgId,
+      isClub: r.orgId === orgId,
+      rank: r.rank,
+      played: r.played,
+      won: r.won,
+      lost: r.lost,
+      ties: r.ties,
+      noResults: r.noResults,
+      byes: r.byes,
+      forfeits: r.forfeits,
+      points: num(r.competitionPoints),
+      bonusPoints: num(r.bonusPoints),
+      quotient: num(r.quotient),
+      netRunRate: num(r.netRunRate),
+      runsFor: r.runsFor,
+      wicketsLost: r.wicketsLost,
+      oversFaced: num(r.oversFaced),
+      runsAgainst: r.runsAgainst,
+      wicketsTaken: r.wicketsTaken,
+      oversBowled: num(r.oversBowled),
+    });
+    tables.set(r.ladderName, teams);
+  }
+  return {
+    gradeId: grade.id,
+    gradeName: grade.name ?? "",
+    season: grade.season,
+    ladders: [...tables.entries()].map(([name, teams]) => ({ name, teams })),
+  };
 }
 
 /** One side of a PlayHQ match: its organisation and that organisation's logo. */
@@ -398,4 +410,26 @@ export async function playhqMatchSides(
       away: side(row.awayOrgId, row.awayTeamName),
     };
   });
+}
+
+/**
+ * The PlayHQ grade of each central match that came from PlayHQ, keyed by
+ * central match id (`central.matches.playhq_match_id` = `playhq.matches.id`).
+ * Matches with no PlayHQ origin are absent.
+ */
+export async function playhqGradeIdsForCentralMatches(
+  matchIds: readonly number[],
+): Promise<Map<number, string>> {
+  if (matchIds.length === 0) return new Map();
+  const rows = await centralDb
+    .select({ matchId: centralMatchesTable.matchId, gradeId: playhqMatchesTable.gradeId })
+    .from(centralMatchesTable)
+    .innerJoin(
+      playhqMatchesTable,
+      sql`${playhqMatchesTable.id}::text = ${centralMatchesTable.playhqMatchId}`,
+    )
+    .where(inArray(centralMatchesTable.matchId, [...matchIds]));
+  const out = new Map<number, string>();
+  for (const r of rows) if (r.gradeId) out.set(r.matchId, r.gradeId);
+  return out;
 }

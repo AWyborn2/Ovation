@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { and, eq, isNotNull, ne } from "drizzle-orm";
-import { db, capRegisterTable, socialDraftsTable, socialSettingsTable } from "@workspace/db";
+import { db, capRegisterTable, socialDraftsTable } from "@workspace/db";
 import type { CentralAchievement } from "@workspace/db/central-queries";
 import { GRADE_TO_CAP_CATEGORY } from "./cap-sync";
 import { draftKeys, findDraftByKey, upsertDraftByKey, type PlayerKeyRef } from "./draft-upsert";
@@ -12,7 +12,11 @@ import {
 } from "./milestone-detector";
 import { loadCentralIdentity, type CentralIdentity } from "./roundup-central";
 import { playerPath } from "./roundup";
-import { familyAllows, resolveFamilyConfig, type FamilyConfig } from "./social-families";
+import { familyAllows, type FamilyConfig } from "./social-families";
+import { loadDraftingGates, type AchievementKind } from "./posting-plan";
+
+/** Which achievement cards draft for a grade: the Posting Plan rows, or (tests) a family config. */
+export type AchievementGate = (kind: AchievementKind, grade: string) => boolean;
 
 /**
  * Achievement cards (centuries, five-fors, debuts, career milestones) for a
@@ -61,13 +65,18 @@ export type AchievementDraft = {
 export function buildAchievementDrafts(
   achievements: readonly CentralAchievement[],
   identity: Pick<CentralIdentity, "playerIdFor" | "isFillIn" | "nameFor">,
-  families: FamilyConfig,
+  allowed: FamilyConfig | AchievementGate,
   capNumberFor: (playerId: number, grade: string) => number | null = () => null,
 ): AchievementDraft[] {
   const out: AchievementDraft[] = [];
   const seen = new Set<string>();
+  const allows: AchievementGate =
+    typeof allowed === "function"
+      ? allowed
+      : (_kind, grade) => familyAllows(allowed, "achievements", grade, false);
   for (const a of achievements) {
-    if (!familyAllows(families, "achievements", a.grade, false)) continue;
+    const kind: AchievementKind = a.kind === "career" ? "milestone" : a.kind;
+    if (!allows(kind, a.grade)) continue;
     if (identity.isFillIn(a.participantId)) continue;
     const playerId = identity.playerIdFor(a.participantId);
     const ref: PlayerKeyRef = playerId ?? centralPlayerKey(a.participantId);
@@ -173,12 +182,8 @@ export async function draftCentralAchievements(
 ): Promise<CentralAchievementsResult> {
   const result: CentralAchievementsResult = { drafted: 0, skipped: 0 };
   if (matchIds.length === 0) return result;
-  const [settings] = await db
-    .select()
-    .from(socialSettingsTable)
-    .where(eq(socialSettingsTable.tenantId, tenantId));
-  const families = resolveFamilyConfig(settings ?? null);
-  if (!families.achievements.enabled) return result;
+  const gates = await loadDraftingGates(tenantId);
+  if (!gates.achievementsAny()) return result;
 
   const { centralMatchAchievements } = await import("@workspace/db/central-queries");
   // Confirmed merges fold into the keeper: a merged player's combined career
@@ -191,7 +196,7 @@ export async function draftCentralAchievements(
     TIER_THRESHOLDS,
     identity.merges,
   );
-  const drafts = buildAchievementDrafts(achievements, identity, families, (playerId, grade) => {
+  const drafts = buildAchievementDrafts(achievements, identity, gates.achievement, (playerId, grade) => {
     const category = GRADE_TO_CAP_CATEGORY[grade];
     return category ? (caps.get(`${category}|${playerId}`) ?? null) : null;
   });

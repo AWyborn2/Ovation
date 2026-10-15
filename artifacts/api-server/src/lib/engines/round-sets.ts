@@ -16,16 +16,17 @@ import {
 } from "@workspace/scorecard";
 import { loadCentralMatchDetail } from "../match-detail";
 import { inClubGradeOrder } from "../club-grade-order";
-import { familyAllows, resolveFamilyConfig } from "../social-families";
+import { draftingGates } from "../posting-plan";
+import { clubLeaderboardCarousel } from "@workspace/scorecard/club-leaderboard-input";
+import { ladderCarousel, ladderInput, type LadderCardInput } from "@workspace/scorecard/ladder-input";
 import { upsertDraftByKey } from "../draft-upsert";
 import { loadClubIdentity } from "../club-overlay";
-import { getTenantCentralClubId, tenantIsCentral } from "../tenant";
+import { getTenantCentralClubId, getTenantPlayhqOrgId, tenantIsCentral } from "../tenant";
 import {
   CLUB_TIME_ZONE,
   ROUND_WINDOW_MS,
   lastScheduledAt,
   resolveRoundSchedules,
-  roundResultsCarouselOn,
 } from "../round-schedules";
 import { formatFixtureTime } from "./match-day";
 import {
@@ -186,14 +187,12 @@ export async function generateRoundGameDayDrafts(
 ): Promise<RoundSetResult> {
   const result: RoundSetResult = { drafted: 0, refreshed: 0 };
   const settings = await loadSettings(tenantId);
-  const families = resolveFamilyConfig(settings);
+  const gates = draftingGates(settings, await tenantIsCentral(tenantId));
   const schedule = resolveRoundSchedules(settings?.roundSchedules).gameDay;
-  if (!families.matchday.enabled || schedule.mode !== "perRound") return result;
+  if (!gates.gameDayRound()) return result;
 
   const anchor = lastScheduledAt(now, schedule);
-  const rounds = await scheduledRounds(tenantId, now, anchor, (g, j) =>
-    familyAllows(families, "matchday", g, j),
-  );
+  const rounds = await scheduledRounds(tenantId, now, anchor, gates.gameDayGrade);
   for (const round of rounds) {
     const { action } = await upsertDraftByKey({
       tenantId,
@@ -218,9 +217,9 @@ export async function generateRoundTeamListDrafts(
 ): Promise<RoundSetResult> {
   const result: RoundSetResult = { drafted: 0, refreshed: 0 };
   const settings = await loadSettings(tenantId);
-  const families = resolveFamilyConfig(settings);
+  const gates = draftingGates(settings, await tenantIsCentral(tenantId));
   const schedule = resolveRoundSchedules(settings?.roundSchedules).teamLists;
-  if (!families.matchday.enabled || schedule.mode !== "perRound") return result;
+  if (!gates.teamListsRound()) return result;
 
   const anchor = lastScheduledAt(now, schedule);
   // Men's and women's teams post as their own sets (juniors apart as always).
@@ -228,7 +227,7 @@ export async function generateRoundTeamListDrafts(
     tenantId,
     now,
     anchor,
-    (g, j) => familyAllows(families, "matchday", g, j),
+    gates.teamListsGrade,
     { byAudience: true },
   );
   if (rounds.length === 0) return result;
@@ -300,25 +299,15 @@ export async function generateWeekendWrapDrafts(
 ): Promise<RoundSetResult> {
   const result: RoundSetResult = { drafted: 0, refreshed: 0 };
   const settings = await loadSettings(tenantId);
-  const families = resolveFamilyConfig(settings);
-  const schedule = resolveRoundSchedules(settings?.roundSchedules).weekendWrap;
-  if (!families.roundup.enabled || !roundResultsCarouselOn(schedule.mode)) return result;
-  if (!(await tenantIsCentral(tenantId))) return result;
+  const central = await tenantIsCentral(tenantId);
+  // The round carousel's day and hour stay on the weekend-wrap schedule
+  // (release 1); whether it drafts is the Posting Plan's Results row.
+  if (!central || !draftingGates(settings, central).resultsCarousel()) return result;
 
-  const anchor = lastScheduledAt(now, schedule);
-  const toDay = (d: Date) => new Date(d.getTime() + CLUB_OFFSET_MS).toISOString().slice(0, 10);
-  const from = toDay(new Date(anchor.getTime() - 6 * 24 * HOUR_MS));
-  const to = toDay(anchor);
-
-  const { centralClubMatches, centralWeekendWrap } = await import("@workspace/db/central-queries");
-  const clubId = await getTenantCentralClubId(tenantId);
-  const season = seasonOf(anchor);
-  const played = (await centralClubMatches(clubId, { season })).filter(
-    (m) => m.round != null && m.matchDate != null && m.matchDate >= from && m.matchDate <= to,
-  );
-  if (played.length === 0) return result;
-  const latest = played.reduce((a, b) => ((b.matchDate ?? "") > (a.matchDate ?? "") ? b : a));
-  const round = latest.round!;
+  const played = await latestPlayedRound(tenantId, settings, now);
+  if (!played) return result;
+  const { clubId, season, round } = played;
+  const { centralWeekendWrap } = await import("@workspace/db/central-queries");
 
   const { merges } = await loadClubIdentity(tenantId);
   const wrap = await centralWeekendWrap(clubId, season, round, merges);
@@ -358,6 +347,159 @@ export async function generateWeekendWrapDrafts(
       })),
       results,
     },
+    appPath: "/fixtures",
+    sourceImportedAt: now,
+  });
+  if (action === "inserted") result.drafted++;
+  else if (action === "refreshed") result.refreshed++;
+  return result;
+}
+
+/**
+ * The round the weekend-wrap cadence posts: the latest round the club played
+ * in the six days before the weekend-wrap anchor (its day and hour), with that
+ * round's matches. Central clubs only. Shared by the results, club
+ * leaderboards and ladders round carousels (plan 2026-10-07-001 KTD9).
+ */
+export async function latestPlayedRound(
+  tenantId: number,
+  settings: SocialSettingsRow | null,
+  now: Date,
+): Promise<{
+  clubId: number;
+  season: number;
+  round: number;
+  matches: { id: number; grade: string; matchDate: string | null; abandoned: boolean }[];
+} | null> {
+  const schedule = resolveRoundSchedules(settings?.roundSchedules).weekendWrap;
+  const anchor = lastScheduledAt(now, schedule);
+  const toDay = (d: Date) => new Date(d.getTime() + CLUB_OFFSET_MS).toISOString().slice(0, 10);
+  const from = toDay(new Date(anchor.getTime() - 6 * 24 * HOUR_MS));
+  const to = toDay(anchor);
+  const { centralClubMatches } = await import("@workspace/db/central-queries");
+  const clubId = await getTenantCentralClubId(tenantId);
+  const season = seasonOf(anchor);
+  const all = await centralClubMatches(clubId, { season });
+  const played = all.filter(
+    (m) => m.round != null && m.matchDate != null && m.matchDate >= from && m.matchDate <= to,
+  );
+  if (played.length === 0) return null;
+  const latest = played.reduce((a, b) => ((b.matchDate ?? "") > (a.matchDate ?? "") ? b : a));
+  const round = latest.round!;
+  return { clubId, season, round, matches: played.filter((m) => m.round === round) };
+}
+
+/**
+ * Club leaderboards as one round carousel (Posting Plan U4): one card per
+ * category (runs, wickets, catches, dismissals), each listing every senior
+ * grade's season leader. Drafted on the weekend-wrap cadence; refreshed while
+ * unposted; nothing when no category has a leader yet.
+ */
+export async function generateClubLeaderboardDrafts(
+  tenantId: number,
+  now: Date = new Date(),
+): Promise<RoundSetResult> {
+  const result: RoundSetResult = { drafted: 0, refreshed: 0 };
+  const settings = await loadSettings(tenantId);
+  const central = await tenantIsCentral(tenantId);
+  if (!central || !draftingGates(settings, central).clubLeaderboards()) return result;
+  const played = await latestPlayedRound(tenantId, settings, now);
+  if (!played) return result;
+  const { clubId, season, round } = played;
+
+  const { centralClubTotalsBySeason } = await import("@workspace/db/central-queries");
+  const { merges } = await loadClubIdentity(tenantId);
+  const grades = await centralClubTotalsBySeason(clubId, season, merges);
+  const cardInput = clubLeaderboardCarousel(season, grades);
+  if (!cardInput) return result;
+
+  const { action } = await upsertDraftByKey({
+    tenantId,
+    engine: "clubleaderboard-round",
+    family: "roundup",
+    sourceKey: `clubleaderboard-round:${season}:${round}`,
+    cardInput: { ...cardInput },
+    appPath: "/records",
+    sourceImportedAt: now,
+  });
+  if (action === "inserted") result.drafted++;
+  else if (action === "refreshed") result.refreshed++;
+  return result;
+}
+
+/**
+ * Ladders as one round carousel (Posting Plan U5): one card per published
+ * PlayHQ ladder table for each senior grade the club played this round, in
+ * the club's grade order. A grade's ladder is used only once the club's
+ * games-played count on it has caught up with its finished matches this
+ * season (KTD7), so a scrape taken before PlayHQ recalculated never posts
+ * last week's standings. Grades with no published ladder are skipped.
+ */
+export async function generateLadderDrafts(
+  tenantId: number,
+  now: Date = new Date(),
+): Promise<RoundSetResult> {
+  const result: RoundSetResult = { drafted: 0, refreshed: 0 };
+  const settings = await loadSettings(tenantId);
+  const central = await tenantIsCentral(tenantId);
+  const gates = draftingGates(settings, central);
+  if (!central || !gates.ladders()) return result;
+  const orgId = await getTenantPlayhqOrgId(tenantId);
+  if (!orgId) return result;
+  const played = await latestPlayedRound(tenantId, settings, now);
+  if (!played) return result;
+  const { clubId, season, round } = played;
+
+  const { centralClubMatches, playhqGradeIdsForCentralMatches, playhqGradeLadderUncached } =
+    await import("@workspace/db/central-queries");
+  const seasonMatches = await centralClubMatches(clubId, { season });
+  const gradeIdOf = await playhqGradeIdsForCentralMatches(seasonMatches.map((m) => m.id));
+  const roundDate = played.matches.reduce((d, m) => ((m.matchDate ?? "") > d ? m.matchDate! : d), "");
+
+  // One entry per PlayHQ grade the club played this round.
+  const grades = new Map<string, { gradeLabel: string; gradeId: string }>();
+  for (const m of played.matches) {
+    const gradeId = gradeIdOf.get(m.id);
+    if (!gradeId || m.abandoned || !gates.ladderGrade(m.grade)) continue;
+    grades.set(gradeId, { gradeLabel: m.grade, gradeId });
+  }
+  const finished = (gradeId: string) =>
+    seasonMatches.filter(
+      (m) =>
+        gradeIdOf.get(m.id) === gradeId &&
+        !m.abandoned &&
+        m.result != null &&
+        (m.matchDate ?? "") <= roundDate,
+    ).length;
+
+  const slides: LadderCardInput[] = [];
+  for (const g of await inClubGradeOrder(tenantId, [...grades.values()])) {
+    const ladder = await playhqGradeLadderUncached(g.gradeId, orgId);
+    if (!ladder) continue;
+    const need = finished(g.gradeId);
+    const several = ladder.ladders.length > 1;
+    for (const table of ladder.ladders) {
+      const club = table.teams.find((t) => t.isClub);
+      if (!club || (club.played ?? 0) < need) continue;
+      slides.push(
+        ladderInput({
+          grade: g.gradeLabel,
+          tableName: several ? table.name : null,
+          asOfLabel: `AFTER ROUND ${round}`,
+          teams: table.teams,
+        }),
+      );
+    }
+  }
+  const cardInput = ladderCarousel(slides);
+  if (!cardInput) return result;
+
+  const { action } = await upsertDraftByKey({
+    tenantId,
+    engine: "ladder-round",
+    family: "roundup",
+    sourceKey: `ladder-round:${season}:${round}`,
+    cardInput: { ...cardInput },
     appPath: "/fixtures",
     sourceImportedAt: now,
   });

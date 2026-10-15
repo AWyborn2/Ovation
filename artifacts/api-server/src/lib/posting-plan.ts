@@ -51,6 +51,121 @@ export async function loadPostingPlan(
   return { settings: settings ?? null, plan: resolvePostingPlan(settings ?? null, central) };
 }
 
+// ---------------------------------------------------------------------------
+// Drafting gates (U3)
+
+export type AchievementKind = "milestone" | "century" | "fiveFor" | "debut";
+
+/**
+ * Every drafting decision the engines make. A club that has never saved a
+ * plan keeps today's exact rules (the legacy branch below, which is the
+ * code that lived in each engine before); a saved plan is read row by row.
+ * Keeping the two apart makes carry-over exact for every legacy settings
+ * combination, including ones the derived plan can only approximate.
+ */
+export interface DraftingGates {
+  /** Results: may per-match result cards draft at all (drafter entry, stumps, junior manual)? */
+  resultsAny(): boolean;
+  /** Results: one card per match for this grade. */
+  resultsMatch(grade: string | null, junior: boolean): boolean;
+  /** Results: the central sweep drafts per-match cards (not carousel-only). */
+  resultsPerMatchCentral(): boolean;
+  /** Results: the round carousel (weekend wrap). */
+  resultsCarousel(): boolean;
+  /** Any achievement row on (early exit). */
+  achievementsAny(): boolean;
+  achievement(kind: AchievementKind, grade: string | null): boolean;
+  gradeLeadersAny(): boolean;
+  gradeLeaders(grade: string): boolean;
+  gameDayIndividual(): boolean;
+  gameDayRound(): boolean;
+  gameDayGrade(grade: string | null, junior: boolean): boolean;
+  teamListsIndividual(): boolean;
+  teamListsRound(): boolean;
+  teamListsGrade(grade: string | null, junior: boolean): boolean;
+  clubLeaderboards(): boolean;
+  ladders(): boolean;
+  ladderGrade(grade: string): boolean;
+}
+
+const ACHIEVEMENT_ROW: Record<AchievementKind, PostingRowId> = {
+  milestone: "milestones",
+  century: "feats",
+  fiveFor: "feats",
+  debut: "debuts",
+};
+
+export function draftingGates(settings: SocialSettingsRow | null, central: boolean): DraftingGates {
+  if (settings?.postingPlan) return planGates(resolvePostingPlan(settings, central));
+  return legacyGates(settings);
+}
+
+export async function loadDraftingGates(tenantId: number): Promise<DraftingGates> {
+  const [settings] = await db
+    .select()
+    .from(socialSettingsTable)
+    .where(eq(socialSettingsTable.tenantId, tenantId));
+  if (!settings?.postingPlan) return legacyGates(settings ?? null);
+  return planGates(resolvePostingPlan(settings, await tenantIsCentral(tenantId)));
+}
+
+/** Today's rules, verbatim from the engines (familyAllows + round-schedule modes). */
+function legacyGates(settings: SocialSettingsRow | null): DraftingGates {
+  const f = resolveFamilyConfig(settings);
+  const s = resolveRoundSchedules(settings?.roundSchedules);
+  const allows = (fam: keyof FamilyConfig, grade: string | null, junior: boolean) => {
+    const setting = f[fam];
+    if (!setting.enabled) return false;
+    const explicit = setting.grades[grade ?? ""];
+    return explicit !== undefined ? explicit : !junior;
+  };
+  return {
+    resultsAny: () => f.results.enabled,
+    resultsMatch: (g, j) => settings != null && allows("results", g, j),
+    resultsPerMatchCentral: () => s.weekendWrap.mode !== "perRound",
+    resultsCarousel: () =>
+      f.roundup.enabled && (s.weekendWrap.mode === "perRound" || s.weekendWrap.mode === "both"),
+    achievementsAny: () => f.achievements.enabled,
+    achievement: (_k, g) => allows("achievements", g, false),
+    gradeLeadersAny: () => f.roundup.enabled,
+    gradeLeaders: (g) => allows("roundup", g, false),
+    gameDayIndividual: () => f.matchday.enabled && s.gameDay.mode === "perFixture",
+    gameDayRound: () => f.matchday.enabled && s.gameDay.mode === "perRound",
+    gameDayGrade: (g, j) => allows("matchday", g, j),
+    teamListsIndividual: () => f.matchday.enabled && s.teamLists.mode === "perFixture",
+    teamListsRound: () => f.matchday.enabled && s.teamLists.mode === "perRound",
+    teamListsGrade: (g, j) => allows("matchday", g, j),
+    clubLeaderboards: () => false,
+    ladders: () => false,
+    ladderGrade: () => false,
+  };
+}
+
+function planGates(plan: PostingPlan): DraftingGates {
+  const r = plan.rows;
+  return {
+    resultsAny: () => rowIndividual(r.results),
+    resultsMatch: (g, j) => rowIndividual(r.results) && rowAllows(r.results, g, j),
+    resultsPerMatchCentral: () => rowIndividual(r.results),
+    resultsCarousel: () => rowRound(r.results),
+    achievementsAny: () => r.milestones.enabled || r.feats.enabled || r.debuts.enabled,
+    // A native career crossing has no grade: the row's switch decides.
+    achievement: (k, g) =>
+      g == null ? r[ACHIEVEMENT_ROW[k]].enabled : rowAllows(r[ACHIEVEMENT_ROW[k]], g, false),
+    gradeLeadersAny: () => r.gradeLeaders.enabled,
+    gradeLeaders: (g) => rowAllows(r.gradeLeaders, g, false),
+    gameDayIndividual: () => rowIndividual(r.gameDay),
+    gameDayRound: () => rowRound(r.gameDay),
+    gameDayGrade: (g, j) => rowAllows(r.gameDay, g, j),
+    teamListsIndividual: () => rowIndividual(r.teamLists),
+    teamListsRound: () => rowRound(r.teamLists),
+    teamListsGrade: (g, j) => rowAllows(r.teamLists, g, j),
+    clubLeaderboards: () => rowRound(r.clubLeaderboards),
+    ladders: () => rowRound(r.ladders),
+    ladderGrade: (g) => rowAllows(r.ladders, g, false),
+  };
+}
+
 /** Should `row` draft a card for this grade? */
 export function planAllows(
   plan: PostingPlan,

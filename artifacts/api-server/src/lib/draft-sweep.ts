@@ -20,9 +20,10 @@ import {
   generateRoundGameDayDrafts,
   generateRoundTeamListDrafts,
   generateWeekendWrapDrafts,
+  generateClubLeaderboardDrafts,
+  generateLadderDrafts,
 } from "./engines/round-sets";
 import { ensureSettings } from "./social-cards-helpers";
-import { familyAllows, resolveFamilyConfig } from "./social-families";
 import { generateRoundUpDrafts } from "./roundup";
 import { tenantIsCentral, getTenantCentralClubId, NATIVE_STATS_TENANT_ID } from "./tenant";
 import { loadAutoPost, persistDueDrafts } from "./effective-draft-state";
@@ -33,7 +34,7 @@ import { checkConnectionHealth } from "./publishing/connection-health";
 import { fillMissingDraftPhotos } from "./draft-enrich";
 import { draftCentralAchievements } from "./central-achievements";
 import { syncDebutCaps } from "./debut-caps";
-import { matchResultCardsOn, resolveRoundSchedules } from "./round-schedules";
+import { loadDraftingGates, type DraftingGates } from "./posting-plan";
 import { runAvailabilitySchedule } from "./availability-schedule";
 import { autoSeedSquadIfEmpty } from "./squad-season-seed";
 import { runPendingLayoutChecks } from "./draft-render";
@@ -178,7 +179,12 @@ export async function runDraftSweep(
   // Round sets on the club's schedule. The weekend wrap reads results, so it
   // only runs on the scheduled sweep, not on a fixtures refresh.
   const roundEngines = [generateRoundGameDayDrafts, generateRoundTeamListDrafts];
-  if (scope.kind === "scheduled") roundEngines.push(generateWeekendWrapDrafts);
+  if (scope.kind === "scheduled")
+    roundEngines.push(
+      generateWeekendWrapDrafts,
+      generateClubLeaderboardDrafts,
+      generateLadderDrafts,
+    );
   for (const engine of roundEngines) {
     try {
       summary.roundSets += (await engine(tenantId, now)).drafted;
@@ -354,9 +360,8 @@ export async function sweepCentralMatches(
 
   // A club posting its results as a round carousel only ("perRound") gets no per-match
   // result cards; the carousel engine drafts the round instead.
-  const perMatch = matchResultCardsOn(
-    resolveRoundSchedules(settings.roundSchedules).weekendWrap.mode,
-  );
+  const gates = await loadDraftingGates(tenantId);
+  const perMatch = gates.resultsPerMatchCentral();
   const result = perMatch
     ? await generateMatchSummaryDrafts(
         tenantId,
@@ -382,7 +387,7 @@ export async function sweepCentralMatches(
   } catch (err) {
     logger.error({ err, tenantId }, "central achievement drafts failed");
   }
-  await draftCentralRoundUps(tenantId, settings, done, logger);
+  await draftCentralRoundUps(tenantId, gates, done, logger);
   // Never past a recent match still in progress: re-reading from it is harmless (drafting is
   // keyed, unchanged cards are no-ops) and drafts its result when it completes. Matches outside
   // the recent window never hold it, so one that is never finished can't stall the sweep.
@@ -399,18 +404,17 @@ export async function sweepCentralMatches(
  */
 async function draftCentralRoundUps(
   tenantId: number,
-  settings: Parameters<typeof resolveFamilyConfig>[0],
+  gates: DraftingGates,
   recent: { grade: string; season: number | null }[],
   logger: Logger,
 ): Promise<void> {
-  const families = resolveFamilyConfig(settings);
-  if (!families.roundup.enabled) return;
+  if (!gates.gradeLeadersAny()) return;
   const pairs = new Map<string, { grade: string; season: number }>();
   for (const m of recent) {
     if (m.season != null) pairs.set(`${m.season}|${m.grade}`, { grade: m.grade, season: m.season });
   }
   for (const { grade, season } of pairs.values()) {
-    if (!familyAllows(families, "roundup", grade, false)) continue;
+    if (!gates.gradeLeaders(grade)) continue;
     try {
       await generateRoundUpDrafts(tenantId, grade, season, null);
     } catch (err) {

@@ -74,7 +74,8 @@ describe("derivePostingPlan", () => {
       }),
     ).rows.results;
     expect(rowRound(r)).toBe(false);
-    expect(rowIndividual(r)).toBe(false);
+    // The native import path never read the mode, so per-match cards continue.
+    expect(rowIndividual(r)).toBe(true);
   });
 
   it("keeps a results grade override for per-match posts", () => {

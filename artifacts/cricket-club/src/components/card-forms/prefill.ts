@@ -33,6 +33,7 @@ import type {
   TeamListPlayer as TeamListPlayerDto,
 } from "@workspace/api-client-react";
 import { gradeTile, groupOfGrade, isJuniorGradeLabel } from "@workspace/scorecard";
+import { clubLeaderboardInput } from "@workspace/scorecard/club-leaderboard-input";
 import type { CardFormState } from "./logic";
 
 // --------------------------------------------------------------------------
@@ -389,13 +390,6 @@ export function ladderRowsToState(
   };
 }
 
-const CLUB_LEADER_COPY: Record<ClubLeaderboardCategory, { title: string; subtitle: string }> = {
-  Runs: { title: "CLUB RUN SCORERS", subtitle: "Leading run scorer in each grade" },
-  Wickets: { title: "CLUB WICKET TAKERS", subtitle: "Leading wicket taker in each grade" },
-  Catches: { title: "CLUB CATCHERS", subtitle: "Most catches in each grade" },
-  Dismissals: { title: "SAFE HANDS", subtitle: "Most catches and stumpings in each grade" },
-};
-
 export function clubSeasonTotalsToState(
   seasonYear: number,
   category: ClubLeaderboardCategory,
@@ -407,27 +401,9 @@ export function clubSeasonTotalsToState(
   category: ClubLeaderboardCategory;
   leaders: ClubLeaderboardLeader[];
 } {
-  const leaders: ClubLeaderboardLeader[] = grades.map((g) => {
-    const leader =
-      category === "Runs"
-        ? g.topRunScorer
-        : category === "Wickets"
-          ? g.topWicketTaker
-          : category === "Catches"
-            ? (g.topCatches ?? null)
-            : (g.topDismissals ?? null);
-    return {
-      gradeLabel: g.gradeLabel.toUpperCase(),
-      playerName: leader?.playerName ?? "",
-      value: leader != null ? String(leader.value) : "",
-    };
-  });
-  return {
-    ...CLUB_LEADER_COPY[category],
-    season: seasonLabelFromYear(seasonYear),
-    category,
-    leaders,
-  };
+  // Shared with the Posting Plan's leaderboard carousel, so both build the same card.
+  const { kind: _kind, ...state } = clubLeaderboardInput(seasonYear, category, grades);
+  return state;
 }
 
 const WRAP_OUTCOME: Record<string, WeekendWrapMatch["outcome"]> = {

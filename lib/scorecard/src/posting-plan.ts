@@ -155,7 +155,9 @@ const row = (
  */
 export function derivePostingPlan(input: LegacyPostingInput): PostingPlan {
   const { families: f, modes, central } = input;
-  const perMatch = f.results.enabled && modes.weekendWrap !== "perRound";
+  // Carousel-only mode stops per-match cards on the central sweep; a native
+  // club's import path never read the mode, so it keeps them.
+  const perMatch = f.results.enabled && (!central || modes.weekendWrap !== "perRound");
   const carousel =
     central &&
     f.roundup.enabled &&
