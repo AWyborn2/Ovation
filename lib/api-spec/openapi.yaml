@@ -7749,6 +7749,8 @@ paths:
           description: Invalid list
         "404":
           description: Fixture not found
+        "409":
+          description: The list was finalised in the Selection Hub; re-open it there to change it
 
   /juniors/matches:
     get:
@@ -14530,8 +14532,15 @@ components:
 
     SelectionFixture:
       type: object
-      required: [id, grade, opponentName, startAt, venue, isHome, roundLabel]
+      required: [kind, id, grade, opponentName, startAt, venue, isHome, roundLabel]
       properties:
+        kind:
+          type: string
+          enum: [senior, junior]
+          description: |
+            `senior`: a `fixtures` row. `junior`: a junior fixture from the junior
+            PlayHQ sync, whose `grade` is the club's junior team ("Halls Head
+            Year 7 Gold") and which publishes to the junior team list.
         id:
           type: integer
         grade:
@@ -14870,6 +14879,13 @@ components:
             failed:
               type: integer
               description: Members every delivery failed for; the next finalise tries them again
+        unlisted:
+          type: array
+          items:
+            type: string
+          description: |
+            Junior side only: players left off the published junior team list
+            because they match none of the club's PlayHQ junior participants.
 
     SelectionRemindBody:
       type: object
@@ -21727,7 +21743,7 @@ components:
         isPublished: { type: boolean }
         source:
           type: string
-          enum: [playhq, admin]
+          enum: [playhq, admin, selection]
           description: Who wrote the list; an admin's list is never overwritten by the sync
         updatedAt: { type: string, format: date-time }
 

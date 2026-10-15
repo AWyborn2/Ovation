@@ -830,9 +830,13 @@ export function teamListAction(
     players: readonly JuniorTeamListPlayer[];
   } | null,
   players: readonly JuniorTeamListPlayer[],
+  window: "upcoming" | "played" | null = "upcoming",
 ): "write" | "keepAdmin" | "unchanged" {
   if (players.length === 0) return "unchanged";
   if (!existing) return "write";
+  // A side finalised in the Selection Hub stands until the match; then PlayHQ's
+  // record of who played replaces it (as for seniors). An admin's list always stands.
+  if (existing.source === "selection" && window === "played") return "write";
   if (existing.source !== "playhq") return "keepAdmin";
   if (existing.isPublished && sameJuniorTeamList(existing.players, players)) return "unchanged";
   return "write";

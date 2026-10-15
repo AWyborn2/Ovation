@@ -295,6 +295,24 @@ router.put(
       return;
     }
     const players = checked.players;
+    // A side finalised in the Selection Hub is changed there, so the Hub's side
+    // and the published list never diverge (as for seniors).
+    const [existing] = await db
+      .select({ source: juniorTeamListsTable.source })
+      .from(juniorTeamListsTable)
+      .where(
+        and(
+          eq(juniorTeamListsTable.tenantId, tenantId),
+          eq(juniorTeamListsTable.juniorFixtureId, fixture.id),
+        ),
+      );
+    if (existing?.source === "selection") {
+      res.status(409).json({
+        error:
+          "This team was picked in the Selection Hub. Re-open it there to make changes, so the side and the published list stay the same.",
+      });
+      return;
+    }
     // One list per fixture: upsert on the (tenant, fixture) unique index. An admin's
     // save makes the list theirs, so the PlayHQ sync stops updating it (KTD9).
     await db

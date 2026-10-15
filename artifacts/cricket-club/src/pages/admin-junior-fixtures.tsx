@@ -167,7 +167,9 @@ export function JuniorTeamListEditor({ fixtureId }: { fixtureId: number }) {
             ? "Copied from the side named in PlayHQ. Saving makes it yours: the sync then leaves it alone."
             : data.teamList?.source === "admin"
               ? "Saved by an admin. The PlayHQ sync leaves this list alone."
-              : "No team named yet. The sync copies the side once it is named in PlayHQ."}
+              : data.teamList?.source === "selection"
+                ? "Picked in the Selection Hub. Re-open it there to make changes; after the match PlayHQ's record of who played replaces it."
+                : "No team named yet. The sync copies the side once it is named in PlayHQ."}
           {numbersOn && ` Shirt numbers are for the ${seasonLabel(data.season)} season.`}
         </p>
         <div className="flex items-center gap-2 text-sm">

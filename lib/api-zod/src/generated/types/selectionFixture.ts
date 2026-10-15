@@ -5,8 +5,14 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { SelectionFixtureKind } from './selectionFixtureKind';
 
 export interface SelectionFixture {
+  /** `senior`: a `fixtures` row. `junior`: a junior fixture from the junior
+  PlayHQ sync, whose `grade` is the club's junior team ("Halls Head
+  Year 7 Gold") and which publishes to the junior team list.
+   */
+  kind: SelectionFixtureKind;
   id: number;
   grade: string;
   opponentName: string;
