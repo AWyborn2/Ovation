@@ -50,6 +50,7 @@ export function TeamCard({
   onRole,
   onFinalise,
   onReopen,
+  onPlayhqSync,
 }: {
   side: SelectionSide;
   /** Junior section: players' parents are notified. */
@@ -62,8 +63,11 @@ export function TeamCard({
   onRole: (role: "captain" | "keeper", memberId: number | null) => void;
   onFinalise: () => void;
   onReopen: () => void;
+  /** Replace the draft with the side PlayHQ has published (`side.playhqPlayers`). */
+  onPlayhqSync: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const availability = useAvailability();
   const label = sideLabel(side);
   const final = side.state === "final";
@@ -252,8 +256,9 @@ export function TeamCard({
               Finalise {label} with {plural(w.filled, "player")}
               {w.twelfth ? " and a 12th" : ""}?{" "}
               {headsUp.length > 0 && <b>Heads up: {headsUp.join(", ")}. </b>}
-              Each player{junior ? "'s parent" : ""} gets an SMS and email with the match details,
-              and the side is published as the team list.
+              {availability
+                ? `Each player${junior ? "'s parent" : ""} gets an SMS and email with the match details, and the side is published as the team list.`
+                : "The side is published as the team list."}
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -264,22 +269,58 @@ export function TeamCard({
                   onFinalise();
                 }}
               >
-                Finalise and notify
+                {availability ? "Finalise and notify" : "Finalise"}
               </Button>
               <Button variant="outline" className="flex-1" onClick={() => setConfirming(false)}>
                 Keep editing
               </Button>
             </div>
           </>
-        ) : side.canFinalise ? (
-          <Button
-            className="w-full"
-            disabled={busy || picked.length === 0}
-            onClick={() => setConfirming(true)}
-          >
-            Finalise {label}
-          </Button>
-        ) : null}
+        ) : syncing ? (
+          <>
+            <div className="rounded-md bg-muted px-2.5 py-2 text-[12.5px]" role="status">
+              Replace this draft with the {plural(side.playhqPlayers ?? 0, "player")} named in
+              PlayHQ? Anyone not on your squad list, or already in another side, is left as a gap.
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                className="flex-1"
+                disabled={busy}
+                onClick={() => {
+                  setSyncing(false);
+                  onPlayhqSync();
+                }}
+              >
+                Use PlayHQ team
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setSyncing(false)}>
+                Keep this draft
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            {side.playhqPlayers != null && (
+              <Button
+                variant="outline"
+                className="w-full"
+                disabled={busy}
+                onClick={() => setSyncing(true)}
+              >
+                Use PlayHQ team ({side.playhqPlayers})
+              </Button>
+            )}
+            {side.canFinalise && (
+              <Button
+                className="w-full"
+                disabled={busy || picked.length === 0}
+                onClick={() => setConfirming(true)}
+              >
+                Finalise {label}
+              </Button>
+            )}
+          </>
+        )}
       </div>
     </article>
   );

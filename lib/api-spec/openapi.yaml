@@ -2876,6 +2876,49 @@ paths:
         "409":
           description: The side is not finalised
 
+  /selection/{id}/playhq-sync:
+    post:
+      operationId: syncSelectionFromPlayhq
+      tags: [selection]
+      summary: Replace a draft side with the side PlayHQ has published (admin or captain)
+      description: |
+        Fills the draft with the side named in PlayHQ for the fixture (senior or
+        junior, as synced from PlayHQ). Each player is matched to a squad member
+        as a draft is seeded; anyone matched to nobody, or already in another
+        side of the round, is left as a named gap. Captain and keeper follow
+        PlayHQ's roles. The body carries the side's version as loaded. Refused
+        for a finalised side, a stale version or a started match, and 404 when
+        PlayHQ has published no side for the fixture.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelectionFinaliseBody"
+      responses:
+        "200":
+          description: The side, now PlayHQ's
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelectionSide"
+        "400":
+          description: No version in the body
+        "401":
+          description: Not signed in as this club's admin or captain
+        "403":
+          description: The caller may not edit this side
+        "404":
+          description: Side not found, or PlayHQ has published no side for it
+        "409":
+          description: Finalised, changed since the caller loaded it, or the match has started
+
   /selection/{id}/reopen:
     post:
       operationId: reopenSelection
@@ -14599,6 +14642,7 @@ components:
           canEdit,
           canFinalise,
           readOnlyReason,
+          playhqPlayers,
           warnings,
         ]
       properties:
@@ -14639,6 +14683,12 @@ components:
         canFinalise:
           type: boolean
           description: The caller may finalise or re-open the side
+        playhqPlayers:
+          type: integer
+          nullable: true
+          description: |
+            Players in the side PlayHQ has published for this fixture (synced
+            from PlayHQ), or null when it has none yet. The Hub offers to use it.
         readOnlyReason:
           type: ["string", "null"]
           description: Why the side is read-only to the caller; null when they can edit it

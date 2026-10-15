@@ -7,6 +7,8 @@ import {
   PrintTeamSheetBody,
   PrintTeamSheetParams,
   ReopenSelectionParams,
+  SyncSelectionFromPlayhqBody,
+  SyncSelectionFromPlayhqParams,
   RemindSelectionNonRespondersBody,
   SaveSelectionBoardBody,
 } from "@workspace/api-zod";
@@ -20,6 +22,7 @@ import {
   loadCurrentRound,
   reopenSelection,
   saveBoard,
+  syncSideFromPlayhq,
 } from "../lib/selection-board";
 import { loadAvailabilitySettings, runReminder } from "../lib/availability-schedule";
 import {
@@ -166,6 +169,36 @@ router.post("/selection/:id/team-sheet", requireAdminOrCaptain, async (req, res)
     if (!refuse(res, err)) throw err;
   }
 });
+
+router.post(
+  "/selection/:id/playhq-sync",
+  requireAdminOrCaptain,
+  async (req, res): Promise<void> => {
+    const params = SyncSelectionFromPlayhqParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: "Invalid side id" });
+      return;
+    }
+    const body = SyncSelectionFromPlayhqBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: "Send the side's version to sync it." });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const actor = selectionActorOf(req);
+    try {
+      const result = await syncSideFromPlayhq(tenantId, actor, params.data.id, body.data.version);
+      req.log?.info(
+        { tenantId, selectionId: params.data.id, actorKind: actor.kind, matched: result.matched },
+        "selection synced from PlayHQ",
+      );
+      const board = await buildBoard(tenantId, actor, result.section);
+      res.json(board.selections.find((s) => s.id === params.data.id));
+    } catch (err) {
+      if (!refuse(res, err)) throw err;
+    }
+  },
+);
 
 router.post("/selection/:id/reopen", requireAdminOrCaptain, async (req, res): Promise<void> => {
   const params = ReopenSelectionParams.safeParse(req.params);

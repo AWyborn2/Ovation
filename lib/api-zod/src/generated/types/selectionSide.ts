@@ -36,6 +36,10 @@ export interface SelectionSide {
   canEdit: boolean;
   /** The caller may finalise or re-open the side */
   canFinalise: boolean;
+  /** Players in the side PlayHQ has published for this fixture (synced
+  from PlayHQ), or null when it has none yet. The Hub offers to use it.
+   */
+  playhqPlayers: number | null;
   /**
      * Why the side is read-only to the caller; null when they can edit it
      * @nullable

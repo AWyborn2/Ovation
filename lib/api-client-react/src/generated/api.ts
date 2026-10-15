@@ -8954,6 +8954,86 @@ export const usePrintTeamSheet = <TError = ErrorType<void>,
       return useMutation(getPrintTeamSheetMutationOptions(options));
     }
 
+export const getSyncSelectionFromPlayhqUrl = (id: number,) => {
+
+
+
+
+  return `/api/selection/${id}/playhq-sync`
+}
+
+/**
+ * Fills the draft with the side named in PlayHQ for the fixture (senior or
+junior, as synced from PlayHQ). Each player is matched to a squad member
+as a draft is seeded; anyone matched to nobody, or already in another
+side of the round, is left as a named gap. Captain and keeper follow
+PlayHQ's roles. The body carries the side's version as loaded. Refused
+for a finalised side, a stale version or a started match, and 404 when
+PlayHQ has published no side for the fixture.
+
+ * @summary Replace a draft side with the side PlayHQ has published (admin or captain)
+ */
+export const syncSelectionFromPlayhq = async (id: number,
+    selectionFinaliseBody: SelectionFinaliseBody, options?: RequestInit): Promise<SelectionSide> => {
+
+  return customFetch<SelectionSide>(getSyncSelectionFromPlayhqUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      selectionFinaliseBody,)
+  }
+);}
+
+
+
+
+export const getSyncSelectionFromPlayhqMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncSelectionFromPlayhq>>, TError,{id: number;data: BodyType<SelectionFinaliseBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof syncSelectionFromPlayhq>>, TError,{id: number;data: BodyType<SelectionFinaliseBody>}, TContext> => {
+
+const mutationKey = ['syncSelectionFromPlayhq'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncSelectionFromPlayhq>>, {id: number;data: BodyType<SelectionFinaliseBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  syncSelectionFromPlayhq(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SyncSelectionFromPlayhqMutationResult = NonNullable<Awaited<ReturnType<typeof syncSelectionFromPlayhq>>>
+    export type SyncSelectionFromPlayhqMutationBody = BodyType<SelectionFinaliseBody>
+    export type SyncSelectionFromPlayhqMutationError = ErrorType<void>
+
+    /**
+ * @summary Replace a draft side with the side PlayHQ has published (admin or captain)
+ */
+export const useSyncSelectionFromPlayhq = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncSelectionFromPlayhq>>, TError,{id: number;data: BodyType<SelectionFinaliseBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof syncSelectionFromPlayhq>>,
+        TError,
+        {id: number;data: BodyType<SelectionFinaliseBody>},
+        TContext
+      > => {
+      return useMutation(getSyncSelectionFromPlayhqMutationOptions(options));
+    }
+
 export const getReopenSelectionUrl = (id: number,) => {
 
 

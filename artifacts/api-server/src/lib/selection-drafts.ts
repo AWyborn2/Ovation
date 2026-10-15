@@ -13,6 +13,7 @@ import {
   teamListsTable,
   type AvailabilityRoundRow,
   type AvailabilityStatus,
+  type JuniorTeamListPlayer,
   type SelectionSlot,
   type TeamListPlayer,
 } from "@workspace/db";
@@ -318,6 +319,42 @@ export async function buildRoundDrafts(
 }
 
 /**
+ * A junior team list (PlayHQ participant ids) as the names the member matcher
+ * knows: a participant matched to a junior squad member (`juniorMemberResolver`)
+ * takes that member's name; anyone else keeps their PlayHQ name, so they read
+ * as a gap "not on register".
+ */
+export async function juniorListAsNames(
+  reader: Parameters<typeof loadJuniorIdentity>[0],
+  tenantId: number,
+  members: readonly Pick<
+    MemberIdentity & { playhqProfileId: string | null },
+    "firstName" | "lastName" | "preferredName" | "playhqProfileId"
+  >[],
+): Promise<(players: readonly JuniorTeamListPlayer[]) => TeamListPlayer[]> {
+  const { participants, merges } = await loadJuniorIdentity(reader, tenantId);
+  const resolve = juniorMemberResolver(participants, merges);
+  const memberOf = new Map<string, (typeof members)[number]>();
+  for (const m of members) {
+    const id = resolve(m);
+    if (id && !memberOf.has(id)) memberOf.set(id, m);
+  }
+  const nameOf = new Map(
+    participants.map((p) => [p.participantId.toLowerCase(), p.displayName ?? ""]),
+  );
+  return (players) =>
+    players.map((p) => {
+      const id = p.participantId.toLowerCase();
+      const m = memberOf.get(id);
+      return {
+        order: p.order,
+        displayName: m ? memberDisplayName(m) : nameOf.get(id) || "Unknown",
+        ...(p.role ? { role: p.role } : {}),
+      };
+    });
+}
+
+/**
  * Junior sides: one per `junior_fixtures` row (junior PlayHQ sync) in the
  * round's window. A club can field several teams in one age group, so each
  * side is seeded from the same team's most recent junior team list. Those
@@ -415,16 +452,7 @@ async function draftJuniorSides(
       .from(squadMembersTable)
       .where(eq(squadMembersTable.tenantId, tenantId))
   ).filter((m) => m.section === "junior");
-  const { participants, merges } = await loadJuniorIdentity(db, tenantId);
-  const resolve = juniorMemberResolver(participants, merges);
-  const memberOfParticipant = new Map<string, (typeof members)[number]>();
-  for (const m of members) {
-    const id = resolve(m);
-    if (id && !memberOfParticipant.has(id)) memberOfParticipant.set(id, m);
-  }
-  const nameOfParticipant = new Map(
-    participants.map((p) => [p.participantId.toLowerCase(), p.displayName ?? ""]),
-  );
+  const asNames = await juniorListAsNames(db, tenantId, members);
   const responses = await loadResponses(tenantId, round.id, window.from, window.to);
 
   const seededTeams = new Set<string>();
@@ -436,18 +464,7 @@ async function draftJuniorSides(
       summary.skipped++;
       continue;
     }
-    // The junior list as names the member matcher knows; an unknown participant
-    // keeps their PlayHQ name and becomes a gap "not on register".
-    const lastList: TeamListPlayer[] | null =
-      seed?.players.map((p) => {
-        const id = p.participantId.toLowerCase();
-        const m = memberOfParticipant.get(id);
-        return {
-          order: p.order,
-          displayName: m ? memberDisplayName(m) : nameOfParticipant.get(id) || "Unknown",
-          ...(p.role ? { role: p.role } : {}),
-        };
-      }) ?? null;
+    const lastList = seed ? asNames(seed.players) : null;
     const draft = buildDraftSlots({
       lastList,
       members,

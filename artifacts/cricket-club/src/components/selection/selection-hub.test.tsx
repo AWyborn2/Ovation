@@ -84,6 +84,7 @@ function side(
     canEdit: true,
     canFinalise: true,
     readOnlyReason: null,
+    playhqPlayers: null,
     warnings: sideWarnings({ slots, captainMemberId: null, keeperMemberId: null } as SelectionSide),
     ...opts,
   };
@@ -171,6 +172,8 @@ function stubApi(board: SelectionBoard, onPut?: (req: Req) => { status: number; 
         const r = onPut ? onPut(req) : { status: 200, body: board };
         status = r.status;
         payload = r.body;
+      } else if (url.includes("/playhq-sync") && method === "POST") {
+        payload = board.selections[0];
       } else if (url.includes("/finalise") && method === "POST") {
         payload = {
           selection: board.selections[0],
@@ -389,6 +392,34 @@ describe("final and read-only cards", () => {
     expect(await screen.findByText("86% replied")).toBeTruthy();
     expect(screen.getByText(/38 of 44 senior players/)).toBeTruthy();
     expect(screen.getByText("A Grade draft built from the side's last game")).toBeTruthy();
+  });
+});
+
+describe("PlayHQ's published side", () => {
+  it("offers PlayHQ's team on a draft that has one and syncs at the version shown", async () => {
+    const board = makeBoard();
+    board.selections[0] = { ...board.selections[0], playhqPlayers: 11 };
+    const requests = stubApi(board);
+    renderHub();
+    const card = await screen.findByTestId(`side-${board.selections[0].id}`);
+    fireEvent.click(within(card).getByRole("button", { name: "Use PlayHQ team (11)" }));
+    expect(within(card).getByText(/Replace this draft with the 11 players named in/)).toBeTruthy();
+    fireEvent.click(within(card).getByRole("button", { name: "Use PlayHQ team" }));
+    await waitFor(() =>
+      expect(requests.some((r) => r.method === "POST" && r.url.includes("/playhq-sync"))).toBe(
+        true,
+      ),
+    );
+    const req = requests.find((r) => r.url.includes("/playhq-sync"))!;
+    expect(req.url).toContain(`/api/selection/${board.selections[0].id}/playhq-sync`);
+    expect(req.body).toEqual({ version: board.selections[0].version });
+  });
+
+  it("shows no PlayHQ button when PlayHQ hasn't named the side", async () => {
+    stubApi(makeBoard());
+    renderHub();
+    await screen.findByTestId("chip-900");
+    expect(screen.queryByRole("button", { name: /Use PlayHQ team/ })).toBeNull();
   });
 });
 

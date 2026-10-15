@@ -6,6 +6,7 @@ import {
   useGetSelectionBoard,
   useRemindSelectionNonResponders,
   useReopenSelection,
+  useSyncSelectionFromPlayhq,
   useSaveSelectionBoard,
   type SelectionBoard,
   type SquadSection,
@@ -83,8 +84,9 @@ export default function SelectionHub() {
   const save = useSaveSelectionBoard();
   const finalise = useFinaliseSelection();
   const reopen = useReopenSelection();
+  const playhqSync = useSyncSelectionFromPlayhq();
   const remind = useRemindSelectionNonResponders();
-  const busy = save.isPending || finalise.isPending || reopen.isPending;
+  const busy = save.isPending || finalise.isPending || reopen.isPending || playhqSync.isPending;
 
   const say = (message: string) => setAnnouncement(message);
   const fail = (message: string) => {
@@ -194,6 +196,32 @@ export default function SelectionHub() {
       {
         onSuccess: () => {
           const msg = `${side ? sideLabel(side) : "The side"} re-opened. Selected players are told about any change once you finalise again.`;
+          say(msg);
+          toast({ description: msg });
+          void refetch();
+        },
+        onError: (e) => {
+          fail(errorText(e));
+          void refetch();
+        },
+      },
+    );
+  };
+
+  const doPlayhqSync = (sideId: number) => {
+    const side = view?.selections.find((s) => s.id === sideId);
+    if (!side) return;
+    playhqSync.mutate(
+      // The version as shown: a side changed since is refused, not overwritten unseen.
+      { id: sideId, data: { version: side.version } },
+      {
+        onSuccess: (r) => {
+          const gaps = r.slots.filter((s) => s.gap).length;
+          const msg = `${sideLabel(side)} now matches the team named in PlayHQ.${
+            gaps
+              ? ` ${gaps} ${gaps === 1 ? "player isn't" : "players aren't"} on your squad list or ${gaps === 1 ? "is" : "are"} in another side: see the gaps.`
+              : ""
+          }`;
           say(msg);
           toast({ description: msg });
           void refetch();
@@ -325,6 +353,7 @@ export default function SelectionHub() {
                       }
                       onFinalise={() => doFinalise(side.id)}
                       onReopen={() => doReopen(side.id)}
+                      onPlayhqSync={() => doPlayhqSync(side.id)}
                     />
                   ))
                 )}
