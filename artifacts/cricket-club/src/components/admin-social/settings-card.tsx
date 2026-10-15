@@ -68,14 +68,7 @@ export function SettingsCard({
           <div className="space-y-2">
             {ENGINES.filter((eng) => eng.value === "ondemand" || eng.value === "recap").map(
               (eng) => {
-                const key =
-                  eng.value === "ondemand"
-                    ? "engineOnDemand"
-                    : eng.value === "milestone"
-                      ? "engineMilestone"
-                      : eng.value === "roundup"
-                        ? "engineRoundUp"
-                        : "engineRecap";
+                const key = eng.value === "ondemand" ? "engineOnDemand" : "engineRecap";
                 return (
                   <div
                     key={eng.value}

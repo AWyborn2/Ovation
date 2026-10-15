@@ -8,6 +8,7 @@
  */
 import { describe, it, expect } from "vitest";
 import type { SocialSettingsRow } from "@workspace/db";
+import { findPostingStyle, planFromStyle } from "@workspace/scorecard/posting-plan";
 import { draftingGates, postingPlanWrite, type DraftingGates } from "./posting-plan";
 
 type Fam = { enabled: boolean; grades: Record<string, boolean> };
@@ -162,5 +163,29 @@ describe('saving the derived plan unchanged ("Keep my current settings")', () =>
       if (carouselOnly) for (const [g] of GRADES) skip.add(`resultsMatch:${g}`);
       compare(draftingGates(after, true), oracle(c.families, c.modes), skip);
     }
+  });
+});
+
+describe("Ash's setup (AE1): one style pick", () => {
+  it("drafts round carousels for results, team lists, ladders and leaderboards, and A Grade debuts on their own", () => {
+    const before = settingsFor(matrix().next().value!);
+    const written = postingPlanWrite(
+      before,
+      planFromStyle(findPostingStyle("round-carousels")!),
+      true,
+    );
+    if ("error" in written) throw new Error(written.error);
+    const g = draftingGates({ ...before, ...written.columns } as SocialSettingsRow, true);
+    expect(g.resultsCarousel()).toBe(true);
+    expect(g.resultsPerMatchCentral()).toBe(false);
+    expect(g.teamListsRound()).toBe(true);
+    expect(g.teamListsIndividual()).toBe(false);
+    expect(g.gameDayIndividual()).toBe(true);
+    expect(g.ladders()).toBe(true);
+    expect(g.clubLeaderboards()).toBe(true);
+    expect(g.achievement("milestone", "B Grade")).toBe(true);
+    expect(g.achievement("debut", "A Grade")).toBe(true);
+    expect(g.achievement("debut", "B Grade")).toBe(false);
+    expect(g.gradeLeadersAny()).toBe(false);
   });
 });
