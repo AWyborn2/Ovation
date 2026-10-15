@@ -14,6 +14,7 @@ import {
   viewPublication,
 } from "../lib/publishing/publications";
 import type { Platform, PostType } from "../lib/publishing/destination";
+import { pinFromPublication } from "../lib/posting-writer";
 
 /**
  * The officer's publishing controls (plan 2026-10-06-001 U5, R3, R8, R17):
@@ -116,6 +117,7 @@ router.post("/social-drafts/:id/publications", ...guard, async (req, res): Promi
       at,
       origin: "manual",
     });
+    await pinFromPublication(tenantId, id, at);
     res.json(rows.map(viewPublication));
   } catch (err) {
     if (err instanceof ScheduleConflictError) {
@@ -155,6 +157,7 @@ router.post("/social-publications/:id/reschedule", ...guard, async (req, res): P
     res.status(409).json({ error: "Only a scheduled post can be moved." });
     return;
   }
+  await pinFromPublication(row.tenantId, row.draftId, at);
   res.json(viewPublication(updated));
 });
 

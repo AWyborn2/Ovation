@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, lte, sql, type SQL } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, lte, sql, type SQL } from "drizzle-orm";
 import { db, socialDraftsTable, socialSettingsTable } from "@workspace/db";
 // From the schema subpath so suites that vi.mock("@workspace/db") keep loading this module.
 import { JUNIOR_SYNC_ID_START } from "@workspace/db/schema";
@@ -20,6 +20,8 @@ type LayoutFields = {
   templateVersion?: number | null;
   layoutCheckPending?: boolean;
   layoutWarnings?: unknown;
+  /** Posting calendar: an expired card never auto-promotes. */
+  expiredAt?: Date | string | null;
 };
 
 /**
@@ -106,6 +108,7 @@ export function effectiveDraftStatus(
     stored === "awaiting_review" &&
     !isSyncedJuniorDraft(draft) &&
     autoPost.enabled &&
+    draft.expiredAt == null &&
     draft.autoReadyAt != null &&
     new Date(draft.autoReadyAt).getTime() <= now.getTime() &&
     !layoutBlocksAutomation({
@@ -157,6 +160,8 @@ export async function persistDueDrafts(
         eq(socialDraftsTable.status, "awaiting_review"),
         isNotNull(socialDraftsTable.autoReadyAt),
         lte(socialDraftsTable.autoReadyAt, now),
+        // An expired card (posting calendar) never comes back by itself.
+        isNull(socialDraftsTable.expiredAt),
         layoutClear,
         // A junior draft is promoted only for a team set to auto-post, even if a stray
         // auto-ready time slipped through (KTD14).

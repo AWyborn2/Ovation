@@ -42,6 +42,9 @@ export function AutoPostCard({ settings }: { settings: SocialSettings | undefine
   useEffect(() => setForm(fromSettings(settings)), [settings]);
   const conn = useGetMetaConnection({ query: { queryKey: getGetMetaConnectionQueryKey() } });
   const canPublish = !!conn.data?.available && conn.data.status === "connected";
+  // With the posting calendar on, a card's posting time replaces the review
+  // window, and the calendar's age limit replaces the cut-off.
+  const calendarOn = !!settings?.postingSchedule?.enabled;
 
   const saved = fromSettings(settings);
   const dirty =
@@ -78,7 +81,7 @@ export function AutoPostCard({ settings }: { settings: SocialSettings | undefine
       return;
     }
     const publish = form.enabled && form.publish;
-    if (publish && freshness < hours) {
+    if (publish && !calendarOn && freshness < hours) {
       setError("The auto-publish cut-off must be at least the review window.");
       return;
     }
@@ -112,26 +115,37 @@ export function AutoPostCard({ settings }: { settings: SocialSettings | undefine
             aria-label="Move drafts to Ready automatically"
           />
         </SettingsRow>
-        <SettingsRow
-          label="Review window"
-          helper="Hours after each draft's own import"
-          htmlFor="auto-post-hours"
-        >
-          <Input
-            id="auto-post-hours"
-            type="number"
-            min={1}
-            max={168}
-            value={form.hours}
-            onChange={(e) => setForm((f) => ({ ...f, hours: e.target.value }))}
-            className="h-9 w-24"
-          />
-        </SettingsRow>
+        {calendarOn && (
+          <p className="text-sm text-muted-foreground" role="note">
+            Your posting calendar is on: each card moves to Ready, or publishes, at its posting time
+            instead of after a review window. Cards older than the calendar&rsquo;s age limit are
+            dropped. Change both in the queue&rsquo;s Posting schedule.
+          </p>
+        )}
+        {!calendarOn && (
+          <SettingsRow
+            label="Review window"
+            helper="Hours after each draft's own import"
+            htmlFor="auto-post-hours"
+          >
+            <Input
+              id="auto-post-hours"
+              type="number"
+              min={1}
+              max={168}
+              value={form.hours}
+              onChange={(e) => setForm((f) => ({ ...f, hours: e.target.value }))}
+              className="h-9 w-24"
+            />
+          </SettingsRow>
+        )}
         <SettingsRow
           label="Publish automatically to Facebook and Instagram"
           helper={
             canPublish
-              ? "Fresh drafts post at the end of their window instead of waiting in Ready. Junior cards never do."
+              ? calendarOn
+                ? "Approved cards post at their posting time instead of waiting in Ready. Junior cards never do."
+                : "Fresh drafts post at the end of their window instead of waiting in Ready. Junior cards never do."
               : "Connect Facebook and Instagram first."
           }
           htmlFor="auto-publish-enabled"
@@ -144,21 +158,23 @@ export function AutoPostCard({ settings }: { settings: SocialSettings | undefine
             aria-label="Publish automatically to Facebook and Instagram"
           />
         </SettingsRow>
-        <SettingsRow
-          label="Only if imported within"
-          helper="Hours since the draft's first import. Older drafts wait in Ready."
-          htmlFor="auto-publish-freshness"
-        >
-          <Input
-            id="auto-publish-freshness"
-            type="number"
-            min={1}
-            max={336}
-            value={form.freshness}
-            onChange={(e) => setForm((f) => ({ ...f, freshness: e.target.value }))}
-            className="h-9 w-24"
-          />
-        </SettingsRow>
+        {!calendarOn && (
+          <SettingsRow
+            label="Only if imported within"
+            helper="Hours since the draft's first import. Older drafts wait in Ready."
+            htmlFor="auto-publish-freshness"
+          >
+            <Input
+              id="auto-publish-freshness"
+              type="number"
+              min={1}
+              max={336}
+              value={form.freshness}
+              onChange={(e) => setForm((f) => ({ ...f, freshness: e.target.value }))}
+              className="h-9 w-24"
+            />
+          </SettingsRow>
+        )}
         <SettingsRow
           label="Notification email"
           helper="Leave empty for in-app notifications only"

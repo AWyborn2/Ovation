@@ -5,6 +5,7 @@ import {
   socialSettingsTable,
   milestoneBoardSettingsTable,
   captionTemplatesTable,
+  type PostingScheduleRow,
   type RoundSchedulesRow,
 } from "@workspace/db";
 import {
@@ -23,6 +24,17 @@ import {
   mergeRoundSchedules,
   resolveRoundSchedules,
 } from "../lib/round-schedules";
+import {
+  invalidPostingSchedule,
+  mergePostingSchedule,
+  resolvePostingSchedule,
+  seedPostingSchedule,
+} from "../lib/posting-schedule";
+import {
+  switchCalendarOff,
+  switchCalendarOn,
+  type SwitchoverSummary,
+} from "../lib/posting-switchover";
 import { getTenantId } from "../middlewares/tenant-context";
 import { getOrCreateSettings } from "../lib/settings";
 import { invalidateMilestonesCache } from "../lib/milestones-cache";
@@ -80,6 +92,7 @@ router.get("/social-settings", async (req, res): Promise<void> => {
       ...settings,
       familyConfig: resolveFamilyConfig(settings),
       roundSchedules: resolveRoundSchedules(settings.roundSchedules),
+      postingSchedule: resolvePostingSchedule(settings.postingSchedule),
     },
     captionTemplates: captionTemplates.map((t) => ({
       engine: t.engine,
@@ -135,6 +148,32 @@ router.patch(
       }
       roundSchedules = mergeRoundSchedules(current.roundSchedules, patchSchedules);
     }
+    // The posting calendar (plan 2026-10-07-003). Kinds merge per kind; the
+    // first switch-on starts from the times the club already drafts round
+    // cards at (KTD4).
+    let postingSchedule: PostingScheduleRow | undefined;
+    let switching: "on" | "off" | null = null;
+    if (parsed.data.postingSchedule) {
+      const patch = parsed.data.postingSchedule as PostingScheduleRow;
+      const problem = invalidPostingSchedule(patch);
+      if (problem) {
+        res.status(400).json({ error: problem });
+        return;
+      }
+      const before = resolvePostingSchedule(current.postingSchedule);
+      const base: PostingScheduleRow | null =
+        current.postingSchedule ??
+        (patch.enabled
+          ? seedPostingSchedule(resolveRoundSchedules(roundSchedules ?? current.roundSchedules))
+          : null);
+      postingSchedule = mergePostingSchedule(base, patch);
+      const after = resolvePostingSchedule(postingSchedule);
+      if (!before.enabled && after.enabled) switching = "on";
+      if (before.enabled && !after.enabled) switching = "off";
+    }
+    const calendarAfter = resolvePostingSchedule(
+      postingSchedule ?? current.postingSchedule,
+    ).enabled;
     // Auto-publish (Meta publishing R4, R5) rides on auto-post and a live
     // connection, and never publishes drafts older than the window allows.
     const autoPostAfter = parsed.data.autoPostEnabled ?? current.autoPostEnabled;
@@ -148,7 +187,9 @@ router.patch(
     const windowAfter = parsed.data.autoPostWindowHours ?? current.autoPostWindowHours;
     const freshnessAfter =
       parsed.data.autoPublishFreshnessHours ?? current.autoPublishFreshnessHours;
+    // On the posting calendar the age limit replaces the cut-off (KTD9).
     if (
+      !calendarAfter &&
       (parsed.data.autoPublishEnabled ?? current.autoPublishEnabled) &&
       freshnessAfter < windowAfter
     ) {
@@ -167,6 +208,7 @@ router.patch(
       familyConfig: _submitted,
       packColourModes: _modes,
       roundSchedules: _schedules,
+      postingSchedule: _posting,
       ...patch
     } = parsed.data;
     const [row] = await db
@@ -176,14 +218,26 @@ router.patch(
         ...syncFamilySettings(current, parsed.data),
         ...(packColourModes ? { packColourModes } : {}),
         ...(roundSchedules ? { roundSchedules } : {}),
+        ...(postingSchedule ? { postingSchedule } : {}),
         updatedAt: new Date(),
       })
       .where(eq(socialSettingsTable.tenantId, tenantId))
       .returning();
+    // Bring the club's open cards onto the calendar, or hand them back to
+    // auto-post (KTD3).
+    const resolvedPosting = resolvePostingSchedule(row.postingSchedule);
+    let postingSwitchover: SwitchoverSummary | undefined;
+    if (switching === "on") {
+      postingSwitchover = await switchCalendarOn(tenantId, resolvedPosting, new Date());
+    } else if (switching === "off") {
+      postingSwitchover = await switchCalendarOff(tenantId);
+    }
     res.json({
       ...row,
       familyConfig: resolveFamilyConfig(row),
       roundSchedules: resolveRoundSchedules(row.roundSchedules),
+      postingSchedule: resolvedPosting,
+      ...(postingSwitchover ? { postingSwitchover } : {}),
     });
   },
 );

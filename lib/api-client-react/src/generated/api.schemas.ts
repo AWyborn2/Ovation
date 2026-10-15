@@ -5194,6 +5194,84 @@ export interface RoundSchedules {
   weekendWrap: RoundSchedule;
 }
 
+export interface PostingSlot {
+  /**
+     * 0 = Sunday, club time
+     * @minimum 0
+     * @maximum 6
+     */
+  day: number;
+  /**
+     * HH:mm, 15-minute steps
+     * @pattern ^([01]\d|2[0-3]):[0-5]\d$
+     */
+  time: string;
+}
+
+/**
+ * Several cards in one slot: "space" them out by the club's minimum gap, or "roll" extras to later slots (one per slot).
+ */
+export type PostingKindCollision = typeof PostingKindCollision[keyof typeof PostingKindCollision];
+
+
+export const PostingKindCollision = {
+  space: 'space',
+  roll: 'roll',
+} as const;
+
+export interface PostingKind {
+  /** @maxItems 14 */
+  slots: PostingSlot[];
+  /** Several cards in one slot: "space" them out by the club's minimum gap, or "roll" extras to later slots (one per slot). */
+  collision: PostingKindCollision;
+}
+
+export interface PostingKinds {
+  results: PostingKind;
+  roundResults: PostingKind;
+  teamLists: PostingKind;
+  gameDay: PostingKind;
+  milestones: PostingKind;
+  debuts: PostingKind;
+  achievements: PostingKind;
+  roundUp: PostingKind;
+  other: PostingKind;
+}
+
+/**
+ * The posting calendar: weekly slots per card kind, a daily cap, a minimum gap and an age limit. Always complete in a response. Off unless `enabled`.
+ */
+export interface PostingSchedule {
+  enabled: boolean;
+  /**
+     * @minimum 1
+     * @maximum 20
+     */
+  dailyCap: number;
+  /**
+     * @minimum 0
+     * @maximum 240
+     */
+  minGapMinutes: number;
+  /**
+     * @minimum 1
+     * @maximum 30
+     */
+  ageLimitDays: number;
+  kinds: PostingKinds;
+}
+
+export interface PostingSwitchover {
+  /** Open cards given a time when the calendar was turned on */
+  placed: number;
+  /** Cards already scheduled to Meta */
+  pinned: number;
+  /** Cards with no free slot */
+  unscheduled: number;
+  /** Cards handed back to auto-post when it was turned off */
+  restored: number;
+}
+
 export interface SocialSettings {
   engineOnDemand: boolean;
   engineMilestone: boolean;
@@ -5240,6 +5318,8 @@ export interface SocialSettings {
   familyConfig?: SocialFamilyConfig;
   packColourModes?: PackColourModes;
   roundSchedules?: RoundSchedules;
+  postingSchedule?: PostingSchedule;
+  postingSwitchover?: PostingSwitchover;
 }
 
 export interface Notification {
@@ -5947,6 +6027,41 @@ export interface RoundSchedulesUpdate {
   weekendWrap?: RoundSchedule;
 }
 
+export interface PostingKindsUpdate {
+  results?: PostingKind;
+  roundResults?: PostingKind;
+  teamLists?: PostingKind;
+  gameDay?: PostingKind;
+  milestones?: PostingKind;
+  debuts?: PostingKind;
+  achievements?: PostingKind;
+  roundUp?: PostingKind;
+  other?: PostingKind;
+}
+
+/**
+ * Merged into the stored schedule; kinds merge per kind. Turning `enabled` on places the club's open cards; turning it off hands them back to auto-post.
+ */
+export interface PostingScheduleUpdate {
+  enabled?: boolean;
+  /**
+     * @minimum 1
+     * @maximum 20
+     */
+  dailyCap?: number;
+  /**
+     * @minimum 0
+     * @maximum 240
+     */
+  minGapMinutes?: number;
+  /**
+     * @minimum 1
+     * @maximum 30
+     */
+  ageLimitDays?: number;
+  kinds?: PostingKindsUpdate;
+}
+
 export interface SocialSettingsUpdate {
   engineOnDemand?: boolean;
   engineMilestone?: boolean;
@@ -5991,6 +6106,7 @@ export interface SocialSettingsUpdate {
   packColourModes?: PackColourModes;
   /** Merged per card: only the cards sent change, the others keep their schedule. */
   roundSchedules?: RoundSchedulesUpdate;
+  postingSchedule?: PostingScheduleUpdate;
 }
 
 /**
@@ -7496,6 +7612,18 @@ export interface LayoutWarning {
  */
 export type SocialDraftLayoutWarnings = {[key: string]: LayoutWarning[]} | null;
 
+/**
+ * "auto" — placed automatically and may roll; "admin" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).
+ * @nullable
+ */
+export type SocialDraftPlannedBy = typeof SocialDraftPlannedBy[keyof typeof SocialDraftPlannedBy] | null;
+
+
+export const SocialDraftPlannedBy = {
+  auto: 'auto',
+  admin: 'admin',
+} as const;
+
 export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraftStatus];
 
 
@@ -7629,10 +7757,106 @@ export interface SocialDraft {
      * @nullable
      */
   staleSince?: string | null;
+  /**
+     * When the card goes out on the posting calendar; null = unscheduled.
+     * @nullable
+     */
+  plannedAt?: string | null;
+  /**
+     * "auto" — placed automatically and may roll; "admin" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).
+     * @nullable
+     */
+  plannedBy?: SocialDraftPlannedBy;
+  /** How many times the card rolled to a later slot unapproved. */
+  rollCount?: number;
+  /**
+     * When it was published or the club was told to share it, at its time.
+     * @nullable
+     */
+  dispatchedAt?: string | null;
+  /**
+     * A pinned card's one overdue reminder.
+     * @nullable
+     */
+  overdueNotifiedAt?: string | null;
+  /**
+     * Past the club's age limit; off the calendar until moved to a time.
+     * @nullable
+     */
+  expiredAt?: string | null;
   /** Its Facebook / Instagram posts, newest attempt per platform and post type. */
   publications?: SocialPublication[];
   /** A post failed for good and nothing else is pending for it. */
   needsAttention?: boolean;
+}
+
+export interface SocialCalendarCard {
+  draft: SocialDraft;
+  /** The posting-calendar kind the card posts in (milestones, debuts, results…). */
+  slotKind: string;
+  /** Its time passed while it still waits for approval. */
+  overdue: boolean;
+  /**
+     * Why the card's day needs a look (over the cap, or inside the gap).
+     * @nullable
+     */
+  warning?: string | null;
+}
+
+export interface SocialCalendarDay {
+  /** Club-local YYYY-MM-DD */
+  date: string;
+  /** Posts planned or posted that day */
+  count: number;
+  overCap: boolean;
+  /** Cards closer to another post than the club's minimum gap. */
+  gapWarnings: number[];
+}
+
+export interface SocialCalendarPlaceholder {
+  slotKind: string;
+  label: string;
+  at: string;
+}
+
+export interface SocialCalendar {
+  /** Whether the club's posting calendar is on */
+  enabled: boolean;
+  from: string;
+  to: string;
+  timeZone: string;
+  dailyCap: number;
+  minGapMinutes: number;
+  days: SocialCalendarDay[];
+  cards: SocialCalendarCard[];
+  /** The Unscheduled tray — open cards with no time. */
+  unscheduled: SocialCalendarCard[];
+  placeholders: SocialCalendarPlaceholder[];
+  /** Open automatic cards a switch-on would place (shown before turning the calendar on). */
+  openCards: number;
+}
+
+export interface SetPlannedTimeRequest {
+  plannedAt: string;
+  /**
+     * The card's planned time as the client saw it; null when unscheduled.
+     * @nullable
+     */
+  expectedPlannedAt: string | null;
+}
+
+export interface UnscheduleDraftRequest {
+  /** @nullable */
+  expectedPlannedAt: string | null;
+}
+
+export type PostingSlotsRunResponseResultsItem = {
+  tenantId: number;
+  ok: boolean;
+};
+
+export interface PostingSlotsRunResponse {
+  results: PostingSlotsRunResponseResultsItem[];
 }
 
 export interface PublishSweepSummary {
@@ -9880,6 +10104,19 @@ export type DeleteClubPhotos200 = {
 
 export type GetFixtureForecastParams = {
 fixtureId: number;
+};
+
+export type GetSocialCalendarParams = {
+/**
+ * First club-local day, YYYY-MM-DD.
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+from: string;
+/**
+ * Last club-local day, YYYY-MM-DD (inclusive).
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+to: string;
 };
 
 export type SweepMatchSummaryDraftsBody = {

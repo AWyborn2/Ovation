@@ -114,6 +114,40 @@ The hourly scheduled draft sweep also runs the worker for each club it sweeps, s
 
 ---
 
+## 3a. Posting calendar
+
+A club can plan its posts on a weekly calendar (plan `docs/plans/2026-10-07-003-feat-social-posting-calendar-plan.md`). It is off for every club until an admin turns it on in **Social Media Studio → Queue → Set up posting calendar**.
+
+**Deploy order (once)**
+
+1. Paste `lib/db/migrations/0041_social_posting_calendar.sql` into Replit's **Production** SQL runner. It is idempotent.
+2. Check the columns exist (read-only):
+
+   ```sql
+   select column_name from information_schema.columns
+   where table_name = 'social_drafts'
+     and column_name in ('planned_at','planned_by','roll_count','dispatched_at',
+                         'overdue_notified_at','expired_at')
+   union all
+   select column_name from information_schema.columns
+   where table_name = 'social_settings' and column_name = 'posting_schedule';
+   ```
+
+   Expect 7 rows.
+
+3. Republish.
+4. Turn the calendar on for Halls Head only and watch a weekend before offering it to other clubs.
+
+**How it behaves**
+
+- Every new card gets the next free slot for its kind, within the daily cap and the minimum gap. Admin moves always win; over the cap only warns.
+- Slots run on the hourly scheduled sweep, and the PlayHQ runner calls `/api/internal/playhq/posting-slots` before its scrapes, so a card goes out within the hour after its slot.
+- At its slot an approved card publishes when auto-publish is on and Facebook/Instagram is connected; otherwise the club is told to share it by hand. Junior and hand-made cards never publish on their own.
+- A card still awaiting review rolls to the next free slot (the club is reminded); one an admin placed is flagged overdue once instead. Cards older than the age limit expire to the Unscheduled tray.
+- Turning the calendar on places the open queue; cards already scheduled to publish keep their time.
+
+**Turning it off** hands cards back to auto-post's review window, measured from each card's import. Cards whose window has already passed can become ready, or publish, on the next sweep. The admin is warned before confirming.
+
 ## 4. Maintenance
 
 ### Rotating the token key
