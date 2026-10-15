@@ -28,6 +28,8 @@ import { DEFAULT_SCHEDULE, roundWeekendFor, setSendPaceMs } from "../lib/availab
  */
 
 const STAMP = Date.now();
+// Distinct first names: name matching ignores digits, so "Kid1"/"Kid2" would collide.
+const FIRST = ["", "Ava", "Ben", "Cal", "Dan", "Eli"];
 const pid = (i: number) =>
   `00000000-0000-4000-8000-${String(STAMP % 1e6).padStart(6, "0")}${String(i).padStart(6, "0")}`;
 
@@ -78,21 +80,19 @@ describe("Selection Hub junior sides", () => {
 
     // Juniors 1–4 are PlayHQ participants; 1–3 carry their profile id, 4 matches by
     // name; 5 is on the squad but matches no participant.
-    await db
-      .insert(juniorParticipantsTable)
-      .values(
-        [1, 2, 3, 4].map((i) => ({
-          tenantId,
-          participantId: pid(i),
-          displayName: `Kid${i} Jones`,
-        })),
-      );
+    await db.insert(juniorParticipantsTable).values(
+      [1, 2, 3, 4].map((i) => ({
+        tenantId,
+        participantId: pid(i),
+        displayName: `${FIRST[i]} Jones`,
+      })),
+    );
     for (let i = 1; i <= 5; i++) {
       const [row] = await db
         .insert(squadMembersTable)
         .values({
           tenantId,
-          firstName: `Kid${i}`,
+          firstName: FIRST[i],
           lastName: "Jones",
           section: "junior",
           playhqProfileId: i <= 3 ? pid(i) : null,
@@ -180,7 +180,7 @@ describe("Selection Hub junior sides", () => {
 
   it("finalise publishes participant ids to the junior team list and names the unmatched", async () => {
     let gold = (await board()).selections.find((s) => s.fixture.grade === "Hub Year 7 Gold")!;
-    // Put kid 5 (no PlayHQ match) in slot 5.
+    // Put Eli (kid 5, no PlayHQ match) in slot 5.
     const slots = gold.slots.map((s, i) => ({ memberId: i === 4 ? m[5] : s.memberId }));
     await asAdmin(request(app).put("/api/selection/board"))
       .send({
@@ -199,7 +199,7 @@ describe("Selection Hub junior sides", () => {
     const res = await asAdmin(request(app).post(`/api/selection/${gold.id}/finalise`))
       .send({ version: gold.version })
       .expect(200);
-    expect(res.body.unlisted).toEqual(["Kid5 Jones"]);
+    expect(res.body.unlisted).toEqual(["Eli Jones"]);
     expect(res.body.messaged).toEqual({ selected: 0, deselected: 0, failed: 0 });
 
     const [list] = await db
