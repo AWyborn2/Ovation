@@ -463,7 +463,9 @@ export async function generateLadderDrafts(
   const grades = new Map<string, { gradeLabel: string; gradeId: string }>();
   for (const m of played.matches) {
     const gradeId = gradeIdOf.get(m.id);
-    if (!gradeId || m.abandoned || !gates.ladderGrade(m.grade)) continue;
+    // Juniors never appear, whatever the row ticks (R13).
+    if (!gradeId || m.abandoned || isJuniorGradeLabel(m.grade) || !gates.ladderGrade(m.grade))
+      continue;
     grades.set(gradeId, { gradeLabel: m.grade, gradeId });
   }
   const finished = (gradeId: string) =>

@@ -12,6 +12,7 @@ import {
   type PostingPlan,
 } from "@workspace/scorecard/posting-plan";
 import { PostingPlanEditor } from "@/components/posting-plan/posting-plan-editor";
+import AdminSocialPlan from "@/pages/admin-social-plan";
 import { renderAt } from "@/test/render";
 
 afterEach(() => {
@@ -181,5 +182,42 @@ describe("Posting Plan", () => {
     fireEvent.click(milestones);
     expect(results.getAttribute("aria-expanded")).toBe("false");
     expect(milestones.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("disables the Save bar while saving", async () => {
+    let finish: (r: Response) => void = () => {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_input: RequestInfo | URL, init?: RequestInit) =>
+        (init?.method ?? "GET").toUpperCase() === "PATCH"
+          ? new Promise<Response>((resolve) => (finish = resolve))
+          : Promise.resolve(json({})),
+      ),
+    );
+    render(settings());
+    fireEvent.click(within(table()).getByRole("switch", { name: "Ladders: draft automatically" }));
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    const saving = await screen.findByRole("button", { name: /saving/i });
+    expect((saving as HTMLButtonElement).disabled).toBe(true);
+    finish(json({}));
+  });
+
+  it("shows the error panel when settings fail to load, and Retry refetches", async () => {
+    let calls = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("/social-settings")) {
+          calls++;
+          return calls === 1 ? json({ error: "down" }, 500) : json({ settings: settings() });
+        }
+        return json([]);
+      }),
+    );
+    renderAt(<AdminSocialPlan />, "/admin/social/plan");
+    fireEvent.click(await screen.findByRole("button", { name: /try again/i }));
+    expect(await screen.findByRole("table")).toBeTruthy();
+    expect(calls).toBe(2);
   });
 });

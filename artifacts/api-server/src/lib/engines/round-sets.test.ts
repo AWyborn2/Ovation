@@ -17,6 +17,11 @@ import {
   socialDraftsTable,
   captionTemplatesTable,
 } from "@workspace/db";
+import {
+  findPostingStyle,
+  planFromStyle,
+  type PostingPlan,
+} from "@workspace/scorecard/posting-plan";
 import { encodeSession, SESSION_COOKIE } from "../auth";
 import { generateRoundGameDayDrafts, generateRoundTeamListDrafts, weekendOf } from "./round-sets";
 import { generateMatchDayDrafts } from "./match-day";
@@ -218,6 +223,70 @@ describe("round sets on a schedule", () => {
       .where(eq(fixturesTable.id, fx["A Grade"]));
     const r = await generateRoundGameDayDrafts(tenantId, SAT(6));
     expect(r).toEqual({ drafted: 0, refreshed: 0 });
+  });
+});
+
+describe("team lists under a saved Posting Plan", () => {
+  /** Every-match style with the Team lists row replaced; Under 15 ticked. */
+  const savePlan = async (packaging: "individual" | "round") => {
+    const plan: PostingPlan = planFromStyle(findPostingStyle("every-match")!);
+    plan.rows.teamLists = {
+      enabled: true,
+      packaging,
+      grades: { "Under 15": true },
+      others: "seniors",
+    };
+    await db
+      .update(socialSettingsTable)
+      .set({ postingPlan: plan })
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+  };
+
+  beforeAll(async () => {
+    await db.insert(teamListsTable).values({
+      tenantId,
+      fixtureId: fx.junior,
+      isPublished: true,
+      players: [{ order: 1, playerId: 8, displayName: "Kid Junior" }],
+    });
+  });
+
+  afterAll(async () => {
+    await db
+      .update(socialSettingsTable)
+      .set({ postingPlan: null })
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+    await db.delete(teamListsTable).where(eq(teamListsTable.fixtureId, fx.junior));
+  });
+
+  it("switching to a round carousel leaves the per-fixture drafts already made (KTD10)", async () => {
+    await savePlan("individual");
+    await generateTeamListDrafts(tenantId, FRI_1PM);
+    const before = await draftsLike("teamlist:");
+    expect(before.length).toBeGreaterThan(0);
+
+    await savePlan("round");
+    await generateTeamListDrafts(tenantId, FRI_1PM);
+    await generateRoundTeamListDrafts(tenantId, FRI_1PM);
+    const after = await draftsLike("teamlist:");
+    expect(after.map((d) => [d.id, d.status, d.cardInput])).toEqual(
+      before.map((d) => [d.id, d.status, d.cardInput]),
+    );
+  });
+
+  it("Under 15 team lists form their own junior carousel, never the senior one (AE2)", async () => {
+    await savePlan("round");
+    await generateRoundTeamListDrafts(tenantId, FRI_1PM);
+    const rows = await draftsLike("teamlists-round:");
+    const junior = rows.filter((r) => r.sourceMatchIsJunior);
+    expect(junior).toHaveLength(1);
+    expect(junior[0].sourceKey?.endsWith(":junior")).toBe(true);
+    const grades = (r: (typeof rows)[number]) =>
+      (r.cardInput as { teams: { grade: string }[] }).teams.map((t) => t.grade);
+    expect(grades(junior[0])).toEqual(["Under 15"]);
+    for (const senior of rows.filter((r) => !r.sourceMatchIsJunior)) {
+      expect(grades(senior)).not.toContain("Under 15");
+    }
   });
 });
 

@@ -24,17 +24,23 @@ const STAMP = Date.now();
 let centralId: number;
 let nativeId: number;
 let otherId: number;
+let freeId: number;
 const adminIds: number[] = [];
 const cookies: Record<number, string> = {};
 
-async function tenant(slug: string, readsFromCentral: boolean, clubId: number) {
+async function tenant(
+  slug: string,
+  readsFromCentral: boolean,
+  clubId: number,
+  plan: "pro" | "free" = "pro",
+) {
   const [t] = await db
     .insert(tenantsTable)
     .values({
       slug: `${slug}-${STAMP}`,
       centralClubId: clubId,
       name: slug,
-      plan: "pro",
+      plan,
       readsFromCentral,
     })
     .returning();
@@ -64,10 +70,11 @@ beforeAll(async () => {
   centralId = await tenant("pp-central", true, 98501);
   nativeId = await tenant("pp-native", false, 98502);
   otherId = await tenant("pp-other", true, 98503);
+  freeId = await tenant("pp-free", true, 98504, "free");
 });
 
 afterAll(async () => {
-  const ids = [centralId, nativeId, otherId];
+  const ids = [centralId, nativeId, otherId, freeId];
   await db.delete(captionTemplatesTable).where(inArray(captionTemplatesTable.tenantId, ids));
   await db.delete(socialSettingsTable).where(inArray(socialSettingsTable.tenantId, ids));
   await db.delete(adminsTable).where(inArray(adminsTable.id, adminIds));
@@ -77,7 +84,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await db
     .delete(socialSettingsTable)
-    .where(inArray(socialSettingsTable.tenantId, [centralId, nativeId, otherId]));
+    .where(inArray(socialSettingsTable.tenantId, [centralId, nativeId, otherId, freeId]));
 });
 
 describe("GET /social-settings postingPlan", () => {
@@ -146,6 +153,18 @@ describe("PATCH /social-settings postingPlan", () => {
 
   it("needs an admin session", async () => {
     await patch(centralId, { postingPlan: style("every-match") }, false).expect(401);
+  });
+
+  it("is gated on the Social Studio entitlement once billing is on", async () => {
+    const billing = process.env.BILLING_ENABLED;
+    process.env.BILLING_ENABLED = "true";
+    try {
+      await patch(freeId, { postingPlan: style("round-carousels") }).expect(402);
+      expect((await row(freeId))?.postingPlan ?? null).toBeNull();
+    } finally {
+      if (billing === undefined) delete process.env.BILLING_ENABLED;
+      else process.env.BILLING_ENABLED = billing;
+    }
   });
 
   it("never touches another tenant's settings", async () => {
