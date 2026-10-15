@@ -11,4 +11,8 @@ import type { SelectionSide } from './selectionSide';
 export interface SelectionFinaliseResult {
   selection: SelectionSide;
   messaged: SelectionFinaliseResultMessaged;
+  /** Junior side only: players left off the published junior team list
+  because they match none of the club's PlayHQ junior participants.
+   */
+  unlisted?: string[];
 }

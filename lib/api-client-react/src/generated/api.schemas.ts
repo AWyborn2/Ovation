@@ -3405,7 +3405,26 @@ export interface SelectionSlot {
   member: SelectionMember | null;
 }
 
+/**
+ * `senior`: a `fixtures` row. `junior`: a junior fixture from the junior
+PlayHQ sync, whose `grade` is the club's junior team ("Halls Head
+Year 7 Gold") and which publishes to the junior team list.
+
+ */
+export type SelectionFixtureKind = typeof SelectionFixtureKind[keyof typeof SelectionFixtureKind];
+
+
+export const SelectionFixtureKind = {
+  senior: 'senior',
+  junior: 'junior',
+} as const;
+
 export interface SelectionFixture {
+  /** `senior`: a `fixtures` row. `junior`: a junior fixture from the junior
+  PlayHQ sync, whose `grade` is the club's junior team ("Halls Head
+  Year 7 Gold") and which publishes to the junior team list.
+   */
+  kind: SelectionFixtureKind;
   id: number;
   grade: string;
   opponentName: string;
@@ -3619,6 +3638,10 @@ export type SelectionFinaliseResultMessaged = {
 export interface SelectionFinaliseResult {
   selection: SelectionSide;
   messaged: SelectionFinaliseResultMessaged;
+  /** Junior side only: players left off the published junior team list
+  because they match none of the club's PlayHQ junior participants.
+   */
+  unlisted?: string[];
 }
 
 export interface SelectionRemindBody {
@@ -8952,6 +8975,7 @@ export type JuniorAdminTeamListSavedSource = typeof JuniorAdminTeamListSavedSour
 export const JuniorAdminTeamListSavedSource = {
   playhq: 'playhq',
   admin: 'admin',
+  selection: 'selection',
 } as const;
 
 export interface JuniorAdminTeamListSaved {

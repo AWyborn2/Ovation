@@ -764,6 +764,13 @@ describe("team lists", () => {
       "unchanged",
     );
     expect(teamListAction(null, [])).toBe("unchanged");
+    // A Selection Hub side stands until the match, then PlayHQ's played side replaces it.
+    const hub = { source: "selection", isPublished: true, players: [] };
+    expect(teamListAction(hub, players, "upcoming")).toBe("keepAdmin");
+    expect(teamListAction(hub, players, "played")).toBe("write");
+    expect(
+      teamListAction({ source: "admin", isPublished: true, players: [] }, players, "played"),
+    ).toBe("keepAdmin");
   });
 
   it("copies sides within 8 days ahead or 7 days after the start", () => {

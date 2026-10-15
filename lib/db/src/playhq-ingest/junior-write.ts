@@ -236,11 +236,13 @@ export async function writeTeamLists(
     }
     const players = planJuniorTeamList(side, ctx.merges);
     const current = listOf.get(fixtureId) ?? null;
+    const window = teamListWindow(m.startAt, now);
     const action = teamListAction(
       current
         ? { source: current.source, isPublished: current.is_published, players: current.players }
         : null,
       players,
+      window,
     );
     if (action === "keepAdmin") summary.teamListsKeptAdmin++;
     if (action !== "write") continue;
@@ -249,8 +251,9 @@ export async function writeTeamLists(
       sql`insert into junior_team_lists (tenant_id, junior_fixture_id, players, is_published, source)
           values (${tenantId}, ${fixtureId}, ${JSON.stringify(players)}::jsonb, true, 'playhq')
           on conflict (tenant_id, junior_fixture_id) do update set
-            players = excluded.players, is_published = true, updated_at = now()
+            players = excluded.players, is_published = true, source = 'playhq', updated_at = now()
           where junior_team_lists.source = 'playhq'
+             or (junior_team_lists.source = 'selection' and ${window === "played"})
           returning id`,
     );
     summary.teamListsWritten += written.length;

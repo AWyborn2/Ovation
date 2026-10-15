@@ -1,15 +1,14 @@
+import { loadSideFixtures, sideFixtureKey, type SideFixture } from "../lib/selection-fixtures";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { and, asc, eq, gte, isNull, lte, or, sql } from "drizzle-orm";
 import {
   db,
   availabilityAwayTable,
   availabilityResponsesTable,
-  fixturesTable,
   selectionEventsTable,
   selectionsTable,
   squadMembersTable,
   type AvailabilityStatus,
-  type FixtureRow,
   type RecipientSlot,
   type SelectionRow,
   type SquadMemberRow,
@@ -139,7 +138,7 @@ async function resolve(req: Request, res: Response): Promise<ResolvedAvailabilit
   return found;
 }
 
-type MemberSide = { selection: SelectionRow; fixture: FixtureRow; date: string };
+type MemberSide = { selection: SelectionRow; fixture: SideFixture; date: string };
 
 /** The round's sides holding this member (at most one per date), with their Perth dates. */
 async function memberSides(
@@ -148,24 +147,22 @@ async function memberSides(
   memberId: number,
 ): Promise<MemberSide[]> {
   const rows = await db
-    .select({ selection: selectionsTable, fixture: fixturesTable })
+    .select()
     .from(selectionsTable)
-    .innerJoin(
-      fixturesTable,
-      and(
-        eq(fixturesTable.id, selectionsTable.fixtureId),
-        eq(fixturesTable.tenantId, selectionsTable.tenantId),
-      ),
-    )
     .where(
       and(
         eq(selectionsTable.tenantId, tenantId),
         eq(selectionsTable.roundId, roundId),
         sql`${selectionsTable.slots} @> ${JSON.stringify([{ memberId }])}::jsonb`,
       ),
-    )
-    .orderBy(asc(fixturesTable.startAt));
-  return rows.map((r) => ({ ...r, date: perthDate(r.fixture.startAt) }));
+    );
+  const fixtures = await loadSideFixtures(db, tenantId, rows);
+  return rows
+    .flatMap((selection) => {
+      const fixture = fixtures.get(sideFixtureKey(selection));
+      return fixture ? [{ selection, fixture, date: perthDate(fixture.startAt) }] : [];
+    })
+    .sort((a, b) => a.fixture.startAt.getTime() - b.fixture.startAt.getTime());
 }
 
 /** The dates a member answers this round: their grade's dates plus any date they're picked on. */

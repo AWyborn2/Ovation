@@ -666,6 +666,7 @@ export * from './selectionFinaliseBody';
 export * from './selectionFinaliseResult';
 export * from './selectionFinaliseResultMessaged';
 export * from './selectionFixture';
+export * from './selectionFixtureKind';
 export * from './selectionGap';
 export * from './selectionGapReason';
 export * from './selectionMember';

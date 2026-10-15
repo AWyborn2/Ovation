@@ -64,6 +64,7 @@ function side(
     id,
     roundId: 7,
     fixture: {
+      kind: "senior",
       id: id * 10,
       grade,
       opponentName: "Riverside Districts",
