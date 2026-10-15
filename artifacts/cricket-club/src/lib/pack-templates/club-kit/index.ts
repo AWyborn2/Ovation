@@ -58,6 +58,6 @@ export const CLUB_KIT_PACK: PackManifest = {
   packId: "club-kit-v1",
   name: "Club Kit",
   colourMode: "club-only",
-  rootVars: ({ tokens, brand, junior }) => clubKitVars(clubKitPaletteFor(tokens, brand, junior)),
+  rootVars: ({ tokens, brand }) => clubKitVars(clubKitPaletteFor(tokens, brand)),
   designs: CLUB_KIT_DESIGNS,
 };

@@ -510,7 +510,7 @@ export function renderFreeLayers(
     JSON.stringify(layers).includes("var(--ck-");
   const palette =
     hasElement && ctx.tokens
-      ? `;${templatePaletteVars(clubKitPaletteFor(ctx.tokens, ctx.brand, ctx.junior ?? false))}`
+      ? `;${templatePaletteVars(clubKitPaletteFor(ctx.tokens, ctx.brand))}`
       : "";
   const parts = layers.map((layer) => {
     if (layer.hidden) return "";

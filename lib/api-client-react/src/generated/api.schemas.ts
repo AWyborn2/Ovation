@@ -5077,7 +5077,6 @@ export type GenerateCardSetBodyKind = typeof GenerateCardSetBodyKind[keyof typeo
 
 export const GenerateCardSetBodyKind = {
   matchSummary: 'matchSummary',
-  gradeLeader: 'gradeLeader',
 } as const;
 
 export type GenerateCardSetBodyPlatformSize = typeof GenerateCardSetBodyPlatformSize[keyof typeof GenerateCardSetBodyPlatformSize];
@@ -5231,7 +5230,7 @@ export type PostingPlanVersion = typeof PostingPlanVersion[keyof typeof PostingP
 
 
 export const PostingPlanVersion = {
-  NUMBER_1: 1,
+  NUMBER_2: 2,
 } as const;
 
 export type PostingPlanRowPackaging = typeof PostingPlanRowPackaging[keyof typeof PostingPlanRowPackaging];
@@ -5240,12 +5239,8 @@ export type PostingPlanRowPackaging = typeof PostingPlanRowPackaging[keyof typeo
 export const PostingPlanRowPackaging = {
   individual: 'individual',
   round: 'round',
-  both: 'both',
 } as const;
 
-/**
- * Unlisted grades: seniors draft (juniors do not), or nothing drafts.
- */
 export type PostingPlanRowOthers = typeof PostingPlanRowOthers[keyof typeof PostingPlanRowOthers];
 
 
@@ -5255,39 +5250,70 @@ export const PostingPlanRowOthers = {
 } as const;
 
 /**
- * Explicit per-grade choices; a grade absent here follows others.
+ * Carousel rows with a junior grade on: juniors share the seniors' carousel or get their own.
+ */
+export type PostingPlanRowJuniors = typeof PostingPlanRowJuniors[keyof typeof PostingPlanRowJuniors];
+
+
+export const PostingPlanRowJuniors = {
+  combined: 'combined',
+  separate: 'separate',
+} as const;
+
+/**
+ * Explicit per-grade choices (junior age groups included); a grade absent here follows others.
  */
 export type PostingPlanRowGrades = {[key: string]: boolean};
 
+/**
+ * One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).
+ */
 export interface PostingPlanRow {
   enabled: boolean;
   packaging: PostingPlanRowPackaging;
-  /** Explicit per-grade choices; a grade absent here follows others. */
+  /** Explicit per-grade choices (junior age groups included); a grade absent here follows others. */
   grades: PostingPlanRowGrades;
-  /** Unlisted grades: seniors draft (juniors do not), or nothing drafts. */
   others: PostingPlanRowOthers;
+  /** Carousel rows with a junior grade on: juniors share the seniors' carousel or get their own. */
+  juniors?: PostingPlanRowJuniors;
 }
+
+/**
+ * Runs a junior innings needs to be a Big Moment: a century, or a half-century (R11).
+ */
+export type PostingPlanBigMomentsJuniorRunsBar = typeof PostingPlanBigMomentsJuniorRunsBar[keyof typeof PostingPlanBigMomentsJuniorRunsBar];
+
+
+export const PostingPlanBigMomentsJuniorRunsBar = {
+  NUMBER_50: 50,
+  NUMBER_100: 100,
+} as const;
 
 export type PostingPlanRows = {
   results: PostingPlanRow;
+  bigMoments: PostingPlanRow;
   milestones: PostingPlanRow;
-  feats: PostingPlanRow;
   debuts: PostingPlanRow;
-  gradeLeaders: PostingPlanRow;
-  clubLeaderboards: PostingPlanRow;
-  ladders: PostingPlanRow;
   gameDay: PostingPlanRow;
   teamLists: PostingPlanRow;
+  clubLeaderboards: PostingPlanRow;
+  ladders: PostingPlanRow;
+};
+
+export type PostingPlanBigMoments = {
+  /** Runs a junior innings needs to be a Big Moment: a century, or a half-century (R11). */
+  juniorRunsBar: PostingPlanBigMomentsJuniorRunsBar;
 };
 
 /**
- * One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001).
+ * One row per card type: drafts or not, which senior and junior grades, individual or round carousel (version 2, plan 2026-10-15-001).
  */
 export interface PostingPlan {
   version: PostingPlanVersion;
   /** @nullable */
   styleId: string | null;
   rows: PostingPlanRows;
+  bigMoments: PostingPlanBigMoments;
 }
 
 export interface PostingSlot {
@@ -8029,11 +8055,6 @@ export interface SocialDraftRevision {
 
 export interface PendingDraftCount {
   count: number;
-}
-
-export interface RoundUpInput {
-  grade: string;
-  season: number;
 }
 
 export type BackfillMatchesInputIncludeItem = typeof BackfillMatchesInputIncludeItem[keyof typeof BackfillMatchesInputIncludeItem];

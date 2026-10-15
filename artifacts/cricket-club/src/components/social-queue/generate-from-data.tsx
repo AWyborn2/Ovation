@@ -13,7 +13,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   useListMatches,
   getListMatchesQueryKey,
-  useGenerateRoundUp,
   useGenerateRecaps,
   useBackfillMatchDrafts,
   BackfillMatchesInputIncludeItem,
@@ -74,7 +73,6 @@ export function GenerateFromDataCard({ onDrafted }: { onDrafted: () => void }) {
     onDrafted();
   };
   const recapM = useGenerateRecaps({ mutation: { onSuccess: done("season recap") } });
-  const roundupM = useGenerateRoundUp({ mutation: { onSuccess: done("round-up") } });
 
   const ready = !!effectiveGrade && effectiveSeason != null;
   const body = () => ({ grade: effectiveGrade, season: effectiveSeason as number });
@@ -138,15 +136,6 @@ export function GenerateFromDataCard({ onDrafted }: { onDrafted: () => void }) {
               <Sparkles className="mr-2 h-4 w-4" />
             )}
             Season recap
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={!ready || roundupM.isPending}
-            onClick={() => roundupM.mutate({ data: body() })}
-          >
-            {roundupM.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Round-up
           </Button>
           <Button type="button" variant="outline" onClick={() => setBackfillOpen(true)}>
             <History className="mr-2 h-4 w-4" />

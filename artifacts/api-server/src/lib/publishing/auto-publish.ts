@@ -1,3 +1,5 @@
+import { isJuniorDraft, juniorDraftMayAutoPublish } from "../junior-publishing";
+import { loadJuniorTeamPublishing } from "../junior-helpers";
 import { and, eq, gte, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { db, socialDraftsTable, socialPublicationsTable, socialSettingsTable } from "@workspace/db";
 import { loadConnection, publishingAvailable } from "./connections";
@@ -52,7 +54,11 @@ export async function autoPublishCandidates(
 ): Promise<number[]> {
   const freshSince = new Date(now.getTime() - freshnessHours * 3_600_000);
   const rows = await db
-    .select({ id: socialDraftsTable.id })
+    .select({
+      id: socialDraftsTable.id,
+      sourceMatchIsJunior: socialDraftsTable.sourceMatchIsJunior,
+      cardInput: socialDraftsTable.cardInput,
+    })
     .from(socialDraftsTable)
     .where(
       and(
@@ -60,8 +66,6 @@ export async function autoPublishCandidates(
         eq(socialDraftsTable.status, "ready"),
         isNotNull(socialDraftsTable.autoReadyAt),
         gte(socialDraftsTable.sourceImportedAt, freshSince),
-        eq(socialDraftsTable.sourceMatchIsJunior, false),
-        sql`coalesce(${socialDraftsTable.cardInput}->>'junior', 'false') <> 'true'`,
         ne(socialDraftsTable.engine, "adhoc"),
         isNull(socialDraftsTable.expiredAt),
         // A templated card that needs a look is never auto-posted (KTD10).
@@ -69,7 +73,9 @@ export async function autoPublishCandidates(
         sql`not exists (select 1 from ${socialPublicationsTable} p where p.draft_id = ${socialDraftsTable.id})`,
       ),
     );
-  return rows.map((r) => r.id);
+  // Junior content passes only through the per-team gate (ADR-006), failing closed.
+  const publishing = rows.some(isJuniorDraft) ? await loadJuniorTeamPublishing(tenantId) : null;
+  return rows.filter((r) => juniorDraftMayAutoPublish(r, publishing)).map((r) => r.id);
 }
 
 /**

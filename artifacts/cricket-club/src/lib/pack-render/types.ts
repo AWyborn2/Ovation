@@ -10,7 +10,7 @@
 export interface PackTokens {
   /** Brand accent → `--gold`. */
   accent: string;
-  /** Panel colour → `--panel` (junior forces brown `#42342B`). */
+  /** Panel colour → `--panel`. */
   panel: string;
   /** Deep background → `--ink`. */
   ink: string;
@@ -19,9 +19,6 @@ export interface PackTokens {
   /** Display font key → `--disp` family. */
   displayFont?: string;
 }
-
-/** The junior brown panel, forced regardless of theme (KTD6 / replit.md). */
-export const JUNIOR_PANEL = "#42342B";
 
 /**
  * How a design pack is coloured for a club (stored per club, per pack):

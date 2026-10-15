@@ -29,6 +29,7 @@ export const PROJECTOR_WRITABLE: readonly string[] = [
   "central.match_rosters",
   "central.fall_of_wickets",
   "central.fielding",
+  "central.match_feats",
   "central.players",
 ];
 

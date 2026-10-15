@@ -100,13 +100,13 @@ function Editor({ brand }: { brand: TenantBrand }) {
     snapHexToAccentToken(brand.primaryColour ?? brand.backgroundColour),
   );
 
-  // Custom mode state — all three colour slots
+  // Custom mode state — the background and primary slots. The juniors colour is
+  // no longer offered (plan 2026-10-15-001 R18/R19); the stored value is kept as is.
   const [customPrimary, setCustomPrimary] = useState(brand.backgroundColour ?? "#1A3350");
   const [customSecondary, setCustomSecondary] = useState(
     brand.primaryColour ??
       ACCENT_HEX[snapHexToAccentToken(brand.primaryColour ?? brand.backgroundColour)],
   );
-  const [customTertiary, setCustomTertiary] = useState(brand.juniorsColour ?? "#2A4060");
 
   const [badgeStyle, setBadgeStyle] = useState<BadgeStyle>(
     (brand.badgeStyle as BadgeStyle | null | undefined) ?? "logo",
@@ -135,7 +135,6 @@ function Editor({ brand }: { brand: TenantBrand }) {
     setAccent(snapped);
     setCustomPrimary(brand.backgroundColour ?? "#1A3350");
     setCustomSecondary(brand.primaryColour ?? ACCENT_HEX[snapped]);
-    setCustomTertiary(brand.juniorsColour ?? "#2A4060");
     setBadgeStyle((brand.badgeStyle as BadgeStyle | null | undefined) ?? "logo");
     setUseNavyBase(brand.useNavyBase ?? false);
     setBackgroundUrl(brand.backgroundUrl ?? "");
@@ -256,7 +255,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
           ...shared,
           backgroundColour: customPrimary || null,
           primaryColour: customSecondary || null,
-          juniorsColour: customTertiary || null,
+          juniorsColour: brand.juniorsColour,
         },
       });
     }
@@ -270,7 +269,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
     logoUrl: logoUrl || null,
     backgroundColour: colourTab === "preset" ? brand.backgroundColour : customPrimary,
     primaryColour: previewSecondary,
-    juniorsColour: colourTab === "preset" ? brand.juniorsColour : customTertiary,
+    juniorsColour: brand.juniorsColour,
     backgroundUrl: backgroundUrl || null,
     useNavyBase,
     themeOverrides: themeOverridesPayload,
@@ -283,9 +282,7 @@ function Editor({ brand }: { brand: TenantBrand }) {
   const autoHex = (key: string): string => hslTripletToHex(autoTokens[key]) ?? "#334155";
 
   const contrastWarning =
-    colourTab === "custom"
-      ? contrastWarningMessage([customPrimary, customSecondary, customTertiary], mode)
-      : null;
+    colourTab === "custom" ? contrastWarningMessage([customPrimary, customSecondary], mode) : null;
 
   const busy =
     isUploadingLogo ||
@@ -608,13 +605,6 @@ function Editor({ brand }: { brand: TenantBrand }) {
                     description="Buttons, nav highlights, badges, all interactive colours"
                     value={customSecondary}
                     onChange={setCustomSecondary}
-                    disabled={busy}
-                  />
-                  <ColourSlotPicker
-                    label="Juniors colour"
-                    description="Juniors section banner only"
-                    value={customTertiary}
-                    onChange={setCustomTertiary}
                     disabled={busy}
                   />
                   {contrastWarning && (

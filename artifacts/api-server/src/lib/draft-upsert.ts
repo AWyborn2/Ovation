@@ -404,6 +404,8 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
   const refreshed = {
     cardInput: input.cardInput,
     appPath: input.appPath,
+    // Juniors joining a combined round set make the draft junior; it never goes back (KTD6).
+    ...(input.sourceMatchIsJunior === true ? { sourceMatchIsJunior: true } : {}),
     ...(current.editedAt == null ? { caption: e.caption } : {}),
     ...(isAutoPhoto(current.photoSource)
       ? { photoUrl: e.photoUrl, photoSource: e.photoSource }
@@ -507,14 +509,14 @@ export const draftKeys = {
   careerMilestone: (playerId: PlayerKeyRef, boardKey: string, tierIndex: number) =>
     `milestone:${playerId}:${boardKey}:${tierIndex}`,
   matchFeat: (
-    boardKey: "century" | "fiveFor",
+    boardKey: "century" | "fiveFor" | "hatTrick" | "fiveCatches",
     playerId: PlayerKeyRef,
     grade: string,
     season: number,
     round: number | null,
   ) => `feat:${boardKey}:${grade}:${season}:${round ?? "none"}:${playerId}`,
   matchFeatPrefix: (
-    boardKey: "century" | "fiveFor",
+    boardKey: "century" | "fiveFor" | "hatTrick" | "fiveCatches",
     grade: string,
     season: number,
     round: number | null,

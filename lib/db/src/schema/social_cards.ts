@@ -423,17 +423,20 @@ export type RoundSchedulesRow = Partial<
 
 /** Stored Posting Plan; the shape and rules live in @workspace/scorecard/posting-plan. */
 export type PostingPlanRow = {
-  version: 1;
+  /** A stored plan older than version 2 is replaced by the code default when read (ADR-004). */
+  version: 2;
   styleId: string | null;
   rows: Record<
     string,
     {
       enabled: boolean;
-      packaging: "individual" | "round" | "both";
+      packaging: "individual" | "round";
       grades: Record<string, boolean>;
       others: "seniors" | "off";
+      juniors?: "combined" | "separate";
     }
   >;
+  bigMoments: { juniorRunsBar: 50 | 100 };
 };
 
 /** One weekly posting slot: day 0 = Sunday, "HH:mm" in club time (15-minute steps). */

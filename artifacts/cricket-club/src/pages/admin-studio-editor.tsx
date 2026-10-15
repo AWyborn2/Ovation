@@ -361,17 +361,12 @@ function EditorApp({ draftId }: { draftId: number }) {
   const palette = [
     bundle?.brand?.primaryColour ?? brand.primaryColour,
     bundle?.brand?.backgroundColour ?? brand.backgroundColour,
-    bundle?.brand?.juniorsColour ?? brand.juniorsColour,
   ].filter((c): c is string => !!c);
   const slideData = slideJunior ? { ...data, photoUrl: undefined } : data;
   const fieldValues = packFieldValues(slideInput, slideData, packId);
   // The club's Club Kit palette, for the element library's thumbnails.
   const elementPalette = clubKitVars(
-    clubKitPaletteFor(
-      resolveCardTokens({ theme, junior: slideJunior, data, packId }),
-      data?.brand,
-      slideJunior,
-    ),
+    clubKitPaletteFor(resolveCardTokens({ theme, junior: slideJunior, data, packId }), data?.brand),
   );
 
   const native = packNativeSize(format);

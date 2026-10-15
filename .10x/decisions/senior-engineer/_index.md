@@ -4,4 +4,5 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 
 ## Active features
 
+- [social-auto-queue-criteria](social-auto-queue-criteria.md)
 - [card-kind-templates](card-kind-templates.md)

@@ -24,6 +24,7 @@ import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { invalidateTenantConfigCache } from "../lib/tenant";
 import { runDraftSweep } from "../lib/draft-sweep";
 import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
+import { findPostingStyle, planFromStyle } from "@workspace/scorecard/posting-plan";
 
 // Central club ids no other suite uses (tenants.central_club_id is unique).
 const CLUB = 97651;
@@ -136,9 +137,16 @@ beforeAll(async () => {
     { tenantId, participantId: G_PRIVATE, playerId: 43 },
     { tenantId, participantId: G_JUNIOR, playerId: 44 },
   ]);
-  await db
-    .insert(socialSettingsTable)
-    .values([{ tenantId, centralSweepWatermark: WATERMARK }, { tenantId: otherTenantId }]);
+  await db.insert(socialSettingsTable).values([
+    // Version 2 plans default a central club to round carousels; this suite
+    // drafts one card per match, so it opts into the "every match" style.
+    {
+      tenantId,
+      centralSweepWatermark: WATERMARK,
+      postingPlan: planFromStyle(findPostingStyle("every-match", true)!),
+    },
+    { tenantId: otherTenantId },
+  ]);
   await db.insert(premiershipsTable).values({
     tenantId,
     year: 2025,
@@ -230,58 +238,12 @@ const get = (path: string, as: "a" | "b" = "a") =>
     .set("x-tenant-id", String(as === "a" ? tenantId : otherTenantId));
 
 type Draft = { sourceKey: string; appPath: string; cardInput: Record<string, unknown> };
-const byCategory = (drafts: Draft[], category: string) =>
-  drafts.find((d) => d.cardInput.category === category);
-
 function assertNoLeaks(drafts: Draft[]) {
   const text = JSON.stringify(drafts);
   expect(text).not.toContain("P Hidden"); // private
   expect(text).not.toContain("J Kid"); // junior
   for (const g of GUIDS) expect(text).not.toContain(g); // GUIDs never reach a card
 }
-
-describe("central season round-up", () => {
-  it("drafts the round-up from the club's senior scorecards", async () => {
-    const res = await post("/social-roundups", { grade: "A Grade", season: 2024 });
-    expect(res.status).toBe(200);
-    const drafts = res.body as Draft[];
-    assertNoLeaks(drafts);
-    expect(drafts.map((d) => d.sourceKey).sort()).toEqual(
-      [
-        "roundup:2024:A Grade:3:Best Bowling",
-        "roundup:2024:A Grade:3:Best Innings",
-        "roundup:2024:A Grade:3:Dismissals",
-        "roundup:2024:A Grade:3:Runs",
-        "roundup:2024:A Grade:3:Wickets",
-      ].sort(),
-    );
-    expect(byCategory(drafts, "Runs")).toMatchObject({
-      appPath: "/players/41",
-      cardInput: { playerName: "R Star", value: 1050 },
-    });
-    // Unmapped player: the card stays, the link drops to the players list.
-    expect(byCategory(drafts, "Wickets")).toMatchObject({
-      appPath: "/players",
-      cardInput: { playerName: "U Bowler", value: 12 },
-    });
-    expect(byCategory(drafts, "Best Bowling")?.cardInput.value).toBe("6/20");
-    expect(byCategory(drafts, "Dismissals")?.cardInput.value).toBe(2);
-  });
-
-  it("a repeat run refreshes the same drafts instead of adding more", async () => {
-    await post("/social-roundups", { grade: "A Grade", season: 2024 });
-    const rows = await db
-      .select()
-      .from(socialDraftsTable)
-      .where(
-        and(
-          eq(socialDraftsTable.tenantId, tenantId),
-          like(socialDraftsTable.sourceKey, "roundup:%"),
-        ),
-      );
-    expect(rows).toHaveLength(5);
-  });
-});
 
 describe("central season recap", () => {
   it("drafts champions, the milestone crossed and the premiership", async () => {
@@ -447,10 +409,10 @@ describe("tenant isolation", () => {
 });
 
 // Runs last: it advances the watermark the backfill tests assert on.
-describe("scheduled sweep: weekly round-up for a central club", () => {
+describe("scheduled sweep: no grade-leader round-up for a central club", () => {
   const log = { error: () => {}, warn: () => {}, info: () => {} };
 
-  it("drafts the round-up for a grade that just had a new match, when round-ups are on", async () => {
+  it("drafts no round-up cards even with the legacy round-up switch on (R5)", async () => {
     await db
       .delete(socialDraftsTable)
       .where(
@@ -479,10 +441,6 @@ describe("scheduled sweep: weekly round-up for a central club", () => {
           like(socialDraftsTable.sourceKey, "roundup:%"),
         ),
       );
-    expect(roundUps.map((d) => d.sourceKey)).toEqual(
-      expect.arrayContaining(["roundup:2024:A Grade:3:Runs", "roundup:2024:A Grade:3:Wickets"]),
-    );
-    expect(JSON.stringify(roundUps)).not.toContain("P Hidden");
-    expect(JSON.stringify(roundUps)).not.toContain("J Kid");
+    expect(roundUps).toEqual([]);
   });
 });

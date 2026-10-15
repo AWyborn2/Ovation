@@ -6,6 +6,7 @@
  * unchanged. The pure mapping is unit-tested in team-list.test.ts; this drives
  * generateTeamListDrafts against a real database (needs DATABASE_URL; CI).
  */
+import { findPostingStyle, planFromStyle } from "@workspace/scorecard/posting-plan";
 import { randomUUID } from "node:crypto";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { and, eq, inArray } from "drizzle-orm";
@@ -49,6 +50,8 @@ describe("team-list drafts with season shirt numbers (DB)", () => {
         roundup: { enabled: false, grades: {} },
         matchday: { enabled: true, grades: {} },
       },
+      // Version 2 plan (ADR-004): team lists draft one card per fixture.
+      postingPlan: planFromStyle(findPostingStyle("every-match", true)!),
     });
     if (numbersOn) {
       await db.insert(shirtNumberSettingsTable).values({ tenantId: t.id, enabled: true });

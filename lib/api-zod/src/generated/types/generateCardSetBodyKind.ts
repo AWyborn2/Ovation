@@ -11,5 +11,4 @@ export type GenerateCardSetBodyKind = typeof GenerateCardSetBodyKind[keyof typeo
 
 export const GenerateCardSetBodyKind = {
   matchSummary: 'matchSummary',
-  gradeLeader: 'gradeLeader',
 } as const;

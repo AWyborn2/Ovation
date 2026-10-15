@@ -21,9 +21,9 @@ import {
 import { packPreviewPhoto } from "@/lib/gallery-photo";
 import { useHeroImage } from "@/lib/use-hero-image";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, IdCard, PenSquare } from "lucide-react";
+import { Loader2, Trash2, PenSquare } from "lucide-react";
 import { CARD_KIND_OPTIONS } from "@/components/card-kind-picker";
 import { usePackSelection } from "@/lib/use-pack-selection";
 import { usePackColourModes } from "@/lib/use-pack-colour-modes";
@@ -455,29 +455,6 @@ export default function AdminSocialStudio() {
               <WeekendCarousel initialType="results" />
               <WeekendCarousel initialType="matchSummary" />
             </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Trading cards entry */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Trading cards</h2>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <IdCard className="h-4 w-4" /> Player trading cards
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              Choose which stats and awards appear on collectible player trading cards, with
-              optional per-role overrides.
-            </p>
-            <Link href="/admin/social/trading-cards">
-              <Button size="sm" variant="outline">
-                Configure trading cards
-              </Button>
-            </Link>
           </CardContent>
         </Card>
       </section>

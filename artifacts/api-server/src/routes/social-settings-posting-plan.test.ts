@@ -59,7 +59,7 @@ const patch = (tenantId: number, body: unknown, withCookie = true) => {
   const r = request(app).patch("/api/social-settings").set("x-tenant-id", String(tenantId));
   return (withCookie ? r.set("Cookie", cookies[tenantId]) : r).send(body as object);
 };
-const style = (id: string): PostingPlan => planFromStyle(findPostingStyle(id)!);
+const style = (id: string): PostingPlan => planFromStyle(findPostingStyle(id, true)!);
 const row = async (tenantId: number) =>
   (
     await db.select().from(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId))
@@ -88,12 +88,14 @@ beforeEach(async () => {
 });
 
 describe("GET /social-settings postingPlan", () => {
-  it("derives the plan from current settings until one is saved (AE5)", async () => {
+  it("serves the default table until a plan is saved (ADR-004)", async () => {
     const res = await get(centralId).expect(200);
     const s = res.body.settings;
     expect(s.postingPlanSaved).toBe(false);
     expect(s.centralData).toBe(true);
-    expect(s.postingPlan.rows.results).toMatchObject({ enabled: true, packaging: "individual" });
+    expect(s.postingPlan.version).toBe(2);
+    expect(s.postingPlan.rows.results).toMatchObject({ enabled: true, packaging: "round" });
+    expect(s.postingPlan.rows.bigMoments).toMatchObject({ enabled: true, packaging: "individual" });
     expect(s.postingPlan.rows.ladders.enabled).toBe(false);
   });
 });
@@ -111,7 +113,8 @@ describe("PATCH /social-settings postingPlan", () => {
     expect(res.body.postingPlan.styleId).toBe("round-carousels");
 
     const r = await row(centralId);
-    expect(r.postingPlan?.rows.ladders.enabled).toBe(true);
+    expect(r.postingPlan?.rows.ladders.enabled).toBe(false);
+    expect(r.postingPlan?.rows.teamLists.packaging).toBe("round");
     expect(r.roundSchedules?.teamLists).toEqual({ mode: "perRound", day: 3, hour: 9 });
     expect(r.roundSchedules?.weekendWrap?.mode).toBe("perRound");
     expect(r.engineRoundUp).toBe(true);
@@ -122,7 +125,7 @@ describe("PATCH /social-settings postingPlan", () => {
 
   it("collapses rows that share a family widest-wins", async () => {
     const plan = style("every-match");
-    plan.rows.feats = { ...plan.rows.feats, enabled: false };
+    plan.rows.bigMoments = { ...plan.rows.bigMoments, enabled: false };
     plan.rows.gameDay = { ...plan.rows.gameDay, grades: { "C Grade": false } };
     plan.rows.teamLists = { ...plan.rows.teamLists, grades: { "C Grade": true } };
     await patch(centralId, { postingPlan: plan }).expect(200);

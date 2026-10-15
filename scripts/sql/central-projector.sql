@@ -138,6 +138,24 @@ on conflict (grade_key) do update
    set central_grade = excluded.central_grade, votes = excluded.votes, updated_at = now()
  where central.grade_playhq_map.source = 'history';
 
+-- ── Feats (ADR-005, plan 2026-10-15-001) ────────────────────────────────────────────────────
+-- Hat-tricks and five-catch innings the projector detects from playhq.balls and
+-- playhq.match_fielding when it projects a match. Drizzle: lib/db/src/central-schema/match_feats.ts.
+create table if not exists central.match_feats (
+  id              integer primary key default nextval('central.projected_line_id_seq'),
+  match_id        integer not null,
+  innings         integer,
+  club_id         integer,
+  participant_id  text,
+  player_name     text,
+  kind            text not null,
+  detail          jsonb
+);
+-- A table CI (drizzle push of central-schema) or an older run created without the
+-- sequence default still gets one: the projector inserts without an id.
+alter table central.match_feats alter column id set default nextval('central.projected_line_id_seq');
+create index if not exists idx_central_match_feats_club_match on central.match_feats (club_id, match_id);
+
 -- ── The role ─────────────────────────────────────────────────────────────────────────────────
 do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'central_projector') then
@@ -151,7 +169,7 @@ grant select on all tables in schema central to central_projector;
 grant select on all tables in schema playhq to central_projector;
 grant select, insert, update, delete on
   central.matches, central.match_batting, central.match_bowling, central.match_rosters,
-  central.fall_of_wickets, central.fielding, central.players
+  central.fall_of_wickets, central.fielding, central.match_feats, central.players
   to central_projector;
 grant usage, select on central.projected_match_id_seq, central.projected_line_id_seq
   to central_projector;
@@ -187,7 +205,7 @@ revoke insert, update, delete, truncate on
   from central_projector;
 revoke truncate on
   central.matches, central.match_batting, central.match_bowling, central.match_rosters,
-  central.fall_of_wickets, central.fielding, central.players
+  central.fall_of_wickets, central.fielding, central.match_feats, central.players
   from central_projector;
 do $$
 declare s text;

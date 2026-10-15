@@ -4,15 +4,8 @@ import { getTableConfig } from "drizzle-orm/pg-core";
 // module — which throws without DATABASE_URL — is never loaded. Keeps this a
 // pure, DB-free schema/contract/mapping round-trip.
 import { cardSetsTable } from "@workspace/db/schema";
-import type { PlayerGradeStat } from "@workspace/db/schema";
 import { GenerateCardSetBody, GenerateCardSetResponse } from "@workspace/api-zod";
-import {
-  assembleSlides,
-  gradeLeaderInput,
-  leaderValue,
-  topLeaderRow,
-  GENERATE_GRADES,
-} from "../lib/social-cards-generate";
+import { assembleSlides } from "../lib/social-cards-generate";
 
 /**
  * C3 — server-side themed carousel-set generation: schema + OpenAPI contract +
@@ -21,7 +14,7 @@ import {
  * Asserts (1) the Drizzle `card_sets` table carries the nullable grouping
  * columns plus the partial unique index that makes regeneration idempotent,
  * (2) the generated Zod body/response schemas round-trip the generate contract,
- * and (3) the pure slide-assembly + gradeLeader mapping helpers behave. The
+ * and (3) the pure slide-assembly helper behaves. The
  * upsert transaction itself is exercised against a live DB elsewhere; here we
  * pin the index shape + the pure logic.
  */
@@ -49,7 +42,7 @@ describe("C3 card_sets generation — schema shape", () => {
     // The key is (tenant_id, source_kind, COALESCE(season,-1),
     // COALESCE(source_round,-1), COALESCE(grade,'')): two named columns first,
     // then three COALESCE-sentinel expressions that fold the nullable columns to
-    // non-null so the all-null gradeLeader key dedupes at the DB level (and the
+    // non-null so a partly-null key dedupes at the DB level (and the
     // expression is identical in the Drizzle schema + the SQL migration, so both
     // sync paths build the same index). Named columns expose `.name`; SQL
     // expressions do not.
@@ -80,20 +73,16 @@ describe("C3 generate contract — Zod round-trip", () => {
     expect(body.round).toBe(5);
   });
 
-  it("accepts a gradeLeader body with round/season/grades omitted", () => {
-    const body = GenerateCardSetBody.parse({
-      kind: "gradeLeader",
-      platformSize: "portrait",
-    });
-    expect(body.kind).toBe("gradeLeader");
-    expect(body.round).toBeUndefined();
-    expect(body.grades).toBeUndefined();
+  it("rejects the retired gradeLeader kind (plan 2026-10-15-001 R5)", () => {
+    expect(() =>
+      GenerateCardSetBody.parse({ kind: "gradeLeader", platformSize: "portrait" }),
+    ).toThrow();
   });
 
   it("rejects an unknown kind and a bad platform size", () => {
     expect(() => GenerateCardSetBody.parse({ kind: "nope", platformSize: "square" })).toThrow();
     expect(() =>
-      GenerateCardSetBody.parse({ kind: "gradeLeader", platformSize: "banner" }),
+      GenerateCardSetBody.parse({ kind: "matchSummary", platformSize: "banner" }),
     ).toThrow();
   });
 
@@ -126,7 +115,7 @@ describe("C3 generate contract — Zod round-trip", () => {
   });
 });
 
-describe("C3 slide assembly + mapping — pure helpers", () => {
+describe("C3 slide assembly — pure helper", () => {
   const input = (kind: string) => ({ kind });
 
   it("assembles ordered slides with deterministic ids and draft defaults", () => {
@@ -150,69 +139,5 @@ describe("C3 slide assembly + mapping — pure helpers", () => {
     const { slides, truncated } = assembleSlides([], 10);
     expect(slides).toHaveLength(0);
     expect(truncated).toBe(0);
-  });
-
-  const row = (over: Partial<PlayerGradeStat>): PlayerGradeStat =>
-    ({
-      id: 1,
-      playerId: 1,
-      surname: "Smith",
-      givenName: "Jo",
-      grade: "A Grade",
-      season: null,
-      games: 10,
-      innings: null,
-      notOuts: null,
-      runs: null,
-      batAvg: null,
-      highScore: null,
-      fifties: null,
-      hundreds: null,
-      wickets: null,
-      runsConceded: null,
-      bowlAvg: null,
-      bestBowling: null,
-      fiveWickets: null,
-      catches: null,
-      stumpings: null,
-      runOuts: null,
-      ...over,
-    }) as PlayerGradeStat;
-
-  it("reads the category value, treating null as 0", () => {
-    expect(leaderValue(row({ runs: 420 }), "Runs")).toBe(420);
-    expect(leaderValue(row({ wickets: 31 }), "Wickets")).toBe(31);
-    expect(leaderValue(row({ runs: null }), "Runs")).toBe(0);
-  });
-
-  it("picks the top qualifying row and skips zero/negative categories", () => {
-    const rows = [
-      row({ givenName: "Low", runs: 100 }),
-      row({ givenName: "High", runs: 500 }),
-      row({ givenName: "Zero", runs: 0 }),
-    ];
-    expect(topLeaderRow(rows, "Runs")?.givenName).toBe("High");
-    // No one has wickets → null.
-    expect(topLeaderRow(rows, "Wickets")).toBeNull();
-  });
-
-  it("maps a leaderboard row to the exact gradeLeader ShareCardInput shape", () => {
-    const inp = gradeLeaderInput(
-      row({ givenName: "Jo", surname: "Smith", runs: 742 }),
-      "B Grade",
-      "Runs",
-    );
-    expect(inp).toEqual({
-      kind: "gradeLeader",
-      grade: "B Grade",
-      category: "Runs",
-      playerName: "Jo Smith",
-      value: 742,
-    });
-  });
-
-  it("exposes the app's fixed grade list as the default span", () => {
-    expect(GENERATE_GRADES).toContain("A Grade");
-    expect(GENERATE_GRADES).toContain("Colts");
   });
 });

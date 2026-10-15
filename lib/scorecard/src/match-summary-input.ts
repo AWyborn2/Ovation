@@ -8,7 +8,7 @@
 
 import { buildScorecard } from "./mapping";
 import { buildJuniorScorecard } from "./junior-mapping";
-import { DEFAULT_BRAND, type ClubBrand } from "./brand";
+import { DEFAULT_BRAND, deriveClubColors, type ClubBrand } from "./brand";
 import type { Scorecard, ScorecardTeam, ScorecardBatsman, ScorecardBowler } from "./types";
 import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
 import type {
@@ -237,18 +237,13 @@ export function matchToSummaryInput(match: MatchDetail): MatchSummaryInput {
 // they stay correct even with the line excluded).
 const MASK_NAME = "Private Player";
 
-// Junior club brand: the brown palette is applied by the renderer; the team
-// chrome (innings header bars, result banner) uses club brown so the whole card
-// reads as junior content rather than the senior navy.
-const JUNIOR_BROWN = "#42342B";
-const JUNIOR_GOLD = "#FBAC27";
-
 /**
  * Map a junior match-detail DTO into a junior `matchSummary` share-card input.
  * Mirrors the senior `matchToSummaryInput` but builds via `buildJuniorScorecard`
- * (which masks private participants), forces the junior brown club chrome, sets
- * `junior: true` so the card renders in the brown palette with a "JUNIOR MATCH"
- * eyebrow, and excludes any masked private players from the featured lists. Only
+ * (which masks private participants), keeps the club's own chrome (the junior
+ * brown look is retired, plan 2026-10-15-001 R18), sets `junior: true` so the
+ * card carries a "JUNIOR MATCH" eyebrow and the junior naming rules, and
+ * excludes any masked private players from the featured lists. Only
  * the club's own juniors are featured: opposition batters and bowlers are never
  * named on a card (R22), though both team totals are shown.
  *
@@ -268,15 +263,17 @@ export function juniorMatchToSummaryInput(
       ? first.battingTeam
       : first.bowlingTeam
     : null;
-  // The tenant's own club always wears the junior brown chrome, regardless of
-  // innings order; its name/shortName/logo come from the resolved scorecard
-  // team, falling back to the tenant brand when there's no innings data yet.
+  // The tenant's own club wears its own colours regardless of innings order;
+  // its name/shortName/logo/colours come from the resolved scorecard team,
+  // falling back to the tenant brand when there's no innings data yet.
+  const b = brand ?? DEFAULT_BRAND;
+  const clubColors = clubScTeam?.colors ?? deriveClubColors(b.backgroundColour, b.primaryColour);
   const clubTeam: MatchSummaryTeam = {
     name: clubScTeam?.name ?? brand?.name ?? DEFAULT_BRAND.name,
     shortName: clubScTeam?.shortName ?? brand?.shortName ?? null,
-    primaryColor: JUNIOR_BROWN,
-    secondaryColor: JUNIOR_GOLD,
-    textColor: JUNIOR_GOLD,
+    primaryColor: clubColors.primary,
+    secondaryColor: clubColors.secondary,
+    textColor: clubColors.text,
     logoUrl: clubScTeam?.logoUrl ?? brand?.logoUrl ?? null,
   };
   const oppScTeam = first

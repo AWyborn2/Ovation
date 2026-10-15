@@ -10,4 +10,5 @@
 
 ## Active features
 
+- [social-auto-queue-criteria](social-auto-queue-criteria.md)
 - [card-kind-templates](card-kind-templates.md)

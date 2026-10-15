@@ -276,6 +276,7 @@ afterAll(async () => {
     "match_rosters",
     "fall_of_wickets",
     "fielding",
+    "match_feats",
   ])
     await admin.query(`delete from central.${t} where match_id = any($1::int[])`, [mids]);
   await admin.query(`delete from central.matches where match_id = any($1::int[])`, [mids]);
@@ -742,5 +743,85 @@ describe("ingest hook (CENTRAL_PROJECTION)", () => {
     const s = await projectDumpToCentral(dumpRows, warnings, log);
     expect(s).toMatchObject({ mode: "on", considered: 2, created: 0, updated: 2, skipped: 0 });
     expect(warnings).toEqual([]);
+  });
+});
+
+describe("feats (ADR-005): hat-tricks and five catches from balls and fielding", () => {
+  const INNINGS = randomUUID();
+  const ballRows: [number, number, string | null, boolean, string | null, string | null, number][] =
+    // seq, over, bowler, wicket, dismissal, dismissed, wides
+    [
+      [1, 1, P[3]!, false, null, null, 0],
+      [2, 1, P[3]!, true, "Bowled", P[0]!, 0],
+      [3, 1, P[3]!, true, "Caught", P[1]!, 0],
+      [4, 1, P[3]!, false, null, null, 1], // a wide: not a legal delivery
+      [5, 1, P[3]!, true, "LBW", P[2]!, 0],
+      [6, 1, P[3]!, false, null, null, 0],
+    ];
+
+  beforeAll(async () => {
+    for (const [seq, over, bowler, wicket, how, out, wides] of ballRows) {
+      await admin.query(
+        `insert into playhq.balls (ball_id, match_id, innings_id, innings_number, seq, over_number,
+            bowler_id, bowler_name, is_wicket, dismissal_type, dismissed_id, wides, no_balls)
+         values ($1, $2, $3, 1, $4, $5, $6, 'D Dunn', $7, $8, $9, $10, 0)`,
+        [randomUUID(), MATCH, INNINGS, seq, over, bowler, wicket, how, out, wides],
+      );
+    }
+    await admin.query(
+      `insert into playhq.match_fielding (innings_id, participant_id, short_name, catches, wk_catches, total_catches, stumpings, run_outs)
+       values ($1, $2, 'E Evans', 5, 0, 5, 1, 0), ($1, $3, 'D Dunn', 1, 0, 1, 0, 0)
+       on conflict (innings_id, participant_id) do nothing`,
+      [INNINGS, P[4], P[3]],
+    );
+  });
+
+  afterAll(async () => {
+    await admin.query(`delete from playhq.balls where match_id = $1`, [MATCH]);
+    await admin.query(`delete from playhq.match_fielding where innings_id = $1`, [INNINGS]);
+  });
+
+  it("writes one row per feat, with the player's club, and re-projection leaves them unchanged", async () => {
+    const s = await projectToCentral(projector, { matchIds: [MATCH] });
+    expect(s.skipped).toEqual([]);
+    expect(s.feats).toBe(2);
+    const { match_id } = await centralMatch();
+    const feats = async () =>
+      (
+        await admin.query(
+          `select kind, innings, club_id, participant_id, player_name, detail
+             from central.match_feats where match_id = $1 order by kind`,
+          [match_id],
+        )
+      ).rows;
+    const first = await feats();
+    expect(first).toEqual([
+      expect.objectContaining({
+        kind: "fiveCatches",
+        innings: 1,
+        club_id: CLUB_B,
+        participant_id: P[4],
+        detail: { kind: "fiveCatches", catches: 5 },
+      }),
+      expect.objectContaining({
+        kind: "hatTrick",
+        innings: 1,
+        club_id: CLUB_B,
+        participant_id: P[3],
+        player_name: "D Dunn",
+      }),
+    ]);
+    // The wide between the second and third wickets did not break the hat-trick (AE3).
+    expect(
+      first[1].detail.wickets.map((w: { seq: number; how: string }) => [w.seq, w.how]),
+    ).toEqual([
+      [2, "bowled"],
+      [3, "caught"],
+      [5, "lbw"],
+    ]);
+
+    const again = await projectToCentral(projector, { matchIds: [MATCH] });
+    expect(again.feats).toBe(2);
+    expect(await feats()).toEqual(first);
   });
 });

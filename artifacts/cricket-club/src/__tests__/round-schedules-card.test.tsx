@@ -28,7 +28,7 @@ const SCHEDULES = {
 const settingsFor = (styleId: string) =>
   ({
     roundSchedules: SCHEDULES,
-    postingPlan: planFromStyle(findPostingStyle(styleId)!),
+    postingPlan: planFromStyle(findPostingStyle(styleId, true)!),
   }) as unknown as SocialSettings;
 
 describe("Round carousel times", () => {
@@ -39,13 +39,23 @@ describe("Round carousel times", () => {
   });
 
   it("shows a time only for the round carousels the plan turns on", () => {
+    // Version 2's "Round carousels" style posts game day, team lists and
+    // results as round carousels, so all three have a time.
     renderAt(
       <RoundSchedulesCard settings={settingsFor("round-carousels")} />,
       "/admin/social/cards",
     );
-    expect(screen.queryByLabelText("Game day: day")).toBeNull();
+    expect(screen.getByLabelText("Game day: day")).toBeTruthy();
     expect(screen.getByLabelText("Team lists: day")).toBeTruthy();
     expect(screen.getByLabelText("Results, ladders and leaderboards: day")).toBeTruthy();
+
+    cleanup();
+    const s = settingsFor("every-match");
+    s.postingPlan!.rows.teamLists = { ...s.postingPlan!.rows.teamLists, packaging: "round" };
+    renderAt(<RoundSchedulesCard settings={s} />, "/admin/social/cards");
+    expect(screen.queryByLabelText("Game day: day")).toBeNull();
+    expect(screen.getByLabelText("Team lists: day")).toBeTruthy();
+    expect(screen.queryByLabelText("Results, ladders and leaderboards: day")).toBeNull();
   });
 
   it("keeps the shared results time when only ladders are a round carousel", () => {

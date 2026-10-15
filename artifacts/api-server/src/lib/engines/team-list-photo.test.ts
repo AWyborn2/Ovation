@@ -4,6 +4,7 @@
  * fill-in, and kept when the selection changes around them. Real-DB
  * integration test (needs DATABASE_URL).
  */
+import { findPostingStyle, planFromStyle } from "@workspace/scorecard/posting-plan";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { and, eq, inArray } from "drizzle-orm";
 import {
@@ -91,6 +92,8 @@ beforeAll(async () => {
       roundup: { enabled: false, grades: {} },
       matchday: { enabled: true, grades: {} },
     },
+    // Version 2 plan (ADR-004): team lists draft one card per fixture.
+    postingPlan: planFromStyle(findPostingStyle("every-match", true)!),
   });
   const players = await db
     .insert(playersTable)

@@ -4,6 +4,7 @@
  * test (needs DATABASE_URL).
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { findPostingStyle, planFromStyle } from "@workspace/scorecard/posting-plan";
 import request from "supertest";
 import { and, eq, inArray } from "drizzle-orm";
 import app from "../../app";
@@ -49,12 +50,7 @@ beforeAll(async () => {
   cookie = `${SESSION_COOKIE}=${encodeSession({ adminId, issuedAt: Date.now() })}`;
   await db.insert(socialSettingsTable).values({
     tenantId,
-    familyConfig: {
-      results: { enabled: true, grades: {} },
-      achievements: { enabled: false, grades: {} },
-      roundup: { enabled: false, grades: {} },
-      matchday: { enabled: true, grades: {} },
-    },
+    postingPlan: planFromStyle(findPostingStyle("every-match", true)!),
   });
 });
 
@@ -114,12 +110,11 @@ describe("match-day engine", () => {
     await db
       .update(socialSettingsTable)
       .set({
-        familyConfig: {
-          results: { enabled: true, grades: {} },
-          achievements: { enabled: false, grades: {} },
-          roundup: { enabled: false, grades: {} },
-          matchday: { enabled: true, grades: { "C Grade": false } },
-        },
+        postingPlan: (() => {
+          const p = planFromStyle(findPostingStyle("every-match", true)!);
+          p.rows.gameDay.grades = { "C Grade": false };
+          return p;
+        })(),
       })
       .where(eq(socialSettingsTable.tenantId, tenantId));
     const f = await fixture(20, "C Grade");
@@ -172,16 +167,17 @@ describe("family switches on the settings API", () => {
   const api = (method: "get" | "patch", path: string) =>
     request(app)[method](`/api${path}`).set("Cookie", cookie).set("x-tenant-id", String(tenantId));
 
-  it("toggling a family is saved, mirrored to the engine flag, and honoured by the next sweep", async () => {
-    const res = await api("patch", "/social-settings").send({
-      familyConfig: { matchday: { enabled: false }, achievements: { enabled: true } },
-    });
+  it("switching the Game day row off is saved, mirrored to the legacy switch, and honoured by the next sweep", async () => {
+    const plan = planFromStyle(findPostingStyle("every-match", true)!);
+    plan.rows.gameDay.enabled = false;
+    const res = await api("patch", "/social-settings").send({ postingPlan: plan });
     expect(res.status).toBe(200);
-    expect(res.body.familyConfig.matchday.enabled).toBe(false);
-    expect(res.body.engineMilestone).toBe(true);
+    expect(res.body.postingPlan.rows.gameDay.enabled).toBe(false);
+    // Team lists keep the match-day family on; the mirror is widest-wins.
+    expect(res.body.familyConfig.matchday.enabled).toBe(true);
 
     const got = await api("get", "/social-settings");
-    expect(got.body.settings.familyConfig.achievements.enabled).toBe(true);
+    expect(got.body.settings.postingPlan.rows.gameDay.enabled).toBe(false);
 
     const f = await fixture(10);
     const sweep = await generateMatchDayDrafts(tenantId, NOW);

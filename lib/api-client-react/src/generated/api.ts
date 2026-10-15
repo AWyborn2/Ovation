@@ -333,7 +333,6 @@ import type {
   ReplaceHistoryBoundariesBody,
   ReschedulePublicationRequest,
   RoundResults,
-  RoundUpInput,
   SaveCardPhotoRulesRequest,
   SaveDraftTemplateRequest,
   SaveKindTemplateRequest,
@@ -22955,77 +22954,6 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDismissSocialDraftMutationOptions(options));
-    }
-
-export const getGenerateRoundUpUrl = () => {
-
-
-
-
-  return `/api/social-roundups`
-}
-
-/**
- * @summary Generate top-performer drafts from the most recent import for a grade
- */
-export const generateRoundUp = async (roundUpInput: RoundUpInput, options?: RequestInit): Promise<SocialDraft[]> => {
-
-  return customFetch<SocialDraft[]>(getGenerateRoundUpUrl(),
-  {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      roundUpInput,)
-  }
-);}
-
-
-
-
-export const getGenerateRoundUpMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateRoundUp>>, TError,{data: BodyType<RoundUpInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof generateRoundUp>>, TError,{data: BodyType<RoundUpInput>}, TContext> => {
-
-const mutationKey = ['generateRoundUp'];
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateRoundUp>>, {data: BodyType<RoundUpInput>}> = (props) => {
-          const {data} = props ?? {};
-
-          return  generateRoundUp(data,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GenerateRoundUpMutationResult = NonNullable<Awaited<ReturnType<typeof generateRoundUp>>>
-    export type GenerateRoundUpMutationBody = BodyType<RoundUpInput>
-    export type GenerateRoundUpMutationError = ErrorType<unknown>
-
-    /**
- * @summary Generate top-performer drafts from the most recent import for a grade
- */
-export const useGenerateRoundUp = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateRoundUp>>, TError,{data: BodyType<RoundUpInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof generateRoundUp>>,
-        TError,
-        {data: BodyType<RoundUpInput>},
-        TContext
-      > => {
-      return useMutation(getGenerateRoundUpMutationOptions(options));
     }
 
 export const getGenerateRecapsUrl = () => {

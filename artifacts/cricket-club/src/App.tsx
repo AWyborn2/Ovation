@@ -152,9 +152,6 @@ function AdminRoutes() {
 
             {/* Trading cards moved from Settings into Social Media Studio; keep
                 the old Settings URL working (must precede the settings group). */}
-            <Route path="/admin/settings/trading-cards">
-              <Redirect to="/admin/social/trading-cards" />
-            </Route>
 
             {/* Card kind templates: starter proofs contact sheet (plan U10). */}
             <Route path="/admin/kind-templates/proofs" component={AdminStarterProofs} />
@@ -211,9 +208,6 @@ function AdminRoutes() {
             </Route>
             <Route path="/admin/records-display">
               <Redirect to="/admin/settings/records" />
-            </Route>
-            <Route path="/admin/trading-cards">
-              <Redirect to="/admin/social/trading-cards" />
             </Route>
             <Route path="/admin/junior-match-display">
               <Redirect to="/admin/settings/junior-matches" />

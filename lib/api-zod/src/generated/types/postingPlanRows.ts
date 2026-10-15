@@ -9,12 +9,11 @@ import type { PostingPlanRow } from './postingPlanRow';
 
 export type PostingPlanRows = {
   results: PostingPlanRow;
+  bigMoments: PostingPlanRow;
   milestones: PostingPlanRow;
-  feats: PostingPlanRow;
   debuts: PostingPlanRow;
-  gradeLeaders: PostingPlanRow;
-  clubLeaderboards: PostingPlanRow;
-  ladders: PostingPlanRow;
   gameDay: PostingPlanRow;
   teamLists: PostingPlanRow;
+  clubLeaderboards: PostingPlanRow;
+  ladders: PostingPlanRow;
 };

@@ -12,5 +12,4 @@ export type PostingPlanRowPackaging = typeof PostingPlanRowPackaging[keyof typeo
 export const PostingPlanRowPackaging = {
   individual: 'individual',
   round: 'round',
-  both: 'both',
 } as const;

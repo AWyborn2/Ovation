@@ -33,6 +33,7 @@ vi.mock("./junior-helpers", () => ({
 }));
 
 import { shouldDraftGrade } from "./match-summary-drafter";
+import { defaultPostingPlan, type PostingPlan } from "@workspace/scorecard/posting-plan";
 
 type SocialSettings = Parameters<typeof shouldDraftGrade>[0];
 
@@ -40,115 +41,61 @@ type SocialSettings = Parameters<typeof shouldDraftGrade>[0];
 // Tests
 // ---------------------------------------------------------------------------
 
-describe("shouldDraftGrade", () => {
-  const baseSettings: NonNullable<SocialSettings> = {
-    engineMatchSummary: true,
-    matchSummaryGradeConfig: {},
-  } as NonNullable<SocialSettings>;
+describe("shouldDraftGrade (Posting Plan version 2)", () => {
+  const withPlan = (plan: PostingPlan) =>
+    ({ postingPlan: plan }) as unknown as NonNullable<SocialSettings>;
+  const plan = (mutate: (p: PostingPlan) => void = () => {}) => {
+    const p = defaultPostingPlan(false);
+    mutate(p);
+    return withPlan(p);
+  };
 
-  it("returns false when settings are null", () => {
-    expect(shouldDraftGrade(null, "A Grade", false)).toBe(false);
+  it("null settings fall back to the default table: seniors draft, juniors don't", () => {
+    expect(shouldDraftGrade(null, "A Grade", false)).toBe(true);
+    expect(shouldDraftGrade(null, "Under 14", true)).toBe(false);
   });
 
-  it("returns false when engineMatchSummary is OFF", () => {
-    const settings = { ...baseSettings, engineMatchSummary: false };
-    expect(shouldDraftGrade(settings, "A Grade", false)).toBe(false);
+  it("a central club's default posts the round carousel, so no per-match card", () => {
+    expect(shouldDraftGrade(null, "A Grade", false, true)).toBe(false);
   });
 
-  it("returns true for senior grade with default config (ON by default)", () => {
-    expect(shouldDraftGrade(baseSettings, "A Grade", false)).toBe(true);
+  it("Match result off drafts nothing", () => {
+    const s = plan((p) => (p.rows.results.enabled = false));
+    expect(shouldDraftGrade(s, "A Grade", false)).toBe(false);
+    expect(shouldDraftGrade(s, "Under 14", true)).toBe(false);
   });
 
-  it("returns false for junior grade with default config (OFF by default)", () => {
-    expect(shouldDraftGrade(baseSettings, "Under 14", true)).toBe(false);
+  it("a listed junior age group drafts; an unlisted one doesn't", () => {
+    const s = plan((p) => (p.rows.results.grades = { "Under 14": true }));
+    expect(shouldDraftGrade(s, "Under 14", true)).toBe(true);
+    expect(shouldDraftGrade(s, "Under 12", true)).toBe(false);
   });
 
-  it("returns true for junior grade explicitly enabled in config", () => {
-    const settings = {
-      ...baseSettings,
-      matchSummaryGradeConfig: { "Under 14": { enabled: true } },
-    };
-    expect(shouldDraftGrade(settings, "Under 14", true)).toBe(true);
+  it("a senior grade switched off is skipped; others keep the default", () => {
+    const s = plan((p) => (p.rows.results.grades = { "B Grade": false }));
+    expect(shouldDraftGrade(s, "B Grade", false)).toBe(false);
+    expect(shouldDraftGrade(s, "A Grade", false)).toBe(true);
   });
 
-  it("returns false for senior grade explicitly disabled in config", () => {
-    const settings = {
-      ...baseSettings,
-      matchSummaryGradeConfig: { "A Grade": { enabled: false } },
-    };
-    expect(shouldDraftGrade(settings, "A Grade", false)).toBe(false);
+  it("others off with A Grade listed allows only A Grade", () => {
+    const s = plan((p) => {
+      p.rows.results.grades = { "A Grade": true };
+      p.rows.results.others = "off";
+    });
+    expect(shouldDraftGrade(s, "A Grade", false)).toBe(true);
+    expect(shouldDraftGrade(s, "B Grade", false)).toBe(false);
   });
 
-  it("uses default for a grade not present in config", () => {
-    const settings = {
-      ...baseSettings,
-      matchSummaryGradeConfig: { "B Grade": { enabled: false } },
-    };
-    // "A Grade" is not in config -> defaults to senior ON
-    expect(shouldDraftGrade(settings, "A Grade", false)).toBe(true);
-    // "Under 14" is not in config -> defaults to junior OFF
-    expect(shouldDraftGrade(settings, "Under 14", true)).toBe(false);
+  it("a stored version 1 plan is ignored in favour of the default (ADR-004)", () => {
+    const s = {
+      postingPlan: { version: 1, styleId: null, rows: { results: { enabled: false } } },
+    } as unknown as NonNullable<SocialSettings>;
+    expect(shouldDraftGrade(s, "A Grade", false)).toBe(true);
   });
 
-  it("handles null grade gracefully", () => {
-    expect(shouldDraftGrade(baseSettings, null, false)).toBe(true);
-    expect(shouldDraftGrade(baseSettings, null, true)).toBe(false);
-  });
-
-  it("handles empty string grade the same as null", () => {
-    const settings = {
-      ...baseSettings,
-      matchSummaryGradeConfig: { "": { enabled: true } },
-    };
-    // Empty string is in config and explicitly enabled
-    expect(shouldDraftGrade(settings, "", false)).toBe(true);
-    expect(shouldDraftGrade(settings, "", true)).toBe(true);
-  });
-});
-
-describe("match summary draft engine design", () => {
-  const baseSettings: NonNullable<SocialSettings> = {
-    engineMatchSummary: true,
-    matchSummaryGradeConfig: {},
-  } as NonNullable<SocialSettings>;
-
-  it("senior default is ON, junior default is OFF", () => {
-    // Senior grades auto-draft
-    expect(shouldDraftGrade(baseSettings, "A Grade", false)).toBe(true);
-    expect(shouldDraftGrade(baseSettings, "B Grade", false)).toBe(true);
-    expect(shouldDraftGrade(baseSettings, "C Grade", false)).toBe(true);
-
-    // Junior grades do NOT auto-draft by default
-    expect(shouldDraftGrade(baseSettings, "Under 14", true)).toBe(false);
-    expect(shouldDraftGrade(baseSettings, "Under 12", true)).toBe(false);
-  });
-
-  it("per-grade config overrides defaults in both directions", () => {
-    const settings = {
-      ...baseSettings,
-      matchSummaryGradeConfig: {
-        "A Grade": { enabled: false }, // senior OFF (override)
-        "Under 14": { enabled: true }, // junior ON (override)
-      },
-    };
-
-    expect(shouldDraftGrade(settings, "A Grade", false)).toBe(false);
-    expect(shouldDraftGrade(settings, "B Grade", false)).toBe(true); // default ON
-    expect(shouldDraftGrade(settings, "Under 14", true)).toBe(true);
-    expect(shouldDraftGrade(settings, "Under 12", true)).toBe(false); // default OFF
-  });
-
-  it("global kill switch overrides all per-grade config", () => {
-    const settings = {
-      ...baseSettings,
-      engineMatchSummary: false,
-      matchSummaryGradeConfig: {
-        "A Grade": { enabled: true },
-        "Under 14": { enabled: true },
-      },
-    };
-
-    expect(shouldDraftGrade(settings, "A Grade", false)).toBe(false);
-    expect(shouldDraftGrade(settings, "Under 14", true)).toBe(false);
+  it("a null or empty grade follows the default for the match type", () => {
+    expect(shouldDraftGrade(plan(), null, false)).toBe(true);
+    expect(shouldDraftGrade(plan(), null, true)).toBe(false);
+    expect(shouldDraftGrade(plan(), "", false)).toBe(true);
   });
 });

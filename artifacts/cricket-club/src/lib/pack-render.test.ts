@@ -8,7 +8,6 @@ import {
   normaliseBrandHex,
   packImageSlots,
   PACK_DEFAULT_TOKENS,
-  JUNIOR_PANEL,
   type PackTokens,
   type PackCardData,
 } from "./pack-render";
@@ -84,11 +83,11 @@ describe("pack stage tone (--ink)", () => {
     expect(render("broadcast-dark-v1")).toBe(render());
   });
 
-  it("keeps the junior brown panel independent of the stage tint", () => {
-    // Tokens resolve `junior > override > theme > brand`; the tint sits on the
-    // stage only and must not disturb the juniors invariant.
+  it("keeps a junior card's panel independent of the stage tint", () => {
+    // The tint sits on the stage only; the panel is the club's own (R18: the
+    // forced junior brown is retired).
     const html = renderPackCard(input, "square", true, TOKENS, true, null, "sunset-v1");
-    expect(html).toContain(`--panel:${JUNIOR_PANEL}`);
+    expect(html).toContain(`--panel:${TOKENS.panel}`);
     expect(inkDecl(html)).toMatch(/^color-mix\(/);
   });
 });
@@ -156,10 +155,11 @@ describe("renderPackCard", () => {
     expect(on).toContain("SUPPORTED BY");
   });
 
-  it("forces the brown junior panel token regardless of the supplied tokens", () => {
+  it("renders a junior card with the supplied panel token (the brown force is retired, R18)", () => {
     const input = { ...sampleCardInput("matchSummary"), junior: true } as ShareCardInput;
     const html = renderPackCard(input, "story", true, TOKENS, true);
-    expect(html).toMatch(/--panel:\s*#42342B/i);
+    expect(html).toMatch(/--panel:\s*#6E1C2B/i);
+    expect(html).not.toMatch(/--panel:\s*#42342B/i);
   });
 
   it("renders placeholder markup (never an empty img src) for a missing photo/logo", () => {
@@ -541,18 +541,15 @@ describe("resolvePackTokens (token resolution order)", () => {
     expect(resolved.displayFont).toBe("teko"); // override beats theme
     expect(resolved.ink).toBe(BRAND.ink); // brand only
 
-    // Junior forces the brown panel over everything (override/theme/brand).
+    // `junior` no longer changes the panel (R18): the same order applies.
     const junior = resolvePackTokens({ brand: BRAND, theme, override, junior: true });
-    expect(junior.panel).toBe(JUNIOR_PANEL);
-    // Non-panel tokens still resolve by the normal order.
-    expect(junior.accent).toBe("#THEME0");
-    expect(junior.displayFont).toBe("teko");
+    expect(junior).toEqual(resolved);
   });
 
-  it("junior ignores the theme entirely for the panel (brown wins)", () => {
+  it("a junior card keeps the theme's panel (the brown force is retired)", () => {
     const theme = tokensFromCardTheme({ bgPanel: "#ABCDEF", accent: "#123456" });
     const resolved = resolvePackTokens({ brand: BRAND, theme, junior: true });
-    expect(resolved.panel).toBe(JUNIOR_PANEL);
+    expect(resolved.panel).toBe("#ABCDEF");
   });
 
   it("tokensFromCardTheme drops null/empty fields so they do not clobber the brand", () => {
@@ -658,9 +655,9 @@ describe("brandDefaultTokens (brand → pack default palette)", () => {
     expect(overridden.accent).toBe("#FFFFFF"); // override > theme > brand
     expect(overridden.panel).toBe("#EEEEEE"); // theme still applies
 
-    // Junior force still wins the panel over the brand default.
+    // A junior card keeps the brand default panel (the brown force is retired).
     const junior = resolvePackTokens({ brand, junior: true });
-    expect(junior.panel).toBe(JUNIOR_PANEL);
+    expect(junior.panel).toBe("#0055FF");
     expect(junior.accent).toBe("#22AA22"); // brand default still seeds the accent
   });
 });

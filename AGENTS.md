@@ -100,17 +100,30 @@ In short:
 - **PlayHQ sync is live:** GitHub Actions headless collector → `/api/internal/playhq/ingest`
   → `playhq.*` → fixtures, team lists, `central.*` projection and the draft sweep; then
   every hourly run calls `/api/internal/playhq/sweep` (scheduled sweep for every club).
-- **Social Studio automation is live:** result, achievement, round-up and match-day cards
+- **Social Studio automation is live:** result, achievement and match-day cards
   (incl. Team Lists from PlayHQ selections) draft into the review queue.
-  **The Posting Plan decides what drafts** (Social Studio → Posting Plan tab; plan
+  **The Posting Plan decides what drafts** (Social Studio → Posting Plan tab; version 2, plan
+  `docs/plans/2026-10-15-001-feat-social-auto-queue-criteria-plan.md`, on top of
   `docs/plans/2026-10-07-001-feat-social-posting-plan-plan.md`): one row per card kind —
-  drafts or not, which grades, each on its own or one club-wide round carousel. Every drafting
-  gate reads `api-server/src/lib/posting-plan.ts` (`draftingGates` / `loadDraftingGates`);
-  never read `familyConfig`, the `engine*` flags or round-schedule modes directly (a reader
-  guard test enforces it). Until a club saves a plan (`social_settings.posting_plan` null) the
-  gates apply the legacy settings exactly; saving mirrors the plan back to them widest-wins.
+  Match result, Big Moment, Milestones, Debuts, Game day, Team lists, Club leaderboards,
+  Ladders — drafts or not, which grades (junior age groups on rows with junior data), each on
+  its own or one club-wide round carousel, and for a carousel with juniors on whether they
+  share the seniors' set. Every drafting gate reads `api-server/src/lib/posting-plan.ts`
+  (`draftingGates` / `loadDraftingGates`); never read `familyConfig`, the `engine*` flags or
+  round-schedule modes directly (a reader guard test enforces it). Defaults live in code
+  (`defaultPostingPlan(central)`, ADR-004): a stored plan that isn't version 2 is ignored and
+  the default applies; saving mirrors the plan back to the legacy columns widest-wins.
   Club leaderboard and ladder round carousels (PlayHQ published ladders) draft on the
   weekend-wrap cadence; a round carousel is an ordinary card with a `carousel` slide list.
+  **Big Moment** covers centuries, five-fors, hat-tricks and five catches: the projector
+  detects hat-tricks and five catches from `playhq.balls` / `playhq.match_fielding` into
+  `central.match_feats` (ADR-005); match-day, day-after and catch-up syncs fetch
+  ball-by-ball (`HarnessPlan.balls = "since"`). Grade leader, trading card and countdown cards
+  are retired (`RETIRED_CARD_KINDS` in `@workspace/scorecard`): nothing drafts them and the
+  pickers no longer offer them; posted ones still render. Junior cards wear the club's own
+  look (no brown palette) and publish on their own only for teams on `auto` in Junior
+  matches settings, fail-closed (`juniorDraftMayAutoPublish`, ADR-006). Release steps:
+  `docs/runbooks/meta-publishing.md` §3b.
 - **Availability and Selection Hub are built, off per club by default**
   (`availability_settings.enabled`; plan `docs/plans/2026-10-06-002-feat-player-availability-selection-plan.md`).
   Admins import the PlayHQ participant CSV into `squad_members` (only whitelisted columns are

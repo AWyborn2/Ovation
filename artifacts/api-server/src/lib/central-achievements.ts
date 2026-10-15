@@ -140,6 +140,43 @@ export function buildAchievementDrafts(
           },
         };
         break;
+      case "hatTrick":
+        // Feats draft as the Big Moment design (KTD3); the key carries the feat kind.
+        draft = {
+          sourceKey: draftKeys.matchFeat("hatTrick", ref, a.grade, a.season, a.round),
+          playerId,
+          grade: a.grade,
+          season: a.season,
+          cardInput: {
+            kind: "bigMoment",
+            momentLabel: "HAT-TRICK",
+            playerName,
+            oppositionName: a.opponent,
+            inningsLabel: a.innings != null ? `Innings ${a.innings}` : null,
+            boundaryDetail: a.wickets
+              .map((w) => (w.dismissed ? `${w.dismissed} (${w.how})` : w.how))
+              .join(", "),
+            photoUrl: null,
+          },
+        };
+        break;
+      case "fiveCatches":
+        draft = {
+          sourceKey: draftKeys.matchFeat("fiveCatches", ref, a.grade, a.season, a.round),
+          playerId,
+          grade: a.grade,
+          season: a.season,
+          cardInput: {
+            kind: "bigMoment",
+            momentLabel: `${a.catches} CATCHES`,
+            playerName,
+            oppositionName: a.opponent,
+            inningsLabel: a.innings != null ? `Innings ${a.innings}` : null,
+            boundaryDetail: `${a.catches} catches in one innings`,
+            photoUrl: null,
+          },
+        };
+        break;
       case "career": {
         const key = a.boardKey as BoardKey;
         draft = {

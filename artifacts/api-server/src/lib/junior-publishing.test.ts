@@ -12,6 +12,8 @@ import {
   juniorTeamListKey,
   juniorTeamPublishMode,
   syncedJuniorMatchIdOf,
+  juniorDraftMayAutoPublish,
+  juniorTeamsOf,
 } from "./junior-publishing";
 
 /**
@@ -234,5 +236,73 @@ describe("junior draft keys", () => {
     expect(syncedJuniorMatchIdOf("matchSummary:junior:1234")).toBeNull();
     expect(syncedJuniorMatchIdOf("matchSummary:senior:200000123")).toBeNull();
     expect(syncedJuniorMatchIdOf(null)).toBeNull();
+  });
+});
+
+describe("juniorDraftMayAutoPublish (the Meta gate, ADR-006)", () => {
+  const publishing = { "Year 9": { Hawks: "auto", Kites: "approval" } };
+  const junior = (juniorTeams?: unknown) => ({
+    sourceMatchIsJunior: false,
+    cardInput: { kind: "milestone", junior: true, ...(juniorTeams ? { juniorTeams } : {}) },
+  });
+
+  it("a senior draft passes", () => {
+    expect(
+      juniorDraftMayAutoPublish(
+        { sourceMatchIsJunior: false, cardInput: { kind: "x" } },
+        publishing,
+      ),
+    ).toBe(true);
+  });
+
+  it("a junior card publishes only when every team it covers is auto", () => {
+    expect(
+      juniorDraftMayAutoPublish(junior([{ ageGroup: "Year 9", teamName: "Hawks" }]), publishing),
+    ).toBe(true);
+    expect(
+      juniorDraftMayAutoPublish(junior([{ ageGroup: "Year 9", teamName: "Kites" }]), publishing),
+    ).toBe(false);
+    // A combined set: one approval team holds the whole carousel.
+    expect(
+      juniorDraftMayAutoPublish(
+        junior([
+          { ageGroup: "Year 9", teamName: "Hawks" },
+          { ageGroup: "Year 9", teamName: "Kites" },
+        ]),
+        publishing,
+      ),
+    ).toBe(false);
+  });
+
+  it("fails closed: no team list, an empty one, an unresolvable team, or no settings", () => {
+    expect(juniorDraftMayAutoPublish(junior(), publishing)).toBe(false);
+    expect(juniorDraftMayAutoPublish(junior([]), publishing)).toBe(false);
+    expect(
+      juniorDraftMayAutoPublish(junior([{ ageGroup: "Year 9", teamName: null }]), publishing),
+    ).toBe(false);
+    expect(
+      juniorDraftMayAutoPublish(junior([{ ageGroup: "Year 7", teamName: "Hawks" }]), publishing),
+    ).toBe(false);
+    expect(
+      juniorDraftMayAutoPublish(junior([{ ageGroup: "Year 9", teamName: "Hawks" }]), null),
+    ).toBe(false);
+    expect(juniorDraftMayAutoPublish(junior(["Hawks"]), publishing)).toBe(false);
+  });
+
+  it("the source-match marker alone is junior too", () => {
+    expect(
+      juniorDraftMayAutoPublish(
+        { sourceMatchIsJunior: true, cardInput: { kind: "matchSummary" } },
+        publishing,
+      ),
+    ).toBe(false);
+  });
+
+  it("juniorTeamsOf reads the recorded teams and nothing else", () => {
+    expect(juniorTeamsOf(junior([{ ageGroup: "Year 9", teamName: "Hawks" }]))).toEqual([
+      { ageGroup: "Year 9", teamName: "Hawks" },
+    ]);
+    expect(juniorTeamsOf(junior())).toBeNull();
+    expect(juniorTeamsOf(junior([{ ageGroup: 9 }]))).toEqual([{ ageGroup: null, teamName: null }]);
   });
 });

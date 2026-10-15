@@ -12,7 +12,6 @@ import {
   socialDraftRevisionsTable,
   socialDraftsTable,
   trackedLinksTable,
-  importsTable,
   milestoneEventsTable,
   matchesTable,
   juniorMatchesTable,
@@ -30,13 +29,13 @@ import {
   UpdateSocialDraftBody,
 } from "@workspace/api-zod";
 import { familyOfKind } from "../lib/social-families";
-import { generateRoundUpDrafts, generateRecapDrafts } from "../lib/roundup";
+import { generateRecapDrafts } from "../lib/roundup";
 import {
   generateMatchSummaryDrafts,
   generateJuniorMatchSummaryDrafts,
 } from "../lib/match-summary-drafter";
 import { getTenantId } from "../middlewares/tenant-context";
-import { NATIVE_STATS_TENANT_ID, tenantIsCentral } from "../lib/tenant";
+import { NATIVE_STATS_TENANT_ID } from "../lib/tenant";
 import { backfillMatchDrafts } from "../lib/draft-sweep";
 import { recaptionQueuedDrafts } from "../lib/draft-recaption";
 import {
@@ -755,35 +754,6 @@ router.post(
       return;
     }
     res.json(presentDraft(updated));
-  },
-);
-
-router.post(
-  "/social-roundups",
-  requireAdmin,
-  requireEntitlement("socialStudio"),
-  async (req, res): Promise<void> => {
-    const grade = String(req.body?.grade ?? "");
-    const season = parseInt(String(req.body?.season ?? ""), 10);
-    if (!grade || !Number.isInteger(season)) {
-      res.status(400).json({ error: "grade and season required" });
-      return;
-    }
-    const tenantId = getTenantId(req);
-    // Imports belong to the native club; a central-data club's round-up is read
-    // from the central scorecards and has no import to stamp.
-    const [imp] = (await tenantIsCentral(tenantId))
-      ? []
-      : await db
-          .select({ id: importsTable.id })
-          .from(importsTable)
-          .where(
-            sql`${importsTable.grade} = ${grade} AND ${importsTable.season} = ${season} AND ${importsTable.status} = 'committed'`,
-          )
-          .orderBy(desc(importsTable.importedAt))
-          .limit(1);
-    const created = await generateRoundUpDrafts(tenantId, grade, season, imp?.id ?? null);
-    res.json(created);
   },
 );
 

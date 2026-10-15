@@ -7,6 +7,7 @@
  * dismissed card is never drafted again.
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { defaultPostingPlan } from "@workspace/scorecard/posting-plan";
 import type * as DraftUpsertModule from "./draft-upsert";
 
 const h = vi.hoisted(() => {
@@ -65,6 +66,8 @@ vi.mock("@workspace/db", () => ({
   socialDraftsTable: h.socialDraftsTable,
   capRegisterTable: h.capRegisterTable,
 }));
+// The drafting gates ask whether the club reads from central (for its default plan).
+vi.mock("./tenant", () => ({ tenantIsCentral: async () => true }));
 vi.mock("@workspace/db/central-queries", () => ({
   centralMatchAchievements: h.centralMatchAchievements,
 }));
@@ -271,7 +274,11 @@ describe("draftCentralAchievements", () => {
   });
 
   it("reads nothing while the achievements family is off", async () => {
-    h.state.rows.social_settings[0].engineMilestone = false;
+    const off = defaultPostingPlan(true);
+    off.rows.bigMoments.enabled = false;
+    off.rows.milestones.enabled = false;
+    off.rows.debuts.enabled = false;
+    h.state.rows.social_settings[0].postingPlan = off;
     const r = await draftCentralAchievements(9, 77, [501], new Date());
     expect(r).toEqual({ drafted: 0, skipped: 0 });
     expect(h.centralMatchAchievements).not.toHaveBeenCalled();
@@ -322,5 +329,53 @@ describe("draftCentralAchievements", () => {
     h.upsertDraftByKey.mockResolvedValue({ action: "unchanged", draft: {} });
     const r = await draftCentralAchievements(9, 77, [501], new Date());
     expect(r).toEqual({ drafted: 0, skipped: 1 });
+  });
+});
+
+describe("feats draft as Big Moment cards (KTD3)", () => {
+  const hatTrick: CentralAchievement = {
+    ...base,
+    kind: "hatTrick",
+    participantId: "g-star",
+    displayName: "R Star",
+    innings: 2,
+    wickets: [
+      { seq: 14, over: 3, dismissed: "A Batter", how: "bowled" },
+      { seq: 15, over: 3, dismissed: "B Batter", how: "caught" },
+      { seq: 16, over: 3, dismissed: "C Batter", how: "lbw" },
+    ],
+  };
+  const fiveCatches: CentralAchievement = {
+    ...base,
+    kind: "fiveCatches",
+    participantId: "g-debut",
+    displayName: "D Fielder",
+    innings: 1,
+    catches: 5,
+  };
+
+  it("a hat-trick is a Big Moment card keyed by its feat kind, labelled with the wickets", () => {
+    const [d] = buildAchievementDrafts([hatTrick], h.identity, () => true);
+    expect(d.sourceKey).toBe("feat:hatTrick:A Grade:2024:3:41");
+    expect(d.playerId).toBe(41);
+    expect(d.cardInput).toMatchObject({
+      kind: "bigMoment",
+      momentLabel: "HAT-TRICK",
+      playerName: "R Star",
+      oppositionName: "Rivals CC",
+      inningsLabel: "Innings 2",
+      boundaryDetail: "A Batter (bowled), B Batter (caught), C Batter (lbw)",
+    });
+  });
+
+  it("five catches is a Big Moment card with the catch count", () => {
+    const [d] = buildAchievementDrafts([fiveCatches], h.identity, () => true);
+    expect(d.sourceKey).toBe("feat:fiveCatches:A Grade:2024:3:42");
+    expect(d.cardInput).toMatchObject({ kind: "bigMoment", momentLabel: "5 CATCHES" });
+  });
+
+  it("the Big Moment gate decides both, like centuries", () => {
+    const gate = (kind: string) => kind === "hatTrick";
+    expect(buildAchievementDrafts([hatTrick, fiveCatches], h.identity, gate)).toHaveLength(1);
   });
 });

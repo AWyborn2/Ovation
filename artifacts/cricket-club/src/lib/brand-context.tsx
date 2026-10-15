@@ -99,7 +99,7 @@ export function useClubShortName(): string {
  * Apply the tenant brand to the runtime theme for the given light/dark mode:
  * every structural + accent CSS custom property comes from
  * {@link deriveThemeTokens} (Phase 5), plus the juniors banner accent (the
- * brand's tertiary colour), document title, per-tenant background image and
+ * club's primary colour), document title, per-tenant background image and
  * favicon. For tenant #1 (Halls Head) the derived dark-mode tokens match the
  * app's original hardcoded look (see `theme-tokens.test.ts`); light mode and
  * mode-switching are new.
@@ -111,11 +111,12 @@ function applyBrandTheme(brand: ClubBrand, mode: ThemeMode): void {
     root.style.setProperty(prop, value);
   }
 
-  // The juniors section banner accent (the brand's own tertiary colour; falls
-  // back to the neutral default, never a hardcoded Halls Head literal).
+  // The juniors section banner accent follows the club's primary colour
+  // (R19): the stored juniors colour is no longer read, and the fallback is the
+  // neutral default, never a hardcoded Halls Head literal.
   root.style.setProperty(
     "--juniors-accent",
-    brand.juniorsColour ?? DEFAULT_BRAND.juniorsColour ?? "#475569",
+    brand.primaryColour ?? DEFAULT_BRAND.primaryColour ?? "#475569",
   );
 
   // Per-tenant site background (index.css reads --app-bg-image, default none).

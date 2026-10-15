@@ -1,10 +1,15 @@
-import { and, eq, gt, lte } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, lte, ne } from "drizzle-orm";
 import {
   db,
   fixturesTable,
   teamListsTable,
   socialSettingsTable,
+  juniorFixturesTable,
+  juniorTeamListsTable,
+  juniorMatchesTable,
+  JUNIOR_SYNC_ID_START,
   type FixtureRow,
+  type JuniorFixtureRow,
   type SocialSettingsRow,
 } from "@workspace/db";
 import type { MatchDetail } from "@workspace/api-zod";
@@ -12,11 +17,15 @@ import {
   gradeTile,
   groupOfGrade,
   isJuniorGradeLabel,
+  juniorMatchToSummaryInput,
   matchToSummaryInput,
 } from "@workspace/scorecard";
+import type { JuniorPackaging } from "@workspace/scorecard/posting-plan";
+// The junior helpers are imported only when a row lists junior grades, like the
+// central queries below, so a club without juniors never loads them.
 import { loadCentralMatchDetail } from "../match-detail";
 import { inClubGradeOrder } from "../club-grade-order";
-import { draftingGates } from "../posting-plan";
+import { draftingGates, type DraftingGates } from "../posting-plan";
 import { clubLeaderboardCarousel } from "@workspace/scorecard/club-leaderboard-input";
 import {
   ladderCarousel,
@@ -88,15 +97,50 @@ export function formatRoundDate(d: Date): string {
     .toUpperCase();
 }
 
+/** The junior team a slide covers, for the per-team publishing gate (ADR-006). */
+export type JuniorTeamRef = { ageGroup: string | null; teamName: string | null };
+
+/**
+ * What a round set needs from a fixture. Senior rows satisfy it as they are; a
+ * junior-sync fixture is adapted onto it with its age group as the grade and its
+ * team on `juniorTeam`.
+ */
+export type RoundFixture = Pick<
+  FixtureRow,
+  "id" | "grade" | "roundLabel" | "opponentName" | "venue" | "startAt" | "isHome"
+> & {
+  juniorTeam?: JuniorTeamRef;
+  /** The junior_fixtures id, for its team list. */
+  juniorFixtureId?: number;
+};
+
 export type FixtureRoundGroup = {
   key: string;
   roundLabel: string;
+  /** Every fixture is junior: the round's own junior set. */
   junior: boolean;
+  /** Any fixture is junior: the card carries junior markers (KTD6). */
+  hasJuniors: boolean;
   /** Team lists only: whose teams these are (men's and women's post apart). */
   audience?: RoundAudience;
-  /** Earliest start first. */
-  fixtures: FixtureRow[];
+  /** Earliest start first; seniors before juniors in a combined set. */
+  fixtures: RoundFixture[];
 };
+
+/** The junior teams a set of fixtures covers, one entry per team. */
+export function juniorTeamsOf(fixtures: readonly RoundFixture[]): JuniorTeamRef[] {
+  const seen = new Map<string, JuniorTeamRef>();
+  for (const f of fixtures) {
+    const ref =
+      f.juniorTeam ?? (isJuniorGradeLabel(f.grade) ? { ageGroup: f.grade, teamName: null } : null);
+    if (ref) seen.set(`${ref.ageGroup ?? ""}|${ref.teamName ?? ""}`, ref);
+  }
+  return [...seen.values()];
+}
+
+function isJuniorFixture(f: RoundFixture): boolean {
+  return f.juniorTeam != null || isJuniorGradeLabel(f.grade);
+}
 
 export type RoundAudience = "men" | "women" | "junior";
 
@@ -121,28 +165,64 @@ export const AUDIENCE_LABEL: Record<RoundAudience, string> = {
  * draft.
  */
 export function groupFixtureRounds(
-  fixtures: readonly FixtureRow[],
-  opts: { byAudience?: boolean } = {},
+  fixtures: readonly RoundFixture[],
+  opts: { byAudience?: boolean; juniors?: JuniorPackaging } = {},
 ): FixtureRoundGroup[] {
   const groups = new Map<string, FixtureRoundGroup>();
+  // A combined set keeps the senior key, so a round drafted before juniors were
+  // switched on refreshes in place rather than drafting again.
+  const combined = opts.juniors === "combined";
   for (const f of fixtures) {
-    const roundLabel = (f.roundLabel ?? "").trim().toUpperCase();
-    const junior = isJuniorGradeLabel(f.grade);
-    const audience = opts.byAudience ? audienceOfGrade(f.grade) : undefined;
-    const section = junior ? "junior" : audience === "women" ? "women" : "senior";
-    const key = `${weekendOf(f.startAt)}:${roundLabel || "ROUND"}:${section}`;
-    let g = groups.get(key);
+    const junior = isJuniorFixture(f);
+    // A junior-sync fixture has no round label; it joins the weekend's senior round.
+    const roundLabel = junior && f.juniorTeam ? "" : (f.roundLabel ?? "").trim().toUpperCase();
+    const audience = opts.byAudience ? (junior ? "junior" : audienceOfGrade(f.grade)) : undefined;
+    const section = junior && !combined ? "junior" : audience === "women" ? "women" : "senior";
+    const weekend = weekendOf(f.startAt);
+    let g = junior && combined ? seniorGroupFor(groups, weekend, section) : undefined;
     if (!g) {
-      g = { key, roundLabel, junior, ...(audience ? { audience } : {}), fixtures: [] };
-      groups.set(key, g);
+      const key = `${weekend}:${roundLabel || "ROUND"}:${section}`;
+      g = groups.get(key);
+      if (!g) {
+        const aud = junior && !combined ? "junior" : audience === "junior" ? undefined : audience;
+        g = {
+          key,
+          roundLabel,
+          junior,
+          hasJuniors: junior,
+          ...(aud ? { audience: aud } : {}),
+          fixtures: [],
+        };
+        groups.set(key, g);
+      }
     }
     g.fixtures.push(f);
+    g.junior = g.junior && junior;
+    g.hasJuniors = g.hasJuniors || junior;
+    if (!g.roundLabel && roundLabel) g.roundLabel = roundLabel;
   }
   const out = [...groups.values()];
   for (const g of out) {
-    g.fixtures.sort((a, b) => a.startAt.getTime() - b.startAt.getTime() || a.id - b.id);
+    g.fixtures.sort(
+      (a, b) =>
+        Number(isJuniorFixture(a)) - Number(isJuniorFixture(b)) ||
+        a.startAt.getTime() - b.startAt.getTime() ||
+        a.id - b.id,
+    );
   }
   return out;
+}
+
+/** The weekend's existing senior group in a section, for a combined junior fixture to join. */
+function seniorGroupFor(
+  groups: Map<string, FixtureRoundGroup>,
+  weekend: string,
+  section: string,
+): FixtureRoundGroup | undefined {
+  for (const [key, g] of groups) {
+    if (key.startsWith(`${weekend}:`) && key.endsWith(`:${section}`) && !g.junior) return g;
+  }
+  return undefined;
 }
 
 export function roundToGameDayInput(round: FixtureRoundGroup): Record<string, unknown> {
@@ -155,9 +235,47 @@ export function roundToGameDayInput(round: FixtureRoundGroup): Record<string, un
       opponent: f.opponentName,
       venue: f.venue || (f.isHome ? "Home" : "Away"),
       startTime: formatFixtureTime(f.startAt),
+      ...(f.juniorTeam?.teamName ? { team: f.juniorTeam.teamName } : {}),
     })),
-    ...(round.junior ? { junior: true } : {}),
+    // Any junior fixture makes the whole set a junior card (KTD6): junior rules apply.
+    ...(round.hasJuniors ? { junior: true, juniorTeams: juniorTeamsOf(round.fixtures) } : {}),
   };
+}
+
+/** The junior-sync fixtures starting in a window, adapted onto the round-set shape. */
+async function juniorRoundFixtures(
+  tenantId: number,
+  anchor: Date,
+  allows: (grade: string, junior: boolean) => boolean,
+): Promise<(RoundFixture & { juniorFixtureId: number; row: JuniorFixtureRow })[]> {
+  const rows = await db
+    .select()
+    .from(juniorFixturesTable)
+    .where(
+      and(
+        eq(juniorFixturesTable.tenantId, tenantId),
+        gt(juniorFixturesTable.startAt, anchor),
+        lte(juniorFixturesTable.startAt, new Date(anchor.getTime() + ROUND_WINDOW_MS)),
+      ),
+    );
+  const out: (RoundFixture & { juniorFixtureId: number; row: JuniorFixtureRow })[] = [];
+  for (const r of rows) {
+    const grade = r.ageGroup ?? r.grade ?? "";
+    if (!r.startAt || !grade || !allows(grade, true)) continue;
+    out.push({
+      id: r.id,
+      grade,
+      roundLabel: null,
+      opponentName: r.opponentName ?? "",
+      venue: r.venue,
+      startAt: r.startAt,
+      isHome: r.isHome ?? false,
+      juniorTeam: { ageGroup: r.ageGroup ?? null, teamName: r.teamName ?? null },
+      juniorFixtureId: r.id,
+      row: r,
+    });
+  }
+  return out;
 }
 
 /** The scheduled week's fixtures for a per-round card, grouped, rounds not yet started. */
@@ -166,7 +284,7 @@ async function scheduledRounds(
   now: Date,
   anchor: Date,
   allows: (grade: string, junior: boolean) => boolean,
-  opts: { byAudience?: boolean } = {},
+  opts: { byAudience?: boolean; juniors?: JuniorPackaging | null } = {},
 ): Promise<FixtureRoundGroup[]> {
   const fixtures = await db
     .select()
@@ -178,10 +296,18 @@ async function scheduledRounds(
         lte(fixturesTable.startAt, new Date(anchor.getTime() + ROUND_WINDOW_MS)),
       ),
     );
-  return groupFixtureRounds(
-    fixtures.filter((f) => allows(f.grade, isJuniorGradeLabel(f.grade))),
-    opts,
-  ).filter((r) => (r.fixtures[0]?.startAt.getTime() ?? 0) > now.getTime());
+  const all: RoundFixture[] = fixtures.filter((f) => allows(f.grade, isJuniorGradeLabel(f.grade)));
+  // Junior-sync fixtures join only when the row lists junior grades (KTD6).
+  if (opts.juniors) all.push(...(await juniorRoundFixtures(tenantId, anchor, allows)));
+  return groupFixtureRounds(all, {
+    byAudience: opts.byAudience,
+    ...(opts.juniors ? { juniors: opts.juniors } : {}),
+  }).filter((r) => (r.fixtures[0]?.startAt.getTime() ?? 0) > now.getTime());
+}
+
+/** The row's junior packaging when it lists any junior grade, else null. */
+function juniorsFor(gates: DraftingGates, row: "results" | "gameDay" | "teamLists") {
+  return gates.juniorsAny(row) ? gates.juniorPackaging(row) : null;
 }
 
 /** Game day as one round set, at the club's chosen day and hour. */
@@ -196,7 +322,9 @@ export async function generateRoundGameDayDrafts(
   if (!gates.gameDayRound()) return result;
 
   const anchor = lastScheduledAt(now, schedule);
-  const rounds = await scheduledRounds(tenantId, now, anchor, gates.gameDayGrade);
+  const rounds = await scheduledRounds(tenantId, now, anchor, gates.gameDayGrade, {
+    juniors: juniorsFor(gates, "gameDay"),
+  });
   for (const round of rounds) {
     const { action } = await upsertDraftByKey({
       tenantId,
@@ -205,7 +333,7 @@ export async function generateRoundGameDayDrafts(
       sourceKey: `gameday-round:${round.key}`,
       cardInput: roundToGameDayInput(round),
       appPath: "/fixtures",
-      sourceMatchIsJunior: round.junior,
+      sourceMatchIsJunior: round.hasJuniors,
       sourceImportedAt: now,
     });
     if (action === "inserted") result.drafted++;
@@ -227,8 +355,10 @@ export async function generateRoundTeamListDrafts(
 
   const anchor = lastScheduledAt(now, schedule);
   // Men's and women's teams post as their own sets (juniors apart as always).
+  const juniors = juniorsFor(gates, "teamLists");
   const rounds = await scheduledRounds(tenantId, now, anchor, gates.teamListsGrade, {
     byAudience: true,
+    juniors,
   });
   if (rounds.length === 0) return result;
 
@@ -238,20 +368,80 @@ export async function generateRoundTeamListDrafts(
     .where(and(eq(teamListsTable.tenantId, tenantId), eq(teamListsTable.isPublished, true)));
   const byFixture = new Map(lists.map((l) => [l.fixtureId, l.players]));
 
+  // Junior-sync team lists, named in the club's junior style (never a photo, KTD6).
+  const juniorFixtureIds = rounds.flatMap((r) =>
+    r.fixtures.flatMap((f) => (f.juniorFixtureId != null ? [f.juniorFixtureId] : [])),
+  );
+  const juniorLists = juniorFixtureIds.length
+    ? await db
+        .select({
+          fixtureId: juniorTeamListsTable.juniorFixtureId,
+          players: juniorTeamListsTable.players,
+        })
+        .from(juniorTeamListsTable)
+        .where(
+          and(
+            eq(juniorTeamListsTable.tenantId, tenantId),
+            eq(juniorTeamListsTable.isPublished, true),
+            inArray(juniorTeamListsTable.juniorFixtureId, juniorFixtureIds),
+          ),
+        )
+    : [];
+  const byJuniorFixture = new Map(juniorLists.map((l) => [l.fixtureId, l.players]));
+  const juniorTools = juniorLists.length
+    ? await (async () => {
+        const [{ juniorCardNamer, juniorTeamListToCardInput }, { loadJuniorNaming }] =
+          await Promise.all([import("./junior-team-list"), import("../junior-helpers")]);
+        const nameOf = juniorCardNamer(
+          await loadJuniorNaming(
+            tenantId,
+            juniorLists.flatMap((l) => l.players.map((p) => p.participantId)),
+          ),
+        );
+        return { nameOf, toCardInput: juniorTeamListToCardInput };
+      })()
+    : null;
+  const juniorNumbers = new Map<number, unknown>();
+  const juniorNumbersFor = async (season: number) => {
+    if (!juniorNumbers.has(season)) {
+      const { loadJuniorSeasonShirtNumbers } = await import("../junior-shirt-numbers");
+      juniorNumbers.set(
+        season,
+        await loadJuniorSeasonShirtNumbers(tenantId, season).catch(() => null),
+      );
+    }
+    return (juniorNumbers.get(season) ?? null) as Parameters<
+      NonNullable<typeof juniorTools>["toCardInput"]
+    >[3];
+  };
+
   // Season shirt numbers: read only when the club has the feature on.
   const shirtNumbers = teamListShirtNumberLoader(tenantId);
   for (const round of rounds) {
     const teams: Record<string, unknown>[] = [];
     for (const f of round.fixtures) {
+      if (f.juniorFixtureId != null) {
+        const players = byJuniorFixture.get(f.juniorFixtureId);
+        const row = (f as RoundFixture & { row?: JuniorFixtureRow }).row;
+        if (!players || !row || !juniorTools) continue;
+        const { kind: _kind, ...team } = juniorTools.toCardInput(
+          row,
+          players,
+          juniorTools.nameOf,
+          await juniorNumbersFor(row.seasonStartYear),
+        );
+        if ((team.players as unknown[]).length > 0) teams.push(team);
+        continue;
+      }
       const players = byFixture.get(f.id);
       if (!players) continue;
       // Each team is exactly the fixture's own team-list card (fill-ins excluded).
       const debuts = await loadAutoDebuts(tenantId, players, f.startAt);
       const { kind: _kind, ...team } = teamListToCardInput(
-        f,
+        f as FixtureRow,
         players,
         debuts,
-        await shirtNumbers(teamListSeasonOf(f)),
+        await shirtNumbers(teamListSeasonOf(f as FixtureRow)),
       );
       if ((team.players as unknown[]).length > 0) teams.push(team);
     }
@@ -267,9 +457,11 @@ export async function generateRoundTeamListDrafts(
         date: round.fixtures[0] ? formatRoundDate(round.fixtures[0].startAt) : "",
         ...(round.audience ? { audience: AUDIENCE_LABEL[round.audience] } : {}),
         teams,
+        // Any junior team makes the whole set a junior card (KTD6).
+        ...(round.hasJuniors ? { junior: true, juniorTeams: juniorTeamsOf(round.fixtures) } : {}),
       },
       appPath: "/fixtures",
-      sourceMatchIsJunior: round.junior,
+      sourceMatchIsJunior: round.hasJuniors,
       sourceImportedAt: now,
     });
     if (action === "inserted") result.drafted++;
@@ -302,7 +494,8 @@ export async function generateWeekendWrapDrafts(
   const central = await tenantIsCentral(tenantId);
   // The round carousel's day and hour stay on the weekend-wrap schedule
   // (release 1); whether it drafts is the Posting Plan's Results row.
-  if (!central || !draftingGates(settings, central).resultsCarousel()) return result;
+  const gates = draftingGates(settings, central);
+  if (!central || !gates.resultsCarousel()) return result;
 
   const played = await latestPlayedRound(tenantId, settings, now);
   if (!played) return result;
@@ -329,30 +522,166 @@ export async function generateWeekendWrapDrafts(
     }
   }
   const listed = [...rows, ...ordered.filter((m) => !rows.includes(m))];
+  const seniorRows = listed.map((m) => ({
+    gradeLabel: m.gradeLabel,
+    resultLine: m.resultLine,
+    performers: m.performers,
+    outcome: WRAP_OUTCOME[m.outcome] ?? "draw",
+  }));
 
-  const { action } = await upsertDraftByKey({
-    tenantId,
-    engine: "weekendwrap-round",
-    family: "roundup",
-    sourceKey: `weekendwrap-round:${season}:${round}`,
-    cardInput: {
-      kind: "weekendWrap",
-      roundLabel: wrap.roundLabel.toUpperCase(),
-      dateRange: wrap.dateRange,
-      matches: listed.map((m) => ({
-        gradeLabel: m.gradeLabel,
-        resultLine: m.resultLine,
-        performers: m.performers,
-        outcome: WRAP_OUTCOME[m.outcome] ?? "draw",
-      })),
-      results,
-    },
-    appPath: "/fixtures",
-    sourceImportedAt: now,
-  });
-  if (action === "inserted") result.drafted++;
-  else if (action === "refreshed") result.refreshed++;
+  // Junior results from the junior sync, when the row lists junior age groups (KTD6):
+  // in the same carousel after the seniors, or as their own set.
+  const juniors = juniorsFor(gates, "results");
+  const juniorSet = juniors
+    ? await juniorRoundResults(tenantId, played.from, played.to, gates)
+    : null;
+
+  const upsert = (
+    key: string,
+    cover: typeof seniorRows,
+    slides: Record<string, unknown>[],
+    junior: { teams: JuniorTeamRef[] } | null,
+  ) =>
+    upsertDraftByKey({
+      tenantId,
+      engine: "weekendwrap-round",
+      family: "roundup",
+      sourceKey: key,
+      cardInput: {
+        kind: "weekendWrap",
+        roundLabel: wrap.roundLabel.toUpperCase(),
+        dateRange: wrap.dateRange,
+        matches: cover,
+        results: slides,
+        // Any junior slide makes the whole set a junior card (KTD6).
+        ...(junior ? { junior: true, juniorTeams: junior.teams } : {}),
+      },
+      appPath: "/fixtures",
+      sourceMatchIsJunior: junior != null,
+      sourceImportedAt: now,
+    });
+
+  const count = (action: string) => {
+    if (action === "inserted") result.drafted++;
+    else if (action === "refreshed") result.refreshed++;
+  };
+
+  if (juniors === "combined" && juniorSet && juniorSet.slides.length > 0) {
+    const { action } = await upsert(
+      `weekendwrap-round:${season}:${round}`,
+      [...seniorRows, ...juniorSet.cover],
+      [...results, ...juniorSet.slides],
+      { teams: juniorSet.teams },
+    );
+    count(action);
+    return result;
+  }
+  count((await upsert(`weekendwrap-round:${season}:${round}`, seniorRows, results, null)).action);
+  if (juniors === "separate" && juniorSet && juniorSet.slides.length > 0) {
+    count(
+      (
+        await upsert(
+          `weekendwrap-round:${season}:${round}:junior`,
+          juniorSet.cover,
+          juniorSet.slides,
+          {
+            teams: juniorSet.teams,
+          },
+        )
+      ).action,
+    );
+  }
   return result;
+}
+
+/**
+ * The club's synced junior results in a round's date window, as weekend-wrap cover
+ * rows and result slides. Only finished, scored matches of age groups the Match
+ * result row lists; names follow the club's junior naming (private players withheld).
+ */
+async function juniorRoundResults(
+  tenantId: number,
+  from: string,
+  to: string,
+  gates: DraftingGates,
+): Promise<{
+  cover: {
+    gradeLabel: string;
+    resultLine: string;
+    performers: string;
+    outcome: "won" | "lost" | "draw";
+  }[];
+  slides: Record<string, unknown>[];
+  teams: JuniorTeamRef[];
+}> {
+  const rows = await db
+    .select({
+      id: juniorMatchesTable.id,
+      ageGroup: juniorMatchesTable.ageGroup,
+      grade: juniorMatchesTable.grade,
+      teamName: juniorMatchesTable.teamName,
+      hhResult: juniorMatchesTable.hhResult,
+      matchDate: juniorMatchesTable.matchDate,
+    })
+    .from(juniorMatchesTable)
+    .where(
+      and(
+        eq(juniorMatchesTable.tenantId, tenantId),
+        gte(juniorMatchesTable.id, JUNIOR_SYNC_ID_START),
+        ne(juniorMatchesTable.status, "IN_PROGRESS"),
+        gte(juniorMatchesTable.matchDate, from),
+        lte(juniorMatchesTable.matchDate, to),
+      ),
+    );
+  const allowed = rows.filter((m) => gates.resultsGrade(m.ageGroup ?? m.grade ?? "", true));
+  const out = {
+    cover: [] as never[],
+    slides: [] as Record<string, unknown>[],
+    teams: [] as JuniorTeamRef[],
+  } as {
+    cover: {
+      gradeLabel: string;
+      resultLine: string;
+      performers: string;
+      outcome: "won" | "lost" | "draw";
+    }[];
+    slides: Record<string, unknown>[];
+    teams: JuniorTeamRef[];
+  };
+  if (allowed.length === 0) return out;
+  const [{ loadJuniorMatchDetail }, { loadJuniorNaming }, { getTenantBrand }] = await Promise.all([
+    import("../match-summary-drafter"),
+    import("../junior-helpers"),
+    import("../tenant-brand"),
+  ]);
+  const brand = await getTenantBrand(tenantId);
+  const naming = await loadJuniorNaming(tenantId);
+  const seen = new Set<string>();
+  for (const m of allowed.sort(
+    (a, b) => (a.matchDate ?? "").localeCompare(b.matchDate ?? "") || a.id - b.id,
+  )) {
+    const detail = await loadJuniorMatchDetail(m.id, tenantId, naming);
+    if (!detail) continue;
+    const input = juniorMatchToSummaryInput(
+      detail as Parameters<typeof juniorMatchToSummaryInput>[0],
+      brand,
+    );
+    const resultText = m.hhResult ?? "";
+    out.cover.push({
+      gradeLabel: [m.ageGroup ?? m.grade ?? "", m.teamName ?? ""].filter(Boolean).join(" · "),
+      resultLine: (input as { result?: string }).result ?? resultText,
+      performers: "",
+      outcome: /\bwon\b/i.test(resultText) ? "won" : /\blost\b/i.test(resultText) ? "lost" : "draw",
+    });
+    out.slides.push(input as unknown as Record<string, unknown>);
+    const ref = { ageGroup: m.ageGroup ?? null, teamName: m.teamName ?? null };
+    const key = `${ref.ageGroup ?? ""}|${ref.teamName ?? ""}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.teams.push(ref);
+    }
+  }
+  return out;
 }
 
 /**
@@ -369,6 +698,9 @@ export async function latestPlayedRound(
   clubId: number;
   season: number;
   round: number;
+  /** The club-time date window (YYYY-MM-DD, inclusive) the round was found in. */
+  from: string;
+  to: string;
   matches: { id: number; grade: string; matchDate: string | null; abandoned: boolean }[];
 } | null> {
   const schedule = resolveRoundSchedules(settings?.roundSchedules).weekendWrap;
@@ -386,7 +718,7 @@ export async function latestPlayedRound(
   if (played.length === 0) return null;
   const latest = played.reduce((a, b) => ((b.matchDate ?? "") > (a.matchDate ?? "") ? b : a));
   const round = latest.round!;
-  return { clubId, season, round, matches: played.filter((m) => m.round === round) };
+  return { clubId, season, round, from, to, matches: played.filter((m) => m.round === round) };
 }
 
 /**

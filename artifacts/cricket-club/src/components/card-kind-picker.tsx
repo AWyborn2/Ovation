@@ -12,7 +12,8 @@ export const CARD_KIND_OPTIONS: { value: CardKind; label: string }[] = [
   { value: "milestone", label: "Milestone" },
   { value: "player", label: "Player" },
   { value: "record", label: "Record" },
-  { value: "gradeLeader", label: "Leaderboard" },
+  // gradeLeader, countdown and tradingCard are retired (plan 2026-10-15-001 R5): no new
+  // cards of those kinds; posted ones still render.
   { value: "premiership", label: "Premiership" },
   { value: "debut", label: "Debut" },
   { value: "century", label: "Century" },
@@ -24,10 +25,8 @@ export const CARD_KIND_OPTIONS: { value: CardKind; label: string }[] = [
   { value: "ladder", label: "Ladder" },
   { value: "bigMoment", label: "Big Moment" },
   { value: "newSigning", label: "New Signing" },
-  { value: "countdown", label: "Countdown" },
   { value: "clubLeaderboard", label: "Club Leaderboard" },
   { value: "roundFixtures", label: "Game Day" },
-  { value: "tradingCard", label: "Trading Card" },
   { value: "juniorHighlights", label: "Junior Highlights" },
   { value: "teamListRound", label: "Round Team Lists" },
   { value: "announcement", label: "Announcement" },

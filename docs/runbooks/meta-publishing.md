@@ -148,6 +148,57 @@ A club can plan its posts on a weekly calendar (plan `docs/plans/2026-10-07-003-
 
 **Turning it off** hands cards back to auto-post's review window, measured from each card's import. Cards whose window has already passed can become ready, or publish, on the next sweep. The admin is warned before confirming.
 
+## 3b. Auto-queue criteria (Posting Plan version 2)
+
+The Posting Plan version 2 (plan `docs/plans/2026-10-15-001-feat-social-auto-queue-criteria-plan.md`) retires the grade leader, trading card and countdown cards, folds centuries, five-fors, hat-tricks and five catches into the Big Moment card, lets each row list junior age groups, and makes a junior team's "auto" setting mean publishing to Facebook and Instagram. No app migration: the one new table lives in `central` and comes from the projector SQL.
+
+**Deploy order (once)**
+
+1. **Before republishing:** paste `scripts/sql/central-projector.sql` into the Production SQL runner for the database `CENTRAL_PROJECTOR_DATABASE_URL` points at (it is idempotent). Check (read-only):
+
+   ```sql
+   select to_regclass('central.match_feats');
+   ```
+
+   Expect `central.match_feats`, not null.
+
+2. **Read-only, before republishing:** list the junior teams currently on `auto`, so those clubs can be told the setting now means publishing and they must opt in again:
+
+   ```sql
+   select t.slug, s.team_publishing
+   from junior_match_display_settings s join tenants t on t.id = s.tenant_id
+   where s.team_publishing::text like '%"auto"%';
+   ```
+
+3. Republish. Every club's Posting Plan comes back as the default table (round carousels for a central club, every match on its own otherwise) with the junior runs bar at 100; a club's saved version 1 plan is not read.
+4. **After republishing:** paste `scripts/sql/auto-queue-release.sql` into the Production SQL runner (idempotent). It dismisses open drafts of the retired kinds, cancels their waiting publications and puts every junior team back on `approval`. Checks (read-only), both expect 0:
+
+   ```sql
+   select count(*) from social_drafts
+   where status in ('awaiting_review', 'ready')
+     and card_input->>'kind' in ('gradeLeader', 'tradingCard', 'countdown');
+   select count(*) from junior_match_display_settings where team_publishing::text like '%"auto"%';
+   ```
+
+5. Backfill this season's feats (hat-tricks and five catches need ball-by-ball and fielding rows; only matches the sync has fetched balls for can have a hat-trick):
+
+   ```bash
+   pnpm --filter @workspace/scripts exec tsx src/playhq-project-central.ts --since 2026-10-01
+   ```
+
+   Check (read-only): `select kind, count(*) from central.match_feats group by kind;`
+
+6. After the next match-day or day-after sync run, confirm it fetched balls for a played match (read-only):
+
+   ```sql
+   select match_id, count(*) from playhq.balls group by match_id order by max(ingested_at) desc limit 5;
+   ```
+
+**How it behaves**
+
+- Only match-day, day-after and catch-up syncs fetch ball-by-ball; weekly and pre-weekend syncs don't (Ash approved the extra scrape volume on 15 Oct 2026).
+- A junior-marked card publishes on its own only when every team it names is `auto`; a card that names no team, or any team on `approval`, waits for an admin even when the calendar or auto-post would otherwise send it.
+
 ## 4. Maintenance
 
 ### Rotating the token key

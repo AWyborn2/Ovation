@@ -2,6 +2,9 @@ import { isJuniorGradeLabel } from "@workspace/scorecard";
 import {
   PACKAGING_LABELS,
   POSTING_ROW_DEFS,
+  rowHasJuniors,
+  rowJuniorPackaging,
+  type JuniorPackaging,
   type PostingRow,
   type PostingRowId,
 } from "@workspace/scorecard/posting-plan";
@@ -67,10 +70,14 @@ export function gradeSummary(row: PostingRow, knownGrades: readonly string[]): s
 const PACKAGING_SENTENCE: Record<PostingRow["packaging"], string> = {
   individual: "each on its own",
   round: "one round carousel",
-  both: "each on its own and a round carousel",
 };
 
-/** "Results: A–C Grade · one round carousel". */
+const JUNIOR_PACKAGING_SENTENCE: Record<JuniorPackaging, string> = {
+  combined: "juniors in the same carousel",
+  separate: "juniors in their own carousel",
+};
+
+/** "Match result: A–C Grade · one round carousel, juniors in their own carousel". */
 export function rowSentence(
   id: PostingRowId,
   row: PostingRow,
@@ -80,7 +87,11 @@ export function rowSentence(
   if (!row.enabled) return `${label}: off`;
   // Leaderboards and ladders are always one round carousel; grades only matter for ladders.
   if (id === "clubLeaderboards") return `${label}: one round carousel, every senior grade`;
-  return `${label}: ${gradeSummary(row, knownGrades)} · ${PACKAGING_SENTENCE[row.packaging]}`;
+  const packaging =
+    row.packaging === "round" && rowHasJuniors(row)
+      ? `${PACKAGING_SENTENCE.round}, ${JUNIOR_PACKAGING_SENTENCE[rowJuniorPackaging(row)]}`
+      : PACKAGING_SENTENCE[row.packaging];
+  return `${label}: ${gradeSummary(row, knownGrades)} · ${packaging}`;
 }
 
 /** The sentence without its row label: "A Grade only · each on its own". */
@@ -99,7 +110,7 @@ export function hasGradePicker(id: PostingRowId): boolean {
   return id !== "clubLeaderboards";
 }
 
-/** Rows whose junior grades can never draft as a round carousel (central data holds no juniors). */
-export function juniorsUnavailable(id: PostingRowId, row: PostingRow): boolean {
-  return id === "ladders" || (id === "results" && row.packaging === "round");
+/** Rows with no junior data at all (KTD6): milestones, debuts, ladders, club leaderboards. */
+export function juniorsUnavailable(id: PostingRowId, _row: PostingRow): boolean {
+  return !POSTING_ROW_DEFS[id].juniors;
 }

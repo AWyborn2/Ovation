@@ -1,113 +1,85 @@
 import { describe, it, expect } from "vitest";
 import {
-  derivePostingPlan,
+  DEFAULT_STYLE_ID,
+  POSTING_ROWS,
+  defaultPostingPlan,
   findPostingStyle,
   invalidPostingPlan,
   matchingStyle,
   normalizePostingPlan,
   planFromStyle,
   postingPlanToLegacy,
+  postingStyles,
   rowAllows,
+  rowHasJuniors,
   rowIndividual,
+  rowJuniorPackaging,
   rowRound,
-  type LegacyPostingInput,
   type PostingPlan,
 } from "./posting-plan";
 
-const fam = (enabled: boolean, grades: Record<string, boolean> = {}) => ({ enabled, grades });
+const style = (id: string, central = true) => planFromStyle(findPostingStyle(id, central)!);
 
-function legacy(over: Partial<LegacyPostingInput> = {}): LegacyPostingInput {
-  return {
-    families: {
-      results: fam(true),
-      achievements: fam(false),
-      roundup: fam(false),
-      matchday: fam(false),
-    },
-    modes: { gameDay: "perFixture", teamLists: "perFixture", weekendWrap: "off" },
-    central: true,
-    ...over,
-  };
-}
+describe("defaultPostingPlan (R13)", () => {
+  it("is the round-carousels style for a central club", () => {
+    const plan = defaultPostingPlan(true);
+    expect(plan.version).toBe(2);
+    expect(plan.styleId).toBe(DEFAULT_STYLE_ID);
+    expect(rowRound(plan.rows.results)).toBe(true);
+    expect(rowIndividual(plan.rows.bigMoments)).toBe(true);
+    expect(rowAllows(plan.rows.bigMoments, "C Grade", false)).toBe(true);
+    expect(rowIndividual(plan.rows.milestones)).toBe(true);
+    expect(rowRound(plan.rows.teamLists)).toBe(true);
+    expect(rowRound(plan.rows.gameDay)).toBe(true);
+    expect(plan.rows.ladders.enabled).toBe(false);
+    expect(plan.rows.clubLeaderboards.enabled).toBe(false);
+    expect(plan.bigMoments.juniorRunsBar).toBe(100);
+  });
 
-const style = (id: string) => planFromStyle(findPostingStyle(id)!);
+  it("limits debuts to A Grade", () => {
+    const d = defaultPostingPlan(true).rows.debuts;
+    expect(rowAllows(d, "A Grade", false)).toBe(true);
+    expect(rowAllows(d, "Female A Grade", false)).toBe(true);
+    expect(rowAllows(d, "B Grade", false)).toBe(false);
+  });
 
-describe("derivePostingPlan", () => {
-  it("reproduces a club on default settings", () => {
-    const plan = derivePostingPlan(legacy());
+  it("posts each match on its own for a non-central club and validates", () => {
+    const plan = defaultPostingPlan(false);
     expect(rowIndividual(plan.rows.results)).toBe(true);
     expect(rowRound(plan.rows.results)).toBe(false);
-    expect(plan.rows.milestones.enabled).toBe(false);
-    expect(plan.rows.gameDay.enabled).toBe(false);
-    expect(plan.rows.clubLeaderboards.enabled).toBe(false);
-    expect(plan.rows.ladders.enabled).toBe(false);
-    expect(plan.styleId).toBeNull();
+    expect(invalidPostingPlan(plan, { central: false })).toBeNull();
   });
 
-  it("maps the weekend-wrap mode onto results packaging when round-up is on", () => {
-    const on = (weekendWrap: LegacyPostingInput["modes"]["weekendWrap"]) =>
-      derivePostingPlan(
-        legacy({
-          families: { ...legacy().families, roundup: fam(true) },
-          modes: { gameDay: "perFixture", teamLists: "perFixture", weekendWrap },
-        }),
-      ).rows.results;
-    expect(on("perRound")).toMatchObject({ enabled: true, packaging: "round" });
-    expect(on("both")).toMatchObject({ enabled: true, packaging: "both" });
-    expect(on("perFixture")).toMatchObject({ enabled: true, packaging: "individual" });
-  });
-
-  it("derives no results at all with round-up off and carousel-only mode, as today", () => {
-    const r = derivePostingPlan(
-      legacy({
-        modes: { gameDay: "perFixture", teamLists: "perFixture", weekendWrap: "perRound" },
-      }),
-    ).rows.results;
-    expect(rowIndividual(r)).toBe(false);
-    expect(rowRound(r)).toBe(false);
-  });
-
-  it("drafts no results carousel for a non-central club", () => {
-    const r = derivePostingPlan(
-      legacy({
-        central: false,
-        families: { ...legacy().families, roundup: fam(true) },
-        modes: { gameDay: "perFixture", teamLists: "perFixture", weekendWrap: "perRound" },
-      }),
-    ).rows.results;
-    expect(rowRound(r)).toBe(false);
-    // The native import path never read the mode, so per-match cards continue.
-    expect(rowIndividual(r)).toBe(true);
-  });
-
-  it("keeps a results grade override for per-match posts", () => {
-    const r = derivePostingPlan(
-      legacy({ families: { ...legacy().families, results: fam(true, { "B Grade": false }) } }),
-    ).rows.results;
-    expect(rowAllows(r, "B Grade", false)).toBe(false);
-    expect(rowAllows(r, "A Grade", false)).toBe(true);
-  });
-
-  it("game day and team lists follow the match-day family and their own mode", () => {
-    const p = derivePostingPlan(
-      legacy({
-        families: { ...legacy().families, matchday: fam(true) },
-        modes: { gameDay: "perRound", teamLists: "off", weekendWrap: "off" },
-      }),
-    );
-    expect(p.rows.gameDay).toMatchObject({ enabled: true, packaging: "round" });
-    expect(p.rows.teamLists.enabled).toBe(false);
+  it("lists only rows an engine can draft", () => {
+    expect([...POSTING_ROWS]).toEqual([
+      "results",
+      "bigMoments",
+      "milestones",
+      "debuts",
+      "gameDay",
+      "teamLists",
+      "clubLeaderboards",
+      "ladders",
+    ]);
   });
 });
 
 describe("rowAllows", () => {
   const base = style("every-match").rows.results;
-  it("drafts unlisted seniors but not unlisted juniors", () => {
+  it("drafts unlisted seniors but not unlisted juniors on every row", () => {
+    const plan = defaultPostingPlan(true);
+    for (const id of POSTING_ROWS) {
+      expect(rowAllows(plan.rows[id], "Under 14", true)).toBe(false);
+    }
     expect(rowAllows(base, "C Grade", false)).toBe(true);
-    expect(rowAllows(base, "Under 16s", true)).toBe(false);
   });
   it("drafts an explicitly listed junior grade", () => {
-    expect(rowAllows({ ...base, grades: { "Under 16s": true } }, "Under 16s", true)).toBe(true);
+    const r = { ...base, grades: { "Under 14": true } };
+    expect(rowAllows(r, "Under 14", true)).toBe(true);
+    expect(rowHasJuniors(r)).toBe(true);
+    // Juniors get their own set unless the club chose combined.
+    expect(rowJuniorPackaging(r)).toBe("separate");
+    expect(rowJuniorPackaging({ ...r, juniors: "combined" })).toBe("combined");
   });
   it("others off with A Grade listed allows only A Grade", () => {
     const r = { ...base, grades: { "A Grade": true }, others: "off" as const };
@@ -117,96 +89,132 @@ describe("rowAllows", () => {
   });
 });
 
-describe("styles", () => {
-  it("round carousels + highlights is Ash's setup", () => {
-    const p = style("round-carousels");
-    expect(p.rows.results.packaging).toBe("round");
-    expect(p.rows.teamLists.packaging).toBe("round");
-    expect(rowRound(p.rows.ladders)).toBe(true);
-    expect(rowRound(p.rows.clubLeaderboards)).toBe(true);
-    expect(p.rows.milestones.packaging).toBe("individual");
-    expect(rowAllows(p.rows.debuts, "A Grade", false)).toBe(true);
-    expect(rowAllows(p.rows.debuts, "B Grade", false)).toBe(false);
+describe("normalizePostingPlan (ADR-004)", () => {
+  const base = defaultPostingPlan(true);
+  it("replaces a version 1 plan, a null plan and a malformed plan with the default", () => {
+    const v1 = { version: 1, styleId: "every-match", rows: { results: { enabled: false } } };
+    expect(normalizePostingPlan(v1, base)).toEqual(base);
+    expect(normalizePostingPlan(null, base)).toEqual(base);
+    expect(normalizePostingPlan("nonsense", base)).toEqual(base);
+    expect(normalizePostingPlan({ version: 2, rows: 7 }, base).rows).toEqual(base.rows);
   });
 
-  it("a plan built from a style matches it until a row changes", () => {
-    const p = style("round-carousels");
-    expect(matchingStyle(p)?.id).toBe("round-carousels");
-    const edited: PostingPlan = {
-      ...p,
-      rows: { ...p.rows, milestones: { ...p.rows.milestones, enabled: false } },
-    };
-    expect(matchingStyle(edited)).toBeNull();
+  it("keeps a version 2 plan's rows, juniors option and runs bar", () => {
+    const out = normalizePostingPlan(
+      {
+        version: 2,
+        styleId: null,
+        rows: {
+          results: {
+            enabled: true,
+            packaging: "round",
+            grades: { "Under 14": true },
+            juniors: "separate",
+          },
+          bigMoments: {
+            enabled: true,
+            packaging: "individual",
+            grades: { "Under 14": true },
+            juniors: "separate",
+          },
+        },
+        bigMoments: { juniorRunsBar: 50 },
+      },
+      base,
+    );
+    expect(out.rows.results.juniors).toBe("separate");
+    expect(out.rows.bigMoments.juniors).toBeUndefined(); // only meaningful on a carousel
+    expect(out.bigMoments.juniorRunsBar).toBe(50);
+    expect(out.styleId).toBeNull();
+    expect(out.rows.milestones).toEqual(base.rows.milestones);
+  });
+
+  it("returns a copy, not the base object", () => {
+    const out = normalizePostingPlan(null, base);
+    out.rows.results.enabled = false;
+    expect(base.rows.results.enabled).toBe(true);
   });
 });
 
 describe("invalidPostingPlan", () => {
-  const p = style("every-match");
-  it("rejects a round carousel for milestones", () => {
-    const bad = {
-      ...p,
-      rows: { ...p.rows, milestones: { ...p.rows.milestones, packaging: "round" as const } },
-    };
-    expect(invalidPostingPlan(bad, { central: true })).toMatch(/Milestones/);
+  const base = defaultPostingPlan(true);
+  const withRow = (
+    id: (typeof POSTING_ROWS)[number],
+    patch: Partial<PostingPlan["rows"][typeof id]>,
+  ): PostingPlan => ({
+    ...base,
+    rows: { ...base.rows, [id]: { ...base.rows[id], ...patch } },
   });
-  it("rejects both for team lists", () => {
-    const bad = {
-      ...p,
-      rows: { ...p.rows, teamLists: { ...p.rows.teamLists, packaging: "both" as const } },
-    };
-    expect(invalidPostingPlan(bad, { central: true })).toMatch(/Team lists/);
+
+  it("rejects juniors on milestones and accepts them on Big Moment", () => {
+    expect(
+      invalidPostingPlan(withRow("milestones", { grades: { "Under 14": true } }), {
+        central: true,
+      }),
+    ).toMatch(/junior/);
+    expect(
+      invalidPostingPlan(withRow("bigMoments", { grades: { "Under 14": true } }), {
+        central: true,
+      }),
+    ).toBeNull();
   });
-  it("only allows results, ladder and leaderboard carousels for central clubs", () => {
-    expect(invalidPostingPlan(style("round-carousels"), { central: false })).toMatch(/association/);
-    const teamListsRound = {
-      ...p,
-      rows: { ...p.rows, teamLists: { ...p.rows.teamLists, packaging: "round" as const } },
-    };
-    expect(invalidPostingPlan(teamListsRound, { central: false })).toBeNull();
+
+  it("rejects 'both' and other unknown packaging", () => {
+    const plan = withRow("results", { packaging: "both" as never });
+    expect(invalidPostingPlan(plan, { central: true })).toMatch(/can't be posted/);
+  });
+
+  it("rejects a results round carousel for a non-central club", () => {
+    expect(invalidPostingPlan(base, { central: false })).toMatch(/association database/);
+  });
+
+  it("rejects a junior runs bar other than 50 or 100", () => {
+    const bad = { ...base, bigMoments: { juniorRunsBar: 75 as never } };
+    expect(invalidPostingPlan(bad, { central: true })).toMatch(/50 or 100/);
+    expect(
+      invalidPostingPlan({ ...base, bigMoments: { juniorRunsBar: 50 } }, { central: true }),
+    ).toBeNull();
+    expect(
+      invalidPostingPlan({ ...base, bigMoments: { juniorRunsBar: 100 } }, { central: true }),
+    ).toBeNull();
   });
 });
 
 describe("postingPlanToLegacy", () => {
-  it("collapses shared families widest-wins", () => {
-    const p = style("every-match");
-    p.rows.feats = { ...p.rows.feats, enabled: false };
-    p.rows.gameDay = { ...p.rows.gameDay, grades: { "C Grade": false } };
-    p.rows.teamLists = { ...p.rows.teamLists, grades: { "C Grade": true } };
-    const out = postingPlanToLegacy(p);
-    expect(out.families.achievements.enabled).toBe(true);
-    expect(out.families.matchday.grades["C Grade"]).toBe(true);
+  it("turns the achievements family on when only Big Moment is on", () => {
+    const plan = style("results-only");
+    plan.rows.bigMoments.enabled = true;
+    const legacy = postingPlanToLegacy(plan);
+    expect(legacy.families.achievements.enabled).toBe(true);
+    expect(legacy.families.results.enabled).toBe(true);
+    expect(legacy.families.roundup.enabled).toBe(false);
+    expect(legacy.modes.weekendWrap).toBe("perFixture");
   });
 
-  it("keeps round-up on when the results carousel is on", () => {
-    const out = postingPlanToLegacy(style("round-carousels"));
-    expect(out.families.roundup.enabled).toBe(true);
-    expect(out.modes.weekendWrap).toBe("perRound");
-    expect(out.modes.teamLists).toBe("perRound");
-    expect(out.modes.gameDay).toBe("perFixture");
-  });
-
-  it("round-trips through derive for legacy-expressible plans", () => {
-    const input = legacy({
-      families: {
-        results: fam(true, { "B Grade": false }),
-        achievements: fam(true),
-        roundup: fam(true),
-        matchday: fam(true, { "Under 16s": true }),
-      },
-      modes: { gameDay: "perRound", teamLists: "perFixture", weekendWrap: "both" },
-    });
-    const plan = derivePostingPlan(input);
-    const back = postingPlanToLegacy(plan);
-    expect(derivePostingPlan({ ...back, central: true }).rows).toEqual(plan.rows);
+  it("maps the results carousel onto the round-up family and carousel mode", () => {
+    const legacy = postingPlanToLegacy(defaultPostingPlan(true));
+    expect(legacy.families.roundup.enabled).toBe(true);
+    expect(legacy.families.results.enabled).toBe(false);
+    expect(legacy.modes.weekendWrap).toBe("perRound");
+    expect(legacy.modes.teamLists).toBe("perRound");
+    expect(legacy.modes.gameDay).toBe("perRound");
   });
 });
 
-describe("normalizePostingPlan", () => {
-  it("fills missing rows from the base and keeps submitted packaging for validation", () => {
-    const base = style("every-match");
-    const out = normalizePostingPlan({ rows: { milestones: { packaging: "round" } } }, base);
-    expect(out.rows.results).toEqual(base.rows.results);
-    expect(out.rows.milestones.packaging).toBe("round");
-    expect(out.rows.milestones.enabled).toBe(true);
+describe("styles", () => {
+  it("every style validates for the data source it was built for", () => {
+    for (const central of [true, false]) {
+      for (const s of postingStyles(central)) {
+        expect(invalidPostingPlan(planFromStyle(s), { central })).toBeNull();
+      }
+    }
+  });
+
+  it("matchingStyle recognises the default and a hand-built plan as custom", () => {
+    expect(matchingStyle(defaultPostingPlan(true), true)?.id).toBe(DEFAULT_STYLE_ID);
+    expect(matchingStyle(defaultPostingPlan(false), false)?.id).toBe(DEFAULT_STYLE_ID);
+    const custom = defaultPostingPlan(true);
+    custom.rows.results.grades = { "Under 14": true };
+    expect(matchingStyle(custom, true)).toBeNull();
   });
 });

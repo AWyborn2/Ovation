@@ -43,7 +43,6 @@ export function GradePicker({
     { title: "Women", grades: all.filter((g) => !isJuniorGradeLabel(g) && isWomen(g)) },
     { title: "Juniors", grades: all.filter((g) => isJuniorGradeLabel(g)) },
   ].filter((group) => group.grades.length > 0);
-  const juniorOn = all.some((g) => isJuniorGradeLabel(g) && gradeOn(row, g));
 
   const pick = (value: QuickChoice) => {
     setChoosing(value === "custom");
@@ -99,8 +98,8 @@ export function GradePicker({
           ))}
           {juniorsUnavailable && groups.some((g) => g.title === "Juniors") && (
             <p id={`${id}-junior-reason`} className="text-xs text-muted-foreground">
-              Junior grades can&rsquo;t be part of this carousel: the association&rsquo;s results
-              hold senior grades only.
+              Junior grades aren&rsquo;t available for this card: milestones, debuts, ladders and
+              leaderboards come from senior results only.
             </p>
           )}
           <label className="flex items-center gap-2 text-sm">
@@ -133,11 +132,6 @@ export function GradePicker({
             </Button>
           </div>
         </div>
-      )}
-      {juniorOn && !juniorsUnavailable && (
-        <p className="text-xs text-muted-foreground">
-          Junior cards post as their own carousel and are never auto-published.
-        </p>
       )}
     </div>
   );

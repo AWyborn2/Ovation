@@ -70,8 +70,9 @@ export function shouldDraftGrade(
   settings: SocialSettings | null,
   grade: string | null,
   junior: boolean,
+  central = false,
 ): boolean {
-  return draftingGates(settings, false).resultsMatch(grade, junior);
+  return draftingGates(settings, central).resultsMatch(grade, junior);
 }
 
 // ---------------------------------------------------------------------------
@@ -475,7 +476,6 @@ export async function generateCentralStumpsDrafts(
 export async function generateJuniorMatchSummaryDrafts(
   tenantId: number,
   matchIds: number[],
-  opts: { synced?: boolean } = {},
 ): Promise<DraftResult> {
   const result: DraftResult = { drafted: 0, skipped: 0, errors: [] };
   if (matchIds.length === 0) return result;
@@ -504,14 +504,16 @@ export async function generateJuniorMatchSummaryDrafts(
           return;
         }
         const grade = detail.ageGroup ?? detail.grade;
-        const allowed = opts.synced
-          ? gates.juniorSynced("results", grade)
-          : gates.resultsMatch(grade, true);
-        if (!allowed) {
+        // Junior age groups draft only when the Match result row lists them (KTD6).
+        if (!gates.resultsMatch(grade, true)) {
           result.skipped++;
           return;
         }
-        const cardInput = juniorMatchToSummaryInput(detail as JuniorMatchDetail, brand);
+        const cardInput = {
+          ...juniorMatchToSummaryInput(detail as JuniorMatchDetail, brand),
+          // The junior team this card covers, for the per-team publishing gate (ADR-006).
+          juniorTeams: [{ ageGroup: detail.ageGroup ?? null, teamName: detail.teamName ?? null }],
+        };
         const mode = juniorTeamPublishMode(publishing, detail.ageGroup, detail.teamName);
         const outcome = await upsertDraft(
           tenantId,

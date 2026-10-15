@@ -35,8 +35,10 @@ full data model are in `replit.md`.
   one-club-centric (`opponent_club_id`, opposition as display-only text in
   `match_opposition_lines`).
 - `lib/scorecard/src/*` — types/mapping named around HHCC; brand constants.
-- `artifacts/cricket-club/src/components/layout.tsx` — club name in header/footer/copyright;
-  juniors banner has an intentional hard-coded brown `#42342B`.
+- `artifacts/cricket-club/src/components/layout.tsx` — club name in header/footer/copyright.
+  (The juniors banner and junior cards follow the club's own colours since plan
+  2026-10-15-001; the old brown `#42342B` junior look is retired and `juniors_colour` is no
+  longer read.)
 - `artifacts/cricket-club/index.html` — title, meta description, OG/twitter tags, favicon.
 - `artifacts/cricket-mobile/app.json` + welcome/onboarding screens.
 - Fill-in convention: `player_id >= 90000` = fill-in, excluded from all derivations — preserve
@@ -207,7 +209,8 @@ awareness) are implemented; Phase D items are tracked there.
 4. Generalise `halls-head-brand.ts` → `tenant-brand.ts`; add `tenants` table with Halls Head
    hard-coded as tenant #1; tenant-context middleware (header or env for now, subdomain later).
 5. Sweep the 77-file brand inventory: replace literals with tenant-sourced values (name, logo,
-   colours, titles, OG tags). Leave the juniors-banner brown as a tenant theme value.
+   colours, titles, OG tags). (The juniors-banner brown was later retired outright, plan
+   2026-10-15-001: junior surfaces use the club's primary colour.)
 6. Add tenant-isolation tests early — one tenant must never read another's curated data.
 
 Phase 1: 2–3 friendly PCA clubs on subdomains (concierge) — IN PROGRESS. Phase 2: self-serve

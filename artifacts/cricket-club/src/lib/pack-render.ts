@@ -27,7 +27,6 @@
  */
 
 export {
-  JUNIOR_PANEL,
   type PackTokens,
   type PackColourMode,
   type PackPhotoPlacement,

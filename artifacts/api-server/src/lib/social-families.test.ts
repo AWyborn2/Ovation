@@ -12,6 +12,7 @@ import {
   syncFamilySettings,
 } from "./social-families";
 import { shouldDraftGrade } from "./match-summary-drafter";
+import { defaultPostingPlan } from "@workspace/scorecard/posting-plan";
 
 type Settings = Parameters<typeof shouldDraftGrade>[0] & object;
 
@@ -86,28 +87,28 @@ describe("familyAllows", () => {
   });
 });
 
-describe("AE4 — junior drafting per grade", () => {
-  it("Under 15s off drafts nothing; turning it on drafts for that grade only", () => {
-    const off = legacy({ familyConfig: { results: { enabled: true, grades: {} } } });
+describe("AE4 — junior drafting per grade (Posting Plan version 2)", () => {
+  it("Under 15s unlisted drafts nothing; listing it drafts for that age group only", () => {
+    const off = { postingPlan: defaultPostingPlan(false) } as unknown as Settings;
     expect(shouldDraftGrade(off, "Under 15", true)).toBe(false);
 
-    const patch = syncFamilySettings(off, {
-      familyConfig: { results: { grades: { "Under 15": true } } },
-    });
-    const on = legacy({ ...patch, familyConfig: patch.familyConfig });
+    const plan = defaultPostingPlan(false);
+    plan.rows.results.grades = { "Under 15": true };
+    const on = { postingPlan: plan } as unknown as Settings;
     expect(shouldDraftGrade(on, "Under 15", true)).toBe(true);
     expect(shouldDraftGrade(on, "Under 13", true)).toBe(false);
   });
 });
 
 describe("Achievements off leaves match results alone", () => {
-  it("disabling achievements does not stop match summaries", () => {
-    const s = legacy({ engineMilestone: true });
-    const patch = syncFamilySettings(s, { familyConfig: { achievements: { enabled: false } } });
-    const next = legacy({ ...patch });
-    const config = resolveFamilyConfig(next);
-    expect(config.achievements.enabled).toBe(false);
-    expect(shouldDraftGrade(next, "A Grade", false)).toBe(true);
+  it("switching Big Moments, milestones and debuts off does not stop match summaries", () => {
+    const plan = defaultPostingPlan(false);
+    plan.rows.bigMoments.enabled = false;
+    plan.rows.milestones.enabled = false;
+    plan.rows.debuts.enabled = false;
+    expect(shouldDraftGrade({ postingPlan: plan } as unknown as Settings, "A Grade", false)).toBe(
+      true,
+    );
   });
 });
 

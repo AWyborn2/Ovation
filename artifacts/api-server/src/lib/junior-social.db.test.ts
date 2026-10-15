@@ -9,6 +9,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { findPostingStyle, planFromStyle } from "@workspace/scorecard/posting-plan";
 import { and, eq, inArray, like } from "drizzle-orm";
 import {
   db,
@@ -83,16 +84,20 @@ async function makeTenant(
       juniorSyncEnabled,
     })
     .returning();
+  // Version 2: junior age groups draft only when the row lists them (KTD6).
+  const plan = planFromStyle(findPostingStyle("every-match", true)!);
+  plan.rows.results.grades = { "Year 10-11": true, "Year 5": true, "Year 9": true, "Year 4": true };
+  plan.rows.teamLists.grades = {
+    "Year 10-11": true,
+    "Year 5": true,
+    "Year 9": true,
+    "Year 4": true,
+  };
   await db.insert(socialSettingsTable).values({
     tenantId: t.id,
     autoPostEnabled: true,
     autoPostWindowHours: 1,
-    familyConfig: {
-      results: { enabled: true, grades: {} },
-      achievements: { enabled: false, grades: {} },
-      roundup: { enabled: false, grades: {} },
-      matchday: { enabled: true, grades: {} },
-    },
+    postingPlan: plan,
   });
   return t.id;
 }
@@ -389,6 +394,89 @@ describe("junior social drafting (DB)", () => {
     expect(JSON.stringify(card)).not.toContain("GALLASH");
   });
 
+  it("AE2: junior Big Moments follow the club's junior runs bar, and a private child never gets one", async () => {
+    // Mia (public) made 52 in the scored Year 9 match; Secret Child (private) made 64.
+    await db.insert(juniorMatchBattingTable).values({
+      id: Y9_MATCH + 7,
+      matchId: Y9_MATCH,
+      innings: 1,
+      battingTeam: "Halls Head Hawks",
+      isHallsHead: true,
+      batOrder: 2,
+      participantId: MIA,
+      playerName: "Mia Brown",
+      runs: 52,
+      balls: 40,
+    });
+    const grades = { "Year 10-11": true, "Year 5": true, "Year 9": true, "Year 4": true };
+    const planWith = (bar: 50 | 100, bigMomentsOn: boolean) => {
+      const p = planFromStyle(findPostingStyle("every-match", true)!);
+      p.rows.results.grades = grades;
+      p.rows.teamLists.grades = grades;
+      p.rows.bigMoments.grades = bigMomentsOn ? { "Year 9": true } : {};
+      p.bigMoments.juniorRunsBar = bar;
+      return p;
+    };
+    const featDrafts = async () =>
+      (
+        await db.select().from(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId))
+      ).filter((d) => d.sourceKey?.startsWith("feat:"));
+
+    // The default bar (100) with Year 9 listed: 52 is no century.
+    await db
+      .update(socialSettingsTable)
+      .set({ postingPlan: planWith(100, true) })
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+    await runJuniorSocialSweep(tenantId, "scheduled", NOW, log);
+    expect(await featDrafts()).toHaveLength(0);
+
+    // Lowered to 50: Mia's 52 is a Big Moment; Secret Child's 64 never is.
+    await db
+      .update(socialSettingsTable)
+      .set({ postingPlan: planWith(50, true) })
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+    const summary = await runJuniorSocialSweep(tenantId, "scheduled", NOW, log);
+    expect(summary.bigMoments).toBe(1);
+    const feats = await featDrafts();
+    expect(feats).toHaveLength(1);
+    const card = feats[0].cardInput as Record<string, unknown>;
+    // Named in whatever style the club is on at this point of the suite.
+    expect(card.playerName).toMatch(/^Mia( Brown)?$/);
+    expect(card).toMatchObject({
+      kind: "century",
+      runs: 52,
+      grade: "Year 9",
+      opponent: "Rockingham Rams",
+      junior: true,
+      juniorTeams: [{ ageGroup: "Year 9", teamName: "Halls Head Hawks" }],
+    });
+    expect(feats[0].sourceMatchIsJunior).toBe(true);
+    expect(feats[0].photoUrl).toBeNull();
+    // Year 9 Hawks is not in the publishing map: approval, so no auto-ready time.
+    expect(feats[0].autoReadyAt).toBeNull();
+
+    // Big Moment off for juniors again: nothing new, and the card already made stays.
+    await db
+      .update(socialSettingsTable)
+      .set({ postingPlan: planWith(100, false) })
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+    const again = await runJuniorSocialSweep(tenantId, "scheduled", NOW, log);
+    expect(again.bigMoments).toBe(0);
+    expect(await featDrafts()).toHaveLength(1);
+
+    // Leave the later tests the drafts they expect.
+    const ids = feats.map((d) => d.id);
+    await db
+      .delete(socialDraftRevisionsTable)
+      .where(inArray(socialDraftRevisionsTable.draftId, ids));
+    await db.delete(socialDraftsTable).where(inArray(socialDraftsTable.id, ids));
+    await db.delete(juniorMatchBattingTable).where(eq(juniorMatchBattingTable.id, Y9_MATCH + 7));
+    await db
+      .update(socialSettingsTable)
+      .set({ postingPlan: planWith(100, false) })
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+  });
+
   it("a disabled club's junior rows draft nothing, and junior drafts never mix with senior ones", async () => {
     await runJuniorSocialSweep(tenantBId, "scheduled", NOW, log);
     await runDraftSweep(tenantBId, { kind: "scheduled", now: NOW }, log);
@@ -401,7 +489,7 @@ describe("junior social drafting (DB)", () => {
     expect(drafts.length).toBeGreaterThan(0);
     for (const d of drafts) {
       expect(d.sourceMatchIsJunior).toBe(true);
-      expect(d.sourceKey).toMatch(/^(juniorteamlist:|matchSummary:junior:)/);
+      expect(d.sourceKey).toMatch(/^(juniorteamlist:|matchSummary:junior:|feat:)/);
     }
     const senior = await db
       .select()

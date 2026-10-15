@@ -21,7 +21,8 @@ export interface HarnessPlan {
   orgId: string;
   seasons: "current";
   kinds: string[];
-  balls: "none";
+  /** "since": also fetch ball-by-ball for each match played since `since` (hat-tricks, ADR-005). */
+  balls: "none" | "since";
   scorecards: "none" | "since";
   /** "upcoming": also fetch each upcoming match for the sides clubs have named (Team List). */
   lineups?: "none" | "upcoming";
@@ -126,7 +127,7 @@ function basePlan(orgId: string, name: PlanName, since?: string): HarnessPlan {
         orgId,
         seasons: "current",
         kinds: ["matches", "ladder"],
-        balls: "none",
+        balls: "since",
         scorecards: "since",
         since,
       };
@@ -136,7 +137,7 @@ function basePlan(orgId: string, name: PlanName, since?: string): HarnessPlan {
         orgId,
         seasons: "current",
         kinds: ["matches", "ladder"],
-        balls: "none",
+        balls: "since",
         scorecards: "since",
         lineups: "upcoming",
         since,

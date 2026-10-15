@@ -103,7 +103,7 @@ export function rootStyle(
   const vars: Record<string, string> = {
     "--club-primary": brand.backgroundColour,
     "--club-secondary": brand.primaryColour,
-    "--club-accent": brand.juniorsColour,
+    "--club-accent": brand.primaryColour,
   };
 
   if (settings) {

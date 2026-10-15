@@ -6,9 +6,6 @@
  * OpenAPI spec version: 0.1.0
  */
 
-/**
- * Unlisted grades: seniors draft (juniors do not), or nothing drafts.
- */
 export type PostingPlanRowOthers = typeof PostingPlanRowOthers[keyof typeof PostingPlanRowOthers];
 
 

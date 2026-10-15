@@ -129,7 +129,11 @@ beforeAll(async () => {
 
   // The one style pick, saved as the Posting Plan page saves it.
   const [row] = await db.insert(socialSettingsTable).values({ tenantId }).returning();
-  const written = postingPlanWrite(row, planFromStyle(findPostingStyle("round-carousels")!), true);
+  // The round-carousels style, plus the two carousels that are off by default (R13).
+  const plan = planFromStyle(findPostingStyle("round-carousels", true)!);
+  plan.rows.clubLeaderboards.enabled = true;
+  plan.rows.ladders.enabled = true;
+  const written = postingPlanWrite(row, plan, true);
   if ("error" in written) throw new Error(written.error);
   await db
     .update(socialSettingsTable)
