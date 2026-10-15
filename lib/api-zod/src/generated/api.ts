@@ -2212,6 +2212,11 @@ export const ListShirtNumbersResponse = zod.object({
   "source": zod.enum(['upload', 'squad', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from. `squad`: added from the club\'s squad register (the availability squad import) by \"Add squad to register\".'),
   "held": zod.boolean().describe('True while the entry is not linked to a player who has played.'),
   "duplicate": zod.boolean().describe('True when another entry in the season wears the same number.'),
+  "crossRegister": zod.array(zod.object({
+  "relation": zod.enum(['same', 'sharedId', 'nameOnly']).describe('`same`: same Profile ID and the same name. `sharedId`: same Profile ID but a different name (a family account?). `nameOnly`: same name under a different Profile ID.'),
+  "name": zod.string().describe('The name in the other register.'),
+  "number": zod.string().nullable().describe('The number in the other register (null when unnumbered).')
+}).describe('The same person (or a possibly related one) in the other register this season: the senior register for a junior row or entry, the juniors register for a senior one. Admin-only, informational unless `relation` is `same`.')).optional().describe('Admin-only cross-check against the juniors register for the same season (read-only, this club only). Empty when nothing relates.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }))
@@ -2268,6 +2273,11 @@ export const UpdateShirtNumberResponse = zod.object({
   "source": zod.enum(['upload', 'squad', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from. `squad`: added from the club\'s squad register (the availability squad import) by \"Add squad to register\".'),
   "held": zod.boolean().describe('True while the entry is not linked to a player who has played.'),
   "duplicate": zod.boolean().describe('True when another entry in the season wears the same number.'),
+  "crossRegister": zod.array(zod.object({
+  "relation": zod.enum(['same', 'sharedId', 'nameOnly']).describe('`same`: same Profile ID and the same name. `sharedId`: same Profile ID but a different name (a family account?). `nameOnly`: same name under a different Profile ID.'),
+  "name": zod.string().describe('The name in the other register.'),
+  "number": zod.string().nullable().describe('The number in the other register (null when unnumbered).')
+}).describe('The same person (or a possibly related one) in the other register this season: the senior register for a junior row or entry, the juniors register for a senior one. Admin-only, informational unless `relation` is `same`.')).optional().describe('Admin-only cross-check against the juniors register for the same season (read-only, this club only). Empty when nothing relates.'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }),
@@ -2366,7 +2376,7 @@ export const UploadShirtNumbersResponse = zod.object({
   "name": zod.string(),
   "participantId": zod.string().nullable().describe('Participant id from the file (lowercased), or the matched junior participant.'),
   "number": zod.string().nullable(),
-  "status": zod.enum(['matched', 'suggested', 'new', 'invalid']),
+  "status": zod.enum(['matched', 'suggested', 'new', 'held', 'mismatch', 'invalid']).describe('`held` (juniors only): the row\'s PlayHQ Profile ID is not one of the club\'s junior players yet; the number is kept by that id and goes live when the player arrives from PlayHQ under a matching name. `mismatch`: the Profile ID belongs to someone whose name differs from the sheet\'s (often a family account), so the row is never linked automatically.'),
   "playerId": zod.number().nullable().describe('The matched senior player, for `matched` senior rows.'),
   "candidates": zod.array(zod.object({
   "playerId": zod.number().nullish(),
@@ -2379,13 +2389,21 @@ export const UploadShirtNumbersResponse = zod.object({
   "numberChange": zod.boolean().describe('True when the row changes an existing entry\'s number.'),
   "duplicate": zod.boolean().describe('True when the row\'s number is worn by someone else in the season.'),
   "duplicateWith": zod.array(zod.string()).optional(),
-  "errors": zod.array(zod.string()).describe('Why an `invalid` row cannot be applied.')
+  "errors": zod.array(zod.string()).describe('Why an `invalid` row cannot be applied.'),
+  "idOwnerName": zod.string().nullish().describe('For a `mismatch` row: the name of the club\'s person who has this Profile ID.'),
+  "crossRegister": zod.array(zod.object({
+  "relation": zod.enum(['same', 'sharedId', 'nameOnly']).describe('`same`: same Profile ID and the same name. `sharedId`: same Profile ID but a different name (a family account?). `nameOnly`: same name under a different Profile ID.'),
+  "name": zod.string().describe('The name in the other register.'),
+  "number": zod.string().nullable().describe('The number in the other register (null when unnumbered).')
+}).describe('The same person (or a possibly related one) in the other register this season: the senior register for a junior row or entry, the juniors register for a senior one. Admin-only, informational unless `relation` is `same`.')).optional().describe('Cross-check against the other register for the season (see ShirtNumberCrossRegisterNote). Absent on previews made before it existed.')
 })),
   "counts": zod.object({
   "total": zod.number(),
   "matched": zod.number(),
   "suggested": zod.number(),
   "new": zod.number(),
+  "held": zod.number(),
+  "mismatch": zod.number(),
   "invalid": zod.number(),
   "numberChanges": zod.number(),
   "duplicates": zod.number()
@@ -2408,7 +2426,8 @@ export const CommitShirtNumberUploadBody = zod.object({
   "resolutions": zod.array(zod.object({
   "rowIndex": zod.number(),
   "action": zod.enum(['link', 'hold', 'discard']).describe('`link`: attach to `playerId`; `hold`: keep as a held entry (no player yet); `discard`: skip the row.'),
-  "playerId": zod.number().nullish().describe('Required for `link`.')
+  "playerId": zod.number().nullish().describe('Required for `link`.'),
+  "useCrossRegisterNumber": zod.boolean().optional().describe('Give the entry the number this row\'s person wears in the juniors register (the preview\'s `same` cross-register note) instead of the sheet\'s number.')
 }))
 })
 
@@ -12631,16 +12650,32 @@ export const ListJuniorShirtNumbersQueryParams = zod.object({
 })
 
 export const ListJuniorShirtNumbersResponse = zod.object({
+  "juniorsAvailable": zod.boolean().describe('True when the club has junior players or junior PlayHQ sync is on (a register can be kept before the season\'s players arrive).'),
+  "seniorNumbers": zod.array(zod.object({
+  "participantId": zod.string(),
+  "number": zod.string()
+})).describe('Admin-only: the season\'s senior-register numbers of the club\'s junior players (same Profile ID and name), to prefill the add form.'),
   "season": zod.number(),
   "seasons": zod.array(zod.number()),
   "entries": zod.array(zod.object({
   "id": zod.number(),
   "season": zod.number(),
   "participantId": zod.string().describe('PlayHQ participant GUID (lowercased)'),
-  "name": zod.string(),
+  "name": zod.string().describe('The name on the register (from the club\'s sheet for an uploaded row). Admin-only; public pages use the PlayHQ name in the club\'s style.'),
   "number": zod.string().nullable(),
   "source": zod.enum(['upload', 'squad', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from. `squad`: added from the club\'s squad register (the availability squad import) by \"Add squad to register\".'),
   "duplicate": zod.boolean(),
+  "linkStatus": zod.enum(['linked', 'waiting', 'nameMismatch']).describe('`linked`: live on cards and the profile. `waiting`: held by Profile ID until that player arrives from PlayHQ. `nameMismatch`: held, and the player with this Profile ID has a different name; check before linking.'),
+  "playerName": zod.string().nullable().describe('The junior player\'s PlayHQ name, once the player exists.'),
+  "suggestedLink": zod.union([zod.object({
+  "participantId": zod.string(),
+  "name": zod.string()
+}),zod.null()]).optional().describe('For a held entry: the one club junior whose PlayHQ name matches the entry\'s name under a different Profile ID (never linked automatically).'),
+  "crossRegister": zod.array(zod.object({
+  "relation": zod.enum(['same', 'sharedId', 'nameOnly']).describe('`same`: same Profile ID and the same name. `sharedId`: same Profile ID but a different name (a family account?). `nameOnly`: same name under a different Profile ID.'),
+  "name": zod.string().describe('The name in the other register.'),
+  "number": zod.string().nullable().describe('The number in the other register (null when unnumbered).')
+}).describe('The same person (or a possibly related one) in the other register this season: the senior register for a junior row or entry, the juniors register for a senior one. Admin-only, informational unless `relation` is `same`.')).describe('Admin-only cross-check against the senior register for the same season (read-only, this club only).'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }))
@@ -12672,12 +12707,14 @@ export const UpdateJuniorShirtNumberParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
 export const updateJuniorShirtNumberBodyNameMax = 120;
 
 export const updateJuniorShirtNumberBodyNumberOneRegExp = new RegExp('^[0-9]{1,3}$');
 
 
 export const UpdateJuniorShirtNumberBody = zod.object({
+  "participantId": zod.string().min(1).optional().describe('Link the entry to this club junior player (resolving merges) and make it live. Re-sending the entry\'s own id confirms a held entry.'),
   "name": zod.string().min(1).max(updateJuniorShirtNumberBodyNameMax).optional(),
   "number": zod.union([zod.string().regex(updateJuniorShirtNumberBodyNumberOneRegExp).describe('A shirt number as 1-3 digits; leading zeros are kept (\"07\" and \"7\" differ).'),zod.null()]).optional()
 })
@@ -12687,10 +12724,21 @@ export const UpdateJuniorShirtNumberResponse = zod.object({
   "id": zod.number(),
   "season": zod.number(),
   "participantId": zod.string().describe('PlayHQ participant GUID (lowercased)'),
-  "name": zod.string(),
+  "name": zod.string().describe('The name on the register (from the club\'s sheet for an uploaded row). Admin-only; public pages use the PlayHQ name in the club\'s style.'),
   "number": zod.string().nullable(),
   "source": zod.enum(['upload', 'squad', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from. `squad`: added from the club\'s squad register (the availability squad import) by \"Add squad to register\".'),
   "duplicate": zod.boolean(),
+  "linkStatus": zod.enum(['linked', 'waiting', 'nameMismatch']).describe('`linked`: live on cards and the profile. `waiting`: held by Profile ID until that player arrives from PlayHQ. `nameMismatch`: held, and the player with this Profile ID has a different name; check before linking.'),
+  "playerName": zod.string().nullable().describe('The junior player\'s PlayHQ name, once the player exists.'),
+  "suggestedLink": zod.union([zod.object({
+  "participantId": zod.string(),
+  "name": zod.string()
+}),zod.null()]).optional().describe('For a held entry: the one club junior whose PlayHQ name matches the entry\'s name under a different Profile ID (never linked automatically).'),
+  "crossRegister": zod.array(zod.object({
+  "relation": zod.enum(['same', 'sharedId', 'nameOnly']).describe('`same`: same Profile ID and the same name. `sharedId`: same Profile ID but a different name (a family account?). `nameOnly`: same name under a different Profile ID.'),
+  "name": zod.string().describe('The name in the other register.'),
+  "number": zod.string().nullable().describe('The number in the other register (null when unnumbered).')
+}).describe('The same person (or a possibly related one) in the other register this season: the senior register for a junior row or entry, the juniors register for a senior one. Admin-only, informational unless `relation` is `same`.')).describe('Admin-only cross-check against the senior register for the same season (read-only, this club only).'),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 }),
@@ -12787,7 +12835,7 @@ export const UploadJuniorShirtNumbersResponse = zod.object({
   "name": zod.string(),
   "participantId": zod.string().nullable().describe('Participant id from the file (lowercased), or the matched junior participant.'),
   "number": zod.string().nullable(),
-  "status": zod.enum(['matched', 'suggested', 'new', 'invalid']),
+  "status": zod.enum(['matched', 'suggested', 'new', 'held', 'mismatch', 'invalid']).describe('`held` (juniors only): the row\'s PlayHQ Profile ID is not one of the club\'s junior players yet; the number is kept by that id and goes live when the player arrives from PlayHQ under a matching name. `mismatch`: the Profile ID belongs to someone whose name differs from the sheet\'s (often a family account), so the row is never linked automatically.'),
   "playerId": zod.number().nullable().describe('The matched senior player, for `matched` senior rows.'),
   "candidates": zod.array(zod.object({
   "playerId": zod.number().nullish(),
@@ -12800,13 +12848,21 @@ export const UploadJuniorShirtNumbersResponse = zod.object({
   "numberChange": zod.boolean().describe('True when the row changes an existing entry\'s number.'),
   "duplicate": zod.boolean().describe('True when the row\'s number is worn by someone else in the season.'),
   "duplicateWith": zod.array(zod.string()).optional(),
-  "errors": zod.array(zod.string()).describe('Why an `invalid` row cannot be applied.')
+  "errors": zod.array(zod.string()).describe('Why an `invalid` row cannot be applied.'),
+  "idOwnerName": zod.string().nullish().describe('For a `mismatch` row: the name of the club\'s person who has this Profile ID.'),
+  "crossRegister": zod.array(zod.object({
+  "relation": zod.enum(['same', 'sharedId', 'nameOnly']).describe('`same`: same Profile ID and the same name. `sharedId`: same Profile ID but a different name (a family account?). `nameOnly`: same name under a different Profile ID.'),
+  "name": zod.string().describe('The name in the other register.'),
+  "number": zod.string().nullable().describe('The number in the other register (null when unnumbered).')
+}).describe('The same person (or a possibly related one) in the other register this season: the senior register for a junior row or entry, the juniors register for a senior one. Admin-only, informational unless `relation` is `same`.')).optional().describe('Cross-check against the other register for the season (see ShirtNumberCrossRegisterNote). Absent on previews made before it existed.')
 })),
   "counts": zod.object({
   "total": zod.number(),
   "matched": zod.number(),
   "suggested": zod.number(),
   "new": zod.number(),
+  "held": zod.number(),
+  "mismatch": zod.number(),
   "invalid": zod.number(),
   "numberChanges": zod.number(),
   "duplicates": zod.number()
@@ -12828,8 +12884,9 @@ export const CommitJuniorShirtNumberUploadParams = zod.object({
 export const CommitJuniorShirtNumberUploadBody = zod.object({
   "resolutions": zod.array(zod.object({
   "rowIndex": zod.number(),
-  "action": zod.enum(['link', 'discard']).describe('`link`: attach to the junior `participantId`; `discard`: skip the row.'),
-  "participantId": zod.string().nullish().describe('Required for `link`.')
+  "action": zod.enum(['link', 'hold', 'discard']).describe('`link`: attach to the junior `participantId`; `hold` (only for a `held` row): keep the number by the row\'s Profile ID until that player arrives from PlayHQ; `discard`: skip the row.'),
+  "participantId": zod.string().nullish().describe('Required for `link`.'),
+  "useCrossRegisterNumber": zod.boolean().optional().describe('Give the entry the number this row\'s person wears in the senior register (the preview\'s `same` cross-register note) instead of the sheet\'s number.')
 }))
 })
 

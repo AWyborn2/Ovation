@@ -11,9 +11,11 @@ import {
   type ShirtNumberUploadRow,
 } from "@workspace/db";
 import {
+  isPlayhqParticipantGuid,
   isValidShirtNumber,
   normaliseParticipantId,
   shirtNumberNameKey,
+  shirtNumberNamesAgree,
   type ShirtNumberSettings,
   type ShirtNumberSide,
 } from "@workspace/db/shirt-numbers";
@@ -459,7 +461,14 @@ export function buildUploadRoster(
   return { people, byParticipant, byName, matcher };
 }
 
-export type PreviewStatus = "matched" | "suggested" | "new" | "invalid";
+export type PreviewStatus = "matched" | "suggested" | "new" | "held" | "mismatch" | "invalid";
+
+/** The contract's `ShirtNumberCrossRegisterNote` (admin-only cross-check, see ./shirt-number-cross). */
+export type CrossRegisterNote = {
+  relation: "same" | "sharedId" | "nameOnly";
+  name: string;
+  number: string | null;
+};
 
 export type PreviewCandidate = {
   playerId: number | null;
@@ -483,7 +492,19 @@ export type PreviewRow = {
   duplicate: boolean;
   duplicateWith: string[];
   errors: string[];
+  /** `mismatch` rows: the name of the person this Profile ID belongs to. */
+  idOwnerName?: string | null;
+  /** The same person's number in the other register (absent on older previews). */
+  crossRegister?: CrossRegisterNote[];
 };
+
+/**
+ * The other register's number a row may adopt ("Use senior number #X"): only a
+ * `same` note (same Profile ID and name) with a number. Never for a shared id.
+ */
+export function crossRegisterNumberOf(row: Pick<PreviewRow, "crossRegister">): string | null {
+  return row.crossRegister?.find((n) => n.relation === "same" && n.number !== null)?.number ?? null;
+}
 
 const candidateOf = (p: RosterPerson, score: number | null): PreviewCandidate => ({
   playerId: p.playerId,
@@ -518,25 +539,55 @@ function existingEntryFor<E extends RegisterEntryLike>(
 }
 
 /** The identity a row stands for, to spot the same person twice in a file. */
-function identityKey(r: { playerId: number | null; participantId: string | null; name: string }) {
+function identityKey(r: {
+  playerId: number | null;
+  participantId: string | null;
+  name: string;
+  status?: PreviewStatus;
+}) {
+  // A Profile ID that belongs to someone else names nobody: siblings on one family
+  // account can share it, so the sheet name tells them apart.
+  if (r.status === "mismatch") return `m:${r.participantId}|${fullNameKey(r.name)}`;
   if (r.playerId !== null) return `p:${r.playerId}`;
   if (r.participantId !== null) return `g:${r.participantId}`;
   return `n:${fullNameKey(r.name)}`;
 }
 
+export type PreviewOptions = {
+  /**
+   * Juniors: a row whose Profile ID is a valid PlayHQ GUID that matches nobody
+   * (and whose name matches nobody uniquely) is `held` by that id instead of
+   * needing a link, and a unique exact-name match takes the matched person's id.
+   */
+  holdUnknownIds?: boolean;
+};
+
 /**
  * Classify parsed rows against a roster and the season's register (R7, R8).
  * Pure. Order: participant id, then a unique exact normalised name, then
- * name-matcher suggestions (never applied). Also reports, for each row, the
- * entry it would update, a number change, and duplicate numbers against the
- * season as it would stand after the upload.
+ * name-matcher suggestions (never applied). A participant id is trusted only
+ * when the sheet name agrees with its owner's name (shirtNumberNamesAgree):
+ * otherwise the row is a `mismatch` (a family account's id), never linked
+ * automatically, with exact-name matches offered. Also reports, for each row,
+ * the entry it would update, a number change, and duplicate numbers against
+ * the season as it would stand after the upload.
  */
 export function buildPreviewRows(
   parsed: readonly ParsedUploadRow[],
   roster: UploadRoster,
   season: readonly RegisterEntryLike[],
+  opts: PreviewOptions = {},
 ): PreviewRow[] {
   const seen = new Map<string, number>();
+  const heldIds = new Set<string>();
+  const nameCandidates = (p: ParsedUploadRow): PreviewCandidate[] => {
+    const exact = roster.byName.get(nameKey(p.surname, p.givenName)) ?? [];
+    if (exact.length > 0) return exact.map((x) => candidateOf(x, null));
+    const m = roster.matcher.resolve(p.surname, p.givenName);
+    return m.status === "suggested"
+      ? m.candidates.map((c) => candidateOf(roster.people[c.playerId]!, c.score))
+      : [];
+  };
   const rows: PreviewRow[] = parsed.map((p) => {
     const base: PreviewRow = {
       rowIndex: p.rowIndex,
@@ -557,7 +608,14 @@ export function buildPreviewRows(
 
     const byId = p.participantId !== null ? roster.byParticipant.get(p.participantId) : undefined;
     let row: PreviewRow;
-    if (byId) {
+    if (byId && byId.name.trim() !== "" && !shirtNumberNamesAgree(p.name, byId.name)) {
+      row = {
+        ...base,
+        status: "mismatch",
+        idOwnerName: byId.name,
+        candidates: nameCandidates(p),
+      };
+    } else if (byId) {
       row = {
         ...base,
         status: "matched",
@@ -566,6 +624,11 @@ export function buildPreviewRows(
       };
     } else {
       const exact = roster.byName.get(nameKey(p.surname, p.givenName)) ?? [];
+      const holdable =
+        opts.holdUnknownIds === true &&
+        p.participantId !== null &&
+        isPlayhqParticipantGuid(p.participantId) &&
+        !heldIds.has(p.participantId);
       if (exact.length === 1) {
         const person = exact[0]!;
         row = {
@@ -573,7 +636,23 @@ export function buildPreviewRows(
           status: "matched",
           playerId: person.playerId,
           participantId:
-            p.participantId ?? (person.playerId === null ? person.participantId : null),
+            opts.holdUnknownIds === true
+              ? person.participantId
+              : (p.participantId ?? (person.playerId === null ? person.participantId : null)),
+        };
+      } else if (holdable) {
+        // One register entry per Profile ID: a second row with the same unknown id
+        // (two children on one family account) needs a link instead.
+        heldIds.add(p.participantId!);
+        row = { ...base, status: "held", candidates: nameCandidates(p) };
+      } else if (opts.holdUnknownIds === true && p.participantId !== null) {
+        // An unknown id that cannot be held (repeated, or not a GUID) is not kept.
+        const candidates = nameCandidates(p);
+        row = {
+          ...base,
+          participantId: null,
+          status: candidates.length > 0 ? "suggested" : "new",
+          candidates,
         };
       } else if (exact.length > 1) {
         row = { ...base, status: "suggested", candidates: exact.map((x) => candidateOf(x, null)) };
@@ -611,7 +690,8 @@ export function buildPreviewRows(
   const selfId = new Map<number, number>();
   rows.forEach((row, i) => {
     if (row.status === "invalid") return;
-    const existing = existingEntryFor(season, row);
+    // A mismatch row's id belongs to someone else: it updates nobody's entry yet.
+    const existing = row.status === "mismatch" ? undefined : existingEntryFor(season, row);
     if (existing) {
       row.existingEntryId = existing.id;
       row.existingNumber = existing.number;
@@ -638,6 +718,8 @@ export type PreviewCounts = {
   matched: number;
   suggested: number;
   new: number;
+  held: number;
+  mismatch: number;
   invalid: number;
   numberChanges: number;
   duplicates: number;
@@ -649,6 +731,8 @@ export function previewCounts(rows: readonly PreviewRow[]): PreviewCounts {
     matched: 0,
     suggested: 0,
     new: 0,
+    held: 0,
+    mismatch: 0,
     invalid: 0,
     numberChanges: 0,
     duplicates: 0,
@@ -827,6 +911,8 @@ export type SeniorResolution = {
   rowIndex: number;
   action: "link" | "hold" | "discard";
   playerId?: number | null;
+  /** Take the person's juniors-register number (the row's `same` cross-register note). */
+  useCrossRegisterNumber?: boolean;
 };
 
 export type CommitResult = {
@@ -959,6 +1045,13 @@ export async function commitSeniorUpload(
 
       for (const row of rows) {
         const res = byRow.get(row.rowIndex);
+        if (!res && row.status === "mismatch") {
+          return fail(
+            400,
+            `Row ${row.rowIndex}: its Profile ID belongs to ${row.idOwnerName ?? "someone else"}. ` +
+              `Choose a player, keep it held or discard it.`,
+          );
+        }
         const action =
           res?.action ??
           (row.status === "matched" && row.playerId !== null
@@ -981,10 +1074,20 @@ export async function commitSeniorUpload(
         // A participant id that matched a player belongs to that player: it
         // does not follow the row when the admin links someone else. Held, it
         // stays, so the entry links once that participant plays.
+        // A mismatch row's participant id is someone else's: it never travels.
         const participantId =
-          action === "link" && row.status === "matched" && playerId !== row.playerId
+          row.status === "mismatch" ||
+          (action === "link" && row.status === "matched" && playerId !== row.playerId)
             ? null
             : row.participantId;
+        let explicit = row.number;
+        if (res?.useCrossRegisterNumber) {
+          const cross = crossRegisterNumberOf(row);
+          if (cross === null) {
+            return fail(400, `Row ${row.rowIndex} has no juniors-register number to use.`);
+          }
+          explicit = cross;
+        }
 
         let existing: ShirtNumberRow | undefined;
         if (playerId !== null) existing = entries.find((e) => e.playerId === playerId);
@@ -1019,7 +1122,7 @@ export async function commitSeniorUpload(
           playerId,
           participantId,
           existing,
-          explicit: row.number,
+          explicit,
           selfId: -(planned.length + 1),
         });
       }

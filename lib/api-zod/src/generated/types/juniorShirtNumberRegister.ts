@@ -5,9 +5,14 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { JuniorSeniorNumber } from './juniorSeniorNumber';
 import type { JuniorShirtNumberEntry } from './juniorShirtNumberEntry';
 
 export interface JuniorShirtNumberRegister {
+  /** True when the club has junior players or junior PlayHQ sync is on (a register can be kept before the season's players arrive). */
+  juniorsAvailable: boolean;
+  /** Admin-only: the season's senior-register numbers of the club's junior players (same Profile ID and name), to prefill the add form. */
+  seniorNumbers: JuniorSeniorNumber[];
   season: number;
   seasons: number[];
   entries: JuniorShirtNumberEntry[];

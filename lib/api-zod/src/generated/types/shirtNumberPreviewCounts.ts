@@ -11,6 +11,8 @@ export interface ShirtNumberPreviewCounts {
   matched: number;
   suggested: number;
   new: number;
+  held: number;
+  mismatch: number;
   invalid: number;
   numberChanges: number;
   duplicates: number;

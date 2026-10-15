@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { ShirtNumberCrossRegisterNote } from './shirtNumberCrossRegisterNote';
 import type { ShirtNumberSource } from './shirtNumberSource';
 
 export interface ShirtNumberEntry {
@@ -36,6 +37,8 @@ export interface ShirtNumberEntry {
   held: boolean;
   /** True when another entry in the season wears the same number. */
   duplicate: boolean;
+  /** Admin-only cross-check against the juniors register for the same season (read-only, this club only). Empty when nothing relates. */
+  crossRegister?: ShirtNumberCrossRegisterNote[];
   createdAt: Date;
   updatedAt: Date;
 }

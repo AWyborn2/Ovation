@@ -278,6 +278,8 @@ async function shirtNumbersFor(
         eq(juniorShirtNumbersTable.tenantId, tenantId),
         eq(juniorShirtNumbersTable.season, season),
         inArray(juniorShirtNumbersTable.participantId, profiles),
+        // A held number (its player not here yet, or a name to check) is never printed.
+        eq(juniorShirtNumbersTable.held, false),
       ),
     );
   const byProfile = new Map(rows.filter((r) => r.number).map((r) => [r.participantId, r.number!]));

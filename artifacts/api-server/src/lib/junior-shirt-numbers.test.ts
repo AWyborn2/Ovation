@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildJuniorPreviewRows,
   juniorCanonicalizer,
+  juniorRegisterLink,
   resolveJuniorCommitRows,
   shapeJuniorShirtNumbers,
   type JuniorMergeLike,
@@ -93,7 +94,7 @@ describe("buildJuniorPreviewRows", () => {
 
   it("matches by participant id first, then by name", () => {
     const [byId, byName] = preview([
-      parsed(1, "Totally Different", G.ben, "4"),
+      parsed(1, "Ben Bowler", G.ben, "4"),
       parsed(2, "Amy Archer", null, "5"),
     ]);
     expect(byId).toMatchObject({ status: "matched", participantId: G.ben, playerId: null });
@@ -101,17 +102,23 @@ describe("buildJuniorPreviewRows", () => {
   });
 
   it("an id merged away resolves to the keeper", () => {
-    const [row] = preview([parsed(1, "Amy A", G.dupOfAmy.toUpperCase(), "9")]);
+    const [row] = preview([parsed(1, "Amy Archer", G.dupOfAmy.toUpperCase(), "9")]);
     expect(row).toMatchObject({ status: "matched", participantId: G.amy });
   });
 
-  it("an unknown id falls back to the name and never keeps the stranger's id", () => {
-    const [known, unknown] = preview([
-      parsed(1, "Ben Bowler", G.stranger),
-      parsed(2, "Nobody Here", G.stranger),
-    ]);
+  it("an unknown id with a unique name match takes the matched junior's id", () => {
+    const [known] = preview([parsed(1, "Ben Bowler", G.stranger)]);
     expect(known).toMatchObject({ status: "matched", participantId: G.ben });
-    expect(unknown).toMatchObject({ status: "new", participantId: null });
+  });
+
+  it("an unknown PlayHQ id with no name match is held by that id, not a blocker", () => {
+    const [held] = preview([parsed(1, "Nobody Here", G.stranger.toUpperCase(), "12")]);
+    expect(held).toMatchObject({ status: "held", participantId: G.stranger, number: "12" });
+  });
+
+  it("an id that is not a PlayHQ GUID is never held: the row needs a link", () => {
+    const [row] = preview([parsed(1, "Nobody Here", "12345", "12")]);
+    expect(row).toMatchObject({ status: "new", participantId: null });
   });
 
   it("a private participant matches by id but is never offered by name", () => {
@@ -168,22 +175,99 @@ describe("resolveJuniorCommitRows", () => {
     ...over,
   });
 
-  it("defaults: matched rows link to their participant, everything else is discarded", () => {
+  it("defaults: matched rows link, held rows hold, everything else is discarded", () => {
     const res = resolveJuniorCommitRows(
       [
         row(1, { status: "matched", participantId: G.amy, number: "5" }),
         row(2, { status: "suggested" }),
         row(3, { status: "new" }),
         row(4, { status: "invalid", errors: ["bad"] }),
+        row(5, { status: "held", participantId: G.stranger, number: "12" }),
       ],
       [],
       canonical,
     );
     expect(res).toEqual({
       ok: true,
-      planned: [{ row: expect.objectContaining({ rowIndex: 1 }), participantId: G.amy }],
+      planned: [
+        {
+          row: expect.objectContaining({ rowIndex: 1 }),
+          participantId: G.amy,
+          held: false,
+          explicit: "5",
+        },
+        {
+          row: expect.objectContaining({ rowIndex: 5 }),
+          participantId: G.stranger,
+          held: true,
+          explicit: "12",
+        },
+      ],
       discarded: 3,
     });
+  });
+
+  it("a held row can be discarded or linked instead, but only a held row can be held", () => {
+    const rows = [
+      row(1, { status: "held", participantId: G.stranger }),
+      row(2, { status: "held", participantId: G.cal }),
+      row(3, { status: "new" }),
+    ];
+    const res = resolveJuniorCommitRows(
+      rows,
+      [
+        { rowIndex: 1, action: "discard" },
+        { rowIndex: 2, action: "link", participantId: G.ben },
+        { rowIndex: 3, action: "discard" },
+      ],
+      canonical,
+    );
+    expect(res.ok && res.planned.map((p) => [p.participantId, p.held])).toEqual([[G.ben, false]]);
+    expect(
+      resolveJuniorCommitRows(rows, [{ rowIndex: 3, action: "hold" }], canonical),
+    ).toMatchObject({ ok: false });
+  });
+
+  it("a mismatch row needs an explicit decision and can never be held", () => {
+    const rows = [row(1, { status: "mismatch", participantId: G.cal, idOwnerName: "Cal Bowler" })];
+    expect(resolveJuniorCommitRows(rows, [], canonical)).toMatchObject({ ok: false });
+    expect(
+      resolveJuniorCommitRows(rows, [{ rowIndex: 1, action: "hold" }], canonical),
+    ).toMatchObject({ ok: false });
+    const linked = resolveJuniorCommitRows(
+      rows,
+      [{ rowIndex: 1, action: "link", participantId: G.ben }],
+      canonical,
+    );
+    expect(linked.ok && linked.planned[0]).toMatchObject({ participantId: G.ben, held: false });
+  });
+
+  it("uses the senior number only for a same-id, same-name note", () => {
+    const same = row(1, {
+      status: "matched",
+      participantId: G.amy,
+      number: "8",
+      crossRegister: [{ relation: "same", name: "Amy Archer", number: "3" }],
+    });
+    const shared = row(2, {
+      status: "matched",
+      participantId: G.ben,
+      number: "8",
+      crossRegister: [{ relation: "sharedId", name: "Bob Bowler", number: "3" }],
+    });
+    const res = resolveJuniorCommitRows(
+      [same],
+      [{ rowIndex: 1, action: "link", participantId: G.amy, useCrossRegisterNumber: true }],
+      canonical,
+    );
+    expect(res.ok && res.planned[0]!.explicit).toBe("3");
+    expect(
+      resolveJuniorCommitRows(
+        [shared],
+        [{ rowIndex: 2, action: "link", participantId: G.ben, useCrossRegisterNumber: true }],
+        canonical,
+      ),
+    ).toMatchObject({ ok: false });
   });
 
   it("links a suggested or new row to a chosen participant (merges resolved)", () => {
@@ -288,5 +372,122 @@ describe("shapeJuniorShirtNumbers", () => {
       { season: 2026, number: "5" },
       { season: 2025, number: "11" },
     ]);
+  });
+});
+
+// ── Family accounts: PlayHQ Profile IDs are not trusted when names disagree ──
+// Shapes from a real club's exports (fake ids and names): a parent's id on a child's
+// row, brothers' ids crossed, a genuine dual player, and a child not in the app yet.
+describe("buildJuniorPreviewRows — family accounts", () => {
+  const F = {
+    parent: "10000000-0000-4000-8000-000000000001", // Ben Dreckow, a senior (not a junior)
+    noah: "10000000-0000-4000-8000-000000000002",
+    hayes: "10000000-0000-4000-8000-000000000003",
+    cohen: "10000000-0000-4000-8000-000000000004",
+    archie: "10000000-0000-4000-8000-000000000005",
+    newKid: "10000000-0000-4000-8000-000000000006",
+  };
+  const juniors: JuniorParticipantLike[] = [
+    { participantId: F.noah, displayName: "Noah Dreckow", isPrivate: false },
+    { participantId: F.hayes, displayName: "Hayes Buller", isPrivate: false },
+    { participantId: F.cohen, displayName: "Cohen Buller", isPrivate: false },
+    { participantId: F.archie, displayName: "Archie Nicholson", isPrivate: false },
+  ];
+  const rows = buildJuniorPreviewRows(
+    [
+      parsed(1, "Noah Dreckow", F.parent, "48"),
+      parsed(2, "Hayes Buller", F.cohen, "3"),
+      parsed(3, "Cohen Buller", F.hayes, "8"),
+      parsed(4, "Archie Nicholson", F.archie, "70"),
+      parsed(5, "Mia Newcomb", F.newKid, "12"),
+      parsed(6, "Lily Newcomb", F.newKid, "13"),
+    ],
+    juniors,
+    [],
+    [],
+  );
+
+  it("a parent's id on a child's row links the child by name, never the parent's id", () => {
+    expect(rows[0]).toMatchObject({ status: "matched", participantId: F.noah });
+  });
+
+  it("brothers with crossed ids are mismatches, each offered the brother of the same name", () => {
+    expect(rows[1]).toMatchObject({
+      status: "mismatch",
+      idOwnerName: "Cohen Buller",
+      participantId: F.cohen,
+    });
+    expect(rows[1]!.candidates.map((c) => c.participantId)).toEqual([F.hayes]);
+    expect(rows[2]).toMatchObject({ status: "mismatch", idOwnerName: "Hayes Buller" });
+    expect(rows[2]!.candidates.map((c) => c.participantId)).toEqual([F.cohen]);
+  });
+
+  it("a genuine player (same id, same name) matches", () => {
+    expect(rows[3]).toMatchObject({ status: "matched", participantId: F.archie });
+  });
+
+  it("a new child is held by id; a sibling on the same account needs a link", () => {
+    expect(rows[4]).toMatchObject({ status: "held", participantId: F.newKid });
+    expect(rows[5]).toMatchObject({ status: "new", participantId: null, errors: [] });
+  });
+});
+
+describe("juniorRegisterLink", () => {
+  const P = {
+    noah: "30000000-0000-4000-8000-000000000001",
+    parent: "30000000-0000-4000-8000-000000000002",
+    hayes: "30000000-0000-4000-8000-000000000003",
+    cohen: "30000000-0000-4000-8000-000000000004",
+    unknown: "30000000-0000-4000-8000-000000000005",
+  };
+  const people: JuniorParticipantLike[] = [
+    { participantId: P.noah, displayName: "Noah Dreckow", isPrivate: false },
+    { participantId: P.hayes, displayName: "Hayes Buller", isPrivate: false },
+    { participantId: P.cohen, displayName: "Cohen Buller", isPrivate: false },
+  ];
+  const link = (
+    entry: { participantId: string; name: string; held: boolean },
+    onRegister: readonly string[] = [],
+  ) => juniorRegisterLink(entry, people, [], new Set(onRegister));
+
+  it("a live entry is linked and shows the PlayHQ name", () => {
+    expect(link({ participantId: P.noah, name: "noah dreckow", held: false })).toEqual({
+      linkStatus: "linked",
+      playerName: "Noah Dreckow",
+      suggestedLink: null,
+    });
+  });
+
+  it("a held entry waits for its player; the sync makes it live", () => {
+    expect(link({ participantId: P.unknown, name: "Mia Newcomb", held: true })).toEqual({
+      linkStatus: "waiting",
+      playerName: null,
+      suggestedLink: null,
+    });
+  });
+
+  it("a held entry whose player arrived under another name is flagged, never live", () => {
+    // The sheet put Hayes's id on Cohen's row (brothers crossed).
+    expect(link({ participantId: P.hayes, name: "Cohen Buller", held: true })).toMatchObject({
+      linkStatus: "nameMismatch",
+      playerName: "Hayes Buller",
+    });
+  });
+
+  it("suggests the one junior with the sheet's exact name under another id (never auto)", () => {
+    // A parent's id on the child's row; the child arrived under their own id.
+    expect(link({ participantId: P.parent, name: "Noah Dreckow", held: true })).toEqual({
+      linkStatus: "waiting",
+      playerName: null,
+      suggestedLink: { participantId: P.noah, name: "Noah Dreckow" },
+    });
+    // Not when that junior already has a live entry this season.
+    expect(
+      link({ participantId: P.parent, name: "Noah Dreckow", held: true }, [P.noah]).suggestedLink,
+    ).toBeNull();
+    // The mismatch case offers the brother of the sheet's name.
+    expect(
+      link({ participantId: P.hayes, name: "Cohen Buller", held: true }).suggestedLink,
+    ).toEqual({ participantId: P.cohen, name: "Cohen Buller" });
   });
 });

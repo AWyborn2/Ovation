@@ -9,11 +9,13 @@ import type { JuniorShirtNumberRowResolutionAction } from './juniorShirtNumberRo
 
 export interface JuniorShirtNumberRowResolution {
   rowIndex: number;
-  /** `link`: attach to the junior `participantId`; `discard`: skip the row. */
+  /** `link`: attach to the junior `participantId`; `hold` (only for a `held` row): keep the number by the row's Profile ID until that player arrives from PlayHQ; `discard`: skip the row. */
   action: JuniorShirtNumberRowResolutionAction;
   /**
      * Required for `link`.
      * @nullable
      */
   participantId?: string | null;
+  /** Give the entry the number this row's person wears in the senior register (the preview's `same` cross-register note) instead of the sheet's number. */
+  useCrossRegisterNumber?: boolean;
 }

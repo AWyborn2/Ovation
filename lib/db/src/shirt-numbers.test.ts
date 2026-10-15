@@ -3,8 +3,11 @@ import {
   DEFAULT_SHIRT_NUMBER_SETTINGS,
   carriedNumberFor,
   getShirtNumberSettings,
+  heldJuniorEntriesToActivate,
+  isPlayhqParticipantGuid,
   isValidShirtNumber,
   normaliseParticipantId,
+  shirtNumberNamesAgree,
 } from "./shirt-numbers";
 import {
   juniorShirtNumbersTable,
@@ -229,5 +232,82 @@ describe("carriedNumberFor", () => {
       }),
     ).resolves.toBeNull();
     expect(reads).toHaveLength(0);
+  });
+});
+
+describe("shirtNumberNamesAgree (Profile IDs are not trusted when names disagree)", () => {
+  it("agrees across case, spacing, hyphens, apostrophes and accents", () => {
+    expect(shirtNumberNamesAgree("Noah Dreckow", "  noah   DRECKOW ")).toBe(true);
+    expect(shirtNumberNamesAgree("Liam O'Neil", "Liam ONeil")).toBe(true);
+    expect(shirtNumberNamesAgree("Ava Smith-Jones", "Ava Smith Jones")).toBe(true);
+    expect(shirtNumberNamesAgree("José Ruiz", "Jose Ruiz")).toBe(true);
+  });
+
+  it("reads the PlayHQ 'Surname, First' form and ignores middle names", () => {
+    expect(shirtNumberNamesAgree("Dreckow, Noah", "Noah Dreckow")).toBe(true);
+    expect(shirtNumberNamesAgree("Noah James Dreckow", "Noah Dreckow")).toBe(true);
+  });
+
+  it("accepts a preferred name in brackets or quotes, and a lone initial", () => {
+    expect(shirtNumberNamesAgree("Christopher (Chris) Walsh", "Chris Walsh")).toBe(true);
+    expect(shirtNumberNamesAgree('Edward "Ted" Young', "Ted Young")).toBe(true);
+    expect(shirtNumberNamesAgree("B Dreckow", "Ben Dreckow")).toBe(true);
+  });
+
+  it("disagrees on a different first name, whatever the surname", () => {
+    // Parent and child on one PlayHQ account.
+    expect(shirtNumberNamesAgree("Noah Dreckow", "Ben Dreckow")).toBe(false);
+    expect(shirtNumberNamesAgree("Christopher Walsh", "Sara Walsh")).toBe(false);
+    // Brothers whose ids are crossed.
+    expect(shirtNumberNamesAgree("Hayes Buller", "Cohen Buller")).toBe(false);
+    expect(shirtNumberNamesAgree("Noah Dreckow", "Noah Smith")).toBe(false);
+    expect(shirtNumberNamesAgree("N Dreckow", "Ben Dreckow")).toBe(false);
+  });
+
+  it("never agrees on a blank name", () => {
+    expect(shirtNumberNamesAgree("", "Noah Dreckow")).toBe(false);
+    expect(shirtNumberNamesAgree("Noah Dreckow", null)).toBe(false);
+  });
+});
+
+describe("isPlayhqParticipantGuid", () => {
+  it("accepts a PlayHQ GUID in any casing and rejects anything else", () => {
+    expect(isPlayhqParticipantGuid("a0827b9c-1111-4222-8333-444455556666")).toBe(true);
+    expect(isPlayhqParticipantGuid("A0827B9C-1111-4222-8333-444455556666")).toBe(true);
+    expect(isPlayhqParticipantGuid("12345")).toBe(false);
+    expect(isPlayhqParticipantGuid("abc-def")).toBe(false);
+    expect(isPlayhqParticipantGuid(null)).toBe(false);
+  });
+});
+
+describe("heldJuniorEntriesToActivate", () => {
+  const P_NOAH = "00000000-0000-4000-8000-000000000001";
+  const P_HAYES = "00000000-0000-4000-8000-000000000002";
+  const P_ARCHIE = "00000000-0000-4000-8000-000000000003";
+
+  it("activates a held entry only when its participant arrives under the sheet's name", () => {
+    const ids = heldJuniorEntriesToActivate(
+      [
+        { id: 1, participantId: P_NOAH, name: "Noah Dreckow" },
+        // The sheet's id is the brother's: the PlayHQ name differs, so it stays held.
+        { id: 2, participantId: P_HAYES, name: "Cohen Buller" },
+        // Not in the app yet.
+        { id: 3, participantId: P_ARCHIE, name: "Archie Nicholson" },
+      ],
+      [
+        { participantId: P_NOAH.toUpperCase(), displayName: "noah dreckow" },
+        { participantId: P_HAYES, displayName: "Hayes Buller" },
+      ],
+    );
+    expect(ids).toEqual([1]);
+  });
+
+  it("leaves a held entry whose participant has no name yet", () => {
+    expect(
+      heldJuniorEntriesToActivate(
+        [{ id: 1, participantId: P_NOAH, name: "Noah Dreckow" }],
+        [{ participantId: P_NOAH, displayName: null }],
+      ),
+    ).toEqual([]);
   });
 });

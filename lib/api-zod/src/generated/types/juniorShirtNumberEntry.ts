@@ -5,6 +5,9 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { JuniorShirtNumberEntryLinkStatus } from './juniorShirtNumberEntryLinkStatus';
+import type { JuniorShirtNumberSuggestedLink } from './juniorShirtNumberSuggestedLink';
+import type { ShirtNumberCrossRegisterNote } from './shirtNumberCrossRegisterNote';
 import type { ShirtNumberSource } from './shirtNumberSource';
 
 export interface JuniorShirtNumberEntry {
@@ -12,11 +15,23 @@ export interface JuniorShirtNumberEntry {
   season: number;
   /** PlayHQ participant GUID (lowercased) */
   participantId: string;
+  /** The name on the register (from the club's sheet for an uploaded row). Admin-only; public pages use the PlayHQ name in the club's style. */
   name: string;
   /** @nullable */
   number: string | null;
   source: ShirtNumberSource;
   duplicate: boolean;
+  /** `linked`: live on cards and the profile. `waiting`: held by Profile ID until that player arrives from PlayHQ. `nameMismatch`: held, and the player with this Profile ID has a different name; check before linking. */
+  linkStatus: JuniorShirtNumberEntryLinkStatus;
+  /**
+     * The junior player's PlayHQ name, once the player exists.
+     * @nullable
+     */
+  playerName: string | null;
+  /** For a held entry: the one club junior whose PlayHQ name matches the entry's name under a different Profile ID (never linked automatically). */
+  suggestedLink?: JuniorShirtNumberSuggestedLink | null;
+  /** Admin-only cross-check against the senior register for the same season (read-only, this club only). */
+  crossRegister: ShirtNumberCrossRegisterNote[];
   createdAt: Date;
   updatedAt: Date;
 }
