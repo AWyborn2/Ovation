@@ -25,6 +25,7 @@ export * from "./match_bowling";
 export * from "./match_rosters";
 export * from "./fall_of_wickets";
 export * from "./fielding";
+export * from "./match_feats";
 export * from "./ladder";
 export * from "./premiers";
 export * from "./club_name_history";

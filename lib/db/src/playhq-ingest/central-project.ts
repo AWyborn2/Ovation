@@ -1,6 +1,7 @@
 import type pg from "pg";
 import { classifyCentralGrade } from "../central/grades";
 import { matchOrgsToClubs } from "./club-names";
+import { detectFeats, type DetectedFeat, type FeatBall, type FeatFielding } from "./feats";
 import {
   ProjectionSkip,
   scorecardToCentral,
@@ -61,6 +62,8 @@ export interface ProjectSummary {
   namesUpgraded: number;
   /** Central match ids written (or that would be, in a dry run). */
   matchIds: number[];
+  /** Hat-tricks and five-catch innings written (ADR-005). */
+  feats: number;
 }
 
 type Queryable = Pick<pg.Pool, "query" | "connect">;
@@ -353,6 +356,110 @@ async function writeMatch(
   return { matchId, created };
 }
 
+/**
+ * The match's ball-by-ball and per-innings fielding from `playhq.*`, shaped for the
+ * feat detector (ADR-005). Innings numbers come from the raw scorecard's innings ids,
+ * else from the balls themselves; a match synced without balls simply has none.
+ */
+async function loadFeatInputs(
+  c: Pick<pg.PoolClient, "query">,
+  playhqMatchId: string,
+  raw: RawScorecard | null,
+  nameOf: (participantId: string | null) => string | null,
+): Promise<{ balls: FeatBall[]; fielding: FeatFielding[] }> {
+  const ballRows = await c.query<{
+    innings_id: string;
+    innings_number: number | null;
+    seq: number;
+    over_number: number | null;
+    bowler_id: string | null;
+    bowler_name: string | null;
+    is_wicket: boolean;
+    dismissal_type: string | null;
+    dismissed_id: string | null;
+    wides: number | null;
+    no_balls: number | null;
+  }>(
+    `select innings_id::text as innings_id, innings_number, seq, over_number,
+            bowler_id::text as bowler_id, bowler_name, is_wicket, dismissal_type,
+            dismissed_id::text as dismissed_id, wides, no_balls
+       from playhq.balls where match_id = $1::uuid order by innings_number, seq`,
+    [playhqMatchId],
+  );
+  const inningsNumber = new Map<string, number | null>();
+  for (const inn of raw?.innings ?? []) {
+    const id = (inn as { id?: string | null }).id;
+    if (id) inningsNumber.set(id.toLowerCase(), inn.inningsNumber ?? inn.inningsOrder ?? null);
+  }
+  for (const b of ballRows.rows) {
+    if (!inningsNumber.has(b.innings_id.toLowerCase()))
+      inningsNumber.set(b.innings_id.toLowerCase(), b.innings_number);
+  }
+  const balls: FeatBall[] = ballRows.rows.map((b) => ({
+    innings: b.innings_number ?? inningsNumber.get(b.innings_id.toLowerCase()) ?? null,
+    seq: b.seq,
+    overNumber: b.over_number,
+    bowlerId: b.bowler_id ? b.bowler_id.toLowerCase() : null,
+    bowlerName: b.bowler_name,
+    isWicket: b.is_wicket,
+    dismissalType: b.dismissal_type,
+    dismissedId: b.dismissed_id ? b.dismissed_id.toLowerCase() : null,
+    dismissedName: nameOf(b.dismissed_id ? b.dismissed_id.toLowerCase() : null),
+    wides: b.wides,
+    noBalls: b.no_balls,
+  }));
+  const inningsIds = [...inningsNumber.keys()];
+  const fieldingRows = inningsIds.length
+    ? await c.query<{
+        innings_id: string;
+        participant_id: string;
+        short_name: string | null;
+        total_catches: number | null;
+      }>(
+        `select innings_id::text as innings_id, participant_id::text as participant_id, short_name, total_catches
+           from playhq.match_fielding where lower(innings_id::text) = any($1::text[])`,
+        [inningsIds],
+      )
+    : { rows: [] };
+  const fielding: FeatFielding[] = fieldingRows.rows.map((f) => ({
+    innings: inningsNumber.get(f.innings_id.toLowerCase()) ?? null,
+    participantId: f.participant_id.toLowerCase(),
+    playerName: nameOf(f.participant_id.toLowerCase()) ?? f.short_name,
+    totalCatches: f.total_catches,
+  }));
+  return { balls, fielding };
+}
+
+/** Replace a match's feat rows with the ones detected now (idempotent per projection). */
+async function writeFeats(
+  c: pg.PoolClient,
+  matchId: number,
+  feats: readonly DetectedFeat[],
+  clubOf: (participantId: string) => number | null,
+): Promise<number> {
+  await c.query(`delete from central.match_feats where match_id = $1`, [matchId]);
+  if (!feats.length) return 0;
+  const params: unknown[] = [matchId];
+  const values = feats.map((f) => {
+    params.push(
+      f.innings,
+      clubOf(f.participantId),
+      f.participantId,
+      f.playerName,
+      f.kind,
+      JSON.stringify(f.detail),
+    );
+    const n = params.length;
+    return `($1, $${n - 5}, $${n - 4}, $${n - 3}, $${n - 2}, $${n - 1}, $${n}::jsonb)`;
+  });
+  await c.query(
+    `insert into central.match_feats (match_id, innings, club_id, participant_id, player_name, kind, detail)
+     values ${values.join(", ")}`,
+    params,
+  );
+  return feats.length;
+}
+
 /** Insert unseen players; never overwrite an existing name or privacy flag. */
 async function insertPlayers(c: pg.PoolClient, p: CentralProjection): Promise<number> {
   let inserted = 0;
@@ -552,6 +659,7 @@ export async function projectToCentral(
     playersInserted: 0,
     namesUpgraded: 0,
     matchIds: [],
+    feats: 0,
   };
   if (opts.matchIds && opts.matchIds.length === 0) return summary;
 
@@ -604,6 +712,19 @@ export async function projectToCentral(
     try {
       await client.query("begin");
       const { matchId, created } = await writeMatch(client, projection);
+      // Feats (hat-tricks, five catches) from the match's balls and fielding (ADR-005).
+      const lines = [...projection.batting, ...projection.bowling, ...projection.rosters];
+      const nameOf = (pid: string | null) =>
+        pid ? (lines.find((l) => l.participant_id === pid)?.player_name ?? null) : null;
+      const clubOf = (pid: string) => lines.find((l) => l.participant_id === pid)?.club_id ?? null;
+      const inputs = await loadFeatInputs(client, m.id, m.raw, nameOf);
+      const feats = await writeFeats(
+        client,
+        matchId,
+        detectFeats(inputs.balls, inputs.fielding),
+        clubOf,
+      );
+      summary.feats += feats;
       const inserted = await insertPlayers(client, projection);
       const renamed = await upgradeNames(
         client,

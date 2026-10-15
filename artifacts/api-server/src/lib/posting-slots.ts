@@ -20,6 +20,8 @@ import {
 import type { PostingSchedule } from "./posting-schedule";
 import { loadConnection, publishingAvailable } from "./publishing/connections";
 import { ScheduleConflictError, schedulePublications } from "./publishing/publications";
+import { isJuniorDraft, juniorDraftMayAutoPublish } from "./junior-publishing";
+import { loadJuniorTeamPublishing } from "./junior-helpers";
 import type { Platform } from "./publishing/destination";
 
 /**
@@ -84,8 +86,12 @@ async function publishGate(tenantId: number): Promise<Platform[] | null> {
   return connection.igUserId ? ["facebook", "instagram"] : ["facebook"];
 }
 
-function isJunior(d: SocialDraftRow): boolean {
-  return d.sourceMatchIsJunior || (d.cardInput as { junior?: unknown } | null)?.junior === true;
+/**
+ * Whether a due card may be sent to Meta by itself. Junior content passes only
+ * through the per-team gate (ADR-006): every team on the card set to `auto`.
+ */
+function mayAutoPublish(d: SocialDraftRow, publishing: unknown): boolean {
+  return juniorDraftMayAutoPublish(d, publishing);
 }
 
 /**
@@ -99,6 +105,7 @@ async function dispatch(
   row: SocialDraftRow,
   platforms: Platform[] | null,
   now: Date,
+  publishing: unknown,
 ): Promise<"published" | "nudged" | "existing" | null> {
   return db.transaction(async (tx) => {
     const [d] = await tx
@@ -132,7 +139,7 @@ async function dispatch(
       layoutCheckPending: d.layoutCheckPending,
       layoutWarnings: d.layoutWarnings as Partial<Record<string, unknown[]>> | null,
     });
-    if (platforms && !isJunior(d) && !handMadeUnpinned && !layoutBlocked) {
+    if (platforms && mayAutoPublish(d, publishing) && !handMadeUnpinned && !layoutBlocked) {
       const planned = d.plannedAt as Date;
       await schedulePublications(
         {
@@ -264,13 +271,16 @@ export async function runPostingSlots(
     .orderBy(socialDraftsTable.plannedAt, socialDraftsTable.id);
 
   const platforms = due.some((d) => d.status === "ready") ? await publishGate(tenantId) : null;
+  // The club's junior team publishing modes, read once: the gate every junior card passes.
+  const publishing =
+    platforms && due.some(isJuniorDraft) ? await loadJuniorTeamPublishing(tenantId) : null;
   const nudged: number[] = [];
   const rolled: number[] = [];
   const overdue: number[] = [];
   for (const row of due) {
     try {
       if (row.status === "ready") {
-        const result = await dispatch(row, platforms, now);
+        const result = await dispatch(row, platforms, now, publishing);
         if (result === "published") summary.published++;
         if (result === "nudged") nudged.push(row.id);
       } else if (row.plannedBy === "auto") {

@@ -110,6 +110,47 @@ export function juniorResultAutoReady(matchId: number, mode: JuniorTeamPublishMo
   return juniorDraftMayAutoPost({ sourceKey: `matchSummary:junior:${matchId}` }, mode);
 }
 
+/** The junior team a card (or one slide of a carousel) covers. */
+export type JuniorTeamRef = { ageGroup: string | null; teamName: string | null };
+
+/**
+ * The junior teams a draft records on its card input (`juniorTeams`, written by every
+ * junior drafter and every carousel with a junior slide, KTD6), or null when the draft
+ * carries none — a loader-era junior summary, a junior round set made before this, or
+ * anything else the publishing gate cannot trace to a team.
+ */
+export function juniorTeamsOf(d: { cardInput: unknown }): JuniorTeamRef[] | null {
+  const input = d.cardInput as Record<string, unknown> | null | undefined;
+  const raw = input?.juniorTeams;
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const out: JuniorTeamRef[] = [];
+  for (const t of raw) {
+    if (!t || typeof t !== "object") return null;
+    const { ageGroup, teamName } = t as Record<string, unknown>;
+    out.push({
+      ageGroup: typeof ageGroup === "string" ? ageGroup : null,
+      teamName: typeof teamName === "string" ? teamName : null,
+    });
+  }
+  return out;
+}
+
+/**
+ * The Meta publishing gate for junior content (ADR-006), failing closed: a senior
+ * draft passes; a draft with either junior marker publishes on its own only when it
+ * lists the teams it covers and every one of them is set to `auto`. A missing or
+ * unresolvable team, or any `approval` team, means the card waits for an admin.
+ */
+export function juniorDraftMayAutoPublish(
+  d: { sourceMatchIsJunior: boolean; cardInput: unknown },
+  publishing: unknown,
+): boolean {
+  if (!isJuniorDraft(d)) return true;
+  const teams = juniorTeamsOf(d);
+  if (!teams) return false;
+  return teams.every((t) => juniorTeamPublishMode(publishing, t.ageGroup, t.teamName) === "auto");
+}
+
 /**
  * What the sweep does to one unposted synced junior draft's timing (KTD14, KTD15):
  *  - `hold`: back to review with no auto-ready time (junior sync switched off, or an

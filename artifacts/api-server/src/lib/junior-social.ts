@@ -20,6 +20,7 @@ import {
 import { autoReadyAtFor } from "./effective-draft-state";
 import { cancelDraftPublications } from "./publishing/publications";
 import { generateJuniorTeamListDrafts } from "./engines/junior-team-list";
+import { generateJuniorBigMomentDrafts } from "./engines/junior-big-moments";
 import { generateJuniorMatchSummaryDrafts } from "./match-summary-drafter";
 
 /**
@@ -53,6 +54,8 @@ export type JuniorSweepSummary = {
   enabled: boolean;
   teamLists: number;
   results: number;
+  /** Junior Big Moment cards drafted (runs bar or five wickets). */
+  bigMoments: number;
   /** Drafts sent back to review (switch-off, or auto-promoted for an approval team). */
   held: number;
   /** Drafts whose auto-ready time was cleared or set. */
@@ -317,6 +320,7 @@ export async function runJuniorSocialSweep(
     enabled: false,
     teamLists: 0,
     results: 0,
+    bigMoments: 0,
     held: 0,
     retimed: 0,
   };
@@ -353,6 +357,12 @@ export async function runJuniorSocialSweep(
           { tenantId, errors: result.errors.map((e) => safeError(new Error(e))) },
           "junior result drafts had errors",
         );
+      }
+      // Junior Big Moments from the same matches (plan 2026-10-15-001 U4).
+      try {
+        summary.bigMoments = (await generateJuniorBigMomentDrafts(tenantId, [...ids], now)).drafted;
+      } catch (err) {
+        logger.error({ tenantId, error: safeError(err) }, "junior big moment drafts failed");
       }
     } catch (err) {
       logger.error({ tenantId, error: safeError(err) }, "junior result drafts failed");

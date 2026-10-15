@@ -4,6 +4,7 @@ import {
   centralFieldingTable,
   centralMatchBattingTable,
   centralMatchBowlingTable,
+  centralMatchFeatsTable,
   centralMatchRostersTable,
   centralMatchesTable,
 } from "../central";
@@ -103,6 +104,12 @@ export type CentralAchievement =
       overs: string | null;
     })
   | (AchievementBase & { kind: "debut" })
+  | (AchievementBase & {
+      kind: "hatTrick";
+      innings: number | null;
+      wickets: { seq: number; over: number | null; dismissed: string | null; how: string }[];
+    })
+  | (AchievementBase & { kind: "fiveCatches"; innings: number | null; catches: number })
   | (AchievementBase & {
       kind: "career";
       boardKey: keyof AchievementTiers;
@@ -317,7 +324,14 @@ export function foldMatchAchievements(raw: FoldAchievementsInput): CentralAchiev
     }
   }
 
-  const kindOrder = { debut: 0, century: 1, fiveFor: 2, career: 3 } as const;
+  const kindOrder = {
+    debut: 0,
+    century: 1,
+    fiveFor: 2,
+    hatTrick: 3,
+    fiveCatches: 4,
+    career: 5,
+  } as const;
   out.sort(
     (x, y) =>
       chrono(x.matchId, y.matchId) ||
@@ -490,7 +504,7 @@ export async function centralMatchAchievements(
     centralPlayerNames(players),
   ]);
 
-  return foldMatchAchievements({
+  const folded = foldMatchAchievements({
     targetIds,
     matches,
     batting,
@@ -501,4 +515,41 @@ export async function centralMatchAchievements(
     tiers,
     merges,
   });
+
+  // Feats the projector detected from ball-by-ball and fielding data (ADR-005): the
+  // club's hat-tricks and five-catch innings in the target matches, private players
+  // omitted, a merged GUID folded to its keeper.
+  const featRows = await centralDb
+    .select()
+    .from(centralMatchFeatsTable)
+    .where(
+      and(
+        eq(centralMatchFeatsTable.clubId, clubId),
+        inList(centralMatchFeatsTable.matchId, targetIds),
+      ),
+    );
+  const metaById = new Map(matches.map((m) => [m.matchId, m]));
+  const feats: CentralAchievement[] = [];
+  for (const f of featRows) {
+    const m = metaById.get(f.matchId);
+    if (!m || m.grade == null || m.season == null || !f.participantId) continue;
+    const pid = merges?.get(f.participantId) ?? f.participantId;
+    const name = names.get(pid) ?? names.get(f.participantId);
+    if (name?.isPrivate) continue;
+    const base: AchievementBase = {
+      participantId: pid,
+      displayName: name?.displayName ?? f.playerName,
+      matchId: f.matchId,
+      grade: m.grade,
+      season: m.season,
+      round: m.round,
+      opponent: m.opponent,
+    };
+    if (f.kind === "hatTrick" && f.detail?.kind === "hatTrick") {
+      feats.push({ ...base, kind: "hatTrick", innings: f.innings, wickets: f.detail.wickets });
+    } else if (f.kind === "fiveCatches" && f.detail?.kind === "fiveCatches") {
+      feats.push({ ...base, kind: "fiveCatches", innings: f.innings, catches: f.detail.catches });
+    }
+  }
+  return [...folded, ...feats];
 }

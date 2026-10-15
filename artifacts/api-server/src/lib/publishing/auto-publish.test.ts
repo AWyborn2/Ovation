@@ -18,6 +18,7 @@ import {
   socialPublicationsTable,
   notificationsTable,
   captionTemplatesTable,
+  juniorMatchDisplaySettingsTable,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../auth";
 import { seal } from "../secret-box";
@@ -221,6 +222,36 @@ describe("auto-publish candidates", () => {
     const scheduled = await scheduleAutoPublish(tenantId, new Date());
     expect(scheduled.has(byColumn.id)).toBe(false);
     expect(scheduled.has(byInput.id)).toBe(false);
+  });
+
+  it("a junior draft auto-publishes only when every team it covers is set to auto (ADR-006)", async () => {
+    await db
+      .insert(juniorMatchDisplaySettingsTable)
+      .values({ tenantId, teamPublishing: { "Year 9": { Hawks: "auto", Kites: "approval" } } })
+      .onConflictDoUpdate({
+        target: juniorMatchDisplaySettingsTable.tenantId,
+        set: { teamPublishing: { "Year 9": { Hawks: "auto", Kites: "approval" } } },
+      });
+    const hawks = await autoDraft(13, {
+      junior: true,
+      juniorTeams: [{ ageGroup: "Year 9", teamName: "Hawks" }],
+    });
+    const kites = await autoDraft(13, {
+      junior: true,
+      juniorTeams: [{ ageGroup: "Year 9", teamName: "Kites" }],
+    });
+    const untraceable = await autoDraft(13, { junior: true });
+    await db
+      .update(socialDraftsTable)
+      .set({ status: "ready" })
+      .where(eq(socialDraftsTable.tenantId, tenantId));
+    const scheduled = await scheduleAutoPublish(tenantId, new Date());
+    expect(scheduled.has(hawks.id)).toBe(true);
+    expect(scheduled.has(kites.id)).toBe(false);
+    expect(scheduled.has(untraceable.id)).toBe(false);
+    await db
+      .delete(juniorMatchDisplaySettingsTable)
+      .where(eq(juniorMatchDisplaySettingsTable.tenantId, tenantId));
   });
 
   it("does nothing while the club needs to reconnect", async () => {

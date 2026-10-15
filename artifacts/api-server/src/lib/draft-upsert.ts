@@ -509,14 +509,14 @@ export const draftKeys = {
   careerMilestone: (playerId: PlayerKeyRef, boardKey: string, tierIndex: number) =>
     `milestone:${playerId}:${boardKey}:${tierIndex}`,
   matchFeat: (
-    boardKey: "century" | "fiveFor",
+    boardKey: "century" | "fiveFor" | "hatTrick" | "fiveCatches",
     playerId: PlayerKeyRef,
     grade: string,
     season: number,
     round: number | null,
   ) => `feat:${boardKey}:${grade}:${season}:${round ?? "none"}:${playerId}`,
   matchFeatPrefix: (
-    boardKey: "century" | "fiveFor",
+    boardKey: "century" | "fiveFor" | "hatTrick" | "fiveCatches",
     grade: string,
     season: number,
     round: number | null,

@@ -14,6 +14,7 @@ import {
   socialConnectionsTable,
   socialPublicationsTable,
   notificationsTable,
+  juniorMatchDisplaySettingsTable,
 } from "@workspace/db";
 import { seal } from "./secret-box";
 import { logger } from "./logger";
@@ -173,6 +174,48 @@ describe("an approved card at its time", () => {
     const r = await runPostingSlots(tenantId, SUNDAY_7PM, logger);
     expect(r.nudged).toBe(1);
     expect(await pubsFor(card.id)).toHaveLength(0);
+  });
+
+  it("publishes a junior card only when every team it covers is auto; a combined set with an approval team waits (AE6)", async () => {
+    await metaOn();
+    await settings({ autoPostEnabled: true, autoPublishEnabled: true });
+    await db
+      .insert(juniorMatchDisplaySettingsTable)
+      .values({ tenantId, teamPublishing: { "Year 9": { Hawks: "auto", Kites: "approval" } } })
+      .onConflictDoUpdate({
+        target: juniorMatchDisplaySettingsTable.tenantId,
+        set: { teamPublishing: { "Year 9": { Hawks: "auto", Kites: "approval" } } },
+      });
+    const hawks = await plannedCard({
+      status: "ready",
+      sourceMatchIsJunior: true,
+      cardInput: {
+        kind: "milestone",
+        junior: true,
+        juniorTeams: [{ ageGroup: "Year 9", teamName: "Hawks" }],
+      },
+    });
+    const combined = await plannedCard({
+      status: "ready",
+      sourceMatchIsJunior: true,
+      plannedAt: SUNDAY_6PM,
+      cardInput: {
+        kind: "weekendWrap",
+        junior: true,
+        juniorTeams: [
+          { ageGroup: "Year 9", teamName: "Hawks" },
+          { ageGroup: "Year 9", teamName: "Kites" },
+        ],
+      },
+    });
+    const r = await runPostingSlots(tenantId, SUNDAY_7PM, logger);
+    expect(r.published).toBe(1);
+    expect(r.nudged).toBe(1);
+    expect(await pubsFor(hawks.id)).toHaveLength(2);
+    expect(await pubsFor(combined.id)).toHaveLength(0);
+    await db
+      .delete(juniorMatchDisplaySettingsTable)
+      .where(eq(juniorMatchDisplaySettingsTable.tenantId, tenantId));
   });
 
   it("treats posts scheduled by hand as already sent", async () => {
