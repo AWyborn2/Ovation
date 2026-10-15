@@ -94,10 +94,12 @@ export function bindInput(input: ShareCardInput): BoundInput {
         }
       }
       if (input.resultWinner === "draw") {
-        set(values, "resultVerb", "MATCH DRAWN");
-        set(values, "resultVerbShort", "DRAW");
+        // A washed-out game is no result, not a draw.
+        const noResult = /abandon|no result/i.test(input.result ?? "");
+        set(values, "resultVerb", noResult ? "NO RESULT" : "MATCH DRAWN");
+        set(values, "resultVerbShort", noResult ? "N/R" : "DRAW");
       }
-      // One-word headline (Club Kit): WIN / RESULT (a loss) / DRAW, or TIE / NO RESULT
+      // One-word headline (Club Kit): WIN / RESULT (a loss) / DRAW, or TIE / NO RESULT / ABANDONED
       // when the result line says so. The club always keeps the top bar.
       set(values, "resultWord", resultWord(input.resultWinner, input.result));
       if (input.carouselDetail === true) bindInningsDetail(input, values);
@@ -726,7 +728,8 @@ export function leaderTitle(category: string): [string, string] {
  * under it says who won.
  */
 export function resultWord(winner: "club" | "opposition" | "draw", result: string): string {
-  if (/no result|abandon/i.test(result)) return "NO RESULT";
+  if (/abandon/i.test(result)) return "ABANDONED";
+  if (/no result/i.test(result)) return "NO RESULT";
   if (/\btie[d]?\b/i.test(result)) return "TIE";
   if (winner === "draw") return "DRAW";
   return winner === "club" ? "WIN" : "RESULT";

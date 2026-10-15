@@ -165,6 +165,50 @@ describe("carousel completed-match sources", () => {
     expect(summary.fixtures).toHaveLength(0);
     expect(summary.warnings.join(" ")).toContain("no detailed innings");
   });
+  it("gives an abandoned match a no-result card, in Results and Match summaries", async () => {
+    const washedOut = {
+      ...match,
+      id: 96,
+      result: null,
+      abandoned: true,
+      opponent: "Pinjarra A Grade",
+    };
+    mocks.matches.mockResolvedValue([washedOut]);
+    mocks.detail.mockResolvedValue({ ...detail, ...washedOut, lines: [] });
+    for (const type of ["results", "matchSummary"] as const) {
+      const r = await load(type);
+      expect(r.warnings).toEqual([]);
+      expect(r.fixtures).toHaveLength(1);
+      // No innings to detail: it posts as the result card, even in Match summaries.
+      expect(r.content[-96]).toMatchObject({
+        result: "Match abandoned",
+        resultWinner: "draw",
+        carouselDetail: false,
+      });
+    }
+  });
+  it("matches a fixture to its scorecard by grade and day, whatever each calls the opponent", async () => {
+    mocks.matches.mockResolvedValue([
+      { ...match, grade: "B Grade", opponent: "WSCC Senior Men B Grade" },
+    ]);
+    const fixture = (grade: string, opponentName: string) =>
+      ({ id: 1, grade, opponentName, startAt: new Date("2026-10-10T01:30:00Z") }) as never;
+    const r = await carouselContent(
+      {} as Request,
+      8,
+      "results",
+      [
+        fixture("B Grade", "Warnbro Swans Cricket Club"),
+        fixture("C Grade", "White Knights Baldivis"),
+      ],
+      "2026-10-09",
+      "2026-10-11",
+    );
+    expect(r.warnings).toHaveLength(1);
+    expect(r.warnings[0]).toMatch(
+      /^C Grade v White Knights Baldivis: no eligible completed scorecard/,
+    );
+  });
   it("fails closed rather than substituting another tenant's data after a source failure", async () => {
     mocks.source.mockRejectedValue(new Error("tenant not configured"));
     await expect(load("results")).rejects.toThrow("tenant not configured");
