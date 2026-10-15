@@ -1,13 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
-import {
-  db,
-  fixturesTable,
-  juniorFixturesTable,
-  type FixtureRow,
-  type JuniorFixtureRow,
-  type SelectionRow,
-  type SquadSection,
-} from "@workspace/db";
+import { fixturesTable, juniorFixturesTable } from "@workspace/db";
+import type { db, FixtureRow, JuniorFixtureRow, SelectionRow, SquadSection } from "@workspace/db";
 import { fixtureSection } from "./availability-grades";
 
 /**
