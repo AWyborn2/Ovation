@@ -1,32 +1,41 @@
 # Project Status
 
 **Project:** Ovation (white-label cricket club platform)
-**Active feature:** card-kind-templates
-**Phase:** Delivery — PR open; production release per decisions/devops (switch stays off until starters are designed)
+**Active feature:** social-auto-queue-criteria
+**Phase:** Delivery — PR to `main` from `claude/social-auto-queue-criteria`; production release steps are Ash's (runbook §3b)
 
-## Phase tracking — card-kind-templates
+## Phase tracking — social-auto-queue-criteria
 
-| Phase            | State       | Notes                                                                                                         |
-| ---------------- | ----------- | ------------------------------------------------------------------------------------------------------------- |
-| 0 Brainstorming  | Done        | Requirements approved 2026-10-07; plan written (`docs/plans/2026-10-07-002-feat-card-kind-templates-plan.md`) |
-| Discovery        | Done        | `.10x/` created; decisions tagged [DISCOVERED]                                                                |
-| Spec review      | Approved    | 11 fixes accepted, 3 decisions made and folded into the plan (2026-10-07)                                     |
-| 1 Strategy       | Done        | Build now; success criteria in decisions/product-manager                                                      |
-| 2 Design (ADR)   | Done        | ADR-001, ADR-002, ADR-003 accepted                                                                            |
-| 3 Planning       | Done        | 40 tasks in 4 milestones + design track; see decisions/engineering-manager                                    |
-| 4 Implementation | Done        | Milestones A–D done; starters are the design track                                                            |
-| 5 Verification   | Done        | Security + QA reviews; all findings fixed or accepted (reviews/2026-10-08)                                    |
-| 6 Delivery       | In progress | Release plan, rollback and runbook written; PR open                                                           |
-
-## Blockers
-
-- 168 starter layouts are hand-designed in the new editor (decided 2026-10-07). Design track starts after U8; the switch stays off until the U6 contract test passes with no skips. Progress = remaining skips in that test.
+| Phase            | State | Notes                                                                                                           |
+| ---------------- | ----- | --------------------------------------------------------------------------------------------------------------- |
+| 0 Brainstorming  | Done  | Requirements and plan approved 2026-10-15 (`docs/plans/2026-10-15-001-feat-social-auto-queue-criteria-plan.md`) |
+| Spec review      | Done  | 13 findings resolved; decisions in `.10x/specs/2026-10-15-social-auto-queue-criteria-design.md`                 |
+| 1 Strategy       | Done  | decisions/cto, decisions/product-manager                                                                        |
+| 2 Design (ADR)   | Done  | ADR-004 (plan v2 defaults in code), ADR-005 (feats by the projector), ADR-006 (junior auto-publish fail-closed) |
+| 3 Planning       | Done  | Tasks T1.1–T9.3 in decisions/engineering-manager                                                                |
+| 4 Implementation | Done  | Milestones A–E; decisions/sde, decisions/dba                                                                    |
+| 5 Verification   | Done  | reviews/2026-10-15-social-auto-queue-criteria-review.md — no blocking findings                                  |
+| 6 Delivery       | Open  | decisions/devops (deploy order, rollback), decisions/sre (what to watch); PR open, auto-merge on green          |
 
 ## Task progress
 
-Milestone A: T1.1–T1.6, T2.1–T2.3, T3.1–T3.3, T4.1–T4.2 — done
-Milestone B: T5.1–T5.7, T6.1, T10.1–T10.2 — done
-Milestone C: T7.1–T7.5 — done (2026-10-07)
-Milestone D: T8.1–T8.7, T6.2, T9.1–T9.3 — done (2026-10-08)
-Design track: D1–D3 — not started
-Release: R1–R4 — not started
+Milestone A: T1.1–T1.2, T2.1–T2.4 — done (commit 24174a61)
+Milestone B: T10.1–T10.2, T3.1–T3.4 — done (commit 1346e52e)
+Milestone C: T4.1–T4.3, T5.1–T5.2 — done (commit 1346e52e)
+Milestone D: T6.1–T6.2, T7.1–T7.2, T8.1–T8.2 — done (commit c3d09256)
+Milestone E: T9.1–T9.2 — done (commit c3d09256); T9.3 — verification done locally, PR open
+
+## Verification (local, 2026-10-15)
+
+- Typecheck api-server + cricket-club: clean. Codegen regenerated. drizzle-kit generate: no schema changes.
+- Web 173 files / 2,029 tests; lib/db 38 / 479; scorecard 20 / 547; API full suite on local Postgres: see the PR description.
+- Prettier 3.9.6 + eslint on changed files: clean.
+
+## Blockers
+
+- None in code. Production needs the runbook §3b SQL steps (Ash).
+
+## Parked
+
+- card-kind-templates: Delivery in progress (design track D1–D3, release R1–R4).
+- Next spec: Record / Team of the week / Premiership engines (decisions/architect/team-of-the-week-engines.md).
