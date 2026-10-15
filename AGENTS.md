@@ -130,6 +130,13 @@ In short:
   replies (STOP included) go to the owner's phone, so SMS end "Stop texts at the link." and the
   player page's Stop/Start text messages control (`POST /availability/respond/{token}/texts`)
   is the opt-out; it sets the same `*_sms_opt_out` flags Twilio's STOP (21610) does.
+  Junior sides come from `junior_fixtures` (junior PlayHQ sync): `selections.junior_fixture_id`
+  (exactly one of it and `fixture_id` is set), one side per junior team, seeded from that team's
+  last junior list; finalising publishes `junior_team_lists` with source `selection` and PlayHQ
+  participant ids (`juniorMemberResolver`: profile id, else a unique exact name); unmatched
+  players are left off and reported. The junior sync replaces a Hub list only after the match.
+  The shared side shape is `api-server/src/lib/selection-fixtures.ts`. Without availability
+  (`availability_settings.enabled` off) the Hub drafts on demand and finalising messages nobody.
   A finalised side has **Print team sheet** (`GET`/`POST /selection/{id}/team-sheet`,
   `api-server/src/lib/team-sheet.ts`): an A4 PDF from the side itself (not `team_lists`),
   printed by the shared Chromium (`renderHtmlToPdf`). Format, competition, both team names and

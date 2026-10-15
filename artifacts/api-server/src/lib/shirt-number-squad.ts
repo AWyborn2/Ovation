@@ -101,7 +101,9 @@ export function squadMemberName(m: Pick<SquadMemberLike, "firstName" | "lastName
 }
 
 /** The name keys a member is recognised by: first or preferred name plus last name. */
-function memberKeys(m: SquadMemberLike): string[] {
+function memberKeys(
+  m: Pick<SquadMemberLike, "firstName" | "lastName" | "preferredName">,
+): string[] {
   const keys = new Set([shirtNumberNameKey(`${m.firstName} ${m.lastName}`)]);
   if (m.preferredName) keys.add(shirtNumberNameKey(`${m.preferredName} ${m.lastName}`));
   return [...keys].filter(Boolean);
@@ -208,6 +210,37 @@ export function planSeniorSquadAdd(
 }
 
 /**
+ * A junior squad member's PlayHQ participant (merged-away ids followed to the
+ * keeper): their profile id when it is one of the club's junior participants,
+ * else a unique exact normalised name among non-private participants; null
+ * otherwise. Also used to publish a Selection Hub junior side.
+ */
+export function juniorMemberResolver(
+  participants: readonly JuniorParticipantLike[],
+  merges: readonly JuniorMergeLike[],
+): (
+  m: Pick<SquadMemberLike, "firstName" | "lastName" | "preferredName" | "playhqProfileId">,
+) => string | null {
+  const canonical = juniorCanonicalizer(participants, merges);
+  const byName = new Map<string, Set<string>>();
+  for (const p of participants) {
+    if (p.isPrivate || !p.displayName) continue;
+    const id = canonical(p.participantId);
+    const key = shirtNumberNameKey(p.displayName);
+    if (!id || !key) continue;
+    if (!byName.has(key)) byName.set(key, new Set());
+    byName.get(key)!.add(id);
+  }
+  return (m) => {
+    const own = canonical(m.playhqProfileId);
+    if (own !== null) return own;
+    const hits = new Set<string>();
+    for (const k of memberKeys(m)) for (const id of byName.get(k) ?? []) hits.add(id);
+    return hits.size === 1 ? [...hits][0]! : null;
+  };
+}
+
+/**
  * Plan adding the junior squad to a season's juniors register. Each member
  * must resolve to one of the club's junior participants (merged-away ids
  * followed to the keeper): by profile id when it is one, else by a unique
@@ -221,25 +254,10 @@ export function planJuniorSquadAdd(
     merges: readonly JuniorMergeLike[];
   },
 ): SquadAddPlan {
-  const canonical = juniorCanonicalizer(args.participants, args.merges);
-  const byName = new Map<string, Set<string>>();
-  for (const p of args.participants) {
-    if (p.isPrivate || !p.displayName) continue;
-    const id = canonical(p.participantId);
-    const key = shirtNumberNameKey(p.displayName);
-    if (!id || !key) continue;
-    if (!byName.has(key)) byName.set(key, new Set());
-    byName.get(key)!.add(id);
-  }
-
+  const resolve = juniorMemberResolver(args.participants, args.merges);
   const people = args.members.map((m) => {
     const name = squadMemberName(m);
-    let participantId = canonical(m.playhqProfileId);
-    if (participantId === null) {
-      const hits = new Set<string>();
-      for (const k of memberKeys(m)) for (const id of byName.get(k) ?? []) hits.add(id);
-      if (hits.size === 1) participantId = [...hits][0]!;
-    }
+    const participantId = resolve(m);
     if (participantId === null) return { kind: "unmatched" as const, name };
     const who: RegisterIdentity = { playerId: null, participantId };
     const present = (season: Present[]) => season.some((e) => e.participantId === participantId);

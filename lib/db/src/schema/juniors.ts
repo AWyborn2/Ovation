@@ -419,8 +419,8 @@ export type JuniorTeamListPlayer = {
   role?: TeamListRole;
 };
 
-/** Who wrote a junior team list (KTD9). */
-export type JuniorTeamListSource = "playhq" | "admin";
+/** Who wrote a junior team list (KTD9); `selection` is a side finalised in the Selection Hub. */
+export type JuniorTeamListSource = "playhq" | "admin" | "selection";
 
 /**
  * The team list for a junior fixture, one per fixture (KTD9). `source` is `playhq`
@@ -447,7 +447,10 @@ export const juniorTeamListsTable = pgTable(
       t.tenantId,
       t.juniorFixtureId,
     ),
-    chkSource: check("junior_team_lists_source_check", sql`"source" IN ('playhq', 'admin')`),
+    chkSource: check(
+      "junior_team_lists_source_check",
+      sql`"source" IN ('playhq', 'admin', 'selection')`,
+    ),
   }),
 );
 

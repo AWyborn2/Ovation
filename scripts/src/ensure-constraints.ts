@@ -277,7 +277,7 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
   {
     table: "junior_team_lists",
     name: "junior_team_lists_source_check",
-    sql: `"source" IN ('playhq', 'admin')`,
+    sql: `"source" IN ('playhq', 'admin', 'selection')`,
   },
   {
     table: "junior_match_display_settings",

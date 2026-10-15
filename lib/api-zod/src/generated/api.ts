@@ -3507,6 +3507,7 @@ export const GetSelectionBoardResponse = zod.object({
   "id": zod.number(),
   "roundId": zod.number(),
   "fixture": zod.object({
+  "kind": zod.enum(['senior', 'junior']).describe('`senior`: a `fixtures` row. `junior`: a junior fixture from the junior\nPlayHQ sync, whose `grade` is the club\'s junior team (\"Halls Head\nYear 7 Gold\") and which publishes to the junior team list.\n'),
   "id": zod.number(),
   "grade": zod.string(),
   "opponentName": zod.string(),
@@ -3655,6 +3656,7 @@ export const SaveSelectionBoardResponse = zod.object({
   "id": zod.number(),
   "roundId": zod.number(),
   "fixture": zod.object({
+  "kind": zod.enum(['senior', 'junior']).describe('`senior`: a `fixtures` row. `junior`: a junior fixture from the junior\nPlayHQ sync, whose `grade` is the club\'s junior team (\"Halls Head\nYear 7 Gold\") and which publishes to the junior team list.\n'),
   "id": zod.number(),
   "grade": zod.string(),
   "opponentName": zod.string(),
@@ -3759,6 +3761,7 @@ export const FinaliseSelectionResponse = zod.object({
   "id": zod.number(),
   "roundId": zod.number(),
   "fixture": zod.object({
+  "kind": zod.enum(['senior', 'junior']).describe('`senior`: a `fixtures` row. `junior`: a junior fixture from the junior\nPlayHQ sync, whose `grade` is the club\'s junior team (\"Halls Head\nYear 7 Gold\") and which publishes to the junior team list.\n'),
   "id": zod.number(),
   "grade": zod.string(),
   "opponentName": zod.string(),
@@ -3810,7 +3813,8 @@ export const FinaliseSelectionResponse = zod.object({
   "selected": zod.number().describe('Newly selected members messaged'),
   "deselected": zod.number().describe('Members dropped since the last finalise who were told'),
   "failed": zod.number().describe('Members every delivery failed for; the next finalise tries them again')
-})
+}),
+  "unlisted": zod.array(zod.string()).optional().describe('Junior side only: players left off the published junior team list\nbecause they match none of the club\'s PlayHQ junior participants.\n')
 })
 
 
@@ -3883,6 +3887,7 @@ export const ReopenSelectionResponse = zod.object({
   "id": zod.number(),
   "roundId": zod.number(),
   "fixture": zod.object({
+  "kind": zod.enum(['senior', 'junior']).describe('`senior`: a `fixtures` row. `junior`: a junior fixture from the junior\nPlayHQ sync, whose `grade` is the club\'s junior team (\"Halls Head\nYear 7 Gold\") and which publishes to the junior team list.\n'),
   "id": zod.number(),
   "grade": zod.string(),
   "opponentName": zod.string(),
@@ -12049,7 +12054,7 @@ export const GetJuniorFixtureTeamListResponse = zod.object({
   "isKnown": zod.boolean().describe('Still one of the club\'s junior participants')
 })),
   "isPublished": zod.boolean(),
-  "source": zod.enum(['playhq', 'admin']).describe('Who wrote the list; an admin\'s list is never overwritten by the sync'),
+  "source": zod.enum(['playhq', 'admin', 'selection']).describe('Who wrote the list; an admin\'s list is never overwritten by the sync'),
   "updatedAt": zod.coerce.date()
 }).nullable(),
   "candidates": zod.array(zod.object({
@@ -12113,7 +12118,7 @@ export const PutJuniorFixtureTeamListResponse = zod.object({
   "isKnown": zod.boolean().describe('Still one of the club\'s junior participants')
 })),
   "isPublished": zod.boolean(),
-  "source": zod.enum(['playhq', 'admin']).describe('Who wrote the list; an admin\'s list is never overwritten by the sync'),
+  "source": zod.enum(['playhq', 'admin', 'selection']).describe('Who wrote the list; an admin\'s list is never overwritten by the sync'),
   "updatedAt": zod.coerce.date()
 }).nullable(),
   "candidates": zod.array(zod.object({

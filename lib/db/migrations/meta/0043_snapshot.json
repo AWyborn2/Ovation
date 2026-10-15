@@ -1,5 +1,5 @@
 {
-  "id": "e2d308dd-72d1-41f8-9f79-36444d9985b3",
+  "id": "6f343a06-a6cc-4176-9440-5589a0f3b490",
   "prevId": "64bc8f99-d21b-4a80-8e5e-cbcc2c2762ac",
   "version": "7",
   "dialect": "postgresql",
@@ -9084,7 +9084,7 @@
       "checkConstraints": {
         "junior_team_lists_source_check": {
           "name": "junior_team_lists_source_check",
-          "value": "\"source\" IN ('playhq', 'admin')"
+          "value": "\"source\" IN ('playhq', 'admin', 'selection')"
         }
       },
       "isRLSEnabled": false
@@ -13002,7 +13002,13 @@
           "name": "fixture_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "junior_fixture_id": {
+          "name": "junior_fixture_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
         },
         "slots": {
           "name": "slots",
@@ -13107,6 +13113,22 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "selections_junior_fixture_uidx": {
+          "name": "selections_junior_fixture_uidx",
+          "columns": [
+            {
+              "expression": "junior_fixture_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"junior_fixture_id\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -13174,6 +13196,19 @@
           ],
           "onDelete": "set null",
           "onUpdate": "no action"
+        },
+        "selections_junior_fixture_id_junior_fixtures_id_fk": {
+          "name": "selections_junior_fixture_id_junior_fixtures_id_fk",
+          "tableFrom": "selections",
+          "tableTo": "junior_fixtures",
+          "columnsFrom": [
+            "junior_fixture_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -13183,6 +13218,10 @@
         "selections_state_check": {
           "name": "selections_state_check",
           "value": "\"state\" IN ('draft', 'final')"
+        },
+        "selections_one_fixture_check": {
+          "name": "selections_one_fixture_check",
+          "value": "(\"fixture_id\" IS NULL) <> (\"junior_fixture_id\" IS NULL)"
         }
       },
       "isRLSEnabled": false
@@ -13501,13 +13540,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'admin'"
-        },
-        "held": {
-          "name": "held",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "created_at": {
           "name": "created_at",

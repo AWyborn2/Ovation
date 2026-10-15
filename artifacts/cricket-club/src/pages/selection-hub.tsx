@@ -157,8 +157,11 @@ export default function SelectionHub() {
         onSuccess: (r) => {
           const n = r.messaged.selected;
           const label = sideLabel(side);
+          const unlisted = r.unlisted?.length
+            ? ` ${r.unlisted.join(", ")} ${r.unlisted.length === 1 ? "isn't" : "aren't"} on the junior team list: no matching PlayHQ junior was found.`
+            : "";
           const msg = !board.data?.availability
-            ? `${label} finalised and published as the team list.`
+            ? `${label} finalised and published as the team list.${unlisted}`
             : `${label} finalised and published. ${n} ${
                 section === "junior"
                   ? n === 1
@@ -171,7 +174,7 @@ export default function SelectionHub() {
                 r.messaged.failed
                   ? ` ${r.messaged.failed} couldn't be reached; finalise again later to retry.`
                   : ""
-              }`;
+              }${unlisted}`;
           say(msg);
           toast({ description: msg });
           void refetch();

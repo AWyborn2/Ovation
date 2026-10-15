@@ -15,4 +15,5 @@ export type JuniorAdminTeamListSavedSource = typeof JuniorAdminTeamListSavedSour
 export const JuniorAdminTeamListSavedSource = {
   playhq: 'playhq',
   admin: 'admin',
+  selection: 'selection',
 } as const;

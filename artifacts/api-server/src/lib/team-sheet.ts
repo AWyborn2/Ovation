@@ -2,7 +2,6 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
   availabilitySettingsTable,
-  fixturesTable,
   juniorShirtNumbersTable,
   selectionsTable,
   squadMembersTable,
@@ -14,7 +13,8 @@ import {
 import { normaliseParticipantId } from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
-import { fixtureSection, memberDisplayName } from "./availability-grades";
+import { memberDisplayName } from "./availability-grades";
+import { loadSideFixture, sideSection, type SideFixture } from "./selection-fixtures";
 import { loadSelectionParticipantIds } from "./selection-published-players";
 import { normaliseSlots, SIDE_SIZE, TWELFTH_INDEX } from "./selection-drafts";
 import { shirtNumberOf, teamListShirtNumberLoader } from "./engines/team-list";
@@ -168,24 +168,60 @@ export function normaliseOvers(value: unknown): string | null {
   return text.slice(0, 20);
 }
 
+/** The fixture fields a sheet prints, from a senior fixture or a junior one. */
+type SheetFixture = Pick<
+  FixtureRow,
+  | "grade"
+  | "roundLabel"
+  | "opponentName"
+  | "venue"
+  | "startAt"
+  | "isHome"
+  | "matchFormat"
+  | "competitionName"
+  | "associationOrgId"
+  | "homeTeamName"
+  | "awayTeamName"
+>;
+
+/** A junior fixture as a sheet prints it: its age group, its team v the opposition. */
+function juniorSheetFixture(f: SideFixture): SheetFixture {
+  const team = f.junior?.teamName ?? null;
+  return {
+    grade: f.ageGroup ?? f.grade,
+    roundLabel: null,
+    opponentName: f.opponentName,
+    venue: f.venue,
+    startAt: f.startAt,
+    isHome: f.isHome,
+    matchFormat: null,
+    competitionName: f.competition,
+    associationOrgId: null,
+    homeTeamName: f.isHome ? team : f.opponentName,
+    awayTeamName: f.isHome ? f.opponentName : team,
+  };
+}
+
 type Loaded = {
   selection: SelectionRow;
-  fixture: FixtureRow;
+  fixture: SheetFixture;
   section: SquadSection;
   members: SheetMember[];
   remembered: Record<string, string>;
 };
 
 async function loadSide(tenantId: number, selectionId: number): Promise<Loaded> {
-  const [row] = await db
-    .select({ selection: selectionsTable, fixture: fixturesTable })
+  const [selection] = await db
+    .select()
     .from(selectionsTable)
-    .innerJoin(
-      fixturesTable,
-      and(eq(fixturesTable.id, selectionsTable.fixtureId), eq(fixturesTable.tenantId, tenantId)),
-    )
     .where(and(eq(selectionsTable.id, selectionId), eq(selectionsTable.tenantId, tenantId)));
-  if (!row) throw new TeamSheetError(404, "Side not found.");
+  const side = selection ? await loadSideFixture(db, tenantId, selection) : null;
+  if (!selection || !side) throw new TeamSheetError(404, "Side not found.");
+  const row = {
+    selection,
+    fixture: side.senior ?? juniorSheetFixture(side),
+    section: sideSection(side),
+  };
   if (row.selection.state !== "final") {
     throw new TeamSheetError(409, "Finalise the side to print its team sheet.");
   }
@@ -214,7 +250,7 @@ async function loadSide(tenantId: number, selectionId: number): Promise<Loaded> 
   return {
     selection: row.selection,
     fixture: row.fixture,
-    section: fixtureSection(row.fixture.grade),
+    section: row.section,
     members,
     remembered: settings?.overs ?? {},
   };
