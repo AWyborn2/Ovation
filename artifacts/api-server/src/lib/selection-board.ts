@@ -52,7 +52,9 @@ import {
   SIDE_SIZE,
   TWELFTH_INDEX,
   XI_SIZE,
+  buildDraftSlots,
   buildRoundDrafts,
+  juniorListAsNames,
   loadResponses,
   normaliseSlots,
   xiMemberIds,
@@ -211,6 +213,11 @@ export type BoardSide = {
   finalisedBy: string | null;
   canEdit: boolean;
   canFinalise: boolean;
+  /**
+   * Players in the side PlayHQ has published for this fixture (synced from
+   * PlayHQ), or null when it has none yet: the Hub offers to use it.
+   */
+  playhqPlayers: number | null;
   readOnlyReason: string | null;
   warnings: {
     /** Players in the XI (slots 1–11). */
@@ -469,6 +476,10 @@ export async function buildBoard(
     (s) => s.fixture.grade,
     gradeOrder,
   );
+  const playhqCounts = await loadPlayhqListSizes(
+    tenantId,
+    sectionSides.map((s) => s.fixture),
+  );
   const selections: BoardSide[] = sectionSides.map(({ selection: sel, fixture: f }) => {
     const date = perthDate(f.startAt);
     const right = selectionRight(actor, rule, f.grade);
@@ -511,6 +522,7 @@ export async function buildBoard(
         : final
           ? "This side is finalised. Re-open it to make changes."
           : null,
+      playhqPlayers: playhqCounts.get(`${f.kind}:${f.id}`) ?? null,
       warnings: {
         filled: inXi,
         open: XI_SIZE - inXi,
@@ -855,6 +867,177 @@ export async function saveBoard(
 
     const firstSide = sideOf.get(ids[0])!;
     return { section: sideSection(firstSide.fixture), selectionIds: ids };
+  });
+}
+
+// --- PlayHQ's published side ---
+
+/** Sizes of the non-empty lists PlayHQ has published for these fixtures, keyed "kind:id". */
+async function loadPlayhqListSizes(
+  tenantId: number,
+  fixtures: readonly Pick<SideFixture, "kind" | "id">[],
+): Promise<Map<string, number>> {
+  const senior = fixtures.filter((f) => f.kind === "senior").map((f) => f.id);
+  const junior = fixtures.filter((f) => f.kind === "junior").map((f) => f.id);
+  const [s, j] = await Promise.all([
+    senior.length > 0
+      ? db
+          .select({ id: teamListsTable.fixtureId, players: teamListsTable.players })
+          .from(teamListsTable)
+          .where(
+            and(
+              eq(teamListsTable.tenantId, tenantId),
+              eq(teamListsTable.source, "playhq"),
+              inArray(teamListsTable.fixtureId, senior),
+            ),
+          )
+      : [],
+    junior.length > 0
+      ? db
+          .select({
+            id: juniorTeamListsTable.juniorFixtureId,
+            players: juniorTeamListsTable.players,
+          })
+          .from(juniorTeamListsTable)
+          .where(
+            and(
+              eq(juniorTeamListsTable.tenantId, tenantId),
+              eq(juniorTeamListsTable.source, "playhq"),
+              inArray(juniorTeamListsTable.juniorFixtureId, junior),
+            ),
+          )
+      : [],
+  ]);
+  const out = new Map<string, number>();
+  for (const r of s) if (r.players.length > 0) out.set(`senior:${r.id}`, r.players.length);
+  for (const r of j) if (r.players.length > 0) out.set(`junior:${r.id}`, r.players.length);
+  return out;
+}
+
+/**
+ * Replace a draft side with the side PlayHQ has published for its fixture
+ * (synced from PlayHQ into the fixture's team list). Each PlayHQ player is
+ * matched to a squad member as a draft is seeded: a member placed in another
+ * side of the round, or nobody, leaves a named gap. Captain and keeper come
+ * from PlayHQ's roles. Same refusals as a save: rights, finalised, stale
+ * version, started; 404 when PlayHQ has published no side yet.
+ */
+export async function syncSideFromPlayhq(
+  tenantId: number,
+  actor: SelectionActor,
+  selectionId: number,
+  version: number,
+  now: Date = new Date(),
+): Promise<{ section: SquadSection; matched: number; gaps: number }> {
+  const rule = await selectionRule(tenantId);
+  return db.transaction(async (tx) => {
+    const { selection, fixture } = await lockSide(tx, tenantId, selectionId);
+    const right = selectionRight(actor, rule, fixture.grade);
+    if (!right.allowed) {
+      throw new SelectionError(403, `${fixture.grade} is read-only to you. ${right.reason}`);
+    }
+    if (selection.state === "final") {
+      throw new SelectionError(409, `${fixture.grade} is finalised. Re-open it to make changes.`);
+    }
+    if (selection.version !== version) {
+      throw new SelectionError(
+        409,
+        `${fixture.grade} was changed by someone else. Reload to see the latest side.`,
+      );
+    }
+    refuseIfStarted(fixture, now, "changed");
+
+    const section = sideSection(fixture);
+    const members = (
+      await tx
+        .select({
+          id: squadMembersTable.id,
+          firstName: squadMembersTable.firstName,
+          lastName: squadMembersTable.lastName,
+          preferredName: squadMembersTable.preferredName,
+          linkedPlayerId: squadMembersTable.linkedPlayerId,
+          active: squadMembersTable.active,
+          gradeHint: squadMembersTable.gradeHint,
+          playhqProfileId: squadMembersTable.playhqProfileId,
+          section: squadMembersTable.section,
+        })
+        .from(squadMembersTable)
+        .where(eq(squadMembersTable.tenantId, tenantId))
+    ).filter((m) => m.section === section);
+
+    let list: TeamListPlayer[] = [];
+    if (fixture.kind === "junior") {
+      const [row] = await tx
+        .select({ players: juniorTeamListsTable.players })
+        .from(juniorTeamListsTable)
+        .where(
+          and(
+            eq(juniorTeamListsTable.tenantId, tenantId),
+            eq(juniorTeamListsTable.juniorFixtureId, fixture.id),
+            eq(juniorTeamListsTable.source, "playhq"),
+          ),
+        );
+      if (row) list = (await juniorListAsNames(tx, tenantId, members))(row.players);
+    } else {
+      const [row] = await tx
+        .select({ players: teamListsTable.players })
+        .from(teamListsTable)
+        .where(
+          and(
+            eq(teamListsTable.tenantId, tenantId),
+            eq(teamListsTable.fixtureId, fixture.id),
+            eq(teamListsTable.source, "playhq"),
+          ),
+        );
+      if (row) list = row.players;
+    }
+    if (list.length === 0) {
+      throw new SelectionError(404, `PlayHQ hasn't published a side for ${fixture.grade} yet.`);
+    }
+
+    // Members already in another side of the round stay there.
+    const others = await tx
+      .select({ id: selectionsTable.id, slots: selectionsTable.slots })
+      .from(selectionsTable)
+      .where(
+        and(eq(selectionsTable.tenantId, tenantId), eq(selectionsTable.roundId, selection.roundId)),
+      );
+    const placed = new Set<number>();
+    for (const o of others) {
+      if (o.id === selection.id) continue;
+      for (const slot of o.slots) if (slot.memberId != null) placed.add(slot.memberId);
+    }
+    const draft = buildDraftSlots({
+      lastList: list,
+      members,
+      responses: new Map(),
+      fixtureDate: perthDate(fixture.startAt),
+      placed,
+      requireYes: false,
+    });
+    await tx
+      .update(selectionsTable)
+      .set({
+        slots: draft.slots,
+        captainMemberId: draft.captainMemberId,
+        keeperMemberId: draft.keeperMemberId,
+        version: selection.version + 1,
+        updatedAt: now,
+      })
+      .where(and(eq(selectionsTable.id, selection.id), eq(selectionsTable.tenantId, tenantId)));
+    const matched = draft.slots.filter((x) => x.memberId != null).length;
+    const gaps = draft.slots.filter((x) => x.gap != null).length;
+    await tx.insert(selectionEventsTable).values({
+      tenantId,
+      selectionId: selection.id,
+      actorKind: actor.kind,
+      actorId: actor.id,
+      actorName: actor.name,
+      action: "playhq_sync",
+      detail: { playhqPlayers: list.length, matched, gaps },
+      createdAt: now,
+    });
+    return { section, matched, gaps };
   });
 }
 

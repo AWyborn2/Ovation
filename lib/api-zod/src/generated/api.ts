@@ -3544,6 +3544,7 @@ export const GetSelectionBoardResponse = zod.object({
   "finalisedBy": zod.string().nullable(),
   "canEdit": zod.boolean().describe('The caller may change the side now (they have the right and it is not finalised)'),
   "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
+  "playhqPlayers": zod.number().nullable().describe('Players in the side PlayHQ has published for this fixture (synced\nfrom PlayHQ), or null when it has none yet. The Hub offers to use it.\n'),
   "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
   "warnings": zod.object({
   "filled": zod.number().describe('Players in the XI (slots 1–11); the 12th is not counted'),
@@ -3693,6 +3694,7 @@ export const SaveSelectionBoardResponse = zod.object({
   "finalisedBy": zod.string().nullable(),
   "canEdit": zod.boolean().describe('The caller may change the side now (they have the right and it is not finalised)'),
   "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
+  "playhqPlayers": zod.number().nullable().describe('Players in the side PlayHQ has published for this fixture (synced\nfrom PlayHQ), or null when it has none yet. The Hub offers to use it.\n'),
   "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
   "warnings": zod.object({
   "filled": zod.number().describe('Players in the XI (slots 1–11); the 12th is not counted'),
@@ -3798,6 +3800,7 @@ export const FinaliseSelectionResponse = zod.object({
   "finalisedBy": zod.string().nullable(),
   "canEdit": zod.boolean().describe('The caller may change the side now (they have the right and it is not finalised)'),
   "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
+  "playhqPlayers": zod.number().nullable().describe('Players in the side PlayHQ has published for this fixture (synced\nfrom PlayHQ), or null when it has none yet. The Hub offers to use it.\n'),
   "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
   "warnings": zod.object({
   "filled": zod.number().describe('Players in the XI (slots 1–11); the 12th is not counted'),
@@ -3867,6 +3870,86 @@ export const PrintTeamSheetBody = zod.object({
 
 
 /**
+ * Fills the draft with the side named in PlayHQ for the fixture (senior or
+junior, as synced from PlayHQ). Each player is matched to a squad member
+as a draft is seeded; anyone matched to nobody, or already in another
+side of the round, is left as a named gap. Captain and keeper follow
+PlayHQ's roles. The body carries the side's version as loaded. Refused
+for a finalised side, a stale version or a started match, and 404 when
+PlayHQ has published no side for the fixture.
+
+ * @summary Replace a draft side with the side PlayHQ has published (admin or captain)
+ */
+export const SyncSelectionFromPlayhqParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SyncSelectionFromPlayhqBody = zod.object({
+  "version": zod.number().describe('The side\'s version as the caller loaded it')
+})
+
+
+export const syncSelectionFromPlayhqResponseSlotsMin = 12;
+export const syncSelectionFromPlayhqResponseSlotsMax = 12;
+
+
+
+export const SyncSelectionFromPlayhqResponse = zod.object({
+  "id": zod.number(),
+  "roundId": zod.number(),
+  "fixture": zod.object({
+  "kind": zod.enum(['senior', 'junior']).describe('`senior`: a `fixtures` row. `junior`: a junior fixture from the junior\nPlayHQ sync, whose `grade` is the club\'s junior team (\"Halls Head\nYear 7 Gold\") and which publishes to the junior team list.\n'),
+  "id": zod.number(),
+  "grade": zod.string(),
+  "opponentName": zod.string(),
+  "startAt": zod.coerce.date(),
+  "venue": zod.string().nullable(),
+  "isHome": zod.boolean(),
+  "roundLabel": zod.string().nullable()
+}),
+  "date": zod.coerce.date().describe('The fixture\'s Perth date'),
+  "state": zod.enum(['draft', 'final']),
+  "version": zod.number(),
+  "slots": zod.array(zod.object({
+  "memberId": zod.number().nullable(),
+  "gap": zod.union([zod.object({
+  "name": zod.string().min(1),
+  "reason": zod.enum(['no', 'maybe', 'no_reply', 'not_on_register', 'withdrew', 'picked_elsewhere'])
+}).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
+  "member": zod.union([zod.object({
+  "id": zod.number(),
+  "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
+  "displayName": zod.string(),
+  "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
+  "note": zod.string().nullable(),
+  "lastGrade": zod.string().nullable().describe('The grade of the last team list the member appears in, else their grade hint'),
+  "junior": zod.boolean().describe('True for a junior (or under-18) member on the senior board'),
+  "isPrivate": zod.boolean(),
+  "repliedAt": zod.coerce.date().nullable(),
+  "late": zod.boolean().describe('Answered after the cut-off')
+}).describe('A squad member as the Hub shows them — never a contact value.'),zod.null()])
+})).min(syncSelectionFromPlayhqResponseSlotsMin).max(syncSelectionFromPlayhqResponseSlotsMax).describe('The side\'s 12 slots in order; 1–11 are the XI and slot 12 the 12th player'),
+  "captainMemberId": zod.number().nullable(),
+  "keeperMemberId": zod.number().nullable(),
+  "finalisedAt": zod.coerce.date().nullable(),
+  "finalisedBy": zod.string().nullable(),
+  "canEdit": zod.boolean().describe('The caller may change the side now (they have the right and it is not finalised)'),
+  "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
+  "playhqPlayers": zod.number().nullable().describe('Players in the side PlayHQ has published for this fixture (synced\nfrom PlayHQ), or null when it has none yet. The Hub offers to use it.\n'),
+  "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
+  "warnings": zod.object({
+  "filled": zod.number().describe('Players in the XI (slots 1–11); the 12th is not counted'),
+  "open": zod.number().describe('Open slots in the XI; an empty 12th is not an open slot'),
+  "twelfth": zod.boolean().describe('Slot 12 (the 12th player) is filled'),
+  "unconfirmed": zod.number().describe('Selected members who said Maybe or haven\'t replied'),
+  "saidNo": zod.number().describe('Selected members who said they\'re unavailable'),
+  "noCaptain": zod.boolean(),
+  "noKeeper": zod.boolean()
+})
+})
+
+
+/**
  * Returns the side to draft and logs it. The published team list stays as
 last finalised until the side is finalised again. Refused once the match
 has started.
@@ -3924,6 +4007,7 @@ export const ReopenSelectionResponse = zod.object({
   "finalisedBy": zod.string().nullable(),
   "canEdit": zod.boolean().describe('The caller may change the side now (they have the right and it is not finalised)'),
   "canFinalise": zod.boolean().describe('The caller may finalise or re-open the side'),
+  "playhqPlayers": zod.number().nullable().describe('Players in the side PlayHQ has published for this fixture (synced\nfrom PlayHQ), or null when it has none yet. The Hub offers to use it.\n'),
   "readOnlyReason": zod.string().nullable().describe('Why the side is read-only to the caller; null when they can edit it'),
   "warnings": zod.object({
   "filled": zod.number().describe('Players in the XI (slots 1–11); the 12th is not counted'),

@@ -66,6 +66,7 @@ function side(
     canEdit: opts.canEdit ?? opts.state !== "final",
     canFinalise: true,
     readOnlyReason: null,
+    playhqPlayers: null,
     warnings: {
       filled: 0,
       open: 11,
