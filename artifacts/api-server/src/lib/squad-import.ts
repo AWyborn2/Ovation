@@ -81,6 +81,14 @@ export const REQUIRED_SQUAD_COLUMNS: SquadImportColumn[] = [
   "Season",
 ];
 
+/** Contact columns; a file must carry at least one (see `parseSquadCsv`). */
+const SQUAD_CONTACT_COLUMNS: SquadImportColumn[] = [
+  "Account Holder Mobile",
+  "Account Holder Email",
+  "Parent/Guardian1 Mobile Number",
+  "Parent/Guardian1 Email",
+];
+
 /**
  * `Status` values (lower-cased) that count as a current registration. Anything
  * else — "Cancelled", "Deregistered", "Pending", "Expired" — is inactive.
@@ -142,6 +150,22 @@ export function parseSquadCsv(content: string): ParsedSquadCsv {
         "Upload the PlayHQ participant export.",
     );
   }
+  // An existing member's date of birth, section and contacts are rewritten from
+  // the file, so a cut-down file (a shirt-number list, say) would blank them.
+  const hasSection = index.has("Age Group") || index.has("Grade");
+  const hasContact = SQUAD_CONTACT_COLUMNS.some((c) => index.has(c));
+  if (!index.has("Date of Birth") || !hasSection || !hasContact) {
+    const absent = [
+      !index.has("Date of Birth") && "Date of Birth",
+      !hasSection && "Age Group or Grade",
+      !hasContact && "contact",
+    ].filter(Boolean);
+    throw new SquadImportError(
+      `This isn't the full PlayHQ participant export: it has no ${absent.join(", ")} ` +
+        "column, so importing it would clear players' details. Export every column " +
+        "from PlayHQ and upload that. Shirt numbers go on the Shirt numbers page.",
+    );
+  }
 
   const rows: ParsedSquadCsv["rows"] = [];
   for (let r = 1; r < records.length; r++) {
@@ -156,9 +180,12 @@ export function parseSquadCsv(content: string): ParsedSquadCsv {
   return { rows };
 }
 
-/** Junior when an age group or grade names an under-age group. */
+/**
+ * Junior when an age group, grade or team names an under-age group or a school
+ * year ("Year 7 Boys Peel", "Halls Head Year 10-11" in WA junior cricket).
+ */
 export function isJuniorLabel(s: string): boolean {
-  return /\bunder\b|\bu\s?-?\s?\d{1,2}(?!\d)|junior/i.test(s);
+  return /\bunder\b|\bu\s?-?\s?\d{1,2}(?!\d)|junior|\byear\s?\d{1,2}\b/i.test(s);
 }
 
 /** `dd/mm/yyyy` (optionally with a time) or `yyyy-mm-dd` → ISO date, else null. */
@@ -297,7 +324,10 @@ export function planSquadImport(parsed: ParsedSquadCsv): SquadImportPlan {
       lastName: f["Last Name"],
       preferredName: f["Preferred Name"] || null,
       dateOfBirth: parseExportDate(f["Date of Birth"]),
-      section: isJuniorLabel(f["Age Group"]) || isJuniorLabel(f.Grade) ? "junior" : "senior",
+      section:
+        isJuniorLabel(f["Age Group"]) || isJuniorLabel(f.Grade) || isJuniorLabel(f.Team)
+          ? "junior"
+          : "senior",
       gradeHint: f.Grade || null,
       teamName: f.Team || null,
       ageGroup: f["Age Group"] || null,

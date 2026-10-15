@@ -43,6 +43,23 @@ describe("parseSquadCsv", () => {
   it("rejects an empty file", () => {
     expect(() => parseSquadCsv("")).toThrow(SquadImportError);
   });
+
+  it("refuses a cut-down file (a shirt-number list) that would clear players' details", () => {
+    // The columns of the juniors shirt-number list imported here by mistake on 15 Oct 2026.
+    const csv = [
+      "Number,First Name,Last Name,Profile ID,Gender,Role,Team,New To Club,Role,Status,Season",
+      "7,Ava,Hill,fbfebb71-959e-40b6-818b-da292d09cb72,Female,Player,Halls Head Year 7 Gold,No,Player,Active,2026/2027",
+    ].join("\n");
+    expect(() => parseSquadCsv(csv)).toThrow(SquadImportError);
+    expect(() => parseSquadCsv(csv)).toThrow(
+      /no Date of Birth, Age Group or Grade, contact column.*Shirt numbers page/,
+    );
+  });
+
+  it("refuses a file without contact columns even when it has a date of birth", () => {
+    const cols = PLAYHQ_PARTICIPANT_COLUMNS.filter((c) => !/Mobile|Email/.test(c));
+    expect(() => parseSquadCsv(buildParticipantCsv([ADULT], cols))).toThrow(/contact column/);
+  });
 });
 
 describe("planSquadImport", () => {
@@ -133,6 +150,15 @@ describe("planSquadImport", () => {
   });
 });
 
+describe("school-year juniors", () => {
+  it("a 'Year 7' grade or team is junior even with a blank age group", () => {
+    const p = plan([{ ...JUNIOR, "Age Group": "", Grade: "Year 7 Boys Peel" }]);
+    expect(p.members[0].section).toBe("junior");
+    const q = plan([{ ...JUNIOR, "Age Group": "", Grade: "", Team: "Halls Head Year 4 Gold" }]);
+    expect(q.members[0].section).toBe("junior");
+  });
+});
+
 describe("helpers", () => {
   it("parses dd/mm/yyyy and yyyy-mm-dd dates, rejecting impossible ones", () => {
     expect(parseExportDate("14/03/1995")).toBe("1995-03-14");
@@ -145,7 +171,16 @@ describe("helpers", () => {
   });
 
   it("recognises junior age groups and grades", () => {
-    for (const s of ["Under 16", "U16", "U 12 Girls", "U-14", "Junior Blasters", "under 11s"]) {
+    for (const s of [
+      "Under 16",
+      "U16",
+      "U 12 Girls",
+      "U-14",
+      "Junior Blasters",
+      "under 11s",
+      "Year 7 Boys Peel",
+      "Halls Head Year 10-11",
+    ]) {
       expect(isJuniorLabel(s)).toBe(true);
     }
     for (const s of ["Open", "A Grade", "Colts", "Senior", "Club 12", ""]) {
