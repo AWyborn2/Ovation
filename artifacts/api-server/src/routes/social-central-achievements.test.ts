@@ -8,6 +8,7 @@
  * other suite uses (test files run one at a time), and removes every row it
  * created afterwards, even when a test fails part-way.
  */
+import { findPostingStyle, planFromStyle } from "@workspace/scorecard/posting-plan";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { and, eq, sql } from "drizzle-orm";
@@ -159,10 +160,14 @@ beforeAll(async () => {
     // The other club maps the same star under its own id: never a link here.
     { tenantId: otherTenantId, participantId: G_OTHER, playerId: 61 },
   ]);
-  // Achievements start OFF (the default), with the watermark set.
+  // The achievement rows start OFF, with the watermark set (version 2 plans, ADR-004).
   await db.insert(socialSettingsTable).values([
-    { tenantId, centralSweepWatermark: WATERMARK },
-    { tenantId: otherTenantId, centralSweepWatermark: WATERMARK, engineMilestone: true },
+    { tenantId, centralSweepWatermark: WATERMARK, postingPlan: achievementsPlan(false) },
+    {
+      tenantId: otherTenantId,
+      centralSweepWatermark: WATERMARK,
+      postingPlan: achievementsPlan(true),
+    },
   ]);
 
   await db.execute(sql`
@@ -244,6 +249,19 @@ const achievementDrafts = async (tid: number): Promise<DraftRow[]> =>
 
 const keysOf = (rows: DraftRow[]) => rows.map((d) => d.sourceKey).sort();
 
+/**
+ * A plan with only the achievement rows (Big Moment, milestones, debuts) on or off —
+ * every other row stays off so the sweep drafts nothing else here.
+ */
+function achievementsPlan(enabled: boolean, grades: Record<string, boolean> = {}) {
+  const plan = planFromStyle(findPostingStyle("results-only", true)!);
+  plan.rows.results = { ...plan.rows.results, enabled: false };
+  for (const id of ["bigMoments", "milestones", "debuts"] as const) {
+    plan.rows[id] = { ...plan.rows[id], enabled, grades };
+  }
+  return plan;
+}
+
 async function setSettings(tid: number, patch: Partial<typeof socialSettingsTable.$inferInsert>) {
   await db.update(socialSettingsTable).set(patch).where(eq(socialSettingsTable.tenantId, tid));
 }
@@ -286,14 +304,14 @@ function assertNoLeaks(rows: DraftRow[]) {
 }
 
 describe("scheduled sweep: achievements for a central club", () => {
-  it("drafts nothing while the achievements family is off", async () => {
+  it("drafts nothing while the achievement rows are off", async () => {
     const summary = await sweep();
     expect(summary.achievements).toBe(0);
     expect(await achievementDrafts(tenantId)).toHaveLength(0);
   });
 
   it("drafts the century, five-for, debut and milestone from a new match", async () => {
-    await setSettings(tenantId, { engineMilestone: true });
+    await setSettings(tenantId, { postingPlan: achievementsPlan(true) });
     const summary = await sweep();
     expect(summary.achievements).toBe(4);
     const rows = await achievementDrafts(tenantId);
@@ -356,23 +374,16 @@ describe("scheduled sweep: achievements for a central club", () => {
     expect(keysOf(live)).toEqual(NEW_KEYS.filter((k) => k !== "debut:A Grade:52"));
   });
 
-  it("the family's per-grade switch keeps a grade out", async () => {
+  it("the rows' per-grade switch keeps a grade out", async () => {
     await db
       .delete(socialDraftsTable)
       .where(
         and(eq(socialDraftsTable.tenantId, tenantId), eq(socialDraftsTable.family, "achievements")),
       );
-    await setSettings(tenantId, {
-      familyConfig: {
-        results: { enabled: true, grades: {} },
-        achievements: { enabled: true, grades: { "A Grade": false } },
-        roundup: { enabled: false, grades: {} },
-        matchday: { enabled: false, grades: {} },
-      },
-    });
+    await setSettings(tenantId, { postingPlan: achievementsPlan(true, { "A Grade": false }) });
     await sweep();
     expect(await achievementDrafts(tenantId)).toHaveLength(0);
-    await setSettings(tenantId, { familyConfig: null, engineMilestone: true });
+    await setSettings(tenantId, { postingPlan: achievementsPlan(true) });
   });
 });
 

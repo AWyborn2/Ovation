@@ -10,6 +10,7 @@
  *     watermark.
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { findPostingStyle, planFromStyle } from "@workspace/scorecard/posting-plan";
 
 const h = vi.hoisted(() => {
   const settings: Record<string, unknown> = { tenantId: 7, centralSweepWatermark: 100 };
@@ -47,7 +48,10 @@ const h = vi.hoisted(() => {
   };
 });
 
-vi.mock("@workspace/db", () => ({
+// Partial: the real tables stay (junior helpers build SQL at import time); the pool and
+// the two tables the sweep queries are stubbed.
+vi.mock("@workspace/db", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@workspace/db")>()),
   db: h.db,
   matchesTable: { season: {}, grade: {}, id: {} },
   socialSettingsTable: { tenantId: {} },
@@ -68,6 +72,15 @@ vi.mock("./match-summary-drafter", () => ({
 vi.mock("./engines/match-day", () => ({ generateMatchDayDrafts: async () => ({ drafted: 0 }) }));
 vi.mock("./engines/team-list", () => ({ generateTeamListDrafts: async () => ({ drafted: 0 }) }));
 vi.mock("./social-cards-helpers", () => ({ ensureSettings: async () => h.settings }));
+// The gates read the same stubbed settings (the mocked select chain resolves to nothing).
+vi.mock("./posting-plan", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./posting-plan")>();
+  return {
+    ...actual,
+    loadDraftingGates: async () =>
+      actual.planGates(actual.resolvePostingPlan(h.settings as never, h.isCentral)),
+  };
+});
 vi.mock("./roundup", () => ({
   playerPath: (id: number | null) => (id == null ? "/players" : `/players/${id}`),
 }));
@@ -94,6 +107,9 @@ const log = { error: vi.fn(), warn: vi.fn(), info: vi.fn() };
 beforeEach(() => {
   h.isCentral = true;
   h.settings.centralSweepWatermark = 100;
+  // Version 2 plan (ADR-004): one result card per match, so the sweep drafts summaries
+  // per match; a central club's default would be a round carousel instead.
+  h.settings.postingPlan = planFromStyle(findPostingStyle("every-match", true)!);
   h.updates.length = 0;
   vi.clearAllMocks();
   h.centralClubMatchesAfter.mockResolvedValue({

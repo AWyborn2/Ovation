@@ -4,6 +4,7 @@
 //
 // Real database, as internal-playhq-ingest.test.ts: the playhq landing schema and the
 // playhq_ingest role are applied to the central database and ingest connects as that role.
+import { findPostingStyle, planFromStyle } from "@workspace/scorecard/posting-plan";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -187,6 +188,8 @@ beforeAll(async () => {
       roundup: { enabled: false, grades: {} },
       matchday: { enabled: true, grades: {} },
     },
+    // Version 2 plan (ADR-004): team lists draft one card per fixture.
+    postingPlan: planFromStyle(findPostingStyle("every-match", true)!),
   });
   const players = await db
     .insert(playersTable)
