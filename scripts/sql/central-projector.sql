@@ -151,6 +151,9 @@ create table if not exists central.match_feats (
   kind            text not null,
   detail          jsonb
 );
+-- A table CI (drizzle push of central-schema) or an older run created without the
+-- sequence default still gets one: the projector inserts without an id.
+alter table central.match_feats alter column id set default nextval('central.projected_line_id_seq');
 create index if not exists idx_central_match_feats_club_match on central.match_feats (club_id, match_id);
 
 -- ── The role ─────────────────────────────────────────────────────────────────────────────────

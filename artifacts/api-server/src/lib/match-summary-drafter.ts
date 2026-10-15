@@ -476,7 +476,6 @@ export async function generateCentralStumpsDrafts(
 export async function generateJuniorMatchSummaryDrafts(
   tenantId: number,
   matchIds: number[],
-  opts: { synced?: boolean } = {},
 ): Promise<DraftResult> {
   const result: DraftResult = { drafted: 0, skipped: 0, errors: [] };
   if (matchIds.length === 0) return result;

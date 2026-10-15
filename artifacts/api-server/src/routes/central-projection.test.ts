@@ -783,6 +783,7 @@ describe("feats (ADR-005): hat-tricks and five catches from balls and fielding",
 
   it("writes one row per feat, with the player's club, and re-projection leaves them unchanged", async () => {
     const s = await projectToCentral(projector, { matchIds: [MATCH] });
+    expect(s.skipped).toEqual([]);
     expect(s.feats).toBe(2);
     const { match_id } = await centralMatch();
     const feats = async () =>

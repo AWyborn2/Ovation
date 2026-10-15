@@ -350,7 +350,7 @@ export async function runJuniorSocialSweep(
         const id = syncedJuniorMatchIdOf(d.sourceKey);
         if (id !== null) ids.add(id);
       }
-      const result = await generateJuniorMatchSummaryDrafts(tenantId, [...ids], { synced: true });
+      const result = await generateJuniorMatchSummaryDrafts(tenantId, [...ids]);
       summary.results = result.drafted;
       if (result.errors.length) {
         logger.warn(
