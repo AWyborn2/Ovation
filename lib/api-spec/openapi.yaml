@@ -17006,10 +17006,70 @@ components:
           $ref: "#/components/schemas/PackColourModes"
         roundSchedules:
           $ref: "#/components/schemas/RoundSchedules"
+        postingPlan:
+          $ref: "#/components/schemas/PostingPlan"
+        postingPlanSaved:
+          type: boolean
+          description: "Whether the club has saved a Posting Plan; false means postingPlan is derived from its other settings (first visit)."
+        centralData:
+          type: boolean
+          description: "Whether the club reads its results from the association database (results, ladder and leaderboard round carousels need it)."
         postingSchedule:
           $ref: "#/components/schemas/PostingSchedule"
         postingSwitchover:
           $ref: "#/components/schemas/PostingSwitchover"
+
+    PostingPlanRow:
+      type: object
+      required: [enabled, packaging, grades, others]
+      properties:
+        enabled:
+          type: boolean
+        packaging:
+          type: string
+          enum: [individual, round, both]
+        grades:
+          type: object
+          additionalProperties:
+            type: boolean
+          description: "Explicit per-grade choices; a grade absent here follows others."
+        others:
+          type: string
+          enum: [seniors, "off"]
+          description: "Unlisted grades: seniors draft (juniors do not), or nothing drafts."
+
+    PostingPlan:
+      type: object
+      description: "One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001)."
+      required: [version, styleId, rows]
+      properties:
+        version:
+          type: integer
+          enum: [1]
+        styleId:
+          type: ["string", "null"]
+        rows:
+          type: object
+          required: [results, milestones, feats, debuts, gradeLeaders, clubLeaderboards, ladders, gameDay, teamLists]
+          properties:
+            results:
+              $ref: "#/components/schemas/PostingPlanRow"
+            milestones:
+              $ref: "#/components/schemas/PostingPlanRow"
+            feats:
+              $ref: "#/components/schemas/PostingPlanRow"
+            debuts:
+              $ref: "#/components/schemas/PostingPlanRow"
+            gradeLeaders:
+              $ref: "#/components/schemas/PostingPlanRow"
+            clubLeaderboards:
+              $ref: "#/components/schemas/PostingPlanRow"
+            ladders:
+              $ref: "#/components/schemas/PostingPlanRow"
+            gameDay:
+              $ref: "#/components/schemas/PostingPlanRow"
+            teamLists:
+              $ref: "#/components/schemas/PostingPlanRow"
 
     Notification:
       type: object
@@ -18056,6 +18116,10 @@ components:
           description: >-
             Merged per card: only the cards sent change, the others keep their
             schedule.
+        postingPlan:
+          allOf:
+            - $ref: "#/components/schemas/PostingPlan"
+          description: "The whole Posting Plan; saving it also updates the family switches and round-schedule modes."
         postingSchedule:
           $ref: "#/components/schemas/PostingScheduleUpdate"
 

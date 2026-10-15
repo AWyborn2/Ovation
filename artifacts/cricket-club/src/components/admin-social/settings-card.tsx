@@ -9,7 +9,10 @@ import { Save, Loader2 } from "lucide-react";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ENGINES, SIZE_KEYS } from "./constants";
 
-/** Content engines, output sizes, club URL / hashtag and the sponsor + caption toggles. */
+/**
+ * Share buttons, season recap, output sizes, club URL / hashtag and the sponsor
+ * + caption toggles. What drafts automatically lives on the Posting Plan tab.
+ */
 export function SettingsCard({
   settings,
   onSaved,
@@ -31,7 +34,23 @@ export function SettingsCard({
 
   useEffect(() => setDraft(settings), [settings]);
 
-  const save = () => update.mutate({ data: draft });
+  // Only this card's fields: sending the whole settings object would also save
+  // the (possibly derived) Posting Plan and family switches.
+  const save = () =>
+    update.mutate({
+      data: {
+        engineOnDemand: draft.engineOnDemand,
+        engineRecap: draft.engineRecap,
+        sizeSquare: draft.sizeSquare,
+        sizePortrait: draft.sizePortrait,
+        sizeStory: draft.sizeStory,
+        sizeLandscape: draft.sizeLandscape,
+        sponsorsEnabled: draft.sponsorsEnabled,
+        captionsEnabled: draft.captionsEnabled,
+        clubHashtag: draft.clubHashtag,
+        clubUrl: draft.clubUrl,
+      },
+    });
 
   const set = <K extends keyof SocialSettings>(k: K, v: SocialSettings[K]) =>
     setDraft((d) => ({ ...d, [k]: v }));
@@ -39,39 +58,41 @@ export function SettingsCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Engines, sizes and tone</CardTitle>
+        <CardTitle>Sharing, sizes and tone</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
           <h3 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
-            Content engines
+            Sharing
           </h3>
           <div className="space-y-2">
-            {ENGINES.map((eng) => {
-              const key =
-                eng.value === "ondemand"
-                  ? "engineOnDemand"
-                  : eng.value === "milestone"
-                    ? "engineMilestone"
-                    : eng.value === "roundup"
-                      ? "engineRoundUp"
-                      : "engineRecap";
-              return (
-                <div
-                  key={eng.value}
-                  className="flex items-start justify-between gap-3 border rounded p-3"
-                >
-                  <div>
-                    <div className="font-medium">{eng.label}</div>
-                    <div className="text-xs text-muted-foreground">{eng.desc}</div>
+            {ENGINES.filter((eng) => eng.value === "ondemand" || eng.value === "recap").map(
+              (eng) => {
+                const key =
+                  eng.value === "ondemand"
+                    ? "engineOnDemand"
+                    : eng.value === "milestone"
+                      ? "engineMilestone"
+                      : eng.value === "roundup"
+                        ? "engineRoundUp"
+                        : "engineRecap";
+                return (
+                  <div
+                    key={eng.value}
+                    className="flex items-start justify-between gap-3 border rounded p-3"
+                  >
+                    <div>
+                      <div className="font-medium">{eng.label}</div>
+                      <div className="text-xs text-muted-foreground">{eng.desc}</div>
+                    </div>
+                    <Switch
+                      checked={(draft[key] as boolean) ?? false}
+                      onCheckedChange={(v) => set(key, v as SocialSettings[typeof key])}
+                    />
                   </div>
-                  <Switch
-                    checked={(draft[key] as boolean) ?? false}
-                    onCheckedChange={(v) => set(key, v as SocialSettings[typeof key])}
-                  />
-                </div>
-              );
-            })}
+                );
+              },
+            )}
           </div>
         </div>
 

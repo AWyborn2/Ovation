@@ -87,6 +87,14 @@ The ready-to-share bundle for one card: its images in the chosen formats plus a 
 
 The club-set number of hours after an import within which its auto-drafts must be posted when auto-post is on. At the deadline, drafts still awaiting review become ready to post.
 
+### Posting Plan
+
+The club's single table of automation choices, one row per card kind: whether it drafts and for which grades, whether it posts on its own or as one club-wide round carousel, when it posts, who approves it, and which formats it produces. Replaces the separate automation, round-card and auto-post settings.
+
+### Posting style
+
+A named preset that fills every row of a Posting Plan in one choice (for example "Round carousels + individual highlights"). Changing any row afterwards makes the plan custom.
+
 ### Card kind template
 
 A club's one design for a card kind, made of editable elements (the starter's own parts plus anything the admin adds) with a separate canvas per size. Automated drafts of that kind render from it; a single draft can still be tweaked without changing it.

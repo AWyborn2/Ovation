@@ -292,10 +292,7 @@ export default function AdminSocialQueue() {
         Last import: {relativeTime(lastImport ?? null)} · Last sweep:{" "}
         {relativeTime(bundle?.settings.lastSweepAt ?? null)}
       </p>
-      <Link
-        href="/admin/social/cards#automation"
-        className="text-sm font-medium text-primary-text underline"
-      >
+      <Link href="/admin/social/plan" className="text-sm font-medium text-primary-text underline">
         Check which cards are switched on
       </Link>
     </div>

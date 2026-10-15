@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PackColourModes } from './packColourModes';
+import type { PostingPlan } from './postingPlan';
 import type { PostingScheduleUpdate } from './postingScheduleUpdate';
 import type { RoundSchedulesUpdate } from './roundSchedulesUpdate';
 import type { SocialFamilyConfigUpdate } from './socialFamilyConfigUpdate';
@@ -55,5 +56,7 @@ export interface SocialSettingsUpdate {
   packColourModes?: PackColourModes;
   /** Merged per card: only the cards sent change, the others keep their schedule. */
   roundSchedules?: RoundSchedulesUpdate;
+  /** The whole Posting Plan; saving it also updates the family switches and round-schedule modes. */
+  postingPlan?: PostingPlan;
   postingSchedule?: PostingScheduleUpdate;
 }

@@ -15,17 +15,17 @@ import {
   db,
   clubsTable,
   socialDraftsTable,
-  socialSettingsTable,
   juniorMatchesTable,
   juniorMatchBattingTable,
   juniorMatchBowlingTable,
   juniorMatchRostersTable,
 } from "@workspace/db";
+import type { SocialSettingsRow } from "@workspace/db";
 import { eq, and, ne } from "drizzle-orm";
 import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
 import { matchToSummaryInput, juniorMatchToSummaryInput } from "@workspace/scorecard";
 import { getTenantBrand } from "./tenant-brand";
-import { familyAllows, resolveFamilyConfig } from "./social-families";
+import { draftingGates, loadDraftingGates } from "./posting-plan";
 import { loadMatchDetail, loadCentralMatchDetail } from "./match-detail";
 import { overlayNativeOpponents } from "./club-brand";
 import {
@@ -34,11 +34,7 @@ import {
   splitScores,
   type JuniorNaming,
 } from "./junior-helpers";
-import {
-  juniorFamilyAllows,
-  juniorResultAutoReady,
-  juniorTeamPublishMode,
-} from "./junior-publishing";
+import { juniorResultAutoReady, juniorTeamPublishMode } from "./junior-publishing";
 import {
   draftKeys,
   findDraftByKey,
@@ -53,25 +49,17 @@ import { topPerformerPlayerId } from "./match-top-performer";
 
 type DraftResult = { drafted: number; skipped: number; errors: string[] };
 
-type SocialSettings = typeof socialSettingsTable.$inferSelect;
+type SocialSettings = SocialSettingsRow;
 
 // ---------------------------------------------------------------------------
 // Settings
 // ---------------------------------------------------------------------------
 
-async function loadSocialSettings(tenantId: number): Promise<SocialSettings | null> {
-  const [row] = await db
-    .select()
-    .from(socialSettingsTable)
-    .where(eq(socialSettingsTable.tenantId, tenantId));
-  return row ?? null;
-}
-
 /**
- * Should a draft be generated for this grade? Follows the "results" family
- * (lib/social-families.ts), which a tenant that never saved family switches
- * derives from engineMatchSummary + matchSummaryGradeConfig. False when:
- *   - The results family is OFF
+ * Should a draft be generated for this grade? Follows the Posting Plan's
+ * Results row (lib/posting-plan.ts), or for a club that never saved one the
+ * results family switches. False when:
+ *   - Results are OFF
  *   - The grade is explicitly disabled
  *   - The grade has no override AND the default for the match type
  *     (senior/junior) is OFF
@@ -83,8 +71,7 @@ export function shouldDraftGrade(
   grade: string | null,
   junior: boolean,
 ): boolean {
-  if (!settings) return false;
-  return familyAllows(resolveFamilyConfig(settings), "results", grade, junior);
+  return draftingGates(settings, false).resultsMatch(grade, junior);
 }
 
 // ---------------------------------------------------------------------------
@@ -365,8 +352,8 @@ export async function generateMatchSummaryDrafts(
   const result: DraftResult = { drafted: 0, skipped: 0, errors: [] };
   if (matchIds.length === 0) return result;
 
-  const settings = await loadSocialSettings(tenantId);
-  if (!resolveFamilyConfig(settings).results.enabled) {
+  const gates = await loadDraftingGates(tenantId);
+  if (!gates.resultsAny()) {
     result.skipped = matchIds.length;
     return result;
   }
@@ -384,7 +371,7 @@ export async function generateMatchSummaryDrafts(
           result.skipped++;
           return;
         }
-        if (!shouldDraftGrade(settings, detail.grade, false)) {
+        if (!gates.resultsMatch(detail.grade, false)) {
           result.skipped++;
           return;
         }
@@ -430,8 +417,8 @@ export async function generateCentralStumpsDrafts(
 ): Promise<DraftResult> {
   const result: DraftResult = { drafted: 0, skipped: 0, errors: [] };
   if (matchIds.length === 0) return result;
-  const settings = await loadSocialSettings(tenantId);
-  if (!resolveFamilyConfig(settings).results.enabled) {
+  const gates = await loadDraftingGates(tenantId);
+  if (!gates.resultsAny()) {
     result.skipped = matchIds.length;
     return result;
   }
@@ -443,7 +430,7 @@ export async function generateCentralStumpsDrafts(
         continue;
       }
       const detail = await loadCentralMatchDetail({ tenantId, clubId }, matchId);
-      if (!detail || !shouldDraftGrade(settings, detail.grade, false)) {
+      if (!detail || !gates.resultsMatch(detail.grade, false)) {
         result.skipped++;
         continue;
       }
@@ -493,13 +480,12 @@ export async function generateJuniorMatchSummaryDrafts(
   const result: DraftResult = { drafted: 0, skipped: 0, errors: [] };
   if (matchIds.length === 0) return result;
 
-  const settings = await loadSocialSettings(tenantId);
-  if (!resolveFamilyConfig(settings).results.enabled) {
+  const gates = await loadDraftingGates(tenantId);
+  if (!gates.resultsAny()) {
     result.skipped = matchIds.length;
     return result;
   }
 
-  const families = resolveFamilyConfig(settings);
   const brand = await getTenantBrand(tenantId);
   // Club-wide naming loaded once for the batch (KTD12), and the per-team publishing map.
   const [naming, publishing] = await Promise.all([
@@ -519,8 +505,8 @@ export async function generateJuniorMatchSummaryDrafts(
         }
         const grade = detail.ageGroup ?? detail.grade;
         const allowed = opts.synced
-          ? juniorFamilyAllows(families, "results", grade)
-          : shouldDraftGrade(settings, grade, true);
+          ? gates.juniorSynced("results", grade)
+          : gates.resultsMatch(grade, true);
         if (!allowed) {
           result.skipped++;
           return;

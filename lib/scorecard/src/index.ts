@@ -57,6 +57,8 @@ export {
   evenSizes,
   gradeTile,
   groupOfGrade,
+  carouselSlides,
+  isSetInput,
   isSetKind,
   landscapeSummary,
   planCardSet,

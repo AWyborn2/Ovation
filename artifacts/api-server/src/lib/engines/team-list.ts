@@ -3,7 +3,6 @@ import {
   db,
   fixturesTable,
   teamListsTable,
-  socialSettingsTable,
   shirtNumbersTable,
   type FixtureRow,
   type TeamListPlayer,
@@ -11,10 +10,9 @@ import {
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import { getShirtNumberSettings, normaliseParticipantId } from "@workspace/db/shirt-numbers";
 import { logger } from "../logger";
-import { familyAllows, resolveFamilyConfig } from "../social-families";
+import { loadDraftingGates } from "../posting-plan";
 import { upsertDraftByKey } from "../draft-upsert";
 import { teamListPhotoPlayer } from "../draft-enrich";
-import { resolveRoundSchedules } from "../round-schedules";
 import { formatFixtureDate, formatFixtureTime } from "./match-day";
 import { autoDebutPlayerIds, isDebut } from "../team-list-debuts";
 
@@ -230,15 +228,9 @@ export async function generateTeamListDrafts(
   now: Date = new Date(),
 ): Promise<TeamListResult> {
   const result: TeamListResult = { drafted: 0, refreshed: 0, skipped: 0 };
-  const [settings] = await db
-    .select()
-    .from(socialSettingsTable)
-    .where(eq(socialSettingsTable.tenantId, tenantId));
-  const families = resolveFamilyConfig(settings ?? null);
-  if (!families.matchday.enabled) return result;
   // A club drafting this card per round (or not at all) gets no per-match cards.
-  if (resolveRoundSchedules(settings?.roundSchedules).teamLists.mode !== "perFixture")
-    return result;
+  const gates = await loadDraftingGates(tenantId);
+  if (!gates.teamListsIndividual()) return result;
 
   const rows = await db
     .select({ fixture: fixturesTable, players: teamListsTable.players })
@@ -256,7 +248,7 @@ export async function generateTeamListDrafts(
 
   const shirtNumbers = teamListShirtNumberLoader(tenantId);
   for (const { fixture, players } of rows) {
-    if (players.length === 0 || !familyAllows(families, "matchday", fixture.grade, false)) {
+    if (players.length === 0 || !gates.teamListsGrade(fixture.grade, false)) {
       result.skipped++;
       continue;
     }

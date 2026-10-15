@@ -65,6 +65,11 @@ export type MatchMilestoneContext = {
    * (the player already shows ≥1 game).
    */
   gradeGamesBefore: Map<number, number>;
+  /**
+   * Which cards the club's Posting Plan drafts for this grade (debuts and
+   * centuries / five-fors are separate rows). Absent = both, as before.
+   */
+  kinds?: { debut: boolean; feats: boolean };
 };
 
 // `newCap` was a fourth key here. The New Cap card kind was retired in favour
@@ -114,6 +119,7 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
     createdCaps,
     gradeGamesBefore,
   } = ctx;
+  const kinds = ctx.kinds ?? { debut: true, feats: true };
   const capCategory = GRADE_TO_CAP_CATEGORY[grade];
   // An abandoned match awards no grade game and mints no cap, so it can never
   // be a debut. Century / five-for are left alone deliberately — the innings
@@ -176,7 +182,7 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
   const detected: Detected[] = [];
 
   // --- Debut: first-ever game in a cap-register grade (A / Female A Grade).
-  if (isCapGrade && capCategory) {
+  if (kinds.debut && isCapGrade && capCategory) {
     // The card's cap number comes from the REGISTER, not just from the caps this
     // commit happened to mint. cap-sync runs inside the commit transaction and
     // that transaction has already closed here, so this read sees both the caps
@@ -252,7 +258,7 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
   const qualifying = new Set<string>();
   const centHandled = new Set<number>();
   const fiveHandled = new Set<number>();
-  for (const l of lines) {
+  for (const l of kinds.feats ? lines : []) {
     const runs = l.runs ?? 0;
     if (runs >= 100 && !centHandled.has(l.playerId)) {
       centHandled.add(l.playerId);
@@ -348,7 +354,7 @@ export async function detectAndQueueMatchMilestones(ctx: MatchMilestoneContext):
     }
   }
 
-  for (const feat of ["century", "fiveFor"] as const) {
+  for (const feat of kinds.feats ? (["century", "fiveFor"] as const) : []) {
     const prefix = draftKeys.matchFeatPrefix(feat, grade, season, round);
     for (const d of await draftsWithKeyPrefix(tenantId, prefix)) {
       if (!qualifying.has(d.sourceKey ?? "")) await withdrawDraft(d);

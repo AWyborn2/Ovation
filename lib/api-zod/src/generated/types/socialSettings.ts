@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PackColourModes } from './packColourModes';
+import type { PostingPlan } from './postingPlan';
 import type { PostingSchedule } from './postingSchedule';
 import type { PostingSwitchover } from './postingSwitchover';
 import type { RoundSchedules } from './roundSchedules';
@@ -58,6 +59,11 @@ export interface SocialSettings {
   familyConfig?: SocialFamilyConfig;
   packColourModes?: PackColourModes;
   roundSchedules?: RoundSchedules;
+  postingPlan?: PostingPlan;
+  /** Whether the club has saved a Posting Plan; false means postingPlan is derived from its other settings (first visit). */
+  postingPlanSaved?: boolean;
+  /** Whether the club reads its results from the association database (results, ladder and leaderboard round carousels need it). */
+  centralData?: boolean;
   postingSchedule?: PostingSchedule;
   postingSwitchover?: PostingSwitchover;
 }

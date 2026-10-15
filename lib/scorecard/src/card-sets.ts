@@ -261,11 +261,39 @@ function teamCard(team: TeamRow, junior: boolean, design: unknown): SetInput {
   };
 }
 
+/**
+ * A round carousel of ordinary cards (Posting Plan, plan 2026-10-07-001 KTD8):
+ * the input is itself a complete card (its first slide) and `carousel` lists
+ * every slide, e.g. one club leaderboard per category or one ladder per grade.
+ * No cover — each slide carries its own title — so code that doesn't know
+ * about carousels still shows a sensible single card.
+ */
+export function carouselSlides(input: SetInput): SetInput[] | null {
+  const list = (input as { carousel?: unknown }).carousel;
+  return Array.isArray(list) && list.length > 0 ? (list as SetInput[]) : null;
+}
+
+/** Whether this input posts as more than one slide (a set kind or a round carousel). */
+export function isSetInput(input: SetInput): boolean {
+  return isSetKind(input.kind) || carouselSlides(input) !== null;
+}
+
 /** Plan the slides one card input posts as (a single slide for every non-set kind). */
 export function planCardSet<I extends SetInput>(
   input: I,
   opts: CardSetOptions = {},
 ): PlannedSlide<I>[] {
+  const carousel = carouselSlides(input);
+  if (carousel) {
+    const of = carousel.length;
+    return carousel.map((slide, i) => ({
+      key: of === 1 ? "single" : `detail:slide:${i}`,
+      role: of === 1 ? "single" : "detail",
+      input: (of === 1 ? slide : { ...slide, setPage: `${i + 1}/${of}` }) as unknown as I,
+      page: i + 1,
+      of,
+    }));
+  }
   if (!isSetKind(input.kind)) return [{ key: "single", role: "single", input, page: 1, of: 1 }];
   const out = planSet(input, opts);
   return out as unknown as PlannedSlide<I>[];
@@ -438,6 +466,8 @@ function planSet(input: SetInput, opts: CardSetOptions): PlannedSlide[] {
  * set has more than one slide; otherwise the card itself.
  */
 export function landscapeSummary<I extends SetInput>(input: I, opts: CardSetOptions = {}): I {
+  const carousel = carouselSlides(input);
+  if (carousel) return carousel[0] as unknown as I;
   if (!isSetKind(input.kind)) return input;
   const slides = planCardSet(input, { ...opts, cover: undefined });
   if (slides.length <= 1) return slides[0]?.input ?? input;

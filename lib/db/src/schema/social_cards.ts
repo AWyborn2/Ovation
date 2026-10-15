@@ -421,6 +421,21 @@ export type RoundSchedulesRow = Partial<
   Record<"gameDay" | "teamLists" | "weekendWrap", RoundScheduleRow>
 >;
 
+/** Stored Posting Plan; the shape and rules live in @workspace/scorecard/posting-plan. */
+export type PostingPlanRow = {
+  version: 1;
+  styleId: string | null;
+  rows: Record<
+    string,
+    {
+      enabled: boolean;
+      packaging: "individual" | "round" | "both";
+      grades: Record<string, boolean>;
+      others: "seniors" | "off";
+    }
+  >;
+};
+
 /** One weekly posting slot: day 0 = Sunday, "HH:mm" in club time (15-minute steps). */
 export type PostingSlotRow = { day: number; time: string };
 /** A slot kind's slots and what happens when several of its cards share one. */
@@ -511,6 +526,12 @@ export const socialSettingsTable = pgTable(
     // club-chosen day and hour. Null = never saved; the API applies defaults
     // that match the per-match behaviour from before (see lib/round-schedules).
     roundSchedules: jsonb("round_schedules").$type<RoundSchedulesRow>(),
+    // The club's Posting Plan (plan 2026-10-07-001): one row per card kind —
+    // drafts or not, which grades, individual / round carousel. Null = never
+    // saved; the API derives it from the family config and round schedules
+    // above, so nothing changes until an admin saves (see
+    // @workspace/scorecard/posting-plan).
+    postingPlan: jsonb("posting_plan").$type<PostingPlanRow>(),
     // The posting calendar (plan 2026-10-07-003): weekly slots per card kind,
     // a daily cap, a minimum gap and an age limit. Null = never saved (off).
     postingSchedule: jsonb("posting_schedule").$type<PostingScheduleRow>(),

@@ -7,7 +7,10 @@
     ".": "./src/index.ts",
     "./brand": "./src/brand.ts",
     "./queued-carousel": "./src/queued-carousel.ts",
-    "./kind-templates": "./src/kind-templates/index.ts"
+    "./kind-templates": "./src/kind-templates/index.ts",
+    "./posting-plan": "./src/posting-plan.ts",
+    "./club-leaderboard-input": "./src/club-leaderboard-input.ts",
+    "./ladder-input": "./src/ladder-input.ts"
   },
   "dependencies": {
     "@workspace/api-zod": "workspace:*"

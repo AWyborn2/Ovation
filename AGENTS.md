@@ -102,6 +102,15 @@ In short:
   every hourly run calls `/api/internal/playhq/sweep` (scheduled sweep for every club).
 - **Social Studio automation is live:** result, achievement, round-up and match-day cards
   (incl. Team Lists from PlayHQ selections) draft into the review queue.
+  **The Posting Plan decides what drafts** (Social Studio → Posting Plan tab; plan
+  `docs/plans/2026-10-07-001-feat-social-posting-plan-plan.md`): one row per card kind —
+  drafts or not, which grades, each on its own or one club-wide round carousel. Every drafting
+  gate reads `api-server/src/lib/posting-plan.ts` (`draftingGates` / `loadDraftingGates`);
+  never read `familyConfig`, the `engine*` flags or round-schedule modes directly (a reader
+  guard test enforces it). Until a club saves a plan (`social_settings.posting_plan` null) the
+  gates apply the legacy settings exactly; saving mirrors the plan back to them widest-wins.
+  Club leaderboard and ladder round carousels (PlayHQ published ladders) draft on the
+  weekend-wrap cadence; a round carousel is an ordinary card with a `carousel` slide list.
 - **Availability and Selection Hub are built, off per club by default**
   (`availability_settings.enabled`; plan `docs/plans/2026-10-06-002-feat-player-availability-selection-plan.md`).
   Admins import the PlayHQ participant CSV into `squad_members` (only whitelisted columns are

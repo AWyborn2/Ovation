@@ -3,19 +3,18 @@ import {
   db,
   juniorFixturesTable,
   juniorTeamListsTable,
-  socialSettingsTable,
   type JuniorFixtureRow,
   type JuniorNameStyle,
   type JuniorTeamListPlayer,
 } from "@workspace/db";
 import { normaliseParticipantId } from "@workspace/db/shirt-numbers";
 import { logger } from "../logger";
-import { resolveFamilyConfig } from "../social-families";
+import { loadDraftingGates } from "../posting-plan";
 import { upsertDraftByKey } from "../draft-upsert";
 import { loadJuniorNaming, loadJuniorTeamPublishing } from "../junior-helpers";
 import { JUNIOR_WITHHELD_NAME, type JuniorNaming } from "../junior-names";
 import { loadJuniorSeasonShirtNumbers } from "../junior-shirt-numbers";
-import { juniorFamilyAllows, juniorTeamListKey, juniorTeamPublishMode } from "../junior-publishing";
+import { juniorTeamListKey, juniorTeamPublishMode } from "../junior-publishing";
 import { formatFixtureDate, formatFixtureTime } from "./match-day";
 import { TEAM_LIST_LEAD_MS, type TeamListResult, type TeamListShirtNumbers } from "./team-list";
 
@@ -133,12 +132,9 @@ export async function generateJuniorTeamListDrafts(
   alsoFixtureIds: readonly number[] = [],
 ): Promise<TeamListResult> {
   const result: TeamListResult = { drafted: 0, refreshed: 0, skipped: 0 };
-  const [settings] = await db
-    .select()
-    .from(socialSettingsTable)
-    .where(eq(socialSettingsTable.tenantId, tenantId));
-  const families = resolveFamilyConfig(settings ?? null);
-  if (!families.matchday.enabled) return result;
+  // The Posting Plan's Team lists row (or, unsaved, the match-day switch).
+  const gates = await loadDraftingGates(tenantId);
+  if (!gates.juniorSynced("teamLists", null)) return result;
 
   const upcoming = and(
     gt(juniorFixturesTable.startAt, now),
@@ -185,7 +181,7 @@ export async function generateJuniorTeamListDrafts(
   };
 
   for (const { fixture, players } of rows) {
-    if (players.length === 0 || !juniorFamilyAllows(families, "matchday", fixture.ageGroup)) {
+    if (players.length === 0 || !gates.juniorSynced("teamLists", fixture.ageGroup)) {
       result.skipped++;
       continue;
     }

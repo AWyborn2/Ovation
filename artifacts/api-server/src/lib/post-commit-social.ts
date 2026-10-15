@@ -3,7 +3,6 @@ import {
   playersTable,
   playerGradeStatsTable,
   milestoneEventsTable,
-  socialSettingsTable,
   matchesTable,
 } from "@workspace/db";
 import { eq, sql, inArray } from "drizzle-orm";
@@ -21,7 +20,7 @@ import {
   upsertDraftByKey,
   withdrawDraft,
 } from "./draft-upsert";
-import { familyAllows, resolveFamilyConfig } from "./social-families";
+import { loadDraftingGates, type DraftingGates } from "./posting-plan";
 import { tenantIsCentral } from "./tenant";
 
 // The import/match-commit pipeline reads the NATIVE stats tables (Halls Head's
@@ -204,15 +203,25 @@ export type PostCommitSocialOpts = {
   matchContext?: MatchMilestoneContext;
 };
 
+/**
+ * Which per-match milestone cards (debut / century / five-for) the plan drafts
+ * for this grade, or null when none — the detector is then skipped entirely,
+ * exactly as when the achievements family was off.
+ */
+function matchMilestoneKinds(
+  gates: DraftingGates,
+  grade: string,
+): { debut: boolean; feats: boolean } | null {
+  const debut = gates.achievement("debut", grade);
+  const feats = gates.achievement("century", grade);
+  return debut || feats ? { debut, feats } : null;
+}
+
 export async function runPostCommitSocial(opts: PostCommitSocialOpts): Promise<void> {
   const { tenantId, importId, affectedGrades, season, beforeMap, logger, matchContext } = opts;
-  const [socialSettings] = await db
-    .select()
-    .from(socialSettingsTable)
-    .where(eq(socialSettingsTable.tenantId, tenantId));
-  const families = resolveFamilyConfig(socialSettings ?? null);
+  const gates = await loadDraftingGates(tenantId);
 
-  if (families.achievements.enabled) {
+  if (gates.achievement("milestone", null)) {
     try {
       await queueCareerCrossings(tenantId, importId, beforeMap, season);
     } catch (err) {
@@ -220,9 +229,10 @@ export async function runPostCommitSocial(opts: PostCommitSocialOpts): Promise<v
     }
   }
 
-  if (matchContext && familyAllows(families, "achievements", matchContext.grade, false)) {
+  const matchKinds = matchContext && matchMilestoneKinds(gates, matchContext.grade);
+  if (matchContext && matchKinds) {
     try {
-      await detectAndQueueMatchMilestones(matchContext);
+      await detectAndQueueMatchMilestones({ ...matchContext, kinds: matchKinds });
     } catch (err) {
       logger.error({ err }, "match milestone detection failed");
     }
@@ -230,7 +240,7 @@ export async function runPostCommitSocial(opts: PostCommitSocialOpts): Promise<v
 
   try {
     for (const grade of affectedGrades) {
-      if (!familyAllows(families, "roundup", grade, false)) continue;
+      if (!gates.gradeLeaders(grade)) continue;
       await generateRoundUpDrafts(tenantId, grade, season, importId);
     }
   } catch (err) {
@@ -239,7 +249,7 @@ export async function runPostCommitSocial(opts: PostCommitSocialOpts): Promise<v
 
   // Match-summary drafts: look up the match(es) created by this import and
   // generate a matchSummary social card draft for each. Gated internally by
-  // socialSettings.engineMatchSummary + per-grade config.
+  // the Posting Plan's Results row (lib/posting-plan.ts).
   try {
     const matchRows = await db
       .select({ id: matchesTable.id })
@@ -277,28 +287,26 @@ export type BatchPostCommitSocialOpts = {
 
 export async function runBatchPostCommitSocial(opts: BatchPostCommitSocialOpts): Promise<void> {
   const { tenantId, sourceImportId, beforeMap, affected, matchContexts, logger } = opts;
-  const [socialSettings] = await db
-    .select()
-    .from(socialSettingsTable)
-    .where(eq(socialSettingsTable.tenantId, tenantId));
-  const families = resolveFamilyConfig(socialSettings ?? null);
+  const gates = await loadDraftingGates(tenantId);
 
-  if (families.achievements.enabled) {
+  if (gates.achievementsAny()) {
     try {
       // A batch can span seasons; a career crossing lands in the latest.
-      await queueCareerCrossings(
-        tenantId,
-        sourceImportId,
-        beforeMap,
-        affected.length > 0 ? Math.max(...affected.map((a) => a.season)) : null,
-      );
+      if (gates.achievement("milestone", null))
+        await queueCareerCrossings(
+          tenantId,
+          sourceImportId,
+          beforeMap,
+          affected.length > 0 ? Math.max(...affected.map((a) => a.season)) : null,
+        );
     } catch (err) {
       logger.error({ err }, "milestone detection failed");
     }
     for (const ctx of matchContexts) {
-      if (!familyAllows(families, "achievements", ctx.grade, false)) continue;
+      const kinds = matchMilestoneKinds(gates, ctx.grade);
+      if (!kinds) continue;
       try {
-        await detectAndQueueMatchMilestones(ctx);
+        await detectAndQueueMatchMilestones({ ...ctx, kinds });
       } catch (err) {
         logger.error({ err }, "match milestone detection failed");
       }
@@ -307,7 +315,7 @@ export async function runBatchPostCommitSocial(opts: BatchPostCommitSocialOpts):
 
   try {
     for (const { grade, season } of affected) {
-      if (!familyAllows(families, "roundup", grade, false)) continue;
+      if (!gates.gradeLeaders(grade)) continue;
       await generateRoundUpDrafts(tenantId, grade, season, sourceImportId);
     }
   } catch (err) {
