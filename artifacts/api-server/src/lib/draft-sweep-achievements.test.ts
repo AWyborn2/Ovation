@@ -11,6 +11,8 @@
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { findPostingStyle, planFromStyle } from "@workspace/scorecard/posting-plan";
+import type * as DbModule from "@workspace/db";
+import type * as PostingPlanModule from "./posting-plan";
 
 const h = vi.hoisted(() => {
   const settings: Record<string, unknown> = { tenantId: 7, centralSweepWatermark: 100 };
@@ -51,7 +53,7 @@ const h = vi.hoisted(() => {
 // Partial: the real tables stay (junior helpers build SQL at import time); the pool and
 // the two tables the sweep queries are stubbed.
 vi.mock("@workspace/db", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@workspace/db")>()),
+  ...(await importOriginal<typeof DbModule>()),
   db: h.db,
   matchesTable: { season: {}, grade: {}, id: {} },
   socialSettingsTable: { tenantId: {} },
@@ -74,7 +76,7 @@ vi.mock("./engines/team-list", () => ({ generateTeamListDrafts: async () => ({ d
 vi.mock("./social-cards-helpers", () => ({ ensureSettings: async () => h.settings }));
 // The gates read the same stubbed settings (the mocked select chain resolves to nothing).
 vi.mock("./posting-plan", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./posting-plan")>();
+  const actual = await importOriginal<typeof PostingPlanModule>();
   return {
     ...actual,
     loadDraftingGates: async () =>
