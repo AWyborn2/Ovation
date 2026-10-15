@@ -3,6 +3,7 @@ import type { SelectionMember, SelectionMemberStatus } from "@workspace/api-clie
 import { ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useAvailability } from "./availability-context";
 import { PlayerChip, StatusMark } from "./player-chip";
 
 const zoneClass =
@@ -66,7 +67,8 @@ function Heading({
 
 /**
  * Players not in any side: Available, Maybe, No reply (with the remind
- * action) and Unavailable (collapsed). The search filters every group.
+ * action) and Unavailable (collapsed); without availability, one Squad list.
+ * The search filters every group.
  * Each group is a drop zone, so dragging a side player here takes them out.
  */
 export function PlayerPool({
@@ -94,6 +96,7 @@ export function PlayerPool({
 }) {
   const [query, setQuery] = useState("");
   const [showNo, setShowNo] = useState(false);
+  const availability = useAvailability();
   const q = query.trim().toLowerCase();
   const shown = q ? pool.filter((m) => m.displayName.toLowerCase().includes(q)) : pool;
   const by = (status: SelectionMemberStatus) =>
@@ -147,60 +150,80 @@ export function PlayerPool({
         ref={scrollRef}
         className="flex min-h-0 max-h-[60vh] flex-col gap-1.5 overflow-auto overscroll-contain px-2.5 pb-3 pt-1.5 lg:max-h-none lg:flex-1"
       >
-        <section data-drop="pool" className={zoneClass} aria-label="Available, not picked">
-          <div className={headClass}>
-            <Heading status="yes" count={yes.length}>
-              Available, not picked
-            </Heading>
-          </div>
-          {list(yes)}
-        </section>
-        <section data-drop="pool" className={zoneClass} aria-label="Maybe">
-          <div className={headClass}>
-            <Heading status="maybe" count={maybe.length}>
-              Maybe
-            </Heading>
-          </div>
-          {list(maybe)}
-        </section>
-        <section data-drop="pool" className={zoneClass} aria-label="No reply">
-          <div className={headClass}>
-            <Heading status="none" count={none.length}>
-              No reply
-            </Heading>
-            {canRemind && none.length > 0 && (
+        {!availability && (
+          <section data-drop="pool" className={zoneClass} aria-label="Squad">
+            <div className={headClass}>
+              Squad
+              <span className="flex-1" />
+              <span className="font-mono text-xs text-muted-foreground">{shown.length}</span>
+            </div>
+            {list(
+              [...shown].sort(
+                (a, b) =>
+                  (a.lastGrade ?? "~").localeCompare(b.lastGrade ?? "~") ||
+                  a.displayName.localeCompare(b.displayName),
+              ),
+            )}
+          </section>
+        )}
+        {availability && (
+          <>
+            <section data-drop="pool" className={zoneClass} aria-label="Available, not picked">
+              <div className={headClass}>
+                <Heading status="yes" count={yes.length}>
+                  Available, not picked
+                </Heading>
+              </div>
+              {list(yes)}
+            </section>
+            <section data-drop="pool" className={zoneClass} aria-label="Maybe">
+              <div className={headClass}>
+                <Heading status="maybe" count={maybe.length}>
+                  Maybe
+                </Heading>
+              </div>
+              {list(maybe)}
+            </section>
+            <section data-drop="pool" className={zoneClass} aria-label="No reply">
+              <div className={headClass}>
+                <Heading status="none" count={none.length}>
+                  No reply
+                </Heading>
+                {canRemind && none.length > 0 && (
+                  <button
+                    type="button"
+                    className="min-h-[30px] rounded-md border border-input bg-card px-2 font-sans text-xs font-semibold normal-case tracking-normal disabled:opacity-50"
+                    disabled={reminding}
+                    onClick={onRemind}
+                  >
+                    Remind {none.length}
+                  </button>
+                )}
+              </div>
+              <p className="mx-1 mb-1.5 text-xs text-muted-foreground">
+                Left out of drafts at cut-off. Picking one flags them until they reply.
+              </p>
+              {list(none)}
+            </section>
+            <section data-drop="pool" className={zoneClass} aria-label="Unavailable">
               <button
                 type="button"
-                className="min-h-[30px] rounded-md border border-input bg-card px-2 font-sans text-xs font-semibold normal-case tracking-normal disabled:opacity-50"
-                disabled={reminding}
-                onClick={onRemind}
+                className={cn(headClass, "w-full text-left")}
+                aria-expanded={showNo}
+                onClick={() => setShowNo((v) => !v)}
               >
-                Remind {none.length}
+                <ChevronRight
+                  className={cn("h-3 w-3 transition-transform", showNo && "rotate-90")}
+                  aria-hidden
+                />
+                <Heading status="no" count={no.length}>
+                  Unavailable
+                </Heading>
               </button>
-            )}
-          </div>
-          <p className="mx-1 mb-1.5 text-xs text-muted-foreground">
-            Left out of drafts at cut-off. Picking one flags them until they reply.
-          </p>
-          {list(none)}
-        </section>
-        <section data-drop="pool" className={zoneClass} aria-label="Unavailable">
-          <button
-            type="button"
-            className={cn(headClass, "w-full text-left")}
-            aria-expanded={showNo}
-            onClick={() => setShowNo((v) => !v)}
-          >
-            <ChevronRight
-              className={cn("h-3 w-3 transition-transform", showNo && "rotate-90")}
-              aria-hidden
-            />
-            <Heading status="no" count={no.length}>
-              Unavailable
-            </Heading>
-          </button>
-          {showNo && list(no)}
-        </section>
+              {showNo && list(no)}
+            </section>
+          </>
+        )}
         <p className="mx-1 mt-1 text-xs text-muted-foreground">
           Showing {q ? "matching players" : junior ? "junior families" : "seniors"}.
         </p>

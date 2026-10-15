@@ -92,6 +92,7 @@ function side(
 function makeBoard(): SelectionBoard {
   return {
     section: "senior",
+    availability: true,
     actor: { kind: "admin", name: "Ash", selectionRule: "captains_own_grade", canRemind: true },
     round: {
       roundId: 7,
@@ -387,6 +388,35 @@ describe("final and read-only cards", () => {
     expect(await screen.findByText("86% replied")).toBeTruthy();
     expect(screen.getByText(/38 of 44 senior players/)).toBeTruthy();
     expect(screen.getByText("A Grade draft built from the side's last game")).toBeTruthy();
+  });
+});
+
+describe("without availability", () => {
+  it("shows one Squad list and no round header, statuses or reminders", async () => {
+    const board = { ...makeBoard(), availability: false };
+    stubApi(board);
+    renderHub();
+    await screen.findByTestId("chip-900");
+    expect(screen.queryByText("86% replied")).toBeNull();
+    expect(screen.getByRole("region", { name: "Squad" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "No reply" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Remind/ })).toBeNull();
+    // Every pool player is listed, whatever their (meaningless) status.
+    for (const m of board.pool) expect(screen.getByTestId(`chip-${m.id}`)).toBeTruthy();
+    expect(screen.getByTestId("chip-900").getAttribute("aria-label")).not.toMatch(
+      /reply|available/i,
+    );
+  });
+
+  it("says finalising published the list without claiming anyone was messaged", async () => {
+    const board = { ...makeBoard(), availability: false };
+    stubApi(board);
+    renderHub();
+    const card = await screen.findByTestId("side-1");
+    fireEvent.click(within(card).getByRole("button", { name: /^Finalise/ }));
+    fireEvent.click(within(card).getByRole("button", { name: /^Finalise/ }));
+    expect(await screen.findByText(/finalised and published as the team list\./)).toBeTruthy();
+    expect(screen.queryByText(/notified/)).toBeNull();
   });
 });
 

@@ -3457,6 +3457,7 @@ export const getSelectionBoardResponseSelectionsItemSlotsMax = 12;
 
 export const GetSelectionBoardResponse = zod.object({
   "section": zod.enum(['senior', 'junior']),
+  "availability": zod.boolean().describe('The club uses availability requests. Off, the Hub stands alone: the\nweekend\'s sides are drafted on demand from each grade\'s last team\nlist (everyone listed kept), member statuses and the round\'s steps\ndon\'t apply, and finalising messages no one.\n'),
   "actor": zod.object({
   "kind": zod.enum(['admin', 'captain']),
   "name": zod.string(),
@@ -3604,6 +3605,7 @@ export const saveSelectionBoardResponseSelectionsItemSlotsMax = 12;
 
 export const SaveSelectionBoardResponse = zod.object({
   "section": zod.enum(['senior', 'junior']),
+  "availability": zod.boolean().describe('The club uses availability requests. Off, the Hub stands alone: the\nweekend\'s sides are drafted on demand from each grade\'s last team\nlist (everyone listed kept), member statuses and the round\'s steps\ndon\'t apply, and finalising messages no one.\n'),
   "actor": zod.object({
   "kind": zod.enum(['admin', 'captain']),
   "name": zod.string(),
