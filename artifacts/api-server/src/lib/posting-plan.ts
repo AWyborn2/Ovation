@@ -39,18 +39,6 @@ function modesOf(settings: SocialSettingsRow | null) {
   return { gameDay: s.gameDay.mode, teamLists: s.teamLists.mode, weekendWrap: s.weekendWrap.mode };
 }
 
-/** The tenant's settings row and its effective plan, for pipeline code. */
-export async function loadPostingPlan(
-  tenantId: number,
-): Promise<{ settings: SocialSettingsRow | null; plan: PostingPlan }> {
-  const [settings] = await db
-    .select()
-    .from(socialSettingsTable)
-    .where(eq(socialSettingsTable.tenantId, tenantId));
-  const central = await tenantIsCentral(tenantId);
-  return { settings: settings ?? null, plan: resolvePostingPlan(settings ?? null, central) };
-}
-
 // ---------------------------------------------------------------------------
 // Drafting gates (U3)
 
@@ -174,26 +162,6 @@ function planGates(plan: PostingPlan): DraftingGates {
     ladderGrade: (g) => rowAllows(r.ladders, g, false),
     juniorSynced: (row, ag) => r[row].enabled && r[row].grades[ag ?? ""] !== false,
   };
-}
-
-/** Should `row` draft a card for this grade? */
-export function planAllows(
-  plan: PostingPlan,
-  row: PostingRowId,
-  grade: string | null,
-  junior: boolean,
-): boolean {
-  return rowAllows(plan.rows[row], grade, junior);
-}
-
-/** Does `row` draft one card per event (it may also draft a round carousel)? */
-export function planIndividual(plan: PostingPlan, row: PostingRowId): boolean {
-  return rowIndividual(plan.rows[row]);
-}
-
-/** Does `row` draft one club-wide carousel per round? */
-export function planRound(plan: PostingPlan, row: PostingRowId): boolean {
-  return rowRound(plan.rows[row]);
 }
 
 /**
