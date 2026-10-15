@@ -28,7 +28,7 @@ const SCHEDULES = {
 const settingsFor = (styleId: string) =>
   ({
     roundSchedules: SCHEDULES,
-    postingPlan: planFromStyle(findPostingStyle(styleId)!),
+    postingPlan: planFromStyle(findPostingStyle(styleId, true)!),
   }) as unknown as SocialSettings;
 
 describe("Round carousel times", () => {

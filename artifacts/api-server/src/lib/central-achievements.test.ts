@@ -7,6 +7,7 @@
  * dismissed card is never drafted again.
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { defaultPostingPlan } from "@workspace/scorecard/posting-plan";
 import type * as DraftUpsertModule from "./draft-upsert";
 
 const h = vi.hoisted(() => {
@@ -65,6 +66,8 @@ vi.mock("@workspace/db", () => ({
   socialDraftsTable: h.socialDraftsTable,
   capRegisterTable: h.capRegisterTable,
 }));
+// The drafting gates ask whether the club reads from central (for its default plan).
+vi.mock("./tenant", () => ({ tenantIsCentral: async () => true }));
 vi.mock("@workspace/db/central-queries", () => ({
   centralMatchAchievements: h.centralMatchAchievements,
 }));
@@ -271,7 +274,11 @@ describe("draftCentralAchievements", () => {
   });
 
   it("reads nothing while the achievements family is off", async () => {
-    h.state.rows.social_settings[0].engineMilestone = false;
+    const off = defaultPostingPlan(true);
+    off.rows.bigMoments.enabled = false;
+    off.rows.milestones.enabled = false;
+    off.rows.debuts.enabled = false;
+    h.state.rows.social_settings[0].postingPlan = off;
     const r = await draftCentralAchievements(9, 77, [501], new Date());
     expect(r).toEqual({ drafted: 0, skipped: 0 });
     expect(h.centralMatchAchievements).not.toHaveBeenCalled();

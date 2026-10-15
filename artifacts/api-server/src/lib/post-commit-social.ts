@@ -11,7 +11,6 @@ import {
   detectAndQueueMatchMilestones,
   type MatchMilestoneContext,
 } from "./match-milestone-detector";
-import { generateRoundUpDrafts } from "./roundup";
 import { generateMatchSummaryDrafts } from "./match-summary-drafter";
 import {
   draftKeys,
@@ -218,7 +217,7 @@ function matchMilestoneKinds(
 }
 
 export async function runPostCommitSocial(opts: PostCommitSocialOpts): Promise<void> {
-  const { tenantId, importId, affectedGrades, season, beforeMap, logger, matchContext } = opts;
+  const { tenantId, importId, season, beforeMap, logger, matchContext } = opts;
   const gates = await loadDraftingGates(tenantId);
 
   if (gates.achievement("milestone", null)) {
@@ -236,15 +235,6 @@ export async function runPostCommitSocial(opts: PostCommitSocialOpts): Promise<v
     } catch (err) {
       logger.error({ err }, "match milestone detection failed");
     }
-  }
-
-  try {
-    for (const grade of affectedGrades) {
-      if (!gates.gradeLeaders(grade)) continue;
-      await generateRoundUpDrafts(tenantId, grade, season, importId);
-    }
-  } catch (err) {
-    logger.error({ err }, "auto roundup failed");
   }
 
   // Match-summary drafts: look up the match(es) created by this import and
@@ -311,15 +301,6 @@ export async function runBatchPostCommitSocial(opts: BatchPostCommitSocialOpts):
         logger.error({ err }, "match milestone detection failed");
       }
     }
-  }
-
-  try {
-    for (const { grade, season } of affected) {
-      if (!gates.gradeLeaders(grade)) continue;
-      await generateRoundUpDrafts(tenantId, grade, season, sourceImportId);
-    }
-  } catch (err) {
-    logger.error({ err }, "auto roundup failed");
   }
 
   // Match-summary drafts for the entire batch: gather all import IDs from the

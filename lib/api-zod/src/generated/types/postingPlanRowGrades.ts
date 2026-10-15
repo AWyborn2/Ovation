@@ -7,6 +7,6 @@
  */
 
 /**
- * Explicit per-grade choices; a grade absent here follows others.
+ * Explicit per-grade choices (junior age groups included); a grade absent here follows others.
  */
 export type PostingPlanRowGrades = {[key: string]: boolean};

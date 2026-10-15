@@ -7230,65 +7230,70 @@ export const GetSocialSettingsResponse = zod.object({
 })
 }).optional().describe('When the round cards draft themselves (balanced card sets). Always complete in a response: a card never saved shows its default.'),
   "postingPlan": zod.object({
-  "version": zod.literal(1),
+  "version": zod.literal(2),
   "styleId": zod.string().nullable(),
   "rows": zod.object({
   "results": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
+  "bigMoments": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
   "milestones": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
-  "feats": zod.object({
-  "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
   "debuts": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
-  "gradeLeaders": zod.object({
-  "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
-  "clubLeaderboards": zod.object({
-  "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
-  "ladders": zod.object({
-  "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
   "gameDay": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
   "teamLists": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
+  "clubLeaderboards": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
+  "ladders": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).')
+}),
+  "bigMoments": zod.object({
+  "juniorRunsBar": zod.union([zod.literal(50),zod.literal(100)]).describe('Runs a junior innings needs to be a Big Moment: a century, or a half-century (R11).')
 })
-})
-}).optional().describe('One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001).'),
+}).optional().describe('One row per card type: drafts or not, which senior and junior grades, individual or round carousel (version 2, plan 2026-10-15-001).'),
   "postingPlanSaved": zod.boolean().optional().describe('Whether the club has saved a Posting Plan; false means postingPlan is derived from its other settings (first visit).'),
   "centralData": zod.boolean().optional().describe('Whether the club reads its results from the association database (results, ladder and leaderboard round carousels need it).'),
   "postingSchedule": zod.object({
@@ -7548,65 +7553,70 @@ export const UpdateSocialSettingsBody = zod.object({
 }).optional()
 }).optional().describe('Merged per card: only the cards sent change, the others keep their schedule.'),
   "postingPlan": zod.object({
-  "version": zod.literal(1),
+  "version": zod.literal(2),
   "styleId": zod.string().nullable(),
   "rows": zod.object({
   "results": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
+  "bigMoments": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
   "milestones": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
-  "feats": zod.object({
-  "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
   "debuts": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
-  "gradeLeaders": zod.object({
-  "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
-  "clubLeaderboards": zod.object({
-  "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
-  "ladders": zod.object({
-  "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
   "gameDay": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
   "teamLists": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
+  "clubLeaderboards": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
+  "ladders": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).')
+}),
+  "bigMoments": zod.object({
+  "juniorRunsBar": zod.union([zod.literal(50),zod.literal(100)]).describe('Runs a junior innings needs to be a Big Moment: a century, or a half-century (R11).')
 })
-})
-}).describe('One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001).').optional().describe('The whole Posting Plan; saving it also updates the family switches and round-schedule modes.'),
+}).describe('One row per card type: drafts or not, which senior and junior grades, individual or round carousel (version 2, plan 2026-10-15-001).').optional().describe('The whole Posting Plan; saving it also updates the family switches and round-schedule modes.'),
   "postingSchedule": zod.object({
   "enabled": zod.boolean().optional(),
   "dailyCap": zod.number().min(1).max(updateSocialSettingsBodyPostingScheduleDailyCapMax).optional(),
@@ -7823,65 +7833,70 @@ export const UpdateSocialSettingsResponse = zod.object({
 })
 }).optional().describe('When the round cards draft themselves (balanced card sets). Always complete in a response: a card never saved shows its default.'),
   "postingPlan": zod.object({
-  "version": zod.literal(1),
+  "version": zod.literal(2),
   "styleId": zod.string().nullable(),
   "rows": zod.object({
   "results": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
+  "bigMoments": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
   "milestones": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
-  "feats": zod.object({
-  "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
   "debuts": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
-  "gradeLeaders": zod.object({
-  "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
-  "clubLeaderboards": zod.object({
-  "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
-  "ladders": zod.object({
-  "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
   "gameDay": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
-}),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
   "teamLists": zod.object({
   "enabled": zod.boolean(),
-  "packaging": zod.enum(['individual', 'round', 'both']),
-  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
-  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
+  "clubLeaderboards": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).'),
+  "ladders": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices (junior age groups included); a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']),
+  "juniors": zod.enum(['combined', 'separate']).optional().describe('Carousel rows with a junior grade on: juniors share the seniors\' carousel or get their own.')
+}).describe('One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).')
+}),
+  "bigMoments": zod.object({
+  "juniorRunsBar": zod.union([zod.literal(50),zod.literal(100)]).describe('Runs a junior innings needs to be a Big Moment: a century, or a half-century (R11).')
 })
-})
-}).optional().describe('One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001).'),
+}).optional().describe('One row per card type: drafts or not, which senior and junior grades, individual or round carousel (version 2, plan 2026-10-15-001).'),
   "postingPlanSaved": zod.boolean().optional().describe('Whether the club has saved a Posting Plan; false means postingPlan is derived from its other settings (first visit).'),
   "centralData": zod.boolean().optional().describe('Whether the club reads its results from the association database (results, ladder and leaderboard round carousels need it).'),
   "postingSchedule": zod.object({

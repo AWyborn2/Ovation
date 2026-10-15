@@ -3,7 +3,15 @@ import { isJuniorGradeLabel } from "./junior-grade";
 
 describe("isJuniorGradeLabel", () => {
   it("matches junior grade labels", () => {
-    for (const g of ["Under 15", "U13s", "U-17 Girls", "Juniors", "under14"]) {
+    for (const g of [
+      "Under 15",
+      "U13s",
+      "U-17 Girls",
+      "Juniors",
+      "under14",
+      "Year 9",
+      "Year 10-11",
+    ]) {
       expect({ g, junior: isJuniorGradeLabel(g) }).toEqual({ g, junior: true });
     }
   });

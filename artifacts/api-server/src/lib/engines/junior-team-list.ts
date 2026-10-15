@@ -132,9 +132,10 @@ export async function generateJuniorTeamListDrafts(
   alsoFixtureIds: readonly number[] = [],
 ): Promise<TeamListResult> {
   const result: TeamListResult = { drafted: 0, refreshed: 0, skipped: 0 };
-  // The Posting Plan's Team lists row (or, unsaved, the match-day switch).
+  // The Posting Plan's Team lists row: per-fixture cards, for the junior age groups it lists.
+  // A round-carousel row puts junior teams on the round set instead (KTD6).
   const gates = await loadDraftingGates(tenantId);
-  if (!gates.juniorSynced("teamLists", null)) return result;
+  if (!gates.teamListsIndividual() || !gates.juniorsAny("teamLists")) return result;
 
   const upcoming = and(
     gt(juniorFixturesTable.startAt, now),
@@ -181,7 +182,7 @@ export async function generateJuniorTeamListDrafts(
   };
 
   for (const { fixture, players } of rows) {
-    if (players.length === 0 || !gates.juniorSynced("teamLists", fixture.ageGroup)) {
+    if (players.length === 0 || !gates.teamListsGrade(fixture.ageGroup, true)) {
       result.skipped++;
       continue;
     }
@@ -191,12 +192,16 @@ export async function generateJuniorTeamListDrafts(
       engine: "teamlist",
       family: "matchday",
       sourceKey: juniorTeamListKey(fixture.id),
-      cardInput: juniorTeamListToCardInput(
-        fixture,
-        players,
-        nameOf,
-        await numbersFor(fixture.seasonStartYear),
-      ),
+      cardInput: {
+        ...juniorTeamListToCardInput(
+          fixture,
+          players,
+          nameOf,
+          await numbersFor(fixture.seasonStartYear),
+        ),
+        // The junior teams this card covers, for the per-team publishing gate (ADR-006).
+        juniorTeams: [{ ageGroup: fixture.ageGroup ?? null, teamName: fixture.teamName ?? null }],
+      },
       appPath: `/juniors/fixtures/${fixture.id}`,
       sourceMatchIsJunior: true,
       // No photo: no player, grade or featured player for any photo pick (R21).

@@ -8,6 +8,7 @@
  * uses (test files run one at a time), and removes them afterwards.
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { findPostingStyle, planFromStyle } from "@workspace/scorecard/posting-plan";
 import request from "supertest";
 import { and, eq, like, sql } from "drizzle-orm";
 import app from "../app";
@@ -20,10 +21,22 @@ import {
   captionTemplatesTable,
   squadMembersTable,
   availabilitySettingsTable,
+  juniorMatchesTable,
+  JUNIOR_SYNC_ID_START,
 } from "@workspace/db";
 import { invalidateTenantConfigCache } from "./tenant";
 import { runDraftSweep } from "./draft-sweep";
 import { draftKeys } from "./draft-upsert";
+
+/** Per-match results only: what a club's legacy defaults amounted to before version 2. */
+function sweepPlan(mutate: (p: ReturnType<typeof planFromStyle>) => void = () => {}) {
+  const p = planFromStyle(findPostingStyle("every-match", true)!);
+  p.rows.bigMoments.enabled = false;
+  p.rows.milestones.enabled = false;
+  p.rows.debuts.enabled = false;
+  mutate(p);
+  return p;
+}
 
 const CLUB = 9941;
 const OPP = 9942;
@@ -32,6 +45,8 @@ const LINE_BASE = BASE * 10;
 const GUID = "99410000-0000-4000-8000-000000000001";
 const STAMP = Date.now();
 const NOW = new Date("2026-11-20T10:00:00Z");
+/** A junior-sync match id band row for the round-carousel test (removed afterwards). */
+const JUNIOR_MATCH = JUNIOR_SYNC_ID_START + 900_000 + (Date.now() % 90_000);
 const log = { error: () => {}, warn: () => {}, info: () => {} };
 
 let tenantId: number;
@@ -79,7 +94,7 @@ beforeAll(async () => {
   tenantId = t.id;
   invalidateTenantConfigCache(tenantId);
   await db.insert(playerIdMapTable).values({ tenantId, participantId: GUID, playerId: 41 });
-  await db.insert(socialSettingsTable).values({ tenantId });
+  await db.insert(socialSettingsTable).values({ tenantId, postingPlan: sweepPlan() });
   // Years of history already in central before drafting is switched on.
   await centralMatch(BASE + 1, { date: "2019-01-12" });
   await centralMatch(BASE + 2, { date: "2021-02-20" });
@@ -96,6 +111,7 @@ afterAll(async () => {
     sql`delete from central.matches where match_id >= ${BASE} and match_id < ${BASE + 10}`,
   );
   await db.delete(socialDraftsTable).where(eq(socialDraftsTable.tenantId, tenantId));
+  await db.delete(juniorMatchesTable).where(eq(juniorMatchesTable.id, JUNIOR_MATCH));
   // ensureSettings (run by the sweep) seeds default caption templates.
   await db.delete(captionTemplatesTable).where(eq(captionTemplatesTable.tenantId, tenantId));
   await db.delete(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId));
@@ -241,7 +257,7 @@ describe("central drafting sweep", () => {
     await db
       .update(socialSettingsTable)
       .set({
-        engineRoundUp: true,
+        postingPlan: sweepPlan((p) => (p.rows.results.packaging = "round")),
         roundSchedules: { weekendWrap: { mode: "perRound", day: 0, hour: 19 } },
       })
       .where(eq(socialSettingsTable.tenantId, tenantId));
@@ -269,6 +285,79 @@ describe("central drafting sweep", () => {
     expect(input.kind).toBe("weekendWrap");
     expect(input.matches.map((m) => m.gradeLabel)).toEqual(["A Grade", "B Grade"]);
     expect(input.results.map((r) => r.kind)).toEqual(["matchSummary", "matchSummary"]);
+  });
+
+  it("junior results join the round carousel when combined, or get their own set when separate (R14, KTD6)", async () => {
+    // A synced, finished Year 9 match the same weekend as round 4.
+    await db.insert(juniorMatchesTable).values({
+      id: JUNIOR_MATCH,
+      tenantId,
+      ageGroup: "Year 9",
+      grade: "Year 9 Gold",
+      teamName: "Sweep Hawks",
+      status: "COMPLETED",
+      matchDate: "2026-11-14",
+      hhResult: "Won by 5 wickets",
+      season: "2026/27",
+      seasonStartYear: 2026,
+      opponentName: "Rivals Juniors",
+    });
+    const plan = (juniors: "combined" | "separate") =>
+      sweepPlan((p) => {
+        p.rows.results.packaging = "round";
+        p.rows.results.grades = { "Year 9": true };
+        p.rows.results.juniors = juniors;
+      });
+    const wraps = async () =>
+      db
+        .select()
+        .from(socialDraftsTable)
+        .where(
+          and(
+            eq(socialDraftsTable.tenantId, tenantId),
+            like(socialDraftsTable.sourceKey, "weekendwrap-round:%"),
+          ),
+        );
+    type Wrap = {
+      matches: { gradeLabel: string }[];
+      results: { kind: string }[];
+      junior?: boolean;
+      juniorTeams?: { ageGroup: string | null; teamName: string | null }[];
+    };
+
+    await db
+      .update(socialSettingsTable)
+      .set({ postingPlan: plan("combined") })
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+    await runDraftSweep(tenantId, { kind: "scheduled", now: NOW }, log);
+    const combined = (await wraps()).find((d) => !d.sourceKey?.endsWith(":junior"))!;
+    const c = combined.cardInput as Wrap;
+    expect(c.matches.map((m) => m.gradeLabel)).toEqual([
+      "A Grade",
+      "B Grade",
+      "Year 9 · Sweep Hawks",
+    ]);
+    expect(c.results).toHaveLength(3);
+    expect(c.junior).toBe(true);
+    expect(c.juniorTeams).toEqual([{ ageGroup: "Year 9", teamName: "Sweep Hawks" }]);
+    expect(combined.sourceMatchIsJunior).toBe(true);
+    expect((await wraps()).some((d) => d.sourceKey?.endsWith(":junior"))).toBe(false);
+
+    await db
+      .update(socialSettingsTable)
+      .set({ postingPlan: plan("separate") })
+      .where(eq(socialSettingsTable.tenantId, tenantId));
+    await runDraftSweep(tenantId, { kind: "scheduled", now: NOW }, log);
+    const all = await wraps();
+    const seniors = all.find((d) => !d.sourceKey?.endsWith(":junior"))!.cardInput as Wrap;
+    expect(seniors.matches.map((m) => m.gradeLabel)).toEqual(["A Grade", "B Grade"]);
+    expect(seniors.junior).toBeUndefined();
+    const junior = all.find((d) => d.sourceKey?.endsWith(":junior"))!;
+    const j = junior.cardInput as Wrap;
+    expect(j.matches.map((m) => m.gradeLabel)).toEqual(["Year 9 · Sweep Hawks"]);
+    expect(j.results).toHaveLength(1);
+    expect(j.junior).toBe(true);
+    expect(junior.sourceMatchIsJunior).toBe(true);
   });
 });
 

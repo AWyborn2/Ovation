@@ -9,6 +9,7 @@
  */
 import { randomUUID } from "node:crypto";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { findPostingStyle, planFromStyle } from "@workspace/scorecard/posting-plan";
 import { and, eq, inArray, like } from "drizzle-orm";
 import {
   db,
@@ -83,16 +84,20 @@ async function makeTenant(
       juniorSyncEnabled,
     })
     .returning();
+  // Version 2: junior age groups draft only when the row lists them (KTD6).
+  const plan = planFromStyle(findPostingStyle("every-match", true)!);
+  plan.rows.results.grades = { "Year 10-11": true, "Year 5": true, "Year 9": true, "Year 4": true };
+  plan.rows.teamLists.grades = {
+    "Year 10-11": true,
+    "Year 5": true,
+    "Year 9": true,
+    "Year 4": true,
+  };
   await db.insert(socialSettingsTable).values({
     tenantId: t.id,
     autoPostEnabled: true,
     autoPostWindowHours: 1,
-    familyConfig: {
-      results: { enabled: true, grades: {} },
-      achievements: { enabled: false, grades: {} },
-      roundup: { enabled: false, grades: {} },
-      matchday: { enabled: true, grades: {} },
-    },
+    postingPlan: plan,
   });
   return t.id;
 }

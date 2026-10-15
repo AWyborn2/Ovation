@@ -17021,55 +17021,65 @@ components:
 
     PostingPlanRow:
       type: object
+      description: "One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001)."
       required: [enabled, packaging, grades, others]
       properties:
         enabled:
           type: boolean
         packaging:
           type: string
-          enum: [individual, round, both]
+          enum: [individual, round]
         grades:
           type: object
+          description: "Explicit per-grade choices (junior age groups included); a grade absent here follows others."
           additionalProperties:
             type: boolean
-          description: "Explicit per-grade choices; a grade absent here follows others."
         others:
           type: string
-          enum: [seniors, "off"]
-          description: "Unlisted grades: seniors draft (juniors do not), or nothing drafts."
+          enum: [seniors, off]
+        juniors:
+          type: string
+          enum: [combined, separate]
+          description: "Carousel rows with a junior grade on: juniors share the seniors' carousel or get their own."
 
     PostingPlan:
       type: object
-      description: "One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001)."
-      required: [version, styleId, rows]
+      description: "One row per card type: drafts or not, which senior and junior grades, individual or round carousel (version 2, plan 2026-10-15-001)."
+      required: [version, styleId, rows, bigMoments]
       properties:
         version:
           type: integer
-          enum: [1]
+          enum: [2]
         styleId:
           type: ["string", "null"]
         rows:
           type: object
-          required: [results, milestones, feats, debuts, gradeLeaders, clubLeaderboards, ladders, gameDay, teamLists]
+          required: [results, bigMoments, milestones, debuts, gameDay, teamLists, clubLeaderboards, ladders]
           properties:
             results:
               $ref: "#/components/schemas/PostingPlanRow"
+            bigMoments:
+              $ref: "#/components/schemas/PostingPlanRow"
             milestones:
               $ref: "#/components/schemas/PostingPlanRow"
-            feats:
-              $ref: "#/components/schemas/PostingPlanRow"
             debuts:
-              $ref: "#/components/schemas/PostingPlanRow"
-            gradeLeaders:
-              $ref: "#/components/schemas/PostingPlanRow"
-            clubLeaderboards:
-              $ref: "#/components/schemas/PostingPlanRow"
-            ladders:
               $ref: "#/components/schemas/PostingPlanRow"
             gameDay:
               $ref: "#/components/schemas/PostingPlanRow"
             teamLists:
               $ref: "#/components/schemas/PostingPlanRow"
+            clubLeaderboards:
+              $ref: "#/components/schemas/PostingPlanRow"
+            ladders:
+              $ref: "#/components/schemas/PostingPlanRow"
+        bigMoments:
+          type: object
+          required: [juniorRunsBar]
+          properties:
+            juniorRunsBar:
+              type: integer
+              enum: [50, 100]
+              description: "Runs a junior innings needs to be a Big Moment: a century, or a half-century (R11)."
 
     Notification:
       type: object

@@ -24,7 +24,6 @@ import {
   generateLadderDrafts,
 } from "./engines/round-sets";
 import { ensureSettings } from "./social-cards-helpers";
-import { generateRoundUpDrafts } from "./roundup";
 import { tenantIsCentral, getTenantCentralClubId, NATIVE_STATS_TENANT_ID } from "./tenant";
 import { loadAutoPost, persistDueDrafts } from "./effective-draft-state";
 import { notifyDraftsReady } from "./draft-notifications";
@@ -34,7 +33,7 @@ import { checkConnectionHealth } from "./publishing/connection-health";
 import { fillMissingDraftPhotos } from "./draft-enrich";
 import { draftCentralAchievements } from "./central-achievements";
 import { syncDebutCaps } from "./debut-caps";
-import { loadDraftingGates, type DraftingGates } from "./posting-plan";
+import { loadDraftingGates } from "./posting-plan";
 import { runAvailabilitySchedule } from "./availability-schedule";
 import { autoSeedSquadIfEmpty } from "./squad-season-seed";
 import { runPendingLayoutChecks } from "./draft-render";
@@ -411,40 +410,12 @@ export async function sweepCentralMatches(
   } catch (err) {
     logger.error({ err, tenantId }, "central achievement drafts failed");
   }
-  await draftCentralRoundUps(tenantId, gates, done, logger);
   // Never past a recent match still in progress: re-reading from it is harmless (drafting is
   // keyed, unchanged cards are no-ops) and drafts its result when it completes. Matches outside
   // the recent window never hold it, so one that is never finished can't stall the sweep.
   const hold = live.length ? Math.min(...live.map((m) => m.matchId)) - 1 : null;
   await setWatermark(tenantId, hold ?? lastSeenId);
   return { seen: matches.length, drafted: result.drafted, achievements };
-}
-
-/**
- * The weekly round-up for a central-data club: once per (grade, season) that
- * just had a new match, exactly as a native import triggers one per affected
- * grade. Gated by the round-up family; keyed by the latest round, so the same
- * round refreshes its cards and the next round gets its own.
- */
-async function draftCentralRoundUps(
-  tenantId: number,
-  gates: DraftingGates,
-  recent: { grade: string; season: number | null }[],
-  logger: Logger,
-): Promise<void> {
-  if (!gates.gradeLeadersAny()) return;
-  const pairs = new Map<string, { grade: string; season: number }>();
-  for (const m of recent) {
-    if (m.season != null) pairs.set(`${m.season}|${m.grade}`, { grade: m.grade, season: m.season });
-  }
-  for (const { grade, season } of pairs.values()) {
-    if (!gates.gradeLeaders(grade)) continue;
-    try {
-      await generateRoundUpDrafts(tenantId, grade, season, null);
-    } catch (err) {
-      logger.error({ err, tenantId, grade, season }, "central round-up drafts failed");
-    }
-  }
 }
 
 /** Most past matches drafted by one backfill call. */

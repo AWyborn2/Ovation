@@ -51,15 +51,25 @@ beforeAll(async () => {
     .returning();
   adminId = admin.id;
   cookie = `${SESSION_COOKIE}=${encodeSession({ adminId, issuedAt: Date.now() })}`;
+  // Version 2: game day and team lists as round sets; Under 15 listed, in its own junior set.
+  const plan = planFromStyle(findPostingStyle("every-match", true)!);
+  plan.rows.gameDay = {
+    enabled: true,
+    packaging: "round",
+    grades: { "Under 15": true },
+    others: "seniors",
+    juniors: "separate",
+  };
+  plan.rows.teamLists = {
+    enabled: true,
+    packaging: "round",
+    grades: { "Under 15": true },
+    others: "seniors",
+    juniors: "separate",
+  };
   await db.insert(socialSettingsTable).values({
     tenantId,
-    familyConfig: {
-      results: { enabled: true, grades: {} },
-      achievements: { enabled: false, grades: {} },
-      roundup: { enabled: false, grades: {} },
-      // Juniors draft only when a grade is switched on.
-      matchday: { enabled: true, grades: { "Under 15": true } },
-    },
+    postingPlan: plan,
     roundSchedules: {
       gameDay: { mode: "perRound", day: 4, hour: 18 },
       teamLists: { mode: "perRound", day: 5, hour: 12 },
@@ -228,13 +238,17 @@ describe("round sets on a schedule", () => {
 
 describe("team lists under a saved Posting Plan", () => {
   /** Every-match style with the Team lists row replaced; Under 15 ticked. */
-  const savePlan = async (packaging: "individual" | "round") => {
-    const plan: PostingPlan = planFromStyle(findPostingStyle("every-match")!);
+  const savePlan = async (
+    packaging: "individual" | "round",
+    juniors: "combined" | "separate" = "separate",
+  ) => {
+    const plan: PostingPlan = planFromStyle(findPostingStyle("every-match", true)!);
     plan.rows.teamLists = {
       enabled: true,
       packaging,
       grades: { "Under 15": true },
       others: "seniors",
+      juniors,
     };
     await db
       .update(socialSettingsTable)
@@ -287,6 +301,24 @@ describe("team lists under a saved Posting Plan", () => {
     for (const senior of rows.filter((r) => !r.sourceMatchIsJunior)) {
       expect(grades(senior)).not.toContain("Under 15");
     }
+  });
+
+  it("Under 15 team lists join the men's set when the row says combined, marked junior (R14, KTD6)", async () => {
+    await savePlan("round", "combined");
+    await generateRoundTeamListDrafts(tenantId, FRI_1PM);
+    const rows = await draftsLike("teamlists-round:");
+    const men = rows.find((r) => r.sourceKey?.endsWith(":senior"))!;
+    const input = men.cardInput as {
+      teams: { grade: string }[];
+      junior?: boolean;
+      juniorTeams?: { ageGroup: string | null; teamName: string | null }[];
+    };
+    // Seniors first, the junior team after them; the whole set carries junior markers.
+    expect(input.teams.map((t) => t.grade).at(-1)).toBe("Under 15");
+    expect(input.teams.map((t) => t.grade).slice(0, -1)).not.toContain("Under 15");
+    expect(input.junior).toBe(true);
+    expect(input.juniorTeams).toEqual([{ ageGroup: "Under 15", teamName: null }]);
+    expect(men.sourceMatchIsJunior).toBe(true);
   });
 });
 

@@ -78,7 +78,10 @@ import { generateClubLeaderboardDrafts, generateLadderDrafts } from "./round-set
 const NOW = new Date("2026-11-22T12:00:00Z");
 
 function withPlan(mutate: (p: PostingPlan) => void = () => {}) {
-  const plan = planFromStyle(findPostingStyle("round-carousels")!);
+  const plan = planFromStyle(findPostingStyle("round-carousels", true)!);
+  // Off in the default table (R13); these tests are about the carousels themselves.
+  plan.rows.clubLeaderboards.enabled = true;
+  plan.rows.ladders.enabled = true;
   mutate(plan);
   h.state.settings = { tenantId: 7, postingPlan: plan, roundSchedules: null };
 }

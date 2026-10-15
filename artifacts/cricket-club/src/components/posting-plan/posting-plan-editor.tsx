@@ -9,7 +9,7 @@ import {
 import {
   POSTING_ROWS,
   POSTING_ROW_DEFS,
-  POSTING_STYLES,
+  postingStyles,
   matchingStyle,
   planFromStyle,
   type Packaging,
@@ -86,7 +86,8 @@ export function PostingPlanEditor({
   });
 
   const dirty = JSON.stringify(form) !== JSON.stringify(saved);
-  const style = useMemo(() => matchingStyle(form), [form]);
+  const styles = useMemo(() => postingStyles(central), [central]);
+  const style = useMemo(() => matchingStyle(form, central), [form, central]);
   const setRow = (id: PostingRowId, row: PostingRow) =>
     setForm((f) => ({ ...f, styleId: null, rows: { ...f.rows, [id]: row } }));
 
@@ -199,7 +200,7 @@ export function PostingPlanEditor({
             club. Nothing changes until you save.
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
-            {POSTING_STYLES.map((s) => (
+            {styles.map((s) => (
               <button
                 key={s.id}
                 type="button"
@@ -239,11 +240,11 @@ export function PostingPlanEditor({
           className={selectClass}
           value={style?.id ?? "custom"}
           onChange={(e) => {
-            const target = POSTING_STYLES.find((s) => s.id === e.target.value);
+            const target = styles.find((s) => s.id === e.target.value);
             if (target) void applyStyle(target);
           }}
         >
-          {POSTING_STYLES.map((s) => (
+          {styles.map((s) => (
             <option key={s.id} value={s.id}>
               {s.label}
             </option>

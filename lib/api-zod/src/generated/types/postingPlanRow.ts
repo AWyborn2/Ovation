@@ -6,14 +6,19 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PostingPlanRowGrades } from './postingPlanRowGrades';
+import type { PostingPlanRowJuniors } from './postingPlanRowJuniors';
 import type { PostingPlanRowOthers } from './postingPlanRowOthers';
 import type { PostingPlanRowPackaging } from './postingPlanRowPackaging';
 
+/**
+ * One Posting Plan row: whether the card type drafts, for which senior and junior grades, and its packaging (plan 2026-10-15-001).
+ */
 export interface PostingPlanRow {
   enabled: boolean;
   packaging: PostingPlanRowPackaging;
-  /** Explicit per-grade choices; a grade absent here follows others. */
+  /** Explicit per-grade choices (junior age groups included); a grade absent here follows others. */
   grades: PostingPlanRowGrades;
-  /** Unlisted grades: seniors draft (juniors do not), or nothing drafts. */
   others: PostingPlanRowOthers;
+  /** Carousel rows with a junior grade on: juniors share the seniors' carousel or get their own. */
+  juniors?: PostingPlanRowJuniors;
 }

@@ -23,7 +23,7 @@ afterEach(() => {
 const GRADES = ["A Grade", "B Grade", "Female A Grade", "Under 16"];
 
 function settings(over: Partial<{ plan: PostingPlan; saved: boolean; central: boolean }> = {}) {
-  const plan = over.plan ?? planFromStyle(findPostingStyle("every-match")!);
+  const plan = over.plan ?? planFromStyle(findPostingStyle("every-match", true)!);
   return {
     postingPlan: plan,
     postingPlanSaved: over.saved ?? true,
@@ -84,7 +84,7 @@ describe("Posting Plan", () => {
   });
 
   it("asks before a style replaces a custom plan, and cancel keeps the edits", async () => {
-    const plan = planFromStyle(findPostingStyle("every-match")!);
+    const plan = planFromStyle(findPostingStyle("every-match", true)!);
     plan.rows.milestones = { ...plan.rows.milestones, enabled: false };
     render(settings({ plan }));
     fireEvent.change(screen.getByLabelText("Style"), { target: { value: "results-only" } });

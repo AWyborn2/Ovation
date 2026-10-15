@@ -5,15 +5,17 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { PostingPlanBigMoments } from './postingPlanBigMoments';
 import type { PostingPlanRows } from './postingPlanRows';
 import type { PostingPlanVersion } from './postingPlanVersion';
 
 /**
- * One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001).
+ * One row per card type: drafts or not, which senior and junior grades, individual or round carousel (version 2, plan 2026-10-15-001).
  */
 export interface PostingPlan {
   version: PostingPlanVersion;
   /** @nullable */
   styleId: string | null;
   rows: PostingPlanRows;
+  bigMoments: PostingPlanBigMoments;
 }

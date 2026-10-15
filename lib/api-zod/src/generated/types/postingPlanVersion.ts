@@ -10,5 +10,5 @@ export type PostingPlanVersion = typeof PostingPlanVersion[keyof typeof PostingP
 
 
 export const PostingPlanVersion = {
-  NUMBER_1: 1,
+  NUMBER_2: 2,
 } as const;
