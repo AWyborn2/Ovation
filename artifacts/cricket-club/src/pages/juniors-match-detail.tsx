@@ -18,7 +18,7 @@ export default function JuniorsMatchDetail() {
     isLoading,
     isError,
     refetch,
-  } = useGetJuniorMatch(id, {
+  } = useGetJuniorMatch(id, undefined, {
     query: { enabled: Number.isFinite(id), queryKey: getGetJuniorMatchQueryKey(id) },
   });
 

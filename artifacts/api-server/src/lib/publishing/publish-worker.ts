@@ -15,6 +15,8 @@ import { destination } from "./meta-adapter";
 import { captionFor, prepareMedia, removeImages } from "./prepare-media";
 import { postDraftIfDone } from "./publications";
 import { logger as appLogger } from "../logger";
+import { draftMayAutoPost } from "../effective-draft-state";
+import { isSyncedJuniorDraft } from "../junior-publishing";
 import type { Platform, PostType } from "./destination";
 
 /**
@@ -214,6 +216,23 @@ async function processOne(
     );
   if (!draft || draft.status === "dismissed") {
     await update(row, { status: "cancelled", leaseUntil: null, lastError: "The draft is gone." });
+    await removeImages(row.imagePaths);
+    return "cancelled";
+  }
+  // An automatic post of a synced junior card goes out only for a team set to auto-post
+  // (junior PlayHQ sync plan KTD14); an admin's own scheduling is their approval. The
+  // same scope as promotion (`juniorAutoPostClear`): other drafts are never held here.
+  if (
+    row.origin === "auto" &&
+    !row.mediaIds.length &&
+    isSyncedJuniorDraft(draft) &&
+    !(await draftMayAutoPost(row.tenantId, draft.id))
+  ) {
+    await update(row, {
+      status: "cancelled",
+      leaseUntil: null,
+      lastError: "Junior cards for this team need an admin's approval.",
+    });
     await removeImages(row.imagePaths);
     return "cancelled";
   }

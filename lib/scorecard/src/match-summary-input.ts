@@ -248,7 +248,9 @@ const JUNIOR_GOLD = "#FBAC27";
  * Mirrors the senior `matchToSummaryInput` but builds via `buildJuniorScorecard`
  * (which masks private participants), forces the junior brown club chrome, sets
  * `junior: true` so the card renders in the brown palette with a "JUNIOR MATCH"
- * eyebrow, and excludes any masked private players from the featured lists.
+ * eyebrow, and excludes any masked private players from the featured lists. Only
+ * the club's own juniors are featured: opposition batters and bowlers are never
+ * named on a card (R22), though both team totals are shown.
  *
  * `brand` (the current tenant's brand) supplies the club team's name/shortName
  * when a match has no recorded innings to derive them from; the neutral default
@@ -305,14 +307,17 @@ export function juniorMatchToSummaryInput(
       const wickets =
         inn.wickets ??
         (battingRecorded ? inn.batsmen.filter((b) => !b.notOut && b.dismissal).length : 0);
+      // R22: opposition juniors are never named on a card, not even by initials. The
+      // club batting means the opposition bowled, and vice versa; totals stay.
+      const clubBatted = inn.battingTeam.isHallsHead;
       return {
-        teamKey: inn.battingTeam.isHallsHead ? ("club" as const) : ("opposition" as const),
+        teamKey: clubBatted ? ("club" as const) : ("opposition" as const),
         inningsNum: (i + 1) as 1 | 2,
         totalRuns: String(totalRuns),
         wickets: String(wickets),
         overs: inn.oversTotal ?? "",
-        topBatters: topBatters(inn.batsmen, MASK_NAME),
-        topBowlers: topBowlers(inn.bowlers, MASK_NAME),
+        topBatters: clubBatted ? topBatters(inn.batsmen, MASK_NAME) : [],
+        topBowlers: clubBatted ? [] : topBowlers(inn.bowlers, MASK_NAME),
       };
     });
 

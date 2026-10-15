@@ -69,6 +69,13 @@ export interface AdminTenant {
   playhqOrgId?: string | null;
   /** Whether scheduled PlayHQ sync runs for this tenant. */
   playhqSyncEnabled?: boolean;
+  /** Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on. */
+  juniorSyncEnabled?: boolean;
+  /**
+     * The tenant's junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.
+     * @nullable
+     */
+  playhqJuniorOrgId?: string | null;
   /** True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults). */
   brandingComplete: boolean;
 }

@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { JuniorMatchDisplaySettingsDefaultSeasonMode } from './juniorMatchDisplaySettingsDefaultSeasonMode';
+import type { JuniorNameStyle } from './juniorNameStyle';
+import type { JuniorTeamPublishing } from './juniorTeamPublishing';
 
 export interface JuniorMatchDisplaySettings {
   /** Age group pre-selected on first load. Empty string = All age groups. */
@@ -19,4 +21,6 @@ export interface JuniorMatchDisplaySettings {
   defaultSeason?: string | null;
   /** Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones. */
   ageGroupOrder: string[];
+  nameStyle: JuniorNameStyle;
+  teamPublishing: JuniorTeamPublishing;
 }

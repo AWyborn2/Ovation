@@ -10964,6 +10964,175 @@ export const GetJuniorsFiltersResponse = zod.object({
 
 
 /**
+ * The club's junior fixtures synced from PlayHQ that start from 12 hours ago onward (so match-day games stay listed), ordered by start time. Empty when the club's junior sync is switched off (R23).
+ * @summary Upcoming junior games for the club, soonest first
+ */
+export const ListJuniorFixturesQueryParams = zod.object({
+  "ageGroup": zod.coerce.string().optional().describe('Filter by age group (e.g. \"Year 6\")')
+})
+
+export const ListJuniorFixturesResponseItem = zod.object({
+  "id": zod.number(),
+  "seasonStartYear": zod.number(),
+  "ageGroup": zod.string().nullable(),
+  "grade": zod.string().nullable(),
+  "teamName": zod.string().nullable().describe('The club\'s own junior team'),
+  "opponentName": zod.string().nullable(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date().nullable(),
+  "isHome": zod.boolean().nullable(),
+  "status": zod.string().nullable().describe('PlayHQ match status as last synced (e.g. UPCOMING)'),
+  "hasTeamList": zod.boolean().describe('A published team list exists for this fixture')
+})
+export const ListJuniorFixturesResponse = zod.array(ListJuniorFixturesResponseItem)
+
+
+/**
+ * Team-list players are named by the club's junior naming rules; a private, non-overridden player is "Private Player" with no participant id or shirt number. 404 when the fixture is another club's, or the club's junior sync is switched off.
+ * @summary One junior fixture with its published team list
+ */
+export const GetJuniorFixtureParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetJuniorFixtureResponse = zod.object({
+  "fixture": zod.object({
+  "id": zod.number(),
+  "seasonStartYear": zod.number(),
+  "ageGroup": zod.string().nullable(),
+  "grade": zod.string().nullable(),
+  "teamName": zod.string().nullable().describe('The club\'s own junior team'),
+  "opponentName": zod.string().nullable(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date().nullable(),
+  "isHome": zod.boolean().nullable(),
+  "status": zod.string().nullable().describe('PlayHQ match status as last synced (e.g. UPCOMING)'),
+  "hasTeamList": zod.boolean().describe('A published team list exists for this fixture')
+}),
+  "teamList": zod.array(zod.object({
+  "order": zod.number(),
+  "name": zod.string().describe('Public name in the club\'s style, or \"Private Player\"'),
+  "participantId": zod.string().nullable().describe('Null when the player is withheld'),
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).describe('Captain \/ vice-captain \/ wicket-keeper marker').nullable(),
+  "shirtNumber": zod.string().nullable().describe('Junior shirt number for the fixture\'s season (null when withheld or none)')
+})).nullable().describe('The published team list in order, or null when none is published')
+})
+
+
+/**
+ * Full names, each player's junior shirt number for the fixture's season, and the club's junior players to pick from.
+ * @summary A junior fixture's team list for the admin editor (admin only)
+ */
+export const GetJuniorFixtureTeamListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetJuniorFixtureTeamListResponse = zod.object({
+  "fixture": zod.object({
+  "id": zod.number(),
+  "seasonStartYear": zod.number(),
+  "ageGroup": zod.string().nullable(),
+  "grade": zod.string().nullable(),
+  "teamName": zod.string().nullable().describe('The club\'s own junior team'),
+  "opponentName": zod.string().nullable(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date().nullable(),
+  "isHome": zod.boolean().nullable(),
+  "status": zod.string().nullable().describe('PlayHQ match status as last synced (e.g. UPCOMING)'),
+  "hasTeamList": zod.boolean().describe('A published team list exists for this fixture')
+}),
+  "season": zod.number().describe('Season start year whose shirt numbers are shown'),
+  "shirtNumbersEnabled": zod.boolean(),
+  "teamList": zod.object({
+  "players": zod.array(zod.object({
+  "order": zod.number(),
+  "participantId": zod.string(),
+  "name": zod.string().describe('Full name'),
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).describe('Captain \/ vice-captain \/ wicket-keeper marker').nullable(),
+  "shirtNumber": zod.string().nullable(),
+  "isPrivate": zod.boolean().describe('Withheld on public pages (private in PlayHQ, not overridden)'),
+  "isKnown": zod.boolean().describe('Still one of the club\'s junior participants')
+})),
+  "isPublished": zod.boolean(),
+  "source": zod.enum(['playhq', 'admin']).describe('Who wrote the list; an admin\'s list is never overwritten by the sync'),
+  "updatedAt": zod.coerce.date()
+}).nullable(),
+  "candidates": zod.array(zod.object({
+  "participantId": zod.string(),
+  "name": zod.string(),
+  "isPrivate": zod.boolean(),
+  "shirtNumber": zod.string().nullable(),
+  "teams": zod.string().nullable(),
+  "lastSeason": zod.string().nullable()
+}))
+})
+
+
+/**
+ * Saves the list as `admin`, so the PlayHQ sync never overwrites it. Every player must be one of the club's own junior participants (never an opposition player or another club's); orders must be unique and at most one captain, vice-captain and wicket-keeper may be named. The list is stored in order, renumbered from 1.
+ * @summary Save a junior fixture's team list (admin only)
+ */
+export const PutJuniorFixtureTeamListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+export const putJuniorFixtureTeamListBodyPlayersMax = 30;
+
+
+
+export const PutJuniorFixtureTeamListBody = zod.object({
+  "players": zod.array(zod.object({
+  "order": zod.number().min(1),
+  "participantId": zod.string().min(1),
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).describe('Captain \/ vice-captain \/ wicket-keeper marker').nullish()
+})).max(putJuniorFixtureTeamListBodyPlayersMax),
+  "isPublished": zod.boolean().optional()
+})
+
+export const PutJuniorFixtureTeamListResponse = zod.object({
+  "fixture": zod.object({
+  "id": zod.number(),
+  "seasonStartYear": zod.number(),
+  "ageGroup": zod.string().nullable(),
+  "grade": zod.string().nullable(),
+  "teamName": zod.string().nullable().describe('The club\'s own junior team'),
+  "opponentName": zod.string().nullable(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date().nullable(),
+  "isHome": zod.boolean().nullable(),
+  "status": zod.string().nullable().describe('PlayHQ match status as last synced (e.g. UPCOMING)'),
+  "hasTeamList": zod.boolean().describe('A published team list exists for this fixture')
+}),
+  "season": zod.number().describe('Season start year whose shirt numbers are shown'),
+  "shirtNumbersEnabled": zod.boolean(),
+  "teamList": zod.object({
+  "players": zod.array(zod.object({
+  "order": zod.number(),
+  "participantId": zod.string(),
+  "name": zod.string().describe('Full name'),
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).describe('Captain \/ vice-captain \/ wicket-keeper marker').nullable(),
+  "shirtNumber": zod.string().nullable(),
+  "isPrivate": zod.boolean().describe('Withheld on public pages (private in PlayHQ, not overridden)'),
+  "isKnown": zod.boolean().describe('Still one of the club\'s junior participants')
+})),
+  "isPublished": zod.boolean(),
+  "source": zod.enum(['playhq', 'admin']).describe('Who wrote the list; an admin\'s list is never overwritten by the sync'),
+  "updatedAt": zod.coerce.date()
+}).nullable(),
+  "candidates": zod.array(zod.object({
+  "participantId": zod.string(),
+  "name": zod.string(),
+  "isPrivate": zod.boolean(),
+  "shirtNumber": zod.string().nullable(),
+  "teams": zod.string().nullable(),
+  "lastSeason": zod.string().nullable()
+}))
+})
+
+
+/**
  * @summary List junior matches, filterable by season and age group
  */
 export const ListJuniorMatchesQueryParams = zod.object({
@@ -11003,10 +11172,15 @@ export const ListJuniorMatchesResponse = zod.array(ListJuniorMatchesResponseItem
 
 
 /**
+ * Public lines are named by the club's junior naming rules: a private, non-overridden player is "Private Player" with no participant id; the club's own players follow its naming style; opposition players show as initials ("O. G.").
  * @summary Get a single junior match with its full scorecard
  */
 export const GetJuniorMatchParams = zod.object({
   "id": zod.coerce.number()
+})
+
+export const GetJuniorMatchQueryParams = zod.object({
+  "includePrivate": zod.coerce.boolean().optional().describe('Return full names and participant ids on every line (honoured only for a signed-in admin of this club — silently ignored otherwise). Used by the admin scorecard editor.')
 })
 
 export const GetJuniorMatchResponse = zod.object({
@@ -11272,7 +11446,7 @@ export const RemoveJuniorRosterEntryParams = zod.object({
 
 
 /**
- * @summary Correct a junior participant's display name or privacy flag (admin, journalled)
+ * @summary Correct a junior participant's display name, privacy flag or privacy override (admin, journalled)
  */
 export const UpdateJuniorParticipantParams = zod.object({
   "id": zod.coerce.string().describe('PlayHQ participant_id')
@@ -11283,14 +11457,32 @@ export const UpdateJuniorParticipantParams = zod.object({
 
 export const UpdateJuniorParticipantBody = zod.object({
   "displayName": zod.string().min(1).optional(),
-  "isPrivate": zod.boolean().optional()
+  "isPrivate": zod.boolean().optional(),
+  "privacyOverride": zod.boolean().optional().describe('Show a private player\'s name publicly anyway (true) or withhold it again (false). Can only be switched on for a private player.')
 })
 
 export const UpdateJuniorParticipantResponse = zod.object({
   "participantId": zod.string(),
   "displayName": zod.string(),
-  "isPrivate": zod.boolean()
+  "isPrivate": zod.boolean(),
+  "privacyOverride": zod.boolean().describe('An admin has chosen to show this private player\'s name publicly.'),
+  "privacyOverrideBy": zod.string().nullable().describe('The admin who set the override.'),
+  "privacyOverrideAt": zod.coerce.date().nullable().describe('When the override was set.')
 })
+
+
+/**
+ * @summary The club's private junior players whose names an admin has chosen to show publicly (admin only)
+ */
+export const ListJuniorPrivacyOverridesResponseItem = zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "isPrivate": zod.boolean(),
+  "privacyOverride": zod.boolean().describe('An admin has chosen to show this private player\'s name publicly.'),
+  "privacyOverrideBy": zod.string().nullable().describe('The admin who set the override.'),
+  "privacyOverrideAt": zod.coerce.date().nullable().describe('When the override was set.')
+})
+export const ListJuniorPrivacyOverridesResponse = zod.array(ListJuniorPrivacyOverridesResponseItem)
 
 
 /**
@@ -11345,7 +11537,10 @@ export const ListJuniorPlayersResponseItem = zod.object({
   "runs": zod.number().optional(),
   "wickets": zod.number().optional(),
   "seniorPlayerId": zod.number().nullish().describe('Optional cross-reference to a senior player record. For profile linking only; never combines stats.'),
-  "isPrivate": zod.boolean().optional().describe('Only present\/true on admin requests with includePrivate.')
+  "isPrivate": zod.boolean().optional().describe('Only present\/true on admin requests with includePrivate.'),
+  "privacyOverride": zod.boolean().optional().describe('Admin requests with includePrivate only. A private player an admin names publicly.'),
+  "privacyOverrideBy": zod.string().nullish().describe('Admin requests with includePrivate only. The admin who set the override.'),
+  "privacyOverrideAt": zod.coerce.date().nullish().describe('Admin requests with includePrivate only. When the override was set.')
 })
 export const ListJuniorPlayersResponse = zod.array(ListJuniorPlayersResponseItem)
 
@@ -11909,7 +12104,9 @@ export const GetJuniorMatchDisplaySettingsResponse = zod.object({
   "defaultAgeGroup": zod.string().describe('Age group pre-selected on first load. Empty string = All age groups.'),
   "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).describe('How the default season is chosen: latest available season, a specific season, or all seasons.'),
   "defaultSeason": zod.string().nullish().describe('Specific season string (e.g. \"2024\/25\") used when defaultSeasonMode = specific.'),
-  "ageGroupOrder": zod.array(zod.string()).describe('Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones.')
+  "ageGroupOrder": zod.array(zod.string()).describe('Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones.'),
+  "nameStyle": zod.enum(['full', 'first_initial', 'first']).describe('How public junior surfaces name the club\'s players: full name, first name and surname initial (\"Ollie G\"), or first name only.'),
+  "teamPublishing": zod.record(zod.string(), zod.record(zod.string(), zod.enum(['approval', 'auto']))).describe('Per-team social publishing, keyed by age group then team name. A team not listed needs approval; only \"auto\" lets its cards post themselves.')
 })
 
 
@@ -11920,14 +12117,18 @@ export const UpdateJuniorMatchDisplaySettingsBody = zod.object({
   "defaultAgeGroup": zod.string().optional(),
   "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).optional(),
   "defaultSeason": zod.string().nullish(),
-  "ageGroupOrder": zod.array(zod.string()).optional()
+  "ageGroupOrder": zod.array(zod.string()).optional(),
+  "nameStyle": zod.enum(['full', 'first_initial', 'first']).optional().describe('How public junior surfaces name the club\'s players: full name, first name and surname initial (\"Ollie G\"), or first name only.'),
+  "teamPublishing": zod.record(zod.string(), zod.record(zod.string(), zod.enum(['approval', 'auto']))).optional().describe('Per-team social publishing, keyed by age group then team name. A team not listed needs approval; only \"auto\" lets its cards post themselves.')
 })
 
 export const UpdateJuniorMatchDisplaySettingsResponse = zod.object({
   "defaultAgeGroup": zod.string().describe('Age group pre-selected on first load. Empty string = All age groups.'),
   "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).describe('How the default season is chosen: latest available season, a specific season, or all seasons.'),
   "defaultSeason": zod.string().nullish().describe('Specific season string (e.g. \"2024\/25\") used when defaultSeasonMode = specific.'),
-  "ageGroupOrder": zod.array(zod.string()).describe('Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones.')
+  "ageGroupOrder": zod.array(zod.string()).describe('Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones.'),
+  "nameStyle": zod.enum(['full', 'first_initial', 'first']).describe('How public junior surfaces name the club\'s players: full name, first name and surname initial (\"Ollie G\"), or first name only.'),
+  "teamPublishing": zod.record(zod.string(), zod.record(zod.string(), zod.enum(['approval', 'auto']))).describe('Per-team social publishing, keyed by age group then team name. A team not listed needs approval; only \"auto\" lets its cards post themselves.')
 })
 
 
@@ -12142,7 +12343,8 @@ export const GetTenantPlanResponse = zod.object({
   "socialStudio": zod.boolean(),
   "socialPublishing": zod.boolean().describe('Publishing drafts to Facebook and Instagram.'),
   "clubroomTv": zod.boolean(),
-  "curation": zod.boolean()
+  "curation": zod.boolean(),
+  "juniors": zod.boolean().describe('Junior PlayHQ sync. On the club and pro plans; not enforced while billing is dormant, when the platform-admin junior sync switch is the effective control.')
 }).describe('Per-feature flags resolved from the tenant\'s plan.')
 })
 
@@ -12283,6 +12485,8 @@ export const ListAllTenantsResponseItem = zod.object({
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
+  "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 export const ListAllTenantsResponse = zod.array(ListAllTenantsResponseItem)
@@ -12364,6 +12568,8 @@ export const GetAdminTenantResponse = zod.object({
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
+  "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.'),
   "admins": zod.array(zod.object({
@@ -12384,8 +12590,10 @@ export const UpdateAdminTenantParams = zod.object({
 export const UpdateAdminTenantBody = zod.object({
   "plan": zod.enum(['free', 'club', 'pro']).optional(),
   "customDomain": zod.string().nullish(),
-  "playhqSyncEnabled": zod.boolean().optional().describe('Scheduled PlayHQ sync for this tenant. When false the hourly runner plans nothing for its organisation and ingest does not project its fixtures.')
-}).describe('Partial update of a tenant\'s plan, custom domain and\/or PlayHQ sync switch.')
+  "playhqSyncEnabled": zod.boolean().optional().describe('Scheduled PlayHQ sync for this tenant. When false the hourly runner plans nothing for its organisation and ingest does not project its fixtures.'),
+  "juniorSyncEnabled": zod.boolean().optional().describe('Junior PlayHQ sync for this tenant. Takes effect only while PlayHQ sync is on and the plan includes juniors; when off, junior grades are dropped at ingest.'),
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID when its juniors run under a separate organisation. Null or blank clears it (juniors then use playhqOrgId). Unique across tenants.')
+}).describe('Partial update of a tenant\'s plan, custom domain, PlayHQ sync switch and\/or junior sync settings. Platform admin only; the club-admin brand update and signup schemas carry none of these.')
 
 export const updateAdminTenantResponseHeroImagesOneHomeMax = 2048;
 
@@ -12438,6 +12646,8 @@ export const UpdateAdminTenantResponse = zod.object({
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
+  "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 
@@ -12546,6 +12756,8 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
+  "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.'),
   "admins": zod.array(zod.object({
@@ -12614,6 +12826,8 @@ export const ArchiveAdminTenantResponse = zod.object({
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
+  "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 
@@ -12676,6 +12890,8 @@ export const RestoreAdminTenantResponse = zod.object({
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
+  "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 

@@ -1,4 +1,5 @@
 export * from "./load";
+export * from "./grade-classes";
 export * from "./project";
 export * from "./pool";
 export * from "./cadence";
@@ -10,3 +11,4 @@ export * from "./central-transform";
 export * from "./central-project";
 export * from "./team-lists";
 export * from "./shirt-number-sync";
+export * from "./junior-project";

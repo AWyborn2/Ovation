@@ -204,6 +204,28 @@ describe("PATCH /tenant-brand: self-service branding update", () => {
     expect(row.customDomain).toBeNull();
   });
 
+  it("rejects a body carrying only the junior sync fields, which stay platform-admin only", async () => {
+    // Neither field is on UpdateTenantBrandBody, so validation strips both and the
+    // request has nothing left to update (400); with a brand field alongside they are
+    // simply ignored. Either way the tenant row never changes.
+    await request(app)
+      .patch("/api/tenant-brand")
+      .set("Cookie", adminACookie)
+      .set("x-tenant-id", String(tenantAId))
+      .send({ juniorSyncEnabled: true, playhqJuniorOrgId: `smuggled-${STAMP}` })
+      .expect(400);
+    await request(app)
+      .patch("/api/tenant-brand")
+      .set("Cookie", adminACookie)
+      .set("x-tenant-id", String(tenantAId))
+      .send({ shortName: "Iso A", juniorSyncEnabled: true, playhqJuniorOrgId: `smuggled-${STAMP}` })
+      .expect(200);
+
+    const [row] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantAId));
+    expect(row.juniorSyncEnabled).toBe(false);
+    expect(row.playhqJuniorOrgId).toBeNull();
+  });
+
   it("cannot update a different tenant's branding (cross-tenant isolation)", async () => {
     const res = await request(app)
       .patch("/api/tenant-brand")

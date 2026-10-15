@@ -66,6 +66,13 @@ const JUNIOR_NAV_FALLBACK: ResolvedNavItem[] = [
     description: "",
   },
   {
+    label: "Fixtures",
+    target: "/juniors/fixtures",
+    isExternal: false,
+    iconKey: "calendarDays",
+    description: "",
+  },
+  {
     label: "Premierships",
     target: "/juniors/premierships",
     isExternal: false,

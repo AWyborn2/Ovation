@@ -306,7 +306,8 @@ function centralCompType(t: string | null | undefined): string | null {
   return v === "One Day" || v === "T20" ? v : null;
 }
 
-function num(v: string | number | null | undefined): number | null {
+/** A finite number from a PlayHQ value (number or numeric text); null otherwise. */
+export function num(v: string | number | null | undefined): number | null {
   if (v === null || v === undefined || v === "") return null;
   const n = typeof v === "number" ? v : Number(v);
   return Number.isFinite(n) ? n : null;

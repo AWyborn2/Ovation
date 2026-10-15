@@ -18,7 +18,8 @@ import { loadMatchDetail, loadCentralMatchDetail } from "./match-detail";
 import { loadJuniorMatchDetail } from "./match-summary-drafter";
 import { parseMatchDate } from "./match-date";
 import { clubTimeToUtc } from "./round-schedules";
-import { getPrivateIds, MASK_NAME } from "./junior-helpers";
+import { getPrivateIds } from "./junior-helpers";
+import { JUNIOR_WITHHELD_NAME } from "./junior-names";
 import { getTenantBrand } from "./tenant-brand";
 import { beforeBoundary, loadClubOverlayData } from "./club-overlay";
 import {
@@ -99,7 +100,7 @@ export async function carouselContent(
         junior && (!p.participantId || privateIds.has(p.participantId))
           ? {
               ...p,
-              displayName: MASK_NAME,
+              displayName: JUNIOR_WITHHELD_NAME,
               playerId: undefined,
               participantId: undefined,
               debut: false,
@@ -131,7 +132,6 @@ export async function carouselContent(
     .select()
     .from(juniorMatchesTable)
     .where(eq(juniorMatchesTable.tenantId, tenantId));
-  const privateIds = await getPrivateIds(tenantId);
   const brand = await getTenantBrand(tenantId);
   const available: FixtureRow[] = [];
   let undated = 0;
@@ -173,7 +173,7 @@ export async function carouselContent(
     ]);
     if (seen.has(identity)) continue;
     const detail = match.junior
-      ? await loadJuniorMatchDetail(match.id, tenantId, privateIds)
+      ? await loadJuniorMatchDetail(match.id, tenantId)
       : source.kind === "central"
         ? await loadCentralMatchDetail(source, match.id)
         : await loadMatchDetail(match.id, tenantId);

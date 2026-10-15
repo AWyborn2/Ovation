@@ -25,4 +25,16 @@ export interface JuniorPlayerSummary {
   seniorPlayerId?: number | null;
   /** Only present/true on admin requests with includePrivate. */
   isPrivate?: boolean;
+  /** Admin requests with includePrivate only. A private player an admin names publicly. */
+  privacyOverride?: boolean;
+  /**
+     * Admin requests with includePrivate only. The admin who set the override.
+     * @nullable
+     */
+  privacyOverrideBy?: string | null;
+  /**
+     * Admin requests with includePrivate only. When the override was set.
+     * @nullable
+     */
+  privacyOverrideAt?: Date | null;
 }

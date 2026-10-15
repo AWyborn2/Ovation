@@ -6,8 +6,12 @@ import {
   juniorMatchRostersTable,
   juniorParticipantsTable,
   juniorMatchesTable,
+  type JuniorNameStyle,
 } from "@workspace/db";
 import { BALLS_PER_OVER } from "./junior-cricket";
+import { juniorParticipantIsPublic } from "./junior-helpers";
+import { formatJuniorName } from "./junior-names";
+import { juniorParticipantJoin } from "./junior-participant-scope";
 
 /**
  * Junior leaderboard query helpers, extracted from routes/juniors.ts.
@@ -39,7 +43,6 @@ export async function rosterGamesByParticipant(
   scope: LeaderScope = {},
 ): Promise<Map<string, number>> {
   const conds = [
-    ofTenant(tenantId),
     eq(juniorMatchRostersTable.isHallsHead, true),
     isNotNull(juniorMatchRostersTable.participantId),
   ];
@@ -52,7 +55,7 @@ export async function rosterGamesByParticipant(
     })
     .from(juniorMatchRostersTable)
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchRostersTable.matchId))
-    .where(and(...conds))
+    .where(and(ofTenant(tenantId), ...conds))
     .groupBy(juniorMatchRostersTable.participantId);
   return new Map(
     rows
@@ -61,11 +64,16 @@ export async function rosterGamesByParticipant(
   );
 }
 
-export async function battingLeaders(tenantId: number, limit: number, scope: LeaderScope = {}) {
+export async function battingLeaders(
+  tenantId: number,
+  limit: number,
+  scope: LeaderScope = {},
+  style: JuniorNameStyle = "full",
+) {
   const conds = [
     ofTenant(tenantId),
     eq(juniorMatchBattingTable.isHallsHead, true),
-    eq(juniorParticipantsTable.isPrivate, false),
+    juniorParticipantIsPublic,
   ];
   if (scope.season) conds.push(eq(juniorMatchesTable.season, scope.season));
   if (scope.ageGroup) conds.push(eq(juniorMatchesTable.ageGroup, scope.ageGroup));
@@ -81,7 +89,7 @@ export async function battingLeaders(tenantId: number, limit: number, scope: Lea
     .from(juniorMatchBattingTable)
     .innerJoin(
       juniorParticipantsTable,
-      eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
+      juniorParticipantJoin(juniorMatchBattingTable.participantId, tenantId),
     )
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
     .where(and(...conds))
@@ -91,7 +99,7 @@ export async function battingLeaders(tenantId: number, limit: number, scope: Lea
     .limit(limit);
   return rows.map((r) => ({
     participantId: r.participantId,
-    displayName: r.displayName ?? "",
+    displayName: formatJuniorName(r.displayName, style),
     runs: r.runs,
     innings: r.innings,
     highScore: r.highScore,
@@ -99,11 +107,16 @@ export async function battingLeaders(tenantId: number, limit: number, scope: Lea
   }));
 }
 
-export async function bowlingLeaders(tenantId: number, limit: number, scope: LeaderScope = {}) {
+export async function bowlingLeaders(
+  tenantId: number,
+  limit: number,
+  scope: LeaderScope = {},
+  style: JuniorNameStyle = "full",
+) {
   const conds = [
     ofTenant(tenantId),
     eq(juniorMatchBowlingTable.isHallsHead, true),
-    eq(juniorParticipantsTable.isPrivate, false),
+    juniorParticipantIsPublic,
   ];
   if (scope.season) conds.push(eq(juniorMatchesTable.season, scope.season));
   if (scope.ageGroup) conds.push(eq(juniorMatchesTable.ageGroup, scope.ageGroup));
@@ -120,7 +133,7 @@ export async function bowlingLeaders(tenantId: number, limit: number, scope: Lea
     .from(juniorMatchBowlingTable)
     .innerJoin(
       juniorParticipantsTable,
-      eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
+      juniorParticipantJoin(juniorMatchBowlingTable.participantId, tenantId),
     )
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
     .where(and(...conds))
@@ -133,7 +146,7 @@ export async function bowlingLeaders(tenantId: number, limit: number, scope: Lea
   const rosterGames = await rosterGamesByParticipant(tenantId, scope);
   return rows.map((r) => ({
     participantId: r.participantId,
-    displayName: r.displayName ?? "",
+    displayName: formatJuniorName(r.displayName, style),
     wickets: r.wickets,
     matches: rosterGames.get(r.participantId) ?? 0,
     bestWickets: r.bestWickets,
@@ -141,7 +154,11 @@ export async function bowlingLeaders(tenantId: number, limit: number, scope: Lea
   }));
 }
 
-export async function highestScoreInnings(tenantId: number, limit: number) {
+export async function highestScoreInnings(
+  tenantId: number,
+  limit: number,
+  style: JuniorNameStyle = "full",
+) {
   const rows = await db
     .select({
       participantId: juniorParticipantsTable.participantId,
@@ -157,14 +174,14 @@ export async function highestScoreInnings(tenantId: number, limit: number) {
     .from(juniorMatchBattingTable)
     .innerJoin(
       juniorParticipantsTable,
-      eq(juniorParticipantsTable.participantId, juniorMatchBattingTable.participantId),
+      juniorParticipantJoin(juniorMatchBattingTable.participantId, tenantId),
     )
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBattingTable.matchId))
     .where(
       and(
         ofTenant(tenantId),
         eq(juniorMatchBattingTable.isHallsHead, true),
-        eq(juniorParticipantsTable.isPrivate, false),
+        juniorParticipantIsPublic,
         isNotNull(juniorMatchBattingTable.runs),
       ),
     )
@@ -172,7 +189,7 @@ export async function highestScoreInnings(tenantId: number, limit: number) {
     .limit(limit);
   return rows.map((r) => ({
     participantId: r.participantId,
-    displayName: r.displayName ?? "",
+    displayName: formatJuniorName(r.displayName, style),
     runs: r.runs ?? 0,
     balls: r.balls,
     season: r.season,
@@ -183,7 +200,11 @@ export async function highestScoreInnings(tenantId: number, limit: number) {
   }));
 }
 
-export async function bestBowlingFigures(tenantId: number, limit: number) {
+export async function bestBowlingFigures(
+  tenantId: number,
+  limit: number,
+  style: JuniorNameStyle = "full",
+) {
   const rows = await db
     .select({
       participantId: juniorParticipantsTable.participantId,
@@ -199,14 +220,14 @@ export async function bestBowlingFigures(tenantId: number, limit: number) {
     .from(juniorMatchBowlingTable)
     .innerJoin(
       juniorParticipantsTable,
-      eq(juniorParticipantsTable.participantId, juniorMatchBowlingTable.participantId),
+      juniorParticipantJoin(juniorMatchBowlingTable.participantId, tenantId),
     )
     .innerJoin(juniorMatchesTable, eq(juniorMatchesTable.id, juniorMatchBowlingTable.matchId))
     .where(
       and(
         ofTenant(tenantId),
         eq(juniorMatchBowlingTable.isHallsHead, true),
-        eq(juniorParticipantsTable.isPrivate, false),
+        juniorParticipantIsPublic,
         isNotNull(juniorMatchBowlingTable.wickets),
       ),
     )
@@ -214,7 +235,7 @@ export async function bestBowlingFigures(tenantId: number, limit: number) {
     .limit(limit);
   return rows.map((r) => ({
     participantId: r.participantId,
-    displayName: r.displayName ?? "",
+    displayName: formatJuniorName(r.displayName, style),
     wickets: r.wickets ?? 0,
     runs: r.runs ?? 0,
     season: r.season,

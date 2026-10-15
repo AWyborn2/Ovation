@@ -72,6 +72,13 @@ export type DraftUpsert = {
    * existed). The match returned gets the key backfilled.
    */
   findLegacy?: () => Promise<SocialDraftRow | null>;
+  /**
+   * `false`: never auto-ready. The draft gets no auto-post deadline on insert, and a
+   * refresh of a draft still in review clears any it had. Junior drafts whose team is
+   * not explicitly set to auto-post use it (junior PlayHQ sync plan KTD14). Default
+   * (true): the club's auto-post window, fixed at creation.
+   */
+  autoReady?: boolean;
 };
 
 /** Key-order-independent JSON equality for card inputs. */
@@ -337,7 +344,8 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
           sourceImportedAt: importedAt,
           // The auto-post deadline, fixed at creation from the club's window
           // (KTD4); only read while auto-post is on.
-          autoReadyAt: await autoReadyAtFor(input.tenantId, importedAt),
+          autoReadyAt:
+            input.autoReady === false ? null : await autoReadyAtFor(input.tenantId, importedAt),
           // Pack and caption resolve at creation (KTD8); the photo is a
           // snapshot so library edits never change the draft (KTD6).
           packId: e.packId,
@@ -401,6 +409,12 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
     // New data can change how a templated card lays out: it owes a fresh
     // layout check before automation can touch it again (KTD10).
     ...(current.templateVersion !== null ? { layoutCheckPending: true } : {}),
+    // A never-auto-ready draft still in review loses any deadline it had (KTD14). A
+    // ready one is left to the sweep's re-timing, which tells auto-promotion apart
+    // from an admin's approval.
+    ...(input.autoReady === false && normalizeDraftStatus(current.status) === "awaiting_review"
+      ? { autoReadyAt: null }
+      : {}),
   };
   const row = await db.transaction(async (tx) => {
     await recordDraftRevision(current, "refresh", tx);

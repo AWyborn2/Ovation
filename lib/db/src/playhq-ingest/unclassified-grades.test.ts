@@ -38,6 +38,14 @@ describe("findUnclassifiedGrades", () => {
     ).toEqual([]);
   });
 
+  it("stays quiet for any grade the PlayHQ grade classifier calls junior", () => {
+    // Stored before the ingest learned the loader's age banding, these can still sit in
+    // playhq.grades with is_junior = false until the next ingest reclassifies them.
+    expect(
+      findUnclassifiedGrades([use("Peel Girls League"), use("Year 7 Gold"), use("U13 Boys")]),
+    ).toEqual([]);
+  });
+
   it("reports the grades the app has no equivalent for, with the classifier's reason", () => {
     const [r] = findUnclassifiedGrades([use("Female C Grade", 3)]);
     expect(r?.reason).toMatch(/Female C/);

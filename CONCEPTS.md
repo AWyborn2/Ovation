@@ -53,6 +53,10 @@ _Avoid:_ cap number, squad number
 
 A tenant's per-season list of people and their shirt numbers, seeded from the club's squad register (the availability squad import, via "Add squad to register") and the club's number spreadsheet, and extended by synced lineups. An entry stays held — admin-only — until a lineup links it to a player who has played.
 
+### Junior sync
+
+The per-club extension of the PlayHQ sync that captures a club's junior grades from its own PlayHQ organisation, from 2026/27 onward, into junior-only fixtures, team lists, match data and players. It runs only for clubs where it is switched on; for every other club junior grades are still dropped at ingest.
+
 ## Branding and onboarding
 
 ### Concierge onboarding

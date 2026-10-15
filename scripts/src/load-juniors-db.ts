@@ -1,8 +1,14 @@
 /**
- * load-juniors-db.ts — load the club's self-contained JUNIORS PostgreSQL export
+ * load-juniors-db.ts — load Halls Head's self-contained JUNIORS PostgreSQL export
  * into the app's isolated junior_* tables. Junior data is kept COMPLETELY
  * SEPARATE from the senior data by club decision; nothing here touches the
  * senior tables.
+ *
+ * Scope (junior PlayHQ sync plan KTD6, R12, AE2): tenant 1 only, seasons before
+ * 2026/27 only, ids below the junior sync id band (200,000,000+) — the junior
+ * PlayHQ sync owns 2026/27 onward. Participants are upserted, never deleted. The
+ * ETL refuses to run (and rolls back) if the dump would touch another club's rows,
+ * a synced season or sync-made rows. Every count below is tenant 1's.
  *
  *   pnpm --filter @workspace/scripts run load-juniors-db            # preview only
  *   pnpm --filter @workspace/scripts run load-juniors-db -- --commit
@@ -15,8 +21,9 @@
  *      (distinct from the master loader's `staging` schema).
  *   3. PREVIEW: print staging row counts + current public counts. (default)
  *   4. --commit: run the SQL ETL (scripts/sql/juniors-etl.sql) inside a single
- *      transaction — it fully replaces the junior_* tables and re-applies any
- *      admin-set junior↔senior cross-reference links.
+ *      transaction — it replaces tenant 1's pre-2026 junior matches, lines and
+ *      premierships, upserts participants, and re-applies admin corrections and
+ *      merges. Senior cross-links stay on their (never deleted) participant rows.
  *
  * The ETL is pure SQL; this file only orchestrates psql and reports.
  */
@@ -24,6 +31,12 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  LOADER_TENANT_ID,
+  TRACKED_TABLES,
+  protectedRowsSql,
+  tenantCountSql,
+} from "./load-juniors-db-core";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..", "..");
@@ -40,17 +53,6 @@ if (!DATABASE_URL) {
 const args = process.argv.slice(2);
 const commit = args.includes("--commit");
 const fileArg = args.find((a) => a.startsWith("--file="))?.slice("--file=".length);
-
-/** Public junior_* tables the ETL replaces — used for the preview diff. */
-const TRACKED_TABLES = [
-  "junior_matches",
-  "junior_match_batting",
-  "junior_match_bowling",
-  "junior_match_rosters",
-  "junior_participants",
-  "junior_premierships",
-  "junior_premiership_players",
-];
 
 /** Staging table names as they appear in the dump. */
 const STAGING_TABLES = [
@@ -90,6 +92,19 @@ function counts(schema: string, tables: string[]): Record<string, number | null>
   return out;
 }
 
+/** Tenant 1's row count in each tracked public table. */
+function tenantCounts(): Record<string, number | null> {
+  const out: Record<string, number | null> = {};
+  for (const t of TRACKED_TABLES) {
+    try {
+      out[t] = Number(psql(tenantCountSql(t)));
+    } catch {
+      out[t] = null;
+    }
+  }
+  return out;
+}
+
 function pickDump(): string {
   if (fileArg) return fileArg;
   const matches = readdirSync(assetsDir)
@@ -123,7 +138,8 @@ function main(): void {
   console.log(`\n=== load-juniors-db (${commit ? "COMMIT" : "PREVIEW"}) ===`);
   console.log(`dump: ${dumpPath}`);
 
-  const before = counts("public", TRACKED_TABLES);
+  const before = tenantCounts();
+  const protectedBefore = psql(protectedRowsSql());
 
   console.log("\nbuilding juniors_staging schema...");
   buildStaging(dumpPath);
@@ -132,7 +148,7 @@ function main(): void {
   for (const [t, n] of Object.entries(staging)) console.log(`  ${t.padEnd(28)} ${n ?? "-"}`);
 
   if (!commit) {
-    console.log("\n--- PREVIEW: current public row counts (no changes made) ---");
+    console.log(`\n--- PREVIEW: tenant ${LOADER_TENANT_ID} row counts (no changes made) ---`);
     for (const t of TRACKED_TABLES) console.log(`  ${t.padEnd(28)} ${before[t] ?? "-"}`);
     console.log("\nRe-run with --commit to apply the load.");
     return;
@@ -141,8 +157,9 @@ function main(): void {
   console.log("\nrunning ETL (single transaction)...");
   psqlFile(etlSql, true);
 
-  const after = counts("public", TRACKED_TABLES);
-  console.log("\n--- table row counts: before -> after ---");
+  const after = tenantCounts();
+  const protectedAfter = psql(protectedRowsSql());
+  console.log(`\n--- tenant ${LOADER_TENANT_ID} row counts: before -> after ---`);
   for (const t of TRACKED_TABLES) {
     console.log(
       `  ${t.padEnd(28)} ${String(before[t] ?? "-").padStart(6)} -> ${String(
@@ -151,11 +168,21 @@ function main(): void {
     );
   }
 
-  const privateCount = psql(`SELECT count(*) FROM public.junior_participants WHERE is_private`);
+  const t = LOADER_TENANT_ID;
+  const privateCount = psql(
+    `SELECT count(*) FROM public.junior_participants WHERE tenant_id = ${t} AND is_private`,
+  );
   const linkCount = psql(
-    `SELECT count(*) FROM public.junior_participants WHERE senior_player_id IS NOT NULL`,
+    `SELECT count(*) FROM public.junior_participants WHERE tenant_id = ${t} AND senior_player_id IS NOT NULL`,
   );
   console.log("\n--- verification ---");
+  console.log(`  synced / 2026+ matches (untouched):   ${protectedBefore} -> ${protectedAfter}`);
+  if (protectedBefore !== protectedAfter) {
+    console.log(
+      `\n  *** WARNING: the number of synced / 2026+ junior matches changed during the ` +
+        `load. The loader must never touch them — investigate before trusting junior data.`,
+    );
+  }
   console.log(`  private participants (hidden by API): ${privateCount}`);
   console.log(`  preserved junior->senior links:       ${linkCount}`);
 
@@ -164,32 +191,34 @@ function main(): void {
   // ids, a correction whose target no longer resolves is SKIPPED, not applied
   // to the wrong row. Count and report unresolved corrections loudly — the
   // journal is never deleted, so a skip means "review/re-anchor", not "lost".
-  const correctionCount = psql(`SELECT count(*) FROM public.junior_stat_corrections`);
+  const correctionCount = psql(
+    `SELECT count(*) FROM public.junior_stat_corrections WHERE tenant_id = ${t}`,
+  );
   const skippedCorrections = psql(`
     SELECT count(*) FROM public.junior_stat_corrections c
-    WHERE
+    WHERE c.tenant_id = ${t} AND (
       (c.target_table = 'junior_matches' AND NOT EXISTS (
         SELECT 1 FROM public.junior_matches m
-        WHERE m.id = c.target_id::int
+        WHERE m.id = c.target_id::int AND m.tenant_id = ${t}
           AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)))
       OR (c.target_table = 'junior_match_batting' AND c.op <> 'delete' AND NOT EXISTS (
         SELECT 1 FROM public.junior_match_batting t
-        JOIN public.junior_matches m ON m.id = t.match_id
+        JOIN public.junior_matches m ON m.id = t.match_id AND m.tenant_id = ${t}
         WHERE t.id = c.target_id::int
           AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)))
       OR (c.target_table = 'junior_match_bowling' AND c.op <> 'delete' AND NOT EXISTS (
         SELECT 1 FROM public.junior_match_bowling t
-        JOIN public.junior_matches m ON m.id = t.match_id
+        JOIN public.junior_matches m ON m.id = t.match_id AND m.tenant_id = ${t}
         WHERE t.id = c.target_id::int
           AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)))
       OR (c.target_table = 'junior_match_rosters' AND c.op <> 'delete' AND NOT EXISTS (
         SELECT 1 FROM public.junior_match_rosters t
-        JOIN public.junior_matches m ON m.id = t.match_id
+        JOIN public.junior_matches m ON m.id = t.match_id AND m.tenant_id = ${t}
         WHERE t.id = c.target_id::int
           AND (c.playhq_match_id IS NULL OR m.playhq_match_id = c.playhq_match_id)))
       OR (c.target_table = 'junior_participants' AND NOT EXISTS (
         SELECT 1 FROM public.junior_participants p
-        WHERE p.participant_id = c.target_id))
+        WHERE p.tenant_id = ${t} AND p.participant_id = c.target_id)))
   `);
   console.log(`  admin stat corrections journalled:    ${correctionCount}`);
 
@@ -199,21 +228,23 @@ function main(): void {
   // from the new dump is SKIPPED entirely (duplicate temporarily live again)
   // and reported here; the map row remains, so a later dump containing the
   // keeper self-heals.
-  const mergeCount = psql(`SELECT count(*) FROM public.junior_participant_merges`);
+  const mergeCount = psql(
+    `SELECT count(*) FROM public.junior_participant_merges WHERE tenant_id = ${t}`,
+  );
   const skippedMerges = psql(`
     SELECT count(*) FROM public.junior_participant_merges m
-    WHERE NOT EXISTS (
+    WHERE m.tenant_id = ${t} AND NOT EXISTS (
       SELECT 1 FROM public.junior_participants k
-      WHERE k.participant_id = m.keeper_participant_id
+      WHERE k.tenant_id = ${t} AND k.participant_id = m.keeper_participant_id
     )
   `);
   const liveDuplicates = psql(`
     SELECT count(*) FROM public.junior_participant_merges m
     JOIN public.junior_participants d
-      ON d.participant_id = m.duplicate_participant_id
-    WHERE EXISTS (
+      ON d.tenant_id = ${t} AND d.participant_id = m.duplicate_participant_id
+    WHERE m.tenant_id = ${t} AND EXISTS (
       SELECT 1 FROM public.junior_participants k
-      WHERE k.participant_id = m.keeper_participant_id
+      WHERE k.tenant_id = ${t} AND k.participant_id = m.keeper_participant_id
     )
   `);
   console.log(`  junior profile merges journalled:     ${mergeCount}`);

@@ -115,8 +115,10 @@ export async function cancelDraftPublications(
   draftId: number,
   reason: string,
   statuses: string[] = ["scheduled", "held"],
+  /** The executor: a transaction when the cancel must commit with another write. */
+  exec: Pick<typeof db, "update"> = db,
 ): Promise<number> {
-  const rows = await db
+  const rows = await exec
     .update(socialPublicationsTable)
     .set({ status: "cancelled", lastError: reason, updatedAt: new Date() })
     .where(
