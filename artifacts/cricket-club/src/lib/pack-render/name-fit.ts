@@ -54,6 +54,8 @@ export function fitFor(
   if (length <= capacity) return { scale: 1, lines: 1 };
   const oneLine = capacity / length;
   if (oneLine >= MIN_FIT) return { scale: oneLine, lines: 1 };
+  // One word can't wrap ("ABANDONED" in a WIN-sized headline): shrink it to fit.
+  if (words && words.length === 1) return { scale: oneLine, lines: 1 };
   const longest = words && words.length > 1 ? balancedLongestLine(words) : length / 2;
   return { scale: Math.max(MIN_FIT, Math.min(1, capacity / longest)), lines: 2 };
 }
