@@ -27,11 +27,7 @@ import {
   type PostingSchedule,
 } from "../lib/posting-schedule";
 import { slotOccurrences, STEP_MINUTES } from "../lib/posting-placement";
-import {
-  OPEN_DRAFT_STATUSES,
-  loadPostingSchedule,
-  withPlacementLock,
-} from "../lib/posting-writer";
+import { OPEN_DRAFT_STATUSES, loadPostingSchedule, withPlacementLock } from "../lib/posting-writer";
 import { countOpenCards } from "../lib/posting-switchover";
 import { CLUB_TIME_ZONE } from "../lib/round-schedules";
 import { notAnUntouchedEditorDraft } from "./social-drafts";
@@ -81,9 +77,7 @@ function warningsFor(
     const key = clubDate(c.at).key;
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
-  const overCapDays = new Set(
-    [...counts].filter(([, n]) => n > schedule.dailyCap).map(([k]) => k),
-  );
+  const overCapDays = new Set([...counts].filter(([, n]) => n > schedule.dailyCap).map(([k]) => k));
   const gapIds = new Set<number>();
   const gap = schedule.minGapMinutes * MINUTE;
   if (gap > 0) {
@@ -234,7 +228,11 @@ router.get("/social-calendar", requireAdmin, async (req, res): Promise<void> => 
             clubDate(cardTime(d) as Date).key === dayKey,
         );
         if (near && !covered) {
-          placeholders.push({ slotKind: kind, label: SLOT_KIND_LABELS[kind], at: at.toISOString() });
+          placeholders.push({
+            slotKind: kind,
+            label: SLOT_KIND_LABELS[kind],
+            at: at.toISOString(),
+          });
         }
       }
     }

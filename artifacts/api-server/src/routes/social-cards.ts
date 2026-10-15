@@ -171,7 +171,9 @@ router.patch(
       if (!before.enabled && after.enabled) switching = "on";
       if (before.enabled && !after.enabled) switching = "off";
     }
-    const calendarAfter = resolvePostingSchedule(postingSchedule ?? current.postingSchedule).enabled;
+    const calendarAfter = resolvePostingSchedule(
+      postingSchedule ?? current.postingSchedule,
+    ).enabled;
     // Auto-publish (Meta publishing R4, R5) rides on auto-post and a live
     // connection, and never publishes drafts older than the window allows.
     const autoPostAfter = parsed.data.autoPostEnabled ?? current.autoPostEnabled;

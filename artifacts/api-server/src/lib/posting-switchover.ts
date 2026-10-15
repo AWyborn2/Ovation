@@ -1,15 +1,6 @@
 import { and, eq, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
-import {
-  db,
-  socialDraftsTable,
-  socialPublicationsTable,
-  socialSettingsTable,
-} from "@workspace/db";
-import {
-  OPEN_DRAFT_STATUSES,
-  placeDraftIn,
-  withPlacementLock,
-} from "./posting-writer";
+import { db, socialDraftsTable, socialPublicationsTable, socialSettingsTable } from "@workspace/db";
+import { OPEN_DRAFT_STATUSES, placeDraftIn, withPlacementLock } from "./posting-writer";
 import type { PostingSchedule } from "./posting-schedule";
 
 /**

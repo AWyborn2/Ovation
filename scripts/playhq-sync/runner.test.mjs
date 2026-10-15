@@ -448,10 +448,21 @@ test("posting slots run before the scrapes, and a failure there doesn't fail the
       return { ok: true, status: 200, text: async () => JSON.stringify(SWEEP_OK) };
     if (url.endsWith("/watchdog"))
       return { ok: true, status: 200, text: async () => JSON.stringify(WATCHDOG_OK) };
-    return { ok: true, status: 200, text: async () => '{"status":"ok","fixtureChanges":0,"tenants":[]}' };
+    return {
+      ok: true,
+      status: 200,
+      text: async () => '{"status":"ok","fixtureChanges":0,"tenants":[]}',
+    };
   };
   const b = fakeBrowser([done]);
-  const r = await run({ env: ENV, fetchImpl, launch: b.launch, readHarness: async () => "H", sleep, log: () => {} });
+  const r = await run({
+    env: ENV,
+    fetchImpl,
+    launch: b.launch,
+    readHarness: async () => "H",
+    sleep,
+    log: () => {},
+  });
   assert.deepEqual(order, ["plans", "posting-slots", "ingest", "sweep", "watchdog"]);
   assert.deepEqual(r.failures, []);
 });

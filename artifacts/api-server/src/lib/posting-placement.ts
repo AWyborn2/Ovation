@@ -88,9 +88,7 @@ export function dayCount(at: Date, taken: Date[], timeZone: string = CLUB_TIME_Z
 /** Whether `at` keeps at least `gapMinutes` from every planned post. */
 export function gapOk(at: Date, taken: Date[], gapMinutes: number): boolean {
   const gap = gapMinutes * MINUTE;
-  return taken.every((t) =>
-    gap === 0 ? true : Math.abs(t.getTime() - at.getTime()) >= gap,
-  );
+  return taken.every((t) => (gap === 0 ? true : Math.abs(t.getTime() - at.getTime()) >= gap));
 }
 
 export function placeCard(input: PlacementInput): Date | null {
@@ -122,10 +120,7 @@ export function placeCard(input: PlacementInput): Date | null {
     }
 
     let at = slot.getTime() < earliest.getTime() ? earliest : slot;
-    while (
-      at.getTime() < windowEnd &&
-      at.getTime() <= input.horizonEnd.getTime()
-    ) {
+    while (at.getTime() < windowEnd && at.getTime() <= input.horizonEnd.getTime()) {
       if (
         dayCount(at, input.taken, tz) < input.dailyCap &&
         gapOk(at, input.taken, input.minGapMinutes)

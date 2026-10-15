@@ -68,7 +68,10 @@ describe("invalidPostingSchedule", () => {
     [{ ageLimitDays: 0 }, /age limit/],
     [{ kinds: { debuts: { slots: [{ day: 7, time: "18:00" }], collision: "space" } } }, /day/],
     [{ kinds: { debuts: { slots: [{ day: 1, time: "25:00" }], collision: "space" } } }, /time/],
-    [{ kinds: { debuts: { slots: [{ day: 1, time: "18:10" }], collision: "space" } } }, /15-minute/],
+    [
+      { kinds: { debuts: { slots: [{ day: 1, time: "18:10" }], collision: "space" } } },
+      /15-minute/,
+    ],
     [{ kinds: { nope: { slots: [], collision: "space" } } }, /Unknown card kind/],
   ] as const)("rejects %j", (patch, message) => {
     expect(invalidPostingSchedule(patch as never)).toMatch(message);

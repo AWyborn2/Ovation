@@ -17,6 +17,7 @@ import {
   socialPublicationsTable,
   notificationsTable,
   captionTemplatesTable,
+  type PostingScheduleRow,
 } from "@workspace/db";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 import { clubDate } from "../lib/posting-schedule";
@@ -33,15 +34,23 @@ const slots = [
   { day: 0, time: "18:00" },
   { day: 3, time: "18:00" },
 ];
-const SCHEDULE = {
+const SCHEDULE: PostingScheduleRow = {
   enabled: true,
   dailyCap: 2,
   minGapMinutes: 45,
   ageLimitDays: 7,
   kinds: Object.fromEntries(
-    ["results", "roundResults", "teamLists", "gameDay", "milestones", "debuts", "achievements", "roundUp", "other"].map(
-      (k) => [k, { slots, collision: k === "milestones" ? "roll" : "space" }],
-    ),
+    [
+      "results",
+      "roundResults",
+      "teamLists",
+      "gameDay",
+      "milestones",
+      "debuts",
+      "achievements",
+      "roundUp",
+      "other",
+    ].map((k) => [k, { slots, collision: k === "milestones" ? "roll" : "space" }]),
   ),
 };
 
@@ -345,7 +354,12 @@ describe("settings switch-over", () => {
       .send({ postingSchedule: { enabled: true } })
       .expect(200);
     expect(res.body.postingSchedule.enabled).toBe(true);
-    expect(res.body.postingSwitchover).toEqual({ placed: 1, pinned: 1, unscheduled: 0, restored: 0 });
+    expect(res.body.postingSwitchover).toEqual({
+      placed: 1,
+      pinned: 1,
+      unscheduled: 0,
+      restored: 0,
+    });
     const o = await load(open.id);
     expect(o.plannedBy).toBe("auto");
     expect(o.autoReadyAt?.getTime()).toBe(o.plannedAt?.getTime());
@@ -356,8 +370,18 @@ describe("settings switch-over", () => {
   });
 
   it("hands automatic cards back to auto-post when it is turned off", async () => {
-    const owned = await card({ status: "awaiting_review", plannedAt: future(2), plannedBy: "auto", autoReadyAt: future(2) });
-    const sentBack = await card({ status: "awaiting_review", plannedAt: future(3), plannedBy: "auto", autoReadyAt: null });
+    const owned = await card({
+      status: "awaiting_review",
+      plannedAt: future(2),
+      plannedBy: "auto",
+      autoReadyAt: future(2),
+    });
+    const sentBack = await card({
+      status: "awaiting_review",
+      plannedAt: future(3),
+      plannedBy: "auto",
+      autoReadyAt: null,
+    });
     const res = await api("patch", "/social-settings")
       .send({ postingSchedule: { enabled: false } })
       .expect(200);
