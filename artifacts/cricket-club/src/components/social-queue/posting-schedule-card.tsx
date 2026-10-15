@@ -78,13 +78,16 @@ export function PostingScheduleDialog({ open, onOpenChange, schedule, openCards 
   const [result, setResult] = useState<string | null>(null);
   const [adding, setAdding] = useState<Record<string, { day: number; time: string }>>({});
 
+  // Start from the saved schedule each time the dialog opens — not when a
+  // save refetches settings, which would wipe the result just shown.
   useEffect(() => {
     if (open) {
       setDraft(schedule);
       setError(null);
       setResult(null);
     }
-  }, [open, schedule]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const setKind = (key: keyof PostingSchedule["kinds"], kind: PostingKind) =>
     setDraft((d) => ({ ...d, kinds: { ...d.kinds, [key]: kind } }));

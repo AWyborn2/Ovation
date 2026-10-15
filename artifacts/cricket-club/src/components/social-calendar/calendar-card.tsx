@@ -72,7 +72,7 @@ export function CalendarCard({ card, compact, dragging, onOpen, onMoveTo, onPoin
         className="min-w-0 flex-1 px-1.5 py-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => onOpen(card)}
         aria-label={`${heading}, ${at ? formatClubTime(at) : "no time"}, ${state}${
-          card.warning ? `. ${card.warning}` : ""
+          card.warning ? `. ${card.warning.replace(/\.$/, "")}` : ""
         }. Open`}
       >
         <span className="block truncate font-semibold">{heading}</span>
