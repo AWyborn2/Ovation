@@ -1,14 +1,16 @@
 /**
- * Balanced card sets U5 — the Round cards settings: per-match or whole-round
- * drafting for game day and team lists, and the weekend wrap's day and time.
+ * Round carousel times (balanced card sets U5; Posting Plan R20): the day and
+ * time for each round carousel the Posting Plan turns on. Which cards post as
+ * a round carousel is chosen on the Posting Plan tab.
  */
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
 import type { SocialSettings } from "@workspace/api-client-react";
+import { findPostingStyle, planFromStyle } from "@workspace/scorecard/posting-plan";
 import {
   RoundSchedulesCard,
-  describeSchedule,
   hourLabel,
+  whenLabel,
 } from "@/components/social-queue/round-schedules-card";
 import { renderAt } from "@/test/render";
 
@@ -17,40 +19,49 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const SETTINGS = {
-  familyConfig: {
-    results: { enabled: true, grades: {} },
-    achievements: { enabled: false, grades: {} },
-    roundup: { enabled: true, grades: {} },
-    matchday: { enabled: true, grades: {} },
-  },
-  roundSchedules: {
-    gameDay: { mode: "perFixture", day: 4, hour: 18 },
-    teamLists: { mode: "perFixture", day: 5, hour: 12 },
-    weekendWrap: { mode: "off", day: 0, hour: 19 },
-  },
-} as unknown as SocialSettings;
+const SCHEDULES = {
+  gameDay: { mode: "perFixture", day: 4, hour: 18 },
+  teamLists: { mode: "perRound", day: 5, hour: 12 },
+  weekendWrap: { mode: "perRound", day: 0, hour: 19 },
+};
 
-describe("Round cards settings", () => {
-  it("describes each schedule in plain words", () => {
+const settingsFor = (styleId: string) =>
+  ({
+    roundSchedules: SCHEDULES,
+    postingPlan: planFromStyle(findPostingStyle(styleId)!),
+  }) as unknown as SocialSettings;
+
+describe("Round carousel times", () => {
+  it("labels times in plain words", () => {
     expect(hourLabel(0)).toBe("12 am");
     expect(hourLabel(12)).toBe("12 pm");
-    expect(hourLabel(18)).toBe("6 pm");
-    expect(describeSchedule("gameDay", { mode: "perRound", day: 4, hour: 18 })).toBe(
-      "The whole round as one set, every Thursday at 6 pm.",
-    );
-    expect(describeSchedule("teamLists", { mode: "off", day: 5, hour: 12 })).toBe(
-      "Not drafted automatically.",
-    );
-    expect(describeSchedule("weekendWrap", { mode: "off", day: 0, hour: 19 })).toBe(
-      "Each match gets its own result card once it's finished.",
-    );
-    expect(describeSchedule("weekendWrap", { mode: "perRound", day: 0, hour: 19 })).toMatch(
-      /^Last round's results as one carousel .* every Sunday at 7 pm\. No separate/,
-    );
+    expect(whenLabel({ day: 0, hour: 19 })).toBe("Sunday at 7 pm");
   });
 
-  it("switching game day to whole round asks for a day and time, and saves the schedule", async () => {
+  it("shows a time only for the round carousels the plan turns on", () => {
+    renderAt(
+      <RoundSchedulesCard settings={settingsFor("round-carousels")} />,
+      "/admin/social/cards",
+    );
+    expect(screen.queryByLabelText("Game day: day")).toBeNull();
+    expect(screen.getByLabelText("Team lists: day")).toBeTruthy();
+    expect(screen.getByLabelText("Results, ladders and leaderboards: day")).toBeTruthy();
+  });
+
+  it("keeps the shared results time when only ladders are a round carousel", () => {
+    const s = settingsFor("every-match");
+    const plan = s.postingPlan!;
+    plan.rows.ladders = { ...plan.rows.ladders, enabled: true };
+    renderAt(<RoundSchedulesCard settings={s} />, "/admin/social/cards");
+    expect(screen.getByLabelText("Results, ladders and leaderboards: day")).toBeTruthy();
+  });
+
+  it("says so when nothing posts as a round carousel", () => {
+    renderAt(<RoundSchedulesCard settings={settingsFor("results-only")} />, "/admin/social/cards");
+    expect(screen.getByText("No cards post as a round carousel yet.")).toBeTruthy();
+  });
+
+  it("saves a new time and keeps each card's mode", async () => {
     const bodies: unknown[] = [];
     vi.stubGlobal(
       "fetch",
@@ -64,36 +75,16 @@ describe("Round cards settings", () => {
         });
       }),
     );
-    renderAt(<RoundSchedulesCard settings={SETTINGS} />, "/admin/social/cards");
-    expect(screen.queryByLabelText("Game day: day")).toBeNull();
-    fireEvent.change(screen.getByLabelText("Game day: how it drafts"), {
-      target: { value: "perRound" },
-    });
-    fireEvent.change(screen.getByLabelText("Game day: day"), { target: { value: "5" } });
-    fireEvent.change(screen.getByLabelText("Game day: time"), { target: { value: "17" } });
-    expect(screen.getByText("The whole round as one set, every Friday at 5 pm.")).toBeTruthy();
+    renderAt(
+      <RoundSchedulesCard settings={settingsFor("round-carousels")} />,
+      "/admin/social/cards",
+    );
+    fireEvent.change(screen.getByLabelText("Team lists: day"), { target: { value: "4" } });
+    fireEvent.change(screen.getByLabelText("Team lists: time"), { target: { value: "17" } });
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
     await waitFor(() => expect(bodies).toHaveLength(1));
     expect(bodies[0]).toEqual({
-      roundSchedules: {
-        gameDay: { mode: "perRound", day: 5, hour: 17 },
-        teamLists: { mode: "perFixture", day: 5, hour: 12 },
-        weekendWrap: { mode: "off", day: 0, hour: 19 },
-      },
+      roundSchedules: { ...SCHEDULES, teamLists: { mode: "perRound", day: 4, hour: 17 } },
     });
-  });
-
-  it("match results: each match, whole round or both; the old 'off' reads as each match", () => {
-    renderAt(<RoundSchedulesCard settings={SETTINGS} />, "/admin/social/cards");
-    const select = screen.getByLabelText("Match results: how it drafts") as HTMLSelectElement;
-    expect(Array.from(select.options).map((o) => o.value)).toEqual([
-      "perFixture",
-      "perRound",
-      "both",
-    ]);
-    expect(select.value).toBe("perFixture");
-    expect(screen.queryByLabelText("Match results: day")).toBeNull();
-    fireEvent.change(select, { target: { value: "both" } });
-    expect(screen.getByLabelText("Match results: day")).toBeTruthy();
   });
 });

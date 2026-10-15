@@ -49,7 +49,9 @@ export function ladderInput(opts: {
   if (club && !shown.includes(club)) shown = [...shown.slice(0, LADDER_ROWS - 1), club];
   return {
     kind: "ladder",
-    competitionName: opts.tableName ? `${gradeLabel} · ${opts.tableName.toUpperCase()}` : gradeLabel,
+    competitionName: opts.tableName
+      ? `${gradeLabel} · ${opts.tableName.toUpperCase()}`
+      : gradeLabel,
     gradeLabel,
     asOfLabel: opts.asOfLabel,
     rows: shown.map((t, i) => ({

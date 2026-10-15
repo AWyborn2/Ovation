@@ -19,7 +19,6 @@ import {
   SponsorsCard,
   CaptionTemplatesCard,
 } from "@/components/admin-social";
-import { AutomationCard } from "@/components/social-queue/automation-card";
 import { AutoPostCard } from "@/components/social-queue/auto-post-card";
 import { MetaConnectionCard } from "@/components/social-queue/meta-connection-card";
 import { RoundSchedulesCard } from "@/components/social-queue/round-schedules-card";
@@ -36,7 +35,7 @@ export default function AdminSocial() {
   const audioTracksQ = useListCardAudioTracks();
   const loaded = !!bundle.data;
 
-  // The queue links here as /admin/social/cards#automation; the card only
+  // Links arrive as /admin/social/cards#round-schedules; the card only
   // exists once settings load, so scroll to the hash then.
   useEffect(() => {
     const id = window.location.hash.slice(1);
@@ -60,8 +59,8 @@ export default function AdminSocial() {
     <div className="space-y-6">
       <div>
         <p className="max-w-[75ch] text-[15px] text-muted-foreground">
-          Which cards draft themselves, how they post, and the themes, sponsors and captions they
-          use.
+          When round carousels draft, how cards post, and the themes, sponsors and captions they
+          use. Which cards draft themselves is on the Posting Plan tab.
         </p>
       </div>
 
@@ -71,7 +70,6 @@ export default function AdminSocial() {
         <LoadingState label="Loading social settings…" />
       ) : bundle.data ? (
         <>
-          <AutomationCard config={bundle.data.settings.familyConfig} />
           <RoundSchedulesCard settings={bundle.data.settings} />
           <MetaConnectionCard />
           <AutoPostCard settings={bundle.data.settings} />

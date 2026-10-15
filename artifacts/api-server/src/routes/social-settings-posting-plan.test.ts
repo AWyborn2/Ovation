@@ -13,7 +13,11 @@ import {
   socialSettingsTable,
   captionTemplatesTable,
 } from "@workspace/db";
-import { findPostingStyle, planFromStyle, type PostingPlan } from "@workspace/scorecard/posting-plan";
+import {
+  findPostingStyle,
+  planFromStyle,
+  type PostingPlan,
+} from "@workspace/scorecard/posting-plan";
 import { encodeSession, SESSION_COOKIE } from "../lib/auth";
 
 const STAMP = Date.now();
@@ -26,7 +30,13 @@ const cookies: Record<number, string> = {};
 async function tenant(slug: string, readsFromCentral: boolean, clubId: number) {
   const [t] = await db
     .insert(tenantsTable)
-    .values({ slug: `${slug}-${STAMP}`, centralClubId: clubId, name: slug, plan: "pro", readsFromCentral })
+    .values({
+      slug: `${slug}-${STAMP}`,
+      centralClubId: clubId,
+      name: slug,
+      plan: "pro",
+      readsFromCentral,
+    })
     .returning();
   const [admin] = await db
     .insert(adminsTable)
@@ -45,7 +55,9 @@ const patch = (tenantId: number, body: unknown, withCookie = true) => {
 };
 const style = (id: string): PostingPlan => planFromStyle(findPostingStyle(id)!);
 const row = async (tenantId: number) =>
-  (await db.select().from(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId)))[0];
+  (
+    await db.select().from(socialSettingsTable).where(eq(socialSettingsTable.tenantId, tenantId))
+  )[0];
 
 beforeAll(async () => {
   process.env.SESSION_SECRET = process.env.SESSION_SECRET ?? "test-secret-posting-plan";
@@ -108,7 +120,10 @@ describe("PATCH /social-settings postingPlan", () => {
     plan.rows.teamLists = { ...plan.rows.teamLists, grades: { "C Grade": true } };
     await patch(centralId, { postingPlan: plan }).expect(200);
     const r = await row(centralId);
-    const fc = r.familyConfig as Record<string, { enabled: boolean; grades: Record<string, boolean> }>;
+    const fc = r.familyConfig as Record<
+      string,
+      { enabled: boolean; grades: Record<string, boolean> }
+    >;
     expect(fc.achievements.enabled).toBe(true);
     expect(fc.matchday.grades["C Grade"]).toBe(true);
   });

@@ -1,12 +1,10 @@
 /**
  * Social Studio U8 — the queue: revisions with revert (AE3), the stale notice
- * with refresh, photo swap, the waiting-for-import empty state, and the
- * automation switches.
+ * with refresh, photo swap and the waiting-for-import empty state.
  */
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { screen, cleanup, fireEvent, within, waitFor } from "@testing-library/react";
 import AdminSocialQueue from "@/pages/admin-social-queue";
-import { AutomationCard } from "@/components/social-queue/automation-card";
 import { renderAt } from "@/test/render";
 
 afterEach(() => {
@@ -208,26 +206,7 @@ describe("queue page", () => {
     expect(screen.getByText(/after the next results import/)).toBeTruthy();
     expect(screen.getByText(/Last import: just now/)).toBeTruthy();
     expect(screen.getByRole("link", { name: /switched on/ }).getAttribute("href")).toBe(
-      "/admin/social/cards#automation",
+      "/admin/social/plan",
     );
-  });
-
-  it("turning on Achievements from the automation card (Cards tab) saves the family switch", async () => {
-    const requests = stubApi(
-      baseRoutes(
-        [DRAFT],
-        [{ method: "PATCH", match: /\/api\/social-settings/, reply: () => ({}) }],
-      ),
-    );
-    renderAt(<AutomationCard config={FAMILY_CONFIG} />, "/admin/social/cards");
-    const toggle = await screen.findByRole("switch", { name: "Achievements" });
-    await waitFor(() => expect(toggle.hasAttribute("disabled")).toBe(false));
-    fireEvent.click(toggle);
-    await waitFor(() => {
-      const patch = requests.find(
-        (r) => r.method === "PATCH" && r.url.includes("/social-settings"),
-      );
-      expect(patch?.body).toEqual({ familyConfig: { achievements: { enabled: true } } });
-    });
   });
 });

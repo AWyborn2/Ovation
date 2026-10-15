@@ -4,7 +4,11 @@
  * the drafting gates and card builders are real.
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { findPostingStyle, planFromStyle, type PostingPlan } from "@workspace/scorecard/posting-plan";
+import {
+  findPostingStyle,
+  planFromStyle,
+  type PostingPlan,
+} from "@workspace/scorecard/posting-plan";
 import { planCardSet, type SetInput } from "@workspace/scorecard";
 
 const h = vi.hoisted(() => {
@@ -79,7 +83,12 @@ function withPlan(mutate: (p: PostingPlan) => void = () => {}) {
   h.state.settings = { tenantId: 7, postingPlan: plan, roundSchedules: null };
 }
 
-const match = (id: number, grade: string, matchDate: string, extra: Record<string, unknown> = {}) => ({
+const match = (
+  id: number,
+  grade: string,
+  matchDate: string,
+  extra: Record<string, unknown> = {},
+) => ({
   id,
   grade,
   season: 2026,
@@ -200,7 +209,9 @@ describe("ladders round carousel", () => {
       ],
     }));
     await generateLadderDrafts(7, NOW);
-    const names = planCardSet(h.upserts[0].cardInput as SetInput).map((s) => s.input.competitionName);
+    const names = planCardSet(h.upserts[0].cardInput as SetInput).map(
+      (s) => s.input.competitionName,
+    );
     expect(names).toEqual([
       "A GRADE · ONE DAY",
       "A GRADE · TWO DAY",

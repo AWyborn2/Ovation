@@ -10,6 +10,7 @@ const AdminSocialCreate = lazy(() => import("@/pages/admin-social-create"));
 const AdminSocialSets = lazy(() => import("@/pages/admin-social-sets"));
 const AdminJuniorSocial = lazy(() => import("@/pages/admin-junior-social"));
 const AdminSocialQueue = lazy(() => import("@/pages/admin-social-queue"));
+const AdminSocialPlan = lazy(() => import("@/pages/admin-social-plan"));
 const AdminPhotoLibrary = lazy(() => import("@/pages/admin-photo-library"));
 const AdminFixtures = lazy(() => import("@/pages/admin-fixtures"));
 const AdminMatchDisplay = lazy(() => import("@/pages/admin-match-display"));
@@ -101,6 +102,7 @@ export function AdminSocialGroup() {
       groupKey="social"
       pages={{
         studio: <AdminSocialStudio />,
+        plan: <AdminSocialPlan />,
         cards: <AdminSocial />,
         create: <AdminSocialCreate />,
         sets: <AdminSocialSets />,

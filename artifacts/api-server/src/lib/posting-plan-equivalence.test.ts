@@ -13,7 +13,10 @@ import { draftingGates, postingPlanWrite, type DraftingGates } from "./posting-p
 type Fam = { enabled: boolean; grades: Record<string, boolean> };
 type Mode = "off" | "perFixture" | "perRound" | "both";
 
-function oracle(families: Record<"results" | "achievements" | "roundup" | "matchday", Fam>, modes: Record<"gameDay" | "teamLists" | "weekendWrap", Mode>) {
+function oracle(
+  families: Record<"results" | "achievements" | "roundup" | "matchday", Fam>,
+  modes: Record<"gameDay" | "teamLists" | "weekendWrap", Mode>,
+) {
   const allows = (f: Fam, g: string | null, j: boolean) => {
     if (!f.enabled) return false;
     const v = f.grades[g ?? ""];
@@ -24,7 +27,8 @@ function oracle(families: Record<"results" | "achievements" | "roundup" | "match
     resultsMatch: (g: string | null, j: boolean) => allows(families.results, g, j),
     resultsPerMatchCentral: () => modes.weekendWrap !== "perRound",
     resultsCarousel: () =>
-      families.roundup.enabled && (modes.weekendWrap === "perRound" || modes.weekendWrap === "both"),
+      families.roundup.enabled &&
+      (modes.weekendWrap === "perRound" || modes.weekendWrap === "both"),
     achievementsAny: () => families.achievements.enabled,
     achievement: (g: string | null) => allows(families.achievements, g, false),
     gradeLeadersAny: () => families.roundup.enabled,
@@ -81,7 +85,11 @@ function settingsFor(c: ReturnType<typeof matrix> extends Generator<infer T> ? T
   } as unknown as SocialSettingsRow;
 }
 
-function compare(gates: DraftingGates, o: ReturnType<typeof oracle>, skip: Set<string> = new Set()) {
+function compare(
+  gates: DraftingGates,
+  o: ReturnType<typeof oracle>,
+  skip: Set<string> = new Set(),
+) {
   const out: Record<string, unknown> = {};
   const want: Record<string, unknown> = {};
   const put = (k: string, a: unknown, b: unknown) => {
@@ -90,7 +98,11 @@ function compare(gates: DraftingGates, o: ReturnType<typeof oracle>, skip: Set<s
     want[k] = b;
   };
   put("resultsAny", gates.resultsAny(), o.resultsAny());
-  put("resultsPerMatchCentral", gates.resultsPerMatchCentral() && gates.resultsAny(), o.resultsPerMatchCentral() && o.resultsAny());
+  put(
+    "resultsPerMatchCentral",
+    gates.resultsPerMatchCentral() && gates.resultsAny(),
+    o.resultsPerMatchCentral() && o.resultsAny(),
+  );
   put("resultsCarousel", gates.resultsCarousel(), o.resultsCarousel());
   put("achievementsAny", gates.achievementsAny(), o.achievementsAny());
   put("gradeLeadersAny", gates.gradeLeadersAny(), o.gradeLeadersAny());
@@ -104,7 +116,8 @@ function compare(gates: DraftingGates, o: ReturnType<typeof oracle>, skip: Set<s
     if (o.achievementsAny())
       for (const k of ["milestone", "century", "fiveFor", "debut"] as const)
         if (g !== null) put(`achievement:${k}:${g}`, gates.achievement(k, g), o.achievement(g));
-    if (g && o.gradeLeadersAny()) put(`gradeLeaders:${g}`, gates.gradeLeaders(g), o.gradeLeaders(g));
+    if (g && o.gradeLeadersAny())
+      put(`gradeLeaders:${g}`, gates.gradeLeaders(g), o.gradeLeaders(g));
     if (o.gameDayIndividual() || o.gameDayRound())
       put(`gameDayGrade:${g}`, gates.gameDayGrade(g, j), o.matchdayGrade(g, j));
     if (o.teamListsIndividual() || o.teamListsRound())
@@ -132,7 +145,7 @@ describe("unsaved plan: today's rules exactly", () => {
   });
 });
 
-describe("saving the derived plan unchanged (\"Keep my current settings\")", () => {
+describe('saving the derived plan unchanged ("Keep my current settings")', () => {
   it("keeps every gate for central clubs, except carousel-only stumps", () => {
     for (const c of matrix()) {
       const before = settingsFor(c);

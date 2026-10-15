@@ -59,7 +59,9 @@ describe("derivePostingPlan", () => {
 
   it("derives no results at all with round-up off and carousel-only mode, as today", () => {
     const r = derivePostingPlan(
-      legacy({ modes: { gameDay: "perFixture", teamLists: "perFixture", weekendWrap: "perRound" } }),
+      legacy({
+        modes: { gameDay: "perFixture", teamLists: "perFixture", weekendWrap: "perRound" },
+      }),
     ).rows.results;
     expect(rowIndividual(r)).toBe(false);
     expect(rowRound(r)).toBe(false);
@@ -141,16 +143,25 @@ describe("styles", () => {
 describe("invalidPostingPlan", () => {
   const p = style("every-match");
   it("rejects a round carousel for milestones", () => {
-    const bad = { ...p, rows: { ...p.rows, milestones: { ...p.rows.milestones, packaging: "round" as const } } };
+    const bad = {
+      ...p,
+      rows: { ...p.rows, milestones: { ...p.rows.milestones, packaging: "round" as const } },
+    };
     expect(invalidPostingPlan(bad, { central: true })).toMatch(/Milestones/);
   });
   it("rejects both for team lists", () => {
-    const bad = { ...p, rows: { ...p.rows, teamLists: { ...p.rows.teamLists, packaging: "both" as const } } };
+    const bad = {
+      ...p,
+      rows: { ...p.rows, teamLists: { ...p.rows.teamLists, packaging: "both" as const } },
+    };
     expect(invalidPostingPlan(bad, { central: true })).toMatch(/Team lists/);
   });
   it("only allows results, ladder and leaderboard carousels for central clubs", () => {
     expect(invalidPostingPlan(style("round-carousels"), { central: false })).toMatch(/association/);
-    const teamListsRound = { ...p, rows: { ...p.rows, teamLists: { ...p.rows.teamLists, packaging: "round" as const } } };
+    const teamListsRound = {
+      ...p,
+      rows: { ...p.rows, teamLists: { ...p.rows.teamLists, packaging: "round" as const } },
+    };
     expect(invalidPostingPlan(teamListsRound, { central: false })).toBeNull();
   });
 });

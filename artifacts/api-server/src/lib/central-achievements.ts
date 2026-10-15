@@ -196,10 +196,15 @@ export async function draftCentralAchievements(
     TIER_THRESHOLDS,
     identity.merges,
   );
-  const drafts = buildAchievementDrafts(achievements, identity, gates.achievement, (playerId, grade) => {
-    const category = GRADE_TO_CAP_CATEGORY[grade];
-    return category ? (caps.get(`${category}|${playerId}`) ?? null) : null;
-  });
+  const drafts = buildAchievementDrafts(
+    achievements,
+    identity,
+    gates.achievement,
+    (playerId, grade) => {
+      const category = GRADE_TO_CAP_CATEGORY[grade];
+      return category ? (caps.get(`${category}|${playerId}`) ?? null) : null;
+    },
+  );
 
   for (const d of drafts) {
     // Fire-once: a card the club dismissed is never drafted again.

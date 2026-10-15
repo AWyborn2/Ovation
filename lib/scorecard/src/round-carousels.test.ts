@@ -13,7 +13,9 @@ const grade = (gradeLabel: string, runs: number | null) => ({
 
 describe("club leaderboard inputs", () => {
   it("builds the card the Studio prefill always built", () => {
-    expect(clubLeaderboardInput(2025, "Runs", [grade("A Grade", 400), grade("B Grade", null)])).toEqual({
+    expect(
+      clubLeaderboardInput(2025, "Runs", [grade("A Grade", 400), grade("B Grade", null)]),
+    ).toEqual({
       kind: "clubLeaderboard",
       title: "CLUB RUN SCORERS",
       subtitle: "Leading run scorer in each grade",

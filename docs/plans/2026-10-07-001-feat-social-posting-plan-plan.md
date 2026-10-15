@@ -17,7 +17,7 @@ execution: code
 - **Product authority:** Ash (owner, Halls Head media officer). Product decisions were made with him on 2026-10-07; the Product Contract below governs scope. Where it and the Planning Contract disagree, the Product Contract wins and the conflict is surfaced, not resolved silently.
 - **Open blockers:** None.
 - **Stop conditions:** Stop and ask if carry-over cannot be made exactly equivalent for any existing settings combination (R14), if a club's drafts would change without the admin touching the plan, or if ladder data turns out unavailable for Halls Head's PlayHQ grades.
-- **Execution profile:** Monorepo change across `lib/scorecard`, `lib/db`, `lib/api-spec`, `artifacts/api-server` and `artifacts/cricket-club`. OpenAPI-first; one generated migration (0035) applied to production by hand before republishing.
+- **Execution profile:** Monorepo change across `lib/scorecard`, `lib/db`, `lib/api-spec`, `artifacts/api-server` and `artifacts/cricket-club`. OpenAPI-first; one generated migration (0040) applied to production by hand before republishing.
 - **Tail ownership:** The implementer opens the PR and hands Ash the migration SQL for the Production SQL runner; Ash applies it and republishes.
 
 ---
@@ -184,32 +184,32 @@ Release 1 adds a Posting Plan, stored alongside today's settings and derived fro
 
 ### Rows in release 1
 
-| Row | Card kinds drafted | Package options | Default when derived |
-|---|---|---|---|
-| Results | matchSummary, Stumps Day 1, weekend-wrap carousel | individual / round carousel / both | per-match posts from `familyConfig.results` grades + `matchResultCardsOn(weekendWrap.mode)`; carousel from `familyConfig.roundup.enabled` + `roundResultsCarouselOn(weekendWrap.mode)`, all senior grades |
-| Milestones | milestone (career crossings) | individual | from `familyConfig.achievements` |
-| Centuries and five-fors | century, fiveFor | individual | from `familyConfig.achievements` |
-| Debuts | debut | individual | from `familyConfig.achievements` (every senior grade) |
-| Grade leaders | gradeLeader | individual | from `familyConfig.roundup` |
-| Club leaderboards | clubLeaderboard (new carousel) | round carousel | off |
-| Ladders | ladder (new carousel) | round carousel | off |
-| Game day | matchDay, roundFixtures | individual / round carousel | from `familyConfig.matchday` + `roundSchedules.gameDay.mode` |
-| Team lists | teamList, teamListRound | individual / round carousel | from `familyConfig.matchday` + `roundSchedules.teamLists.mode` |
+| Row                     | Card kinds drafted                                | Package options                    | Default when derived                                                                                                                                                                                      |
+| ----------------------- | ------------------------------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Results                 | matchSummary, Stumps Day 1, weekend-wrap carousel | individual / round carousel / both | per-match posts from `familyConfig.results` grades + `matchResultCardsOn(weekendWrap.mode)`; carousel from `familyConfig.roundup.enabled` + `roundResultsCarouselOn(weekendWrap.mode)`, all senior grades |
+| Milestones              | milestone (career crossings)                      | individual                         | from `familyConfig.achievements`                                                                                                                                                                          |
+| Centuries and five-fors | century, fiveFor                                  | individual                         | from `familyConfig.achievements`                                                                                                                                                                          |
+| Debuts                  | debut                                             | individual                         | from `familyConfig.achievements` (every senior grade)                                                                                                                                                     |
+| Grade leaders           | gradeLeader                                       | individual                         | from `familyConfig.roundup`                                                                                                                                                                               |
+| Club leaderboards       | clubLeaderboard (new carousel)                    | round carousel                     | off                                                                                                                                                                                                       |
+| Ladders                 | ladder (new carousel)                             | round carousel                     | off                                                                                                                                                                                                       |
+| Game day                | matchDay, roundFixtures                           | individual / round carousel        | from `familyConfig.matchday` + `roundSchedules.gameDay.mode`                                                                                                                                              |
+| Team lists              | teamList, teamListRound                           | individual / round carousel        | from `familyConfig.matchday` + `roundSchedules.teamLists.mode`                                                                                                                                            |
 
 ### Key Technical Decisions
 
 - KTD1. **A nullable `posting_plan` jsonb column; null means derive.** Mirrors `resolveFamilyConfig` and `resolveRoundSchedules`, so existing clubs carry over with no backfill and no production `UPDATE`. A saved plan stores resolved rows plus the source style id.
-- KTD2. **One resolver, `resolvePostingPlan(settings)`, is the only reader of drafting settings.** Every gate in the Seams list asks the resolver whether a row allows a grade and how the row is packaged. A test fails if a drafting module reads `engine*`, `familyConfig`, `matchSummaryGradeConfig` or `roundSchedules.*.mode` directly.
+- KTD2. **One module, `lib/posting-plan.ts`, is the only reader of drafting settings.** Every gate in the Seams list asks its drafting gates whether a row allows a grade and how the row is packaged. Until a club saves a plan the gates evaluate the legacy settings exactly as the engines did; a saved plan is read row by row. The derived plan is what the page shows, so carry-over is exact even for legacy combinations the derived plan can only approximate. A test fails if a drafting module reads `engine*`, `familyConfig`, `matchSummaryGradeConfig` or `roundSchedules.*.mode` directly.
 - KTD3. **Saving a plan also writes the legacy columns** (`familyConfig` via `syncFamilySettings`, `roundSchedules` modes with existing day and hour kept). Rows sharing one legacy family collapse with a fixed rule: the family is on if any of its rows is on, and a grade is allowed if any of its rows allows it (Game day + Team lists → matchday; Milestones + Centuries and five-fors + Debuts → achievements; Results carousel + Grade leaders → roundup). Rollback by redeploying the previous build therefore keeps drafting on with the widest earlier setting, not the exact saved plan. The auto-post and sizes cards, which remain until release 2, keep their inputs.
 - KTD4. **Grade selection keeps `familyAllows` semantics** — explicit grade entries, otherwise seniors on and juniors off — plus an `others` switch (seniors or off) so "A Grade only" means unlisted grades stay off. Derived rows reproduce today's per-family grade overrides exactly.
-- KTD5. **Carry-over follows today's effective behaviour, not the raw stored flags.** The derived row is whatever `familyAllows` and the round-schedule mode produce now; `syncFamilySettings` already makes `familyConfig` authoritative over `engineMatchSummary` and `matchSummaryGradeConfig`. The Results row's carousel branch follows today's weekend-wrap gate (the round-up switch, all senior grades, no results grade filter), separately from its per-match branch. Equivalence is proven by running a frozen copy of today's gates against the new resolver over a settings matrix (U3).
+- KTD5. **Carry-over follows today's effective behaviour, not the raw stored flags.** The derived row is whatever `familyAllows` and the round-schedule mode produce now; `syncFamilySettings` already makes `familyConfig` authoritative over `engineMatchSummary` and `matchSummaryGradeConfig`. The Results row's carousel branch follows today's weekend-wrap gate (the round-up switch, all senior grades, no results grade filter), separately from its per-match branch. Equivalence is proven by running a frozen copy of today's gates against the new gates over a settings matrix, both before a plan is saved and after saving the derived plan unchanged (U3). The one accepted difference after saving: with results carousel-only, "Stumps, Day 1" and the junior manual sweep follow individual posting rather than the bare results switch.
 - KTD6. **"Leaderboards" means the club leaderboard carousel.** One slide per category (Runs, Wickets, Catches, Dismissals), each listing every senior grade's leader from `centralClubTotalsBySeason`. Per-grade leader cards from the round-up engine stay as the Grade leaders row, individual only.
 - KTD7. **Ladders come from PlayHQ published ladders** (`playhqGradeLadder`, keyed by the club's PlayHQ org and grade ids). One slide per grade, or per ladder table when a grade publishes several (One Day, Two Day). Grades with no published ladder are skipped. A grade's ladder is used only when the club team's `played` count on it is at least the club's finished matches in that grade this season, so a scrape taken before PlayHQ recalculates never passes. PlayHQ grade ids come from the club's central matches joined on `playhq_match_id` to the PlayHQ game's `grade_id`. The sweep reads ladders without the central cache. If no grade qualifies, nothing drafts. The all-time `central.ladder` table is not used.
-- KTD8. **New carousels compose existing card kinds.** `clubLeaderboardRound` and `ladderRound` are new set kinds in `lib/scorecard/src/card-sets.ts` whose slides are existing `clubLeaderboard` and `ladder` inputs — the same pattern as the weekend wrap's `results[]` — so no pack templates are added and both renderers pick them up through `planCardSet`.
+- KTD8. **New carousels are ordinary cards carrying their slides.** A club leaderboard or ladder draft is a normal `clubLeaderboard` / `ladder` input (its first slide) with a `carousel` list of every slide; `planCardSet` in `lib/scorecard/src/card-sets.ts` posts those slides in order. No new card kinds or pack templates, no cover (each slide carries its own title), and code unaware of carousels still shows a sensible single card.
 - KTD9. **New carousels draft on the weekend-wrap cadence.** They run in the scheduled sweep's round engines for the latest round played in the six days before the weekend-wrap anchor, keyed `clubleaderboard-round:{season}:{round}` and `ladder-round:{season}:{round}`, and upsert like the existing round drafts (refresh while unposted).
 - KTD10. **Packaging changes apply from the next round.** Changing a row never deletes or merges drafts already in the queue.
 - KTD11. **Posting styles are static presets in code**, shared by web and API: "Round carousels + individual highlights" (results, team lists, ladders and club leaderboards as round carousels; milestones individual; debuts A Grade only; game day per fixture), "Every match on its own" (today's defaults), and "Results only". A plan is custom when any row differs from its style's rows. Applying a style over a custom plan needs confirmation.
-- KTD12. **Results, Club leaderboards and Ladders round carousels are central-tenant only; Game day and Team lists round carousels stay available to every club, as today.** Non-central clubs see the three central-only options disabled with the reason. A non-central club's derived Results row reproduces its effective behaviour today (off when its stored mode is per-round, individual otherwise). Results carousels are senior-only because central data holds no junior grades.
+- KTD12. **Results, Club leaderboards and Ladders round carousels are central-tenant only; Game day and Team lists round carousels stay available to every club, as today.** Non-central clubs see the three central-only options disabled with the reason. A non-central club's derived Results row reproduces its effective behaviour today (the native import path never read the round-schedule mode, so per-match results continue whatever the mode). Results carousels are senior-only because central data holds no junior grades.
 
 ### High-Level Technical Design
 
@@ -263,6 +263,7 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 **Dependencies:** none
 
 **Files:**
+
 - `lib/scorecard/src/posting-plan.ts` (new), exported from `lib/scorecard/src/index.ts`
 - `lib/scorecard/src/posting-plan.test.ts` (new)
 
@@ -271,6 +272,7 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 **Patterns to follow:** `lib/scorecard/src/card-sets.ts` (shared pure planning with tests); `artifacts/api-server/src/lib/social-families.ts` for grade semantics.
 
 **Test scenarios:**
+
 - Derivation from null legacy settings yields today's defaults: results individual for seniors, achievements and round-up per legacy engine flags, game day and team lists per fixture, club leaderboards and ladders off.
 - `weekendWrap.mode` perRound with round-up on gives results round carousel; both gives both; perFixture gives individual.
 - Round-up off with `weekendWrap.mode` perRound derives no results carousel (and no per-match results), matching today.
@@ -293,8 +295,9 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 **Dependencies:** U1
 
 **Files:**
+
 - `lib/db/src/schema/social_cards.ts` (add nullable `postingPlan` jsonb)
-- `lib/db/migrations/0035_*.sql` plus `meta/` snapshot and journal (generated)
+- `lib/db/migrations/0040_posting_plan.sql` plus `meta/` snapshot and journal (generated)
 - `lib/api-spec/openapi.yaml` (`PostingPlan`, `PostingPlanRow`, `PostingStyle`; resolved `SocialSettings.postingPlan`, `SocialSettingsUpdate.postingPlan`, styles in `SocialSettingsBundle`); regenerated `lib/api-zod` and `lib/api-client-react`
 - `artifacts/api-server/src/routes/social-cards.ts` (GET and PATCH)
 - `artifacts/api-server/src/lib/social-families.ts` (mirror helper)
@@ -305,6 +308,7 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 **Patterns to follow:** the `packColourModes` and `roundSchedules` merges in `routes/social-cards.ts`; migration style of `0010_auto_post_notifications.sql` (`ADD COLUMN IF NOT EXISTS`, `--> statement-breakpoint`).
 
 **Test scenarios:**
+
 - Covers AE5. GET for a tenant with no saved plan returns rows equal to the derivation of its legacy settings.
 - PATCH a valid plan: stored; a later GET returns it; `familyConfig` and `roundSchedules` modes reflect it; stored day and hour unchanged.
 - PATCH with round carousel on Milestones returns 400 with a message.
@@ -324,6 +328,7 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 **Dependencies:** U2
 
 **Files:**
+
 - `artifacts/api-server/src/lib/match-summary-drafter.ts`, `draft-sweep.ts`, `central-achievements.ts`, `post-commit-social.ts`, `match-milestone-detector.ts`, `roundup.ts`
 - `artifacts/api-server/src/lib/engines/match-day.ts`, `team-list.ts`, `round-sets.ts`
 - `artifacts/api-server/src/lib/round-schedules.ts`
@@ -336,10 +341,11 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 **Execution note:** Write the equivalence matrix test first, with a frozen copy of today's gate logic as the oracle (not the code being rewritten), and keep it green while moving each call site.
 
 **Test scenarios:**
+
 - Equivalence matrix: for each combination of `familyConfig` (null, explicit, per-grade overrides), `engineMatchSummary`, `matchSummaryGradeConfig` and each `roundSchedules` mode, old and new gates agree for every card kind, grade and junior flag.
 - Covers AE1. Debuts row A Grade only: a B Grade debut in central data drafts nothing; an A Grade debut drafts as today.
 - Covers AE2. Team lists round carousel with Under 16s selected: the junior team lists form their own carousel draft with the junior flag, never the senior one.
-- A non-central club with stored results mode per-round still drafts no results after the change (KTD12).
+- A non-central club with stored results mode per-round keeps its per-match results, as its import path always did (KTD12).
 - Results individual: no results carousel drafts; results round carousel: no per-match result drafts on the central path.
 - Running the scheduled sweep twice produces no duplicate drafts.
 - Switching Team lists from individual to round carousel leaves existing per-fixture drafts unchanged (KTD10).
@@ -356,16 +362,18 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 **Dependencies:** U3
 
 **Files:**
-- `lib/scorecard/src/card-sets.ts` (set kind `clubLeaderboardRound`) and `lib/scorecard/src/card-sets.test.ts`
+
+- `lib/scorecard/src/card-sets.ts` (`carousel` inputs, KTD8) and `lib/scorecard/src/round-carousels.test.ts`
 - `lib/scorecard/src/club-leaderboard-input.ts` (new; shared builder moved from `clubSeasonTotalsToState` in `artifacts/cricket-club/src/components/card-forms/prefill.ts`)
 - `artifacts/api-server/src/lib/engines/round-sets.ts` (new engine) and `artifacts/api-server/src/lib/draft-sweep.ts` (register it)
 - `artifacts/api-server/src/lib/engines/club-leaderboard-round.test.ts` (new)
 
-**Approach:** On the weekend-wrap cadence (KTD9), load `centralClubTotalsBySeason` for the season (passing the tenant's merges, as the weekend wrap does) and build one `clubLeaderboard` slide per category that has at least one leader, cover first. The web prefill imports the shared builder. Seniors only.
+**Approach:** On the weekend-wrap cadence (KTD9), load `centralClubTotalsBySeason` for the season (passing the tenant's merges, as the weekend wrap does) and build one `clubLeaderboard` slide per category that has at least one leader, in Runs, Wickets, Catches, Dismissals order. The web prefill imports the shared builder. Seniors only.
 
 **Patterns to follow:** `generateWeekendWrapDrafts` in `engines/round-sets.ts`; the weekend-wrap `results[]` branch in `card-sets.ts`.
 
 **Test scenarios:**
+
 - Row on, round played this week: one draft keyed `clubleaderboard-round:{season}:{round}` with Runs, Wickets, Catches and Dismissals slides.
 - Early season with no Catches leaders: that slide is omitted; no categories at all: no draft.
 - Sweep run twice: one draft, refreshed not duplicated.
@@ -384,7 +392,8 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 **Dependencies:** U3
 
 **Files:**
-- `lib/scorecard/src/card-sets.ts` (set kind `ladderRound`)
+
+- `lib/scorecard/src/card-sets.ts` (`carousel` inputs, KTD8)
 - `lib/scorecard/src/ladder-input.ts` (new; shared builder from `ladderRowsToState`, extended for PlayHQ rows and a ladder-table label)
 - `lib/db/src/central/playhq-fixtures.ts` (new helper: club's PlayHQ grade ids for a round via `playhq_match_id`; an uncached ladder read for the sweep)
 - `artifacts/api-server/src/lib/engines/round-sets.ts` and `artifacts/api-server/src/lib/draft-sweep.ts`
@@ -393,6 +402,7 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 **Approach:** Resolve the club's PlayHQ org (`getTenantPlayhqOrgId`) and the PlayHQ grade ids of its senior grades in the round (central matches joined on `playhq_match_id` to the PlayHQ game's `grade_id`, via one new helper in `playhq-fixtures.ts`). Load each ladder uncached, keep grades where the club team's `played` count has caught up with its finished matches this season (KTD7), and build one `ladder` slide per ladder table in club grade order with the club's row flagged. Skip silently when the club has no PlayHQ org.
 
 **Test scenarios:**
+
 - Two grades with fresh ladders: one draft with two ladder slides in club grade order, club row flagged.
 - A grade with One Day and Two Day tables: two slides labelled by table name.
 - A grade whose ladder was scraped after the match but still shows the old `played` count is excluded; all stale gives no draft.
@@ -412,6 +422,7 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 **Dependencies:** U2 (U4 and U5 for those rows to draft anything)
 
 **Files:**
+
 - `artifacts/cricket-club/src/pages/admin-social-plan.tsx` (new) and `artifacts/cricket-club/src/components/posting-plan/` (new: row editor, grade picker, style picker)
 - `artifacts/cricket-club/src/lib/admin-nav.ts` (new `plan` tab) and `artifacts/cricket-club/src/App.tsx` (route)
 - `artifacts/cricket-club/src/pages/admin-social.tsx` (remove `AutomationCard`; keep `RoundSchedulesCard` for day and hour)
@@ -431,6 +442,7 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 **Patterns to follow:** `components/social-queue/round-schedules-card.tsx` (local draft, `SaveBar`, sentence descriptions); `components/admin-ui` primitives (`SettingsCard`, `data-table`, `edit-drawer`); `admin-nav.ts` and the `App.tsx` `<Redirect>` pattern.
 
 **Test scenarios:**
+
 - Renders nine rows from a mocked settings bundle, each with its sentence.
 - Choosing "Round carousels + individual highlights" fills rows and the badge shows that style; editing one row flips the badge to Custom.
 - Applying a style over a custom plan shows a confirm; cancel keeps the edits.
@@ -455,10 +467,11 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 **Dependencies:** U2–U6
 
 **Files:**
-- `AGENTS.md` (Social Studio section: the Posting Plan is the drafting source of truth)
-- `docs/runbooks/posting-plan-release.md` (new: apply `0035`, verify the column, then republish)
 
-**Approach:** Give Ash the `0035` SQL for the Production SQL runner and a verification query on `information_schema.columns` for `social_settings.posting_plan`. Because the column is nullable and derived, deploying before any club saves a plan changes nothing.
+- `AGENTS.md` (Social Studio section: the Posting Plan is the drafting source of truth)
+- `docs/runbooks/posting-plan-release.md` (new: apply `0040`, verify the column, then republish)
+
+**Approach:** Give Ash the `0040` SQL for the Production SQL runner and a verification query on `information_schema.columns` for `social_settings.posting_plan`. Because the column is nullable and derived, deploying before any club saves a plan changes nothing.
 
 **Test expectation:** none -- documentation and operational hand-off.
 
@@ -468,17 +481,17 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 
 ## Verification Contract
 
-| Gate | Command | Applies to |
-|---|---|---|
-| Typecheck | `pnpm run typecheck` | all units |
-| Lint | `pnpm run lint` | all units |
-| Format | `npx prettier@3.9.6 --check .` (CI pins 3.9.6) | all units |
-| Library tests | `pnpm run test:libs` | U1, U4, U5 |
-| API integration tests | `pnpm --filter @workspace/api-server test` (real Postgres; CI is authoritative on Windows) | U2–U5 |
-| Web tests | `pnpm --filter @workspace/cricket-club test` | U6 |
-| Codegen drift | `pnpm --filter @workspace/api-spec run codegen` leaves no diff | U2 |
-| Migration drift | `pnpm --filter @workspace/db run generate` leaves no diff; migrate twice for idempotency | U2 |
-| Render check | render-harness PNG of one club leaderboard and one ladder carousel | U4, U5 |
+| Gate                  | Command                                                                                    | Applies to |
+| --------------------- | ------------------------------------------------------------------------------------------ | ---------- |
+| Typecheck             | `pnpm run typecheck`                                                                       | all units  |
+| Lint                  | `pnpm run lint`                                                                            | all units  |
+| Format                | `npx prettier@3.9.6 --check .` (CI pins 3.9.6)                                             | all units  |
+| Library tests         | `pnpm run test:libs`                                                                       | U1, U4, U5 |
+| API integration tests | `pnpm --filter @workspace/api-server test` (real Postgres; CI is authoritative on Windows) | U2–U5      |
+| Web tests             | `pnpm --filter @workspace/cricket-club test`                                               | U6         |
+| Codegen drift         | `pnpm --filter @workspace/api-spec run codegen` leaves no diff                             | U2         |
+| Migration drift       | `pnpm --filter @workspace/db run generate` leaves no diff; migrate twice for idempotency   | U2         |
+| Render check          | render-harness PNG of one club leaderboard and one ladder carousel                         | U4, U5     |
 
 ---
 
@@ -488,7 +501,7 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 - The equivalence matrix proves no existing club's drafts change until it saves a plan (R14).
 - Ash's setup (AE1) is one style pick and produces the expected drafts in a sweep test.
 - The Automation card, Round cards mode selects, content-engine switches and Studio match-summary engine controls are gone; each remaining setting appears once (R2).
-- Migration 0035 SQL and the verification query are handed to Ash.
+- Migration 0040 SQL and the verification query are handed to Ash.
 - No abandoned-attempt code, unused helpers or commented-out legacy readers remain in the diff.
 
 ### Deferred to Follow-Up Work

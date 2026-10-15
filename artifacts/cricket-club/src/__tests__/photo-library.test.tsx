@@ -399,7 +399,7 @@ describe("selection inside a folder", () => {
       join(__dirname, "..", "lib", "photo-folders.ts"),
       join(__dirname, "..", "pages", "admin-social-queue.tsx"),
       join(__dirname, "..", "components", "social-queue", "draft-drawer.tsx"),
-      join(__dirname, "..", "components", "social-queue", "automation-card.tsx"),
+      join(__dirname, "..", "components", "posting-plan", "posting-plan-editor.tsx"),
     ]) {
       expect({ f, hex: readFileSync(f, "utf8").match(/#[0-9a-fA-F]{6}\b/g) }).toEqual({
         f,

@@ -18,7 +18,11 @@ import { loadCentralMatchDetail } from "../match-detail";
 import { inClubGradeOrder } from "../club-grade-order";
 import { draftingGates } from "../posting-plan";
 import { clubLeaderboardCarousel } from "@workspace/scorecard/club-leaderboard-input";
-import { ladderCarousel, ladderInput, type LadderCardInput } from "@workspace/scorecard/ladder-input";
+import {
+  ladderCarousel,
+  ladderInput,
+  type LadderCardInput,
+} from "@workspace/scorecard/ladder-input";
 import { upsertDraftByKey } from "../draft-upsert";
 import { loadClubIdentity } from "../club-overlay";
 import { getTenantCentralClubId, getTenantPlayhqOrgId, tenantIsCentral } from "../tenant";
@@ -223,13 +227,9 @@ export async function generateRoundTeamListDrafts(
 
   const anchor = lastScheduledAt(now, schedule);
   // Men's and women's teams post as their own sets (juniors apart as always).
-  const rounds = await scheduledRounds(
-    tenantId,
-    now,
-    anchor,
-    gates.teamListsGrade,
-    { byAudience: true },
-  );
+  const rounds = await scheduledRounds(tenantId, now, anchor, gates.teamListsGrade, {
+    byAudience: true,
+  });
   if (rounds.length === 0) return result;
 
   const lists = await db
@@ -454,7 +454,10 @@ export async function generateLadderDrafts(
     await import("@workspace/db/central-queries");
   const seasonMatches = await centralClubMatches(clubId, { season });
   const gradeIdOf = await playhqGradeIdsForCentralMatches(seasonMatches.map((m) => m.id));
-  const roundDate = played.matches.reduce((d, m) => ((m.matchDate ?? "") > d ? m.matchDate! : d), "");
+  const roundDate = played.matches.reduce(
+    (d, m) => ((m.matchDate ?? "") > d ? m.matchDate! : d),
+    "",
+  );
 
   // One entry per PlayHQ grade the club played this round.
   const grades = new Map<string, { gradeLabel: string; gradeId: string }>();

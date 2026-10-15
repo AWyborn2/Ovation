@@ -66,6 +66,12 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     description: "Branded share-card factory, card builders, junior cards and the review queue.",
     tabs: [
       { value: "studio", label: "Studio", path: "/admin/social", feature: "socialStudio" },
+      {
+        value: "plan",
+        label: "Posting Plan",
+        path: "/admin/social/plan",
+        feature: "socialStudio",
+      },
       { value: "cards", label: "Cards", path: "/admin/social/cards", feature: "socialStudio" },
       {
         value: "create",

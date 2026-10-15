@@ -294,11 +294,11 @@ export async function runBatchPostCommitSocial(opts: BatchPostCommitSocialOpts):
       // A batch can span seasons; a career crossing lands in the latest.
       if (gates.achievement("milestone", null))
         await queueCareerCrossings(
-        tenantId,
-        sourceImportId,
-        beforeMap,
-        affected.length > 0 ? Math.max(...affected.map((a) => a.season)) : null,
-      );
+          tenantId,
+          sourceImportId,
+          beforeMap,
+          affected.length > 0 ? Math.max(...affected.map((a) => a.season)) : null,
+        );
     } catch (err) {
       logger.error({ err }, "milestone detection failed");
     }

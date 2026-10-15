@@ -191,7 +191,12 @@ export function derivePostingPlan(input: LegacyPostingInput): PostingPlan {
 // Mirror back to legacy settings (KTD3)
 
 export interface LegacyPostingOutput {
-  families: { results: FamilyLike; achievements: FamilyLike; roundup: FamilyLike; matchday: FamilyLike };
+  families: {
+    results: FamilyLike;
+    achievements: FamilyLike;
+    roundup: FamilyLike;
+    matchday: FamilyLike;
+  };
   modes: { gameDay: ModeLike; teamLists: ModeLike; weekendWrap: ModeLike };
 }
 
@@ -336,7 +341,10 @@ function sameRow(a: PostingRow, b: PostingRow): boolean {
 
 /** The style whose rows this plan matches, or null when it's custom. */
 export function matchingStyle(plan: PostingPlan): PostingStyle | null {
-  return POSTING_STYLES.find((s) => POSTING_ROWS.every((id) => sameRow(plan.rows[id], s.rows[id]))) ?? null;
+  return (
+    POSTING_STYLES.find((s) => POSTING_ROWS.every((id) => sameRow(plan.rows[id], s.rows[id]))) ??
+    null
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -374,7 +382,10 @@ export const PACKAGING_LABELS: Record<Packaging, string> = {
  */
 export function normalizePostingPlan(input: unknown, base: PostingPlan): PostingPlan {
   const src = (input && typeof input === "object" ? input : {}) as Record<string, unknown>;
-  const rowsIn = (src.rows && typeof src.rows === "object" ? src.rows : {}) as Record<string, unknown>;
+  const rowsIn = (src.rows && typeof src.rows === "object" ? src.rows : {}) as Record<
+    string,
+    unknown
+  >;
   const rows = {} as Record<PostingRowId, PostingRow>;
   for (const id of POSTING_ROWS) {
     const b = base.rows[id];
@@ -397,6 +408,7 @@ export function normalizePostingPlan(input: unknown, base: PostingPlan): Posting
       others: raw.others === "seniors" || raw.others === "off" ? raw.others : b.others,
     };
   }
-  const styleId = typeof src.styleId === "string" ? src.styleId : src.styleId === null ? null : base.styleId;
+  const styleId =
+    typeof src.styleId === "string" ? src.styleId : src.styleId === null ? null : base.styleId;
   return { version: 1, styleId, rows };
 }
