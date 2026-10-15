@@ -421,6 +421,21 @@ export type RoundSchedulesRow = Partial<
   Record<"gameDay" | "teamLists" | "weekendWrap", RoundScheduleRow>
 >;
 
+/** Stored Posting Plan; the shape and rules live in @workspace/scorecard/posting-plan. */
+export type PostingPlanRow = {
+  version: 1;
+  styleId: string | null;
+  rows: Record<
+    string,
+    {
+      enabled: boolean;
+      packaging: "individual" | "round" | "both";
+      grades: Record<string, boolean>;
+      others: "seniors" | "off";
+    }
+  >;
+};
+
 // One row per tenant (unique on tenantId; PK stays a surrogate id). A tenant's
 // row is created on first access (see `ensureSettings` in social-cards.ts),
 // seeded with these schema defaults — never copied from another tenant's saved
@@ -495,6 +510,12 @@ export const socialSettingsTable = pgTable(
     // club-chosen day and hour. Null = never saved; the API applies defaults
     // that match the per-match behaviour from before (see lib/round-schedules).
     roundSchedules: jsonb("round_schedules").$type<RoundSchedulesRow>(),
+    // The club's Posting Plan (plan 2026-10-07-001): one row per card kind —
+    // drafts or not, which grades, individual / round carousel. Null = never
+    // saved; the API derives it from the family config and round schedules
+    // above, so nothing changes until an admin saves (see
+    // @workspace/scorecard/posting-plan).
+    postingPlan: jsonb("posting_plan").$type<PostingPlanRow>(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

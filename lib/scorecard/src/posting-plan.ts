@@ -104,8 +104,8 @@ export const POSTING_ROW_DEFS: Record<PostingRowId, PostingRowDef> = {
 /** Does this row draft for `grade`? Same rule as the family switches (KTD4). */
 export function rowAllows(row: PostingRow, grade: string | null, junior: boolean): boolean {
   if (!row.enabled) return false;
-  const key = grade ?? "";
-  if (key in row.grades) return row.grades[key];
+  const explicit = row.grades[grade ?? ""];
+  if (explicit !== undefined) return explicit;
   return row.others === "seniors" ? !junior : false;
 }
 

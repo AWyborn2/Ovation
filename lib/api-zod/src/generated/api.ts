@@ -7167,7 +7167,69 @@ export const GetSocialSettingsResponse = zod.object({
   "day": zod.number().min(getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapDayMin).max(getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
   "hour": zod.number().min(getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapHourMin).max(getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
 })
-}).optional().describe('When the round cards draft themselves (balanced card sets). Always complete in a response: a card never saved shows its default.')
+}).optional().describe('When the round cards draft themselves (balanced card sets). Always complete in a response: a card never saved shows its default.'),
+  "postingPlan": zod.object({
+  "version": zod.literal(1),
+  "styleId": zod.string().nullable(),
+  "rows": zod.object({
+  "results": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "milestones": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "feats": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "debuts": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "gradeLeaders": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "clubLeaderboards": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "ladders": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "gameDay": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "teamLists": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+})
+})
+}).optional().describe('One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001).'),
+  "postingPlanSaved": zod.boolean().optional().describe('Whether the club has saved a Posting Plan; false means postingPlan is derived from its other settings (first visit).'),
+  "centralData": zod.boolean().optional().describe('Whether the club reads its results from the association database (results, ladder and leaderboard round carousels need it).')
 }),
   "captionTemplates": zod.array(zod.object({
   "engine": zod.string(),
@@ -7285,7 +7347,67 @@ export const UpdateSocialSettingsBody = zod.object({
   "day": zod.number().min(updateSocialSettingsBodyRoundSchedulesOneWeekendWrapDayMin).max(updateSocialSettingsBodyRoundSchedulesOneWeekendWrapDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
   "hour": zod.number().min(updateSocialSettingsBodyRoundSchedulesOneWeekendWrapHourMin).max(updateSocialSettingsBodyRoundSchedulesOneWeekendWrapHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
 }).optional()
-}).optional().describe('Merged per card: only the cards sent change, the others keep their schedule.')
+}).optional().describe('Merged per card: only the cards sent change, the others keep their schedule.'),
+  "postingPlan": zod.object({
+  "version": zod.literal(1),
+  "styleId": zod.string().nullable(),
+  "rows": zod.object({
+  "results": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "milestones": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "feats": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "debuts": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "gradeLeaders": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "clubLeaderboards": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "ladders": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "gameDay": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "teamLists": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+})
+})
+}).describe('One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001).').optional().describe('The whole Posting Plan; saving it also updates the family switches and round-schedule modes.')
 })
 
 export const updateSocialSettingsResponseRoundSchedulesGameDayDayMin = 0;
@@ -7368,7 +7490,69 @@ export const UpdateSocialSettingsResponse = zod.object({
   "day": zod.number().min(updateSocialSettingsResponseRoundSchedulesWeekendWrapDayMin).max(updateSocialSettingsResponseRoundSchedulesWeekendWrapDayMax).describe('Day of the week the round set is drafted (0 = Sunday), club time.'),
   "hour": zod.number().min(updateSocialSettingsResponseRoundSchedulesWeekendWrapHourMin).max(updateSocialSettingsResponseRoundSchedulesWeekendWrapHourMax).describe('Hour of the day the round set is drafted, club time (Perth).')
 })
-}).optional().describe('When the round cards draft themselves (balanced card sets). Always complete in a response: a card never saved shows its default.')
+}).optional().describe('When the round cards draft themselves (balanced card sets). Always complete in a response: a card never saved shows its default.'),
+  "postingPlan": zod.object({
+  "version": zod.literal(1),
+  "styleId": zod.string().nullable(),
+  "rows": zod.object({
+  "results": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "milestones": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "feats": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "debuts": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "gradeLeaders": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "clubLeaderboards": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "ladders": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "gameDay": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+}),
+  "teamLists": zod.object({
+  "enabled": zod.boolean(),
+  "packaging": zod.enum(['individual', 'round', 'both']),
+  "grades": zod.record(zod.string(), zod.boolean()).describe('Explicit per-grade choices; a grade absent here follows others.'),
+  "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
+})
+})
+}).optional().describe('One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001).'),
+  "postingPlanSaved": zod.boolean().optional().describe('Whether the club has saved a Posting Plan; false means postingPlan is derived from its other settings (first visit).'),
+  "centralData": zod.boolean().optional().describe('Whether the club reads its results from the association database (results, ladder and leaderboard round carousels need it).')
 })
 
 

@@ -5178,6 +5178,69 @@ export interface RoundSchedules {
   weekendWrap: RoundSchedule;
 }
 
+export type PostingPlanVersion = typeof PostingPlanVersion[keyof typeof PostingPlanVersion];
+
+
+export const PostingPlanVersion = {
+  NUMBER_1: 1,
+} as const;
+
+export type PostingPlanRowPackaging = typeof PostingPlanRowPackaging[keyof typeof PostingPlanRowPackaging];
+
+
+export const PostingPlanRowPackaging = {
+  individual: 'individual',
+  round: 'round',
+  both: 'both',
+} as const;
+
+/**
+ * Unlisted grades: seniors draft (juniors do not), or nothing drafts.
+ */
+export type PostingPlanRowOthers = typeof PostingPlanRowOthers[keyof typeof PostingPlanRowOthers];
+
+
+export const PostingPlanRowOthers = {
+  seniors: 'seniors',
+  off: 'off',
+} as const;
+
+/**
+ * Explicit per-grade choices; a grade absent here follows others.
+ */
+export type PostingPlanRowGrades = {[key: string]: boolean};
+
+export interface PostingPlanRow {
+  enabled: boolean;
+  packaging: PostingPlanRowPackaging;
+  /** Explicit per-grade choices; a grade absent here follows others. */
+  grades: PostingPlanRowGrades;
+  /** Unlisted grades: seniors draft (juniors do not), or nothing drafts. */
+  others: PostingPlanRowOthers;
+}
+
+export type PostingPlanRows = {
+  results: PostingPlanRow;
+  milestones: PostingPlanRow;
+  feats: PostingPlanRow;
+  debuts: PostingPlanRow;
+  gradeLeaders: PostingPlanRow;
+  clubLeaderboards: PostingPlanRow;
+  ladders: PostingPlanRow;
+  gameDay: PostingPlanRow;
+  teamLists: PostingPlanRow;
+};
+
+/**
+ * One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001).
+ */
+export interface PostingPlan {
+  version: PostingPlanVersion;
+  /** @nullable */
+  styleId: string | null;
+  rows: PostingPlanRows;
+}
+
 export interface SocialSettings {
   engineOnDemand: boolean;
   engineMilestone: boolean;
@@ -5224,6 +5287,11 @@ export interface SocialSettings {
   familyConfig?: SocialFamilyConfig;
   packColourModes?: PackColourModes;
   roundSchedules?: RoundSchedules;
+  postingPlan?: PostingPlan;
+  /** Whether the club has saved a Posting Plan; false means postingPlan is derived from its other settings (first visit). */
+  postingPlanSaved?: boolean;
+  /** Whether the club reads its results from the association database (results, ladder and leaderboard round carousels need it). */
+  centralData?: boolean;
 }
 
 export interface Notification {
@@ -5975,6 +6043,8 @@ export interface SocialSettingsUpdate {
   packColourModes?: PackColourModes;
   /** Merged per card: only the cards sent change, the others keep their schedule. */
   roundSchedules?: RoundSchedulesUpdate;
+  /** The whole Posting Plan; saving it also updates the family switches and round-schedule modes. */
+  postingPlan?: PostingPlan;
 }
 
 /**

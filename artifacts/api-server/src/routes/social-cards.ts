@@ -31,6 +31,8 @@ import { DEFAULT_TEMPLATES, ensureSettings } from "../lib/social-cards-helpers";
 import { resolveFamilyConfig, syncFamilySettings } from "../lib/social-families";
 import { persistDueDrafts } from "../lib/effective-draft-state";
 import { loadConnection } from "../lib/publishing/connections";
+import { postingPlanWrite, resolvePostingPlan } from "../lib/posting-plan";
+import { tenantIsCentral } from "../lib/tenant";
 
 // Deliberately loose: the address is only ever a recipient for our own mail.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,6 +71,7 @@ router.use(setsRouter);
 router.get("/social-settings", async (req, res): Promise<void> => {
   const tenantId = getTenantId(req);
   const settings = await ensureSettings(tenantId);
+  const central = await tenantIsCentral(tenantId);
   const captionTemplates = await db
     .select()
     .from(captionTemplatesTable)
@@ -80,6 +83,9 @@ router.get("/social-settings", async (req, res): Promise<void> => {
       ...settings,
       familyConfig: resolveFamilyConfig(settings),
       roundSchedules: resolveRoundSchedules(settings.roundSchedules),
+      postingPlan: resolvePostingPlan(settings, central),
+      postingPlanSaved: settings.postingPlan != null,
+      centralData: central,
     },
     captionTemplates: captionTemplates.map((t) => ({
       engine: t.engine,
@@ -162,11 +168,24 @@ router.patch(
     if (current.autoPostEnabled && parsed.data.autoPostEnabled === false) {
       await persistDueDrafts(tenantId);
     }
+    // A saved Posting Plan also rewrites the family switches and round-schedule
+    // modes it collapses to (plan 2026-10-07-001 KTD3); day and hour are kept.
+    const central = await tenantIsCentral(tenantId);
+    let planColumns: Partial<typeof socialSettingsTable.$inferInsert> = {};
+    if (parsed.data.postingPlan) {
+      const written = postingPlanWrite(current, parsed.data.postingPlan, central);
+      if ("error" in written) {
+        res.status(400).json({ error: written.error });
+        return;
+      }
+      planColumns = written.columns;
+    }
     // Family switches and the legacy engine flags are kept in step both ways.
     const {
       familyConfig: _submitted,
       packColourModes: _modes,
       roundSchedules: _schedules,
+      postingPlan: _plan,
       ...patch
     } = parsed.data;
     const [row] = await db
@@ -176,6 +195,7 @@ router.patch(
         ...syncFamilySettings(current, parsed.data),
         ...(packColourModes ? { packColourModes } : {}),
         ...(roundSchedules ? { roundSchedules } : {}),
+        ...planColumns,
         updatedAt: new Date(),
       })
       .where(eq(socialSettingsTable.tenantId, tenantId))
@@ -184,6 +204,9 @@ router.patch(
       ...row,
       familyConfig: resolveFamilyConfig(row),
       roundSchedules: resolveRoundSchedules(row.roundSchedules),
+      postingPlan: resolvePostingPlan(row, central),
+      postingPlanSaved: row.postingPlan != null,
+      centralData: central,
     });
   },
 );
