@@ -4,8 +4,11 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 
 ## Active features
 
+- [social-auto-queue-criteria](social-auto-queue-criteria.md)
 - [card-kind-templates](card-kind-templates.md)
 
 ## Feature ADRs
 
 - card-kind-templates: ADR-001, ADR-002, ADR-003
+
+- [team-of-the-week-engines](team-of-the-week-engines.md) — discovery only, next spec
