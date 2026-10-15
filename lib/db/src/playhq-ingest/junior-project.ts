@@ -207,6 +207,7 @@ export async function projectJuniors(
       matchesSkipped: 0,
       participantsCreated: 0,
       participantsUpdated: 0,
+      shirtNumbersActivated: 0,
       touchedParticipantIds: [],
       errors: [],
     };

@@ -44,6 +44,11 @@ import {
   parseShirtNumberUpload,
   UploadParseError,
 } from "../lib/shirt-number-upload";
+import {
+  annotateCrossRegister,
+  loadJuniorCrossEntries,
+  seniorGuidsByPlayer,
+} from "../lib/shirt-number-cross";
 
 /**
  * Season shirt numbers — the senior register (plan U3). Tenant-curated content:
@@ -304,11 +309,20 @@ router.post(
     const tenantId = getTenantId(req);
     let rows: ReturnType<typeof buildPreviewRows> = [];
     if (parsed.errors.length === 0 && parsed.rows.length > 0) {
-      const [roster, entries] = await Promise.all([
+      const [roster, entries, junior] = await Promise.all([
         loadSeniorUploadRoster(tenantId),
         loadSeasonEntries(db, "senior", tenantId, season),
+        loadJuniorCrossEntries(tenantId, season),
       ]);
       rows = buildPreviewRows(parsed.rows, roster, entries);
+      // Admin-only cross-check against the juniors register (read-only, this season).
+      if (junior.length > 0) {
+        const guids = await seniorGuidsByPlayer(tenantId);
+        rows = annotateCrossRegister(rows, junior, (row) => [
+          row.participantId,
+          ...(row.playerId !== null ? (guids.get(row.playerId) ?? []) : []),
+        ]);
+      }
     }
     const preview = await createUpload({
       tenantId,

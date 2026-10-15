@@ -104,6 +104,8 @@ async function seasonShirtNumbers(
         eq(juniorShirtNumbersTable.tenantId, tenantId),
         eq(juniorShirtNumbersTable.season, season),
         isNotNull(juniorShirtNumbersTable.number),
+        // A held number (its player not here yet, or a name to check) is never shown.
+        eq(juniorShirtNumbersTable.held, false),
       ),
     );
   return new Map(rows.map((r) => [r.participantId.toLowerCase(), r.number!]));

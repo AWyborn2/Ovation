@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+/**
+ * `held` (juniors only): the row's PlayHQ Profile ID is not one of the club's junior players yet; the number is kept by that id and goes live when the player arrives from PlayHQ under a matching name. `mismatch`: the Profile ID belongs to someone whose name differs from the sheet's (often a family account), so the row is never linked automatically.
+ */
 export type ShirtNumberPreviewStatus = typeof ShirtNumberPreviewStatus[keyof typeof ShirtNumberPreviewStatus];
 
 
@@ -13,5 +16,7 @@ export const ShirtNumberPreviewStatus = {
   matched: 'matched',
   suggested: 'suggested',
   new: 'new',
+  held: 'held',
+  mismatch: 'mismatch',
   invalid: 'invalid',
 } as const;

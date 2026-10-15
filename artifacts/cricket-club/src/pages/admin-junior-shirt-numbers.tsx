@@ -1,5 +1,9 @@
 import { Link } from "wouter";
-import { useGetJuniorsOverview, useGetShirtNumberSettings } from "@workspace/api-client-react";
+import {
+  useGetJuniorsOverview,
+  useGetShirtNumberSettings,
+  useListJuniorShirtNumbers,
+} from "@workspace/api-client-react";
 import { EmptyState, LoadingState, QueryError } from "@/components/data-states";
 import {
   JuniorPersonPicker,
@@ -14,11 +18,21 @@ import { juniorShirtNumberApi } from "@/components/shirt-numbers/junior-api";
  * with uploads, review and season start, kept apart from the senior register.
  * The feature switch and policies are shared with the senior register and are
  * changed on the senior Shirt numbers tab. Clubs without junior data (central
- * PCA clubs) have no junior players, so the register is hidden for them.
+ * PCA clubs) have no junior players, so the register is hidden for them, unless
+ * junior PlayHQ sync is on: then numbers can be uploaded and held before the
+ * season's juniors arrive (the register says so with `juniorsAvailable`).
  */
 export default function AdminJuniorShirtNumbers() {
   const settings = useGetShirtNumberSettings();
   const overview = useGetJuniorsOverview();
+  const noPlayers = overview.data?.totals.players === 0;
+  // Only asked when the club has no junior players yet: is junior sync bringing them?
+  const availability = useListJuniorShirtNumbers(undefined, {
+    query: {
+      queryKey: ["junior-shirt-numbers-available"],
+      enabled: noPlayers && !!settings.data?.enabled,
+    },
+  });
 
   if (settings.isError) return <QueryError onRetry={() => settings.refetch()} />;
   if (overview.isError) return <QueryError onRetry={() => overview.refetch()} />;
@@ -32,7 +46,11 @@ export default function AdminJuniorShirtNumbers() {
     </Link>
   );
 
-  if (overview.data.totals.players === 0) {
+  if (noPlayers && settings.data.enabled) {
+    if (availability.isError) return <QueryError onRetry={() => availability.refetch()} />;
+    if (availability.isLoading || !availability.data) return <LoadingState />;
+  }
+  if (noPlayers && !(settings.data.enabled && availability.data?.juniorsAvailable)) {
     return (
       <EmptyState
         title="No junior players"

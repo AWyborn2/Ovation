@@ -5,8 +5,38 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/admin-ui";
 import { cn } from "@/lib/utils";
-import type { RegisterEntryView } from "./api";
+import type { PickedPerson, RegisterEntryView, ShirtNumberSide } from "./api";
 import { isValidShirtNumber } from "./values";
+
+/** A dual player's number in the other register, as a short tag (admin only). */
+function CrossRegisterTags({ entry, side }: { entry: RegisterEntryView; side: ShirtNumberSide }) {
+  const other = side === "junior" ? "senior" : "junior";
+  const Other = other === "senior" ? "Senior" : "Junior";
+  if (entry.crossRegister.length === 0) return null;
+  return (
+    <span className="flex flex-wrap items-center gap-1">
+      {entry.crossRegister.map((n, i) => {
+        const num = n.number !== null ? `#${n.number}` : "no number";
+        if (n.relation === "same") {
+          const differs = n.number !== entry.number;
+          return (
+            <StatusPill key={i} tone={differs ? "attention" : "neutral"}>
+              {Other} {num}
+              {differs ? " · differs" : ""}
+            </StatusPill>
+          );
+        }
+        return (
+          <span key={i} className="text-xs text-muted-foreground">
+            {n.relation === "sharedId"
+              ? `Profile ID shared with ${n.name} in the ${other} register — family account?`
+              : `Also ${other} ${num} (different Profile ID)`}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
 
 export type SaveOutcome =
   | { ok: true; warnings: ShirtNumberWarning[] }
@@ -37,6 +67,8 @@ export function ShirtNumberRegisterTable({
   onSaveNumber,
   onDelete,
   renderLinkControl,
+  onQuickLink,
+  side = "senior",
   toolbarAction,
   label = "Shirt number register",
 }: {
@@ -46,6 +78,10 @@ export function ShirtNumberRegisterTable({
   onDelete?: (entry: RegisterEntryView) => void;
   /** The link picker for a held row; `done` closes it. Omit to hide "Link to player". */
   renderLinkControl?: (entry: RegisterEntryView, done: () => void) => ReactNode;
+  /** One-click link of a held entry (a suggested junior, or confirming a name mismatch). */
+  onQuickLink?: (entry: RegisterEntryView, person: PickedPerson) => void;
+  /** Which register this is, for the cross-register tags. */
+  side?: ShirtNumberSide;
   toolbarAction?: ReactNode;
   label?: string;
 }) {
@@ -272,12 +308,26 @@ export function ShirtNumberRegisterTable({
                     </td>
                     <td className={td}>
                       {cellLabel("Name")}
-                      <span className="font-semibold">{e.name}</span>
+                      <span className="flex flex-col gap-0.5">
+                        <span className="font-semibold">{e.name}</span>
+                        <CrossRegisterTags entry={e} side={side} />
+                      </span>
                     </td>
                     <td className={td}>
                       {cellLabel("Player")}
                       {e.held ? (
-                        <StatusPill tone="attention">Held</StatusPill>
+                        <span className="flex flex-wrap items-center gap-2">
+                          {e.heldReason === "nameMismatch" ? (
+                            <StatusPill tone="danger">Name mismatch — check</StatusPill>
+                          ) : e.heldReason === "waiting" ? (
+                            <StatusPill tone="info">Waiting for PlayHQ</StatusPill>
+                          ) : (
+                            <StatusPill tone="attention">Held</StatusPill>
+                          )}
+                          {e.heldReason === "nameMismatch" && e.playerName && (
+                            <span className="text-muted-foreground">PlayHQ: {e.playerName}</span>
+                          )}
+                        </span>
                       ) : (
                         <span className="flex items-center gap-2">
                           <StatusPill tone="success">Linked</StatusPill>
@@ -292,6 +342,40 @@ export function ShirtNumberRegisterTable({
                       <span className="text-muted-foreground">{SOURCE_LABEL[e.source]}</span>
                     </td>
                     <td className={cn(td, "flex-wrap md:text-right")}>
+                      {e.held && onQuickLink && e.suggestedLink && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            onQuickLink(e, {
+                              name: e.suggestedLink!.name,
+                              participantId: e.suggestedLink!.participantId,
+                            })
+                          }
+                        >
+                          Link to {e.suggestedLink.name}
+                        </Button>
+                      )}
+                      {e.held &&
+                        onQuickLink &&
+                        e.heldReason === "nameMismatch" &&
+                        e.participantId &&
+                        e.playerName && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              onQuickLink(e, {
+                                name: e.playerName!,
+                                participantId: e.participantId,
+                              })
+                            }
+                          >
+                            Confirm {e.playerName}
+                          </Button>
+                        )}
                       {supportsHeld && e.held && renderLinkControl && (
                         <>
                           {linkingId === e.id ? (

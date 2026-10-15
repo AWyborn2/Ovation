@@ -16,4 +16,6 @@ export interface ShirtNumberRowResolution {
      * @nullable
      */
   playerId?: number | null;
+  /** Give the entry the number this row's person wears in the juniors register (the preview's `same` cross-register note) instead of the sheet's number. */
+  useCrossRegisterNumber?: boolean;
 }
