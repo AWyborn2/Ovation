@@ -28,6 +28,7 @@ import { PlayerPool } from "@/components/selection/player-pool";
 import { ChangeLog, RoundHeader } from "@/components/selection/round-header";
 import { TeamCard } from "@/components/selection/team-card";
 import { usePointerDrag } from "@/components/selection/use-pointer-drag";
+import { AvailabilityContext } from "@/components/selection/availability-context";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -156,19 +157,24 @@ export default function SelectionHub() {
         onSuccess: (r) => {
           const n = r.messaged.selected;
           const label = sideLabel(side);
-          const msg = `${label} finalised and published. ${n} ${
-            section === "junior"
-              ? n === 1
-                ? "family"
-                : "families"
-              : n === 1
-                ? "player"
-                : "players"
-          } notified${r.messaged.deselected ? `, ${r.messaged.deselected} told they're out` : ""}.${
-            r.messaged.failed
-              ? ` ${r.messaged.failed} couldn't be reached; finalise again later to retry.`
-              : ""
-          }`;
+          const unlisted = r.unlisted?.length
+            ? ` ${r.unlisted.join(", ")} ${r.unlisted.length === 1 ? "isn't" : "aren't"} on the junior team list: no matching PlayHQ junior was found.`
+            : "";
+          const msg = !board.data?.availability
+            ? `${label} finalised and published as the team list.${unlisted}`
+            : `${label} finalised and published. ${n} ${
+                section === "junior"
+                  ? n === 1
+                    ? "family"
+                    : "families"
+                  : n === 1
+                    ? "player"
+                    : "players"
+              } notified${r.messaged.deselected ? `, ${r.messaged.deselected} told they're out` : ""}.${
+                r.messaged.failed
+                  ? ` ${r.messaged.failed} couldn't be reached; finalise again later to retry.`
+                  : ""
+              }${unlisted}`;
           say(msg);
           toast({ description: msg });
           void refetch();
@@ -228,125 +234,133 @@ export default function SelectionHub() {
   const roundLabel = data?.selections.find((s) => s.fixture.roundLabel)?.fixture.roundLabel;
 
   return (
-    <div className="mx-auto flex w-full min-w-0 flex-col gap-4 pb-12">
-      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
-            Selection Hub
-          </div>
-          <h1 className="mt-1.5 font-serif text-[34px] font-extrabold leading-none">
-            {roundLabel ?? "This round"}
-            {data?.round && (
-              <span className="font-semibold text-muted-foreground">
-                {" "}
-                · {weekendLabel(data.round.weekendDate)}
-              </span>
-            )}
-          </h1>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <SelectionCompareLink junior={junior} />
-          <AddActivePlayer section={section} />
-          <div
-            role="group"
-            aria-label="Section"
-            className="inline-flex rounded-lg border border-border bg-muted p-0.5"
-          >
-            {(["senior", "junior"] as const).map((s) => (
-              <button
-                key={s}
-                type="button"
-                aria-pressed={section === s}
-                onClick={() => setSection(s)}
-                className={cn(
-                  "min-h-[34px] rounded-md px-3 text-sm font-semibold text-muted-foreground",
-                  section === s && "bg-card text-foreground shadow-sm",
-                )}
-              >
-                {s === "senior" ? "Seniors" : "Juniors"}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
-
-      <div aria-live="polite" role="status" className="sr-only" data-testid="hub-announcer">
-        {announcement}
-      </div>
-
-      {board.isError ? (
-        <QueryError message={errorText(board.error)} onRetry={() => board.refetch()} />
-      ) : board.isLoading || !data || !view ? (
-        <LoadingState label="Loading the board…" />
-      ) : !data.round && view.selections.length === 0 ? (
-        <EmptyState
-          title="No availability round yet"
-          message="Once the club's availability requests go out, this round's drafts and replies show here."
-        />
-      ) : (
-        <>
-          {data.round && <RoundHeader round={data.round} actor={data.actor} junior={junior} />}
-          <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
-            <main
-              aria-label="Teams"
-              className="grid min-w-0 content-start gap-3.5 [grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr))]"
-            >
-              {view.selections.length === 0 ? (
-                <EmptyState
-                  className="col-span-full"
-                  title="No drafts yet"
-                  message="Drafts open when availability requests are sent for each grade with a fixture this round. Check that this section has fixtures scheduled."
-                />
-              ) : (
-                view.selections.map((side) => (
-                  <TeamCard
-                    key={side.id}
-                    side={side}
-                    junior={junior}
-                    busy={busy}
-                    draggingId={drag.draggingId}
-                    onOpenMember={openMember}
-                    onChipPointerDown={drag.onPointerDown}
-                    onRole={(role, memberId) =>
-                      act({ kind: "role", sideId: side.id, role, memberId })
-                    }
-                    onFinalise={() => doFinalise(side.id)}
-                    onReopen={() => doReopen(side.id)}
-                  />
-                ))
+    <AvailabilityContext.Provider value={data?.availability ?? true}>
+      <div className="mx-auto flex w-full min-w-0 flex-col gap-4 pb-12">
+        <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+              Selection Hub
+            </div>
+            <h1 className="mt-1.5 font-serif text-[34px] font-extrabold leading-none">
+              {roundLabel ?? "This round"}
+              {data?.round && (
+                <span className="font-semibold text-muted-foreground">
+                  {" "}
+                  · {weekendLabel(data.round.weekendDate)}
+                </span>
               )}
-            </main>
-            <div className="relative order-first min-w-0 lg:order-none lg:min-h-[420px]">
-              <PlayerPool
-                pool={view.pool}
-                junior={junior}
-                busy={save.isPending}
-                draggingId={drag.draggingId}
-                scrollRef={poolRef}
-                canRemind={data.actor.canRemind && data.round != null}
-                reminding={remind.isPending}
-                onRemind={doRemind}
-                onOpenMember={openMember}
-                onChipPointerDown={drag.onPointerDown}
-              />
+            </h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <SelectionCompareLink junior={junior} />
+            <AddActivePlayer section={section} />
+            <div
+              role="group"
+              aria-label="Section"
+              className="inline-flex rounded-lg border border-border bg-muted p-0.5"
+            >
+              {(["senior", "junior"] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  aria-pressed={section === s}
+                  onClick={() => setSection(s)}
+                  className={cn(
+                    "min-h-[34px] rounded-md px-3 text-sm font-semibold text-muted-foreground",
+                    section === s && "bg-card text-foreground shadow-sm",
+                  )}
+                >
+                  {s === "senior" ? "Seniors" : "Juniors"}
+                </button>
+              ))}
             </div>
           </div>
-          <ChangeLog events={data.events} />
-        </>
-      )}
+        </header>
 
-      {view && (
-        <MoveDialog
-          junior={junior}
-          state={view}
-          memberId={openId}
-          busy={busy}
-          onClose={() => setOpenId(null)}
-          onMove={(memberId, target) => act({ kind: "move", memberId, target })}
-          onRole={(sideId, role, memberId) => act({ kind: "role", sideId, role, memberId })}
-        />
-      )}
-    </div>
+        <div aria-live="polite" role="status" className="sr-only" data-testid="hub-announcer">
+          {announcement}
+        </div>
+
+        {board.isError ? (
+          <QueryError message={errorText(board.error)} onRetry={() => board.refetch()} />
+        ) : board.isLoading || !data || !view ? (
+          <LoadingState label="Loading the board…" />
+        ) : !data.round && view.selections.length === 0 ? (
+          <EmptyState
+            title="No availability round yet"
+            message="Once the club's availability requests go out, this round's drafts and replies show here."
+          />
+        ) : (
+          <>
+            {data.availability && data.round && (
+              <RoundHeader round={data.round} actor={data.actor} junior={junior} />
+            )}
+            <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+              <main
+                aria-label="Teams"
+                className="grid min-w-0 content-start gap-3.5 [grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr))]"
+              >
+                {view.selections.length === 0 ? (
+                  <EmptyState
+                    className="col-span-full"
+                    title={data.availability ? "No drafts yet" : "No fixtures this weekend"}
+                    message={
+                      data.availability
+                        ? "Drafts open when availability requests are sent for each grade with a fixture this round. Check that this section has fixtures scheduled."
+                        : "A side is drafted for each of this section's fixtures from Friday to Sunday, starting from the grade's last team list. Add or sync fixtures to start picking."
+                    }
+                  />
+                ) : (
+                  view.selections.map((side) => (
+                    <TeamCard
+                      key={side.id}
+                      side={side}
+                      junior={junior}
+                      busy={busy}
+                      draggingId={drag.draggingId}
+                      onOpenMember={openMember}
+                      onChipPointerDown={drag.onPointerDown}
+                      onRole={(role, memberId) =>
+                        act({ kind: "role", sideId: side.id, role, memberId })
+                      }
+                      onFinalise={() => doFinalise(side.id)}
+                      onReopen={() => doReopen(side.id)}
+                    />
+                  ))
+                )}
+              </main>
+              <div className="relative order-first min-w-0 lg:order-none lg:min-h-[420px]">
+                <PlayerPool
+                  pool={view.pool}
+                  junior={junior}
+                  busy={save.isPending}
+                  draggingId={drag.draggingId}
+                  scrollRef={poolRef}
+                  canRemind={data.availability && data.actor.canRemind && data.round != null}
+                  reminding={remind.isPending}
+                  onRemind={doRemind}
+                  onOpenMember={openMember}
+                  onChipPointerDown={drag.onPointerDown}
+                />
+              </div>
+            </div>
+            <ChangeLog events={data.events} />
+          </>
+        )}
+
+        {view && (
+          <MoveDialog
+            junior={junior}
+            state={view}
+            memberId={openId}
+            busy={busy}
+            onClose={() => setOpenId(null)}
+            onMove={(memberId, target) => act({ kind: "move", memberId, target })}
+            onRole={(sideId, role, memberId) => act({ kind: "role", sideId, role, memberId })}
+          />
+        )}
+      </div>
+    </AvailabilityContext.Provider>
   );
 }
 

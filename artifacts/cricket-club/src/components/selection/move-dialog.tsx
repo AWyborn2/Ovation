@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { locate, sideEditable, sideLabel, type BoardState, type DropTarget } from "./apply-move";
 import { STATUS, perthDateTime } from "./labels";
+import { useAvailability } from "./availability-context";
 import { StatusMark } from "./player-chip";
 import { SelectionCompareLink } from "./compare-link";
 
@@ -94,6 +95,7 @@ export function MoveDialog({
   const locked = memberId != null ? lockedReason(state, memberId) : null;
   const canRole = side != null && sideEditable(side);
   const s = member ? STATUS[member.status] : null;
+  const availability = useAvailability();
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -108,17 +110,21 @@ export function MoveDialog({
             </DialogDescription>
           </DialogHeader>
           <dl className="grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-1.5 text-[13px]">
-            <dt className="text-muted-foreground">This round</dt>
-            <dd className="flex min-w-0 items-center gap-1.5">
-              <StatusMark status={member.status} />
-              {s.label}
-              {member.repliedAt
-                ? ` · replied ${perthDateTime(member.repliedAt)}`
-                : member.status === "none"
-                  ? " · no reply yet"
-                  : ""}
-              {member.late ? " · after cut-off" : ""}
-            </dd>
+            {availability && (
+              <>
+                <dt className="text-muted-foreground">This round</dt>
+                <dd className="flex min-w-0 items-center gap-1.5">
+                  <StatusMark status={member.status} />
+                  {s.label}
+                  {member.repliedAt
+                    ? ` · replied ${perthDateTime(member.repliedAt)}`
+                    : member.status === "none"
+                      ? " · no reply yet"
+                      : ""}
+                  {member.late ? " · after cut-off" : ""}
+                </dd>
+              </>
+            )}
             {member.note && (
               <>
                 <dt className="text-muted-foreground">Note</dt>

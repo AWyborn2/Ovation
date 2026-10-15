@@ -7,12 +7,13 @@
  */
 
 /**
- * `link`: attach to the junior `participantId`; `discard`: skip the row.
+ * `link`: attach to the junior `participantId`; `hold` (only for a `held` row): keep the number by the row's Profile ID until that player arrives from PlayHQ; `discard`: skip the row.
  */
 export type JuniorShirtNumberRowResolutionAction = typeof JuniorShirtNumberRowResolutionAction[keyof typeof JuniorShirtNumberRowResolutionAction];
 
 
 export const JuniorShirtNumberRowResolutionAction = {
   link: 'link',
+  hold: 'hold',
   discard: 'discard',
 } as const;

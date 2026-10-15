@@ -3405,7 +3405,26 @@ export interface SelectionSlot {
   member: SelectionMember | null;
 }
 
+/**
+ * `senior`: a `fixtures` row. `junior`: a junior fixture from the junior
+PlayHQ sync, whose `grade` is the club's junior team ("Halls Head
+Year 7 Gold") and which publishes to the junior team list.
+
+ */
+export type SelectionFixtureKind = typeof SelectionFixtureKind[keyof typeof SelectionFixtureKind];
+
+
+export const SelectionFixtureKind = {
+  senior: 'senior',
+  junior: 'junior',
+} as const;
+
 export interface SelectionFixture {
+  /** `senior`: a `fixtures` row. `junior`: a junior fixture from the junior
+  PlayHQ sync, whose `grade` is the club's junior team ("Halls Head
+  Year 7 Gold") and which publishes to the junior team list.
+   */
+  kind: SelectionFixtureKind;
   id: number;
   grade: string;
   opponentName: string;
@@ -3527,6 +3546,12 @@ export interface SelectionActor {
 
 export interface SelectionBoard {
   section: SquadSection;
+  /** The club uses availability requests. Off, the Hub stands alone: the
+  weekend's sides are drafted on demand from each grade's last team
+  list (everyone listed kept), member statuses and the round's steps
+  don't apply, and finalising messages no one.
+   */
+  availability: boolean;
   actor: SelectionActor;
   round: SelectionRound | null;
   selections: SelectionSide[];
@@ -3613,6 +3638,10 @@ export type SelectionFinaliseResultMessaged = {
 export interface SelectionFinaliseResult {
   selection: SelectionSide;
   messaged: SelectionFinaliseResultMessaged;
+  /** Junior side only: players left off the published junior team list
+  because they match none of the club's PlayHQ junior participants.
+   */
+  unlisted?: string[];
 }
 
 export interface SelectionRemindBody {
@@ -8425,6 +8454,33 @@ export interface ShirtNumberConflict {
   warnings: ShirtNumberWarning[];
 }
 
+/**
+ * `same`: same Profile ID and the same name. `sharedId`: same Profile ID but a different name (a family account?). `nameOnly`: same name under a different Profile ID.
+ */
+export type ShirtNumberCrossRegisterNoteRelation = typeof ShirtNumberCrossRegisterNoteRelation[keyof typeof ShirtNumberCrossRegisterNoteRelation];
+
+
+export const ShirtNumberCrossRegisterNoteRelation = {
+  same: 'same',
+  sharedId: 'sharedId',
+  nameOnly: 'nameOnly',
+} as const;
+
+/**
+ * The same person (or a possibly related one) in the other register this season: the senior register for a junior row or entry, the juniors register for a senior one. Admin-only, informational unless `relation` is `same`.
+ */
+export interface ShirtNumberCrossRegisterNote {
+  /** `same`: same Profile ID and the same name. `sharedId`: same Profile ID but a different name (a family account?). `nameOnly`: same name under a different Profile ID. */
+  relation: ShirtNumberCrossRegisterNoteRelation;
+  /** The name in the other register. */
+  name: string;
+  /**
+     * The number in the other register (null when unnumbered).
+     * @nullable
+     */
+  number: string | null;
+}
+
 export interface ShirtNumberEntry {
   id: number;
   season: number;
@@ -8454,6 +8510,8 @@ export interface ShirtNumberEntry {
   held: boolean;
   /** True when another entry in the season wears the same number. */
   duplicate: boolean;
+  /** Admin-only cross-check against the juniors register for the same season (read-only, this club only). Empty when nothing relates. */
+  crossRegister?: ShirtNumberCrossRegisterNote[];
   createdAt: string;
   updatedAt: string;
 }
@@ -8531,6 +8589,9 @@ export const ShirtNumberUploadKind = {
   numbers: 'numbers',
 } as const;
 
+/**
+ * `held` (juniors only): the row's PlayHQ Profile ID is not one of the club's junior players yet; the number is kept by that id and goes live when the player arrives from PlayHQ under a matching name. `mismatch`: the Profile ID belongs to someone whose name differs from the sheet's (often a family account), so the row is never linked automatically.
+ */
 export type ShirtNumberPreviewStatus = typeof ShirtNumberPreviewStatus[keyof typeof ShirtNumberPreviewStatus];
 
 
@@ -8538,6 +8599,8 @@ export const ShirtNumberPreviewStatus = {
   matched: 'matched',
   suggested: 'suggested',
   new: 'new',
+  held: 'held',
+  mismatch: 'mismatch',
   invalid: 'invalid',
 } as const;
 
@@ -8587,6 +8650,13 @@ export interface ShirtNumberPreviewRow {
   duplicateWith?: string[];
   /** Why an `invalid` row cannot be applied. */
   errors: string[];
+  /**
+     * For a `mismatch` row: the name of the club's person who has this Profile ID.
+     * @nullable
+     */
+  idOwnerName?: string | null;
+  /** Cross-check against the other register for the season (see ShirtNumberCrossRegisterNote). Absent on previews made before it existed. */
+  crossRegister?: ShirtNumberCrossRegisterNote[];
 }
 
 export interface ShirtNumberPreviewCounts {
@@ -8594,6 +8664,8 @@ export interface ShirtNumberPreviewCounts {
   matched: number;
   suggested: number;
   new: number;
+  held: number;
+  mismatch: number;
   invalid: number;
   numberChanges: number;
   duplicates: number;
@@ -8644,6 +8716,8 @@ export interface ShirtNumberRowResolution {
      * @nullable
      */
   playerId?: number | null;
+  /** Give the entry the number this row's person wears in the juniors register (the preview's `same` cross-register note) instead of the sheet's number. */
+  useCrossRegisterNumber?: boolean;
 }
 
 export interface ShirtNumberUploadCommit {
@@ -8651,25 +8725,28 @@ export interface ShirtNumberUploadCommit {
 }
 
 /**
- * `link`: attach to the junior `participantId`; `discard`: skip the row.
+ * `link`: attach to the junior `participantId`; `hold` (only for a `held` row): keep the number by the row's Profile ID until that player arrives from PlayHQ; `discard`: skip the row.
  */
 export type JuniorShirtNumberRowResolutionAction = typeof JuniorShirtNumberRowResolutionAction[keyof typeof JuniorShirtNumberRowResolutionAction];
 
 
 export const JuniorShirtNumberRowResolutionAction = {
   link: 'link',
+  hold: 'hold',
   discard: 'discard',
 } as const;
 
 export interface JuniorShirtNumberRowResolution {
   rowIndex: number;
-  /** `link`: attach to the junior `participantId`; `discard`: skip the row. */
+  /** `link`: attach to the junior `participantId`; `hold` (only for a `held` row): keep the number by the row's Profile ID until that player arrives from PlayHQ; `discard`: skip the row. */
   action: JuniorShirtNumberRowResolutionAction;
   /**
      * Required for `link`.
      * @nullable
      */
   participantId?: string | null;
+  /** Give the entry the number this row's person wears in the senior register (the preview's `same` cross-register note) instead of the sheet's number. */
+  useCrossRegisterNumber?: boolean;
 }
 
 export interface JuniorShirtNumberUploadCommit {
@@ -8686,21 +8763,59 @@ export interface ShirtNumberUploadCommitResult {
   warnings: ShirtNumberWarning[];
 }
 
+/**
+ * `linked`: live on cards and the profile. `waiting`: held by Profile ID until that player arrives from PlayHQ. `nameMismatch`: held, and the player with this Profile ID has a different name; check before linking.
+ */
+export type JuniorShirtNumberEntryLinkStatus = typeof JuniorShirtNumberEntryLinkStatus[keyof typeof JuniorShirtNumberEntryLinkStatus];
+
+
+export const JuniorShirtNumberEntryLinkStatus = {
+  linked: 'linked',
+  waiting: 'waiting',
+  nameMismatch: 'nameMismatch',
+} as const;
+
+export interface JuniorShirtNumberSuggestedLink {
+  participantId: string;
+  name: string;
+}
+
 export interface JuniorShirtNumberEntry {
   id: number;
   season: number;
   /** PlayHQ participant GUID (lowercased) */
   participantId: string;
+  /** The name on the register (from the club's sheet for an uploaded row). Admin-only; public pages use the PlayHQ name in the club's style. */
   name: string;
   /** @nullable */
   number: string | null;
   source: ShirtNumberSource;
   duplicate: boolean;
+  /** `linked`: live on cards and the profile. `waiting`: held by Profile ID until that player arrives from PlayHQ. `nameMismatch`: held, and the player with this Profile ID has a different name; check before linking. */
+  linkStatus: JuniorShirtNumberEntryLinkStatus;
+  /**
+     * The junior player's PlayHQ name, once the player exists.
+     * @nullable
+     */
+  playerName: string | null;
+  /** For a held entry: the one club junior whose PlayHQ name matches the entry's name under a different Profile ID (never linked automatically). */
+  suggestedLink?: JuniorShirtNumberSuggestedLink | null;
+  /** Admin-only cross-check against the senior register for the same season (read-only, this club only). */
+  crossRegister: ShirtNumberCrossRegisterNote[];
   createdAt: string;
   updatedAt: string;
 }
 
+export interface JuniorSeniorNumber {
+  participantId: string;
+  number: string;
+}
+
 export interface JuniorShirtNumberRegister {
+  /** True when the club has junior players or junior PlayHQ sync is on (a register can be kept before the season's players arrive). */
+  juniorsAvailable: boolean;
+  /** Admin-only: the season's senior-register numbers of the club's junior players (same Profile ID and name), to prefill the add form. */
+  seniorNumbers: JuniorSeniorNumber[];
   season: number;
   seasons: number[];
   entries: JuniorShirtNumberEntry[];
@@ -8720,6 +8835,11 @@ export interface JuniorShirtNumberEntryInput {
 }
 
 export interface JuniorShirtNumberEntryUpdate {
+  /**
+     * Link the entry to this club junior player (resolving merges) and make it live. Re-sending the entry's own id confirms a held entry.
+     * @minLength 1
+     */
+  participantId?: string;
   /**
      * @minLength 1
      * @maxLength 120
@@ -8967,6 +9087,7 @@ export type JuniorAdminTeamListSavedSource = typeof JuniorAdminTeamListSavedSour
 export const JuniorAdminTeamListSavedSource = {
   playhq: 'playhq',
   admin: 'admin',
+  selection: 'selection',
 } as const;
 
 export interface JuniorAdminTeamListSaved {

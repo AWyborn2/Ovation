@@ -108,7 +108,7 @@ router.post("/selection/:id/finalise", requireAdminOrCaptain, async (req, res): 
     );
     const board = await buildBoard(tenantId, actor, result.section);
     const selection = board.selections.find((s) => s.id === params.data.id);
-    res.json({ selection, messaged: result.messaged });
+    res.json({ selection, messaged: result.messaged, unlisted: result.unlisted });
   } catch (err) {
     if (!refuse(res, err)) throw err;
   }

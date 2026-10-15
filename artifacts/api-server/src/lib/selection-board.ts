@@ -4,13 +4,14 @@ import {
   db,
   availabilityResponsesTable,
   fixturesTable,
+  juniorTeamListsTable,
   selectionEventsTable,
   selectionsTable,
   squadMembersTable,
   teamListsTable,
   type AvailabilityRoundRow,
   type AvailabilityStatus,
-  type FixtureRow,
+  type JuniorTeamListPlayer,
   type SelectionRow,
   type SelectionRule,
   type SelectionSlot,
@@ -21,7 +22,15 @@ import {
 import { FILL_IN_THRESHOLD, sortByGradeOrder } from "@workspace/scorecard";
 import { loadClubGradeOrder } from "./club-grade-order";
 import {
-  fixtureSection,
+  loadSideFixture,
+  loadSideFixtures,
+  sideFixtureKey,
+  sideSection,
+  type SideFixture,
+} from "./selection-fixtures";
+import { loadJuniorIdentity } from "./junior-shirt-numbers";
+import { juniorMemberResolver } from "./shirt-number-squad";
+import {
   memberDisplayName,
   memberGrades,
   normaliseName,
@@ -31,6 +40,7 @@ import {
 import {
   DEFAULT_SCHEDULE,
   datesForGrade,
+  ensureRound,
   findRound,
   loadAvailabilitySettings,
   roundCounts,
@@ -177,6 +187,8 @@ export type BoardSide = {
   id: number;
   roundId: number;
   fixture: {
+    /** A senior `fixtures` row or a `junior_fixtures` row (junior PlayHQ sync). */
+    kind: "senior" | "junior";
     id: number;
     grade: string;
     opponentName: string;
@@ -216,6 +228,8 @@ export type BoardSide = {
 
 export type Board = {
   section: SquadSection;
+  /** The club uses availability requests; off, statuses and the round steps don't apply. */
+  availability: boolean;
   actor: {
     kind: SelectionActor["kind"];
     name: string;
@@ -261,6 +275,7 @@ const MEMBER_COLUMNS = {
   gradeHint: squadMembersTable.gradeHint,
   isPrivate: squadMembersTable.isPrivate,
   linkedPlayerId: squadMembersTable.linkedPlayerId,
+  playhqProfileId: squadMembersTable.playhqProfileId,
 };
 
 type BoardMemberRow = Pick<SquadMemberRow, keyof typeof MEMBER_COLUMNS>;
@@ -312,11 +327,20 @@ export async function buildBoard(
   section: SquadSection,
   now: Date = new Date(),
 ): Promise<Board> {
-  const { rule, weekendDate, slots: stepSlots, round } = await currentRound(tenantId, now);
+  const current = await currentRound(tenantId, now);
+  const { rule, weekendDate, slots: stepSlots } = current;
+  const availability = current.settings?.enabled === true;
   const window = roundWindow(weekendDate);
-  // Backfill already-sent rounds created before early drafting was supported.
-  // The builder is idempotent and never overwrites a saved or finalised side.
-  if (round && (round.sendStartedAt || round.sendCompletedAt)) {
+  let round = current.round;
+  if (!availability) {
+    // Without availability the Hub stands alone: the weekend's sides are drafted
+    // on demand from each grade's last team list, everyone listed kept in. Each
+    // load picks up fixtures added since; saved and finalised sides are kept.
+    round ??= await ensureRound(tenantId, weekendDate);
+    await buildRoundDrafts(tenantId, round.id, now, { requireYes: false });
+  } else if (round && (round.sendStartedAt || round.sendCompletedAt)) {
+    // Backfill already-sent rounds created before early drafting was supported.
+    // The builder is idempotent and never overwrites a saved or finalised side.
     await buildRoundDrafts(tenantId, round.id, now);
   }
 
@@ -332,22 +356,7 @@ export async function buildBoard(
         .select(MEMBER_COLUMNS)
         .from(squadMembersTable)
         .where(eq(squadMembersTable.tenantId, tenantId)),
-      round
-        ? db
-            .select({ selection: selectionsTable, fixture: fixturesTable })
-            .from(selectionsTable)
-            .innerJoin(
-              fixturesTable,
-              and(
-                eq(fixturesTable.id, selectionsTable.fixtureId),
-                eq(fixturesTable.tenantId, selectionsTable.tenantId),
-              ),
-            )
-            .where(
-              and(eq(selectionsTable.tenantId, tenantId), eq(selectionsTable.roundId, round.id)),
-            )
-            .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id))
-        : [],
+      round ? loadRoundSides(tenantId, round.id) : [],
       round
         ? loadResponses(tenantId, round.id, window.from, window.to)
         : new Map<number, ReadonlyMap<string, AvailabilityStatus>>(),
@@ -456,7 +465,7 @@ export async function buildBoard(
 
   // Stable sort retains fixture start/id order for multiple sides of the same grade.
   const sectionSides = sortByGradeOrder(
-    sides.filter((s) => fixtureSection(s.fixture.grade) === section),
+    sides.filter((s) => sideSection(s.fixture) === section),
     (s) => s.fixture.grade,
     gradeOrder,
   );
@@ -478,6 +487,7 @@ export async function buildBoard(
       id: sel.id,
       roundId: sel.roundId,
       fixture: {
+        kind: f.kind,
         id: f.id,
         grade: f.grade,
         opponentName: f.opponentName,
@@ -505,7 +515,9 @@ export async function buildBoard(
         filled: inXi,
         open: XI_SIZE - inXi,
         twelfth: slots[TWELFTH_INDEX]?.member != null,
-        unconfirmed: picked.filter((m) => m.status === "maybe" || m.status === "none").length,
+        unconfirmed: availability
+          ? picked.filter((m) => m.status === "maybe" || m.status === "none").length
+          : 0,
         saidNo: picked.filter((m) => m.status === "no").length,
         noCaptain: sel.captainMemberId == null,
         noKeeper: sel.keeperMemberId == null,
@@ -538,6 +550,7 @@ export async function buildBoard(
   const sectionMembers = new Set(members.filter((m) => m.section === section).map((m) => m.id));
   return {
     section,
+    availability,
     actor: {
       kind: actor.kind,
       name: actor.name,
@@ -586,7 +599,26 @@ export type SideChange = {
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-type LockedSide = { selection: SelectionRow; fixture: FixtureRow };
+type LockedSide = { selection: SelectionRow; fixture: SideFixture };
+
+/** A round's sides with their fixtures (senior or junior), by start then id. */
+async function loadRoundSides(tenantId: number, roundId: number): Promise<LockedSide[]> {
+  const rows = await db
+    .select()
+    .from(selectionsTable)
+    .where(and(eq(selectionsTable.tenantId, tenantId), eq(selectionsTable.roundId, roundId)));
+  const fixtures = await loadSideFixtures(db, tenantId, rows);
+  return rows
+    .flatMap((selection) => {
+      const fixture = fixtures.get(sideFixtureKey(selection));
+      return fixture ? [{ selection, fixture }] : [];
+    })
+    .sort(
+      (a, b) =>
+        a.fixture.startAt.getTime() - b.fixture.startAt.getTime() ||
+        a.selection.id - b.selection.id,
+    );
+}
 
 /** Lock every side of a round, with its fixture (tenant-scoped). */
 async function lockRound(tx: Tx, tenantId: number, roundId: number): Promise<LockedSide[]> {
@@ -597,21 +629,9 @@ async function lockRound(tx: Tx, tenantId: number, roundId: number): Promise<Loc
     .orderBy(asc(selectionsTable.id))
     .for("update");
   if (rows.length === 0) return [];
-  const fixtures = await tx
-    .select()
-    .from(fixturesTable)
-    .where(
-      and(
-        eq(fixturesTable.tenantId, tenantId),
-        inArray(
-          fixturesTable.id,
-          rows.map((r) => r.fixtureId),
-        ),
-      ),
-    );
-  const fixtureOf = new Map(fixtures.map((f) => [f.id, f]));
+  const fixtures = await loadSideFixtures(tx, tenantId, rows);
   return rows.flatMap((selection) => {
-    const fixture = fixtureOf.get(selection.fixtureId);
+    const fixture = fixtures.get(sideFixtureKey(selection));
     return fixture ? [{ selection, fixture }] : [];
   });
 }
@@ -834,8 +854,94 @@ export async function saveBoard(
     }
 
     const firstSide = sideOf.get(ids[0])!;
-    return { section: fixtureSection(firstSide.fixture.grade), selectionIds: ids };
+    return { section: sideSection(firstSide.fixture), selectionIds: ids };
   });
+}
+
+// --- Junior sides ---
+
+type JuniorPublishMember = Pick<
+  SquadMemberRow,
+  "id" | "firstName" | "lastName" | "preferredName" | "playhqProfileId"
+>;
+
+/**
+ * Publish a junior side as its fixture's `junior_team_lists` row (source
+ * "selection", published). Junior lists hold PlayHQ participant ids, never
+ * names, so each member is matched to one of the club's junior participants
+ * (`juniorMemberResolver`); anyone who matches none is left off and named in
+ * `unlisted`. A list PlayHQ supplied is never replaced.
+ */
+async function publishJuniorSide(
+  tx: Tx,
+  tenantId: number,
+  juniorFixtureId: number,
+  side: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId">,
+  members: readonly JuniorPublishMember[],
+): Promise<{ players: JuniorTeamListPlayer[]; unlisted: string[] }> {
+  const { participants, merges } = await loadJuniorIdentity(tx, tenantId);
+  const resolve = juniorMemberResolver(participants, merges);
+  const byId = new Map(members.map((m) => [m.id, m]));
+  const players: JuniorTeamListPlayer[] = [];
+  const unlisted: string[] = [];
+  const used = new Set<string>();
+  normaliseSlots(side.slots).forEach((slot, index) => {
+    const m = slot.memberId == null ? undefined : byId.get(slot.memberId);
+    if (!m) return;
+    const participantId = resolve(m);
+    if (!participantId || used.has(participantId)) {
+      unlisted.push(memberDisplayName(m));
+      return;
+    }
+    used.add(participantId);
+    const twelfth = index === TWELFTH_INDEX;
+    const role = twelfth ? undefined : roleOf(m.id, side);
+    players.push({
+      order: twelfth ? SIDE_SIZE : players.filter((p) => p.order <= XI_SIZE).length + 1,
+      participantId,
+      ...(role ? { role } : {}),
+    });
+  });
+  await tx
+    .insert(juniorTeamListsTable)
+    .values({ tenantId, juniorFixtureId, players, isPublished: true, source: "selection" })
+    .onConflictDoUpdate({
+      target: [juniorTeamListsTable.tenantId, juniorTeamListsTable.juniorFixtureId],
+      set: { players, isPublished: true, source: "selection", updatedAt: new Date() },
+      setWhere: ne(juniorTeamListsTable.source, "playhq"),
+    });
+  return { players, unlisted };
+}
+
+/** Drop a withdrawn member from a junior side's published Hub list. */
+async function withdrawFromJuniorList(
+  tx: Tx,
+  tenantId: number,
+  juniorFixtureId: number,
+  member: JuniorPublishMember,
+): Promise<void> {
+  const [list] = await tx
+    .select()
+    .from(juniorTeamListsTable)
+    .where(
+      and(
+        eq(juniorTeamListsTable.tenantId, tenantId),
+        eq(juniorTeamListsTable.juniorFixtureId, juniorFixtureId),
+        eq(juniorTeamListsTable.source, "selection"),
+      ),
+    );
+  if (!list) return;
+  const { participants, merges } = await loadJuniorIdentity(tx, tenantId);
+  const participantId = juniorMemberResolver(participants, merges)(member);
+  if (!participantId) return;
+  const players = list.players
+    .filter((p) => p.participantId !== participantId)
+    .map((p, i) => (p.order > XI_SIZE ? p : { ...p, order: i + 1 }));
+  if (players.length === list.players.length) return;
+  await tx
+    .update(juniorTeamListsTable)
+    .set({ players, updatedAt: new Date() })
+    .where(and(eq(juniorTeamListsTable.id, list.id), eq(juniorTeamListsTable.tenantId, tenantId)));
 }
 
 // --- Finalise and re-open ---
@@ -848,16 +954,13 @@ async function lockSide(tx: Tx, tenantId: number, selectionId: number): Promise<
     .where(and(eq(selectionsTable.tenantId, tenantId), eq(selectionsTable.id, selectionId)))
     .for("update");
   if (!selection) throw new SelectionError(404, "Side not found.");
-  const [fixture] = await tx
-    .select()
-    .from(fixturesTable)
-    .where(and(eq(fixturesTable.tenantId, tenantId), eq(fixturesTable.id, selection.fixtureId)));
+  const fixture = await loadSideFixture(tx, tenantId, selection);
   if (!fixture) throw new SelectionError(404, "Side not found.");
   return { selection, fixture };
 }
 
 /** A side is fixed once its match has started: PlayHQ's record of who played takes over. */
-function refuseIfStarted(fixture: FixtureRow, now: Date, action: string): void {
+function refuseIfStarted(fixture: SideFixture, now: Date, action: string): void {
   if (fixture.startAt.getTime() <= now.getTime()) {
     throw new SelectionError(
       409,
@@ -882,6 +985,11 @@ function roleOf(
 export type FinaliseResult = {
   section: SquadSection;
   messaged: { selected: number; deselected: number; failed: number };
+  /**
+   * Junior side: players left off the published junior team list because they
+   * match none of the club's PlayHQ junior participants.
+   */
+  unlisted: string[];
 };
 
 /**
@@ -934,20 +1042,35 @@ export async function finaliseSelection(
             )
         : [];
     const memberOf = new Map(members.map((m) => [m.id, m]));
-    const participantIds =
-      fixtureSection(fixture.grade) === "senior"
-        ? await loadSelectionParticipantIds(tx, tenantId, fixture.startAt)
-        : new Map<number, string>();
-    const players = selectionPublishedPlayers(selection, members, participantIds);
-    await tx
-      .insert(teamListsTable)
-      .values({ tenantId, fixtureId: fixture.id, players, isPublished: true, source: "selection" })
-      .onConflictDoUpdate({
-        target: [teamListsTable.tenantId, teamListsTable.fixtureId],
-        set: { players, isPublished: true, source: "selection" },
-        // PlayHQ's list for the fixture is never replaced.
-        setWhere: ne(teamListsTable.source, "playhq"),
-      });
+    let players: { order: number }[];
+    let unlisted: string[] = [];
+    if (fixture.kind === "junior") {
+      const published = await publishJuniorSide(tx, tenantId, fixture.id, selection, members);
+      players = published.players;
+      unlisted = published.unlisted;
+    } else {
+      const participantIds =
+        sideSection(fixture) === "senior"
+          ? await loadSelectionParticipantIds(tx, tenantId, fixture.startAt)
+          : new Map<number, string>();
+      const list = selectionPublishedPlayers(selection, members, participantIds);
+      players = list;
+      await tx
+        .insert(teamListsTable)
+        .values({
+          tenantId,
+          fixtureId: fixture.id,
+          players: list,
+          isPublished: true,
+          source: "selection",
+        })
+        .onConflictDoUpdate({
+          target: [teamListsTable.tenantId, teamListsTable.fixtureId],
+          set: { players: list, isPublished: true, source: "selection" },
+          // PlayHQ's list for the fixture is never replaced.
+          setWhere: ne(teamListsTable.source, "playhq"),
+        });
+    }
 
     const notified = new Set(selection.notifiedMemberIds);
     const current = picked.filter((id) => memberOf.has(id));
@@ -978,14 +1101,16 @@ export async function finaliseSelection(
         captainMemberId: selection.captainMemberId,
         keeperMemberId: selection.keeperMemberId,
         notified: { selected: toSelect, deselected: toDeselect },
+        ...(unlisted.length > 0 ? { unlisted } : {}),
       },
       createdAt: now,
     });
-    return { selection, fixture, toSelect, toDeselect, twelfthId };
+    return { selection, fixture, toSelect, toDeselect, twelfthId, unlisted };
   });
 
   const { selection, fixture } = plan;
-  const toMessage = [...plan.toSelect, ...plan.toDeselect];
+  // A club not using availability publishes the side without messaging anyone.
+  const toMessage = settings?.enabled ? [...plan.toSelect, ...plan.toDeselect] : [];
   const rows =
     toMessage.length > 0
       ? await db
@@ -1081,7 +1206,7 @@ export async function finaliseSelection(
       );
     }
   }
-  return { section: fixtureSection(fixture.grade), messaged };
+  return { section: sideSection(fixture), messaged, unlisted: plan.unlisted };
 }
 
 /**
@@ -1119,7 +1244,7 @@ export async function reopenSelection(
       detail: {},
       createdAt: now,
     });
-    return { section: fixtureSection(fixture.grade) };
+    return { section: sideSection(fixture) };
   });
 }
 
@@ -1179,16 +1304,22 @@ export async function withdrawFromSelection(
         .where(and(eq(selectionsTable.id, selection.id), eq(selectionsTable.tenantId, tenantId)));
 
       // Drop them from the published Hub list; a list PlayHQ has since replaced is left alone.
-      const [list] = await tx
-        .select()
-        .from(teamListsTable)
-        .where(
-          and(
-            eq(teamListsTable.tenantId, tenantId),
-            eq(teamListsTable.fixtureId, fixture.id),
-            eq(teamListsTable.source, "selection"),
-          ),
-        );
+      if (fixture.kind === "junior") {
+        await withdrawFromJuniorList(tx, tenantId, fixture.id, member);
+      }
+      const [list] =
+        fixture.kind === "senior"
+          ? await tx
+              .select()
+              .from(teamListsTable)
+              .where(
+                and(
+                  eq(teamListsTable.tenantId, tenantId),
+                  eq(teamListsTable.fixtureId, fixture.id),
+                  eq(teamListsTable.source, "selection"),
+                ),
+              )
+          : [];
       if (list) {
         const linked =
           member.linkedPlayerId != null && member.linkedPlayerId < FILL_IN_THRESHOLD

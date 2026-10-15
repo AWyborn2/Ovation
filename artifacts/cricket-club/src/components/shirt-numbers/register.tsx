@@ -281,8 +281,10 @@ export function ShirtNumberRegister({
           label={`${seasonLabel(season)} shirt number register`}
           entries={entries}
           supportsHeld={api.supportsHeld}
+          side={api.side}
           onSaveNumber={onSaveNumber}
           onDelete={(e) => void onDelete(e)}
+          onQuickLink={(entry, person) => void onLink(entry, person)}
           renderLinkControl={
             api.supportsHeld && PersonPicker
               ? (entry, done) => (
@@ -321,6 +323,8 @@ export function ShirtNumberRegister({
           <AddEntryForm
             PersonPicker={PersonPicker}
             requirePerson={requirePerson}
+            crossNumbers={register.data?.crossNumbers}
+            otherSide={api.side === "junior" ? "senior" : "junior"}
             onCancel={() => setAdding(false)}
             onSubmit={async (values) => {
               try {
@@ -365,11 +369,16 @@ export function ShirtNumberRegister({
 function AddEntryForm({
   PersonPicker,
   requirePerson,
+  crossNumbers,
+  otherSide,
   onSubmit,
   onCancel,
 }: {
   PersonPicker?: ComponentType<PersonPickerProps>;
   requirePerson: boolean;
+  /** The other register's number per participant id: prefills the number (editable). */
+  crossNumbers?: Record<string, string>;
+  otherSide: "senior" | "junior";
   /** Resolves to an error message to show, or null on success. */
   onSubmit: (values: PickedPerson & { number: string | null }) => Promise<string | null>;
   onCancel: () => void;
@@ -379,6 +388,18 @@ function AddEntryForm({
   const [number, setNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [prefilled, setPrefilled] = useState<string | null>(null);
+
+  // Picking someone who wears a number in the other register this season fills it in
+  // (only into an empty or still-prefilled field; the admin can change it).
+  const pickPerson = (p: PickedPerson | null) => {
+    setPerson(p);
+    const cross = p?.participantId ? (crossNumbers?.[p.participantId.toLowerCase()] ?? null) : null;
+    if (number.trim() === "" || number === prefilled) {
+      setNumber(cross ?? "");
+      setPrefilled(cross);
+    }
+  };
 
   const displayName = name.trim() || person?.name || "";
   const submit = async (e: React.FormEvent) => {
@@ -406,7 +427,7 @@ function AddEntryForm({
       {PersonPicker && (
         <div className="space-y-1">
           <Label>{requirePerson ? "Player" : "Player (optional)"}</Label>
-          <PersonPicker value={person} onChange={setPerson} />
+          <PersonPicker value={person} onChange={pickPerson} />
           {!requirePerson && (
             <p className="text-xs text-muted-foreground">
               Leave empty to add someone who hasn't played yet; they stay held until they do.
@@ -436,6 +457,11 @@ function AddEntryForm({
           onChange={(e) => setNumber(e.target.value)}
           className="w-24 tabular-nums"
         />
+        {prefilled !== null && number === prefilled && (
+          <p className="text-xs text-muted-foreground">
+            Their {otherSide} number this season; change it if they wear another.
+          </p>
+        )}
       </div>
       {error && (
         <p role="alert" className="text-sm text-destructive">

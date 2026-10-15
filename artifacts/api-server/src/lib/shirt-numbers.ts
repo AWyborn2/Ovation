@@ -16,6 +16,12 @@ import {
   type ShirtNumberSide,
 } from "@workspace/db/shirt-numbers";
 import { FILL_IN_THRESHOLD, seasonLabel } from "@workspace/scorecard";
+import type { CrossRegisterNote } from "./shirt-number-upload";
+import {
+  crossRegisterNotes,
+  loadJuniorCrossEntries,
+  seniorGuidsByPlayer,
+} from "./shirt-number-cross";
 
 /**
  * Season shirt-number register service (docs/plans/2026-10-06-001-feat-season-
@@ -319,7 +325,11 @@ export async function seniorRegisterSeasons(tenantId: number): Promise<number[]>
 }
 
 /** A senior entry in the contract's `ShirtNumberEntry` shape. */
-export function serializeSeniorEntry(row: ShirtNumberRow, duplicate: boolean) {
+export function serializeSeniorEntry(
+  row: ShirtNumberRow,
+  duplicate: boolean,
+  crossRegister: CrossRegisterNote[] = [],
+) {
   return {
     id: row.id,
     season: row.season,
@@ -330,6 +340,7 @@ export function serializeSeniorEntry(row: ShirtNumberRow, duplicate: boolean) {
     source: row.source,
     held: row.playerId === null,
     duplicate,
+    crossRegister,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -572,15 +583,38 @@ export async function deleteSeniorEntry(tenantId: number, id: number): Promise<b
   return row !== undefined;
 }
 
-/** The senior register for a season, in the contract's entry shape. */
+/**
+ * The senior register for a season, in the contract's entry shape (admin only), with
+ * the admin-only cross-check against the juniors register (read-only, this tenant and
+ * season; ./shirt-number-cross).
+ */
 export async function listSeniorEntries(tenantId: number, season: number): Promise<SeniorEntry[]> {
-  const rows = await db
-    .select()
-    .from(shirtNumbersTable)
-    .where(and(eq(shirtNumbersTable.tenantId, tenantId), eq(shirtNumbersTable.season, season)))
-    .orderBy(asc(shirtNumbersTable.name), asc(shirtNumbersTable.id));
+  const [rows, junior] = await Promise.all([
+    db
+      .select()
+      .from(shirtNumbersTable)
+      .where(and(eq(shirtNumbersTable.tenantId, tenantId), eq(shirtNumbersTable.season, season)))
+      .orderBy(asc(shirtNumbersTable.name), asc(shirtNumbersTable.id)),
+    loadJuniorCrossEntries(tenantId, season),
+  ]);
   const dupes = duplicateEntryIds(rows);
-  return rows.map((r) => serializeSeniorEntry(r, dupes.has(r.id)));
+  const guids =
+    junior.length > 0 && rows.some((r) => r.playerId !== null)
+      ? await seniorGuidsByPlayer(tenantId)
+      : new Map<number, string[]>();
+  return rows.map((r) =>
+    serializeSeniorEntry(
+      r,
+      dupes.has(r.id),
+      crossRegisterNotes(
+        {
+          ids: [r.participantId, ...(r.playerId !== null ? (guids.get(r.playerId) ?? []) : [])],
+          name: r.name,
+        },
+        junior,
+      ),
+    ),
+  );
 }
 
 export type SeasonStartResult = {

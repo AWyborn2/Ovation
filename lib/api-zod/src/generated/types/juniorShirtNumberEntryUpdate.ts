@@ -9,6 +9,11 @@ import type { ShirtNumberValue } from './shirtNumberValue';
 
 export interface JuniorShirtNumberEntryUpdate {
   /**
+     * Link the entry to this club junior player (resolving merges) and make it live. Re-sending the entry's own id confirms a held entry.
+     * @minLength 1
+     */
+  participantId?: string;
+  /**
      * @minLength 1
      * @maxLength 120
      */

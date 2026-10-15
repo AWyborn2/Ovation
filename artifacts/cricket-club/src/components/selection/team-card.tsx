@@ -8,6 +8,7 @@ import { TWELFTH_INDEX, XI_SIZE, sideEditable, sideLabel } from "./apply-move";
 import { GAP_REASON, perthDateTime } from "./labels";
 import { PlayerChip, type ChipRole } from "./player-chip";
 import { TeamSheetButton } from "./team-sheet-button";
+import { useAvailability } from "./availability-context";
 
 export function roleOf(side: SelectionSide, memberId: number | null): ChipRole {
   if (memberId == null) return null;
@@ -63,6 +64,7 @@ export function TeamCard({
   onReopen: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const availability = useAvailability();
   const label = sideLabel(side);
   const final = side.state === "final";
   const edit = sideEditable(side);
@@ -229,8 +231,8 @@ export function TeamCard({
           <>
             <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-[var(--win-fg)]">
               <Lock className="h-3.5 w-3.5" aria-hidden />
-              Finalised and published as the team list. {plural(picked.length, "player")} notified
-              by SMS and email.
+              Finalised and published as the team list.
+              {availability && ` ${plural(picked.length, "player")} notified by SMS and email.`}
             </div>
             <TeamSheetButton selectionId={side.id} label={label} />
             {side.canFinalise && (

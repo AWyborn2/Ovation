@@ -7728,6 +7728,8 @@ paths:
           description: Invalid list
         "404":
           description: Fixture not found
+        "409":
+          description: The list was finalised in the Selection Hub; re-open it there to change it
 
   /juniors/matches:
     get:
@@ -14509,8 +14511,15 @@ components:
 
     SelectionFixture:
       type: object
-      required: [id, grade, opponentName, startAt, venue, isHome, roundLabel]
+      required: [kind, id, grade, opponentName, startAt, venue, isHome, roundLabel]
       properties:
+        kind:
+          type: string
+          enum: [senior, junior]
+          description: |
+            `senior`: a `fixtures` row. `junior`: a junior fixture from the junior
+            PlayHQ sync, whose `grade` is the club's junior team ("Halls Head
+            Year 7 Gold") and which publishes to the junior team list.
         id:
           type: integer
         grade:
@@ -14707,10 +14716,17 @@ components:
 
     SelectionBoard:
       type: object
-      required: [section, actor, round, selections, pool, events]
+      required: [section, availability, actor, round, selections, pool, events]
       properties:
         section:
           $ref: "#/components/schemas/SquadSection"
+        availability:
+          type: boolean
+          description: |
+            The club uses availability requests. Off, the Hub stands alone: the
+            weekend's sides are drafted on demand from each grade's last team
+            list (everyone listed kept), member statuses and the round's steps
+            don't apply, and finalising messages no one.
         actor:
           $ref: "#/components/schemas/SelectionActor"
         round:
@@ -14842,6 +14858,13 @@ components:
             failed:
               type: integer
               description: Members every delivery failed for; the next finalise tries them again
+        unlisted:
+          type: array
+          items:
+            type: string
+          description: |
+            Junior side only: players left off the published junior team list
+            because they match none of the club's PlayHQ junior participants.
 
     SelectionRemindBody:
       type: object
@@ -20992,6 +21015,13 @@ components:
         duplicate:
           type: boolean
           description: True when another entry in the season wears the same number.
+        crossRegister:
+          type: array
+          description: >-
+            Admin-only cross-check against the juniors register for the same season
+            (read-only, this club only). Empty when nothing relates.
+          items:
+            $ref: "#/components/schemas/ShirtNumberCrossRegisterNote"
         createdAt:
           type: string
           format: date-time
@@ -21117,7 +21147,35 @@ components:
 
     ShirtNumberPreviewStatus:
       type: string
-      enum: [matched, suggested, new, invalid]
+      enum: [matched, suggested, new, held, mismatch, invalid]
+      description: >-
+        `held` (juniors only): the row's PlayHQ Profile ID is not one of the club's
+        junior players yet; the number is kept by that id and goes live when the
+        player arrives from PlayHQ under a matching name. `mismatch`: the Profile ID
+        belongs to someone whose name differs from the sheet's (often a family
+        account), so the row is never linked automatically.
+
+    ShirtNumberCrossRegisterNote:
+      type: object
+      required: [relation, name, number]
+      description: >-
+        The same person (or a possibly related one) in the other register this
+        season: the senior register for a junior row or entry, the juniors register
+        for a senior one. Admin-only, informational unless `relation` is `same`.
+      properties:
+        relation:
+          type: string
+          enum: [same, sharedId, nameOnly]
+          description: >-
+            `same`: same Profile ID and the same name. `sharedId`: same Profile ID
+            but a different name (a family account?). `nameOnly`: same name under a
+            different Profile ID.
+        name:
+          type: string
+          description: The name in the other register.
+        number:
+          type: ["string", "null"]
+          description: The number in the other register (null when unnumbered).
 
     ShirtNumberCandidate:
       type: object
@@ -21180,10 +21238,22 @@ components:
           description: Why an `invalid` row cannot be applied.
           items:
             type: string
+        idOwnerName:
+          type: ["string", "null"]
+          description: >-
+            For a `mismatch` row: the name of the club's person who has this
+            Profile ID.
+        crossRegister:
+          type: array
+          description: >-
+            Cross-check against the other register for the season (see
+            ShirtNumberCrossRegisterNote). Absent on previews made before it existed.
+          items:
+            $ref: "#/components/schemas/ShirtNumberCrossRegisterNote"
 
     ShirtNumberPreviewCounts:
       type: object
-      required: [total, matched, suggested, new, invalid, numberChanges, duplicates]
+      required: [total, matched, suggested, new, held, mismatch, invalid, numberChanges, duplicates]
       properties:
         total:
           type: integer
@@ -21192,6 +21262,10 @@ components:
         suggested:
           type: integer
         new:
+          type: integer
+        held:
+          type: integer
+        mismatch:
           type: integer
         invalid:
           type: integer
@@ -21251,6 +21325,12 @@ components:
         playerId:
           type: ["integer", "null"]
           description: Required for `link`.
+        useCrossRegisterNumber:
+          type: boolean
+          description: >-
+            Give the entry the number this row's person wears in the juniors
+            register (the preview's `same` cross-register note) instead of the
+            sheet's number.
 
     ShirtNumberUploadCommit:
       type: object
@@ -21269,11 +21349,19 @@ components:
           type: integer
         action:
           type: string
-          enum: [link, discard]
-          description: "`link`: attach to the junior `participantId`; `discard`: skip the row."
+          enum: [link, hold, discard]
+          description: >-
+            `link`: attach to the junior `participantId`; `hold` (only for a `held`
+            row): keep the number by the row's Profile ID until that player arrives
+            from PlayHQ; `discard`: skip the row.
         participantId:
           type: ["string", "null"]
           description: Required for `link`.
+        useCrossRegisterNumber:
+          type: boolean
+          description: >-
+            Give the entry the number this row's person wears in the senior register
+            (the preview's `same` cross-register note) instead of the sheet's number.
 
     JuniorShirtNumberUploadCommit:
       type: object
@@ -21307,7 +21395,8 @@ components:
 
     JuniorShirtNumberEntry:
       type: object
-      required: [id, season, participantId, name, number, source, duplicate, createdAt, updatedAt]
+      required:
+        [id, season, participantId, name, number, source, duplicate, linkStatus, playerName, crossRegister, createdAt, updatedAt]
       properties:
         id:
           type: integer
@@ -21318,12 +21407,39 @@ components:
           description: PlayHQ participant GUID (lowercased)
         name:
           type: string
+          description: >-
+            The name on the register (from the club's sheet for an uploaded row).
+            Admin-only; public pages use the PlayHQ name in the club's style.
         number:
           type: ["string", "null"]
         source:
           $ref: "#/components/schemas/ShirtNumberSource"
         duplicate:
           type: boolean
+        linkStatus:
+          type: string
+          enum: [linked, waiting, nameMismatch]
+          description: >-
+            `linked`: live on cards and the profile. `waiting`: held by Profile ID
+            until that player arrives from PlayHQ. `nameMismatch`: held, and the
+            player with this Profile ID has a different name; check before linking.
+        playerName:
+          type: ["string", "null"]
+          description: The junior player's PlayHQ name, once the player exists.
+        suggestedLink:
+          oneOf:
+            - $ref: "#/components/schemas/JuniorShirtNumberSuggestedLink"
+            - type: "null"
+          description: >-
+            For a held entry: the one club junior whose PlayHQ name matches the
+            entry's name under a different Profile ID (never linked automatically).
+        crossRegister:
+          type: array
+          description: >-
+            Admin-only cross-check against the senior register for the same season
+            (read-only, this club only).
+          items:
+            $ref: "#/components/schemas/ShirtNumberCrossRegisterNote"
         createdAt:
           type: string
           format: date-time
@@ -21331,10 +21447,40 @@ components:
           type: string
           format: date-time
 
+    JuniorShirtNumberSuggestedLink:
+      type: object
+      required: [participantId, name]
+      properties:
+        participantId:
+          type: string
+        name:
+          type: string
+
+    JuniorSeniorNumber:
+      type: object
+      required: [participantId, number]
+      properties:
+        participantId:
+          type: string
+        number:
+          type: string
+
     JuniorShirtNumberRegister:
       type: object
-      required: [season, seasons, entries]
+      required: [season, seasons, entries, juniorsAvailable, seniorNumbers]
       properties:
+        juniorsAvailable:
+          type: boolean
+          description: >-
+            True when the club has junior players or junior PlayHQ sync is on (a
+            register can be kept before the season's players arrive).
+        seniorNumbers:
+          type: array
+          description: >-
+            Admin-only: the season's senior-register numbers of the club's junior
+            players (same Profile ID and name), to prefill the add form.
+          items:
+            $ref: "#/components/schemas/JuniorSeniorNumber"
         season:
           type: integer
         seasons:
@@ -21368,6 +21514,12 @@ components:
     JuniorShirtNumberEntryUpdate:
       type: object
       properties:
+        participantId:
+          type: string
+          minLength: 1
+          description: >-
+            Link the entry to this club junior player (resolving merges) and make it
+            live. Re-sending the entry's own id confirms a held entry.
         name:
           type: string
           minLength: 1
@@ -21701,7 +21853,7 @@ components:
         isPublished: { type: boolean }
         source:
           type: string
-          enum: [playhq, admin]
+          enum: [playhq, admin, selection]
           description: Who wrote the list; an admin's list is never overwritten by the sync
         updatedAt: { type: string, format: date-time }
 

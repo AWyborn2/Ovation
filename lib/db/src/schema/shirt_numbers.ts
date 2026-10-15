@@ -90,6 +90,12 @@ export const juniorShirtNumbersTable = pgTable(
     name: text("name").notNull(),
     number: text("number"),
     source: text("source").$type<ShirtNumberSource>().notNull().default("admin"),
+    // Held (junior shirt-number held rows): kept by a PlayHQ Profile ID from the
+    // club's sheet before that player is one of the club's juniors, or whose PlayHQ
+    // name did not match the sheet. Never shown publicly; the junior sync clears it
+    // when the participant arrives under a matching name (activateHeldJuniorShirtNumbers),
+    // or an admin confirms the link.
+    held: boolean("held").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ShirtNumberCandidate } from './shirtNumberCandidate';
+import type { ShirtNumberCrossRegisterNote } from './shirtNumberCrossRegisterNote';
 import type { ShirtNumberPreviewStatus } from './shirtNumberPreviewStatus';
 
 export interface ShirtNumberPreviewRow {
@@ -41,4 +42,11 @@ export interface ShirtNumberPreviewRow {
   duplicateWith?: string[];
   /** Why an `invalid` row cannot be applied. */
   errors: string[];
+  /**
+     * For a `mismatch` row: the name of the club's person who has this Profile ID.
+     * @nullable
+     */
+  idOwnerName?: string | null;
+  /** Cross-check against the other register for the season (see ShirtNumberCrossRegisterNote). Absent on previews made before it existed. */
+  crossRegister?: ShirtNumberCrossRegisterNote[];
 }

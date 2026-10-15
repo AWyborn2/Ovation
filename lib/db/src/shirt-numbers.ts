@@ -245,3 +245,156 @@ export async function linkHeldShirtNumberEntry(
     .returning({ id: shirtNumbersTable.id });
   return rows.length > 0;
 }
+
+// ── Junior held entries and the name rule ───────────────────────────────────
+
+const PLAYHQ_GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** True for a PlayHQ participant (Profile) id: a GUID, any casing. */
+export function isPlayhqParticipantGuid(value: string | null | undefined): boolean {
+  return PLAYHQ_GUID.test((value ?? "").trim());
+}
+
+/** Letters only, accents stripped, lower case. */
+const letters = (s: string) =>
+  s
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z]/g, "");
+
+type NameParts = { givens: string[]; lastKey: string; tailKey: string };
+
+/**
+ * A name's comparable parts: first-name keys (the first given name plus any
+ * preferred name in brackets or quotes) and the surname as its last word and as
+ * every word after the first name, both letters only. Reads "Surname, First".
+ */
+function nameParts(raw: string | null | undefined): NameParts | null {
+  let name = (raw ?? "").normalize("NFKC");
+  const preferred: string[] = [];
+  name = name.replace(/\(([^)]*)\)|"([^"]*)"|\u201c([^\u201d]*)\u201d/g, (_m, a, b, c) => {
+    const p = letters(String(a ?? b ?? c ?? ""));
+    if (p) preferred.push(p);
+    return " ";
+  });
+  let givenPart: string;
+  let surnamePart: string;
+  const comma = name.indexOf(",");
+  if (comma >= 0) {
+    surnamePart = name.slice(0, comma);
+    givenPart = name.slice(comma + 1);
+  } else {
+    const words = name.trim().split(/\s+/).filter(Boolean);
+    if (words.length < 2) return null;
+    givenPart = words[0]!;
+    surnamePart = words.slice(1).join(" ");
+  }
+  const givenWords = givenPart.trim().split(/\s+/).filter(Boolean);
+  const surnameWords = surnamePart
+    .trim()
+    .split(/[\s-]+/)
+    .filter(Boolean);
+  const first = letters(givenWords[0] ?? "");
+  // With "Surname, First Middle", middle names sit after the first name.
+  const tailKey = letters(comma >= 0 ? surnameWords.join("") : surnamePart.replace(/[\s-]+/g, ""));
+  const lastKey = letters(surnameWords[surnameWords.length - 1] ?? "");
+  if (!first || !lastKey) return null;
+  return { givens: [first, ...preferred], lastKey, tailKey };
+}
+
+function givenNamesAgree(a: readonly string[], b: readonly string[]): boolean {
+  for (const x of a) {
+    for (const y of b) {
+      if (x === y) return true;
+      // A lone initial ("B Dreckow") agrees with a first name starting with it.
+      if ((x.length === 1 || y.length === 1) && x[0] === y[0]) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Whether two names are the same person's name, for deciding when a PlayHQ
+ * Profile ID can be trusted (a family's PlayHQ account can put a parent's or a
+ * sibling's id on a child's row). Same first name (or preferred name, or a lone
+ * initial) and the same surname, ignoring case, spacing, hyphens, apostrophes,
+ * accents and middle names. A blank or one-word name never agrees.
+ */
+export function shirtNumberNamesAgree(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  const x = nameParts(a);
+  const y = nameParts(b);
+  if (!x || !y) return false;
+  const surnames =
+    x.lastKey === y.lastKey ||
+    x.tailKey === y.tailKey ||
+    x.tailKey.endsWith(y.tailKey) ||
+    y.tailKey.endsWith(x.tailKey);
+  return surnames && givenNamesAgree(x.givens, y.givens);
+}
+
+/**
+ * The held junior entries that can go live (pure): those whose participant is now
+ * one of the club's juniors under a name agreeing with the sheet's. A participant
+ * with a different (or no) name leaves the entry held for an admin to check.
+ */
+export function heldJuniorEntriesToActivate(
+  held: readonly { id: number; participantId: string; name: string }[],
+  participants: readonly { participantId: string; displayName: string | null }[],
+): number[] {
+  const nameOf = new Map<string, string | null>();
+  for (const p of participants) {
+    const id = normaliseParticipantId(p.participantId);
+    if (id) nameOf.set(id, p.displayName);
+  }
+  return held
+    .filter((h) => {
+      const id = normaliseParticipantId(h.participantId);
+      return id !== null && nameOf.has(id) && shirtNumberNamesAgree(h.name, nameOf.get(id));
+    })
+    .map((h) => h.id);
+}
+
+/**
+ * Make the tenant's held junior shirt numbers live for participants that now exist
+ * under a matching name (any season). Run by the junior sync after it writes
+ * participants, so a number uploaded before the player was in the app shows on their
+ * team-list card with no admin step. Tenant-scoped; `participantIds` (lowercased)
+ * limits the check to the participants just written. Returns the entries activated.
+ */
+export async function activateHeldJuniorShirtNumbers(
+  executor: Pick<Db, "execute">,
+  tenantId: number,
+  participantIds?: readonly string[],
+): Promise<number> {
+  if (participantIds !== undefined && participantIds.length === 0) return 0;
+  const only =
+    participantIds === undefined
+      ? sql``
+      : sql`and lower(s.participant_id) = any(${sql.param([...participantIds])}::text[])`;
+  const res = await executor.execute(
+    sql`select s.id, s.participant_id, s.name, p.display_name
+          from junior_shirt_numbers s
+          join junior_participants p
+            on p.tenant_id = s.tenant_id and lower(p.participant_id) = lower(s.participant_id)
+         where s.tenant_id = ${tenantId} and s.held ${only}`,
+  );
+  const rows = (
+    res as unknown as {
+      rows: { id: number; participant_id: string; name: string; display_name: string | null }[];
+    }
+  ).rows;
+  const ids = heldJuniorEntriesToActivate(
+    rows.map((r) => ({ id: r.id, participantId: r.participant_id, name: r.name })),
+    rows.map((r) => ({ participantId: r.participant_id, displayName: r.display_name })),
+  );
+  if (ids.length === 0) return 0;
+  await executor.execute(
+    sql`update junior_shirt_numbers set held = false, updated_at = now()
+         where tenant_id = ${tenantId} and held and id = any(${sql.param(ids)}::int[])`,
+  );
+  return ids.length;
+}

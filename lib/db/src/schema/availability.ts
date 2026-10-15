@@ -14,6 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { tenantIdColumn } from "./_tenant";
 import { fixturesTable } from "./fixtures";
+import { juniorFixturesTable } from "./juniors";
 
 /**
  * Player availability and the Selection Hub.
@@ -337,7 +338,9 @@ export type AvailabilityAwayRow = typeof availabilityAwayTable.$inferSelect;
 // `version` is the optimistic-concurrency check for Hub saves: a save carries
 // its last-seen version and bumps it. Captain and keeper are members of the XI
 // and clear when that member leaves it or moves to 12th. Finalising publishes into
-// the fixture's `team_lists` row with source "selection".
+// the fixture's `team_lists` row with source "selection". A junior side belongs to a
+// junior fixture instead (`junior_fixture_id`, from the junior PlayHQ sync) and
+// publishes into its `junior_team_lists` row; exactly one of the two is set.
 export const selectionsTable = pgTable(
   "selections",
   {
@@ -346,9 +349,10 @@ export const selectionsTable = pgTable(
     roundId: integer("round_id")
       .notNull()
       .references(() => availabilityRoundsTable.id, { onDelete: "cascade" }),
-    fixtureId: integer("fixture_id")
-      .notNull()
-      .references(() => fixturesTable.id, { onDelete: "cascade" }),
+    fixtureId: integer("fixture_id").references(() => fixturesTable.id, { onDelete: "cascade" }),
+    juniorFixtureId: integer("junior_fixture_id").references(() => juniorFixturesTable.id, {
+      onDelete: "cascade",
+    }),
     slots: jsonb("slots").$type<SelectionSlot[]>().notNull().default([]),
     captainMemberId: integer("captain_member_id").references(() => squadMembersTable.id, {
       onDelete: "set null",
@@ -368,6 +372,13 @@ export const selectionsTable = pgTable(
   },
   (t) => ({
     uqFixture: uniqueIndex("selections_fixture_uidx").on(t.fixtureId),
+    uqJuniorFixture: uniqueIndex("selections_junior_fixture_uidx")
+      .on(t.juniorFixtureId)
+      .where(sql`"junior_fixture_id" IS NOT NULL`),
+    chkOneFixture: check(
+      "selections_one_fixture_check",
+      sql`("fixture_id" IS NULL) <> ("junior_fixture_id" IS NULL)`,
+    ),
     idxTenantRound: index("selections_tenant_round_idx").on(t.tenantId, t.roundId),
     chkState: check("selections_state_check", sql`"state" IN ('draft', 'final')`),
   }),

@@ -14,6 +14,7 @@ import {
 import type {
   ShirtNumberEntry,
   ShirtNumberConflict,
+  ShirtNumberCrossRegisterNote,
   ShirtNumberSeasonStartResult,
   ShirtNumberSource,
   ShirtNumberSquadAddResult,
@@ -28,7 +29,8 @@ import { handleAdminMutationError } from "@/lib/admin-auth";
  * The register UI is side-agnostic: the senior page passes
  * {@link seniorShirtNumberApi}; the juniors page passes its own adapter over
  * the junior client functions. Entries are normalised to one view shape
- * (junior entries are never held and never carry a senior `playerId`).
+ * (junior entries never carry a senior `playerId`; they are held by PlayHQ
+ * Profile ID until their player arrives).
  */
 export type ShirtNumberSide = "senior" | "junior";
 
@@ -41,16 +43,27 @@ export type RegisterEntryView = {
   /** Senior only: the linked player; always null on the junior side. */
   playerId: number | null;
   playerName: string | null;
-  /** Senior only: not yet linked to a player who has played. */
+  /**
+   * Not live yet. Senior: not linked to a player who has played. Junior: kept by a
+   * PlayHQ Profile ID until that player arrives under the sheet's name.
+   */
   held: boolean;
+  /** Junior only: why a held entry is not live (`nameMismatch`: check before linking). */
+  heldReason: "waiting" | "nameMismatch" | null;
+  /** Junior only: the one club junior whose PlayHQ name matches a held entry's name. */
+  suggestedLink: { participantId: string; name: string } | null;
   duplicate: boolean;
   source: ShirtNumberSource;
+  /** Admin-only cross-check against the other side's register this season. */
+  crossRegister: ShirtNumberCrossRegisterNote[];
 };
 
 export type RegisterView = {
   season: number;
   seasons: number[];
   entries: RegisterEntryView[];
+  /** The other register's number per participant id, to prefill the add form (juniors). */
+  crossNumbers?: Record<string, string>;
 };
 
 export type WriteResultView = { warnings: ShirtNumberWarning[] };
@@ -76,12 +89,19 @@ export type RowResolution = {
   action: "link" | "hold" | "discard";
   playerId?: number | null;
   participantId?: string | null;
+  /** Take the number the person wears in the other register (a `same` note). */
+  useCrossRegisterNumber?: boolean;
 };
 
 export interface ShirtNumberRegisterApi {
   side: ShirtNumberSide;
-  /** Senior: entries can be held (unlinked) and linked to a player later. */
+  /** Entries can be held (not live yet) and linked to a player later. */
   supportsHeld: boolean;
+  /**
+   * Juniors: only an upload row whose PlayHQ Profile ID is no club junior yet can be
+   * held (by that id); every other unmatched row must be linked or discarded.
+   */
+  holdOnlyByProfileId: boolean;
   registerQueryKey: (season: number) => QueryKey;
   fetchRegister: (season: number) => Promise<RegisterView>;
   createEntry: (input: EntryCreate) => Promise<WriteResultView>;
@@ -111,13 +131,17 @@ const seniorEntryView = (e: ShirtNumberEntry): RegisterEntryView => ({
   playerId: e.playerId,
   playerName: e.playerName ?? null,
   held: e.held,
+  heldReason: null,
+  suggestedLink: null,
   duplicate: e.duplicate,
   source: e.source,
+  crossRegister: e.crossRegister ?? [],
 });
 
 export const seniorShirtNumberApi: ShirtNumberRegisterApi = {
   side: "senior",
   supportsHeld: true,
+  holdOnlyByProfileId: false,
   registerQueryKey: (season) => getListShirtNumbersQueryKey({ season }),
   fetchRegister: async (season) => {
     const r = await listShirtNumbers({ season });
@@ -138,10 +162,11 @@ export const seniorShirtNumberApi: ShirtNumberRegisterApi = {
   upload: (input) => uploadShirtNumbers(input),
   commitUpload: (id, resolutions) =>
     commitShirtNumberUpload(id, {
-      resolutions: resolutions.map(({ rowIndex, action, playerId }) => ({
+      resolutions: resolutions.map(({ rowIndex, action, playerId, useCrossRegisterNumber }) => ({
         rowIndex,
         action,
         ...(action === "link" ? { playerId: playerId ?? null } : {}),
+        ...(useCrossRegisterNumber && action !== "discard" ? { useCrossRegisterNumber: true } : {}),
       })),
     }),
   discardUpload: (id) => discardShirtNumberUpload(id),

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import type {
+  ShirtNumberCrossRegisterNote,
   ShirtNumberPreviewRow,
   ShirtNumberUploadCommitResult,
   ShirtNumberUploadPreview,
@@ -11,7 +12,13 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { StatusPill, type StatusTone } from "@/components/admin-ui";
-import { conflictOf, errorMessage, type RowResolution, type ShirtNumberRegisterApi } from "./api";
+import {
+  conflictOf,
+  errorMessage,
+  type RowResolution,
+  type ShirtNumberRegisterApi,
+  type ShirtNumberSide,
+} from "./api";
 import { seasonLabel } from "./season";
 
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -25,10 +32,24 @@ type Group = {
 };
 const GROUPS: Group[] = [
   {
+    status: "mismatch",
+    title: "Profile ID belongs to someone else",
+    tone: "attention",
+    hint:
+      "The sheet's name differs from the person with this PlayHQ Profile ID (often a family " +
+      "account). Link the right person or discard the row; it is never linked automatically.",
+  },
+  {
     status: "suggested",
     title: "Needs review",
     tone: "attention",
     hint: "Possible matches. Pick the right player, keep the row as held, or discard it.",
+  },
+  {
+    status: "held",
+    title: "Waiting for PlayHQ",
+    tone: "info",
+    hint: "Kept by PlayHQ Profile ID; linked automatically when this player appears in a team list or scorecard.",
   },
   {
     status: "new",
@@ -50,10 +71,24 @@ const GROUPS: Group[] = [
   },
 ];
 
+/** "senior" for a junior upload, "junior" for a senior one. */
+const otherSide = (side: ShirtNumberSide) => (side === "junior" ? "senior" : "junior");
+
+/** Whether a row may be kept as held on this side. */
+function canHold(row: ShirtNumberPreviewRow, api: ShirtNumberRegisterApi): boolean {
+  if (!api.supportsHeld || row.status === "invalid") return false;
+  return api.holdOnlyByProfileId ? row.status === "held" : true;
+}
+
+/** The other register's number this row may adopt: same Profile ID and name, numbered. */
+export function crossNumberOf(row: ShirtNumberPreviewRow): string | null {
+  return row.crossRegister?.find((n) => n.relation === "same" && n.number !== null)?.number ?? null;
+}
+
 /** The effective decision for a row: the admin's choice, else the server default. */
 function defaultResolution(
   row: ShirtNumberPreviewRow,
-  supportsHeld: boolean,
+  api: ShirtNumberRegisterApi,
 ): RowResolution | null {
   if (row.status === "invalid") return { rowIndex: row.rowIndex, action: "discard" };
   if (row.status === "matched") {
@@ -64,7 +99,9 @@ function defaultResolution(
       participantId: row.participantId,
     };
   }
-  return supportsHeld ? { rowIndex: row.rowIndex, action: "hold" } : null;
+  // A Profile ID that belongs to someone else always needs a decision.
+  if (row.status === "mismatch") return null;
+  return canHold(row, api) ? { rowIndex: row.rowIndex, action: "hold" } : null;
 }
 
 const encode = (r: RowResolution | null): string =>
@@ -91,6 +128,11 @@ function decode(rowIndex: number, value: string): RowResolution | null {
  * suggested rows and bulk actions, then commit. A block-policy rejection
  * lists the conflicting rows. Registered players without numbers come from
  * the squad register ("Add squad to register"), not an upload.
+ *
+ * Rows whose person wears a different number in the other register (same
+ * PlayHQ Profile ID and name) are listed with a keep / use choice; a Profile ID
+ * shared with someone of another name (a family account) is shown as such and
+ * never offers the other number.
  */
 export function ShirtNumberUploadPanel({
   api,
@@ -106,6 +148,8 @@ export function ShirtNumberUploadPanel({
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<ShirtNumberUploadPreview | null>(null);
   const [choices, setChoices] = useState<Map<number, RowResolution | null>>(new Map());
+  // Rows that take the other register's number instead of the sheet's.
+  const [useCross, setUseCross] = useState<Set<number>>(new Set());
   const [conflict, setConflict] = useState<{
     error: string;
     warnings: ShirtNumberWarning[];
@@ -121,6 +165,7 @@ export function ShirtNumberUploadPanel({
   const reset = () => {
     setPreview(null);
     setChoices(new Map());
+    setUseCross(new Set());
     setConflict(null);
     setError(null);
     setFile(null);
@@ -144,6 +189,7 @@ export function ShirtNumberUploadPanel({
         onSuccess: (p) => {
           setPreview(p);
           setChoices(new Map());
+          setUseCross(new Set());
           setConflict(null);
         },
         onError: (err) => setError(errorMessage(err)),
@@ -152,9 +198,7 @@ export function ShirtNumberUploadPanel({
   };
 
   const resolutionOf = (row: ShirtNumberPreviewRow): RowResolution | null =>
-    choices.has(row.rowIndex)
-      ? (choices.get(row.rowIndex) ?? null)
-      : defaultResolution(row, api.supportsHeld);
+    choices.has(row.rowIndex) ? (choices.get(row.rowIndex) ?? null) : defaultResolution(row, api);
 
   const choose = (rowIndex: number, r: RowResolution | null) =>
     setChoices((prev) => new Map(prev).set(rowIndex, r));
@@ -170,13 +214,34 @@ export function ShirtNumberUploadPanel({
     });
   };
 
+  const setCross = (rowIndices: number[], on: boolean) =>
+    setUseCross((prev) => {
+      const next = new Set(prev);
+      for (const i of rowIndices) {
+        if (on) next.add(i);
+        else next.delete(i);
+      }
+      return next;
+    });
+
   const unresolved = (preview?.rows ?? []).filter((r) => resolutionOf(r) === null).length;
 
   const onCommit = () => {
     if (!preview) return;
     setConflict(null);
     setError(null);
-    const resolutions = [...choices.values()].filter((r): r is RowResolution => r !== null);
+    const resolutions: RowResolution[] = [];
+    for (const row of preview.rows) {
+      const chosen = choices.has(row.rowIndex) ? (choices.get(row.rowIndex) ?? null) : null;
+      if (useCross.has(row.rowIndex) && crossNumberOf(row) !== null) {
+        const base = chosen ?? defaultResolution(row, api);
+        if (base && base.action !== "discard") {
+          resolutions.push({ ...base, useCrossRegisterNumber: true });
+          continue;
+        }
+      }
+      if (chosen) resolutions.push(chosen);
+    }
     commit.mutate(
       { id: preview.id, resolutions },
       {
@@ -267,6 +332,13 @@ export function ShirtNumberUploadPanel({
   const c = preview.counts;
   const duplicates = preview.rows.filter((r) => r.duplicate);
   const busy = commit.isPending || discard.isPending;
+  const other = otherSide(api.side);
+  // Same person (same Profile ID and name) wearing another number in the other register.
+  const differing = preview.rows.filter((r) => {
+    if (r.status === "invalid" || resolutionOf(r)?.action === "discard") return false;
+    const cross = crossNumberOf(r);
+    return cross !== null && cross !== r.number;
+  });
 
   return (
     <Card>
@@ -277,9 +349,11 @@ export function ShirtNumberUploadPanel({
       </CardHeader>
       <CardContent className="space-y-5 text-sm">
         <p className="text-muted-foreground">
-          {c.total} rows: {c.matched} matched, {c.suggested} to review, {c.new} new, {c.invalid}{" "}
-          can't be used, {c.numberChanges} number change{c.numberChanges === 1 ? "" : "s"},{" "}
-          {c.duplicates} duplicate{c.duplicates === 1 ? "" : "s"}. Nothing changes until you apply.
+          {c.total} rows: {c.matched} matched, {c.suggested} to review, {c.new} new
+          {c.held ? `, ${c.held} waiting for PlayHQ` : ""}
+          {c.mismatch ? `, ${c.mismatch} with someone else's Profile ID` : ""}, {c.invalid} can't be
+          used, {c.numberChanges} number change{c.numberChanges === 1 ? "" : "s"}, {c.duplicates}{" "}
+          duplicate{c.duplicates === 1 ? "" : "s"}. Nothing changes until you apply.
         </p>
         {preview.truncated && (
           <p className="text-destructive">Only the first 1,000 rows were read.</p>
@@ -292,7 +366,7 @@ export function ShirtNumberUploadPanel({
         )}
 
         <div className="flex flex-wrap gap-2">
-          {api.supportsHeld && c.new > 0 && (
+          {api.supportsHeld && !api.holdOnlyByProfileId && c.new > 0 && (
             <Button type="button" size="sm" variant="outline" onClick={() => bulk("new", "hold")}>
               Keep all new as held
             </Button>
@@ -323,7 +397,8 @@ export function ShirtNumberUploadPanel({
                   <PreviewRowItem
                     key={row.rowIndex}
                     row={row}
-                    supportsHeld={api.supportsHeld}
+                    holdable={canHold(row, api)}
+                    otherSide={other}
                     value={resolutionOf(row)}
                     onChange={(r) => choose(row.rowIndex, r)}
                   />
@@ -332,6 +407,83 @@ export function ShirtNumberUploadPanel({
             </section>
           );
         })}
+
+        {differing.length > 0 && (
+          <section aria-label={`Different from ${other} number`} className="space-y-2">
+            <h3 className="m-0 flex items-center gap-2 text-base font-semibold">
+              Different from {other} number{" "}
+              <StatusPill tone="attention">{differing.length}</StatusPill>
+            </h3>
+            <p className="m-0 text-xs text-muted-foreground">
+              The same player (same PlayHQ Profile ID and name) wears another number in the {other}{" "}
+              register. The two registers stay separate; choose which number this one keeps.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  setCross(
+                    differing.map((r) => r.rowIndex),
+                    false,
+                  )
+                }
+              >
+                Keep all {api.side} numbers
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  setCross(
+                    differing.map((r) => r.rowIndex),
+                    true,
+                  )
+                }
+              >
+                Use all {other} numbers
+              </Button>
+            </div>
+            <ul className="m-0 list-none space-y-1 p-0">
+              {differing.map((row) => {
+                const id = `shirt-cross-${row.rowIndex}`;
+                const cross = crossNumberOf(row)!;
+                return (
+                  <li
+                    key={row.rowIndex}
+                    className="flex flex-col gap-2 rounded border bg-background px-3 py-2 sm:flex-row sm:items-center"
+                  >
+                    <span className="flex-1">
+                      <span className="font-semibold">{row.name}</span>{" "}
+                      <span className="text-xs text-muted-foreground">
+                        sheet {row.number !== null ? `#${row.number}` : "no number"} · {other} #
+                        {cross}
+                      </span>
+                    </span>
+                    <label htmlFor={id} className="sr-only">
+                      Number for {row.name}
+                    </label>
+                    <select
+                      id={id}
+                      className={selectClass}
+                      value={useCross.has(row.rowIndex) ? "use" : "keep"}
+                      onChange={(e) => setCross([row.rowIndex], e.target.value === "use")}
+                    >
+                      <option value="keep">
+                        Keep {api.side} number{row.number !== null ? ` #${row.number}` : ""}
+                      </option>
+                      <option value="use">
+                        Use {other} number #{cross}
+                      </option>
+                    </select>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         {duplicates.length > 0 && (
           <section aria-label="Duplicates" className="space-y-1">
@@ -386,18 +538,38 @@ export function ShirtNumberUploadPanel({
   );
 }
 
+/** One line per cross-register note: what the other register says about this person. */
+export function crossNoteText(
+  note: ShirtNumberCrossRegisterNote,
+  other: ShirtNumberSide,
+  own: string | null,
+): string {
+  const n = note.number !== null ? `#${note.number}` : "no number";
+  const Other = other === "senior" ? "Senior" : "Junior";
+  if (note.relation === "same") {
+    return note.number === own ? `Also ${other} ${n}` : `${Other} ${n}`;
+  }
+  if (note.relation === "sharedId") {
+    return `Profile ID shared with ${note.name} in the ${other} register — family account?`;
+  }
+  return `Also ${other} ${n} (different Profile ID)`;
+}
+
 function PreviewRowItem({
   row,
-  supportsHeld,
+  holdable,
+  otherSide: other,
   value,
   onChange,
 }: {
   row: ShirtNumberPreviewRow;
-  supportsHeld: boolean;
+  holdable: boolean;
+  otherSide: ShirtNumberSide;
   value: RowResolution | null;
   onChange: (r: RowResolution | null) => void;
 }) {
   const id = `shirt-row-${row.rowIndex}`;
+  const notes = row.crossRegister ?? [];
   return (
     <li className="flex flex-col gap-2 rounded border bg-background px-3 py-2 sm:flex-row sm:items-center">
       <span className="w-12 shrink-0 font-bold tabular-nums">
@@ -416,6 +588,23 @@ function PreviewRowItem({
             Duplicate
           </StatusPill>
         )}
+        {row.status === "mismatch" && row.idOwnerName && (
+          <span className="block text-xs text-muted-foreground">
+            Sheet name {row.name} · Profile ID belongs to {row.idOwnerName}
+          </span>
+        )}
+        {notes.map((n, i) => (
+          <span
+            key={i}
+            className={
+              n.relation === "same" && n.number !== row.number
+                ? "block text-xs font-medium text-foreground"
+                : "block text-xs text-muted-foreground"
+            }
+          >
+            {crossNoteText(n, other, row.number)}
+          </span>
+        ))}
         {row.errors.length > 0 && (
           <span className="block text-xs text-destructive">{row.errors.join(" ")}</span>
         )}
@@ -459,7 +648,11 @@ function PreviewRowItem({
                 </option>
               );
             })}
-            {supportsHeld && <option value="hold">Keep as held</option>}
+            {holdable && (
+              <option value="hold">
+                {row.status === "held" ? "Keep until they arrive" : "Keep as held"}
+              </option>
+            )}
             <option value="discard">Discard</option>
           </select>
         </>

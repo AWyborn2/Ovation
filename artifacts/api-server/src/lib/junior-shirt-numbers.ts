@@ -12,6 +12,8 @@ import {
   carriedNumberFor,
   getShirtNumberSettings,
   normaliseParticipantId,
+  shirtNumberNameKey,
+  shirtNumberNamesAgree,
 } from "@workspace/db/shirt-numbers";
 import type { ShirtNumberSettings } from "@workspace/db/shirt-numbers";
 import {
@@ -36,6 +38,7 @@ import {
 import {
   buildPreviewRows,
   buildUploadRoster,
+  crossRegisterNumberOf,
   fail,
   payloadRows,
   splitFullName,
@@ -46,6 +49,12 @@ import {
   type UploadRoster,
 } from "./shirt-number-upload";
 import type { TeamListShirtNumbers } from "./engines/team-list";
+import type { CrossRegisterNote } from "./shirt-number-upload";
+import {
+  crossRegisterNotes,
+  juniorSeniorNumbers,
+  loadSeniorCrossEntries,
+} from "./shirt-number-cross";
 
 /**
  * Season shirt numbers — the juniors register (docs/plans/2026-10-06-001-feat-
@@ -141,9 +150,12 @@ export function buildJuniorUploadRoster(
 
 /**
  * Classify a junior upload's rows (R7, R8): participant id first (merged-away
- * ids resolved to the keeper), then a unique exact name, then suggestions.
- * A participant id that is not one of the club's juniors is ignored for
- * matching, so a matched row always carries a real participant.
+ * ids resolved to the keeper) when its owner's name agrees with the sheet's,
+ * then a unique exact name, then suggestions. A Profile ID whose owner has
+ * another name is a `mismatch` (a family PlayHQ account), never linked
+ * automatically. A valid PlayHQ id that is none of the club's juniors (and
+ * whose name matches nobody uniquely) is `held` by that id: the player has not
+ * arrived from PlayHQ yet.
  */
 export function buildJuniorPreviewRows(
   parsed: readonly ParsedUploadRow[],
@@ -152,26 +164,42 @@ export function buildJuniorPreviewRows(
   season: readonly RegisterEntryLike[],
 ): PreviewRow[] {
   const canonical = juniorCanonicalizer(participants, merges);
-  const rows = parsed.map((p) => ({ ...p, participantId: canonical(p.participantId) }));
-  return buildPreviewRows(rows, buildJuniorUploadRoster(participants), season);
+  const rows = parsed.map((p) => ({
+    ...p,
+    participantId: canonical(p.participantId) ?? normaliseParticipantId(p.participantId),
+  }));
+  return buildPreviewRows(rows, buildJuniorUploadRoster(participants), season, {
+    holdUnknownIds: true,
+  });
 }
 
 /** The contract's `JuniorShirtNumberRowResolution`. */
 export type JuniorResolution = {
   rowIndex: number;
-  action: "link" | "discard";
+  action: "link" | "hold" | "discard";
   participantId?: string | null;
+  /** Take the person's senior-register number (the row's `same` cross-register note). */
+  useCrossRegisterNumber?: boolean;
+};
+
+/** One row's planned junior write: `held` rows wait for their player (by Profile ID). */
+export type JuniorPlannedRow = {
+  row: PreviewRow;
+  participantId: string;
+  held: boolean;
+  /** The number the row sets explicitly, or null (keep / carry). */
+  explicit: string | null;
 };
 
 export type JuniorCommitPlan =
-  | { ok: true; planned: { row: PreviewRow; participantId: string }[]; discarded: number }
-  | { ok: false; error: string };
+  { ok: true; planned: JuniorPlannedRow[]; discarded: number } | { ok: false; error: string };
 
 /**
- * Decide each previewed row's fate for a junior commit. Junior entries always
- * carry a participant, so there is no "held": a row links to a junior
- * participant or is discarded. Rows without a resolution take their default:
- * `matched` links to its participant, every other row is discarded.
+ * Decide each previewed row's fate for a junior commit. A row links to a junior
+ * participant, is held by its Profile ID (only a `held` row: that player is not
+ * in the app yet), or is discarded. Rows without a resolution take their
+ * default: `matched` links, `held` holds, a `mismatch` (its Profile ID belongs
+ * to someone else) must be decided, every other row is discarded.
  */
 export function resolveJuniorCommitRows(
   rows: readonly PreviewRow[],
@@ -190,13 +218,26 @@ export function resolveJuniorCommitRows(
     if (!indexes.has(idx)) return { ok: false, error: `Row ${idx} is not in this upload.` };
   }
 
-  const planned: { row: PreviewRow; participantId: string }[] = [];
+  const planned: JuniorPlannedRow[] = [];
   const claimed = new Map<string, number>();
   let discarded = 0;
   for (const row of rows) {
     const res = byRow.get(row.rowIndex);
+    if (!res && row.status === "mismatch") {
+      return {
+        ok: false,
+        error:
+          `Row ${row.rowIndex}: its Profile ID belongs to ${row.idOwnerName ?? "someone else"}. ` +
+          `Choose a junior or discard it.`,
+      };
+    }
     const action =
-      res?.action ?? (row.status === "matched" && row.participantId !== null ? "link" : "discard");
+      res?.action ??
+      (row.status === "matched" && row.participantId !== null
+        ? "link"
+        : row.status === "held" && row.participantId !== null
+          ? "hold"
+          : "discard");
     if (action === "discard") {
       discarded += 1;
       continue;
@@ -204,23 +245,46 @@ export function resolveJuniorCommitRows(
     if (row.status === "invalid") {
       return { ok: false, error: `Row ${row.rowIndex} is invalid and can only be discarded.` };
     }
-    const chosen = res ? (res.participantId ?? null) : row.participantId;
-    if (chosen === null || chosen.trim() === "") {
-      return { ok: false, error: `Row ${row.rowIndex}: choose a junior participant to link.` };
+
+    let participantId: string | null;
+    if (action === "hold") {
+      // Only a row whose Profile ID is no junior of the club can wait for that player.
+      if (row.status !== "held" || row.participantId === null) {
+        return {
+          ok: false,
+          error: `Row ${row.rowIndex} can't be held: link it to a junior or discard it.`,
+        };
+      }
+      participantId = normaliseParticipantId(row.participantId);
+    } else {
+      const chosen = res ? (res.participantId ?? null) : row.participantId;
+      if (chosen === null || chosen.trim() === "") {
+        return { ok: false, error: `Row ${row.rowIndex}: choose a junior participant to link.` };
+      }
+      participantId = canonical(chosen);
+      if (participantId === null) {
+        return {
+          ok: false,
+          error: `Row ${row.rowIndex}: that is not one of this club's junior participants.`,
+        };
+      }
     }
-    const participantId = canonical(chosen);
-    if (participantId === null) {
-      return {
-        ok: false,
-        error: `Row ${row.rowIndex}: that is not one of this club's junior participants.`,
-      };
+
+    let explicit = row.number;
+    if (res?.useCrossRegisterNumber) {
+      const cross = crossRegisterNumberOf(row);
+      if (cross === null) {
+        return { ok: false, error: `Row ${row.rowIndex} has no senior-register number to use.` };
+      }
+      explicit = cross;
     }
-    const earlier = claimed.get(participantId);
+
+    const earlier = claimed.get(participantId!);
     if (earlier !== undefined) {
       return { ok: false, error: `Rows ${earlier} and ${row.rowIndex} are the same person.` };
     }
-    claimed.set(participantId, row.rowIndex);
-    planned.push({ row, participantId });
+    claimed.set(participantId!, row.rowIndex);
+    planned.push({ row, participantId: participantId!, held: action === "hold", explicit });
   }
   return { ok: true, planned, discarded };
 }
@@ -291,10 +355,75 @@ export function shapeJuniorShirtNumbers(
   return { shirtNumber: bySeason.get(opts.currentSeason)?.number ?? null, shirtNumbers };
 }
 
+export type JuniorLinkStatus = "linked" | "waiting" | "nameMismatch";
+
+export type JuniorRegisterLink = {
+  linkStatus: JuniorLinkStatus;
+  /** The participant's PlayHQ name, once they are one of the club's juniors. */
+  playerName: string | null;
+  /** A held entry's likely player: the one junior with the entry's exact name. */
+  suggestedLink: { participantId: string; name: string } | null;
+};
+
+/**
+ * How a register entry stands against the club's juniors (admin register view). Pure.
+ * A live entry is `linked`. A held entry is `waiting` until its participant arrives
+ * (the junior sync makes it live when the PlayHQ name agrees with the sheet's), and
+ * `nameMismatch` when the participant arrived under another name — a family account's
+ * id, for an admin to check. A held entry also gets a `suggestedLink` when exactly one
+ * other, non-withheld junior has the entry's exact name and no live entry this season
+ * (`liveOnRegister`, lowercased ids): offered for one-click confirmation, never applied.
+ */
+export function juniorRegisterLink(
+  entry: { participantId: string; name: string; held: boolean },
+  participants: readonly JuniorParticipantLike[],
+  merges: readonly JuniorMergeLike[],
+  liveOnRegister: ReadonlySet<string>,
+): JuniorRegisterLink {
+  const canonical = juniorCanonicalizer(participants, merges);
+  const own = canonical(entry.participantId);
+  const person =
+    own === null
+      ? undefined
+      : participants.find((p) => normaliseParticipantId(p.participantId) === own);
+  const playerName = person?.displayName ?? null;
+  if (!entry.held) return { linkStatus: "linked", playerName, suggestedLink: null };
+
+  const agrees = person !== undefined && shirtNumberNamesAgree(entry.name, playerName);
+  const key = shirtNumberNameKey(entry.name);
+  const sameName = participants.filter((p) => {
+    const id = normaliseParticipantId(p.participantId);
+    return (
+      id !== null &&
+      id !== own &&
+      !p.isPrivate &&
+      !liveOnRegister.has(id) &&
+      key !== "" &&
+      shirtNumberNameKey(p.displayName ?? "") === key
+    );
+  });
+  return {
+    linkStatus: person === undefined || agrees ? "waiting" : "nameMismatch",
+    playerName,
+    suggestedLink:
+      sameName.length === 1
+        ? {
+            participantId: normaliseParticipantId(sameName[0]!.participantId)!,
+            name: sameName[0]!.displayName ?? "",
+          }
+        : null,
+  };
+}
+
 // ── Database helpers ────────────────────────────────────────────────────────
 
 /** A junior entry in the contract's `JuniorShirtNumberEntry` shape. */
-export function serializeJuniorEntry(row: JuniorShirtNumberRow, duplicate: boolean) {
+export function serializeJuniorEntry(
+  row: JuniorShirtNumberRow,
+  duplicate: boolean,
+  link?: JuniorRegisterLink,
+  crossRegister: CrossRegisterNote[] = [],
+) {
   return {
     id: row.id,
     season: row.season,
@@ -303,6 +432,10 @@ export function serializeJuniorEntry(row: JuniorShirtNumberRow, duplicate: boole
     number: row.number,
     source: row.source,
     duplicate,
+    linkStatus: link?.linkStatus ?? (row.held ? ("waiting" as const) : ("linked" as const)),
+    playerName: link?.playerName ?? null,
+    suggestedLink: link?.suggestedLink ?? null,
+    crossRegister,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -327,20 +460,43 @@ export async function juniorRegisterSeasons(tenantId: number): Promise<number[]>
   return rows.map((r) => r.season);
 }
 
-/** The juniors register for a season, in the contract's entry shape. */
-export async function listJuniorEntries(tenantId: number, season: number): Promise<JuniorEntry[]> {
-  const rows = await db
-    .select()
-    .from(juniorShirtNumbersTable)
-    .where(
-      and(
-        eq(juniorShirtNumbersTable.tenantId, tenantId),
-        eq(juniorShirtNumbersTable.season, season),
-      ),
-    )
-    .orderBy(asc(juniorShirtNumbersTable.name), asc(juniorShirtNumbersTable.id));
+/**
+ * The juniors register for a season, in the contract's entry shape (admin only): each
+ * entry's link status against the club's juniors, and the admin-only cross-check
+ * against the senior register (read-only, this tenant and season). Also the senior
+ * numbers of the club's juniors, to prefill the add form.
+ */
+export async function listJuniorEntries(
+  tenantId: number,
+  season: number,
+): Promise<{ entries: JuniorEntry[]; seniorNumbers: { participantId: string; number: string }[] }> {
+  const [rows, identity, senior] = await Promise.all([
+    db
+      .select()
+      .from(juniorShirtNumbersTable)
+      .where(
+        and(
+          eq(juniorShirtNumbersTable.tenantId, tenantId),
+          eq(juniorShirtNumbersTable.season, season),
+        ),
+      )
+      .orderBy(asc(juniorShirtNumbersTable.name), asc(juniorShirtNumbersTable.id)),
+    loadJuniorIdentity(db, tenantId),
+    loadSeniorCrossEntries(tenantId, season),
+  ]);
   const dupes = duplicateEntryIds(rows.map((r) => ({ ...r, playerId: null })));
-  return rows.map((r) => serializeJuniorEntry(r, dupes.has(r.id)));
+  const live = new Set(
+    rows.filter((r) => !r.held).flatMap((r) => normaliseParticipantId(r.participantId) ?? []),
+  );
+  const entries = rows.map((r) =>
+    serializeJuniorEntry(
+      r,
+      dupes.has(r.id),
+      juniorRegisterLink(r, identity.participants, identity.merges, live),
+      crossRegisterNotes({ ids: [r.participantId], name: r.name }, senior),
+    ),
+  );
+  return { entries, seniorNumbers: juniorSeniorNumbers(identity.participants, senior) };
 }
 
 /** A tenant's junior participants and merge map, for matching and commit. */
@@ -495,7 +651,21 @@ export async function createJuniorEntry(
 export async function updateJuniorEntry(
   tenantId: number,
   id: number,
-  input: { name?: string; number?: string | null },
+  input: { name?: string; number?: string | null; participantId?: string },
+  settings: ShirtNumberSettings,
+): Promise<JuniorWriteOutcome> {
+  try {
+    return await updateJuniorEntryTx(tenantId, id, input, settings);
+  } catch (e) {
+    if (isUniqueViolation(e)) return conflict("That junior is already on this season's register.");
+    throw e;
+  }
+}
+
+async function updateJuniorEntryTx(
+  tenantId: number,
+  id: number,
+  input: { name?: string; number?: string | null; participantId?: string },
   settings: ShirtNumberSettings,
 ): Promise<JuniorWriteOutcome> {
   return db.transaction(async (tx) => {
@@ -512,6 +682,33 @@ export async function updateJuniorEntry(
     const patch: Partial<typeof juniorShirtNumbersTable.$inferInsert> = { updatedAt: new Date() };
     if (input.name !== undefined) patch.name = cleanName(input.name);
     if (input.number !== undefined) patch.number = input.number;
+    if (input.participantId !== undefined) {
+      // Link (or confirm) the entry: the participant must be one of the club's juniors.
+      const participant = await resolveJuniorParticipant(tx, tenantId, input.participantId);
+      if (!participant) {
+        return {
+          ok: false as const,
+          status: 400 as const,
+          body: { error: "That is not one of this club's junior participants." },
+        };
+      }
+      if (participant.participantId !== existing.participantId) {
+        const [other] = await tx
+          .select({ id: juniorShirtNumbersTable.id })
+          .from(juniorShirtNumbersTable)
+          .where(
+            and(
+              eq(juniorShirtNumbersTable.tenantId, tenantId),
+              eq(juniorShirtNumbersTable.season, existing.season),
+              eq(juniorShirtNumbersTable.participantId, participant.participantId),
+            ),
+          )
+          .limit(1);
+        if (other) return conflict(ALREADY_ON_REGISTER(existing.season));
+        patch.participantId = participant.participantId;
+      }
+      patch.held = false;
+    }
 
     const number = input.number !== undefined ? input.number : existing.number;
     const warnings: ShirtNumberWarning[] = [];
@@ -577,6 +774,21 @@ export async function startJuniorSeason(
       duplicatePolicy: settings.duplicatePolicy,
     });
     result.skipped = plan.skipped;
+    // An entry still waiting for its player stays held in the new season.
+    const heldBefore = new Set(
+      (
+        await tx
+          .select({ participantId: juniorShirtNumbersTable.participantId })
+          .from(juniorShirtNumbersTable)
+          .where(
+            and(
+              eq(juniorShirtNumbersTable.tenantId, tenantId),
+              eq(juniorShirtNumbersTable.season, fromSeason),
+              eq(juniorShirtNumbersTable.held, true),
+            ),
+          )
+      ).map((r) => r.participantId),
+    );
     const values = plan.create.flatMap((c) =>
       c.participantId === null
         ? []
@@ -588,6 +800,7 @@ export async function startJuniorSeason(
               name: c.name,
               number: c.number,
               source: c.source,
+              held: heldBefore.has(c.participantId),
             },
           ],
     );
@@ -688,7 +901,6 @@ export async function commitJuniorUpload(
       const planned = plan.planned.map((p, i) => ({
         ...p,
         existing: entries.find((e) => e.participantId === p.participantId),
-        explicit: p.row.number,
         selfId: -(i + 1),
       }));
       type Planned = (typeof planned)[number];
@@ -768,15 +980,18 @@ export async function commitJuniorUpload(
             name: cleanName(p.row.name),
             number,
             source,
+            held: p.held,
           });
           if (number !== null) touched.add(number);
           continue;
         }
-        if (number === p.existing.number) continue;
-        if (number !== null) touched.add(number);
+        // Linking confirms a held entry; holding never un-confirms a live one.
+        const confirm = !p.held && p.existing.held;
+        if (number === p.existing.number && !confirm) continue;
+        if (number !== null && number !== p.existing.number) touched.add(number);
         await tx
           .update(juniorShirtNumbersTable)
-          .set({ number, updatedAt: now })
+          .set({ number, updatedAt: now, ...(confirm ? { held: false } : {}) })
           .where(
             and(
               eq(juniorShirtNumbersTable.tenantId, tenantId),
@@ -814,8 +1029,8 @@ export async function commitJuniorUpload(
           uploadId: upload.id,
           created: inserts.length,
           updated,
-          linked: planned.length,
-          held: 0,
+          linked: planned.filter((p) => !p.held).length,
+          held: planned.filter((p) => p.held).length,
           discarded: plan.discarded,
           warnings,
         },
@@ -851,6 +1066,7 @@ export async function loadJuniorProfileShirtNumbers(
       ),
     );
   const ids = [own, ...dups.flatMap((d) => normaliseParticipantId(d.id) ?? [])];
+  // Held entries (waiting for their player, or a name to check) are never public.
   const rows = await db
     .select({
       season: juniorShirtNumbersTable.season,
@@ -862,6 +1078,7 @@ export async function loadJuniorProfileShirtNumbers(
       and(
         eq(juniorShirtNumbersTable.tenantId, tenantId),
         inArray(juniorShirtNumbersTable.participantId, ids),
+        eq(juniorShirtNumbersTable.held, false),
       ),
     );
   return shapeJuniorShirtNumbers(rows, { currentSeason, participantId: own });
@@ -890,6 +1107,8 @@ export async function loadJuniorSeasonShirtNumbers(
         and(
           eq(juniorShirtNumbersTable.tenantId, tenantId),
           eq(juniorShirtNumbersTable.season, season),
+          // A held number is not live until its player arrives under the sheet's name.
+          eq(juniorShirtNumbersTable.held, false),
         ),
       ),
     db

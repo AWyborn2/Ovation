@@ -233,11 +233,24 @@ describe("buildPreviewRows", () => {
     return buildPreviewRows(parsed.rows, roster, season);
   }
 
-  it("matches a row by participant id (any casing) before its name", async () => {
+  it("matches a row by participant id (any casing) when the names agree", async () => {
+    const [row] = await preview(
+      `Name,Participant ID,Number\nJANE smith,${GUID_A.toUpperCase()},7\n`,
+    );
+    expect(row).toMatchObject({ status: "matched", playerId: 1, participantId: GUID_A });
+  });
+
+  it("never trusts a participant id whose owner has another name (a family account)", async () => {
     const [row] = await preview(
       `Name,Participant ID,Number\nSomeone Else,${GUID_A.toUpperCase()},7\n`,
     );
-    expect(row).toMatchObject({ status: "matched", playerId: 1, participantId: GUID_A });
+    expect(row).toMatchObject({
+      status: "mismatch",
+      playerId: null,
+      participantId: GUID_A,
+      idOwnerName: "Jane Smith",
+      existingEntryId: null,
+    });
   });
 
   it("matches a unique exact normalised name", async () => {
@@ -305,6 +318,8 @@ describe("buildPreviewRows", () => {
       matched: 2,
       suggested: 0,
       new: 1,
+      held: 0,
+      mismatch: 0,
       invalid: 0,
       numberChanges: 1,
       duplicates: 1,

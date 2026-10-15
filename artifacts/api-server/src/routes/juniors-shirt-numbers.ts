@@ -42,6 +42,8 @@ import {
 } from "../lib/junior-shirt-numbers";
 import { enabledSettings, sendOutcome, validSeason } from "../lib/shirt-number-route-helpers";
 import { addSquadToJuniorRegister } from "../lib/shirt-number-squad";
+import { annotateCrossRegister, loadSeniorCrossEntries } from "../lib/shirt-number-cross";
+import { isJuniorSyncOn } from "../lib/junior-sync";
 
 /**
  * Season shirt numbers — the juniors register (plan U10; R17). Kept apart from
@@ -51,24 +53,35 @@ import { addSquadToJuniorRegister } from "../lib/shirt-number-squad";
  * register (one switch and one set of policies per club, read from
  * /api/shirt-numbers/settings).
  *
- * Juniors gating: a central-read tenant has no native junior data, so the
- * register reads empty and every write 404s, exactly like the other juniors
- * routes. Writes need an admin with the curation entitlement and, with the
- * feature off, refuse with 400.
+ * Juniors gating: a club with no junior data of its own and junior PlayHQ sync
+ * off (a central-read tenant) gets an empty register and every write 404s,
+ * exactly like the other juniors routes. With junior sync on, a register can be
+ * kept before the season's players arrive (held entries). Writes need an admin
+ * with the curation entitlement and, with the feature off, refuse with 400.
+ *
+ * Admin-only cross-check: the register and the upload preview READ the senior
+ * register (same tenant and season, ./shirt-number-cross) so an admin sees what a
+ * dual player wears there. Nothing senior is written, and public juniors pages and
+ * cards never read it.
  */
 
 const router: IRouter = Router();
 
 const NO_JUNIORS = "Juniors are not available for this club.";
 
-/** Whether this club has any juniors of its own (junior_participants rows). */
+/**
+ * Whether this club keeps a juniors register: it has juniors of its own
+ * (junior_participants rows), or junior PlayHQ sync is on so its juniors are on
+ * their way (numbers can be uploaded and held before they arrive).
+ */
 async function hasJuniors(tenantId: number): Promise<boolean> {
   const [row] = await db
     .select({ id: juniorParticipantsTable.participantId })
     .from(juniorParticipantsTable)
     .where(eq(juniorParticipantsTable.tenantId, tenantId))
     .limit(1);
-  return !!row;
+  if (row) return true;
+  return isJuniorSyncOn(tenantId, { requireActive: false });
 }
 
 /** True (and a 404 sent) when the club has no junior data. */
@@ -94,14 +107,20 @@ router.get("/juniors/shirt-numbers", requireAdmin, async (req, res): Promise<voi
   const tenantId = getTenantId(req);
   // A club with no juniors of its own gets an empty register.
   if (!(await hasJuniors(tenantId))) {
-    res.json({ season, seasons: [], entries: [] });
+    res.json({ season, seasons: [], entries: [], juniorsAvailable: false, seniorNumbers: [] });
     return;
   }
-  const [entries, seasons] = await Promise.all([
+  const [register, seasons] = await Promise.all([
     listJuniorEntries(tenantId, season),
     juniorRegisterSeasons(tenantId),
   ]);
-  res.json({ season, seasons, entries });
+  res.json({
+    season,
+    seasons,
+    entries: register.entries,
+    juniorsAvailable: true,
+    seniorNumbers: register.seniorNumbers,
+  });
 });
 
 router.post(
@@ -184,7 +203,7 @@ router.patch(
     const outcome = await updateJuniorEntry(
       getTenantId(req),
       params.data.id,
-      { name: body.name, number: body.number },
+      { name: body.name, number: body.number, participantId: body.participantId },
       settings,
     );
     sendOutcome(res, outcome, 200);
@@ -294,11 +313,16 @@ router.post(
     const tenantId = getTenantId(req);
     let rows: PreviewRow[] = [];
     if (parsed.errors.length === 0 && parsed.rows.length > 0) {
-      const [identity, entries] = await Promise.all([
+      const [identity, entries, senior] = await Promise.all([
         loadJuniorIdentity(db, tenantId),
         loadSeasonEntries(db, "junior", tenantId, season),
+        loadSeniorCrossEntries(tenantId, season),
       ]);
-      rows = buildJuniorPreviewRows(parsed.rows, identity.participants, identity.merges, entries);
+      rows = annotateCrossRegister(
+        buildJuniorPreviewRows(parsed.rows, identity.participants, identity.merges, entries),
+        senior,
+        (row) => [row.participantId],
+      );
     }
     const preview = await createUpload({
       tenantId,

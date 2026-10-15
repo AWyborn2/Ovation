@@ -5,10 +5,13 @@ import {
   availabilityResponsesTable,
   availabilityRoundsTable,
   fixturesTable,
+  juniorFixturesTable,
+  juniorTeamListsTable,
   selectionEventsTable,
   selectionsTable,
   squadMembersTable,
   teamListsTable,
+  type AvailabilityRoundRow,
   type AvailabilityStatus,
   type SelectionSlot,
   type TeamListPlayer,
@@ -21,6 +24,8 @@ import {
   roundWindow,
   type MemberIdentity,
 } from "./availability-grades";
+import { loadJuniorIdentity } from "./junior-shirt-numbers";
+import { juniorMemberResolver } from "./shirt-number-squad";
 
 /**
  * Draft sides at cut-off.
@@ -93,6 +98,11 @@ export function buildDraftSlots(input: {
   responses: ResponsesByMember;
   fixtureDate: string;
   placed?: Set<number>;
+  /**
+   * Keep a listed player only on a Yes (the availability flow, default). False
+   * for a club not using availability: everyone listed stays unless they said No.
+   */
+  requireYes?: boolean;
 }): DraftSide {
   const { lastList, members, responses, fixtureDate } = input;
   const elsewhere = input.placed ?? new Set<number>();
@@ -118,7 +128,8 @@ export function buildDraftSlots(input: {
       return;
     }
     const status = responses.get(m.id)?.get(fixtureDate);
-    if (status !== "yes") {
+    const keep = input.requireYes === false ? status !== "no" : status === "yes";
+    if (!keep && status !== "yes") {
       slots[i] = { memberId: null, gap: { name, reason: status ?? "no_reply" } };
       return;
     }
@@ -152,6 +163,7 @@ export async function buildRoundDrafts(
   tenantId: number,
   roundId: number,
   now: Date = new Date(),
+  opts: { requireYes?: boolean } = {},
 ): Promise<RoundDraftSummary> {
   const summary: RoundDraftSummary = { created: 0, skipped: 0, selectionIds: [] };
   const [round] = await db
@@ -174,7 +186,7 @@ export async function buildRoundDrafts(
       ),
     )
     .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id));
-  if (fixtures.length === 0) return summary;
+  if (fixtures.length === 0) return draftJuniorSides(tenantId, round, now, opts, summary);
 
   // Sides already drafted: their fixtures are skipped and their members are
   // placed, along with anyone in another side of this round.
@@ -260,6 +272,7 @@ export async function buildRoundDrafts(
       responses,
       fixtureDate: perthDate(f.startAt),
       placed,
+      requireYes: opts.requireYes,
     });
 
     const created = await db.transaction(async (tx) => {
@@ -295,6 +308,186 @@ export async function buildRoundDrafts(
       return row.id;
     });
     // A concurrent run got there first: count it as already drafted.
+    if (created == null) summary.skipped++;
+    else {
+      summary.created++;
+      summary.selectionIds.push(created);
+    }
+  }
+  return draftJuniorSides(tenantId, round, now, opts, summary);
+}
+
+/**
+ * Junior sides: one per `junior_fixtures` row (junior PlayHQ sync) in the
+ * round's window. A club can field several teams in one age group, so each
+ * side is seeded from the same team's most recent junior team list. Those
+ * lists hold PlayHQ participant ids, matched back to squad members the way a
+ * junior side is published (`juniorMemberResolver`).
+ */
+async function draftJuniorSides(
+  tenantId: number,
+  round: AvailabilityRoundRow,
+  now: Date,
+  opts: { requireYes?: boolean },
+  summary: RoundDraftSummary,
+): Promise<RoundDraftSummary> {
+  const window = roundWindow(round.weekendDate);
+  const fixtures = await db
+    .select()
+    .from(juniorFixturesTable)
+    .where(
+      and(
+        eq(juniorFixturesTable.tenantId, tenantId),
+        gte(juniorFixturesTable.startAt, window.from),
+        lt(juniorFixturesTable.startAt, window.to),
+      ),
+    )
+    .orderBy(asc(juniorFixturesTable.startAt), asc(juniorFixturesTable.id));
+  if (fixtures.length === 0) return summary;
+
+  const roundSides = await db
+    .select({ juniorFixtureId: selectionsTable.juniorFixtureId, slots: selectionsTable.slots })
+    .from(selectionsTable)
+    .where(
+      and(
+        eq(selectionsTable.tenantId, tenantId),
+        or(
+          eq(selectionsTable.roundId, round.id),
+          inArray(
+            selectionsTable.juniorFixtureId,
+            fixtures.map((f) => f.id),
+          ),
+        ),
+      ),
+    );
+  const existing = new Set(roundSides.map((r) => r.juniorFixtureId));
+  const placed = new Set<number>();
+  for (const r of roundSides)
+    for (const x of r.slots) if (x.memberId != null) placed.add(x.memberId);
+
+  // Each team's most recent non-empty junior list from before the round.
+  const teams = [...new Set(fixtures.flatMap((f) => (f.teamName ? [f.teamName] : [])))];
+  const lastLists =
+    teams.length > 0
+      ? await db
+          .selectDistinctOn([juniorFixturesTable.teamName], {
+            teamName: juniorFixturesTable.teamName,
+            fixtureId: juniorFixturesTable.id,
+            players: juniorTeamListsTable.players,
+          })
+          .from(juniorFixturesTable)
+          .innerJoin(
+            juniorTeamListsTable,
+            and(
+              eq(juniorTeamListsTable.juniorFixtureId, juniorFixturesTable.id),
+              eq(juniorTeamListsTable.tenantId, juniorFixturesTable.tenantId),
+            ),
+          )
+          .where(
+            and(
+              eq(juniorFixturesTable.tenantId, tenantId),
+              inArray(juniorFixturesTable.teamName, teams),
+              lt(juniorFixturesTable.startAt, window.from),
+              sql`jsonb_array_length(${juniorTeamListsTable.players}) > 0`,
+            ),
+          )
+          .orderBy(
+            juniorFixturesTable.teamName,
+            desc(juniorFixturesTable.startAt),
+            desc(juniorFixturesTable.id),
+          )
+      : [];
+  const lastByTeam = new Map(lastLists.map((l) => [l.teamName, l]));
+
+  const members = (
+    await db
+      .select({
+        id: squadMembersTable.id,
+        firstName: squadMembersTable.firstName,
+        lastName: squadMembersTable.lastName,
+        preferredName: squadMembersTable.preferredName,
+        linkedPlayerId: squadMembersTable.linkedPlayerId,
+        active: squadMembersTable.active,
+        gradeHint: squadMembersTable.gradeHint,
+        playhqProfileId: squadMembersTable.playhqProfileId,
+        section: squadMembersTable.section,
+      })
+      .from(squadMembersTable)
+      .where(eq(squadMembersTable.tenantId, tenantId))
+  ).filter((m) => m.section === "junior");
+  const { participants, merges } = await loadJuniorIdentity(db, tenantId);
+  const resolve = juniorMemberResolver(participants, merges);
+  const memberOfParticipant = new Map<string, (typeof members)[number]>();
+  for (const m of members) {
+    const id = resolve(m);
+    if (id && !memberOfParticipant.has(id)) memberOfParticipant.set(id, m);
+  }
+  const nameOfParticipant = new Map(
+    participants.map((p) => [p.participantId.toLowerCase(), p.displayName ?? ""]),
+  );
+  const responses = await loadResponses(tenantId, round.id, window.from, window.to);
+
+  const seededTeams = new Set<string>();
+  for (const f of fixtures) {
+    const team = f.teamName ?? "";
+    const seed = team && !seededTeams.has(team) ? (lastByTeam.get(team) ?? null) : null;
+    if (team) seededTeams.add(team);
+    if (existing.has(f.id)) {
+      summary.skipped++;
+      continue;
+    }
+    // The junior list as names the member matcher knows; an unknown participant
+    // keeps their PlayHQ name and becomes a gap "not on register".
+    const lastList: TeamListPlayer[] | null =
+      seed?.players.map((p) => {
+        const id = p.participantId.toLowerCase();
+        const m = memberOfParticipant.get(id);
+        return {
+          order: p.order,
+          displayName: m ? memberDisplayName(m) : nameOfParticipant.get(id) || "Unknown",
+          ...(p.role ? { role: p.role } : {}),
+        };
+      }) ?? null;
+    const draft = buildDraftSlots({
+      lastList,
+      members,
+      responses,
+      fixtureDate: perthDate(f.startAt!),
+      placed,
+      requireYes: opts.requireYes,
+    });
+    const created = await db.transaction(async (tx) => {
+      const [row] = await tx
+        .insert(selectionsTable)
+        .values({
+          tenantId,
+          roundId: round.id,
+          juniorFixtureId: f.id,
+          slots: draft.slots,
+          captainMemberId: draft.captainMemberId,
+          keeperMemberId: draft.keeperMemberId,
+          state: "draft",
+          version: 1,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoNothing()
+        .returning({ id: selectionsTable.id });
+      if (!row) return null;
+      await tx.insert(selectionEventsTable).values({
+        tenantId,
+        selectionId: row.id,
+        actorKind: "system",
+        action: "draft",
+        detail: {
+          seededFromJuniorFixtureId: seed?.fixtureId ?? null,
+          filled: draft.slots.slice(0, XI_SIZE).filter((s) => s.memberId != null).length,
+          twelfth: draft.slots[TWELFTH_INDEX]?.memberId != null,
+        },
+        createdAt: now,
+      });
+      return row.id;
+    });
     if (created == null) summary.skipped++;
     else {
       summary.created++;

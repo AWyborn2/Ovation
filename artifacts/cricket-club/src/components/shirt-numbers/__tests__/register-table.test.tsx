@@ -68,8 +68,11 @@ const entry = (
   playerId: id + 100,
   playerName: name,
   held: false,
+  heldReason: null,
+  suggestedLink: null,
   duplicate: false,
   source: "upload",
+  crossRegister: [],
   ...extra,
 });
 
