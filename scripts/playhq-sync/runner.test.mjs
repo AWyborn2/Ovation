@@ -307,6 +307,15 @@ test("manual catch-up rejects a bad organisation id or date", () => {
   assert.throws(() => manualPlan("2dd0a9a1-86d8-eb11-a7ad-2818780da0cc", "3 Oct"), /date/);
 });
 
+test("manualPlan includes junior grades only when asked", () => {
+  const org = "4559f1b9-86d8-eb11-a7ad-2818780da0cc";
+  assert.equal(manualPlan(org, "2026-10-03").plan.includeJuniors, undefined);
+  assert.equal(
+    manualPlan(org, "2026-10-03", new Date(), { includeJuniors: true }).plan.includeJuniors,
+    true,
+  );
+});
+
 test("the names backfill fetches every season's grade stats reports for one organisation", () => {
   const p = manualNamesPlan(
     "4559F1B9-86D8-EB11-A7AD-2818780DA0CC",

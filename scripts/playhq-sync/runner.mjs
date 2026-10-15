@@ -50,8 +50,12 @@ export function ingestBody(due, status, timedOut, durationMs, dump) {
 
 const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** The one plan a manual catch-up runs (the same shape the server's catchup plan has). */
-export function manualPlan(orgId, since, now = new Date()) {
+/**
+ * The one plan a manual catch-up runs (the same shape the server's catchup plan has). With
+ * `includeJuniors` the harness keeps junior grades too; the ingest still drops them unless the
+ * organisation's club has junior sync enabled (junior sync plan KTD2).
+ */
+export function manualPlan(orgId, since, now = new Date(), { includeJuniors = false } = {}) {
   const org = String(orgId ?? "")
     .trim()
     .toLowerCase();
@@ -73,6 +77,7 @@ export function manualPlan(orgId, since, now = new Date()) {
       lineups: "upcoming",
       since: day,
       resume: true,
+      ...(includeJuniors ? { includeJuniors: true } : {}),
     },
   };
 }
@@ -220,7 +225,9 @@ export async function run({
         plans: [
           env.MANUAL_NAMES === "true"
             ? manualNamesPlan(env.MANUAL_ORG)
-            : manualPlan(env.MANUAL_ORG, env.MANUAL_SINCE),
+            : manualPlan(env.MANUAL_ORG, env.MANUAL_SINCE, new Date(), {
+                includeJuniors: env.MANUAL_JUNIORS === "true",
+              }),
         ],
       }
     : await api(fetchImpl, base, secret, "/internal/playhq/plans");
