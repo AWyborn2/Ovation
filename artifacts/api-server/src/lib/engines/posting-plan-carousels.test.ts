@@ -256,4 +256,24 @@ describe("ladders round carousel", () => {
     await generateLadderDrafts(7, NOW);
     expect(await generateLadderDrafts(7, NOW)).toEqual({ drafted: 0, refreshed: 1 });
   });
+
+  it("never includes a junior grade, even one the row ticks", async () => {
+    withPlan((p) => {
+      p.rows.ladders.grades = { "Under 16": true };
+    });
+    h.centralClubMatches.mockResolvedValue([
+      match(10, "A Grade", "2026-11-21"),
+      match(12, "Under 16", "2026-11-21"),
+    ]);
+    h.playhqGradeIdsForCentralMatches.mockResolvedValue(
+      new Map([
+        [10, "g-a"],
+        [12, "g-u16"],
+      ]),
+    );
+    await generateLadderDrafts(7, NOW);
+    const grades = planCardSet(h.upserts[0].cardInput as SetInput).map((s) => s.input.gradeLabel);
+    expect(grades).toEqual(["A GRADE"]);
+    expect(h.playhqGradeLadderUncached).not.toHaveBeenCalledWith("g-u16", expect.anything());
+  });
 });
