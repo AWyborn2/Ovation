@@ -138,7 +138,7 @@ In short:
   under advisory lock in `lib/posting-writer.ts`); `lib/posting-slots.ts` (hourly sweep + the
   runner's `/internal/playhq/posting-slots` call) dispatches, rolls and expires cards, and
   replaces the legacy auto-post window for that club. The queue opens as a Week/List calendar
-  (`cricket-club/src/components/social-calendar/`). Migration `0040` is applied by hand.
+  (`cricket-club/src/components/social-calendar/`). Migration `0041` is applied by hand.
 - **Billing and entitlements are built but switched off** (Phase 2c/2d); onboarding,
   tenant-scoped admin auth and the platform-admin console are live.
 
@@ -244,6 +244,16 @@ In short:
   `references/`); ingest `api-server/src/lib/playhq-ingest.ts`; loader, cadence, health,
   fixtures/team-list/central projections in `lib/db/src/playhq-ingest/`; landing schema
   `scripts/sql/playhq-schema.sql` (+ `playhq-ingest-role.sql`, `central-projector.sql`)
+- Junior PlayHQ sync (2026/27 onward, ids >= 200,000,000): gate
+  `api-server/src/lib/junior-sync.ts` (`playhq_sync_enabled` + platform-admin
+  `junior_sync_enabled` + `juniors` entitlement; optional `playhq_junior_org_id`); grade
+  classifier `lib/db/src/playhq-ingest/grade-classes.ts`; projection
+  `lib/db/src/playhq-ingest/junior-project.ts` (planners `junior-plan.ts`, writers
+  `junior-write.ts`); junior cards `api-server/src/lib/junior-social.ts`, naming
+  `lib/junior-names.ts`, publishing modes `lib/junior-publishing.ts`. Migration 0040 (`0040_junior_sync.sql`) is
+  applied by hand in production. Grades the classifier can call neither junior nor senior are
+  not reported separately: they surface on the platform Competitions screen (PlayHQ grade
+  decisions, `unclassified-grades.ts`), which also never lists a junior grade.
 - Social drafting: `api-server/src/lib/draft-sweep.ts` (entry), `lib/engines/*` (per card
   kind), `lib/draft-enrich.ts` (pack, caption and photo pick)
 - Meta publishing: `api-server/src/lib/publishing/` (destination boundary + Meta adapter,

@@ -61,6 +61,19 @@ export function lineupEntries(players: unknown): LineupEntry[] {
   });
 }
 
+/** A selected player's team-list role from PlayHQ's captain / keeper flags. */
+export function lineupRole(
+  e: Pick<LineupEntry, "isCaptain" | "isWicketKeeper">,
+): "C/WK" | "C" | "WK" | undefined {
+  return e.isCaptain && e.isWicketKeeper
+    ? "C/WK"
+    : e.isCaptain
+      ? "C"
+      : e.isWicketKeeper
+        ? "WK"
+        : undefined;
+}
+
 /** Fill-in ids (>= 90000) never appear on a team list (fill-in exclusion invariant). */
 const FILL_IN_THRESHOLD = 90000;
 
@@ -90,14 +103,7 @@ export function lineupToTeamList(
   return rows.map((e, i) => {
     const key = e.participantId?.toLowerCase() ?? null;
     const playerId = key ? playerIdOf.get(key) : undefined;
-    const role: TeamListPlayer["role"] =
-      e.isCaptain && e.isWicketKeeper
-        ? "C/WK"
-        : e.isCaptain
-          ? "C"
-          : e.isWicketKeeper
-            ? "WK"
-            : undefined;
+    const role = lineupRole(e);
     return {
       order: i + 1,
       ...(playerId != null && playerId < FILL_IN_THRESHOLD ? { playerId } : {}),

@@ -18,6 +18,7 @@ import {
   type Queryable,
 } from "@workspace/db/playhq-ingest";
 import { sendEmail } from "./integrations/email";
+import { juniorOrgIdsOf, loadJuniorSyncTenants } from "./junior-sync";
 import { withoutDecidedGrades } from "./playhq-grade-decisions";
 import { env } from "../config";
 
@@ -77,12 +78,22 @@ export async function computeHealth(now: Date): Promise<HealthSnapshot> {
   await assertIngestScope(pool);
   const reader = pool as unknown as Queryable;
   const tenants = await syncTenants();
-  const orgIds = [...new Set(tenants.map((t) => t.orgId))];
+  // Junior-sync clubs' junior organisations are planned too (junior sync plan U4), so health
+  // judges the same plans the runner is given; a separate junior organisation is listed
+  // under its club.
+  const juniors = await loadJuniorSyncTenants();
+  for (const j of juniors) {
+    const org = j.orgId.toLowerCase();
+    const club = tenants.find((t) => t.id === j.tenantId);
+    if (club && club.orgId !== org) tenants.push({ ...club, orgId: org });
+  }
+  const juniorOrgIds = juniorOrgIdsOf(juniors);
+  const orgIds = [...new Set([...tenants.map((t) => t.orgId), ...juniorOrgIds])];
   const [{ matches, lastRuns }, runs] = await Promise.all([
-    loadCadenceInputs(reader, orgIds),
+    loadCadenceInputs(reader, orgIds, juniorOrgIds),
     loadRunSummaries(reader, orgIds),
   ]);
-  const due = duePlans(now, orgIds, matches, lastRuns);
+  const due = duePlans(now, orgIds, matches, lastRuns, juniorOrgIds);
   return { now, tenants, health: assessHealth(now, orgIds, due, runs) };
 }
 

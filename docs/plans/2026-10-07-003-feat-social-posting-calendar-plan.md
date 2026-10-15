@@ -26,7 +26,7 @@ status: implemented
 
 Where the implementation differs from the text below, this list wins:
 
-- **Migration is `0040`, not `0035`.** `lib/db/migrations/0040_social_posting_calendar.sql` is itself idempotent and paste-ready; there is no separate `.prod.sql` file. The read-only column check lives in `docs/runbooks/meta-publishing.md` §3a.
+- **Migration is `0041`, not `0035`** (renumbered after the junior sync took `0040`). `lib/db/migrations/0041_social_posting_calendar.sql` is itself idempotent and paste-ready; there is no separate `.prod.sql` file. The read-only column check lives in `docs/runbooks/meta-publishing.md` §3a.
 - **`nudged_at` became `dispatched_at`**, stamped (guarded) when a due ready card is either scheduled for publishing or nudged, so a slot is handled exactly once. A further column, **`overdue_notified_at`**, makes the one-time overdue reminder for an admin-placed unapproved card idempotent.
 - **Unscheduling is `POST /social-drafts/{id}/unschedule`** (with `expectedPlannedAt`), not `DELETE …/planned-time`. It pins the card as `admin` with no time, so automation never re-places it.
 - **`auto_ready_at` follows `planned_at`** for calendar clubs instead of being cleared: the slot is the one deadline, and send-back, reopen and edit still clear it.
@@ -282,7 +282,7 @@ Schema first (U1), then the pure schedule and placement logic (U2), then the ser
 
 ## Operational Notes
 
-Deploy order: merge; Ash pastes `lib/db/migrations/0040_social_posting_calendar.sql` into the Production SQL runner; Ash runs the read-only column check in the runbook; republish; smoke-test the queue and one ingest; enable the calendar for Halls Head only and check the backfill placed its open cards. Rollback: turn the calendar off for the club. The columns are additive and stay.
+Deploy order: merge; Ash pastes `lib/db/migrations/0041_social_posting_calendar.sql` into the Production SQL runner; Ash runs the read-only column check in the runbook; republish; smoke-test the queue and one ingest; enable the calendar for Halls Head only and check the backfill placed its open cards. Rollback: turn the calendar off for the club. The columns are additive and stay.
 
 ---
 
@@ -301,7 +301,7 @@ Deploy order: merge; Ash pastes `lib/db/migrations/0040_social_posting_calendar.
 - `lib/db/src/schema/social_cards.ts` (modify: `social_drafts` gains `planned_at`, `planned_by`, `roll_count`, `dispatched_at`, `expired_at`; `social_settings` gains `posting_schedule` jsonb with its row type)
 - `lib/db/migrations/0035_social_posting_calendar.sql` (create; number re-checked against `origin/main` before generating)
 - `lib/db/migrations/meta/_journal.json` and the matching snapshot (generated)
-- (as built: no separate production file — migration `0040` is paste-ready; see As built)
+- (as built: no separate production file — migration `0041` is paste-ready; see As built)
 
 **Approach:**
 

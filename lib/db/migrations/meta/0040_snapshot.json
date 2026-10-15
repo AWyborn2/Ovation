@@ -1,5 +1,5 @@
 {
-  "id": "f81fcda3-2d59-4635-9afb-a5d60f7aa4c9",
+  "id": "26342bf1-1931-42f8-b2db-d6f6a1d916b4",
   "prevId": "76b3f537-bb0d-423a-b61f-735369467776",
   "version": "7",
   "dialect": "postgresql",
@@ -4856,68 +4856,9 @@
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
-        },
-        "planned_at": {
-          "name": "planned_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "planned_by": {
-          "name": "planned_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "roll_count": {
-          "name": "roll_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "dispatched_at": {
-          "name": "dispatched_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "overdue_notified_at": {
-          "name": "overdue_notified_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "expired_at": {
-          "name": "expired_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {
-        "social_drafts_planned_idx": {
-          "name": "social_drafts_planned_idx",
-          "columns": [
-            {
-              "expression": "tenant_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "planned_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "where": "planned_at IS NOT NULL",
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "social_drafts_match_dedupe": {
           "name": "social_drafts_match_dedupe",
           "columns": [
@@ -5007,14 +4948,6 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
-        "social_drafts_planned_by_check": {
-          "name": "social_drafts_planned_by_check",
-          "value": "\"planned_by\" IS NULL OR \"planned_by\" IN ('auto', 'admin')"
-        },
-        "social_drafts_roll_count_check": {
-          "name": "social_drafts_roll_count_check",
-          "value": "\"roll_count\" >= 0"
-        },
         "social_drafts_status_check": {
           "name": "social_drafts_status_check",
           "value": "\"status\" IN ('awaiting_review', 'ready', 'dismissed', 'posted')"
@@ -5211,12 +5144,6 @@
         },
         "round_schedules": {
           "name": "round_schedules",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "posting_schedule": {
-          "name": "posting_schedule",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
@@ -7628,6 +7555,178 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.junior_fixtures": {
+      "name": "junior_fixtures",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "playhq_match_id": {
+          "name": "playhq_match_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "season_start_year": {
+          "name": "season_start_year",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "age_group": {
+          "name": "age_group",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grade": {
+          "name": "grade",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "team_name": {
+          "name": "team_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "opponent_name": {
+          "name": "opponent_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "venue": {
+          "name": "venue",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_at": {
+          "name": "start_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_home": {
+          "name": "is_home",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "junior_fixtures_tenant_idx": {
+          "name": "junior_fixtures_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "junior_fixtures_tenant_start_idx": {
+          "name": "junior_fixtures_tenant_start_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "start_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "junior_fixtures_tenant_playhq_match_uidx": {
+          "name": "junior_fixtures_tenant_playhq_match_uidx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "playhq_match_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "junior_fixtures_tenant_id_tenants_id_fk": {
+          "name": "junior_fixtures_tenant_id_tenants_id_fk",
+          "tableFrom": "junior_fixtures",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.junior_match_batting": {
       "name": "junior_match_batting",
       "schema": "",
@@ -7928,6 +8027,20 @@
           "notNull": true,
           "default": "'{}'"
         },
+        "name_style": {
+          "name": "name_style",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'full'"
+        },
+        "team_publishing": {
+          "name": "team_publishing",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp with time zone",
@@ -7971,7 +8084,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "junior_match_display_settings_name_style_check": {
+          "name": "junior_match_display_settings_name_style_check",
+          "value": "\"name_style\" IN ('full', 'first_initial', 'first')"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.junior_match_rosters": {
@@ -8249,6 +8367,28 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "junior_matches_tenant_playhq_match_uidx": {
+          "name": "junior_matches_tenant_playhq_match_uidx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "playhq_match_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"playhq_match_id\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -8401,7 +8541,7 @@
         "participant_id": {
           "name": "participant_id",
           "type": "text",
-          "primaryKey": true,
+          "primaryKey": false,
           "notNull": true
         },
         "tenant_id": {
@@ -8423,6 +8563,25 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "privacy_override": {
+          "name": "privacy_override",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "privacy_override_by": {
+          "name": "privacy_override_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "privacy_override_at": {
+          "name": "privacy_override_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         },
         "scorecard_lines": {
           "name": "scorecard_lines",
@@ -8493,7 +8652,15 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "junior_participants_tenant_participant_pk": {
+          "name": "junior_participants_tenant_participant_pk",
+          "columns": [
+            "tenant_id",
+            "participant_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
@@ -8720,6 +8887,127 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.junior_team_lists": {
+      "name": "junior_team_lists",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "junior_fixture_id": {
+          "name": "junior_fixture_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "players": {
+          "name": "players",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "is_published": {
+          "name": "is_published",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'admin'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "junior_team_lists_tenant_fixture_uidx": {
+          "name": "junior_team_lists_tenant_fixture_uidx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "junior_fixture_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "junior_team_lists_tenant_id_tenants_id_fk": {
+          "name": "junior_team_lists_tenant_id_tenants_id_fk",
+          "tableFrom": "junior_team_lists",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "junior_team_lists_junior_fixture_id_junior_fixtures_id_fk": {
+          "name": "junior_team_lists_junior_fixture_id_junior_fixtures_id_fk",
+          "tableFrom": "junior_team_lists",
+          "tableTo": "junior_fixtures",
+          "columnsFrom": [
+            "junior_fixture_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "junior_team_lists_source_check": {
+          "name": "junior_team_lists_source_check",
+          "value": "\"source\" IN ('playhq', 'admin')"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.junior_stat_corrections": {
@@ -9135,6 +9423,19 @@
           "notNull": true,
           "default": false
         },
+        "junior_sync_enabled": {
+          "name": "junior_sync_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "playhq_junior_org_id": {
+          "name": "playhq_junior_org_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "hero_images": {
           "name": "hero_images",
           "type": "jsonb",
@@ -9193,6 +9494,22 @@
           ],
           "isUnique": true,
           "where": "\"playhq_org_id\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "tenants_playhq_junior_org_id_uidx": {
+          "name": "tenants_playhq_junior_org_id_uidx",
+          "columns": [
+            {
+              "expression": "playhq_junior_org_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"playhq_junior_org_id\" IS NOT NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -13585,7 +13902,18 @@
   },
   "enums": {},
   "schemas": {},
-  "sequences": {},
+  "sequences": {
+    "public.junior_sync_id_seq": {
+      "name": "junior_sync_id_seq",
+      "schema": "public",
+      "increment": "1",
+      "startWith": "200000000",
+      "minValue": "200000000",
+      "maxValue": "9223372036854775807",
+      "cache": "1",
+      "cycle": false
+    }
+  },
   "roles": {},
   "policies": {},
   "views": {},

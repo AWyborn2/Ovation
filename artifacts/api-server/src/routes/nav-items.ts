@@ -28,6 +28,7 @@ const INTERNAL_TARGETS: { value: string; label: string; section: "senior" | "jun
     // Junior public pages
     { value: "/juniors", label: "Juniors Overview", section: "junior" },
     { value: "/juniors/matches", label: "Juniors Matches", section: "junior" },
+    { value: "/juniors/fixtures", label: "Juniors Fixtures", section: "junior" },
     { value: "/juniors/premierships", label: "Juniors Premierships", section: "junior" },
     { value: "/juniors/players", label: "Juniors Players", section: "junior" },
     { value: "/juniors/office-bearers", label: "Juniors Office Bearers", section: "junior" },

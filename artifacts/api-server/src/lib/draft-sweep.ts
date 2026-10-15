@@ -54,7 +54,8 @@ type Logger = PostCommitLogger & {
  * - `scheduled`: the periodic job. A central-data club drafts match summaries
  *   and achievement cards (centuries, five-fors, debuts, career milestones)
  *   for central matches past its watermark; every club gets its match-day and
- *   team-list cards.
+ *   team-list cards. A club with junior sync on also gets junior team-list and
+ *   result cards (junior-social.ts).
  * - `fixtures`: the fixtures projection just refreshed a tenant's schedule —
  *   only the fixture-driven engines run.
  *
@@ -177,6 +178,19 @@ export async function runDraftSweep(
     summary.teamLists = (await generateTeamListDrafts(tenantId, now)).drafted;
   } catch (err) {
     logger.error({ err, tenantId }, "team-list drafts failed");
+  }
+  // Junior social (junior PlayHQ sync plan U8): junior team-list and result cards for a
+  // club with junior sync on, per-team re-timing, and the switch-off hold. Runs before
+  // anything below can promote or post a draft.
+  try {
+    // Loaded on use: it pulls in the junior tables, which the senior paths never need.
+    const { runJuniorSocialSweep } = await import("./junior-social");
+    const junior = await runJuniorSocialSweep(tenantId, scope.kind, now, logger);
+    if (junior.teamLists || junior.results || junior.held || junior.retimed) {
+      logger.info({ tenantId, ...junior }, "junior social sweep");
+    }
+  } catch (err) {
+    logger.error({ err, tenantId }, "junior social sweep failed");
   }
 
   // Round sets on the club's schedule. The weekend wrap reads results, so it

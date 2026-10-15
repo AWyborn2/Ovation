@@ -33,6 +33,8 @@ describe("plan entitlements", () => {
     expect(club.curation).toBe(true);
     expect(club.socialStudio).toBe(true);
     expect(club.customDomain).toBe(false); // still a pro feature
+    expect(club.juniors).toBe(true); // KTD16: juniors on club and pro
+    expect(free.juniors).toBe(false);
 
     const pro = entitlementsFor("pro");
     expect(Object.values(pro).every(Boolean)).toBe(true);

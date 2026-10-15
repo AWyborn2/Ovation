@@ -5,7 +5,10 @@
  * playing a new competition would just see its matches missing.
  *
  * Deliberate exclusions (charity one-offs, WA junior / pathway grades) are NOT reported: they
- * carry an explanatory `note`. A grade is "unclassified" when there is no app grade and no such
+ * carry an explanatory `note`. Nor is any grade the PlayHQ grade classifier (`grade-classes.ts`,
+ * the junior sync's one classifier) calls junior — e.g. "Peel Girls League" stored with
+ * `is_junior = false` before the ingest reclassifies it — so juniors never reach this senior
+ * report or the platform grade decisions built on it. A grade is "unclassified" when there is no app grade and no such
  * note, or the note says the app lacks a grade for it ("Female C").
  *
  * Reads `playhq.*` only (the ingest role's scope), so it classifies the raw PlayHQ grade name and
@@ -13,6 +16,7 @@
  * flagged here although the projector resolves it. Pure `findUnclassifiedGrades` + a loader.
  */
 import { classifyCentralGrade } from "../central/grades";
+import { classifyGrade } from "./grade-classes";
 import type { Queryable } from "./load";
 
 export interface UnclassifiedGrade {
@@ -36,6 +40,7 @@ export function findUnclassifiedGrades(usage: readonly GradeUsage[]): Unclassifi
   for (const u of usage) {
     const name = (u.gradeName ?? "").trim();
     if (!name) continue;
+    if (classifyGrade(name) === "junior") continue;
     const { appGrade, note } = classifyCentralGrade(name);
     if (appGrade) continue;
     if (note && DELIBERATE_NOTE.test(note)) continue;

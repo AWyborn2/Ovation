@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
   juniorMatchBattingTable,
@@ -19,12 +19,24 @@ import {
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { juniorEditRateLimiter, juniorMergeRateLimiter } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
-import { journal, adminName, recomputeParticipantMetadata } from "../lib/junior-admin-helpers";
+import {
+  journal,
+  adminName,
+  recomputeParticipantMetadata,
+  renameClubLines,
+} from "../lib/junior-admin-helpers";
+import {
+  juniorParticipantKey,
+  tenantJuniorMatchIds,
+  tenantJuniorPremiershipIds,
+} from "../lib/junior-participant-scope";
+import { planJuniorParticipantPatch } from "../lib/junior-privacy";
 
 /**
  * Juniors admin — participant profile corrections and duplicate merges.
  *
- * `PATCH /juniors/participants/:id` (display name / privacy) and
+ * `PATCH /juniors/participants/:id` (display name / privacy / privacy override),
+ * `GET /juniors/privacy-overrides` (the club's active overrides) and
  * `POST /juniors/participants/:id/merge` (absorb a duplicate PlayHQ GUID into
  * its keeper, recorded in junior_participant_merges so the ETL re-applies it).
  * See routes/juniors-admin.ts for the write-through + journal model. Mounted
@@ -32,8 +44,48 @@ import { journal, adminName, recomputeParticipantMetadata } from "../lib/junior-
  */
 const router: IRouter = Router();
 
+/** Admin shape of a participant: full name and every privacy fact (KTD12). */
+function adminParticipant(p: typeof juniorParticipantsTable.$inferSelect) {
+  return {
+    participantId: p.participantId,
+    displayName: p.displayName ?? "",
+    isPrivate: p.isPrivate,
+    privacyOverride: p.privacyOverride,
+    privacyOverrideBy: p.privacyOverrideBy,
+    privacyOverrideAt: p.privacyOverrideAt?.toISOString() ?? null,
+  };
+}
+
 // ---------------------------------------------------------------------------
-// PATCH /juniors/participants/:id — display name / privacy corrections
+// GET /juniors/privacy-overrides — the club's players named publicly although
+// PlayHQ (or an admin) marked them private. Admin only, this tenant only.
+// ---------------------------------------------------------------------------
+router.get(
+  "/juniors/privacy-overrides",
+  requireAdmin,
+  async (req: RequestWithAdmin, res): Promise<void> => {
+    const rows = await db
+      .select()
+      .from(juniorParticipantsTable)
+      .where(
+        and(
+          eq(juniorParticipantsTable.tenantId, getTenantId(req)),
+          eq(juniorParticipantsTable.isPrivate, true),
+          eq(juniorParticipantsTable.privacyOverride, true),
+        ),
+      )
+      .orderBy(asc(juniorParticipantsTable.displayName));
+    res.json(rows.map(adminParticipant));
+  },
+);
+
+// ---------------------------------------------------------------------------
+// PATCH /juniors/participants/:id — display name / privacy corrections, and the
+// privacy override (KTD12): an admin may name a private player publicly. The
+// override records who set it and when, and is journalled like every correction.
+// It can only be switched ON for a player who is currently private — an override
+// set in advance would silently name a child the moment PlayHQ marks them private —
+// and making the player public clears it in the same journalled patch.
 // ---------------------------------------------------------------------------
 
 router.patch(
@@ -51,39 +103,26 @@ router.patch(
       res.status(400).json({ error: body.error.message });
       return;
     }
+    const tenantId = getTenantId(req);
     const [participant] = await db
       .select()
       .from(juniorParticipantsTable)
-      .where(
-        and(
-          eq(juniorParticipantsTable.participantId, params.data.id),
-          eq(juniorParticipantsTable.tenantId, getTenantId(req)),
-        ),
-      );
+      .where(juniorParticipantKey(tenantId, params.data.id));
     if (!participant) {
       res.status(404).json({ error: "Participant not found" });
       return;
     }
 
-    const set: Record<string, unknown> = {};
-    const patch: Record<string, unknown> = {};
-    const prev: Record<string, unknown> = {};
-    if (body.data.displayName !== undefined) {
-      set.displayName = body.data.displayName;
-      patch.display_name = body.data.displayName;
-      prev.display_name = participant.displayName;
+    // An override is only ever switched on for a private player, and is cleared in the
+    // same journalled patch when the player becomes public (junior-privacy.ts).
+    const plan = planJuniorParticipantPatch(participant, body.data, adminName(req), new Date());
+    if (!plan.ok) {
+      res.status(400).json({ error: plan.error });
+      return;
     }
-    if (body.data.isPrivate !== undefined) {
-      set.isPrivate = body.data.isPrivate;
-      patch.is_private = body.data.isPrivate;
-      prev.is_private = participant.isPrivate;
-    }
+    const { set, patch, prev } = plan;
     if (Object.keys(set).length === 0) {
-      res.json({
-        participantId: participant.participantId,
-        displayName: participant.displayName ?? "",
-        isPrivate: participant.isPrivate,
-      });
+      res.json(adminParticipant(participant));
       return;
     }
 
@@ -91,43 +130,18 @@ router.patch(
       const [row] = await tx
         .update(juniorParticipantsTable)
         .set(set)
-        .where(eq(juniorParticipantsTable.participantId, participant.participantId))
+        .where(juniorParticipantKey(tenantId, participant.participantId))
         .returning();
       // A display-name change flows onto the participant's stored line names
-      // so scorecards/rosters keep matching the directory. Journalled via the
-      // participant patch only — the ETL re-apply refreshes line names from
-      // the participant row the same way.
+      // so scorecards/rosters keep matching the directory — on this club's
+      // matches only (another club's junior with the same GUID keeps theirs).
+      // Journalled via the participant patch only — the ETL re-apply refreshes
+      // line names from the participant row the same way.
       if (body.data.displayName !== undefined) {
-        await tx
-          .update(juniorMatchBattingTable)
-          .set({ playerName: body.data.displayName })
-          .where(
-            and(
-              eq(juniorMatchBattingTable.participantId, participant.participantId),
-              eq(juniorMatchBattingTable.isHallsHead, true),
-            ),
-          );
-        await tx
-          .update(juniorMatchBowlingTable)
-          .set({ playerName: body.data.displayName })
-          .where(
-            and(
-              eq(juniorMatchBowlingTable.participantId, participant.participantId),
-              eq(juniorMatchBowlingTable.isHallsHead, true),
-            ),
-          );
-        await tx
-          .update(juniorMatchRostersTable)
-          .set({ playerName: body.data.displayName })
-          .where(
-            and(
-              eq(juniorMatchRostersTable.participantId, participant.participantId),
-              eq(juniorMatchRostersTable.isHallsHead, true),
-            ),
-          );
+        await renameClubLines(tx, tenantId, participant.participantId, body.data.displayName);
       }
       await journal(tx, {
-        tenantId: getTenantId(req),
+        tenantId,
         targetTable: "junior_participants",
         targetId: participant.participantId,
         op: "update",
@@ -139,11 +153,7 @@ router.patch(
       return row;
     });
 
-    res.json({
-      participantId: updated.participantId,
-      displayName: updated.displayName ?? "",
-      isPrivate: updated.isPrivate,
-    });
+    res.json(adminParticipant(updated));
   },
 );
 
@@ -189,22 +199,12 @@ router.post(
         const [dup] = await tx
           .select()
           .from(juniorParticipantsTable)
-          .where(
-            and(
-              eq(juniorParticipantsTable.participantId, duplicateId),
-              eq(juniorParticipantsTable.tenantId, tenantId),
-            ),
-          );
+          .where(juniorParticipantKey(tenantId, duplicateId));
         if (!dup) throw new Error("__DUP_NOT_FOUND__");
         const [keeper] = await tx
           .select()
           .from(juniorParticipantsTable)
-          .where(
-            and(
-              eq(juniorParticipantsTable.participantId, keeperId),
-              eq(juniorParticipantsTable.tenantId, tenantId),
-            ),
-          );
+          .where(juniorParticipantKey(tenantId, keeperId));
         if (!keeper) {
           // A missing keeper that is a recorded duplicate means the client is
           // stale — refuse with the canonical keeper instead of silently
@@ -230,34 +230,53 @@ router.post(
           throw new Error("__KEEPER_NOT_FOUND__");
         }
 
-        // Reassign every junior line from the duplicate to the keeper. The
-        // HH flag is untouched — a line carrying this GUID is the same human
-        // whichever side of the card it sits on.
+        // Reassign every junior line from the duplicate to the keeper, on
+        // this club's matches only: another club's junior with the same GUID
+        // is a different row and is never touched. The HH flag is untouched —
+        // a line carrying this GUID is the same human whichever side of the
+        // card it sits on.
         const batting = await tx
           .update(juniorMatchBattingTable)
           .set({ participantId: keeperId })
-          .where(eq(juniorMatchBattingTable.participantId, duplicateId))
+          .where(
+            and(
+              inArray(juniorMatchBattingTable.matchId, tenantJuniorMatchIds(tenantId)),
+              eq(juniorMatchBattingTable.participantId, duplicateId),
+            ),
+          )
           .returning({ id: juniorMatchBattingTable.id });
         const bowling = await tx
           .update(juniorMatchBowlingTable)
           .set({ participantId: keeperId })
-          .where(eq(juniorMatchBowlingTable.participantId, duplicateId))
+          .where(
+            and(
+              inArray(juniorMatchBowlingTable.matchId, tenantJuniorMatchIds(tenantId)),
+              eq(juniorMatchBowlingTable.participantId, duplicateId),
+            ),
+          )
           .returning({ id: juniorMatchBowlingTable.id });
         const rosters = await tx
           .update(juniorMatchRostersTable)
           .set({ participantId: keeperId })
-          .where(eq(juniorMatchRostersTable.participantId, duplicateId))
+          .where(
+            and(
+              inArray(juniorMatchRostersTable.matchId, tenantJuniorMatchIds(tenantId)),
+              eq(juniorMatchRostersTable.participantId, duplicateId),
+            ),
+          )
           .returning({ id: juniorMatchRostersTable.id });
 
         // Same-match roster duplicates cannot double-count Games (canonical
         // figure is COUNT(DISTINCT match_id)) but are deduped for tidiness.
         const dedupedRes = await tx.execute(sql`
           DELETE FROM junior_match_rosters a
-          USING junior_match_rosters b
+          USING junior_match_rosters b, junior_matches m
           WHERE a.participant_id = ${keeperId}
             AND b.participant_id = ${keeperId}
             AND a.match_id = b.match_id
             AND a.id > b.id
+            AND m.id = a.match_id
+            AND m.tenant_id = ${tenantId}
         `);
         const rostersDeduped = Number(
           (dedupedRes as unknown as { rowCount?: number }).rowCount ?? 0,
@@ -266,15 +285,25 @@ router.post(
         const premPlayers = await tx
           .update(juniorPremiershipPlayersTable)
           .set({ participantId: keeperId })
-          .where(eq(juniorPremiershipPlayersTable.participantId, duplicateId))
+          .where(
+            and(
+              inArray(
+                juniorPremiershipPlayersTable.premiershipId,
+                tenantJuniorPremiershipIds(tenantId),
+              ),
+              eq(juniorPremiershipPlayersTable.participantId, duplicateId),
+            ),
+          )
           .returning({ id: juniorPremiershipPlayersTable.id });
         await tx.execute(sql`
           DELETE FROM junior_premiership_players a
-          USING junior_premiership_players b
+          USING junior_premiership_players b, junior_premierships pr
           WHERE a.participant_id = ${keeperId}
             AND b.participant_id = ${keeperId}
             AND a.premiership_id = b.premiership_id
             AND a.id > b.id
+            AND pr.id = a.premiership_id
+            AND pr.tenant_id = ${tenantId}
         `);
         const officeBearers = await tx
           .update(juniorOfficeBearersTable)
@@ -291,33 +320,7 @@ router.post(
         // scorecards keep matching the directory — mirrors the rename
         // propagation in PATCH /juniors/participants/:id.
         if (keeper.displayName) {
-          await tx
-            .update(juniorMatchBattingTable)
-            .set({ playerName: keeper.displayName })
-            .where(
-              and(
-                eq(juniorMatchBattingTable.participantId, keeperId),
-                eq(juniorMatchBattingTable.isHallsHead, true),
-              ),
-            );
-          await tx
-            .update(juniorMatchBowlingTable)
-            .set({ playerName: keeper.displayName })
-            .where(
-              and(
-                eq(juniorMatchBowlingTable.participantId, keeperId),
-                eq(juniorMatchBowlingTable.isHallsHead, true),
-              ),
-            );
-          await tx
-            .update(juniorMatchRostersTable)
-            .set({ playerName: keeper.displayName })
-            .where(
-              and(
-                eq(juniorMatchRostersTable.participantId, keeperId),
-                eq(juniorMatchRostersTable.isHallsHead, true),
-              ),
-            );
+          await renameClubLines(tx, tenantId, keeperId, keeper.displayName);
         }
 
         // Carry the senior cross-link (keeper's own wins) and privacy
@@ -328,15 +331,13 @@ router.post(
             seniorPlayerId: keeper.seniorPlayerId ?? dup.seniorPlayerId,
             isPrivate: keeper.isPrivate || dup.isPrivate,
           })
-          .where(eq(juniorParticipantsTable.participantId, keeperId))
+          .where(juniorParticipantKey(tenantId, keeperId))
           .returning();
 
-        await recomputeParticipantMetadata(tx, keeperId);
+        await recomputeParticipantMetadata(tx, tenantId, keeperId);
 
-        // Snapshot then delete the absorbed profile row.
-        await tx
-          .delete(juniorParticipantsTable)
-          .where(eq(juniorParticipantsTable.participantId, duplicateId));
+        // Snapshot then delete the absorbed profile row (this club's only).
+        await tx.delete(juniorParticipantsTable).where(juniorParticipantKey(tenantId, duplicateId));
 
         // Keep the map flat: earlier merges that pointed at the duplicate now
         // point at the new keeper.

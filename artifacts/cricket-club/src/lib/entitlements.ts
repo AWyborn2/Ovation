@@ -21,6 +21,7 @@ const ALL_ON: Entitlements = {
   socialPublishing: true,
   clubroomTv: true,
   curation: true,
+  juniors: true,
 };
 
 export function useEntitlements(): Entitlements {

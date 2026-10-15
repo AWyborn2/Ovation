@@ -285,8 +285,15 @@
     {
       "idx": 40,
       "version": "7",
-      "when": 1792019584285,
-      "tag": "0040_social_posting_calendar",
+      "when": 1792020700069,
+      "tag": "0040_junior_sync",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792027133410,
+      "tag": "0041_social_posting_calendar",
       "breakpoints": true
     }
   ]

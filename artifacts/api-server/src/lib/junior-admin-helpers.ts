@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
   juniorMatchesTable,
@@ -15,6 +15,7 @@ import {
 } from "@workspace/db";
 import { getTenantId } from "../middlewares/tenant-context";
 import type { RequestWithAdmin } from "../middlewares/require-admin";
+import { juniorParticipantKey, tenantJuniorMatchIds } from "./junior-participant-scope";
 
 /**
  * Shared helpers for the juniors admin (stat-correction) routes.
@@ -30,6 +31,49 @@ import type { RequestWithAdmin } from "../middlewares/require-admin";
  */
 
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Set a participant's stored name on the club's own (HH) lines in this club's
+ * matches. Lines reach their tenant through their match; another club's junior
+ * with the same GUID keeps its own name.
+ */
+export async function renameClubLines(
+  tx: Tx,
+  tenantId: number,
+  participantId: string,
+  playerName: string,
+): Promise<void> {
+  await tx
+    .update(juniorMatchBattingTable)
+    .set({ playerName })
+    .where(
+      and(
+        inArray(juniorMatchBattingTable.matchId, tenantJuniorMatchIds(tenantId)),
+        eq(juniorMatchBattingTable.participantId, participantId),
+        eq(juniorMatchBattingTable.isHallsHead, true),
+      ),
+    );
+  await tx
+    .update(juniorMatchBowlingTable)
+    .set({ playerName })
+    .where(
+      and(
+        inArray(juniorMatchBowlingTable.matchId, tenantJuniorMatchIds(tenantId)),
+        eq(juniorMatchBowlingTable.participantId, participantId),
+        eq(juniorMatchBowlingTable.isHallsHead, true),
+      ),
+    );
+  await tx
+    .update(juniorMatchRostersTable)
+    .set({ playerName })
+    .where(
+      and(
+        inArray(juniorMatchRostersTable.matchId, tenantJuniorMatchIds(tenantId)),
+        eq(juniorMatchRostersTable.participantId, participantId),
+        eq(juniorMatchRostersTable.isHallsHead, true),
+      ),
+    );
+}
 
 export type JournalEntry = {
   tenantId: number;
@@ -111,12 +155,7 @@ export async function tenantParticipant(
       displayName: juniorParticipantsTable.displayName,
     })
     .from(juniorParticipantsTable)
-    .where(
-      and(
-        eq(juniorParticipantsTable.participantId, participantId),
-        eq(juniorParticipantsTable.tenantId, getTenantId(req)),
-      ),
-    );
+    .where(juniorParticipantKey(getTenantId(req), participantId));
   return p ?? null;
 }
 
@@ -225,18 +264,27 @@ export function serializeRosterEntry(l: JuniorMatchRosterRow) {
 
 /** Recompute a keeper's stored dump-derived metadata from its live lines.
  * The ETL copies these columns verbatim from the dump and never recomputes
- * them, so after a merge they must be refreshed here. The SQL mirrors ETL
- * step 7f (set-based there, single-GUID here) — keep the two in sync. */
-export async function recomputeParticipantMetadata(tx: Tx, participantId: string): Promise<void> {
+ * them, so after a merge they must be refreshed here. Only the participant's
+ * own club's lines count: lines reach their tenant through their match, and
+ * the same GUID may be a junior at another club. The SQL mirrors ETL step 7f
+ * (set-based there, single-GUID here) — keep the two in sync. */
+export async function recomputeParticipantMetadata(
+  tx: Tx,
+  tenantId: number,
+  participantId: string,
+): Promise<void> {
   await tx.execute(sql`
     UPDATE junior_participants p SET
       scorecard_lines =
         (SELECT count(*) FROM junior_match_batting b
+          JOIN junior_matches m ON m.id = b.match_id AND m.tenant_id = p.tenant_id
           WHERE b.participant_id = p.participant_id AND b.is_halls_head)
       + (SELECT count(*) FROM junior_match_bowling w
+          JOIN junior_matches m ON m.id = w.match_id AND m.tenant_id = p.tenant_id
           WHERE w.participant_id = p.participant_id AND w.is_halls_head),
       roster_appearances =
         (SELECT count(*) FROM junior_match_rosters r
+          JOIN junior_matches m ON m.id = r.match_id AND m.tenant_id = p.tenant_id
           WHERE r.participant_id = p.participant_id AND r.is_halls_head),
       first_season = (
         SELECT m.season FROM junior_matches m
@@ -248,7 +296,7 @@ export async function recomputeParticipantMetadata(tx: Tx, participantId: string
           UNION SELECT match_id FROM junior_match_rosters
             WHERE participant_id = p.participant_id AND is_halls_head
         ) t ON t.match_id = m.id
-        WHERE m.season IS NOT NULL
+        WHERE m.season IS NOT NULL AND m.tenant_id = p.tenant_id
         ORDER BY m.season_start_year ASC NULLS LAST LIMIT 1),
       last_season = (
         SELECT m.season FROM junior_matches m
@@ -260,14 +308,15 @@ export async function recomputeParticipantMetadata(tx: Tx, participantId: string
           UNION SELECT match_id FROM junior_match_rosters
             WHERE participant_id = p.participant_id AND is_halls_head
         ) t ON t.match_id = m.id
-        WHERE m.season IS NOT NULL
+        WHERE m.season IS NOT NULL AND m.tenant_id = p.tenant_id
         ORDER BY m.season_start_year DESC NULLS LAST LIMIT 1),
       teams = (
         SELECT string_agg(DISTINCT r.team_name, ', ' ORDER BY r.team_name)
         FROM junior_match_rosters r
+        JOIN junior_matches m ON m.id = r.match_id AND m.tenant_id = p.tenant_id
         WHERE r.participant_id = p.participant_id AND r.is_halls_head
           AND r.team_name IS NOT NULL)
-    WHERE p.participant_id = ${participantId}
+    WHERE p.tenant_id = ${tenantId} AND p.participant_id = ${participantId}
   `);
 }
 

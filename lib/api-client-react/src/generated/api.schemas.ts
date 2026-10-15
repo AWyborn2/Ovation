@@ -1886,6 +1886,8 @@ export interface Entitlements {
   socialPublishing: boolean;
   clubroomTv: boolean;
   curation: boolean;
+  /** Junior PlayHQ sync. On the club and pro plans; not enforced while billing is dormant, when the platform-admin junior sync switch is the effective control. */
+  juniors: boolean;
 }
 
 export type MetaConnectionStatus = typeof MetaConnectionStatus[keyof typeof MetaConnectionStatus];
@@ -2135,6 +2137,13 @@ export interface AdminTenant {
   playhqOrgId?: string | null;
   /** Whether scheduled PlayHQ sync runs for this tenant. */
   playhqSyncEnabled?: boolean;
+  /** Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on. */
+  juniorSyncEnabled?: boolean;
+  /**
+     * The tenant's junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.
+     * @nullable
+     */
+  playhqJuniorOrgId?: string | null;
   /** True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults). */
   brandingComplete: boolean;
 }
@@ -2475,7 +2484,7 @@ export const UpdateTenantBodyPlan = {
 } as const;
 
 /**
- * Partial update of a tenant's plan, custom domain and/or PlayHQ sync switch.
+ * Partial update of a tenant's plan, custom domain, PlayHQ sync switch and/or junior sync settings. Platform admin only; the club-admin brand update and signup schemas carry none of these.
  */
 export interface UpdateTenantBody {
   plan?: UpdateTenantBodyPlan;
@@ -2483,6 +2492,13 @@ export interface UpdateTenantBody {
   customDomain?: string | null;
   /** Scheduled PlayHQ sync for this tenant. When false the hourly runner plans nothing for its organisation and ingest does not project its fixtures. */
   playhqSyncEnabled?: boolean;
+  /** Junior PlayHQ sync for this tenant. Takes effect only while PlayHQ sync is on and the plan includes juniors; when off, junior grades are dropped at ingest. */
+  juniorSyncEnabled?: boolean;
+  /**
+     * The tenant's junior PlayHQ organisation GUID when its juniors run under a separate organisation. Null or blank clears it (juniors then use playhqOrgId). Unique across tenants.
+     * @nullable
+     */
+  playhqJuniorOrgId?: string | null;
 }
 
 export type ProvisionTenantBodyPlan = typeof ProvisionTenantBodyPlan[keyof typeof ProvisionTenantBodyPlan];
@@ -8781,6 +8797,118 @@ export interface JuniorInnings {
   bowling: JuniorBowlingLine[];
 }
 
+export interface JuniorFixture {
+  id: number;
+  seasonStartYear: number;
+  ageGroup: string | null;
+  grade: string | null;
+  /** The club's own junior team */
+  teamName: string | null;
+  opponentName: string | null;
+  venue: string | null;
+  startAt: string | null;
+  isHome: boolean | null;
+  /** PlayHQ match status as last synced (e.g. UPCOMING) */
+  status: string | null;
+  /** A published team list exists for this fixture */
+  hasTeamList: boolean;
+}
+
+/**
+ * Captain / vice-captain / wicket-keeper marker
+ */
+export type JuniorTeamListRole = typeof JuniorTeamListRole[keyof typeof JuniorTeamListRole];
+
+
+export const JuniorTeamListRole = {
+  C: 'C',
+  VC: 'VC',
+  WK: 'WK',
+  'C/WK': 'C/WK',
+  'VC/WK': 'VC/WK',
+} as const;
+
+export interface JuniorPublicTeamListPlayer {
+  order: number;
+  /** Public name in the club's style, or "Private Player" */
+  name: string;
+  /** Null when the player is withheld */
+  participantId: string | null;
+  role: JuniorTeamListRole | null;
+  /** Junior shirt number for the fixture's season (null when withheld or none) */
+  shirtNumber: string | null;
+}
+
+export interface JuniorFixtureDetail {
+  fixture: JuniorFixture;
+  /** The published team list in order, or null when none is published */
+  teamList: JuniorPublicTeamListPlayer[] | null;
+}
+
+export interface JuniorAdminTeamListPlayer {
+  order: number;
+  participantId: string;
+  /** Full name */
+  name: string;
+  role: JuniorTeamListRole | null;
+  shirtNumber: string | null;
+  /** Withheld on public pages (private in PlayHQ, not overridden) */
+  isPrivate: boolean;
+  /** Still one of the club's junior participants */
+  isKnown: boolean;
+}
+
+export interface JuniorTeamListCandidate {
+  participantId: string;
+  name: string;
+  isPrivate: boolean;
+  shirtNumber: string | null;
+  teams: string | null;
+  lastSeason: string | null;
+}
+
+/**
+ * Who wrote the list; an admin's list is never overwritten by the sync
+ */
+export type JuniorAdminTeamListSavedSource = typeof JuniorAdminTeamListSavedSource[keyof typeof JuniorAdminTeamListSavedSource];
+
+
+export const JuniorAdminTeamListSavedSource = {
+  playhq: 'playhq',
+  admin: 'admin',
+} as const;
+
+export interface JuniorAdminTeamListSaved {
+  players: JuniorAdminTeamListPlayer[];
+  isPublished: boolean;
+  /** Who wrote the list; an admin's list is never overwritten by the sync */
+  source: JuniorAdminTeamListSavedSource;
+  updatedAt: string;
+}
+
+export interface JuniorAdminTeamList {
+  fixture: JuniorFixture;
+  /** Season start year whose shirt numbers are shown */
+  season: number;
+  shirtNumbersEnabled: boolean;
+  teamList: JuniorAdminTeamListSaved | null;
+  candidates: JuniorTeamListCandidate[];
+}
+
+export interface PutJuniorTeamListPlayer {
+  /** @minimum 1 */
+  order: number;
+  /** @minLength 1 */
+  participantId: string;
+  role?: JuniorTeamListRole | null;
+}
+
+export interface PutJuniorTeamListBody {
+  /** @maxItems 30 */
+  players: PutJuniorTeamListPlayer[];
+  isPublished?: boolean;
+}
+
 export interface JuniorMatchSummary {
   id: number;
   /** @nullable */
@@ -8905,6 +9033,18 @@ export interface JuniorPlayerSummary {
   seniorPlayerId?: number | null;
   /** Only present/true on admin requests with includePrivate. */
   isPrivate?: boolean;
+  /** Admin requests with includePrivate only. A private player an admin names publicly. */
+  privacyOverride?: boolean;
+  /**
+     * Admin requests with includePrivate only. The admin who set the override.
+     * @nullable
+     */
+  privacyOverrideBy?: string | null;
+  /**
+     * Admin requests with includePrivate only. When the override was set.
+     * @nullable
+     */
+  privacyOverrideAt?: string | null;
 }
 
 export interface JuniorSeniorLinkSummary {
@@ -9152,12 +9292,51 @@ export interface UpdateJuniorParticipantBody {
   /** @minLength 1 */
   displayName?: string;
   isPrivate?: boolean;
+  /** Show a private player's name publicly anyway (true) or withhold it again (false). Can only be switched on for a private player. */
+  privacyOverride?: boolean;
 }
+
+/**
+ * How public junior surfaces name the club's players: full name, first name and surname initial ("Ollie G"), or first name only.
+ */
+export type JuniorNameStyle = typeof JuniorNameStyle[keyof typeof JuniorNameStyle];
+
+
+export const JuniorNameStyle = {
+  full: 'full',
+  first_initial: 'first_initial',
+  first: 'first',
+} as const;
+
+export type JuniorTeamPublishMode = typeof JuniorTeamPublishMode[keyof typeof JuniorTeamPublishMode];
+
+
+export const JuniorTeamPublishMode = {
+  approval: 'approval',
+  auto: 'auto',
+} as const;
+
+/**
+ * Per-team social publishing, keyed by age group then team name. A team not listed needs approval; only "auto" lets its cards post themselves.
+ */
+export interface JuniorTeamPublishing {[key: string]: {[key: string]: JuniorTeamPublishMode}}
 
 export interface JuniorAdminParticipant {
   participantId: string;
   displayName: string;
   isPrivate: boolean;
+  /** An admin has chosen to show this private player's name publicly. */
+  privacyOverride: boolean;
+  /**
+     * The admin who set the override.
+     * @nullable
+     */
+  privacyOverrideBy: string | null;
+  /**
+     * When the override was set.
+     * @nullable
+     */
+  privacyOverrideAt: string | null;
 }
 
 export type JuniorStatCorrectionTargetTable = typeof JuniorStatCorrectionTargetTable[keyof typeof JuniorStatCorrectionTargetTable];
@@ -9437,6 +9616,8 @@ export interface JuniorMatchDisplaySettings {
   defaultSeason?: string | null;
   /** Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones. */
   ageGroupOrder: string[];
+  nameStyle: JuniorNameStyle;
+  teamPublishing: JuniorTeamPublishing;
 }
 
 export type JuniorMatchDisplaySettingsUpdateDefaultSeasonMode = typeof JuniorMatchDisplaySettingsUpdateDefaultSeasonMode[keyof typeof JuniorMatchDisplaySettingsUpdateDefaultSeasonMode];
@@ -9454,6 +9635,8 @@ export interface JuniorMatchDisplaySettingsUpdate {
   /** @nullable */
   defaultSeason?: string | null;
   ageGroupOrder?: string[];
+  nameStyle?: JuniorNameStyle;
+  teamPublishing?: JuniorTeamPublishing;
 }
 
 export interface JuniorPremiershipPlayer {
@@ -9977,6 +10160,13 @@ season?: string;
 allTime?: boolean;
 };
 
+export type ListJuniorFixturesParams = {
+/**
+ * Filter by age group (e.g. "Year 6")
+ */
+ageGroup?: string;
+};
+
 export type ListJuniorMatchesParams = {
 /**
  * Filter by season (e.g. "2024/25")
@@ -9986,6 +10176,13 @@ season?: string;
  * Filter by age group (e.g. "U14")
  */
 ageGroup?: string;
+};
+
+export type GetJuniorMatchParams = {
+/**
+ * Return full names and participant ids on every line (honoured only for a signed-in admin of this club — silently ignored otherwise). Used by the admin scorecard editor.
+ */
+includePrivate?: boolean;
 };
 
 export type ListJuniorStatCorrectionsParams = {

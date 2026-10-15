@@ -120,7 +120,7 @@ A club can plan its posts on a weekly calendar (plan `docs/plans/2026-10-07-003-
 
 **Deploy order (once)**
 
-1. Paste `lib/db/migrations/0040_social_posting_calendar.sql` into Replit's **Production** SQL runner. It is idempotent.
+1. Paste `lib/db/migrations/0041_social_posting_calendar.sql` into Replit's **Production** SQL runner. It is idempotent.
 2. Check the columns exist (read-only):
 
    ```sql

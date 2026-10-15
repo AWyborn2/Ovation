@@ -932,10 +932,17 @@ router.delete("/players/:id", ...nativeAdmin, async (req, res): Promise<void> =>
       await detachDeletedNativePlayers(tx, [params.data.id]);
       // Clear the junior→senior profile cross-reference (a link-only column with
       // no FK; never carries stats) so junior profiles don't point at a ghost.
+      // Native player ids are Halls Head's own: another club's junior linked to
+      // the same integer means that club's crosswalk player and is left alone.
       await tx
         .update(juniorParticipantsTable)
         .set({ seniorPlayerId: null })
-        .where(eq(juniorParticipantsTable.seniorPlayerId, params.data.id));
+        .where(
+          and(
+            eq(juniorParticipantsTable.tenantId, NATIVE_STATS_TENANT_ID),
+            eq(juniorParticipantsTable.seniorPlayerId, params.data.id),
+          ),
+        );
       if (grades.length > 0) {
         await recomputeAggregates(
           tx,
@@ -1240,11 +1247,17 @@ router.post("/players/:id/merge", ...nativeAdmin, async (req, res): Promise<void
         );
       }
       // Junior→senior profile cross-reference (link-only column, no FK, never
-      // stats): follow the keeper so linked junior profiles stay connected.
+      // stats): follow the keeper so linked junior profiles stay connected —
+      // Halls Head's juniors only, as with the curated links above.
       await tx
         .update(juniorParticipantsTable)
         .set({ seniorPlayerId: keeperId })
-        .where(eq(juniorParticipantsTable.seniorPlayerId, duplicateId));
+        .where(
+          and(
+            eq(juniorParticipantsTable.tenantId, NATIVE_STATS_TENANT_ID),
+            eq(juniorParticipantsTable.seniorPlayerId, duplicateId),
+          ),
+        );
 
       // Delete duplicate (cascades aggregates rows). Its curated links have
       // all moved above, so nothing is left to detach.

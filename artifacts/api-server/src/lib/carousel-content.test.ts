@@ -31,7 +31,6 @@ vi.mock("./club-overlay", () => ({
 }));
 vi.mock("./junior-helpers", () => ({
   getPrivateIds: async () => new Set(),
-  MASK_NAME: "Private Player",
 }));
 vi.mock("./tenant-brand", () => ({ getTenantBrand: async () => null }));
 vi.mock("./match-summary-drafter", () => ({ loadJuniorMatchDetail: mocks.juniorDetail }));

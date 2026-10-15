@@ -27,6 +27,12 @@ export interface HarnessPlan {
   lineups?: "none" | "upcoming";
   since?: string;
   resume?: boolean;
+  /**
+   * Also discover the organisation's junior / pathway grades (the harness drops them by
+   * default). Set only on plans for organisations with junior sync enabled (junior sync plan
+   * U4, KTD2); absent everywhere else, so other organisations' plans are unchanged.
+   */
+  includeJuniors?: boolean;
 }
 
 export interface DuePlan {
@@ -45,6 +51,8 @@ export interface CadenceMatch {
   lastDayStartAt?: Date | null;
   status: string | null;
   matchType: string | null;
+  /** A junior / pathway grade's match: counts only for organisations with junior sync on. */
+  isJunior?: boolean;
 }
 
 export interface LastRun {
@@ -79,7 +87,17 @@ export function matchDurationMs(matchType: string | null): number {
   return /t20|twenty/i.test(matchType ?? "") ? 3.5 * HOUR : 7 * HOUR;
 }
 
-export function harnessPlan(orgId: string, name: PlanName, since?: string): HarnessPlan {
+export function harnessPlan(
+  orgId: string,
+  name: PlanName,
+  since?: string,
+  includeJuniors = false,
+): HarnessPlan {
+  const plan = basePlan(orgId, name, since);
+  return includeJuniors ? { ...plan, includeJuniors: true } : plan;
+}
+
+function basePlan(orgId: string, name: PlanName, since?: string): HarnessPlan {
   switch (name) {
     case "weekly":
       // The grade stats reports carry each player's full name ("Surname, Firstname"), which
@@ -127,13 +145,19 @@ export function harnessPlan(orgId: string, name: PlanName, since?: string): Harn
   }
 }
 
-/** Every plan due for each organisation at `now`. */
+/**
+ * Every plan due for each organisation at `now`. `juniorOrgIds` are the organisations with
+ * junior sync enabled: only their plans ask for junior grades, and only for them do junior
+ * matches make a match day.
+ */
 export function duePlans(
   now: Date,
   orgIds: string[],
   matches: CadenceMatch[],
   lastRuns: LastRun[],
+  juniorOrgIds: Iterable<string> = [],
 ): DuePlan[] {
+  const juniors = new Set([...juniorOrgIds].map((o) => o.toLowerCase()));
   const t = now.getTime();
   const today = perthMidnight(t);
   const lastRun = new Map<string, number>();
@@ -145,8 +169,11 @@ export function duePlans(
   const out: DuePlan[] = [];
   for (const rawOrg of [...new Set(orgIds.map((o) => o.toLowerCase()))].sort()) {
     const org = rawOrg;
+    const withJuniors = juniors.has(org);
     const mine = matches.filter(
-      (m) => m.homeOrgId?.toLowerCase() === org || m.awayOrgId?.toLowerCase() === org,
+      (m) =>
+        (m.homeOrgId?.toLowerCase() === org || m.awayOrgId?.toLowerCase() === org) &&
+        (!m.isJunior || withJuniors),
     );
     const due = (name: PlanName, slot: number, since?: string) => {
       if (slot > t) return;
@@ -155,7 +182,7 @@ export function duePlans(
         orgId: org,
         planName: name,
         slot: new Date(slot).toISOString(),
-        plan: harnessPlan(org, name, since),
+        plan: harnessPlan(org, name, since, withJuniors),
       });
     };
     /** Matches starting on the Perth day beginning at `dayStart`. */
@@ -216,14 +243,17 @@ export function duePlans(
 
 /**
  * Gather `duePlans` inputs from `playhq.*`: senior matches for these organisations starting
- * between four days ago and five days ahead, and the latest successful run per plan.
+ * between four days ago and five days ahead (plus the junior matches of `juniorOrgIds`, the
+ * organisations with junior sync enabled), and the latest successful run per plan.
  */
 export async function loadCadenceInputs(
   c: Queryable,
   orgIds: string[],
+  juniorOrgIds: Iterable<string> = [],
 ): Promise<{ matches: CadenceMatch[]; lastRuns: LastRun[] }> {
   if (orgIds.length === 0) return { matches: [], lastRuns: [] };
   const orgs = [...new Set(orgIds.map((o) => o.toLowerCase()))];
+  const juniors = [...new Set([...juniorOrgIds].map((o) => o.toLowerCase()))];
   const m = await c.query<{
     home_org_id: string | null;
     away_org_id: string | null;
@@ -231,15 +261,18 @@ export async function loadCadenceInputs(
     end_at: Date | null;
     status: string | null;
     match_type: string | null;
+    is_junior: boolean;
   }>(
-    `select m.home_org_id::text, m.away_org_id::text, m.start_at, m.end_at, m.status, m.match_type
+    `select m.home_org_id::text, m.away_org_id::text, m.start_at, m.end_at, m.status, m.match_type,
+            g.is_junior
        from playhq.matches m
        join playhq.grades g on g.id = m.grade_id
       where (m.home_org_id::text = any($1::text[]) or m.away_org_id::text = any($1::text[]))
-        and g.is_junior = false
+        and (g.is_junior = false
+          or m.home_org_id::text = any($2::text[]) or m.away_org_id::text = any($2::text[]))
         and m.start_at >= now() - interval '4 days'
         and m.start_at <  now() + interval '5 days'`,
-    [orgs],
+    [orgs, juniors],
   );
   const r = await c.query<{ org_id: string; plan_name: string; loaded_at: Date }>(
     `select org_id::text, plan_name, max(loaded_at) as loaded_at
@@ -259,6 +292,7 @@ export async function loadCadenceInputs(
       lastDayStartAt: x.end_at ? new Date(x.end_at) : null,
       status: x.status,
       matchType: x.match_type,
+      isJunior: x.is_junior === true,
     })),
     lastRuns: r.rows.map((x) => ({
       orgId: x.org_id,
