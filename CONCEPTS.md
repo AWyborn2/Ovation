@@ -79,6 +79,14 @@ A milestone marking the match at which a player's running career total — games
 
 A social card the app creates by itself after an import commits a club's data, filled from that data in the club's default pack and placed in the queue for review. Distinct from an ad-hoc card, which an admin starts by hand.
 
+### Big Moment
+
+A card for one standout innings performance: a century, five wickets, a hat-trick or five catches. The bar is fixed, except that a club may lower the junior runs bar to 50. Replaces the separate century, five-for and big-moment cards.
+
+### Match result
+
+The card type for a finished match, posted as one card per match or as one carousel per round. Replaces the separate weekend wrap, match summary and results summary cards.
+
 ### Post pack
 
 The ready-to-share bundle for one card: its images in the chosen formats plus a caption and hashtags, handed off as a single download or through the phone share sheet. What the admin shares manually until direct Meta posting exists.
