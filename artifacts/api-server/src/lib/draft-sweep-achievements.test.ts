@@ -68,7 +68,9 @@ vi.mock("./match-summary-drafter", () => ({
 vi.mock("./engines/match-day", () => ({ generateMatchDayDrafts: async () => ({ drafted: 0 }) }));
 vi.mock("./engines/team-list", () => ({ generateTeamListDrafts: async () => ({ drafted: 0 }) }));
 vi.mock("./social-cards-helpers", () => ({ ensureSettings: async () => h.settings }));
-vi.mock("./roundup", () => ({ generateRoundUpDrafts: async () => [] }));
+vi.mock("./roundup", () => ({
+  playerPath: (id: number | null) => (id == null ? "/players" : `/players/${id}`),
+}));
 vi.mock("./tenant", () => ({
   tenantIsCentral: async () => h.isCentral,
   getTenantCentralClubId: async () => 77,

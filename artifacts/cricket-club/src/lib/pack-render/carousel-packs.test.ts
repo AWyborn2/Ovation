@@ -9,7 +9,6 @@ import {
 import { resolveTemplate } from "./templates";
 import { listPackManifests } from "../pack-templates/registry";
 import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
-import { JUNIOR_PANEL } from "./types";
 import type { ShareCardInput, MatchSummaryInnings, CardSize } from "@/lib/share-card";
 
 const tokens = resolvePackTokens({ brand: brandDefaultTokens(null), theme: null, junior: false });
@@ -192,7 +191,8 @@ describe("carousel templates across packs", () => {
         expect(packColourModeFor(data, packId)).toBe(packId === "club-kit-v1" ? "club" : mode);
         for (const junior of [false, true]) {
           const resolved = resolveCardTokens({ data, packId, junior });
-          if (junior) expect(resolved.panel).toBe(JUNIOR_PANEL);
+          // Junior cards wear the club's own look (R18): identical tokens.
+          if (junior) expect(resolved).toEqual(resolveCardTokens({ data, packId, junior: false }));
           for (const size of SIZES) {
             const html = renderPackCard(detail, size, false, resolved, junior, data, packId);
             expect(html).toContain(resolved.accent);

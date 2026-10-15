@@ -646,7 +646,6 @@ export * from './roundSchedule';
 export * from './roundScheduleMode';
 export * from './roundSchedules';
 export * from './roundSchedulesUpdate';
-export * from './roundUpInput';
 export * from './saveCardPhotoRulesRequest';
 export * from './saveDraftTemplateRequest';
 export * from './saveKindTemplateRequest';

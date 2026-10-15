@@ -97,7 +97,7 @@ The club-set number of hours after an import within which its auto-drafts must b
 
 ### Posting Plan
 
-The club's single table of automation choices, one row per card kind: whether it drafts and for which grades, whether it posts on its own or as one club-wide round carousel, when it posts, who approves it, and which formats it produces. Replaces the separate automation, round-card and auto-post settings.
+The club's single table of automation choices, one row per card kind (Match result, Big Moment, Milestones, Debuts, Game day, Team lists, Club leaderboards, Ladders): whether it drafts and for which grades — junior age groups included on rows that have junior data — whether it posts on its own or as one club-wide round carousel, and for a carousel with juniors on whether they share the seniors' set or get their own. The Big Moment row also sets the junior runs bar (50 or 100). Replaces the separate automation, round-card and auto-post settings. Version 2 (October 2026) is the only version read; every club starts on the default table.
 
 ### Posting style
 

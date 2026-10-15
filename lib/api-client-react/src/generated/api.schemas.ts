@@ -5044,7 +5044,6 @@ export type GenerateCardSetBodyKind = typeof GenerateCardSetBodyKind[keyof typeo
 
 export const GenerateCardSetBodyKind = {
   matchSummary: 'matchSummary',
-  gradeLeader: 'gradeLeader',
 } as const;
 
 export type GenerateCardSetBodyPlatformSize = typeof GenerateCardSetBodyPlatformSize[keyof typeof GenerateCardSetBodyPlatformSize];
@@ -8023,11 +8022,6 @@ export interface SocialDraftRevision {
 
 export interface PendingDraftCount {
   count: number;
-}
-
-export interface RoundUpInput {
-  grade: string;
-  season: number;
 }
 
 export type BackfillMatchesInputIncludeItem = typeof BackfillMatchesInputIncludeItem[keyof typeof BackfillMatchesInputIncludeItem];

@@ -45,7 +45,7 @@ export function useThemeStyle({ open, isJunior }: { open: boolean; isJunior: boo
 
   // The effective accent/panel/font shown in the pickers (override ?? theme).
   const effAccent = styleAccent ?? selectedTheme?.accent ?? "#FBAC27";
-  const effPanel = stylePanel ?? selectedTheme?.bgPanel ?? "#42342B";
+  const effPanel = stylePanel ?? selectedTheme?.bgPanel ?? "#1E293B";
   const effFont =
     styleFont ?? ((selectedTheme as { displayFont?: string } | undefined)?.displayFont || "anton");
 

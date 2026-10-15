@@ -10,9 +10,7 @@ const palette = (secondary: string) =>
   deriveClubKitPalette({
     primary: "#F5B400",
     secondary,
-    juniors: "#5A3E2B",
     chalk: "#F2F5F8",
-    junior: false,
   });
 const stageOf = (vars: string) => /--ck-stage:(#[0-9A-F]{6})/i.exec(vars)?.[1] ?? "";
 

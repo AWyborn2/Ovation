@@ -75,3 +75,4 @@ export {
   type SetSection,
   type SlideRole,
 } from "./card-sets";
+export * from "./retired-kinds";

@@ -6970,27 +6970,6 @@ paths:
         "204":
           description: Dismissed
 
-  /social-roundups:
-    post:
-      operationId: generateRoundUp
-      tags: [socialCards]
-      summary: Generate top-performer drafts from the most recent import for a grade
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RoundUpInput"
-      responses:
-        "200":
-          description: Drafts created
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/SocialDraft"
-
   /social-recaps:
     post:
       operationId: generateRecaps
@@ -16845,12 +16824,11 @@ components:
       required: [kind, platformSize]
       properties:
         # Which same-kind cards to batch-assemble. "matchSummary" gathers every
-        # match in a round (requires round, season and exactly one grade);
-        # "gradeLeader" gathers each grade's top player (grades optional — all
-        # grades when omitted).
+        # match in a round (requires round, season and exactly one grade). Grade
+        # leader sets are retired (plan 2026-10-15-001 R5).
         kind:
           type: string
-          enum: [matchSummary, gradeLeader]
+          enum: [matchSummary]
         round:
           type: integer
         season:
@@ -20617,13 +20595,6 @@ components:
       required: [count]
       properties:
         count: { type: integer }
-
-    RoundUpInput:
-      type: object
-      required: [grade, season]
-      properties:
-        grade: { type: string }
-        season: { type: integer }
 
     BackfillMatchesInput:
       type: object

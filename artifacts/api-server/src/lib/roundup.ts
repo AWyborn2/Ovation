@@ -5,7 +5,6 @@ import {
   milestoneEventsTable,
   importsTable,
   premiershipsTable,
-  matchesTable,
   type SocialDraftRow,
 } from "@workspace/db";
 import { eq, and, inArray, lt, sql } from "drizzle-orm";
@@ -81,27 +80,6 @@ const queryPerformers = async (
   }));
 };
 
-// Per-row high score / best bowling for a (grade, season) — kept as raw strings
-// so the card can show "87*" or "5/22" verbatim rather than a re-summed number.
-const queryInningsRows = async (grade: string, season: number): Promise<InningsRow[]> =>
-  db
-    .select({
-      playerId: playerGradeSeasonStatsTable.playerId,
-      surname: playersTable.surname,
-      givenName: playersTable.givenName,
-      highScore: playerGradeSeasonStatsTable.highScore,
-      bestBowling: playerGradeSeasonStatsTable.bestBowling,
-    })
-    .from(playerGradeSeasonStatsTable)
-    .innerJoin(playersTable, eq(playerGradeSeasonStatsTable.playerId, playersTable.id))
-    .where(
-      and(
-        eq(playerGradeSeasonStatsTable.grade, grade),
-        eq(playerGradeSeasonStatsTable.season, season),
-        lt(playerGradeSeasonStatsTable.playerId, FILL_IN_THRESHOLD),
-      ),
-    );
-
 const fullName = (s: { givenName: string; surname: string }) =>
   `${s.givenName} ${s.surname}`.trim();
 
@@ -110,21 +88,6 @@ export const playerPath = (playerId: number | null): string =>
   playerId == null ? "/players" : `/players/${playerId}`;
 
 const seasonLabel = (year: number) => `${year}/${String((year + 1) % 100).padStart(2, "0")}`;
-
-// Leading numeric part of a score, e.g. "87*" -> 87, "112 (retired)" -> 112.
-const parseHighScore = (hs: string | null): number | null => {
-  if (!hs) return null;
-  const m = hs.match(/(\d+)/);
-  return m ? Number(m[1]) : null;
-};
-
-// "5/22" -> { wkts: 5, runs: 22 }. Best = most wickets, then fewest runs.
-const parseBowling = (bb: string | null): { wkts: number; runs: number } | null => {
-  if (!bb) return null;
-  const m = bb.match(/(\d+)\s*\/\s*(\d+)/);
-  if (!m) return null;
-  return { wkts: Number(m[1]), runs: Number(m[2]) };
-};
 
 type GradeLeaderCard = {
   kind: "gradeLeader";
@@ -181,149 +144,21 @@ const insertCard = async (
 };
 
 /** Latest round played in a (grade, season) — the round a round-up belongs to. */
-async function latestRound(grade: string, season: number): Promise<number | null> {
-  const [row] = await db
-    .select({ round: sql<number | null>`max(${matchesTable.round})` })
-    .from(matchesTable)
-    .where(and(eq(matchesTable.grade, grade), eq(matchesTable.season, season)));
-  return row?.round == null ? null : Number(row.round);
-}
-
 const topBatting = (rows: PerformerRow[]) => [...rows].sort((a, b) => b.runs - a.runs)[0];
 const topBowling = (rows: PerformerRow[]) => [...rows].sort((a, b) => b.wickets - a.wickets)[0];
 const topKeeping = (rows: PerformerRow[]) =>
   [...rows].sort((a, b) => b.dismissals - a.dismissals)[0];
 
-const bestInnings = (rows: InningsRow[]) =>
-  rows
-    .map((r) => ({ r, n: parseHighScore(r.highScore) }))
-    .filter((x): x is { r: InningsRow; n: number } => x.n != null)
-    .sort((a, b) => b.n - a.n)[0];
-
-const bestBowlingPerformance = (rows: InningsRow[]) =>
-  rows
-    .map((r) => ({ r, b: parseBowling(r.bestBowling) }))
-    .filter((x): x is { r: InningsRow; b: { wkts: number; runs: number } } => x.b != null)
-    .sort((a, b) => b.b.wkts - a.b.wkts || a.b.runs - b.b.runs)[0];
-
-//** Everything a round-up needs for one (grade, season), from either read path. */
+/**
+ * A (grade, season)'s season figures from either read path. The grade-leader
+ * round-up that once drafted from these is retired (plan 2026-10-15-001 R5);
+ * the season recap still reads `performers`.
+ */
 export type RoundUpData = {
   performers: PerformerRow[];
   innings: InningsRow[];
   latestRound: number | null;
 };
-
-/**
- * Where a (grade, season)'s figures come from. A central-data club reads its
- * own club's scorecards from the central DB (senior grades only, private
- * players omitted, ids crosswalked); every other tenant keeps the native
- * season snapshot tables exactly as before.
- */
-async function loadRoundUpData(
-  tenantId: number,
-  grade: string,
-  season: number,
-): Promise<RoundUpData> {
-  if (await tenantIsCentral(tenantId)) return loadCentralGradeSeason(tenantId, grade, season);
-  const performers = await queryPerformers(grade, { season });
-  const innings = await queryInningsRows(grade, season);
-  return { performers, innings, latestRound: await latestRound(grade, season) };
-}
-
-// Generates "top performer" drafts for a single (grade, season) from season-
-// scoped figures (the native player_grade_season_stats snapshot, or the central
-// scorecards for that season), so we never blend historic totals into a single
-// round/season call-out.
-export async function generateRoundUpDrafts(
-  tenantId: number,
-  grade: string,
-  season: number,
-  sourceImportId: number | null,
-): Promise<SocialDraft[]> {
-  const {
-    performers: stats,
-    innings,
-    latestRound: round,
-  } = await loadRoundUpData(tenantId, grade, season);
-  const created: SocialDraft[] = [];
-  const headline = `${grade} ${seasonLabel(season)} Round-up`;
-  const keyBase = `roundup:${season}:${grade}:${round ?? "none"}`;
-
-  const topRuns = topBatting(stats);
-  const topWkts = topBowling(stats);
-  const topKeeper = topKeeping(stats);
-  const bestBat = bestInnings(innings);
-  const bestBowl = bestBowlingPerformance(innings);
-
-  if (topRuns && topRuns.runs > 0)
-    created.push(
-      await insertCard(
-        keyBase,
-        tenantId,
-        "roundup",
-        gradeLeaderCard(grade, "Runs", topRuns, topRuns.runs, headline),
-        playerPath(topRuns.playerId),
-        sourceImportId,
-      ),
-    );
-  if (topWkts && topWkts.wickets > 0)
-    created.push(
-      await insertCard(
-        keyBase,
-        tenantId,
-        "roundup",
-        gradeLeaderCard(grade, "Wickets", topWkts, topWkts.wickets, headline),
-        playerPath(topWkts.playerId),
-        sourceImportId,
-      ),
-    );
-  if (bestBowl)
-    created.push(
-      await insertCard(
-        keyBase,
-        tenantId,
-        "roundup",
-        gradeLeaderCard(
-          grade,
-          "Best Bowling",
-          bestBowl.r,
-          bestBowl.r.bestBowling ?? `${bestBowl.b.wkts}/${bestBowl.b.runs}`,
-          headline,
-        ),
-        playerPath(bestBowl.r.playerId),
-        sourceImportId,
-      ),
-    );
-  if (bestBat)
-    created.push(
-      await insertCard(
-        keyBase,
-        tenantId,
-        "roundup",
-        gradeLeaderCard(
-          grade,
-          "Best Innings",
-          bestBat.r,
-          bestBat.r.highScore ?? String(bestBat.n),
-          headline,
-        ),
-        playerPath(bestBat.r.playerId),
-        sourceImportId,
-      ),
-    );
-  if (topKeeper && topKeeper.dismissals > 0)
-    created.push(
-      await insertCard(
-        keyBase,
-        tenantId,
-        "roundup",
-        gradeLeaderCard(grade, "Dismissals", topKeeper, topKeeper.dismissals, headline),
-        playerPath(topKeeper.playerId),
-        sourceImportId,
-      ),
-    );
-  return created;
-}
 
 // Native milestones unlocked in a (grade, season): milestone_events don't carry
 // a grade directly, so we join through the import that produced them.

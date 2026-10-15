@@ -12,7 +12,7 @@ import {
   tokensFromCardTheme,
 } from "./tokens";
 import { packColourModeFor, renderPackCard, resolveCardTokens } from "./render";
-import { JUNIOR_PANEL, type PackCardData } from "./types";
+import type { PackCardData } from "./types";
 import { getPackManifest } from "../pack-templates/registry";
 import {
   SUNSET_BASE,
@@ -100,12 +100,18 @@ describe("club colours beat the card theme", () => {
     }
   });
 
-  it("junior forces the junior panel in both modes", () => {
+  it("junior cards resolve the same tokens as senior cards in both modes (R18)", () => {
     for (const mode of ["club", "pack"] as const) {
       const d = data(NAVY_RED, { "broadcast-dark-v1": mode });
+      const senior = resolveCardTokens({
+        theme: CLUB_CLASSIC,
+        junior: false,
+        data: d,
+        packId: null,
+      });
       const t = resolveCardTokens({ theme: CLUB_CLASSIC, junior: true, data: d, packId: null });
-      expect(t.panel, mode).toBe(JUNIOR_PANEL);
-      expect(rootStyle(t, true, "square")).toContain(`--panel:${JUNIOR_PANEL}`);
+      expect(t, mode).toEqual(senior);
+      expect(rootStyle(t, true, "square")).toContain(`--panel:${senior.panel}`);
     }
   });
 });

@@ -45,9 +45,7 @@ describe("Club Kit palette (handoff §1)", () => {
     const p = deriveClubKitPalette({
       primary: "#FBAC27",
       secondary: "#333F48",
-      juniors: "#42342B",
       chalk: "#F2F5F8",
-      junior: false,
     });
     expect(p.base).toBe("#10151B");
     expect(p.base2).toBe(mixHex("#10151B", "#333F48", 0.35));
@@ -63,9 +61,7 @@ describe("Club Kit palette (handoff §1)", () => {
       const p = deriveClubKitPalette({
         primary,
         secondary: "#14213D",
-        juniors: "#2E4A3A",
         chalk: "#F2F5F8",
-        junior: false,
       });
       expect(contrastRatio(p.pt, p.base), `${primary} as text`).toBeGreaterThanOrEqual(4.5);
       expect(contrastRatio(p.onp, p.p), `on ${primary}`).toBeGreaterThanOrEqual(
@@ -74,18 +70,12 @@ describe("Club Kit palette (handoff §1)", () => {
     }
   });
 
-  it("swaps to the juniors palette for junior cards", () => {
-    const p = deriveClubKitPalette({
-      primary: "#FBAC27",
-      secondary: "#333F48",
-      juniors: "#42342B",
-      chalk: "#F2F5F8",
-      junior: true,
-    });
-    expect(p.base).toBe(mixHex("#42342B", "#000000", 0.45));
-    expect(p.s).toBe("#42342B");
-    const html = render(sampleCardInput("milestone"), "square", HALLS, true);
-    expect(html).toContain(`--ck-base:${mixHex("#42342B", "#000000", 0.45)}`);
+  it("junior cards wear the same kit as senior cards (R18)", () => {
+    const senior = render(sampleCardInput("milestone"), "square", HALLS, false);
+    const junior = render(sampleCardInput("milestone"), "square", HALLS, true);
+    expect(junior).toContain("--ck-base:#10151B");
+    expect(junior).not.toContain(mixHex("#42342B", "#000000", 0.45));
+    expect(junior.match(/--ck-[a-z0-9]+:[^;"]+/g)).toEqual(senior.match(/--ck-[a-z0-9]+:[^;"]+/g));
   });
 });
 
@@ -329,9 +319,10 @@ describe("Club Kit-only kinds", () => {
     expect(noCap).not.toContain("#242");
   });
 
-  it("junior highlights are always junior: juniors palette, first name + initial only", () => {
+  it("junior highlights are always junior: club kit palette, first name + initial only", () => {
     const html = render(sampleCardInput("juniorHighlights"), "square");
-    expect(html).toContain(`--ck-base:${mixHex("#42342B", "#000000", 0.45)}`);
+    // The club's own kit (R18): no junior brown.
+    expect(html).toContain("--ck-base:#10151B");
     expect(html).toContain("Riley T.");
     expect(html).not.toContain("Thompson");
     expect(html).not.toContain("Morgan");

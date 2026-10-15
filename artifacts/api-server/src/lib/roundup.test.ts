@@ -1,11 +1,12 @@
 /**
- * Round-up / season-recap card sets (Social Studio). Mocked — no database.
+ * Season-recap card sets (Social Studio). Mocked — no database.
  *
  * The native path is pinned byte-for-byte: the exact upsert inputs (source
  * keys, card JSON with key order, app paths) a native club produced before
  * central clubs were supported. The central path must produce the same card
  * set and source-key shape from the central loaders, dropping only the player
- * link for an unmapped participant.
+ * link for an unmapped participant. The grade-leader round-up is retired
+ * (plan 2026-10-15-001 R5) and no longer drafted.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -53,7 +54,7 @@ vi.mock("./roundup-central", () => ({
   loadCentralRecapMilestones: vi.fn(),
 }));
 
-import { generateRecapDrafts, generateRoundUpDrafts, playerPath } from "./roundup";
+import { generateRecapDrafts, playerPath } from "./roundup";
 import { tenantIsCentral } from "./tenant";
 import { upsertDraftByKey } from "./draft-upsert";
 import { loadCentralGradeSeason, loadCentralRecapMilestones } from "./roundup-central";
@@ -72,42 +73,6 @@ const PERFORMERS = [
   { playerId: 11, runs: 312, wickets: 3, dismissals: 2, surname: "Smith", givenName: "Sam" },
   { playerId: 12, runs: 40, wickets: 19, dismissals: 9, surname: "Jones", givenName: "Lee" },
 ];
-const INNINGS = [
-  { playerId: 11, surname: "Smith", givenName: "Sam", highScore: "104*", bestBowling: null },
-  { playerId: 12, surname: "Jones", givenName: "Lee", highScore: "22", bestBowling: "6/31" },
-  { playerId: 13, surname: "Park", givenName: "Ari", highScore: "88", bestBowling: "6/20" },
-];
-
-describe("native round-up (byte-identical)", () => {
-  it("drafts the same five cards, keys and JSON as before", async () => {
-    vi.mocked(tenantIsCentral).mockResolvedValue(false);
-    queued.push(PERFORMERS, INNINGS, [{ round: 7 }]);
-
-    await generateRoundUpDrafts(1, "A Grade", 2024, 99);
-
-    const h = "A Grade 2024/25 Round-up";
-    const card = (category: string, playerName: string, value: string | number) =>
-      `{"kind":"gradeLeader","grade":"A Grade","category":"${category}","playerName":"${playerName}","value":${JSON.stringify(value)},"headline":"${h}"}`;
-    const row = (cat: string, input: string, path: string) =>
-      `{"tenantId":1,"engine":"roundup","family":"roundup","sourceKey":"roundup:2024:A Grade:7:${cat}","cardInput":${input},"appPath":"${path}","sourceImportId":99}`;
-    expect(upserts()).toEqual([
-      row("Runs", card("Runs", "Sam Smith", 312), "/players/11"),
-      row("Wickets", card("Wickets", "Lee Jones", 19), "/players/12"),
-      row("Best Bowling", card("Best Bowling", "Ari Park", "6/20"), "/players/13"),
-      row("Best Innings", card("Best Innings", "Sam Smith", "104*"), "/players/11"),
-      row("Dismissals", card("Dismissals", "Lee Jones", 9), "/players/12"),
-    ]);
-    expect(loadCentralGradeSeason).not.toHaveBeenCalled();
-  });
-
-  it("keys a round-up with no numbered round as 'none'", async () => {
-    vi.mocked(tenantIsCentral).mockResolvedValue(false);
-    queued.push(PERFORMERS, [], [{ round: null }]);
-    await generateRoundUpDrafts(1, "B Grade", 2023, null);
-    expect(upserts()[0]).toContain('"sourceKey":"roundup:2023:B Grade:none:Runs"');
-  });
-});
-
 describe("native season recap (byte-identical)", () => {
   it("drafts champions, milestones and the premiership exactly as before", async () => {
     vi.mocked(tenantIsCentral).mockResolvedValue(false);
@@ -143,37 +108,15 @@ describe("native season recap (byte-identical)", () => {
   });
 });
 
-describe("central round-up and recap", () => {
+describe("central recap", () => {
   const central = {
     performers: [
       { ...PERFORMERS[0], playerId: null },
       { ...PERFORMERS[1], playerId: 12 },
     ],
-    innings: [{ ...INNINGS[1], playerId: 12 }],
+    innings: [],
     latestRound: 5,
   };
-
-  it("drafts the same card set and key shape; an unmapped player keeps the card, not the link", async () => {
-    vi.mocked(tenantIsCentral).mockResolvedValue(true);
-    vi.mocked(loadCentralGradeSeason).mockResolvedValue(central);
-
-    await generateRoundUpDrafts(7, "A Grade", 2024, null);
-
-    const calls = vi.mocked(upsertDraftByKey).mock.calls.map(([i]) => i);
-    expect(calls.map((c) => c.sourceKey)).toEqual([
-      "roundup:2024:A Grade:5:Runs",
-      "roundup:2024:A Grade:5:Wickets",
-      "roundup:2024:A Grade:5:Best Bowling",
-      "roundup:2024:A Grade:5:Best Innings",
-      "roundup:2024:A Grade:5:Dismissals",
-    ]);
-    expect(calls[0]).toMatchObject({ tenantId: 7, appPath: "/players" });
-    expect(calls[0].cardInput).toMatchObject({ playerName: "Sam Smith", value: 312 });
-    expect(calls[1].appPath).toBe("/players/12");
-    // The native tables are never read for a central club.
-    expect(queued).toHaveLength(0);
-    expect(loadCentralGradeSeason).toHaveBeenCalledWith(7, "A Grade", 2024);
-  });
 
   it("recap reads central performers and central milestones", async () => {
     vi.mocked(tenantIsCentral).mockResolvedValue(true);

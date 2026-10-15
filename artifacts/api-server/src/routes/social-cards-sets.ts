@@ -27,17 +27,10 @@ import {
   CARD_SET_MIN_SLIDES,
   CARD_SET_MAX_SLIDES,
 } from "../lib/social-cards-helpers";
-import {
-  GENERATE_GRADES,
-  gradeLeaderInput,
-  topLeaderRow,
-  deriveAutoseedGroups,
-  type AutoseedDraft,
-} from "../lib/social-cards-generate";
+import { deriveAutoseedGroups, type AutoseedDraft } from "../lib/social-cards-generate";
 import { upsertGeneratedCardSet } from "../lib/card-set-generate-store";
 import { listRoundMatchIds } from "../lib/round-matches";
 import { loadMatchDetailForRequest } from "../lib/match-detail";
-import { loadGradeLeaderboard } from "../lib/grade-leaderboard";
 
 /**
  * Social studio — multi-card / carousel sets, including the round-summary
@@ -107,10 +100,9 @@ router.post(
 
 // Batch-assemble a carousel from a group of same-kind cards, server-side, and
 // UPSERT one set keyed on the grouping columns so regeneration updates the same
-// row. Reuses the shared input builders: `matchToSummaryInput` (@workspace/
-// scorecard) for match summaries and `gradeLeaderInput` (the server twin of the
-// carousel editor's inline builder) for grade leaderboards. New sets are drafts,
-// like the other card-set routes.
+// row. Reuses the shared `matchToSummaryInput` builder (@workspace/scorecard)
+// for match summaries; grade-leader sets are retired (plan 2026-10-15-001 R5).
+// New sets are drafts, like the other card-set routes.
 router.post(
   "/card-sets/generate",
   requireAdmin,
@@ -154,17 +146,6 @@ router.post(
       groupRound = round;
       groupGrade = grade;
       name = `${grade} • Round ${round}`;
-    } else {
-      // gradeLeader: one top-player card per grade (all grades unless the request
-      // names a subset). Category isn't in the body contract — default to Runs,
-      // matching the editor's default. Grouping columns stay null (spans grades).
-      const gradeList = grades && grades.length ? grades : [...GENERATE_GRADES];
-      const boards = await Promise.all(gradeList.map((g) => loadGradeLeaderboard(req, g)));
-      gradeList.forEach((g, i) => {
-        const top = topLeaderRow(boards[i] ?? [], "Runs");
-        if (top) inputs.push(gradeLeaderInput(top, g, "Runs"));
-      });
-      name = "Grade leaderboards";
     }
 
     if (inputs.length === 0) {

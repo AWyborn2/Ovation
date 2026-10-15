@@ -54,18 +54,10 @@ const themeFromBrand = (brand?: ClubBrand | null): CardTheme => {
   };
 };
 
-// Junior cards are forced onto this brown background, regardless of any
-// selected card theme, so junior social content is instantly distinguishable
-// from the senior cards. Per Task #200 this brown branding intentionally
-// overrides the club's own primary colour; the accent still follows the
-// tenant's brand (or the neutral default) rather than a fixed hex.
-const JUNIOR_BROWN = "#42342B";
-export const juniorThemeFromBrand = (brand?: ClubBrand | null): CardTheme => ({
-  bgDark: JUNIOR_BROWN,
-  bgPanel: lighten(JUNIOR_BROWN, 0.12),
-  accent: brand?.primaryColour || DEFAULT_BRAND.primaryColour || "#94A3B8",
-  textLight: "#F5EFE6",
-});
+// Junior cards wear the club's own look (plan 2026-10-15-001 R18): the forced
+// brown palette is retired. Junior content is still told apart by its labels
+// ("JUNIOR MATCH") and its naming and photo rules, never by colour alone.
+export const juniorThemeFromBrand = (brand?: ClubBrand | null): CardTheme => themeFromBrand(brand);
 
 // True when an input is a junior-flagged card kind.
 export const isJuniorInput = (input: ShareCardInput): boolean =>

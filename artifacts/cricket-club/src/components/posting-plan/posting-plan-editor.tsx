@@ -7,11 +7,16 @@ import {
   type SocialSettings,
 } from "@workspace/api-client-react";
 import {
+  JUNIOR_PACKAGING_LABELS,
   POSTING_ROWS,
   POSTING_ROW_DEFS,
   postingStyles,
   matchingStyle,
   planFromStyle,
+  rowHasJuniors,
+  rowJuniorPackaging,
+  type JuniorPackaging,
+  type JuniorRunsBar,
   type Packaging,
   type PostingPlan,
   type PostingRow,
@@ -37,6 +42,8 @@ const selectClass =
 const CENTRAL_REASON =
   "Round carousels for results, ladders and leaderboards need your club's results from the association database.";
 
+const JUNIOR_RUNS_BARS: readonly JuniorRunsBar[] = [50, 100];
+
 function messageOf(err: unknown): string {
   const data = (err as { data?: { error?: unknown } } | null)?.data;
   return typeof data?.error === "string"
@@ -53,10 +60,12 @@ function roundTime(id: PostingRowId, settings: SocialSettings): string | null {
 }
 
 /**
- * The Posting Plan (plan 2026-10-07-001 U6): one row per card kind — drafts or
- * not, which grades, each on its own or one round carousel — filled from a
- * posting style and adjusted row by row. A table on desktop; on a phone one
- * summary card per row, one open at a time.
+ * The Posting Plan, version 2 (plan 2026-10-15-001 U7): one row per card kind —
+ * drafts or not, which grades (junior age groups included where the card has
+ * junior data), each on its own or one round carousel, and for a carousel with
+ * juniors on whether they share the seniors' set — filled from a posting style
+ * and adjusted row by row. The Big Moment row also sets the junior runs bar.
+ * A table on desktop; on a phone one summary card per row, one open at a time.
  */
 export function PostingPlanEditor({
   settings,
@@ -72,6 +81,8 @@ export function PostingPlanEditor({
   const [form, setForm] = useState<PostingPlan>(saved);
   const [open, setOpen] = useState<PostingRowId | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // First visit: offer the styles up front. There is no "keep my current
+  // settings" choice because every club starts on the default table (KTD1).
   const [firstVisit, setFirstVisit] = useState(!settings.postingPlanSaved);
   useEffect(() => setForm(settings.postingPlan as PostingPlan), [settings.postingPlan]);
 
@@ -90,9 +101,11 @@ export function PostingPlanEditor({
   const style = useMemo(() => matchingStyle(form, central), [form, central]);
   const setRow = (id: PostingRowId, row: PostingRow) =>
     setForm((f) => ({ ...f, styleId: null, rows: { ...f.rows, [id]: row } }));
+  const setJuniorRunsBar = (bar: JuniorRunsBar) =>
+    setForm((f) => ({ ...f, bigMoments: { ...f.bigMoments, juniorRunsBar: bar } }));
 
   const applyStyle = async (target: PostingStyle) => {
-    const next = planFromStyle(target);
+    const next = { ...planFromStyle(target), bigMoments: form.bigMoments };
     const changed = POSTING_ROWS.filter(
       (id) => rowSentence(id, form.rows[id], grades) !== rowSentence(id, next.rows[id], grades),
     );
@@ -144,6 +157,50 @@ export function PostingPlanEditor({
     );
   };
 
+  /** A carousel row with a junior grade on: do juniors share the seniors' set? */
+  const juniorPackagingControl = (id: PostingRowId, row: PostingRow) => {
+    if (row.packaging !== "round" || !rowHasJuniors(row)) return null;
+    return (
+      <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+        Juniors
+        <select
+          className={selectClass}
+          value={rowJuniorPackaging(row)}
+          onChange={(e) => setRow(id, { ...row, juniors: e.target.value as JuniorPackaging })}
+          aria-label={`${POSTING_ROW_DEFS[id].label}: juniors`}
+        >
+          {(Object.keys(JUNIOR_PACKAGING_LABELS) as JuniorPackaging[]).map((p) => (
+            <option key={p} value={p}>
+              {JUNIOR_PACKAGING_LABELS[p]}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  };
+
+  /** The Big Moment row with juniors on: a junior century or a half-century. */
+  const juniorRunsBarControl = (id: PostingRowId, row: PostingRow) => {
+    if (id !== "bigMoments" || !rowHasJuniors(row)) return null;
+    return (
+      <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+        Junior runs bar
+        <select
+          className={selectClass}
+          value={form.bigMoments.juniorRunsBar}
+          onChange={(e) => setJuniorRunsBar(Number(e.target.value) as JuniorRunsBar)}
+          aria-label="Big Moment: junior runs bar"
+        >
+          {JUNIOR_RUNS_BARS.map((bar) => (
+            <option key={bar} value={bar}>
+              {bar === 50 ? "50 runs (half-century)" : "100 runs (century)"}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  };
+
   /** Whether the row can be switched on at all for this club. */
   const unavailable = (id: PostingRowId) =>
     !central && POSTING_ROW_DEFS[id].packaging.every((p) => p !== "individual");
@@ -165,13 +222,16 @@ export function PostingPlanEditor({
 
   const gradesControl = (id: PostingRowId, row: PostingRow) =>
     hasGradePicker(id) ? (
-      <GradePicker
-        label={POSTING_ROW_DEFS[id].label}
-        row={row}
-        grades={grades}
-        juniorsUnavailable={juniorsUnavailable(id, row)}
-        onChange={(r) => setRow(id, r)}
-      />
+      <div className="space-y-3">
+        <GradePicker
+          label={POSTING_ROW_DEFS[id].label}
+          row={row}
+          grades={grades}
+          juniorsUnavailable={juniorsUnavailable(id, row)}
+          onChange={(r) => setRow(id, r)}
+        />
+        {juniorRunsBarControl(id, row)}
+      </div>
     ) : (
       <span className="text-sm text-muted-foreground">Every senior grade</span>
     );
@@ -196,8 +256,8 @@ export function PostingPlanEditor({
             Choose how your club posts
           </h2>
           <p className="text-sm text-muted-foreground">
-            Pick a style to fill every row, then change anything that&rsquo;s different for your
-            club. Nothing changes until you save.
+            Your club starts on the default table below. Pick a style to fill every row, then change
+            anything that&rsquo;s different for your club. Nothing changes until you save.
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
             {styles.map((s) => (
@@ -206,7 +266,7 @@ export function PostingPlanEditor({
                 type="button"
                 className="rounded-lg border border-border p-3 text-left hover:bg-accent"
                 onClick={() => {
-                  setForm(planFromStyle(s));
+                  setForm({ ...planFromStyle(s), bigMoments: form.bigMoments });
                   setFirstVisit(false);
                 }}
               >
@@ -214,19 +274,6 @@ export function PostingPlanEditor({
                 <span className="block text-xs text-muted-foreground">{s.description}</span>
               </button>
             ))}
-            <button
-              type="button"
-              className="rounded-lg border border-border p-3 text-left hover:bg-accent"
-              onClick={() => {
-                update.mutate({ data: { postingPlan: form } });
-                setFirstVisit(false);
-              }}
-            >
-              <span className="block text-sm font-medium">Keep my current settings</span>
-              <span className="block text-xs text-muted-foreground">
-                Save the plan your club drafts with today, unchanged.
-              </span>
-            </button>
           </div>
         </section>
       )}
@@ -250,7 +297,7 @@ export function PostingPlanEditor({
             </option>
           ))}
           <option value="custom" disabled>
-            {settings.postingPlanSaved ? "Custom" : "Custom (based on your current settings)"}
+            Custom
           </option>
         </select>
         <span aria-live="polite" className="text-xs text-muted-foreground">
@@ -286,7 +333,10 @@ export function PostingPlanEditor({
                 </td>
                 <td className="px-4 py-3">{toggle(id, row)}</td>
                 <td className="px-4 py-3">{row.enabled ? gradesControl(id, row) : null}</td>
-                <td className="px-4 py-3">{packagingControl(id, row)}</td>
+                <td className="space-y-3 px-4 py-3">
+                  {packagingControl(id, row)}
+                  {juniorPackagingControl(id, row)}
+                </td>
               </tr>
             );
           })}
@@ -319,6 +369,7 @@ export function PostingPlanEditor({
                 <div id={`plan-row-${id}`} className="space-y-3 border-t border-border p-4">
                   {row.enabled && gradesControl(id, row)}
                   {packagingControl(id, row)}
+                  {juniorPackagingControl(id, row)}
                   {notes(id, row).map((n) => (
                     <p key={n} className="text-xs text-muted-foreground">
                       {n}
@@ -332,11 +383,16 @@ export function PostingPlanEditor({
       </ul>
 
       <p className="text-xs text-muted-foreground">
-        Round carousel times are on the{" "}
+        Junior cards post to Facebook and Instagram on their own only for teams set to
+        &ldquo;auto&rdquo; in{" "}
+        <Link href="/admin/settings/junior-matches" className="underline underline-offset-2">
+          Junior matches
+        </Link>
+        ; every team starts on &ldquo;approval&rdquo;. Round carousel times are on the{" "}
         <Link href="/admin/social/cards#round-schedules" className="underline underline-offset-2">
           Cards tab
         </Link>
-        . Approval and auto-posting stay as set there for now.
+        .
       </p>
 
       {error && (

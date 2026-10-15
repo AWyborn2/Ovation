@@ -97,12 +97,6 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         path: "/admin/social/juniors",
         feature: "socialStudio",
       },
-      {
-        value: "trading-cards",
-        label: "Trading cards",
-        path: "/admin/social/trading-cards",
-        feature: "socialStudio",
-      },
       { value: "queue", label: "Queue", path: "/admin/social/queue", feature: "socialStudio" },
       {
         value: "library",

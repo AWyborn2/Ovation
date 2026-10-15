@@ -94,7 +94,7 @@ const SAMPLES: { [K in ShareCardInput["kind"]]: Extract<ShareCardInput, { kind: 
     club: {
       name: "Sample Club",
       shortName: "SC",
-      primaryColor: "#42342B",
+      primaryColor: "#333F48",
       secondaryColor: "#FBAC27",
       textColor: "#F5F2E8",
     },

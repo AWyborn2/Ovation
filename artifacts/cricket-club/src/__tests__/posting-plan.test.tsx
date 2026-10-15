@@ -1,6 +1,8 @@
 /**
- * The Posting Plan tab (plan 2026-10-07-001 U6): styles, rows, grade picker,
- * first visit, central-only carousels, saving and the phone layout.
+ * The Posting Plan tab, version 2 (plan 2026-10-15-001 U7): styles, rows,
+ * grade picker with junior age groups, the combined-or-separate choice, the
+ * junior runs bar, first visit, central-only carousels, saving and the phone
+ * layout.
  */
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
@@ -20,7 +22,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const GRADES = ["A Grade", "B Grade", "Female A Grade", "Under 16"];
+const GRADES = ["A Grade", "B Grade", "Female A Grade", "Under 14", "Under 16"];
 
 function settings(over: Partial<{ plan: PostingPlan; saved: boolean; central: boolean }> = {}) {
   const plan = over.plan ?? planFromStyle(findPostingStyle("every-match", true)!);
@@ -62,20 +64,28 @@ const summaryOf = (label: string) => {
 };
 const render = (s: SocialSettings) =>
   renderAt(<PostingPlanEditor settings={s} grades={GRADES} />, "/admin/social/plan");
+/** Switch a row's grade picker to "Choose grades…" and tick one grade. */
+const tickGrade = (label: string, grade: string) => {
+  fireEvent.change(within(table()).getByLabelText(`${label}: grades`), {
+    target: { value: "custom" },
+  });
+  fireEvent.click(within(table()).getByLabelText(grade));
+};
 
 describe("Posting Plan", () => {
   it("shows one row per card kind with a plain-words sentence", () => {
     render(settings());
     const rows = within(table()).getAllByRole("row");
     expect(rows).toHaveLength(POSTING_ROWS.length + 1);
-    expect(summaryOf("Results")).toBe("all senior grades · each on its own");
+    expect(summaryOf("Match result")).toBe("all senior grades · each on its own");
+    expect(summaryOf("Big Moment")).toBe("all senior grades · each on its own");
     expect(summaryOf("Ladders")).toBe("off");
   });
 
   it("choosing a style fills every row; editing one makes it custom", () => {
     render(settings());
     fireEvent.change(screen.getByLabelText("Style"), { target: { value: "round-carousels" } });
-    expect(summaryOf("Results")).toBe("all senior grades · one round carousel");
+    expect(summaryOf("Match result")).toBe("all senior grades · one round carousel");
     expect(screen.getByText("Using “Round carousels + individual highlights”")).toBeTruthy();
     fireEvent.click(
       within(table()).getByRole("switch", { name: "Milestones: draft automatically" }),
@@ -95,16 +105,18 @@ describe("Posting Plan", () => {
     expect(summaryOf("Game day")).toBe("all senior grades · each on its own");
   });
 
-  it("offers only the packaging each row supports", () => {
+  it("offers only the packaging each row supports, never 'both'", () => {
     render(settings());
     expect(within(table()).queryByLabelText("Milestones: post as")).toBeNull();
     const teamLists = within(table()).getByLabelText("Team lists: post as") as HTMLSelectElement;
     expect(Array.from(teamLists.options).map((o) => o.value)).toEqual(["individual", "round"]);
+    const results = within(table()).getByLabelText("Match result: post as") as HTMLSelectElement;
+    expect(Array.from(results.options).map((o) => o.value)).not.toContain("both");
   });
 
   it("keeps results, ladder and leaderboard carousels to central clubs", () => {
     render(settings({ central: false }));
-    const results = within(table()).getByLabelText("Results: post as") as HTMLSelectElement;
+    const results = within(table()).getByLabelText("Match result: post as") as HTMLSelectElement;
     const round = Array.from(results.options).find((o) => o.value === "round")!;
     expect(round.disabled).toBe(true);
     const teamLists = within(table()).getByLabelText("Team lists: post as") as HTMLSelectElement;
@@ -119,7 +131,7 @@ describe("Posting Plan", () => {
     expect(within(table()).getAllByText(/association database/).length).toBeGreaterThan(0);
   });
 
-  it("saves the whole plan in one request and shows the API's error", async () => {
+  it("saves the whole version 2 plan in one request and shows the API's error", async () => {
     const bodies = stubPatch(() =>
       json({ error: "Milestones can't be posted as one round carousel." }, 400),
     );
@@ -128,60 +140,99 @@ describe("Posting Plan", () => {
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
     await waitFor(() => expect(bodies).toHaveLength(1));
     const sent = (bodies[0] as { postingPlan: PostingPlan }).postingPlan;
+    expect(sent.version).toBe(2);
     expect(Object.keys(sent.rows)).toEqual([...POSTING_ROWS]);
     expect(sent.rows.ladders.enabled).toBe(true);
+    expect(sent.bigMoments).toEqual({ juniorRunsBar: 100 });
     expect(await screen.findByRole("alert")).toHaveProperty(
       "textContent",
       "Milestones can't be posted as one round carousel.",
     );
   });
 
-  it("first visit: a style fills the rows unsaved; keeping current settings saves them", async () => {
+  it("first visit: the default table shows with styles to pick, and no 'keep my current settings'", () => {
     const bodies = stubPatch();
     render(settings({ saved: false }));
     expect(screen.getByText("Choose how your club posts")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Keep my current settings/ })).toBeNull();
+    expect(table()).toBeTruthy();
     fireEvent.click(
       screen.getByRole("button", { name: /Round carousels \+ individual highlights/ }),
     );
     expect(screen.queryByText("Choose how your club posts")).toBeNull();
     expect(screen.getByRole("region", { name: "Unsaved changes" })).toBeTruthy();
     expect(bodies).toHaveLength(0);
-
-    cleanup();
-    const bodies2 = stubPatch();
-    render(settings({ saved: false }));
-    fireEvent.click(screen.getByRole("button", { name: /Keep my current settings/ }));
-    await waitFor(() => expect(bodies2).toHaveLength(1));
-    expect((bodies2[0] as { postingPlan: PostingPlan }).postingPlan.styleId).toBe("every-match");
   });
 
-  it("grade picker: A Grade only, chosen grades, and the junior note", () => {
+  it("grade picker: A Grade only, and junior age groups on rows with junior data", () => {
     render(settings());
-    const picker = within(table()).getByLabelText("Debuts: grades");
-    fireEvent.change(picker, { target: { value: "aGradeOnly" } });
+    fireEvent.change(within(table()).getByLabelText("Debuts: grades"), {
+      target: { value: "aGradeOnly" },
+    });
     expect(summaryOf("Debuts")).toBe("A Grade only · each on its own");
-    fireEvent.change(within(table()).getByLabelText("Results: grades"), {
+    tickGrade("Match result", "Under 14");
+    expect(summaryOf("Match result")).toBe("all senior grades, plus Under 14 · each on its own");
+  });
+
+  it("milestones offer no junior grades", () => {
+    render(settings());
+    fireEvent.change(within(table()).getByLabelText("Milestones: grades"), {
       target: { value: "custom" },
     });
-    const box = within(table()).getByLabelText("Under 16") as HTMLInputElement;
-    expect(box.checked).toBe(false);
-    fireEvent.click(box);
-    expect(
-      within(table()).getByText(
-        "Junior cards post as their own carousel and are never auto-published.",
-      ),
-    ).toBeTruthy();
+    const row = within(table())
+      .getByText("Milestones", { selector: "p.font-medium" })
+      .closest("tr")!;
+    const under14 = within(row).getByLabelText("Under 14") as HTMLInputElement;
+    expect(under14.disabled).toBe(true);
+    expect(within(row).getByText(/aren.t available for this card/)).toBeTruthy();
+  });
+
+  it("a carousel row with a junior grade on offers combined or separate; off hides it", () => {
+    render(settings({ plan: planFromStyle(findPostingStyle("round-carousels", true)!) }));
+    expect(within(table()).queryByLabelText("Match result: juniors")).toBeNull();
+    tickGrade("Match result", "Under 14");
+    const juniors = within(table()).getByLabelText("Match result: juniors") as HTMLSelectElement;
+    expect(juniors.value).toBe("separate");
+    expect(Array.from(juniors.options).map((o) => o.value)).toEqual(["combined", "separate"]);
+    fireEvent.change(juniors, { target: { value: "combined" } });
+    expect(summaryOf("Match result")).toBe(
+      "all senior grades, plus Under 14 · one round carousel, juniors in the same carousel",
+    );
+    fireEvent.click(within(table()).getByLabelText("Under 14"));
+    expect(within(table()).queryByLabelText("Match result: juniors")).toBeNull();
+  });
+
+  it("the Big Moment junior runs bar offers 50 and 100, and saving sends the choice", async () => {
+    const bodies = stubPatch();
+    render(settings());
+    expect(screen.queryByLabelText("Big Moment: junior runs bar")).toBeNull();
+    tickGrade("Big Moment", "Under 16");
+    const bar = screen.getByLabelText("Big Moment: junior runs bar") as HTMLSelectElement;
+    expect(Array.from(bar.options).map((o) => o.value)).toEqual(["50", "100"]);
+    fireEvent.change(bar, { target: { value: "50" } });
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    const sent = (bodies[0] as { postingPlan: PostingPlan }).postingPlan;
+    expect(sent.bigMoments.juniorRunsBar).toBe(50);
+    expect(sent.rows.bigMoments.grades).toEqual({ "Under 16": true });
+  });
+
+  it("explains junior auto-publishing and links to the junior team settings", () => {
+    render(settings());
+    const link = screen.getByRole("link", { name: "Junior matches" });
+    expect(link.getAttribute("href")).toBe("/admin/settings/junior-matches");
+    expect(screen.getByText(/every team starts on/)).toBeTruthy();
   });
 
   it("phone layout: summary cards, one open at a time", () => {
     render(settings());
     const list = screen.getByRole("list", { name: "Posting Plan" });
-    const [results, milestones] = within(list).getAllByRole("button", { expanded: false });
+    const [results, bigMoments] = within(list).getAllByRole("button", { expanded: false });
     fireEvent.click(results);
     expect(results.getAttribute("aria-expanded")).toBe("true");
-    fireEvent.click(milestones);
+    fireEvent.click(bigMoments);
     expect(results.getAttribute("aria-expanded")).toBe("false");
-    expect(milestones.getAttribute("aria-expanded")).toBe("true");
+    expect(bigMoments.getAttribute("aria-expanded")).toBe("true");
   });
 
   it("disables the Save bar while saving", async () => {

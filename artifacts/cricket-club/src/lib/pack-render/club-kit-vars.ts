@@ -13,7 +13,7 @@
  * safe to place inside an inline style.
  */
 
-import { JUNIOR_PANEL, type PackCardData, type PackTokens } from "./types";
+import type { PackCardData, PackTokens } from "./types";
 import { contrastRatio, MIN_TEXT_CONTRAST, normaliseBrandHex } from "./tokens";
 
 /** Fixed dark base (the handoff's `ink`). */
@@ -56,17 +56,18 @@ export interface ClubKitPalette {
   chalk: string;
 }
 
-/** The handoff's derived palette for a primary / secondary / juniors set. */
+/**
+ * The handoff's derived palette for a primary / secondary set. Junior cards
+ * wear the same kit as senior cards (plan 2026-10-15-001 R18).
+ */
 export function deriveClubKitPalette(input: {
   primary: string;
   secondary: string;
-  juniors: string;
   chalk: string;
-  junior: boolean;
 }): ClubKitPalette {
-  const { primary, chalk, junior } = input;
-  const base = junior ? mixHex(input.juniors, "#000000", 0.45) : CK_INK;
-  const s = junior ? input.juniors : input.secondary;
+  const { primary, chalk } = input;
+  const base = CK_INK;
+  const s = input.secondary;
   const base2 = mixHex(base, s, 0.35);
   const onp =
     contrastRatio(primary, "#FFFFFF") >= contrastRatio(primary, CK_INK) ? "#FFFFFF" : CK_INK;
@@ -79,19 +80,17 @@ export function deriveClubKitPalette(input: {
 
 /**
  * The palette for a render: the resolved accent (so themes and per-card
- * overrides still apply) as the primary, the club's background colour as the
- * secondary, and its juniors colour for junior cards.
+ * overrides still apply) as the primary and the club's background colour as
+ * the secondary, for senior and junior cards alike.
  */
 export function clubKitPaletteFor(
   tokens: PackTokens,
   brand: PackCardData["brand"] | null | undefined,
-  junior: boolean,
 ): ClubKitPalette {
   const primary = normaliseBrandHex(tokens.accent) ?? "#FBAC27";
   const secondary = normaliseBrandHex(brand?.backgroundColour) ?? CK_SECONDARY_FALLBACK;
-  const juniors = normaliseBrandHex(brand?.juniorsColour) ?? JUNIOR_PANEL;
   const chalk = normaliseBrandHex(tokens.textLight) ?? "#F2F5F8";
-  return deriveClubKitPalette({ primary, secondary, juniors, chalk, junior });
+  return deriveClubKitPalette({ primary, secondary, chalk });
 }
 
 /** `--ck-*` declarations for a palette (no leading `;`). */

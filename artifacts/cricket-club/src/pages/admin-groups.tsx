@@ -15,7 +15,6 @@ const AdminPhotoLibrary = lazy(() => import("@/pages/admin-photo-library"));
 const AdminFixtures = lazy(() => import("@/pages/admin-fixtures"));
 const AdminMatchDisplay = lazy(() => import("@/pages/admin-match-display"));
 const AdminRecordsDisplay = lazy(() => import("@/pages/admin-records-display"));
-const AdminTradingCards = lazy(() => import("@/pages/admin-trading-cards"));
 const AdminHonourBoards = lazy(() => import("@/pages/admin-honour-boards"));
 const AdminMilestoneBoard = lazy(() => import("@/pages/admin-milestone-board"));
 const AdminJuniorMatchDisplay = lazy(() => import("@/pages/admin-junior-match-display"));
@@ -109,7 +108,6 @@ export function AdminSocialGroup() {
         sets: <AdminSocialSets />,
         fixtures: <AdminFixtures />,
         juniors: <AdminJuniorSocial />,
-        "trading-cards": <AdminTradingCards />,
         queue: <AdminSocialQueue />,
         library: <AdminPhotoLibrary />,
       }}

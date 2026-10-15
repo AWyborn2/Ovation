@@ -1,16 +1,16 @@
 /**
- * Pack renderer — theme tokens: resolution priority (junior > override > theme
- * > brand default, or junior > override > club brand > theme in "club colours"
+ * Pack renderer — theme tokens: resolution priority (override > theme > brand
+ * default, or override > club brand > theme in "club colours"
  * mode), the brand → default-token bridge, display fonts, native sizes and the
  * root wrapper style that exposes tokens as CSS custom properties.
  */
 
 import type { PackInkTint } from "../pack-templates/types";
 import type { CardSize } from "../share-card";
-import { JUNIOR_PANEL, type PackCardData, type PackColourMode, type PackTokens } from "./types";
+import type { PackCardData, PackColourMode, PackTokens } from "./types";
 
 // ---------------------------------------------------------------------------
-// Token resolution (junior force > per-card override > theme > brand default)
+// Token resolution (per-card override > theme > brand default)
 // ---------------------------------------------------------------------------
 
 /** A `card_themes` row (or any theme-shaped object) as the renderer reads it. */
@@ -47,7 +47,10 @@ export interface PackTokenSources {
   theme?: Partial<PackTokens> | null;
   /** Explicit per-card overrides; each present key overrides the theme. */
   override?: Partial<PackTokens> | null;
-  /** Junior force — the brown panel wins over every source (KTD6). */
+  /**
+   * Whether the card is junior content. Accepted for call-site symmetry but no
+   * longer changes the palette: junior cards wear the club's own look (R18).
+   */
   junior?: boolean;
   /**
    * Colour mode for the pack being rendered. `"club"` (the product default)
@@ -75,14 +78,14 @@ function assignDefined(target: PackTokens, src?: Partial<PackTokens> | null): vo
 
 /**
  * Resolve the final pack tokens by priority (highest wins):
- *   1. junior force (brown panel, regardless of anything)
- *   2. explicit per-card override tokens
- *   3. selected theme's tokens (incl. `displayFont` → `--disp`)
- *   4. tenant brand default
+ *   1. explicit per-card override tokens
+ *   2. selected theme's tokens (incl. `displayFont` → `--disp`)
+ *   3. tenant brand default
  *
  * In `"club"` mode the theme drops to `displayFont` / `textLight` only, so the
  * brand's accent, panel and stage (already on `brand`) win over the theme's
- * colours. Override and junior keep their places at the top.
+ * colours. Override keeps its place at the top. `junior` is accepted but never
+ * changes the result: the forced junior brown is retired (R18).
  */
 export function resolvePackTokens(sources: PackTokenSources): PackTokens {
   const resolved: PackTokens = { ...sources.brand };
@@ -97,7 +100,7 @@ export function resolvePackTokens(sources: PackTokenSources): PackTokens {
     assignDefined(resolved, sources.theme);
   }
   assignDefined(resolved, sources.override);
-  if (sources.junior) resolved.panel = JUNIOR_PANEL;
+  // Junior cards use the club's own panel (R18): the forced brown is retired.
   return resolved;
 }
 
@@ -107,7 +110,7 @@ export function resolvePackTokens(sources: PackTokenSources): PackTokens {
 
 /**
  * The pack's built-in default palette — the "Broadcast Dark" look: a gold accent
- * on the juniors-brown panel over a near-black ink stage. It is the last-resort
+ * on a dark brown panel over a near-black ink stage. It is the last-resort
  * fallback for any pack token a tenant's brand leaves unset, and the baseline
  * {@link brandDefaultTokens} overlays brand colours onto.
  *
@@ -156,7 +159,7 @@ export function normaliseBrandHex(colour?: string | null): string | null {
  * Bridge a tenant's brand colours onto the pack's DEFAULT token baseline. This
  * is the LOWEST-priority token source: {@link resolvePackTokens} still layers
  * theme (or, in "club" mode, only the theme's font and text colour), then
- * per-card override, then the junior force on top.
+ * per-card override on top.
  *
  * `"pack"` mode — "Pack's own look", byte-identical to the output before the
  * club colour mode existed:
@@ -358,7 +361,10 @@ export function rootStyle(
   mode: PackColourMode = "pack",
 ): string {
   const native = NATIVE[size] ?? NATIVE.story;
-  const panel = junior ? JUNIOR_PANEL : tokens.panel;
+  // `junior` is accepted for call-site symmetry; the card wears the club's
+  // panel either way (R18).
+  void junior;
+  const panel = tokens.panel;
   const panel2 = darkenHex(panel, 0.42);
   const disp = DISPLAY_FONT_FAMILY[tokens.displayFont ?? "anton"] ?? DISPLAY_FONT_FAMILY.anton;
   const ink = stageInk(tokens, inkTint, mode);

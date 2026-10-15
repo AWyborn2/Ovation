@@ -26,8 +26,7 @@ export function isUnbranded(brand: TenantBrand | PlatformBrand | undefined): boo
   return (
     (brand.logoUrl ?? null) === (DEFAULT_BRAND.logoUrl ?? null) &&
     (brand.backgroundColour ?? null) === (DEFAULT_BRAND.backgroundColour ?? null) &&
-    (brand.primaryColour ?? null) === (DEFAULT_BRAND.primaryColour ?? null) &&
-    (brand.juniorsColour ?? null) === (DEFAULT_BRAND.juniorsColour ?? null)
+    (brand.primaryColour ?? null) === (DEFAULT_BRAND.primaryColour ?? null)
   );
 }
 
