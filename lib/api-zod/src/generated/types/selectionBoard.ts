@@ -14,6 +14,12 @@ import type { SquadSection } from './squadSection';
 
 export interface SelectionBoard {
   section: SquadSection;
+  /** The club uses availability requests. Off, the Hub stands alone: the
+  weekend's sides are drafted on demand from each grade's last team
+  list (everyone listed kept), member statuses and the round's steps
+  don't apply, and finalising messages no one.
+   */
+  availability: boolean;
   actor: SelectionActor;
   round: SelectionRound | null;
   selections: SelectionSide[];

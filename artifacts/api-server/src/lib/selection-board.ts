@@ -31,6 +31,7 @@ import {
 import {
   DEFAULT_SCHEDULE,
   datesForGrade,
+  ensureRound,
   findRound,
   loadAvailabilitySettings,
   roundCounts,
@@ -216,6 +217,8 @@ export type BoardSide = {
 
 export type Board = {
   section: SquadSection;
+  /** The club uses availability requests; off, statuses and the round steps don't apply. */
+  availability: boolean;
   actor: {
     kind: SelectionActor["kind"];
     name: string;
@@ -312,11 +315,20 @@ export async function buildBoard(
   section: SquadSection,
   now: Date = new Date(),
 ): Promise<Board> {
-  const { rule, weekendDate, slots: stepSlots, round } = await currentRound(tenantId, now);
+  const current = await currentRound(tenantId, now);
+  const { rule, weekendDate, slots: stepSlots } = current;
+  const availability = current.settings?.enabled === true;
   const window = roundWindow(weekendDate);
-  // Backfill already-sent rounds created before early drafting was supported.
-  // The builder is idempotent and never overwrites a saved or finalised side.
-  if (round && (round.sendStartedAt || round.sendCompletedAt)) {
+  let round = current.round;
+  if (!availability) {
+    // Without availability the Hub stands alone: the weekend's sides are drafted
+    // on demand from each grade's last team list, everyone listed kept in. Each
+    // load picks up fixtures added since; saved and finalised sides are kept.
+    round ??= await ensureRound(tenantId, weekendDate);
+    await buildRoundDrafts(tenantId, round.id, now, { requireYes: false });
+  } else if (round && (round.sendStartedAt || round.sendCompletedAt)) {
+    // Backfill already-sent rounds created before early drafting was supported.
+    // The builder is idempotent and never overwrites a saved or finalised side.
     await buildRoundDrafts(tenantId, round.id, now);
   }
 
@@ -505,7 +517,9 @@ export async function buildBoard(
         filled: inXi,
         open: XI_SIZE - inXi,
         twelfth: slots[TWELFTH_INDEX]?.member != null,
-        unconfirmed: picked.filter((m) => m.status === "maybe" || m.status === "none").length,
+        unconfirmed: availability
+          ? picked.filter((m) => m.status === "maybe" || m.status === "none").length
+          : 0,
         saidNo: picked.filter((m) => m.status === "no").length,
         noCaptain: sel.captainMemberId == null,
         noKeeper: sel.keeperMemberId == null,
@@ -538,6 +552,7 @@ export async function buildBoard(
   const sectionMembers = new Set(members.filter((m) => m.section === section).map((m) => m.id));
   return {
     section,
+    availability,
     actor: {
       kind: actor.kind,
       name: actor.name,
@@ -985,7 +1000,8 @@ export async function finaliseSelection(
   });
 
   const { selection, fixture } = plan;
-  const toMessage = [...plan.toSelect, ...plan.toDeselect];
+  // A club not using availability publishes the side without messaging anyone.
+  const toMessage = settings?.enabled ? [...plan.toSelect, ...plan.toDeselect] : [];
   const rows =
     toMessage.length > 0
       ? await db

@@ -79,6 +79,22 @@ describe("buildDraftSlots", () => {
     });
   });
 
+  it("without availability keeps everyone listed except a No, with their roles", () => {
+    const list = LAST.map((p) => (p.order === 1 ? { ...p, role: "C/WK" as const } : p));
+    const draft = buildDraftSlots({
+      lastList: list,
+      members: MEMBERS,
+      responses: answers({ 3: "no" }),
+      fixtureDate: DATE,
+      requireYes: false,
+    });
+    expect(draft.slots.filter((s) => s.memberId != null)).toHaveLength(10);
+    expect(draft.slots[2]).toEqual({ memberId: null, gap: { name: "Cal Dunn", reason: "no" } });
+    expect(draft.slots[9]).toEqual({ memberId: 10 });
+    expect(draft.captainMemberId).toBe(1);
+    expect(draft.keeperMemberId).toBe(1);
+  });
+
   it("carries the captain who stays and drops the keeper who said No (R37)", () => {
     const list = LAST.map((p) =>
       p.order === 1

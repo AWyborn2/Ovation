@@ -3,6 +3,7 @@ import type { SelectionMember } from "@workspace/api-client-react";
 import { MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { gradeCode } from "@/lib/grade-code";
+import { useAvailability } from "./availability-context";
 import { ROLE_LABEL, STATUS } from "./labels";
 
 /** The availability mark: a glyph on the status colour. */
@@ -14,6 +15,7 @@ export function StatusMark({
   className?: string;
 }) {
   const s = STATUS[status];
+  if (!useAvailability()) return null;
   return (
     <span
       aria-hidden
@@ -71,8 +73,10 @@ export function PlayerChip({
   onOpen: () => void;
   onPointerDown?: (e: PointerEvent<HTMLElement>) => void;
 }) {
+  const availability = useAvailability();
   const s = STATUS[member.status];
   const picked = inSide != null;
+  const statusText = availability ? `, ${s.label}` : "";
   const showFrom = member.lastGrade && (!picked || member.lastGrade !== inSide);
   const roleTitle = role ? ROLE_LABEL[role] : "";
   return (
@@ -80,7 +84,7 @@ export function PlayerChip({
       type="button"
       data-member-id={member.id}
       data-testid={`chip-${member.id}`}
-      aria-label={`${member.displayName}, ${s.label}${role ? `, ${roleTitle.toLowerCase()}` : ""}${
+      aria-label={`${member.displayName}${statusText}${role ? `, ${roleTitle.toLowerCase()}` : ""}${
         member.note ? `, note: ${member.note}` : ""
       }. Open to move.`}
       onClick={onOpen}
@@ -88,10 +92,14 @@ export function PlayerChip({
       className={cn(
         "flex min-h-9 min-w-0 flex-1 touch-manipulation select-none items-center gap-2 rounded-md border border-border bg-card py-1 pl-1 pr-2 text-left text-sm hover:border-muted-foreground/50",
         draggable && "cursor-grab",
-        picked &&
+        availability &&
+          picked &&
           (member.status === "maybe" || member.status === "none") &&
           "border-amber-500 bg-amber-500/10",
-        picked && member.status === "no" && "border-[var(--loss-fg)] bg-[var(--loss-bg)]",
+        availability &&
+          picked &&
+          member.status === "no" &&
+          "border-[var(--loss-fg)] bg-[var(--loss-bg)]",
         dragging && "opacity-35",
       )}
     >
@@ -124,7 +132,7 @@ export function PlayerChip({
             Jr
           </span>
         )}
-        {member.late && (
+        {availability && member.late && (
           <span
             title="Answered after cut-off"
             className="rounded bg-muted px-1.5 py-0.5 text-[10.5px] font-semibold leading-none text-muted-foreground"
