@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { PackColourModes } from './packColourModes';
+import type { PostingSchedule } from './postingSchedule';
+import type { PostingSwitchover } from './postingSwitchover';
 import type { RoundSchedules } from './roundSchedules';
 import type { SocialFamilyConfig } from './socialFamilyConfig';
 import type { SocialSettingsMatchSummaryGradeConfig } from './socialSettingsMatchSummaryGradeConfig';
@@ -56,4 +58,6 @@ export interface SocialSettings {
   familyConfig?: SocialFamilyConfig;
   packColourModes?: PackColourModes;
   roundSchedules?: RoundSchedules;
+  postingSchedule?: PostingSchedule;
+  postingSwitchover?: PostingSwitchover;
 }

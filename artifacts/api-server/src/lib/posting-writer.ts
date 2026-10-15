@@ -173,6 +173,32 @@ export async function placeDraft(
 }
 
 /**
+ * A post scheduled or moved by hand from the drawer (Meta publishing) sets the
+ * card's one time on a calendar club (KTD11): pinned at that time, and — once
+ * posts exist — already sent. A no-op for a club without the calendar.
+ */
+export async function pinFromPublication(
+  tenantId: number,
+  draftId: number,
+  at: Date,
+  now: Date = new Date(),
+): Promise<void> {
+  if (!(await calendarEnabled(tenantId))) return;
+  await withPlacementLock(tenantId, async (tx) => {
+    await tx
+      .update(socialDraftsTable)
+      .set({
+        plannedAt: at,
+        plannedBy: "admin",
+        dispatchedAt: now,
+        expiredAt: null,
+        overdueNotifiedAt: null,
+      })
+      .where(and(eq(socialDraftsTable.id, draftId), eq(socialDraftsTable.tenantId, tenantId)));
+  });
+}
+
+/**
  * Place every generated draft that has no time yet and was never pinned:
  * the recovery path for a crash between insert and placement, and for cards
  * that found no free slot last time. Oldest first. Returns how many were placed.

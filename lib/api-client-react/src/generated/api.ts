@@ -158,6 +158,7 @@ import type {
   GetRecordsParams,
   GetSelectionBoardParams,
   GetSeniorSeasonTopPerformersParams,
+  GetSocialCalendarParams,
   GetSocialClubSeasonTotalsParams,
   GetSocialLadderPrefillParams,
   GetSocialRoundResultsPrefillParams,
@@ -306,6 +307,7 @@ import type {
   PointsConfigUpdate,
   PointsLeaderboard,
   PostPack,
+  PostingSlotsRunResponse,
   Premiership,
   PremiershipInput,
   PremiershipUpdate,
@@ -342,6 +344,7 @@ import type {
   SeniorOverview,
   SetGradeDecisionBody,
   SetJuniorSeniorLinkBody,
+  SetPlannedTimeRequest,
   SetPlayerPrivacyBody,
   ShirtNumberConflict,
   ShirtNumberEntryInput,
@@ -358,6 +361,8 @@ import type {
   SignupBody,
   SignupResult,
   SlugAvailability,
+  SocialCalendar,
+  SocialCalendarCard,
   SocialDraft,
   SocialDraftRevision,
   SocialPublication,
@@ -402,6 +407,7 @@ import type {
   TradingCardSettingsUpdate,
   UndoSeasonInput,
   UndoSeasonResult,
+  UnscheduleDraftRequest,
   UpdateAdminTenantBrandBody,
   UpdateFixtureBody,
   UpdateJuniorBattingLineBody,
@@ -20289,6 +20295,77 @@ export const useRunPlayhqScheduledSweep = <TError = ErrorType<void>,
       return useMutation(getRunPlayhqScheduledSweepMutationOptions(options));
     }
 
+export const getRunPlayhqPostingSlotsUrl = () => {
+
+
+
+
+  return `/api/internal/playhq/posting-slots`
+}
+
+/**
+ * Machine-to-machine only (same `x-sync-secret` as the other /internal/playhq routes; 401 otherwise). For every active club with the posting calendar on: cards due now are published or nudged, unapproved ones roll, old ones expire. The runner calls it before its scrapes; the scheduled sweep runs the same step again. Idempotent.
+ * @summary Handle posting-calendar cards whose time has arrived (hourly runner)
+ */
+export const runPlayhqPostingSlots = async ( options?: RequestInit): Promise<PostingSlotsRunResponse> => {
+
+  return customFetch<PostingSlotsRunResponse>(getRunPlayhqPostingSlotsUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRunPlayhqPostingSlotsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runPlayhqPostingSlots>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runPlayhqPostingSlots>>, TError,void, TContext> => {
+
+const mutationKey = ['runPlayhqPostingSlots'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runPlayhqPostingSlots>>, void> = () => {
+
+
+          return  runPlayhqPostingSlots(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunPlayhqPostingSlotsMutationResult = NonNullable<Awaited<ReturnType<typeof runPlayhqPostingSlots>>>
+
+    export type RunPlayhqPostingSlotsMutationError = ErrorType<void>
+
+    /**
+ * @summary Handle posting-calendar cards whose time has arrived (hourly runner)
+ */
+export const useRunPlayhqPostingSlots = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runPlayhqPostingSlots>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runPlayhqPostingSlots>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRunPlayhqPostingSlotsMutationOptions(options));
+    }
+
 export const getGetPlatformPlayhqSyncUrl = () => {
 
 
@@ -22138,6 +22215,237 @@ export const useCreatePostPack = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreatePostPackMutationOptions(options));
+    }
+
+export const getGetSocialCalendarUrl = (params: GetSocialCalendarParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/social-calendar?${stringifiedParams}` : `/api/social-calendar`
+}
+
+/**
+ * Cards with a planned time in the range, cards posted in the range, the Unscheduled tray, placeholders for round cards the plan expects but has not drafted yet, and each day's posts against the club's daily cap. Days are club time (Perth). At most 14 days.
+ * @summary The posting calendar for a range of club-local days
+ */
+export const getSocialCalendar = async (params: GetSocialCalendarParams, options?: RequestInit): Promise<SocialCalendar> => {
+
+  return customFetch<SocialCalendar>(getGetSocialCalendarUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSocialCalendarQueryKey = (params?: GetSocialCalendarParams,) => {
+    return [
+    `/api/social-calendar`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSocialCalendarQueryOptions = <TData = Awaited<ReturnType<typeof getSocialCalendar>>, TError = ErrorType<void>>(params: GetSocialCalendarParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialCalendar>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSocialCalendarQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSocialCalendar>>> = ({ signal }) => getSocialCalendar(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSocialCalendar>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSocialCalendarQueryResult = NonNullable<Awaited<ReturnType<typeof getSocialCalendar>>>
+export type GetSocialCalendarQueryError = ErrorType<void>
+
+
+/**
+ * @summary The posting calendar for a range of club-local days
+ */
+
+export function useGetSocialCalendar<TData = Awaited<ReturnType<typeof getSocialCalendar>>, TError = ErrorType<void>>(
+ params: GetSocialCalendarParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSocialCalendar>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSocialCalendarQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSetSocialDraftPlannedTimeUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/planned-time`
+}
+
+/**
+ * Pins the card at `plannedAt` (snapped to 15 minutes): automatic placement never moves it again. Moving past the daily cap or inside the minimum gap is allowed; the day's warnings say so. 409 when the card moved since the client saw it (`expectedPlannedAt` differs), when it is already going out, or when the posting calendar is off.
+ * @summary Move a card to a new time on the posting calendar
+ */
+export const setSocialDraftPlannedTime = async (id: number,
+    setPlannedTimeRequest: SetPlannedTimeRequest, options?: RequestInit): Promise<SocialCalendarCard> => {
+
+  return customFetch<SocialCalendarCard>(getSetSocialDraftPlannedTimeUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setPlannedTimeRequest,)
+  }
+);}
+
+
+
+
+export const getSetSocialDraftPlannedTimeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setSocialDraftPlannedTime>>, TError,{id: number;data: BodyType<SetPlannedTimeRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setSocialDraftPlannedTime>>, TError,{id: number;data: BodyType<SetPlannedTimeRequest>}, TContext> => {
+
+const mutationKey = ['setSocialDraftPlannedTime'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setSocialDraftPlannedTime>>, {id: number;data: BodyType<SetPlannedTimeRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setSocialDraftPlannedTime(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetSocialDraftPlannedTimeMutationResult = NonNullable<Awaited<ReturnType<typeof setSocialDraftPlannedTime>>>
+    export type SetSocialDraftPlannedTimeMutationBody = BodyType<SetPlannedTimeRequest>
+    export type SetSocialDraftPlannedTimeMutationError = ErrorType<void>
+
+    /**
+ * @summary Move a card to a new time on the posting calendar
+ */
+export const useSetSocialDraftPlannedTime = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setSocialDraftPlannedTime>>, TError,{id: number;data: BodyType<SetPlannedTimeRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setSocialDraftPlannedTime>>,
+        TError,
+        {id: number;data: BodyType<SetPlannedTimeRequest>},
+        TContext
+      > => {
+      return useMutation(getSetSocialDraftPlannedTimeMutationOptions(options));
+    }
+
+export const getUnscheduleSocialDraftUrl = (id: number,) => {
+
+
+
+
+  return `/api/social-drafts/${id}/unschedule`
+}
+
+/**
+ * The card stays in the tray until an admin drags it onto a time; automatic placement leaves it alone. Its scheduled posts are cancelled.
+ * @summary Take a card off the calendar into the Unscheduled tray
+ */
+export const unscheduleSocialDraft = async (id: number,
+    unscheduleDraftRequest: UnscheduleDraftRequest, options?: RequestInit): Promise<SocialCalendarCard> => {
+
+  return customFetch<SocialCalendarCard>(getUnscheduleSocialDraftUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      unscheduleDraftRequest,)
+  }
+);}
+
+
+
+
+export const getUnscheduleSocialDraftMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unscheduleSocialDraft>>, TError,{id: number;data: BodyType<UnscheduleDraftRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unscheduleSocialDraft>>, TError,{id: number;data: BodyType<UnscheduleDraftRequest>}, TContext> => {
+
+const mutationKey = ['unscheduleSocialDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unscheduleSocialDraft>>, {id: number;data: BodyType<UnscheduleDraftRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  unscheduleSocialDraft(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnscheduleSocialDraftMutationResult = NonNullable<Awaited<ReturnType<typeof unscheduleSocialDraft>>>
+    export type UnscheduleSocialDraftMutationBody = BodyType<UnscheduleDraftRequest>
+    export type UnscheduleSocialDraftMutationError = ErrorType<void>
+
+    /**
+ * @summary Take a card off the calendar into the Unscheduled tray
+ */
+export const useUnscheduleSocialDraft = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unscheduleSocialDraft>>, TError,{id: number;data: BodyType<UnscheduleDraftRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unscheduleSocialDraft>>,
+        TError,
+        {id: number;data: BodyType<UnscheduleDraftRequest>},
+        TContext
+      > => {
+      return useMutation(getUnscheduleSocialDraftMutationOptions(options));
     }
 
 export const getSendBackSocialDraftUrl = (id: number,) => {

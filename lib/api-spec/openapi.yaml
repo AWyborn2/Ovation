@@ -6101,6 +6101,26 @@ paths:
         "401":
           description: Missing or wrong sync secret
 
+  /internal/playhq/posting-slots:
+    post:
+      operationId: runPlayhqPostingSlots
+      tags: [fixtures]
+      summary: Handle posting-calendar cards whose time has arrived (hourly runner)
+      description: >-
+        Machine-to-machine only (same `x-sync-secret` as the other /internal/playhq routes;
+        401 otherwise). For every active club with the posting calendar on: cards due now
+        are published or nudged, unapproved ones roll, old ones expire. The runner calls it
+        before its scrapes; the scheduled sweep runs the same step again. Idempotent.
+      responses:
+        "200":
+          description: Results per club
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostingSlotsRunResponse"
+        "401":
+          description: Missing or wrong sync secret
+
   /platform/admin/playhq-sync:
     get:
       operationId: getPlatformPlayhqSync
@@ -6728,6 +6748,104 @@ paths:
           description: Not found
         "500":
           description: The render failed
+
+  /social-calendar:
+    get:
+      operationId: getSocialCalendar
+      tags: [socialCards]
+      summary: The posting calendar for a range of club-local days
+      description: >-
+        Cards with a planned time in the range, cards posted in the range, the
+        Unscheduled tray, placeholders for round cards the plan expects but has
+        not drafted yet, and each day's posts against the club's daily cap. Days
+        are club time (Perth). At most 14 days.
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+          description: First club-local day, YYYY-MM-DD.
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+          description: Last club-local day, YYYY-MM-DD (inclusive).
+      responses:
+        "200":
+          description: The calendar
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialCalendar"
+        "400":
+          description: Bad range
+
+  /social-drafts/{id}/planned-time:
+    put:
+      operationId: setSocialDraftPlannedTime
+      tags: [socialCards]
+      summary: Move a card to a new time on the posting calendar
+      description: >-
+        Pins the card at `plannedAt` (snapped to 15 minutes): automatic placement
+        never moves it again. Moving past the daily cap or inside the minimum gap
+        is allowed; the day's warnings say so. 409 when the card moved since the
+        client saw it (`expectedPlannedAt` differs), when it is already going out,
+        or when the posting calendar is off.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetPlannedTimeRequest"
+      responses:
+        "200":
+          description: The card at its new time
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialCalendarCard"
+        "400":
+          description: Bad time, or a time that has passed
+        "404":
+          description: Not found
+        "409":
+          description: Moved by someone else, already going out, or the calendar is off
+
+  /social-drafts/{id}/unschedule:
+    post:
+      operationId: unscheduleSocialDraft
+      tags: [socialCards]
+      summary: Take a card off the calendar into the Unscheduled tray
+      description: >-
+        The card stays in the tray until an admin drags it onto a time; automatic
+        placement leaves it alone. Its scheduled posts are cancelled.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnscheduleDraftRequest"
+      responses:
+        "200":
+          description: The card, now unscheduled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialCalendarCard"
+        "404":
+          description: Not found
+        "409":
+          description: Moved by someone else, or already going out
 
   /social-drafts/{id}/send-back:
     post:
@@ -16716,6 +16834,10 @@ components:
           $ref: "#/components/schemas/PackColourModes"
         roundSchedules:
           $ref: "#/components/schemas/RoundSchedules"
+        postingSchedule:
+          $ref: "#/components/schemas/PostingSchedule"
+        postingSwitchover:
+          $ref: "#/components/schemas/PostingSwitchover"
 
     Notification:
       type: object
@@ -17762,6 +17884,8 @@ components:
           description: >-
             Merged per card: only the cards sent change, the others keep their
             schedule.
+        postingSchedule:
+          $ref: "#/components/schemas/PostingScheduleUpdate"
 
     RoundSchedule:
       type: object
@@ -19955,6 +20079,31 @@ components:
           type: ["string", "null"]
           format: date-time
           description: "Set when a posted draft's source data changed after it was shared"
+        plannedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When the card goes out on the posting calendar; null = unscheduled.
+        plannedBy:
+          type: ["string", "null"]
+          enum: [auto, admin, null]
+          description: >-
+            "auto" — placed automatically and may roll; "admin" — pinned by an admin (a
+            drag, or taken off the calendar when plannedAt is null).
+        rollCount:
+          type: integer
+          description: How many times the card rolled to a later slot unapproved.
+        dispatchedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When it was published or the club was told to share it, at its time.
+        overdueNotifiedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: A pinned card's one overdue reminder.
+        expiredAt:
+          type: ["string", "null"]
+          format: date-time
+          description: Past the club's age limit; off the calendar until moved to a time.
         publications:
           type: array
           description: Its Facebook / Instagram posts, newest attempt per platform and post type.
@@ -19963,6 +20112,188 @@ components:
         needsAttention:
           type: boolean
           description: A post failed for good and nothing else is pending for it.
+
+    SocialCalendarCard:
+      type: object
+      required: [draft, slotKind, overdue]
+      properties:
+        draft:
+          $ref: "#/components/schemas/SocialDraft"
+        slotKind:
+          type: string
+          description: The posting-calendar kind the card posts in (milestones, debuts, results…).
+        overdue:
+          type: boolean
+          description: Its time passed while it still waits for approval.
+        warning:
+          type: ["string", "null"]
+          description: Why the card's day needs a look (over the cap, or inside the gap).
+
+    SocialCalendarDay:
+      type: object
+      required: [date, count, overCap, gapWarnings]
+      properties:
+        date: { type: string, description: "Club-local YYYY-MM-DD" }
+        count: { type: integer, description: Posts planned or posted that day }
+        overCap: { type: boolean }
+        gapWarnings:
+          type: array
+          description: Cards closer to another post than the club's minimum gap.
+          items: { type: integer }
+
+    SocialCalendarPlaceholder:
+      type: object
+      required: [slotKind, label, at]
+      properties:
+        slotKind: { type: string }
+        label: { type: string }
+        at: { type: string, format: date-time }
+
+    SocialCalendar:
+      type: object
+      required:
+        [enabled, from, to, timeZone, dailyCap, minGapMinutes, days, cards, unscheduled, placeholders, openCards]
+      properties:
+        enabled: { type: boolean, description: Whether the club's posting calendar is on }
+        from: { type: string }
+        to: { type: string }
+        timeZone: { type: string }
+        dailyCap: { type: integer }
+        minGapMinutes: { type: integer }
+        days:
+          type: array
+          items: { $ref: "#/components/schemas/SocialCalendarDay" }
+        cards:
+          type: array
+          items: { $ref: "#/components/schemas/SocialCalendarCard" }
+        unscheduled:
+          type: array
+          description: The Unscheduled tray — open cards with no time.
+          items: { $ref: "#/components/schemas/SocialCalendarCard" }
+        placeholders:
+          type: array
+          items: { $ref: "#/components/schemas/SocialCalendarPlaceholder" }
+        openCards:
+          type: integer
+          description: >-
+            Open automatic cards a switch-on would place (shown before turning the
+            calendar on).
+
+    SetPlannedTimeRequest:
+      type: object
+      required: [plannedAt, expectedPlannedAt]
+      properties:
+        plannedAt: { type: string, format: date-time }
+        expectedPlannedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: The card's planned time as the client saw it; null when unscheduled.
+
+    UnscheduleDraftRequest:
+      type: object
+      required: [expectedPlannedAt]
+      properties:
+        expectedPlannedAt:
+          type: ["string", "null"]
+          format: date-time
+
+    PostingSlot:
+      type: object
+      required: [day, time]
+      properties:
+        day: { type: integer, minimum: 0, maximum: 6, description: "0 = Sunday, club time" }
+        time: { type: string, pattern: "^([01]\\d|2[0-3]):[0-5]\\d$", description: "HH:mm, 15-minute steps" }
+
+    PostingKind:
+      type: object
+      required: [slots, collision]
+      properties:
+        slots:
+          type: array
+          maxItems: 14
+          items: { $ref: "#/components/schemas/PostingSlot" }
+        collision:
+          type: string
+          enum: [space, roll]
+          description: >-
+            Several cards in one slot: "space" them out by the club's minimum gap, or
+            "roll" extras to later slots (one per slot).
+
+    PostingKinds:
+      type: object
+      required: [results, roundResults, teamLists, gameDay, milestones, debuts, achievements, roundUp, other]
+      properties:
+        results: { $ref: "#/components/schemas/PostingKind" }
+        roundResults: { $ref: "#/components/schemas/PostingKind" }
+        teamLists: { $ref: "#/components/schemas/PostingKind" }
+        gameDay: { $ref: "#/components/schemas/PostingKind" }
+        milestones: { $ref: "#/components/schemas/PostingKind" }
+        debuts: { $ref: "#/components/schemas/PostingKind" }
+        achievements: { $ref: "#/components/schemas/PostingKind" }
+        roundUp: { $ref: "#/components/schemas/PostingKind" }
+        other: { $ref: "#/components/schemas/PostingKind" }
+
+    PostingKindsUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        results: { $ref: "#/components/schemas/PostingKind" }
+        roundResults: { $ref: "#/components/schemas/PostingKind" }
+        teamLists: { $ref: "#/components/schemas/PostingKind" }
+        gameDay: { $ref: "#/components/schemas/PostingKind" }
+        milestones: { $ref: "#/components/schemas/PostingKind" }
+        debuts: { $ref: "#/components/schemas/PostingKind" }
+        achievements: { $ref: "#/components/schemas/PostingKind" }
+        roundUp: { $ref: "#/components/schemas/PostingKind" }
+        other: { $ref: "#/components/schemas/PostingKind" }
+
+    PostingSchedule:
+      type: object
+      description: >-
+        The posting calendar: weekly slots per card kind, a daily cap, a minimum gap and an
+        age limit. Always complete in a response. Off unless `enabled`.
+      required: [enabled, dailyCap, minGapMinutes, ageLimitDays, kinds]
+      properties:
+        enabled: { type: boolean }
+        dailyCap: { type: integer, minimum: 1, maximum: 20 }
+        minGapMinutes: { type: integer, minimum: 0, maximum: 240 }
+        ageLimitDays: { type: integer, minimum: 1, maximum: 30 }
+        kinds: { $ref: "#/components/schemas/PostingKinds" }
+
+    PostingScheduleUpdate:
+      type: object
+      additionalProperties: false
+      description: >-
+        Merged into the stored schedule; kinds merge per kind. Turning `enabled` on places
+        the club's open cards; turning it off hands them back to auto-post.
+      properties:
+        enabled: { type: boolean }
+        dailyCap: { type: integer, minimum: 1, maximum: 20 }
+        minGapMinutes: { type: integer, minimum: 0, maximum: 240 }
+        ageLimitDays: { type: integer, minimum: 1, maximum: 30 }
+        kinds: { $ref: "#/components/schemas/PostingKindsUpdate" }
+
+    PostingSwitchover:
+      type: object
+      required: [placed, pinned, unscheduled, restored]
+      properties:
+        placed: { type: integer, description: Open cards given a time when the calendar was turned on }
+        pinned: { type: integer, description: Cards already scheduled to Meta, kept at that time }
+        unscheduled: { type: integer, description: Cards with no free slot, now in the tray }
+        restored: { type: integer, description: Cards handed back to auto-post when it was turned off }
+
+    PostingSlotsRunResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            required: [tenantId, ok]
+            properties:
+              tenantId: { type: integer }
+              ok: { type: boolean }
 
     PublishSweepSummary:
       type: object
