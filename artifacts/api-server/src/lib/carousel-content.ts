@@ -18,7 +18,8 @@ import { loadMatchDetail, loadCentralMatchDetail } from "./match-detail";
 import { loadJuniorMatchDetail } from "./match-summary-drafter";
 import { parseMatchDate } from "./match-date";
 import { clubTimeToUtc } from "./round-schedules";
-import { getPrivateIds, MASK_NAME } from "./junior-helpers";
+import { getPrivateIds } from "./junior-helpers";
+import { JUNIOR_WITHHELD_NAME } from "./junior-names";
 import { getTenantBrand } from "./tenant-brand";
 import { beforeBoundary, loadClubOverlayData } from "./club-overlay";
 import {
@@ -46,6 +47,12 @@ export function carouselMatchDay(value: string | null): string | null {
     return ["year", "month", "day"].map((k) => p.find((x) => x.type === k)!.value).join("-");
   }
   return parseMatchDate(value);
+}
+
+/** Grade labels as the same team: "A Grade" / "a-grade" / "A GRADE". */
+function sameGrade(a: string, b: string): boolean {
+  const key = (g: string) => g.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return key(a) === key(b);
 }
 
 /** Reuse published-list and scorecard builders; never read Selection Hub drafts. */
@@ -99,7 +106,7 @@ export async function carouselContent(
         junior && (!p.participantId || privateIds.has(p.participantId))
           ? {
               ...p,
-              displayName: MASK_NAME,
+              displayName: JUNIOR_WITHHELD_NAME,
               playerId: undefined,
               participantId: undefined,
               debut: false,
@@ -131,7 +138,6 @@ export async function carouselContent(
     .select()
     .from(juniorMatchesTable)
     .where(eq(juniorMatchesTable.tenantId, tenantId));
-  const privateIds = await getPrivateIds(tenantId);
   const brand = await getTenantBrand(tenantId);
   const available: FixtureRow[] = [];
   let undated = 0;
@@ -156,9 +162,15 @@ export async function carouselContent(
     }
     if (day < from || day > to) continue;
     const label = `${match.grade} v ${match.opponent || "opponent unknown"}`;
+    // An abandoned (washed-out) match is a final result: it gets a "no result"
+    // card even though no winner or result line was recorded.
+    const abandoned = "abandoned" in match && match.abandoned === true;
     if (
-      !match.result?.trim() ||
-      /\b(pending|scheduled|in progress|unknown|upcoming|not started)\b/i.test(match.result.trim())
+      !abandoned &&
+      (!match.result?.trim() ||
+        /\b(pending|scheduled|in progress|unknown|upcoming|not started)\b/i.test(
+          match.result.trim(),
+        ))
     ) {
       warnings.push(`${label}: result is not available yet.`);
       continue;
@@ -173,7 +185,7 @@ export async function carouselContent(
     ]);
     if (seen.has(identity)) continue;
     const detail = match.junior
-      ? await loadJuniorMatchDetail(match.id, tenantId, privateIds)
+      ? await loadJuniorMatchDetail(match.id, tenantId)
       : source.kind === "central"
         ? await loadCentralMatchDetail(source, match.id)
         : await loadMatchDetail(match.id, tenantId);
@@ -184,10 +196,8 @@ export async function carouselContent(
     const input = match.junior
       ? juniorMatchToSummaryInput(detail as JuniorMatchDetail, brand)
       : matchToSummaryInput(detail as MatchDetail);
-    if (
-      type === "matchSummary" &&
-      !input.innings.some((i) => i.topBatters.length || i.topBowlers.length)
-    ) {
+    const performances = input.innings.some((i) => i.topBatters.length || i.topBowlers.length);
+    if (type === "matchSummary" && !abandoned && !performances) {
       warnings.push(
         `${label}: no detailed innings or player performances recorded. Try Results instead.`,
       );
@@ -215,7 +225,8 @@ export async function carouselContent(
       ...input,
       grade: match.grade,
       junior: match.junior,
-      carouselDetail: type === "matchSummary",
+      // An abandoned game with nothing to detail posts as the result card.
+      carouselDetail: type === "matchSummary" && performances,
       ...(type === "results"
         ? { innings: input.innings.map((i) => ({ ...i, topBatters: [], topBowlers: [] })) }
         : {}),
@@ -224,13 +235,15 @@ export async function carouselContent(
     seen.add(identity);
   }
   for (const fixture of fixtures) {
+    // A grade plays one match a day, so grade + club day finds the fixture's
+    // scorecard. The opponent is not compared: the fixture carries the club
+    // name ("Warnbro Swans Cricket Club") and the scorecard the team name
+    // ("WSCC Senior Men B Grade").
     const day = carouselMatchDay(fixture.startAt.toISOString());
     if (
       !available.some(
         (f) =>
-          f.grade === fixture.grade &&
-          carouselMatchDay(f.startAt.toISOString()) === day &&
-          f.opponentName.toLowerCase() === fixture.opponentName.toLowerCase(),
+          sameGrade(f.grade, fixture.grade) && carouselMatchDay(f.startAt.toISOString()) === day,
       )
     ) {
       warnings.push(

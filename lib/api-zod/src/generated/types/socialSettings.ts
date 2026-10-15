@@ -7,6 +7,8 @@
  */
 import type { PackColourModes } from './packColourModes';
 import type { PostingPlan } from './postingPlan';
+import type { PostingSchedule } from './postingSchedule';
+import type { PostingSwitchover } from './postingSwitchover';
 import type { RoundSchedules } from './roundSchedules';
 import type { SocialFamilyConfig } from './socialFamilyConfig';
 import type { SocialSettingsMatchSummaryGradeConfig } from './socialSettingsMatchSummaryGradeConfig';
@@ -62,4 +64,6 @@ export interface SocialSettings {
   postingPlanSaved?: boolean;
   /** Whether the club reads its results from the association database (results, ladder and leaderboard round carousels need it). */
   centralData?: boolean;
+  postingSchedule?: PostingSchedule;
+  postingSwitchover?: PostingSwitchover;
 }

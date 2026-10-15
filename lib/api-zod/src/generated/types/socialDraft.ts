@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SocialDraftLayoutWarnings } from './socialDraftLayoutWarnings';
+import type { SocialDraftPlannedBy } from './socialDraftPlannedBy';
 import type { SocialDraftStatus } from './socialDraftStatus';
 import type { SocialPublication } from './socialPublication';
 
@@ -81,6 +82,33 @@ export interface SocialDraft {
      * @nullable
      */
   staleSince?: Date | null;
+  /**
+     * When the card goes out on the posting calendar; null = unscheduled.
+     * @nullable
+     */
+  plannedAt?: Date | null;
+  /**
+     * "auto" — placed automatically and may roll; "admin" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).
+     * @nullable
+     */
+  plannedBy?: SocialDraftPlannedBy;
+  /** How many times the card rolled to a later slot unapproved. */
+  rollCount?: number;
+  /**
+     * When it was published or the club was told to share it, at its time.
+     * @nullable
+     */
+  dispatchedAt?: Date | null;
+  /**
+     * A pinned card's one overdue reminder.
+     * @nullable
+     */
+  overdueNotifiedAt?: Date | null;
+  /**
+     * Past the club's age limit; off the calendar until moved to a time.
+     * @nullable
+     */
+  expiredAt?: Date | null;
   /** Its Facebook / Instagram posts, newest attempt per platform and post type. */
   publications?: SocialPublication[];
   /** A post failed for good and nothing else is pending for it. */

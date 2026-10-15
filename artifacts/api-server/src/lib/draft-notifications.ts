@@ -43,6 +43,61 @@ export async function notifyDraftsReady(
 }
 
 /**
+ * Posting calendar (plan 2026-10-07-003, KTD12): at most one notice of each
+ * kind per club per run.
+ *
+ *  - `posts_due`: cards whose planned time arrived and that the club shares by
+ *    hand (Meta publishing off, or a junior card) — the ready-to-share nudge.
+ *  - `cards_rolled`: cards still waiting for approval at their time, rolled to
+ *    a later slot, or (pinned by an admin) left in place as overdue.
+ */
+export async function notifyPostsDue(
+  tenantId: number,
+  draftIds: number[],
+  logger: Logger,
+): Promise<NotificationRow | null> {
+  if (draftIds.length === 0) return null;
+  const n = draftIds.length;
+  return notifyClub(
+    tenantId,
+    {
+      kind: "posts_due",
+      title: n === 1 ? "1 card is due to share now" : `${n} cards are due to share now`,
+      body: "It's their posting time. Open the queue to share them, then mark them posted.",
+      link: `/admin/social/queue?ids=${draftIds.join(",")}`,
+      payload: { draftIds },
+    },
+    logger,
+  );
+}
+
+export async function notifyCardsNeedApproval(
+  tenantId: number,
+  rolled: number[],
+  overdue: number[],
+  logger: Logger,
+): Promise<NotificationRow | null> {
+  const draftIds = [...rolled, ...overdue];
+  if (draftIds.length === 0) return null;
+  const n = draftIds.length;
+  const parts = [
+    rolled.length ? `${rolled.length} moved to their next posting time` : "",
+    overdue.length ? `${overdue.length} kept the time you chose and are overdue` : "",
+  ].filter(Boolean);
+  return notifyClub(
+    tenantId,
+    {
+      kind: "cards_rolled",
+      title: n === 1 ? "1 card needs approving" : `${n} cards need approving`,
+      body: `Their posting time came before anyone approved them: ${parts.join("; ")}.`,
+      link: `/admin/social/queue?ids=${draftIds.join(",")}`,
+      payload: { rolled, overdue },
+    },
+    logger,
+  );
+}
+
+/**
  * One in-app notice, echoed by email to the club's notification address
  * (best-effort). Shared by the Meta publishing notices (plan 2026-10-06-001):
  * posts published, posts that failed for good, and a connection that needs
@@ -51,7 +106,7 @@ export async function notifyDraftsReady(
 export async function notifyClub(
   tenantId: number,
   notice: {
-    kind: "published" | "publish_failed" | "reconnect_needed";
+    kind: "published" | "publish_failed" | "reconnect_needed" | "posts_due" | "cards_rolled";
     title: string;
     body: string;
     link: string;

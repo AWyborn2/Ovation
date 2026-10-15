@@ -175,12 +175,24 @@ export interface ProjectionSummary {
   updated: number;
 }
 
+/** The shared clubs register id of each PlayHQ organisation (lowercased), for crests. */
+export async function loadClubIdByOrg(): Promise<Map<string, number>> {
+  const { db, clubsTable } = await import("../index");
+  const clubs = await db
+    .select({ id: clubsTable.id, orgId: clubsTable.playhqOrgId })
+    .from(clubsTable)
+    .where(isNotNull(clubsTable.playhqOrgId));
+  const clubIdByOrg = new Map<string, number>();
+  for (const c of clubs) if (c.orgId) clubIdByOrg.set(c.orgId.toLowerCase(), c.id);
+  return clubIdByOrg;
+}
+
 export async function projectFixtures(opts: ProjectionOpts = {}): Promise<ProjectionSummary[]> {
   const log = opts.log ?? ((line: string) => console.log(line));
   const windowDays = opts.windowDays ?? 14;
 
   // Both handles are opened lazily so importing this module never needs a DB.
-  const { db, tenantsTable, fixturesTable, clubsTable } = await import("../index");
+  const { db, tenantsTable, fixturesTable } = await import("../index");
   const { appGradeFromCentral } = await import("../central-queries");
 
   let owned: pg.Client | null = null;
@@ -262,12 +274,7 @@ export async function projectFixtures(opts: ProjectionOpts = {}): Promise<Projec
     return [];
   }
 
-  const clubs = await db
-    .select({ id: clubsTable.id, orgId: clubsTable.playhqOrgId })
-    .from(clubsTable)
-    .where(isNotNull(clubsTable.playhqOrgId));
-  const clubIdByOrg = new Map<string, number>();
-  for (const c of clubs) if (c.orgId) clubIdByOrg.set(c.orgId.toLowerCase(), c.id);
+  const clubIdByOrg = await loadClubIdByOrg();
 
   const summaries: ProjectionSummary[] = [];
   try {

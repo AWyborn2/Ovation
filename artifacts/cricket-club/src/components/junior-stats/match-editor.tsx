@@ -20,6 +20,9 @@ import { BowlingTable } from "./bowling";
 import { RosterEditor } from "./roster-editor";
 import { CorrectionsPanel } from "./corrections-panel";
 
+/** The admin scorecard editor reads full names (honoured for admins only). */
+const ADMIN_VIEW = { includePrivate: true } as const;
+
 /**
  * Full editor for one junior match: metadata, per-innings batting/bowling
  * tables, roster and the corrections journal. Every mutation invalidates the
@@ -29,13 +32,14 @@ export function JuniorMatchEditor({ matchId, onBack }: { matchId: number; onBack
   const qc = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 
+  // Admin view: full names and ids on every line, not the public naming.
   const {
     data: match,
     isLoading,
     isError,
     refetch,
-  } = useGetJuniorMatch(matchId, {
-    query: { queryKey: getGetJuniorMatchQueryKey(matchId) },
+  } = useGetJuniorMatch(matchId, ADMIN_VIEW, {
+    query: { queryKey: getGetJuniorMatchQueryKey(matchId, ADMIN_VIEW) },
   });
 
   const invalidate = () => {

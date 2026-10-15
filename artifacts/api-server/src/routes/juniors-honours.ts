@@ -6,7 +6,7 @@ import {
   juniorPremiershipPlayersTable,
   juniorOfficeBearersTable,
 } from "@workspace/db";
-import { getPrivateIds, MASK_NAME, officeBearersOrdered } from "../lib/junior-helpers";
+import { loadJuniorNaming, officeBearersOrdered } from "../lib/junior-helpers";
 import {
   CreateJuniorOfficeBearerBody,
   UpdateJuniorOfficeBearerBody,
@@ -32,7 +32,6 @@ const router: IRouter = Router();
 // ---------------------------------------------------------------------------
 router.get("/juniors/premierships", async (req, res): Promise<void> => {
   const tenantId = getTenantId(req);
-  const privateIds = await getPrivateIds(tenantId);
   const prems = await db
     .select()
     .from(juniorPremiershipsTable)
@@ -50,6 +49,13 @@ router.get("/juniors/premierships", async (req, res): Promise<void> => {
         )
         .orderBy(juniorPremiershipPlayersTable.id)
     : [];
+
+  // Premiership players are the club's own side: named in the club's style, or
+  // withheld (KTD12).
+  const naming = await loadJuniorNaming(
+    tenantId,
+    players.map((p) => p.participantId),
+  );
 
   const byPrem = new Map<number, typeof players>();
   for (const p of players) {
@@ -76,11 +82,11 @@ router.get("/juniors/premierships", async (req, res): Promise<void> => {
       mom: pr.mom,
       matchId: pr.matchId,
       players: (byPrem.get(pr.id) ?? []).map((pl) => {
-        const priv = !!pl.participantId && privateIds.has(pl.participantId);
+        const named = naming.line({ ...pl, isHallsHead: true });
         return {
           id: pl.id,
-          participantId: priv ? null : pl.participantId,
-          playerName: priv ? MASK_NAME : (pl.playerName ?? ""),
+          participantId: named.participantId,
+          playerName: named.playerName,
           isCaptain: pl.isCaptain,
         };
       }),
@@ -147,7 +153,6 @@ router.patch("/juniors/premierships/:id", requireAdmin, async (req, res): Promis
     }
   });
 
-  const privateIds = await getPrivateIds(getTenantId(req));
   const [updated] = await db
     .select()
     .from(juniorPremiershipsTable)
@@ -157,6 +162,11 @@ router.patch("/juniors/premierships/:id", requireAdmin, async (req, res): Promis
     .from(juniorPremiershipPlayersTable)
     .where(eq(juniorPremiershipPlayersTable.premiershipId, id))
     .orderBy(juniorPremiershipPlayersTable.id);
+  // Admin response: full names (KTD12).
+  const naming = await loadJuniorNaming(
+    getTenantId(req),
+    players.map((p) => p.participantId),
+  );
 
   res.json({
     id: updated.id,
@@ -175,11 +185,11 @@ router.patch("/juniors/premierships/:id", requireAdmin, async (req, res): Promis
     mom: updated.mom,
     matchId: updated.matchId,
     players: players.map((pl) => {
-      const priv = !!pl.participantId && privateIds.has(pl.participantId);
+      const named = naming.adminLine({ ...pl, isHallsHead: true });
       return {
         id: pl.id,
-        participantId: priv ? null : pl.participantId,
-        playerName: priv ? MASK_NAME : (pl.playerName ?? ""),
+        participantId: named.participantId,
+        playerName: named.playerName,
         isCaptain: pl.isCaptain,
       };
     }),

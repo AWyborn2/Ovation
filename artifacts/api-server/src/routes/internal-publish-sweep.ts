@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { Router, type IRouter, type Request } from "express";
 import { env } from "../config";
 import { runPublishSweep } from "../lib/publishing/publish-worker";
+import { runPostingSlotsForAll } from "../lib/posting-slots";
 
 /**
  * `POST /api/internal/publish-sweep` — runs the Meta publish worker (plan
@@ -24,6 +25,13 @@ router.post("/publish-sweep", async (req, res): Promise<void> => {
   if (!secretMatches(req)) {
     res.status(401).json({ error: "unauthorized" });
     return;
+  }
+  // Cards due on the posting calendar get their posts first, so this run
+  // already publishes them (plan 2026-10-07-003, KTD8).
+  try {
+    await runPostingSlotsForAll(new Date(), req.log);
+  } catch (err) {
+    req.log.error({ err }, "posting slots failed");
   }
   const summary = await runPublishSweep({}, req.log);
   res.json(summary);

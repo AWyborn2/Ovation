@@ -10,4 +10,6 @@ export interface UpdateJuniorParticipantBody {
   /** @minLength 1 */
   displayName?: string;
   isPrivate?: boolean;
+  /** Show a private player's name publicly anyway (true) or withhold it again (false). Can only be switched on for a private player. */
+  privacyOverride?: boolean;
 }

@@ -8,6 +8,9 @@ import {
 } from "@workspace/db";
 import type { Platform, PostType } from "./destination";
 
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type Executor = typeof db | Tx;
+
 /**
  * Publications: one row per draft, platform and post type (plan 2026-10-06-001
  * KTD4). Their lifecycle:
@@ -115,8 +118,10 @@ export async function cancelDraftPublications(
   draftId: number,
   reason: string,
   statuses: string[] = ["scheduled", "held"],
+  /** The executor: a transaction when the cancel must commit with another write. */
+  exec: Pick<typeof db, "update"> = db,
 ): Promise<number> {
-  const rows = await db
+  const rows = await exec
     .update(socialPublicationsTable)
     .set({ status: "cancelled", lastError: reason, updatedAt: new Date() })
     .where(
@@ -138,14 +143,17 @@ export class ScheduleConflictError extends Error {
  * Create one scheduled publication per platform and post type. A slot that
  * already has an open or published row is a conflict (no reposting).
  */
-export async function schedulePublications(input: {
-  tenantId: number;
-  draftId: number;
-  platforms: Platform[];
-  postTypes: PostType[];
-  at: Date;
-  origin: "manual" | "auto";
-}): Promise<SocialPublicationRow[]> {
+export async function schedulePublications(
+  input: {
+    tenantId: number;
+    draftId: number;
+    platforms: Platform[];
+    postTypes: PostType[];
+    at: Date;
+    origin: "manual" | "auto";
+  },
+  exec: Executor = db,
+): Promise<SocialPublicationRow[]> {
   const values = input.platforms.flatMap((platform) =>
     input.postTypes.map((postType) => ({
       tenantId: input.tenantId,
@@ -160,7 +168,7 @@ export async function schedulePublications(input: {
   );
   if (values.length === 0) return [];
   try {
-    return await db.insert(socialPublicationsTable).values(values).returning();
+    return await exec.insert(socialPublicationsTable).values(values).returning();
   } catch (err) {
     const code =
       (err as { code?: string; cause?: { code?: string } }).code ??

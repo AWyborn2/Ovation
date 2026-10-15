@@ -17,4 +17,6 @@ export interface Entitlements {
   socialPublishing: boolean;
   clubroomTv: boolean;
   curation: boolean;
+  /** Junior PlayHQ sync. On the club and pro plans; not enforced while billing is dormant, when the platform-admin junior sync switch is the effective control. */
+  juniors: boolean;
 }

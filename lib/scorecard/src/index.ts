@@ -30,7 +30,7 @@ export {
   hexToRgb,
   luminance,
 } from "./colors";
-export { formatDismissal } from "./dismissal";
+export { formatDismissal, dismissalWithoutNames } from "./dismissal";
 export { oversToBalls, ballsToOvers, sumOvers, economy } from "./overs";
 export { buildScorecard } from "./mapping";
 export { FILL_IN_THRESHOLD, isFillInPlayerId } from "./fill-in";

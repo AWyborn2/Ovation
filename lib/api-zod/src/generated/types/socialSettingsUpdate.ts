@@ -7,6 +7,7 @@
  */
 import type { PackColourModes } from './packColourModes';
 import type { PostingPlan } from './postingPlan';
+import type { PostingScheduleUpdate } from './postingScheduleUpdate';
 import type { RoundSchedulesUpdate } from './roundSchedulesUpdate';
 import type { SocialFamilyConfigUpdate } from './socialFamilyConfigUpdate';
 import type { SocialSettingsUpdateMatchSummaryGradeConfig } from './socialSettingsUpdateMatchSummaryGradeConfig';
@@ -57,4 +58,5 @@ export interface SocialSettingsUpdate {
   roundSchedules?: RoundSchedulesUpdate;
   /** The whole Posting Plan; saving it also updates the family switches and round-schedule modes. */
   postingPlan?: PostingPlan;
+  postingSchedule?: PostingScheduleUpdate;
 }

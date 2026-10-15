@@ -17,19 +17,25 @@ import type { DropTarget } from "./apply-move";
  *
  * A drop over a zone `check` refuses with a message still calls `onDrop`, so
  * the page can explain the refusal; a drop over nothing does nothing.
+ *
+ * Other pages (the posting calendar) pass `readTarget` to turn a zone and the
+ * pointer position into their own target type; the Selection Hub's zones are
+ * the default.
  */
 
 export type DragVerdict = { ok: true } | { ok: false; message: string };
 
-type Options = {
-  check: (memberId: number, target: DropTarget) => DragVerdict;
-  onDrop: (memberId: number, target: DropTarget) => void;
+type Options<T> = {
+  check: (memberId: number, target: T) => DragVerdict;
+  onDrop: (memberId: number, target: T) => void;
+  /** Turn the zone under the pointer into a target (default: the Selection Hub's zones). */
+  readTarget?: (zone: HTMLElement, point: { x: number; y: number }) => T | null;
   onCancel?: () => void;
   /** A scrolling list (the pool) that should auto-scroll while dragging over its edges. */
   scrollContainer?: RefObject<HTMLElement | null>;
 };
 
-type Drag = {
+type Drag<T> = {
   memberId: number;
   el: HTMLElement;
   pointerId: number;
@@ -39,7 +45,7 @@ type Drag = {
   y: number;
   live: boolean;
   ghost: HTMLElement | null;
-  target: DropTarget | null;
+  target: T | null;
   raf: number;
 };
 
@@ -65,10 +71,10 @@ function clearMarks() {
     .forEach((n) => n.removeAttribute("data-drop-state"));
 }
 
-export function usePointerDrag(options: Options) {
+export function usePointerDrag<T = DropTarget>(options: Options<T>) {
   const opts = useRef(options);
   opts.current = options;
-  const drag = useRef<Drag | null>(null);
+  const drag = useRef<Drag<T> | null>(null);
   const suppress = useRef(false);
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const detach = useRef<() => void>(() => {});
@@ -82,7 +88,9 @@ export function usePointerDrag(options: Options) {
     const el = document.elementFromPoint(d.x, d.y);
     const zone = el instanceof Element ? el.closest<HTMLElement>("[data-drop]") : null;
     if (!zone) return;
-    const target = targetOf(zone);
+    const read =
+      opts.current.readTarget ?? ((z: HTMLElement) => targetOf(z) as unknown as T | null);
+    const target = read(zone, { x: d.x, y: d.y });
     if (!target) return;
     const verdict = opts.current.check(d.memberId, target);
     if (verdict.ok) {

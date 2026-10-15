@@ -28,7 +28,13 @@ import { getTenantBrand } from "./tenant-brand";
 import { draftingGates, loadDraftingGates } from "./posting-plan";
 import { loadMatchDetail, loadCentralMatchDetail } from "./match-detail";
 import { overlayNativeOpponents } from "./club-brand";
-import { getPrivateIds, splitScores, MASK_NAME } from "./junior-helpers";
+import {
+  loadJuniorNaming,
+  loadJuniorTeamPublishing,
+  splitScores,
+  type JuniorNaming,
+} from "./junior-helpers";
+import { juniorResultAutoReady, juniorTeamPublishMode } from "./junior-publishing";
 import {
   draftKeys,
   findDraftByKey,
@@ -81,11 +87,16 @@ export function shouldDraftGrade(
 /**
  * Load a junior match in the JuniorMatchDetail shape needed by
  * `juniorMatchToSummaryInput`. Returns null when the match doesn't exist.
+ *
+ * Card names use the club's public naming (KTD12): withheld private players,
+ * the club's style for its own side, initials for the opposition. A batch caller
+ * may pass a club-wide `naming` loaded once; otherwise it is loaded for the
+ * match's participants.
  */
 export async function loadJuniorMatchDetail(
   matchId: number,
   tenantId: number,
-  privateIds: Set<string>,
+  preloadedNaming?: JuniorNaming,
 ) {
   const [matchRow] = await db
     .select({
@@ -119,8 +130,6 @@ export async function loadJuniorMatchDetail(
       : null;
   const [opponentClub] = await overlayNativeOpponents([opponentClubRaw]);
 
-  const isPriv = (pid: string | null) => !!pid && privateIds.has(pid);
-
   const [battingRows, bowlingRows, rosterRows] = await Promise.all([
     db
       .select()
@@ -138,32 +147,34 @@ export async function loadJuniorMatchDetail(
       .where(eq(juniorMatchRostersTable.matchId, matchId))
       .orderBy(juniorMatchRostersTable.id),
   ]);
+  const naming =
+    preloadedNaming ??
+    (await loadJuniorNaming(tenantId, [
+      ...battingRows.map((r) => r.participantId),
+      ...bowlingRows.map((r) => r.participantId),
+      ...rosterRows.map((r) => r.participantId),
+    ]));
 
   const battingLine = (b: typeof juniorMatchBattingTable.$inferSelect) => {
-    const priv = isPriv(b.participantId);
     return {
       id: b.id,
-      participantId: priv ? null : b.participantId,
-      playerName: priv ? MASK_NAME : (b.playerName ?? ""),
+      ...naming.line(b),
       isHallsHead: b.isHallsHead,
-      isPrivate: priv,
       batOrder: b.batOrder,
       runs: b.runs,
       balls: b.balls,
       fours: b.fours,
       sixes: b.sixes,
       strikeRate: b.strikeRate,
-      dismissal: b.dismissal,
+      // Mode only: the card JSON never carries the fielder or bowler PlayHQ names.
+      dismissal: naming.dismissal(b.dismissal),
     };
   };
   const bowlingLine = (b: typeof juniorMatchBowlingTable.$inferSelect) => {
-    const priv = isPriv(b.participantId);
     return {
       id: b.id,
-      participantId: priv ? null : b.participantId,
-      playerName: priv ? MASK_NAME : (b.playerName ?? ""),
+      ...naming.line(b),
       isHallsHead: b.isHallsHead,
-      isPrivate: priv,
       overs: b.overs,
       maidens: b.maidens,
       runs: b.runs,
@@ -190,17 +201,12 @@ export async function loadJuniorMatchDetail(
     };
   });
 
-  const rosters = rosterRows.map((r) => {
-    const priv = isPriv(r.participantId);
-    return {
-      id: r.id,
-      participantId: priv ? null : r.participantId,
-      playerName: priv ? MASK_NAME : (r.playerName ?? ""),
-      teamName: r.teamName,
-      isHallsHead: r.isHallsHead,
-      isPrivate: priv,
-    };
-  });
+  const rosters = rosterRows.map((r) => ({
+    id: r.id,
+    ...naming.line(r),
+    teamName: r.teamName,
+    isHallsHead: r.isHallsHead,
+  }));
 
   const { hhScore, opponentScore } = splitScores(match);
 
@@ -262,9 +268,11 @@ async function upsertDraft(
     central?: { seenAt: Date };
     grade?: string | null;
     featuredPlayerId?: number | null;
+    /** `false`: never auto-ready (a junior team not set to auto-post, KTD14). */
+    autoReady?: boolean;
   } = {},
 ): Promise<"drafted" | "skipped"> {
-  const { central, grade, featuredPlayerId } = opts;
+  const { central, grade, featuredPlayerId, autoReady } = opts;
   // Re-ingest refreshes the existing draft (keeping a revision), a posted draft
   // is only marked stale, and unchanged input is a no-op (KTD3).
   if (central) {
@@ -297,6 +305,7 @@ async function upsertDraft(
     sourceMatchIsJunior: junior,
     grade,
     featuredPlayerId,
+    ...(autoReady === false ? { autoReady: false } : {}),
     // Drafts from before source keys existed: find them by match and backfill.
     findLegacy: async () => {
       const [legacy] = await db
@@ -455,10 +464,18 @@ export async function generateCentralStumpsDrafts(
  *
  * Same flow as senior but uses the junior scorecard builder, defaults to OFF
  * per grade (juniors are opt-in), and links to the /juniors/matches/:id page.
+ *
+ * `synced` (the scheduled sweep's junior PlayHQ sync matches, plan U8): within an
+ * enabled results family an age group drafts unless the club turned it off.
+ *
+ * Every synced junior result card follows its team's publishing setting (KTD14): only a
+ * team explicitly set to auto-post gets an auto-ready time. Loader-era cards keep the
+ * previous behaviour.
  */
 export async function generateJuniorMatchSummaryDrafts(
   tenantId: number,
   matchIds: number[],
+  opts: { synced?: boolean } = {},
 ): Promise<DraftResult> {
   const result: DraftResult = { drafted: 0, skipped: 0, errors: [] };
   if (matchIds.length === 0) return result;
@@ -470,30 +487,40 @@ export async function generateJuniorMatchSummaryDrafts(
   }
 
   const brand = await getTenantBrand(tenantId);
-  const privateIds = await getPrivateIds(tenantId);
+  // Club-wide naming loaded once for the batch (KTD12), and the per-team publishing map.
+  const [naming, publishing] = await Promise.all([
+    loadJuniorNaming(tenantId),
+    loadJuniorTeamPublishing(tenantId),
+  ]);
 
   const BATCH = 10;
   for (let i = 0; i < matchIds.length; i += BATCH) {
     const batch = matchIds.slice(i, i + BATCH);
     const outcomes = await Promise.allSettled(
       batch.map(async (matchId) => {
-        const detail = await loadJuniorMatchDetail(matchId, tenantId, privateIds);
+        const detail = await loadJuniorMatchDetail(matchId, tenantId, naming);
         if (!detail) {
           result.skipped++;
           return;
         }
         const grade = detail.ageGroup ?? detail.grade;
-        if (!gates.resultsMatch(grade, true)) {
+        const allowed = opts.synced
+          ? gates.juniorSynced("results", grade)
+          : gates.resultsMatch(grade, true);
+        if (!allowed) {
           result.skipped++;
           return;
         }
         const cardInput = juniorMatchToSummaryInput(detail as JuniorMatchDetail, brand);
+        const mode = juniorTeamPublishMode(publishing, detail.ageGroup, detail.teamName);
         const outcome = await upsertDraft(
           tenantId,
           matchId,
           true,
           cardInput as Record<string, unknown>,
           `/juniors/matches/${matchId}`,
+          // A synced card follows its team's mode; a loader-era card keeps auto-ready.
+          { autoReady: juniorResultAutoReady(matchId, mode) },
         );
         if (outcome === "drafted") result.drafted++;
         else result.skipped++;

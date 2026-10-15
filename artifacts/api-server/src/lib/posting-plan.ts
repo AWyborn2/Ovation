@@ -86,6 +86,11 @@ export interface DraftingGates {
   clubLeaderboards(): boolean;
   ladders(): boolean;
   ladderGrade(grade: string): boolean;
+  /**
+   * A junior-sync card (synced result, junior team list) for this age group. Unlike
+   * senior grades, an age group drafts unless the club turned it off.
+   */
+  juniorSynced(row: "results" | "teamLists", ageGroup: string | null | undefined): boolean;
 }
 
 const ACHIEVEMENT_ROW: Record<AchievementKind, PostingRowId> = {
@@ -138,6 +143,10 @@ function legacyGates(settings: SocialSettingsRow | null): DraftingGates {
     clubLeaderboards: () => false,
     ladders: () => false,
     ladderGrade: () => false,
+    juniorSynced: (row, ag) => {
+      const setting = f[row === "results" ? "results" : "matchday"];
+      return setting.enabled && setting.grades[ag ?? ""] !== false;
+    },
   };
 }
 
@@ -163,6 +172,7 @@ function planGates(plan: PostingPlan): DraftingGates {
     clubLeaderboards: () => rowRound(r.clubLeaderboards),
     ladders: () => rowRound(r.ladders),
     ladderGrade: (g) => rowAllows(r.ladders, g, false),
+    juniorSynced: (row, ag) => r[row].enabled && r[row].grades[ag ?? ""] !== false,
   };
 }
 

@@ -8,7 +8,11 @@ import {
   type JuniorShirtNumberRow,
   type ShirtNumberSource,
 } from "@workspace/db";
-import { carriedNumberFor, normaliseParticipantId } from "@workspace/db/shirt-numbers";
+import {
+  carriedNumberFor,
+  getShirtNumberSettings,
+  normaliseParticipantId,
+} from "@workspace/db/shirt-numbers";
 import type { ShirtNumberSettings } from "@workspace/db/shirt-numbers";
 import {
   applyCarriedNumber,
@@ -41,6 +45,7 @@ import {
   type RosterPerson,
   type UploadRoster,
 } from "./shirt-number-upload";
+import type { TeamListShirtNumbers } from "./engines/team-list";
 
 /**
  * Season shirt numbers — the juniors register (docs/plans/2026-10-06-001-feat-
@@ -218,6 +223,39 @@ export function resolveJuniorCommitRows(
     planned.push({ row, participantId });
   }
   return { ok: true, planned, discarded };
+}
+
+/**
+ * A junior season's numbers in the shape a team-list card reads (junior PlayHQ sync
+ * plan U8, KTD13): by lowercased participant id only (`byPlayerId` stays empty —
+ * juniors have no senior player ids). A merged-away duplicate selected on a team list
+ * shows its keeper's number unless it carries its own. Only numbered entries count.
+ */
+export function buildJuniorTeamListShirtNumbers(
+  entries: readonly { participantId: string | null; number: string | null }[],
+  merges: readonly JuniorMergeLike[],
+): TeamListShirtNumbers {
+  const byParticipantId = new Map<string, string>();
+  for (const e of entries) {
+    const id = normaliseParticipantId(e.participantId);
+    if (id !== null && e.number) byParticipantId.set(id, e.number);
+  }
+  for (const m of merges) {
+    const dup = normaliseParticipantId(m.duplicateParticipantId);
+    if (dup === null || byParticipantId.has(dup)) continue;
+    // Follow the chain to the first numbered keeper.
+    let cur = normaliseParticipantId(m.keeperParticipantId);
+    for (let hop = 0; cur !== null && hop <= MAX_MERGE_HOPS; hop++) {
+      const n = byParticipantId.get(cur);
+      if (n) {
+        byParticipantId.set(dup, n);
+        break;
+      }
+      const next = merges.find((x) => normaliseParticipantId(x.duplicateParticipantId) === cur);
+      cur = next ? normaliseParticipantId(next.keeperParticipantId) : null;
+    }
+  }
+  return { byPlayerId: new Map(), byParticipantId };
 }
 
 export type JuniorProfileShirtNumbers = {
@@ -827,4 +865,40 @@ export async function loadJuniorProfileShirtNumbers(
       ),
     );
   return shapeJuniorShirtNumbers(rows, { currentSeason, participantId: own });
+}
+
+/**
+ * One junior season's register as a team-list card reads it (junior PlayHQ sync plan
+ * U8, KTD13): every numbered entry by participant, merged-away duplicates following
+ * their keeper. Null when the club has shirt numbers switched off, so the card carries
+ * no numbering at all (as on senior cards). Tenant-scoped; reads `junior_shirt_numbers`
+ * and the junior merge map only. Throws on a failed read; the caller decides.
+ */
+export async function loadJuniorSeasonShirtNumbers(
+  tenantId: number,
+  season: number,
+): Promise<TeamListShirtNumbers | null> {
+  if (!(await getShirtNumberSettings(db, tenantId)).enabled) return null;
+  const [entries, merges] = await Promise.all([
+    db
+      .select({
+        participantId: juniorShirtNumbersTable.participantId,
+        number: juniorShirtNumbersTable.number,
+      })
+      .from(juniorShirtNumbersTable)
+      .where(
+        and(
+          eq(juniorShirtNumbersTable.tenantId, tenantId),
+          eq(juniorShirtNumbersTable.season, season),
+        ),
+      ),
+    db
+      .select({
+        duplicateParticipantId: juniorParticipantMergesTable.duplicateParticipantId,
+        keeperParticipantId: juniorParticipantMergesTable.keeperParticipantId,
+      })
+      .from(juniorParticipantMergesTable)
+      .where(eq(juniorParticipantMergesTable.tenantId, tenantId)),
+  ]);
+  return buildJuniorTeamListShirtNumbers(entries, merges);
 }

@@ -171,3 +171,64 @@ describe("duePlans — organisations", () => {
     expect(names(perth("2026-10-05 07:00"), [], runs)).toEqual(["weekly"]);
   });
 });
+
+describe("duePlans — junior sync (junior sync plan U4, KTD2, R7)", () => {
+  const JUNIOR_ORG = "99999999-8888-7777-6666-555555555555";
+  const weeklyDone = [
+    ran("weekly", "2026-10-05 06:01"),
+    { orgId: OPP, planName: "weekly", loadedAt: perth("2026-10-05 06:01") },
+  ];
+  // A Sunday-morning junior game between the two clubs; no senior game that day.
+  const juniorSunday: CadenceMatch = {
+    homeOrgId: ORG,
+    awayOrgId: OPP,
+    startAt: perth("2026-10-11 08:30"),
+    status: "UPCOMING",
+    matchType: "T20",
+    isJunior: true,
+  };
+
+  it("schedules match-day plans for an enabled organisation's junior match day only", () => {
+    const now = perth("2026-10-11 07:05");
+    const runs = [...weeklyDone, ran("preweekend", "2026-10-09 18:04")];
+    const plans = duePlans(now, [ORG, OPP], [juniorSunday], runs, [ORG]);
+    // 07:05 is inside the 08:30 start's two-hour lead-in, so the hourly plan is due too.
+    expect(plans.map((p) => [p.orgId, p.planName])).toEqual([
+      [ORG, "matchmorn"],
+      [ORG, "matchday"],
+    ]);
+    // Not enabled: the junior game doesn't make a match day.
+    expect(duePlans(now, [ORG, OPP], [juniorSunday], runs)).toEqual([]);
+  });
+
+  it("counts junior games for the before-the-weekend plan of an enabled organisation", () => {
+    const now = perth("2026-10-08 18:10");
+    expect(duePlans(now, [ORG], [juniorSunday], weeklyDone, [ORG]).map((p) => p.planName)).toEqual([
+      "preweekend",
+    ]);
+    expect(duePlans(now, [ORG], [juniorSunday], weeklyDone)).toEqual([]);
+  });
+
+  it("asks the harness for junior grades on enabled organisations' plans only", () => {
+    const now = perth("2026-10-05 06:05");
+    const plans = duePlans(now, [ORG, OPP], [], [], [ORG.toUpperCase()]);
+    const byOrg = new Map(plans.map((p) => [p.orgId, p.plan]));
+    expect(byOrg.get(ORG)).toMatchObject({ includeJuniors: true });
+    expect(byOrg.get(OPP)).not.toHaveProperty("includeJuniors");
+  });
+
+  it("plans a separate junior organisation as its own organisation", () => {
+    const now = perth("2026-10-11 07:05");
+    const atJuniorOrg = { ...juniorSunday, homeOrgId: JUNIOR_ORG };
+    const runs = [
+      ...weeklyDone,
+      { orgId: JUNIOR_ORG, planName: "weekly", loadedAt: perth("2026-10-05 06:01") },
+      { orgId: JUNIOR_ORG, planName: "preweekend", loadedAt: perth("2026-10-09 18:04") },
+    ];
+    const plans = duePlans(now, [ORG, JUNIOR_ORG], [atJuniorOrg], runs, [JUNIOR_ORG]);
+    expect(plans.map((p) => [p.orgId, p.planName, p.plan.includeJuniors])).toEqual([
+      [JUNIOR_ORG, "matchmorn", true],
+      [JUNIOR_ORG, "matchday", true],
+    ]);
+  });
+});

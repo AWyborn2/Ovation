@@ -7104,6 +7104,67 @@ export const getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapDayMax = 
 export const getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapHourMin = 0;
 export const getSocialSettingsResponseSettingsRoundSchedulesWeekendWrapHourMax = 23;
 
+export const getSocialSettingsResponseSettingsPostingScheduleDailyCapMax = 20;
+
+export const getSocialSettingsResponseSettingsPostingScheduleMinGapMinutesMin = 0;
+export const getSocialSettingsResponseSettingsPostingScheduleMinGapMinutesMax = 240;
+
+export const getSocialSettingsResponseSettingsPostingScheduleAgeLimitDaysMax = 30;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsResultsSlotsItemDayMin = 0;
+export const getSocialSettingsResponseSettingsPostingScheduleKindsResultsSlotsItemDayMax = 6;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsResultsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const getSocialSettingsResponseSettingsPostingScheduleKindsResultsSlotsMax = 14;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsRoundResultsSlotsItemDayMin = 0;
+export const getSocialSettingsResponseSettingsPostingScheduleKindsRoundResultsSlotsItemDayMax = 6;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsRoundResultsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const getSocialSettingsResponseSettingsPostingScheduleKindsRoundResultsSlotsMax = 14;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsTeamListsSlotsItemDayMin = 0;
+export const getSocialSettingsResponseSettingsPostingScheduleKindsTeamListsSlotsItemDayMax = 6;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsTeamListsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const getSocialSettingsResponseSettingsPostingScheduleKindsTeamListsSlotsMax = 14;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsGameDaySlotsItemDayMin = 0;
+export const getSocialSettingsResponseSettingsPostingScheduleKindsGameDaySlotsItemDayMax = 6;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsGameDaySlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const getSocialSettingsResponseSettingsPostingScheduleKindsGameDaySlotsMax = 14;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsMilestonesSlotsItemDayMin = 0;
+export const getSocialSettingsResponseSettingsPostingScheduleKindsMilestonesSlotsItemDayMax = 6;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsMilestonesSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const getSocialSettingsResponseSettingsPostingScheduleKindsMilestonesSlotsMax = 14;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsDebutsSlotsItemDayMin = 0;
+export const getSocialSettingsResponseSettingsPostingScheduleKindsDebutsSlotsItemDayMax = 6;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsDebutsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const getSocialSettingsResponseSettingsPostingScheduleKindsDebutsSlotsMax = 14;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsAchievementsSlotsItemDayMin = 0;
+export const getSocialSettingsResponseSettingsPostingScheduleKindsAchievementsSlotsItemDayMax = 6;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsAchievementsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const getSocialSettingsResponseSettingsPostingScheduleKindsAchievementsSlotsMax = 14;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsRoundUpSlotsItemDayMin = 0;
+export const getSocialSettingsResponseSettingsPostingScheduleKindsRoundUpSlotsItemDayMax = 6;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsRoundUpSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const getSocialSettingsResponseSettingsPostingScheduleKindsRoundUpSlotsMax = 14;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsOtherSlotsItemDayMin = 0;
+export const getSocialSettingsResponseSettingsPostingScheduleKindsOtherSlotsItemDayMax = 6;
+
+export const getSocialSettingsResponseSettingsPostingScheduleKindsOtherSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const getSocialSettingsResponseSettingsPostingScheduleKindsOtherSlotsMax = 14;
+
 
 
 export const GetSocialSettingsResponse = zod.object({
@@ -7229,7 +7290,84 @@ export const GetSocialSettingsResponse = zod.object({
 })
 }).optional().describe('One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001).'),
   "postingPlanSaved": zod.boolean().optional().describe('Whether the club has saved a Posting Plan; false means postingPlan is derived from its other settings (first visit).'),
-  "centralData": zod.boolean().optional().describe('Whether the club reads its results from the association database (results, ladder and leaderboard round carousels need it).')
+  "centralData": zod.boolean().optional().describe('Whether the club reads its results from the association database (results, ladder and leaderboard round carousels need it).'),
+  "postingSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "dailyCap": zod.number().min(1).max(getSocialSettingsResponseSettingsPostingScheduleDailyCapMax),
+  "minGapMinutes": zod.number().min(getSocialSettingsResponseSettingsPostingScheduleMinGapMinutesMin).max(getSocialSettingsResponseSettingsPostingScheduleMinGapMinutesMax),
+  "ageLimitDays": zod.number().min(1).max(getSocialSettingsResponseSettingsPostingScheduleAgeLimitDaysMax),
+  "kinds": zod.object({
+  "results": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(getSocialSettingsResponseSettingsPostingScheduleKindsResultsSlotsItemDayMin).max(getSocialSettingsResponseSettingsPostingScheduleKindsResultsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(getSocialSettingsResponseSettingsPostingScheduleKindsResultsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(getSocialSettingsResponseSettingsPostingScheduleKindsResultsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "roundResults": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(getSocialSettingsResponseSettingsPostingScheduleKindsRoundResultsSlotsItemDayMin).max(getSocialSettingsResponseSettingsPostingScheduleKindsRoundResultsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(getSocialSettingsResponseSettingsPostingScheduleKindsRoundResultsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(getSocialSettingsResponseSettingsPostingScheduleKindsRoundResultsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "teamLists": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(getSocialSettingsResponseSettingsPostingScheduleKindsTeamListsSlotsItemDayMin).max(getSocialSettingsResponseSettingsPostingScheduleKindsTeamListsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(getSocialSettingsResponseSettingsPostingScheduleKindsTeamListsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(getSocialSettingsResponseSettingsPostingScheduleKindsTeamListsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "gameDay": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(getSocialSettingsResponseSettingsPostingScheduleKindsGameDaySlotsItemDayMin).max(getSocialSettingsResponseSettingsPostingScheduleKindsGameDaySlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(getSocialSettingsResponseSettingsPostingScheduleKindsGameDaySlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(getSocialSettingsResponseSettingsPostingScheduleKindsGameDaySlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "milestones": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(getSocialSettingsResponseSettingsPostingScheduleKindsMilestonesSlotsItemDayMin).max(getSocialSettingsResponseSettingsPostingScheduleKindsMilestonesSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(getSocialSettingsResponseSettingsPostingScheduleKindsMilestonesSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(getSocialSettingsResponseSettingsPostingScheduleKindsMilestonesSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "debuts": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(getSocialSettingsResponseSettingsPostingScheduleKindsDebutsSlotsItemDayMin).max(getSocialSettingsResponseSettingsPostingScheduleKindsDebutsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(getSocialSettingsResponseSettingsPostingScheduleKindsDebutsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(getSocialSettingsResponseSettingsPostingScheduleKindsDebutsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "achievements": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(getSocialSettingsResponseSettingsPostingScheduleKindsAchievementsSlotsItemDayMin).max(getSocialSettingsResponseSettingsPostingScheduleKindsAchievementsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(getSocialSettingsResponseSettingsPostingScheduleKindsAchievementsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(getSocialSettingsResponseSettingsPostingScheduleKindsAchievementsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "roundUp": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(getSocialSettingsResponseSettingsPostingScheduleKindsRoundUpSlotsItemDayMin).max(getSocialSettingsResponseSettingsPostingScheduleKindsRoundUpSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(getSocialSettingsResponseSettingsPostingScheduleKindsRoundUpSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(getSocialSettingsResponseSettingsPostingScheduleKindsRoundUpSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "other": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(getSocialSettingsResponseSettingsPostingScheduleKindsOtherSlotsItemDayMin).max(getSocialSettingsResponseSettingsPostingScheduleKindsOtherSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(getSocialSettingsResponseSettingsPostingScheduleKindsOtherSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(getSocialSettingsResponseSettingsPostingScheduleKindsOtherSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+})
+})
+}).optional().describe('The posting calendar: weekly slots per card kind, a daily cap, a minimum gap and an age limit. Always complete in a response. Off unless `enabled`.'),
+  "postingSwitchover": zod.object({
+  "placed": zod.number().describe('Open cards given a time when the calendar was turned on'),
+  "pinned": zod.number().describe('Cards already scheduled to Meta'),
+  "unscheduled": zod.number().describe('Cards with no free slot'),
+  "restored": zod.number().describe('Cards handed back to auto-post when it was turned off')
+}).optional()
 }),
   "captionTemplates": zod.array(zod.object({
   "engine": zod.string(),
@@ -7285,6 +7423,67 @@ export const updateSocialSettingsBodyRoundSchedulesOneWeekendWrapDayMax = 6;
 
 export const updateSocialSettingsBodyRoundSchedulesOneWeekendWrapHourMin = 0;
 export const updateSocialSettingsBodyRoundSchedulesOneWeekendWrapHourMax = 23;
+
+export const updateSocialSettingsBodyPostingScheduleDailyCapMax = 20;
+
+export const updateSocialSettingsBodyPostingScheduleMinGapMinutesMin = 0;
+export const updateSocialSettingsBodyPostingScheduleMinGapMinutesMax = 240;
+
+export const updateSocialSettingsBodyPostingScheduleAgeLimitDaysMax = 30;
+
+export const updateSocialSettingsBodyPostingScheduleKindsResultsSlotsItemDayMin = 0;
+export const updateSocialSettingsBodyPostingScheduleKindsResultsSlotsItemDayMax = 6;
+
+export const updateSocialSettingsBodyPostingScheduleKindsResultsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsBodyPostingScheduleKindsResultsSlotsMax = 14;
+
+export const updateSocialSettingsBodyPostingScheduleKindsRoundResultsSlotsItemDayMin = 0;
+export const updateSocialSettingsBodyPostingScheduleKindsRoundResultsSlotsItemDayMax = 6;
+
+export const updateSocialSettingsBodyPostingScheduleKindsRoundResultsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsBodyPostingScheduleKindsRoundResultsSlotsMax = 14;
+
+export const updateSocialSettingsBodyPostingScheduleKindsTeamListsSlotsItemDayMin = 0;
+export const updateSocialSettingsBodyPostingScheduleKindsTeamListsSlotsItemDayMax = 6;
+
+export const updateSocialSettingsBodyPostingScheduleKindsTeamListsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsBodyPostingScheduleKindsTeamListsSlotsMax = 14;
+
+export const updateSocialSettingsBodyPostingScheduleKindsGameDaySlotsItemDayMin = 0;
+export const updateSocialSettingsBodyPostingScheduleKindsGameDaySlotsItemDayMax = 6;
+
+export const updateSocialSettingsBodyPostingScheduleKindsGameDaySlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsBodyPostingScheduleKindsGameDaySlotsMax = 14;
+
+export const updateSocialSettingsBodyPostingScheduleKindsMilestonesSlotsItemDayMin = 0;
+export const updateSocialSettingsBodyPostingScheduleKindsMilestonesSlotsItemDayMax = 6;
+
+export const updateSocialSettingsBodyPostingScheduleKindsMilestonesSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsBodyPostingScheduleKindsMilestonesSlotsMax = 14;
+
+export const updateSocialSettingsBodyPostingScheduleKindsDebutsSlotsItemDayMin = 0;
+export const updateSocialSettingsBodyPostingScheduleKindsDebutsSlotsItemDayMax = 6;
+
+export const updateSocialSettingsBodyPostingScheduleKindsDebutsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsBodyPostingScheduleKindsDebutsSlotsMax = 14;
+
+export const updateSocialSettingsBodyPostingScheduleKindsAchievementsSlotsItemDayMin = 0;
+export const updateSocialSettingsBodyPostingScheduleKindsAchievementsSlotsItemDayMax = 6;
+
+export const updateSocialSettingsBodyPostingScheduleKindsAchievementsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsBodyPostingScheduleKindsAchievementsSlotsMax = 14;
+
+export const updateSocialSettingsBodyPostingScheduleKindsRoundUpSlotsItemDayMin = 0;
+export const updateSocialSettingsBodyPostingScheduleKindsRoundUpSlotsItemDayMax = 6;
+
+export const updateSocialSettingsBodyPostingScheduleKindsRoundUpSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsBodyPostingScheduleKindsRoundUpSlotsMax = 14;
+
+export const updateSocialSettingsBodyPostingScheduleKindsOtherSlotsItemDayMin = 0;
+export const updateSocialSettingsBodyPostingScheduleKindsOtherSlotsItemDayMax = 6;
+
+export const updateSocialSettingsBodyPostingScheduleKindsOtherSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsBodyPostingScheduleKindsOtherSlotsMax = 14;
 
 
 
@@ -7407,7 +7606,78 @@ export const UpdateSocialSettingsBody = zod.object({
   "others": zod.enum(['seniors', 'off']).describe('Unlisted grades: seniors draft (juniors do not), or nothing drafts.')
 })
 })
-}).describe('One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001).').optional().describe('The whole Posting Plan; saving it also updates the family switches and round-schedule modes.')
+}).describe('One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001).').optional().describe('The whole Posting Plan; saving it also updates the family switches and round-schedule modes.'),
+  "postingSchedule": zod.object({
+  "enabled": zod.boolean().optional(),
+  "dailyCap": zod.number().min(1).max(updateSocialSettingsBodyPostingScheduleDailyCapMax).optional(),
+  "minGapMinutes": zod.number().min(updateSocialSettingsBodyPostingScheduleMinGapMinutesMin).max(updateSocialSettingsBodyPostingScheduleMinGapMinutesMax).optional(),
+  "ageLimitDays": zod.number().min(1).max(updateSocialSettingsBodyPostingScheduleAgeLimitDaysMax).optional(),
+  "kinds": zod.object({
+  "results": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsBodyPostingScheduleKindsResultsSlotsItemDayMin).max(updateSocialSettingsBodyPostingScheduleKindsResultsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsBodyPostingScheduleKindsResultsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsBodyPostingScheduleKindsResultsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}).optional(),
+  "roundResults": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsBodyPostingScheduleKindsRoundResultsSlotsItemDayMin).max(updateSocialSettingsBodyPostingScheduleKindsRoundResultsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsBodyPostingScheduleKindsRoundResultsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsBodyPostingScheduleKindsRoundResultsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}).optional(),
+  "teamLists": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsBodyPostingScheduleKindsTeamListsSlotsItemDayMin).max(updateSocialSettingsBodyPostingScheduleKindsTeamListsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsBodyPostingScheduleKindsTeamListsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsBodyPostingScheduleKindsTeamListsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}).optional(),
+  "gameDay": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsBodyPostingScheduleKindsGameDaySlotsItemDayMin).max(updateSocialSettingsBodyPostingScheduleKindsGameDaySlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsBodyPostingScheduleKindsGameDaySlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsBodyPostingScheduleKindsGameDaySlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}).optional(),
+  "milestones": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsBodyPostingScheduleKindsMilestonesSlotsItemDayMin).max(updateSocialSettingsBodyPostingScheduleKindsMilestonesSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsBodyPostingScheduleKindsMilestonesSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsBodyPostingScheduleKindsMilestonesSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}).optional(),
+  "debuts": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsBodyPostingScheduleKindsDebutsSlotsItemDayMin).max(updateSocialSettingsBodyPostingScheduleKindsDebutsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsBodyPostingScheduleKindsDebutsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsBodyPostingScheduleKindsDebutsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}).optional(),
+  "achievements": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsBodyPostingScheduleKindsAchievementsSlotsItemDayMin).max(updateSocialSettingsBodyPostingScheduleKindsAchievementsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsBodyPostingScheduleKindsAchievementsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsBodyPostingScheduleKindsAchievementsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}).optional(),
+  "roundUp": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsBodyPostingScheduleKindsRoundUpSlotsItemDayMin).max(updateSocialSettingsBodyPostingScheduleKindsRoundUpSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsBodyPostingScheduleKindsRoundUpSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsBodyPostingScheduleKindsRoundUpSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}).optional(),
+  "other": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsBodyPostingScheduleKindsOtherSlotsItemDayMin).max(updateSocialSettingsBodyPostingScheduleKindsOtherSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsBodyPostingScheduleKindsOtherSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsBodyPostingScheduleKindsOtherSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}).optional()
+}).optional()
+}).optional().describe('Merged into the stored schedule; kinds merge per kind. Turning `enabled` on places the club\'s open cards; turning it off hands them back to auto-post.')
 })
 
 export const updateSocialSettingsResponseRoundSchedulesGameDayDayMin = 0;
@@ -7427,6 +7697,67 @@ export const updateSocialSettingsResponseRoundSchedulesWeekendWrapDayMax = 6;
 
 export const updateSocialSettingsResponseRoundSchedulesWeekendWrapHourMin = 0;
 export const updateSocialSettingsResponseRoundSchedulesWeekendWrapHourMax = 23;
+
+export const updateSocialSettingsResponsePostingScheduleDailyCapMax = 20;
+
+export const updateSocialSettingsResponsePostingScheduleMinGapMinutesMin = 0;
+export const updateSocialSettingsResponsePostingScheduleMinGapMinutesMax = 240;
+
+export const updateSocialSettingsResponsePostingScheduleAgeLimitDaysMax = 30;
+
+export const updateSocialSettingsResponsePostingScheduleKindsResultsSlotsItemDayMin = 0;
+export const updateSocialSettingsResponsePostingScheduleKindsResultsSlotsItemDayMax = 6;
+
+export const updateSocialSettingsResponsePostingScheduleKindsResultsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsResponsePostingScheduleKindsResultsSlotsMax = 14;
+
+export const updateSocialSettingsResponsePostingScheduleKindsRoundResultsSlotsItemDayMin = 0;
+export const updateSocialSettingsResponsePostingScheduleKindsRoundResultsSlotsItemDayMax = 6;
+
+export const updateSocialSettingsResponsePostingScheduleKindsRoundResultsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsResponsePostingScheduleKindsRoundResultsSlotsMax = 14;
+
+export const updateSocialSettingsResponsePostingScheduleKindsTeamListsSlotsItemDayMin = 0;
+export const updateSocialSettingsResponsePostingScheduleKindsTeamListsSlotsItemDayMax = 6;
+
+export const updateSocialSettingsResponsePostingScheduleKindsTeamListsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsResponsePostingScheduleKindsTeamListsSlotsMax = 14;
+
+export const updateSocialSettingsResponsePostingScheduleKindsGameDaySlotsItemDayMin = 0;
+export const updateSocialSettingsResponsePostingScheduleKindsGameDaySlotsItemDayMax = 6;
+
+export const updateSocialSettingsResponsePostingScheduleKindsGameDaySlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsResponsePostingScheduleKindsGameDaySlotsMax = 14;
+
+export const updateSocialSettingsResponsePostingScheduleKindsMilestonesSlotsItemDayMin = 0;
+export const updateSocialSettingsResponsePostingScheduleKindsMilestonesSlotsItemDayMax = 6;
+
+export const updateSocialSettingsResponsePostingScheduleKindsMilestonesSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsResponsePostingScheduleKindsMilestonesSlotsMax = 14;
+
+export const updateSocialSettingsResponsePostingScheduleKindsDebutsSlotsItemDayMin = 0;
+export const updateSocialSettingsResponsePostingScheduleKindsDebutsSlotsItemDayMax = 6;
+
+export const updateSocialSettingsResponsePostingScheduleKindsDebutsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsResponsePostingScheduleKindsDebutsSlotsMax = 14;
+
+export const updateSocialSettingsResponsePostingScheduleKindsAchievementsSlotsItemDayMin = 0;
+export const updateSocialSettingsResponsePostingScheduleKindsAchievementsSlotsItemDayMax = 6;
+
+export const updateSocialSettingsResponsePostingScheduleKindsAchievementsSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsResponsePostingScheduleKindsAchievementsSlotsMax = 14;
+
+export const updateSocialSettingsResponsePostingScheduleKindsRoundUpSlotsItemDayMin = 0;
+export const updateSocialSettingsResponsePostingScheduleKindsRoundUpSlotsItemDayMax = 6;
+
+export const updateSocialSettingsResponsePostingScheduleKindsRoundUpSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsResponsePostingScheduleKindsRoundUpSlotsMax = 14;
+
+export const updateSocialSettingsResponsePostingScheduleKindsOtherSlotsItemDayMin = 0;
+export const updateSocialSettingsResponsePostingScheduleKindsOtherSlotsItemDayMax = 6;
+
+export const updateSocialSettingsResponsePostingScheduleKindsOtherSlotsItemTimeRegExp = new RegExp('^([01]\\d|2[0-3]):[0-5]\\d$');
+export const updateSocialSettingsResponsePostingScheduleKindsOtherSlotsMax = 14;
 
 
 
@@ -7552,7 +7883,84 @@ export const UpdateSocialSettingsResponse = zod.object({
 })
 }).optional().describe('One row per card kind: drafts or not, which grades, individual or round carousel (plan 2026-10-07-001).'),
   "postingPlanSaved": zod.boolean().optional().describe('Whether the club has saved a Posting Plan; false means postingPlan is derived from its other settings (first visit).'),
-  "centralData": zod.boolean().optional().describe('Whether the club reads its results from the association database (results, ladder and leaderboard round carousels need it).')
+  "centralData": zod.boolean().optional().describe('Whether the club reads its results from the association database (results, ladder and leaderboard round carousels need it).'),
+  "postingSchedule": zod.object({
+  "enabled": zod.boolean(),
+  "dailyCap": zod.number().min(1).max(updateSocialSettingsResponsePostingScheduleDailyCapMax),
+  "minGapMinutes": zod.number().min(updateSocialSettingsResponsePostingScheduleMinGapMinutesMin).max(updateSocialSettingsResponsePostingScheduleMinGapMinutesMax),
+  "ageLimitDays": zod.number().min(1).max(updateSocialSettingsResponsePostingScheduleAgeLimitDaysMax),
+  "kinds": zod.object({
+  "results": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsResponsePostingScheduleKindsResultsSlotsItemDayMin).max(updateSocialSettingsResponsePostingScheduleKindsResultsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsResponsePostingScheduleKindsResultsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsResponsePostingScheduleKindsResultsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "roundResults": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsResponsePostingScheduleKindsRoundResultsSlotsItemDayMin).max(updateSocialSettingsResponsePostingScheduleKindsRoundResultsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsResponsePostingScheduleKindsRoundResultsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsResponsePostingScheduleKindsRoundResultsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "teamLists": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsResponsePostingScheduleKindsTeamListsSlotsItemDayMin).max(updateSocialSettingsResponsePostingScheduleKindsTeamListsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsResponsePostingScheduleKindsTeamListsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsResponsePostingScheduleKindsTeamListsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "gameDay": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsResponsePostingScheduleKindsGameDaySlotsItemDayMin).max(updateSocialSettingsResponsePostingScheduleKindsGameDaySlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsResponsePostingScheduleKindsGameDaySlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsResponsePostingScheduleKindsGameDaySlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "milestones": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsResponsePostingScheduleKindsMilestonesSlotsItemDayMin).max(updateSocialSettingsResponsePostingScheduleKindsMilestonesSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsResponsePostingScheduleKindsMilestonesSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsResponsePostingScheduleKindsMilestonesSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "debuts": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsResponsePostingScheduleKindsDebutsSlotsItemDayMin).max(updateSocialSettingsResponsePostingScheduleKindsDebutsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsResponsePostingScheduleKindsDebutsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsResponsePostingScheduleKindsDebutsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "achievements": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsResponsePostingScheduleKindsAchievementsSlotsItemDayMin).max(updateSocialSettingsResponsePostingScheduleKindsAchievementsSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsResponsePostingScheduleKindsAchievementsSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsResponsePostingScheduleKindsAchievementsSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "roundUp": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsResponsePostingScheduleKindsRoundUpSlotsItemDayMin).max(updateSocialSettingsResponsePostingScheduleKindsRoundUpSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsResponsePostingScheduleKindsRoundUpSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsResponsePostingScheduleKindsRoundUpSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+}),
+  "other": zod.object({
+  "slots": zod.array(zod.object({
+  "day": zod.number().min(updateSocialSettingsResponsePostingScheduleKindsOtherSlotsItemDayMin).max(updateSocialSettingsResponsePostingScheduleKindsOtherSlotsItemDayMax).describe('0 = Sunday, club time'),
+  "time": zod.string().regex(updateSocialSettingsResponsePostingScheduleKindsOtherSlotsItemTimeRegExp).describe('HH:mm, 15-minute steps')
+})).max(updateSocialSettingsResponsePostingScheduleKindsOtherSlotsMax),
+  "collision": zod.enum(['space', 'roll']).describe('Several cards in one slot: \"space\" them out by the club\'s minimum gap, or \"roll\" extras to later slots (one per slot).')
+})
+})
+}).optional().describe('The posting calendar: weekly slots per card kind, a daily cap, a minimum gap and an age limit. Always complete in a response. Off unless `enabled`.'),
+  "postingSwitchover": zod.object({
+  "placed": zod.number().describe('Open cards given a time when the calendar was turned on'),
+  "pinned": zod.number().describe('Cards already scheduled to Meta'),
+  "unscheduled": zod.number().describe('Cards with no free slot'),
+  "restored": zod.number().describe('Cards handed back to auto-post when it was turned off')
+}).optional()
 })
 
 
@@ -9101,6 +9509,12 @@ export const ListSocialDraftsResponseItem = zod.object({
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
   "draftId": zod.number(),
@@ -9479,6 +9893,18 @@ export const RunPlayhqScheduledSweepResponse = zod.object({
   "teamLists": zod.number(),
   "roundSets": zod.number().optional().describe('Round sets (game day, team lists, weekend wrap) drafted on the club\'s schedule.'),
   "promoted": zod.number().optional().describe('Drafts moved to ready because their auto-post deadline passed.')
+}))
+})
+
+
+/**
+ * Machine-to-machine only (same `x-sync-secret` as the other /internal/playhq routes; 401 otherwise). For every active club with the posting calendar on: cards due now are published or nudged, unapproved ones roll, old ones expire. The runner calls it before its scrapes; the scheduled sweep runs the same step again. Idempotent.
+ * @summary Handle posting-calendar cards whose time has arrived (hourly runner)
+ */
+export const RunPlayhqPostingSlotsResponse = zod.object({
+  "results": zod.array(zod.object({
+  "tenantId": zod.number(),
+  "ok": zod.boolean()
 }))
 })
 
@@ -9919,6 +10345,12 @@ export const ApproveSocialDraftResponse = zod.object({
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
   "draftId": zod.number(),
@@ -9993,6 +10425,12 @@ export const UpdateSocialDraftResponse = zod.object({
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
   "draftId": zod.number(),
@@ -10124,6 +10562,322 @@ export const CreatePostPackResponse = zod.object({
 
 
 /**
+ * Cards with a planned time in the range, cards posted in the range, the Unscheduled tray, placeholders for round cards the plan expects but has not drafted yet, and each day's posts against the club's daily cap. Days are club time (Perth). At most 14 days.
+ * @summary The posting calendar for a range of club-local days
+ */
+export const getSocialCalendarQueryFromRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const getSocialCalendarQueryToRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const GetSocialCalendarQueryParams = zod.object({
+  "from": zod.coerce.string().regex(getSocialCalendarQueryFromRegExp).describe('First club-local day, YYYY-MM-DD.'),
+  "to": zod.coerce.string().regex(getSocialCalendarQueryToRegExp).describe('Last club-local day, YYYY-MM-DD (inclusive).')
+})
+
+export const GetSocialCalendarResponse = zod.object({
+  "enabled": zod.boolean().describe('Whether the club\'s posting calendar is on'),
+  "from": zod.string(),
+  "to": zod.string(),
+  "timeZone": zod.string(),
+  "dailyCap": zod.number(),
+  "minGapMinutes": zod.number(),
+  "days": zod.array(zod.object({
+  "date": zod.string().describe('Club-local YYYY-MM-DD'),
+  "count": zod.number().describe('Posts planned or posted that day'),
+  "overCap": zod.boolean(),
+  "gapWarnings": zod.array(zod.number()).describe('Cards closer to another post than the club\'s minimum gap.')
+})),
+  "cards": zod.array(zod.object({
+  "draft": zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
+}),
+  "slotKind": zod.string().describe('The posting-calendar kind the card posts in (milestones, debuts, results…).'),
+  "overdue": zod.boolean().describe('Its time passed while it still waits for approval.'),
+  "warning": zod.string().nullish().describe('Why the card\'s day needs a look (over the cap, or inside the gap).')
+})),
+  "unscheduled": zod.array(zod.object({
+  "draft": zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
+}),
+  "slotKind": zod.string().describe('The posting-calendar kind the card posts in (milestones, debuts, results…).'),
+  "overdue": zod.boolean().describe('Its time passed while it still waits for approval.'),
+  "warning": zod.string().nullish().describe('Why the card\'s day needs a look (over the cap, or inside the gap).')
+})).describe('The Unscheduled tray — open cards with no time.'),
+  "placeholders": zod.array(zod.object({
+  "slotKind": zod.string(),
+  "label": zod.string(),
+  "at": zod.coerce.date()
+})),
+  "openCards": zod.number().describe('Open automatic cards a switch-on would place (shown before turning the calendar on).')
+})
+
+
+/**
+ * Pins the card at `plannedAt` (snapped to 15 minutes): automatic placement never moves it again. Moving past the daily cap or inside the minimum gap is allowed; the day's warnings say so. 409 when the card moved since the client saw it (`expectedPlannedAt` differs), when it is already going out, or when the posting calendar is off.
+ * @summary Move a card to a new time on the posting calendar
+ */
+export const SetSocialDraftPlannedTimeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SetSocialDraftPlannedTimeBody = zod.object({
+  "plannedAt": zod.coerce.date(),
+  "expectedPlannedAt": zod.coerce.date().nullable().describe('The card\'s planned time as the client saw it; null when unscheduled.')
+})
+
+export const SetSocialDraftPlannedTimeResponse = zod.object({
+  "draft": zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
+}),
+  "slotKind": zod.string().describe('The posting-calendar kind the card posts in (milestones, debuts, results…).'),
+  "overdue": zod.boolean().describe('Its time passed while it still waits for approval.'),
+  "warning": zod.string().nullish().describe('Why the card\'s day needs a look (over the cap, or inside the gap).')
+})
+
+
+/**
+ * The card stays in the tray until an admin drags it onto a time; automatic placement leaves it alone. Its scheduled posts are cancelled.
+ * @summary Take a card off the calendar into the Unscheduled tray
+ */
+export const UnscheduleSocialDraftParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UnscheduleSocialDraftBody = zod.object({
+  "expectedPlannedAt": zod.coerce.date().nullable()
+})
+
+export const UnscheduleSocialDraftResponse = zod.object({
+  "draft": zod.object({
+  "id": zod.number(),
+  "engine": zod.string(),
+  "status": zod.enum(['awaiting_review', 'ready', 'posted', 'dismissed']),
+  "cardInput": zod.unknown(),
+  "appPath": zod.string(),
+  "trackedSlug": zod.string().nullish(),
+  "milestoneEventId": zod.number().nullish(),
+  "sourceImportId": zod.number().nullish(),
+  "sourceKind": zod.string().nullish().describe('Engine-specific source discriminator (e.g. \'matchSummary\')'),
+  "sourceMatchId": zod.number().nullish().describe('Source match PK when sourceKind = \'matchSummary\''),
+  "sourceMatchIsJunior": zod.boolean().describe('Whether the source match is a junior match'),
+  "createdAt": zod.coerce.date(),
+  "reviewedAt": zod.coerce.date().nullish(),
+  "family": zod.string().nullish(),
+  "sourceKey": zod.string().nullish(),
+  "sourceImportedAt": zod.coerce.date().nullish(),
+  "autoReadyAt": zod.coerce.date().nullish(),
+  "packId": zod.string().nullish(),
+  "caption": zod.string().nullish(),
+  "photoUrl": zod.string().nullish(),
+  "photoSource": zod.string().nullish(),
+  "adjustments": zod.unknown().optional(),
+  "editedAt": zod.coerce.date().nullish(),
+  "templateVersion": zod.number().nullish().describe('The card kind template version this draft copied; null for a draft that uses a pack.'),
+  "designEditedAt": zod.coerce.date().nullish().describe('When an admin last edited this templated draft\'s design by hand.'),
+  "layoutWarnings": zod.record(zod.string(), zod.array(zod.object({
+  "reason": zod.enum(['overflow', 'font', 'slides']),
+  "size": zod.enum(['square', 'portrait', 'story', 'landscape']),
+  "layerId": zod.string().optional(),
+  "row": zod.number().optional(),
+  "field": zod.string().optional(),
+  "detail": zod.string().optional()
+}))).nullish().describe('Layout warnings from the last render, per card size (\"needs a look\"). A size with an empty list rendered cleanly; a missing size hasn\'t been rendered.'),
+  "layoutCheckPending": zod.boolean().optional().describe('True while a templated draft owes a layout check; automation leaves it alone until then.'),
+  "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
+  "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
+  "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
+  "publications": zod.array(zod.object({
+  "id": zod.number(),
+  "draftId": zod.number(),
+  "platform": zod.enum(['facebook', 'instagram']),
+  "postType": zod.enum(['feed', 'story']),
+  "status": zod.enum(['scheduled', 'held', 'publishing', 'published', 'failed', 'cancelled']),
+  "origin": zod.enum(['manual', 'auto']),
+  "scheduledFor": zod.coerce.date(),
+  "attempts": zod.number(),
+  "lastError": zod.string().nullish(),
+  "publishedAt": zod.coerce.date().nullish()
+})).optional().describe('Its Facebook \/ Instagram posts, newest attempt per platform and post type.'),
+  "needsAttention": zod.boolean().optional().describe('A post failed for good and nothing else is pending for it.')
+}),
+  "slotKind": zod.string().describe('The posting-calendar kind the card posts in (milestones, debuts, results…).'),
+  "overdue": zod.boolean().describe('Its time passed while it still waits for approval.'),
+  "warning": zod.string().nullish().describe('Why the card\'s day needs a look (over the cap, or inside the gap).')
+})
+
+
+/**
  * @summary Return a ready draft to review and stop its auto-promotion
  */
 export const SendBackSocialDraftParams = zod.object({
@@ -10168,6 +10922,12 @@ export const SendBackSocialDraftResponse = zod.object({
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
   "draftId": zod.number(),
@@ -10229,6 +10989,12 @@ export const ReopenSocialDraftResponse = zod.object({
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
   "draftId": zod.number(),
@@ -10312,6 +11078,12 @@ export const RevertSocialDraftResponse = zod.object({
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
   "draftId": zod.number(),
@@ -10373,6 +11145,12 @@ export const MarkSocialDraftPostedResponse = zod.object({
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
   "draftId": zod.number(),
@@ -10440,6 +11218,12 @@ export const GenerateRoundUpResponseItem = zod.object({
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
   "draftId": zod.number(),
@@ -10506,6 +11290,12 @@ export const GenerateRecapsResponseItem = zod.object({
   "createdByAdminId": zod.number().nullish().describe('The admin who made the draft by hand; null for drafts the sweep made.'),
   "createdBy": zod.string().nullish().describe('The name of the admin who made the draft by hand (in the queue list); null for drafts the sweep made and for drafts from before this was recorded.'),
   "staleSince": zod.coerce.date().nullish().describe('Set when a posted draft\'s source data changed after it was shared'),
+  "plannedAt": zod.coerce.date().nullish().describe('When the card goes out on the posting calendar; null = unscheduled.'),
+  "plannedBy": zod.union([zod.literal('auto'),zod.literal('admin'),zod.literal(null)]).nullish().describe('\"auto\" — placed automatically and may roll; \"admin\" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).'),
+  "rollCount": zod.number().optional().describe('How many times the card rolled to a later slot unapproved.'),
+  "dispatchedAt": zod.coerce.date().nullish().describe('When it was published or the club was told to share it, at its time.'),
+  "overdueNotifiedAt": zod.coerce.date().nullish().describe('A pinned card\'s one overdue reminder.'),
+  "expiredAt": zod.coerce.date().nullish().describe('Past the club\'s age limit; off the calendar until moved to a time.'),
   "publications": zod.array(zod.object({
   "id": zod.number(),
   "draftId": zod.number(),
@@ -11148,6 +11938,175 @@ export const GetJuniorsFiltersResponse = zod.object({
 
 
 /**
+ * The club's junior fixtures synced from PlayHQ that start from 12 hours ago onward (so match-day games stay listed), ordered by start time. Empty when the club's junior sync is switched off (R23).
+ * @summary Upcoming junior games for the club, soonest first
+ */
+export const ListJuniorFixturesQueryParams = zod.object({
+  "ageGroup": zod.coerce.string().optional().describe('Filter by age group (e.g. \"Year 6\")')
+})
+
+export const ListJuniorFixturesResponseItem = zod.object({
+  "id": zod.number(),
+  "seasonStartYear": zod.number(),
+  "ageGroup": zod.string().nullable(),
+  "grade": zod.string().nullable(),
+  "teamName": zod.string().nullable().describe('The club\'s own junior team'),
+  "opponentName": zod.string().nullable(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date().nullable(),
+  "isHome": zod.boolean().nullable(),
+  "status": zod.string().nullable().describe('PlayHQ match status as last synced (e.g. UPCOMING)'),
+  "hasTeamList": zod.boolean().describe('A published team list exists for this fixture')
+})
+export const ListJuniorFixturesResponse = zod.array(ListJuniorFixturesResponseItem)
+
+
+/**
+ * Team-list players are named by the club's junior naming rules; a private, non-overridden player is "Private Player" with no participant id or shirt number. 404 when the fixture is another club's, or the club's junior sync is switched off.
+ * @summary One junior fixture with its published team list
+ */
+export const GetJuniorFixtureParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetJuniorFixtureResponse = zod.object({
+  "fixture": zod.object({
+  "id": zod.number(),
+  "seasonStartYear": zod.number(),
+  "ageGroup": zod.string().nullable(),
+  "grade": zod.string().nullable(),
+  "teamName": zod.string().nullable().describe('The club\'s own junior team'),
+  "opponentName": zod.string().nullable(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date().nullable(),
+  "isHome": zod.boolean().nullable(),
+  "status": zod.string().nullable().describe('PlayHQ match status as last synced (e.g. UPCOMING)'),
+  "hasTeamList": zod.boolean().describe('A published team list exists for this fixture')
+}),
+  "teamList": zod.array(zod.object({
+  "order": zod.number(),
+  "name": zod.string().describe('Public name in the club\'s style, or \"Private Player\"'),
+  "participantId": zod.string().nullable().describe('Null when the player is withheld'),
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).describe('Captain \/ vice-captain \/ wicket-keeper marker').nullable(),
+  "shirtNumber": zod.string().nullable().describe('Junior shirt number for the fixture\'s season (null when withheld or none)')
+})).nullable().describe('The published team list in order, or null when none is published')
+})
+
+
+/**
+ * Full names, each player's junior shirt number for the fixture's season, and the club's junior players to pick from.
+ * @summary A junior fixture's team list for the admin editor (admin only)
+ */
+export const GetJuniorFixtureTeamListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetJuniorFixtureTeamListResponse = zod.object({
+  "fixture": zod.object({
+  "id": zod.number(),
+  "seasonStartYear": zod.number(),
+  "ageGroup": zod.string().nullable(),
+  "grade": zod.string().nullable(),
+  "teamName": zod.string().nullable().describe('The club\'s own junior team'),
+  "opponentName": zod.string().nullable(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date().nullable(),
+  "isHome": zod.boolean().nullable(),
+  "status": zod.string().nullable().describe('PlayHQ match status as last synced (e.g. UPCOMING)'),
+  "hasTeamList": zod.boolean().describe('A published team list exists for this fixture')
+}),
+  "season": zod.number().describe('Season start year whose shirt numbers are shown'),
+  "shirtNumbersEnabled": zod.boolean(),
+  "teamList": zod.object({
+  "players": zod.array(zod.object({
+  "order": zod.number(),
+  "participantId": zod.string(),
+  "name": zod.string().describe('Full name'),
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).describe('Captain \/ vice-captain \/ wicket-keeper marker').nullable(),
+  "shirtNumber": zod.string().nullable(),
+  "isPrivate": zod.boolean().describe('Withheld on public pages (private in PlayHQ, not overridden)'),
+  "isKnown": zod.boolean().describe('Still one of the club\'s junior participants')
+})),
+  "isPublished": zod.boolean(),
+  "source": zod.enum(['playhq', 'admin']).describe('Who wrote the list; an admin\'s list is never overwritten by the sync'),
+  "updatedAt": zod.coerce.date()
+}).nullable(),
+  "candidates": zod.array(zod.object({
+  "participantId": zod.string(),
+  "name": zod.string(),
+  "isPrivate": zod.boolean(),
+  "shirtNumber": zod.string().nullable(),
+  "teams": zod.string().nullable(),
+  "lastSeason": zod.string().nullable()
+}))
+})
+
+
+/**
+ * Saves the list as `admin`, so the PlayHQ sync never overwrites it. Every player must be one of the club's own junior participants (never an opposition player or another club's); orders must be unique and at most one captain, vice-captain and wicket-keeper may be named. The list is stored in order, renumbered from 1.
+ * @summary Save a junior fixture's team list (admin only)
+ */
+export const PutJuniorFixtureTeamListParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+export const putJuniorFixtureTeamListBodyPlayersMax = 30;
+
+
+
+export const PutJuniorFixtureTeamListBody = zod.object({
+  "players": zod.array(zod.object({
+  "order": zod.number().min(1),
+  "participantId": zod.string().min(1),
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).describe('Captain \/ vice-captain \/ wicket-keeper marker').nullish()
+})).max(putJuniorFixtureTeamListBodyPlayersMax),
+  "isPublished": zod.boolean().optional()
+})
+
+export const PutJuniorFixtureTeamListResponse = zod.object({
+  "fixture": zod.object({
+  "id": zod.number(),
+  "seasonStartYear": zod.number(),
+  "ageGroup": zod.string().nullable(),
+  "grade": zod.string().nullable(),
+  "teamName": zod.string().nullable().describe('The club\'s own junior team'),
+  "opponentName": zod.string().nullable(),
+  "venue": zod.string().nullable(),
+  "startAt": zod.coerce.date().nullable(),
+  "isHome": zod.boolean().nullable(),
+  "status": zod.string().nullable().describe('PlayHQ match status as last synced (e.g. UPCOMING)'),
+  "hasTeamList": zod.boolean().describe('A published team list exists for this fixture')
+}),
+  "season": zod.number().describe('Season start year whose shirt numbers are shown'),
+  "shirtNumbersEnabled": zod.boolean(),
+  "teamList": zod.object({
+  "players": zod.array(zod.object({
+  "order": zod.number(),
+  "participantId": zod.string(),
+  "name": zod.string().describe('Full name'),
+  "role": zod.enum(['C', 'VC', 'WK', 'C/WK', 'VC/WK']).describe('Captain \/ vice-captain \/ wicket-keeper marker').nullable(),
+  "shirtNumber": zod.string().nullable(),
+  "isPrivate": zod.boolean().describe('Withheld on public pages (private in PlayHQ, not overridden)'),
+  "isKnown": zod.boolean().describe('Still one of the club\'s junior participants')
+})),
+  "isPublished": zod.boolean(),
+  "source": zod.enum(['playhq', 'admin']).describe('Who wrote the list; an admin\'s list is never overwritten by the sync'),
+  "updatedAt": zod.coerce.date()
+}).nullable(),
+  "candidates": zod.array(zod.object({
+  "participantId": zod.string(),
+  "name": zod.string(),
+  "isPrivate": zod.boolean(),
+  "shirtNumber": zod.string().nullable(),
+  "teams": zod.string().nullable(),
+  "lastSeason": zod.string().nullable()
+}))
+})
+
+
+/**
  * @summary List junior matches, filterable by season and age group
  */
 export const ListJuniorMatchesQueryParams = zod.object({
@@ -11187,10 +12146,15 @@ export const ListJuniorMatchesResponse = zod.array(ListJuniorMatchesResponseItem
 
 
 /**
+ * Public lines are named by the club's junior naming rules: a private, non-overridden player is "Private Player" with no participant id; the club's own players follow its naming style; opposition players show as initials ("O. G.").
  * @summary Get a single junior match with its full scorecard
  */
 export const GetJuniorMatchParams = zod.object({
   "id": zod.coerce.number()
+})
+
+export const GetJuniorMatchQueryParams = zod.object({
+  "includePrivate": zod.coerce.boolean().optional().describe('Return full names and participant ids on every line (honoured only for a signed-in admin of this club — silently ignored otherwise). Used by the admin scorecard editor.')
 })
 
 export const GetJuniorMatchResponse = zod.object({
@@ -11456,7 +12420,7 @@ export const RemoveJuniorRosterEntryParams = zod.object({
 
 
 /**
- * @summary Correct a junior participant's display name or privacy flag (admin, journalled)
+ * @summary Correct a junior participant's display name, privacy flag or privacy override (admin, journalled)
  */
 export const UpdateJuniorParticipantParams = zod.object({
   "id": zod.coerce.string().describe('PlayHQ participant_id')
@@ -11467,14 +12431,32 @@ export const UpdateJuniorParticipantParams = zod.object({
 
 export const UpdateJuniorParticipantBody = zod.object({
   "displayName": zod.string().min(1).optional(),
-  "isPrivate": zod.boolean().optional()
+  "isPrivate": zod.boolean().optional(),
+  "privacyOverride": zod.boolean().optional().describe('Show a private player\'s name publicly anyway (true) or withhold it again (false). Can only be switched on for a private player.')
 })
 
 export const UpdateJuniorParticipantResponse = zod.object({
   "participantId": zod.string(),
   "displayName": zod.string(),
-  "isPrivate": zod.boolean()
+  "isPrivate": zod.boolean(),
+  "privacyOverride": zod.boolean().describe('An admin has chosen to show this private player\'s name publicly.'),
+  "privacyOverrideBy": zod.string().nullable().describe('The admin who set the override.'),
+  "privacyOverrideAt": zod.coerce.date().nullable().describe('When the override was set.')
 })
+
+
+/**
+ * @summary The club's private junior players whose names an admin has chosen to show publicly (admin only)
+ */
+export const ListJuniorPrivacyOverridesResponseItem = zod.object({
+  "participantId": zod.string(),
+  "displayName": zod.string(),
+  "isPrivate": zod.boolean(),
+  "privacyOverride": zod.boolean().describe('An admin has chosen to show this private player\'s name publicly.'),
+  "privacyOverrideBy": zod.string().nullable().describe('The admin who set the override.'),
+  "privacyOverrideAt": zod.coerce.date().nullable().describe('When the override was set.')
+})
+export const ListJuniorPrivacyOverridesResponse = zod.array(ListJuniorPrivacyOverridesResponseItem)
 
 
 /**
@@ -11529,7 +12511,10 @@ export const ListJuniorPlayersResponseItem = zod.object({
   "runs": zod.number().optional(),
   "wickets": zod.number().optional(),
   "seniorPlayerId": zod.number().nullish().describe('Optional cross-reference to a senior player record. For profile linking only; never combines stats.'),
-  "isPrivate": zod.boolean().optional().describe('Only present\/true on admin requests with includePrivate.')
+  "isPrivate": zod.boolean().optional().describe('Only present\/true on admin requests with includePrivate.'),
+  "privacyOverride": zod.boolean().optional().describe('Admin requests with includePrivate only. A private player an admin names publicly.'),
+  "privacyOverrideBy": zod.string().nullish().describe('Admin requests with includePrivate only. The admin who set the override.'),
+  "privacyOverrideAt": zod.coerce.date().nullish().describe('Admin requests with includePrivate only. When the override was set.')
 })
 export const ListJuniorPlayersResponse = zod.array(ListJuniorPlayersResponseItem)
 
@@ -12093,7 +13078,9 @@ export const GetJuniorMatchDisplaySettingsResponse = zod.object({
   "defaultAgeGroup": zod.string().describe('Age group pre-selected on first load. Empty string = All age groups.'),
   "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).describe('How the default season is chosen: latest available season, a specific season, or all seasons.'),
   "defaultSeason": zod.string().nullish().describe('Specific season string (e.g. \"2024\/25\") used when defaultSeasonMode = specific.'),
-  "ageGroupOrder": zod.array(zod.string()).describe('Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones.')
+  "ageGroupOrder": zod.array(zod.string()).describe('Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones.'),
+  "nameStyle": zod.enum(['full', 'first_initial', 'first']).describe('How public junior surfaces name the club\'s players: full name, first name and surname initial (\"Ollie G\"), or first name only.'),
+  "teamPublishing": zod.record(zod.string(), zod.record(zod.string(), zod.enum(['approval', 'auto']))).describe('Per-team social publishing, keyed by age group then team name. A team not listed needs approval; only \"auto\" lets its cards post themselves.')
 })
 
 
@@ -12104,14 +13091,18 @@ export const UpdateJuniorMatchDisplaySettingsBody = zod.object({
   "defaultAgeGroup": zod.string().optional(),
   "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).optional(),
   "defaultSeason": zod.string().nullish(),
-  "ageGroupOrder": zod.array(zod.string()).optional()
+  "ageGroupOrder": zod.array(zod.string()).optional(),
+  "nameStyle": zod.enum(['full', 'first_initial', 'first']).optional().describe('How public junior surfaces name the club\'s players: full name, first name and surname initial (\"Ollie G\"), or first name only.'),
+  "teamPublishing": zod.record(zod.string(), zod.record(zod.string(), zod.enum(['approval', 'auto']))).optional().describe('Per-team social publishing, keyed by age group then team name. A team not listed needs approval; only \"auto\" lets its cards post themselves.')
 })
 
 export const UpdateJuniorMatchDisplaySettingsResponse = zod.object({
   "defaultAgeGroup": zod.string().describe('Age group pre-selected on first load. Empty string = All age groups.'),
   "defaultSeasonMode": zod.enum(['latest', 'specific', 'all']).describe('How the default season is chosen: latest available season, a specific season, or all seasons.'),
   "defaultSeason": zod.string().nullish().describe('Specific season string (e.g. \"2024\/25\") used when defaultSeasonMode = specific.'),
-  "ageGroupOrder": zod.array(zod.string()).describe('Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones.')
+  "ageGroupOrder": zod.array(zod.string()).describe('Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones.'),
+  "nameStyle": zod.enum(['full', 'first_initial', 'first']).describe('How public junior surfaces name the club\'s players: full name, first name and surname initial (\"Ollie G\"), or first name only.'),
+  "teamPublishing": zod.record(zod.string(), zod.record(zod.string(), zod.enum(['approval', 'auto']))).describe('Per-team social publishing, keyed by age group then team name. A team not listed needs approval; only \"auto\" lets its cards post themselves.')
 })
 
 
@@ -12326,7 +13317,8 @@ export const GetTenantPlanResponse = zod.object({
   "socialStudio": zod.boolean(),
   "socialPublishing": zod.boolean().describe('Publishing drafts to Facebook and Instagram.'),
   "clubroomTv": zod.boolean(),
-  "curation": zod.boolean()
+  "curation": zod.boolean(),
+  "juniors": zod.boolean().describe('Junior PlayHQ sync. On the club and pro plans; not enforced while billing is dormant, when the platform-admin junior sync switch is the effective control.')
 }).describe('Per-feature flags resolved from the tenant\'s plan.')
 })
 
@@ -12467,6 +13459,8 @@ export const ListAllTenantsResponseItem = zod.object({
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
+  "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 export const ListAllTenantsResponse = zod.array(ListAllTenantsResponseItem)
@@ -12548,6 +13542,8 @@ export const GetAdminTenantResponse = zod.object({
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
+  "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.'),
   "admins": zod.array(zod.object({
@@ -12568,8 +13564,10 @@ export const UpdateAdminTenantParams = zod.object({
 export const UpdateAdminTenantBody = zod.object({
   "plan": zod.enum(['free', 'club', 'pro']).optional(),
   "customDomain": zod.string().nullish(),
-  "playhqSyncEnabled": zod.boolean().optional().describe('Scheduled PlayHQ sync for this tenant. When false the hourly runner plans nothing for its organisation and ingest does not project its fixtures.')
-}).describe('Partial update of a tenant\'s plan, custom domain and\/or PlayHQ sync switch.')
+  "playhqSyncEnabled": zod.boolean().optional().describe('Scheduled PlayHQ sync for this tenant. When false the hourly runner plans nothing for its organisation and ingest does not project its fixtures.'),
+  "juniorSyncEnabled": zod.boolean().optional().describe('Junior PlayHQ sync for this tenant. Takes effect only while PlayHQ sync is on and the plan includes juniors; when off, junior grades are dropped at ingest.'),
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID when its juniors run under a separate organisation. Null or blank clears it (juniors then use playhqOrgId). Unique across tenants.')
+}).describe('Partial update of a tenant\'s plan, custom domain, PlayHQ sync switch and\/or junior sync settings. Platform admin only; the club-admin brand update and signup schemas carry none of these.')
 
 export const updateAdminTenantResponseHeroImagesOneHomeMax = 2048;
 
@@ -12622,6 +13620,8 @@ export const UpdateAdminTenantResponse = zod.object({
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
+  "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 
@@ -12730,6 +13730,8 @@ export const UpdateAdminTenantBrandResponse = zod.object({
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
+  "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.'),
   "admins": zod.array(zod.object({
@@ -12798,6 +13800,8 @@ export const ArchiveAdminTenantResponse = zod.object({
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
+  "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 
@@ -12860,6 +13864,8 @@ export const RestoreAdminTenantResponse = zod.object({
   "suspendedAt": zod.string().nullish().describe('ISO-8601 instant the tenant was suspended, or null when active.'),
   "playhqOrgId": zod.string().nullish().describe('The tenant\'s linked PlayHQ organisation GUID, or null when not linked.'),
   "playhqSyncEnabled": zod.boolean().optional().describe('Whether scheduled PlayHQ sync runs for this tenant.'),
+  "juniorSyncEnabled": zod.boolean().optional().describe('Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on.'),
+  "playhqJuniorOrgId": zod.string().nullish().describe('The tenant\'s junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.'),
   "brandingComplete": zod.boolean().describe('True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults).')
 }).describe('A tenant as listed in the platform-admin console.')
 

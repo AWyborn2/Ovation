@@ -6101,6 +6101,26 @@ paths:
         "401":
           description: Missing or wrong sync secret
 
+  /internal/playhq/posting-slots:
+    post:
+      operationId: runPlayhqPostingSlots
+      tags: [fixtures]
+      summary: Handle posting-calendar cards whose time has arrived (hourly runner)
+      description: >-
+        Machine-to-machine only (same `x-sync-secret` as the other /internal/playhq routes;
+        401 otherwise). For every active club with the posting calendar on: cards due now
+        are published or nudged, unapproved ones roll, old ones expire. The runner calls it
+        before its scrapes; the scheduled sweep runs the same step again. Idempotent.
+      responses:
+        "200":
+          description: Results per club
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostingSlotsRunResponse"
+        "401":
+          description: Missing or wrong sync secret
+
   /platform/admin/playhq-sync:
     get:
       operationId: getPlatformPlayhqSync
@@ -6728,6 +6748,104 @@ paths:
           description: Not found
         "500":
           description: The render failed
+
+  /social-calendar:
+    get:
+      operationId: getSocialCalendar
+      tags: [socialCards]
+      summary: The posting calendar for a range of club-local days
+      description: >-
+        Cards with a planned time in the range, cards posted in the range, the
+        Unscheduled tray, placeholders for round cards the plan expects but has
+        not drafted yet, and each day's posts against the club's daily cap. Days
+        are club time (Perth). At most 14 days.
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+          description: First club-local day, YYYY-MM-DD.
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+          description: Last club-local day, YYYY-MM-DD (inclusive).
+      responses:
+        "200":
+          description: The calendar
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialCalendar"
+        "400":
+          description: Bad range
+
+  /social-drafts/{id}/planned-time:
+    put:
+      operationId: setSocialDraftPlannedTime
+      tags: [socialCards]
+      summary: Move a card to a new time on the posting calendar
+      description: >-
+        Pins the card at `plannedAt` (snapped to 15 minutes): automatic placement
+        never moves it again. Moving past the daily cap or inside the minimum gap
+        is allowed; the day's warnings say so. 409 when the card moved since the
+        client saw it (`expectedPlannedAt` differs), when it is already going out,
+        or when the posting calendar is off.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetPlannedTimeRequest"
+      responses:
+        "200":
+          description: The card at its new time
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialCalendarCard"
+        "400":
+          description: Bad time, or a time that has passed
+        "404":
+          description: Not found
+        "409":
+          description: Moved by someone else, already going out, or the calendar is off
+
+  /social-drafts/{id}/unschedule:
+    post:
+      operationId: unscheduleSocialDraft
+      tags: [socialCards]
+      summary: Take a card off the calendar into the Unscheduled tray
+      description: >-
+        The card stays in the tray until an admin drags it onto a time; automatic
+        placement leaves it alone. Its scheduled posts are cancelled.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UnscheduleDraftRequest"
+      responses:
+        "200":
+          description: The card, now unscheduled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialCalendarCard"
+        "404":
+          description: Not found
+        "409":
+          description: Moved by someone else, or already going out
 
   /social-drafts/{id}/send-back:
     post:
@@ -7524,6 +7642,114 @@ paths:
               schema:
                 $ref: "#/components/schemas/JuniorFilters"
 
+  /juniors/fixtures:
+    get:
+      operationId: listJuniorFixtures
+      tags: [juniors]
+      summary: Upcoming junior games for the club, soonest first
+      description: >-
+        The club's junior fixtures synced from PlayHQ that start from 12 hours
+        ago onward (so match-day games stay listed), ordered by start time.
+        Empty when the club's junior sync is switched off (R23).
+      parameters:
+        - name: ageGroup
+          in: query
+          schema:
+            type: string
+          description: Filter by age group (e.g. "Year 6")
+      responses:
+        "200":
+          description: Upcoming junior fixtures
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorFixture"
+
+  /juniors/fixtures/{id}:
+    get:
+      operationId: getJuniorFixture
+      tags: [juniors]
+      summary: One junior fixture with its published team list
+      description: >-
+        Team-list players are named by the club's junior naming rules; a
+        private, non-overridden player is "Private Player" with no participant
+        id or shirt number. 404 when the fixture is another club's, or the
+        club's junior sync is switched off.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The fixture and its published team list (null when none)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorFixtureDetail"
+        "404":
+          description: Not found
+
+  /juniors/fixtures/{id}/team-list:
+    get:
+      operationId: getJuniorFixtureTeamList
+      tags: [juniors]
+      summary: A junior fixture's team list for the admin editor (admin only)
+      description: >-
+        Full names, each player's junior shirt number for the fixture's season,
+        and the club's junior players to pick from.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The editor's view of the fixture's team list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorAdminTeamList"
+        "404":
+          description: Fixture not found
+    put:
+      operationId: putJuniorFixtureTeamList
+      tags: [juniors]
+      summary: Save a junior fixture's team list (admin only)
+      description: >-
+        Saves the list as `admin`, so the PlayHQ sync never overwrites it. Every
+        player must be one of the club's own junior participants (never an
+        opposition player or another club's); orders must be unique and at
+        most one captain, vice-captain and wicket-keeper may be named. The list
+        is stored in order, renumbered from 1.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PutJuniorTeamListBody"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorAdminTeamList"
+        "400":
+          description: Invalid list
+        "404":
+          description: Fixture not found
+
   /juniors/matches:
     get:
       operationId: listJuniorMatches
@@ -7555,12 +7781,25 @@ paths:
       operationId: getJuniorMatch
       tags: [juniors]
       summary: Get a single junior match with its full scorecard
+      description: >-
+        Public lines are named by the club's junior naming rules: a private,
+        non-overridden player is "Private Player" with no participant id; the
+        club's own players follow its naming style; opposition players show as
+        initials ("O. G.").
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: integer
+        - name: includePrivate
+          in: query
+          schema:
+            type: boolean
+          description: >-
+            Return full names and participant ids on every line (honoured only
+            for a signed-in admin of this club — silently ignored otherwise).
+            Used by the admin scorecard editor.
       responses:
         "200":
           description: Junior match detail with both innings
@@ -7811,7 +8050,9 @@ paths:
     patch:
       operationId: updateJuniorParticipant
       tags: [juniors]
-      summary: Correct a junior participant's display name or privacy flag (admin, journalled)
+      summary: >-
+        Correct a junior participant's display name, privacy flag or privacy
+        override (admin, journalled)
       parameters:
         - name: id
           in: path
@@ -7832,8 +8073,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/JuniorAdminParticipant"
+        "400":
+          description: Invalid body, or an override requested for a player who is not private
         "404":
           description: Participant not found
+
+  /juniors/privacy-overrides:
+    get:
+      operationId: listJuniorPrivacyOverrides
+      tags: [juniors]
+      summary: >-
+        The club's private junior players whose names an admin has chosen to
+        show publicly (admin only)
+      responses:
+        "200":
+          description: Active privacy overrides, by name
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorAdminParticipant"
 
   /juniors/corrections:
     get:
@@ -8869,7 +9129,7 @@ paths:
         "404":
           description: No such tenant.
         "409":
-          description: That custom domain is already in use.
+          description: That custom domain or junior PlayHQ organisation is already in use.
 
   /platform/admin/tenants/{id}/brand:
     patch:
@@ -12047,7 +12307,8 @@ components:
     Entitlements:
       type: object
       description: Per-feature flags resolved from the tenant's plan.
-      required: [customDomain, mobileApp, socialStudio, socialPublishing, clubroomTv, curation]
+      required:
+        [customDomain, mobileApp, socialStudio, socialPublishing, clubroomTv, curation, juniors]
       properties:
         customDomain:
           type: boolean
@@ -12062,6 +12323,11 @@ components:
           type: boolean
         curation:
           type: boolean
+        juniors:
+          type: boolean
+          description: >-
+            Junior PlayHQ sync. On the club and pro plans; not enforced while billing is
+            dormant, when the platform-admin junior sync switch is the effective control.
 
     MetaConnection:
       type: object
@@ -12356,6 +12622,16 @@ components:
         playhqSyncEnabled:
           type: boolean
           description: Whether scheduled PlayHQ sync runs for this tenant.
+        juniorSyncEnabled:
+          type: boolean
+          description: >-
+            Whether junior PlayHQ sync is switched on for this tenant (platform admin
+            only). Junior grades sync only when PlayHQ sync is also on.
+        playhqJuniorOrgId:
+          type: ["string", "null"]
+          description: >-
+            The tenant's junior PlayHQ organisation GUID, or null when its juniors run
+            under playhqOrgId.
         brandingComplete:
           type: boolean
           description: >-
@@ -12866,7 +13142,10 @@ components:
 
     UpdateTenantBody:
       type: object
-      description: Partial update of a tenant's plan, custom domain and/or PlayHQ sync switch.
+      description: >-
+        Partial update of a tenant's plan, custom domain, PlayHQ sync switch and/or junior
+        sync settings. Platform admin only; the club-admin brand update and signup schemas
+        carry none of these.
       properties:
         plan:
           type: string
@@ -12878,6 +13157,17 @@ components:
           description: >-
             Scheduled PlayHQ sync for this tenant. When false the hourly runner plans
             nothing for its organisation and ingest does not project its fixtures.
+        juniorSyncEnabled:
+          type: boolean
+          description: >-
+            Junior PlayHQ sync for this tenant. Takes effect only while PlayHQ sync is on
+            and the plan includes juniors; when off, junior grades are dropped at ingest.
+        playhqJuniorOrgId:
+          type: ["string", "null"]
+          description: >-
+            The tenant's junior PlayHQ organisation GUID when its juniors run under a
+            separate organisation. Null or blank clears it (juniors then use playhqOrgId).
+            Unique across tenants.
 
     ProvisionTenantBody:
       type: object
@@ -16724,6 +17014,10 @@ components:
         centralData:
           type: boolean
           description: "Whether the club reads its results from the association database (results, ladder and leaderboard round carousels need it)."
+        postingSchedule:
+          $ref: "#/components/schemas/PostingSchedule"
+        postingSwitchover:
+          $ref: "#/components/schemas/PostingSwitchover"
 
     PostingPlanRow:
       type: object
@@ -17826,6 +18120,8 @@ components:
           allOf:
             - $ref: "#/components/schemas/PostingPlan"
           description: "The whole Posting Plan; saving it also updates the family switches and round-schedule modes."
+        postingSchedule:
+          $ref: "#/components/schemas/PostingScheduleUpdate"
 
     RoundSchedule:
       type: object
@@ -20019,6 +20315,31 @@ components:
           type: ["string", "null"]
           format: date-time
           description: "Set when a posted draft's source data changed after it was shared"
+        plannedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When the card goes out on the posting calendar; null = unscheduled.
+        plannedBy:
+          type: ["string", "null"]
+          enum: [auto, admin, null]
+          description: >-
+            "auto" — placed automatically and may roll; "admin" — pinned by an admin (a
+            drag, or taken off the calendar when plannedAt is null).
+        rollCount:
+          type: integer
+          description: How many times the card rolled to a later slot unapproved.
+        dispatchedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When it was published or the club was told to share it, at its time.
+        overdueNotifiedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: A pinned card's one overdue reminder.
+        expiredAt:
+          type: ["string", "null"]
+          format: date-time
+          description: Past the club's age limit; off the calendar until moved to a time.
         publications:
           type: array
           description: Its Facebook / Instagram posts, newest attempt per platform and post type.
@@ -20027,6 +20348,188 @@ components:
         needsAttention:
           type: boolean
           description: A post failed for good and nothing else is pending for it.
+
+    SocialCalendarCard:
+      type: object
+      required: [draft, slotKind, overdue]
+      properties:
+        draft:
+          $ref: "#/components/schemas/SocialDraft"
+        slotKind:
+          type: string
+          description: The posting-calendar kind the card posts in (milestones, debuts, results…).
+        overdue:
+          type: boolean
+          description: Its time passed while it still waits for approval.
+        warning:
+          type: ["string", "null"]
+          description: Why the card's day needs a look (over the cap, or inside the gap).
+
+    SocialCalendarDay:
+      type: object
+      required: [date, count, overCap, gapWarnings]
+      properties:
+        date: { type: string, description: "Club-local YYYY-MM-DD" }
+        count: { type: integer, description: Posts planned or posted that day }
+        overCap: { type: boolean }
+        gapWarnings:
+          type: array
+          description: Cards closer to another post than the club's minimum gap.
+          items: { type: integer }
+
+    SocialCalendarPlaceholder:
+      type: object
+      required: [slotKind, label, at]
+      properties:
+        slotKind: { type: string }
+        label: { type: string }
+        at: { type: string, format: date-time }
+
+    SocialCalendar:
+      type: object
+      required:
+        [enabled, from, to, timeZone, dailyCap, minGapMinutes, days, cards, unscheduled, placeholders, openCards]
+      properties:
+        enabled: { type: boolean, description: Whether the club's posting calendar is on }
+        from: { type: string }
+        to: { type: string }
+        timeZone: { type: string }
+        dailyCap: { type: integer }
+        minGapMinutes: { type: integer }
+        days:
+          type: array
+          items: { $ref: "#/components/schemas/SocialCalendarDay" }
+        cards:
+          type: array
+          items: { $ref: "#/components/schemas/SocialCalendarCard" }
+        unscheduled:
+          type: array
+          description: The Unscheduled tray — open cards with no time.
+          items: { $ref: "#/components/schemas/SocialCalendarCard" }
+        placeholders:
+          type: array
+          items: { $ref: "#/components/schemas/SocialCalendarPlaceholder" }
+        openCards:
+          type: integer
+          description: >-
+            Open automatic cards a switch-on would place (shown before turning the
+            calendar on).
+
+    SetPlannedTimeRequest:
+      type: object
+      required: [plannedAt, expectedPlannedAt]
+      properties:
+        plannedAt: { type: string, format: date-time }
+        expectedPlannedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: The card's planned time as the client saw it; null when unscheduled.
+
+    UnscheduleDraftRequest:
+      type: object
+      required: [expectedPlannedAt]
+      properties:
+        expectedPlannedAt:
+          type: ["string", "null"]
+          format: date-time
+
+    PostingSlot:
+      type: object
+      required: [day, time]
+      properties:
+        day: { type: integer, minimum: 0, maximum: 6, description: "0 = Sunday, club time" }
+        time: { type: string, pattern: "^([01]\\d|2[0-3]):[0-5]\\d$", description: "HH:mm, 15-minute steps" }
+
+    PostingKind:
+      type: object
+      required: [slots, collision]
+      properties:
+        slots:
+          type: array
+          maxItems: 14
+          items: { $ref: "#/components/schemas/PostingSlot" }
+        collision:
+          type: string
+          enum: [space, roll]
+          description: >-
+            Several cards in one slot: "space" them out by the club's minimum gap, or
+            "roll" extras to later slots (one per slot).
+
+    PostingKinds:
+      type: object
+      required: [results, roundResults, teamLists, gameDay, milestones, debuts, achievements, roundUp, other]
+      properties:
+        results: { $ref: "#/components/schemas/PostingKind" }
+        roundResults: { $ref: "#/components/schemas/PostingKind" }
+        teamLists: { $ref: "#/components/schemas/PostingKind" }
+        gameDay: { $ref: "#/components/schemas/PostingKind" }
+        milestones: { $ref: "#/components/schemas/PostingKind" }
+        debuts: { $ref: "#/components/schemas/PostingKind" }
+        achievements: { $ref: "#/components/schemas/PostingKind" }
+        roundUp: { $ref: "#/components/schemas/PostingKind" }
+        other: { $ref: "#/components/schemas/PostingKind" }
+
+    PostingKindsUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        results: { $ref: "#/components/schemas/PostingKind" }
+        roundResults: { $ref: "#/components/schemas/PostingKind" }
+        teamLists: { $ref: "#/components/schemas/PostingKind" }
+        gameDay: { $ref: "#/components/schemas/PostingKind" }
+        milestones: { $ref: "#/components/schemas/PostingKind" }
+        debuts: { $ref: "#/components/schemas/PostingKind" }
+        achievements: { $ref: "#/components/schemas/PostingKind" }
+        roundUp: { $ref: "#/components/schemas/PostingKind" }
+        other: { $ref: "#/components/schemas/PostingKind" }
+
+    PostingSchedule:
+      type: object
+      description: >-
+        The posting calendar: weekly slots per card kind, a daily cap, a minimum gap and an
+        age limit. Always complete in a response. Off unless `enabled`.
+      required: [enabled, dailyCap, minGapMinutes, ageLimitDays, kinds]
+      properties:
+        enabled: { type: boolean }
+        dailyCap: { type: integer, minimum: 1, maximum: 20 }
+        minGapMinutes: { type: integer, minimum: 0, maximum: 240 }
+        ageLimitDays: { type: integer, minimum: 1, maximum: 30 }
+        kinds: { $ref: "#/components/schemas/PostingKinds" }
+
+    PostingScheduleUpdate:
+      type: object
+      additionalProperties: false
+      description: >-
+        Merged into the stored schedule; kinds merge per kind. Turning `enabled` on places
+        the club's open cards; turning it off hands them back to auto-post.
+      properties:
+        enabled: { type: boolean }
+        dailyCap: { type: integer, minimum: 1, maximum: 20 }
+        minGapMinutes: { type: integer, minimum: 0, maximum: 240 }
+        ageLimitDays: { type: integer, minimum: 1, maximum: 30 }
+        kinds: { $ref: "#/components/schemas/PostingKindsUpdate" }
+
+    PostingSwitchover:
+      type: object
+      required: [placed, pinned, unscheduled, restored]
+      properties:
+        placed: { type: integer, description: Open cards given a time when the calendar was turned on }
+        pinned: { type: integer, description: Cards already scheduled to Meta, kept at that time }
+        unscheduled: { type: integer, description: Cards with no free slot, now in the tray }
+        restored: { type: integer, description: Cards handed back to auto-post when it was turned off }
+
+    PostingSlotsRunResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            required: [tenantId, ok]
+            properties:
+              tenantId: { type: integer }
+              ok: { type: boolean }
 
     PublishSweepSummary:
       type: object
@@ -21100,6 +21603,170 @@ components:
           items:
             $ref: "#/components/schemas/JuniorBowlingLine"
 
+    JuniorFixture:
+      type: object
+      required:
+        - id
+        - seasonStartYear
+        - ageGroup
+        - grade
+        - teamName
+        - opponentName
+        - venue
+        - startAt
+        - isHome
+        - status
+        - hasTeamList
+      properties:
+        id: { type: integer }
+        seasonStartYear: { type: integer }
+        ageGroup: { type: string, nullable: true }
+        grade: { type: string, nullable: true }
+        teamName:
+          type: string
+          nullable: true
+          description: The club's own junior team
+        opponentName: { type: string, nullable: true }
+        venue: { type: string, nullable: true }
+        startAt: { type: string, format: date-time, nullable: true }
+        isHome: { type: boolean, nullable: true }
+        status:
+          type: string
+          nullable: true
+          description: PlayHQ match status as last synced (e.g. UPCOMING)
+        hasTeamList:
+          type: boolean
+          description: A published team list exists for this fixture
+
+    JuniorTeamListRole:
+      type: string
+      enum: ["C", "VC", "WK", "C/WK", "VC/WK"]
+      description: Captain / vice-captain / wicket-keeper marker
+
+    JuniorPublicTeamListPlayer:
+      type: object
+      required: [order, name, participantId, role, shirtNumber]
+      properties:
+        order: { type: integer }
+        name:
+          type: string
+          description: Public name in the club's style, or "Private Player"
+        participantId:
+          type: string
+          nullable: true
+          description: Null when the player is withheld
+        role:
+          allOf:
+            - $ref: "#/components/schemas/JuniorTeamListRole"
+          nullable: true
+        shirtNumber:
+          type: string
+          nullable: true
+          description: Junior shirt number for the fixture's season (null when withheld or none)
+
+    JuniorFixtureDetail:
+      type: object
+      required: [fixture, teamList]
+      properties:
+        fixture:
+          $ref: "#/components/schemas/JuniorFixture"
+        teamList:
+          type: array
+          nullable: true
+          description: The published team list in order, or null when none is published
+          items:
+            $ref: "#/components/schemas/JuniorPublicTeamListPlayer"
+
+    JuniorAdminTeamListPlayer:
+      type: object
+      required: [order, participantId, name, role, shirtNumber, isPrivate, isKnown]
+      properties:
+        order: { type: integer }
+        participantId: { type: string }
+        name:
+          type: string
+          description: Full name
+        role:
+          allOf:
+            - $ref: "#/components/schemas/JuniorTeamListRole"
+          nullable: true
+        shirtNumber: { type: string, nullable: true }
+        isPrivate:
+          type: boolean
+          description: Withheld on public pages (private in PlayHQ, not overridden)
+        isKnown:
+          type: boolean
+          description: Still one of the club's junior participants
+
+    JuniorTeamListCandidate:
+      type: object
+      required: [participantId, name, isPrivate, shirtNumber, teams, lastSeason]
+      properties:
+        participantId: { type: string }
+        name: { type: string }
+        isPrivate: { type: boolean }
+        shirtNumber: { type: string, nullable: true }
+        teams: { type: string, nullable: true }
+        lastSeason: { type: string, nullable: true }
+
+    JuniorAdminTeamListSaved:
+      type: object
+      required: [players, isPublished, source, updatedAt]
+      properties:
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorAdminTeamListPlayer"
+        isPublished: { type: boolean }
+        source:
+          type: string
+          enum: [playhq, admin]
+          description: Who wrote the list; an admin's list is never overwritten by the sync
+        updatedAt: { type: string, format: date-time }
+
+    JuniorAdminTeamList:
+      type: object
+      required: [fixture, season, shirtNumbersEnabled, teamList, candidates]
+      properties:
+        fixture:
+          $ref: "#/components/schemas/JuniorFixture"
+        season:
+          type: integer
+          description: Season start year whose shirt numbers are shown
+        shirtNumbersEnabled: { type: boolean }
+        teamList:
+          allOf:
+            - $ref: "#/components/schemas/JuniorAdminTeamListSaved"
+          nullable: true
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/JuniorTeamListCandidate"
+
+    PutJuniorTeamListPlayer:
+      type: object
+      required: [order, participantId]
+      properties:
+        order: { type: integer, minimum: 1 }
+        participantId:
+          type: string
+          minLength: 1
+        role:
+          allOf:
+            - $ref: "#/components/schemas/JuniorTeamListRole"
+          nullable: true
+
+    PutJuniorTeamListBody:
+      type: object
+      required: [players]
+      properties:
+        players:
+          type: array
+          maxItems: 30
+          items:
+            $ref: "#/components/schemas/PutJuniorTeamListPlayer"
+        isPublished: { type: boolean }
+
     JuniorMatchSummary:
       type: object
       required: [id, isHallsHead]
@@ -21252,6 +21919,16 @@ components:
         isPrivate:
           type: boolean
           description: Only present/true on admin requests with includePrivate.
+        privacyOverride:
+          type: boolean
+          description: Admin requests with includePrivate only. A private player an admin names publicly.
+        privacyOverrideBy:
+          type: ["string", "null"]
+          description: Admin requests with includePrivate only. The admin who set the override.
+        privacyOverrideAt:
+          type: ["string", "null"]
+          format: date-time
+          description: Admin requests with includePrivate only. When the override was set.
 
     JuniorSeniorLinkSummary:
       type: object
@@ -21557,10 +22234,37 @@ components:
           minLength: 1
         isPrivate:
           type: boolean
+        privacyOverride:
+          type: boolean
+          description: >-
+            Show a private player's name publicly anyway (true) or withhold it
+            again (false). Can only be switched on for a private player.
+
+    JuniorNameStyle:
+      type: string
+      enum: [full, first_initial, first]
+      description: >-
+        How public junior surfaces name the club's players: full name, first
+        name and surname initial ("Ollie G"), or first name only.
+
+    JuniorTeamPublishMode:
+      type: string
+      enum: [approval, auto]
+
+    JuniorTeamPublishing:
+      type: object
+      description: >-
+        Per-team social publishing, keyed by age group then team name. A team
+        not listed needs approval; only "auto" lets its cards post themselves.
+      additionalProperties:
+        type: object
+        additionalProperties:
+          $ref: "#/components/schemas/JuniorTeamPublishMode"
 
     JuniorAdminParticipant:
       type: object
-      required: [participantId, displayName, isPrivate]
+      required:
+        [participantId, displayName, isPrivate, privacyOverride, privacyOverrideBy, privacyOverrideAt]
       properties:
         participantId:
           type: string
@@ -21568,6 +22272,16 @@ components:
           type: string
         isPrivate:
           type: boolean
+        privacyOverride:
+          type: boolean
+          description: An admin has chosen to show this private player's name publicly.
+        privacyOverrideBy:
+          type: ["string", "null"]
+          description: The admin who set the override.
+        privacyOverrideAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When the override was set.
 
     JuniorStatCorrection:
       type: object
@@ -21910,7 +22624,7 @@ components:
 
     JuniorMatchDisplaySettings:
       type: object
-      required: [defaultAgeGroup, defaultSeasonMode, ageGroupOrder]
+      required: [defaultAgeGroup, defaultSeasonMode, ageGroupOrder, nameStyle, teamPublishing]
       properties:
         defaultAgeGroup:
           type: string
@@ -21931,6 +22645,10 @@ components:
           description: >-
             Ordered age-group tokens for the age-group menu. Tokens not listed
             fall back to the natural order, appended after the configured ones.
+        nameStyle:
+          $ref: "#/components/schemas/JuniorNameStyle"
+        teamPublishing:
+          $ref: "#/components/schemas/JuniorTeamPublishing"
 
     JuniorMatchDisplaySettingsUpdate:
       type: object
@@ -21946,6 +22664,10 @@ components:
           type: array
           items:
             type: string
+        nameStyle:
+          $ref: "#/components/schemas/JuniorNameStyle"
+        teamPublishing:
+          $ref: "#/components/schemas/JuniorTeamPublishing"
 
     JuniorPremiershipPlayer:
       type: object

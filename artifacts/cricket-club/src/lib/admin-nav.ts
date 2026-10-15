@@ -166,6 +166,11 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       },
       { value: "junior-players", label: "Junior players", path: "/admin/people/junior-players" },
       {
+        value: "junior-fixtures",
+        label: "Junior fixtures",
+        path: "/admin/people/junior-fixtures",
+      },
+      {
         value: "committee",
         label: "Committee",
         path: "/admin/people/committee",

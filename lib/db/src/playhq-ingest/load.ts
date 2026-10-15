@@ -11,6 +11,11 @@
  * PlayHQ GUIDs, so re-loading the same dump is a no-op and re-loading a newer dump records
  * what changed (see `playhq.fixture_changes`).
  */
+import { classifyGrade } from "./grade-classes";
+
+// Junior / pathway grade labels live with the one grade classifier; re-exported for importers.
+export { JUNIOR_RE } from "./grade-classes";
+
 // ---------------------------------------------------------------------------
 // Dump shapes (what harness.js exports)
 // ---------------------------------------------------------------------------
@@ -31,10 +36,6 @@ export interface Dump {
   records: DumpRecord[];
 }
 export type Row = Record<string, unknown>;
-
-/** Junior / pathway grade labels (PCA "Year N", WA "Under 17s", "U15", …) — kept out of senior surfaces. */
-export const JUNIOR_RE =
-  /\b(year\s?\d{1,2}|u\s?\d{1,2}s?\b|under\s?\d{1,2}s?\b|junior|primary|stage\s?\d|blast|woolworths|pathway|school)\b/i;
 
 // ---------------------------------------------------------------------------
 // Small coercion helpers — API payloads are untyped JSON
@@ -184,7 +185,7 @@ export function rowsFromDump(dump: Dump, sourceFile: string): LoadRows {
           season_name: str(g.seasonName),
           owner_org_id: ownerId,
           source_org_id: srcOrg,
-          is_junior: JUNIOR_RE.test(name),
+          is_junior: classifyGrade(name) === "junior",
           raw: g,
         });
         const ids = arr(g.teamIds);
@@ -768,19 +769,49 @@ export async function loadRows(
   return { counts, runIds };
 }
 
+/** A grade `playhq.grades` already knows is junior, with the organisations it belongs to. */
+export interface KnownJuniorGrade {
+  id: string;
+  ownerOrgId: string | null;
+  sourceOrgId: string | null;
+}
+
 /**
  * Drop everything belonging to junior / pathway grades (juniors isolation: they are never
- * blended into senior surfaces). `juniorGradeIds` adds grades already known to be junior
- * (e.g. `playhq.grades.is_junior` for a grade this dump has no `grade` record for).
+ * blended into senior surfaces), except the junior grades of organisations with junior sync
+ * enabled (docs/plans/2026-10-14-001-feat-junior-playhq-sync-plan.md, U4, KTD2).
+ *
+ * `knownJuniorGrades` adds grades already known to be junior (`playhq.grades.is_junior` for a
+ * grade this dump may have no `grade` record for, e.g. a scorecard-only dump), with their
+ * organisations. A junior grade is kept, with its teams, matches, lineups, scorecards and
+ * players, when its owner or source organisation is in `enabledOrgIds`. With no organisation
+ * enabled the result is exactly the old drop-everything-junior behaviour. Kept junior rows
+ * keep `is_junior = true`, which every senior reader filters out.
  * Pure; the scheduled-ingest path applies it, the hand-run CLI keeps its own behaviour.
  */
 export function dropJuniorGrades(
   rows: LoadRows,
-  juniorGradeIds: Iterable<string> = [],
-): { rows: LoadRows; droppedGradeIds: string[] } {
-  const junior = new Set<string>(juniorGradeIds);
-  for (const g of rows.grades) if (g.is_junior === true) junior.add(g.id as string);
-  if (junior.size === 0) return { rows, droppedGradeIds: [] };
+  knownJuniorGrades: Iterable<KnownJuniorGrade> = [],
+  enabledOrgIds: Iterable<string> = [],
+): { rows: LoadRows; droppedGradeIds: string[]; keptJuniorGradeIds: string[] } {
+  const enabled = new Set([...enabledOrgIds].map((o) => o.toLowerCase()));
+  const orgsOf = new Map<string, Set<string>>();
+  const addJunior = (id: string, ...orgs: unknown[]) => {
+    const set = orgsOf.get(id) ?? new Set<string>();
+    for (const o of orgs) if (typeof o === "string" && o) set.add(o.toLowerCase());
+    orgsOf.set(id, set);
+  };
+  for (const g of knownJuniorGrades) addJunior(g.id, g.ownerOrgId, g.sourceOrgId);
+  for (const g of rows.grades)
+    if (g.is_junior === true) addJunior(g.id as string, g.owner_org_id, g.source_org_id);
+
+  const junior = new Set<string>();
+  const keptJuniorGradeIds: string[] = [];
+  for (const [id, orgs] of orgsOf) {
+    if ([...orgs].some((o) => enabled.has(o))) keptJuniorGradeIds.push(id);
+    else junior.add(id);
+  }
+  if (junior.size === 0) return { rows, droppedGradeIds: [], keptJuniorGradeIds };
 
   const keepGrade = (r: Row) => !junior.has(r.grade_id as string);
   const matches = rows.matches.filter(keepGrade);
@@ -798,13 +829,14 @@ export function dropJuniorGrades(
   const keepInnings = (r: Row) => !droppedInnings.has(r.innings_id as string);
   const player_grade_stats = rows.player_grade_stats.filter(keepGrade);
 
-  // A participant seen only in junior grade stats is a junior; keep everyone else.
-  const seniorPlayers = new Set(player_grade_stats.map((r) => r.participant_id as string));
+  // A participant seen only in dropped junior grade stats is a junior; keep everyone else
+  // (seniors, and the juniors of an enabled organisation's kept grades).
+  const keptPlayers = new Set(player_grade_stats.map((r) => r.participant_id as string));
   const juniorOnly = new Set(
     rows.player_grade_stats
       .filter((r) => !keepGrade(r))
       .map((r) => r.participant_id as string)
-      .filter((id) => !seniorPlayers.has(id)),
+      .filter((id) => !keptPlayers.has(id)),
   );
 
   return {
@@ -826,5 +858,6 @@ export function dropJuniorGrades(
       match_lineups: rows.match_lineups.filter(keepMatch),
     },
     droppedGradeIds: [...junior],
+    keptJuniorGradeIds,
   };
 }

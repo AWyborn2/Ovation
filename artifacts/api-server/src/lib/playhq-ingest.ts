@@ -1,5 +1,5 @@
-import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
-import { db, tenantsTable } from "@workspace/db";
+import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { db, fixturesTable, teamListsTable, tenantsTable } from "@workspace/db";
 import {
   PROJECTABLE_STATUSES,
   assertIngestScope,
@@ -15,7 +15,11 @@ import {
   dropJuniorGrades,
   getPlayhqIngestPool,
   loadRows,
+  juniorReclassifications,
+  type KnownJuniorGrade,
   projectFixtures,
+  projectJuniors,
+  juniorProjectionErrorText,
   projectTeamLists,
   linkHeldShirtNumbers,
   rowsFromDump,
@@ -25,10 +29,14 @@ import {
   type Queryable,
   type RunMeta,
   type TeamListUpdate,
+  type JuniorProjectionSummary,
+  type JuniorSyncTenantRef,
 } from "@workspace/db/playhq-ingest";
 import type { z } from "zod";
 import type { IngestPlayhqDumpResponse } from "@workspace/api-zod";
 import { runDraftSweep } from "./draft-sweep";
+import { juniorOrgIdsOf, loadJuniorSyncTenants } from "./junior-sync";
+import { recomputeParticipantMetadata } from "./junior-admin-helpers";
 import { clearMilestonesCache } from "./milestones-cache";
 import { env } from "../config";
 
@@ -94,18 +102,51 @@ export async function ingestPlayhqDump(
       harness_version: input.dump.version,
     });
 
-  // Juniors isolation: drop junior/pathway grades by name, and by what playhq already knows.
+  // Juniors isolation: drop junior/pathway grades by name, and by what playhq already knows,
+  // except those of organisations with junior sync enabled (junior sync plan U4, KTD1/KTD2).
+  // The gate is decided once, here; with no club enabled the drop is exactly as before.
+  const warnings: string[] = [];
+  const juniorSyncTenants = await loadJuniorSyncTenants();
+  const juniorOrgIds = new Set(juniorOrgIdsOf(juniorSyncTenants));
   const gradeIds = referencedGradeIds(parsed);
-  const known = gradeIds.length
-    ? await reader.query<{ id: string }>(
-        `select id from playhq.grades where id = any($1::uuid[]) and is_junior`,
-        [gradeIds],
-      )
-    : { rows: [] };
-  const { rows, droppedGradeIds } = dropJuniorGrades(
+  const stored = gradeIds.length
+    ? (
+        await reader.query<{
+          id: string;
+          name: string | null;
+          is_junior: boolean;
+          owner_org_id: string | null;
+          source_org_id: string | null;
+        }>(
+          `select id::text as id, name, is_junior, owner_org_id::text as owner_org_id,
+                  source_org_id::text as source_org_id
+             from playhq.grades where id = any($1::uuid[])`,
+          [gradeIds],
+        )
+      ).rows.map((r) => ({ ...r, isJunior: r.is_junior === true }))
+    : [];
+  // Stored grades the classifier now calls junior (e.g. "Peel Girls League", stored as senior
+  // before it learned the loader's age banding) are junior from this run on, stored too, so
+  // every senior projection stops reading them (adversarial review P2).
+  const reclassified = juniorReclassifications(stored);
+  if (reclassified.length) await reclassifyStoredJuniorGrades(reader, reclassified, warnings, log);
+  const knownJunior: KnownJuniorGrade[] = stored
+    .filter((g) => g.isJunior || reclassified.includes(g))
+    .map((r) => ({
+      id: r.id,
+      ownerOrgId: r.owner_org_id,
+      sourceOrgId: r.source_org_id,
+    }));
+  const { rows, droppedGradeIds, keptJuniorGradeIds } = dropJuniorGrades(
     parsed,
-    known.rows.map((r) => r.id),
+    knownJunior,
+    juniorOrgIds,
   );
+  if (keptJuniorGradeIds.length)
+    log.info(
+      { juniorGrades: keptJuniorGradeIds.length },
+      "playhq ingest: junior grades kept for junior-sync clubs",
+    );
 
   const meta: RunMeta = {
     collector: input.collector,
@@ -127,7 +168,6 @@ export async function ingestPlayhqDump(
     client.release();
   }
 
-  const warnings: string[] = [];
   const orgIds = [
     ...new Set(
       rows.matches
@@ -216,6 +256,12 @@ export async function ingestPlayhqDump(
 
   const centralProjection = await projectDumpToCentral(rows, warnings, log);
 
+  // Junior projection (junior sync plan U5, KTD5): the kept junior grades (`is_junior = true`
+  // in playhq.*) of the enabled tenants go to their `junior_*` tables only, after the senior
+  // projections. Every senior step above filters `is_junior = false`, so it never sees them.
+  if (juniorSyncTenants.length)
+    await projectDumpJuniors(rows, juniorSyncTenants, reader, warnings, log, keptJuniorGradeIds);
+
   // Held shirt-number entries link once their player has played for the club in central
   // (F2): after the projection, so this sync's results count. Reads central only.
   if (orgIds.length)
@@ -261,6 +307,183 @@ export async function ingestPlayhqDump(
     warnings,
     ...(centralProjection ? { centralProjection } : {}),
   };
+}
+
+/**
+ * Every PlayHQ match a dump's rows mention (fixtures, scorecards, lineups). With
+ * `juniorGradeIds`, a match the dump places in any other grade is left out: only junior
+ * grades are projected, and a match with no grade in the dump (a lineup) stays in.
+ */
+function dumpMatchIds(rows: LoadRows, juniorGradeIds?: readonly string[]): string[] {
+  const ids = new Set<string>();
+  for (const table of [
+    rows.matches.map((m) => ({ match_id: m.id })),
+    rows.scorecards,
+    rows.match_lineups,
+  ])
+    for (const r of table) if (typeof r.match_id === "string") ids.add(r.match_id.toLowerCase());
+  if (juniorGradeIds) {
+    const junior = new Set(juniorGradeIds.map((g) => g.toLowerCase()));
+    const otherGrade = new Set<string>();
+    for (const r of [
+      ...rows.matches.map((m) => ({ match_id: m.id, grade_id: m.grade_id })),
+      ...rows.scorecards,
+    ])
+      if (
+        typeof r.match_id === "string" &&
+        typeof r.grade_id === "string" &&
+        !junior.has(r.grade_id.toLowerCase())
+      )
+        otherGrade.add(r.match_id.toLowerCase());
+    for (const id of otherGrade) ids.delete(id);
+  }
+  return [...ids];
+}
+
+/**
+ * Project this dump's junior matches for the junior-sync tenants (junior sync plan U5), then
+ * recompute the stored metadata (lines, appearances, seasons, teams) of every junior
+ * participant the projection touched, with the admin merge's own recompute. A failure is a
+ * warning carrying ids, stages and counts only, never a player's name, and never fails the
+ * ingest; the next sync retries idempotently.
+ */
+export async function projectDumpJuniors(
+  rows: LoadRows,
+  tenants: readonly JuniorSyncTenantRef[],
+  reader: Queryable,
+  warnings: string[],
+  log: Logger,
+  /** The dump's kept junior grades: a match the dump places in another grade is skipped. */
+  juniorGradeIds?: readonly string[],
+): Promise<JuniorProjectionSummary[]> {
+  const matchIds = dumpMatchIds(rows, juniorGradeIds);
+  if (!tenants.length || !matchIds.length) return [];
+  let summaries: JuniorProjectionSummary[] = [];
+  try {
+    summaries = await projectJuniors({
+      tenants,
+      central: reader,
+      matchIds,
+      log: (line) => log.info(`playhq junior projection: ${line}`),
+    });
+  } catch (err) {
+    const text = juniorProjectionErrorText(err);
+    log.error({ err: text }, "playhq ingest: junior projection failed");
+    warnings.push(`junior projection failed: ${text}`);
+    return [];
+  }
+  for (const s of summaries) {
+    for (const e of s.errors) {
+      log.error(
+        { tenantId: s.tenantId, stage: e.stage, playhqMatchId: e.playhqMatchId, err: e.message },
+        "playhq ingest: junior projection step failed",
+      );
+      warnings.push(
+        `junior projection ${e.stage} failed for tenant ${s.tenantId}` +
+          (e.playhqMatchId ? ` (PlayHQ match ${e.playhqMatchId})` : "") +
+          `: ${e.message}`,
+      );
+    }
+    if (!s.touchedParticipantIds.length) continue;
+    try {
+      await db.transaction(async (tx) => {
+        for (const participantId of s.touchedParticipantIds)
+          await recomputeParticipantMetadata(tx, s.tenantId, participantId);
+      });
+    } catch (err) {
+      const text = juniorProjectionErrorText(err);
+      log.error(
+        { tenantId: s.tenantId, participants: s.touchedParticipantIds.length, err: text },
+        "playhq ingest: junior participant recompute failed",
+      );
+      warnings.push(
+        `junior participant recompute failed for tenant ${s.tenantId} ` +
+          `(${s.touchedParticipantIds.length} participants): ${text}`,
+      );
+    }
+  }
+  return summaries;
+}
+
+/**
+ * Flip stored senior grades the classifier now calls junior to `is_junior = true` (idempotent:
+ * only rows still false change), then report what the senior projections already wrote from
+ * them — `public.fixtures` / `team_lists` rows and `central.matches` rows — for the operator to
+ * review. Nothing is deleted: removing projected senior rows is an operator decision. The
+ * report carries grade names, ids and counts only. A failure is a warning, never fatal.
+ */
+export async function reclassifyStoredJuniorGrades(
+  reader: Queryable,
+  grades: readonly { id: string; name: string | null }[],
+  warnings: string[],
+  log: Logger,
+): Promise<void> {
+  const ids = grades.map((g) => g.id);
+  const names = [...new Set(grades.map((g) => g.name ?? g.id))].join(", ");
+  try {
+    await reader.query(
+      `update playhq.grades set is_junior = true where id = any($1::uuid[]) and is_junior = false`,
+      [ids],
+    );
+    const matchIds = (
+      await reader.query<{ id: string }>(
+        `select lower(id::text) as id from playhq.matches where grade_id = any($1::uuid[])`,
+        [ids],
+      )
+    ).rows.map((r) => r.id);
+    let fixtures = 0;
+    let teamLists = 0;
+    let centralMatches: number | null = null;
+    if (matchIds.length) {
+      const [f] = await db
+        .select({
+          fixtures: sql<number>`count(*)::int`,
+          teamLists: sql<number>`count(${teamListsTable.id})::int`,
+        })
+        .from(fixturesTable)
+        .leftJoin(
+          teamListsTable,
+          and(
+            eq(teamListsTable.fixtureId, fixturesTable.id),
+            eq(teamListsTable.tenantId, fixturesTable.tenantId),
+          ),
+        )
+        .where(inArray(sql`lower(${fixturesTable.playhqMatchId})`, matchIds));
+      fixtures = f?.fixtures ?? 0;
+      teamLists = f?.teamLists ?? 0;
+      if (centralProjectorConfigured()) {
+        const { rows } = await getCentralProjectorPool().query<{ n: number }>(
+          `select count(*)::int as n from central.matches
+            where lower(playhq_match_id::text) = any($1::text[])`,
+          [matchIds],
+        );
+        centralMatches = rows[0]?.n ?? 0;
+      }
+    }
+    const projected = fixtures + teamLists + (centralMatches ?? 0);
+    log.warn(
+      {
+        gradeIds: ids,
+        grades: names,
+        matches: matchIds.length,
+        fixtures,
+        teamLists,
+        centralMatches,
+      },
+      "playhq ingest: stored grades reclassified as junior",
+    );
+    if (projected > 0)
+      warnings.push(
+        `grades reclassified as junior (${names}): already projected as senior — ` +
+          `${fixtures} fixture(s), ${teamLists} team list(s)` +
+          (centralMatches === null ? "" : `, ${centralMatches} central match(es)`) +
+          `; left in place for review`,
+      );
+  } catch (err) {
+    const text = juniorProjectionErrorText(err);
+    log.error({ gradeIds: ids, err: text }, "playhq ingest: grade reclassification failed");
+    warnings.push(`grade reclassification failed (${names}): ${text}`);
+  }
 }
 
 /**
@@ -362,8 +585,10 @@ export async function projectDumpToCentral(
 
 /**
  * The plans due now for every PlayHQ organisation linked to an active tenant with sync
- * switched on (U5, U4). Reads
- * `playhq.*` through the ingest pool: sync is either fully configured or answers 503.
+ * switched on (U5, U4), plus each junior-sync club's junior organisation (junior sync plan
+ * U4, KTD2): those organisations' plans ask the harness for junior grades too, their junior
+ * match days are scheduled, and a separate junior organisation is planned as its own org.
+ * Reads `playhq.*` through the ingest pool: sync is either fully configured or answers 503.
  */
 export async function listDuePlans(now: Date): Promise<DuePlansResponse> {
   const pool = getPlayhqIngestPool();
@@ -378,11 +603,16 @@ export async function listDuePlans(now: Date): Promise<DuePlansResponse> {
         eq(tenantsTable.playhqSyncEnabled, true),
       ),
     );
-  const orgIds = linked.map((t) => t.orgId!.toLowerCase());
-  const { matches, lastRuns } = await loadCadenceInputs(pool as unknown as Queryable, orgIds);
+  const juniorOrgIds = juniorOrgIdsOf(await loadJuniorSyncTenants());
+  const orgIds = [...new Set([...linked.map((t) => t.orgId!.toLowerCase()), ...juniorOrgIds])];
+  const { matches, lastRuns } = await loadCadenceInputs(
+    pool as unknown as Queryable,
+    orgIds,
+    juniorOrgIds,
+  );
   return {
     now: now.toISOString(),
-    plans: duePlans(now, orgIds, matches, lastRuns),
+    plans: duePlans(now, orgIds, matches, lastRuns, juniorOrgIds),
   };
 }
 

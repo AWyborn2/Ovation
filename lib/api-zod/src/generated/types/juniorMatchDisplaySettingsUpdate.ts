@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { JuniorMatchDisplaySettingsUpdateDefaultSeasonMode } from './juniorMatchDisplaySettingsUpdateDefaultSeasonMode';
+import type { JuniorNameStyle } from './juniorNameStyle';
+import type { JuniorTeamPublishing } from './juniorTeamPublishing';
 
 export interface JuniorMatchDisplaySettingsUpdate {
   defaultAgeGroup?: string;
@@ -13,4 +15,6 @@ export interface JuniorMatchDisplaySettingsUpdate {
   /** @nullable */
   defaultSeason?: string | null;
   ageGroupOrder?: string[];
+  nameStyle?: JuniorNameStyle;
+  teamPublishing?: JuniorTeamPublishing;
 }

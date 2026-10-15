@@ -1,4 +1,4 @@
-# Posting Plan release (migration 0040)
+# Posting Plan release (migration 0042)
 
 Release 1 of the Social Studio Posting Plan (`docs/plans/2026-10-07-001-feat-social-posting-plan-plan.md`) adds one nullable column. Production does not migrate on publish, so apply it by hand **before** republishing.
 

@@ -98,7 +98,7 @@ function FromJuniorMatch({ onOpen }: { onOpen: (i: ShareCardInput) => void }) {
     [matches, season, ageGroup],
   );
 
-  const detailQ = useGetJuniorMatch(matchId ?? 0, {
+  const detailQ = useGetJuniorMatch(matchId ?? 0, undefined, {
     query: { enabled: matchId != null, queryKey: getGetJuniorMatchQueryKey(matchId ?? 0) },
   });
 

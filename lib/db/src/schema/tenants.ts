@@ -107,6 +107,15 @@ export const tenantsTable = pgTable(
     // organisation and ingest does not project its fixtures. A platform-admin switch;
     // migration 0024 turned it on once for tenants already linked to an organisation.
     playhqSyncEnabled: boolean("playhq_sync_enabled").notNull().default(false),
+    // Junior PlayHQ sync (docs/plans/2026-10-14-001-feat-junior-playhq-sync-plan.md,
+    // U1, KTD1/KTD2). A platform-admin switch, default off: junior grades sync for a
+    // tenant only when PlayHQ sync is on, this is on and its plan includes `juniors`
+    // (the gate lives in api-server/src/lib/junior-sync.ts). While off, the tenant's
+    // junior grades are dropped at ingest exactly as before.
+    juniorSyncEnabled: boolean("junior_sync_enabled").notNull().default(false),
+    // The club's junior PlayHQ organisation GUID when its juniors run under a separate
+    // organisation. Null = juniors live under `playhqOrgId`. Unique when set.
+    playhqJuniorOrgId: text("playhq_junior_org_id"),
     // Broadcast imagery: tenant-uploaded hero and explore-card photos, keyed by
     // slot (`home`, `juniors`, `honours`, `explore.{honours,players,premierships}`),
     // each an `/api/storage/...` path or null. Null column = no imagery; heroes
@@ -122,6 +131,9 @@ export const tenantsTable = pgTable(
     uqPlayhqOrg: uniqueIndex("tenants_playhq_org_id_uidx")
       .on(t.playhqOrgId)
       .where(sql`"playhq_org_id" IS NOT NULL`),
+    uqPlayhqJuniorOrg: uniqueIndex("tenants_playhq_junior_org_id_uidx")
+      .on(t.playhqJuniorOrgId)
+      .where(sql`"playhq_junior_org_id" IS NOT NULL`),
     chkPlan: check("tenants_plan_check", sql`"plan" IN ('free', 'club', 'pro', 'pilot')`),
   }),
 );

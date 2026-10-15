@@ -165,6 +165,7 @@ describe("Club Kit designs", () => {
     expect(resultWord("draw", "Match drawn")).toBe("DRAW");
     expect(resultWord("draw", "Match tied")).toBe("TIE");
     expect(resultWord("opposition", "No result — rain")).toBe("NO RESULT");
+    expect(resultWord("draw", "Match abandoned")).toBe("ABANDONED");
     const html = render(sampleCardInput("matchSummary"), "square");
     expect(html).toMatch(/>WIN<\/div>/);
     expect(html.indexOf("Sample Club")).toBeLessThan(html.indexOf("Rival Club"));

@@ -30,6 +30,8 @@ describe("fitFor", () => {
     expect(f.lines).toBe(2);
     expect(f.scale).toBeCloseTo(0.7);
     expect(fitFor(80, 14).scale).toBe(MIN_FIT);
+    // One word can't wrap, so it shrinks past the floor instead.
+    expect(fitFor(9, 4, ["ABANDONED"])).toEqual({ scale: 4 / 9, lines: 1 });
   });
 });
 

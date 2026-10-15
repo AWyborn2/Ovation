@@ -13,7 +13,14 @@ import {
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { adminWriteRateLimiter } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
-import { snakeToCamel, serializeCorrection, SNAKE_TO_TABLE } from "../lib/junior-admin-helpers";
+import {
+  renameClubLines,
+  snakeToCamel,
+  serializeCorrection,
+  SNAKE_TO_TABLE,
+} from "../lib/junior-admin-helpers";
+import { juniorParticipantKey } from "../lib/junior-participant-scope";
+import { guardRevertedPrivacy } from "../lib/junior-privacy";
 
 /**
  * Juniors admin — the corrections journal: list + revert.
@@ -107,14 +114,29 @@ router.delete(
         const prev = (correction.prevValues ?? {}) as Record<string, unknown>;
         const set: Record<string, unknown> = {};
         for (const [snake, value] of Object.entries(prev)) {
-          set[snakeToCamel(snake)] = value;
+          // Journalled timestamps (e.g. privacy_override_at) are ISO strings in JSON.
+          set[snakeToCamel(snake)] =
+            snake.endsWith("_at") && typeof value === "string" ? new Date(value) : value;
         }
         if (Object.keys(set).length > 0) {
           if (correction.targetTable === "junior_participants") {
+            // Never restore a privacy override onto a participant who ends up public.
+            const [current] = await tx
+              .select({
+                isPrivate: juniorParticipantsTable.isPrivate,
+                privacyOverride: juniorParticipantsTable.privacyOverride,
+              })
+              .from(juniorParticipantsTable)
+              .where(juniorParticipantKey(tenantId, correction.targetId));
             await tx
               .update(juniorParticipantsTable)
-              .set(set)
-              .where(eq(juniorParticipantsTable.participantId, correction.targetId));
+              .set(current ? guardRevertedPrivacy(set, current) : set)
+              .where(juniorParticipantKey(tenantId, correction.targetId));
+            // The rename flowed onto this club's stored line names (PATCH
+            // /juniors/participants/:id), so a reverted name flows back the same way.
+            if (typeof set.displayName === "string") {
+              await renameClubLines(tx, tenantId, correction.targetId, set.displayName);
+            }
           } else {
             await tx
               .update(table)

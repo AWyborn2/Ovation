@@ -53,6 +53,10 @@ _Avoid:_ cap number, squad number
 
 A tenant's per-season list of people and their shirt numbers, seeded from the club's squad register (the availability squad import, via "Add squad to register") and the club's number spreadsheet, and extended by synced lineups. An entry stays held — admin-only — until a lineup links it to a player who has played.
 
+### Junior sync
+
+The per-club extension of the PlayHQ sync that captures a club's junior grades from its own PlayHQ organisation, from 2026/27 onward, into junior-only fixtures, team lists, match data and players. It runs only for clubs where it is switched on; for every other club junior grades are still dropped at ingest.
+
 ## Branding and onboarding
 
 ### Concierge onboarding
@@ -98,3 +102,15 @@ A club's one design for a card kind, made of editable elements (the starter's ow
 ### Starter design
 
 A ready-made design (Club Kit or Broadcast) that a club copies into a card kind template as its starting point. The copy has no live link back to the starter.
+
+### Posting slot
+
+A weekly day and time at which cards of one kind go out, set per card kind in the club's posting schedule. A new card takes its kind's next free slot within the daily cap and minimum gap. A card nobody has approved by then rolls to the next free slot until the age limit expires it.
+
+### Posting schedule
+
+A club's posting slots per card kind, plus what happens when several cards share a slot (space them out, or one per slot), the daily cap, the minimum gap and the age limit. Switched on, it replaces the posting window: a card's slot is its deadline.
+
+### Unscheduled tray
+
+The calendar's holding area for cards with no posting time: hand-made cards, cards with no free slot before they expire, cards an admin took off the calendar, and expired cards. A card leaves it only when someone gives it a time.

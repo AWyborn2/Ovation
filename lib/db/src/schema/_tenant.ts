@@ -116,6 +116,14 @@ import { tenantsTable } from "./tenants";
  *   tenant via getOrCreateSettings), shirt_number_uploads (upload previews).
  *   Directly tenant-scoped from day one (reads filter, writes set from request
  *   context); never written to the central database.
+ * APPLIED (junior PlayHQ sync, migration 0040):
+ *   junior_fixtures (upsert key `(tenant_id, playhq_match_id)`), junior_team_lists
+ *   (unique `(tenant_id, junior_fixture_id)`, cascades from its fixture). Junior-only
+ *   twins of fixtures / team_lists; directly tenant-scoped from day one (every read
+ *   filters, every write sets it), never blended with the senior tables.
+ *   junior_participants is now keyed `(tenant_id, participant_id)` so a child at two
+ *   clubs is two independent rows; junior_matches gains a partial unique
+ *   `(tenant_id, playhq_match_id)`.
  * ───────────────────────────────────────────────────────────────────────────
  */
 export const tenantIdColumn = () =>

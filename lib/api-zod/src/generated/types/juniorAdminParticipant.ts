@@ -10,4 +10,16 @@ export interface JuniorAdminParticipant {
   participantId: string;
   displayName: string;
   isPrivate: boolean;
+  /** An admin has chosen to show this private player's name publicly. */
+  privacyOverride: boolean;
+  /**
+     * The admin who set the override.
+     * @nullable
+     */
+  privacyOverrideBy: string | null;
+  /**
+     * When the override was set.
+     * @nullable
+     */
+  privacyOverrideAt: Date | null;
 }

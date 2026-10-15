@@ -13,6 +13,8 @@ import {
   useGetSocialSettings,
   getGetSocialSettingsQueryKey,
   getGetPendingSocialDraftCountQueryKey,
+  useGetSocialCalendar,
+  getGetSocialCalendarQueryKey,
   useListImports,
   getListImportsQueryKey,
   type SocialDraft,
@@ -30,6 +32,10 @@ import { DataTable, StatusPill, type DataTableColumn } from "@/components/admin-
 import { DraftDrawer } from "@/components/social-queue/draft-drawer";
 import { CarouselExportButton } from "@/components/social-queue/carousel-export-button";
 import { GenerateFromDataCard } from "@/components/social-queue/generate-from-data";
+import { PostingScheduleDialog } from "@/components/social-queue/posting-schedule-card";
+import { SocialCalendarView } from "@/components/social-calendar/social-calendar-view";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { clubDay } from "@/components/social-calendar/calendar-time";
 import {
   FAMILIES,
   FAMILY_LABEL,
@@ -77,6 +83,9 @@ function slideCount(d: SocialDraft): number {
 }
 
 /** "3 captions refreshed · 2 edited kept" */
+type QueueView = "week" | "list" | "table";
+const VIEW_LABEL: Record<QueueView, string> = { week: "Week", list: "List", table: "Table" };
+
 function recaptionSummary(r: RecaptionDraftsResult): string {
   const parts = [
     r.recaptioned === 1 ? "1 caption refreshed" : `${r.recaptioned} captions refreshed`,
@@ -110,6 +119,21 @@ export default function AdminSocialQueue() {
   const [needsLook, setNeedsLook] = useState(false);
   const [open, setOpen] = useState<SocialDraft | null>(null);
   const [preview, setPreview] = useState<SocialDraft | null>(null);
+
+  // Posting calendar (plan 2026-10-07-003): with it on, the queue opens as the
+  // week (desktop) or a day list (phone); the table stays one click away.
+  const schedule = bundle?.settings.postingSchedule ?? null;
+  const calendarOn = !!schedule?.enabled;
+  const wide = useMediaQuery("(min-width: 768px)");
+  const [chosenView, setChosenView] = useState<QueueView | null>(null);
+  const view: QueueView = calendarOn ? (chosenView ?? (wide ? "week" : "list")) : "table";
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  // Only to say how many cards a switch-on would place.
+  const today = clubDay(new Date());
+  const openCardsParams = { from: today, to: today };
+  const openCardsQ = useGetSocialCalendar(openCardsParams, {
+    query: { queryKey: getGetSocialCalendarQueryKey(openCardsParams), enabled: scheduleOpen },
+  });
 
   const invalidateDrafts = () => {
     qc.invalidateQueries({ queryKey: getListSocialDraftsQueryKey() });
@@ -294,6 +318,11 @@ export default function AdminSocialQueue() {
               Couldn&rsquo;t refresh captions. Try again.
             </span>
           )}
+          {schedule && (
+            <Button variant="outline" size="sm" onClick={() => setScheduleOpen(true)}>
+              {calendarOn ? "Posting schedule" : "Set up posting calendar"}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -319,95 +348,117 @@ export default function AdminSocialQueue() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Draft state">
-        {STATUS_ORDER.map((s) => (
-          <button
-            key={s}
-            type="button"
-            role="tab"
-            aria-selected={status === s}
-            onClick={() => setStatus(s)}
-            className={cn(
-              "h-9 rounded-full border px-4 text-sm font-semibold transition-colors",
-              status === s
-                ? "border-primary bg-primary/10 text-primary-text"
-                : "border-border bg-card text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {STATUS_LABEL[s]} ({counts[s]})
-          </button>
-        ))}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <Label htmlFor="family-filter" className="text-sm">
-          Type
-        </Label>
-        <select
-          id="family-filter"
-          value={family}
-          onChange={(e) => setFamily(e.target.value as Family | "all")}
-          className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground"
-        >
-          <option value="all">All types</option>
-          {FAMILIES.map((f) => (
-            <option key={f} value={f}>
-              {FAMILY_LABEL[f]}
-            </option>
+      {calendarOn && (
+        <div className="flex gap-1" role="group" aria-label="Queue view">
+          {(["week", "list", "table"] as const).map((v) => (
+            <Button
+              key={v}
+              size="sm"
+              variant={view === v ? "default" : "outline"}
+              aria-pressed={view === v}
+              onClick={() => setChosenView(v)}
+            >
+              {VIEW_LABEL[v]}
+            </Button>
           ))}
-        </select>
-        <Label htmlFor="grade-filter" className="text-sm">
-          Grade
-        </Label>
-        <select
-          id="grade-filter"
-          value={grade}
-          onChange={(e) => setGrade(e.target.value)}
-          className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground"
-        >
-          <option value="all">All grades</option>
-          {grades.map((g) => (
-            <option key={g} value={g}>
-              {g}
-            </option>
-          ))}
-        </select>
-        {(lookCount > 0 || needsLook) && (
-          <button
-            type="button"
-            aria-pressed={needsLook}
-            onClick={() => setNeedsLook((v) => !v)}
-            className={cn(
-              "h-9 rounded-full border px-3 text-sm font-semibold transition-colors",
-              needsLook
-                ? "border-destructive bg-destructive/10 text-destructive"
-                : "border-border bg-card text-muted-foreground hover:text-foreground",
-            )}
-          >
-            Needs a look ({lookCount})
-          </button>
-        )}
-      </div>
+        </div>
+      )}
 
-      {draftsQ.isLoading ? (
-        <ListSkeleton rows={5} />
-      ) : draftsQ.isError ? (
-        <QueryError
-          message="We couldn’t load the social queue. Please try again."
-          onRetry={() => draftsQ.refetch()}
-        />
+      {view !== "table" ? (
+        <SocialCalendarView view={view} schedule={schedule} onOpenDraft={setOpen} />
       ) : (
-        <DataTable
-          label="Drafts"
-          rows={rows}
-          columns={columns}
-          getRowId={(d) => d.id}
-          searchText={(d) => `${draftHeading(d)} ${draftSubline(d)}`}
-          searchPlaceholder="Search drafts"
-          onRowClick={setOpen}
-          emptyState={emptyState}
-          minWidth={640}
-        />
+        <>
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Draft state">
+            {STATUS_ORDER.map((s) => (
+              <button
+                key={s}
+                type="button"
+                role="tab"
+                aria-selected={status === s}
+                onClick={() => setStatus(s)}
+                className={cn(
+                  "h-9 rounded-full border px-4 text-sm font-semibold transition-colors",
+                  status === s
+                    ? "border-primary bg-primary/10 text-primary-text"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {STATUS_LABEL[s]} ({counts[s]})
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Label htmlFor="family-filter" className="text-sm">
+              Type
+            </Label>
+            <select
+              id="family-filter"
+              value={family}
+              onChange={(e) => setFamily(e.target.value as Family | "all")}
+              className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground"
+            >
+              <option value="all">All types</option>
+              {FAMILIES.map((f) => (
+                <option key={f} value={f}>
+                  {FAMILY_LABEL[f]}
+                </option>
+              ))}
+            </select>
+            <Label htmlFor="grade-filter" className="text-sm">
+              Grade
+            </Label>
+            <select
+              id="grade-filter"
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
+              className="h-9 rounded-md border border-border bg-card px-2 text-sm text-foreground"
+            >
+              <option value="all">All grades</option>
+              {grades.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+            </select>
+            {(lookCount > 0 || needsLook) && (
+              <button
+                type="button"
+                aria-pressed={needsLook}
+                onClick={() => setNeedsLook((v) => !v)}
+                className={cn(
+                  "h-9 rounded-full border px-3 text-sm font-semibold transition-colors",
+                  needsLook
+                    ? "border-destructive bg-destructive/10 text-destructive"
+                    : "border-border bg-card text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Needs a look ({lookCount})
+              </button>
+            )}
+          </div>
+
+          {draftsQ.isLoading ? (
+            <ListSkeleton rows={5} />
+          ) : draftsQ.isError ? (
+            <QueryError
+              message="We couldn’t load the social queue. Please try again."
+              onRetry={() => draftsQ.refetch()}
+            />
+          ) : (
+            <DataTable
+              label="Drafts"
+              rows={rows}
+              columns={columns}
+              getRowId={(d) => d.id}
+              searchText={(d) => `${draftHeading(d)} ${draftSubline(d)}`}
+              searchPlaceholder="Search drafts"
+              onRowClick={setOpen}
+              emptyState={emptyState}
+              minWidth={640}
+            />
+          )}
+        </>
       )}
 
       <GenerateFromDataCard onDrafted={invalidateDrafts} />
@@ -452,6 +503,15 @@ export default function AdminSocialQueue() {
         onClose={() => setOpen(null)}
         onPreview={(d) => (readQueuedCarousel(d.cardInput) ? setOpen(d) : setPreview(d))}
       />
+
+      {schedule && (
+        <PostingScheduleDialog
+          open={scheduleOpen}
+          onOpenChange={setScheduleOpen}
+          schedule={schedule}
+          openCards={openCardsQ.data?.openCards ?? 0}
+        />
+      )}
 
       <ShareCardModal
         open={!!preview}

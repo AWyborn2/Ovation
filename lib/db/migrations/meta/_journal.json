@@ -285,8 +285,22 @@
     {
       "idx": 40,
       "version": "7",
-      "when": 1792022766486,
-      "tag": "0040_posting_plan",
+      "when": 1792020700069,
+      "tag": "0040_junior_sync",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1792027133410,
+      "tag": "0041_social_posting_calendar",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792030490626,
+      "tag": "0042_posting_plan",
       "breakpoints": true
     }
   ]

@@ -1886,6 +1886,8 @@ export interface Entitlements {
   socialPublishing: boolean;
   clubroomTv: boolean;
   curation: boolean;
+  /** Junior PlayHQ sync. On the club and pro plans; not enforced while billing is dormant, when the platform-admin junior sync switch is the effective control. */
+  juniors: boolean;
 }
 
 export type MetaConnectionStatus = typeof MetaConnectionStatus[keyof typeof MetaConnectionStatus];
@@ -2135,6 +2137,13 @@ export interface AdminTenant {
   playhqOrgId?: string | null;
   /** Whether scheduled PlayHQ sync runs for this tenant. */
   playhqSyncEnabled?: boolean;
+  /** Whether junior PlayHQ sync is switched on for this tenant (platform admin only). Junior grades sync only when PlayHQ sync is also on. */
+  juniorSyncEnabled?: boolean;
+  /**
+     * The tenant's junior PlayHQ organisation GUID, or null when its juniors run under playhqOrgId.
+     * @nullable
+     */
+  playhqJuniorOrgId?: string | null;
   /** True when the tenant has set both an explicit logo and primary colour (has configured its own branding rather than relying on defaults). */
   brandingComplete: boolean;
 }
@@ -2475,7 +2484,7 @@ export const UpdateTenantBodyPlan = {
 } as const;
 
 /**
- * Partial update of a tenant's plan, custom domain and/or PlayHQ sync switch.
+ * Partial update of a tenant's plan, custom domain, PlayHQ sync switch and/or junior sync settings. Platform admin only; the club-admin brand update and signup schemas carry none of these.
  */
 export interface UpdateTenantBody {
   plan?: UpdateTenantBodyPlan;
@@ -2483,6 +2492,13 @@ export interface UpdateTenantBody {
   customDomain?: string | null;
   /** Scheduled PlayHQ sync for this tenant. When false the hourly runner plans nothing for its organisation and ingest does not project its fixtures. */
   playhqSyncEnabled?: boolean;
+  /** Junior PlayHQ sync for this tenant. Takes effect only while PlayHQ sync is on and the plan includes juniors; when off, junior grades are dropped at ingest. */
+  juniorSyncEnabled?: boolean;
+  /**
+     * The tenant's junior PlayHQ organisation GUID when its juniors run under a separate organisation. Null or blank clears it (juniors then use playhqOrgId). Unique across tenants.
+     * @nullable
+     */
+  playhqJuniorOrgId?: string | null;
 }
 
 export type ProvisionTenantBodyPlan = typeof ProvisionTenantBodyPlan[keyof typeof ProvisionTenantBodyPlan];
@@ -5241,6 +5257,84 @@ export interface PostingPlan {
   rows: PostingPlanRows;
 }
 
+export interface PostingSlot {
+  /**
+     * 0 = Sunday, club time
+     * @minimum 0
+     * @maximum 6
+     */
+  day: number;
+  /**
+     * HH:mm, 15-minute steps
+     * @pattern ^([01]\d|2[0-3]):[0-5]\d$
+     */
+  time: string;
+}
+
+/**
+ * Several cards in one slot: "space" them out by the club's minimum gap, or "roll" extras to later slots (one per slot).
+ */
+export type PostingKindCollision = typeof PostingKindCollision[keyof typeof PostingKindCollision];
+
+
+export const PostingKindCollision = {
+  space: 'space',
+  roll: 'roll',
+} as const;
+
+export interface PostingKind {
+  /** @maxItems 14 */
+  slots: PostingSlot[];
+  /** Several cards in one slot: "space" them out by the club's minimum gap, or "roll" extras to later slots (one per slot). */
+  collision: PostingKindCollision;
+}
+
+export interface PostingKinds {
+  results: PostingKind;
+  roundResults: PostingKind;
+  teamLists: PostingKind;
+  gameDay: PostingKind;
+  milestones: PostingKind;
+  debuts: PostingKind;
+  achievements: PostingKind;
+  roundUp: PostingKind;
+  other: PostingKind;
+}
+
+/**
+ * The posting calendar: weekly slots per card kind, a daily cap, a minimum gap and an age limit. Always complete in a response. Off unless `enabled`.
+ */
+export interface PostingSchedule {
+  enabled: boolean;
+  /**
+     * @minimum 1
+     * @maximum 20
+     */
+  dailyCap: number;
+  /**
+     * @minimum 0
+     * @maximum 240
+     */
+  minGapMinutes: number;
+  /**
+     * @minimum 1
+     * @maximum 30
+     */
+  ageLimitDays: number;
+  kinds: PostingKinds;
+}
+
+export interface PostingSwitchover {
+  /** Open cards given a time when the calendar was turned on */
+  placed: number;
+  /** Cards already scheduled to Meta */
+  pinned: number;
+  /** Cards with no free slot */
+  unscheduled: number;
+  /** Cards handed back to auto-post when it was turned off */
+  restored: number;
+}
+
 export interface SocialSettings {
   engineOnDemand: boolean;
   engineMilestone: boolean;
@@ -5292,6 +5386,8 @@ export interface SocialSettings {
   postingPlanSaved?: boolean;
   /** Whether the club reads its results from the association database (results, ladder and leaderboard round carousels need it). */
   centralData?: boolean;
+  postingSchedule?: PostingSchedule;
+  postingSwitchover?: PostingSwitchover;
 }
 
 export interface Notification {
@@ -5999,6 +6095,41 @@ export interface RoundSchedulesUpdate {
   weekendWrap?: RoundSchedule;
 }
 
+export interface PostingKindsUpdate {
+  results?: PostingKind;
+  roundResults?: PostingKind;
+  teamLists?: PostingKind;
+  gameDay?: PostingKind;
+  milestones?: PostingKind;
+  debuts?: PostingKind;
+  achievements?: PostingKind;
+  roundUp?: PostingKind;
+  other?: PostingKind;
+}
+
+/**
+ * Merged into the stored schedule; kinds merge per kind. Turning `enabled` on places the club's open cards; turning it off hands them back to auto-post.
+ */
+export interface PostingScheduleUpdate {
+  enabled?: boolean;
+  /**
+     * @minimum 1
+     * @maximum 20
+     */
+  dailyCap?: number;
+  /**
+     * @minimum 0
+     * @maximum 240
+     */
+  minGapMinutes?: number;
+  /**
+     * @minimum 1
+     * @maximum 30
+     */
+  ageLimitDays?: number;
+  kinds?: PostingKindsUpdate;
+}
+
 export interface SocialSettingsUpdate {
   engineOnDemand?: boolean;
   engineMilestone?: boolean;
@@ -6045,6 +6176,7 @@ export interface SocialSettingsUpdate {
   roundSchedules?: RoundSchedulesUpdate;
   /** The whole Posting Plan; saving it also updates the family switches and round-schedule modes. */
   postingPlan?: PostingPlan;
+  postingSchedule?: PostingScheduleUpdate;
 }
 
 /**
@@ -7550,6 +7682,18 @@ export interface LayoutWarning {
  */
 export type SocialDraftLayoutWarnings = {[key: string]: LayoutWarning[]} | null;
 
+/**
+ * "auto" — placed automatically and may roll; "admin" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).
+ * @nullable
+ */
+export type SocialDraftPlannedBy = typeof SocialDraftPlannedBy[keyof typeof SocialDraftPlannedBy] | null;
+
+
+export const SocialDraftPlannedBy = {
+  auto: 'auto',
+  admin: 'admin',
+} as const;
+
 export type SocialDraftStatus = typeof SocialDraftStatus[keyof typeof SocialDraftStatus];
 
 
@@ -7683,10 +7827,106 @@ export interface SocialDraft {
      * @nullable
      */
   staleSince?: string | null;
+  /**
+     * When the card goes out on the posting calendar; null = unscheduled.
+     * @nullable
+     */
+  plannedAt?: string | null;
+  /**
+     * "auto" — placed automatically and may roll; "admin" — pinned by an admin (a drag, or taken off the calendar when plannedAt is null).
+     * @nullable
+     */
+  plannedBy?: SocialDraftPlannedBy;
+  /** How many times the card rolled to a later slot unapproved. */
+  rollCount?: number;
+  /**
+     * When it was published or the club was told to share it, at its time.
+     * @nullable
+     */
+  dispatchedAt?: string | null;
+  /**
+     * A pinned card's one overdue reminder.
+     * @nullable
+     */
+  overdueNotifiedAt?: string | null;
+  /**
+     * Past the club's age limit; off the calendar until moved to a time.
+     * @nullable
+     */
+  expiredAt?: string | null;
   /** Its Facebook / Instagram posts, newest attempt per platform and post type. */
   publications?: SocialPublication[];
   /** A post failed for good and nothing else is pending for it. */
   needsAttention?: boolean;
+}
+
+export interface SocialCalendarCard {
+  draft: SocialDraft;
+  /** The posting-calendar kind the card posts in (milestones, debuts, results…). */
+  slotKind: string;
+  /** Its time passed while it still waits for approval. */
+  overdue: boolean;
+  /**
+     * Why the card's day needs a look (over the cap, or inside the gap).
+     * @nullable
+     */
+  warning?: string | null;
+}
+
+export interface SocialCalendarDay {
+  /** Club-local YYYY-MM-DD */
+  date: string;
+  /** Posts planned or posted that day */
+  count: number;
+  overCap: boolean;
+  /** Cards closer to another post than the club's minimum gap. */
+  gapWarnings: number[];
+}
+
+export interface SocialCalendarPlaceholder {
+  slotKind: string;
+  label: string;
+  at: string;
+}
+
+export interface SocialCalendar {
+  /** Whether the club's posting calendar is on */
+  enabled: boolean;
+  from: string;
+  to: string;
+  timeZone: string;
+  dailyCap: number;
+  minGapMinutes: number;
+  days: SocialCalendarDay[];
+  cards: SocialCalendarCard[];
+  /** The Unscheduled tray — open cards with no time. */
+  unscheduled: SocialCalendarCard[];
+  placeholders: SocialCalendarPlaceholder[];
+  /** Open automatic cards a switch-on would place (shown before turning the calendar on). */
+  openCards: number;
+}
+
+export interface SetPlannedTimeRequest {
+  plannedAt: string;
+  /**
+     * The card's planned time as the client saw it; null when unscheduled.
+     * @nullable
+     */
+  expectedPlannedAt: string | null;
+}
+
+export interface UnscheduleDraftRequest {
+  /** @nullable */
+  expectedPlannedAt: string | null;
+}
+
+export type PostingSlotsRunResponseResultsItem = {
+  tenantId: number;
+  ok: boolean;
+};
+
+export interface PostingSlotsRunResponse {
+  results: PostingSlotsRunResponseResultsItem[];
 }
 
 export interface PublishSweepSummary {
@@ -8627,6 +8867,118 @@ export interface JuniorInnings {
   bowling: JuniorBowlingLine[];
 }
 
+export interface JuniorFixture {
+  id: number;
+  seasonStartYear: number;
+  ageGroup: string | null;
+  grade: string | null;
+  /** The club's own junior team */
+  teamName: string | null;
+  opponentName: string | null;
+  venue: string | null;
+  startAt: string | null;
+  isHome: boolean | null;
+  /** PlayHQ match status as last synced (e.g. UPCOMING) */
+  status: string | null;
+  /** A published team list exists for this fixture */
+  hasTeamList: boolean;
+}
+
+/**
+ * Captain / vice-captain / wicket-keeper marker
+ */
+export type JuniorTeamListRole = typeof JuniorTeamListRole[keyof typeof JuniorTeamListRole];
+
+
+export const JuniorTeamListRole = {
+  C: 'C',
+  VC: 'VC',
+  WK: 'WK',
+  'C/WK': 'C/WK',
+  'VC/WK': 'VC/WK',
+} as const;
+
+export interface JuniorPublicTeamListPlayer {
+  order: number;
+  /** Public name in the club's style, or "Private Player" */
+  name: string;
+  /** Null when the player is withheld */
+  participantId: string | null;
+  role: JuniorTeamListRole | null;
+  /** Junior shirt number for the fixture's season (null when withheld or none) */
+  shirtNumber: string | null;
+}
+
+export interface JuniorFixtureDetail {
+  fixture: JuniorFixture;
+  /** The published team list in order, or null when none is published */
+  teamList: JuniorPublicTeamListPlayer[] | null;
+}
+
+export interface JuniorAdminTeamListPlayer {
+  order: number;
+  participantId: string;
+  /** Full name */
+  name: string;
+  role: JuniorTeamListRole | null;
+  shirtNumber: string | null;
+  /** Withheld on public pages (private in PlayHQ, not overridden) */
+  isPrivate: boolean;
+  /** Still one of the club's junior participants */
+  isKnown: boolean;
+}
+
+export interface JuniorTeamListCandidate {
+  participantId: string;
+  name: string;
+  isPrivate: boolean;
+  shirtNumber: string | null;
+  teams: string | null;
+  lastSeason: string | null;
+}
+
+/**
+ * Who wrote the list; an admin's list is never overwritten by the sync
+ */
+export type JuniorAdminTeamListSavedSource = typeof JuniorAdminTeamListSavedSource[keyof typeof JuniorAdminTeamListSavedSource];
+
+
+export const JuniorAdminTeamListSavedSource = {
+  playhq: 'playhq',
+  admin: 'admin',
+} as const;
+
+export interface JuniorAdminTeamListSaved {
+  players: JuniorAdminTeamListPlayer[];
+  isPublished: boolean;
+  /** Who wrote the list; an admin's list is never overwritten by the sync */
+  source: JuniorAdminTeamListSavedSource;
+  updatedAt: string;
+}
+
+export interface JuniorAdminTeamList {
+  fixture: JuniorFixture;
+  /** Season start year whose shirt numbers are shown */
+  season: number;
+  shirtNumbersEnabled: boolean;
+  teamList: JuniorAdminTeamListSaved | null;
+  candidates: JuniorTeamListCandidate[];
+}
+
+export interface PutJuniorTeamListPlayer {
+  /** @minimum 1 */
+  order: number;
+  /** @minLength 1 */
+  participantId: string;
+  role?: JuniorTeamListRole | null;
+}
+
+export interface PutJuniorTeamListBody {
+  /** @maxItems 30 */
+  players: PutJuniorTeamListPlayer[];
+  isPublished?: boolean;
+}
+
 export interface JuniorMatchSummary {
   id: number;
   /** @nullable */
@@ -8751,6 +9103,18 @@ export interface JuniorPlayerSummary {
   seniorPlayerId?: number | null;
   /** Only present/true on admin requests with includePrivate. */
   isPrivate?: boolean;
+  /** Admin requests with includePrivate only. A private player an admin names publicly. */
+  privacyOverride?: boolean;
+  /**
+     * Admin requests with includePrivate only. The admin who set the override.
+     * @nullable
+     */
+  privacyOverrideBy?: string | null;
+  /**
+     * Admin requests with includePrivate only. When the override was set.
+     * @nullable
+     */
+  privacyOverrideAt?: string | null;
 }
 
 export interface JuniorSeniorLinkSummary {
@@ -8998,12 +9362,51 @@ export interface UpdateJuniorParticipantBody {
   /** @minLength 1 */
   displayName?: string;
   isPrivate?: boolean;
+  /** Show a private player's name publicly anyway (true) or withhold it again (false). Can only be switched on for a private player. */
+  privacyOverride?: boolean;
 }
+
+/**
+ * How public junior surfaces name the club's players: full name, first name and surname initial ("Ollie G"), or first name only.
+ */
+export type JuniorNameStyle = typeof JuniorNameStyle[keyof typeof JuniorNameStyle];
+
+
+export const JuniorNameStyle = {
+  full: 'full',
+  first_initial: 'first_initial',
+  first: 'first',
+} as const;
+
+export type JuniorTeamPublishMode = typeof JuniorTeamPublishMode[keyof typeof JuniorTeamPublishMode];
+
+
+export const JuniorTeamPublishMode = {
+  approval: 'approval',
+  auto: 'auto',
+} as const;
+
+/**
+ * Per-team social publishing, keyed by age group then team name. A team not listed needs approval; only "auto" lets its cards post themselves.
+ */
+export interface JuniorTeamPublishing {[key: string]: {[key: string]: JuniorTeamPublishMode}}
 
 export interface JuniorAdminParticipant {
   participantId: string;
   displayName: string;
   isPrivate: boolean;
+  /** An admin has chosen to show this private player's name publicly. */
+  privacyOverride: boolean;
+  /**
+     * The admin who set the override.
+     * @nullable
+     */
+  privacyOverrideBy: string | null;
+  /**
+     * When the override was set.
+     * @nullable
+     */
+  privacyOverrideAt: string | null;
 }
 
 export type JuniorStatCorrectionTargetTable = typeof JuniorStatCorrectionTargetTable[keyof typeof JuniorStatCorrectionTargetTable];
@@ -9283,6 +9686,8 @@ export interface JuniorMatchDisplaySettings {
   defaultSeason?: string | null;
   /** Ordered age-group tokens for the age-group menu. Tokens not listed fall back to the natural order, appended after the configured ones. */
   ageGroupOrder: string[];
+  nameStyle: JuniorNameStyle;
+  teamPublishing: JuniorTeamPublishing;
 }
 
 export type JuniorMatchDisplaySettingsUpdateDefaultSeasonMode = typeof JuniorMatchDisplaySettingsUpdateDefaultSeasonMode[keyof typeof JuniorMatchDisplaySettingsUpdateDefaultSeasonMode];
@@ -9300,6 +9705,8 @@ export interface JuniorMatchDisplaySettingsUpdate {
   /** @nullable */
   defaultSeason?: string | null;
   ageGroupOrder?: string[];
+  nameStyle?: JuniorNameStyle;
+  teamPublishing?: JuniorTeamPublishing;
 }
 
 export interface JuniorPremiershipPlayer {
@@ -9769,6 +10176,19 @@ export type GetFixtureForecastParams = {
 fixtureId: number;
 };
 
+export type GetSocialCalendarParams = {
+/**
+ * First club-local day, YYYY-MM-DD.
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+from: string;
+/**
+ * Last club-local day, YYYY-MM-DD (inclusive).
+ * @pattern ^\d{4}-\d{2}-\d{2}$
+ */
+to: string;
+};
+
 export type SweepMatchSummaryDraftsBody = {
   matchIds?: number[];
   junior?: boolean;
@@ -9810,6 +10230,13 @@ season?: string;
 allTime?: boolean;
 };
 
+export type ListJuniorFixturesParams = {
+/**
+ * Filter by age group (e.g. "Year 6")
+ */
+ageGroup?: string;
+};
+
 export type ListJuniorMatchesParams = {
 /**
  * Filter by season (e.g. "2024/25")
@@ -9819,6 +10246,13 @@ season?: string;
  * Filter by age group (e.g. "U14")
  */
 ageGroup?: string;
+};
+
+export type GetJuniorMatchParams = {
+/**
+ * Return full names and participant ids on every line (honoured only for a signed-in admin of this club — silently ignored otherwise). Used by the admin scorecard editor.
+ */
+includePrivate?: boolean;
 };
 
 export type ListJuniorStatCorrectionsParams = {

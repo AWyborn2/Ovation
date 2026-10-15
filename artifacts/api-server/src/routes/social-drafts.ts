@@ -4,7 +4,7 @@ import {
   carouselPackId,
   isCarouselPackId,
 } from "@workspace/scorecard/queued-carousel";
-import { and, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql, type SQL } from "drizzle-orm";
 import {
   db,
   adminsTable,
@@ -16,6 +16,7 @@ import {
   milestoneEventsTable,
   matchesTable,
   juniorMatchesTable,
+  type SocialDraftRow,
 } from "@workspace/db";
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
@@ -41,6 +42,7 @@ import { recaptionQueuedDrafts } from "../lib/draft-recaption";
 import {
   effectiveDraftStatus,
   layoutClear,
+  syncedJuniorDraft,
   loadAutoPost,
   type AutoPost,
 } from "../lib/effective-draft-state";
@@ -56,6 +58,7 @@ import {
   publicationsByDraft,
 } from "../lib/publishing/publications";
 import { BLANK_PACK_ID, templatedDesignFor } from "../lib/kind-templates";
+import { calendarEnabled, placeDraft } from "../lib/posting-writer";
 
 const router: IRouter = Router();
 
@@ -67,12 +70,36 @@ const randomSlug = (): string =>
  * and — while auto-post is on — a draft past its deadline reads as ready even
  * before the sweep stores it (KTD4).
  */
-function presentDraft<T extends { status: string; autoReadyAt: Date | null }>(
+export function presentDraft<
+  T extends { status: string; autoReadyAt: Date | null; sourceKey: string | null },
+>(
   row: T,
   autoPost: AutoPost = { enabled: false },
   now: Date = new Date(),
 ): T & { status: DraftStatus } {
   return { ...row, status: effectiveDraftStatus(row, autoPost, now) };
+}
+
+/**
+ * Posting calendar (KTD13): a card sent back or reopened is no longer sent.
+ * Its "sent" and "overdue" marks clear; an automatic card is placed again from
+ * now (it will roll, not auto-approve — sending back cleared that), and a
+ * pinned card keeps its time, overdue if that has passed.
+ */
+async function resetPostingTiming(draft: SocialDraftRow): Promise<SocialDraftRow> {
+  if (!(await calendarEnabled(draft.tenantId))) return draft;
+  const [cleared] = await db
+    .update(socialDraftsTable)
+    .set({ dispatchedAt: null, overdueNotifiedAt: null })
+    .where(eq(socialDraftsTable.id, draft.id))
+    .returning();
+  if (cleared.plannedBy === "admin") return cleared;
+  await db
+    .update(socialDraftsTable)
+    .set({ plannedAt: null, plannedBy: null })
+    .where(eq(socialDraftsTable.id, draft.id));
+  await placeDraft(draft.tenantId, draft.id);
+  return (await loadDraft(draft.tenantId, draft.id)) ?? cleared;
 }
 
 function parseId(raw: unknown): number | null {
@@ -93,7 +120,7 @@ async function loadDraft(tenantId: number, id: number) {
  * to save into. Until someone saves an edit (every edit records a revision) or acts on it, it
  * stays out of the queue, so just looking at a card in the editor leaves nothing behind.
  */
-const notAnUntouchedEditorDraft = sql`NOT (
+export const notAnUntouchedEditorDraft = sql`NOT (
   ${socialDraftsTable.engine} = 'adhoc'
   AND ${socialDraftsTable.status} = 'awaiting_review'
   AND NOT EXISTS (
@@ -161,12 +188,15 @@ router.get("/social-drafts/pending-count", requireAdmin, async (req, res): Promi
     eq(socialDraftsTable.tenantId, tenantId),
     eq(socialDraftsTable.status, "awaiting_review"),
     notAnUntouchedEditorDraft,
+    // An expired card (posting calendar) no longer waits for anyone.
+    isNull(socialDraftsTable.expiredAt),
   ];
   // Drafts past their deadline already read as ready while auto-post is on —
   // unless their layout needs a look, which keeps them waiting (KTD10).
   if ((await loadAutoPost(tenantId)).enabled) {
     conditions.push(
-      sql`(${socialDraftsTable.autoReadyAt} IS NULL OR ${socialDraftsTable.autoReadyAt} > now() OR NOT ${layoutClear})`,
+      // A synced junior draft waits for the sweep (effectiveDraftStatus), so it stays pending.
+      sql`(${socialDraftsTable.autoReadyAt} IS NULL OR ${socialDraftsTable.autoReadyAt} > now() OR NOT ${layoutClear} OR ${syncedJuniorDraft})`,
     );
   }
   const [row] = await db
@@ -196,6 +226,12 @@ router.post(
     const current = normalizeDraftStatus(draft.status);
     if (current !== "awaiting_review" && current !== "ready") {
       res.status(409).json({ error: `Cannot mark a ${current} draft ready` });
+      return;
+    }
+    if (draft.expiredAt !== null) {
+      res.status(409).json({
+        error: "This card is past the club's age limit. Move it to a time to bring it back.",
+      });
       return;
     }
     let slug = draft.trackedSlug;
@@ -246,7 +282,7 @@ router.post(
       .returning();
     // A draft back in review must not go out on its old schedule (R13).
     await cancelDraftPublications(tenantId, id, "Sent back to review.");
-    res.json(presentDraft(updated));
+    res.json(presentDraft(await resetPostingTiming(updated)));
   },
 );
 
@@ -362,7 +398,7 @@ router.post(
         .set({ status: "awaiting_review", autoReadyAt: null, reviewedAt: null })
         .where(and(eq(socialDraftsTable.id, id), eq(socialDraftsTable.tenantId, tenantId)))
         .returning();
-      res.json(presentDraft(updated));
+      res.json(presentDraft(await resetPostingTiming(updated)));
     } catch (err) {
       // A newer undismissed draft already holds this event (dedupe index).
       if ((err as { code?: string }).code === "23505") {

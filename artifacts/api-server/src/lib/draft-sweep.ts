@@ -39,6 +39,8 @@ import { runAvailabilitySchedule } from "./availability-schedule";
 import { autoSeedSquadIfEmpty } from "./squad-season-seed";
 import { runPendingLayoutChecks } from "./draft-render";
 import { logger as appLogger } from "./logger";
+import { calendarEnabled } from "./posting-writer";
+import { runPostingSlots, type PostingSlotsSummary } from "./posting-slots";
 
 type Logger = PostCommitLogger & {
   info: (obj: unknown, msg?: string) => void;
@@ -53,7 +55,8 @@ type Logger = PostCommitLogger & {
  * - `scheduled`: the periodic job. A central-data club drafts match summaries
  *   and achievement cards (centuries, five-fors, debuts, career milestones)
  *   for central matches past its watermark; every club gets its match-day and
- *   team-list cards.
+ *   team-list cards. A club with junior sync on also gets junior team-list and
+ *   result cards (junior-social.ts).
  * - `fixtures`: the fixtures projection just refreshed a tenant's schedule —
  *   only the fixture-driven engines run.
  *
@@ -79,6 +82,8 @@ export type SweepSummary = {
   promoted: number;
   /** A Grade / Female A Grade debut caps issued (debut-caps.ts). */
   debutCaps?: number;
+  /** Posting calendar clubs: what happened at planned times this run. */
+  postingSlots?: PostingSlotsSummary;
 };
 
 /** Most central matches drafted in one sweep. */
@@ -175,6 +180,19 @@ export async function runDraftSweep(
   } catch (err) {
     logger.error({ err, tenantId }, "team-list drafts failed");
   }
+  // Junior social (junior PlayHQ sync plan U8): junior team-list and result cards for a
+  // club with junior sync on, per-team re-timing, and the switch-off hold. Runs before
+  // anything below can promote or post a draft.
+  try {
+    // Loaded on use: it pulls in the junior tables, which the senior paths never need.
+    const { runJuniorSocialSweep } = await import("./junior-social");
+    const junior = await runJuniorSocialSweep(tenantId, scope.kind, now, logger);
+    if (junior.teamLists || junior.results || junior.held || junior.retimed) {
+      logger.info({ tenantId, ...junior }, "junior social sweep");
+    }
+  } catch (err) {
+    logger.error({ err, tenantId }, "junior social sweep failed");
+  }
 
   // Round sets on the club's schedule. The weekend wrap reads results, so it
   // only runs on the scheduled sweep, not on a fixtures refresh.
@@ -211,9 +229,15 @@ export async function runDraftSweep(
     }
     // Auto-post (KTD4): store what already reads as ready, then tell the club
     // once for the whole batch. With auto-publish on, fresh drafts are
-    // scheduled to Facebook / Instagram instead and skip the notice.
+    // scheduled to Facebook / Instagram instead and skip the notice. A club on
+    // the posting calendar does all of this at each card's planned time
+    // instead (plan 2026-10-07-003, KTD8).
     try {
-      if ((await loadAutoPost(tenantId)).enabled) {
+      if (await calendarEnabled(tenantId)) {
+        const slots = await runPostingSlots(tenantId, now, logger);
+        summary.promoted = slots.promoted;
+        summary.postingSlots = slots;
+      } else if ((await loadAutoPost(tenantId)).enabled) {
         const promoted = await persistDueDrafts(tenantId, now);
         summary.promoted = promoted.length;
         const autoPublished = await scheduleAutoPublish(tenantId, now);

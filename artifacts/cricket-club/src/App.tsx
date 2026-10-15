@@ -38,6 +38,11 @@ const StatDetail = lazy(() => import("@/pages/stat-detail"));
 const JuniorsDashboard = lazy(() => import("@/pages/juniors-dashboard"));
 const JuniorsMatches = lazy(() => import("@/pages/juniors-matches"));
 const JuniorsMatchDetail = lazy(() => import("@/pages/juniors-match-detail"));
+const JuniorsFixtures = lazy(() => import("@/pages/juniors-fixtures"));
+const JuniorsFixtureDetail = lazyNamed(
+  () => import("@/pages/juniors-fixtures"),
+  "JuniorsFixtureDetail",
+);
 const JuniorsPremierships = lazy(() => import("@/pages/juniors-premierships"));
 const JuniorsPlayers = lazy(() => import("@/pages/juniors-players"));
 const JuniorsPlayerDetail = lazy(() => import("@/pages/juniors-player-detail"));
@@ -118,6 +123,8 @@ function PublicRoutes() {
           <Route path="/juniors" component={JuniorsDashboard} />
           <Route path="/juniors/matches" component={JuniorsMatches} />
           <Route path="/juniors/matches/:id" component={JuniorsMatchDetail} />
+          <Route path="/juniors/fixtures" component={JuniorsFixtures} />
+          <Route path="/juniors/fixtures/:id" component={JuniorsFixtureDetail} />
           <Route path="/juniors/premierships" component={JuniorsPremierships} />
           <Route path="/juniors/players" component={JuniorsPlayers} />
           <Route path="/juniors/players/:id" component={JuniorsPlayerDetail} />

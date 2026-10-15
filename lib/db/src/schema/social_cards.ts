@@ -436,6 +436,22 @@ export type PostingPlanRow = {
   >;
 };
 
+/** One weekly posting slot: day 0 = Sunday, "HH:mm" in club time (15-minute steps). */
+export type PostingSlotRow = { day: number; time: string };
+/** A slot kind's slots and what happens when several of its cards share one. */
+export type PostingKindRow = { slots: PostingSlotRow[]; collision: "space" | "roll" };
+/**
+ * The club's posting calendar (plan 2026-10-07-003): off unless `enabled`.
+ * Stored partial; the API resolves missing kinds and fields to defaults.
+ */
+export type PostingScheduleRow = {
+  enabled?: boolean;
+  dailyCap?: number;
+  minGapMinutes?: number;
+  ageLimitDays?: number;
+  kinds?: Partial<Record<string, PostingKindRow>>;
+};
+
 // One row per tenant (unique on tenantId; PK stays a surrogate id). A tenant's
 // row is created on first access (see `ensureSettings` in social-cards.ts),
 // seeded with these schema defaults — never copied from another tenant's saved
@@ -516,6 +532,9 @@ export const socialSettingsTable = pgTable(
     // above, so nothing changes until an admin saves (see
     // @workspace/scorecard/posting-plan).
     postingPlan: jsonb("posting_plan").$type<PostingPlanRow>(),
+    // The posting calendar (plan 2026-10-07-003): weekly slots per card kind,
+    // a daily cap, a minimum gap and an age limit. Null = never saved (off).
+    postingSchedule: jsonb("posting_schedule").$type<PostingScheduleRow>(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
@@ -666,8 +685,28 @@ export const socialDraftsTable = pgTable(
     layoutWarnings: jsonb("layout_warnings").$type<DraftLayoutWarningsColumn>(),
     layoutCheckPending: boolean("layout_check_pending").notNull().default(false),
     designEditedAt: timestamp("design_edited_at", { withTimezone: true }),
+    // Posting calendar (plan 2026-10-07-003). plannedAt: when the card goes out;
+    // plannedBy: "auto" (placement may move it) or "admin" (pinned — a drag, or a
+    // removal to the Unscheduled tray when plannedAt is null). rollCount: times it
+    // rolled to a later slot unapproved. dispatchedAt: when it was published or
+    // nudged at its time (never twice). overdueNotifiedAt: a pinned card's one
+    // overdue reminder. expiredAt: past the club's age limit; off the calendar.
+    plannedAt: timestamp("planned_at", { withTimezone: true }),
+    plannedBy: text("planned_by"),
+    rollCount: integer("roll_count").notNull().default(0),
+    dispatchedAt: timestamp("dispatched_at", { withTimezone: true }),
+    overdueNotifiedAt: timestamp("overdue_notified_at", { withTimezone: true }),
+    expiredAt: timestamp("expired_at", { withTimezone: true }),
   },
   (t) => ({
+    plannedIdx: index("social_drafts_planned_idx")
+      .on(t.tenantId, t.plannedAt)
+      .where(sql`planned_at IS NOT NULL`),
+    chkPlannedBy: check(
+      "social_drafts_planned_by_check",
+      sql`"planned_by" IS NULL OR "planned_by" IN ('auto', 'admin')`,
+    ),
+    chkRollCount: check("social_drafts_roll_count_check", sql`"roll_count" >= 0`),
     // Partial unique index for match summary dedupe. Only enforced when
     // sourceKind = 'matchSummary' AND the draft hasn't been dismissed, so a
     // dismissed draft can be re-created for the same match.

@@ -17,7 +17,7 @@ execution: code
 - **Product authority:** Ash (owner, Halls Head media officer). Product decisions were made with him on 2026-10-07; the Product Contract below governs scope. Where it and the Planning Contract disagree, the Product Contract wins and the conflict is surfaced, not resolved silently.
 - **Open blockers:** None.
 - **Stop conditions:** Stop and ask if carry-over cannot be made exactly equivalent for any existing settings combination (R14), if a club's drafts would change without the admin touching the plan, or if ladder data turns out unavailable for Halls Head's PlayHQ grades.
-- **Execution profile:** Monorepo change across `lib/scorecard`, `lib/db`, `lib/api-spec`, `artifacts/api-server` and `artifacts/cricket-club`. OpenAPI-first; one generated migration (0040) applied to production by hand before republishing.
+- **Execution profile:** Monorepo change across `lib/scorecard`, `lib/db`, `lib/api-spec`, `artifacts/api-server` and `artifacts/cricket-club`. OpenAPI-first; one generated migration (0042) applied to production by hand before republishing.
 - **Tail ownership:** The implementer opens the PR and hands Ash the migration SQL for the Production SQL runner; Ash applies it and republishes.
 
 ---
@@ -297,7 +297,7 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 **Files:**
 
 - `lib/db/src/schema/social_cards.ts` (add nullable `postingPlan` jsonb)
-- `lib/db/migrations/0040_posting_plan.sql` plus `meta/` snapshot and journal (generated)
+- `lib/db/migrations/0042_posting_plan.sql` plus `meta/` snapshot and journal (generated)
 - `lib/api-spec/openapi.yaml` (`PostingPlan`, `PostingPlanRow`, `PostingStyle`; resolved `SocialSettings.postingPlan`, `SocialSettingsUpdate.postingPlan`, styles in `SocialSettingsBundle`); regenerated `lib/api-zod` and `lib/api-client-react`
 - `artifacts/api-server/src/routes/social-cards.ts` (GET and PATCH)
 - `artifacts/api-server/src/lib/social-families.ts` (mirror helper)
@@ -469,9 +469,9 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 **Files:**
 
 - `AGENTS.md` (Social Studio section: the Posting Plan is the drafting source of truth)
-- `docs/runbooks/posting-plan-release.md` (new: apply `0040`, verify the column, then republish)
+- `docs/runbooks/posting-plan-release.md` (new: apply `0042`, verify the column, then republish)
 
-**Approach:** Give Ash the `0040` SQL for the Production SQL runner and a verification query on `information_schema.columns` for `social_settings.posting_plan`. Because the column is nullable and derived, deploying before any club saves a plan changes nothing.
+**Approach:** Give Ash the `0042` SQL for the Production SQL runner and a verification query on `information_schema.columns` for `social_settings.posting_plan`. Because the column is nullable and derived, deploying before any club saves a plan changes nothing.
 
 **Test expectation:** none -- documentation and operational hand-off.
 
@@ -501,7 +501,7 @@ U1, then U2, then U3; then U4 and U5 one after the other (both register engines 
 - The equivalence matrix proves no existing club's drafts change until it saves a plan (R14).
 - Ash's setup (AE1) is one style pick and produces the expected drafts in a sweep test.
 - The Automation card, Round cards mode selects, content-engine switches and Studio match-summary engine controls are gone; each remaining setting appears once (R2).
-- Migration 0040 SQL and the verification query are handed to Ash.
+- Migration 0042 SQL and the verification query are handed to Ash.
 - No abandoned-attempt code, unused helpers or commented-out legacy readers remain in the diff.
 
 ### Deferred to Follow-Up Work

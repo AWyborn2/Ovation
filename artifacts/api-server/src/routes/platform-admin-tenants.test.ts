@@ -150,6 +150,65 @@ describe("platform-admin tenant management", () => {
       .expect(401);
   });
 
+  it("sets and clears the junior sync switch and junior organisation (junior sync U1)", async () => {
+    const on = await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", platformCookie)
+      .send({ juniorSyncEnabled: true, playhqJuniorOrgId: `  JUNIOR-ORG-${STAMP} ` })
+      .expect(200);
+    expect(on.body.juniorSyncEnabled).toBe(true);
+    // Trimmed and lowercased like the PlayHQ GUIDs it is compared with.
+    expect(on.body.playhqJuniorOrgId).toBe(`junior-org-${STAMP}`);
+
+    const off = await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", platformCookie)
+      .send({ juniorSyncEnabled: false, playhqJuniorOrgId: "" })
+      .expect(200);
+    expect(off.body.juniorSyncEnabled).toBe(false);
+    expect(off.body.playhqJuniorOrgId).toBeNull();
+    const [row] = await db
+      .select({ on: tenantsTable.juniorSyncEnabled, org: tenantsTable.playhqJuniorOrgId })
+      .from(tenantsTable)
+      .where(eq(tenantsTable.id, throwawayTenantId));
+    expect(row).toEqual({ on: false, org: null });
+  });
+
+  it("refuses a junior organisation already linked to another tenant (409)", async () => {
+    const otherOrg = `other-senior-org-${STAMP}`;
+    const [other] = await db
+      .insert(tenantsTable)
+      .values({
+        slug: `pa-junior-org-${STAMP}`,
+        centralClubId: 9291,
+        name: "PA Junior Org Clash",
+        playhqOrgId: otherOrg,
+      })
+      .returning();
+    try {
+      await request(app)
+        .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+        .set("Cookie", platformCookie)
+        .send({ playhqJuniorOrgId: otherOrg })
+        .expect(409);
+      const [row] = await db
+        .select({ org: tenantsTable.playhqJuniorOrgId })
+        .from(tenantsTable)
+        .where(eq(tenantsTable.id, throwawayTenantId));
+      expect(row.org).toBeNull();
+    } finally {
+      await db.delete(tenantsTable).where(eq(tenantsTable.id, other.id));
+    }
+  });
+
+  it("refuses the junior sync fields to a club-admin session", async () => {
+    await request(app)
+      .patch(`/api/platform/admin/tenants/${throwawayTenantId}`)
+      .set("Cookie", clubAdminCookie)
+      .send({ juniorSyncEnabled: true, playhqJuniorOrgId: "x" })
+      .expect(401);
+  });
+
   it("rejects setting a custom domain on a non-Pro tenant, even with BILLING_ENABLED unset (402)", async () => {
     // Tenant is "club" tier from the previous test — club doesn't include
     // customDomain, and this gate stays enforced regardless of the dormant flag.

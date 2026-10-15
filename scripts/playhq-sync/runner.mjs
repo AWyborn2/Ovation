@@ -233,6 +233,15 @@ export async function run({
     `${due.length} plan(s) due${plans.length !== due.length ? ` (${plans.length} before filters)` : ""}`,
   );
   const result = { due: due.length, uploaded: [], failures: [], sweep: null, watchdog: null };
+  // Posting calendar cards due now go out before the scrapes, which can run for most of
+  // the hour on a match day. Best-effort: the sweep at the end runs the same step.
+  if (due.length > 0) {
+    try {
+      await api(fetchImpl, base, secret, "/internal/playhq/posting-slots", { method: "POST" });
+    } catch (err) {
+      log(`posting slots: FAILED ${err?.message ?? err} (the sweep will retry)`);
+    }
+  }
   if (due.length > 0)
     await collectAll(due, result, {
       env,
