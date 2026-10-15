@@ -1,4 +1,5 @@
-import { JUNIOR_SYNC_ID_START } from "@workspace/db";
+// From the schema subpath so suites that vi.mock("@workspace/db") keep loading this module.
+import { JUNIOR_SYNC_ID_START } from "@workspace/db/schema";
 import type { JuniorTeamPublishMode } from "@workspace/db";
 import type { FamilyConfig, SocialFamily } from "./social-families";
 

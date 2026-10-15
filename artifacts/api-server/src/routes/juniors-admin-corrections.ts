@@ -13,7 +13,12 @@ import {
 import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { adminWriteRateLimiter } from "../middlewares/rate-limit";
 import { getTenantId } from "../middlewares/tenant-context";
-import { snakeToCamel, serializeCorrection, SNAKE_TO_TABLE } from "../lib/junior-admin-helpers";
+import {
+  renameClubLines,
+  snakeToCamel,
+  serializeCorrection,
+  SNAKE_TO_TABLE,
+} from "../lib/junior-admin-helpers";
 import { juniorParticipantKey } from "../lib/junior-participant-scope";
 import { guardRevertedPrivacy } from "../lib/junior-privacy";
 
@@ -127,6 +132,11 @@ router.delete(
               .update(juniorParticipantsTable)
               .set(current ? guardRevertedPrivacy(set, current) : set)
               .where(juniorParticipantKey(tenantId, correction.targetId));
+            // The rename flowed onto this club's stored line names (PATCH
+            // /juniors/participants/:id), so a reverted name flows back the same way.
+            if (typeof set.displayName === "string") {
+              await renameClubLines(tx, tenantId, correction.targetId, set.displayName);
+            }
           } else {
             await tx
               .update(table)

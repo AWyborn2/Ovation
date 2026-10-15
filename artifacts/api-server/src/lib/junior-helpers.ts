@@ -13,7 +13,6 @@ import {
   type JuniorTeamPublishing,
 } from "@workspace/db";
 import { juniorParticipantJoin } from "./junior-participant-scope";
-import { getOrCreateSettings } from "./settings";
 import {
   makeJuniorNaming,
   parseJuniorNameStyle,
@@ -59,16 +58,35 @@ export async function getPrivateIds(tenantId: number): Promise<Set<string>> {
   return new Set(rows.map((r) => r.id));
 }
 
+/**
+ * The club's junior display settings row, read only. These helpers run on public reads
+ * and in the sweep, so they never create the row (that is the settings routes' job via
+ * `getOrCreateSettings`): a club with no row gets the schema defaults through the
+ * parsers below, and a read never leaves a row behind that pins the tenant.
+ */
+async function readJuniorDisplaySettings(
+  tenantId: number,
+): Promise<Pick<JuniorMatchDisplaySettingsRow, "nameStyle" | "teamPublishing"> | undefined> {
+  const [row] = await db
+    .select({
+      nameStyle: juniorMatchDisplaySettingsTable.nameStyle,
+      teamPublishing: juniorMatchDisplaySettingsTable.teamPublishing,
+    })
+    .from(juniorMatchDisplaySettingsTable)
+    .where(eq(juniorMatchDisplaySettingsTable.tenantId, tenantId));
+  return row;
+}
+
 /** The club's public junior name style (`full` until an admin picks another). */
 export async function getJuniorNameStyle(tenantId: number): Promise<JuniorNameStyle> {
-  const settings = await getOrCreateSettings(juniorMatchDisplaySettingsTable, tenantId);
-  return parseJuniorNameStyle(settings.nameStyle);
+  const settings = await readJuniorDisplaySettings(tenantId);
+  return parseJuniorNameStyle(settings?.nameStyle);
 }
 
 /** The club's per-team junior social publishing map (KTD14); a missing team is `approval`. */
 export async function loadJuniorTeamPublishing(tenantId: number): Promise<JuniorTeamPublishing> {
-  const settings = await getOrCreateSettings(juniorMatchDisplaySettingsTable, tenantId);
-  return parseJuniorTeamPublishing(settings.teamPublishing);
+  const settings = await readJuniorDisplaySettings(tenantId);
+  return parseJuniorTeamPublishing(settings?.teamPublishing);
 }
 
 /**

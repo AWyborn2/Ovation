@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
   juniorMatchesTable,
@@ -15,7 +15,7 @@ import {
 } from "@workspace/db";
 import { getTenantId } from "../middlewares/tenant-context";
 import type { RequestWithAdmin } from "../middlewares/require-admin";
-import { juniorParticipantKey } from "./junior-participant-scope";
+import { juniorParticipantKey, tenantJuniorMatchIds } from "./junior-participant-scope";
 
 /**
  * Shared helpers for the juniors admin (stat-correction) routes.
@@ -31,6 +31,49 @@ import { juniorParticipantKey } from "./junior-participant-scope";
  */
 
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Set a participant's stored name on the club's own (HH) lines in this club's
+ * matches. Lines reach their tenant through their match; another club's junior
+ * with the same GUID keeps its own name.
+ */
+export async function renameClubLines(
+  tx: Tx,
+  tenantId: number,
+  participantId: string,
+  playerName: string,
+): Promise<void> {
+  await tx
+    .update(juniorMatchBattingTable)
+    .set({ playerName })
+    .where(
+      and(
+        inArray(juniorMatchBattingTable.matchId, tenantJuniorMatchIds(tenantId)),
+        eq(juniorMatchBattingTable.participantId, participantId),
+        eq(juniorMatchBattingTable.isHallsHead, true),
+      ),
+    );
+  await tx
+    .update(juniorMatchBowlingTable)
+    .set({ playerName })
+    .where(
+      and(
+        inArray(juniorMatchBowlingTable.matchId, tenantJuniorMatchIds(tenantId)),
+        eq(juniorMatchBowlingTable.participantId, participantId),
+        eq(juniorMatchBowlingTable.isHallsHead, true),
+      ),
+    );
+  await tx
+    .update(juniorMatchRostersTable)
+    .set({ playerName })
+    .where(
+      and(
+        inArray(juniorMatchRostersTable.matchId, tenantJuniorMatchIds(tenantId)),
+        eq(juniorMatchRostersTable.participantId, participantId),
+        eq(juniorMatchRostersTable.isHallsHead, true),
+      ),
+    );
+}
 
 export type JournalEntry = {
   tenantId: number;

@@ -521,6 +521,9 @@ describe("juniors tenant isolation: one participant id at two clubs", () => {
     await as("d", request(app).delete(`/api/juniors/corrections/${correction.id}`)).expect(204);
     expect((await rowOf(t.d)).displayName).toBe("Shared AtD");
     expect((await rowOf(t.c)).displayName).toBe("Shared AtC");
+    // The revert flows the old name back onto D's lines, as the rename flowed it out.
+    expect(await lineName(MD)).toBe("Shared AtD");
+    expect(await lineName(MC)).toBe("Shared AtC");
 
     // A club's admin cannot edit a participant id only another club has.
     await as("d", request(app).patch(`/api/juniors/participants/${KEEP_C}`))

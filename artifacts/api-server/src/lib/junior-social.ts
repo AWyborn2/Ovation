@@ -4,9 +4,9 @@ import {
   juniorFixturesTable,
   juniorMatchesTable,
   socialDraftsTable,
-  JUNIOR_SYNC_ID_START,
   type SocialDraftRow,
 } from "@workspace/db";
+import { JUNIOR_SYNC_ID_START } from "@workspace/db/schema";
 import { juniorProjectionErrorText, perthDate } from "@workspace/db/playhq-ingest";
 import { isJuniorSyncOn } from "./junior-sync";
 import { loadJuniorTeamPublishing } from "./junior-helpers";

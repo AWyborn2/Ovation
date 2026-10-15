@@ -384,16 +384,18 @@ describe("publish worker", () => {
  */
 describe("publish worker junior guard", () => {
   const AGE = "Year 7";
-  let fixtureIds: { approval: number; auto: number };
+  // One fixture per test: a junior card's source key is `juniorteamlist:<fixture id>`,
+  // unique per tenant, so two tests drafting for one fixture would collide.
+  let fixtureIds: { approval: number; auto: number; approvalManual: number };
 
   beforeAll(async () => {
-    const fixture = async (teamName: string) =>
+    const fixture = async (key: string, teamName: string) =>
       (
         await db
           .insert(juniorFixturesTable)
           .values({
             tenantId,
-            playhqMatchId: `worker-junior-${STAMP}-${teamName}`,
+            playhqMatchId: `worker-junior-${STAMP}-${key}`,
             seasonStartYear: 2026,
             ageGroup: AGE,
             teamName,
@@ -401,7 +403,11 @@ describe("publish worker junior guard", () => {
           })
           .returning()
       )[0]!.id;
-    fixtureIds = { approval: await fixture("Hawks"), auto: await fixture("Eagles") };
+    fixtureIds = {
+      approval: await fixture("approval", "Hawks"),
+      auto: await fixture("auto", "Eagles"),
+      approvalManual: await fixture("approval-manual", "Hawks"),
+    };
     await db
       .insert(juniorMatchDisplaySettingsTable)
       .values({ tenantId, teamPublishing: { [AGE]: { Hawks: "approval", Eagles: "auto" } } })
@@ -456,7 +462,7 @@ describe("publish worker junior guard", () => {
   });
 
   it("lets an admin's own scheduling of an approval team's junior card through", async () => {
-    const { pub: p } = await juniorTeamListPost(fixtureIds.approval, "manual");
+    const { pub: p } = await juniorTeamListPost(fixtureIds.approvalManual, "manual");
     await run();
     expect((await pub(p.id)).status).toBe("published");
   });

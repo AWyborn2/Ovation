@@ -23,7 +23,7 @@ import {
   journal,
   adminName,
   recomputeParticipantMetadata,
-  type Tx,
+  renameClubLines,
 } from "../lib/junior-admin-helpers";
 import {
   juniorParticipantKey,
@@ -43,49 +43,6 @@ import { planJuniorParticipantPatch } from "../lib/junior-privacy";
  * there.
  */
 const router: IRouter = Router();
-
-/**
- * Set a participant's stored name on the club's own (HH) lines in this club's
- * matches. Lines reach their tenant through their match; another club's junior
- * with the same GUID keeps its own name.
- */
-async function renameClubLines(
-  tx: Tx,
-  tenantId: number,
-  participantId: string,
-  playerName: string,
-): Promise<void> {
-  await tx
-    .update(juniorMatchBattingTable)
-    .set({ playerName })
-    .where(
-      and(
-        inArray(juniorMatchBattingTable.matchId, tenantJuniorMatchIds(tenantId)),
-        eq(juniorMatchBattingTable.participantId, participantId),
-        eq(juniorMatchBattingTable.isHallsHead, true),
-      ),
-    );
-  await tx
-    .update(juniorMatchBowlingTable)
-    .set({ playerName })
-    .where(
-      and(
-        inArray(juniorMatchBowlingTable.matchId, tenantJuniorMatchIds(tenantId)),
-        eq(juniorMatchBowlingTable.participantId, participantId),
-        eq(juniorMatchBowlingTable.isHallsHead, true),
-      ),
-    );
-  await tx
-    .update(juniorMatchRostersTable)
-    .set({ playerName })
-    .where(
-      and(
-        inArray(juniorMatchRostersTable.matchId, tenantJuniorMatchIds(tenantId)),
-        eq(juniorMatchRostersTable.participantId, participantId),
-        eq(juniorMatchRostersTable.isHallsHead, true),
-      ),
-    );
-}
 
 /** Admin shape of a participant: full name and every privacy fact (KTD12). */
 function adminParticipant(p: typeof juniorParticipantsTable.$inferSelect) {

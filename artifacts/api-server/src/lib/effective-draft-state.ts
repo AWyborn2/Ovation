@@ -1,5 +1,7 @@
 import { and, eq, isNotNull, lte, sql, type SQL } from "drizzle-orm";
-import { db, socialDraftsTable, socialSettingsTable, JUNIOR_SYNC_ID_START } from "@workspace/db";
+import { db, socialDraftsTable, socialSettingsTable } from "@workspace/db";
+// From the schema subpath so suites that vi.mock("@workspace/db") keep loading this module.
+import { JUNIOR_SYNC_ID_START } from "@workspace/db/schema";
 import { layoutBlocksAutomation } from "@workspace/scorecard/kind-templates";
 import { normalizeDraftStatus, type DraftStatus } from "./draft-status";
 import { isSyncedJuniorDraft } from "./junior-publishing";
