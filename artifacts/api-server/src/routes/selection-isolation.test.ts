@@ -73,8 +73,8 @@ describe("Selection Hub tenant isolation", () => {
       .returning();
     [tenantA, tenantB] = tenants.map((t) => t.id);
     await db.insert(availabilitySettingsTable).values([
-      { tenantId: tenantA, selectionRule: "captains_all_grades" },
-      { tenantId: tenantB, selectionRule: "captains_all_grades" },
+      { tenantId: tenantA, selectionRule: "captains_all_grades", enabled: true },
+      { tenantId: tenantB, selectionRule: "captains_all_grades", enabled: true },
     ]);
 
     const admins = await db

@@ -177,7 +177,7 @@ describe("Selection Hub API", () => {
       })
       .returning();
     tenantA = t.id;
-    await db.insert(availabilitySettingsTable).values({ tenantId: tenantA });
+    await db.insert(availabilitySettingsTable).values({ tenantId: tenantA, enabled: true });
 
     const [admin] = await db
       .insert(adminsTable)

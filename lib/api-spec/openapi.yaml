@@ -14728,10 +14728,17 @@ components:
 
     SelectionBoard:
       type: object
-      required: [section, actor, round, selections, pool, events]
+      required: [section, availability, actor, round, selections, pool, events]
       properties:
         section:
           $ref: "#/components/schemas/SquadSection"
+        availability:
+          type: boolean
+          description: |
+            The club uses availability requests. Off, the Hub stands alone: the
+            weekend's sides are drafted on demand from each grade's last team
+            list (everyone listed kept), member statuses and the round's steps
+            don't apply, and finalising messages no one.
         actor:
           $ref: "#/components/schemas/SelectionActor"
         round:

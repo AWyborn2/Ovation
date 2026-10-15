@@ -93,6 +93,11 @@ export function buildDraftSlots(input: {
   responses: ResponsesByMember;
   fixtureDate: string;
   placed?: Set<number>;
+  /**
+   * Keep a listed player only on a Yes (the availability flow, default). False
+   * for a club not using availability: everyone listed stays unless they said No.
+   */
+  requireYes?: boolean;
 }): DraftSide {
   const { lastList, members, responses, fixtureDate } = input;
   const elsewhere = input.placed ?? new Set<number>();
@@ -118,7 +123,8 @@ export function buildDraftSlots(input: {
       return;
     }
     const status = responses.get(m.id)?.get(fixtureDate);
-    if (status !== "yes") {
+    const keep = input.requireYes === false ? status !== "no" : status === "yes";
+    if (!keep && status !== "yes") {
       slots[i] = { memberId: null, gap: { name, reason: status ?? "no_reply" } };
       return;
     }
@@ -152,6 +158,7 @@ export async function buildRoundDrafts(
   tenantId: number,
   roundId: number,
   now: Date = new Date(),
+  opts: { requireYes?: boolean } = {},
 ): Promise<RoundDraftSummary> {
   const summary: RoundDraftSummary = { created: 0, skipped: 0, selectionIds: [] };
   const [round] = await db
@@ -260,6 +267,7 @@ export async function buildRoundDrafts(
       responses,
       fixtureDate: perthDate(f.startAt),
       placed,
+      requireYes: opts.requireYes,
     });
 
     const created = await db.transaction(async (tx) => {
