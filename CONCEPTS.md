@@ -90,3 +90,15 @@ A club's one design for a card kind, made of editable elements (the starter's ow
 ### Starter design
 
 A ready-made design (Club Kit or Broadcast) that a club copies into a card kind template as its starting point. The copy has no live link back to the starter.
+
+### Posting slot
+
+A weekly day and time at which cards of one kind go out, set per card kind in the club's posting schedule. A new card takes its kind's next free slot within the daily cap and minimum gap. A card nobody has approved by then rolls to the next free slot until the age limit expires it.
+
+### Posting schedule
+
+A club's posting slots per card kind, plus what happens when several cards share a slot (space them out, or one per slot), the daily cap, the minimum gap and the age limit. Switched on, it replaces the posting window: a card's slot is its deadline.
+
+### Unscheduled tray
+
+The calendar's holding area for cards with no posting time: hand-made cards, cards with no free slot before they expire, cards an admin took off the calendar, and expired cards. A card leaves it only when someone gives it a time.

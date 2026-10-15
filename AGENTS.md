@@ -132,6 +132,13 @@ In short:
 - **Meta publishing is built but switched off** (`META_PUBLISHING_ENABLED`): clubs connect a
   Facebook Page + Instagram account and drafts publish on a schedule or automatically at the
   auto-post deadline. Waits on Meta App Review; runbook `docs/runbooks/meta-publishing.md`.
+- **Posting calendar is built, off per club by default** (`social_settings.posting_schedule`;
+  plan `docs/plans/2026-10-07-003-feat-social-posting-calendar-plan.md`). With it on, every new
+  draft gets a `planned_at` from its kind's weekly slots (`lib/posting-placement.ts`, writes
+  under advisory lock in `lib/posting-writer.ts`); `lib/posting-slots.ts` (hourly sweep + the
+  runner's `/internal/playhq/posting-slots` call) dispatches, rolls and expires cards, and
+  replaces the legacy auto-post window for that club. The queue opens as a Week/List calendar
+  (`cricket-club/src/components/social-calendar/`). Migration `0040` is applied by hand.
 - **Billing and entitlements are built but switched off** (Phase 2c/2d); onboarding,
   tenant-scoped admin auth and the platform-admin console are live.
 
@@ -243,6 +250,9 @@ In short:
   publish worker, auto-publish, connection health, media prep), routes
   `social-connections.ts`, `social-publications.ts`, `meta-callbacks.ts`,
   `internal-publish-sweep.ts`; token encryption `lib/secret-box.ts`
+- Posting calendar: `api-server/src/lib/posting-{schedule,placement,writer,slots,switchover}.ts`,
+  route `social-calendar.ts`; web `components/social-calendar/`,
+  `components/social-queue/posting-schedule-card.tsx`
 - Caps: `routes/caps.ts` (register + confirmation queue), `lib/debut-caps.ts` (automatic
   A Grade debut caps), `lib/cap-sync.ts`
 - App entry: `api-server/src/app.ts` (middleware wiring) → `index.ts`

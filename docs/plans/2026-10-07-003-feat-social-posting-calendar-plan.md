@@ -8,6 +8,7 @@ artifact_readiness: implementation-ready
 product_contract_source: ce-brainstorm
 execution: code
 deepened: 2026-10-07
+status: implemented
 ---
 
 # Social Posting Calendar - Plan
@@ -20,6 +21,18 @@ deepened: 2026-10-07
 - **Stop conditions:** Stop and ask Ash if a change would alter what a club currently posts without that club turning the calendar on, touch juniors isolation, or need a new cron-job.org job or secret.
 - **Open blockers:** None. Meta App Review gates real publishing only; the nudge path is the live behaviour.
 - **Tail ownership:** The production migration SQL is run by Ash in Replit's Production SQL runner before republishing; the plan ships the SQL and the verification query.
+
+## As built (2026-10-15)
+
+Where the implementation differs from the text below, this list wins:
+
+- **Migration is `0040`, not `0035`.** `lib/db/migrations/0040_social_posting_calendar.sql` is itself idempotent and paste-ready; there is no separate `.prod.sql` file. The read-only column check lives in `docs/runbooks/meta-publishing.md` §3a.
+- **`nudged_at` became `dispatched_at`**, stamped (guarded) when a due ready card is either scheduled for publishing or nudged, so a slot is handled exactly once. A further column, **`overdue_notified_at`**, makes the one-time overdue reminder for an admin-placed unapproved card idempotent.
+- **Unscheduling is `POST /social-drafts/{id}/unschedule`** (with `expectedPlannedAt`), not `DELETE …/planned-time`. It pins the card as `admin` with no time, so automation never re-places it.
+- **`auto_ready_at` follows `planned_at`** for calendar clubs instead of being cleared: the slot is the one deadline, and send-back, reopen and edit still clear it.
+- **Rolls use no grace**, so a missed slot is never reused; first placement keeps a 60-minute grace for a slot that has just passed.
+- **Switching on** places every open undispatched card (not only `planned_at IS NULL`), so re-enabling reconciles anything that changed while the calendar was off; **switching off** restores `auto_ready_at` only on automation-owned cards (`auto_ready_at` not null).
+- **Settings** live in a "Posting schedule" dialog opened from the queue header (`posting-schedule-card.tsx`), shown even while the calendar is off ("Set up posting calendar").
 
 ---
 
@@ -256,20 +269,20 @@ Schema first (U1), then the pure schedule and placement logic (U2), then the ser
 
 ## Risks & Dependencies
 
-| Risk | Mitigation |
-|---|---|
+| Risk                                                                                                                                 | Mitigation                                                                                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | New code runs before the production SQL, so every draft read and every PlayHQ ingest fails on a missing column (the 10 Sep pattern). | Running and checking the SQL is a hard gate before republishing; the prod SQL file ends with a read-only `information_schema.columns` check for all six new columns (five on `social_drafts` plus `social_settings.posting_schedule`). |
-| Overlapping hourly and 5-minute runs, or a run and a drag, act on the same card. | Tenant advisory lock for every `planned_at` write; guarded updates with notifications built from returned rows (KTD6, KTD12). |
-| A dragged card's publication rows drift from its planned time, or post after it is removed. | Rows locked and moved in the same transaction; removal, dismissal and withdrawal cancel them (KTD11). |
-| Enabling mid-week strands existing ready cards; disabling triggers a burst or revives expired cards. | Switch-over backfill and recompute (KTD3); legacy paths exclude expired cards (KTD2); the burst on disable is documented in the runbook. |
-| Slot timing is up to an hour late while Meta is off. | Accepted by Ash for now; tightens automatically once the publish job runs. |
-| Placement fails during ingest. | Caught and logged; the card stays unscheduled and the next hourly run places it. |
+| Overlapping hourly and 5-minute runs, or a run and a drag, act on the same card.                                                     | Tenant advisory lock for every `planned_at` write; guarded updates with notifications built from returned rows (KTD6, KTD12).                                                                                                          |
+| A dragged card's publication rows drift from its planned time, or post after it is removed.                                          | Rows locked and moved in the same transaction; removal, dismissal and withdrawal cancel them (KTD11).                                                                                                                                  |
+| Enabling mid-week strands existing ready cards; disabling triggers a burst or revives expired cards.                                 | Switch-over backfill and recompute (KTD3); legacy paths exclude expired cards (KTD2); the burst on disable is documented in the runbook.                                                                                               |
+| Slot timing is up to an hour late while Meta is off.                                                                                 | Accepted by Ash for now; tightens automatically once the publish job runs.                                                                                                                                                             |
+| Placement fails during ingest.                                                                                                       | Caught and logged; the card stays unscheduled and the next hourly run places it.                                                                                                                                                       |
 
 ---
 
 ## Operational Notes
 
-Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.prod.sql` in the Production SQL runner; Ash runs its read-only column check; republish; smoke-test the queue and one ingest; enable the calendar for Halls Head only and check the backfill placed its open cards. Rollback: turn the calendar off for the club. The columns are additive and stay.
+Deploy order: merge; Ash pastes `lib/db/migrations/0040_social_posting_calendar.sql` into the Production SQL runner; Ash runs the read-only column check in the runbook; republish; smoke-test the queue and one ingest; enable the calendar for Halls Head only and check the backfill placed its open cards. Rollback: turn the calendar off for the club. The columns are additive and stay.
 
 ---
 
@@ -284,12 +297,14 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 **Dependencies:** none
 
 **Files:**
+
 - `lib/db/src/schema/social_cards.ts` (modify: `social_drafts` gains `planned_at`, `planned_by`, `roll_count`, `dispatched_at`, `expired_at`; `social_settings` gains `posting_schedule` jsonb with its row type)
 - `lib/db/migrations/0035_social_posting_calendar.sql` (create; number re-checked against `origin/main` before generating)
 - `lib/db/migrations/meta/_journal.json` and the matching snapshot (generated)
-- `docs/runbooks/sql/0035_social_posting_calendar.prod.sql` (create: paste-ready production SQL plus a read-only column check)
+- (as built: no separate production file — migration `0040` is paste-ready; see As built)
 
 **Approach:**
+
 - All columns nullable or defaulted (`roll_count` default 0) so existing rows stay valid; `ADD COLUMN IF NOT EXISTS` throughout, matching `0033_social_draft_created_by.sql`.
 - Checks `planned_by IN ('auto','admin')` and `roll_count >= 0`, wrapped in `0033`'s `DO $$ … duplicate_object` guard.
 - Plain `CREATE INDEX IF NOT EXISTS` (not `CONCURRENTLY`) on `(tenant_id, planned_at) WHERE planned_at IS NOT NULL`.
@@ -299,6 +314,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 **Patterns to follow:** `lib/db/migrations/0023_*.sql` (jsonb settings column), `0033_social_draft_created_by.sql` (idempotent DDL), the `RoundSchedulesRow` type in `social_cards.ts`.
 
 **Test scenarios:**
+
 - Applying the migration twice succeeds both times (CI re-runs `migrate`).
 - An existing `social_settings` row reads `posting_schedule` as null after migration.
 - An existing draft reads `planned_at` null and `roll_count` 0; inserting `planned_by = 'other'` is rejected.
@@ -314,6 +330,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 **Dependencies:** U1
 
 **Files:**
+
 - `artifacts/api-server/src/lib/posting-schedule.ts` (create: types, defaults, `resolvePostingSchedule`, `mergePostingSchedule`, `invalidPostingSchedule`, slot-kind mapping)
 - `artifacts/api-server/src/lib/posting-placement.ts` (create: `placeCard`, `nextSlotsFrom`, `dayCount`, `gapOk`)
 - `artifacts/api-server/src/lib/round-schedules.ts` (modify: export the zone helpers needed for weekday/time-to-UTC and Perth day keys)
@@ -321,6 +338,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 - `artifacts/api-server/src/lib/posting-placement.test.ts` (create)
 
 **Approach:**
+
 - Schedule shape: `enabled`, `dailyCap` (1–20), `minGapMinutes` (0–240, 15-minute steps), `ageLimitDays` (1–30), and per slot kind a list of `{day, time}` slots plus `collision: "space" | "roll"`.
 - Defaults: calendar disabled; when first enabled, round-kind slots copy the club's resolved round schedules, individual kinds get one Sunday 6pm slot, cap 4, gap 45, age limit 7.
 - `placeCard` walks candidate slots for the kind from `now` up to 14 days ahead. Under "space", it tries the slot time then slot time plus gap steps until the next slot of that kind or Perth midnight; under "roll", one card per slot. Each candidate must satisfy the cap for its Perth day and the gap against every planned time. It returns null past the horizon.
@@ -331,6 +349,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 **Patterns to follow:** `artifacts/api-server/src/lib/round-schedules.ts` and `round-schedules.test.ts`; `artifacts/api-server/src/lib/availability-schedule.test.ts` for pure-function tests.
 
 **Test scenarios:**
+
 - Covers AE1. Three milestones, Sunday 6pm slot, "space", 45-minute gap → 6:00, 6:45, 7:30pm Perth.
 - Covers AE2. Two debuts, Sunday and Wednesday 6pm slots, "roll" → Sunday 6pm and Wednesday 6pm.
 - Covers AE3. Cap 4 with four cards already on Sunday → fifth card goes to its kind's next slot on a day under the cap.
@@ -353,6 +372,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 **Dependencies:** U2
 
 **Files:**
+
 - `artifacts/api-server/src/lib/posting-writer.ts` (create: `withPlacementLock`, `placeDraft(tenantId, draftId, now)` writing `planned_at` and `planned_by = 'auto'`)
 - `artifacts/api-server/src/lib/draft-upsert.ts` (modify: insert with `auto_ready_at = null` for calendar clubs, then call `placeDraft`; never touch `planned_at` in the refresh branch; `withdrawDraft` cancels scheduled publication rows)
 - `artifacts/api-server/src/routes/social-drafts.ts` (modify: ad-hoc drafts stay unplaced)
@@ -360,12 +380,14 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 - `artifacts/api-server/src/lib/draft-upsert.test.ts` (modify)
 
 **Approach:**
+
 - Read the club's resolved Posting schedule once per call; when disabled, behave exactly as today (R17).
 - Placement failure never fails ingest: catch, log, and leave the draft unscheduled for the hourly run to place.
 
 **Patterns to follow:** the existing `autoReadyAtFor` computation beside the insert in `draft-upsert.ts`; the 23505 retry pattern there; `DEBUT_CAP_LOCK_KEY` for the lock key.
 
 **Test scenarios:**
+
 - Calendar club: an inserted milestone draft gets `planned_at` in the next Sunday 6pm slot, `planned_by = 'auto'` and `auto_ready_at` null.
 - Covers AE11. Non-calendar club: an inserted draft has `planned_at` null and `auto_ready_at` set as before.
 - Refreshing an existing draft with changed data keeps its `planned_at`, including an admin-placed time.
@@ -386,6 +408,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 **Dependencies:** U3
 
 **Files:**
+
 - `artifacts/api-server/src/lib/posting-slots.ts` (create: `runPostingSlots(tenantId, now)`)
 - `artifacts/api-server/src/lib/draft-sweep.ts` (modify: call it in the scheduled path for calendar clubs, also placing any still-unscheduled generated drafts; skip review-window promotion and `scheduleAutoPublish` for calendar clubs)
 - `artifacts/api-server/src/routes/internal-publish-sweep.ts` (modify: when the job runs, call `runPostingSlots` for calendar clubs before the worker)
@@ -399,6 +422,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 - `artifacts/api-server/src/lib/publishing/auto-publish.test.ts`, `auto-post.test.ts`, `draft-sweep.test.ts` (modify)
 
 **Approach:**
+
 - Select the tenant's drafts with `planned_at <= now`, not posted or dismissed, `dispatched_at` and `expired_at` null.
 - Ready, or awaiting review with auto-post on: approve if needed, set `dispatched_at`, then if the publish gate is open (KTD9) create publication rows at `planned_at`; otherwise add the card to the club's batched "ready to share" notification.
 - Awaiting review with auto-post off: `auto` cards re-place from `now` and increment `roll_count`; `admin` cards stay and are flagged overdue (KTD10). Add to the "rolled" reminder while `roll_count <= 3`.
@@ -410,6 +434,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 **Patterns to follow:** `persistDueDrafts` and `scheduleAutoPublish` guarded updates; `notifyDraftsReady` batching; `auto-publish.test.ts` setup with injected destination and renderer fakes.
 
 **Test scenarios:**
+
 - Covers AE6. Meta off: an approved card at its planned time gets `dispatched_at` and one notification row lists it; a second run sends nothing new.
 - Covers AE8. Meta on, connected, auto-publish on, auto-post on: an unreviewed results carousel is approved and gets publication rows scheduled at `planned_at`.
 - Meta on but the club's auto-publish opt-in off: an approved card is nudged, not published.
@@ -435,6 +460,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 **Dependencies:** U2, U3, U4
 
 **Files:**
+
 - `lib/api-spec/openapi.yaml` (modify: `GET /social-calendar`, `PUT /social-drafts/{id}/planned-time`, `DELETE /social-drafts/{id}/planned-time`, `postingSchedule` on `SocialSettings` and `SocialSettingsUpdate`, draft `plannedAt`/`plannedBy`/`expiredAt`/`overdue`)
 - `lib/api-client-react/**` and `lib/api-zod/**` (generated)
 - `artifacts/api-server/src/routes/social-calendar.ts` (create)
@@ -447,6 +473,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 - `artifacts/api-server/src/lib/posting-switchover.test.ts` (create)
 
 **Approach:**
+
 - `GET /social-calendar?from&to` (Perth dates, max 14 days) returns cards with planned times in range, posted cards in range, the Unscheduled tray, placeholders (KTD14), per-day counts against the cap, and over-cap or inside-gap warnings.
 - `PUT planned-time` takes `plannedAt` (snapped to 15 minutes) and `expectedPlannedAt`; under the tenant lock it sets `planned_by = 'admin'`, clears `dispatched_at` and `expired_at` when moved into the future, and moves publication rows (KTD11). Mismatch → 409; publishing or published → refusal with a reason; a past time → refusal.
 - `DELETE planned-time` moves a card to the Unscheduled tray and cancels its scheduled rows.
@@ -456,6 +483,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 **Patterns to follow:** `routes/social-cards.ts` settings PATCH; `routes/social-publications.ts` reschedule; regenerate with the local orval binary (`cd lib/api-spec && ./node_modules/.bin/orval --config ./orval.config.ts`) and restore `pnpm-lock.yaml` if touched.
 
 **Test scenarios:**
+
 - Covers AE7. A calendar club with Friday 12pm team lists and an upcoming fixture round but no team-list draft returns a team-lists placeholder at Friday 12pm; once the draft exists, the placeholder is gone.
 - Covers AE4. Moving a Monday card onto a full Sunday succeeds and the response flags Sunday over cap.
 - Move with a stale `expectedPlannedAt` → 409; move of a card whose publication is publishing → refused; move into the past → refused.
@@ -480,12 +508,14 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 **Dependencies:** U5
 
 **Files:**
+
 - `artifacts/cricket-club/src/components/social-queue/posting-schedule-card.tsx` (create)
 - `artifacts/cricket-club/src/pages/admin-social-queue.tsx` (modify: open the panel from the Week view)
 - `artifacts/cricket-club/src/components/social-queue/auto-post-card.tsx` (modify: when the calendar is on, explain that slots replace the review window and hide the freshness field)
 - `artifacts/cricket-club/src/components/social-queue/posting-schedule-card.test.tsx` (create)
 
 **Approach:**
+
 - One row per slot kind: slot chips (day plus time, add and remove) and a "space them out / one per slot" choice; club-wide cap, gap and age limit below.
 - Turning the calendar on or off shows a one-line explanation of what happens to cards already in the queue.
 - Plain words and Perth time labels; no cross-card dependencies.
@@ -493,6 +523,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 **Patterns to follow:** `round-schedules-card.tsx` (day and hour pickers, Perth wording), `auto-post-card.tsx` (validation and save).
 
 **Test scenarios:**
+
 - Turning the calendar on shows slots prefilled from the club's round schedules.
 - Adding a Wednesday 6pm debut slot and saving sends the merged schedule.
 - A cap of 0 shows a validation message and blocks save.
@@ -509,6 +540,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 **Dependencies:** U5
 
 **Files:**
+
 - `artifacts/cricket-club/src/components/selection/use-pointer-drag.ts` (modify: generic payload and drop-target types, behaviour unchanged for the Selection Hub)
 - `artifacts/cricket-club/src/components/social-calendar/week-grid.tsx` (create)
 - `artifacts/cricket-club/src/components/social-calendar/day-list.tsx` (create)
@@ -525,6 +557,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 - `artifacts/cricket-club/src/components/selection/use-pointer-drag.test.ts` (create or extend)
 
 **Approach:**
+
 - Week grid: CSS grid of seven Perth days by 15-minute rows over the club's posting hours; cards absolutely positioned; day headers show "n / cap" with an over-cap tone; placeholders and empty slots as outlined boxes.
 - Drop computes the Perth time from the cell, snaps to 15 minutes, applies optimistically, sends `expectedPlannedAt`, and rolls back with the server's reason on refusal or 409 (then refetches).
 - List view is the default below `md` and offers Move to (next 7 days, the kind's slot times as quick picks, custom time) instead of drag; the same sheet opens from a keyboard-focused card on desktop.
@@ -537,6 +570,7 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 **Patterns to follow:** `components/selection/apply-move.ts` and its test (pure logic beside UI); `draft-meta.ts` Perth formatting and status tones; `DraftDrawer` integration in `admin-social-queue.tsx`.
 
 **Test scenarios:**
+
 - `calendar-time`: a drop on Sunday's 6:45pm cell yields 10:45 UTC; 00:30 Perth buckets into the right day; snapping rounds 6:52pm to 6:45pm.
 - Week grid renders a planned card in the right column and row, a placeholder outline, and "4 / 4" in an over-cap tone when the response flags it.
 - A refused drop restores the card to its previous cell and shows the reason.
@@ -558,8 +592,9 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 **Dependencies:** U1–U7
 
 **Files:**
+
 - `docs/runbooks/meta-publishing.md` (modify: calendar clubs skip review-window promotion and `at: now` auto-publish; posting slots run hourly and on the publish job when it runs; disabling the calendar may release a burst of due cards)
-- `docs/runbooks/sql/0035_social_posting_calendar.prod.sql` (finalise from U1)
+- `docs/runbooks/meta-publishing.md` §3a (deploy order and read-only column check)
 - `AGENTS.md` (modify: the calendar's state and the opt-in flag)
 - `CONCEPTS.md` (modify: refine "Posting slot"; add "Posting schedule" and "Unscheduled tray")
 
@@ -573,15 +608,15 @@ Deploy order: merge; Ash runs `docs/runbooks/sql/0035_social_posting_calendar.pr
 
 ## Verification Contract
 
-| Gate | Command or check | Applies to |
-|---|---|---|
-| API tests | `pnpm --filter @workspace/api-server exec vitest run <files>` against a migrated, CI-seeded database (embedded Postgres on Windows, port 55432), including the modified `auto-publish.test.ts`, `auto-post.test.ts`, `draft-sweep.test.ts`, `draft-upsert.test.ts` and `social-drafts-v2.test.ts` | U1–U5 |
-| Web tests | `cd artifacts/cricket-club && NODE_ENV=test ./node_modules/.bin/vitest run` (full suite) | U6, U7 |
-| Typecheck | `./node_modules/.bin/tsc --build lib/api-client-react lib/object-storage-web lib/scorecard lib/api-zod`, then the root typecheck | all |
-| Codegen drift | orval run via the local binary produces no diff after commit | U5 |
-| Migration drift | drizzle `generate` produces nothing new; `migrate` runs twice cleanly | U1 |
-| Formatting | `npx -y prettier@3.9.6 --write <touched files>` | all |
-| Behaviour | Dev preview: enable the calendar with open drafts and see them placed, ingest or seed a round, drag a card, run the hourly sweep past a slot with Meta off and see one nudge, disable and see `auto_ready_at` restored | U3–U7 |
+| Gate            | Command or check                                                                                                                                                                                                                                                                                  | Applies to |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| API tests       | `pnpm --filter @workspace/api-server exec vitest run <files>` against a migrated, CI-seeded database (embedded Postgres on Windows, port 55432), including the modified `auto-publish.test.ts`, `auto-post.test.ts`, `draft-sweep.test.ts`, `draft-upsert.test.ts` and `social-drafts-v2.test.ts` | U1–U5      |
+| Web tests       | `cd artifacts/cricket-club && NODE_ENV=test ./node_modules/.bin/vitest run` (full suite)                                                                                                                                                                                                          | U6, U7     |
+| Typecheck       | `./node_modules/.bin/tsc --build lib/api-client-react lib/object-storage-web lib/scorecard lib/api-zod`, then the root typecheck                                                                                                                                                                  | all        |
+| Codegen drift   | orval run via the local binary produces no diff after commit                                                                                                                                                                                                                                      | U5         |
+| Migration drift | drizzle `generate` produces nothing new; `migrate` runs twice cleanly                                                                                                                                                                                                                             | U1         |
+| Formatting      | `npx -y prettier@3.9.6 --write <touched files>`                                                                                                                                                                                                                                                   | all        |
+| Behaviour       | Dev preview: enable the calendar with open drafts and see them placed, ingest or seed a round, drag a card, run the hourly sweep past a slot with Meta off and see one nudge, disable and see `auto_ready_at` restored                                                                            | U3–U7      |
 
 ---
 
