@@ -1,9 +1,10 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import {
   db,
   availabilitySettingsTable,
   juniorShirtNumbersTable,
   selectionsTable,
+  shirtNumbersTable,
   squadMembersTable,
   type FixtureRow,
   type SelectionRow,
@@ -17,7 +18,9 @@ import { memberDisplayName } from "./availability-grades";
 import { loadSideFixture, sideSection, type SideFixture } from "./selection-fixtures";
 import { loadSelectionParticipantIds } from "./selection-published-players";
 import { normaliseSlots, SIDE_SIZE, TWELFTH_INDEX } from "./selection-drafts";
-import { shirtNumberOf, teamListShirtNumberLoader } from "./engines/team-list";
+import { buildTeamListShirtNumbers, shirtNumberOf } from "./engines/team-list";
+import { loadJuniorIdentity } from "./junior-shirt-numbers";
+import { juniorMemberResolver } from "./shirt-number-squad";
 import { getTenantBrand } from "./tenant-brand";
 import {
   bowlingRulesFor,
@@ -280,16 +283,41 @@ export async function loadTeamSheetPreview(
   };
 }
 
-/** Senior: the season register (feature on), linked player first. Junior: the juniors register. */
+/**
+ * Each player's shirt number for the fixture's season. Unlike the social
+ * team-list cards, the printed sheet doesn't wait for the club's shirt-number
+ * setting: a number on the register prints.
+ * - Senior: the season register, by the member's linked player, else their
+ *   register participant (`loadSelectionParticipantIds`).
+ * - Junior: the juniors register, by the member's PlayHQ participant as a
+ *   junior side is published (`juniorMemberResolver`: profile id with merged-away
+ *   ids followed to the keeper, else a unique exact name). A held number (its
+ *   player not yet brought in by PlayHQ, or a name to check) is never printed.
+ */
 async function shirtNumbersFor(
   tenantId: number,
   loaded: Loaded,
 ): Promise<(m: SheetMember) => string | null> {
   const season = seasonStartYearFor(loaded.fixture.startAt);
   if (loaded.section === "senior") {
-    const numbers = await teamListShirtNumberLoader(tenantId)(season);
-    if (!numbers) return () => null;
-    const participants = await loadSelectionParticipantIds(db, tenantId, loaded.fixture.startAt);
+    const [rows, participants] = await Promise.all([
+      db
+        .select({
+          playerId: shirtNumbersTable.playerId,
+          participantId: shirtNumbersTable.participantId,
+          number: shirtNumbersTable.number,
+        })
+        .from(shirtNumbersTable)
+        .where(
+          and(
+            eq(shirtNumbersTable.tenantId, tenantId),
+            eq(shirtNumbersTable.season, season),
+            isNotNull(shirtNumbersTable.number),
+          ),
+        ),
+      loadSelectionParticipantIds(db, tenantId, loaded.fixture.startAt),
+    ]);
+    const numbers = buildTeamListShirtNumbers(rows);
     return (m) => {
       const linked =
         m.linkedPlayerId != null && m.linkedPlayerId < FILL_IN_THRESHOLD
@@ -301,8 +329,11 @@ async function shirtNumbersFor(
       );
     };
   }
-  const profiles = loaded.members.flatMap((m) => normaliseParticipantId(m.playhqProfileId) ?? []);
-  if (profiles.length === 0) return () => null;
+  const { participants, merges } = await loadJuniorIdentity(db, tenantId);
+  const resolve = juniorMemberResolver(participants, merges);
+  const ids = new Map(loaded.members.map((m) => [m.id, resolve(m)]));
+  const wanted = [...new Set([...ids.values()].filter((x): x is string => !!x))];
+  if (wanted.length === 0) return () => null;
   const rows = await db
     .select({
       participantId: juniorShirtNumbersTable.participantId,
@@ -313,15 +344,27 @@ async function shirtNumbersFor(
       and(
         eq(juniorShirtNumbersTable.tenantId, tenantId),
         eq(juniorShirtNumbersTable.season, season),
-        inArray(juniorShirtNumbersTable.participantId, profiles),
         // A held number (its player not here yet, or a name to check) is never printed.
         eq(juniorShirtNumbersTable.held, false),
+        isNotNull(juniorShirtNumbersTable.number),
       ),
     );
-  const byProfile = new Map(rows.filter((r) => r.number).map((r) => [r.participantId, r.number!]));
+  // A number kept on a merged-away duplicate counts for the keeper.
+  const canonical = new Map<string, string>();
+  for (const id of wanted) canonical.set(id, id);
+  for (const mg of merges) {
+    const dup = normaliseParticipantId(mg.duplicateParticipantId);
+    const keeper = normaliseParticipantId(mg.keeperParticipantId);
+    if (dup && keeper && wanted.includes(keeper)) canonical.set(dup, keeper);
+  }
+  const byParticipant = new Map<string, string>();
+  for (const r of rows) {
+    const id = canonical.get(normaliseParticipantId(r.participantId) ?? "");
+    if (id && r.number && !byParticipant.has(id)) byParticipant.set(id, r.number);
+  }
   return (m) => {
-    const id = normaliseParticipantId(m.playhqProfileId);
-    return id ? (byProfile.get(id) ?? null) : null;
+    const id = ids.get(m.id);
+    return id ? (byParticipant.get(id) ?? null) : null;
   };
 }
 

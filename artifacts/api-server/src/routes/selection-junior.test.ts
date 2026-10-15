@@ -10,7 +10,9 @@ import {
   juniorFixturesTable,
   juniorParticipantsTable,
   juniorTeamListsTable,
+  juniorShirtNumbersTable,
 } from "@workspace/db";
+import { buildTeamSheet } from "../lib/team-sheet";
 import { SESSION_COOKIE, encodeSession } from "../lib/auth";
 import { setEmailTransport } from "../lib/integrations/email";
 import { setSmsTransport } from "../lib/integrations/sms";
@@ -139,6 +141,11 @@ describe("Selection Hub junior sides", () => {
       ])
       .returning();
     currentFixture = current.id;
+    await db.insert(juniorShirtNumbersTable).values([
+      { tenantId, season: 2026, participantId: pid(1), name: "Ava Jones", number: "12" },
+      { tenantId, season: 2026, participantId: pid(4), name: "Dan Jones", number: "9" },
+      { tenantId, season: 2026, participantId: pid(2), name: "Ben Jones", number: "5", held: true },
+    ]);
     void other;
     // Last week's Gold side: kid 1 captain, kids 2–4.
     await db.insert(juniorTeamListsTable).values({
@@ -235,5 +242,14 @@ describe("Selection Hub junior sides", () => {
       grade: "Year 7",
       bowlingRulesSource: null,
     });
+  });
+
+  it("the junior team sheet prints numbers by profile id or name, never a held one", async () => {
+    const gold = (await board()).selections.find((s) => s.fixture.grade === "Hub Year 7 Gold")!;
+    const sheet = await buildTeamSheet(tenantId, gold.id);
+    const numberOf = (name: string) => sheet.players.find((p) => p.name === name)?.shirtNumber;
+    expect(numberOf("Ava Jones")).toBe("12");
+    expect(numberOf("Dan Jones")).toBe("9");
+    expect(numberOf("Ben Jones")).toBeNull();
   });
 });
