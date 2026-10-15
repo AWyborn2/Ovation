@@ -15,12 +15,12 @@ import {
   db,
   clubsTable,
   socialDraftsTable,
-  socialSettingsTable,
   juniorMatchesTable,
   juniorMatchBattingTable,
   juniorMatchBowlingTable,
   juniorMatchRostersTable,
 } from "@workspace/db";
+import type { SocialSettingsRow } from "@workspace/db";
 import { eq, and, ne } from "drizzle-orm";
 import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
 import { matchToSummaryInput, juniorMatchToSummaryInput } from "@workspace/scorecard";
@@ -49,7 +49,7 @@ import { topPerformerPlayerId } from "./match-top-performer";
 
 type DraftResult = { drafted: number; skipped: number; errors: string[] };
 
-type SocialSettings = typeof socialSettingsTable.$inferSelect;
+type SocialSettings = SocialSettingsRow;
 
 // ---------------------------------------------------------------------------
 // Settings
