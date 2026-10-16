@@ -96,9 +96,21 @@ export function PlayerPool({
 }) {
   const [query, setQuery] = useState("");
   const [showNo, setShowNo] = useState(false);
+  const [showUp, setShowUp] = useState(false);
   const availability = useAvailability();
   const q = query.trim().toLowerCase();
-  const shown = q ? pool.filter((m) => m.displayName.toLowerCase().includes(q)) : pool;
+  const matching = q ? pool.filter((m) => m.displayName.toLowerCase().includes(q)) : pool;
+  // On a senior board, juniors (who can play up) are listed apart, collapsed.
+  const playingUp = junior
+    ? []
+    : matching
+        .filter((m) => m.section === "junior")
+        .sort(
+          (a, b) =>
+            (a.lastGrade ?? "~").localeCompare(b.lastGrade ?? "~") ||
+            a.displayName.localeCompare(b.displayName),
+        );
+  const shown = junior ? matching : matching.filter((m) => m.section !== "junior");
   const by = (status: SelectionMemberStatus) =>
     shown
       .filter((m) => m.status === status)
@@ -223,6 +235,28 @@ export function PlayerPool({
               {showNo && list(no)}
             </section>
           </>
+        )}
+        {playingUp.length > 0 && (
+          <section data-drop="pool" className={zoneClass} aria-label="Juniors">
+            <button
+              type="button"
+              className={cn(headClass, "w-full text-left")}
+              aria-expanded={showUp || !!q}
+              onClick={() => setShowUp((v) => !v)}
+            >
+              <ChevronRight
+                className={cn("h-3 w-3 transition-transform", (showUp || q) && "rotate-90")}
+                aria-hidden
+              />
+              Juniors
+              <span className="flex-1" />
+              <span className="font-mono text-xs text-muted-foreground">{playingUp.length}</span>
+            </button>
+            <p className="mx-1 mb-1.5 text-xs text-muted-foreground">
+              From the junior register, to play up in a senior side.
+            </p>
+            {(showUp || !!q) && list(playingUp)}
+          </section>
         )}
         <p className="mx-1 mt-1 text-xs text-muted-foreground">
           Showing {q ? "matching players" : junior ? "junior families" : "seniors"}.

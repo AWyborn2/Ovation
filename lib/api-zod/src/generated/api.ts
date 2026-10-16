@@ -3527,6 +3527,7 @@ export const GetSelectionBoardResponse = zod.object({
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
+  "section": zod.enum(['senior', 'junior']).describe('The register section. A junior on a senior board is playing up; the pool lists them apart.'),
   "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
@@ -3558,6 +3559,7 @@ export const GetSelectionBoardResponse = zod.object({
 })),
   "pool": zod.array(zod.object({
   "id": zod.number(),
+  "section": zod.enum(['senior', 'junior']).describe('The register section. A junior on a senior board is playing up; the pool lists them apart.'),
   "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
@@ -3677,6 +3679,7 @@ export const SaveSelectionBoardResponse = zod.object({
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
+  "section": zod.enum(['senior', 'junior']).describe('The register section. A junior on a senior board is playing up; the pool lists them apart.'),
   "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
@@ -3708,6 +3711,7 @@ export const SaveSelectionBoardResponse = zod.object({
 })),
   "pool": zod.array(zod.object({
   "id": zod.number(),
+  "section": zod.enum(['senior', 'junior']).describe('The register section. A junior on a senior board is playing up; the pool lists them apart.'),
   "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
@@ -3783,6 +3787,7 @@ export const FinaliseSelectionResponse = zod.object({
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
+  "section": zod.enum(['senior', 'junior']).describe('The register section. A junior on a senior board is playing up; the pool lists them apart.'),
   "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
@@ -3918,6 +3923,7 @@ export const SyncSelectionFromPlayhqResponse = zod.object({
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
+  "section": zod.enum(['senior', 'junior']).describe('The register section. A junior on a senior board is playing up; the pool lists them apart.'),
   "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),
@@ -3990,6 +3996,7 @@ export const ReopenSelectionResponse = zod.object({
 }).describe('Who held an open slot and why they left it (\"was <name> · <reason>\")'),zod.null()]),
   "member": zod.union([zod.object({
   "id": zod.number(),
+  "section": zod.enum(['senior', 'junior']).describe('The register section. A junior on a senior board is playing up; the pool lists them apart.'),
   "linkedPlayerId": zod.number().nullish().describe('Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.'),
   "displayName": zod.string(),
   "status": zod.enum(['yes', 'maybe', 'no', 'none']).describe('The member\'s answer for the dates they were asked about (none = no reply)'),

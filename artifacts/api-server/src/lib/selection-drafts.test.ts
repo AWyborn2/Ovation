@@ -141,6 +141,22 @@ describe("buildDraftSlots", () => {
     });
   });
 
+  it("a name on two registers takes the preferred record, else stays unmatched", () => {
+    const senior = member(60, "Sam Reid");
+    const junior = member(61, "Sam Reid");
+    const list: TeamListPlayer[] = [{ order: 1, displayName: "Sam Reid" }];
+    const base = {
+      lastList: list,
+      members: [senior, junior],
+      responses: answers({ 60: "yes", 61: "yes" }),
+      fixtureDate: DATE,
+    };
+    expect(buildDraftSlots({ ...base, prefer: (m) => m.id === 60 }).slots[0]).toEqual({
+      memberId: 60,
+    });
+    expect(buildDraftSlots(base).slots[0].memberId).toBeNull();
+  });
+
   it("matches an unlinked entry by preferred name plus last name", () => {
     const tom = member(50, "Thomas Brooks", { preferredName: "Tom" });
     const list: TeamListPlayer[] = [{ order: 1, displayName: "Tom Brooks" }];

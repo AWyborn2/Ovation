@@ -3354,6 +3354,8 @@ export const SelectionMemberStatus = {
  */
 export interface SelectionMember {
   id: number;
+  /** The register section. A junior on a senior board is playing up; the pool lists them apart. */
+  section: SquadSection;
   /**
      * Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.
      * @nullable

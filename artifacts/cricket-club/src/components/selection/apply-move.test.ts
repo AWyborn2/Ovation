@@ -23,6 +23,7 @@ function member(
     note: null,
     lastGrade: null,
     junior: false,
+    section: "senior",
     isPrivate: false,
     repliedAt: null,
     late: false,

@@ -180,6 +180,8 @@ export type BoardMember = {
   note: string | null;
   lastGrade: string | null;
   junior: boolean;
+  /** The register section: a junior in a senior board is playing up. */
+  section: SquadSection;
   isPrivate: boolean;
   repliedAt: Date | null;
   late: boolean;
@@ -464,6 +466,7 @@ export async function buildBoard(
       note: reply?.note ?? null,
       lastGrade: lastGrade.get(m.id) ?? null,
       junior: section === "senior" && (m.section === "junior" || isUnder18(m.dateOfBirth, now)),
+      section: m.section,
       isPrivate: m.isPrivate,
       repliedAt: reply?.at ?? null,
       late: reply?.late ?? false,
@@ -538,7 +541,8 @@ export async function buildBoard(
   });
 
   const pool = members
-    .filter((m) => m.active && m.section === section && !placed.has(m.id))
+    // A senior side may pick a junior (shown apart in the pool); a junior side juniors only.
+    .filter((m) => m.active && (m.section === section || section === "senior") && !placed.has(m.id))
     .map((m) => summary(m, null))
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
@@ -963,7 +967,9 @@ export async function syncSideFromPlayhq(
         })
         .from(squadMembersTable)
         .where(eq(squadMembersTable.tenantId, tenantId))
-    ).filter((m) => m.section === section);
+    ).filter((m) => section === "senior" || m.section === "junior");
+    // Juniors play up in senior sides; a junior side takes juniors only. A name on
+    // both registers is the senior record in a senior side.
 
     let list: TeamListPlayer[] = [];
     if (fixture.kind === "junior") {
@@ -1014,6 +1020,7 @@ export async function syncSideFromPlayhq(
       fixtureDate: perthDate(fixture.startAt),
       placed,
       requireYes: false,
+      prefer: (m) => members.find((x) => x.id === m.id)?.section === section,
     });
     await tx
       .update(selectionsTable)

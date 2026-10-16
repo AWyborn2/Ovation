@@ -106,7 +106,13 @@ describe("Selection Hub API", () => {
   const board = async (who: typeof asAdmin, section = "senior") =>
     (await who(request(app).get(`/api/selection/board?section=${section}`)).expect(200)).body as {
       selections: SideBody[];
-      pool: { id: number; status: string; junior: boolean; displayName: string }[];
+      pool: {
+        id: number;
+        status: string;
+        junior: boolean;
+        section: string;
+        displayName: string;
+      }[];
       events: { selectionId: number; action: string; detail: Record<string, unknown> }[];
       round: { roundId: number; counts: { no: number; total: number } } | null;
       actor: { kind: string; canRemind: boolean };
@@ -389,7 +395,9 @@ describe("Selection Hub API", () => {
     const poolIds = b.pool.map((p) => p.id);
     expect(poolIds).toEqual(expect.arrayContaining([m[28], m[29], m[30], under18]));
     expect(poolIds).not.toContain(m[1]);
-    expect(poolIds).not.toContain(junior);
+    // A junior can play up: listed in the senior pool, marked by their section.
+    expect(poolIds).toContain(junior);
+    expect(b.pool.find((p) => p.id === junior)?.section).toBe("junior");
     expect(b.pool.find((p) => p.id === m[30])?.status).toBe("no");
     expect(b.pool.find((p) => p.id === under18)?.junior).toBe(true);
     expect(b.pool.find((p) => p.id === m[28])?.junior).toBe(false);

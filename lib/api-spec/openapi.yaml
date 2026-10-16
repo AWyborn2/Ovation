@@ -14494,10 +14494,13 @@ components:
     SelectionMember:
       type: object
       description: A squad member as the Hub shows them — never a contact value.
-      required: [id, displayName, status, note, lastGrade, junior, isPrivate, repliedAt, late]
+      required: [id, displayName, status, note, lastGrade, junior, section, isPrivate, repliedAt, late]
       properties:
         id:
           type: integer
+        section:
+          $ref: "#/components/schemas/SquadSection"
+          description: The register section. A junior on a senior board is playing up; the pool lists them apart.
         linkedPlayerId:
           type: ["integer", "null"]
           description: Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.

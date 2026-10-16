@@ -6,12 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { SelectionMemberStatus } from './selectionMemberStatus';
+import type { SquadSection } from './squadSection';
 
 /**
  * A squad member as the Hub shows them — never a contact value.
  */
 export interface SelectionMember {
   id: number;
+  /** The register section. A junior on a senior board is playing up; the pool lists them apart. */
+  section: SquadSection;
   /**
      * Linked senior statistics profile, never the squad member ID. Null for private members and the junior section.
      * @nullable
