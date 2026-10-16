@@ -174,6 +174,32 @@ describe("Posting Plan", () => {
     expect(summaryOf("Match result")).toBe("all senior grades, plus Under 14 · each on its own");
   });
 
+  it("offers 'All senior and junior grades' on rows with junior data and lists every junior group", () => {
+    const bodies = stubPatch();
+    render(settings());
+    const results = within(table()).getByLabelText("Match result: grades") as HTMLSelectElement;
+    expect(Array.from(results.options).map((o) => o.value)).toEqual([
+      "allSenior",
+      "allGrades",
+      "aGradeOnly",
+      "custom",
+    ]);
+    // Milestones have no junior data: no such choice.
+    const milestones = within(table()).getByLabelText("Milestones: grades") as HTMLSelectElement;
+    expect(Array.from(milestones.options).map((o) => o.value)).not.toContain("allGrades");
+
+    fireEvent.change(results, { target: { value: "allGrades" } });
+    expect(summaryOf("Match result")).toBe("all senior and junior grades · each on its own");
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+    return waitFor(() => expect(bodies).toHaveLength(1)).then(() => {
+      const sent = (bodies[0] as { postingPlan: PostingPlan }).postingPlan;
+      expect(sent.rows.results).toMatchObject({
+        others: "seniors",
+        grades: { "Under 14": true, "Under 16": true },
+      });
+    });
+  });
+
   it("milestones offer no junior grades", () => {
     render(settings());
     fireEvent.change(within(table()).getByLabelText("Milestones: grades"), {
