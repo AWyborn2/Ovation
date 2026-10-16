@@ -11,7 +11,10 @@ import {
   fixturesTable,
   selectionsTable,
   teamListsTable,
+  shirtNumbersTable,
 } from "@workspace/db";
+import { seasonStartYearFor } from "@workspace/db/seasons";
+import { buildTeamSheet } from "../lib/team-sheet";
 import { SESSION_COOKIE, encodeSession } from "../lib/auth";
 import { setEmailTransport, type EmailMessage } from "../lib/integrations/email";
 import { setSmsTransport, type SmsMessage } from "../lib/integrations/sms";
@@ -94,6 +97,7 @@ describe("Selection Hub without availability", () => {
           tenantId,
           firstName: `S${i}`,
           lastName: "Solo",
+          ...(i === 1 ? { linkedPlayerId: 501 } : {}),
           accountHolderMobile: `0412 ${String(300 + i)} ${String(STAMP % 1000).padStart(3, "0")}`,
           accountHolderEmail: `solo${i}.${STAMP}@example.test`,
         })
@@ -121,6 +125,13 @@ describe("Selection Hub without availability", () => {
       ])
       .returning();
     fixtureA = current.id;
+    await db.insert(shirtNumbersTable).values({
+      tenantId,
+      season: seasonStartYearFor(current.startAt),
+      name: "S1 Solo",
+      playerId: 501,
+      number: "7",
+    });
     // Last week's XI: S1 captain and keeper, S1–S11 in order.
     await db.insert(teamListsTable).values({
       tenantId,
@@ -188,5 +199,12 @@ describe("Selection Hub without availability", () => {
     expect(list.source).toBe("selection");
     expect(list.players).toHaveLength(11);
     expect(list.players[0]).toMatchObject({ order: 1, displayName: "S1 Solo", role: "C/WK" });
+  });
+
+  it("the team sheet prints register shirt numbers with the club's setting off", async () => {
+    const side = (await board("senior")).selections[0];
+    const sheet = await buildTeamSheet(tenantId, side.id);
+    expect(sheet.players[0]).toMatchObject({ order: 1, name: "S1 Solo", shirtNumber: "7" });
+    expect(sheet.players[1].shirtNumber).toBeNull();
   });
 });
