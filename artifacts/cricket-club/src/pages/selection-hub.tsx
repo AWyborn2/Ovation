@@ -390,16 +390,38 @@ export default function SelectionHub() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <SelectionCompareLink junior={junior} />
-            {playhqReady.length > 0 && (
-              <Button variant="outline" disabled={busy} onClick={() => void doSyncAll()}>
-                {syncingAll ? "Syncing…" : `Sync all from PlayHQ (${playhqReady.length})`}
-              </Button>
-            )}
-            {finaliseReady.length > 0 && (
-              <Button disabled={busy} onClick={() => void doFinaliseAll()}>
-                {finalisingAll ? "Finalising…" : `Finalise all (${finaliseReady.length})`}
-              </Button>
-            )}
+            {/* Always shown, so they can be found; greyed out with the reason when idle. */}
+            <Button
+              variant="outline"
+              disabled={busy || playhqReady.length === 0}
+              title={
+                playhqReady.length === 0
+                  ? "PlayHQ hasn't named a side for any draft here yet (it syncs about hourly)."
+                  : undefined
+              }
+              onClick={() => void doSyncAll()}
+            >
+              {syncingAll
+                ? "Syncing…"
+                : playhqReady.length > 0
+                  ? `Sync all from PlayHQ (${playhqReady.length})`
+                  : "Sync all from PlayHQ"}
+            </Button>
+            <Button
+              disabled={busy || finaliseReady.length === 0}
+              title={
+                finaliseReady.length === 0
+                  ? "No draft side with players picked for you to finalise."
+                  : undefined
+              }
+              onClick={() => void doFinaliseAll()}
+            >
+              {finalisingAll
+                ? "Finalising…"
+                : finaliseReady.length > 0
+                  ? `Finalise all (${finaliseReady.length})`
+                  : "Finalise all"}
+            </Button>
             <AddActivePlayer section={section} />
             <div
               role="group"
