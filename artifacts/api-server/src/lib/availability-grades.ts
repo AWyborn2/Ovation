@@ -153,8 +153,56 @@ export function buildMemberMatcher<M extends MemberIdentity>(
       const link = linkOf(m);
       return link == null || pid == null || link === pid;
     });
-    return narrow(unlinkedOrSame) ?? (pid != null ? narrow(named) : null);
+    const exact = narrow(unlinkedOrSame) ?? (pid != null ? narrow(named) : null);
+    if (exact) return exact;
+    // Last resort, a close spelling of one member's name ("Tahj" for "Taj"
+    // Bashford): same surname and first initial, first names at most two letters
+    // apart, exactly one such member, and none linked to another player.
+    const close = members.filter((m) => {
+      const link = linkOf(m);
+      return (
+        (link == null || pid == null || link === pid) &&
+        !(pid != null && byPlayerId.has(pid)) &&
+        closeSpelling(entry.displayName, m)
+      );
+    });
+    return narrow(close);
   };
+}
+
+/** Edit distance between two short strings (insert, delete, substitute). */
+function editDistance(a: string, b: string): number {
+  const row = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    let prev = row[0]!;
+    row[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const next = Math.min(row[j]! + 1, row[j - 1]! + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = row[j]!;
+      row[j] = next;
+    }
+  }
+  return row[b.length]!;
+}
+
+/**
+ * A list name that is a close spelling of the member's ("Tahj Bashford" for Taj
+ * Bashford, "Jaden" for Jayden): same surname, same first initial, and first
+ * names at most two letters apart. A parent and child (Ben / Noah) never are.
+ */
+function closeSpelling(
+  displayName: string,
+  m: Pick<MemberIdentity, "firstName" | "lastName" | "preferredName">,
+): boolean {
+  const tokens = normaliseName(displayName).split(" ").filter(Boolean);
+  if (tokens.length < 2) return false;
+  const first = tokens[0]!;
+  if (first.length < 2) return false;
+  if (tokens.slice(1).join(" ") !== normaliseName(m.lastName)) return false;
+  return [m.firstName, m.preferredName].some((f) => {
+    const given = normaliseName(f ?? "").split(" ")[0] ?? "";
+    return given.length >= 2 && given[0] === first[0] && editDistance(given, first) <= 2;
+  });
 }
 
 /**
