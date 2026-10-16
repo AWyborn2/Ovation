@@ -32,12 +32,14 @@ export function GradePicker({
   onChange: (row: PostingRow) => void;
 }) {
   const id = useId();
-  const choice = quickChoiceOf(row);
+  const choice = quickChoiceOf(row, grades);
   const [choosing, setChoosing] = useState(choice === "custom");
   const [extra, setExtra] = useState("");
   const shown = choosing ? "custom" : choice;
 
   const all = [...new Set([...grades, ...Object.keys(row.grades)])];
+  // "All senior and junior grades" only where the row can draft juniors and the club has any.
+  const offerAllGrades = !juniorsUnavailable && grades.some((g) => isJuniorGradeLabel(g));
   const groups: { title: string; grades: string[] }[] = [
     { title: "Seniors", grades: all.filter((g) => !isJuniorGradeLabel(g) && !isWomen(g)) },
     { title: "Women", grades: all.filter((g) => !isJuniorGradeLabel(g) && isWomen(g)) },
@@ -46,7 +48,7 @@ export function GradePicker({
 
   const pick = (value: QuickChoice) => {
     setChoosing(value === "custom");
-    if (value !== "custom") onChange(applyQuickChoice(row, value));
+    if (value !== "custom") onChange(applyQuickChoice(row, value, grades));
   };
   const toggle = (grade: string, on: boolean) =>
     onChange({ ...row, grades: { ...row.grades, [grade]: on } });
@@ -61,6 +63,7 @@ export function GradePicker({
         aria-label={`${label}: grades`}
       >
         <option value="allSenior">All senior grades</option>
+        {offerAllGrades && <option value="allGrades">All senior and junior grades</option>}
         <option value="aGradeOnly">A Grade only</option>
         <option value="custom">Choose grades…</option>
       </select>
