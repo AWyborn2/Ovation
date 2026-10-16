@@ -63,6 +63,19 @@ function memberNameKeys(m: MemberIdentity): string[] {
   return [...keys];
 }
 
+/** Whether a list name and a member share first initial and surname ("T. Brooks", Thomas Brooks). */
+function sameInitialSurname(
+  displayName: string,
+  m: Pick<MemberIdentity, "firstName" | "lastName" | "preferredName">,
+): boolean {
+  const tokens = normaliseName(displayName).split(" ").filter(Boolean);
+  if (tokens.length < 2) return false;
+  const initial = tokens[0]![0];
+  const surname = tokens.slice(1).join(" ");
+  if (surname !== normaliseName(m.lastName)) return false;
+  return [m.firstName, m.preferredName].some((f) => f && normaliseName(f)[0] === initial);
+}
+
 /**
  * Matches team-list entries to members: by linked `playerId` first, then
  * by normalised display name (preferred or first name plus last name). A
@@ -75,7 +88,9 @@ function memberNameKeys(m: MemberIdentity): string[] {
  * family, so a link can land on a sibling):
  * - a link two members share belongs to neither and is ignored;
  * - an id hit whose name differs from the entry gives way to the one member
- *   carrying the entry's exact name, so a sibling never takes the slot;
+ *   carrying the entry's exact name, so a sibling never takes the slot; with
+ *   no such member it stands only for the same initial and surname, so a
+ *   parent's id on a child's record matches nobody;
  * - an exact, unique name still matches a member linked elsewhere when no
  *   member is linked to the entry's player.
  */
@@ -126,7 +141,11 @@ export function buildMemberMatcher<M extends MemberIdentity>(
       // The linked member, unless the entry plainly names someone else on the squad.
       if (!key || memberNameKeys(linked).includes(key)) return linked;
       const other = narrow(named.filter((m) => m.id !== linked.id));
-      return other ?? linked;
+      if (other) return other;
+      // A spelling of the same person ("T. Brooks" for Thomas Brooks) keeps the
+      // link; a different person (Ben Dreckow on his son Noah's record, via a
+      // family PlayHQ account) is not this member: unmatched, not the son.
+      return sameInitialSurname(entry.displayName, linked) ? linked : null;
     }
     // Nobody is linked to this player: a member linked elsewhere still matches
     // on their exact name (their link is wrong, or a sibling's).

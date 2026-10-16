@@ -174,6 +174,21 @@ describe("buildDraftSlots", () => {
     expect(draft.slots.slice(0, 2)).toEqual([{ memberId: 71 }, { memberId: 70 }]);
   });
 
+  it("a parent's id on a child's record matches nobody, not the child", () => {
+    // Noah's record is linked to his father Ben's player (700); Ben isn't on the squad.
+    const noah = member(72, "Noah Dreckow", { linkedPlayerId: 700 });
+    const draft = buildDraftSlots({
+      lastList: [{ order: 1, playerId: 700, displayName: "Ben Dreckow" }],
+      members: [noah],
+      responses: answers({ 72: "yes" }),
+      fixtureDate: DATE,
+    });
+    expect(draft.slots[0]).toEqual({
+      memberId: null,
+      gap: { name: "Ben Dreckow", reason: "not_on_register" },
+    });
+  });
+
   it("a link two members share is ignored; their names decide", () => {
     const mason = member(80, "Mason Head", { linkedPlayerId: 800 });
     const philip = member(81, "Philip Head", { linkedPlayerId: 800 });
