@@ -492,16 +492,13 @@ describe("Selection Hub API", () => {
     }
   });
 
-  it("more than 12 slots, too few, or a member twice → 400 and nothing written", async () => {
+  it("more than 12 slots, too few, or a member twice in a side → 400 and nothing written", async () => {
     const thirteen = await changeFor(sel.C, (ids) => [...ids, m[28]]);
     expect((await put(asAdmin, [thirteen])).status).toBe(400);
     const ten = await changeFor(sel.C, (ids) => ids.slice(0, 10));
     expect((await put(asAdmin, [ten])).status).toBe(400);
 
-    // m11 is in B Grade, which the save doesn't change.
-    const dupAcross = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[11], ids[11]]);
-    expect((await put(asAdmin, [dupAcross])).status).toBe(400);
-
+    // (A member in another side as well is allowed: see "several sides of a round".)
     const dupWithin = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[1], ids[11]]);
     expect((await put(asAdmin, [dupWithin])).status).toBe(400);
 
