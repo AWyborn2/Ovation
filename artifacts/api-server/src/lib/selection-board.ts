@@ -72,7 +72,7 @@ import {
  *
  * - `buildBoard` reads one section's view of the current round: the round
  *   header and counts, each side with its slots, roles and the caller's edit
- *   right, the pool of unplaced active members and the latest changes. Member
+ *   right, the pool (the whole active squad) and the latest changes. Member
  *   summaries are built from explicitly listed non-contact columns, so no
  *   mobile or email can reach a captain.
  * - `saveBoard` applies whole-side changes in one transaction with the round's
@@ -354,7 +354,7 @@ export async function buildBoard(
   }
 
   // Independent reads, run together. `sides` is every side of the round (any
-  // section), so a member placed anywhere is out of the pool; `statusByDate` is
+  // section); `statusByDate` is
   // each member's status per Perth date (away periods count as No) and
   // `replies` the reply details — a row the system recorded (away) is not a
   // reply; `windowFixtures`, `grades` and `lists` give each member's last grade
@@ -542,9 +542,16 @@ export async function buildBoard(
 
   const pool = members
     // A senior side may pick a junior (shown apart in the pool); a junior side juniors only.
-    .filter((m) => m.active && (m.section === section || section === "senior") && !placed.has(m.id))
+    // The whole squad: a player already in a side can still be added to another
+    // (a junior plays up, a senior plays Saturday and Sunday); the board shows where.
+    .filter((m) => m.active && (m.section === section || section === "senior"))
     .map((m) => summary(m, null))
-    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+    // Not yet picked first, then by name.
+    .sort(
+      (a, b) =>
+        Number(placed.has(a.id)) - Number(placed.has(b.id)) ||
+        a.displayName.localeCompare(b.displayName),
+    );
 
   const sideIds = sectionSides.map((s) => s.selection.id);
   const gradeOf = new Map(sectionSides.map((s) => [s.selection.id, s.fixture.grade]));
@@ -693,7 +700,6 @@ export async function saveBoard(
     for (const id of ids) {
       if (!sideOf.has(id)) throw new SelectionError(404, "Side not found.");
     }
-    const changing = new Set(ids);
 
     // Rights, the final lock and versions of the sides being changed.
     for (const c of changes) {
@@ -737,10 +743,6 @@ export async function saveBoard(
       return m ? memberDisplayName(m) : `#${id}`;
     };
 
-    // Where each member sits before the save.
-    const holderOf = new Map<number, LockedSide>();
-    for (const s of sides) for (const id of memberIdsOf(s.selection.slots)) holderOf.set(id, s);
-
     for (const c of changes) {
       const before = new Set(memberIdsOf(sideOf.get(c.selectionId)!.selection.slots));
       for (const id of memberIdsOf(c.slots)) {
@@ -749,37 +751,17 @@ export async function saveBoard(
         if (!before.has(id) && !m.active) {
           throw new SelectionError(400, `${nameOf(id)} isn't an active squad member.`);
         }
-        // Taking a member from a side the save doesn't change.
-        const holder = holderOf.get(id);
-        if (holder && holder.selection.id !== c.selectionId && !changing.has(holder.selection.id)) {
-          const right = selectionRight(actor, rule, holder.fixture.grade);
-          if (!right.allowed || holder.selection.state === "final") {
-            throw new SelectionError(
-              403,
-              `${nameOf(id)} is in ${holder.fixture.grade}, which you can't change.`,
-            );
-          }
-        }
       }
     }
 
-    // No member twice in the round: refuse a save that places anyone more often
-    // than before. A duplicate already in the round (an older draft) can't then
-    // block saving an unrelated side.
-    const placements = (bySide: ReadonlyMap<number, readonly { memberId: number | null }[]>) => {
-      const count = new Map<number, number>();
-      for (const slots of bySide.values()) {
-        for (const id of memberIdsOf(slots)) count.set(id, (count.get(id) ?? 0) + 1);
-      }
-      return count;
-    };
-    const beforeSlots = new Map(sides.map((s) => [s.selection.id, s.selection.slots]));
-    const afterSlots = new Map<number, readonly { memberId: number | null }[]>(beforeSlots);
-    for (const c of changes) afterSlots.set(c.selectionId, c.slots);
-    const was = placements(beforeSlots);
-    for (const [id, n] of placements(afterSlots)) {
-      if (n > 1 && n > (was.get(id) ?? 0)) {
-        throw new SelectionError(400, `${nameOf(id)} can only be picked once in a round.`);
+    // A player can be in several sides of a round (a junior playing up, a senior
+    // on Saturday and Sunday), but only once in a side.
+    for (const c of changes) {
+      const ids = memberIdsOf(c.slots);
+      const dup = ids.find((id, i) => ids.indexOf(id) !== i);
+      if (dup != null) {
+        const { fixture } = sideOf.get(c.selectionId)!;
+        throw new SelectionError(400, `${nameOf(dup)} is in ${fixture.grade} twice.`);
       }
     }
 
@@ -1001,24 +983,13 @@ export async function syncSideFromPlayhq(
       throw new SelectionError(404, `PlayHQ hasn't published a side for ${fixture.grade} yet.`);
     }
 
-    // Members already in another side of the round stay there.
-    const others = await tx
-      .select({ id: selectionsTable.id, slots: selectionsTable.slots })
-      .from(selectionsTable)
-      .where(
-        and(eq(selectionsTable.tenantId, tenantId), eq(selectionsTable.roundId, selection.roundId)),
-      );
-    const placed = new Set<number>();
-    for (const o of others) {
-      if (o.id === selection.id) continue;
-      for (const slot of o.slots) if (slot.memberId != null) placed.add(slot.memberId);
-    }
+    // PlayHQ overrules: a player named there goes in, whatever other sides
+    // of the round hold (juniors play up, seniors play Saturday and Sunday).
     const draft = buildDraftSlots({
       lastList: list,
       members,
       responses: new Map(),
       fixtureDate: perthDate(fixture.startAt),
-      placed,
       requireYes: false,
       prefer: (m) => members.find((x) => x.id === m.id)?.section === section,
     });

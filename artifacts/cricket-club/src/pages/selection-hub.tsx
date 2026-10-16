@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetSelectionBoardQueryKey,
@@ -24,6 +24,7 @@ import {
   toChanges,
   type BoardAction,
   type BoardState,
+  type Location,
 } from "@/components/selection/apply-move";
 import { weekendLabel } from "@/components/selection/labels";
 import { MoveDialog } from "@/components/selection/move-dialog";
@@ -143,21 +144,29 @@ export default function SelectionHub() {
     );
   };
 
+  // Where the chip being dragged or opened sits: a player can be in several sides.
+  const sourceRef = useRef<Location | null>(null);
+  const [openFrom, setOpenFrom] = useState<Location | null>(null);
   const drag = usePointerDrag({
     check: (memberId, target) => {
       const v = viewRef.current;
       if (!v) return { ok: false, message: "" };
-      const r = checkMove(v, memberId, target);
+      const r = checkMove(v, memberId, target, sourceRef.current);
       return r.ok ? r : { ok: false, message: r.message };
     },
-    onDrop: (memberId, target) => act({ kind: "move", memberId, target }),
+    onDrop: (memberId, target) => act({ kind: "move", memberId, target, from: sourceRef.current }),
     onCancel: () => say("Move cancelled"),
     scrollContainer: poolRef,
   });
 
-  const openMember = (id: number) => {
+  const openMember = (id: number, from?: Location) => {
     if (drag.shouldSuppressClick()) return;
+    setOpenFrom(from ?? null);
     setOpenId(id);
+  };
+  const startDrag = (e: PointerEvent<HTMLElement>, id: number, from: Location) => {
+    sourceRef.current = from;
+    drag.onPointerDown(e, id);
   };
 
   const doFinalise = (sideId: number) => {
@@ -488,7 +497,7 @@ export default function SelectionHub() {
                       busy={busy}
                       draggingId={drag.draggingId}
                       onOpenMember={openMember}
-                      onChipPointerDown={drag.onPointerDown}
+                      onChipPointerDown={startDrag}
                       onRole={(role, memberId) =>
                         act({ kind: "role", sideId: side.id, role, memberId })
                       }
@@ -506,11 +515,12 @@ export default function SelectionHub() {
                   busy={save.isPending}
                   draggingId={drag.draggingId}
                   scrollRef={poolRef}
+                  sides={view.selections}
                   canRemind={data.availability && data.actor.canRemind && data.round != null}
                   reminding={remind.isPending}
                   onRemind={doRemind}
                   onOpenMember={openMember}
-                  onChipPointerDown={drag.onPointerDown}
+                  onChipPointerDown={startDrag}
                 />
               </div>
             </div>
@@ -523,9 +533,10 @@ export default function SelectionHub() {
             junior={junior}
             state={view}
             memberId={openId}
+            from={openFrom}
             busy={busy}
             onClose={() => setOpenId(null)}
-            onMove={(memberId, target) => act({ kind: "move", memberId, target })}
+            onMove={(memberId, target) => act({ kind: "move", memberId, target, from: openFrom })}
             onRole={(sideId, role, memberId) => act({ kind: "role", sideId, role, memberId })}
           />
         )}

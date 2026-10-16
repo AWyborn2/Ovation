@@ -7,7 +7,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { locate, sideEditable, sideLabel, type BoardState, type DropTarget } from "./apply-move";
+import {
+  locateFrom,
+  sideEditable,
+  sideLabel,
+  type BoardState,
+  type DropTarget,
+  type Location,
+} from "./apply-move";
 import { STATUS, perthDateTime } from "./labels";
 import { useAvailability } from "./availability-context";
 import { StatusMark } from "./player-chip";
@@ -20,8 +27,8 @@ type Option = { value: string; label: string; disabled: boolean };
  * side, then every other side the caller can edit. Finalised and full sides
  * are listed but disabled; sides the caller can't edit are left out.
  */
-export function moveOptions(state: BoardState, memberId: number): Option[] {
-  const loc = locate(state, memberId);
+export function moveOptions(state: BoardState, memberId: number, from?: Location | null): Option[] {
+  const loc = locateFrom(state, memberId, from);
   if (!loc) return [];
   const out: Option[] = [];
   if (loc.kind === "side") {
@@ -37,18 +44,19 @@ export function moveOptions(state: BoardState, memberId: number): Option[] {
     const final = side.state === "final";
     if (!final && !side.canEdit) continue;
     const full = side.slots.every((s) => s.memberId != null);
+    const inIt = side.slots.some((s) => s.memberId === memberId);
     out.push({
       value: String(side.id),
-      label: `${sideLabel(side)}${final ? " (finalised)" : full ? " (full)" : ""}`,
-      disabled: final || full,
+      label: `${sideLabel(side)}${final ? " (finalised)" : inIt ? " (already in)" : full ? " (full)" : ""}`,
+      disabled: final || full || inIt,
     });
   }
   return out;
 }
 
 /** Why a player can't be moved at all, or null when they can. */
-function lockedReason(state: BoardState, memberId: number): string | null {
-  const loc = locate(state, memberId);
+function lockedReason(state: BoardState, memberId: number, from?: Location | null): string | null {
+  const loc = locateFrom(state, memberId, from);
   if (!loc || loc.kind === "pool") return null;
   const side = state.selections.find((s) => s.id === loc.sideId)!;
   if (side.state === "final") return `${sideLabel(side)} is finalised. Re-open it to make changes.`;
@@ -66,6 +74,7 @@ export function MoveDialog({
   junior = false,
   state,
   memberId,
+  from = null,
   busy,
   onClose,
   onMove,
@@ -74,25 +83,28 @@ export function MoveDialog({
   junior?: boolean;
   state: BoardState;
   memberId: number | null;
+  /** Where the player was opened from (a side slot or the pool): they may be in several sides. */
+  from?: Location | null;
   busy: boolean;
   onClose: () => void;
   onMove: (memberId: number, target: DropTarget) => void;
   onRole: (sideId: number, role: "captain" | "keeper", memberId: number | null) => void;
 }) {
-  const loc = memberId != null ? locate(state, memberId) : null;
+  const loc = memberId != null ? locateFrom(state, memberId, from) : null;
   const side = loc?.kind === "side" ? state.selections.find((s) => s.id === loc.sideId)! : null;
   const member = useMemo(() => {
     if (memberId == null) return null;
     if (side) return side.slots.find((s) => s.memberId === memberId)?.member ?? null;
+    // The pool is the whole squad, so a player is always found there too.
     return state.pool.find((m) => m.id === memberId) ?? null;
   }, [memberId, side, state.pool]);
-  const options = memberId != null ? moveOptions(state, memberId) : [];
+  const options = memberId != null ? moveOptions(state, memberId, loc) : [];
   const firstEnabled = options.find((o) => !o.disabled)?.value ?? "";
   const [choice, setChoice] = useState(firstEnabled);
   useEffect(() => setChoice(firstEnabled), [memberId, firstEnabled]);
 
   const open = memberId != null && member != null;
-  const locked = memberId != null ? lockedReason(state, memberId) : null;
+  const locked = memberId != null ? lockedReason(state, memberId, loc) : null;
   const canRole = side != null && sideEditable(side);
   const s = member ? STATUS[member.status] : null;
   const availability = useAvailability();

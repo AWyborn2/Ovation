@@ -1,10 +1,15 @@
 import { useState, type PointerEvent, type ReactNode, type RefObject } from "react";
-import type { SelectionMember, SelectionMemberStatus } from "@workspace/api-client-react";
+import type {
+  SelectionMember,
+  SelectionMemberStatus,
+  SelectionSide,
+} from "@workspace/api-client-react";
 import { ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAvailability } from "./availability-context";
 import { PlayerChip, StatusMark } from "./player-chip";
+import { sideLabel, type Location } from "./apply-move";
 
 const zoneClass =
   "rounded-lg px-1 py-1.5 data-[drop-state=ok]:bg-blue-500/10 data-[drop-state=ok]:shadow-[inset_0_0_0_2px_var(--color-blue-500)]";
@@ -15,12 +20,15 @@ function List({
   draggingId,
   onOpenMember,
   onChipPointerDown,
+  placedIn,
 }: {
   members: SelectionMember[];
   busy: boolean;
   draggingId: number | null;
-  onOpenMember: (id: number) => void;
-  onChipPointerDown: (e: PointerEvent<HTMLElement>, id: number) => void;
+  onOpenMember: (id: number, from: Location) => void;
+  onChipPointerDown: (e: PointerEvent<HTMLElement>, id: number, from: Location) => void;
+  /** Where each listed player already plays ("A Grade"), for the already-picked group. */
+  placedIn?: ReadonlyMap<number, string[]>;
 }) {
   if (members.length === 0) {
     return (
@@ -37,8 +45,9 @@ function List({
             member={m}
             draggable={!busy}
             dragging={draggingId === m.id}
-            onOpen={() => onOpenMember(m.id)}
-            onPointerDown={(e) => onChipPointerDown(e, m.id)}
+            onOpen={() => onOpenMember(m.id, { kind: "pool" })}
+            onPointerDown={(e) => onChipPointerDown(e, m.id, { kind: "pool" })}
+            alsoIn={placedIn?.get(m.id)}
           />
         </li>
       ))}
@@ -77,6 +86,7 @@ export function PlayerPool({
   busy,
   draggingId,
   scrollRef,
+  sides = [],
   canRemind,
   reminding,
   onRemind,
@@ -91,15 +101,31 @@ export function PlayerPool({
   canRemind: boolean;
   reminding: boolean;
   onRemind: () => void;
-  onOpenMember: (id: number) => void;
-  onChipPointerDown: (e: PointerEvent<HTMLElement>, id: number) => void;
+  onOpenMember: (id: number, from: Location) => void;
+  onChipPointerDown: (e: PointerEvent<HTMLElement>, id: number, from: Location) => void;
+  /** The board's sides, to tell who is already picked and where. */
+  sides?: readonly SelectionSide[];
 }) {
   const [query, setQuery] = useState("");
+  const [showPicked, setShowPicked] = useState(false);
   const [showNo, setShowNo] = useState(false);
   const [showUp, setShowUp] = useState(false);
   const availability = useAvailability();
   const q = query.trim().toLowerCase();
-  const matching = q ? pool.filter((m) => m.displayName.toLowerCase().includes(q)) : pool;
+  // The pool is the whole squad: a player already in a side (they can play
+  // another game too) waits in the collapsed "Already picked" group.
+  const placedIn = new Map<number, string[]>();
+  for (const side of sides) {
+    for (const slot of side.slots) {
+      if (slot.memberId == null) continue;
+      placedIn.set(slot.memberId, [...(placedIn.get(slot.memberId) ?? []), sideLabel(side)]);
+    }
+  }
+  const searched = q ? pool.filter((m) => m.displayName.toLowerCase().includes(q)) : pool;
+  const picked = searched
+    .filter((m) => placedIn.has(m.id))
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  const matching = searched.filter((m) => !placedIn.has(m.id));
   // On a senior board, juniors (who can play up) are listed apart, collapsed.
   const playingUp = junior
     ? []
@@ -121,6 +147,7 @@ export function PlayerPool({
       );
   const list = (members: SelectionMember[]) => (
     <List
+      placedIn={placedIn}
       members={members}
       busy={busy}
       draggingId={draggingId}
@@ -256,6 +283,29 @@ export function PlayerPool({
               From the junior register, to play up in a senior side.
             </p>
             {(showUp || !!q) && list(playingUp)}
+          </section>
+        )}
+        {picked.length > 0 && (
+          <section data-drop="pool" className={zoneClass} aria-label="Already picked">
+            <button
+              type="button"
+              className={cn(headClass, "w-full text-left")}
+              aria-expanded={showPicked || !!q}
+              onClick={() => setShowPicked((v) => !v)}
+            >
+              <ChevronRight
+                className={cn("h-3 w-3 transition-transform", (showPicked || q) && "rotate-90")}
+                aria-hidden
+              />
+              Already picked
+              <span className="flex-1" />
+              <span className="font-mono text-xs text-muted-foreground">{picked.length}</span>
+            </button>
+            <p className="mx-1 mb-1.5 text-xs text-muted-foreground">
+              In a side already. Drag one into another side too: a junior can play up, and a senior
+              can play Saturday and Sunday.
+            </p>
+            {(showPicked || !!q) && list(picked)}
           </section>
         )}
         <p className="mx-1 mt-1 text-xs text-muted-foreground">

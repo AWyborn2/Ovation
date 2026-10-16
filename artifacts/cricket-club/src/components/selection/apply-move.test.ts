@@ -103,7 +103,7 @@ const sideOf = (s: BoardState, id: number) => s.selections.find((x) => x.id === 
 const ids = (s: SelectionSide) => s.slots.map((x) => x.memberId);
 
 describe("applyMove — moves", () => {
-  it("pool → open slot fills it and takes the player out of the pool", () => {
+  it("pool → open slot fills it; the pool (the whole squad) keeps the player", () => {
     const r = applyMove(board(), {
       kind: "move",
       memberId: 900,
@@ -112,7 +112,7 @@ describe("applyMove — moves", () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(ids(sideOf(r.state, 1))[9]).toBe(900);
-    expect(r.state.pool.map((m) => m.id)).not.toContain(900);
+    expect(r.state.pool.map((m) => m.id)).toContain(900);
     expect(r.touched).toEqual([1]);
     expect(sideOf(r.state, 1).warnings.filled).toBe(10);
   });
@@ -156,8 +156,62 @@ describe("applyMove — moves", () => {
     expect(ids(sideOf(r.state, 2))[6]).toBe(900);
     const pool = r.state.pool.map((m) => m.id);
     expect(pool).toContain(206);
-    expect(pool).not.toContain(900);
+    expect(pool).toContain(900);
     expect(r.log[0]).toBe("Pool Yes in to B Grade, B player 7 back to the pool");
+  });
+
+  it("a player already in one side can be added to another from the pool", () => {
+    // 300 plays C Grade on Saturday and is picked for A Grade too.
+    const start = board();
+    start.pool.push(start.selections[2].slots[0].member!);
+    const r = applyMove(start, {
+      kind: "move",
+      memberId: 300,
+      target: { kind: "slot", sideId: 1, index: 9 },
+      from: { kind: "pool" },
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(ids(sideOf(r.state, 1))[9]).toBe(300);
+    expect(ids(sideOf(r.state, 3))[0]).toBe(300);
+    expect(r.touched).toEqual([1]);
+  });
+
+  it("a move from a named slot changes that side only when the player is in two", () => {
+    const start = board();
+    start.pool.push(start.selections[2].slots[0].member!);
+    const twice = applyMove(start, {
+      kind: "move",
+      memberId: 300,
+      target: { kind: "slot", sideId: 1, index: 9 },
+      from: { kind: "pool" },
+    });
+    if (!twice.ok) throw new Error("setup");
+    // Take 300 out of A Grade (slot 10): C Grade keeps them.
+    const r = applyMove(twice.state, {
+      kind: "move",
+      memberId: 300,
+      target: { kind: "pool" },
+      from: { kind: "side", sideId: 1, index: 9 },
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(ids(sideOf(r.state, 1))[9]).toBeNull();
+    expect(ids(sideOf(r.state, 3))[0]).toBe(300);
+  });
+
+  it("a player can't be in the same side twice", () => {
+    const start = board();
+    start.pool.push(start.selections[0].slots[0].member!);
+    const r = applyMove(start, {
+      kind: "move",
+      memberId: 100,
+      target: { kind: "slot", sideId: 1, index: 9 },
+      from: { kind: "pool" },
+    });
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.reason).toBe("already_in_side");
   });
 
   it("dropping on a team card fills its first open slot (AE3: C Grade player into A Grade)", () => {

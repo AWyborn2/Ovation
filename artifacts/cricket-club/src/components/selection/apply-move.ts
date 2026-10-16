@@ -12,6 +12,11 @@ import type {
  * the sides the action touched, or a refusal with the message to show. The
  * page applies the result optimistically and saves the touched sides in one
  * `PUT /selection/board`; the server re-checks every rule.
+ *
+ * A player can be in several sides of a round (a junior playing up, a senior on
+ * Saturday and Sunday), so a move names where it starts (`from`), and the pool
+ * is the whole squad: picking from it adds a player without taking them from
+ * another side, and dropping a side player on it only takes them out of that side.
  */
 
 export type BoardState = {
@@ -26,7 +31,7 @@ export type DropTarget =
   | { kind: "pool" };
 
 export type BoardAction =
-  | { kind: "move"; memberId: number; target: DropTarget }
+  | { kind: "move"; memberId: number; target: DropTarget; from?: Location | null }
   | { kind: "role"; sideId: number; role: "captain" | "keeper"; memberId: number | null };
 
 export type RefusalReason =
@@ -37,7 +42,8 @@ export type RefusalReason =
   | "target_final"
   | "target_read_only"
   | "full"
-  | "not_in_side";
+  | "not_in_side"
+  | "already_in_side";
 
 /** A refused action; `noop` refusals carry an empty message and are not shown. */
 export type Refusal = { ok: false; reason: RefusalReason; message: string };
@@ -74,6 +80,20 @@ export const sideLabel = (side: SelectionSide) => side.fixture.grade;
 
 /** A side is editable when the server says the caller may change it and it isn't final. */
 export const sideEditable = (side: SelectionSide) => side.canEdit && side.state !== "final";
+
+/** `from` when it still holds the member, else the member's first place on the board. */
+export function locateFrom(
+  state: BoardState,
+  memberId: number,
+  from?: Location | null,
+): Location | null {
+  if (from?.kind === "pool" && state.pool.some((m) => m.id === memberId)) return from;
+  if (from?.kind === "side") {
+    const side = state.selections.find((s) => s.id === from.sideId);
+    if (side?.slots[from.index]?.memberId === memberId) return from;
+  }
+  return locate(state, memberId);
+}
 
 export function locate(state: BoardState, memberId: number): Location | null {
   for (const side of state.selections) {
@@ -144,8 +164,9 @@ function resolve(
   state: BoardState,
   memberId: number,
   target: DropTarget,
+  fromHint?: Location | null,
 ): Refusal | { ok: true; from: Location; index: number | null } {
-  const from = locate(state, memberId);
+  const from = locateFrom(state, memberId, fromHint);
   if (!from) return refuse("unknown", "That player isn't on this board any more.");
   const src = sourceCheck(state, from);
   if (src) return src;
@@ -157,6 +178,18 @@ function resolve(
   if (!side) return refuse("unknown", "That side isn't on this board any more.");
   const tgt = targetSideCheck(side);
   if (tgt) return tgt;
+  // Once in a side: a player already there (anywhere but where this move starts) can't be added.
+  const already = side.slots.findIndex(
+    (s, i) =>
+      s.memberId === memberId &&
+      !(from.kind === "side" && from.sideId === side.id && from.index === i),
+  );
+  if (already > -1) {
+    return refuse(
+      "already_in_side",
+      `${nameOf(state, memberId)} is already in ${sideLabel(side)}.`,
+    );
+  }
 
   if (target.kind === "slot") {
     if (target.index < 0 || target.index >= side.slots.length) return refuse("unknown");
@@ -180,8 +213,9 @@ export function checkMove(
   state: BoardState,
   memberId: number,
   target: DropTarget,
+  from?: Location | null,
 ): { ok: true } | Refusal {
-  const r = resolve(state, memberId, target);
+  const r = resolve(state, memberId, target, from);
   return r.ok ? { ok: true } : r;
 }
 
@@ -248,7 +282,7 @@ export function applyMove(state: BoardState, action: BoardAction): MoveResult | 
   if (action.kind === "role") return applyRole(state, action);
 
   const { memberId, target } = action;
-  const r = resolve(state, memberId, target);
+  const r = resolve(state, memberId, target, action.from);
   if (!r.ok) return r;
   const moving = memberOf(state, memberId);
   if (!moving) return refuse("unknown", "That player isn't on this board any more.");
@@ -270,10 +304,14 @@ export function applyMove(state: BoardState, action: BoardAction): MoveResult | 
   const from = r.from;
   let warning: string | null = null;
 
+  // The pool is the whole squad: nobody leaves it by being picked.
+  const toPool = (m: SelectionMember) => {
+    if (!pool.some((p) => p.id === m.id)) pool = [...pool, m];
+  };
   if (target.kind === "pool") {
     // Only a side member reaches here (pool → pool is a no-op).
     if (from.kind === "side") slots(from.sideId)[from.index] = emptySlot();
-    pool = [...pool, moving];
+    toPool(moving);
     log.push(`${moving.displayName} moved from ${where(from)} to the pool`);
   } else {
     const index = r.index!;
@@ -281,7 +319,6 @@ export function applyMove(state: BoardState, action: BoardAction): MoveResult | 
     const occupant = to[index].member ?? null;
     const occupantId = to[index].memberId;
     if (from.kind === "side") slots(from.sideId)[from.index] = emptySlot();
-    else pool = pool.filter((m) => m.id !== memberId);
     to[index] = filledSlot(moving);
     const tLabel = label(target.sideId);
 
@@ -297,7 +334,7 @@ export function applyMove(state: BoardState, action: BoardAction): MoveResult | 
             : `${moving.displayName} swapped with ${occName} (${where(from)} ↔ ${tLabel})`,
         );
       } else {
-        if (occupant) pool = [...pool, occupant];
+        if (occupant) toPool(occupant);
         log.push(`${moving.displayName} in to ${tLabel}, ${occName} back to the pool`);
       }
     } else {

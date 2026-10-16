@@ -394,7 +394,8 @@ describe("Selection Hub API", () => {
     expect(b.selections.map((s) => s.fixture.grade)).toEqual(["A Grade", "B Grade", "C Grade"]);
     const poolIds = b.pool.map((p) => p.id);
     expect(poolIds).toEqual(expect.arrayContaining([m[28], m[29], m[30], under18]));
-    expect(poolIds).not.toContain(m[1]);
+    // The pool is the whole squad: a player in a side can be picked for another game too.
+    expect(poolIds).toContain(m[1]);
     // A junior can play up: listed in the senior pool, marked by their section.
     expect(poolIds).toContain(junior);
     expect(b.pool.find((p) => p.id === junior)?.section).toBe("junior");
@@ -648,12 +649,14 @@ describe("Selection Hub API", () => {
     const toA = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[28], ids[11]]);
     expect((await put(asCaptain, [toA])).status).toBe(403);
 
-    // Pulling m1 out of A Grade into B Grade.
-    const pullB = await changeFor(sel.B, (ids) => [m[1], ...ids.slice(1)]);
-    expect((await put(asCaptain, [pullB])).status).toBe(403);
+    // Taking m1 out of A Grade is A Grade's captain's call.
     const pullA = await changeFor(sel.A, (ids) => [null, ...ids.slice(1)], { captain: null });
-    expect((await put(asCaptain, [pullB, pullA])).status).toBe(403);
-    expect((await loadSel(sel.B)).version).toBe(1);
+    expect((await put(asCaptain, [pullA])).status).toBe(403);
+    // Adding m1 to B Grade as well (they can play more than one game) leaves A Grade
+    // untouched, so it needs no right over A Grade.
+    const alsoB = await changeFor(sel.B, (ids) => [m[1], ...ids.slice(1)]);
+    expect((await put(asCaptain, [alsoB])).status).toBe(200);
+    expect((await loadSel(sel.A)).slots[0].memberId).toBe(m[1]);
 
     // Their own grade, from the pool: fine.
     const own = await changeFor(sel.B, (ids) => [m[28], ...ids.slice(1)]);
@@ -932,23 +935,19 @@ describe("Selection Hub API", () => {
     expect(email.map((e) => e.to)).toEqual([EMAIL(28)]);
   });
 
-  it("a duplicate already in the round doesn't block saving another grade, and a save can't add one", async () => {
-    // An older draft left m28 in both A and B Grade.
-    for (const id of [sel.A, sel.B]) {
-      const row = await loadSel(id);
-      await db
-        .update(selectionsTable)
-        .set({ slots: row.slots.map((s, i) => (i === 10 ? { memberId: m[28] } : s)) })
-        .where(eq(selectionsTable.id, id));
-    }
-    const c = await changeFor(sel.C, (ids) => [...ids.slice(0, 6), m[29], ...ids.slice(7)]);
-    expect((await put(asAdmin, [c])).status).toBe(200);
-    // Adding m28 to a third side is still refused.
-    const c2 = await changeFor(sel.C, (ids) => [...ids.slice(0, 7), m[28], ...ids.slice(8)]);
-    expect((await put(asAdmin, [c2])).status).toBe(400);
-    // Taking m28 out of A Grade resolves it.
-    const a = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), null, ids[11]]);
+  it("a player can be in several sides of a round, but only once in a side", async () => {
+    // m28 in A and B Grade (a junior playing up, a senior on Saturday and Sunday).
+    const a = await changeFor(sel.A, (ids) => [...ids.slice(0, 10), m[28], ids[11]]);
     expect((await put(asAdmin, [a])).status).toBe(200);
+    const b = await changeFor(sel.B, (ids) => [...ids.slice(0, 10), m[28], ids[11]]);
+    expect((await put(asAdmin, [b])).status).toBe(200);
+    expect((await loadSel(sel.A)).slots[10].memberId).toBe(m[28]);
+    expect((await loadSel(sel.B)).slots[10].memberId).toBe(m[28]);
+    // Twice in one side is refused.
+    const c = await changeFor(sel.C, (ids) => [m[29], m[29], ...ids.slice(2)]);
+    const res = await put(asAdmin, [c]);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/twice/);
   });
 
   it("a save with one valid and one stale side → 409, the valid side unchanged and nothing logged", async () => {
