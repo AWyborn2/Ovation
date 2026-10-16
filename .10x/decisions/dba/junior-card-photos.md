@@ -1,0 +1,6 @@
+# DBA — junior-card-photos
+
+- **Migration 0045** (`0045_junior_card_photos.sql`): three nullable/defaulted columns on `junior_participants` and the new `junior_photos` table with an FK to `tenants` and an index on `(tenant_id, participant_id)`. Idempotent; apply by hand in the Production SQL runner **before** republishing (statement by statement). Snapshot `meta/0045_snapshot.json` matches the Drizzle schema (`drizzle-kit generate` → no changes).
+- **Why a separate table.** `club_photos` is senior-only by invariant and tagged by integer player ids; juniors are keyed by PlayHQ GUID (text) and must not flow through senior rules or third-party background removal. `junior_photos.participant_id` has no FK to `junior_participants` because that table's key is `(tenant_id, participant_id)` with case-insensitive matching in the engines; the helper joins on `lower()`.
+- **Reads.** `loadJuniorPhotos` is one join per batch (`junior_photos` default rows × participant privacy flags) filtered by tenant and a lower-cased id list; the public serving route is one indexed point read per image. No new heavy query.
+- **Objects.** Junior photos live under `library/juniors/<uuid>` in the private object dir; deleting a photo removes both objects (best effort). Nothing is written to `club_photos`.

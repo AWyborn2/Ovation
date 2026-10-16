@@ -123,7 +123,15 @@ In short:
   pickers no longer offer them; posted ones still render. Junior cards wear the club's own
   look (no brown palette) and publish on their own only for teams on `auto` in Junior
   matches settings, fail-closed (`juniorDraftMayAutoPublish`, ADR-006). Release steps:
-  `docs/runbooks/meta-publishing.md` §3b.
+  `docs/runbooks/meta-publishing.md` §3b. **Junior card photos** (plan 2026-10-16-001,
+  ADR-007, supersedes the junior sync plan's R21): admins upload a junior's photo into
+  `junior_photos` (never the senior library); a card or the public profile shows it only while
+  the player is allowed one — not `photo_withheld` (the admin's non-consent record, off by
+  default) and not private — via `lib/junior-photos.ts` (`loadJuniorPhotos`,
+  `pickJuniorCardPhoto`, `withdrawJuniorPhotos`). Renderers draw a junior photo only behind
+  the server's `cardInput.juniorPhotoAllowed` marker; the senior photo pipeline still gives
+  junior cards nothing. Images are served through `/juniors/photos/:id`, which re-checks the
+  player every request; the raw `library/juniors/` prefix is admin-only.
 - **Availability and Selection Hub are built, off per club by default**
   (`availability_settings.enabled`; plan `docs/plans/2026-10-06-002-feat-player-availability-selection-plan.md`).
   Admins import the PlayHQ participant CSV into `squad_members` (only whitelisted columns are

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './addJuniorPhotoBody';
 export * from './addJuniorRosterEntryBody';
 export * from './admin';
 export * from './adminInput';
@@ -384,6 +385,7 @@ export * from './juniorOfficeBearer';
 export * from './juniorOfficeBearerInput';
 export * from './juniorOfficeBearerUpdate';
 export * from './juniorOverview';
+export * from './juniorPhoto';
 export * from './juniorPlayerDetail';
 export * from './juniorPlayerMatchLine';
 export * from './juniorPlayerSeason';

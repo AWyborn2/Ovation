@@ -299,7 +299,24 @@ export function DraftDrawer({
           <section className="space-y-2">
             <h3 className="text-sm font-semibold">Photo</h3>
             {junior ? (
-              <p className="text-sm text-muted-foreground">Junior cards don't use photos.</p>
+              current.photoUrl ? (
+                <div className="space-y-2">
+                  <img
+                    src={current.photoUrl}
+                    alt="Chosen for this card"
+                    className="aspect-[4/3] w-full rounded-lg border border-border object-cover"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    A junior player&rsquo;s own photo, uploaded by the club and allowed by their
+                    family. Withhold it under Junior players if that changes.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No photo: no player on this card has an uploaded photo their family allows. Add
+                  one under Junior players.
+                </p>
+              )
             ) : (
               <>
                 {current.photoUrl ? (

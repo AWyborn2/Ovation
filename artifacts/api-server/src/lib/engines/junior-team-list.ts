@@ -12,6 +12,7 @@ import { logger } from "../logger";
 import { loadDraftingGates } from "../posting-plan";
 import { upsertDraftByKey } from "../draft-upsert";
 import { loadJuniorNaming, loadJuniorTeamPublishing } from "../junior-helpers";
+import { juniorPhotoFields, loadJuniorPhotos, pickJuniorCardPhoto } from "../junior-photos";
 import { JUNIOR_WITHHELD_NAME, type JuniorNaming } from "../junior-names";
 import { loadJuniorSeasonShirtNumbers } from "../junior-shirt-numbers";
 import { juniorTeamListKey, juniorTeamPublishMode } from "../junior-publishing";
@@ -160,12 +161,12 @@ export async function generateJuniorTeamListDrafts(
     );
   if (rows.length === 0) return result;
 
-  const [naming, publishing] = await Promise.all([
-    loadJuniorNaming(
-      tenantId,
-      rows.flatMap((r) => r.players.map((p) => p.participantId)),
-    ),
+  const participantIds = rows.flatMap((r) => r.players.map((p) => p.participantId));
+  const [naming, publishing, photos] = await Promise.all([
+    loadJuniorNaming(tenantId, participantIds),
     loadJuniorTeamPublishing(tenantId),
+    // The listed players' own photos, allowed ones only (ADR-007).
+    loadJuniorPhotos(tenantId, participantIds),
   ]);
   const nameOf = juniorCardNamer(naming);
   const seasons = new Map<number, Promise<TeamListShirtNumbers | null>>();
@@ -187,11 +188,21 @@ export async function generateJuniorTeamListDrafts(
       continue;
     }
     const mode = juniorTeamPublishMode(publishing, fixture.ageGroup, fixture.teamName);
+    const sourceKey = juniorTeamListKey(fixture.id);
+    // One featured player with an allowed photo, picked by the draft key like a senior
+    // team list (ADR-007); none when no listed player qualifies.
+    const photo = juniorPhotoFields(
+      pickJuniorCardPhoto(
+        photos,
+        players.map((p) => p.participantId),
+        sourceKey,
+      ),
+    );
     const { action } = await upsertDraftByKey({
       tenantId,
       engine: "teamlist",
       family: "matchday",
-      sourceKey: juniorTeamListKey(fixture.id),
+      sourceKey,
       cardInput: {
         ...juniorTeamListToCardInput(
           fixture,
@@ -199,15 +210,18 @@ export async function generateJuniorTeamListDrafts(
           nameOf,
           await numbersFor(fixture.seasonStartYear),
         ),
+        ...photo.cardInput,
         // The junior teams this card covers, for the per-team publishing gate (ADR-006).
         juniorTeams: [{ ageGroup: fixture.ageGroup ?? null, teamName: fixture.teamName ?? null }],
       },
       appPath: `/juniors/fixtures/${fixture.id}`,
       sourceMatchIsJunior: true,
-      // No photo: no player, grade or featured player for any photo pick (R21).
+      // No senior photo pick (no player, grade or featured player id); the junior photo
+      // is handed in ready-picked.
       playerId: null,
       grade: null,
       featuredPlayerId: null,
+      photo: photo.photo,
       sourceImportedAt: now,
       // Only an explicitly auto team follows the club's auto-post window (KTD14).
       autoReady: mode === "auto",

@@ -97,7 +97,7 @@ New junior players never reach the app, which also means the juniors shirt-numbe
 
 **Safeguards**
 
-- R21. Junior cards carry no player photos.
+- R21. Junior cards carry no player photos. _Superseded 16 Oct 2026 by plan `2026-10-16-001-feat-junior-card-photos-plan.md` (ADR-007): a junior card may feature a junior player's own uploaded photo unless the family's consent is withheld._
 - R22. Opposition juniors appear only on the scorecard of the match they played. Publicly they show by initials; they never become the club's junior players and are never named on cards.
 - R23. Switching junior sync off for a club stops capture and projection, holds that club's unposted junior cards, and hides its synced junior fixtures and team lists from public pages. Synced match data is kept.
 - R24. The `juniors` entitlement is not sold or enforced as a paid feature until PlayHQ licence or partner access covers junior data. Until then junior sync is enabled only by the platform admin.

@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AddJuniorPhotoBody,
   AddJuniorRosterEntryBody,
   Admin,
   AdminInput,
@@ -212,6 +213,7 @@ import type {
   JuniorOfficeBearerInput,
   JuniorOfficeBearerUpdate,
   JuniorOverview,
+  JuniorPhoto,
   JuniorPlayerDetail,
   JuniorPlayerSummary,
   JuniorPremiership,
@@ -26069,6 +26071,453 @@ export const useUpdateJuniorParticipant = <TError = ErrorType<void>,
       > => {
       return useMutation(getUpdateJuniorParticipantMutationOptions(options));
     }
+
+export const getListJuniorPhotosUrl = (id: string,) => {
+
+
+
+
+  return `/api/juniors/participants/${id}/photos`
+}
+
+/**
+ * @summary A junior player's photos (admin)
+ */
+export const listJuniorPhotos = async (id: string, options?: RequestInit): Promise<JuniorPhoto[]> => {
+
+  return customFetch<JuniorPhoto[]>(getListJuniorPhotosUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListJuniorPhotosQueryKey = (id: string,) => {
+    return [
+    `/api/juniors/participants/${id}/photos`
+    ] as const;
+    }
+
+
+export const getListJuniorPhotosQueryOptions = <TData = Awaited<ReturnType<typeof listJuniorPhotos>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorPhotos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListJuniorPhotosQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listJuniorPhotos>>> = ({ signal }) => listJuniorPhotos(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listJuniorPhotos>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListJuniorPhotosQueryResult = NonNullable<Awaited<ReturnType<typeof listJuniorPhotos>>>
+export type ListJuniorPhotosQueryError = ErrorType<void>
+
+
+/**
+ * @summary A junior player's photos (admin)
+ */
+
+export function useListJuniorPhotos<TData = Awaited<ReturnType<typeof listJuniorPhotos>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listJuniorPhotos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListJuniorPhotosQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAddJuniorPhotoUrl = (id: string,) => {
+
+
+
+
+  return `/api/juniors/participants/${id}/photos`
+}
+
+/**
+ * @summary Add a photo of a junior player from an uploaded object (admin): converted, stored privately, the first becomes the default
+ */
+export const addJuniorPhoto = async (id: string,
+    addJuniorPhotoBody: AddJuniorPhotoBody, options?: RequestInit): Promise<JuniorPhoto> => {
+
+  return customFetch<JuniorPhoto>(getAddJuniorPhotoUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      addJuniorPhotoBody,)
+  }
+);}
+
+
+
+
+export const getAddJuniorPhotoMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addJuniorPhoto>>, TError,{id: string;data: BodyType<AddJuniorPhotoBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addJuniorPhoto>>, TError,{id: string;data: BodyType<AddJuniorPhotoBody>}, TContext> => {
+
+const mutationKey = ['addJuniorPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addJuniorPhoto>>, {id: string;data: BodyType<AddJuniorPhotoBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addJuniorPhoto(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddJuniorPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof addJuniorPhoto>>>
+    export type AddJuniorPhotoMutationBody = BodyType<AddJuniorPhotoBody>
+    export type AddJuniorPhotoMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a photo of a junior player from an uploaded object (admin): converted, stored privately, the first becomes the default
+ */
+export const useAddJuniorPhoto = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addJuniorPhoto>>, TError,{id: string;data: BodyType<AddJuniorPhotoBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addJuniorPhoto>>,
+        TError,
+        {id: string;data: BodyType<AddJuniorPhotoBody>},
+        TContext
+      > => {
+      return useMutation(getAddJuniorPhotoMutationOptions(options));
+    }
+
+export const getDeleteJuniorPhotoUrl = (id: string,
+    photoId: number,) => {
+
+
+
+
+  return `/api/juniors/participants/${id}/photos/${photoId}`
+}
+
+/**
+ * @summary Remove a junior player's photo (admin); the next becomes the default
+ */
+export const deleteJuniorPhoto = async (id: string,
+    photoId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteJuniorPhotoUrl(id,photoId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteJuniorPhotoMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorPhoto>>, TError,{id: string;photoId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorPhoto>>, TError,{id: string;photoId: number}, TContext> => {
+
+const mutationKey = ['deleteJuniorPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteJuniorPhoto>>, {id: string;photoId: number}> = (props) => {
+          const {id,photoId} = props ?? {};
+
+          return  deleteJuniorPhoto(id,photoId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteJuniorPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof deleteJuniorPhoto>>>
+
+    export type DeleteJuniorPhotoMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a junior player's photo (admin); the next becomes the default
+ */
+export const useDeleteJuniorPhoto = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteJuniorPhoto>>, TError,{id: string;photoId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteJuniorPhoto>>,
+        TError,
+        {id: string;photoId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteJuniorPhotoMutationOptions(options));
+    }
+
+export const getSetDefaultJuniorPhotoUrl = (id: string,
+    photoId: number,) => {
+
+
+
+
+  return `/api/juniors/participants/${id}/photos/${photoId}/default`
+}
+
+/**
+ * @summary Make this the photo cards and the profile use (admin)
+ */
+export const setDefaultJuniorPhoto = async (id: string,
+    photoId: number, options?: RequestInit): Promise<JuniorPhoto> => {
+
+  return customFetch<JuniorPhoto>(getSetDefaultJuniorPhotoUrl(id,photoId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSetDefaultJuniorPhotoMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setDefaultJuniorPhoto>>, TError,{id: string;photoId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setDefaultJuniorPhoto>>, TError,{id: string;photoId: number}, TContext> => {
+
+const mutationKey = ['setDefaultJuniorPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setDefaultJuniorPhoto>>, {id: string;photoId: number}> = (props) => {
+          const {id,photoId} = props ?? {};
+
+          return  setDefaultJuniorPhoto(id,photoId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetDefaultJuniorPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof setDefaultJuniorPhoto>>>
+
+    export type SetDefaultJuniorPhotoMutationError = ErrorType<void>
+
+    /**
+ * @summary Make this the photo cards and the profile use (admin)
+ */
+export const useSetDefaultJuniorPhoto = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setDefaultJuniorPhoto>>, TError,{id: string;photoId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setDefaultJuniorPhoto>>,
+        TError,
+        {id: string;photoId: number},
+        TContext
+      > => {
+      return useMutation(getSetDefaultJuniorPhotoMutationOptions(options));
+    }
+
+export const getGetJuniorPhotoUrl = (photoId: number,) => {
+
+
+
+
+  return `/api/juniors/photos/${photoId}`
+}
+
+/**
+ * @summary A junior player's photo. Served only while the player is allowed a photo (not withheld, not private) or to a signed-in admin (ADR-007).
+ */
+export const getJuniorPhoto = async (photoId: number, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetJuniorPhotoUrl(photoId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJuniorPhotoQueryKey = (photoId: number,) => {
+    return [
+    `/api/juniors/photos/${photoId}`
+    ] as const;
+    }
+
+
+export const getGetJuniorPhotoQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorPhoto>>, TError = ErrorType<void>>(photoId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorPhotoQueryKey(photoId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorPhoto>>> = ({ signal }) => getJuniorPhoto(photoId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(photoId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJuniorPhoto>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJuniorPhotoQueryResult = NonNullable<Awaited<ReturnType<typeof getJuniorPhoto>>>
+export type GetJuniorPhotoQueryError = ErrorType<void>
+
+
+/**
+ * @summary A junior player's photo. Served only while the player is allowed a photo (not withheld, not private) or to a signed-in admin (ADR-007).
+ */
+
+export function useGetJuniorPhoto<TData = Awaited<ReturnType<typeof getJuniorPhoto>>, TError = ErrorType<void>>(
+ photoId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorPhoto>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJuniorPhotoQueryOptions(photoId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetJuniorPhotoThumbUrl = (photoId: number,) => {
+
+
+
+
+  return `/api/juniors/photos/${photoId}/thumb`
+}
+
+/**
+ * @summary The thumbnail of a junior player's photo, gated like the photo
+ */
+export const getJuniorPhotoThumb = async (photoId: number, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetJuniorPhotoThumbUrl(photoId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJuniorPhotoThumbQueryKey = (photoId: number,) => {
+    return [
+    `/api/juniors/photos/${photoId}/thumb`
+    ] as const;
+    }
+
+
+export const getGetJuniorPhotoThumbQueryOptions = <TData = Awaited<ReturnType<typeof getJuniorPhotoThumb>>, TError = ErrorType<void>>(photoId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorPhotoThumb>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJuniorPhotoThumbQueryKey(photoId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJuniorPhotoThumb>>> = ({ signal }) => getJuniorPhotoThumb(photoId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(photoId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJuniorPhotoThumb>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJuniorPhotoThumbQueryResult = NonNullable<Awaited<ReturnType<typeof getJuniorPhotoThumb>>>
+export type GetJuniorPhotoThumbQueryError = ErrorType<void>
+
+
+/**
+ * @summary The thumbnail of a junior player's photo, gated like the photo
+ */
+
+export function useGetJuniorPhotoThumb<TData = Awaited<ReturnType<typeof getJuniorPhotoThumb>>, TError = ErrorType<void>>(
+ photoId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJuniorPhotoThumb>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJuniorPhotoThumbQueryOptions(photoId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListJuniorPrivacyOverridesUrl = () => {
 

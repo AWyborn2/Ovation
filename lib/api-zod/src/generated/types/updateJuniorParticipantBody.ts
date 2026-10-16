@@ -12,4 +12,6 @@ export interface UpdateJuniorParticipantBody {
   isPrivate?: boolean;
   /** Show a private player's name publicly anyway (true) or withhold it again (false). Can only be switched on for a private player. */
   privacyOverride?: boolean;
+  /** The family has not consented to photos (true): no photo of this player appears on any card or page, and open cards lose theirs at once. Off by default — the club's registration form carries consent. */
+  photoWithheld?: boolean;
 }

@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import playersRouter from "./juniors-players";
+import photosRouter from "./juniors-photos";
 import matchesRouter from "./juniors-matches";
 import leaderboardsRouter from "./juniors-leaderboards";
 import honoursRouter from "./juniors-honours";
@@ -38,6 +39,7 @@ const router: IRouter = Router();
 router.use(leaderboardsRouter);
 router.use(matchesRouter);
 router.use(playersRouter);
+router.use(photosRouter);
 router.use(honoursRouter);
 
 export default router;

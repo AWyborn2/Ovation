@@ -9,8 +9,21 @@ import { ObjectStorageService, objectStorageClient } from "./objectStorage";
  */
 export interface PhotoStore {
   read(objectPath: string): Promise<Buffer>;
-  write(data: Buffer, contentType: string): Promise<string>;
+  /**
+   * Write a converted object under `prefix` (default `library`, the senior photo
+   * library). Junior photos use {@link JUNIOR_PHOTO_PREFIX}, which the public
+   * storage route refuses to serve (ADR-007).
+   */
+  write(data: Buffer, contentType: string, prefix?: string): Promise<string>;
   remove(objectPath: string): Promise<void>;
+}
+
+/** Object prefix for junior players' photos: private, served only through `/juniors/photos/:id`. */
+export const JUNIOR_PHOTO_PREFIX = "library/juniors";
+
+/** Whether an `/objects/...` entity path is a junior photo (never served publicly). */
+export function isJuniorPhotoPath(objectPath: string): boolean {
+  return objectPath.replace(/^\/?objects\//, "").startsWith(`${JUNIOR_PHOTO_PREFIX}/`);
 }
 
 const service = new ObjectStorageService();
@@ -28,9 +41,9 @@ const objectStore: PhotoStore = {
     const [data] = await file.download();
     return data;
   },
-  async write(data, contentType) {
+  async write(data, contentType, prefix = "library") {
     const dir = service.getPrivateObjectDir();
-    const id = `library/${randomUUID()}`;
+    const id = `${prefix}/${randomUUID()}`;
     const { bucketName, objectName } = splitBucketPath(`${dir.replace(/\/$/, "")}/${id}`);
     await objectStorageClient
       .bucket(bucketName)

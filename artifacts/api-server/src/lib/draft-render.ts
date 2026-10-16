@@ -171,8 +171,9 @@ export async function renderDraftSlides(
           .map((s) => ({ name: s.name, logoUrl: s.logoUrl }))
       : [],
     presentingSponsorName: sponsorsOn ? (sponsors.find((s) => s.isPresenting)?.name ?? null) : null,
-    // Junior cards never carry a photo (KTD15).
-    photoUrl: junior ? null : draft.photoUrl,
+    // A junior card shows a photo only behind the engines' positive marker: a junior
+    // player's own photo the family allows (ADR-007). Nothing else reaches it.
+    photoUrl: junior && input.juniorPhotoAllowed !== true ? null : draft.photoUrl,
     photoPlacement: "contained",
     ...(Object.keys(modes).length ? { packColourModes: modes } : {}),
   };
@@ -212,7 +213,9 @@ export async function renderDraftSlides(
         : planCardSet(input as SetInput, setOptions);
     for (const slide of slides) {
       const slideJunior = junior || (slide.input as SetInput).junior === true;
-      const slideData = slideJunior ? { ...data, photoUrl: null } : data;
+      const slideAllowed =
+        (slide.input as { juniorPhotoAllowed?: boolean }).juniorPhotoAllowed === true;
+      const slideData = slideJunior && !slideAllowed ? { ...data, photoUrl: null } : data;
       const { buffer, warnings } = await serialised(() =>
         renderer(
           slide.input,

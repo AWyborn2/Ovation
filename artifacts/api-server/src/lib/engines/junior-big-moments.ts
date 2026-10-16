@@ -8,6 +8,7 @@ import {
 } from "@workspace/db";
 import { draftKeys, findDraftByKey, upsertDraftByKey, withdrawDraft } from "../draft-upsert";
 import { loadJuniorNaming, loadJuniorTeamPublishing } from "../junior-helpers";
+import { juniorPhotoFields, loadJuniorPhotos, pickJuniorCardPhoto } from "../junior-photos";
 import { juniorTeamPublishMode } from "../junior-publishing";
 import { loadDraftingGates } from "../posting-plan";
 
@@ -97,12 +98,15 @@ export async function generateJuniorBigMomentDrafts(
   ]);
   if (batting.length === 0 && bowling.length === 0) return result;
 
-  const [naming, publishing] = await Promise.all([
-    loadJuniorNaming(tenantId, [
-      ...batting.map((b) => b.participantId),
-      ...bowling.map((b) => b.participantId),
-    ]),
+  const participantIds = [
+    ...batting.map((b) => b.participantId),
+    ...bowling.map((b) => b.participantId),
+  ];
+  const [naming, publishing, photos] = await Promise.all([
+    loadJuniorNaming(tenantId, participantIds),
     loadJuniorTeamPublishing(tenantId),
+    // The players' own photos, allowed ones only (ADR-007).
+    loadJuniorPhotos(tenantId, participantIds),
   ]);
 
   type Line = { matchId: number; participantId: string | null; playerName: string | null };
@@ -139,6 +143,10 @@ export async function generateJuniorBigMomentDrafts(
       return;
     }
     const mode = juniorTeamPublishMode(publishing, m.ageGroup, m.teamName);
+    // The player's own photo, when the family allows one (ADR-007); never any other.
+    const photo = juniorPhotoFields(
+      pickJuniorCardPhoto(photos, [], sourceKey, [line.participantId]),
+    );
     const { action } = await upsertDraftByKey({
       tenantId,
       engine: "milestone",
@@ -150,18 +158,20 @@ export async function generateJuniorBigMomentDrafts(
         grade,
         opponent: m.opponentName,
         round: roundNumber(m.round),
-        photoUrl: null,
         ...body,
+        ...photo.cardInput,
         // Junior markers (KTD6): junior rules, and the team the publishing gate checks.
         junior: true,
         juniorTeams: [{ ageGroup: m.ageGroup ?? null, teamName: m.teamName ?? null }],
       },
       appPath: `/juniors/matches/${m.id}`,
       sourceMatchIsJunior: true,
-      // No photo: no player, grade or featured player for any photo pick.
+      // No senior photo pick: no player, grade or featured player id; the junior photo is
+      // handed in ready-picked.
       playerId: null,
       grade: null,
       featuredPlayerId: null,
+      photo: photo.photo,
       sourceImportedAt: now,
       // Only an explicitly auto team follows the club's auto-post window.
       autoReady: mode === "auto",

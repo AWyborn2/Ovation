@@ -30,7 +30,8 @@ import {
   tenantJuniorMatchIds,
   tenantJuniorPremiershipIds,
 } from "../lib/junior-participant-scope";
-import { planJuniorParticipantPatch } from "../lib/junior-privacy";
+import { planJuniorParticipantPatch, patchWithdrawsPhoto } from "../lib/junior-privacy";
+import { withdrawJuniorPhotos } from "../lib/junior-photos";
 
 /**
  * Juniors admin — participant profile corrections and duplicate merges.
@@ -44,8 +45,8 @@ import { planJuniorParticipantPatch } from "../lib/junior-privacy";
  */
 const router: IRouter = Router();
 
-/** Admin shape of a participant: full name and every privacy fact (KTD12). */
-function adminParticipant(p: typeof juniorParticipantsTable.$inferSelect) {
+/** Admin shape of a participant: full name and every privacy fact (KTD12, ADR-007). */
+export function adminParticipant(p: typeof juniorParticipantsTable.$inferSelect) {
   return {
     participantId: p.participantId,
     displayName: p.displayName ?? "",
@@ -53,6 +54,9 @@ function adminParticipant(p: typeof juniorParticipantsTable.$inferSelect) {
     privacyOverride: p.privacyOverride,
     privacyOverrideBy: p.privacyOverrideBy,
     privacyOverrideAt: p.privacyOverrideAt?.toISOString() ?? null,
+    photoWithheld: p.photoWithheld,
+    photoWithheldBy: p.photoWithheldBy,
+    photoWithheldAt: p.photoWithheldAt?.toISOString() ?? null,
   };
 }
 
@@ -152,6 +156,16 @@ router.patch(
       });
       return row;
     });
+
+    // The player is no longer allowed a photo (consent withheld, or made private):
+    // their photo comes off every open card now, not at the next sweep (R6, ADR-007).
+    if (patchWithdrawsPhoto(participant, set)) {
+      const outcome = await withdrawJuniorPhotos(tenantId, participant.participantId);
+      req.log.info(
+        { tenantId, participantId: participant.participantId, ...outcome },
+        "junior photo withdrawn from cards",
+      );
+    }
 
     res.json(adminParticipant(updated));
   },

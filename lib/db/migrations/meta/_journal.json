@@ -316,6 +316,13 @@
       "when": 1792054040183,
       "tag": "0044_junior_shirt_number_held",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1792114136736,
+      "tag": "0045_junior_card_photos",
+      "breakpoints": true
     }
   ]
 }

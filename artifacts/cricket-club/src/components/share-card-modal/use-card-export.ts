@@ -92,6 +92,8 @@ export function useCardExport({
     const out: Array<{ blob: Blob; suffix: string }> = [];
     for (const slide of slides) {
       const j = isJuniorSlide(slide, isJunior);
+      // A junior slide keeps its photo only behind the server's positive marker (ADR-007).
+      const allowed = (slide.input as { juniorPhotoAllowed?: boolean }).juniorPhotoAllowed === true;
       const base = stillOptions(size);
       const blob = (await stillMutation.mutateAsync({
         data: {
@@ -99,7 +101,7 @@ export function useCardExport({
           options: {
             ...base,
             junior: j,
-            data: j ? { ...base.data, photoUrl: null } : base.data,
+            data: j && !allowed ? { ...base.data, photoUrl: null } : base.data,
           },
         },
       })) as Blob;

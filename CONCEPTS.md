@@ -99,6 +99,14 @@ The club-set number of hours after an import within which its auto-drafts must b
 
 The club's single table of automation choices, one row per card kind (Match result, Big Moment, Milestones, Debuts, Game day, Team lists, Club leaderboards, Ladders): whether it drafts and for which grades — junior age groups included on rows that have junior data — whether it posts on its own or as one club-wide round carousel, and for a carousel with juniors on whether they share the seniors' set or get their own. The Big Moment row also sets the junior runs bar (50 or 100). Replaces the separate automation, round-card and auto-post settings. Version 2 (October 2026) is the only version read; every club starts on the default table.
 
+### Junior photo
+
+A photo of a junior player that the club's admin uploaded (never taken from PlayHQ), kept in its own library keyed by the player's PlayHQ id. The default one appears on that player's junior cards and public profile while the player is allowed a photo, served through a route that re-checks that allowance on every request.
+
+### Photo withheld
+
+An admin's record that a junior player's family has not consented to photos. Off by default, because the club's registration form carries consent; when on, no photo of the player appears anywhere, and any card not yet posted loses theirs at once.
+
 ### Posting style
 
 A named preset that fills every row of a Posting Plan in one choice (for example "Round carousels + individual highlights"). Changing any row afterwards makes the plan custom.

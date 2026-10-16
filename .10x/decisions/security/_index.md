@@ -8,3 +8,4 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 
 - [card-kind-templates](card-kind-templates.md)
 - [social-auto-queue-criteria](social-auto-queue-criteria.md)
+- [junior-card-photos](junior-card-photos.md)

@@ -51,6 +51,8 @@ export type PhotoSource =
   | "auto:rule-fixed"
   | "auto:rule-random"
   | "auto:rule-player"
+  /** A junior player's own uploaded photo, picked by the junior engines (ADR-007). */
+  | "auto:junior-photo"
   | "manual";
 
 export type EnrichInput = {
@@ -62,8 +64,16 @@ export type EnrichInput = {
   playerId?: number | null;
   /** The grade for a team/grade photo; defaults to the card input's grade. */
   grade?: string | null;
-  /** A junior card never gets a photo (also inferred from `cardInput.junior`). */
+  /**
+   * A junior card never gets a photo from the senior library or rules (also inferred
+   * from `cardInput.junior`); its engine may hand one in through `photo` (ADR-007).
+   */
   junior?: boolean;
+  /**
+   * A photo the engine already picked (a junior player's own photo). Used as is,
+   * instead of the automatic pick; `null` means the engine picked none.
+   */
+  photo?: { url: string; source: PhotoSource } | null;
   /** Stable per-draft seed for a random photo rule (the draft's source key). */
   seed?: string | null;
   /**
@@ -767,17 +777,20 @@ export async function enrichDraft(input: EnrichInput): Promise<DraftEnrichment> 
       input.appPath,
       input.seed ?? null,
     ),
-    pickDraftPhoto(input.tenantId, {
-      playerId,
-      grade,
-      junior,
-      kind,
-      ruleKinds: photoRuleKinds(input.cardInput),
-      seed: input.seed ?? null,
-      featuredPlayerId: input.featuredPlayerId !== undefined ? input.featuredPlayerId : playerId,
-      photoTypes: preferredPhotoTypes(input.cardInput),
-      matchFormat: preferredMatchFormat(input.cardInput),
-    }),
+    input.photo !== undefined
+      ? Promise.resolve(input.photo)
+      : pickDraftPhoto(input.tenantId, {
+          playerId,
+          grade,
+          junior,
+          kind,
+          ruleKinds: photoRuleKinds(input.cardInput),
+          seed: input.seed ?? null,
+          featuredPlayerId:
+            input.featuredPlayerId !== undefined ? input.featuredPlayerId : playerId,
+          photoTypes: preferredPhotoTypes(input.cardInput),
+          matchFormat: preferredMatchFormat(input.cardInput),
+        }),
   ]);
   return {
     packId,

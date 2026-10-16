@@ -362,7 +362,11 @@ function EditorApp({ draftId }: { draftId: number }) {
     bundle?.brand?.primaryColour ?? brand.primaryColour,
     bundle?.brand?.backgroundColour ?? brand.backgroundColour,
   ].filter((c): c is string => !!c);
-  const slideData = slideJunior ? { ...data, photoUrl: undefined } : data;
+  // A junior slide keeps its photo only behind the server's positive marker (ADR-007).
+  const slideData =
+    slideJunior && (slideInput as { juniorPhotoAllowed?: boolean }).juniorPhotoAllowed !== true
+      ? { ...data, photoUrl: undefined }
+      : data;
   const fieldValues = packFieldValues(slideInput, slideData, packId);
   // The club's Club Kit palette, for the element library's thumbnails.
   const elementPalette = clubKitVars(

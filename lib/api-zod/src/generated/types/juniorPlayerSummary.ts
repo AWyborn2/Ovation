@@ -37,4 +37,21 @@ export interface JuniorPlayerSummary {
      * @nullable
      */
   privacyOverrideAt?: Date | null;
+  /**
+     * The player's default photo (gated URL), when they have one and are allowed a photo; admins also see it for a withheld player.
+     * @nullable
+     */
+  photoUrl?: string | null;
+  /** Admin requests with includePrivate only. The family has not consented to photos. */
+  photoWithheld?: boolean;
+  /**
+     * Admin requests with includePrivate only.
+     * @nullable
+     */
+  photoWithheldBy?: string | null;
+  /**
+     * Admin requests with includePrivate only.
+     * @nullable
+     */
+  photoWithheldAt?: Date | null;
 }

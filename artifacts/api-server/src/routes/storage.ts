@@ -2,7 +2,8 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { Readable } from "stream";
 import { RequestUploadUrlBody, RequestUploadUrlResponse } from "@workspace/api-zod";
 import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
-import { requireAdmin } from "../middlewares/require-admin";
+import { requireAdmin, resolveAdmin } from "../middlewares/require-admin";
+import { isJuniorPhotoPath } from "../lib/photo-store";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -156,6 +157,13 @@ router.get("/storage/objects/*path", async (req: Request, res: Response) => {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
     const objectPath = `/objects/${wildcardPath}`;
+    // Junior players' photos are never served from here (ADR-007): the public way
+    // to one is `/juniors/photos/:id`, which checks the player is still allowed a
+    // photo. A signed-in admin of this club may still fetch the raw object.
+    if (isJuniorPhotoPath(objectPath) && !(await resolveAdmin(req))) {
+      res.status(404).json({ error: "Object not found" });
+      return;
+    }
     const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
 
     // --- Protected route example (uncomment when using replit-auth) ---

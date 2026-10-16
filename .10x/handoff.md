@@ -1,5 +1,16 @@
 # Handoff
 
+**From:** DevOps + SRE (Phase 6)
+**To:** Ash (release) / next feature
+**Feature:** junior-card-photos
+
+## Context
+
+- Plan `docs/plans/2026-10-16-001-feat-junior-card-photos-plan.md` implemented (U1–U7) on `claude/junior-card-photos`; ADR-007 accepted; decisions per role under `decisions/*/junior-card-photos.md`; review `reviews/2026-10-16-junior-card-photos-review.md`.
+- Release: apply `lib/db/migrations/0045_junior_card_photos.sql` in the Production SQL runner (statement by statement) BEFORE republishing; runbook §3c. Then upload a junior photo and check Admin → Junior players and one junior card.
+
+## Previous feature
+
 **From:** DevOps + SRE (Phase 6, delivered)
 **To:** next feature
 **Feature:** social-auto-queue-criteria
