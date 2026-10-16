@@ -12,7 +12,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAdmin, resolveAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { getTenantId } from "../middlewares/tenant-context";
-import { juniorParticipantKey } from "../lib/junior-participant-scope";
+import { juniorParticipantJoin, juniorParticipantKey } from "../lib/junior-participant-scope";
 import { adminName } from "../lib/junior-admin-helpers";
 import { IngestError, ingestImage, withTenantSlot } from "../lib/image-ingest";
 import { JUNIOR_PHOTO_PREFIX, photoStore } from "../lib/photo-store";
@@ -289,10 +289,7 @@ async function serve(req: Request, res: Response, photoId: number, thumb: boolea
     .from(juniorPhotosTable)
     .innerJoin(
       juniorParticipantsTable,
-      and(
-        eq(juniorParticipantsTable.tenantId, juniorPhotosTable.tenantId),
-        eq(juniorParticipantsTable.participantId, juniorPhotosTable.participantId),
-      ),
+      juniorParticipantJoin(juniorPhotosTable.participantId, tenantId),
     )
     .where(and(eq(juniorPhotosTable.tenantId, tenantId), eq(juniorPhotosTable.id, photoId)));
   if (!row || (!juniorPhotoAllowed(row) && !(await resolveAdmin(req)))) {

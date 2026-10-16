@@ -15,6 +15,7 @@
 import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import { db, juniorParticipantsTable, juniorPhotosTable, socialDraftsTable } from "@workspace/db";
 import { isJuniorWithheld } from "./junior-names";
+import { juniorParticipantJoin } from "./junior-participant-scope";
 import { seededPick, type PhotoSource } from "./draft-enrich";
 import { withdrawDraft } from "./draft-upsert";
 
@@ -74,12 +75,11 @@ export async function loadJuniorPhotos(
       privacyOverride: juniorParticipantsTable.privacyOverride,
     })
     .from(juniorPhotosTable)
+    // Photo rows are written from the participant row's own id, so the exact,
+    // tenant-scoped join is right (and what the tenant guard test requires).
     .innerJoin(
       juniorParticipantsTable,
-      and(
-        eq(juniorParticipantsTable.tenantId, juniorPhotosTable.tenantId),
-        sql`lower(${juniorParticipantsTable.participantId}) = lower(${juniorPhotosTable.participantId})`,
-      ),
+      juniorParticipantJoin(juniorPhotosTable.participantId, tenantId),
     )
     .where(
       and(
