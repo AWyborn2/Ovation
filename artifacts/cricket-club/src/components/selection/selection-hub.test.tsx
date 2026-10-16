@@ -444,6 +444,26 @@ describe("PlayHQ's published side", () => {
   });
 });
 
+describe("Finalise all", () => {
+  it("finalises every draft the caller may finalise, one at a time at its version", async () => {
+    const board = makeBoard();
+    const ready = board.selections.filter(
+      (x) => x.state === "draft" && x.canEdit && x.canFinalise && x.slots.some((s) => s.member),
+    );
+    expect(ready.length).toBeGreaterThanOrEqual(2);
+    const requests = stubApi(board);
+    renderHub();
+    fireEvent.click(await screen.findByRole("button", { name: `Finalise all (${ready.length})` }));
+    fireEvent.click(await screen.findByRole("button", { name: "Finalise and notify" }));
+    await waitFor(() =>
+      expect(requests.filter((r) => r.url.includes("/finalise"))).toHaveLength(ready.length),
+    );
+    expect(requests.filter((r) => r.url.includes("/finalise")).map((r) => r.body)).toEqual(
+      ready.map((d) => ({ version: d.version })),
+    );
+  });
+});
+
 describe("without availability", () => {
   it("shows one Squad list and no round header, statuses or reminders", async () => {
     const board = { ...makeBoard(), availability: false };

@@ -11,7 +11,7 @@ import {
   type SquadMemberRow,
   type SquadSection,
 } from "@workspace/db";
-import { normaliseParticipantId } from "@workspace/db/shirt-numbers";
+import { normaliseParticipantId, shirtNumberNameKey } from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { memberDisplayName } from "./availability-grades";
@@ -283,28 +283,55 @@ export async function loadTeamSheetPreview(
   };
 }
 
+/** A member's name keys for matching register names ("Tom Brooks" and preferred). */
+function memberNameKeys(m: Pick<SheetMember, "firstName" | "lastName" | "preferredName">) {
+  const keys = new Set([shirtNumberNameKey(`${m.firstName} ${m.lastName}`)]);
+  if (m.preferredName) keys.add(shirtNumberNameKey(`${m.preferredName} ${m.lastName}`));
+  return [...keys].filter(Boolean);
+}
+
+/** Numbers by name key, keeping only names that appear once on the register. */
+function uniqueNameNumbers(rows: readonly { name: string; number: string | null }[]) {
+  const seen = new Map<string, string | null>();
+  for (const r of rows) {
+    const key = shirtNumberNameKey(r.name);
+    if (!key || !r.number) continue;
+    seen.set(key, seen.has(key) ? null : r.number);
+  }
+  return seen;
+}
+
 /**
- * Each player's shirt number for the fixture's season. Unlike the social
- * team-list cards, the printed sheet doesn't wait for the club's shirt-number
- * setting: a number on the register prints.
- * - Senior: the season register, by the member's linked player, else their
- *   register participant (`loadSelectionParticipantIds`).
- * - Junior: the juniors register, by the member's PlayHQ participant as a
- *   junior side is published (`juniorMemberResolver`: profile id with merged-away
- *   ids followed to the keeper, else a unique exact name). A held number (its
- *   player not yet brought in by PlayHQ, or a name to check) is never printed.
+ * Each player's shirt number for the fixture's season. The printed sheet goes
+ * to the umpire for the players actually picked, so it prints the register's
+ * number even where the cards would wait: whatever the club's shirt-number
+ * setting, and for a number not yet confirmed (a held junior number, a senior
+ * entry not linked to a player).
+ * - Senior: the season register by the member's linked player, else their
+ *   register participant, else a name that appears once on the register.
+ * - Junior: the juniors register by the member's PlayHQ participant
+ *   (`juniorMemberResolver`, merged-away ids counting for the keeper), else
+ *   their squad profile id as uploaded, else a name that appears once. A
+ *   confirmed number wins over a held one for the same player.
  */
 async function shirtNumbersFor(
   tenantId: number,
   loaded: Loaded,
 ): Promise<(m: SheetMember) => string | null> {
   const season = seasonStartYearFor(loaded.fixture.startAt);
+  // A name only counts when one player on the sheet has it, so two near-identical
+  // names can never borrow each other's number.
+  const keyUse = new Map<string, number>();
+  for (const m of loaded.members)
+    for (const k of memberNameKeys(m)) keyUse.set(k, (keyUse.get(k) ?? 0) + 1);
+  const ownKeys = (m: SheetMember) => memberNameKeys(m).filter((k) => keyUse.get(k) === 1);
   if (loaded.section === "senior") {
     const [rows, participants] = await Promise.all([
       db
         .select({
           playerId: shirtNumbersTable.playerId,
           participantId: shirtNumbersTable.participantId,
+          name: shirtNumbersTable.name,
           number: shirtNumbersTable.number,
         })
         .from(shirtNumbersTable)
@@ -318,53 +345,70 @@ async function shirtNumbersFor(
       loadSelectionParticipantIds(db, tenantId, loaded.fixture.startAt),
     ]);
     const numbers = buildTeamListShirtNumbers(rows);
+    const byName = uniqueNameNumbers(rows);
     return (m) => {
       const linked =
         m.linkedPlayerId != null && m.linkedPlayerId < FILL_IN_THRESHOLD
           ? m.linkedPlayerId
           : undefined;
-      return shirtNumberOf(
+      const byId = shirtNumberOf(
         { order: 0, displayName: "", playerId: linked, participantId: participants.get(m.id) },
         numbers,
       );
+      if (byId) return byId;
+      for (const key of ownKeys(m)) {
+        const n = byName.get(key);
+        if (n) return n;
+      }
+      return null;
     };
   }
+
   const { participants, merges } = await loadJuniorIdentity(db, tenantId);
   const resolve = juniorMemberResolver(participants, merges);
-  const ids = new Map(loaded.members.map((m) => [m.id, resolve(m)]));
-  const wanted = [...new Set([...ids.values()].filter((x): x is string => !!x))];
-  if (wanted.length === 0) return () => null;
   const rows = await db
     .select({
       participantId: juniorShirtNumbersTable.participantId,
+      name: juniorShirtNumbersTable.name,
       number: juniorShirtNumbersTable.number,
+      held: juniorShirtNumbersTable.held,
     })
     .from(juniorShirtNumbersTable)
     .where(
       and(
         eq(juniorShirtNumbersTable.tenantId, tenantId),
         eq(juniorShirtNumbersTable.season, season),
-        // A held number (its player not here yet, or a name to check) is never printed.
-        eq(juniorShirtNumbersTable.held, false),
         isNotNull(juniorShirtNumbersTable.number),
       ),
     );
+  // Confirmed rows first, so one wins over a held row for the same player.
+  rows.sort((a, b) => Number(a.held) - Number(b.held));
   // A number kept on a merged-away duplicate counts for the keeper.
-  const canonical = new Map<string, string>();
-  for (const id of wanted) canonical.set(id, id);
+  const keeperOf = new Map<string, string>();
   for (const mg of merges) {
     const dup = normaliseParticipantId(mg.duplicateParticipantId);
     const keeper = normaliseParticipantId(mg.keeperParticipantId);
-    if (dup && keeper && wanted.includes(keeper)) canonical.set(dup, keeper);
+    if (dup && keeper) keeperOf.set(dup, keeper);
   }
   const byParticipant = new Map<string, string>();
   for (const r of rows) {
-    const id = canonical.get(normaliseParticipantId(r.participantId) ?? "");
-    if (id && r.number && !byParticipant.has(id)) byParticipant.set(id, r.number);
+    const raw = normaliseParticipantId(r.participantId);
+    if (!raw || !r.number) continue;
+    for (const id of [raw, keeperOf.get(raw)]) {
+      if (id && !byParticipant.has(id)) byParticipant.set(id, r.number);
+    }
   }
+  const byName = uniqueNameNumbers(rows);
   return (m) => {
-    const id = ids.get(m.id);
-    return id ? (byParticipant.get(id) ?? null) : null;
+    for (const id of [resolve(m), normaliseParticipantId(m.playhqProfileId)]) {
+      const n = id ? byParticipant.get(id) : undefined;
+      if (n) return n;
+    }
+    for (const key of ownKeys(m)) {
+      const n = byName.get(key);
+      if (n) return n;
+    }
+    return null;
   };
 }
 
