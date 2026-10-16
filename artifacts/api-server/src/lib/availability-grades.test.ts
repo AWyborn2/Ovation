@@ -76,8 +76,10 @@ describe("buildMemberMatcher (KTD7)", () => {
     expect(match({ playerId: 90012, displayName: "Tom Brooks" })).toBeNull();
   });
 
-  it("does not name-match a member linked to a different player", () => {
-    expect(match({ playerId: 77, displayName: "Jack Hale" })).toBeNull();
+  it("a member linked elsewhere still matches their exact name when nobody holds the entry's player", () => {
+    // Jack Hale is linked to 410, but no member holds 77: his link is wrong (a
+    // family PlayHQ account), so his exact, unique name decides.
+    expect(match({ playerId: 77, displayName: "Jack Hale" })?.id).toBe(2);
     // An entry with an unlinked playerId still name-matches an unlinked member.
     expect(match({ playerId: 77, displayName: "Tom Brooks" })).toBe(tom);
   });
