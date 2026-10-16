@@ -9,11 +9,13 @@ import {
   useCreateSquadMember,
   useListSelectionRoster,
   useSearchSquadPlayers,
+  useUpdateSquadMember,
   type SquadContactUpdate,
   type SquadMemberInput,
   type SquadPlayerSearchHit,
   type SquadSection,
 } from "@workspace/api-client-react";
+import { useConfirm } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +26,25 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+
+/**
+ * Two names are one person when they share first initial and surname
+ * ("Tom Brooks", "Thomas Brooks"). A family PlayHQ account can leave a
+ * parent's player record linked to a child (Ben Dreckow's on Noah's), which
+ * this tells apart.
+ */
+function samePerson(a: string, b: string): boolean {
+  const parts = (n: string) =>
+    n
+      .toLowerCase()
+      .replace(/[^a-z ]/g, " ")
+      .split(/\s+/)
+      .filter(Boolean);
+  const x = parts(a);
+  const y = parts(b);
+  if (x.length < 2 || y.length < 2) return a.trim().toLowerCase() === b.trim().toLowerCase();
+  return x[0]![0] === y[0]![0] && x.slice(1).join(" ") === y.slice(1).join(" ");
+}
 
 const selectClass =
   "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
@@ -144,6 +165,9 @@ function AddForm({ onDone, defaultSection }: { onDone: () => void; defaultSectio
     setG2({});
   };
 
+  const confirm = useConfirm();
+  const unlink = useUpdateSquadMember();
+
   const reactivate = (id: number, name: string) => {
     setError(null);
     activate.mutate(
@@ -152,7 +176,32 @@ function AddForm({ onDone, defaultSection }: { onDone: () => void; defaultSectio
     );
   };
 
-  const pickHit = (h: SquadPlayerSearchHit) => {
+  const pickHit = async (h: SquadPlayerSearchHit) => {
+    if (h.alreadyLinkedTo && !samePerson(h.displayName, h.alreadyLinkedTo.name)) {
+      // The player record is linked to someone else on the squad (often a family
+      // member on one PlayHQ account): unlink them, then add this player.
+      const holder = h.alreadyLinkedTo;
+      const ok = await confirm({
+        title: `${h.displayName} is linked to ${holder.name}`,
+        description: `${h.displayName}'s player record is linked to ${holder.name} on the squad list, which usually means they share a PlayHQ family account. Unlink it from ${holder.name} and add ${h.displayName}? ${holder.name} stays on the squad list.`,
+        confirmText: `Unlink and add ${h.displayName}`,
+      });
+      if (!ok) return;
+      setError(null);
+      try {
+        await unlink.mutateAsync({ id: holder.memberId, data: { linkedPlayerId: null } });
+      } catch (e) {
+        setError(errText(e));
+        return;
+      }
+      await qc.invalidateQueries({ queryKey: getSearchSquadPlayersQueryKey() });
+      setPicked({ ...h, alreadyLinkedTo: null });
+      const parts = h.displayName.trim().split(/\s+/);
+      setFirstName(parts.slice(0, -1).join(" ") || parts[0] || "");
+      setLastName(parts.length > 1 ? parts[parts.length - 1]! : "");
+      setDone(null);
+      return;
+    }
     if (h.alreadyLinkedTo) {
       if (activeIds.has(h.alreadyLinkedTo.memberId)) {
         setError(`${h.alreadyLinkedTo.name} is already active.`);
@@ -242,7 +291,7 @@ function AddForm({ onDone, defaultSection }: { onDone: () => void; defaultSectio
                     </span>
                   )}
                 </span>
-                <Button type="button" size="sm" variant="outline" onClick={() => pickHit(h)}>
+                <Button type="button" size="sm" variant="outline" onClick={() => void pickHit(h)}>
                   {h.alreadyLinkedTo ? "Reactivate" : "Use"}
                 </Button>
               </li>

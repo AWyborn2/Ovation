@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const create = vi.fn();
 const activate = vi.fn();
+const update = vi.fn(async () => ({}));
 const hits = vi.hoisted(
   () =>
     [] as {
@@ -25,14 +26,18 @@ vi.mock("@workspace/api-client-react", () => ({
   useSearchSquadPlayers: () => ({ data: hits, isFetching: false }),
   useActivateSquadMember: () => ({ mutate: activate, isPending: false }),
   useCreateSquadMember: () => ({ mutate: create, isPending: false }),
+  useUpdateSquadMember: () => ({ mutateAsync: update, isPending: false }),
 }));
 
 import { AddActivePlayer } from "./add-active-player";
+import { ConfirmProvider } from "@/components/confirm-dialog";
 
 function setup() {
   render(
     <QueryClientProvider client={new QueryClient()}>
-      <AddActivePlayer />
+      <ConfirmProvider>
+        <AddActivePlayer />
+      </ConfirmProvider>
     </QueryClientProvider>,
   );
   fireEvent.click(screen.getByTestId("button-add-active-player"));
@@ -94,16 +99,37 @@ describe("AddActivePlayer", () => {
   it("reactivates an already-linked historical player instead of creating another row", async () => {
     hits.push({
       playerId: 101,
-      displayName: "Alex History",
+      displayName: "S Poole",
       lastSeason: "2023/24",
       alreadyLinkedTo: { memberId: 5, name: "Sam Poole" },
     });
     setup();
     fireEvent.change(screen.getByLabelText("Find a past or inactive player"), {
-      target: { value: "alex" },
+      target: { value: "s poole" },
     });
     fireEvent.click(await screen.findByRole("button", { name: "Reactivate" }));
-    expect(activate.mock.calls[0]![0]).toEqual({ id: 5 });
+    await waitFor(() => expect(activate.mock.calls[0]![0]).toEqual({ id: 5 }));
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it("a player record linked to a family member offers to unlink them and add the player", async () => {
+    // Ben Dreckow's player record is linked to his son Noah (one PlayHQ account).
+    hits.push({
+      playerId: 202,
+      displayName: "Ben Dreckow",
+      lastSeason: "2025/26",
+      alreadyLinkedTo: { memberId: 9, name: "Noah Dreckow" },
+    });
+    setup();
+    fireEvent.change(screen.getByLabelText("Find a past or inactive player"), {
+      target: { value: "dreck" },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Reactivate" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Unlink and add Ben Dreckow" }));
+    await waitFor(() =>
+      expect(update).toHaveBeenCalledWith({ id: 9, data: { linkedPlayerId: null } }),
+    );
+    expect(activate).not.toHaveBeenCalled();
+    expect(await screen.findByText(/Linked to club player Ben Dreckow/)).toBeTruthy();
   });
 });
