@@ -2,7 +2,7 @@
 
 **Project:** Ovation (white-label cricket club platform)
 **Active feature:** social-auto-queue-criteria
-**Phase:** Delivery — PR to `main` from `claude/social-auto-queue-criteria`; production release steps are Ash's (runbook §3b)
+**Phase:** Delivered — merged to `main` (7b4d0aee, PR #361) and released to production on 16 Oct 2026 (runbook §3b steps run by Ash)
 
 ## Phase tracking — social-auto-queue-criteria
 
@@ -15,7 +15,7 @@
 | 3 Planning       | Done  | Tasks T1.1–T9.3 in decisions/engineering-manager                                                                |
 | 4 Implementation | Done  | Milestones A–E; decisions/sde, decisions/dba                                                                    |
 | 5 Verification   | Done  | reviews/2026-10-15-social-auto-queue-criteria-review.md — no blocking findings                                  |
-| 6 Delivery       | Open  | decisions/devops (deploy order, rollback), decisions/sre (what to watch); PR open, auto-merge on green          |
+| 6 Delivery       | Done  | PR #361 merged 7b4d0aee; projector SQL, republish, release SQL and feats backfill run in production 16 Oct 2026 |
 
 ## Task progress
 
@@ -23,7 +23,7 @@ Milestone A: T1.1–T1.2, T2.1–T2.4 — done (commit 24174a61)
 Milestone B: T10.1–T10.2, T3.1–T3.4 — done (commit 1346e52e)
 Milestone C: T4.1–T4.3, T5.1–T5.2 — done (commit 1346e52e)
 Milestone D: T6.1–T6.2, T7.1–T7.2, T8.1–T8.2 — done (commit c3d09256)
-Milestone E: T9.1–T9.2 — done (commit c3d09256); T9.3 — verification done locally, PR open
+Milestone E: T9.1–T9.2 — done (commit c3d09256); T9.3 — done (PR #361 merged, CI green, released 16 Oct 2026)
 
 ## Verification (local, 2026-10-15)
 

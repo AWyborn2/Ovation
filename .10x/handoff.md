@@ -1,17 +1,17 @@
 # Handoff
 
-**From:** DevOps + SRE (Phase 6)
-**To:** Ash (release) / next feature
+**From:** DevOps + SRE (Phase 6, delivered)
+**To:** next feature
 **Feature:** social-auto-queue-criteria
 
 ## Context
 
 - Plan `docs/plans/2026-10-15-001-feat-social-auto-queue-criteria-plan.md` implemented end to end (U1–U10) on `claude/social-auto-queue-criteria`. Decisions per role under `decisions/*/social-auto-queue-criteria.md`; review in `reviews/2026-10-15-social-auto-queue-criteria-review.md`; ADRs 004–006.
-- PR to `main` opened from this branch; auto-merge once CI is green and `CLEAN`.
+- PR #361 merged to `main` (7b4d0aee) and released to production on 16 Oct 2026: projector SQL, republish, release SQL (171 retired-kind drafts dismissed) and the feats backfill all run. Watch the first match-day sync for `playhq.balls` rows and `central.match_feats` entries.
 
-## Release steps (Ash, by hand)
+## Release
 
-Runbook `docs/runbooks/meta-publishing.md` §3b: projector SQL before republishing → list `auto` junior teams → republish → `scripts/sql/auto-queue-release.sql` → feats backfill → check balls after the next match-day sync.
+Done (runbook `docs/runbooks/meta-publishing.md` §3b). Lessons recorded there: the Production SQL runner executes one statement at a time, and the feats backfill script takes `--org` / `--season` / `--match` with `--yes`.
 
 ## Parked
 

@@ -8,5 +8,5 @@
   - Projector cannot write `central.match_feats` (SQL not applied) → the projection run fails for that match and logs; apply the projector SQL and re-run (idempotent).
   - Junior team settings missing or a team unknown → junior cards never auto-publish (fail closed); admins see them in the queue as usual.
   - A club with a stored version 1 plan → the default table applies; the club re-saves its choices in the Posting Plan tab.
-- **Runbooks:** `docs/runbooks/meta-publishing.md` §3b (release and checks). Backfill: `scripts/src/playhq-project-central.ts --since <date>` is safe to re-run.
+- **Runbooks:** `docs/runbooks/meta-publishing.md` §3b (release and checks). Backfill: `pnpm --filter @workspace/scripts run playhq-project-central -- --org=<guid> --yes` (or `--season="<name>"`) is safe to re-run.
 - **Alerts:** none added; the existing sync watchdog (overdue plans) and publishing failure counters cover the new paths.

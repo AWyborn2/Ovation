@@ -152,7 +152,7 @@ A club can plan its posts on a weekly calendar (plan `docs/plans/2026-10-07-003-
 
 The Posting Plan version 2 (plan `docs/plans/2026-10-15-001-feat-social-auto-queue-criteria-plan.md`) retires the grade leader, trading card and countdown cards, folds centuries, five-fors, hat-tricks and five catches into the Big Moment card, lets each row list junior age groups, and makes a junior team's "auto" setting mean publishing to Facebook and Instagram. No app migration: the one new table lives in `central` and comes from the projector SQL.
 
-**Deploy order (once)**
+**Deploy order (once)** — run for production on 16 Oct 2026. The Production SQL runner executes one statement at a time: paste multi-statement scripts statement by statement and run each check on its own.
 
 1. **Before republishing:** paste `scripts/sql/central-projector.sql` into the Production SQL runner for the database `CENTRAL_PROJECTOR_DATABASE_URL` points at (it is idempotent). Check (read-only):
 
@@ -180,10 +180,11 @@ The Posting Plan version 2 (plan `docs/plans/2026-10-15-001-feat-social-auto-que
    select count(*) from junior_match_display_settings where team_publishing::text like '%"auto"%';
    ```
 
-5. Backfill this season's feats (hat-tricks and five catches need ball-by-ball and fielding rows; only matches the sync has fetched balls for can have a hat-trick):
+5. Backfill feats (hat-tricks and five catches need ball-by-ball and fielding rows; only matches the sync has fetched balls for can have a hat-trick). The script takes `--org=<playhq org guid>`, `--season="<PlayHQ season name>"` or `--match=<guid>`, plus `--yes` to write to a non-local database (`--dry-run` first); it is idempotent. Halls Head's org is `4559f1b9-86d8-eb11-a7ad-2818780da0cc`.
 
    ```bash
-   pnpm --filter @workspace/scripts exec tsx src/playhq-project-central.ts --since 2026-10-01
+   pnpm --filter @workspace/scripts run playhq-project-central -- --org=<playhq org guid> --dry-run
+   pnpm --filter @workspace/scripts run playhq-project-central -- --org=<playhq org guid> --yes
    ```
 
    Check (read-only): `select kind, count(*) from central.match_feats group by kind;`
