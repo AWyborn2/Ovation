@@ -14,6 +14,11 @@ import type { ShirtNumberSeason } from './shirtNumberSeason';
 export interface JuniorPlayerDetail {
   participantId: string;
   displayName: string;
+  /**
+     * The player's default photo (gated URL) when allowed; absent or null otherwise.
+     * @nullable
+     */
+  photoUrl?: string | null;
   /** @nullable */
   firstSeason?: string | null;
   /** @nullable */

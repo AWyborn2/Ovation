@@ -284,6 +284,12 @@ export interface FreeLayerContext {
   tokens?: PackTokens;
   brand?: PackCardData["brand"] | null;
   junior?: boolean;
+  /**
+   * The server's positive marker that this junior card may show its photo — a junior
+   * player's own photo the family allows (ADR-007). Without it a junior card never
+   * draws a photo, whatever the document or data hold.
+   */
+  juniorPhotoAllowed?: boolean;
   rows?: Record<string, Array<Record<string, string>>>;
   /** Each repeat row's variant, parallel to `rows` (for `rows` layers). */
   rowVariants?: Record<string, Array<string | undefined>>;
@@ -373,8 +379,9 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
         return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${bg ? `;background:${bg}` : ""}${style.radius != null ? `;border-radius:${num(style.radius)}px` : ""}"></div>`;
       }
       if (cell.show === "image") {
-        // A photo the row carries (e.g. a player's); junior cards never show one.
-        const src = ctx.junior ? "" : (row[cell.field] ?? "").trim();
+        // A photo the row carries (e.g. a player's); a junior card shows one only
+        // behind the server's positive marker (ADR-007).
+        const src = ctx.junior && !ctx.juniorPhotoAllowed ? "" : (row[cell.field] ?? "").trim();
         if (!src) return "";
         const radius = style.radius != null ? `;border-radius:${num(style.radius)}px` : "";
         return `<div data-row-cell="${escapeHtml(cell.field)}" style="${place.join(";")}${radius}"><img src="${escapeHtml(src)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block" /></div>`;
@@ -397,8 +404,9 @@ function renderRows(layer: FreeLayer, ctx: FreeLayerContext): string | null {
 
 /** A `photo` layer: the card photo at this size's focal point and zoom. */
 function renderPhoto(layer: FreeLayer, size: CardSize, ctx: FreeLayerContext): string | null {
-  // Junior cards never show a photo, whatever the document holds (KTD14).
-  if (ctx.junior || !ctx.photoUrl) return null;
+  // A junior card shows a photo only when the server marked it allowed — a junior
+  // player's own photo the family consented to (ADR-007); never from the document alone.
+  if ((ctx.junior && !ctx.juniorPhotoAllowed) || !ctx.photoUrl) return null;
   const t = resolveGeometry(layer.photo, undefined, size)?.value ?? {
     focalX: 50,
     focalY: 50,

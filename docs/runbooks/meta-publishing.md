@@ -200,6 +200,29 @@ The Posting Plan version 2 (plan `docs/plans/2026-10-15-001-feat-social-auto-que
 - Only match-day, day-after and catch-up syncs fetch ball-by-ball; weekly and pre-weekend syncs don't (Ash approved the extra scrape volume on 15 Oct 2026).
 - A junior-marked card publishes on its own only when every team it names is `auto`; a card that names no team, or any team on `approval`, waits for an admin even when the calendar or auto-post would otherwise send it.
 
+## 3c. Junior card photos
+
+Junior cards and the public junior profile can carry a junior player's own photo (plan `docs/plans/2026-10-16-001-feat-junior-card-photos-plan.md`, ADR-007). The club's admin uploads photos under **Admin → Junior players → a player → Photo** and marks the few players whose families have not consented as **Photo withheld**; everyone else is allowed by default because the registration form carries consent.
+
+**Deploy order (once)** — statement by statement in the Production SQL runner.
+
+1. **Before republishing:** paste `lib/db/migrations/0045_junior_card_photos.sql` (idempotent). Check (read-only), expect 3 rows and `junior_photos`:
+
+   ```sql
+   select column_name from information_schema.columns
+   where table_name = 'junior_participants' and column_name like 'photo_withheld%';
+   select to_regclass('junior_photos');
+   ```
+
+2. Republish. Nothing changes for any club until an admin uploads a photo.
+3. Read-only check after the first uploads: `select count(*) from junior_photos;` and, for a club, that `GET /api/juniors/photos/<id>` returns the image publicly only for an allowed player (a withheld or private player's photo returns 404 without an admin session).
+
+**How it behaves**
+
+- A junior card features one allowed player with a photo: the Big Moment's own player; otherwise a team list, result or junior-only round carousel picks one listed player by the draft key (stable across re-renders). A combined senior-and-junior carousel keeps the senior photo and its junior slides stay photo-less.
+- Withholding a player (or making them private) strips their photo from every unposted card in the same request, marks a posted card stale, and the photo stops being served at once. The hourly sweep then re-drafts the open cards, so a team list can feature another allowed player.
+- Deleting a photo leaves cards that referenced it photo-less on their next refresh.
+
 ## 4. Maintenance
 
 ### Rotating the token key

@@ -34,6 +34,8 @@ import {
   splitScores,
   type JuniorNaming,
 } from "./junior-helpers";
+import { juniorPhotoFields, loadJuniorPhotos, pickJuniorCardPhoto } from "./junior-photos";
+import type { PhotoSource } from "./draft-enrich";
 import { juniorResultAutoReady, juniorTeamPublishMode } from "./junior-publishing";
 import {
   draftKeys,
@@ -271,9 +273,11 @@ async function upsertDraft(
     featuredPlayerId?: number | null;
     /** `false`: never auto-ready (a junior team not set to auto-post, KTD14). */
     autoReady?: boolean;
+    /** A junior player's own photo, picked by the junior path (ADR-007); `null` = none. */
+    photo?: { url: string; source: PhotoSource } | null;
   } = {},
 ): Promise<"drafted" | "skipped"> {
-  const { central, grade, featuredPlayerId, autoReady } = opts;
+  const { central, grade, featuredPlayerId, autoReady, photo } = opts;
   // Re-ingest refreshes the existing draft (keeping a revision), a posted draft
   // is only marked stale, and unchanged input is a no-op (KTD3).
   if (central) {
@@ -306,6 +310,7 @@ async function upsertDraft(
     sourceMatchIsJunior: junior,
     grade,
     featuredPlayerId,
+    ...(photo !== undefined ? { photo } : {}),
     ...(autoReady === false ? { autoReady: false } : {}),
     // Drafts from before source keys existed: find them by match and backfill.
     findLegacy: async () => {
@@ -461,6 +466,32 @@ export async function generateCentralStumpsDrafts(
 }
 
 /**
+ * Who a junior result card may feature (ADR-007): every club player in the match, with the
+ * top run-scorer and top wicket-taker preferred, so the card leads with the performance it
+ * tells. Opposition players are never candidates (R22).
+ */
+export function juniorPhotoCandidates(detail: {
+  innings: Array<{
+    batting: Array<{ participantId: string | null; isHallsHead: boolean; runs: number | null }>;
+    bowling: Array<{ participantId: string | null; isHallsHead: boolean; wickets: number | null }>;
+  }>;
+}): { candidates: string[]; preferred: string[] } {
+  const bats = detail.innings.flatMap((i) =>
+    i.batting.filter((b) => b.isHallsHead && b.participantId),
+  );
+  const bowls = detail.innings.flatMap((i) =>
+    i.bowling.filter((b) => b.isHallsHead && b.participantId),
+  );
+  const topBat = [...bats].sort((a, b) => (b.runs ?? 0) - (a.runs ?? 0))[0];
+  const topBowl = [...bowls].sort((a, b) => (b.wickets ?? 0) - (a.wickets ?? 0))[0];
+  const preferred = [topBat, topBowl]
+    .filter((l): l is NonNullable<typeof l> => !!l)
+    .map((l) => l.participantId as string);
+  const candidates = [...bats, ...bowls].map((l) => l.participantId as string);
+  return { candidates, preferred };
+}
+
+/**
  * Generate match-summary social-card drafts for junior matches.
  *
  * Same flow as senior but uses the junior scorecard builder, defaults to OFF
@@ -487,10 +518,12 @@ export async function generateJuniorMatchSummaryDrafts(
   }
 
   const brand = await getTenantBrand(tenantId);
-  // Club-wide naming loaded once for the batch (KTD12), and the per-team publishing map.
-  const [naming, publishing] = await Promise.all([
+  // Club-wide naming loaded once for the batch (KTD12), the per-team publishing map,
+  // and the allowed players' own photos (ADR-007).
+  const [naming, publishing, photos] = await Promise.all([
     loadJuniorNaming(tenantId),
     loadJuniorTeamPublishing(tenantId),
+    loadJuniorPhotos(tenantId),
   ]);
 
   const BATCH = 10;
@@ -509,8 +542,15 @@ export async function generateJuniorMatchSummaryDrafts(
           result.skipped++;
           return;
         }
+        // The card's photo (ADR-007): the club's top performer with an allowed photo first,
+        // else any club player in the match with one, picked by the draft key; else none.
+        const { candidates, preferred } = juniorPhotoCandidates(detail);
+        const photo = juniorPhotoFields(
+          pickJuniorCardPhoto(photos, candidates, draftKeys.matchSummary(matchId, true), preferred),
+        );
         const cardInput = {
           ...juniorMatchToSummaryInput(detail as JuniorMatchDetail, brand),
+          ...photo.cardInput,
           // The junior team this card covers, for the per-team publishing gate (ADR-006).
           juniorTeams: [{ ageGroup: detail.ageGroup ?? null, teamName: detail.teamName ?? null }],
         };
@@ -522,7 +562,7 @@ export async function generateJuniorMatchSummaryDrafts(
           cardInput as Record<string, unknown>,
           `/juniors/matches/${matchId}`,
           // A synced card follows its team's mode; a loader-era card keeps auto-ready.
-          { autoReady: juniorResultAutoReady(matchId, mode) },
+          { autoReady: juniorResultAutoReady(matchId, mode), photo: photo.photo },
         );
         if (outcome === "drafted") result.drafted++;
         else result.skipped++;

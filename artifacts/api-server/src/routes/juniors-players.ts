@@ -33,6 +33,7 @@ import { getShirtNumberSettings } from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import { loadJuniorProfileShirtNumbers } from "../lib/junior-shirt-numbers";
 import { juniorParticipantKey } from "../lib/junior-participant-scope";
+import { loadJuniorPhotos } from "../lib/junior-photos";
 import { dismissalWithoutNames } from "@workspace/scorecard";
 
 /**
@@ -161,6 +162,13 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
   const runsBy = new Map(runsRows.map((r) => [r.pid, r.runs]));
   const wktsBy = new Map(wktsRows.map((r) => [r.pid, r.wickets]));
 
+  // Default photos (ADR-007): the public directory shows an allowed player's; an admin
+  // also sees a withheld player's (the photo route still refuses it publicly).
+  const photos = await loadJuniorPhotos(
+    tenantId,
+    participants.map((p) => p.participantId),
+    { includeDisallowed: withPrivate },
+  );
   const needle = search && style !== "full" ? search.toLowerCase() : null;
   res.json(
     participants
@@ -176,12 +184,16 @@ router.get("/juniors/players", async (req, res): Promise<void> => {
         runs: runsBy.get(p.participantId) ?? 0,
         wickets: wktsBy.get(p.participantId) ?? 0,
         seniorPlayerId: p.seniorPlayerId,
+        photoUrl: photos.get(p.participantId.toLowerCase())?.url ?? null,
         ...(withPrivate
           ? {
               isPrivate: p.isPrivate,
               privacyOverride: p.privacyOverride,
               privacyOverrideBy: p.privacyOverrideBy,
               privacyOverrideAt: p.privacyOverrideAt?.toISOString() ?? null,
+              photoWithheld: p.photoWithheld,
+              photoWithheldBy: p.photoWithheldBy,
+              photoWithheldAt: p.photoWithheldAt?.toISOString() ?? null,
             }
           : {}),
       })),
@@ -573,9 +585,14 @@ router.get("/juniors/players/:id", async (req, res): Promise<void> => {
       )
     : null;
 
+  // The profile photo (ADR-007, R11): only while the player is allowed one.
+  const photo = (await loadJuniorPhotos(tenantId, [participant.participantId])).get(
+    participant.participantId.toLowerCase(),
+  );
   res.json({
     participantId: participant.participantId,
     displayName: publicName,
+    photoUrl: photo?.url ?? null,
     firstSeason: participant.firstSeason,
     lastSeason: participant.lastSeason,
     teams: participant.teams,

@@ -208,6 +208,12 @@ export const juniorParticipantsTable = pgTable(
     privacyOverride: boolean("privacy_override").notNull().default(false),
     privacyOverrideBy: text("privacy_override_by"),
     privacyOverrideAt: timestamp("privacy_override_at", { withTimezone: true }),
+    // Photo consent (junior card photos plan, ADR-007): the club's registration form
+    // carries consent, so a photo is allowed unless an admin withholds it here. Written
+    // only by the admin PATCH, never by the sync. Who and when, like the override.
+    photoWithheld: boolean("photo_withheld").notNull().default(false),
+    photoWithheldBy: text("photo_withheld_by"),
+    photoWithheldAt: timestamp("photo_withheld_at", { withTimezone: true }),
     scorecardLines: integer("scorecard_lines"),
     rosterAppearances: integer("roster_appearances"),
     firstSeason: text("first_season"),
@@ -225,6 +231,35 @@ export const juniorParticipantsTable = pgTable(
 );
 
 export type JuniorParticipantRow = typeof juniorParticipantsTable.$inferSelect;
+
+/**
+ * A junior player's photos, uploaded by a club admin (junior card photos plan, ADR-007).
+ * Keyed by PlayHQ participant id like every junior row — deliberately separate from the
+ * senior photo library (`club_photos`, integer player ids, senior-only by design) and the
+ * senior headshots (`player_images`). `is_default` marks the one a card or profile uses.
+ * Objects live under the private `library/juniors/` prefix and are served only through
+ * the gated `/juniors/photos/:id` route, which checks the player is still allowed a photo.
+ */
+export const juniorPhotosTable = pgTable(
+  "junior_photos",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    participantId: text("participant_id").notNull(),
+    objectPath: text("object_path").notNull(),
+    thumbPath: text("thumb_path"),
+    width: integer("width"),
+    height: integer("height"),
+    isDefault: boolean("is_default").notNull().default(false),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    idxParticipant: index("junior_photos_tenant_participant_idx").on(t.tenantId, t.participantId),
+  }),
+);
+
+export type JuniorPhotoRow = typeof juniorPhotosTable.$inferSelect;
 
 export const juniorPremiershipsTable = pgTable(
   "junior_premierships",

@@ -5,6 +5,11 @@ import {
   getListJuniorPlayersQueryKey,
   useListJuniorPrivacyOverrides,
   getListJuniorPrivacyOverridesQueryKey,
+  useListJuniorPhotos,
+  getListJuniorPhotosQueryKey,
+  useAddJuniorPhoto,
+  useDeleteJuniorPhoto,
+  useSetDefaultJuniorPhoto,
   useUpdateJuniorParticipant,
   useSetJuniorSeniorLink,
   useClearJuniorSeniorLink,
@@ -30,6 +35,8 @@ import { PlayerTypeahead, type SelectedPlayer } from "@/components/player-typeah
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { DataTable, EditDrawer, StatusPill, type DataTableColumn } from "@/components/admin-ui";
+import { HEADSHOT_ASPECTS, ImageCropDialog } from "@/components/admin-ui/image-crop-dialog";
+import { useUpload } from "@workspace/object-storage-web";
 import { AlertTriangle, Info, Search } from "lucide-react";
 
 /** "1 Oct 2026" for an override timestamp; empty when unknown. */
@@ -131,6 +138,11 @@ export default function AdminJuniorPlayers() {
           ) : (
             <StatusPill>Public</StatusPill>
           )}
+          {p.photoWithheld ? (
+            <StatusPill tone="danger">Photo withheld</StatusPill>
+          ) : p.photoUrl ? (
+            <StatusPill tone="info">Photo</StatusPill>
+          ) : null}
           {p.seniorPlayerId != null && <StatusPill tone="info">Senior linked</StatusPill>}
         </span>
       ),
@@ -411,6 +423,13 @@ function JuniorPlayerEditor({
           </div>
         ))}
 
+      <JuniorPhotoSection
+        player={player}
+        clearError={clearError}
+        onError={onError}
+        onChanged={onChanged}
+      />
+
       <div className="space-y-2 border-t border-border pt-4">
         <p className="text-sm font-semibold">More</p>
         <div className="flex flex-wrap gap-2">
@@ -422,6 +441,161 @@ function JuniorPlayerEditor({
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * A junior player's photos and photo consent (junior card photos plan, ADR-007). The club's
+ * registration form carries consent, so photos are allowed unless the admin withholds them
+ * here; the default photo appears on the player's cards and public profile.
+ */
+function JuniorPhotoSection({
+  player,
+  clearError,
+  onError,
+  onChanged,
+}: {
+  player: JuniorPlayerSummary;
+  clearError: () => void;
+  onError: (e: unknown) => void;
+  onChanged: () => void;
+}) {
+  const qc = useQueryClient();
+  const confirm = useConfirm();
+  const id = player.participantId;
+  const photosQ = useListJuniorPhotos(id, { query: { queryKey: getListJuniorPhotosQueryKey(id) } });
+  const add = useAddJuniorPhoto();
+  const remove = useDeleteJuniorPhoto();
+  const setDefault = useSetDefaultJuniorPhoto();
+  const update = useUpdateJuniorParticipant();
+  const [cropOpen, setCropOpen] = useState(false);
+  const { uploadFile, isUploading } = useUpload({ onError: (e) => onError(e) });
+
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: getListJuniorPhotosQueryKey(id) });
+    onChanged();
+  };
+  const busy =
+    isUploading || add.isPending || remove.isPending || setDefault.isPending || update.isPending;
+
+  const handleFile = async (file: File) => {
+    clearError();
+    const result = await uploadFile(file);
+    if (!result) return;
+    add.mutate({ id, data: { objectPath: result.objectPath } }, { onSuccess: refresh, onError });
+  };
+
+  const toggleWithheld = async () => {
+    const withholding = !player.photoWithheld;
+    if (
+      !(await confirm({
+        title: withholding ? "Withhold photos of this player?" : "Allow photos of this player?",
+        description: withholding
+          ? `${player.displayName}'s photo comes off every card not yet posted and their public profile now, and no photo of them will appear until this is turned back on. Use this when the family has not consented to photos.`
+          : `${player.displayName}'s uploaded photo can appear on cards and their public profile again. Only do this with the family's consent.`,
+        confirmText: withholding ? "Withhold photos" : "Allow photos",
+        destructive: withholding,
+      }))
+    )
+      return;
+    clearError();
+    update.mutate({ id, data: { photoWithheld: withholding } }, { onSuccess: refresh, onError });
+  };
+
+  const photos = photosQ.data ?? [];
+  return (
+    <div className="space-y-3 border-t border-border pt-4" data-testid="junior-photo-section">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold">Photo</p>
+          <p className="text-xs text-muted-foreground">
+            {player.photoWithheld
+              ? `Photos withheld${player.photoWithheldBy ? ` by ${player.photoWithheldBy}` : ""}: none appear on cards or the profile.`
+              : "Allowed unless withheld — the registration form carries the family's consent. The default photo appears on this player's cards and their profile page."}
+          </p>
+        </div>
+        <Button
+          size="sm"
+          variant={player.photoWithheld ? "default" : "outline"}
+          disabled={busy}
+          onClick={toggleWithheld}
+        >
+          {player.photoWithheld ? "Allow photos" : "Withhold photos"}
+        </Button>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-muted-foreground">
+          {photos.length === 0 ? "No photos yet. The first becomes the default." : ""}
+        </span>
+        <button
+          type="button"
+          className="text-sm font-medium text-primary-text hover:underline disabled:opacity-50"
+          onClick={() => setCropOpen(true)}
+          disabled={busy}
+        >
+          {isUploading ? "Uploading…" : "+ Add photo"}
+        </button>
+        <ImageCropDialog
+          open={cropOpen}
+          onOpenChange={setCropOpen}
+          title="Junior player photo"
+          description="Drop a photo the club has taken, then frame the face in the circle. Only upload a photo whose family has consented."
+          aspects={HEADSHOT_ASPECTS}
+          suggestedWidth={800}
+          onCropped={handleFile}
+        />
+      </div>
+      {photos.length > 0 && (
+        <div className="flex flex-wrap gap-3">
+          {photos.map((photo) => (
+            <div key={photo.id} className="w-24 space-y-1">
+              <div
+                className={`relative aspect-square overflow-hidden rounded-md border-2 ${
+                  photo.isDefault ? "border-primary" : "border-transparent"
+                }`}
+              >
+                <img
+                  src={photo.thumbUrl ?? photo.url}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+                {photo.isDefault && (
+                  <span className="absolute left-1 top-1 rounded bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                    Default
+                  </span>
+                )}
+              </div>
+              <div className="flex justify-between text-[11px]">
+                {!photo.isDefault ? (
+                  <button
+                    type="button"
+                    className="text-primary-text hover:underline disabled:opacity-50"
+                    disabled={busy}
+                    onClick={() =>
+                      setDefault.mutate({ id, photoId: photo.id }, { onSuccess: refresh, onError })
+                    }
+                  >
+                    Make default
+                  </button>
+                ) : (
+                  <span />
+                )}
+                <button
+                  type="button"
+                  className="text-destructive hover:underline disabled:opacity-50"
+                  disabled={busy}
+                  onClick={() =>
+                    remove.mutate({ id, photoId: photo.id }, { onSuccess: refresh, onError })
+                  }
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

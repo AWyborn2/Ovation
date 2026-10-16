@@ -8102,6 +8102,153 @@ paths:
         "404":
           description: Participant not found
 
+  /juniors/participants/{id}/photos:
+    get:
+      operationId: listJuniorPhotos
+      tags: [juniors]
+      summary: A junior player's photos (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: PlayHQ participant_id
+      responses:
+        "200":
+          description: Photos, the default first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JuniorPhoto"
+        "404":
+          description: Participant not found
+    post:
+      operationId: addJuniorPhoto
+      tags: [juniors]
+      summary: >-
+        Add a photo of a junior player from an uploaded object (admin): converted,
+        stored privately, the first becomes the default
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddJuniorPhotoBody"
+      responses:
+        "201":
+          description: The stored photo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorPhoto"
+        "404":
+          description: Participant not found
+        "422":
+          description: The upload could not be read or converted
+
+  /juniors/participants/{id}/photos/{photoId}:
+    delete:
+      operationId: deleteJuniorPhoto
+      tags: [juniors]
+      summary: Remove a junior player's photo (admin); the next becomes the default
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+        "404":
+          description: Participant or photo not found
+
+  /juniors/participants/{id}/photos/{photoId}/default:
+    post:
+      operationId: setDefaultJuniorPhoto
+      tags: [juniors]
+      summary: Make this the photo cards and the profile use (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The default photo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JuniorPhoto"
+        "404":
+          description: Participant or photo not found
+
+  /juniors/photos/{photoId}:
+    get:
+      operationId: getJuniorPhoto
+      tags: [juniors]
+      summary: >-
+        A junior player's photo. Served only while the player is allowed a photo
+        (not withheld, not private) or to a signed-in admin (ADR-007).
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: JPEG image
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: No such photo, or the player is not allowed a photo
+
+  /juniors/photos/{photoId}/thumb:
+    get:
+      operationId: getJuniorPhotoThumb
+      tags: [juniors]
+      summary: The thumbnail of a junior player's photo, gated like the photo
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: JPEG image
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: No such photo, or the player is not allowed a photo
+
   /juniors/privacy-overrides:
     get:
       operationId: listJuniorPrivacyOverrides
@@ -22112,6 +22259,21 @@ components:
           type: ["string", "null"]
           format: date-time
           description: Admin requests with includePrivate only. When the override was set.
+        photoUrl:
+          type: ["string", "null"]
+          description: >-
+            The player's default photo (gated URL), when they have one and are
+            allowed a photo; admins also see it for a withheld player.
+        photoWithheld:
+          type: boolean
+          description: Admin requests with includePrivate only. The family has not consented to photos.
+        photoWithheldBy:
+          type: ["string", "null"]
+          description: Admin requests with includePrivate only.
+        photoWithheldAt:
+          type: ["string", "null"]
+          format: date-time
+          description: Admin requests with includePrivate only.
 
     JuniorSeniorLinkSummary:
       type: object
@@ -22422,6 +22584,44 @@ components:
           description: >-
             Show a private player's name publicly anyway (true) or withhold it
             again (false). Can only be switched on for a private player.
+        photoWithheld:
+          type: boolean
+          description: >-
+            The family has not consented to photos (true): no photo of this
+            player appears on any card or page, and open cards lose theirs at
+            once. Off by default — the club's registration form carries consent.
+
+    JuniorPhoto:
+      type: object
+      required: [id, participantId, url, thumbUrl, isDefault, createdAt]
+      description: >-
+        A junior player's photo the club's admin uploaded. `url` and `thumbUrl`
+        are gated: they serve the image only while the player is allowed a photo
+        (not withheld, not private) or to a signed-in admin.
+      properties:
+        id:
+          type: integer
+        participantId:
+          type: string
+        url:
+          type: string
+        thumbUrl:
+          type: ["string", "null"]
+        isDefault:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    AddJuniorPhotoBody:
+      type: object
+      required: [objectPath]
+      properties:
+        objectPath:
+          type: string
+          description: The uploaded object's path from `requestUploadUrl`; converted and re-stored privately.
+        makeDefault:
+          type: boolean
 
     JuniorNameStyle:
       type: string
@@ -22447,7 +22647,17 @@ components:
     JuniorAdminParticipant:
       type: object
       required:
-        [participantId, displayName, isPrivate, privacyOverride, privacyOverrideBy, privacyOverrideAt]
+        [
+          participantId,
+          displayName,
+          isPrivate,
+          privacyOverride,
+          privacyOverrideBy,
+          privacyOverrideAt,
+          photoWithheld,
+          photoWithheldBy,
+          photoWithheldAt,
+        ]
       properties:
         participantId:
           type: string
@@ -22465,6 +22675,14 @@ components:
           type: ["string", "null"]
           format: date-time
           description: When the override was set.
+        photoWithheld:
+          type: boolean
+          description: The family has not consented to photos (ADR-007).
+        photoWithheldBy:
+          type: ["string", "null"]
+        photoWithheldAt:
+          type: ["string", "null"]
+          format: date-time
 
     JuniorStatCorrection:
       type: object
@@ -22598,6 +22816,9 @@ components:
           type: string
         displayName:
           type: string
+        photoUrl:
+          type: ["string", "null"]
+          description: The player's default photo (gated URL) when allowed; absent or null otherwise.
         firstSeason:
           type: ["string", "null"]
         lastSeason:

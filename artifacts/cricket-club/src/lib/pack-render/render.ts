@@ -120,6 +120,14 @@ function sanitisedOverride(o: PackCardData["tokenOverride"]): Partial<PackTokens
 }
 
 /** Field values plus the club's monogram (initials), for library elements. */
+/**
+ * The server's positive marker that a junior card may show its photo — a junior
+ * player's own photo the family allows (ADR-007). Only the junior engines write it.
+ */
+function juniorPhotoAllowedOn(input: ShareCardInput): boolean {
+  return (input as { juniorPhotoAllowed?: boolean }).juniorPhotoAllowed === true;
+}
+
 function withMonogram(values: Record<string, string>): Record<string, string> {
   if (values.clubMonogram || !values.clubName) return values;
   return { ...values, clubMonogram: initialsOf(values.clubName) };
@@ -209,9 +217,11 @@ export function renderPackCard(
         tokens,
         brand: data?.brand,
         junior,
+        // A junior card shows a photo only behind the server's positive marker (ADR-007).
+        juniorPhotoAllowed: juniorPhotoAllowedOn(input),
         rows: rowValues(bound.rows),
         rowVariants: rowVariantsOf(bound.rows),
-        photoUrl: junior ? null : (data?.photoUrl ?? null),
+        photoUrl: junior && !juniorPhotoAllowedOn(input) ? null : (data?.photoUrl ?? null),
       },
     );
     return `<div class="pack-card-root" style="${rootStyle(tokens, junior, size, getPackManifest().inkTint, mode)}">${layers}</div>`;

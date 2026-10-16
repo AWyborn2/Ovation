@@ -13,7 +13,7 @@ import { getShirtNumberSettings } from "@workspace/db/shirt-numbers";
 import { logger } from "./logger";
 import { normalizeDraftStatus } from "./draft-status";
 import { recordDraftRevision } from "./draft-revisions";
-import { enrichDraft, isAutoPhoto } from "./draft-enrich";
+import { enrichDraft, isAutoPhoto, type PhotoSource } from "./draft-enrich";
 import { autoReadyAtFor } from "./effective-draft-state";
 import { templatedDesignFor } from "./kind-templates";
 import { placeDraft } from "./posting-writer";
@@ -69,6 +69,12 @@ export type DraftUpsert = {
    * rule uses it; the automatic photo order is unchanged.
    */
   featuredPlayerId?: number | null;
+  /**
+   * A photo the engine picked itself — a junior player's own uploaded photo
+   * (ADR-007). Used as is on insert and on every refresh (it counts as an
+   * automatic pick, so an admin's chosen photo still wins); `null` = none.
+   */
+  photo?: { url: string; source: PhotoSource } | null;
   /**
    * Finds a pre-key draft for the same event (drafts created before source keys
    * existed). The match returned gets the key backfilled.
@@ -319,6 +325,7 @@ export async function upsertDraftByKey(raw: DraftUpsert): Promise<DraftUpsertRes
       // A random photo rule is seeded by the event key, so a refresh keeps it.
       seed: input.sourceKey,
       featuredPlayerId: input.featuredPlayerId,
+      ...(input.photo !== undefined ? { photo: input.photo } : {}),
     });
 
   if (!existing) {

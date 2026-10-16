@@ -15,12 +15,17 @@ export type JuniorParticipantPrivacyRow = {
   privacyOverride: boolean;
   privacyOverrideBy: string | null;
   privacyOverrideAt: Date | null;
+  /** Photo consent withheld by an admin (ADR-007); absent on rows that predate it. */
+  photoWithheld?: boolean;
+  photoWithheldBy?: string | null;
+  photoWithheldAt?: Date | null;
 };
 
 export type JuniorParticipantPatchBody = {
   displayName?: string;
   isPrivate?: boolean;
   privacyOverride?: boolean;
+  photoWithheld?: boolean;
 };
 
 export type JuniorParticipantPatchPlan =
@@ -74,7 +79,43 @@ export function planJuniorParticipantPatch(
     prev.privacy_override_by = participant.privacyOverrideBy;
     prev.privacy_override_at = participant.privacyOverrideAt?.toISOString() ?? null;
   }
+  // Photo consent withheld (ADR-007): recorded with who and when, like the override.
+  if (
+    body.photoWithheld !== undefined &&
+    body.photoWithheld !== (participant.photoWithheld ?? false)
+  ) {
+    const by = body.photoWithheld ? adminName : null;
+    const at = body.photoWithheld ? now : null;
+    set.photoWithheld = body.photoWithheld;
+    set.photoWithheldBy = by;
+    set.photoWithheldAt = at;
+    patch.photo_withheld = body.photoWithheld;
+    patch.photo_withheld_by = by;
+    patch.photo_withheld_at = at?.toISOString() ?? null;
+    prev.photo_withheld = participant.photoWithheld ?? false;
+    prev.photo_withheld_by = participant.photoWithheldBy ?? null;
+    prev.photo_withheld_at = participant.photoWithheldAt?.toISOString() ?? null;
+  }
   return { ok: true, set, patch, prev };
+}
+
+/**
+ * Whether a planned patch takes a player's photo away (R6): consent withheld, or the
+ * player made private without an override — either way the engines must drop their photo.
+ */
+export function patchWithdrawsPhoto(
+  participant: JuniorParticipantPrivacyRow,
+  set: Record<string, unknown>,
+): boolean {
+  const withheld =
+    "photoWithheld" in set ? set.photoWithheld === true : !!participant.photoWithheld;
+  const isPrivate = "isPrivate" in set ? set.isPrivate === true : participant.isPrivate;
+  const override =
+    "privacyOverride" in set ? set.privacyOverride === true : participant.privacyOverride;
+  const allowedBefore =
+    !participant.photoWithheld && !(participant.isPrivate && !participant.privacyOverride);
+  const allowedAfter = !withheld && !(isPrivate && !override);
+  return allowedBefore && !allowedAfter;
 }
 
 /**

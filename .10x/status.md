@@ -1,8 +1,20 @@
 # Project Status
 
 **Project:** Ovation (white-label cricket club platform)
-**Active feature:** social-auto-queue-criteria
-**Phase:** Delivered — merged to `main` (7b4d0aee, PR #361) and released to production on 16 Oct 2026 (runbook §3b steps run by Ash)
+**Active feature:** junior-card-photos (social-auto-queue-criteria delivered 16 Oct 2026)
+**Phase:** Delivery — junior-card-photos PR to `main` from `claude/junior-card-photos`; Ash applies migration 0045 before republishing (runbook §3c)
+
+## Phase tracking — junior-card-photos
+
+| Phase            | State | Notes                                                                                                                        |
+| ---------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 0 Brainstorming  | Done  | Three decisions with Ash on 2026-10-16 (per-player withheld flag, default allow; admin library; all cards; public pages too) |
+| 1 Strategy       | Done  | Supersedes R21 of the junior sync plan; plan `docs/plans/2026-10-16-001-feat-junior-card-photos-plan.md`                     |
+| 2 Design (ADR)   | Done  | ADR-007 accepted                                                                                                             |
+| 3 Planning       | Done  | Units U1–U7 in the plan                                                                                                      |
+| 4 Implementation | Done  | decisions/sde, decisions/dba                                                                                                 |
+| 5 Verification   | Done  | reviews/2026-10-16-junior-card-photos-review.md — no blocking findings; browser check after republish                        |
+| 6 Delivery       | Open  | PR open, merge on green + CLEAN; migration 0045 is Ash's                                                                     |
 
 ## Phase tracking — social-auto-queue-criteria
 

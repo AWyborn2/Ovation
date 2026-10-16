@@ -12488,7 +12488,8 @@ export const UpdateJuniorParticipantParams = zod.object({
 export const UpdateJuniorParticipantBody = zod.object({
   "displayName": zod.string().min(1).optional(),
   "isPrivate": zod.boolean().optional(),
-  "privacyOverride": zod.boolean().optional().describe('Show a private player\'s name publicly anyway (true) or withhold it again (false). Can only be switched on for a private player.')
+  "privacyOverride": zod.boolean().optional().describe('Show a private player\'s name publicly anyway (true) or withhold it again (false). Can only be switched on for a private player.'),
+  "photoWithheld": zod.boolean().optional().describe('The family has not consented to photos (true): no photo of this player appears on any card or page, and open cards lose theirs at once. Off by default — the club\'s registration form carries consent.')
 })
 
 export const UpdateJuniorParticipantResponse = zod.object({
@@ -12497,7 +12498,84 @@ export const UpdateJuniorParticipantResponse = zod.object({
   "isPrivate": zod.boolean(),
   "privacyOverride": zod.boolean().describe('An admin has chosen to show this private player\'s name publicly.'),
   "privacyOverrideBy": zod.string().nullable().describe('The admin who set the override.'),
-  "privacyOverrideAt": zod.coerce.date().nullable().describe('When the override was set.')
+  "privacyOverrideAt": zod.coerce.date().nullable().describe('When the override was set.'),
+  "photoWithheld": zod.boolean().describe('The family has not consented to photos (ADR-007).'),
+  "photoWithheldBy": zod.string().nullable(),
+  "photoWithheldAt": zod.coerce.date().nullable()
+})
+
+
+/**
+ * @summary A junior player's photos (admin)
+ */
+export const ListJuniorPhotosParams = zod.object({
+  "id": zod.coerce.string().describe('PlayHQ participant_id')
+})
+
+export const ListJuniorPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "participantId": zod.string(),
+  "url": zod.string(),
+  "thumbUrl": zod.string().nullable(),
+  "isDefault": zod.boolean(),
+  "createdAt": zod.coerce.date()
+}).describe('A junior player\'s photo the club\'s admin uploaded. `url` and `thumbUrl` are gated: they serve the image only while the player is allowed a photo (not withheld, not private) or to a signed-in admin.')
+export const ListJuniorPhotosResponse = zod.array(ListJuniorPhotosResponseItem)
+
+
+/**
+ * @summary Add a photo of a junior player from an uploaded object (admin): converted, stored privately, the first becomes the default
+ */
+export const AddJuniorPhotoParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const AddJuniorPhotoBody = zod.object({
+  "objectPath": zod.string().describe('The uploaded object\'s path from `requestUploadUrl`; converted and re-stored privately.'),
+  "makeDefault": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Remove a junior player's photo (admin); the next becomes the default
+ */
+export const DeleteJuniorPhotoParams = zod.object({
+  "id": zod.coerce.string(),
+  "photoId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Make this the photo cards and the profile use (admin)
+ */
+export const SetDefaultJuniorPhotoParams = zod.object({
+  "id": zod.coerce.string(),
+  "photoId": zod.coerce.number()
+})
+
+export const SetDefaultJuniorPhotoResponse = zod.object({
+  "id": zod.number(),
+  "participantId": zod.string(),
+  "url": zod.string(),
+  "thumbUrl": zod.string().nullable(),
+  "isDefault": zod.boolean(),
+  "createdAt": zod.coerce.date()
+}).describe('A junior player\'s photo the club\'s admin uploaded. `url` and `thumbUrl` are gated: they serve the image only while the player is allowed a photo (not withheld, not private) or to a signed-in admin.')
+
+
+/**
+ * @summary A junior player's photo. Served only while the player is allowed a photo (not withheld, not private) or to a signed-in admin (ADR-007).
+ */
+export const GetJuniorPhotoParams = zod.object({
+  "photoId": zod.coerce.number()
+})
+
+
+/**
+ * @summary The thumbnail of a junior player's photo, gated like the photo
+ */
+export const GetJuniorPhotoThumbParams = zod.object({
+  "photoId": zod.coerce.number()
 })
 
 
@@ -12510,7 +12588,10 @@ export const ListJuniorPrivacyOverridesResponseItem = zod.object({
   "isPrivate": zod.boolean(),
   "privacyOverride": zod.boolean().describe('An admin has chosen to show this private player\'s name publicly.'),
   "privacyOverrideBy": zod.string().nullable().describe('The admin who set the override.'),
-  "privacyOverrideAt": zod.coerce.date().nullable().describe('When the override was set.')
+  "privacyOverrideAt": zod.coerce.date().nullable().describe('When the override was set.'),
+  "photoWithheld": zod.boolean().describe('The family has not consented to photos (ADR-007).'),
+  "photoWithheldBy": zod.string().nullable(),
+  "photoWithheldAt": zod.coerce.date().nullable()
 })
 export const ListJuniorPrivacyOverridesResponse = zod.array(ListJuniorPrivacyOverridesResponseItem)
 
@@ -12570,7 +12651,11 @@ export const ListJuniorPlayersResponseItem = zod.object({
   "isPrivate": zod.boolean().optional().describe('Only present\/true on admin requests with includePrivate.'),
   "privacyOverride": zod.boolean().optional().describe('Admin requests with includePrivate only. A private player an admin names publicly.'),
   "privacyOverrideBy": zod.string().nullish().describe('Admin requests with includePrivate only. The admin who set the override.'),
-  "privacyOverrideAt": zod.coerce.date().nullish().describe('Admin requests with includePrivate only. When the override was set.')
+  "privacyOverrideAt": zod.coerce.date().nullish().describe('Admin requests with includePrivate only. When the override was set.'),
+  "photoUrl": zod.string().nullish().describe('The player\'s default photo (gated URL), when they have one and are allowed a photo; admins also see it for a withheld player.'),
+  "photoWithheld": zod.boolean().optional().describe('Admin requests with includePrivate only. The family has not consented to photos.'),
+  "photoWithheldBy": zod.string().nullish().describe('Admin requests with includePrivate only.'),
+  "photoWithheldAt": zod.coerce.date().nullish().describe('Admin requests with includePrivate only.')
 })
 export const ListJuniorPlayersResponse = zod.array(ListJuniorPlayersResponseItem)
 
@@ -12601,6 +12686,7 @@ export const GetJuniorPlayerParams = zod.object({
 export const GetJuniorPlayerResponse = zod.object({
   "participantId": zod.string(),
   "displayName": zod.string(),
+  "photoUrl": zod.string().nullish().describe('The player\'s default photo (gated URL) when allowed; absent or null otherwise.'),
   "firstSeason": zod.string().nullish(),
   "lastSeason": zod.string().nullish(),
   "teams": zod.string().nullish(),

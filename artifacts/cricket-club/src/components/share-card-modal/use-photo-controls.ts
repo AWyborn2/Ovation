@@ -55,9 +55,12 @@ export function usePhotoControls({
    */
   draftPhotoUrl?: string | null;
 }) {
-  // Junior cards never carry a photo (KTD15).
+  // A junior card carries a photo only behind the server's positive marker: a junior
+  // player's own photo the family allows (ADR-007).
   const junior = !!input && "junior" in input && (input as { junior?: boolean }).junior === true;
-  const draftPhoto = junior ? null : (draftPhotoUrl ?? null);
+  const juniorAllowed =
+    !!input && (input as { juniorPhotoAllowed?: boolean }).juniorPhotoAllowed === true;
+  const draftPhoto = junior && !juniorAllowed ? null : (draftPhotoUrl ?? null);
   // Photo control state. We surface it when the tile is about a player or a
   // match, or already has a draft photo.
   const isMatchCard = matchId != null && playerId == null;

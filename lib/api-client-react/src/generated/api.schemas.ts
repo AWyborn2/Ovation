@@ -9261,6 +9261,23 @@ export interface JuniorPlayerSummary {
      * @nullable
      */
   privacyOverrideAt?: string | null;
+  /**
+     * The player's default photo (gated URL), when they have one and are allowed a photo; admins also see it for a withheld player.
+     * @nullable
+     */
+  photoUrl?: string | null;
+  /** Admin requests with includePrivate only. The family has not consented to photos. */
+  photoWithheld?: boolean;
+  /**
+     * Admin requests with includePrivate only.
+     * @nullable
+     */
+  photoWithheldBy?: string | null;
+  /**
+     * Admin requests with includePrivate only.
+     * @nullable
+     */
+  photoWithheldAt?: string | null;
 }
 
 export interface JuniorSeniorLinkSummary {
@@ -9510,6 +9527,27 @@ export interface UpdateJuniorParticipantBody {
   isPrivate?: boolean;
   /** Show a private player's name publicly anyway (true) or withhold it again (false). Can only be switched on for a private player. */
   privacyOverride?: boolean;
+  /** The family has not consented to photos (true): no photo of this player appears on any card or page, and open cards lose theirs at once. Off by default — the club's registration form carries consent. */
+  photoWithheld?: boolean;
+}
+
+/**
+ * A junior player's photo the club's admin uploaded. `url` and `thumbUrl` are gated: they serve the image only while the player is allowed a photo (not withheld, not private) or to a signed-in admin.
+ */
+export interface JuniorPhoto {
+  id: number;
+  participantId: string;
+  url: string;
+  /** @nullable */
+  thumbUrl: string | null;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface AddJuniorPhotoBody {
+  /** The uploaded object's path from `requestUploadUrl`; converted and re-stored privately. */
+  objectPath: string;
+  makeDefault?: boolean;
 }
 
 /**
@@ -9553,6 +9591,12 @@ export interface JuniorAdminParticipant {
      * @nullable
      */
   privacyOverrideAt: string | null;
+  /** The family has not consented to photos (ADR-007). */
+  photoWithheld: boolean;
+  /** @nullable */
+  photoWithheldBy: string | null;
+  /** @nullable */
+  photoWithheldAt: string | null;
 }
 
 export type JuniorStatCorrectionTargetTable = typeof JuniorStatCorrectionTargetTable[keyof typeof JuniorStatCorrectionTargetTable];
@@ -9666,6 +9710,11 @@ export interface JuniorPlayerMatchLine {
 export interface JuniorPlayerDetail {
   participantId: string;
   displayName: string;
+  /**
+     * The player's default photo (gated URL) when allowed; absent or null otherwise.
+     * @nullable
+     */
+  photoUrl?: string | null;
   /** @nullable */
   firstSeason?: string | null;
   /** @nullable */

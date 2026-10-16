@@ -74,6 +74,15 @@ export default function JuniorsPlayerDetail() {
               Junior Player
             </div>
             <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+              {player.photoUrl && (
+                // The player's own photo, shown only while the family allows one (ADR-007).
+                <img
+                  src={player.photoUrl}
+                  alt=""
+                  data-testid="junior-player-photo"
+                  className="h-20 w-20 rounded-full border-2 border-primary object-cover sm:h-24 sm:w-24"
+                />
+              )}
               <h1 className="text-[clamp(38px,4.6vw,64px)] leading-none">{player.displayName}</h1>
               {player.shirtNumber && (
                 <span

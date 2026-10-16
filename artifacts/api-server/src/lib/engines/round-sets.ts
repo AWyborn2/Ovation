@@ -33,6 +33,7 @@ import {
   type LadderCardInput,
 } from "@workspace/scorecard/ladder-input";
 import { upsertDraftByKey } from "../draft-upsert";
+import { juniorPhotoFields, loadJuniorPhotos, pickJuniorCardPhoto } from "../junior-photos";
 import { loadClubIdentity } from "../club-overlay";
 import { getTenantCentralClubId, getTenantPlayhqOrgId, tenantIsCentral } from "../tenant";
 import {
@@ -540,7 +541,7 @@ export async function generateWeekendWrapDrafts(
     key: string,
     cover: typeof seniorRows,
     slides: Record<string, unknown>[],
-    junior: { teams: JuniorTeamRef[] } | null,
+    junior: { teams: JuniorTeamRef[]; photo?: ReturnType<typeof juniorPhotoFields> } | null,
   ) =>
     upsertDraftByKey({
       tenantId,
@@ -555,9 +556,13 @@ export async function generateWeekendWrapDrafts(
         results: slides,
         // Any junior slide makes the whole set a junior card (KTD6).
         ...(junior ? { junior: true, juniorTeams: junior.teams } : {}),
+        // A junior-only set may feature one allowed player's own photo (ADR-007); a
+        // combined set keeps the senior pick and its junior slides stay photo-less.
+        ...(junior?.photo ? junior.photo.cardInput : {}),
       },
       appPath: "/fixtures",
       sourceMatchIsJunior: junior != null,
+      ...(junior?.photo ? { photo: junior.photo.photo } : {}),
       sourceImportedAt: now,
     });
 
@@ -586,6 +591,14 @@ export async function generateWeekendWrapDrafts(
           juniorSet.slides,
           {
             teams: juniorSet.teams,
+            photo: juniorPhotoFields(
+              pickJuniorCardPhoto(
+                await loadJuniorPhotos(tenantId, juniorSet.candidates),
+                juniorSet.candidates,
+                `weekendwrap-round:${season}:${round}:junior`,
+                juniorSet.preferred,
+              ),
+            ),
           },
         )
       ).action,
@@ -613,6 +626,9 @@ async function juniorRoundResults(
   }[];
   slides: Record<string, unknown>[];
   teams: JuniorTeamRef[];
+  /** Club players in these matches who may feature a photo, top performers first (ADR-007). */
+  candidates: string[];
+  preferred: string[];
 }> {
   const rows = await db
     .select({
@@ -638,6 +654,8 @@ async function juniorRoundResults(
     cover: [] as never[],
     slides: [] as Record<string, unknown>[],
     teams: [] as JuniorTeamRef[],
+    candidates: [] as string[],
+    preferred: [] as string[],
   } as {
     cover: {
       gradeLabel: string;
@@ -647,9 +665,15 @@ async function juniorRoundResults(
     }[];
     slides: Record<string, unknown>[];
     teams: JuniorTeamRef[];
+    candidates: string[];
+    preferred: string[];
   };
   if (allowed.length === 0) return out;
-  const [{ loadJuniorMatchDetail }, { loadJuniorNaming }, { getTenantBrand }] = await Promise.all([
+  const [
+    { loadJuniorMatchDetail, juniorPhotoCandidates },
+    { loadJuniorNaming },
+    { getTenantBrand },
+  ] = await Promise.all([
     import("../match-summary-drafter"),
     import("../junior-helpers"),
     import("../tenant-brand"),
@@ -674,6 +698,9 @@ async function juniorRoundResults(
       outcome: /\bwon\b/i.test(resultText) ? "won" : /\blost\b/i.test(resultText) ? "lost" : "draw",
     });
     out.slides.push(input as unknown as Record<string, unknown>);
+    const who = juniorPhotoCandidates(detail as Parameters<typeof juniorPhotoCandidates>[0]);
+    out.candidates.push(...who.candidates);
+    out.preferred.push(...who.preferred);
     const ref = { ageGroup: m.ageGroup ?? null, teamName: m.teamName ?? null };
     const key = `${ref.ageGroup ?? ""}|${ref.teamName ?? ""}`;
     if (!seen.has(key)) {

@@ -22,4 +22,10 @@ export interface JuniorAdminParticipant {
      * @nullable
      */
   privacyOverrideAt: Date | null;
+  /** The family has not consented to photos (ADR-007). */
+  photoWithheld: boolean;
+  /** @nullable */
+  photoWithheldBy: string | null;
+  /** @nullable */
+  photoWithheldAt: Date | null;
 }
