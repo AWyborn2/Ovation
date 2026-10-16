@@ -244,12 +244,13 @@ describe("Selection Hub junior sides", () => {
     });
   });
 
-  it("the junior team sheet prints numbers by profile id or name, never a held one", async () => {
+  it("the junior team sheet prints numbers by profile id or name, held ones included", async () => {
     const gold = (await board()).selections.find((s) => s.fixture.grade === "Hub Year 7 Gold")!;
     const sheet = await buildTeamSheet(tenantId, gold.id);
     const numberOf = (name: string) => sheet.players.find((p) => p.name === name)?.shirtNumber;
     expect(numberOf("Ava Jones")).toBe("12");
     expect(numberOf("Dan Jones")).toBe("9");
-    expect(numberOf("Ben Jones")).toBeNull();
+    // Held (not yet confirmed in PlayHQ) still prints for a picked player.
+    expect(numberOf("Ben Jones")).toBe("5");
   });
 });

@@ -29,7 +29,7 @@ import { weekendLabel } from "@/components/selection/labels";
 import { MoveDialog } from "@/components/selection/move-dialog";
 import { PlayerPool } from "@/components/selection/player-pool";
 import { ChangeLog, RoundHeader } from "@/components/selection/round-header";
-import { TeamCard } from "@/components/selection/team-card";
+import { TeamCard, finaliseHeadsUp } from "@/components/selection/team-card";
 import { usePointerDrag } from "@/components/selection/use-pointer-drag";
 import { AvailabilityContext } from "@/components/selection/availability-context";
 import { toast } from "@/hooks/use-toast";
@@ -89,9 +89,15 @@ export default function SelectionHub() {
   const playhqSync = useSyncSelectionFromPlayhq();
   const remind = useRemindSelectionNonResponders();
   const [syncingAll, setSyncingAll] = useState(false);
+  const [finalisingAll, setFinalisingAll] = useState(false);
   const confirm = useConfirm();
   const busy =
-    save.isPending || finalise.isPending || reopen.isPending || playhqSync.isPending || syncingAll;
+    save.isPending ||
+    finalise.isPending ||
+    reopen.isPending ||
+    playhqSync.isPending ||
+    syncingAll ||
+    finalisingAll;
 
   const say = (message: string) => setAnnouncement(message);
   const fail = (message: string) => {
@@ -280,6 +286,63 @@ export default function SelectionHub() {
     }
   };
 
+  /** Drafts the caller may finalise that have at least one player picked. */
+  const finaliseReady = (view?.selections ?? []).filter(
+    (s) => s.state === "draft" && s.canEdit && s.canFinalise && s.slots.some((x) => x.member),
+  );
+
+  // One side at a time at the version shown, like a single finalise: a side
+  // changed meanwhile (or started) is refused and named; the rest still finalise.
+  const doFinaliseAll = async () => {
+    const sides = finaliseReady;
+    if (sides.length === 0 || finalisingAll) return;
+    const notify = board.data?.availability === true;
+    const warned = sides.filter((s) => finaliseHeadsUp(s).length > 0);
+    const ok = await confirm({
+      title: `Finalise ${sides.length} ${sides.length === 1 ? "side" : "sides"}?`,
+      description: `${sides.map((s) => sideLabel(s)).join(", ")} will be published as ${
+        sides.length === 1 ? "its team list" : "their team lists"
+      }${notify ? ` and each selected ${section === "junior" ? "family" : "player"} gets an SMS and email` : ""}.${
+        warned.length
+          ? ` Heads up: ${warned
+              .map((s) => `${sideLabel(s)} (${finaliseHeadsUp(s).join(", ")})`)
+              .join("; ")}.`
+          : ""
+      }`,
+      confirmText: notify ? "Finalise and notify" : "Finalise all",
+    });
+    if (!ok) return;
+    setFinalisingAll(true);
+    let done = 0;
+    let notified = 0;
+    const unlisted: string[] = [];
+    const failed: string[] = [];
+    for (const side of sides) {
+      try {
+        const r = await finalise.mutateAsync({ id: side.id, data: { version: side.version } });
+        done++;
+        notified += r.messaged.selected;
+        unlisted.push(...(r.unlisted ?? []));
+      } catch (e) {
+        failed.push(`${sideLabel(side)} (${errorText(e)})`);
+      }
+    }
+    setFinalisingAll(false);
+    await refetch();
+    const msg = `${done} ${done === 1 ? "side" : "sides"} finalised and published.${
+      notify && notified ? ` ${notified} notified.` : ""
+    }${
+      unlisted.length
+        ? ` Not on the junior team list (no matching PlayHQ junior): ${unlisted.join(", ")}.`
+        : ""
+    }${failed.length ? ` Not finalised: ${failed.join("; ")}.` : ""}`;
+    if (failed.length) fail(msg);
+    else {
+      say(msg);
+      toast({ description: msg });
+    }
+  };
+
   const doRemind = () => {
     remind.mutate(
       { data: { section } },
@@ -330,6 +393,11 @@ export default function SelectionHub() {
             {playhqReady.length > 0 && (
               <Button variant="outline" disabled={busy} onClick={() => void doSyncAll()}>
                 {syncingAll ? "Syncing…" : `Sync all from PlayHQ (${playhqReady.length})`}
+              </Button>
+            )}
+            {finaliseReady.length > 0 && (
+              <Button disabled={busy} onClick={() => void doFinaliseAll()}>
+                {finalisingAll ? "Finalising…" : `Finalise all (${finaliseReady.length})`}
               </Button>
             )}
             <AddActivePlayer section={section} />
