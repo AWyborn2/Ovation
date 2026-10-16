@@ -194,6 +194,34 @@ describe("buildDraftSlots", () => {
     });
   });
 
+  it("a close spelling of one member's name matches them (Tahj / Taj Bashford)", () => {
+    const taj = member(95, "Taj Bashford");
+    const draft = buildDraftSlots({
+      lastList: [{ order: 1, playerId: 950, displayName: "Tahj Bashford" }],
+      members: [taj],
+      responses: answers({ 95: "yes" }),
+      fixtureDate: DATE,
+      requireYes: false,
+    });
+    expect(draft.slots[0]).toEqual({ memberId: 95 });
+  });
+
+  it("a close spelling never picks between two members, nor a different first name", () => {
+    const jayden = member(96, "Jayden Roe");
+    const jaiden = member(97, "Jaiden Roe");
+    const brody = member(98, "Brody Dreckow");
+    const pick = (displayName: string, members: ReturnType<typeof member>[]) =>
+      buildDraftSlots({
+        lastList: [{ order: 1, displayName }],
+        members,
+        responses: answers({}),
+        fixtureDate: DATE,
+        requireYes: false,
+      }).slots[0];
+    expect(pick("Jaden Roe", [jayden, jaiden]).memberId).toBeNull();
+    expect(pick("Ben Dreckow", [brody]).memberId).toBeNull();
+  });
+
   it("a link two members share is ignored; their names decide", () => {
     const mason = member(80, "Mason Head", { linkedPlayerId: 800 });
     const philip = member(81, "Philip Head", { linkedPlayerId: 800 });
