@@ -4,7 +4,7 @@ import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { plural } from "@/lib/plural";
-import { TWELFTH_INDEX, XI_SIZE, sideEditable, sideLabel } from "./apply-move";
+import { TWELFTH_INDEX, XI_SIZE, sideEditable, sideLabel, type Location } from "./apply-move";
 import { GAP_REASON, perthDateTime } from "./labels";
 import { PlayerChip, type ChipRole } from "./player-chip";
 import { TeamSheetButton } from "./team-sheet-button";
@@ -58,8 +58,8 @@ export function TeamCard({
   /** A save or finalise is in flight. */
   busy: boolean;
   draggingId: number | null;
-  onOpenMember: (memberId: number) => void;
-  onChipPointerDown: (e: PointerEvent<HTMLElement>, memberId: number) => void;
+  onOpenMember: (memberId: number, from: Location) => void;
+  onChipPointerDown: (e: PointerEvent<HTMLElement>, memberId: number, from: Location) => void;
   onRole: (role: "captain" | "keeper", memberId: number | null) => void;
   onFinalise: () => void;
   onReopen: () => void;
@@ -213,8 +213,12 @@ export function TeamCard({
                 inSide={label}
                 draggable={edit && !busy}
                 dragging={draggingId === slot.memberId}
-                onOpen={() => onOpenMember(slot.memberId!)}
-                onPointerDown={(e) => onChipPointerDown(e, slot.memberId!)}
+                onOpen={() =>
+                  onOpenMember(slot.memberId!, { kind: "side", sideId: side.id, index: i })
+                }
+                onPointerDown={(e) =>
+                  onChipPointerDown(e, slot.memberId!, { kind: "side", sideId: side.id, index: i })
+                }
               />
             ) : (
               <div className="flex min-h-9 min-w-0 flex-1 items-center justify-between gap-2 rounded-md border-[1.5px] border-dashed border-border px-2.5 py-1.5 text-[12.5px] text-muted-foreground">

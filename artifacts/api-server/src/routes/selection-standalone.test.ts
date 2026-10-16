@@ -164,7 +164,8 @@ describe("Selection Hub without availability", () => {
     expect(side.slots.slice(0, 11).map((s) => s.memberId)).toEqual(m.slice(1, 12));
     expect(side.captainMemberId).toBe(m[1]);
     expect(side.keeperMemberId).toBe(m[1]);
-    expect(b.pool).toHaveLength(0);
+    // The pool is the whole squad: all 11 are picked, and still listed.
+    expect(b.pool).toHaveLength(11);
   });
 
   it("a second load drafts nothing new", async () => {

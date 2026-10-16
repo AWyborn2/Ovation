@@ -63,8 +63,11 @@ export function PlayerChip({
   dragging = false,
   onOpen,
   onPointerDown,
+  alsoIn,
 }: {
   member: SelectionMember;
+  /** Sides a pool player is already in (shown as a badge). */
+  alsoIn?: readonly string[];
   role?: ChipRole;
   /** The grade of the side the chip sits in; null in the pool. */
   inSide?: string | null;
@@ -122,6 +125,14 @@ export function PlayerChip({
             className="rounded bg-primary px-1.5 py-0.5 text-[10.5px] font-semibold leading-none text-primary-foreground"
           >
             {role}
+          </span>
+        )}
+        {alsoIn && alsoIn.length > 0 && (
+          <span
+            title={`Already in ${alsoIn.join(", ")}`}
+            className="rounded bg-muted px-1.5 py-0.5 text-[10.5px] font-semibold leading-none text-muted-foreground"
+          >
+            {alsoIn.map((g) => gradeCode(g)).join("·")}
           </span>
         )}
         {member.junior && (

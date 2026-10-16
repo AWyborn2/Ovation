@@ -26,6 +26,7 @@ import {
   type MemberIdentity,
 } from "./availability-grades";
 import { loadJuniorIdentity } from "./junior-shirt-numbers";
+import { loadSideFixtures, sideFixtureKey } from "./selection-fixtures";
 import { juniorMemberResolver } from "./shirt-number-squad";
 
 /**
@@ -98,7 +99,11 @@ export function buildDraftSlots(input: {
   members: readonly MemberIdentity[];
   responses: ResponsesByMember;
   fixtureDate: string;
-  placed?: Set<number>;
+  /**
+   * Members who can't play this game (a clash with a side they're already in);
+   * the members this draft places are added. A `Set` or a `PlacementLedger` view.
+   */
+  placed?: { has(id: number): boolean; add(id: number): void };
   /**
    * Keep a listed player only on a Yes (the availability flow, default). False
    * for a club not using availability: everyone listed stays unless they said No.
@@ -157,6 +162,73 @@ export type RoundDraftSummary = {
   selectionIds: number[];
 };
 
+/** When a side's game runs, for clash checks: start to start + its length. */
+export type GameWindow = { from: number; to: number };
+
+const HOUR = 3_600_000;
+
+/**
+ * A game's window. A T20 (or shorter) game or a junior game is about 3.5 hours;
+ * anything else (a one-day or multi-day day's play) about 7. Two games clash
+ * only when their windows overlap, so a player can play Saturday and Sunday, a
+ * junior game and a senior one, or two T20s with spaced start times.
+ */
+export function gameWindow(
+  startAt: Date,
+  opts: { format?: string | null; junior?: boolean } = {},
+): GameWindow {
+  const short = opts.junior || /\bt\s?(10|20)\b|twenty/i.test(opts.format ?? "");
+  const from = startAt.getTime();
+  return { from, to: from + (short ? 3.5 : 7) * HOUR };
+}
+
+/**
+ * Who is already playing when. A member clashes with a game only when one of
+ * their placed games overlaps it in time; `view` gives `buildDraftSlots` the
+ * set-like `placed` for one game.
+ */
+export class PlacementLedger {
+  private readonly games = new Map<number, GameWindow[]>();
+
+  place(memberId: number, w: GameWindow): void {
+    const list = this.games.get(memberId) ?? [];
+    list.push(w);
+    this.games.set(memberId, list);
+  }
+
+  clashes(memberId: number, w: GameWindow): boolean {
+    return (this.games.get(memberId) ?? []).some((g) => g.from < w.to && w.from < g.to);
+  }
+
+  view(w: GameWindow): { has(id: number): boolean; add(id: number): void } {
+    return { has: (id) => this.clashes(id, w), add: (id) => this.place(id, w) };
+  }
+}
+
+/** The ledger of a round's existing sides (senior and junior), by their games' times. */
+async function roundLedger(tenantId: number, roundId: number): Promise<PlacementLedger> {
+  const rows = await db
+    .select({
+      fixtureId: selectionsTable.fixtureId,
+      juniorFixtureId: selectionsTable.juniorFixtureId,
+      slots: selectionsTable.slots,
+    })
+    .from(selectionsTable)
+    .where(and(eq(selectionsTable.tenantId, tenantId), eq(selectionsTable.roundId, roundId)));
+  const fixtures = await loadSideFixtures(db, tenantId, rows);
+  const ledger = new PlacementLedger();
+  for (const r of rows) {
+    const f = fixtures.get(sideFixtureKey(r));
+    if (!f) continue;
+    const w = gameWindow(f.startAt, {
+      format: f.senior?.matchFormat ?? null,
+      junior: f.kind === "junior",
+    });
+    for (const slot of r.slots) if (slot.memberId != null) ledger.place(slot.memberId, w);
+  }
+  return ledger;
+}
+
 /**
  * Creates the draft selection for every fixture in the round's window that has
  * none yet. Tenant-scoped throughout: a round id from another tenant finds no
@@ -179,7 +251,12 @@ export async function buildRoundDrafts(
 
   const window = roundWindow(round.weekendDate);
   const fixtures = await db
-    .select({ id: fixturesTable.id, grade: fixturesTable.grade, startAt: fixturesTable.startAt })
+    .select({
+      id: fixturesTable.id,
+      grade: fixturesTable.grade,
+      startAt: fixturesTable.startAt,
+      matchFormat: fixturesTable.matchFormat,
+    })
     .from(fixturesTable)
     .where(
       and(
@@ -189,7 +266,9 @@ export async function buildRoundDrafts(
       ),
     )
     .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id));
-  if (fixtures.length === 0) return draftJuniorSides(tenantId, round, now, opts, summary);
+  // Who already plays when, across every side of the round (senior and junior).
+  const ledger = await roundLedger(tenantId, roundId);
+  if (fixtures.length === 0) return draftJuniorSides(tenantId, round, now, opts, summary, ledger);
 
   // Sides already drafted: their fixtures are skipped and their members are
   // placed, along with anyone in another side of this round.
@@ -212,10 +291,6 @@ export async function buildRoundDrafts(
       ),
     );
   const existing = new Set(existingRows.map((r) => r.fixtureId));
-  const placed = new Set<number>();
-  for (const r of existingRows) {
-    for (const s of r.slots) if (s.memberId != null) placed.add(s.memberId);
-  }
 
   // Each grade's most recent non-empty team list from before the round.
   const grades = [...new Set(fixtures.map((f) => f.grade))];
@@ -278,7 +353,7 @@ export async function buildRoundDrafts(
       members,
       responses,
       fixtureDate: perthDate(f.startAt),
-      placed,
+      placed: ledger.view(gameWindow(f.startAt, { format: f.matchFormat })),
       requireYes: opts.requireYes,
       prefer: (m) => seniorRecord.has(m.id),
     });
@@ -322,7 +397,7 @@ export async function buildRoundDrafts(
       summary.selectionIds.push(created);
     }
   }
-  return draftJuniorSides(tenantId, round, now, opts, summary);
+  return draftJuniorSides(tenantId, round, now, opts, summary, ledger);
 }
 
 /**
@@ -374,6 +449,7 @@ async function draftJuniorSides(
   now: Date,
   opts: { requireYes?: boolean },
   summary: RoundDraftSummary,
+  ledger: PlacementLedger,
 ): Promise<RoundDraftSummary> {
   const window = roundWindow(round.weekendDate);
   const fixtures = await db
@@ -405,9 +481,6 @@ async function draftJuniorSides(
       ),
     );
   const existing = new Set(roundSides.map((r) => r.juniorFixtureId));
-  const placed = new Set<number>();
-  for (const r of roundSides)
-    for (const x of r.slots) if (x.memberId != null) placed.add(x.memberId);
 
   // Each team's most recent non-empty junior list from before the round.
   const teams = [...new Set(fixtures.flatMap((f) => (f.teamName ? [f.teamName] : [])))];
@@ -477,7 +550,7 @@ async function draftJuniorSides(
       members,
       responses,
       fixtureDate: perthDate(f.startAt!),
-      placed,
+      placed: ledger.view(gameWindow(f.startAt!, { junior: true })),
       requireYes: opts.requireYes,
     });
     const created = await db.transaction(async (tx) => {

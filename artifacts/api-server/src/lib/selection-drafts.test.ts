@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import type { AvailabilityStatus, TeamListPlayer } from "@workspace/db";
-import { buildDraftSlots, type ResponsesByMember } from "./selection-drafts";
+import {
+  PlacementLedger,
+  buildDraftSlots,
+  gameWindow,
+  type ResponsesByMember,
+} from "./selection-drafts";
 import type { MemberIdentity } from "./availability-grades";
 
 /**
@@ -374,5 +379,64 @@ describe("buildDraftSlots", () => {
     expect(draft.slots[1]).toEqual({ memberId: 2 });
     // The shared set now holds this side's members too, for the next fixture.
     expect([...placed].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 50]);
+  });
+});
+
+describe("game clashes (PlacementLedger)", () => {
+  const at = (iso: string) => new Date(iso);
+  // Saturday 12:00 Perth one-day game (04:00Z, about 7 hours).
+  const satOneDay = gameWindow(at("2026-10-17T04:00:00Z"), { format: "One Day" });
+
+  it("a Saturday game and a Sunday game don't clash", () => {
+    const ledger = new PlacementLedger();
+    ledger.place(1, satOneDay);
+    expect(ledger.clashes(1, gameWindow(at("2026-10-18T01:00:00Z"), { format: "One Day" }))).toBe(
+      false,
+    );
+  });
+
+  it("two one-day games the same afternoon clash", () => {
+    const ledger = new PlacementLedger();
+    ledger.place(1, satOneDay);
+    expect(ledger.clashes(1, gameWindow(at("2026-10-17T04:15:00Z")))).toBe(true);
+  });
+
+  it("two T20s with spaced start times on one day don't clash", () => {
+    const ledger = new PlacementLedger();
+    ledger.place(1, gameWindow(at("2026-10-17T01:00:00Z"), { format: "T20" }));
+    expect(ledger.clashes(1, gameWindow(at("2026-10-17T05:00:00Z"), { format: "T20" }))).toBe(
+      false,
+    );
+  });
+
+  it("a morning junior game and an afternoon senior game don't clash; two at once do", () => {
+    const ledger = new PlacementLedger();
+    ledger.place(1, gameWindow(at("2026-10-17T00:30:00Z"), { junior: true }));
+    expect(ledger.clashes(1, satOneDay)).toBe(false);
+    expect(ledger.clashes(1, gameWindow(at("2026-10-17T01:00:00Z"), { junior: true }))).toBe(true);
+  });
+
+  it("drafting leaves a gap only for a clashing game", () => {
+    const ledger = new PlacementLedger();
+    ledger.place(1, satOneDay);
+    const sunday = buildDraftSlots({
+      lastList: LAST,
+      members: MEMBERS,
+      responses: answers(allYes()),
+      fixtureDate: DATE,
+      placed: ledger.view(gameWindow(at("2026-10-18T01:00:00Z"))),
+    });
+    expect(sunday.slots[0]).toEqual({ memberId: 1 });
+    const sameTime = buildDraftSlots({
+      lastList: LAST,
+      members: MEMBERS,
+      responses: answers(allYes()),
+      fixtureDate: DATE,
+      placed: ledger.view(gameWindow(at("2026-10-17T05:00:00Z"))),
+    });
+    expect(sameTime.slots[0]).toEqual({
+      memberId: null,
+      gap: { name: LAST[0].displayName, reason: "picked_elsewhere" },
+    });
   });
 });
