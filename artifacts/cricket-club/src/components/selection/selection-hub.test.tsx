@@ -415,6 +415,27 @@ describe("PlayHQ's published side", () => {
     expect(req.body).toEqual({ version: board.selections[0].version });
   });
 
+  it("Sync all replaces every draft PlayHQ has named, one at a time at its version", async () => {
+    const board = makeBoard();
+    const drafts = board.selections.filter((x) => x.state === "draft" && x.canEdit);
+    expect(drafts.length).toBeGreaterThanOrEqual(2);
+    for (const d of drafts.slice(0, 2)) d.playhqPlayers = 11;
+    const requests = stubApi(board);
+    renderHub();
+    fireEvent.click(await screen.findByRole("button", { name: "Sync all from PlayHQ (2)" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Use PlayHQ teams" }));
+    await waitFor(() =>
+      expect(requests.filter((r) => r.url.includes("/playhq-sync"))).toHaveLength(2),
+    );
+    const synced = requests.filter((r) => r.url.includes("/playhq-sync"));
+    expect(synced.map((r) => r.url)).toEqual(
+      drafts.slice(0, 2).map((d) => expect.stringContaining(`/api/selection/${d.id}/playhq-sync`)),
+    );
+    expect(synced.map((r) => r.body)).toEqual(
+      drafts.slice(0, 2).map((d) => ({ version: d.version })),
+    );
+  });
+
   it("shows no PlayHQ button when PlayHQ hasn't named the side", async () => {
     stubApi(makeBoard());
     renderHub();

@@ -105,7 +105,7 @@ export type EventActor = {
 /** A refused board action, carried to the route as an HTTP status and message. */
 export class SelectionError extends Error {
   constructor(
-    readonly status: 400 | 403 | 404 | 409,
+    readonly status: 400 | 403 | 404 | 409 | 503,
     message: string,
   ) {
     super(message);
@@ -1085,14 +1085,28 @@ async function publishJuniorSide(
       ...(role ? { role } : {}),
     });
   });
-  await tx
-    .insert(juniorTeamListsTable)
-    .values({ tenantId, juniorFixtureId, players, isPublished: true, source: "selection" })
-    .onConflictDoUpdate({
-      target: [juniorTeamListsTable.tenantId, juniorTeamListsTable.juniorFixtureId],
-      set: { players, isPublished: true, source: "selection", updatedAt: new Date() },
-      setWhere: ne(juniorTeamListsTable.source, "playhq"),
-    });
+  try {
+    await tx
+      .insert(juniorTeamListsTable)
+      .values({ tenantId, juniorFixtureId, players, isPublished: true, source: "selection" })
+      .onConflictDoUpdate({
+        target: [juniorTeamListsTable.tenantId, juniorTeamListsTable.juniorFixtureId],
+        set: { players, isPublished: true, source: "selection", updatedAt: new Date() },
+        setWhere: ne(juniorTeamListsTable.source, "playhq"),
+      });
+  } catch (e) {
+    // A database that missed migration 0043's widened source check (the publish
+    // schema sync doesn't rewrite a CHECK) refuses the row: say so plainly.
+    const code =
+      (e as { code?: string } | null)?.code ?? (e as { cause?: { code?: string } })?.cause?.code;
+    if (code === "23514") {
+      throw new SelectionError(
+        503,
+        "Junior sides can't be published yet: the club's database is missing an update (junior team list source 'selection', migration 0043). Ask your Ovation admin to apply it.",
+      );
+    }
+    throw e;
+  }
   return { players, unlisted };
 }
 

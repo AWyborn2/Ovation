@@ -12,6 +12,8 @@ import {
   type SquadSection,
 } from "@workspace/api-client-react";
 import { AddActivePlayer } from "@/components/add-active-player";
+import { useConfirm } from "@/components/confirm-dialog";
+import { Button } from "@/components/ui/button";
 import { SelectionCompareLink } from "@/components/selection/compare-link";
 import { CaptainShell } from "@/components/captain-shell";
 import { EmptyState, LoadingState, QueryError } from "@/components/data-states";
@@ -86,7 +88,10 @@ export default function SelectionHub() {
   const reopen = useReopenSelection();
   const playhqSync = useSyncSelectionFromPlayhq();
   const remind = useRemindSelectionNonResponders();
-  const busy = save.isPending || finalise.isPending || reopen.isPending || playhqSync.isPending;
+  const [syncingAll, setSyncingAll] = useState(false);
+  const confirm = useConfirm();
+  const busy =
+    save.isPending || finalise.isPending || reopen.isPending || playhqSync.isPending || syncingAll;
 
   const say = (message: string) => setAnnouncement(message);
   const fail = (message: string) => {
@@ -234,6 +239,47 @@ export default function SelectionHub() {
     );
   };
 
+  /** Drafts this section can take PlayHQ's side for: named in PlayHQ, editable, not final. */
+  const playhqReady = (view?.selections ?? []).filter(
+    (s) => s.state === "draft" && s.canEdit && s.playhqPlayers != null,
+  );
+
+  // One side at a time, each at the version shown, so a side changed meanwhile is
+  // refused rather than overwritten; the rest still sync.
+  const doSyncAll = async () => {
+    const sides = playhqReady;
+    if (sides.length === 0 || syncingAll) return;
+    const ok = await confirm({
+      title: `Use PlayHQ's teams for ${sides.length} ${sides.length === 1 ? "side" : "sides"}?`,
+      description: `${sides.map((s) => sideLabel(s)).join(", ")}: each draft is replaced by the team named in PlayHQ. Anyone not on your squad list, or already in another side, is left as a gap. Nothing is published until you finalise.`,
+      confirmText: "Use PlayHQ teams",
+    });
+    if (!ok) return;
+    setSyncingAll(true);
+    let synced = 0;
+    let gaps = 0;
+    const failed: string[] = [];
+    for (const side of sides) {
+      try {
+        const r = await playhqSync.mutateAsync({ id: side.id, data: { version: side.version } });
+        synced++;
+        gaps += r.slots.filter((x) => x.gap).length;
+      } catch (e) {
+        failed.push(`${sideLabel(side)} (${errorText(e)})`);
+      }
+    }
+    setSyncingAll(false);
+    await refetch();
+    const msg = `${synced} ${synced === 1 ? "side now matches" : "sides now match"} PlayHQ.${
+      gaps ? ` ${gaps} ${gaps === 1 ? "gap" : "gaps"} to fill.` : ""
+    }${failed.length ? ` Not synced: ${failed.join("; ")}.` : ""}`;
+    if (failed.length) fail(msg);
+    else {
+      say(msg);
+      toast({ description: msg });
+    }
+  };
+
   const doRemind = () => {
     remind.mutate(
       { data: { section } },
@@ -281,6 +327,11 @@ export default function SelectionHub() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <SelectionCompareLink junior={junior} />
+            {playhqReady.length > 0 && (
+              <Button variant="outline" disabled={busy} onClick={() => void doSyncAll()}>
+                {syncingAll ? "Syncing…" : `Sync all from PlayHQ (${playhqReady.length})`}
+              </Button>
+            )}
             <AddActivePlayer section={section} />
             <div
               role="group"
