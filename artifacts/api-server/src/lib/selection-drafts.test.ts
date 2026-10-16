@@ -157,6 +157,50 @@ describe("buildDraftSlots", () => {
     expect(buildDraftSlots(base).slots[0].memberId).toBeNull();
   });
 
+  it("a sibling's wrong link never puts them in the other's slot (shared PlayHQ account)", () => {
+    // Ben's record is linked to Noah's player (700); Noah's is unlinked.
+    const ben = member(70, "Ben Dreckow", { linkedPlayerId: 700 });
+    const noah = member(71, "Noah Dreckow");
+    const list: TeamListPlayer[] = [
+      { order: 1, playerId: 700, displayName: "Noah Dreckow" },
+      { order: 2, playerId: 701, displayName: "Ben Dreckow" },
+    ];
+    const draft = buildDraftSlots({
+      lastList: list,
+      members: [ben, noah],
+      responses: answers({ 70: "yes", 71: "yes" }),
+      fixtureDate: DATE,
+    });
+    expect(draft.slots.slice(0, 2)).toEqual([{ memberId: 71 }, { memberId: 70 }]);
+  });
+
+  it("a link two members share is ignored; their names decide", () => {
+    const mason = member(80, "Mason Head", { linkedPlayerId: 800 });
+    const philip = member(81, "Philip Head", { linkedPlayerId: 800 });
+    const list: TeamListPlayer[] = [
+      { order: 1, playerId: 800, displayName: "Philip Head" },
+      { order: 2, playerId: 801, displayName: "Mason Head" },
+    ];
+    const draft = buildDraftSlots({
+      lastList: list,
+      members: [mason, philip],
+      responses: answers({ 80: "yes", 81: "yes" }),
+      fixtureDate: DATE,
+    });
+    expect(draft.slots.slice(0, 2)).toEqual([{ memberId: 81 }, { memberId: 80 }]);
+  });
+
+  it("a correct link still wins for a different spelling of the name", () => {
+    const tom = member(90, "Thomas Brooks", { linkedPlayerId: 900 });
+    const draft = buildDraftSlots({
+      lastList: [{ order: 1, playerId: 900, displayName: "T. Brooks" }],
+      members: [tom],
+      responses: answers({ 90: "yes" }),
+      fixtureDate: DATE,
+    });
+    expect(draft.slots[0]).toEqual({ memberId: 90 });
+  });
+
   it("matches an unlinked entry by preferred name plus last name", () => {
     const tom = member(50, "Thomas Brooks", { preferredName: "Tom" });
     const list: TeamListPlayer[] = [{ order: 1, displayName: "Tom Brooks" }];

@@ -67,42 +67,74 @@ function memberNameKeys(m: MemberIdentity): string[] {
  * Matches team-list entries to members: by linked `playerId` first, then
  * by normalised display name (preferred or first name plus last name). A
  * fill-in id (>= 90000) never matches. A name match skips members linked
- * to a different player, and an ambiguous name prefers the one active member;
- * still ambiguous, it stays unmatched rather than guess.
+ * to a different player, and an ambiguous name prefers the one active member
+ * (then `prefer`); still ambiguous, it stays unmatched rather than guess.
+ *
+ * A link is not trusted over a plainly different name, because a squad
+ * member can be linked to the wrong person (PlayHQ accounts hold a whole
+ * family, so a link can land on a sibling):
+ * - a link two members share belongs to neither and is ignored;
+ * - an id hit whose name differs from the entry gives way to the one member
+ *   carrying the entry's exact name, so a sibling never takes the slot;
+ * - an exact, unique name still matches a member linked elsewhere when no
+ *   member is linked to the entry's player.
  */
 export function buildMemberMatcher<M extends MemberIdentity>(
   members: readonly M[],
   /** Breaks a tie between same-named members (e.g. a senior side prefers the senior record). */
   prefer?: (m: M) => boolean,
 ): (entry: ListEntry) => M | null {
+  const linkUse = new Map<number, number>();
+  for (const m of members) {
+    if (m.linkedPlayerId != null)
+      linkUse.set(m.linkedPlayerId, (linkUse.get(m.linkedPlayerId) ?? 0) + 1);
+  }
+  /** The member's link, or null when it is a fill-in id or shared with another member. */
+  const linkOf = (m: M) =>
+    m.linkedPlayerId != null &&
+    m.linkedPlayerId < FILL_IN_THRESHOLD &&
+    linkUse.get(m.linkedPlayerId) === 1
+      ? m.linkedPlayerId
+      : null;
   const byPlayerId = new Map<number, M>();
   const byName = new Map<string, M[]>();
   for (const m of members) {
-    if (m.linkedPlayerId != null && m.linkedPlayerId < FILL_IN_THRESHOLD) {
-      if (!byPlayerId.has(m.linkedPlayerId)) byPlayerId.set(m.linkedPlayerId, m);
-    }
+    const link = linkOf(m);
+    if (link != null) byPlayerId.set(link, m);
     for (const key of memberNameKeys(m)) {
       const list = byName.get(key) ?? [];
       list.push(m);
       byName.set(key, list);
     }
   }
-  return (entry) => {
-    const pid = entry.playerId;
-    if (pid != null && pid >= FILL_IN_THRESHOLD) return null;
-    if (pid != null) {
-      const linked = byPlayerId.get(pid);
-      if (linked) return linked;
-    }
-    let candidates = (byName.get(normaliseName(entry.displayName)) ?? []).filter(
-      (m) => m.linkedPlayerId == null || pid == null || m.linkedPlayerId === pid,
-    );
+  const narrow = (list: M[]): M | null => {
+    let candidates = list;
     if (candidates.length > 1) candidates = candidates.filter((m) => m.active);
     if (candidates.length > 1 && prefer) {
       const preferred = candidates.filter(prefer);
       if (preferred.length === 1) candidates = preferred;
     }
     return candidates.length === 1 ? candidates[0] : null;
+  };
+  return (entry) => {
+    const pid = entry.playerId;
+    if (pid != null && pid >= FILL_IN_THRESHOLD) return null;
+    const key = normaliseName(entry.displayName);
+    const named = byName.get(key) ?? [];
+    const linked = pid != null ? byPlayerId.get(pid) : undefined;
+    if (linked) {
+      // The linked member, unless the entry plainly names someone else on the squad.
+      if (!key || memberNameKeys(linked).includes(key)) return linked;
+      const other = narrow(named.filter((m) => m.id !== linked.id));
+      return other ?? linked;
+    }
+    // Nobody is linked to this player: a member linked elsewhere still matches
+    // on their exact name (their link is wrong, or a sibling's).
+    const unlinkedOrSame = named.filter((m) => {
+      const link = linkOf(m);
+      return link == null || pid == null || link === pid;
+    });
+    return narrow(unlinkedOrSame) ?? (pid != null ? narrow(named) : null);
   };
 }
 
