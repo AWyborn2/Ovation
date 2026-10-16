@@ -72,6 +72,8 @@ function memberNameKeys(m: MemberIdentity): string[] {
  */
 export function buildMemberMatcher<M extends MemberIdentity>(
   members: readonly M[],
+  /** Breaks a tie between same-named members (e.g. a senior side prefers the senior record). */
+  prefer?: (m: M) => boolean,
 ): (entry: ListEntry) => M | null {
   const byPlayerId = new Map<number, M>();
   const byName = new Map<string, M[]>();
@@ -96,6 +98,10 @@ export function buildMemberMatcher<M extends MemberIdentity>(
       (m) => m.linkedPlayerId == null || pid == null || m.linkedPlayerId === pid,
     );
     if (candidates.length > 1) candidates = candidates.filter((m) => m.active);
+    if (candidates.length > 1 && prefer) {
+      const preferred = candidates.filter(prefer);
+      if (preferred.length === 1) candidates = preferred;
+    }
     return candidates.length === 1 ? candidates[0] : null;
   };
 }

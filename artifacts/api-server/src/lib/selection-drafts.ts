@@ -104,6 +104,8 @@ export function buildDraftSlots(input: {
    * for a club not using availability: everyone listed stays unless they said No.
    */
   requireYes?: boolean;
+  /** Breaks a tie between same-named members (see `buildMemberMatcher`). */
+  prefer?: (m: MemberIdentity) => boolean;
 }): DraftSide {
   const { lastList, members, responses, fixtureDate } = input;
   const elsewhere = input.placed ?? new Set<number>();
@@ -112,7 +114,7 @@ export function buildDraftSlots(input: {
   let keeperMemberId: number | null = null;
   if (!lastList || lastList.length === 0) return { slots, captainMemberId, keeperMemberId };
 
-  const match = buildMemberMatcher(members);
+  const match = buildMemberMatcher(members, input.prefer);
   const placed = new Set<number>();
   const entries = [...lastList].sort((a, b) => a.order - b.order).slice(0, SIDE_SIZE);
 
@@ -251,9 +253,13 @@ export async function buildRoundDrafts(
       linkedPlayerId: squadMembersTable.linkedPlayerId,
       active: squadMembersTable.active,
       gradeHint: squadMembersTable.gradeHint,
+      section: squadMembersTable.section,
     })
     .from(squadMembersTable)
     .where(eq(squadMembersTable.tenantId, tenantId));
+  // Juniors play up in senior sides, so every member is matched; a name on both
+  // registers is the senior record.
+  const seniorRecord = new Set(members.filter((m) => m.section === "senior").map((m) => m.id));
 
   const responses = await loadResponses(tenantId, roundId, window.from, window.to);
 
@@ -274,6 +280,7 @@ export async function buildRoundDrafts(
       fixtureDate: perthDate(f.startAt),
       placed,
       requireYes: opts.requireYes,
+      prefer: (m) => seniorRecord.has(m.id),
     });
 
     const created = await db.transaction(async (tx) => {

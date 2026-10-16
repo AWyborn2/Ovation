@@ -48,6 +48,7 @@ describe("Selection Hub: use PlayHQ's published side", () => {
   let adminCookie = "";
   const s: number[] = [];
   const j: number[] = [];
+  let eve = 0;
 
   const asAdmin = (r: request.Test) =>
     r.set("Cookie", adminCookie).set("x-tenant-id", String(tenantId));
@@ -104,6 +105,15 @@ describe("Selection Hub: use PlayHQ's published side", () => {
         .returning();
       j[i] = row.id;
     }
+    // Eve is on the junior register only and plays up; Drew is on both registers.
+    const [e] = await db
+      .insert(squadMembersTable)
+      .values({ tenantId, firstName: "Eve", lastName: "Lee", section: "junior" })
+      .returning();
+    eve = e.id;
+    await db
+      .insert(squadMembersTable)
+      .values({ tenantId, firstName: "Drew", lastName: "Smith", section: "junior" });
 
     const weekendDate = roundWeekendFor(DEFAULT_SCHEDULE, new Date());
     const sat = perthDayStart(weekendDate).getTime();
@@ -126,6 +136,8 @@ describe("Selection Hub: use PlayHQ's published side", () => {
         { order: 1, displayName: "Brett Smith", role: "C" },
         { order: 2, displayName: "Adam Smith", role: "WK" },
         { order: 3, displayName: "Zed Newcomer" },
+        { order: 4, displayName: "Eve Lee" },
+        { order: 5, displayName: "Drew Smith" },
       ],
     });
     const [jf] = await db
@@ -164,7 +176,7 @@ describe("Selection Hub: use PlayHQ's published side", () => {
   });
 
   it("flags each side PlayHQ has named, with its size", async () => {
-    expect((await sides("senior"))[0].playhqPlayers).toBe(3);
+    expect((await sides("senior"))[0].playhqPlayers).toBe(5);
     expect((await sides("junior"))[0].playhqPlayers).toBe(3);
   });
 
@@ -175,6 +187,9 @@ describe("Selection Hub: use PlayHQ's published side", () => {
       .expect(200);
     const after = res.body as Side;
     expect(after.slots.slice(0, 3).map((x) => x.memberId)).toEqual([s[2], s[1], null]);
+    // A junior playing up is placed; a name on both registers is the senior record.
+    expect(after.slots[3].memberId).toBe(eve);
+    expect(after.slots[4].memberId).toBe(s[4]);
     expect(after.slots[2].gap).toEqual({ name: "Zed Newcomer", reason: "not_on_register" });
     expect(after.captainMemberId).toBe(s[2]);
     expect(after.keeperMemberId).toBe(s[1]);

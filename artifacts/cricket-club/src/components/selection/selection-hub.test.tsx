@@ -43,6 +43,7 @@ function member(
     note: null,
     lastGrade: "C Grade",
     junior: false,
+    section: "senior",
     isPrivate: false,
     repliedAt: "2026-10-12T10:14:00.000Z",
     late: false,
@@ -441,6 +442,19 @@ describe("PlayHQ's published side", () => {
     renderHub();
     await screen.findByTestId("chip-900");
     expect(screen.queryByRole("button", { name: /Use PlayHQ team/ })).toBeNull();
+  });
+});
+
+describe("juniors playing up", () => {
+  it("lists juniors apart in a collapsed group on a senior board, and search opens it", async () => {
+    const board = makeBoard();
+    board.pool.push({ ...board.pool[0], id: 990, displayName: "Kobe Lee", section: "junior" });
+    stubApi(board);
+    renderHub();
+    const group = await screen.findByRole("region", { name: "Juniors" });
+    expect(within(group).queryByTestId("chip-990")).toBeNull();
+    fireEvent.change(screen.getByLabelText("Search players"), { target: { value: "kobe" } });
+    expect(await within(group).findByTestId("chip-990")).toBeTruthy();
   });
 });
 
