@@ -441,6 +441,8 @@ describe("PlayHQ's published side", () => {
     renderHub();
     await screen.findByTestId("chip-900");
     expect(screen.queryByRole("button", { name: /Use PlayHQ team/ })).toBeNull();
+    // Sync all stays visible but greyed out, so it can be found.
+    expect(screen.getByRole("button", { name: "Sync all from PlayHQ" })).toBeDisabled();
   });
 });
 
