@@ -9,16 +9,31 @@ import {
   type PostingRowId,
 } from "@workspace/scorecard/posting-plan";
 
-/** The grade picker's quick choices (decision 2, plan 2026-10-07-001 U6). */
-export type QuickChoice = "allSenior" | "aGradeOnly" | "custom";
+/**
+ * The grade picker's quick choices (decision 2, plan 2026-10-07-001 U6). "allGrades" —
+ * every senior grade plus every junior age group the club has — exists only for rows
+ * with junior data; it lists the junior groups explicitly because `others` covers
+ * seniors alone (junior age groups are never drafted by default).
+ */
+export type QuickChoice = "allSenior" | "allGrades" | "aGradeOnly" | "custom";
 
 export const A_GRADES = ["A Grade", "Female A Grade"];
 
-export function quickChoiceOf(row: PostingRow): QuickChoice {
+export function quickChoiceOf(row: PostingRow, knownGrades: readonly string[] = []): QuickChoice {
   const listed = Object.entries(row.grades);
   // Every listed grade just restates the default (seniors on, juniors off).
   if (row.others === "seniors" && listed.every(([g, on]) => on === !isJuniorGradeLabel(g))) {
     return "allSenior";
+  }
+  // Seniors by default, no senior switched off, and every known junior age group on.
+  const juniorKnown = knownGrades.filter(isJuniorGradeLabel);
+  if (
+    row.others === "seniors" &&
+    juniorKnown.length > 0 &&
+    juniorKnown.every((g) => row.grades[g] === true) &&
+    listed.every(([, on]) => on)
+  ) {
+    return "allGrades";
   }
   if (
     row.others === "off" &&
@@ -31,8 +46,16 @@ export function quickChoiceOf(row: PostingRow): QuickChoice {
   return "custom";
 }
 
-export function applyQuickChoice(row: PostingRow, choice: QuickChoice): PostingRow {
+export function applyQuickChoice(
+  row: PostingRow,
+  choice: QuickChoice,
+  knownGrades: readonly string[] = [],
+): PostingRow {
   if (choice === "allSenior") return { ...row, grades: {}, others: "seniors" };
+  if (choice === "allGrades") {
+    const juniors = knownGrades.filter(isJuniorGradeLabel);
+    return { ...row, grades: Object.fromEntries(juniors.map((g) => [g, true])), others: "seniors" };
+  }
   if (choice === "aGradeOnly") {
     return { ...row, grades: Object.fromEntries(A_GRADES.map((g) => [g, true])), others: "off" };
   }
@@ -48,8 +71,9 @@ export function gradeOn(row: PostingRow, grade: string): boolean {
 
 /** "all senior grades", "A Grade only", "senior grades except B Grade", "A Grade, B Grade". */
 export function gradeSummary(row: PostingRow, knownGrades: readonly string[]): string {
-  const choice = quickChoiceOf(row);
+  const choice = quickChoiceOf(row, knownGrades);
   if (choice === "allSenior") return "all senior grades";
+  if (choice === "allGrades") return "all senior and junior grades";
   if (choice === "aGradeOnly") return "A Grade only";
   const juniorsOn = Object.entries(row.grades)
     .filter(([g, on]) => on && isJuniorGradeLabel(g))

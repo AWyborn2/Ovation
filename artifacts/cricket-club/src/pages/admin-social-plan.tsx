@@ -1,25 +1,57 @@
 import { useMemo } from "react";
-import { useGetSocialSettings, useListGrades } from "@workspace/api-client-react";
+import {
+  useGetSocialSettings,
+  useListGrades,
+  useGetJuniorsFilters,
+  useGetJuniorMatchDisplaySettings,
+  useListJuniorFixtures,
+} from "@workspace/api-client-react";
 import { sortByGradeOrder } from "@workspace/scorecard";
 import { LoadingState, QueryError } from "@/components/data-states";
 import { PostingPlanEditor } from "@/components/posting-plan/posting-plan-editor";
 
 /**
- * Social Media Studio "Posting Plan" tab (plan 2026-10-07-001): one place to
- * decide, per card kind, whether it drafts, for which grades, and whether it
- * posts on its own or as one round carousel.
+ * The club's junior age groups, in the order the junior pages use (the admin's saved
+ * order first, then the rest as found): every group with a played match plus every
+ * group with a fixture, so a new season's teams are offered before they have played.
+ */
+function juniorAgeGroups(
+  saved: readonly string[],
+  played: readonly string[],
+  fixtures: readonly (string | null | undefined)[],
+): string[] {
+  const all = new Set<string>();
+  for (const g of played) if (g) all.add(g);
+  for (const g of fixtures) if (g) all.add(g);
+  const ordered = saved.filter((g) => all.has(g));
+  const rest = [...all].filter((g) => !saved.includes(g)).sort();
+  return [...ordered, ...rest];
+}
+
+/**
+ * Social Media Studio "Posting Plan" tab (plan 2026-10-07-001; version 2, plan
+ * 2026-10-15-001): one place to decide, per card kind, whether it drafts, for which
+ * grades — senior grades and junior age groups — and whether it posts on its own or as
+ * one round carousel.
  */
 export default function AdminSocialPlan() {
   const bundle = useGetSocialSettings();
   const gradesQ = useListGrades();
-  const grades = useMemo(
-    () =>
-      sortByGradeOrder(
-        (gradesQ.data ?? []).map((g) => g.grade).filter((g) => g !== "CLUB TOTAL"),
-        (g) => g,
-      ),
-    [gradesQ.data],
-  );
+  const juniorFilters = useGetJuniorsFilters();
+  const juniorDisplay = useGetJuniorMatchDisplaySettings();
+  const juniorFixtures = useListJuniorFixtures();
+  const grades = useMemo(() => {
+    const seniors = sortByGradeOrder(
+      (gradesQ.data ?? []).map((g) => g.grade).filter((g) => g !== "CLUB TOTAL"),
+      (g) => g,
+    );
+    const juniors = juniorAgeGroups(
+      juniorDisplay.data?.ageGroupOrder ?? [],
+      juniorFilters.data?.ageGroups ?? [],
+      (juniorFixtures.data ?? []).map((f) => f.ageGroup),
+    );
+    return [...seniors, ...juniors.filter((g) => !seniors.includes(g))];
+  }, [gradesQ.data, juniorDisplay.data, juniorFilters.data, juniorFixtures.data]);
 
   return (
     <div className="space-y-6">
