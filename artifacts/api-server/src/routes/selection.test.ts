@@ -1021,7 +1021,7 @@ describe("Selection Hub API", () => {
     }
   });
 
-  it("finalise, re-open and withdraw are refused once the match has started", async () => {
+  it("after the start a side can still be re-opened and finalised (no messages); a withdrawal can't", async () => {
     await asAdmin(request(app).post(`/api/selection/${sel.A}/finalise`))
       .send(await ver(sel.A))
       .expect(200);
@@ -1033,17 +1033,19 @@ describe("Selection Hub API", () => {
       .set({ startAt: past })
       .where(inArray(fixturesTable.id, [fixture.A, fixture.B]));
     try {
-      const reopen = await asAdmin(request(app).post(`/api/selection/${sel.A}/reopen`)).expect(409);
-      expect(reopen.body.error).toMatch(/started/);
       await expect(
         withdrawFromSelection(tenantA, m[2], roundId, { kind: "player", id: null, name: null }),
       ).rejects.toMatchObject({ status: 409 });
       expect((await loadSel(sel.A)).state).toBe("final");
+      await asAdmin(request(app).post(`/api/selection/${sel.A}/reopen`)).expect(200);
+      expect((await loadSel(sel.A)).state).toBe("draft");
+      const sent = sms.length + email.length;
       const fin = await asAdmin(request(app).post(`/api/selection/${sel.B}/finalise`))
         .send(await ver(sel.B))
-        .expect(409);
-      expect(fin.body.error).toMatch(/started/);
-      expect((await loadSel(sel.B)).state).toBe("draft");
+        .expect(200);
+      expect(fin.body.messaged).toEqual({ selected: 0, deselected: 0, failed: 0 });
+      expect(sms.length + email.length).toBe(sent);
+      expect((await loadSel(sel.B)).state).toBe("final");
     } finally {
       await db
         .update(fixturesTable)

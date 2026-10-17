@@ -931,8 +931,6 @@ export async function syncSideFromPlayhq(
         `${fixture.grade} was changed by someone else. Reload to see the latest side.`,
       );
     }
-    refuseIfStarted(fixture, now, "changed");
-
     const section = sideSection(fixture);
     const members = (
       await tx
@@ -1134,7 +1132,11 @@ async function lockSide(tx: Tx, tenantId: number, selectionId: number): Promise<
   return { selection, fixture };
 }
 
-/** A side is fixed once its match has started: PlayHQ's record of who played takes over. */
+/**
+ * A player can't withdraw (from their availability link) once the match has
+ * started. A captain or admin can still sync, finalise and re-open a side after
+ * the start, to publish it and print the team sheet.
+ */
 function refuseIfStarted(fixture: SideFixture, now: Date, action: string): void {
   if (fixture.startAt.getTime() <= now.getTime()) {
     throw new SelectionError(
@@ -1202,7 +1204,6 @@ export async function finaliseSelection(
         `${fixture.grade} was changed by someone else. Reload to see the latest side.`,
       );
     }
-    refuseIfStarted(fixture, now, "finalised");
 
     const sideSlots = normaliseSlots(selection.slots);
     const picked = memberIdsOf(sideSlots);
@@ -1284,8 +1285,10 @@ export async function finaliseSelection(
   });
 
   const { selection, fixture } = plan;
-  // A club not using availability publishes the side without messaging anyone.
-  const toMessage = settings?.enabled ? [...plan.toSelect, ...plan.toDeselect] : [];
+  // A club not using availability publishes the side without messaging anyone,
+  // and nobody is messaged once the match has started.
+  const started = fixture.startAt.getTime() <= now.getTime();
+  const toMessage = settings?.enabled && !started ? [...plan.toSelect, ...plan.toDeselect] : [];
   const rows =
     toMessage.length > 0
       ? await db
@@ -1404,7 +1407,6 @@ export async function reopenSelection(
     if (selection.state !== "final") {
       throw new SelectionError(409, `${fixture.grade} isn't finalised.`);
     }
-    refuseIfStarted(fixture, now, "re-opened");
     await tx
       .update(selectionsTable)
       .set({ state: "draft", version: selection.version + 1, updatedAt: now })
