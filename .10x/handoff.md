@@ -7,7 +7,7 @@
 ## Context
 
 - Product decision agreed with Ash 2026-10-19 (scope B): `.10x/decisions/product-manager/admin-menu-consolidation.md`.
-- Architecture + units: `.10x/decisions/architect/admin-menu-consolidation.md`. PR 1 = U1–U2 (menu moves, Imports hub, no migration). PR 2 = U3–U6 (shirt categories, migration 0046, applied by hand in prod before republish).
+- Architecture + units: `.10x/decisions/architect/admin-menu-consolidation.md`. PR 1 = U1–U2 (menu moves, Imports hub, no migration). PR 2 = U3–U6 (shirt categories, migration 0047, applied by hand in prod before republish).
 - Requirement change: a person may be in several registers per season (allowed, badged, 'Also add to…').
 - Original PM priority order: (1) shirt-number category + unified People → Shirt numbers tab (needs migration; juniors stay in `junior_shirt_numbers`), (2) URL redirects, (3) Imports hub, (4) remaining menu moves + tour/test updates.
 - Acceptance: see Requirements and Success criteria in the decision file.
@@ -24,8 +24,8 @@
 ## Context
 
 - Task list: `.10x/decisions/engineering-manager/selection-hub-decoupling.md`. Design: `.10x/decisions/architect/selection-hub-decoupling.md`. ADR-008 accepted.
-- Start with PR0 (T0.1–T0.3: migration 0046, OpenAPI with codegen, `writeReply` and `publicName` extraction). After PR0 merges, PR1, PR2 and PR3 run as parallel sessions in their own worktrees off `main`; they coordinate shared files over SendMessage and merge in order PR1, PR2, PR3.
-- Ash applies migration 0046 in production before the first republish.
+- Start with PR0 (T0.1–T0.3: migration 0047, OpenAPI with codegen, `writeReply` and `publicName` extraction). After PR0 merges, PR1, PR2 and PR3 run as parallel sessions in their own worktrees off `main`; they coordinate shared files over SendMessage and merge in order PR1, PR2, PR3.
+- Ash applies migration 0047 in production before the first republish.
 
 ## Previous handoff
 

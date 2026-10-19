@@ -40,7 +40,7 @@ Replacement rules:
 
 ## Design
 
-### Data (migration `0046_shirt_number_category.sql`, idempotent)
+### Data (migration `0047_shirt_number_category.sql`, idempotent)
 
 - `ALTER TABLE shirt_numbers ADD COLUMN IF NOT EXISTS category text NOT NULL DEFAULT 'men'`
   + `CHECK (category IN ('men','female'))`. Existing rows backfill to `men` via the default.
@@ -112,7 +112,7 @@ Feature gating is kept: shirt numbers and the data tabs keep `curation`; `displa
   tour and shell tests updated.
 - U2 Imports hub: `/admin/import/:tab?`, extract the squad upload component, link from Availability.
 
-**PR 2: shirt-number categories (migration 0046)**
+**PR 2: shirt-number categories (migration 0047)**
 - U3 Migration + schema + shared lib (category, indexes, scoped `seasonNumbersInUse`, rollover,
   lineup category via `isWomensGrade`). Tests: men/female same number = no clash; same person
   in both categories allowed; block policy is per category.
