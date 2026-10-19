@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { shapePlayerShirtNumbers, type PlayerShirtNumberRow } from "./player-shirt-numbers";
+import {
+  profileCategoryBySeason,
+  shapePlayerShirtNumbers,
+  shirtNumberForCategory,
+  type PlayerShirtNumberRow,
+} from "./player-shirt-numbers";
 
 /**
  * Shaping register rows into the player profile's shirt-number fields
@@ -74,5 +79,46 @@ describe("shapePlayerShirtNumbers", () => {
         { season: 2025, number: "1" },
       ],
     });
+  });
+});
+
+describe("public number by category (men / female registers, migration 0047)", () => {
+  const both = [
+    { season: 2026, number: "7", playerId: 7, category: "men" as const },
+    { season: 2026, number: "21", playerId: 7, category: "female" as const },
+  ];
+
+  it("the profile shows the category of the grades the player played most that season", () => {
+    const bySeason = profileCategoryBySeason([
+      { grade: "Female A Grade", season: 2026, games: 6 },
+      { grade: "C Grade", season: 2026, games: 2 },
+    ]);
+    expect(bySeason.get(2026)).toBe("female");
+    const out = shapePlayerShirtNumbers(both, {
+      currentSeason: 2026,
+      preferredPlayerId: 7,
+      categoryBySeason: bySeason,
+    });
+    expect(out.shirtNumber).toBe("21");
+    expect(out.shirtNumbers).toEqual([{ season: 2026, number: "21" }]);
+  });
+
+  it("a tie, or no stats, goes to men", () => {
+    expect(
+      profileCategoryBySeason([
+        { grade: "Female A Grade", season: 2026, games: 3 },
+        { grade: "A Grade", season: 2026, games: 3 },
+      ]).get(2026),
+    ).toBe("men");
+    expect(
+      shapePlayerShirtNumbers(both, { currentSeason: 2026, preferredPlayerId: 7 }).shirtNumber,
+    ).toBe("7");
+  });
+
+  it("a context's category picks its number, else the other register's", () => {
+    expect(shirtNumberForCategory(both, "female")).toBe("21");
+    expect(shirtNumberForCategory(both, "men")).toBe("7");
+    expect(shirtNumberForCategory([{ category: "female", number: "21" }], "men")).toBe("21");
+    expect(shirtNumberForCategory([{ category: "men", number: null }], "men")).toBeNull();
   });
 });

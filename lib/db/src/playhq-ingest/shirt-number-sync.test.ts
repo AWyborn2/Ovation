@@ -35,7 +35,9 @@ describe("lineupCandidates", () => {
       [{ startAt: SEPT_2026, players: [row({ displayName: "Pat New", participantId: P })] }],
       new Map(),
     );
-    expect(c).toEqual([{ season: 2026, participantId: P, name: "Pat New", playerId: null }]);
+    expect(c).toEqual([
+      { season: 2026, category: "men", participantId: P, name: "Pat New", playerId: null },
+    ]);
     const may = lineupCandidates(
       [{ startAt: MAY_2026, players: [row({ displayName: "Pat New", participantId: P })] }],
       new Map(),
@@ -53,7 +55,9 @@ describe("lineupCandidates", () => {
       ],
       new Map([[P, 42]]),
     );
-    expect(c).toEqual([{ season: 2026, participantId: P, name: "Linked", playerId: 42 }]);
+    expect(c).toEqual([
+      { season: 2026, category: "men", participantId: P, name: "Linked", playerId: 42 },
+    ]);
   });
 
   it("skips rows without a participant, fill-ins, and repeats across fixtures; trims and caps names", () => {
@@ -78,6 +82,80 @@ describe("lineupCandidates", () => {
   });
 });
 
+describe("lineupCandidates: shirt-number categories (migration 0047)", () => {
+  it("a women's grade fixture feeds the female register, every other grade the men's", () => {
+    const c = lineupCandidates(
+      [
+        {
+          startAt: SEPT_2026,
+          grade: "Female A Grade",
+          players: [row({ displayName: "Sam Both", participantId: P })],
+        },
+        {
+          startAt: SEPT_2026,
+          grade: "B Grade",
+          players: [row({ displayName: "Sam Both", participantId: P })],
+        },
+      ],
+      new Map(),
+    );
+    // The same person in a women's side and a men's side: one candidate per register.
+    expect(c.map((x) => x.category)).toEqual(["female", "men"]);
+  });
+});
+
+describe("planLineupInserts: per-category registers", () => {
+  const sam = { season: 2026, participantId: P, name: "Sam Both", playerId: 42 };
+
+  it("someone on the men's register is still added to the female register (never blocked)", () => {
+    const plan = planLineupInserts({
+      tenantId: 7,
+      candidates: [{ ...sam, category: "female" as const }],
+      existing: [{ season: 2026, category: "men", participantId: P, playerId: 42, number: "7" }],
+      carried: new Map(),
+      duplicatePolicy: "block",
+    });
+    expect(plan.inserts).toEqual([
+      expect.objectContaining({ category: "female", participantId: P, playerId: 42 }),
+    ]);
+  });
+
+  it("block policy: a men's #7 never blocks a carried female #7", () => {
+    const plan = planLineupInserts({
+      tenantId: 7,
+      candidates: [{ ...sam, category: "female" as const }],
+      existing: [{ season: 2026, category: "men", participantId: Q, playerId: 9, number: "7" }],
+      carried: new Map([[`2026:${P}:female`, "7"]]),
+      duplicatePolicy: "block",
+    });
+    expect(plan.inserts[0]).toMatchObject({ category: "female", number: "7" });
+  });
+
+  it("block policy still applies within a category", () => {
+    const plan = planLineupInserts({
+      tenantId: 7,
+      candidates: [{ ...sam, category: "female" as const }],
+      existing: [{ season: 2026, category: "female", participantId: Q, playerId: 9, number: "7" }],
+      carried: new Map([[`2026:${P}:female`, "7"]]),
+      duplicatePolicy: "block",
+    });
+    expect(plan.inserts[0]).toMatchObject({ category: "female", number: null });
+  });
+});
+
+describe("planHeldLinks: per-category registers", () => {
+  it("links a held female entry for a player already linked on the men's register", () => {
+    const plan = planHeldLinks({
+      tenantId: 1,
+      held: [{ id: 5, tenantId: 1, season: 2026, category: "female", participantId: P }],
+      appeared: new Set([P]),
+      playerIdOf: new Map([[P, 42]]),
+      linked: [{ season: 2026, category: "men", playerId: 42 }],
+    });
+    expect(plan.links).toEqual([{ entryId: 5, playerId: 42 }]);
+  });
+});
+
 describe("planLineupInserts", () => {
   const candidate = { season: 2026, participantId: P, name: "Pat New", playerId: 42 };
 
@@ -93,6 +171,7 @@ describe("planLineupInserts", () => {
       {
         tenantId: 7,
         season: 2026,
+        category: "men",
         name: "Pat New",
         participantId: P,
         playerId: 42,

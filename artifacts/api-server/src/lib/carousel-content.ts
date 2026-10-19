@@ -25,6 +25,7 @@ import { beforeBoundary, loadClubOverlayData } from "./club-overlay";
 import {
   teamListToCardInput,
   teamListShirtNumberLoader,
+  teamListCategoryOf,
   teamListSeasonOf,
   loadAutoDebuts,
 } from "./engines/team-list";
@@ -95,7 +96,9 @@ export async function carouselContent(
         continue;
       }
       const junior = isJuniorGradeLabel(fixture.grade);
-      const shirtNumbers = junior ? null : await numbers(teamListSeasonOf(fixture));
+      const shirtNumbers = junior
+        ? null
+        : await numbers(teamListSeasonOf(fixture), teamListCategoryOf(fixture));
       const resolved = shirtNumbers
         ? await recoverPublishedSelectionIdentities(tenantId, list, fixture.startAt)
         : { players: list.players };

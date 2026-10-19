@@ -1,28 +1,24 @@
-import { Link } from "wouter";
 import {
   useGetJuniorsOverview,
   useGetShirtNumberSettings,
   useListJuniorShirtNumbers,
 } from "@workspace/api-client-react";
 import { EmptyState, LoadingState, QueryError } from "@/components/data-states";
-import {
-  JuniorPersonPicker,
-  ShirtNumberRegister,
-  currentSeasonStartYear,
-  seasonLabel,
-} from "@/components/shirt-numbers";
-import { juniorShirtNumberApi } from "@/components/shirt-numbers/junior-api";
+import { ShirtNumberRegister } from "./register";
+import { JuniorPersonPicker } from "./person-picker";
+import { currentSeasonStartYear, seasonLabel } from "./season";
+import { juniorShirtNumberApi } from "./junior-api";
 
 /**
- * Juniors shirt numbers (plan U10, R17): the juniors register for a season,
- * with uploads, review and season start, kept apart from the senior register.
- * The feature switch and policies are shared with the senior register and are
- * changed on the senior Shirt numbers tab. Clubs without junior data (central
- * PCA clubs) have no junior players, so the register is hidden for them, unless
- * junior PlayHQ sync is on: then numbers can be uploaded and held before the
- * season's juniors arrive (the register says so with `juniorsAvailable`).
+ * The Juniors section of People → Shirt numbers (plan U10, R17): the juniors register
+ * for a season, with uploads, review and season start. Its own table and routes
+ * (/api/juniors/* only), never blended with the senior registers; the page only shows
+ * them side by side. The feature switch and policies are shared and set at the top of
+ * the page. Clubs without junior data (central PCA clubs) have no junior players, so
+ * the register is hidden for them, unless junior PlayHQ sync is on: then numbers can be
+ * uploaded and held before the season's juniors arrive (`juniorsAvailable`).
  */
-export default function AdminJuniorShirtNumbers() {
+export function JuniorShirtNumbersSection() {
   const settings = useGetShirtNumberSettings();
   const overview = useGetJuniorsOverview();
   const noPlayers = overview.data?.totals.players === 0;
@@ -40,12 +36,6 @@ export default function AdminJuniorShirtNumbers() {
     return <LoadingState />;
   }
 
-  const settingsLink = (
-    <Link href="/admin/people/shirt-numbers" className="font-semibold text-primary-text underline">
-      Shirt numbers
-    </Link>
-  );
-
   if (noPlayers && settings.data.enabled) {
     if (availability.isError) return <QueryError onRetry={() => availability.refetch()} />;
     if (availability.isLoading || !availability.data) return <LoadingState />;
@@ -62,8 +52,7 @@ export default function AdminJuniorShirtNumbers() {
   if (!settings.data.enabled) {
     return (
       <p className="max-w-[75ch] text-[15px] text-muted-foreground">
-        Shirt numbers are turned off for this club. Turn them on in {settingsLink} to keep a juniors
-        register.
+        Shirt numbers are turned off for this club. Turn them on above to keep a juniors register.
       </p>
     );
   }
@@ -75,9 +64,8 @@ export default function AdminJuniorShirtNumbers() {
           Current season {seasonLabel(currentSeasonStartYear())}
         </p>
         <p className="max-w-[75ch] text-[15px] text-muted-foreground">
-          Junior playing numbers for each season, kept separate from the senior register and shown
-          only on junior player profiles. Duplicate and rollover rules are shared with the senior
-          register and set in {settingsLink}.
+          Junior playing numbers for each season, kept separate from the senior registers and shown
+          only on junior player profiles. Duplicate and rollover rules are shared and set above.
         </p>
       </div>
       <ShirtNumberRegister

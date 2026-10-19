@@ -1,9 +1,11 @@
 import { and, eq, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm";
 import type { Db } from "./index";
+import { isWomensGrade } from "./central/grades";
 import {
   juniorShirtNumbersTable,
   shirtNumberSettingsTable,
   shirtNumbersTable,
+  type ShirtNumberCategory,
   type ShirtNumberDuplicatePolicy,
   type ShirtNumberRolloverPolicy,
   type ShirtNumberSettingsRow,
@@ -23,6 +25,23 @@ import {
 type Reader = Pick<Db, "select">;
 
 export type ShirtNumberSide = "senior" | "junior";
+
+/** The default senior category: every entry from before migration 0047 is "men". */
+export const DEFAULT_SHIRT_NUMBER_CATEGORY: ShirtNumberCategory = "men";
+
+/** True for a stored or requested senior category. */
+export function isShirtNumberCategory(value: unknown): value is ShirtNumberCategory {
+  return value === "men" || value === "female";
+}
+
+/**
+ * The senior register a fixture's team list feeds: `female` for a women's grade
+ * (isWomensGrade), otherwise `men`. Used for lineup-created entries and for the number a
+ * team list or team sheet shows for its fixture.
+ */
+export function shirtNumberCategoryForGrade(grade: string | null | undefined): ShirtNumberCategory {
+  return isWomensGrade(grade) ? "female" : "men";
+}
 
 export type ShirtNumberSettings = {
   enabled: boolean;
@@ -96,6 +115,8 @@ export type CarriedNumberArgs = {
   playerId?: number | null;
   /** PlayHQ participant GUID (any casing). Required for juniors. */
   participantId?: string | null;
+  /** Senior only: the register the entry is for (default `men`); last season's entry in the same category carries. */
+  category?: ShirtNumberCategory;
   /** Skip the settings read when the caller already has the policy. */
   rolloverPolicy?: ShirtNumberRolloverPolicy;
 };
@@ -106,8 +127,9 @@ export type CarriedNumberArgs = {
  * season's register, or when they were on it unnumbered.
  *
  * Seniors match on the player id or the participant id (an entry held last
- * season may only carry the participant); juniors match on the participant id
- * in the junior register only.
+ * season may only carry the participant) within the same category (a female entry
+ * carries a female number); juniors match on the participant id in the junior
+ * register only.
  */
 export async function carriedNumberFor(
   executor: Reader,
@@ -148,6 +170,7 @@ export async function carriedNumberFor(
       and(
         eq(shirtNumbersTable.tenantId, args.tenantId),
         eq(shirtNumbersTable.season, previous),
+        eq(shirtNumbersTable.category, args.category ?? DEFAULT_SHIRT_NUMBER_CATEGORY),
         or(...identity),
       ),
     )
@@ -194,11 +217,15 @@ export function numberAfterDuplicatePolicy(
   return policy === "block" && taken.has(number) ? null : number;
 }
 
-/** The numbers worn in a tenant's senior register for one season (for the block-policy skip). */
+/**
+ * The numbers worn in one category of a tenant's senior register for one season (for the
+ * block-policy skip). Clashes are per category: a men's #7 never blocks a female #7.
+ */
 export async function seasonNumbersInUse(
   executor: Reader,
   tenantId: number,
   season: number,
+  category: ShirtNumberCategory,
 ): Promise<Set<string>> {
   const rows = await executor
     .select({ number: shirtNumbersTable.number })
@@ -207,6 +234,7 @@ export async function seasonNumbersInUse(
       and(
         eq(shirtNumbersTable.tenantId, tenantId),
         eq(shirtNumbersTable.season, season),
+        eq(shirtNumbersTable.category, category),
         isNotNull(shirtNumbersTable.number),
       ),
     );
@@ -216,8 +244,8 @@ export async function seasonNumbersInUse(
 /**
  * Link a held senior entry to a player in the tenant's id space (KTD2, KTD9):
  * sets `playerId` only while the entry is still held, and only when no other
- * entry of the same tenant and season is already linked to that player (the
- * per-person unique index), so re-runs and races are no-ops. The number is
+ * entry of the same tenant, season and category is already linked to that player
+ * (the per-person unique index), so re-runs and races are no-ops. The number is
  * untouched. Returns whether the entry was linked.
  *
  * The caller vouches that `playerId` is in the tenant's space (a row of the
@@ -239,6 +267,7 @@ export async function linkHeldShirtNumberEntry(
           select 1 from shirt_numbers s2
            where s2.tenant_id = ${args.tenantId}
              and s2.season = ${shirtNumbersTable.season}
+             and s2.category = ${shirtNumbersTable.category}
              and s2.player_id = ${args.playerId})`,
       ),
     )

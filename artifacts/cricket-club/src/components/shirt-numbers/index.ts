@@ -1,5 +1,8 @@
 export {
   seniorShirtNumberApi,
+  seniorShirtNumberApiFor,
+  REGISTER_LABEL,
+  type RegisterName,
   conflictOf,
   errorMessage,
   type ShirtNumberRegisterApi,
@@ -20,3 +23,4 @@ export { StartSeasonDialog, startSeasonLabel } from "./start-season-dialog";
 export { AddSquadDialog, squadAddSummary } from "./add-squad-dialog";
 export { SeniorPersonPicker, JuniorPersonPicker, type PersonPickerProps } from "./person-picker";
 export { currentSeasonStartYear, countSeasonStart, seasonOptions, seasonLabel } from "./season";
+export { alsoAddEntry, alsoAddTargets, invalidateRegisters, withAlsoIn } from "./overlap";

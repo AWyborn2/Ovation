@@ -10,6 +10,7 @@ import {
   CreateJuniorShirtNumberBody,
   DeleteJuniorShirtNumberParams,
   DiscardJuniorShirtNumberUploadParams,
+  GetShirtNumberRegisterOverlapQueryParams,
   ListJuniorShirtNumbersQueryParams,
   StartJuniorShirtNumberSeasonParams,
   UpdateJuniorShirtNumberBody,
@@ -42,7 +43,11 @@ import {
 } from "../lib/junior-shirt-numbers";
 import { enabledSettings, sendOutcome, validSeason } from "../lib/shirt-number-route-helpers";
 import { addSquadToJuniorRegister } from "../lib/shirt-number-squad";
-import { annotateCrossRegister, loadSeniorCrossEntries } from "../lib/shirt-number-cross";
+import {
+  annotateCrossRegister,
+  loadRegisterOverlap,
+  loadSeniorCrossEntries,
+} from "../lib/shirt-number-cross";
 import { isJuniorSyncOn } from "../lib/junior-sync";
 
 /**
@@ -92,6 +97,23 @@ async function refuseNoJuniors(req: Request, res: Response): Promise<boolean> {
 }
 
 // ── Register ────────────────────────────────────────────────────────────────
+
+// Who is on more than one register this season (men / female / juniors), for the admin
+// "Also in" badges. Admin only and flags only (entry ids, never numbers, names or
+// stats); the one read across both tables, so it lives here under /juniors.
+router.get("/juniors/shirt-numbers/overlap", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = GetShirtNumberRegisterOverlapQueryParams.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const season = parsed.data.season ?? seasonStartYearFor(new Date());
+  if (!validSeason(season)) {
+    res.status(400).json({ error: "Invalid season" });
+    return;
+  }
+  res.json({ season, people: await loadRegisterOverlap(getTenantId(req), season) });
+});
 
 router.get("/juniors/shirt-numbers", requireAdmin, async (req, res): Promise<void> => {
   const parsed = ListJuniorShirtNumbersQueryParams.safeParse(req.query);

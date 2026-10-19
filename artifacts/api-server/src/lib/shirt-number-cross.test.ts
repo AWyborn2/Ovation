@@ -3,7 +3,9 @@ import {
   annotateCrossRegister,
   crossRegisterNotes,
   juniorSeniorNumbers,
+  registerOverlap,
   type CrossEntry,
+  type OverlapSeniorEntry,
 } from "./shirt-number-cross";
 import { crossRegisterNumberOf, type PreviewRow } from "./shirt-number-upload";
 
@@ -130,5 +132,55 @@ describe("juniorSeniorNumbers", () => {
       { participantId: ID.archie, number: "70" },
       { participantId: ID.noah, number: "48" },
     ]);
+  });
+});
+
+describe("registerOverlap (People -> Shirt numbers 'Also in' badges)", () => {
+  const sen = (
+    id: number,
+    category: "men" | "female",
+    name: string,
+    who: { playerId?: number | null; participantId?: string | null; guids?: string[] } = {},
+  ): OverlapSeniorEntry => ({
+    id,
+    category,
+    name,
+    playerId: who.playerId ?? null,
+    participantId: who.participantId ?? null,
+    ids: [who.participantId ?? null, ...(who.guids ?? [])],
+  });
+
+  it("groups one person across the men's, female and juniors registers", () => {
+    const out = registerOverlap(
+      [
+        sen(1, "men", "Archie Nicholson", { playerId: 9, guids: [ID.archie] }),
+        sen(2, "female", "Archie Nicholson", { playerId: 9 }),
+        sen(3, "men", "Solo Senior", { playerId: 10 }),
+      ],
+      [
+        { id: 50, name: "Archie Nicholson", participantId: ID.archie.toUpperCase() },
+        { id: 51, name: "Solo Junior", participantId: ID.sam },
+      ],
+    );
+    expect(out).toEqual([
+      { registers: ["men", "female", "juniors"], seniorEntryIds: [1, 2], juniorEntryIds: [50] },
+    ]);
+  });
+
+  it("a shared Profile ID with a different name (family account) is not the same person", () => {
+    const out = registerOverlap(
+      [sen(1, "men", "Paul Dreckow", { participantId: ID.parent })],
+      [{ id: 50, name: "Noah Dreckow", participantId: ID.parent }],
+    );
+    expect(out).toEqual([]);
+  });
+
+  it("returns flags and entry ids only: no names, numbers or stats", () => {
+    const out = registerOverlap(
+      [sen(1, "men", "Archie Nicholson", { participantId: ID.archie })],
+      [{ id: 50, name: "Archie Nicholson", participantId: ID.archie }],
+    );
+    expect(out).toHaveLength(1);
+    expect(Object.keys(out[0]!).sort()).toEqual(["juniorEntryIds", "registers", "seniorEntryIds"]);
   });
 });

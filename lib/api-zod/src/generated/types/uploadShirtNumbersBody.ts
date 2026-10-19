@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { ShirtNumberCategory } from './shirtNumberCategory';
 import type { ShirtNumberUploadKind } from './shirtNumberUploadKind';
 
 export type UploadShirtNumbersBody = {
@@ -13,4 +14,5 @@ export type UploadShirtNumbersBody = {
   kind: ShirtNumberUploadKind;
   /** Starting year of the season (e.g. 2026 for 2026/27) */
   season: number;
+  category?: ShirtNumberCategory;
 };

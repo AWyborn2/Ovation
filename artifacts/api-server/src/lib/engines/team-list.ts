@@ -8,7 +8,12 @@ import {
   type TeamListPlayer,
 } from "@workspace/db";
 import { seasonStartYearFor } from "@workspace/db/seasons";
-import { getShirtNumberSettings, normaliseParticipantId } from "@workspace/db/shirt-numbers";
+import {
+  getShirtNumberSettings,
+  normaliseParticipantId,
+  shirtNumberCategoryForGrade,
+} from "@workspace/db/shirt-numbers";
+import type { ShirtNumberCategory } from "@workspace/db";
 import { logger } from "../logger";
 import { loadDraftingGates } from "../posting-plan";
 import { upsertDraftByKey } from "../draft-upsert";
@@ -84,19 +89,25 @@ export function shirtNumberOf(p: TeamListPlayer, numbers: TeamListShirtNumbers):
   return participant !== null ? (numbers.byParticipantId.get(participant) ?? null) : null;
 }
 
-/** Loads a season's team-list numbers, or null when the club has the feature off. */
-export type TeamListShirtNumberLoader = (season: number) => Promise<TeamListShirtNumbers | null>;
+/**
+ * Loads a season's team-list numbers for one senior register (the fixture grade's
+ * category, default `men`), or null when the club has the feature off.
+ */
+export type TeamListShirtNumberLoader = (
+  season: number,
+  category?: ShirtNumberCategory,
+) => Promise<TeamListShirtNumbers | null>;
 
 /**
  * A per-run loader for a tenant's team-list shirt numbers: reads the settings
- * once, then each season's senior register at most once. Feature off: every
+ * once, then each (season, category) of the senior register at most once. Feature off: every
  * call returns null, so card inputs stay exactly as before (R1, AE5). A failed
  * read is logged and treated as "no numbers" rather than failing the drafts.
  */
 export function teamListShirtNumberLoader(tenantId: number): TeamListShirtNumberLoader {
   let enabled: Promise<boolean> | null = null;
-  const seasons = new Map<number, Promise<TeamListShirtNumbers | null>>();
-  return (season) => {
+  const seasons = new Map<string, Promise<TeamListShirtNumbers | null>>();
+  return (season, category = "men") => {
     enabled ??= getShirtNumberSettings(db, tenantId).then(
       (s) => s.enabled,
       (err: unknown) => {
@@ -104,7 +115,8 @@ export function teamListShirtNumberLoader(tenantId: number): TeamListShirtNumber
         return false;
       },
     );
-    let pending = seasons.get(season);
+    const key = `${season}:${category}`;
+    let pending = seasons.get(key);
     if (!pending) {
       pending = enabled.then(async (on) => {
         if (!on) return null;
@@ -120,6 +132,7 @@ export function teamListShirtNumberLoader(tenantId: number): TeamListShirtNumber
               and(
                 eq(shirtNumbersTable.tenantId, tenantId),
                 eq(shirtNumbersTable.season, season),
+                eq(shirtNumbersTable.category, category),
                 isNotNull(shirtNumbersTable.number),
               ),
             );
@@ -129,7 +142,7 @@ export function teamListShirtNumberLoader(tenantId: number): TeamListShirtNumber
           return null;
         }
       });
-      seasons.set(season, pending);
+      seasons.set(key, pending);
     }
     return pending;
   };
@@ -138,6 +151,10 @@ export function teamListShirtNumberLoader(tenantId: number): TeamListShirtNumber
 /** The season (start year) a fixture's team-list numbers come from (KTD7). */
 export const teamListSeasonOf = (fixture: Pick<FixtureRow, "startAt">): number =>
   seasonStartYearFor(fixture.startAt);
+
+/** The senior register a fixture's team-list numbers come from: its grade's category. */
+export const teamListCategoryOf = (fixture: Pick<FixtureRow, "grade">): ShirtNumberCategory =>
+  shirtNumberCategoryForGrade(fixture.grade);
 
 /**
  * A fixture's team-list card input. Synchronous and pure: given `numbers` (the
@@ -269,7 +286,7 @@ export async function generateTeamListDrafts(
         fixture,
         players,
         await loadAutoDebuts(tenantId, players, fixture.startAt),
-        await shirtNumbers(teamListSeasonOf(fixture)),
+        await shirtNumbers(teamListSeasonOf(fixture), teamListCategoryOf(fixture)),
       ),
       appPath: "/fixtures",
       playerId: featured,

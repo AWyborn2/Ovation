@@ -39,6 +39,7 @@ const juniorEntryView = (e: JuniorShirtNumberEntry): RegisterEntryView => ({
   duplicate: e.duplicate,
   source: e.source,
   crossRegister: e.crossRegister ?? [],
+  alsoIn: [],
 });
 
 /** A junior upload resolution: `link` to a participant, `hold` by Profile ID, or discard. */
@@ -53,6 +54,7 @@ export function juniorResolution(r: RowResolution): JuniorShirtNumberRowResoluti
 
 export const juniorShirtNumberApi: ShirtNumberRegisterApi = {
   side: "junior",
+  register: "juniors",
   supportsHeld: true,
   holdOnlyByProfileId: true,
   registerQueryKey: (season) => getListJuniorShirtNumbersQueryKey({ season }),

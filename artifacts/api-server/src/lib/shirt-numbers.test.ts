@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  alsoInCategories,
   applyCarriedNumber,
   conflict,
   duplicateEntryIds,
@@ -280,5 +281,46 @@ describe("conflict", () => {
       { id: 1, name: "A", number: "7", playerId: 1, participantId: null },
     ]);
     expect(conflict(w.message, [w]).body.warnings).toEqual([w]);
+  });
+});
+
+describe("alsoInCategories (a person may be on the men's and the female register)", () => {
+  const e = (
+    id: number,
+    category: "men" | "female",
+    name: string,
+    who: { playerId?: number | null; participantId?: string | null } = {},
+  ) => ({
+    id,
+    category,
+    name,
+    playerId: who.playerId ?? null,
+    participantId: who.participantId ?? null,
+  });
+  const season = [
+    e(1, "men", "Sam Both", { playerId: 41 }),
+    e(2, "female", "Sam Both", { playerId: 41 }),
+    e(3, "men", "Jo Guid", { participantId: "g-1" }),
+    e(4, "female", "Joanne Guid", { participantId: "g-1" }),
+    e(5, "men", "Held Name"),
+    e(6, "female", "held  name"),
+    e(7, "men", "Only Men", { playerId: 77 }),
+    e(8, "men", "Only Men Two", { playerId: 41 }),
+  ];
+
+  it("flags the other category by player id or participant id", () => {
+    expect(alsoInCategories(season[0]!, season)).toEqual(["female"]);
+    expect(alsoInCategories(season[1]!, season)).toEqual(["men"]);
+    expect(alsoInCategories(season[2]!, season)).toEqual(["female"]);
+  });
+
+  it("matches an id-less entry by name only", () => {
+    expect(alsoInCategories(season[4]!, season)).toEqual(["female"]);
+  });
+
+  it("never flags the same category, nor someone on one register only", () => {
+    expect(alsoInCategories(season[6]!, season)).toEqual([]);
+    // Entry 8 shares a player id with entry 1 but both are men's: not "also in".
+    expect(alsoInCategories(season[7]!, season)).toEqual(["female"]);
   });
 });

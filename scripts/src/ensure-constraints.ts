@@ -378,19 +378,22 @@ const PARTIAL_INDEXES: PartialIndexSpec[] = [
           ON "club_corrections" ("tenant_id", "playhq_match_id", "participant_id", "field")
           WHERE "removed_at" IS NULL`,
   },
-  // Season shirt numbers (migration 0034, KTD4): a person appears at most once
-  // per tenant and season. Uniqueness is per person, never per number.
+  // Season shirt numbers (migrations 0034 and 0047, KTD4): a person appears at
+  // most once per tenant, season and category (men / female); one person may be
+  // in both categories. Uniqueness is per person, never per number.
   {
-    name: "shirt_numbers_tenant_season_participant_uidx",
-    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "shirt_numbers_tenant_season_participant_uidx"
-          ON "shirt_numbers" ("tenant_id", "season", "participant_id")
+    name: "shirt_numbers_tenant_season_category_participant_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "shirt_numbers_tenant_season_category_participant_uidx"
+          ON "shirt_numbers" ("tenant_id", "season", "category", "participant_id")
           WHERE "participant_id" IS NOT NULL`,
+    dropIndexes: ["shirt_numbers_tenant_season_participant_uidx"],
   },
   {
-    name: "shirt_numbers_tenant_season_player_uidx",
-    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "shirt_numbers_tenant_season_player_uidx"
-          ON "shirt_numbers" ("tenant_id", "season", "player_id")
+    name: "shirt_numbers_tenant_season_category_player_uidx",
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "shirt_numbers_tenant_season_category_player_uidx"
+          ON "shirt_numbers" ("tenant_id", "season", "category", "player_id")
           WHERE "player_id" IS NOT NULL`,
+    dropIndexes: ["shirt_numbers_tenant_season_player_uidx"],
   },
   {
     name: "junior_shirt_numbers_tenant_season_participant_uidx",

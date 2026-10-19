@@ -5,12 +5,16 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { ShirtNumberCategory } from './shirtNumberCategory';
 import type { ShirtNumberCrossRegisterNote } from './shirtNumberCrossRegisterNote';
 import type { ShirtNumberSource } from './shirtNumberSource';
 
 export interface ShirtNumberEntry {
   id: number;
   season: number;
+  category: ShirtNumberCategory;
+  /** The other senior categories this person is also on this season (same player or Profile ID; same name for an entry with neither). */
+  alsoIn: ShirtNumberCategory[];
   name: string;
   /**
      * PlayHQ participant GUID (lowercased)
@@ -35,7 +39,7 @@ export interface ShirtNumberEntry {
   source: ShirtNumberSource;
   /** True while the entry is not linked to a player who has played. */
   held: boolean;
-  /** True when another entry in the season wears the same number. */
+  /** True when another entry in the season and category wears the same number. */
   duplicate: boolean;
   /** Admin-only cross-check against the juniors register for the same season (read-only, this club only). Empty when nothing relates. */
   crossRegister?: ShirtNumberCrossRegisterNote[];

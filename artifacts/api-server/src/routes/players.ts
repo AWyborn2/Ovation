@@ -60,7 +60,12 @@ import { classifyDismissal } from "../lib/dismissal-parse";
 import { oversToBalls } from "@workspace/scorecard";
 import { resolveOpponentClub } from "../lib/opponent-club";
 import { DEFAULT_VS_CLUB_MIN_INNINGS, loadVsClub } from "../lib/vs-club";
-import { shapePlayerShirtNumbers, type PlayerShirtNumbers } from "../lib/player-shirt-numbers";
+import {
+  profileCategoryBySeason,
+  shapePlayerShirtNumbers,
+  type GradeSeasonGames,
+  type PlayerShirtNumbers,
+} from "../lib/player-shirt-numbers";
 import { winnerMatchesPlayers } from "../lib/award-recipients";
 
 const router: IRouter = Router();
@@ -349,11 +354,14 @@ async function capOnlyPlayerDetail(tenantId: number, playerId: number) {
  * entries linked to one of the player's ids (held entries stay hidden, R16).
  * Returns no fields at all when the feature is off (AE5). Callers only reach
  * this for a player who is public: a private central player is a 404 before.
+ * Someone on both senior registers (men / female) shows the number of the category
+ * they played most that season, from their grade-season `stats`.
  */
 async function profileShirtNumbers(
   tenantId: number,
   playerIds: readonly number[],
   presentedId: number,
+  stats: readonly GradeSeasonGames[] = [],
 ): Promise<PlayerShirtNumbers | Record<string, never>> {
   const settings = await getShirtNumberSettings(db, tenantId);
   if (!settings.enabled || playerIds.length === 0) return {};
@@ -362,6 +370,7 @@ async function profileShirtNumbers(
       season: shirtNumbersTable.season,
       number: shirtNumbersTable.number,
       playerId: shirtNumbersTable.playerId,
+      category: shirtNumbersTable.category,
     })
     .from(shirtNumbersTable)
     .where(
@@ -373,6 +382,7 @@ async function profileShirtNumbers(
   return shapePlayerShirtNumbers(rows, {
     currentSeason: seasonStartYearFor(new Date()),
     preferredPlayerId: presentedId,
+    categoryBySeason: profileCategoryBySeason(stats),
   });
 }
 
@@ -499,7 +509,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
       })),
       premierships: premRows,
       awards: dedupeAwards(awardRows),
-      ...(await profileShirtNumbers(tenantId, groupIds, playerId)),
+      ...(await profileShirtNumbers(tenantId, groupIds, playerId, detail.stats)),
     });
     return;
   }
@@ -602,7 +612,7 @@ router.get("/players/:id", async (req, res): Promise<void> => {
     stats,
     premierships: premRows,
     awards: dedupeAwards(awardRows),
-    ...(await profileShirtNumbers(source.tenantId, [params.data.id], params.data.id)),
+    ...(await profileShirtNumbers(source.tenantId, [params.data.id], params.data.id, stats)),
   });
 });
 

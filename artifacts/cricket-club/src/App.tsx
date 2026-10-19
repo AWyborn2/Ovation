@@ -184,8 +184,12 @@ function AdminRoutes() {
             <Route path="/admin/honours/shirt-numbers">
               <RedirectKeepingQuery to="/admin/people/shirt-numbers" />
             </Route>
+            {/* The junior shirt-number tab is now the Juniors section of Shirt numbers. */}
             <Route path="/admin/honours/junior-shirt-numbers">
-              <RedirectKeepingQuery to="/admin/people/junior-shirt-numbers" />
+              <Redirect to="/admin/people/shirt-numbers?section=juniors" />
+            </Route>
+            <Route path="/admin/people/junior-shirt-numbers">
+              <Redirect to="/admin/people/shirt-numbers?section=juniors" />
             </Route>
             <Route path="/admin/honours/display">
               <RedirectKeepingQuery to="/admin/settings/display" />

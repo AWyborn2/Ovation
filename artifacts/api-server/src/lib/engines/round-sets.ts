@@ -45,6 +45,7 @@ import {
 import { formatFixtureTime } from "./match-day";
 import {
   loadAutoDebuts,
+  teamListCategoryOf,
   teamListSeasonOf,
   teamListShirtNumberLoader,
   teamListToCardInput,
@@ -442,7 +443,7 @@ export async function generateRoundTeamListDrafts(
         f as FixtureRow,
         players,
         debuts,
-        await shirtNumbers(teamListSeasonOf(f as FixtureRow)),
+        await shirtNumbers(teamListSeasonOf(f as FixtureRow), teamListCategoryOf(f as FixtureRow)),
       );
       if ((team.players as unknown[]).length > 0) teams.push(team);
     }
