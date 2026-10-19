@@ -512,7 +512,8 @@ async function centralPlayerDetailImpl(
  *  /players/:id/seasons shape (zeros collapse to null like the SQL NULLIFs). */
 export interface CentralPlayerSeasonRow {
   grade: string;
-  season: number;
+  /** Null for the pre-scorecard baseline row (club history only). */
+  season: number | null;
   games: number | null;
   innings: number | null;
   notOuts: number | null;

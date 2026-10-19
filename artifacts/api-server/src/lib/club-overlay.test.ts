@@ -305,7 +305,7 @@ describe("the boundary: one source per (grade, season)", () => {
 // ── Career-grain history ────────────────────────────────────────────────────
 
 describe("career-grain history", () => {
-  it("adds once to career totals and appears in no season view", () => {
+  it("adds once to career totals and appears only as the season-null baseline row", () => {
     const stats = apply({
       buckets: [batted(G, "A Grade", 2004, 10, 400)],
       data: {
@@ -315,7 +315,11 @@ describe("career-grain history", () => {
     });
     expect(careerOf(stats, G)).toMatchObject({ games: 60, runs: 1900 });
     expect(clubPlayerDetail(stats, G)?.runs).toBe(1900);
-    expect(clubPlayerSeasons(stats, G).map((s) => s.season)).toEqual([2004]);
+    // The profile hero sums these rows for Career, so the baseline must be here.
+    expect(clubPlayerSeasons(stats, G).map((s) => [s.season, s.games, s.runs])).toEqual([
+      [null, 50, 1500],
+      [2004, 10, 400],
+    ]);
     // A season-scoped leaderboard never sees it; the career leaderboard does, once.
     expect(clubGradeLeaderboard(stats, "A Grade", { seasonStartYear: 2004 })[0]?.runs).toBe(400);
     expect(clubGradeLeaderboard(stats, "A Grade")[0]?.runs).toBe(1900);
