@@ -36,6 +36,10 @@ is about, and to keep folder photos for team-level tiles.
 6. **Retire `random` and `player` card photo rules** for teamList, matchSummary and Match Day
    (Ash, 2026-10-19). Only `fixed` rules remain for these kinds.
 
+7. **Team List rotation** (Ash, 2026-10-20): prefer the selected players, and their photos,
+   used least on Team List posts in the last 4 weeks. Team List only; it never leaves a
+   tile empty.
+
 ## User stories
 
 - As a club admin, I want a team list tile to show someone actually picked in that side.

@@ -91,6 +91,30 @@ Photo sources (for the queue's "why this photo" text): `auto:tag-player`,
 - The manual pick persists as today (`photoSource = "manual"`), and KTD6 holds: auto never
   overwrites it.
 
+
+### Team List rotation (U1b, added 2026-10-20 with Ash: Team List only)
+
+Goal: the same tagged player and photo don't keep appearing on Team List slides.
+
+- **Usage window:** the tenant's `teamList` drafts created in the last 28 days that aren't
+  declined or deleted, excluding the draft being picked for (its own `sourceKey`). Both
+  auto and manual photos count, since a posted photo has been seen either way.
+- **Player usage:** count of those drafts whose `photoUrl` resolves to a `club_photos` row
+  tagged with that player, plus headshot URLs matched to `player_images`. One grouped query.
+- **Player choice (replaces the plain seeded random in Pass A/B):** candidates with a
+  photo → lowest recent-use count → seeded random among ties (same seed as today).
+- **Photo choice for that player:** prefer the photo least used in the window, then
+  today's ordering (types, format, solo, newest).
+- **Stability:** a refresh re-picks auto photos (`draft-upsert.ts:419`). If the draft's
+  current auto photo still tags a player in the side, keep it, so refreshes don't make the
+  photo jump.
+- **Never empties a tile:** rotation only reorders. If the only candidate is over-used, they
+  are still picked.
+- Results / Summary / Match Day: unchanged (top performer order stays).
+- Tests: two fixtures in a week with overlapping sides feature different players when
+  possible; a refresh keeps the photo; a single tagged player is still used.
+- Optional later (P2): show "used 3× in 4 weeks" in the admin picker.
+
 ## Invariants and tests
 
 - Property test: for `side`/`game`, every non-null pick has a tag row (or default headshot)
@@ -117,7 +141,7 @@ manual.
 
 ## Delivery units
 
-- **U1** picker policy, candidate lists, `rankedPerformerPlayerIds`, tests (api-server only).
+- **U1** picker policy, candidate lists, `rankedPerformerPlayerIds`, Team List rotation, tests (api-server only).
 - **U2** rule retirement: route validation, OpenAPI + codegen, admin rules UI, migration 0049.
 - **U3** filtered picker: OpenAPI params + codegen, DTO field, share-modal filters, empty state.
 
