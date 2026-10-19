@@ -8521,6 +8521,38 @@ export interface ShirtNumberSettingsUpdate {
 }
 
 /**
+ * The senior register an entry belongs to. Number clashes are checked within a category only; one person may be in both in the same season.
+ */
+export type ShirtNumberCategory = typeof ShirtNumberCategory[keyof typeof ShirtNumberCategory];
+
+
+export const ShirtNumberCategory = {
+  men: 'men',
+  female: 'female',
+} as const;
+
+export type ShirtNumberRegisterName = typeof ShirtNumberRegisterName[keyof typeof ShirtNumberRegisterName];
+
+
+export const ShirtNumberRegisterName = {
+  men: 'men',
+  female: 'female',
+  juniors: 'juniors',
+} as const;
+
+export interface ShirtNumberRegisterOverlapPerson {
+  /** The registers this person is on (two or more), in display order. */
+  registers: ShirtNumberRegisterName[];
+  seniorEntryIds: number[];
+  juniorEntryIds: number[];
+}
+
+export interface ShirtNumberRegisterOverlap {
+  season: number;
+  people: ShirtNumberRegisterOverlapPerson[];
+}
+
+/**
  * Where a register entry came from. `squad`: added from the club's squad register (the availability squad import) by "Add squad to register".
  */
 export type ShirtNumberSource = typeof ShirtNumberSource[keyof typeof ShirtNumberSource];
@@ -8596,6 +8628,9 @@ export interface ShirtNumberCrossRegisterNote {
 export interface ShirtNumberEntry {
   id: number;
   season: number;
+  category: ShirtNumberCategory;
+  /** The other senior categories this person is also on this season (same player or Profile ID; same name for an entry with neither). */
+  alsoIn: ShirtNumberCategory[];
   name: string;
   /**
      * PlayHQ participant GUID (lowercased)
@@ -8620,7 +8655,7 @@ export interface ShirtNumberEntry {
   source: ShirtNumberSource;
   /** True while the entry is not linked to a player who has played. */
   held: boolean;
-  /** True when another entry in the season wears the same number. */
+  /** True when another entry in the season and category wears the same number. */
   duplicate: boolean;
   /** Admin-only cross-check against the juniors register for the same season (read-only, this club only). Empty when nothing relates. */
   crossRegister?: ShirtNumberCrossRegisterNote[];
@@ -8638,6 +8673,7 @@ export interface ShirtNumberRegister {
 
 export interface ShirtNumberEntryInput {
   season: number;
+  category?: ShirtNumberCategory;
   /**
      * @minLength 1
      * @maxLength 120
@@ -8651,6 +8687,7 @@ export interface ShirtNumberEntryInput {
 }
 
 export interface ShirtNumberEntryUpdate {
+  category?: ShirtNumberCategory;
   /**
      * @minLength 1
      * @maxLength 120
@@ -8797,6 +8834,7 @@ export interface ShirtNumberUploadPreview {
   side: ShirtNumberUploadPreviewSide;
   kind: ShirtNumberUploadKind;
   season: number;
+  category?: ShirtNumberCategory;
   fileName: string;
   rows: ShirtNumberPreviewRow[];
   counts: ShirtNumberPreviewCounts;
@@ -10346,6 +10384,17 @@ export type ListShirtNumbersParams = {
  * Season start year (e.g. 2026 for 2026/27)
  */
 season?: number;
+/**
+ * The senior register (default `men`).
+ */
+category?: ShirtNumberCategory;
+};
+
+export type AddSquadToShirtNumberSeasonParams = {
+/**
+ * The senior register (default `men`).
+ */
+category?: ShirtNumberCategory;
 };
 
 export type UploadShirtNumbersBody = {
@@ -10354,6 +10403,7 @@ export type UploadShirtNumbersBody = {
   kind: ShirtNumberUploadKind;
   /** Starting year of the season (e.g. 2026 for 2026/27) */
   season: number;
+  category?: ShirtNumberCategory;
 };
 
 export type ImportSquadBody = {
@@ -10387,6 +10437,10 @@ token: string;
 export type GetWeekendCarouselSourcesParams = {
 setType?: GetWeekendCarouselSourcesSetType;
 /**
+ * Choose senior or junior sources, or both. Junior-only requests do not read senior fixtures or scorecards.
+ */
+audience?: GetWeekendCarouselSourcesAudience;
+/**
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 from: string;
@@ -10404,6 +10458,15 @@ export const GetWeekendCarouselSourcesSetType = {
   teamList: 'teamList',
   results: 'results',
   matchSummary: 'matchSummary',
+} as const;
+
+export type GetWeekendCarouselSourcesAudience = typeof GetWeekendCarouselSourcesAudience[keyof typeof GetWeekendCarouselSourcesAudience];
+
+
+export const GetWeekendCarouselSourcesAudience = {
+  all: 'all',
+  senior: 'senior',
+  junior: 'junior',
 } as const;
 
 export type ListFixturesParams = {
@@ -10604,6 +10667,13 @@ export type UploadJuniorShirtNumbersBody = {
   kind: ShirtNumberUploadKind;
   /** Starting year of the season (e.g. 2026 for 2026/27) */
   season: number;
+};
+
+export type GetShirtNumberRegisterOverlapParams = {
+/**
+ * Season start year (default the current season)
+ */
+season?: number;
 };
 
 export type ListJuniorLeaderboardParams = {

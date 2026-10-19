@@ -1,5 +1,9 @@
-import { useState, type ComponentType } from "react";
+import { useMemo, useState, type ComponentType } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  getGetShirtNumberRegisterOverlapQueryKey,
+  getShirtNumberRegisterOverlap,
+} from "@workspace/api-client-react";
 import type {
   ShirtNumberSettings,
   ShirtNumberSquadAddResult,
@@ -15,10 +19,13 @@ import { useConfirm } from "@/components/confirm-dialog";
 import {
   conflictOf,
   errorMessage,
+  REGISTER_LABEL,
   type PickedPerson,
   type RegisterEntryView,
+  type RegisterName,
   type ShirtNumberRegisterApi,
 } from "./api";
+import { alsoAddEntry, alsoAddTargets, invalidateRegisters, withAlsoIn } from "./overlap";
 import { ShirtNumberRegisterTable, type SaveOutcome } from "./register-table";
 import { ShirtNumberUploadPanel } from "./upload-panel";
 import { StartSeasonDialog, startSeasonLabel } from "./start-season-dialog";
@@ -33,8 +40,12 @@ import { invalidateTeamListCarouselSources } from "@/lib/team-list-carousel-cach
  * (defaulting to the current season), the register table, add person,
  * "Start season" by rollover policy, "Add squad to register" from the club's
  * squad register, and the number-spreadsheet upload. Side-agnostic: the
- * senior page passes `seniorShirtNumberApi` and `SeniorPersonPicker`; a
- * juniors page passes its own adapter and participant picker.
+ * senior sections pass `seniorShirtNumberApiFor(category)` and `SeniorPersonPicker`;
+ * the juniors section passes its own adapter and participant picker.
+ *
+ * One person may be on several registers in a season: rows show "Also in: …" (from the
+ * admin-only overlap read) and offer "Also add to…". The senior sections can move
+ * selected rows to the other category in one go (`moveTo`).
  */
 export function ShirtNumberRegister({
   api,
@@ -42,6 +53,7 @@ export function ShirtNumberRegister({
   initialSeason,
   PersonPicker,
   requirePerson = false,
+  moveTo,
 }: {
   api: ShirtNumberRegisterApi;
   settings: ShirtNumberSettings;
@@ -51,6 +63,8 @@ export function ShirtNumberRegister({
   PersonPicker?: ComponentType<PersonPickerProps>;
   /** The add form needs a picked person (juniors key on a participant). */
   requirePerson?: boolean;
+  /** Senior only: the category selected rows can be moved to ("Move to Female"). */
+  moveTo?: Exclude<RegisterName, "juniors">;
 }) {
   const queryClient = useQueryClient();
   const confirm = useConfirm();
@@ -69,6 +83,13 @@ export function ShirtNumberRegister({
     queryKey: api.registerQueryKey(season),
     queryFn: () => api.fetchRegister(season),
   });
+  // Who else is on another register this season (flags only). A failed read just
+  // hides the badges; the register itself still works.
+  const overlap = useQuery({
+    queryKey: getGetShirtNumberRegisterOverlapQueryKey({ season }),
+    queryFn: () => getShirtNumberRegisterOverlap({ season }),
+    retry: false,
+  });
   const carry = settings.rolloverPolicy === "carry";
   const previous = useQuery({
     queryKey: api.registerQueryKey(season - 1),
@@ -79,6 +100,9 @@ export function ShirtNumberRegister({
   const invalidate = (...seasons: number[]) => {
     for (const s of seasons.length ? seasons : [season]) {
       void queryClient.invalidateQueries({ queryKey: api.registerQueryKey(s) });
+      void queryClient.invalidateQueries({
+        queryKey: getGetShirtNumberRegisterOverlapQueryKey({ season: s }),
+      });
     }
     if (api.side === "senior") void invalidateTeamListCarouselSources(queryClient);
   };
@@ -92,7 +116,11 @@ export function ShirtNumberRegister({
   const addSquad = useMutation({ mutationFn: api.addSquad });
   const remove = useMutation({ mutationFn: api.deleteEntry });
 
-  const entries = register.data?.entries ?? [];
+  const entries = useMemo(
+    () => withAlsoIn(register.data?.entries ?? [], api.register, overlap.data),
+    [register.data, api.register, overlap.data],
+  );
+  const [moving, setMoving] = useState(false);
   const options = seasonOptions(register.data?.seasons ?? [], current);
   const startCount = !carry
     ? 0
@@ -129,6 +157,49 @@ export function ShirtNumberRegister({
     } catch (e) {
       setError(errorMessage(e));
     }
+  };
+
+  const onAlsoAdd = async (entry: RegisterEntryView, to: RegisterName) => {
+    try {
+      const res = await alsoAddEntry(entry, to, season);
+      invalidateRegisters(queryClient, season);
+      if (to !== "juniors") void invalidateTeamListCarouselSources(queryClient);
+      report(
+        `Also added ${entry.name} to the ${REGISTER_LABEL[to]} register` +
+          (entry.number ? ` as #${entry.number}.` : "."),
+        res.warnings,
+      );
+    } catch (e) {
+      const c = conflictOf(e);
+      setError(c ? c.error : errorMessage(e));
+      if (c) setWarnings(c.warnings);
+    }
+  };
+
+  const onMove = async (picked: RegisterEntryView[]) => {
+    if (!moveTo || !api.moveEntry || picked.length === 0) return;
+    setMoving(true);
+    const moved: string[] = [];
+    const refused: string[] = [];
+    const moveWarnings: ShirtNumberWarning[] = [];
+    for (const entry of picked) {
+      try {
+        const res = await api.moveEntry(entry.id, moveTo);
+        moved.push(entry.name);
+        moveWarnings.push(...res.warnings);
+      } catch (e) {
+        const c = conflictOf(e);
+        refused.push(`${entry.name}: ${c ? c.error : errorMessage(e)}`);
+      }
+    }
+    setMoving(false);
+    invalidateRegisters(queryClient, season);
+    void invalidateTeamListCarouselSources(queryClient);
+    report(
+      moved.length > 0 ? `Moved ${moved.length} to the ${REGISTER_LABEL[moveTo]} register.` : null,
+      moveWarnings,
+    );
+    if (refused.length > 0) setError(`Not moved: ${refused.join("; ")}`);
   };
 
   const onDelete = async (entry: RegisterEntryView) => {
@@ -285,6 +356,19 @@ export function ShirtNumberRegister({
           onSaveNumber={onSaveNumber}
           onDelete={(e) => void onDelete(e)}
           onQuickLink={(entry, person) => void onLink(entry, person)}
+          alsoAdd={{
+            targets: (entry) => alsoAddTargets(entry, api.register),
+            onAdd: (entry, to) => void onAlsoAdd(entry, to),
+          }}
+          bulkMove={
+            moveTo && api.moveEntry
+              ? {
+                  label: `Move to ${REGISTER_LABEL[moveTo]}`,
+                  onMove: (picked) => void onMove(picked),
+                  pending: moving,
+                }
+              : undefined
+          }
           renderLinkControl={
             api.supportsHeld && PersonPicker
               ? (entry, done) => (

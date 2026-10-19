@@ -29,7 +29,7 @@ router.get(
       res.status(400).json({ error: "Choose a valid start and end date." });
       return;
     }
-    const { from, to, setType = "matchDay" } = parsed.data;
+    const { from, to, setType = "matchDay", audience = "all" } = parsed.data;
     const validDay = (s: string) =>
       /^\d{4}-\d{2}-\d{2}$/.test(s) &&
       Number.isFinite(Date.parse(s)) &&
@@ -43,7 +43,7 @@ router.get(
     const start = clubTimeToUtc(`${from}T00:00`)!;
     const end = clubTimeToUtc(`${endDay.toISOString().slice(0, 10)}T00:00`)!;
     const tenantId = getTenantId(req);
-    const rows = await db
+    const rows = audience === "junior" ? [] : await db
       .select()
       .from(fixturesTable)
       .where(
@@ -81,7 +81,7 @@ router.get(
     );
     let sources;
     try {
-      sources = await carouselContent(req, tenantId, setType, eligibleFixtures, from, to);
+      sources = await carouselContent(req, tenantId, setType, eligibleFixtures, from, to, audience);
     } catch (error) {
       req.log.warn({ err: error, tenantId }, "Carousel source lookup failed");
       res

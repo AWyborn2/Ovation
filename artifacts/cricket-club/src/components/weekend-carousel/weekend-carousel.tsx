@@ -28,7 +28,7 @@ import {
 import { EmptyState, QueryError } from "@/components/data-states";
 import { SIZES, type CardSize } from "@/lib/share-card";
 import { listPackManifests } from "@/lib/pack-templates/registry";
-import { CLUB_TIME_ZONE, eligiblePhotos, type TeamSlide } from "./model";
+import { CLUB_TIME_ZONE, eligiblePhotos, type TeamSlide, type CarouselAudience } from "./model";
 import { CoverPhotoPicker } from "./cover-photo-picker";
 import { PhotoPlacement, SlidePreview } from "./slide-preview";
 import { useWeekendCarousel, type WeekendCarouselState } from "./use-weekend-carousel";
@@ -45,14 +45,15 @@ const fmtWhen = (iso: string) =>
     minute: "2-digit",
   }).format(new Date(iso));
 
-const fixtureLine = (f: Fixture) =>
-  `${f.grade} ${f.source === "scorecard" || f.isHome ? "vs" : "at"} ${f.opponentName}`;
+const fixtureLine = (f: Fixture, teamName?: unknown) =>
+  `${f.grade}${typeof teamName === "string" && teamName !== f.grade ? ` (${teamName})` : ""} ${f.source === "scorecard" || f.isHome ? "vs" : "at"} ${f.opponentName}`;
 
 /** Entry action + dialog. Takes no props; data loads only once opened. */
 export function WeekendCarousel({
   className,
   initialType = "matchDay",
-}: { className?: string; initialType?: CarouselSetType } = {}) {
+  initialAudience = "all",
+}: { className?: string; initialType?: CarouselSetType; initialAudience?: CarouselAudience } = {}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -73,7 +74,7 @@ export function WeekendCarousel({
           className="left-0 top-0 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 sm:rounded-none"
           data-testid="weekend-fullscreen-editor"
         >
-          {open && <WeekendCarouselBody initialType={initialType} />}
+          {open && <WeekendCarouselBody initialType={initialType} initialAudience={initialAudience} />}
         </DialogContent>
       </Dialog>
     </>
@@ -82,8 +83,9 @@ export function WeekendCarousel({
 
 export function WeekendCarouselBody({
   initialType = "matchDay",
-}: { initialType?: CarouselSetType } = {}) {
-  const s = useWeekendCarousel(initialType);
+  initialAudience = "all",
+}: { initialType?: CarouselSetType; initialAudience?: CarouselAudience } = {}) {
+  const s = useWeekendCarousel(initialType, initialAudience);
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <DialogHeader className="shrink-0 space-y-1 border-b px-5 py-4 pr-12 text-left">
@@ -109,6 +111,28 @@ export function WeekendCarouselBody({
             </Button>
           ))}
         </fieldset>
+        <fieldset className="flex flex-wrap items-center gap-2" disabled={s.busy}>
+          <legend className="mb-2 text-sm font-medium">Teams</legend>
+          {(["all", "senior", "junior"] as const).map(audience => (
+            <Button
+              key={audience}
+              size="sm"
+              variant={s.audience === audience ? "default" : "outline"}
+              aria-pressed={s.audience === audience}
+              onClick={() => s.setAudience(audience)}
+              data-testid={`button-carousel-audience-${audience}`}
+            >
+              {audience === "all" ? "All teams" : audience === "junior" ? "Juniors" : "Seniors"}
+            </Button>
+          ))}
+        </fieldset>
+        {s.audience === "junior" && (
+          <p className="text-sm text-muted-foreground">
+            Junior match-day tiles use synced junior fixtures. Team-list tiles require a
+            published list from Junior fixtures or a finalised Selection Hub team.
+            Public naming and privacy settings apply; junior team photos are not used.
+          </p>
+        )}
         <div className="space-y-1">
           <Label htmlFor="carousel-pack">Built-in design pack</Label>
           <select
@@ -242,11 +266,11 @@ function RangeAndFixtures({ s }: { s: WeekendCarouselState }) {
                   checked={p.included}
                   disabled={lock}
                   onChange={() => s.togglePick(p.id)}
-                  aria-label={`Include ${fixtureLine(p.fixture)}`}
+                  aria-label={`Include ${fixtureLine(p.fixture, s.sourceContent[p.id]?.juniorTeamName)}`}
                   data-testid={`checkbox-fixture-${p.id}`}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{fixtureLine(p.fixture)}</p>
+                  <p className="truncate text-sm font-medium">{fixtureLine(p.fixture, s.sourceContent[p.id]?.juniorTeamName)}</p>
                   <p className="truncate text-xs text-muted-foreground">
                     {p.fixture.source === "scorecard"
                       ? new Date(p.fixture.startAt).toLocaleDateString("en-AU", {

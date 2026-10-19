@@ -5,6 +5,7 @@ import {
   db,
   playersTable,
   shirtNumbersTable,
+  type ShirtNumberCategory,
   shirtNumberUploadsTable,
   type ShirtNumberRow,
   type ShirtNumberUploadKind,
@@ -823,7 +824,14 @@ export type UploadPayload = {
   rows: PreviewRow[];
   unrecognisedHeaders: string[];
   errors: string[];
+  /** Senior only: the register the upload commits into (absent on older previews: `men`). */
+  category?: ShirtNumberCategory;
 };
+
+/** The senior register a stored upload commits into; `men` for previews from before 0047. */
+export function payloadCategory(payload: unknown): ShirtNumberCategory {
+  return (payload as { category?: unknown } | null)?.category === "female" ? "female" : "men";
+}
 
 /** The contract's `ShirtNumberUploadPreview`. */
 export type UploadPreview = UploadPayload & {
@@ -849,6 +857,7 @@ export function serializePreview(
     counts: previewCounts(payload.rows),
     unrecognisedHeaders: payload.unrecognisedHeaders,
     errors: payload.errors,
+    ...(upload.side === "senior" ? { category: payloadCategory(payload) } : {}),
     // Over-cap files are refused outright, so nothing is ever dropped.
     truncated: false,
   };
@@ -975,6 +984,9 @@ function carriedFrom(
  *
  * Idempotent per upload: the row is locked and must be `pending`; success
  * marks it `committed` and clears the payload, so a second commit is a 409.
+ *
+ * Everything happens within the upload's category (men / female): "already on the
+ * register", duplicates and carry-forward never look at the other category.
  */
 export async function commitSeniorUpload(
   tenantId: number,
@@ -1026,10 +1038,17 @@ export async function commitSeniorUpload(
       }
 
       const season = upload.season;
+      const category = payloadCategory(upload.payload);
       const entries = await tx
         .select()
         .from(shirtNumbersTable)
-        .where(and(eq(shirtNumbersTable.tenantId, tenantId), eq(shirtNumbersTable.season, season)))
+        .where(
+          and(
+            eq(shirtNumbersTable.tenantId, tenantId),
+            eq(shirtNumbersTable.season, season),
+            eq(shirtNumbersTable.category, category),
+          ),
+        )
         .orderBy(asc(shirtNumbersTable.id));
 
       // ── Plan every row ──
@@ -1176,7 +1195,7 @@ export async function commitSeniorUpload(
       // Carry last season's number into new entries without one.
       const warnings: ShirtNumberWarning[] = [];
       if (settings.rolloverPolicy === "carry") {
-        const previous = await loadSeasonEntries(tx, "senior", tenantId, season - 1);
+        const previous = await loadSeasonEntries(tx, "senior", tenantId, season - 1, category);
         for (const p of planned) {
           if (p.existing || p.explicit !== null) continue;
           const carried = carriedFrom(previous, p);
@@ -1214,6 +1233,7 @@ export async function commitSeniorUpload(
             playerId: p.playerId,
             number,
             source,
+            category,
           });
           if (number !== null) touchedNumbers.add(number);
           continue;
@@ -1248,7 +1268,7 @@ export async function commitSeniorUpload(
 
       // Under `warn`, one notice per number this upload gave out that is now shared.
       if (touchedNumbers.size > 0) {
-        const final = await loadSeasonEntries(tx, "senior", tenantId, season);
+        const final = await loadSeasonEntries(tx, "senior", tenantId, season, category);
         for (const number of touchedNumbers) {
           const holders = duplicatesOf(final, number);
           if (holders.length < 2) continue;

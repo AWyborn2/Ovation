@@ -164,12 +164,6 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         feature: "curation",
       },
       {
-        value: "junior-shirt-numbers",
-        label: "Junior shirt numbers",
-        path: "/admin/people/junior-shirt-numbers",
-        feature: "curation",
-      },
-      {
         value: "committee",
         label: "Committee",
         path: "/admin/people/committee",
@@ -238,10 +232,16 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     href: "/admin/import",
     icon: Upload,
     description:
-      "Every file upload in one place: season and match stats, and the PlayHQ squad export.",
+      "Every file upload in one place: season and match stats, the PlayHQ squad export and shirt numbers.",
     tabs: [
       { value: "stats", label: "Stats", path: "/admin/import" },
       { value: "squad", label: "Squad", path: "/admin/import/squad" },
+      {
+        value: "shirt-numbers",
+        label: "Shirt numbers",
+        path: "/admin/import/shirt-numbers",
+        feature: "curation",
+      },
     ],
   },
   { key: "users", label: "Admin users", href: "/admin/users", icon: UserCog, tabs: [] },

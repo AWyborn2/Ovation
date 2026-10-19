@@ -25,10 +25,12 @@ import { beforeBoundary, loadClubOverlayData } from "./club-overlay";
 import {
   teamListToCardInput,
   teamListShirtNumberLoader,
+  teamListCategoryOf,
   teamListSeasonOf,
   loadAutoDebuts,
 } from "./engines/team-list";
 import { recoverPublishedSelectionIdentities } from "./selection-published-players";
+import { juniorCarouselContent } from "./junior-carousel-content";
 
 export type CarouselSetType = "matchDay" | "teamList" | "results" | "matchSummary";
 type Content = Record<string, Record<string, unknown>>;
@@ -63,10 +65,20 @@ export async function carouselContent(
   fixtures: FixtureRow[],
   from: string,
   to: string,
+  audience: "all" | "senior" | "junior" = "all",
 ): Promise<{ fixtures: FixtureRow[]; content: Content; warnings: string[] }> {
   const content: Content = {};
   const warnings: string[] = [];
-  if (type === "matchDay") return { fixtures, content, warnings };
+  const juniorSources = (type === "matchDay" || type === "teamList") && audience !== "senior"
+    ? await juniorCarouselContent(tenantId, type, from, to)
+    : { fixtures: [], content: {}, warnings: [] };
+  if (audience === "junior" && (type === "matchDay" || type === "teamList"))
+    return juniorSources;
+  if (type === "matchDay") return {
+    fixtures: [...fixtures, ...juniorSources!.fixtures],
+    content: juniorSources!.content,
+    warnings: juniorSources!.warnings,
+  };
   if (type === "teamList") {
     const lists = fixtures.length
       ? await db
@@ -95,7 +107,9 @@ export async function carouselContent(
         continue;
       }
       const junior = isJuniorGradeLabel(fixture.grade);
-      const shirtNumbers = junior ? null : await numbers(teamListSeasonOf(fixture));
+      const shirtNumbers = junior
+        ? null
+        : await numbers(teamListSeasonOf(fixture), teamListCategoryOf(fixture));
       const resolved = shirtNumbers
         ? await recoverPublishedSelectionIdentities(tenantId, list, fixture.startAt)
         : { players: list.players };
@@ -124,17 +138,21 @@ export async function carouselContent(
       };
       available.push(fixture);
     }
-    return { fixtures: available, content, warnings };
+    return {
+      fixtures: [...available, ...juniorSources!.fixtures],
+      content: { ...content, ...juniorSources!.content },
+      warnings: [...warnings, ...juniorSources!.warnings],
+    };
   }
 
-  const source = await dataSource(req); // fail-closed native/central tenant guard
+  const source = audience === "junior" ? null : await dataSource(req);
   const senior =
-    source.kind === "central"
+    source?.kind === "central"
       ? await (await import("@workspace/db/central-queries")).centralClubMatches(source.clubId)
-      : await db.select().from(matchesTable);
+      : source ? await db.select().from(matchesTable) : [];
   const boundaries =
-    source.kind === "central" ? (await loadClubOverlayData(tenantId)).boundaries : [];
-  const juniors = await db
+    source?.kind === "central" ? (await loadClubOverlayData(tenantId)).boundaries : [];
+  const juniors = audience === "senior" ? [] : await db
     .select()
     .from(juniorMatchesTable)
     .where(eq(juniorMatchesTable.tenantId, tenantId));
@@ -186,7 +204,7 @@ export async function carouselContent(
     if (seen.has(identity)) continue;
     const detail = match.junior
       ? await loadJuniorMatchDetail(match.id, tenantId)
-      : source.kind === "central"
+      : source?.kind === "central"
         ? await loadCentralMatchDetail(source, match.id)
         : await loadMatchDetail(match.id, tenantId);
     if (!detail) {

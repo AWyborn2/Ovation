@@ -7,8 +7,11 @@
  *  1. After team lists are projected: every PlayHQ participant on the tenant's team lists
  *     for recent and upcoming fixtures who is missing from that fixture's season register is
  *     added (source `lineup`), linked to a player when the tenant's crosswalk knows them,
- *     else held. Carry-forward applies; under the `block` duplicate policy a carried number
- *     another entry already wears is left off.
+ *     else held. The register is the fixture grade's category (a women's grade feeds the
+ *     female register, every other grade the men's; shirtNumberCategoryForGrade), so one
+ *     person can be on both. Carry-forward applies within the category; under the `block`
+ *     duplicate policy a carried number another entry of the category already wears is
+ *     left off.
  *  2. After the central projection: a held entry is linked once its participant has a
  *     senior scorecard or roster row for the tenant's club in central, minting the crosswalk
  *     row first (with the shared `mintPlayerIdMap`) when there is none. "Linked" stays equal
@@ -21,6 +24,7 @@
 import { and, eq, gte, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import type { TeamListPlayer } from "../schema/fixtures";
 import type {
+  ShirtNumberCategory,
   ShirtNumberDuplicatePolicy,
   ShirtNumberRolloverPolicy,
   ShirtNumberSource,
@@ -32,6 +36,7 @@ import {
   linkHeldShirtNumberEntry,
   normaliseParticipantId,
   numberAfterDuplicatePolicy,
+  shirtNumberCategoryForGrade,
   shirtNumberNameKey,
   shirtNumberSettingsFromRow,
 } from "../shirt-numbers";
@@ -48,6 +53,8 @@ const FILL_IN_THRESHOLD = 90000;
 /** One lineup participant to make sure is on a season's register. */
 export interface LineupCandidate {
   season: number;
+  /** The senior register, from the fixture's grade (omitted: `men`). */
+  category?: ShirtNumberCategory;
   /** Lowercased PlayHQ GUID. */
   participantId: string;
   name: string;
@@ -60,6 +67,8 @@ export interface ExistingShirtEntry {
   /** The row id; needed only to attach a lineup participant to a name-only held entry. */
   id?: number;
   season: number;
+  /** Omitted: `men` (every entry from before migration 0047). */
+  category?: ShirtNumberCategory;
   /** The register name; needed only for the name-only held-entry match. */
   name?: string;
   participantId: string | null;
@@ -85,6 +94,7 @@ export interface LineupPlan {
 export interface NewShirtNumberEntry {
   tenantId: number;
   season: number;
+  category: ShirtNumberCategory;
   name: string;
   participantId: string;
   playerId: number | null;
@@ -92,46 +102,64 @@ export interface NewShirtNumberEntry {
   source: ShirtNumberSource;
 }
 
-/** The key carried numbers are passed under: `${season}:${participantId}`. */
-export function carriedKey(season: number, participantId: string): string {
-  return `${season}:${participantId}`;
+/** The key carried numbers are passed under: `${season}:${participantId}` (+ `:female`). */
+export function carriedKey(
+  season: number,
+  participantId: string,
+  category: ShirtNumberCategory = "men",
+): string {
+  return category === "men"
+    ? `${season}:${participantId}`
+    : `${season}:${participantId}:${category}`;
 }
 
+const categoryOf = (e: { category?: ShirtNumberCategory }): ShirtNumberCategory =>
+  e.category ?? "men";
+
+/** `${season}:${category}`: the scope clashes and per-person uniqueness are checked within. */
+const scopeKey = (season: number, category: ShirtNumberCategory) => `${season}:${category}`;
+
 /**
- * The participants on a tenant's team lists, one per (season, participant): the season
- * from the fixture's start (KTD7), the player from the tenant's crosswalk (lowercased
- * keys), the name trimmed and capped. Rows without a participant, fill-ins and blank
+ * The participants on a tenant's team lists, one per (season, category, participant): the
+ * season from the fixture's start (KTD7), the category from its grade, the player from the
+ * tenant's crosswalk (lowercased keys), the name trimmed and capped. Rows without a participant, fill-ins and blank
  * names are skipped.
  */
 export function lineupCandidates(
-  fixtures: ReadonlyArray<{ startAt: Date; players: readonly TeamListPlayer[] }>,
+  fixtures: ReadonlyArray<{
+    startAt: Date;
+    grade?: string | null;
+    players: readonly TeamListPlayer[];
+  }>,
   playerIdOf: ReadonlyMap<string, number>,
 ): LineupCandidate[] {
   const out: LineupCandidate[] = [];
   const seen = new Set<string>();
   for (const f of fixtures) {
     const season = seasonStartYearFor(f.startAt);
+    const category = shirtNumberCategoryForGrade(f.grade);
     for (const p of f.players) {
       const participantId = normaliseParticipantId(p.participantId);
       if (!participantId) continue;
-      const key = carriedKey(season, participantId);
+      const key = carriedKey(season, participantId, category);
       if (seen.has(key)) continue;
       const playerId = playerIdOf.get(participantId) ?? p.playerId ?? null;
       if (playerId !== null && playerId >= FILL_IN_THRESHOLD) continue;
       const name = cleanShirtNumberName(p.displayName);
       if (!name) continue;
       seen.add(key);
-      out.push({ season, participantId, name, playerId });
+      out.push({ season, category, participantId, name, playerId });
     }
   }
   return out;
 }
 
-/** True when the season's register already has this person (by participant or player). */
+/** True when the season's register for the category already has this person (by participant or player). */
 function onRegister(c: LineupCandidate, existing: readonly ExistingShirtEntry[]): boolean {
   return existing.some(
     (e) =>
       e.season === c.season &&
+      categoryOf(e) === categoryOf(c) &&
       (normaliseParticipantId(e.participantId) === c.participantId ||
         (c.playerId !== null && e.playerId === c.playerId)),
   );
@@ -145,12 +173,13 @@ export function missingLineupCandidates(
   return candidates.filter((c) => !onRegister(c, existing));
 }
 
-/** `${season}:${name key}`: the scope a name-only identity is unique within. */
-const seasonNameKey = (season: number, name: string) => `${season}:${shirtNumberNameKey(name)}`;
+/** `${season}:${category}:${name key}`: the scope a name-only identity is unique within. */
+const seasonNameKey = (season: number, category: ShirtNumberCategory, name: string) =>
+  `${scopeKey(season, category)}:${shirtNumberNameKey(name)}`;
 
 /**
  * The register entries to write for a tenant's lineup candidates: only people missing from
- * the season. A missing candidate whose name matches exactly one id-less (name-only) held
+ * the season's register for their category (clashes are checked within it too). A missing candidate whose name matches exactly one id-less (name-only) held
  * entry in the season, and no other missing candidate's, is attached to that entry (it keeps
  * its number) — the same name-only identity rule the upload commit uses. Everyone else is
  * inserted, with last season's number when one was carried (`carried`, keyed by
@@ -164,13 +193,15 @@ export function planLineupInserts(args: {
   carried: ReadonlyMap<string, string>;
   duplicatePolicy: ShirtNumberDuplicatePolicy;
 }): LineupPlan {
-  const taken = new Map<number, Set<string>>();
-  const takenIn = (season: number) => {
-    let s = taken.get(season);
-    if (!s) taken.set(season, (s = new Set()));
+  const taken = new Map<string, Set<string>>();
+  const takenIn = (season: number, category: ShirtNumberCategory) => {
+    const key = scopeKey(season, category);
+    let s = taken.get(key);
+    if (!s) taken.set(key, (s = new Set()));
     return s;
   };
-  for (const e of args.existing) if (e.number !== null) takenIn(e.season).add(e.number);
+  for (const e of args.existing)
+    if (e.number !== null) takenIn(e.season, categoryOf(e)).add(e.number);
 
   const missing = missingLineupCandidates(args.candidates, args.existing);
 
@@ -180,12 +211,12 @@ export function planLineupInserts(args: {
   for (const e of args.existing) {
     if (e.id === undefined || e.name === undefined) continue;
     if (e.playerId !== null || e.participantId !== null) continue;
-    const key = seasonNameKey(e.season, e.name);
+    const key = seasonNameKey(e.season, categoryOf(e), e.name);
     nameOnly.set(key, [...(nameOnly.get(key) ?? []), e]);
   }
   const missingByName = new Map<string, number>();
   for (const c of missing) {
-    const key = seasonNameKey(c.season, c.name);
+    const key = seasonNameKey(c.season, categoryOf(c), c.name);
     missingByName.set(key, (missingByName.get(key) ?? 0) + 1);
   }
 
@@ -195,13 +226,14 @@ export function planLineupInserts(args: {
   for (const c of missing) {
     if (onRegister(c, planned)) continue;
 
-    const key = seasonNameKey(c.season, c.name);
+    const key = seasonNameKey(c.season, categoryOf(c), c.name);
     const heldByName = nameOnly.get(key) ?? [];
     if (heldByName.length === 1 && missingByName.get(key) === 1 && shirtNumberNameKey(c.name)) {
       const entry = heldByName[0]!;
       attaches.push({ entryId: entry.id!, participantId: c.participantId, playerId: c.playerId });
       planned.push({
         season: c.season,
+        category: categoryOf(c),
         participantId: c.participantId,
         playerId: c.playerId,
         number: entry.number,
@@ -209,15 +241,17 @@ export function planLineupInserts(args: {
       continue;
     }
 
-    const inUse = takenIn(c.season);
+    const category = categoryOf(c);
+    const inUse = takenIn(c.season, category);
     const number = numberAfterDuplicatePolicy(
-      args.carried.get(carriedKey(c.season, c.participantId)) ?? null,
+      args.carried.get(carriedKey(c.season, c.participantId, category)) ?? null,
       inUse,
       args.duplicatePolicy,
     );
     if (number !== null) inUse.add(number);
     planned.push({
       season: c.season,
+      category,
       participantId: c.participantId,
       playerId: c.playerId,
       number,
@@ -225,6 +259,7 @@ export function planLineupInserts(args: {
     inserts.push({
       tenantId: args.tenantId,
       season: c.season,
+      category,
       name: c.name,
       participantId: c.participantId,
       playerId: c.playerId,
@@ -266,6 +301,8 @@ export interface HeldShirtEntry {
   id: number;
   tenantId: number;
   season: number;
+  /** Omitted: `men`. */
+  category?: ShirtNumberCategory;
   participantId: string;
 }
 
@@ -274,17 +311,19 @@ export interface HeldShirtEntry {
  * appeared for the club (`appeared`, lowercased GUIDs), linked through the tenant's
  * crosswalk (`playerIdOf`, lowercased keys). An appeared participant without a crosswalk
  * row comes back in `unmapped` (mint, then plan again). Never links to a fill-in id, nor to
- * a player already linked in the same season (the per-person unique index).
+ * a player already linked in the same season and category (the per-person unique index).
  */
 export function planHeldLinks(args: {
   tenantId: number;
   held: readonly HeldShirtEntry[];
   appeared: ReadonlySet<string>;
   playerIdOf: ReadonlyMap<string, number>;
-  /** The tenant's linked entries: (season, playerId) pairs already taken. */
-  linked: ReadonlyArray<{ season: number; playerId: number }>;
+  /** The tenant's linked entries: (season, category, playerId) already taken. */
+  linked: ReadonlyArray<{ season: number; category?: ShirtNumberCategory; playerId: number }>;
 }): { links: { entryId: number; playerId: number }[]; unmapped: string[] } {
-  const taken = new Set(args.linked.map((l) => `${l.season}:${l.playerId}`));
+  const taken = new Set(
+    args.linked.map((l) => `${scopeKey(l.season, categoryOf(l))}:${l.playerId}`),
+  );
   const links: { entryId: number; playerId: number }[] = [];
   const unmapped = new Set<string>();
   for (const h of args.held) {
@@ -297,7 +336,7 @@ export function planHeldLinks(args: {
       continue;
     }
     if (playerId >= FILL_IN_THRESHOLD) continue;
-    const key = `${h.season}:${playerId}`;
+    const key = `${scopeKey(h.season, categoryOf(h))}:${playerId}`;
     if (taken.has(key)) continue;
     taken.add(key);
     links.push({ entryId: h.id, playerId });
@@ -472,7 +511,11 @@ async function syncTenantLineup(
   const { db, fixturesTable, teamListsTable, shirtNumbersTable } = await import("../index");
   const day = 24 * 3600 * 1000;
   const lists = await db
-    .select({ startAt: fixturesTable.startAt, players: teamListsTable.players })
+    .select({
+      startAt: fixturesTable.startAt,
+      grade: fixturesTable.grade,
+      players: teamListsTable.players,
+    })
     .from(teamListsTable)
     .innerJoin(
       fixturesTable,
@@ -509,6 +552,7 @@ async function syncTenantLineup(
     .select({
       id: shirtNumbersTable.id,
       season: shirtNumbersTable.season,
+      category: shirtNumbersTable.category,
       name: shirtNumbersTable.name,
       participantId: shirtNumbersTable.participantId,
       playerId: shirtNumbersTable.playerId,
@@ -523,11 +567,12 @@ async function syncTenantLineup(
       tenantId: t.id,
       side: "senior",
       season: c.season,
+      category: c.category,
       playerId: c.playerId,
       participantId: c.participantId,
       rolloverPolicy: t.rolloverPolicy,
     });
-    if (n !== null) carried.set(carriedKey(c.season, c.participantId), n);
+    if (n !== null) carried.set(carriedKey(c.season, c.participantId, c.category), n);
   }
 
   const plan = planLineupInserts({
@@ -673,6 +718,7 @@ async function linkTenantHeld(t: SyncTenant, summary: HeldShirtLinkSummary, log:
       id: shirtNumbersTable.id,
       tenantId: shirtNumbersTable.tenantId,
       season: shirtNumbersTable.season,
+      category: shirtNumbersTable.category,
       participantId: shirtNumbersTable.participantId,
     })
     .from(shirtNumbersTable)
@@ -693,10 +739,18 @@ async function linkTenantHeld(t: SyncTenant, summary: HeldShirtLinkSummary, log:
   if (appeared.size === 0) return;
 
   const linkedRows = await db
-    .select({ season: shirtNumbersTable.season, playerId: shirtNumbersTable.playerId })
+    .select({
+      season: shirtNumbersTable.season,
+      category: shirtNumbersTable.category,
+      playerId: shirtNumbersTable.playerId,
+    })
     .from(shirtNumbersTable)
     .where(and(eq(shirtNumbersTable.tenantId, t.id), isNotNull(shirtNumbersTable.playerId)));
-  const linked = linkedRows.map((l) => ({ season: l.season, playerId: l.playerId! }));
+  const linked = linkedRows.map((l) => ({
+    season: l.season,
+    category: l.category,
+    playerId: l.playerId!,
+  }));
 
   const appearedGuids = [...appeared];
   let playerIdOf = await playerIdsFor(t.id, appearedGuids);

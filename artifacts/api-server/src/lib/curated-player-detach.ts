@@ -91,8 +91,8 @@ const MOVE_TABLES = [...SET_NULL_TABLES, "player_images"] as const;
 const DEDUPE_TABLES = [
   { table: "honour_board_overrides", scope: ["tenant_id", "board_key"] },
   { table: "club_photo_players", scope: ["photo_id"] },
-  // One shirt-number entry per player per season: the keeper's number wins.
-  { table: "shirt_numbers", scope: ["tenant_id", "season"] },
+  // One shirt-number entry per player per season and category: the keeper's number wins.
+  { table: "shirt_numbers", scope: ["tenant_id", "season", "category"] },
 ] as const;
 
 /** Rows dropped because the keeper already had the same link. */

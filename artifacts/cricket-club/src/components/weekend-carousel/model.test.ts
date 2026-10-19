@@ -4,6 +4,7 @@ import {
   buildWeekendSlides,
   carouselRoundLabel,
   createTeamSlides,
+  filterCarouselFixtures,
   eligiblePhotos,
   eligibleCoverPhotos,
   fixturesInRange,
@@ -14,6 +15,23 @@ import {
 } from "./model";
 import { renderPackCard, resolveCardTokens } from "@/lib/pack-render";
 import { SIZES, type CardSize } from "@/lib/share-card";
+
+describe("carousel senior/junior source filter", () => {
+  it("recognises junior source flags even when the team label has no age group", () => {
+    const senior = fixture(1);
+    const junior = fixture(-2_000_000_001, { grade: "Gold XI", source: "playhq" });
+    const content = { [junior.id]: { kind: "matchDay", junior: true } };
+    expect(filterCarouselFixtures([senior, junior], content, "junior")).toEqual([junior]);
+    expect(filterCarouselFixtures([senior, junior], content, "senior")).toEqual([senior]);
+    expect(filterCarouselFixtures([senior, junior], content, "all")).toEqual([senior, junior]);
+    expect(createTeamSlides([junior], [], content)[0].photoId).toBeNull();
+  });
+  it("recognises legacy junior grade labels and handles empty sources", () => {
+    const junior = fixture(4, { grade: "Year 5" });
+    expect(filterCarouselFixtures([junior], undefined, "junior")).toEqual([junior]);
+    expect(filterCarouselFixtures([], undefined, "all")).toEqual([]);
+  });
+});
 
 const fixture = (id = 1, overrides: Partial<Fixture> = {}): Fixture => ({
   id,

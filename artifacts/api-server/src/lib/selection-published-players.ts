@@ -61,7 +61,7 @@ export async function loadSelectionParticipantIds(
   tenantId: number,
   startAt: Date,
 ): Promise<ReadonlyMap<number, string>> {
-  const [register, roster] = await Promise.all([
+  const [registerRows, roster] = await Promise.all([
     reader
       .select({
         participantId: shirtNumbersTable.participantId,
@@ -89,6 +89,15 @@ export async function loadSelectionParticipantIds(
       .from(squadMembersTable)
       .where(eq(squadMembersTable.tenantId, tenantId)),
   ]);
+  // One person on both senior registers (men and female, migration 0047) is one
+  // candidate, not two: collapse rows that are the same entry in another category.
+  const seenEntry = new Set<string>();
+  const register = registerRows.filter((r) => {
+    const key = `${r.playerId ?? ""}|${normaliseParticipantId(r.participantId) ?? ""}|${nameKey(r.name)}`;
+    if (seenEntry.has(key)) return false;
+    seenEntry.add(key);
+    return true;
+  });
   const namesOf = (m: (typeof roster)[number]) =>
     new Set([nameKey(memberDisplayName(m)), nameKey(`${m.firstName.trim()} ${m.lastName.trim()}`)]);
   const owners = new Map<string, Set<number>>();

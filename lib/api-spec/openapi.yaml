@@ -1589,9 +1589,11 @@ paths:
       tags: [shirtNumbers]
       summary: The senior shirt-number register for a season (admin)
       description: >-
-        Every entry for the season, including held entries (not yet linked to
-        a player who has played) and duplicate-number flags. Defaults to the
-        current season (July-June, Perth time) when `season` is omitted.
+        Every entry for the season in one category (men or female), including
+        held entries (not yet linked to a player who has played) and
+        duplicate-number flags, which are computed within the category. Defaults
+        to the current season (July-June, Perth time) when `season` is omitted
+        and to `men` when `category` is omitted.
       parameters:
         - name: season
           in: query
@@ -1599,6 +1601,12 @@ paths:
           schema:
             type: integer
           description: Season start year (e.g. 2026 for 2026/27)
+        - name: category
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ShirtNumberCategory"
+          description: The senior register (default `men`).
       responses:
         "200":
           description: Register for the season
@@ -1612,8 +1620,10 @@ paths:
       summary: Add a person to a season's senior register (admin, curation)
       description: >-
         Under the `carry` rollover policy an entry created without a number
-        inherits the person's number from the previous season. A duplicate
-        number returns warnings under the `warn` policy and 409 under `block`.
+        inherits the person's number from the previous season (same category).
+        A duplicate number within the category returns warnings under the
+        `warn` policy and 409 under `block`. A person may be on the men's and
+        the female register in the same season.
       requestBody:
         required: true
         content:
@@ -1635,8 +1645,8 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "409":
           description: >-
-            The person is already on this season's register, or the number is
-            a duplicate under the `block` policy
+            The person is already on this season's register for the category,
+            or the number is a duplicate under the `block` policy
           content:
             application/json:
               schema:
@@ -1648,9 +1658,11 @@ paths:
       tags: [shirtNumbers]
       summary: Edit a senior register entry (admin, curation)
       description: >-
-        Assign, change or clear (null) the number, rename, or link the entry to
-        a player. A duplicate number returns warnings under `warn` and 409
-        under `block`.
+        Assign, change or clear (null) the number, rename, link the entry to a
+        player, or move it to the other category ("Move to Female"). A
+        duplicate number within the category returns warnings under `warn` and
+        409 under `block`; a moved entry's number counts as new to its
+        destination category.
       parameters:
         - name: id
           in: path
@@ -1745,7 +1757,8 @@ paths:
         someone already on the season's register is left as they are, number
         unchanged. New entries carry last season's number under the `carry`
         rollover policy; under `block` a carried number someone already wears
-        is left off and reported in `warnings`.
+        is left off and reported in `warnings`. Everything is within one
+        category (default `men`).
       parameters:
         - name: season
           in: path
@@ -1753,6 +1766,12 @@ paths:
           schema:
             type: integer
           description: Season start year to add the squad to
+        - name: category
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ShirtNumberCategory"
+          description: The senior register (default `men`).
       responses:
         "200":
           description: Squad added
@@ -1796,6 +1815,8 @@ paths:
                 season:
                   type: integer
                   description: Starting year of the season (e.g. 2026 for 2026/27)
+                category:
+                  $ref: "#/components/schemas/ShirtNumberCategory"
       responses:
         "200":
           description: Preview
@@ -1804,7 +1825,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ShirtNumberUploadPreview"
         "400":
-          description: Invalid file, kind or season, or the feature is off
+          description: Invalid file, kind, season or category, or the feature is off
           content:
             application/json:
               schema:
@@ -5237,6 +5258,7 @@ paths:
       summary: Tenant-scoped weekend fixtures and eligible action photos for on-demand export
       parameters:
         - { name: setType, in: query, schema: { type: string, enum: [matchDay, teamList, results, matchSummary], default: matchDay } }
+        - { name: audience, in: query, schema: { type: string, enum: [all, senior, junior], default: all }, description: "Choose senior or junior sources, or both. Junior-only requests do not read senior fixtures or scorecards." }
         - { name: from, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' } }
         - { name: to, in: query, required: true, schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' } }
       responses:
@@ -8803,6 +8825,40 @@ paths:
           description: Discarded
         "404":
           description: Not found (or another tenant's upload)
+
+  /juniors/shirt-numbers/overlap:
+    get:
+      operationId: getShirtNumberRegisterOverlap
+      tags: [juniors]
+      summary: Who is on more than one shirt-number register this season (admin)
+      description: >-
+        For the "Also in" badges on People → Shirt numbers: each person on two or
+        more of the men's, female and juniors registers for `season`, with the
+        entry ids that hold them. A senior and a junior entry count as one person
+        only when a PlayHQ Profile ID AND the name agree (a family account can put
+        one id on several people). Flags only: no numbers, names or stats, never
+        used on a public page. Admin only; the only read that touches both
+        registers, kept under /juniors per the juniors isolation rule.
+      parameters:
+        - name: season
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Season start year (default the current season)
+      responses:
+        "200":
+          description: Register overlap for the season
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShirtNumberRegisterOverlap"
+        "400":
+          description: Invalid season
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 
   /juniors/participants/{id}/merge:
     post:
@@ -21360,6 +21416,46 @@ components:
         rolloverPolicy:
           $ref: "#/components/schemas/ShirtNumberRolloverPolicy"
 
+    ShirtNumberCategory:
+      type: string
+      enum: [men, female]
+      description: >-
+        The senior register an entry belongs to. Number clashes are checked within
+        a category only; one person may be in both in the same season.
+
+    ShirtNumberRegisterName:
+      type: string
+      enum: [men, female, juniors]
+
+    ShirtNumberRegisterOverlapPerson:
+      type: object
+      required: [registers, seniorEntryIds, juniorEntryIds]
+      properties:
+        registers:
+          type: array
+          description: The registers this person is on (two or more), in display order.
+          items:
+            $ref: "#/components/schemas/ShirtNumberRegisterName"
+        seniorEntryIds:
+          type: array
+          items:
+            type: integer
+        juniorEntryIds:
+          type: array
+          items:
+            type: integer
+
+    ShirtNumberRegisterOverlap:
+      type: object
+      required: [season, people]
+      properties:
+        season:
+          type: integer
+        people:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShirtNumberRegisterOverlapPerson"
+
     ShirtNumberSource:
       type: string
       enum: [upload, squad, lineup, admin, rollover]
@@ -21421,12 +21517,35 @@ components:
     ShirtNumberEntry:
       type: object
       required:
-        [id, season, name, participantId, playerId, number, source, held, duplicate, createdAt, updatedAt]
+        [
+          id,
+          season,
+          category,
+          alsoIn,
+          name,
+          participantId,
+          playerId,
+          number,
+          source,
+          held,
+          duplicate,
+          createdAt,
+          updatedAt,
+        ]
       properties:
         id:
           type: integer
         season:
           type: integer
+        category:
+          $ref: "#/components/schemas/ShirtNumberCategory"
+        alsoIn:
+          type: array
+          description: >-
+            The other senior categories this person is also on this season (same
+            player or Profile ID; same name for an entry with neither).
+          items:
+            $ref: "#/components/schemas/ShirtNumberCategory"
         name:
           type: string
         participantId:
@@ -21448,7 +21567,7 @@ components:
           description: True while the entry is not linked to a player who has played.
         duplicate:
           type: boolean
-          description: True when another entry in the season wears the same number.
+          description: True when another entry in the season and category wears the same number.
         crossRegister:
           type: array
           description: >-
@@ -21486,6 +21605,8 @@ components:
       properties:
         season:
           type: integer
+        category:
+          $ref: "#/components/schemas/ShirtNumberCategory"
         name:
           type: string
           minLength: 1
@@ -21502,6 +21623,8 @@ components:
     ShirtNumberEntryUpdate:
       type: object
       properties:
+        category:
+          $ref: "#/components/schemas/ShirtNumberCategory"
         name:
           type: string
           minLength: 1
@@ -21723,6 +21846,8 @@ components:
           $ref: "#/components/schemas/ShirtNumberUploadKind"
         season:
           type: integer
+        category:
+          $ref: "#/components/schemas/ShirtNumberCategory"
         fileName:
           type: string
         rows:

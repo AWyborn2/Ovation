@@ -5,10 +5,15 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { ShirtNumberCategory } from './shirtNumberCategory';
 
 export type ListShirtNumbersParams = {
 /**
  * Season start year (e.g. 2026 for 2026/27)
  */
 season?: number;
+/**
+ * The senior register (default `men`).
+ */
+category?: ShirtNumberCategory;
 };

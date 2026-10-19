@@ -2,7 +2,9 @@ import { and, asc, desc, eq, ne, or, type SQL } from "drizzle-orm";
 import {
   db,
   juniorShirtNumbersTable,
+  SHIRT_NUMBER_CATEGORIES,
   shirtNumbersTable,
+  type ShirtNumberCategory,
   type ShirtNumberDuplicatePolicy,
   type ShirtNumberRolloverPolicy,
   type ShirtNumberRow,
@@ -11,6 +13,7 @@ import {
 import {
   carriedNumberFor,
   cleanShirtNumberName,
+  DEFAULT_SHIRT_NUMBER_CATEGORY,
   normaliseParticipantId,
   type ShirtNumberSettings,
   type ShirtNumberSide,
@@ -33,6 +36,10 @@ import {
  * the upload commit (U4) and the juniors register (U10) all apply the same
  * decisions. Every database helper takes an explicit tenant id and only ever
  * touches the tenant database — never central.
+ *
+ * The senior register has two categories (men / female, migration 0047). A person may
+ * hold one entry in each in the same season; "already on the register" and duplicate
+ * numbers are both checked within the entry's category only.
  */
 
 // ── Pure rules ──────────────────────────────────────────────────────────────
@@ -252,12 +259,16 @@ export type Executor = typeof db | Tx;
 /** Display names are trimmed and length-capped (the contract's maxLength). */
 export const cleanName = (name: string): string => cleanShirtNumberName(name);
 
-/** One season's register for a side, as rule-ready entries. */
+/**
+ * One season's register for a side, as rule-ready entries. Senior reads one category
+ * (default `men`); `category` is ignored for juniors.
+ */
 export async function loadSeasonEntries(
   executor: Executor,
   side: ShirtNumberSide,
   tenantId: number,
   season: number,
+  category: ShirtNumberCategory = DEFAULT_SHIRT_NUMBER_CATEGORY,
 ): Promise<RegisterEntryLike[]> {
   if (side === "junior") {
     const rows = await executor
@@ -286,13 +297,19 @@ export async function loadSeasonEntries(
       participantId: shirtNumbersTable.participantId,
     })
     .from(shirtNumbersTable)
-    .where(and(eq(shirtNumbersTable.tenantId, tenantId), eq(shirtNumbersTable.season, season)))
+    .where(
+      and(
+        eq(shirtNumbersTable.tenantId, tenantId),
+        eq(shirtNumbersTable.season, season),
+        eq(shirtNumbersTable.category, category),
+      ),
+    )
     .orderBy(asc(shirtNumbersTable.id));
 }
 
 /**
  * The duplicate check for one write, on either side: the other entries in
- * (tenant, season) wearing exactly `number`, and the warning naming them.
+ * (tenant, season, senior category) wearing exactly `number`, and the warning naming them.
  * Callers return the warning under `warn` and 409 under `block`.
  */
 export async function checkDuplicateNumber(
@@ -303,10 +320,18 @@ export async function checkDuplicateNumber(
     season: number;
     number: string | null;
     excludeId?: number;
+    /** Senior only (default `men`). */
+    category?: ShirtNumberCategory;
   },
 ): Promise<{ others: RegisterEntryLike[]; warning: ShirtNumberWarning | null }> {
   if (args.number === null) return { others: [], warning: null };
-  const entries = await loadSeasonEntries(executor, args.side, args.tenantId, args.season);
+  const entries = await loadSeasonEntries(
+    executor,
+    args.side,
+    args.tenantId,
+    args.season,
+    args.category,
+  );
   const others = duplicatesOf(entries, args.number, args.excludeId);
   return {
     others,
@@ -329,10 +354,13 @@ export function serializeSeniorEntry(
   row: ShirtNumberRow,
   duplicate: boolean,
   crossRegister: CrossRegisterNote[] = [],
+  alsoIn: ShirtNumberCategory[] = [],
 ) {
   return {
     id: row.id,
     season: row.season,
+    category: row.category,
+    alsoIn,
     name: row.name,
     participantId: row.participantId,
     playerId: row.playerId,
@@ -355,14 +383,19 @@ export type WriteOutcome =
   | { ok: true; entry: SeniorEntry; warnings: ShirtNumberWarning[] }
   | { ok: false; status: 404 | 409; body: ShirtNumberConflict | { error: string } };
 
-const ALREADY_ON_REGISTER = (season: number) =>
-  `This person is already on the ${seasonLabel(season)} register.`;
+/** "Men's" / "Female" for messages. */
+export const categoryLabel = (category: ShirtNumberCategory) =>
+  category === "female" ? "Female" : "Men's";
 
-/** A senior entry for the same person in the season, other than `excludeId`. */
+const ALREADY_ON_REGISTER = (season: number, category: ShirtNumberCategory) =>
+  `This person is already on the ${seasonLabel(season)} ${categoryLabel(category)} register.`;
+
+/** A senior entry for the same person in the season and category, other than `excludeId`. */
 async function findSamePerson(
   executor: Executor,
   tenantId: number,
   season: number,
+  category: ShirtNumberCategory,
   who: RegisterIdentity,
   excludeId?: number,
 ): Promise<ShirtNumberRow | undefined> {
@@ -379,6 +412,7 @@ async function findSamePerson(
       and(
         eq(shirtNumbersTable.tenantId, tenantId),
         eq(shirtNumbersTable.season, season),
+        eq(shirtNumbersTable.category, category),
         or(...identity),
         excludeId !== undefined ? ne(shirtNumbersTable.id, excludeId) : undefined,
       ),
@@ -398,13 +432,16 @@ export type CreateSeniorInput = {
   /** Omitted or null: apply carry-forward (KTD6). */
   number?: string | null;
   source?: ShirtNumberSource;
+  /** The senior register (default `men`). */
+  category?: ShirtNumberCategory;
 };
 
 /**
  * Add a person to a season's senior register. The caller has validated the
  * player id against the tenant's player space and the number's format.
  *
- * - Already on the season's register (player or participant id): 409.
+ * - Already on the season's register for the category (player or participant id): 409.
+ *   Being on the OTHER category's register is fine (never blocked).
  * - An explicit duplicate number: warning under `warn`, 409 under `block`.
  * - No number: carried from last season under `carry`; under `block` a carried
  *   number that would duplicate is left off and reported as a warning.
@@ -418,12 +455,13 @@ export async function createSeniorEntry(
     playerId: input.playerId ?? null,
     participantId: normaliseParticipantId(input.participantId),
   };
+  const category = input.category ?? DEFAULT_SHIRT_NUMBER_CATEGORY;
   try {
     return await db.transaction(async (tx) => {
-      if (await findSamePerson(tx, tenantId, input.season, who)) {
-        return conflict(ALREADY_ON_REGISTER(input.season));
+      if (await findSamePerson(tx, tenantId, input.season, category, who)) {
+        return conflict(ALREADY_ON_REGISTER(input.season, category));
       }
-      const season = await loadSeasonEntries(tx, "senior", tenantId, input.season);
+      const season = await loadSeasonEntries(tx, "senior", tenantId, input.season, category);
       const warnings: ShirtNumberWarning[] = [];
       let number: string | null;
 
@@ -442,6 +480,7 @@ export async function createSeniorEntry(
           tenantId,
           side: "senior",
           season: input.season,
+          category,
           playerId: who.playerId,
           participantId: who.participantId,
           rolloverPolicy: settings.rolloverPolicy,
@@ -467,6 +506,7 @@ export async function createSeniorEntry(
           playerId: who.playerId,
           number,
           source: input.source ?? "admin",
+          category,
         })
         .returning();
       return {
@@ -477,7 +517,7 @@ export async function createSeniorEntry(
     });
   } catch (e) {
     // Two concurrent creates for the same person: the partial unique index wins.
-    if (isUniqueViolation(e)) return conflict(ALREADY_ON_REGISTER(input.season));
+    if (isUniqueViolation(e)) return conflict(ALREADY_ON_REGISTER(input.season, category));
     throw e;
   }
 }
@@ -495,10 +535,14 @@ export type UpdateSeniorInput = {
   participantId?: string | null;
   playerId?: number | null;
   number?: string | null;
+  /** Move the entry to the other senior register ("Move to Female"). */
+  category?: ShirtNumberCategory;
 };
 
 /**
- * Edit a senior entry: rename, (re)link, assign, change or clear the number.
+ * Edit a senior entry: rename, (re)link, assign, change or clear the number, or move it
+ * to the other category (refused with 409 when that category already has the person;
+ * its number is then checked against the destination category).
  * A NEW number that duplicates another entry is refused under `block` (409)
  * and warned under `warn`; re-saving an unchanged number never blocks, but a
  * duplicate it already had is still reported as a warning.
@@ -527,6 +571,9 @@ export async function updateSeniorEntry(
       }
       if (input.playerId !== undefined) patch.playerId = input.playerId;
       if (input.number !== undefined) patch.number = input.number;
+      if (input.category !== undefined) patch.category = input.category;
+      const category = input.category ?? existing.category;
+      const moved = category !== existing.category;
 
       const who: RegisterIdentity = {
         playerId: patch.playerId !== undefined ? (patch.playerId ?? null) : existing.playerId,
@@ -537,18 +584,22 @@ export async function updateSeniorEntry(
       };
       const identityChanged =
         who.playerId !== existing.playerId || who.participantId !== existing.participantId;
-      if (identityChanged && (await findSamePerson(tx, tenantId, existing.season, who, id))) {
-        return conflict(ALREADY_ON_REGISTER(existing.season));
+      if (
+        (identityChanged || moved) &&
+        (await findSamePerson(tx, tenantId, existing.season, category, who, id))
+      ) {
+        return conflict(ALREADY_ON_REGISTER(existing.season, category));
       }
 
       const number = input.number !== undefined ? input.number : existing.number;
       const warnings: ShirtNumberWarning[] = [];
       if (number !== null) {
-        const season = await loadSeasonEntries(tx, "senior", tenantId, existing.season);
+        const season = await loadSeasonEntries(tx, "senior", tenantId, existing.season, category);
         const others = duplicatesOf(season, number, id);
         if (others.length > 0) {
           const warning = duplicateWarning(existing.season, number, others);
-          if (settings.duplicatePolicy === "block" && number !== existing.number) {
+          // A moved entry's number is new to its destination register.
+          if (settings.duplicatePolicy === "block" && (moved || number !== existing.number)) {
             return conflict(warning.message, [warning]);
           }
           warnings.push(warning);
@@ -584,12 +635,42 @@ export async function deleteSeniorEntry(tenantId: number, id: number): Promise<b
 }
 
 /**
- * The senior register for a season, in the contract's entry shape (admin only), with
- * the admin-only cross-check against the juniors register (read-only, this tenant and
- * season; ./shirt-number-cross).
+ * The other senior categories each entry's person is also in this season (pure): same
+ * player or participant id, or, for an id-less entry, the same name. `entries` holds the
+ * whole season (both categories).
  */
-export async function listSeniorEntries(tenantId: number, season: number): Promise<SeniorEntry[]> {
-  const [rows, junior] = await Promise.all([
+export function alsoInCategories(
+  entry: RegisterIdentity & { id: number; name: string; category: ShirtNumberCategory },
+  entries: readonly (RegisterIdentity & {
+    id: number;
+    name: string;
+    category: ShirtNumberCategory;
+  })[],
+): ShirtNumberCategory[] {
+  const others = entries.filter((e) => e.category !== entry.category && e.id !== entry.id);
+  const found = new Set<ShirtNumberCategory>();
+  for (const o of others) {
+    const idLess = entry.playerId === null && entry.participantId === null;
+    const same = idLess
+      ? o.playerId === null && o.participantId === null && nameKey(o.name) === nameKey(entry.name)
+      : samePerson(entry, o);
+    if (same) found.add(o.category);
+  }
+  return SHIRT_NUMBER_CATEGORIES.filter((c) => found.has(c));
+}
+
+/**
+ * One category of the senior register for a season, in the contract's entry shape (admin
+ * only): duplicate flags within the category, `alsoIn` for people on the other category's
+ * register too, and the admin-only cross-check against the juniors register (read-only,
+ * this tenant and season; ./shirt-number-cross).
+ */
+export async function listSeniorEntries(
+  tenantId: number,
+  season: number,
+  category: ShirtNumberCategory = DEFAULT_SHIRT_NUMBER_CATEGORY,
+): Promise<SeniorEntry[]> {
+  const [all, junior] = await Promise.all([
     db
       .select()
       .from(shirtNumbersTable)
@@ -597,6 +678,7 @@ export async function listSeniorEntries(tenantId: number, season: number): Promi
       .orderBy(asc(shirtNumbersTable.name), asc(shirtNumbersTable.id)),
     loadJuniorCrossEntries(tenantId, season),
   ]);
+  const rows = all.filter((r) => r.category === category);
   const dupes = duplicateEntryIds(rows);
   const guids =
     junior.length > 0 && rows.some((r) => r.playerId !== null)
@@ -613,6 +695,7 @@ export async function listSeniorEntries(tenantId: number, season: number): Promi
         },
         junior,
       ),
+      alsoInCategories(r, all),
     ),
   );
 }
@@ -629,7 +712,8 @@ export type SeasonStartResult = {
 /**
  * "Start season" for the senior register (KTD6): copy `season - 1` into
  * `season` under `carry` (idempotent; people already present are skipped),
- * nothing under `blank`. Under `block`, a carried number that would duplicate
+ * nothing under `blank`. Each category rolls into itself (a female entry stays female),
+ * and clashes are checked per category. Under `block`, a carried number that would duplicate
  * is left off and the entry created unnumbered, reported in `warnings`; under
  * `warn`, carried duplicates are kept and reported.
  */
@@ -650,52 +734,66 @@ export async function startSeniorSeason(
   if (settings.rolloverPolicy !== "carry") return result;
 
   return db.transaction(async (tx) => {
-    const previous = await loadSeasonEntries(tx, "senior", tenantId, fromSeason);
-    const current = await loadSeasonEntries(tx, "senior", tenantId, season);
-    const plan = planSeasonStart({
-      previous,
-      current,
-      rolloverPolicy: settings.rolloverPolicy,
-      duplicatePolicy: settings.duplicatePolicy,
-    });
-    result.skipped = plan.skipped;
-    if (plan.create.length === 0) return result;
-
-    // A person the PlayHQ lineup sync (or an admin) added since the read above
-    // keeps that row: skip them rather than fail the whole start (per-person
-    // unique indexes), and count only the rows actually created.
-    const inserted = await tx
-      .insert(shirtNumbersTable)
-      .values(plan.create.map((c) => ({ ...c, tenantId, season })))
-      .onConflictDoNothing()
-      .returning();
-    result.created = inserted.length;
-    result.skipped += plan.create.length - inserted.length;
-    result.numbered = inserted.filter((r) => r.number !== null).length;
-
-    const after = await loadSeasonEntries(tx, "senior", tenantId, season);
-    for (const b of plan.blocked) {
-      result.warnings.push(
-        blockedCarryWarning(season, b.number, b.name, duplicatesOf(after, b.number)),
-      );
-    }
-    // Under `warn`, one notice per carried number that now has duplicates.
-    const reported = new Set<string>();
-    for (const row of inserted) {
-      if (row.number === null || reported.has(row.number)) continue;
-      const others = duplicatesOf(after, row.number, row.id);
-      if (others.length === 0) continue;
-      reported.add(row.number);
-      const holders = [row, ...others];
-      result.warnings.push(
-        duplicateWarning(
-          season,
-          row.number,
-          holders,
-          `#${row.number} is worn by ${joinNames(holders.map((h) => h.name))} in ${seasonLabel(season)}.`,
-        ),
-      );
+    for (const category of SHIRT_NUMBER_CATEGORIES) {
+      await startSeniorSeasonCategory(tx, tenantId, season, category, settings, result);
     }
     return result;
   });
+}
+
+/** One category's part of {@link startSeniorSeason}, accumulated into `result`. */
+async function startSeniorSeasonCategory(
+  tx: Executor,
+  tenantId: number,
+  season: number,
+  category: ShirtNumberCategory,
+  settings: ShirtNumberSettings,
+  result: SeasonStartResult,
+): Promise<void> {
+  const previous = await loadSeasonEntries(tx, "senior", tenantId, season - 1, category);
+  const current = await loadSeasonEntries(tx, "senior", tenantId, season, category);
+  const plan = planSeasonStart({
+    previous,
+    current,
+    rolloverPolicy: settings.rolloverPolicy,
+    duplicatePolicy: settings.duplicatePolicy,
+  });
+  result.skipped += plan.skipped;
+  if (plan.create.length === 0) return;
+
+  // A person the PlayHQ lineup sync (or an admin) added since the read above
+  // keeps that row: skip them rather than fail the whole start (per-person
+  // unique indexes), and count only the rows actually created.
+  const inserted = await tx
+    .insert(shirtNumbersTable)
+    .values(plan.create.map((c) => ({ ...c, tenantId, season, category })))
+    .onConflictDoNothing()
+    .returning();
+  result.created += inserted.length;
+  result.skipped += plan.create.length - inserted.length;
+  result.numbered += inserted.filter((r) => r.number !== null).length;
+
+  const after = await loadSeasonEntries(tx, "senior", tenantId, season, category);
+  for (const b of plan.blocked) {
+    result.warnings.push(
+      blockedCarryWarning(season, b.number, b.name, duplicatesOf(after, b.number)),
+    );
+  }
+  // Under `warn`, one notice per carried number that now has duplicates.
+  const reported = new Set<string>();
+  for (const row of inserted) {
+    if (row.number === null || reported.has(row.number)) continue;
+    const others = duplicatesOf(after, row.number, row.id);
+    if (others.length === 0) continue;
+    reported.add(row.number);
+    const holders = [row, ...others];
+    result.warnings.push(
+      duplicateWarning(
+        season,
+        row.number,
+        holders,
+        `#${row.number} is worn by ${joinNames(holders.map((h) => h.name))} in ${seasonLabel(season)}.`,
+      ),
+    );
+  }
 }

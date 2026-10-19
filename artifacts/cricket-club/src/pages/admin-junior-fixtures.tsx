@@ -13,6 +13,7 @@ import { AlertTriangle, ArrowDown, ArrowUp, Search, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { WeekendCarousel } from "@/components/weekend-carousel";
 import { Switch } from "@/components/ui/switch";
 import { handleAdminMutationError } from "@/lib/admin-auth";
 import { ListSkeleton, QueryError, EmptyState } from "@/components/data-states";
@@ -46,11 +47,17 @@ export default function AdminJuniorFixtures() {
 
   return (
     <div className="space-y-4">
-      <div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
         <h2 className="text-xl font-semibold">Junior fixtures</h2>
         <p className="text-sm text-muted-foreground">
           Upcoming junior games synced from PlayHQ. Open a game to check or change its team list.
         </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <WeekendCarousel initialAudience="junior" />
+          <WeekendCarousel initialType="teamList" initialAudience="junior" />
+        </div>
       </div>
       {listQ.isError ? (
         <QueryError onRetry={() => listQ.refetch()} />

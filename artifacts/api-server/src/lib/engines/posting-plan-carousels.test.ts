@@ -68,6 +68,7 @@ vi.mock("./match-day", () => ({ formatFixtureTime: () => "" }));
 vi.mock("./team-list", () => ({
   loadAutoDebuts: async () => new Map(),
   teamListSeasonOf: () => 2026,
+  teamListCategoryOf: () => "men",
   teamListShirtNumberLoader: () => async () => new Map(),
   teamListToCardInput: () => ({}),
 }));

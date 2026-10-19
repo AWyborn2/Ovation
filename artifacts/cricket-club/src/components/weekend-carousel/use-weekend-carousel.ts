@@ -30,6 +30,8 @@ import {
   moveTeam,
   eligibleCoverPhotos,
   COVER_PHOTO_UNAVAILABLE,
+  filterCarouselFixtures,
+  type CarouselAudience,
   type CoverPhoto,
   type TeamSlide,
   type WeekendSlide,
@@ -67,8 +69,12 @@ export function slideAdjustments(slide: WeekendSlide, size: CardSize): CardAdjus
  * picks/order, a frozen generated set (photo choices fixed at generate time),
  * per-team photo/crop edits and caption. Sending to review saves a frozen set.
  */
-export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
+export function useWeekendCarousel(
+  initialType: CarouselSetType = "matchDay",
+  initialAudience: CarouselAudience = "all",
+) {
   const [setType, setSetType] = useState<CarouselSetType>(initialType);
+  const [audience, setAudience] = useState<CarouselAudience>(initialAudience);
   const initial = useMemo(
     () =>
       initialType === "matchDay"
@@ -82,7 +88,7 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
 
   // Server scopes tenant/grade/categories, live cancellation status and the
   // date range (including already-started games) — no client re-filtering.
-  const params = { from, to, setType };
+  const params = { from, to, setType, audience };
   const sourcesQ = useGetWeekendCarouselSources(params, {
     query: { queryKey: getGetWeekendCarouselSourcesQueryKey(params), enabled: rangeValid },
   });
@@ -100,7 +106,9 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
   const [exporting, setExporting] = useState(false);
   const busy = exporting || generating;
 
-  const fixtures = useMemo(() => (sources?.fixtures ?? []) as Fixture[], [sources]);
+  const fixtures = useMemo(() => filterCarouselFixtures(
+    (sources?.fixtures ?? []) as Fixture[], sources?.content, audience,
+  ), [sources, audience]);
   const photos = useMemo(() => (sources?.photos ?? []) as ClubPhoto[], [sources]);
   const coverPhotos = useMemo(() => eligibleCoverPhotos(sources?.coverPhotos ?? []), [sources]);
   const sourceWarnings = sources?.warnings ?? [];
@@ -125,7 +133,7 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
   // New ranges/types select all; a source refresh preserves valid user picks.
   const [picks, setPicks] = useState<Pick[]>([]);
   const pickScope = useRef("");
-  const scope = JSON.stringify([setType, from, to]);
+  const scope = JSON.stringify([setType, from, to, audience]);
   useEffect(() => {
     const reset = pickScope.current !== scope;
     pickScope.current = scope;
@@ -365,6 +373,8 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
 
   return {
     setType,
+    audience,
+    setAudience: (value: CarouselAudience) => !busy && setAudience(value),
     setTypeLabel: CAROUSEL_LABELS[setType],
     changeType: (type: CarouselSetType) => {
       if (busy) return;
@@ -389,6 +399,7 @@ export function useWeekendCarousel(initialType: CarouselSetType = "matchDay") {
     patchCover: (patch: Partial<CoverPhoto>) => !busy && setCover((c) => ({ ...c, ...patch })),
     bundle,
     sourceWarnings,
+    sourceContent: sources?.content ?? {},
     timeZone,
     from,
     to,

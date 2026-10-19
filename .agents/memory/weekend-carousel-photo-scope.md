@@ -50,3 +50,9 @@ Carousel pack selection includes every built-in pack, but excludes saved custom 
 **Why:** The user explicitly confirmed this scope; existing compositions must not be changed by future club-default changes.
 
 **How to apply:** Treat pack changes as presentation-only edits that preserve selected teams, order, photos, crops and caption. Absence in historical compositions means Club Kit; reject explicit unknown choices.
+
+Results carousel cards in the pictured Club Kit layout should show the team grade as the big bold headline, with the outcome followed by “- Round N” in the small line above it.
+
+**Why:** The user requested swapping the grade and WIN / RESULT / ABANDONED labels in carousel sets.
+
+**How to apply:** Keep this hierarchy specific to concise carousel result cards; preserve standalone result-card behaviour and saved composition choices.

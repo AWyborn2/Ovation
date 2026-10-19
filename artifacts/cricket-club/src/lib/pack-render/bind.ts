@@ -47,7 +47,7 @@ export function inningsPerformers(i: MatchSummaryInnings): string {
   return [...bats, ...bowls].join(" · ");
 }
 
-export function bindInput(input: ShareCardInput): BoundInput {
+export function bindInput(input: ShareCardInput, packId?: string | null): BoundInput {
   const values: Record<string, string> = {};
   const images: Record<string, string> = {};
   const rows: Record<string, PackRow[]> = {};
@@ -102,6 +102,21 @@ export function bindInput(input: ShareCardInput): BoundInput {
       // One-word headline (Club Kit): WIN / RESULT (a loss) / DRAW, or TIE / NO RESULT / ABANDONED
       // when the result line says so. The club always keeps the top bar.
       set(values, "resultWord", resultWord(input.resultWinner, input.result));
+      // The concise Club Kit carousel leads with the grade, not the outcome.
+      // Bind at render time so already-saved review sets get the same labels
+      // in previews and exports without rebuilding their frozen composition.
+      if (input.carouselDetail === false && (packId == null || packId === "club-kit-v1")) {
+        const [grade, ...titleRound] = input.matchTitle.split(/\s+[•·]\s+/);
+        const rawRound = (input.roundLabel ?? titleRound.join(" • ")).trim();
+        const numericRound = rawRound.match(/^(?:(?:round|r)\s*\.?\s*)?(\d+)$/i);
+        const round = numericRound ? `Round ${Number(numericRound[1])}` : rawRound;
+        set(values, "resultWord", grade.trim());
+        set(
+          values,
+          "matchTitle",
+          [resultWord(input.resultWinner, input.result), round].filter(Boolean).join(" - "),
+        );
+      }
       if (input.carouselDetail === true) bindInningsDetail(input, values);
       break;
     }

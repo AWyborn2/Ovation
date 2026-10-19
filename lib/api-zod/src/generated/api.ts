@@ -2191,11 +2191,12 @@ export const UpdateShirtNumberSettingsResponse = zod.object({
 
 
 /**
- * Every entry for the season, including held entries (not yet linked to a player who has played) and duplicate-number flags. Defaults to the current season (July-June, Perth time) when `season` is omitted.
+ * Every entry for the season in one category (men or female), including held entries (not yet linked to a player who has played) and duplicate-number flags, which are computed within the category. Defaults to the current season (July-June, Perth time) when `season` is omitted and to `men` when `category` is omitted.
  * @summary The senior shirt-number register for a season (admin)
  */
 export const ListShirtNumbersQueryParams = zod.object({
-  "season": zod.coerce.number().optional().describe('Season start year (e.g. 2026 for 2026\/27)')
+  "season": zod.coerce.number().optional().describe('Season start year (e.g. 2026 for 2026\/27)'),
+  "category": zod.enum(['men', 'female']).optional().describe('The senior register (default `men`).')
 })
 
 export const ListShirtNumbersResponse = zod.object({
@@ -2204,6 +2205,8 @@ export const ListShirtNumbersResponse = zod.object({
   "entries": zod.array(zod.object({
   "id": zod.number(),
   "season": zod.number(),
+  "category": zod.enum(['men', 'female']).describe('The senior register an entry belongs to. Number clashes are checked within a category only; one person may be in both in the same season.'),
+  "alsoIn": zod.array(zod.enum(['men', 'female']).describe('The senior register an entry belongs to. Number clashes are checked within a category only; one person may be in both in the same season.')).describe('The other senior categories this person is also on this season (same player or Profile ID; same name for an entry with neither).'),
   "name": zod.string(),
   "participantId": zod.string().nullable().describe('PlayHQ participant GUID (lowercased)'),
   "playerId": zod.number().nullable().describe('Linked player in the tenant\'s player space; null while held.'),
@@ -2211,7 +2214,7 @@ export const ListShirtNumbersResponse = zod.object({
   "number": zod.string().nullable().describe('Null when the person is on the register but unnumbered.'),
   "source": zod.enum(['upload', 'squad', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from. `squad`: added from the club\'s squad register (the availability squad import) by \"Add squad to register\".'),
   "held": zod.boolean().describe('True while the entry is not linked to a player who has played.'),
-  "duplicate": zod.boolean().describe('True when another entry in the season wears the same number.'),
+  "duplicate": zod.boolean().describe('True when another entry in the season and category wears the same number.'),
   "crossRegister": zod.array(zod.object({
   "relation": zod.enum(['same', 'sharedId', 'nameOnly']).describe('`same`: same Profile ID and the same name. `sharedId`: same Profile ID but a different name (a family account?). `nameOnly`: same name under a different Profile ID.'),
   "name": zod.string().describe('The name in the other register.'),
@@ -2224,7 +2227,7 @@ export const ListShirtNumbersResponse = zod.object({
 
 
 /**
- * Under the `carry` rollover policy an entry created without a number inherits the person's number from the previous season. A duplicate number returns warnings under the `warn` policy and 409 under `block`.
+ * Under the `carry` rollover policy an entry created without a number inherits the person's number from the previous season (same category). A duplicate number within the category returns warnings under the `warn` policy and 409 under `block`. A person may be on the men's and the female register in the same season.
  * @summary Add a person to a season's senior register (admin, curation)
  */
 export const createShirtNumberBodyNameMax = 120;
@@ -2234,6 +2237,7 @@ export const createShirtNumberBodyNumberOneRegExp = new RegExp('^[0-9]{1,3}$');
 
 export const CreateShirtNumberBody = zod.object({
   "season": zod.number(),
+  "category": zod.enum(['men', 'female']).optional().describe('The senior register an entry belongs to. Number clashes are checked within a category only; one person may be in both in the same season.'),
   "name": zod.string().min(1).max(createShirtNumberBodyNameMax),
   "participantId": zod.string().nullish(),
   "playerId": zod.number().nullish(),
@@ -2242,7 +2246,7 @@ export const CreateShirtNumberBody = zod.object({
 
 
 /**
- * Assign, change or clear (null) the number, rename, or link the entry to a player. A duplicate number returns warnings under `warn` and 409 under `block`.
+ * Assign, change or clear (null) the number, rename, link the entry to a player, or move it to the other category ("Move to Female"). A duplicate number within the category returns warnings under `warn` and 409 under `block`; a moved entry's number counts as new to its destination category.
  * @summary Edit a senior register entry (admin, curation)
  */
 export const UpdateShirtNumberParams = zod.object({
@@ -2255,6 +2259,7 @@ export const updateShirtNumberBodyNumberOneRegExp = new RegExp('^[0-9]{1,3}$');
 
 
 export const UpdateShirtNumberBody = zod.object({
+  "category": zod.enum(['men', 'female']).optional().describe('The senior register an entry belongs to. Number clashes are checked within a category only; one person may be in both in the same season.'),
   "name": zod.string().min(1).max(updateShirtNumberBodyNameMax).optional(),
   "participantId": zod.string().nullish(),
   "playerId": zod.number().nullish(),
@@ -2265,6 +2270,8 @@ export const UpdateShirtNumberResponse = zod.object({
   "entry": zod.object({
   "id": zod.number(),
   "season": zod.number(),
+  "category": zod.enum(['men', 'female']).describe('The senior register an entry belongs to. Number clashes are checked within a category only; one person may be in both in the same season.'),
+  "alsoIn": zod.array(zod.enum(['men', 'female']).describe('The senior register an entry belongs to. Number clashes are checked within a category only; one person may be in both in the same season.')).describe('The other senior categories this person is also on this season (same player or Profile ID; same name for an entry with neither).'),
   "name": zod.string(),
   "participantId": zod.string().nullable().describe('PlayHQ participant GUID (lowercased)'),
   "playerId": zod.number().nullable().describe('Linked player in the tenant\'s player space; null while held.'),
@@ -2272,7 +2279,7 @@ export const UpdateShirtNumberResponse = zod.object({
   "number": zod.string().nullable().describe('Null when the person is on the register but unnumbered.'),
   "source": zod.enum(['upload', 'squad', 'lineup', 'admin', 'rollover']).describe('Where a register entry came from. `squad`: added from the club\'s squad register (the availability squad import) by \"Add squad to register\".'),
   "held": zod.boolean().describe('True while the entry is not linked to a player who has played.'),
-  "duplicate": zod.boolean().describe('True when another entry in the season wears the same number.'),
+  "duplicate": zod.boolean().describe('True when another entry in the season and category wears the same number.'),
   "crossRegister": zod.array(zod.object({
   "relation": zod.enum(['same', 'sharedId', 'nameOnly']).describe('`same`: same Profile ID and the same name. `sharedId`: same Profile ID but a different name (a family account?). `nameOnly`: same name under a different Profile ID.'),
   "name": zod.string().describe('The name in the other register.'),
@@ -2326,11 +2333,15 @@ export const StartShirtNumberSeasonResponse = zod.object({
 
 
 /**
- * Adds the active senior members of the club's squad register (the availability squad import) to `season` without numbers of their own. A member linked to one of the club's players is added with that player; anyone else is added as a held entry under their name. Idempotent: someone already on the season's register is left as they are, number unchanged. New entries carry last season's number under the `carry` rollover policy; under `block` a carried number someone already wears is left off and reported in `warnings`.
+ * Adds the active senior members of the club's squad register (the availability squad import) to `season` without numbers of their own. A member linked to one of the club's players is added with that player; anyone else is added as a held entry under their name. Idempotent: someone already on the season's register is left as they are, number unchanged. New entries carry last season's number under the `carry` rollover policy; under `block` a carried number someone already wears is left off and reported in `warnings`. Everything is within one category (default `men`).
  * @summary Add the club's senior squad to a season's register (admin, curation)
  */
 export const AddSquadToShirtNumberSeasonParams = zod.object({
   "season": zod.coerce.number().describe('Season start year to add the squad to')
+})
+
+export const AddSquadToShirtNumberSeasonQueryParams = zod.object({
+  "category": zod.enum(['men', 'female']).optional().describe('The senior register (default `men`).')
 })
 
 export const AddSquadToShirtNumberSeasonResponse = zod.object({
@@ -2362,7 +2373,8 @@ FormData via raw `fetch` against this route.
 export const UploadShirtNumbersBody = zod.object({
   "file": zod.instanceof(File).describe('The shirt-number spreadsheet'),
   "kind": zod.enum(['numbers']).describe('`numbers`: the club\'s shirt-number spreadsheet. Registered players without numbers come from the squad register (\"Add squad to register\").'),
-  "season": zod.number().describe('Starting year of the season (e.g. 2026 for 2026\/27)')
+  "season": zod.number().describe('Starting year of the season (e.g. 2026 for 2026\/27)'),
+  "category": zod.enum(['men', 'female']).optional().describe('The senior register an entry belongs to. Number clashes are checked within a category only; one person may be in both in the same season.')
 })
 
 export const UploadShirtNumbersResponse = zod.object({
@@ -2370,6 +2382,7 @@ export const UploadShirtNumbersResponse = zod.object({
   "side": zod.enum(['senior', 'junior']),
   "kind": zod.enum(['numbers']).describe('`numbers`: the club\'s shirt-number spreadsheet. Registered players without numbers come from the squad register (\"Add squad to register\").'),
   "season": zod.number(),
+  "category": zod.enum(['men', 'female']).optional().describe('The senior register an entry belongs to. Number clashes are checked within a category only; one person may be in both in the same season.'),
   "fileName": zod.string(),
   "rows": zod.array(zod.object({
   "rowIndex": zod.number().describe('1-based data row in the file; resolutions refer to it.'),
@@ -8557,12 +8570,14 @@ export const CompleteMetaConnectResponse = zod.object({
  * @summary Tenant-scoped weekend fixtures and eligible action photos for on-demand export
  */
 export const getWeekendCarouselSourcesQuerySetTypeDefault = `matchDay`;
+export const getWeekendCarouselSourcesQueryAudienceDefault = `all`;
 export const getWeekendCarouselSourcesQueryFromRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 export const getWeekendCarouselSourcesQueryToRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 
 
 export const GetWeekendCarouselSourcesQueryParams = zod.object({
   "setType": zod.enum(['matchDay', 'teamList', 'results', 'matchSummary']).default(getWeekendCarouselSourcesQuerySetTypeDefault),
+  "audience": zod.enum(['all', 'senior', 'junior']).default(getWeekendCarouselSourcesQueryAudienceDefault).describe('Choose senior or junior sources, or both. Junior-only requests do not read senior fixtures or scorecards.'),
   "from": zod.coerce.string().regex(getWeekendCarouselSourcesQueryFromRegExp),
   "to": zod.coerce.string().regex(getWeekendCarouselSourcesQueryToRegExp)
 })
@@ -13343,6 +13358,7 @@ export const UploadJuniorShirtNumbersResponse = zod.object({
   "side": zod.enum(['senior', 'junior']),
   "kind": zod.enum(['numbers']).describe('`numbers`: the club\'s shirt-number spreadsheet. Registered players without numbers come from the squad register (\"Add squad to register\").'),
   "season": zod.number(),
+  "category": zod.enum(['men', 'female']).optional().describe('The senior register an entry belongs to. Number clashes are checked within a category only; one person may be in both in the same season.'),
   "fileName": zod.string(),
   "rows": zod.array(zod.object({
   "rowIndex": zod.number().describe('1-based data row in the file; resolutions refer to it.'),
@@ -13427,6 +13443,24 @@ export const CommitJuniorShirtNumberUploadResponse = zod.object({
  */
 export const DiscardJuniorShirtNumberUploadParams = zod.object({
   "id": zod.coerce.number()
+})
+
+
+/**
+ * For the "Also in" badges on People → Shirt numbers: each person on two or more of the men's, female and juniors registers for `season`, with the entry ids that hold them. A senior and a junior entry count as one person only when a PlayHQ Profile ID AND the name agree (a family account can put one id on several people). Flags only: no numbers, names or stats, never used on a public page. Admin only; the only read that touches both registers, kept under /juniors per the juniors isolation rule.
+ * @summary Who is on more than one shirt-number register this season (admin)
+ */
+export const GetShirtNumberRegisterOverlapQueryParams = zod.object({
+  "season": zod.coerce.number().optional().describe('Season start year (default the current season)')
+})
+
+export const GetShirtNumberRegisterOverlapResponse = zod.object({
+  "season": zod.number(),
+  "people": zod.array(zod.object({
+  "registers": zod.array(zod.enum(['men', 'female', 'juniors'])).describe('The registers this person is on (two or more), in display order.'),
+  "seniorEntryIds": zod.array(zod.number()),
+  "juniorEntryIds": zod.array(zod.number())
+}))
 })
 
 

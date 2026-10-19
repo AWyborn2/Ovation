@@ -13,6 +13,7 @@ import {
   type JuniorTeamPublishing,
 } from "@workspace/db";
 import { juniorParticipantJoin } from "./junior-participant-scope";
+import { matchJuniorOpponentClub } from "./junior-opponent-matching";
 import {
   makeJuniorNaming,
   parseJuniorNameStyle,
@@ -172,6 +173,29 @@ type OpponentClubRow = {
   opponentClubBackgroundColour: string | null;
   opponentClubPrimaryColour: string | null;
 };
+
+type JuniorOpponentClub = NonNullable<ReturnType<typeof toOpponentClub>>;
+let juniorClubCache: { rows: JuniorOpponentClub[]; expires: number } | null = null;
+
+/** Newly synced matches can lack the historical ETL's club link. Resolve only
+ * cosmetic reference data, without changing a match or accessing senior stats.
+ * Existing explicit links always take precedence at the caller. */
+export async function resolveUnlinkedJuniorOpponent(name: string | null | undefined) {
+  if (!name?.trim()) return null;
+  if (!juniorClubCache || juniorClubCache.expires <= Date.now()) {
+    const rows = await db.select({
+      id: clubsTable.id,
+      name: clubsTable.name,
+      shortName: clubsTable.shortName,
+      logoUrl: clubsTable.logoUrl,
+      logoUrl128: clubsTable.logoUrl128,
+      backgroundColour: clubsTable.backgroundColour,
+      primaryColour: clubsTable.primaryColour,
+    }).from(clubsTable);
+    juniorClubCache = { rows, expires: Date.now() + 5 * 60 * 1000 };
+  }
+  return matchJuniorOpponentClub(name, juniorClubCache.rows);
+}
 
 // Collapse the joined club columns into a nullable branding object. Null when
 // the junior match has no matched opposition club so renderers fall back.

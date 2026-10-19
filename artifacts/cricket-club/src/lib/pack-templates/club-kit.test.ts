@@ -182,6 +182,46 @@ describe("Club Kit designs", () => {
     }
   });
 
+  it("leads carousel results with the grade and puts outcome - round above it", () => {
+    const base = sampleCardInput("matchSummary") as Extract<ShareCardInput, { kind: "matchSummary" }>;
+    for (const [resultWinner, result, word] of [
+      ["club", "Won by 15 runs", "WIN"],
+      ["opposition", "Lost by 15 runs", "RESULT"],
+      ["draw", "Match abandoned", "ABANDONED"],
+      ["draw", "Match tied", "TIE"],
+      ["draw", "No result", "NO RESULT"],
+    ] as const) {
+      for (const size of SIZES) {
+        const input = {
+          ...base, matchTitle: "F Grade • Round 2", roundLabel: "R2",
+          carouselDetail: false, resultWinner, result,
+        };
+        const before = JSON.stringify(input);
+        const html = render(input, size);
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        expect(doc.body.textContent).toContain(`${word} - Round 2`);
+        const headline = [...doc.querySelectorAll("div")].find(el => el.textContent === "F Grade");
+        expect(headline?.getAttribute("style")).toContain("font-weight:900");
+        expect(JSON.stringify(input)).toBe(before);
+      }
+    }
+    // Historical saved sets have the round only in their title.
+    expect(render({ ...base, matchTitle: "F Grade • Round 2", carouselDetail: false }, "portrait"))
+      .toContain("WIN - Round 2");
+    expect(render({ ...base, matchTitle: "F Grade", roundLabel: "", carouselDetail: false }, "portrait"))
+      .not.toContain("WIN - ");
+    expect(render({ ...base, matchTitle: "F Grade • Grand Final", carouselDetail: false }, "story"))
+      .toContain("WIN - Grand Final");
+    const long = render({
+      ...base, matchTitle: "Women's Premier Competition • Round 2", carouselDetail: false,
+    }, "square");
+    expect(new DOMParser().parseFromString(long, "text/html").body.textContent)
+      .toContain("Women's Premier Competition");
+    expect(long).toContain("--fit:");
+    // Ordinary standalone cards keep their existing result headline.
+    expect(render({ ...base, matchTitle: "F Grade • Round 2" }, "portrait")).toMatch(/>WIN<\/div>/);
+  });
+
   it("the Starting XI is picked by name, badges only where they apply, one sponsor logo", () => {
     const base = sampleCardInput("teamList") as Extract<ShareCardInput, { kind: "teamList" }>;
     expect(resolveTemplate(base, ID)?.designKey).toBe("team-list");

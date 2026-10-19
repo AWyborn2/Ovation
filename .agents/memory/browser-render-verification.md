@@ -14,3 +14,9 @@ The testing subagent configuration may be unavailable even when its skill is ins
 **Why:** The runtime rejected the documented `testing` configuration with `Unknown config kind`, despite returning a job identifier.
 
 **How to apply:** Do not treat the returned identifier as evidence that a tester started. If the configuration is rejected, use the installed Puppeteer/Chromium for direct browser verification rather than repeatedly starting unsupported tester jobs.
+
+Scope browser-test tenant override headers to the app's own origin, not every request.
+
+**Why:** Puppeteer's global extra headers also went to Google font servers, causing CORS failures. Team-list previews correctly blocked fitting when their intended fonts could not load; the apparent preview defect was caused by the test harness.
+
+**How to apply:** Add tenant overrides through same-origin request interception. Leave external font and image requests untouched, and do not weaken font-loading or export-parity checks to make a faulty harness pass.

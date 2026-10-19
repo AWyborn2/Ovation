@@ -10,3 +10,9 @@ Admin junior social downloads live at `/admin/social/juniors` (page `admin-junio
 **How to apply:** any new junior card kind needs `junior?: boolean` added to its `ShareCardInput` variant + the same three render switches. The modal (`share-card-modal.tsx`) hides the theme + custom-template selectors and forces `selectedTheme=undefined`/`selectedTemplate=null` when `isJunior` (detected via `"junior" in input`), so admins can't override the locked palette.
 
 **Privacy + isolation.** Backend `GET /api/juniors/social-milestones` (route in `juniors.ts`) aggregates career runs/wickets/games per HH participant via the same `is_private=false` inner-join-on-participants pattern as the leaderboard — so opposition (no participant row) AND the 6 private juniors drop out in one move. It emits one row per (participant, stat) for the HIGHEST crossed threshold, sorted most-impressive-first. The match-summary builder (`junior-match-summary.ts`) additionally drops any line whose name is the masked `"Private Player"` from the featured top-performer lists (innings totals still come from the scorecard so they stay correct). No junior query touches a senior table.
+
+Junior team-list and match-day tiles must also be creatable through the same on-demand review/export flow as senior carousels.
+
+**Why:** The user explicitly requested creating team lists and match-day tiles for juniors as well.
+
+**How to apply:** Keep junior sources and identities separate from seniors, retain public junior naming/privacy rules, and use published selections rather than exposing drafting work.

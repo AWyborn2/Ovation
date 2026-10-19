@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { ShirtNumberCategory } from './shirtNumberCategory';
 import type { ShirtNumberPreviewCounts } from './shirtNumberPreviewCounts';
 import type { ShirtNumberPreviewRow } from './shirtNumberPreviewRow';
 import type { ShirtNumberUploadKind } from './shirtNumberUploadKind';
@@ -16,6 +17,7 @@ export interface ShirtNumberUploadPreview {
   side: ShirtNumberUploadPreviewSide;
   kind: ShirtNumberUploadKind;
   season: number;
+  category?: ShirtNumberCategory;
   fileName: string;
   rows: ShirtNumberPreviewRow[];
   counts: ShirtNumberPreviewCounts;

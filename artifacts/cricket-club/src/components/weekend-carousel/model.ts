@@ -128,6 +128,19 @@ export function createTeamSlides(
   });
 }
 
+export type CarouselAudience = "all" | "senior" | "junior";
+
+export function filterCarouselFixtures(
+  fixtures: Fixture[],
+  content: Record<string, Record<string, unknown>> | undefined,
+  audience: CarouselAudience,
+): Fixture[] {
+  return fixtures.filter(f => {
+    const junior = content?.[f.id]?.junior === true || isJuniorGradeLabel(f.grade);
+    return audience === "all" || (audience === "junior" ? junior : !junior);
+  });
+}
+
 /** Refresh content without discarding valid photo/crop choices or edited order. */
 export function refreshTeamSlides(
   fixtures: Fixture[],

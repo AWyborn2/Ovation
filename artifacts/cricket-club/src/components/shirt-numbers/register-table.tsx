@@ -5,8 +5,27 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/admin-ui";
 import { cn } from "@/lib/utils";
-import type { PickedPerson, RegisterEntryView, ShirtNumberSide } from "./api";
+import {
+  REGISTER_LABEL,
+  type PickedPerson,
+  type RegisterEntryView,
+  type RegisterName,
+  type ShirtNumberSide,
+} from "./api";
 import { isValidShirtNumber } from "./values";
+
+/** "Also in: Female, Juniors": the other registers this person is on this season. */
+function AlsoInTag({ entry }: { entry: RegisterEntryView }) {
+  if (entry.alsoIn.length === 0) return null;
+  return (
+    <StatusPill tone="info">
+      Also in: {entry.alsoIn.map((r) => REGISTER_LABEL[r]).join(", ")}
+    </StatusPill>
+  );
+}
+
+/** The "Also add to…" row action: one button per register the person is not on yet. */
+export type AlsoAddTarget = { register: RegisterName; disabledReason: string | null };
 
 /** A dual player's number in the other register, as a short tag (admin only). */
 function CrossRegisterTags({ entry, side }: { entry: RegisterEntryView; side: ShirtNumberSide }) {
@@ -71,6 +90,8 @@ export function ShirtNumberRegisterTable({
   side = "senior",
   toolbarAction,
   label = "Shirt number register",
+  alsoAdd,
+  bulkMove,
 }: {
   entries: readonly RegisterEntryView[];
   supportsHeld: boolean;
@@ -84,6 +105,13 @@ export function ShirtNumberRegisterTable({
   side?: ShirtNumberSide;
   toolbarAction?: ReactNode;
   label?: string;
+  /** "Also add to…": copy a person into another register (never blocked). */
+  alsoAdd?: {
+    targets: (entry: RegisterEntryView) => AlsoAddTarget[];
+    onAdd: (entry: RegisterEntryView, to: RegisterName) => void;
+  };
+  /** Select rows and move them to another register in one go ("Move to Female"). */
+  bulkMove?: { label: string; onMove: (entries: RegisterEntryView[]) => void; pending?: boolean };
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterId | null>(null);
@@ -93,6 +121,15 @@ export function ShirtNumberRegisterTable({
   // Focus the number field when an edit opens (keyboard users land in it).
   const focusOnMount = useCallback((el: HTMLInputElement | null) => el?.focus(), []);
   const [linkingId, setLinkingId] = useState<number | null>(null);
+  const [addingToId, setAddingToId] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const toggleSelected = (id: number) =>
+    setSelected((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const filters = useMemo<
     { id: FilterId; label: string; predicate: (e: RegisterEntryView) => boolean }[]
@@ -213,10 +250,36 @@ export function ShirtNumberRegisterTable({
         {toolbarAction && <div className="ml-auto">{toolbarAction}</div>}
       </div>
 
+      {bulkMove && selected.size > 0 && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
+          <span className="font-medium">{selected.size} selected</span>
+          <Button
+            type="button"
+            size="sm"
+            disabled={bulkMove.pending}
+            onClick={() => {
+              const picked = entries.filter((e) => selected.has(e.id));
+              setSelected(new Set());
+              bulkMove.onMove(picked);
+            }}
+          >
+            {bulkMove.label}
+          </Button>
+          <Button type="button" size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
+            Clear selection
+          </Button>
+        </div>
+      )}
+
       <div className="rounded-xl border border-border bg-card">
         <table className="block w-full border-collapse text-sm md:table" aria-label={label}>
           <thead className="hidden md:table-header-group">
             <tr className="border-b border-border">
+              {bulkMove && (
+                <th scope="col" className="h-10 w-10 px-4">
+                  <span className="sr-only">Select</span>
+                </th>
+              )}
               {["No.", "Name", "Player", "Source", ""].map((h, i) => (
                 <th
                   key={i}
@@ -232,7 +295,7 @@ export function ShirtNumberRegisterTable({
             {visible.length === 0 ? (
               <tr className="block md:table-row">
                 <td
-                  colSpan={5}
+                  colSpan={bulkMove ? 6 : 5}
                   className="block px-4 py-10 text-center text-muted-foreground md:table-cell"
                 >
                   {entries.length === 0
@@ -248,6 +311,17 @@ export function ShirtNumberRegisterTable({
                     key={e.id}
                     className="block border-b border-border py-2 last:border-b-0 md:table-row md:py-0"
                   >
+                    {bulkMove && (
+                      <td className={cn(td, "md:w-10")}>
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4"
+                          checked={selected.has(e.id)}
+                          onChange={() => toggleSelected(e.id)}
+                          aria-label={`Select ${e.name}`}
+                        />
+                      </td>
+                    )}
                     <td className={cn(td, "md:w-40")}>
                       {cellLabel("No.")}
                       {isEditing ? (
@@ -310,6 +384,7 @@ export function ShirtNumberRegisterTable({
                       {cellLabel("Name")}
                       <span className="flex flex-col gap-0.5">
                         <span className="font-semibold">{e.name}</span>
+                        <AlsoInTag entry={e} />
                         <CrossRegisterTags entry={e} side={side} />
                       </span>
                     </td>
@@ -397,6 +472,56 @@ export function ShirtNumberRegisterTable({
                           )}
                         </>
                       )}
+                      {alsoAdd &&
+                        (() => {
+                          const targets = alsoAdd.targets(e);
+                          if (targets.length === 0) return null;
+                          return addingToId === e.id ? (
+                            <span
+                              role="group"
+                              aria-label={`Also add ${e.name} to`}
+                              className="flex flex-wrap items-center gap-1"
+                            >
+                              {targets.map((t) => (
+                                <Button
+                                  key={t.register}
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={t.disabledReason !== null}
+                                  title={t.disabledReason ?? undefined}
+                                  onClick={() => {
+                                    setAddingToId(null);
+                                    alsoAdd.onAdd(e, t.register);
+                                  }}
+                                >
+                                  {REGISTER_LABEL[t.register]}
+                                </Button>
+                              ))}
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setAddingToId(null)}
+                              >
+                                Cancel
+                              </Button>
+                            </span>
+                          ) : (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setAddingToId(e.id);
+                                setLinkingId(null);
+                                cancelEdit();
+                              }}
+                            >
+                              Also add to…
+                            </Button>
+                          );
+                        })()}
                       {onDelete && (
                         <Button
                           type="button"
