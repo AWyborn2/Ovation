@@ -39,9 +39,13 @@ const AdminCaps = lazy(() => import("@/pages/admin-caps"));
 const AdminShirtNumbers = lazy(() => import("@/pages/admin-shirt-numbers"));
 const AdminLifeMembers = lazy(() => import("@/pages/admin-life-members"));
 const AdminJuniorPremierships = lazy(() => import("@/pages/admin-junior-premierships"));
-const AdminJuniorShirtNumbers = lazy(() => import("@/pages/admin-junior-shirt-numbers"));
 const AdminHonoursDisplay = lazy(() => import("@/pages/admin-honours-display"));
 const AdminImport = lazy(() => import("@/pages/admin-import"));
+const ShirtNumberImportPanel = lazy(() =>
+  import("@/components/imports/shirt-number-import").then((m) => ({
+    default: m.ShirtNumberImportPanel,
+  })),
+);
 const SquadImportPanel = lazy(() =>
   import("@/components/imports/squad-import").then((m) => ({ default: m.SquadImportPanel })),
 );
@@ -146,7 +150,6 @@ export function AdminPeopleGroup() {
         players: <AdminPlayers />,
         "junior-players": <AdminJuniorPlayers />,
         "shirt-numbers": <AdminShirtNumbers />,
-        "junior-shirt-numbers": <AdminJuniorShirtNumbers />,
         committee: <AdminCommittee />,
         captains: <AdminCaptains />,
         "junior-office-bearers": <AdminJuniorCommittee />,
@@ -193,6 +196,7 @@ export function AdminImportGroup() {
       pages={{
         stats: <AdminImport />,
         squad: <SquadImportPanel />,
+        "shirt-numbers": <ShirtNumberImportPanel />,
       }}
     />
   );

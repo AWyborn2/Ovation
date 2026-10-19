@@ -12,7 +12,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 import { Route } from "wouter";
-import AdminJuniorShirtNumbers from "@/pages/admin-junior-shirt-numbers";
+import { JuniorShirtNumbersSection as AdminJuniorShirtNumbers } from "@/components/shirt-numbers/junior-section";
 import JuniorsPlayerDetail from "@/pages/juniors-player-detail";
 import { juniorShirtNumberApi } from "@/components/shirt-numbers/junior-api";
 import { renderAt } from "@/test/render";
@@ -84,7 +84,7 @@ describe("Admin junior shirt numbers page", () => {
       { match: /\/api\/shirt-numbers\/settings$/, reply: () => SETTINGS_ON },
       { match: /\/api\/juniors\/overview$/, reply: () => overview(0) },
     ]);
-    renderAt(<AdminJuniorShirtNumbers />, "/admin/people/junior-shirt-numbers");
+    renderAt(<AdminJuniorShirtNumbers />, "/admin/people/shirt-numbers?section=juniors");
     expect(await screen.findByText(/no junior players/i)).toBeInTheDocument();
     expect(screen.queryByRole("table")).toBeNull();
     // Only the availability check: no season's register is fetched.
@@ -111,7 +111,7 @@ describe("Admin junior shirt numbers page", () => {
         }),
       },
     ]);
-    renderAt(<AdminJuniorShirtNumbers />, "/admin/people/junior-shirt-numbers");
+    renderAt(<AdminJuniorShirtNumbers />, "/admin/people/shirt-numbers?section=juniors");
     expect(await screen.findByText("Mia Newcomb")).toBeInTheDocument();
     expect(screen.getByText("Waiting for PlayHQ")).toBeInTheDocument();
     expect(screen.queryByText(/no junior players/i)).toBeNull();
@@ -125,12 +125,10 @@ describe("Admin junior shirt numbers page", () => {
       },
       { match: /\/api\/juniors\/overview$/, reply: () => overview(40) },
     ]);
-    renderAt(<AdminJuniorShirtNumbers />, "/admin/people/junior-shirt-numbers");
+    renderAt(<AdminJuniorShirtNumbers />, "/admin/people/shirt-numbers?section=juniors");
     expect(await screen.findByText(/turned off/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /shirt numbers/i })).toHaveAttribute(
-      "href",
-      "/admin/people/shirt-numbers",
-    );
+    // The switch sits at the top of the same page, above the sections.
+    expect(screen.getByText(/turn them on above/i)).toBeInTheDocument();
     // No settings switch here: one switch covers both registers.
     expect(screen.queryByRole("switch")).toBeNull();
     expect(requests.some((r) => isRegisterList(r.url))).toBe(false);
@@ -156,7 +154,7 @@ describe("Admin junior shirt numbers page", () => {
         }),
       },
     ]);
-    renderAt(<AdminJuniorShirtNumbers />, "/admin/people/junior-shirt-numbers");
+    renderAt(<AdminJuniorShirtNumbers />, "/admin/people/shirt-numbers?section=juniors");
     expect(await screen.findByText("Amy Archer")).toBeInTheDocument();
     expect(screen.getByText(/current season/i)).toBeInTheDocument();
     // A dual player's senior number is tagged, and flagged when it differs.
@@ -199,7 +197,7 @@ describe("Admin junior shirt numbers page", () => {
         reply: () => ({ entry: juniorEntry(3, "Cohen Buller", "8"), warnings: [] }),
       },
     ]);
-    renderAt(<AdminJuniorShirtNumbers />, "/admin/people/junior-shirt-numbers");
+    renderAt(<AdminJuniorShirtNumbers />, "/admin/people/shirt-numbers?section=juniors");
     expect(await screen.findByText("Name mismatch — check")).toBeInTheDocument();
     expect(screen.getByText("PlayHQ: Hayes Buller")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Link to Cohen Buller" }));
@@ -304,7 +302,7 @@ describe("Junior upload preview", () => {
         }),
       },
     ]);
-    renderAt(<AdminJuniorShirtNumbers />, "/admin/people/junior-shirt-numbers");
+    renderAt(<AdminJuniorShirtNumbers />, "/admin/people/shirt-numbers?section=juniors");
     fireEvent.click(await screen.findByRole("button", { name: /upload file/i }));
     const input = screen.getByLabelText("File");
     fireEvent.change(input, {

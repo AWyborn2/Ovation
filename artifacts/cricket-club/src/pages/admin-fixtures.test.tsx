@@ -61,6 +61,8 @@ const TEAM_LIST: TeamList = {
 const entry = (over: Partial<ShirtNumberEntry>): ShirtNumberEntry => ({
   id: 1,
   season: 2026,
+  category: "men",
+  alsoIn: [],
   name: "Someone",
   participantId: null,
   playerId: null,

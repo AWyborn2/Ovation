@@ -403,9 +403,7 @@ export async function addSquadToSeniorRegister(
     // that row (per-person unique indexes): count them as skipped.
     const inserted = await tx
       .insert(shirtNumbersTable)
-      .values(
-        p.create.map((c) => ({ ...c, tenantId, season, category, source: "squad" as const })),
-      )
+      .values(p.create.map((c) => ({ ...c, tenantId, season, category, source: "squad" as const })))
       .onConflictDoNothing()
       .returning();
     result.created = inserted.length;

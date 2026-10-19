@@ -9,10 +9,7 @@ import {
   type SocialDraftRow,
 } from "@workspace/db";
 import { seasonStartYearFor } from "@workspace/db/seasons";
-import {
-  getShirtNumberSettings,
-  shirtNumberCategoryForGrade,
-} from "@workspace/db/shirt-numbers";
+import { getShirtNumberSettings, shirtNumberCategoryForGrade } from "@workspace/db/shirt-numbers";
 import { shirtNumberForCategory } from "./player-shirt-numbers";
 import { logger } from "./logger";
 import { normalizeDraftStatus } from "./draft-status";

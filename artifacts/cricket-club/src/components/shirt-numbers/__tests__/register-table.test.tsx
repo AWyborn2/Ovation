@@ -73,6 +73,7 @@ const entry = (
   duplicate: false,
   source: "upload",
   crossRegister: [],
+  alsoIn: [],
   ...extra,
 });
 
@@ -348,7 +349,7 @@ describe("Add squad to register", () => {
       ...routes(),
       {
         method: "POST",
-        match: /\/api\/shirt-numbers\/seasons\/2026\/from-squad$/,
+        match: /\/api\/shirt-numbers\/seasons\/2026\/from-squad\?category=men$/,
         reply: () => ({
           season: 2026,
           created: 3,
@@ -379,7 +380,9 @@ describe("Add squad to register", () => {
     expect(summary).toHaveTextContent(/2 already on the register/);
     expect(summary).toHaveTextContent(/Zed Unknown/);
     expect(
-      requests.filter((r) => r.method === "POST" && /\/seasons\/2026\/from-squad$/.test(r.url)),
+      requests.filter(
+        (r) => r.method === "POST" && /\/seasons\/2026\/from-squad\?category=men$/.test(r.url),
+      ),
     ).toHaveLength(1);
   });
 
