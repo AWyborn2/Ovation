@@ -12,7 +12,8 @@ import {
 import type { PackCardData } from "@/lib/pack-render";
 import { AnimatedCardPreview } from "./animated-card-preview";
 import { CardSetStrip } from "@/components/card-sets/card-set-strip";
-import { slidesForSize } from "@/lib/card-sets/plan";
+import type { LayerDocument } from "@workspace/scorecard/kind-templates";
+import { modalSlides } from "./slides";
 
 /** Size tabs + the live preview (animated / pack DOM / canvas PNG). */
 export function PreviewTabs({
@@ -33,6 +34,7 @@ export function PreviewTabs({
   packId,
   rendering,
   previewUrls,
+  templateDoc,
 }: {
   input: ShareCardInput;
   activeSize: CardSize;
@@ -51,6 +53,8 @@ export function PreviewTabs({
   packId: string | null;
   rendering: boolean;
   previewUrls: Partial<Record<CardSize, string | null>>;
+  /** A templated draft's layer document (renders on the blank pack). */
+  templateDoc?: LayerDocument | null;
 }) {
   return (
     <Tabs value={activeSize} onValueChange={(v) => setActiveSize(v as CardSize)}>
@@ -64,7 +68,10 @@ export function PreviewTabs({
       </TabsList>
       {enabledSizes.map((s) => (
         <TabsContent key={s} value={s} className="mt-3">
-          {input && isPackCard && !animated && slidesForSize(input, s).length > 1 ? (
+          {input &&
+          isPackCard &&
+          !animated &&
+          (templateDoc || modalSlides(input, s, null).length > 1) ? (
             // A big round posts as a balanced card set: preview every slide.
             <CardSetStrip
               input={input}
@@ -75,6 +82,7 @@ export function PreviewTabs({
               data={buildPackData(renderTransform)}
               packId={packId}
               slideWidth={s === "story" ? 180 : 240}
+              slides={templateDoc ? modalSlides(input, s, templateDoc) : undefined}
             />
           ) : (
             <div

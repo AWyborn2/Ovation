@@ -36,6 +36,7 @@ export function CardSetStrip({
   selectedKey,
   onSelect,
   className,
+  slides: planned,
 }: {
   input: ShareCardInput;
   size: CardSize;
@@ -53,8 +54,13 @@ export function CardSetStrip({
   selectedKey?: string;
   onSelect?: (slide: PlannedSlide) => void;
   className?: string;
+  /**
+   * Pre-planned slides, each with its own adjustments (the Share modal's
+   * templated drafts). Overrides the balanced-set plan and `adjustments`.
+   */
+  slides?: (PlannedSlide & { adjustments: CardAdjustments | null })[];
 }) {
-  const slides = slidesForSize(input, size, options);
+  const slides = planned ?? slidesForSize(input, size, options);
   const ratio = SIZES[size].h / SIZES[size].w;
   return (
     <div
@@ -81,7 +87,11 @@ export function CardSetStrip({
                 junior={j}
                 data={data && j ? { ...data, photoUrl: null } : data}
                 packId={packId}
-                adjustments={slideAdjustments(adjustments, slide.key)}
+                adjustments={
+                  planned
+                    ? (slide as { adjustments: CardAdjustments | null }).adjustments
+                    : slideAdjustments(adjustments, slide.key)
+                }
                 width={slideWidth}
               />
             </span>

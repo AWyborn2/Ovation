@@ -1,3 +1,4 @@
+import type { LayerDocument } from "@workspace/scorecard/kind-templates";
 import { planCardSet, type CardSetOptions } from "@/lib/card-sets/plan";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { readQueuedCarousel } from "@workspace/scorecard/queued-carousel";
@@ -524,6 +525,11 @@ export default function AdminSocialQueue() {
         // renders it), plus the player's gallery to swap in.
         photoUrl={preview?.photoUrl ?? null}
         packId={preview?.packId ?? null}
+        templateDoc={
+          preview?.templateVersion != null
+            ? ((preview.adjustments ?? null) as LayerDocument | null)
+            : null
+        }
         playerId={playerIdFromAppPath(preview?.appPath)}
         onApprove={
           preview && draftStatus(preview) === "ready"
