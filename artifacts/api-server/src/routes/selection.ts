@@ -4,6 +4,8 @@ import {
   FinaliseSelectionParams,
   GetSelectionBoardQueryParams,
   GetTeamSheetPreviewParams,
+  MatchSelectionSlotBody,
+  MatchSelectionSlotParams,
   PrintTeamSheetBody,
   PrintTeamSheetParams,
   ReopenSelectionParams,
@@ -13,6 +15,7 @@ import {
   SaveSelectionBoardBody,
   SetSelectionMemberStatusBody,
   SetSelectionMemberStatusParams,
+  UnmatchSquadMemberParticipantParams,
 } from "@workspace/api-zod";
 import { requireAdminOrCaptain, selectionActorOf } from "../middlewares/require-admin-or-captain";
 import { getTenantId } from "../middlewares/tenant-context";
@@ -28,6 +31,7 @@ import {
   syncSideFromPlayhq,
 } from "../lib/selection-board";
 import { loadAvailabilitySettings, runReminder } from "../lib/availability-schedule";
+import { matchSelectionSlot, unmatchParticipant } from "../lib/selection-match";
 import { setMemberStatus } from "../lib/selection-member-status";
 import {
   TeamSheetError,
@@ -294,6 +298,66 @@ router.post(
   },
 );
 
+// "Match to squad member" on a gap PlayHQ named only "Private Player" (or any row not on
+// the register): fills the slot and remembers the PlayHQ participant for the club (ADR-008).
+router.post("/selection/:id/match", requireAdminOrCaptain, async (req, res): Promise<void> => {
+  const params = MatchSelectionSlotParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid side id" });
+    return;
+  }
+  const body = MatchSelectionSlotBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Send the slot, the member and the side's version." });
+    return;
+  }
+  const tenantId = getTenantId(req);
+  const actor = selectionActorOf(req);
+  try {
+    const result = await matchSelectionSlot(tenantId, actor, params.data.id, body.data);
+    req.log?.info(
+      {
+        tenantId,
+        selectionId: params.data.id,
+        slot: body.data.slot,
+        memberId: body.data.memberId,
+        remembered: result.remembered,
+        actorKind: actor.kind,
+      },
+      "selection slot matched",
+    );
+    const weekend = await selectionWeekend(tenantId, params.data.id);
+    res.json(await buildBoard(tenantId, actor, result.section, new Date(), weekend));
+  } catch (err) {
+    if (!refuse(res, err)) throw err;
+  }
+});
+
+// "Unmatch": forget a remembered PlayHQ participant match. Only later matching changes.
+router.delete(
+  "/squad/:id/participants/:participantId",
+  requireAdminOrCaptain,
+  async (req, res): Promise<void> => {
+    const params = UnmatchSquadMemberParticipantParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: "Invalid member or participant id" });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const actor = selectionActorOf(req);
+    try {
+      await unmatchParticipant(tenantId, actor, params.data.id, params.data.participantId);
+      req.log?.info(
+        { tenantId, memberId: params.data.id, actorKind: actor.kind },
+        "squad participant match forgotten",
+      );
+      res.status(204).end();
+    } catch (err) {
+      if (!refuse(res, err)) throw err;
+    }
+  },
+);
+
 // An answer a member gave in person or by phone, recorded for the weekend's round
 // (ADR-008 §3). Answers with the member's section board.
 router.put(
@@ -331,14 +395,5 @@ router.put(
     }
   },
 );
-
-// Selection Hub decoupled from availability (ADR-008): the contract is in the spec and
-// these routes answer 501 until their slice lands — matching a gap to a squad member
-// and forgetting that match (PR2).
-const notYet = (_req: unknown, res: Response): void => {
-  res.status(501).json({ error: "Not available yet." });
-};
-router.post("/selection/:id/match", requireAdminOrCaptain, notYet);
-router.delete("/squad/:id/participants/:participantId", requireAdminOrCaptain, notYet);
 
 export default router;

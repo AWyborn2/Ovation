@@ -1,3 +1,4 @@
+import type { LayerDocument } from "@workspace/scorecard/kind-templates";
 import type { MotionPreset, ShareCardInput } from "@/lib/share-card";
 import type { Platform } from "@/lib/captions";
 
@@ -32,6 +33,12 @@ export type Props = {
    * club's pack for the kind. A layout picked in the modal still wins.
    */
   packId?: string | null;
+  /**
+   * A templated draft's layer document (its `adjustments` when
+   * `templateVersion` is set). Such a draft renders on the blank pack with this
+   * document on every slide; without it the preview and downloads are blank.
+   */
+  templateDoc?: LayerDocument | null;
   /**
    * When provided, the modal becomes an approval surface: it shows an
    * "Approve & download" button that renders the full card + caption bundle,

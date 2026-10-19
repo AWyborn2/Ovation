@@ -97,6 +97,52 @@ describe("buildMemberMatcher (KTD7)", () => {
   });
 });
 
+describe("buildMemberMatcher: the remembered PlayHQ match comes first (ADR-008)", () => {
+  const tom = member(1, "Thomas", "Brooks", { preferredName: "Tom" });
+  const jack = member(2, "Jack", "Hale", { linkedPlayerId: 41 });
+  const guid = "6f1c2a9e-0000-4000-8000-00000000abcd";
+  const participants = new Map([[guid, 1]]);
+  const match = buildMemberMatcher([tom, jack], undefined, participants);
+
+  it("resolves a Private Player row through the crosswalk", () => {
+    expect(match({ displayName: "Private Player", participantId: guid })).toBe(tom);
+  });
+
+  it("normalises the row's participant id before the lookup", () => {
+    expect(match({ displayName: "Private Player", participantId: ` ${guid.toUpperCase()} ` })).toBe(
+      tom,
+    );
+  });
+
+  it("outranks a linked playerId and a name", () => {
+    expect(match({ playerId: 41, displayName: "Jack Hale", participantId: guid })).toBe(tom);
+  });
+
+  it("falls back to the link, then the name, when the crosswalk has no row", () => {
+    const other = "11111111-2222-4333-8444-555555555555";
+    expect(match({ playerId: 41, displayName: "J. Hale", participantId: other })).toBe(jack);
+    expect(match({ displayName: "Tom Brooks", participantId: other })).toBe(tom);
+    expect(match({ displayName: "Private Player", participantId: other })).toBeNull();
+  });
+
+  it("ignores a remembered member outside the register it was given (another section)", () => {
+    const juniorsOnly = buildMemberMatcher([jack], undefined, participants);
+    expect(juniorsOnly({ displayName: "Private Player", participantId: guid })).toBeNull();
+  });
+
+  it("still never matches a fill-in id", () => {
+    expect(match({ playerId: 90012, displayName: "Private Player", participantId: guid })).toBe(
+      null,
+    );
+  });
+
+  it("matches as before without a crosswalk", () => {
+    expect(buildMemberMatcher([tom])({ displayName: "Private Player", participantId: guid })).toBe(
+      null,
+    );
+  });
+});
+
 describe("member grades (KTD12)", () => {
   const tom = member(1, "Tom", "Brooks", { gradeHint: "B Grade" });
   const sam = member(2, "Sam", "Lee", { gradeHint: "Premier League" });

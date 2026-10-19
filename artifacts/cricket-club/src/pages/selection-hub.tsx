@@ -29,6 +29,7 @@ import {
 import { weekendLabel } from "@/components/selection/labels";
 import { MoveDialog } from "@/components/selection/move-dialog";
 import { MemberStatusControl } from "@/components/selection/member-status-control";
+import { PlayerMatches } from "@/components/selection/player-matches";
 import { PlayerPool } from "@/components/selection/player-pool";
 import { ChangeLog, RoundHeader } from "@/components/selection/round-header";
 import { TeamCard, finaliseHeadsUp } from "@/components/selection/team-card";
@@ -493,6 +494,23 @@ export default function SelectionHub() {
           <>
             {data.availability && data.round && (
               <RoundHeader round={data.round} actor={data.actor} junior={junior} />
+            )}
+            {!data.readOnly && (
+              <PlayerMatches
+                board={data}
+                sides={view.selections}
+                disabled={busy}
+                onBoard={(next) => {
+                  qc.setQueryData(queryKey, next);
+                  setLocal(null);
+                }}
+                onChanged={() => void refetch()}
+                onSay={(message) => {
+                  say(message);
+                  toast({ description: message });
+                }}
+                onFail={fail}
+              />
             )}
             <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
               <main

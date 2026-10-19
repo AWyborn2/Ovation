@@ -52,3 +52,5 @@ Milestone E: T9.1–T9.2 — done (commit c3d09256); T9.3 — done (PR #361 merg
 
 - card-kind-templates: Delivery in progress (design track D1–D3, release R1–R4).
 - Next spec: Record / Team of the week / Premiership engines (decisions/architect/team-of-the-week-engines.md).
+
+- 2026-10-19 PM: scoped social-tile-short-names (preview fix P0 first).

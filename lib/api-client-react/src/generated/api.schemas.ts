@@ -3613,6 +3613,19 @@ export interface SelectionWeekends {
   next: string | null;
 }
 
+export interface SelectionParticipantMatch {
+  /** The PlayHQ participant ID (lower case) */
+  participantId: string;
+  memberId: number;
+  memberName: string;
+  /**
+     * Who made the match
+     * @nullable
+     */
+  createdBy: string | null;
+  createdAt: string;
+}
+
 export interface SelectionBoard {
   section: SquadSection;
   /** The club uses availability requests. Off, the Hub stands alone: the
@@ -3631,6 +3644,11 @@ export interface SelectionBoard {
   weekends?: SelectionWeekends;
   /** The round is a past weekend's; it can be viewed, not changed */
   readOnly?: boolean;
+  /** The club's remembered matches from a PlayHQ participant ID to a squad
+  member (made with "Match to squad member"), for this section's
+  players: juniors' on the junior board, everyone's on the senior board.
+   */
+  participantMatches?: SelectionParticipantMatch[];
 }
 
 export interface SelectionMatchBody {
