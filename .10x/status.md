@@ -2,7 +2,7 @@
 
 **Project:** Ovation (white-label cricket club platform)
 **Active feature:** selection-hub-decoupling (Planning complete 19 Oct 2026, ADR-008 accepted; next: PR0 foundation, then PR1–PR3 in parallel) — junior-card-photos in delivery
-**Queued:** selection-side-size (+ overseas players) — PM scope + design done 19 Oct 2026 (decisions/architect/selection-side-size.md, ADR-009 proposed, migration 0049), next: EM task breakdown; sequence after selection-hub-decoupling PR1–PR3. Also queued: admin-menu-consolidation — product decision + architecture done 2026-10-19 (decisions/architect/admin-menu-consolidation.md); PR 1 (menu moves, Imports hub) implemented on claude/admin-menu-consolidation-84a66f; PR 2 (shirt categories U3–U6, migration 0047) implemented on claude/magical-gould-5777f8, stacked on PR 1; Ash applies 0047 before republishing (docs/runbooks/shirt-number-categories.md)
+**Queued:** selection-side-size (+ overseas players) — planning complete 20 Oct 2026 (decisions/engineering-manager/selection-side-size.md, ADR-009 accepted, migration 0049), next: PR A foundation; sequence after selection-hub-decoupling PR1–PR3. Also queued: admin-menu-consolidation — product decision + architecture done 2026-10-19 (decisions/architect/admin-menu-consolidation.md); PR 1 (menu moves, Imports hub) implemented on claude/admin-menu-consolidation-84a66f; PR 2 (shirt categories U3–U6, migration 0047) implemented on claude/magical-gould-5777f8, stacked on PR 1; Ash applies 0047 before republishing (docs/runbooks/shirt-number-categories.md)
 **Phase:** Delivery — junior-card-photos PR to `main` from `claude/junior-card-photos`; Ash applies migration 0045 before republishing (runbook §3c)
 
 ## Phase tracking — junior-card-photos

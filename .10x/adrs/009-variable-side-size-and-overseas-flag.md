@@ -1,6 +1,6 @@
 # ADR-009: Per-side size and per-season overseas flag
 
-**Status:** Proposed (19 Oct 2026)
+**Status:** Accepted (20 Oct 2026, Ash)
 **Feature:** selection-side-size
 
 ## Context

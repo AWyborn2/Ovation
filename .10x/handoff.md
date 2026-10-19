@@ -1,5 +1,19 @@
 # Handoff
 
+**From:** Engineering Manager
+**To:** Senior Engineer / SDE
+**Feature:** selection-side-size
+
+## Context
+
+- Task list: `.10x/decisions/engineering-manager/selection-side-size.md`. Design: `.10x/decisions/architect/selection-side-size.md`. ADR-009 accepted 20 Oct 2026. Side size 12–14.
+- Start with PR A (TA.1–TA.3: migration 0049, OpenAPI + codegen, shared `selection-shape.ts` with no behaviour change). After it merges, PR B (side size) and PR C (overseas) run as parallel sessions in their own worktrees off `main`, coordinating `selection-board.ts` / `team-card.tsx` / `team-sheet.ts` edits over SendMessage. PR D (cards + public) follows both.
+- The hub-decoupling PRs (#376, #380, #381, #379) have all merged, so nothing blocks this.
+- Ash applies migration 0049 in production before the first republish.
+
+## Previous handoff
+
+
 **From:** Principal Architect
 **To:** Staff Engineer / Engineering Manager
 **Feature:** selection-side-size
