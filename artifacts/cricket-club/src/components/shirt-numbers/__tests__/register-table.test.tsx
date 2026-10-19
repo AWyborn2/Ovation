@@ -107,7 +107,7 @@ describe("Admin shirt numbers page", () => {
         }),
       },
     ]);
-    renderAt(<AdminShirtNumbers />, "/admin/honours/shirt-numbers");
+    renderAt(<AdminShirtNumbers />, "/admin/people/shirt-numbers");
     fireEvent.click(
       await screen.findByRole("button", { name: /edit number for carousel captain/i }),
     );
@@ -132,7 +132,7 @@ describe("Admin shirt numbers page", () => {
         reply: () => ({ enabled: false, duplicatePolicy: "warn", rolloverPolicy: "carry" }),
       },
     ]);
-    renderAt(<AdminShirtNumbers />, "/admin/honours/shirt-numbers");
+    renderAt(<AdminShirtNumbers />, "/admin/people/shirt-numbers");
     expect(await screen.findByRole("switch", { name: /shirt numbers/i })).toBeInTheDocument();
     expect(screen.queryByRole("table")).toBeNull();
     expect(screen.queryByRole("button", { name: /upload/i })).toBeNull();
@@ -155,7 +155,7 @@ describe("Admin shirt numbers page", () => {
         reply: () => ({ season: 2026, seasons: [2026], entries: [] }),
       },
     ]);
-    renderAt(<AdminShirtNumbers />, "/admin/honours/shirt-numbers");
+    renderAt(<AdminShirtNumbers />, "/admin/people/shirt-numbers");
     const toggle = await screen.findByRole("switch", { name: /shirt numbers/i });
     fireEvent.click(toggle);
     await waitFor(() => {

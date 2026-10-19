@@ -5,7 +5,7 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { screen, cleanup, fireEvent, waitFor, within } from "@testing-library/react";
 import { AdminShell } from "@/components/admin-shell";
-import { adminBreadcrumb } from "@/lib/admin-nav";
+import { ADMIN_NAV, adminBreadcrumb } from "@/lib/admin-nav";
 import { renderAt } from "@/test/render";
 import { installApiMock } from "@/test/mock-api";
 
@@ -77,6 +77,36 @@ describe("admin shell v2", () => {
   it("breadcrumbs resolve a group's first tab at its root path", () => {
     expect(adminBreadcrumb("/admin/people")).toEqual(["Admin", "People", "Players"]);
     expect(adminBreadcrumb("/admin")).toEqual(["Admin", "Hub"]);
+  });
+
+  it("groups tabs by job after the menu consolidation (2026-10-19)", () => {
+    expect(adminBreadcrumb("/admin/people/shirt-numbers")).toEqual([
+      "Admin",
+      "People",
+      "Shirt numbers",
+    ]);
+    expect(adminBreadcrumb("/admin/settings/display")).toEqual([
+      "Admin",
+      "Display & Settings",
+      "Display & kiosk",
+    ]);
+    expect(adminBreadcrumb("/admin/data")).toEqual(["Admin", "Stats & Data", "Stats"]);
+    expect(adminBreadcrumb("/admin/import/squad")).toEqual(["Admin", "Imports", "Squad"]);
+    expect(adminBreadcrumb("/admin/selection/junior-fixtures")).toEqual([
+      "Admin",
+      "Selection Hub",
+      "Junior team lists",
+    ]);
+    // Honours & Records holds curated honours only.
+    const honours = ADMIN_NAV.find((g) => g.key === "honours")!.tabs.map((t) => t.value);
+    expect(honours).toEqual([
+      "premierships",
+      "awards",
+      "team-of-decade",
+      "caps",
+      "life-members",
+      "junior-premierships",
+    ]);
   });
 
   it("⌘K opens jump-to, and choosing Players navigates there", async () => {

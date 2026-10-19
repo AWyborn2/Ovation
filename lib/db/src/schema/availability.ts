@@ -44,6 +44,8 @@ export type SquadSection = "senior" | "junior";
 /** Who a request goes to: the account holder (adults) or a guardian. */
 export type RecipientSlot = "account" | "guardian1" | "guardian2";
 export type AvailabilityStatus = "yes" | "no" | "maybe";
+/** Who recorded a reply: the member from their link, or an admin/captain told verbally. */
+export type ReplySource = "member" | "admin";
 export type SelectionState = "draft" | "final";
 /** Who may edit a side in the Selection Hub. */
 export type SelectionRule = "captains_own_grade" | "captains_all_grades" | "admins_only";
@@ -57,7 +59,9 @@ export type SelectionGapReason =
  */
 export type SelectionSlot = {
   memberId: number | null;
-  gap?: { name: string; reason: SelectionGapReason };
+  // `participantId` is the PlayHQ participant GUID of the list row behind the gap, when the
+  // list carried one, so a "Private Player" row can be matched to a squad member.
+  gap?: { name: string; reason: SelectionGapReason; participantId?: string | null };
 };
 
 // The club's squad register, upserted from the PlayHQ participant export
@@ -90,6 +94,12 @@ export const squadMembersTable = pgTable(
     ageGroup: text("age_group"),
     // PlayHQ `Privacy Setting` is private.
     isPrivate: boolean("is_private").notNull().default(false),
+    // An admin's choice to name a private member on the club's public surfaces
+    // (published team list, site, social cards). Off by default; never applies to a
+    // junior or under-18 member. The Hub and team sheet always show real names.
+    showNamePublicly: boolean("show_name_publicly").notNull().default(false),
+    showNamePubliclyBy: text("show_name_publicly_by"),
+    showNamePubliclyAt: timestamp("show_name_publicly_at", { withTimezone: true }),
     linkedPlayerId: integer("linked_player_id"),
     accountHolderName: text("account_holder_name"),
     accountHolderMobile: text("account_holder_mobile"),
@@ -293,6 +303,11 @@ export const availabilityResponsesTable = pgTable(
     respondedBySlot: text("responded_by_slot").$type<RecipientSlot>(),
     respondedAt: timestamp("responded_at", { withTimezone: true }).notNull().defaultNow(),
     late: boolean("late").notNull().default(false),
+    // "admin" when an admin or captain recorded a verbal answer in the Hub; the
+    // member's own later answer overwrites it and sets "member" again.
+    source: text("source").$type<ReplySource>().notNull().default("member"),
+    setByAdminId: integer("set_by_admin_id"),
+    setByName: text("set_by_name"),
   },
   (t) => ({
     uqRoundMemberDate: uniqueIndex("availability_responses_round_member_date_uidx").on(
@@ -305,6 +320,7 @@ export const availabilityResponsesTable = pgTable(
       "availability_responses_status_check",
       sql`"status" IN ('yes', 'no', 'maybe')`,
     ),
+    chkSource: check("availability_responses_source_check", sql`"source" IN ('member', 'admin')`),
   }),
 );
 
@@ -388,15 +404,20 @@ export type SelectionRow = typeof selectionsTable.$inferSelect;
 
 // Append-only log of every selection change: who ("admin" | "captain" |
 // "player" | "system"), what (`action`, e.g. "move", "captain", "finalise",
-// "reopen", "withdraw") and the details. Deleted with its selection.
+// "reopen", "withdraw", "status_set") and the details. Deleted with its selection.
+// A round-level event (an admin-set status for a member in no side) has no
+// selection and carries `round_id` instead; at least one of the two is set.
 export const selectionEventsTable = pgTable(
   "selection_events",
   {
     id: serial("id").primaryKey(),
     tenantId: tenantIdColumn(),
-    selectionId: integer("selection_id")
-      .notNull()
-      .references(() => selectionsTable.id, { onDelete: "cascade" }),
+    selectionId: integer("selection_id").references(() => selectionsTable.id, {
+      onDelete: "cascade",
+    }),
+    roundId: integer("round_id").references(() => availabilityRoundsTable.id, {
+      onDelete: "cascade",
+    }),
     actorKind: text("actor_kind").notNull(),
     actorId: integer("actor_id"),
     actorName: text("actor_name"),
@@ -406,7 +427,39 @@ export const selectionEventsTable = pgTable(
   },
   (t) => ({
     idxSelection: index("selection_events_selection_idx").on(t.selectionId, t.createdAt),
+    idxRound: index("selection_events_round_idx").on(t.roundId, t.createdAt),
+    chkTarget: check(
+      "selection_events_target_check",
+      sql`"selection_id" IS NOT NULL OR "round_id" IS NOT NULL`,
+    ),
   }),
 );
 
 export type SelectionEventRow = typeof selectionEventsTable.$inferSelect;
+
+// The club's own crosswalk from a PlayHQ participant GUID to a squad member, so a
+// team-list row PlayHQ names only "Private Player" still resolves to the right member.
+// Written when an admin matches a gap in the Hub (and by a one-off backfill from
+// already-resolved team lists); deleting the row only affects future matching.
+export const squadMemberParticipantsTable = pgTable(
+  "squad_member_participants",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: tenantIdColumn(),
+    participantId: text("participant_id").notNull(),
+    memberId: integer("member_id")
+      .notNull()
+      .references(() => squadMembersTable.id, { onDelete: "cascade" }),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    uqTenantParticipant: uniqueIndex("squad_member_participants_tenant_participant_uidx").on(
+      t.tenantId,
+      t.participantId,
+    ),
+    idxMember: index("squad_member_participants_member_idx").on(t.memberId),
+  }),
+);
+
+export type SquadMemberParticipantRow = typeof squadMemberParticipantsTable.$inferSelect;

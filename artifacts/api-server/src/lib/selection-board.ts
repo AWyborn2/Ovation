@@ -62,7 +62,8 @@ import {
 import type { SelectionActor } from "../middlewares/require-admin-or-captain";
 import { logger as defaultLogger } from "./logger";
 import {
-  PRIVATE_PLAYER,
+  namedPublicly,
+  publicName,
   selectionPublishedPlayers,
   loadSelectionParticipantIds,
 } from "./selection-published-players";
@@ -262,7 +263,7 @@ export type Board = {
   pool: BoardMember[];
   events: {
     id: number;
-    selectionId: number;
+    selectionId: number | null;
     grade: string;
     actorKind: string;
     actorName: string | null;
@@ -283,6 +284,7 @@ const MEMBER_COLUMNS = {
   active: squadMembersTable.active,
   gradeHint: squadMembersTable.gradeHint,
   isPrivate: squadMembersTable.isPrivate,
+  showNamePublicly: squadMembersTable.showNamePublicly,
   linkedPlayerId: squadMembersTable.linkedPlayerId,
   playhqProfileId: squadMembersTable.playhqProfileId,
 };
@@ -600,7 +602,7 @@ export async function buildBoard(
     events: events.map((e) => ({
       id: e.id,
       selectionId: e.selectionId,
-      grade: gradeOf.get(e.selectionId) ?? "",
+      grade: (e.selectionId == null ? undefined : gradeOf.get(e.selectionId)) ?? "",
       actorKind: e.actorKind,
       actorName: e.actorName,
       action: e.action,
@@ -1502,11 +1504,12 @@ export async function withdrawFromSelection(
           member.linkedPlayerId != null && member.linkedPlayerId < FILL_IN_THRESHOLD
             ? member.linkedPlayerId
             : null;
-        // A private member is listed without an id as "Private Player": drop one
-        // such entry, preferring the one with the role they held.
-        const key = normaliseName(member.isPrivate ? PRIVATE_PLAYER : name);
+        // A private member not named publicly is listed without an id as "Private
+        // Player": drop one such entry, preferring the one with the role they held.
+        const masked = !namedPublicly(member, now);
+        const key = normaliseName(publicName(member, now));
         const role = roleOf(memberId, selection);
-        const privateAt = member.isPrivate
+        const privateAt = masked
           ? (() => {
               const at = list.players
                 .map((p, i) => [p, i] as const)
@@ -1516,7 +1519,7 @@ export async function withdrawFromSelection(
           : -1;
         const players = list.players
           .filter((p, i) =>
-            member.isPrivate
+            masked
               ? i !== privateAt
               : linked != null && p.playerId != null
                 ? p.playerId !== linked

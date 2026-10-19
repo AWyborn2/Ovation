@@ -9,6 +9,7 @@ import type {
   SquadMemberDetail,
 } from "@workspace/api-client-react";
 import AdminAvailability from "./admin-availability";
+import { SquadImportPanel } from "@/components/imports/squad-import";
 
 /**
  * Admin → Availability (plan 2026-10-06-002 U10): schedule settings show the server's
@@ -226,7 +227,15 @@ describe("admin availability", () => {
     );
   });
 
-  it("shows the import summary with counts and skip reasons", async () => {
+  it("sends admins to Imports for the squad file upload", async () => {
+    installFetch(() => undefined);
+    renderAt(<AdminAvailability />, "/admin/availability");
+    const link = await screen.findByRole("link", { name: /Imports → Squad/ });
+    expect(link).toHaveAttribute("href", "/admin/import/squad");
+    expect(screen.queryByLabelText(/PlayHQ participant export/i)).toBeNull();
+  });
+
+  it("shows the squad import summary (Imports → Squad) with counts and skip reasons", async () => {
     const result: SquadImportResult = {
       season: "2026/27",
       created: 12,
@@ -248,7 +257,7 @@ describe("admin availability", () => {
     const calls = installFetch((url, method) =>
       url.includes("/squad/import") && method === "POST" ? { body: result } : undefined,
     );
-    renderAt(<AdminAvailability />, "/admin/availability");
+    renderAt(<SquadImportPanel />, "/admin/import/squad");
 
     const input = (await screen.findByLabelText(/PlayHQ participant export/i)) as HTMLInputElement;
     const file = new File(["Profile ID,First Name\n"], "participants.csv", { type: "text/csv" });

@@ -172,9 +172,9 @@ const ADMIN_STEP_DEFS: StepConfig[] = [
   {
     key: "admin-import",
     element: '[data-tour="admin-nav-/admin/import"]',
-    title: "Import",
+    title: "Imports",
     description:
-      "Upload a PlayCricket combined CSV for a whole season, or a single match scorecard. This is how new results and stats get into the portal.",
+      "Every file upload lives here: a PlayCricket CSV for a whole season, a single match scorecard, or the PlayHQ squad export.",
     side: "right",
     align: "center",
   },
@@ -183,7 +183,16 @@ const ADMIN_STEP_DEFS: StepConfig[] = [
     element: '[data-tour="admin-nav-/admin/people"]',
     title: "People",
     description:
-      "Manage players and their stats, plus committee members, captains, junior office bearers and non-player officials.",
+      "Manage players, junior players and shirt numbers, plus committee members, captains, junior office bearers and non-player officials.",
+    side: "right",
+    align: "center",
+  },
+  {
+    key: "admin-data",
+    element: '[data-tour="admin-nav-/admin/data"]',
+    title: "Stats & Data",
+    description:
+      "Fix the numbers: player stat rows, junior scorecards, stat corrections and duplicate players.",
     side: "right",
     align: "center",
   },
@@ -210,7 +219,7 @@ const ADMIN_STEP_DEFS: StepConfig[] = [
     element: '[data-tour="admin-nav-/admin/settings"]',
     title: "Display & Settings",
     description:
-      "Control defaults and display options for the public pages — Matches, Records, honour & milestone boards, trading cards, the welcome tour and site navigation.",
+      "Control defaults and display options for the public pages — Matches, Records, honour & milestone boards, the clubroom display and kiosk, the welcome tour and site navigation.",
     side: "right",
     align: "center",
   },

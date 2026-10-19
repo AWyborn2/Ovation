@@ -5,6 +5,7 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { AvailabilityReplySource } from './availabilityReplySource';
 import type { SelectionMemberStatus } from './selectionMemberStatus';
 import type { SquadSection } from './squadSection';
 
@@ -36,4 +37,11 @@ export interface SelectionMember {
   repliedAt: Date | null;
   /** Answered after the cut-off */
   late: boolean;
+  /** Who recorded the answer; null with no answer */
+  statusSource?: AvailabilityReplySource | null;
+  /**
+     * The admin or captain who recorded an answer given in person (statusSource admin)
+     * @nullable
+     */
+  statusSetBy?: string | null;
 }

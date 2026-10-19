@@ -9,13 +9,17 @@ import type { SelectionEventDetail } from './selectionEventDetail';
 
 export interface SelectionEvent {
   id: number;
-  selectionId: number;
+  /**
+     * Null for a round-level change (a status set for a member in no side)
+     * @nullable
+     */
+  selectionId: number | null;
   grade: string;
   /** admin, captain, player or system */
   actorKind: string;
   /** @nullable */
   actorName: string | null;
-  /** draft, update, finalise, reopen or withdraw */
+  /** draft, update, finalise, reopen, withdraw, match or status_set */
   action: string;
   detail: SelectionEventDetail;
   createdAt: Date;

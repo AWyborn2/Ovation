@@ -38,7 +38,8 @@ const INTERNAL_TARGETS: { value: string; label: string; section: "senior" | "jun
     { value: "/admin/settings", label: "Display & Settings", section: "admin" },
     { value: "/admin/people", label: "People", section: "admin" },
     { value: "/admin/honours", label: "Honours & Records", section: "admin" },
-    { value: "/admin/import", label: "Import CSV", section: "admin" },
+    { value: "/admin/data", label: "Stats & Data", section: "admin" },
+    { value: "/admin/import", label: "Imports", section: "admin" },
     { value: "/admin/users", label: "Admin users", section: "admin" },
   ];
 
