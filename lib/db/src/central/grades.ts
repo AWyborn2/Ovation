@@ -221,6 +221,21 @@ export function isSeniorAppGrade(grade: string | null | undefined): boolean {
 }
 
 /**
+ * True when a grade is a women's grade: an app grade ("Female A Grade", WA "Women's 1st
+ * Grade") or a raw PlayHQ / central label ("Ladies T20", "Women's First Grade"). Decides
+ * which senior shirt-number register (men / female) a fixture's team list feeds
+ * (admin-menu-consolidation, migration 0047). Women play in men's grades too, so this
+ * only ever says which register a FIXTURE belongs to, never which a person does.
+ */
+export function isWomensGrade(grade: string | null | undefined): boolean {
+  if (!grade) return false;
+  const lower = grade.trim().toLowerCase();
+  if (WA_WOMENS_RE.test(lower)) return true;
+  const app = appGradeFromCentral(grade);
+  return app !== null && /^(female|women's)/i.test(app);
+}
+
+/**
  * True when a central `matches.season` text (e.g. "Summer 2002/03") belongs to
  * the app's integer start-year season (2002). Used only by the optional
  * season-scoped comparison; the live endpoint aggregates all seasons (career).

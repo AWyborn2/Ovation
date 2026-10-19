@@ -9,7 +9,11 @@ import {
   type SocialDraftRow,
 } from "@workspace/db";
 import { seasonStartYearFor } from "@workspace/db/seasons";
-import { getShirtNumberSettings } from "@workspace/db/shirt-numbers";
+import {
+  getShirtNumberSettings,
+  shirtNumberCategoryForGrade,
+} from "@workspace/db/shirt-numbers";
+import { shirtNumberForCategory } from "./player-shirt-numbers";
 import { logger } from "./logger";
 import { normalizeDraftStatus } from "./draft-status";
 import { recordDraftRevision } from "./draft-revisions";
@@ -248,12 +252,14 @@ async function loadDraftShirtNumberFacts(
   tenantId: number,
   playerId: number,
   season: number,
+  grade: string | null | undefined,
 ): Promise<DraftShirtNumberFacts | "failed"> {
   try {
     const settings = await getShirtNumberSettings(db, tenantId);
     if (!settings.enabled) return { enabled: false, number: null, isPrivate: false };
-    const [entry] = await db
-      .select({ number: shirtNumbersTable.number })
+    // A player on both senior registers (men / female): the card's grade picks one.
+    const entries = await db
+      .select({ number: shirtNumbersTable.number, category: shirtNumbersTable.category })
       .from(shirtNumbersTable)
       .where(
         and(
@@ -261,9 +267,8 @@ async function loadDraftShirtNumberFacts(
           eq(shirtNumbersTable.season, season),
           eq(shirtNumbersTable.playerId, playerId),
         ),
-      )
-      .limit(1);
-    const number = entry?.number ?? null;
+      );
+    const number = shirtNumberForCategory(entries, shirtNumberCategoryForGrade(grade));
     if (!number) return { enabled: true, number: null, isPrivate: false };
     return { enabled: true, number, isPrivate: await draftPlayerIsPrivate(tenantId, playerId) };
   } catch (err) {
@@ -276,7 +281,7 @@ async function loadDraftShirtNumberFacts(
 async function lookupShirtNumber(input: DraftUpsert): Promise<DraftShirtNumberLookup> {
   if (!needsShirtNumberLookup(input.cardInput, input.playerId)) return null;
   const season = shirtNumberSeasonFor(input.season, new Date());
-  return loadDraftShirtNumberFacts(input.tenantId, input.playerId!, season);
+  return loadDraftShirtNumberFacts(input.tenantId, input.playerId!, season, input.grade);
 }
 
 /** `raw` with its card input stamped (or cleared) per KTD11, against the existing draft. */

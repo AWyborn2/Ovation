@@ -276,7 +276,7 @@ async function loadCuratedRefs(
         rowId: shirtNumbersTable.id,
         playerId: shirtNumbersTable.playerId,
         participantId: shirtNumbersTable.participantId,
-        label: sql<string>`'shirt ' || coalesce('#' || ${shirtNumbersTable.number}, '(unnumbered)') || ' ' || ${shirtNumbersTable.season}`,
+        label: sql<string>`'shirt ' || coalesce('#' || ${shirtNumbersTable.number}, '(unnumbered)') || ' ' || ${shirtNumbersTable.season} || case when ${shirtNumbersTable.category} = 'female' then ' (female)' else '' end`,
         personName: shirtNumbersTable.name,
       })
       .from(shirtNumbersTable)

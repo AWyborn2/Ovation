@@ -22,6 +22,7 @@ import type {
 import type {
   AddJuniorPhotoBody,
   AddJuniorRosterEntryBody,
+  AddSquadToShirtNumberSeasonParams,
   Admin,
   AdminInput,
   AdminResetIssued,
@@ -160,6 +161,7 @@ import type {
   GetRecordsParams,
   GetSelectionBoardParams,
   GetSeniorSeasonTopPerformersParams,
+  GetShirtNumberRegisterOverlapParams,
   GetSocialCalendarParams,
   GetSocialClubSeasonTotalsParams,
   GetSocialLadderPrefillParams,
@@ -359,6 +361,7 @@ import type {
   ShirtNumberEntryInput,
   ShirtNumberEntryUpdate,
   ShirtNumberRegister,
+  ShirtNumberRegisterOverlap,
   ShirtNumberSeasonStartResult,
   ShirtNumberSettings,
   ShirtNumberSettingsUpdate,
@@ -4901,7 +4904,7 @@ export const getListShirtNumbersUrl = (params?: ListShirtNumbersParams,) => {
 }
 
 /**
- * Every entry for the season, including held entries (not yet linked to a player who has played) and duplicate-number flags. Defaults to the current season (July-June, Perth time) when `season` is omitted.
+ * Every entry for the season in one category (men or female), including held entries (not yet linked to a player who has played) and duplicate-number flags, which are computed within the category. Defaults to the current season (July-June, Perth time) when `season` is omitted and to `men` when `category` is omitted.
  * @summary The senior shirt-number register for a season (admin)
  */
 export const listShirtNumbers = async (params?: ListShirtNumbersParams, options?: RequestInit): Promise<ShirtNumberRegister> => {
@@ -4979,7 +4982,7 @@ export const getCreateShirtNumberUrl = () => {
 }
 
 /**
- * Under the `carry` rollover policy an entry created without a number inherits the person's number from the previous season. A duplicate number returns warnings under the `warn` policy and 409 under `block`.
+ * Under the `carry` rollover policy an entry created without a number inherits the person's number from the previous season (same category). A duplicate number within the category returns warnings under the `warn` policy and 409 under `block`. A person may be on the men's and the female register in the same season.
  * @summary Add a person to a season's senior register (admin, curation)
  */
 export const createShirtNumber = async (shirtNumberEntryInput: ShirtNumberEntryInput, options?: RequestInit): Promise<ShirtNumberWriteResult> => {
@@ -5051,7 +5054,7 @@ export const getUpdateShirtNumberUrl = (id: number,) => {
 }
 
 /**
- * Assign, change or clear (null) the number, rename, or link the entry to a player. A duplicate number returns warnings under `warn` and 409 under `block`.
+ * Assign, change or clear (null) the number, rename, link the entry to a player, or move it to the other category ("Move to Female"). A duplicate number within the category returns warnings under `warn` and 409 under `block`; a moved entry's number counts as new to its destination category.
  * @summary Edit a senior register entry (admin, curation)
  */
 export const updateShirtNumber = async (id: number,
@@ -5256,21 +5259,30 @@ export const useStartShirtNumberSeason = <TError = ErrorType<ErrorEnvelope>,
       return useMutation(getStartShirtNumberSeasonMutationOptions(options));
     }
 
-export const getAddSquadToShirtNumberSeasonUrl = (season: number,) => {
+export const getAddSquadToShirtNumberSeasonUrl = (season: number,
+    params?: AddSquadToShirtNumberSeasonParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/shirt-numbers/seasons/${season}/from-squad`
+  return stringifiedParams.length > 0 ? `/api/shirt-numbers/seasons/${season}/from-squad?${stringifiedParams}` : `/api/shirt-numbers/seasons/${season}/from-squad`
 }
 
 /**
- * Adds the active senior members of the club's squad register (the availability squad import) to `season` without numbers of their own. A member linked to one of the club's players is added with that player; anyone else is added as a held entry under their name. Idempotent: someone already on the season's register is left as they are, number unchanged. New entries carry last season's number under the `carry` rollover policy; under `block` a carried number someone already wears is left off and reported in `warnings`.
+ * Adds the active senior members of the club's squad register (the availability squad import) to `season` without numbers of their own. A member linked to one of the club's players is added with that player; anyone else is added as a held entry under their name. Idempotent: someone already on the season's register is left as they are, number unchanged. New entries carry last season's number under the `carry` rollover policy; under `block` a carried number someone already wears is left off and reported in `warnings`. Everything is within one category (default `men`).
  * @summary Add the club's senior squad to a season's register (admin, curation)
  */
-export const addSquadToShirtNumberSeason = async (season: number, options?: RequestInit): Promise<ShirtNumberSquadAddResult> => {
+export const addSquadToShirtNumberSeason = async (season: number,
+    params?: AddSquadToShirtNumberSeasonParams, options?: RequestInit): Promise<ShirtNumberSquadAddResult> => {
 
-  return customFetch<ShirtNumberSquadAddResult>(getAddSquadToShirtNumberSeasonUrl(season),
+  return customFetch<ShirtNumberSquadAddResult>(getAddSquadToShirtNumberSeasonUrl(season,params),
   {
     ...options,
     method: 'POST'
@@ -5283,8 +5295,8 @@ export const addSquadToShirtNumberSeason = async (season: number, options?: Requ
 
 
 export const getAddSquadToShirtNumberSeasonMutationOptions = <TError = ErrorType<ErrorEnvelope>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, TError,{season: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, TError,{season: number}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, TError,{season: number;params?: AddSquadToShirtNumberSeasonParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, TError,{season: number;params?: AddSquadToShirtNumberSeasonParams}, TContext> => {
 
 const mutationKey = ['addSquadToShirtNumberSeason'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -5296,10 +5308,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, {season: number}> = (props) => {
-          const {season} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, {season: number;params?: AddSquadToShirtNumberSeasonParams}> = (props) => {
+          const {season,params} = props ?? {};
 
-          return  addSquadToShirtNumberSeason(season,requestOptions)
+          return  addSquadToShirtNumberSeason(season,params,requestOptions)
         }
 
 
@@ -5317,11 +5329,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Add the club's senior squad to a season's register (admin, curation)
  */
 export const useAddSquadToShirtNumberSeason = <TError = ErrorType<ErrorEnvelope>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, TError,{season: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>, TError,{season: number;params?: AddSquadToShirtNumberSeasonParams}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof addSquadToShirtNumberSeason>>,
         TError,
-        {season: number},
+        {season: number;params?: AddSquadToShirtNumberSeasonParams},
         TContext
       > => {
       return useMutation(getAddSquadToShirtNumberSeasonMutationOptions(options));
@@ -5350,6 +5362,9 @@ export const uploadShirtNumbers = async (uploadShirtNumbersBody: UploadShirtNumb
 formData.append(`file`, uploadShirtNumbersBody.file);
 formData.append(`kind`, uploadShirtNumbersBody.kind);
 formData.append(`season`, uploadShirtNumbersBody.season.toString())
+if(uploadShirtNumbersBody.category !== undefined) {
+ formData.append(`category`, uploadShirtNumbersBody.category);
+ }
 
   return customFetch<ShirtNumberUploadPreview>(getUploadShirtNumbersUrl(),
   {
@@ -27884,6 +27899,91 @@ export const useDiscardJuniorShirtNumberUpload = <TError = ErrorType<void>,
       > => {
       return useMutation(getDiscardJuniorShirtNumberUploadMutationOptions(options));
     }
+
+export const getGetShirtNumberRegisterOverlapUrl = (params?: GetShirtNumberRegisterOverlapParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/juniors/shirt-numbers/overlap?${stringifiedParams}` : `/api/juniors/shirt-numbers/overlap`
+}
+
+/**
+ * For the "Also in" badges on People → Shirt numbers: each person on two or more of the men's, female and juniors registers for `season`, with the entry ids that hold them. A senior and a junior entry count as one person only when a PlayHQ Profile ID AND the name agree (a family account can put one id on several people). Flags only: no numbers, names or stats, never used on a public page. Admin only; the only read that touches both registers, kept under /juniors per the juniors isolation rule.
+ * @summary Who is on more than one shirt-number register this season (admin)
+ */
+export const getShirtNumberRegisterOverlap = async (params?: GetShirtNumberRegisterOverlapParams, options?: RequestInit): Promise<ShirtNumberRegisterOverlap> => {
+
+  return customFetch<ShirtNumberRegisterOverlap>(getGetShirtNumberRegisterOverlapUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetShirtNumberRegisterOverlapQueryKey = (params?: GetShirtNumberRegisterOverlapParams,) => {
+    return [
+    `/api/juniors/shirt-numbers/overlap`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetShirtNumberRegisterOverlapQueryOptions = <TData = Awaited<ReturnType<typeof getShirtNumberRegisterOverlap>>, TError = ErrorType<ErrorEnvelope>>(params?: GetShirtNumberRegisterOverlapParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getShirtNumberRegisterOverlap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetShirtNumberRegisterOverlapQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getShirtNumberRegisterOverlap>>> = ({ signal }) => getShirtNumberRegisterOverlap(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getShirtNumberRegisterOverlap>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetShirtNumberRegisterOverlapQueryResult = NonNullable<Awaited<ReturnType<typeof getShirtNumberRegisterOverlap>>>
+export type GetShirtNumberRegisterOverlapQueryError = ErrorType<ErrorEnvelope>
+
+
+/**
+ * @summary Who is on more than one shirt-number register this season (admin)
+ */
+
+export function useGetShirtNumberRegisterOverlap<TData = Awaited<ReturnType<typeof getShirtNumberRegisterOverlap>>, TError = ErrorType<ErrorEnvelope>>(
+ params?: GetShirtNumberRegisterOverlapParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getShirtNumberRegisterOverlap>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetShirtNumberRegisterOverlapQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getMergeJuniorParticipantUrl = (id: string,) => {
 

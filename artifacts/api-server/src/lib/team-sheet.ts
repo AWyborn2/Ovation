@@ -11,7 +11,11 @@ import {
   type SquadMemberRow,
   type SquadSection,
 } from "@workspace/db";
-import { normaliseParticipantId, shirtNumberNameKey } from "@workspace/db/shirt-numbers";
+import {
+  normaliseParticipantId,
+  shirtNumberCategoryForGrade,
+  shirtNumberNameKey,
+} from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
 import { memberDisplayName } from "./availability-grades";
@@ -307,8 +311,9 @@ function uniqueNameNumbers(rows: readonly { name: string; number: string | null 
  * number even where the cards would wait: whatever the club's shirt-number
  * setting, and for a number not yet confirmed (a held junior number, a senior
  * entry not linked to a player).
- * - Senior: the season register by the member's linked player, else their
- *   register participant, else a name that appears once on the register.
+ * - Senior: the season register for the fixture grade's category (men / female) by
+ *   the member's linked player, else their register participant, else a name that
+ *   appears once on the register.
  * - Junior: the juniors register by the member's PlayHQ participant
  *   (`juniorMemberResolver`, merged-away ids counting for the keeper), else
  *   their squad profile id as uploaded, else a name that appears once. A
@@ -339,6 +344,7 @@ async function shirtNumbersFor(
           and(
             eq(shirtNumbersTable.tenantId, tenantId),
             eq(shirtNumbersTable.season, season),
+            eq(shirtNumbersTable.category, shirtNumberCategoryForGrade(loaded.fixture.grade)),
             isNotNull(shirtNumbersTable.number),
           ),
         ),

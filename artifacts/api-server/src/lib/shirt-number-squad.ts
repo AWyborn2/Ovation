@@ -5,6 +5,7 @@ import {
   playerIdMapTable,
   shirtNumbersTable,
   squadMembersTable,
+  type ShirtNumberCategory,
   type ShirtNumberDuplicatePolicy,
   type ShirtNumberRolloverPolicy,
   type SquadSection,
@@ -366,17 +367,22 @@ function addWarnings(
   return warnings;
 }
 
-/** "Add squad to register" for the senior register: active senior squad members only. */
+/**
+ * "Add squad to register" for the senior register: active senior squad members only, into
+ * one category (default `men`). Being on the other category's register does not count as
+ * "already present".
+ */
 export async function addSquadToSeniorRegister(
   tenantId: number,
   season: number,
   settings: ShirtNumberSettings,
+  category: ShirtNumberCategory = "men",
 ): Promise<SquadAddResult> {
   const members = await loadSquad(tenantId, "senior");
   const linkable = await loadLinkable(tenantId, members);
   return db.transaction(async (tx) => {
-    const current = await loadSeasonEntries(tx, "senior", tenantId, season);
-    const previous = await loadSeasonEntries(tx, "senior", tenantId, season - 1);
+    const current = await loadSeasonEntries(tx, "senior", tenantId, season, category);
+    const previous = await loadSeasonEntries(tx, "senior", tenantId, season - 1, category);
     const p = planSeniorSquadAdd({
       members,
       linkable,
@@ -397,12 +403,14 @@ export async function addSquadToSeniorRegister(
     // that row (per-person unique indexes): count them as skipped.
     const inserted = await tx
       .insert(shirtNumbersTable)
-      .values(p.create.map((c) => ({ ...c, tenantId, season, source: "squad" as const })))
+      .values(
+        p.create.map((c) => ({ ...c, tenantId, season, category, source: "squad" as const })),
+      )
       .onConflictDoNothing()
       .returning();
     result.created = inserted.length;
     result.skipped += p.create.length - inserted.length;
-    const after = await loadSeasonEntries(tx, "senior", tenantId, season);
+    const after = await loadSeasonEntries(tx, "senior", tenantId, season, category);
     result.warnings = addWarnings(season, p.blocked, inserted, after);
     return result;
   });

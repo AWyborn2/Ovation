@@ -1,10 +1,15 @@
 import { Router, type IRouter, type Request } from "express";
 import { eq } from "drizzle-orm";
 import { db, shirtNumberSettingsTable } from "@workspace/db";
-import { getShirtNumberSettings, isValidShirtNumber } from "@workspace/db/shirt-numbers";
+import {
+  getShirtNumberSettings,
+  isShirtNumberCategory,
+  isValidShirtNumber,
+} from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import {
   AddSquadToShirtNumberSeasonParams,
+  AddSquadToShirtNumberSeasonQueryParams,
   CommitShirtNumberUploadBody,
   CommitShirtNumberUploadParams,
   CreateShirtNumberBody,
@@ -59,6 +64,10 @@ import {
  * Bulk uploads (U4) preview first and write only on commit; "Add squad to
  * register" adds the club's senior squad (`squad_members`) to a season. The
  * juniors register (U10) lives under /juniors only.
+ *
+ * Two senior categories (men / female, migration 0047): every read, write, upload and
+ * squad add is within one category (default `men`), and so are duplicate checks. A
+ * person may be in both categories in one season; that is never refused.
  */
 
 const router: IRouter = Router();
@@ -106,7 +115,7 @@ router.get("/shirt-numbers", requireAdmin, async (req, res): Promise<void> => {
   }
   const tenantId = getTenantId(req);
   const [entries, seasons] = await Promise.all([
-    listSeniorEntries(tenantId, season),
+    listSeniorEntries(tenantId, season, parsed.data.category ?? "men"),
     seniorRegisterSeasons(tenantId),
   ]);
   res.json({ season, seasons, entries });
@@ -154,6 +163,7 @@ router.post(
         playerId: body.playerId,
         number: body.number,
         source: "admin",
+        category: body.category,
       },
       settings,
     );
@@ -204,6 +214,7 @@ router.patch(
         participantId: body.participantId,
         playerId: body.playerId,
         number: body.number,
+        category: body.category,
       },
       settings,
     );
@@ -262,9 +273,21 @@ router.post(
       res.status(400).json({ error: "Invalid season" });
       return;
     }
+    const query = AddSquadToShirtNumberSeasonQueryParams.safeParse(req.query);
+    if (!query.success) {
+      res.status(400).json({ error: query.error.message });
+      return;
+    }
     const settings = await enabledSettings(req, res);
     if (!settings) return;
-    res.json(await addSquadToSeniorRegister(getTenantId(req), params.data.season, settings));
+    res.json(
+      await addSquadToSeniorRegister(
+        getTenantId(req),
+        params.data.season,
+        settings,
+        query.data.category ?? "men",
+      ),
+    );
   },
 );
 
@@ -293,6 +316,12 @@ router.post(
       res.status(400).json({ error: "Invalid season" });
       return;
     }
+    const categoryRaw = req.body?.category ?? "men";
+    if (!isShirtNumberCategory(categoryRaw)) {
+      res.status(400).json({ error: 'category must be "men" or "female"' });
+      return;
+    }
+    const category = categoryRaw;
     if (!(await enabledSettings(req, res))) return;
 
     let parsed;
@@ -311,7 +340,7 @@ router.post(
     if (parsed.errors.length === 0 && parsed.rows.length > 0) {
       const [roster, entries, junior] = await Promise.all([
         loadSeniorUploadRoster(tenantId),
-        loadSeasonEntries(db, "senior", tenantId, season),
+        loadSeasonEntries(db, "senior", tenantId, season, category),
         loadJuniorCrossEntries(tenantId, season),
       ]);
       rows = buildPreviewRows(parsed.rows, roster, entries);
@@ -334,6 +363,7 @@ router.post(
         rows,
         unrecognisedHeaders: parsed.unrecognisedHeaders,
         errors: parsed.errors,
+        category,
       },
     });
     res.json(preview);

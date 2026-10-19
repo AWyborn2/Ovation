@@ -5,10 +5,12 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { ShirtNumberCategory } from './shirtNumberCategory';
 import type { ShirtNumberValue } from './shirtNumberValue';
 
 export interface ShirtNumberEntryInput {
   season: number;
+  category?: ShirtNumberCategory;
   /**
      * @minLength 1
      * @maxLength 120

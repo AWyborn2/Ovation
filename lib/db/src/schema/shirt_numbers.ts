@@ -32,14 +32,27 @@ import { tenantIdColumn } from "./_tenant";
  */
 export type ShirtNumberSource = "upload" | "squad" | "lineup" | "admin" | "rollover";
 
+/**
+ * The senior register a `shirt_numbers` entry belongs to (admin-menu-consolidation,
+ * migration 0047): the men's sides or the female sides. Juniors keep their own table.
+ * Number clashes are checked within a category only, and one person may hold an entry
+ * in each category in the same season (a woman who also plays in a men's side).
+ */
+export type ShirtNumberCategory = "men" | "female";
+
+/** Every senior category, in display order. */
+export const SHIRT_NUMBER_CATEGORIES: readonly ShirtNumberCategory[] = ["men", "female"];
+
 /** SQL for the digit rule on `number` (KTD3): 1-3 digits, leading zeros kept. */
 const NUMBER_CHECK = sql`"number" IS NULL OR "number" ~ '^[0-9]{1,3}$'`;
 const SOURCE_CHECK = sql`"source" IN ('upload', 'squad', 'lineup', 'admin', 'rollover')`;
+const CATEGORY_CHECK = sql`"category" IN ('men', 'female')`;
 
-// One entry per person per season. "Held" is derived, not stored (KTD2): an
+// One entry per person per category per season (0047: a person may be on the
+// men's and the female register at once). "Held" is derived, not stored (KTD2): an
 // entry is held while `playerId` is null and becomes public once linked.
 // Uniqueness is per person, never per number (KTD4) — duplicate numbers are a
-// club policy enforced in the service layer.
+// club policy enforced in the service layer, within a category.
 export const shirtNumbersTable = pgTable(
   "shirt_numbers",
   {
@@ -57,20 +70,23 @@ export const shirtNumbersTable = pgTable(
     // 1-3 digit string; null = on the register but unnumbered.
     number: text("number"),
     source: text("source").$type<ShirtNumberSource>().notNull().default("admin"),
+    // Men's or female register (0047). Every row from before 0047 is "men".
+    category: text("category").$type<ShirtNumberCategory>().notNull().default("men"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
     idxTenant: index("shirt_numbers_tenant_idx").on(t.tenantId),
     idxPlayer: index("shirt_numbers_player_idx").on(t.playerId),
-    uqParticipant: uniqueIndex("shirt_numbers_tenant_season_participant_uidx")
-      .on(t.tenantId, t.season, t.participantId)
+    uqParticipant: uniqueIndex("shirt_numbers_tenant_season_category_participant_uidx")
+      .on(t.tenantId, t.season, t.category, t.participantId)
       .where(sql`"participant_id" IS NOT NULL`),
-    uqPlayer: uniqueIndex("shirt_numbers_tenant_season_player_uidx")
-      .on(t.tenantId, t.season, t.playerId)
+    uqPlayer: uniqueIndex("shirt_numbers_tenant_season_category_player_uidx")
+      .on(t.tenantId, t.season, t.category, t.playerId)
       .where(sql`"player_id" IS NOT NULL`),
     chkNumber: check("shirt_numbers_number_check", NUMBER_CHECK),
     chkSource: check("shirt_numbers_source_check", SOURCE_CHECK),
+    chkCategory: check("shirt_numbers_category_check", CATEGORY_CHECK),
   }),
 );
 

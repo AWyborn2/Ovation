@@ -5,7 +5,12 @@
  * labels (the *-consistency suites depend on PCA mapping staying identical).
  */
 import { describe, expect, it } from "vitest";
-import { appGradeFromCentral, classifyCentralGrade, isSeniorAppGrade } from "./grades";
+import {
+  appGradeFromCentral,
+  classifyCentralGrade,
+  isSeniorAppGrade,
+  isWomensGrade,
+} from "./grades";
 
 describe("classifyCentralGrade — WA Premier Cricket labels", () => {
   it("maps numbered senior grades to '<n>th Grade'", () => {
@@ -177,6 +182,26 @@ describe("isSeniorAppGrade — the club overlay's history-row guard (U10, R8)", 
   it("rejects junior, unmapped and un-normalised labels", () => {
     for (const g of ["Under 15", "U15 Juniors", "Female C Grade", "Ladies T20", "", null]) {
       expect([g, isSeniorAppGrade(g)]).toEqual([g, false]);
+    }
+  });
+});
+
+describe("isWomensGrade — which senior shirt-number register a fixture feeds (0047)", () => {
+  it("is true for the app's and WA's women's grades and the raw PlayHQ labels", () => {
+    for (const g of [
+      "Female A Grade",
+      "Female B Grade",
+      "Ladies T20",
+      "Women's 1st Grade",
+      "Women's First Grade",
+    ]) {
+      expect(isWomensGrade(g), g).toBe(true);
+    }
+  });
+
+  it("is false for men's / open grades and blanks", () => {
+    for (const g of ["A Grade", "1st Grade", "Colts", "Over 40s", "", null, undefined]) {
+      expect(isWomensGrade(g), String(g)).toBe(false);
     }
   });
 });
