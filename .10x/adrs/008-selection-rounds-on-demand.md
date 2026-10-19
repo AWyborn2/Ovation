@@ -1,6 +1,6 @@
 # ADR-008: Selection rounds and drafts created on demand; availability is an optional layer
 
-**Status:** Proposed, 19 Oct 2026 (awaiting Ash). **Feature:** selection-hub-decoupling.
+**Status:** Accepted, 19 Oct 2026 (Ash). **Feature:** selection-hub-decoupling.
 
 ## Context
 

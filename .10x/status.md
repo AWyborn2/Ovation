@@ -1,7 +1,7 @@
 # Project Status
 
 **Project:** Ovation (white-label cricket club platform)
-**Active feature:** selection-hub-decoupling (PM scope + architecture proposed 19 Oct 2026, ADR-008; next: Staff Engineer / EM) — junior-card-photos in delivery
+**Active feature:** selection-hub-decoupling (Planning complete 19 Oct 2026, ADR-008 accepted; next: PR0 foundation, then PR1–PR3 in parallel) — junior-card-photos in delivery
 **Phase:** Delivery — junior-card-photos PR to `main` from `claude/junior-card-photos`; Ash applies migration 0045 before republishing (runbook §3c)
 
 ## Phase tracking — junior-card-photos

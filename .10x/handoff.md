@@ -1,5 +1,17 @@
 # Handoff
 
+**From:** Engineering Manager
+**To:** Senior Engineer / SDE
+**Feature:** selection-hub-decoupling
+
+## Context
+
+- Task list: `.10x/decisions/engineering-manager/selection-hub-decoupling.md`. Design: `.10x/decisions/architect/selection-hub-decoupling.md`. ADR-008 accepted.
+- Start with PR0 (T0.1–T0.3: migration 0046, OpenAPI with codegen, `writeReply` and `publicName` extraction). After PR0 merges, PR1, PR2 and PR3 run as parallel sessions in their own worktrees off `main`; they coordinate shared files over SendMessage and merge in order PR1, PR2, PR3.
+- Ash applies migration 0046 in production before the first republish.
+
+## Previous handoff
+
 **From:** Principal Architect
 **To:** Staff Engineer / Engineering Manager
 **Feature:** selection-hub-decoupling
