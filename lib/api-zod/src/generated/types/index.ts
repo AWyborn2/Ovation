@@ -680,6 +680,7 @@ export * from './selectionGapReason';
 export * from './selectionMatchBody';
 export * from './selectionMember';
 export * from './selectionMemberStatus';
+export * from './selectionParticipantMatch';
 export * from './selectionRemindBody';
 export * from './selectionRound';
 export * from './selectionSide';

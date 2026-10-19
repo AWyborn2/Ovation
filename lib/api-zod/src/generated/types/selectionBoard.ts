@@ -8,6 +8,7 @@
 import type { SelectionActor } from './selectionActor';
 import type { SelectionEvent } from './selectionEvent';
 import type { SelectionMember } from './selectionMember';
+import type { SelectionParticipantMatch } from './selectionParticipantMatch';
 import type { SelectionRound } from './selectionRound';
 import type { SelectionSide } from './selectionSide';
 import type { SelectionWeekends } from './selectionWeekends';
@@ -31,4 +32,9 @@ export interface SelectionBoard {
   weekends?: SelectionWeekends;
   /** The round is a past weekend's; it can be viewed, not changed */
   readOnly?: boolean;
+  /** The club's remembered matches from a PlayHQ participant ID to a squad
+  member (made with "Match to squad member"), for this section's
+  players: juniors' on the junior board, everyone's on the senior board.
+   */
+  participantMatches?: SelectionParticipantMatch[];
 }

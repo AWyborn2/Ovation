@@ -33,6 +33,11 @@ import {
 import { loadJuniorIdentity } from "./junior-shirt-numbers";
 import { juniorMemberResolver } from "./shirt-number-squad";
 import {
+  loadParticipantCrosswalk,
+  loadParticipantMatches,
+  type ParticipantMatch,
+} from "./participant-crosswalk";
+import {
   addDays,
   memberDisplayName,
   memberGrades,
@@ -283,6 +288,8 @@ export type Board = {
     detail: Record<string, unknown>;
     createdAt: Date;
   }[];
+  /** The club's remembered PlayHQ matches for this section's players ("Unmatch" in the Hub). */
+  participantMatches: ParticipantMatch[];
 };
 
 /** The member columns the board reads — deliberately no contact column. */
@@ -800,6 +807,7 @@ export async function buildBoard(
       detail: e.detail,
       createdAt: e.createdAt,
     })),
+    participantMatches: await loadParticipantMatches(db, tenantId, section),
   };
 }
 
@@ -1182,6 +1190,8 @@ export async function syncSideFromPlayhq(
       lastList: list,
       members,
       prefer: (m) => members.find((x) => x.id === m.id)?.section === section,
+      // `members` is already the side's section, so a remembered match can't widen it.
+      participants: await loadParticipantCrosswalk(tx, tenantId),
     });
     await tx
       .update(selectionsTable)

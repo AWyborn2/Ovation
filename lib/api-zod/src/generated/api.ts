@@ -3597,7 +3597,14 @@ export const GetSelectionBoardResponse = zod.object({
   "current": zod.coerce.date().describe('The weekend this board shows'),
   "next": zod.coerce.date().nullable().describe('The nearest later weekend with fixtures, if any')
 }).optional().describe('The weekends the Hub can move between, by their Saturday'),
-  "readOnly": zod.boolean().optional().describe('The round is a past weekend\'s; it can be viewed, not changed')
+  "readOnly": zod.boolean().optional().describe('The round is a past weekend\'s; it can be viewed, not changed'),
+  "participantMatches": zod.array(zod.object({
+  "participantId": zod.string().describe('The PlayHQ participant ID (lower case)'),
+  "memberId": zod.number(),
+  "memberName": zod.string(),
+  "createdBy": zod.string().nullable().describe('Who made the match'),
+  "createdAt": zod.coerce.date()
+})).optional().describe('The club\'s remembered matches from a PlayHQ participant ID to a squad\nmember (made with \"Match to squad member\"), for this section\'s\nplayers: juniors\' on the junior board, everyone\'s on the senior board.\n')
 })
 
 
@@ -3761,7 +3768,14 @@ export const SaveSelectionBoardResponse = zod.object({
   "current": zod.coerce.date().describe('The weekend this board shows'),
   "next": zod.coerce.date().nullable().describe('The nearest later weekend with fixtures, if any')
 }).optional().describe('The weekends the Hub can move between, by their Saturday'),
-  "readOnly": zod.boolean().optional().describe('The round is a past weekend\'s; it can be viewed, not changed')
+  "readOnly": zod.boolean().optional().describe('The round is a past weekend\'s; it can be viewed, not changed'),
+  "participantMatches": zod.array(zod.object({
+  "participantId": zod.string().describe('The PlayHQ participant ID (lower case)'),
+  "memberId": zod.number(),
+  "memberName": zod.string(),
+  "createdBy": zod.string().nullable().describe('Who made the match'),
+  "createdAt": zod.coerce.date()
+})).optional().describe('The club\'s remembered matches from a PlayHQ participant ID to a squad\nmember (made with \"Match to squad member\"), for this section\'s\nplayers: juniors\' on the junior board, everyone\'s on the senior board.\n')
 })
 
 
@@ -4212,7 +4226,14 @@ export const MatchSelectionSlotResponse = zod.object({
   "current": zod.coerce.date().describe('The weekend this board shows'),
   "next": zod.coerce.date().nullable().describe('The nearest later weekend with fixtures, if any')
 }).optional().describe('The weekends the Hub can move between, by their Saturday'),
-  "readOnly": zod.boolean().optional().describe('The round is a past weekend\'s; it can be viewed, not changed')
+  "readOnly": zod.boolean().optional().describe('The round is a past weekend\'s; it can be viewed, not changed'),
+  "participantMatches": zod.array(zod.object({
+  "participantId": zod.string().describe('The PlayHQ participant ID (lower case)'),
+  "memberId": zod.number(),
+  "memberName": zod.string(),
+  "createdBy": zod.string().nullable().describe('Who made the match'),
+  "createdAt": zod.coerce.date()
+})).optional().describe('The club\'s remembered matches from a PlayHQ participant ID to a squad\nmember (made with \"Match to squad member\"), for this section\'s\nplayers: juniors\' on the junior board, everyone\'s on the senior board.\n')
 })
 
 
@@ -4376,7 +4397,14 @@ export const SetSelectionMemberStatusResponse = zod.object({
   "current": zod.coerce.date().describe('The weekend this board shows'),
   "next": zod.coerce.date().nullable().describe('The nearest later weekend with fixtures, if any')
 }).optional().describe('The weekends the Hub can move between, by their Saturday'),
-  "readOnly": zod.boolean().optional().describe('The round is a past weekend\'s; it can be viewed, not changed')
+  "readOnly": zod.boolean().optional().describe('The round is a past weekend\'s; it can be viewed, not changed'),
+  "participantMatches": zod.array(zod.object({
+  "participantId": zod.string().describe('The PlayHQ participant ID (lower case)'),
+  "memberId": zod.number(),
+  "memberName": zod.string(),
+  "createdBy": zod.string().nullable().describe('Who made the match'),
+  "createdAt": zod.coerce.date()
+})).optional().describe('The club\'s remembered matches from a PlayHQ participant ID to a squad\nmember (made with \"Match to squad member\"), for this section\'s\nplayers: juniors\' on the junior board, everyone\'s on the senior board.\n')
 })
 
 

@@ -3027,6 +3027,8 @@ paths:
           description: Forgotten
         "401":
           description: Not signed in as this club's admin or captain
+        "403":
+          description: The caller picks no side at this club
         "404":
           description: No such match for this member
 
@@ -15100,6 +15102,32 @@ components:
         readOnly:
           type: boolean
           description: The round is a past weekend's; it can be viewed, not changed
+        participantMatches:
+          type: array
+          description: |
+            The club's remembered matches from a PlayHQ participant ID to a squad
+            member (made with "Match to squad member"), for this section's
+            players: juniors' on the junior board, everyone's on the senior board.
+          items:
+            $ref: "#/components/schemas/SelectionParticipantMatch"
+
+    SelectionParticipantMatch:
+      type: object
+      required: [participantId, memberId, memberName, createdBy, createdAt]
+      properties:
+        participantId:
+          type: string
+          description: The PlayHQ participant ID (lower case)
+        memberId:
+          type: integer
+        memberName:
+          type: string
+        createdBy:
+          type: ["string", "null"]
+          description: Who made the match
+        createdAt:
+          type: string
+          format: date-time
 
     SelectionWeekends:
       type: object

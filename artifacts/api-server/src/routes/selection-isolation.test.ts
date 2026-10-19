@@ -13,6 +13,7 @@ import {
   availabilityRoundsTable,
   fixturesTable,
   selectionsTable,
+  squadMemberParticipantsTable,
   teamListsTable,
 } from "@workspace/db";
 import {
@@ -27,6 +28,7 @@ import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
 import { perthDayStart } from "../lib/availability-grades";
 import { DEFAULT_SCHEDULE, roundWeekendFor } from "../lib/availability-schedule";
 import { withdrawFromSelection } from "../lib/selection-board";
+import { loadParticipantCrosswalk } from "../lib/participant-crosswalk";
 
 /**
  * Selection Hub tenant isolation (plan 2026-10-06-002 U7): tenant B's admin
@@ -36,6 +38,7 @@ import { withdrawFromSelection } from "../lib/selection-board";
  */
 
 const STAMP = Date.now();
+const GUID_A = `00000000-0000-4000-b000-${String(STAMP % 1e12).padStart(12, "0")}`;
 
 describe("Selection Hub tenant isolation", () => {
   let tenantA: number;
@@ -129,11 +132,25 @@ describe("Selection Hub tenant isolation", () => {
       .returning();
     memberA = ma.id;
     memberB = mb.id;
+    // Slot 2 is a PlayHQ "Private Player" row waiting to be matched.
+    const slots = sideSlots([memberA]);
+    slots[1] = {
+      memberId: null,
+      gap: { name: "Private Player", reason: "not_on_register", participantId: GUID_A },
+    } as (typeof slots)[number];
     const [sa] = await db
       .insert(selectionsTable)
-      .values({ tenantId: tenantA, roundId: roundA, fixtureId: fa.id, slots: sideSlots([memberA]) })
+      .values({ tenantId: tenantA, roundId: roundA, fixtureId: fa.id, slots })
       .returning();
     selA = sa.id;
+    await db
+      .insert(squadMemberParticipantsTable)
+      .values({
+        tenantId: tenantA,
+        participantId: GUID_A,
+        memberId: memberA,
+        createdBy: "Admin A",
+      });
   });
 
   afterAll(async () => {
@@ -234,5 +251,45 @@ describe("Selection Hub tenant isolation", () => {
     expect(out.selectionIds).toEqual([]);
     const [row] = await db.select().from(selectionsTable).where(eq(selectionsTable.id, selA));
     expect(row.slots[0].memberId).toBe(memberA);
+  });
+
+  it("tenant B can't match tenant A's gap, and tenant A can't match tenant B's member", async () => {
+    await request(app)
+      .post(`/api/selection/${selA}/match`)
+      .set("Cookie", adminB)
+      .set("x-tenant-id", String(tenantB))
+      .send({ slot: 2, memberId: memberB, version: 1 })
+      .expect(404);
+    await request(app)
+      .post(`/api/selection/${selA}/match`)
+      .set("Cookie", adminA)
+      .set("x-tenant-id", String(tenantA))
+      .send({ slot: 2, memberId: memberB, version: 1 })
+      .expect(400);
+    const [row] = await db.select().from(selectionsTable).where(eq(selectionsTable.id, selA));
+    expect(row.version).toBe(1);
+    expect(row.slots[1].memberId).toBeNull();
+  });
+
+  it("the participant crosswalk is tenant-scoped: unseen, unusable and undeletable by tenant B", async () => {
+    await request(app)
+      .delete(`/api/squad/${memberA}/participants/${GUID_A}`)
+      .set("Cookie", adminB)
+      .set("x-tenant-id", String(tenantB))
+      .expect(404);
+    const rows = await db
+      .select()
+      .from(squadMemberParticipantsTable)
+      .where(eq(squadMemberParticipantsTable.participantId, GUID_A));
+    expect(rows).toHaveLength(1);
+    const board = await request(app)
+      .get("/api/selection/board?section=senior")
+      .set("Cookie", adminB)
+      .set("x-tenant-id", String(tenantB))
+      .expect(200);
+    expect(board.body.participantMatches).toEqual([]);
+    expect(JSON.stringify(board.body)).not.toContain(GUID_A);
+    expect((await loadParticipantCrosswalk(db, tenantB)).has(GUID_A)).toBe(false);
+    expect((await loadParticipantCrosswalk(db, tenantA)).get(GUID_A)).toBe(memberA);
   });
 });
