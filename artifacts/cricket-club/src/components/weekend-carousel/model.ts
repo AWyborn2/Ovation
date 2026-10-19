@@ -135,7 +135,7 @@ export function filterCarouselFixtures(
   content: Record<string, Record<string, unknown>> | undefined,
   audience: CarouselAudience,
 ): Fixture[] {
-  return fixtures.filter(f => {
+  return fixtures.filter((f) => {
     const junior = content?.[f.id]?.junior === true || isJuniorGradeLabel(f.grade);
     return audience === "all" || (audience === "junior" ? junior : !junior);
   });

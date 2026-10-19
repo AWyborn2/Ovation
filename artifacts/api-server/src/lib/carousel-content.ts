@@ -69,16 +69,17 @@ export async function carouselContent(
 ): Promise<{ fixtures: FixtureRow[]; content: Content; warnings: string[] }> {
   const content: Content = {};
   const warnings: string[] = [];
-  const juniorSources = (type === "matchDay" || type === "teamList") && audience !== "senior"
-    ? await juniorCarouselContent(tenantId, type, from, to)
-    : { fixtures: [], content: {}, warnings: [] };
-  if (audience === "junior" && (type === "matchDay" || type === "teamList"))
-    return juniorSources;
-  if (type === "matchDay") return {
-    fixtures: [...fixtures, ...juniorSources!.fixtures],
-    content: juniorSources!.content,
-    warnings: juniorSources!.warnings,
-  };
+  const juniorSources =
+    (type === "matchDay" || type === "teamList") && audience !== "senior"
+      ? await juniorCarouselContent(tenantId, type, from, to)
+      : { fixtures: [], content: {}, warnings: [] };
+  if (audience === "junior" && (type === "matchDay" || type === "teamList")) return juniorSources;
+  if (type === "matchDay")
+    return {
+      fixtures: [...fixtures, ...juniorSources!.fixtures],
+      content: juniorSources!.content,
+      warnings: juniorSources!.warnings,
+    };
   if (type === "teamList") {
     const lists = fixtures.length
       ? await db
@@ -149,13 +150,15 @@ export async function carouselContent(
   const senior =
     source?.kind === "central"
       ? await (await import("@workspace/db/central-queries")).centralClubMatches(source.clubId)
-      : source ? await db.select().from(matchesTable) : [];
+      : source
+        ? await db.select().from(matchesTable)
+        : [];
   const boundaries =
     source?.kind === "central" ? (await loadClubOverlayData(tenantId)).boundaries : [];
-  const juniors = audience === "senior" ? [] : await db
-    .select()
-    .from(juniorMatchesTable)
-    .where(eq(juniorMatchesTable.tenantId, tenantId));
+  const juniors =
+    audience === "senior"
+      ? []
+      : await db.select().from(juniorMatchesTable).where(eq(juniorMatchesTable.tenantId, tenantId));
   const brand = await getTenantBrand(tenantId);
   const available: FixtureRow[] = [];
   let undated = 0;

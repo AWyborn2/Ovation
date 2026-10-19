@@ -183,15 +183,17 @@ let juniorClubCache: { rows: JuniorOpponentClub[]; expires: number } | null = nu
 export async function resolveUnlinkedJuniorOpponent(name: string | null | undefined) {
   if (!name?.trim()) return null;
   if (!juniorClubCache || juniorClubCache.expires <= Date.now()) {
-    const rows = await db.select({
-      id: clubsTable.id,
-      name: clubsTable.name,
-      shortName: clubsTable.shortName,
-      logoUrl: clubsTable.logoUrl,
-      logoUrl128: clubsTable.logoUrl128,
-      backgroundColour: clubsTable.backgroundColour,
-      primaryColour: clubsTable.primaryColour,
-    }).from(clubsTable);
+    const rows = await db
+      .select({
+        id: clubsTable.id,
+        name: clubsTable.name,
+        shortName: clubsTable.shortName,
+        logoUrl: clubsTable.logoUrl,
+        logoUrl128: clubsTable.logoUrl128,
+        backgroundColour: clubsTable.backgroundColour,
+        primaryColour: clubsTable.primaryColour,
+      })
+      .from(clubsTable);
     juniorClubCache = { rows, expires: Date.now() + 5 * 60 * 1000 };
   }
   return matchJuniorOpponentClub(name, juniorClubCache.rows);
