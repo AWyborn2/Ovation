@@ -1,5 +1,18 @@
 # Handoff
 
+**From:** Principal Architect
+**To:** Staff Engineer / Engineering Manager
+**Feature:** selection-hub-decoupling
+
+## Context
+
+- Design: `.10x/decisions/architect/selection-hub-decoupling.md`; ADR-008 (proposed). Requirements: `.10x/decisions/product-manager/selection-hub-decoupling.md`.
+- Components touched: `selection-board.ts` (on-demand `ensureRound` + `prepareRoundDrafts`, `weekend` param, read-only past rounds), `selection-drafts.ts` (seed from previous selection, no Yes-only pruning), `availability-grades.ts` `buildMemberMatcher` (participant crosswalk first), new `lib/availability-replies.ts` (shared `writeReply`), new route `PUT /selection/members/:id/status`, `selection-published-players.ts` `publicName()`.
+- One migration, 0046 (additive): `availability_responses.source/set_by_*`, `selection_events.round_id`, `squad_member_participants`, `squad_members.show_name_publicly`. Prod is applied by hand before republish.
+- Slice order: draft any time + carry-over, then private mapping, then admin status, then public toggle, then round nav UI. Status colours: yellow none/maybe, green yes, red no, plus a non-colour cue.
+
+## Previous handoff
+
 **From:** Product Manager
 **To:** Principal Architect
 **Feature:** selection-hub-decoupling
