@@ -145,7 +145,7 @@ function makeBoard(): SelectionBoard {
         actorKind: "system",
         actorName: null,
         action: "draft",
-        detail: {},
+        detail: { seededFrom: { kind: "selection", id: 40 } },
         createdAt: "2026-10-15T10:01:00.000Z",
       },
     ],
@@ -392,7 +392,7 @@ describe("final and read-only cards", () => {
     renderHub();
     expect(await screen.findByText("86% replied")).toBeTruthy();
     expect(screen.getByText(/38 of 44 senior players/)).toBeTruthy();
-    expect(screen.getByText("A Grade draft built from the side's last game")).toBeTruthy();
+    expect(screen.getByText("A Grade draft started from the side picked last time")).toBeTruthy();
   });
 });
 
@@ -506,6 +506,86 @@ describe("without availability", () => {
     fireEvent.click(within(card).getByRole("button", { name: /^Finalise/ }));
     expect(await screen.findByText(/finalised and published as the team list\./)).toBeTruthy();
     expect(screen.queryByText(/notified/)).toBeNull();
+  });
+});
+
+describe("slot status tiers (ADR-008)", () => {
+  const tiered = (availability: boolean): SelectionBoard => {
+    const board = { ...makeBoard(), availability };
+    const a = board.selections[0];
+    const statuses: SelectionMember["status"][] = ["yes", "maybe", "none", "no"];
+    a.slots = a.slots.map((slot, i) =>
+      i < 4 && slot.member ? { ...slot, member: { ...slot.member, status: statuses[i]! } } : slot,
+    );
+    return board;
+  };
+
+  it("marks each picked player yellow, green or red, with a glyph and words as well as colour", async () => {
+    stubApi(tiered(true));
+    renderHub();
+    const card = await screen.findByTestId("side-1");
+    const chip = (i: number) => within(card).getByTestId(`chip-${100 + i}`);
+    expect(chip(0).getAttribute("aria-label")).toMatch(/, available/);
+    expect(chip(1).getAttribute("aria-label")).toMatch(/to confirm \(said Maybe\)/);
+    expect(chip(2).getAttribute("aria-label")).toMatch(/to confirm \(no reply\)/);
+    expect(chip(3).getAttribute("aria-label")).toMatch(/, unavailable/);
+    const tierOf = (i: number) => chip(i).querySelector("[data-tier]");
+    expect(tierOf(0)?.textContent).toBe("✓");
+    expect(tierOf(1)?.getAttribute("data-tier")).toBe("confirm");
+    expect(tierOf(2)?.textContent).toBe("?");
+    expect(tierOf(3)?.textContent).toBe("✕");
+    expect(screen.getByRole("list", { name: "Slot colours" })).toBeTruthy();
+  });
+
+  it("still tiers picked players with availability off: no reply reads as to confirm", async () => {
+    stubApi(tiered(false));
+    renderHub();
+    const card = await screen.findByTestId("side-1");
+    expect(within(card).getByTestId("chip-102").getAttribute("aria-label")).toMatch(
+      /to confirm \(no reply\)/,
+    );
+  });
+});
+
+describe("weekend switcher (ADR-008)", () => {
+  const withWeekends = (over: Partial<SelectionBoard> = {}): SelectionBoard => ({
+    ...makeBoard(),
+    weekends: { previous: "2026-10-10", current: "2026-10-17", next: "2026-10-24" },
+    readOnly: false,
+    ...over,
+  });
+
+  it("moves to the next weekend and back to this one", async () => {
+    const requests = stubApi(withWeekends());
+    renderHub();
+    fireEvent.click(await screen.findByRole("button", { name: /^Next: weekend of 24–25 Oct/ }));
+    await waitFor(() =>
+      expect(requests.some((r) => r.url.includes("weekend=2026-10-24"))).toBe(true),
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "This weekend" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "This weekend" })).toBeNull());
+  });
+
+  it("a past weekend shows a view-only badge and disables finalising", async () => {
+    const board = withWeekends({
+      readOnly: true,
+      weekends: { previous: null, current: "2026-10-10", next: "2026-10-17" },
+    });
+    board.selections = board.selections.map((x) => ({
+      ...x,
+      canEdit: false,
+      canFinalise: false,
+      readOnlyReason: "This weekend has passed, so its sides can be viewed but not changed.",
+    }));
+    stubApi(board);
+    renderHub();
+    expect(await screen.findByText(/Past weekend · view only/)).toBeTruthy();
+    expect(
+      (screen.getByRole("button", { name: "No earlier weekend" }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect(
+      (screen.getByRole("button", { name: /^Finalise all/ }) as HTMLButtonElement).disabled,
+    ).toBe(true);
   });
 });
 

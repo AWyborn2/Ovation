@@ -17,6 +17,7 @@ import {
 import { setEmailTransport, type EmailMessage } from "./integrations/email";
 import { setSmsTransport, type SmsMessage } from "./integrations/sms";
 import { purgeTestTenants } from "./tenant-purge.test-helpers";
+import { buildBoard } from "./selection-board";
 import type * as Messaging from "./availability-messaging";
 import {
   DEFAULT_SCHEDULE,
@@ -265,6 +266,7 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
   let tenantCrash: number;
   let tenantStale: number;
   let tenantCap: number;
+  let tenantBoard: number;
   let adult: SquadMemberRow;
   let flakyAdult: SquadMemberRow;
   let awayAdult: SquadMemberRow;
@@ -366,6 +368,7 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
     tenantCrash = await newTenant("crash", true);
     tenantStale = await newTenant("stale", true);
     tenantCap = await newTenant("cap", true);
+    tenantBoard = await newTenant("board", true);
 
     adult = await newMember(tenantA, {
       firstName: "Alex",
@@ -405,6 +408,7 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
     await newMember(tenantCrash, { firstName: "Cody", accountHolderEmail: "cody@example.com" });
     await newMember(tenantStale, { firstName: "Sam", accountHolderEmail: "sam@example.com" });
     await newMember(tenantCap, { firstName: "Dee", accountHolderEmail: DEAD_EMAIL });
+    await newMember(tenantBoard, { firstName: "Bo", accountHolderEmail: "bo@example.com" });
     // Away from Friday to Monday: the whole round weekend (R11).
     await db.insert(availabilityAwayTable).values({
       tenantId: tenantA,
@@ -426,7 +430,28 @@ describe("runAvailabilitySchedule (DB, fake transports)", () => {
       tenantCrash,
       tenantStale,
       tenantCap,
+      tenantBoard,
     ]);
+  });
+
+  it("a round the board drafted before the send is still sent on schedule (ADR-008)", async () => {
+    clear();
+    const board = await buildBoard(
+      tenantBoard,
+      { kind: "admin", id: 0, name: "Ada" },
+      "senior",
+      perth("2026-10-12T12:00:00"),
+    );
+    expect(board.selections).toHaveLength(1);
+    const round = await roundOf(tenantBoard);
+    expect(round).toMatchObject({ sendStartedAt: null, cutoffStartedAt: null });
+    expect(sms.length + email.length).toBe(0);
+
+    const summary = await tick(tenantBoard, "2026-10-12T18:05:00");
+    expect(summary.ran).toEqual(["send"]);
+    // The board drafted every side already (the junior side included), so the send drafts none.
+    expect(summary.results[0]).toMatchObject({ messaged: 1, drafts: 0 });
+    expect((await roundOf(tenantBoard))?.sendStartedAt).not.toBeNull();
   });
 
   it("a disabled club gets no round and no messages (KTD11)", async () => {

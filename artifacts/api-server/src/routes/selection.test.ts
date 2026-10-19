@@ -32,7 +32,7 @@ import { setEmailTransport, type EmailMessage } from "../lib/integrations/email"
 import { setSmsTransport, type SmsMessage } from "../lib/integrations/sms";
 import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
 import { pinClockMidWeek } from "../lib/mid-week-clock.test-helpers";
-import { perthDayStart } from "../lib/availability-grades";
+import { addDays, perthDayStart } from "../lib/availability-grades";
 import { DEFAULT_SCHEDULE, roundWeekendFor, setSendPaceMs } from "../lib/availability-schedule";
 import { normaliseGrade, selectionRight, withdrawFromSelection } from "../lib/selection-board";
 
@@ -1107,5 +1107,133 @@ describe("Selection Hub API", () => {
       .expect(200);
     expect(again.body.messaged).toEqual({ selected: 1, deselected: 0, failed: 0 });
     expect(email.map((e) => e.to)).toEqual([EMAIL(4)]);
+  });
+
+  describe("weekends (ADR-008)", () => {
+    const boardFor = async (weekend: string) =>
+      (await asAdmin(request(app).get(`/api/selection/board?weekend=${weekend}`)).expect(200))
+        .body as {
+        readOnly: boolean;
+        weekends: { previous: string | null; current: string; next: string | null };
+        round: { roundId: number; sendStartedAt: string | null } | null;
+        selections: SideBody[];
+      };
+    const fixtureOn = async (weekend: string, grade: string) => {
+      const [f] = await db
+        .insert(fixturesTable)
+        .values({
+          tenantId: tenantA,
+          grade,
+          opponentName: "Pinjarra",
+          startAt: new Date(perthDayStart(weekend).getTime() + 13 * 3_600_000),
+        })
+        .returning();
+      return f.id;
+    };
+
+    it("drafts next weekend before any send, from this weekend's side, keeping a No player flagged", async () => {
+      const next = addDays(weekendDate, 7);
+      const nextA = await fixtureOn(next, "A Grade");
+      expect((await board(asAdmin)) as unknown).toMatchObject({
+        weekends: { current: weekendDate, next },
+      });
+      // m2 (this weekend's keeper) says No for next weekend once its round exists.
+      const [round] = await db
+        .insert(availabilityRoundsTable)
+        .values({ tenantId: tenantA, weekendDate: next })
+        .returning();
+      await db.insert(availabilityResponsesTable).values({
+        tenantId: tenantA,
+        roundId: round.id,
+        memberId: m[2],
+        date: next,
+        status: "no",
+      });
+
+      const b = await boardFor(next);
+      expect(b.readOnly).toBe(false);
+      expect(b.round).toMatchObject({ roundId: round.id, sendStartedAt: null });
+      expect(b.weekends).toMatchObject({ previous: weekendDate, current: next });
+      const side = b.selections.find((s) => s.fixture.grade === "A Grade")!;
+      expect(side).toBeDefined();
+      expect(side.canEdit).toBe(true);
+      expect(side.slots.slice(0, 10).map((s) => s.memberId)).toEqual(m.slice(1, 11));
+      expect(side.slots[1].member).toMatchObject({ id: m[2], status: "no" });
+      expect(side.warnings.saidNo).toBe(1);
+      expect(side.keeperMemberId).toBe(m[2]);
+      const [row] = await db
+        .select()
+        .from(selectionsTable)
+        .where(eq(selectionsTable.fixtureId, nextA));
+      expect(row.roundId).toBe(round.id);
+    });
+
+    it("a past weekend reads only, creates nothing, and refuses every change with round_closed", async () => {
+      const past = addDays(weekendDate, -14);
+      const [round] = await db
+        .insert(availabilityRoundsTable)
+        .values({ tenantId: tenantA, weekendDate: past })
+        .returning();
+      const pastA = await fixtureOn(past, "A Grade");
+      // A fixture of that weekend that never got a side stays without one.
+      const pastB = await fixtureOn(past, "B Grade");
+      const [side] = await db
+        .insert(selectionsTable)
+        .values({
+          tenantId: tenantA,
+          roundId: round.id,
+          fixtureId: pastA,
+          slots: pad([m[1]]).map((memberId) => ({ memberId })),
+        })
+        .returning();
+      const roundsBefore = await db
+        .select({ id: availabilityRoundsTable.id })
+        .from(availabilityRoundsTable)
+        .where(eq(availabilityRoundsTable.tenantId, tenantA));
+
+      const b = await boardFor(past);
+      expect(b.readOnly).toBe(true);
+      expect(b.selections).toHaveLength(1);
+      expect(b.selections[0]).toMatchObject({ id: side.id, canEdit: false, canFinalise: false });
+      expect(b.selections[0].readOnlyReason).toMatch(/passed/);
+      expect(b.weekends.next).not.toBeNull();
+      expect(
+        await db.select().from(selectionsTable).where(eq(selectionsTable.fixtureId, pastB)),
+      ).toHaveLength(0);
+      // A past weekend with no round is not created either.
+      await boardFor(addDays(weekendDate, -21));
+      const roundsAfter = await db
+        .select({ id: availabilityRoundsTable.id })
+        .from(availabilityRoundsTable)
+        .where(eq(availabilityRoundsTable.tenantId, tenantA));
+      expect(roundsAfter).toHaveLength(roundsBefore.length);
+
+      const closed = { code: "round_closed" };
+      const save = await asAdmin(request(app).put("/api/selection/board"))
+        .send({ changes: [await changeFor(side.id, (ids) => ids)] })
+        .expect(409);
+      expect(save.body).toMatchObject(closed);
+      const fin = await asAdmin(request(app).post(`/api/selection/${side.id}/finalise`))
+        .send(await ver(side.id))
+        .expect(409);
+      expect(fin.body).toMatchObject(closed);
+      await db
+        .update(selectionsTable)
+        .set({ state: "final" })
+        .where(eq(selectionsTable.id, side.id));
+      const reopen = await asAdmin(request(app).post(`/api/selection/${side.id}/reopen`)).expect(
+        409,
+      );
+      expect(reopen.body).toMatchObject(closed);
+      await expect(
+        withdrawFromSelection(tenantA, m[1], round.id, { kind: "player", id: m[1], name: null }),
+      ).rejects.toMatchObject({ status: 409, code: "round_closed" });
+    });
+
+    it("a weekend that isn't a Saturday → 400", async () => {
+      await asAdmin(
+        request(app).get(`/api/selection/board?weekend=${addDays(weekendDate, 1)}`),
+      ).expect(400);
+    });
   });
 });

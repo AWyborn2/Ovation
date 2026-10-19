@@ -14,6 +14,7 @@ import {
   type AvailabilityRoundRow,
   type AvailabilityStatus,
   type JuniorTeamListPlayer,
+  type SelectionRow,
   type SelectionSlot,
   type TeamListPlayer,
 } from "@workspace/db";
@@ -30,24 +31,31 @@ import { loadSideFixtures, sideFixtureKey } from "./selection-fixtures";
 import { juniorMemberResolver } from "./shirt-number-squad";
 
 /**
- * Draft sides at cut-off.
+ * Draft sides for a round.
  *
  * Every fixture in the round's Friday–Sunday window gets one draft `selections`
- * row, seeded from the team list of that grade's most recent fixture before the
- * round. Each listed player who answered Yes for the fixture's date keeps their
- * slot; everyone else leaves an open slot labelled "was <name> · <reason>" (no,
- * maybe, no reply, not on register) in the same position. The first 12 entries
- * seed the side (a list with a 12th player fills slot 12). Nobody else is
- * placed: a Yes player who was not in the last side waits in the pool,
- * and nobody moves between grades on their own. Last game's captain and keeper
- * carry over only while still in the XI.
+ * row. The board builds them whenever it loads the current or a future weekend
+ * (ADR-008), and the availability send and cut-off build any still missing.
  *
- * Nobody is placed twice in a round: fixtures are drafted in start order with
- * one round-wide set of placed members, seeded from the round's existing
- * sides, so a player on two grades' last lists goes to the earlier fixture and
- * the later one keeps an open slot. A grade with two fixtures in the weekend
- * seeds the first and starts the second empty. An existing selection is never
- * overwritten, so re-running the cut-off is a no-op.
+ * A side starts from the same grade's (a junior team's) side in the previous
+ * round that has one, final or draft, slot for slot with its captain and keeper
+ * (`carryDraftSlots`). With no earlier selection, or when the grade has played
+ * since (a newer team list), it starts from the grade's most recent earlier
+ * team list (`buildDraftSlots`). Every carried player keeps their slot whatever
+ * they replied: the board shows each status, so a No is flagged, not removed.
+ * A listed name that matches no active member is a gap "not on register".
+ * Nobody else is placed: a player who was not in the last side waits in the
+ * pool, and nobody moves between grades on their own. Last game's captain and
+ * keeper carry over only while still in the XI.
+ *
+ * Nobody is placed twice at once: fixtures are drafted in start order with one
+ * round-wide ledger of placed members, seeded from the round's existing sides,
+ * so a player on two grades' last sides goes to the earlier fixture and the
+ * later one keeps an open slot "picked in another side". A grade with several
+ * fixtures in the weekend maps them in start order to the previous round's
+ * sides; a side with no earlier equivalent starts empty (only the first takes
+ * the team list). An existing selection is never overwritten, so a re-run is a
+ * no-op.
  */
 
 /** Every side has 12 slots: the XI in slots 1–11 and the 12th player in slot 12. */
@@ -87,32 +95,29 @@ export type DraftSide = {
 const emptySlots = (): SelectionSlot[] =>
   Array.from({ length: SIDE_SIZE }, () => ({ memberId: null }));
 
+/** Members who can't play a game; the members a draft places are added. */
+type Placed = { has(id: number): boolean; add(id: number): void };
+
 /**
  * The draft for one fixture from its grade's last list (pure apart from
  * `placed`). `members` is the whole register: an entry that matches an
  * inactive member — or nobody, or a fill-in id — is a gap "not on register".
- * `placed` is the round's members already in a side: such an entry leaves a
- * plain open slot, and the members this draft places are added to it.
+ * `placed` is the round's members already in a side at that time: such an
+ * entry is a gap "picked in another side", and the members this draft places
+ * are added to it. Everyone else listed is placed, whatever they replied.
  */
 export function buildDraftSlots(input: {
   lastList: readonly TeamListPlayer[] | null;
   members: readonly MemberIdentity[];
-  responses: ResponsesByMember;
-  fixtureDate: string;
   /**
    * Members who can't play this game (a clash with a side they're already in);
    * the members this draft places are added. A `Set` or a `PlacementLedger` view.
    */
-  placed?: { has(id: number): boolean; add(id: number): void };
-  /**
-   * Keep a listed player only on a Yes (the availability flow, default). False
-   * for a club not using availability: everyone listed stays unless they said No.
-   */
-  requireYes?: boolean;
+  placed?: Placed;
   /** Breaks a tie between same-named members (see `buildMemberMatcher`). */
   prefer?: (m: MemberIdentity) => boolean;
 }): DraftSide {
-  const { lastList, members, responses, fixtureDate } = input;
+  const { lastList, members } = input;
   const elsewhere = input.placed ?? new Set<number>();
   const slots = emptySlots();
   let captainMemberId: number | null = null;
@@ -135,12 +140,6 @@ export function buildDraftSlots(input: {
       slots[i] = { memberId: null, gap: { name, reason: "picked_elsewhere" } };
       return;
     }
-    const status = responses.get(m.id)?.get(fixtureDate);
-    const keep = input.requireYes === false ? status !== "no" : status === "yes";
-    if (!keep && status !== "yes") {
-      slots[i] = { memberId: null, gap: { name, reason: status ?? "no_reply" } };
-      return;
-    }
     placed.add(m.id);
     elsewhere.add(m.id);
     slots[i] = { memberId: m.id };
@@ -151,6 +150,122 @@ export function buildDraftSlots(input: {
   });
 
   return { slots, captainMemberId, keeperMemberId };
+}
+
+/**
+ * The draft for one fixture carried over from the previous round's side (pure
+ * apart from `placed`): slot for slot, the 12th staying 12th. A member no
+ * longer active is a gap "not on register"; one already placed at the time a
+ * gap "picked in another side". A carried "not on register" gap (an unmatched
+ * PlayHQ name) is kept as it was; other open slots start empty. The captain and
+ * keeper carry while still in the XI.
+ */
+export function carryDraftSlots(input: {
+  previous: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId">;
+  members: readonly MemberIdentity[];
+  placed?: Placed;
+}): DraftSide {
+  const elsewhere = input.placed ?? new Set<number>();
+  const byId = new Map(input.members.map((m) => [m.id, m]));
+  const slots = emptySlots();
+  const placed = new Set<number>();
+  normaliseSlots(input.previous.slots)
+    .slice(0, SIDE_SIZE)
+    .forEach((slot, i) => {
+      if (slot.memberId == null) {
+        if (slot.gap?.reason === "not_on_register")
+          slots[i] = { memberId: null, gap: { ...slot.gap } };
+        return;
+      }
+      const m = byId.get(slot.memberId);
+      const name = m ? memberDisplayName(m) : "Unknown";
+      if (!m || !m.active || placed.has(m.id)) {
+        slots[i] = { memberId: null, gap: { name, reason: "not_on_register" } };
+        return;
+      }
+      if (elsewhere.has(m.id)) {
+        slots[i] = { memberId: null, gap: { name, reason: "picked_elsewhere" } };
+        return;
+      }
+      placed.add(m.id);
+      elsewhere.add(m.id);
+      slots[i] = { memberId: m.id };
+    });
+  const xi = xiMemberIds(slots);
+  const role = (id: number | null) => (id != null && xi.has(id) ? id : null);
+  return {
+    slots,
+    captainMemberId: role(input.previous.captainMemberId),
+    keeperMemberId: role(input.previous.keeperMemberId),
+  };
+}
+
+/** Where a draft side started from, for its draft event. */
+export type SeededFrom =
+  | { kind: "selection"; id: number; fixtureId?: number; juniorFixtureId?: number }
+  | { kind: "team_list"; id: number; fixtureId?: number; juniorFixtureId?: number }
+  | null;
+
+/** A side of an earlier round, as a seed. */
+type PriorSide = {
+  selectionId: number;
+  fixtureId: number;
+  weekendDate: string;
+  startAt: Date;
+  slots: SelectionSlot[];
+  captainMemberId: number | null;
+  keeperMemberId: number | null;
+};
+
+/**
+ * Per key (a grade, or a junior team), the sides of the latest earlier round in
+ * which any of that key's sides has a player, in start order. `rows` come
+ * newest weekend first, then by start.
+ */
+function previousSides<T extends PriorSide>(
+  rows: readonly T[],
+  key: (r: T) => string,
+): Map<string, T[]> {
+  const byWeekend = new Map<string, Map<string, T[]>>();
+  for (const r of rows) {
+    const k = key(r);
+    const weeks = byWeekend.get(k) ?? new Map<string, T[]>();
+    weeks.set(r.weekendDate, [...(weeks.get(r.weekendDate) ?? []), r]);
+    byWeekend.set(k, weeks);
+  }
+  const out = new Map<string, T[]>();
+  for (const [k, weeks] of byWeekend) {
+    // Map iteration keeps insertion order: newest weekend first.
+    for (const sides of weeks.values()) {
+      if (sides.some((s) => s.slots.some((x) => x.memberId != null))) {
+        out.set(k, sides);
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * The seed for the `index`-th fixture of a grade (or junior team) this weekend:
+ * the previous round's side at the same position, else — for the first fixture
+ * only — the last team list. A team list from a game after the previous
+ * round's sides (the grade played a weekend the Hub didn't draft) wins over
+ * them, so a draft never starts from a stale side.
+ */
+function pickSeed<L extends { startAt: Date | null }>(
+  prior: readonly PriorSide[] | undefined,
+  lastList: L | undefined,
+  index: number,
+): { kind: "selection"; side: PriorSide } | { kind: "team_list"; list: L } | null {
+  const newest = prior?.reduce((t, s) => Math.max(t, s.startAt.getTime()), 0) ?? 0;
+  const listNewer = lastList?.startAt != null && lastList.startAt.getTime() > newest;
+  const side = !listNewer ? prior?.[index] : undefined;
+  if (side && side.slots.some((x) => x.memberId != null || x.gap)) {
+    return { kind: "selection", side };
+  }
+  if (index === 0 && lastList) return { kind: "team_list", list: lastList };
+  return null;
 }
 
 export type RoundDraftSummary = {
@@ -232,13 +347,13 @@ async function roundLedger(tenantId: number, roundId: number): Promise<Placement
 /**
  * Creates the draft selection for every fixture in the round's window that has
  * none yet. Tenant-scoped throughout: a round id from another tenant finds no
- * round and creates nothing.
+ * round and creates nothing. Safe to run concurrently: a side another run
+ * created first is counted as skipped (the per-fixture unique key).
  */
 export async function buildRoundDrafts(
   tenantId: number,
   roundId: number,
   now: Date = new Date(),
-  opts: { requireYes?: boolean } = {},
 ): Promise<RoundDraftSummary> {
   const summary: RoundDraftSummary = { created: 0, skipped: 0, selectionIds: [] };
   const [round] = await db
@@ -268,7 +383,7 @@ export async function buildRoundDrafts(
     .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id));
   // Who already plays when, across every side of the round (senior and junior).
   const ledger = await roundLedger(tenantId, roundId);
-  if (fixtures.length === 0) return draftJuniorSides(tenantId, round, now, opts, summary, ledger);
+  if (fixtures.length === 0) return draftJuniorSides(tenantId, round, now, summary, ledger);
 
   // Sides already drafted: their fixtures are skipped and their members are
   // placed, along with anyone in another side of this round.
@@ -292,32 +407,76 @@ export async function buildRoundDrafts(
     );
   const existing = new Set(existingRows.map((r) => r.fixtureId));
 
-  // Each grade's most recent non-empty team list from before the round.
+  // Each grade's most recent non-empty team list from before the round, and its
+  // sides in the latest earlier round that drafted the grade.
   const grades = [...new Set(fixtures.map((f) => f.grade))];
-  const lastLists = await db
-    .selectDistinctOn([fixturesTable.grade], {
-      grade: fixturesTable.grade,
-      fixtureId: fixturesTable.id,
-      players: teamListsTable.players,
-    })
-    .from(fixturesTable)
-    .innerJoin(
-      teamListsTable,
-      and(
-        eq(teamListsTable.fixtureId, fixturesTable.id),
-        eq(teamListsTable.tenantId, fixturesTable.tenantId),
+  const [lastLists, priorRows] = await Promise.all([
+    db
+      .selectDistinctOn([fixturesTable.grade], {
+        grade: fixturesTable.grade,
+        fixtureId: fixturesTable.id,
+        startAt: fixturesTable.startAt,
+        teamListId: teamListsTable.id,
+        players: teamListsTable.players,
+      })
+      .from(fixturesTable)
+      .innerJoin(
+        teamListsTable,
+        and(
+          eq(teamListsTable.fixtureId, fixturesTable.id),
+          eq(teamListsTable.tenantId, fixturesTable.tenantId),
+        ),
+      )
+      .where(
+        and(
+          eq(fixturesTable.tenantId, tenantId),
+          inArray(fixturesTable.grade, grades),
+          lt(fixturesTable.startAt, window.from),
+          sql`jsonb_array_length(${teamListsTable.players}) > 0`,
+        ),
+      )
+      .orderBy(fixturesTable.grade, desc(fixturesTable.startAt), desc(fixturesTable.id)),
+    db
+      .select({
+        selectionId: selectionsTable.id,
+        fixtureId: fixturesTable.id,
+        grade: fixturesTable.grade,
+        weekendDate: availabilityRoundsTable.weekendDate,
+        startAt: fixturesTable.startAt,
+        slots: selectionsTable.slots,
+        captainMemberId: selectionsTable.captainMemberId,
+        keeperMemberId: selectionsTable.keeperMemberId,
+      })
+      .from(selectionsTable)
+      .innerJoin(
+        availabilityRoundsTable,
+        and(
+          eq(availabilityRoundsTable.id, selectionsTable.roundId),
+          eq(availabilityRoundsTable.tenantId, selectionsTable.tenantId),
+        ),
+      )
+      .innerJoin(
+        fixturesTable,
+        and(
+          eq(fixturesTable.id, selectionsTable.fixtureId),
+          eq(fixturesTable.tenantId, selectionsTable.tenantId),
+        ),
+      )
+      .where(
+        and(
+          eq(selectionsTable.tenantId, tenantId),
+          lt(availabilityRoundsTable.weekendDate, round.weekendDate),
+          inArray(fixturesTable.grade, grades),
+        ),
+      )
+      .orderBy(
+        desc(availabilityRoundsTable.weekendDate),
+        asc(fixturesTable.startAt),
+        asc(selectionsTable.id),
       ),
-    )
-    .where(
-      and(
-        eq(fixturesTable.tenantId, tenantId),
-        inArray(fixturesTable.grade, grades),
-        lt(fixturesTable.startAt, window.from),
-        sql`jsonb_array_length(${teamListsTable.players}) > 0`,
-      ),
-    )
-    .orderBy(fixturesTable.grade, desc(fixturesTable.startAt), desc(fixturesTable.id));
+  ]);
   const lastByGrade = new Map(lastLists.map((l) => [l.grade, l]));
+  const priorByGrade = previousSides(priorRows, (r) => r.grade);
 
   const members = await db
     .select({
@@ -336,59 +495,36 @@ export async function buildRoundDrafts(
   // registers is the senior record.
   const seniorRecord = new Set(members.filter((m) => m.section === "senior").map((m) => m.id));
 
-  const responses = await loadResponses(tenantId, roundId, window.from, window.to);
-
-  const seededGrades = new Set<string>();
+  // Each grade's fixtures this weekend, in start order, map to its previous sides.
+  const gradeIndex = new Map<string, number>();
   for (const f of fixtures) {
-    // The grade's first fixture of the weekend takes the seeded side, even when
-    // its selection already exists; any later one starts empty.
-    const seed = seededGrades.has(f.grade) ? null : (lastByGrade.get(f.grade) ?? null);
-    seededGrades.add(f.grade);
+    const index = gradeIndex.get(f.grade) ?? 0;
+    gradeIndex.set(f.grade, index + 1);
     if (existing.has(f.id)) {
       summary.skipped++;
       continue;
     }
-    const draft = buildDraftSlots({
-      lastList: seed?.players ?? null,
-      members,
-      responses,
-      fixtureDate: perthDate(f.startAt),
-      placed: ledger.view(gameWindow(f.startAt, { format: f.matchFormat })),
-      requireYes: opts.requireYes,
-      prefer: (m) => seniorRecord.has(m.id),
-    });
+    const seed = pickSeed(priorByGrade.get(f.grade), lastByGrade.get(f.grade), index);
+    const placed = ledger.view(gameWindow(f.startAt, { format: f.matchFormat }));
+    const draft =
+      seed?.kind === "selection"
+        ? carryDraftSlots({ previous: seed.side, members, placed })
+        : buildDraftSlots({
+            lastList: seed?.list.players ?? null,
+            members,
+            placed,
+            prefer: (m) => seniorRecord.has(m.id),
+          });
+    const seededFrom: SeededFrom =
+      seed?.kind === "selection"
+        ? { kind: "selection", id: seed.side.selectionId, fixtureId: seed.side.fixtureId }
+        : seed
+          ? { kind: "team_list", id: seed.list.teamListId, fixtureId: seed.list.fixtureId }
+          : null;
 
-    const created = await db.transaction(async (tx) => {
-      const [row] = await tx
-        .insert(selectionsTable)
-        .values({
-          tenantId,
-          roundId,
-          fixtureId: f.id,
-          slots: draft.slots,
-          captainMemberId: draft.captainMemberId,
-          keeperMemberId: draft.keeperMemberId,
-          state: "draft",
-          version: 1,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .onConflictDoNothing({ target: selectionsTable.fixtureId })
-        .returning({ id: selectionsTable.id });
-      if (!row) return null;
-      await tx.insert(selectionEventsTable).values({
-        tenantId,
-        selectionId: row.id,
-        actorKind: "system",
-        action: "draft",
-        detail: {
-          seededFromFixtureId: seed?.fixtureId ?? null,
-          filled: draft.slots.slice(0, XI_SIZE).filter((s) => s.memberId != null).length,
-          twelfth: draft.slots[TWELFTH_INDEX]?.memberId != null,
-        },
-        createdAt: now,
-      });
-      return row.id;
+    const created = await insertDraft(tenantId, now, draft, seededFrom, {
+      roundId,
+      fixtureId: f.id,
     });
     // A concurrent run got there first: count it as already drafted.
     if (created == null) summary.skipped++;
@@ -397,7 +533,54 @@ export async function buildRoundDrafts(
       summary.selectionIds.push(created);
     }
   }
-  return draftJuniorSides(tenantId, round, now, opts, summary, ledger);
+  return draftJuniorSides(tenantId, round, now, summary, ledger);
+}
+
+/**
+ * Insert one draft side and its system "draft" event, or nothing when the
+ * fixture already has a side (a concurrent run, or two selectors loading the
+ * board at once): returns the new id, or null.
+ */
+async function insertDraft(
+  tenantId: number,
+  now: Date,
+  draft: DraftSide,
+  seededFrom: SeededFrom,
+  side: { roundId: number; fixtureId: number } | { roundId: number; juniorFixtureId: number },
+): Promise<number | null> {
+  return db.transaction(async (tx) => {
+    const insert = tx.insert(selectionsTable).values({
+      tenantId,
+      ...side,
+      slots: draft.slots,
+      captainMemberId: draft.captainMemberId,
+      keeperMemberId: draft.keeperMemberId,
+      state: "draft",
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+    });
+    const [row] = await (
+      "fixtureId" in side
+        ? insert.onConflictDoNothing({ target: selectionsTable.fixtureId })
+        : insert.onConflictDoNothing()
+    ).returning({ id: selectionsTable.id });
+    if (!row) return null;
+    await tx.insert(selectionEventsTable).values({
+      tenantId,
+      selectionId: row.id,
+      roundId: side.roundId,
+      actorKind: "system",
+      action: "draft",
+      detail: {
+        seededFrom,
+        filled: draft.slots.slice(0, XI_SIZE).filter((s) => s.memberId != null).length,
+        twelfth: draft.slots[TWELFTH_INDEX]?.memberId != null,
+      },
+      createdAt: now,
+    });
+    return row.id;
+  });
 }
 
 /**
@@ -439,15 +622,15 @@ export async function juniorListAsNames(
 /**
  * Junior sides: one per `junior_fixtures` row (junior PlayHQ sync) in the
  * round's window. A club can field several teams in one age group, so each
- * side is seeded from the same team's most recent junior team list. Those
- * lists hold PlayHQ participant ids, matched back to squad members the way a
- * junior side is published (`juniorMemberResolver`).
+ * side is seeded from the same team's side in the previous round that has one,
+ * else from the team's most recent junior team list. Those lists hold PlayHQ
+ * participant ids, matched back to squad members the way a junior side is
+ * published (`juniorMemberResolver`).
  */
 async function draftJuniorSides(
   tenantId: number,
   round: AvailabilityRoundRow,
   now: Date,
-  opts: { requireYes?: boolean },
   summary: RoundDraftSummary,
   ledger: PlacementLedger,
 ): Promise<RoundDraftSummary> {
@@ -482,39 +665,86 @@ async function draftJuniorSides(
     );
   const existing = new Set(roundSides.map((r) => r.juniorFixtureId));
 
-  // Each team's most recent non-empty junior list from before the round.
+  // Each team's most recent non-empty junior list from before the round, and its
+  // sides in the latest earlier round that drafted the team.
   const teams = [...new Set(fixtures.flatMap((f) => (f.teamName ? [f.teamName] : [])))];
-  const lastLists =
+  const [lastLists, priorRows] =
     teams.length > 0
-      ? await db
-          .selectDistinctOn([juniorFixturesTable.teamName], {
-            teamName: juniorFixturesTable.teamName,
-            fixtureId: juniorFixturesTable.id,
-            players: juniorTeamListsTable.players,
-          })
-          .from(juniorFixturesTable)
-          .innerJoin(
-            juniorTeamListsTable,
-            and(
-              eq(juniorTeamListsTable.juniorFixtureId, juniorFixturesTable.id),
-              eq(juniorTeamListsTable.tenantId, juniorFixturesTable.tenantId),
+      ? await Promise.all([
+          db
+            .selectDistinctOn([juniorFixturesTable.teamName], {
+              teamName: juniorFixturesTable.teamName,
+              fixtureId: juniorFixturesTable.id,
+              startAt: juniorFixturesTable.startAt,
+              teamListId: juniorTeamListsTable.id,
+              players: juniorTeamListsTable.players,
+            })
+            .from(juniorFixturesTable)
+            .innerJoin(
+              juniorTeamListsTable,
+              and(
+                eq(juniorTeamListsTable.juniorFixtureId, juniorFixturesTable.id),
+                eq(juniorTeamListsTable.tenantId, juniorFixturesTable.tenantId),
+              ),
+            )
+            .where(
+              and(
+                eq(juniorFixturesTable.tenantId, tenantId),
+                inArray(juniorFixturesTable.teamName, teams),
+                lt(juniorFixturesTable.startAt, window.from),
+                sql`jsonb_array_length(${juniorTeamListsTable.players}) > 0`,
+              ),
+            )
+            .orderBy(
+              juniorFixturesTable.teamName,
+              desc(juniorFixturesTable.startAt),
+              desc(juniorFixturesTable.id),
             ),
-          )
-          .where(
-            and(
-              eq(juniorFixturesTable.tenantId, tenantId),
-              inArray(juniorFixturesTable.teamName, teams),
-              lt(juniorFixturesTable.startAt, window.from),
-              sql`jsonb_array_length(${juniorTeamListsTable.players}) > 0`,
+          db
+            .select({
+              selectionId: selectionsTable.id,
+              fixtureId: juniorFixturesTable.id,
+              teamName: juniorFixturesTable.teamName,
+              weekendDate: availabilityRoundsTable.weekendDate,
+              startAt: juniorFixturesTable.startAt,
+              slots: selectionsTable.slots,
+              captainMemberId: selectionsTable.captainMemberId,
+              keeperMemberId: selectionsTable.keeperMemberId,
+            })
+            .from(selectionsTable)
+            .innerJoin(
+              availabilityRoundsTable,
+              and(
+                eq(availabilityRoundsTable.id, selectionsTable.roundId),
+                eq(availabilityRoundsTable.tenantId, selectionsTable.tenantId),
+              ),
+            )
+            .innerJoin(
+              juniorFixturesTable,
+              and(
+                eq(juniorFixturesTable.id, selectionsTable.juniorFixtureId),
+                eq(juniorFixturesTable.tenantId, selectionsTable.tenantId),
+              ),
+            )
+            .where(
+              and(
+                eq(selectionsTable.tenantId, tenantId),
+                lt(availabilityRoundsTable.weekendDate, round.weekendDate),
+                inArray(juniorFixturesTable.teamName, teams),
+              ),
+            )
+            .orderBy(
+              desc(availabilityRoundsTable.weekendDate),
+              asc(juniorFixturesTable.startAt),
+              asc(selectionsTable.id),
             ),
-          )
-          .orderBy(
-            juniorFixturesTable.teamName,
-            desc(juniorFixturesTable.startAt),
-            desc(juniorFixturesTable.id),
-          )
-      : [];
-  const lastByTeam = new Map(lastLists.map((l) => [l.teamName, l]));
+        ])
+      : [[], []];
+  const lastByTeam = new Map(lastLists.map((l) => [l.teamName ?? "", l]));
+  const priorByTeam = previousSides(
+    priorRows.flatMap((r) => (r.startAt ? [{ ...r, startAt: r.startAt }] : [])),
+    (r) => r.teamName ?? "",
+  );
 
   const members = (
     await db
@@ -533,57 +763,36 @@ async function draftJuniorSides(
       .where(eq(squadMembersTable.tenantId, tenantId))
   ).filter((m) => m.section === "junior");
   const asNames = await juniorListAsNames(db, tenantId, members);
-  const responses = await loadResponses(tenantId, round.id, window.from, window.to);
 
-  const seededTeams = new Set<string>();
+  const teamIndex = new Map<string, number>();
   for (const f of fixtures) {
     const team = f.teamName ?? "";
-    const seed = team && !seededTeams.has(team) ? (lastByTeam.get(team) ?? null) : null;
-    if (team) seededTeams.add(team);
+    const index = teamIndex.get(team) ?? 0;
+    if (team) teamIndex.set(team, index + 1);
     if (existing.has(f.id)) {
       summary.skipped++;
       continue;
     }
-    const lastList = seed ? asNames(seed.players) : null;
-    const draft = buildDraftSlots({
-      lastList,
-      members,
-      responses,
-      fixtureDate: perthDate(f.startAt!),
-      placed: ledger.view(gameWindow(f.startAt!, { junior: true })),
-      requireYes: opts.requireYes,
-    });
-    const created = await db.transaction(async (tx) => {
-      const [row] = await tx
-        .insert(selectionsTable)
-        .values({
-          tenantId,
-          roundId: round.id,
-          juniorFixtureId: f.id,
-          slots: draft.slots,
-          captainMemberId: draft.captainMemberId,
-          keeperMemberId: draft.keeperMemberId,
-          state: "draft",
-          version: 1,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .onConflictDoNothing()
-        .returning({ id: selectionsTable.id });
-      if (!row) return null;
-      await tx.insert(selectionEventsTable).values({
-        tenantId,
-        selectionId: row.id,
-        actorKind: "system",
-        action: "draft",
-        detail: {
-          seededFromJuniorFixtureId: seed?.fixtureId ?? null,
-          filled: draft.slots.slice(0, XI_SIZE).filter((s) => s.memberId != null).length,
-          twelfth: draft.slots[TWELFTH_INDEX]?.memberId != null,
-        },
-        createdAt: now,
-      });
-      return row.id;
+    // A fixture with no team name has nothing to carry from.
+    const seed = team ? pickSeed(priorByTeam.get(team), lastByTeam.get(team), index) : null;
+    const placed = ledger.view(gameWindow(f.startAt!, { junior: true }));
+    const draft =
+      seed?.kind === "selection"
+        ? carryDraftSlots({ previous: seed.side, members, placed })
+        : buildDraftSlots({
+            lastList: seed ? asNames(seed.list.players) : null,
+            members,
+            placed,
+          });
+    const seededFrom: SeededFrom =
+      seed?.kind === "selection"
+        ? { kind: "selection", id: seed.side.selectionId, juniorFixtureId: seed.side.fixtureId }
+        : seed
+          ? { kind: "team_list", id: seed.list.teamListId, juniorFixtureId: seed.list.fixtureId }
+          : null;
+    const created = await insertDraft(tenantId, now, draft, seededFrom, {
+      roundId: round.id,
+      juniorFixtureId: f.id,
     });
     if (created == null) summary.skipped++;
     else {

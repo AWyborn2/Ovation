@@ -20,7 +20,7 @@ import { setEmailTransport, type EmailMessage } from "../lib/integrations/email"
 import { setSmsTransport, type SmsMessage } from "../lib/integrations/sms";
 import { purgeTestTenants } from "../lib/tenant-purge.test-helpers";
 import { pinClockMidWeek } from "../lib/mid-week-clock.test-helpers";
-import { perthDayStart } from "../lib/availability-grades";
+import { addDays, perthDayStart } from "../lib/availability-grades";
 import { DEFAULT_SCHEDULE, roundWeekendFor, setSendPaceMs } from "../lib/availability-schedule";
 
 /**
@@ -35,16 +35,20 @@ const STAMP = Date.now();
 
 type BoardBody = {
   availability: boolean;
+  readOnly: boolean;
+  weekends: { previous: string | null; current: string; next: string | null };
   round: { roundId: number } | null;
   selections: {
     id: number;
     version: number;
     fixture: { grade: string };
+    canEdit: boolean;
     slots: { memberId: number | null }[];
     captainMemberId: number | null;
     keeperMemberId: number | null;
   }[];
   pool: { id: number }[];
+  events: { selectionId: number; action: string; detail: Record<string, unknown> }[];
 };
 
 describe("Selection Hub without availability", () => {
@@ -55,10 +59,11 @@ describe("Selection Hub without availability", () => {
   const sms: SmsMessage[] = [];
   const email: EmailMessage[] = [];
 
-  const board = async (section: "senior" | "junior") =>
+  let weekendDate = "";
+  const board = async (section: "senior" | "junior", weekend?: string) =>
     (
       await request(app)
-        .get(`/api/selection/board?section=${section}`)
+        .get(`/api/selection/board?section=${section}${weekend ? `&weekend=${weekend}` : ""}`)
         .set("Cookie", adminCookie)
         .set("x-tenant-id", String(tenantId))
         .expect(200)
@@ -105,7 +110,7 @@ describe("Selection Hub without availability", () => {
       m[i] = row.id;
     }
 
-    const weekendDate = roundWeekendFor(DEFAULT_SCHEDULE, new Date());
+    weekendDate = roundWeekendFor(DEFAULT_SCHEDULE, new Date());
     const sat = perthDayStart(weekendDate).getTime();
     const [last, current] = await db
       .insert(fixturesTable)
@@ -207,5 +212,29 @@ describe("Selection Hub without availability", () => {
     const sheet = await buildTeamSheet(tenantId, side.id);
     expect(sheet.players[0]).toMatchObject({ order: 1, name: "S1 Solo", shirtNumber: "7" });
     expect(sheet.players[1].shirtNumber).toBeNull();
+  });
+
+  it("plans next weekend from this weekend's finalised side, with availability off (ADR-008)", async () => {
+    const next = addDays(weekendDate, 7);
+    await db.insert(fixturesTable).values({
+      tenantId,
+      grade: "A Grade",
+      opponentName: "Baldivis",
+      startAt: new Date(perthDayStart(next).getTime() + 13 * 3_600_000),
+    });
+    const now = await board("senior");
+    expect(now.weekends).toEqual({ previous: null, current: weekendDate, next });
+    const thisSide = now.selections[0];
+
+    const ahead = await board("senior", next);
+    expect(ahead.readOnly).toBe(false);
+    expect(ahead.weekends).toMatchObject({ previous: weekendDate, current: next, next: null });
+    expect(ahead.selections).toHaveLength(1);
+    const side = ahead.selections[0];
+    expect(side.canEdit).toBe(true);
+    expect(side.slots.map((s) => s.memberId)).toEqual(thisSide.slots.map((s) => s.memberId));
+    expect(side.captainMemberId).toBe(m[1]);
+    const draft = ahead.events.find((e) => e.selectionId === side.id && e.action === "draft");
+    expect(draft?.detail).toMatchObject({ seededFrom: { kind: "selection", id: thisSide.id } });
   });
 });

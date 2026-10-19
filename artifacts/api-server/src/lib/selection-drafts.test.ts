@@ -1,19 +1,14 @@
 import { describe, it, expect } from "vitest";
-import type { AvailabilityStatus, TeamListPlayer } from "@workspace/db";
-import {
-  PlacementLedger,
-  buildDraftSlots,
-  gameWindow,
-  type ResponsesByMember,
-} from "./selection-drafts";
+import type { SelectionSlot, TeamListPlayer } from "@workspace/db";
+import { PlacementLedger, buildDraftSlots, carryDraftSlots, gameWindow } from "./selection-drafts";
 import type { MemberIdentity } from "./availability-grades";
 
 /**
- * The cut-off draft rules (plan 2026-10-06-002 U6: R16–R18, R37, KTD7, AE1).
+ * The draft rules (plan 2026-10-06-002 U6: R16–R18, R37, KTD7; ADR-008: every
+ * carried player kept whatever they replied, carry-over from the last side).
  * Pure — the DB-backed round builder is covered in selection-drafts.int.test.ts.
  */
 
-const DATE = "2026-10-17";
 const NAMES = [
   "Ava Hill",
   "Ben Cole",
@@ -52,55 +47,15 @@ const LAST: TeamListPlayer[] = NAMES.map((n, i) =>
     : { order: i + 1, displayName: n },
 );
 
-const answers = (byId: Record<number, AvailabilityStatus>, date = DATE): ResponsesByMember => {
-  const m = new Map<number, Map<string, AvailabilityStatus>>();
-  for (const [id, s] of Object.entries(byId)) m.set(Number(id), new Map([[date, s]]));
-  return m;
-};
-
-const allYes = (except: number[] = []) =>
-  Object.fromEntries(
-    MEMBERS.filter((m) => !except.includes(m.id)).map((m) => [m.id, "yes" as const]),
-  );
-
 describe("buildDraftSlots", () => {
-  it("keeps Yes players in place and leaves labelled gaps for No, Maybe and no reply (AE1)", () => {
-    const responses = answers({ ...allYes([3, 6, 10]), 3: "no", 6: "maybe" });
-    const draft = buildDraftSlots({
-      lastList: LAST,
-      members: MEMBERS,
-      responses,
-      fixtureDate: DATE,
-    });
+  it("keeps every listed player in place, whatever they replied (ADR-008)", () => {
+    const draft = buildDraftSlots({ lastList: LAST, members: MEMBERS });
     expect(draft.slots).toHaveLength(12);
+    expect(draft.slots.slice(0, 11).map((s) => s.memberId)).toEqual(MEMBERS.map((m) => m.id));
     expect(draft.slots[11]).toEqual({ memberId: null });
-    expect(draft.slots.filter((s) => s.memberId != null)).toHaveLength(8);
-    expect(draft.slots[0]).toEqual({ memberId: 1 });
-    expect(draft.slots[2]).toEqual({ memberId: null, gap: { name: "Cal Dunn", reason: "no" } });
-    expect(draft.slots[5]).toEqual({ memberId: null, gap: { name: "Finn Hart", reason: "maybe" } });
-    expect(draft.slots[9]).toEqual({
-      memberId: null,
-      gap: { name: "J. Hale", reason: "no_reply" },
-    });
   });
 
-  it("without availability keeps everyone listed except a No, with their roles", () => {
-    const list = LAST.map((p) => (p.order === 1 ? { ...p, role: "C/WK" as const } : p));
-    const draft = buildDraftSlots({
-      lastList: list,
-      members: MEMBERS,
-      responses: answers({ 3: "no" }),
-      fixtureDate: DATE,
-      requireYes: false,
-    });
-    expect(draft.slots.filter((s) => s.memberId != null)).toHaveLength(10);
-    expect(draft.slots[2]).toEqual({ memberId: null, gap: { name: "Cal Dunn", reason: "no" } });
-    expect(draft.slots[9]).toEqual({ memberId: 10 });
-    expect(draft.captainMemberId).toBe(1);
-    expect(draft.keeperMemberId).toBe(1);
-  });
-
-  it("carries the captain who stays and drops the keeper who said No (R37)", () => {
+  it("carries the captain and keeper from the XI", () => {
     const list = LAST.map((p) =>
       p.order === 1
         ? { ...p, role: "C" as const }
@@ -108,14 +63,9 @@ describe("buildDraftSlots", () => {
           ? { ...p, role: "WK" as const }
           : p,
     );
-    const draft = buildDraftSlots({
-      lastList: list,
-      members: MEMBERS,
-      responses: answers({ ...allYes([2]), 2: "no" }),
-      fixtureDate: DATE,
-    });
+    const draft = buildDraftSlots({ lastList: list, members: MEMBERS });
     expect(draft.captainMemberId).toBe(1);
-    expect(draft.keeperMemberId).toBeNull();
+    expect(draft.keeperMemberId).toBe(2);
   });
 
   it("carries a C/WK player as both captain and keeper", () => {
@@ -123,8 +73,6 @@ describe("buildDraftSlots", () => {
     const draft = buildDraftSlots({
       lastList: list,
       members: MEMBERS,
-      responses: answers(allYes()),
-      fixtureDate: DATE,
     });
     expect(draft.captainMemberId).toBe(4);
     expect(draft.keeperMemberId).toBe(4);
@@ -137,8 +85,6 @@ describe("buildDraftSlots", () => {
     const draft = buildDraftSlots({
       lastList: list,
       members: MEMBERS,
-      responses: answers(allYes()),
-      fixtureDate: DATE,
     });
     expect(draft.slots[4]).toEqual({
       memberId: null,
@@ -153,8 +99,6 @@ describe("buildDraftSlots", () => {
     const base = {
       lastList: list,
       members: [senior, junior],
-      responses: answers({ 60: "yes", 61: "yes" }),
-      fixtureDate: DATE,
     };
     expect(buildDraftSlots({ ...base, prefer: (m) => m.id === 60 }).slots[0]).toEqual({
       memberId: 60,
@@ -173,8 +117,6 @@ describe("buildDraftSlots", () => {
     const draft = buildDraftSlots({
       lastList: list,
       members: [ben, noah],
-      responses: answers({ 70: "yes", 71: "yes" }),
-      fixtureDate: DATE,
     });
     expect(draft.slots.slice(0, 2)).toEqual([{ memberId: 71 }, { memberId: 70 }]);
   });
@@ -185,8 +127,6 @@ describe("buildDraftSlots", () => {
     const draft = buildDraftSlots({
       lastList: [{ order: 1, playerId: 700, displayName: "Ben Dreckow" }],
       members: [noah],
-      responses: answers({ 72: "yes" }),
-      fixtureDate: DATE,
     });
     expect(draft.slots[0]).toEqual({
       memberId: null,
@@ -199,9 +139,6 @@ describe("buildDraftSlots", () => {
     const draft = buildDraftSlots({
       lastList: [{ order: 1, playerId: 950, displayName: "Tahj Bashford" }],
       members: [taj],
-      responses: answers({ 95: "yes" }),
-      fixtureDate: DATE,
-      requireYes: false,
     });
     expect(draft.slots[0]).toEqual({ memberId: 95 });
   });
@@ -214,9 +151,6 @@ describe("buildDraftSlots", () => {
       buildDraftSlots({
         lastList: [{ order: 1, displayName }],
         members,
-        responses: answers({}),
-        fixtureDate: DATE,
-        requireYes: false,
       }).slots[0];
     expect(pick("Jaden Roe", [jayden, jaiden]).memberId).toBeNull();
     expect(pick("Ben Dreckow", [brody]).memberId).toBeNull();
@@ -232,8 +166,6 @@ describe("buildDraftSlots", () => {
     const draft = buildDraftSlots({
       lastList: list,
       members: [mason, philip],
-      responses: answers({ 80: "yes", 81: "yes" }),
-      fixtureDate: DATE,
     });
     expect(draft.slots.slice(0, 2)).toEqual([{ memberId: 81 }, { memberId: 80 }]);
   });
@@ -243,8 +175,6 @@ describe("buildDraftSlots", () => {
     const draft = buildDraftSlots({
       lastList: [{ order: 1, playerId: 900, displayName: "T. Brooks" }],
       members: [tom],
-      responses: answers({ 90: "yes" }),
-      fixtureDate: DATE,
     });
     expect(draft.slots[0]).toEqual({ memberId: 90 });
   });
@@ -255,8 +185,6 @@ describe("buildDraftSlots", () => {
     const draft = buildDraftSlots({
       lastList: list,
       members: [tom],
-      responses: answers({ 50: "yes" }),
-      fixtureDate: DATE,
     });
     expect(draft.slots[0]).toEqual({ memberId: 50 });
   });
@@ -267,8 +195,6 @@ describe("buildDraftSlots", () => {
     const draft = buildDraftSlots({
       lastList: list,
       members,
-      responses: answers(allYes()),
-      fixtureDate: DATE,
     });
     expect(draft.slots[6]).toEqual({
       memberId: null,
@@ -284,8 +210,6 @@ describe("buildDraftSlots", () => {
     const draft = buildDraftSlots({
       lastList: null,
       members: MEMBERS,
-      responses: answers(allYes()),
-      fixtureDate: DATE,
     });
     expect(draft.slots).toEqual(Array.from({ length: 12 }, () => ({ memberId: null })));
     expect(draft.captainMemberId).toBeNull();
@@ -297,8 +221,6 @@ describe("buildDraftSlots", () => {
     const draft = buildDraftSlots({
       lastList: LAST,
       members: [...MEMBERS, extra],
-      responses: answers({ ...allYes(), 99: "yes" }),
-      fixtureDate: DATE,
     });
     expect(draft.slots.map((s) => s.memberId)).not.toContain(99);
     expect(draft.slots.slice(0, 11).every((s) => s.memberId != null)).toBe(true);
@@ -306,23 +228,11 @@ describe("buildDraftSlots", () => {
     expect(draft.slots[11]).toEqual({ memberId: null });
   });
 
-  it("only counts answers for the fixture's own date", () => {
-    const draft = buildDraftSlots({
-      lastList: LAST,
-      members: MEMBERS,
-      responses: answers(allYes(), "2026-10-18"),
-      fixtureDate: DATE,
-    });
-    expect(draft.slots.slice(0, 11).every((s) => s.gap?.reason === "no_reply")).toBe(true);
-  });
-
   it("orders by the list's order, pads a short list and trims a long one to 12", () => {
     const short = [...LAST.slice(0, 3)].reverse();
     const d1 = buildDraftSlots({
       lastList: short,
       members: MEMBERS,
-      responses: answers(allYes()),
-      fixtureDate: DATE,
     });
     expect(d1.slots.map((s) => s.memberId)).toEqual([1, 2, 3, ...Array(9).fill(null)]);
     expect(d1.slots[3]).toEqual({ memberId: null });
@@ -336,8 +246,6 @@ describe("buildDraftSlots", () => {
     const d2 = buildDraftSlots({
       lastList: long,
       members: [...MEMBERS, ...extra],
-      responses: answers({ ...allYes(), 12: "yes", 13: "yes" }),
-      fixtureDate: DATE,
     });
     expect(d2.slots).toHaveLength(12);
     expect(d2.slots.map((s) => s.memberId)).not.toContain(13);
@@ -345,22 +253,14 @@ describe("buildDraftSlots", () => {
 
   it("seeds the 12th player from a 12-entry list; a gap there is labelled like any other", () => {
     const list = [...LAST, { order: 12, displayName: "Leo Mann" }];
-    const members = [...MEMBERS, member(12, "Leo Mann")];
-    const d = buildDraftSlots({
-      lastList: list,
-      members,
-      responses: answers({ ...allYes(), 12: "yes" }),
-      fixtureDate: DATE,
-    });
+    const d = buildDraftSlots({ lastList: list, members: [...MEMBERS, member(12, "Leo Mann")] });
     expect(d.slots.map((s) => s.memberId)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
 
-    const no = buildDraftSlots({
-      lastList: list,
-      members,
-      responses: answers({ ...allYes(), 12: "no" }),
-      fixtureDate: DATE,
+    const gone = buildDraftSlots({ lastList: list, members: MEMBERS });
+    expect(gone.slots[11]).toEqual({
+      memberId: null,
+      gap: { name: "Leo Mann", reason: "not_on_register" },
     });
-    expect(no.slots[11]).toEqual({ memberId: null, gap: { name: "Leo Mann", reason: "no" } });
   });
 
   it("a captain or keeper listed 12th doesn't carry over", () => {
@@ -368,8 +268,6 @@ describe("buildDraftSlots", () => {
     const d = buildDraftSlots({
       lastList: list,
       members: [...MEMBERS, member(12, "Leo Mann")],
-      responses: answers({ ...allYes(), 12: "yes" }),
-      fixtureDate: DATE,
     });
     expect(d.slots[11]).toEqual({ memberId: 12 });
     expect(d.captainMemberId).toBeNull();
@@ -381,8 +279,6 @@ describe("buildDraftSlots", () => {
     const draft = buildDraftSlots({
       lastList: list,
       members: MEMBERS,
-      responses: answers(allYes()),
-      fixtureDate: DATE,
     });
     expect(draft.slots.filter((s) => s.memberId === 1)).toHaveLength(1);
     expect(draft.slots[10]).toEqual({
@@ -396,8 +292,6 @@ describe("buildDraftSlots", () => {
     const draft = buildDraftSlots({
       lastList: LAST,
       members: MEMBERS,
-      responses: answers(allYes()),
-      fixtureDate: DATE,
       placed,
     });
     expect(draft.slots[0]).toEqual({
@@ -450,21 +344,90 @@ describe("game clashes (PlacementLedger)", () => {
     const sunday = buildDraftSlots({
       lastList: LAST,
       members: MEMBERS,
-      responses: answers(allYes()),
-      fixtureDate: DATE,
       placed: ledger.view(gameWindow(at("2026-10-18T01:00:00Z"))),
     });
     expect(sunday.slots[0]).toEqual({ memberId: 1 });
     const sameTime = buildDraftSlots({
       lastList: LAST,
       members: MEMBERS,
-      responses: answers(allYes()),
-      fixtureDate: DATE,
       placed: ledger.view(gameWindow(at("2026-10-17T05:00:00Z"))),
     });
     expect(sameTime.slots[0]).toEqual({
       memberId: null,
       gap: { name: LAST[0].displayName, reason: "picked_elsewhere" },
     });
+  });
+});
+
+describe("carryDraftSlots", () => {
+  const side = (ids: (number | null)[], extra: Partial<Record<number, SelectionSlot>> = {}) =>
+    Array.from({ length: 12 }, (_, i): SelectionSlot => extra[i] ?? { memberId: ids[i] ?? null });
+
+  it("carries last round's side slot for slot, the 12th staying 12th, with its roles", () => {
+    const previous = {
+      slots: side([1, 2, 3, null, 5, 6, 7, 8, 9, 10, 11, 12]),
+      captainMemberId: 3,
+      keeperMemberId: 5,
+    };
+    const d = carryDraftSlots({ previous, members: [...MEMBERS, member(12, "Leo Mann")] });
+    expect(d.slots.map((s) => s.memberId)).toEqual([1, 2, 3, null, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(d.captainMemberId).toBe(3);
+    expect(d.keeperMemberId).toBe(5);
+  });
+
+  it("clears a role whose holder is 12th or gone, and gaps a member no longer active", () => {
+    const members = MEMBERS.map((m) => (m.id === 2 ? { ...m, active: false } : m));
+    const d = carryDraftSlots({
+      previous: {
+        slots: side([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+        captainMemberId: 2,
+        keeperMemberId: 12,
+      },
+      members: [...members, member(12, "Leo Mann")],
+    });
+    expect(d.slots[1]).toEqual({
+      memberId: null,
+      gap: { name: "Ben Cole", reason: "not_on_register" },
+    });
+    expect(d.captainMemberId).toBeNull();
+    expect(d.keeperMemberId).toBeNull();
+  });
+
+  it("keeps an unmatched PlayHQ name as its gap; other open slots start empty", () => {
+    const d = carryDraftSlots({
+      previous: {
+        slots: side([1], {
+          1: {
+            memberId: null,
+            gap: { name: "Private Player", reason: "not_on_register", participantId: "g-1" },
+          },
+          2: { memberId: null, gap: { name: "Cal Dunn", reason: "withdrew" } },
+        }),
+        captainMemberId: null,
+        keeperMemberId: null,
+      },
+      members: MEMBERS,
+    });
+    expect(d.slots[1]).toEqual({
+      memberId: null,
+      gap: { name: "Private Player", reason: "not_on_register", participantId: "g-1" },
+    });
+    expect(d.slots[2]).toEqual({ memberId: null });
+  });
+
+  it("leaves a member already playing at that time as a gap 'picked in another side'", () => {
+    const placed = new Set([1]);
+    const d = carryDraftSlots({
+      previous: { slots: side([1, 2]), captainMemberId: 1, keeperMemberId: null },
+      members: MEMBERS,
+      placed,
+    });
+    expect(d.slots[0]).toEqual({
+      memberId: null,
+      gap: { name: "Ava Hill", reason: "picked_elsewhere" },
+    });
+    expect(d.slots[1]).toEqual({ memberId: 2 });
+    expect(d.captainMemberId).toBeNull();
+    expect(placed.has(2)).toBe(true);
   });
 });

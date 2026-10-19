@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { gradeCode } from "@/lib/grade-code";
 import { useAvailability } from "./availability-context";
 import { ROLE_LABEL, STATUS } from "./labels";
+import { TIER, statusTier, tierText } from "./status-tier";
 
 /** The availability mark: a glyph on the status colour. */
 export function StatusMark({
@@ -50,8 +51,9 @@ export type ChipRole = "C" | "WK" | "C/WK" | null;
 /**
  * A player on the board: availability mark, name, captain/keeper badge,
  * junior tag, the grade they last played when it differs from where they sit,
- * and a note marker. A picked player who said No, Maybe or hasn't replied is
- * flagged. Clicking or pressing Enter opens their details; a
+ * and a note marker. A picked player's chip shows their slot status tier
+ * (yellow to confirm, green available, red unavailable) as colour, glyph and
+ * words, with availability on or off. Clicking or pressing Enter opens their details; a
  * draggable chip starts a drag from anywhere with a mouse, or from the grip
  * on touch.
  */
@@ -79,7 +81,8 @@ export function PlayerChip({
   const availability = useAvailability();
   const s = STATUS[member.status];
   const picked = inSide != null;
-  const statusText = availability ? `, ${s.label}` : "";
+  const tier = picked ? TIER[statusTier(member.status)] : null;
+  const statusText = picked ? `, ${tierText(member.status)}` : availability ? `, ${s.label}` : "";
   const showFrom = member.lastGrade && (!picked || member.lastGrade !== inSide);
   const roleTitle = role ? ROLE_LABEL[role] : "";
   return (
@@ -95,14 +98,7 @@ export function PlayerChip({
       className={cn(
         "flex min-h-9 min-w-0 flex-1 touch-manipulation select-none items-center gap-2 rounded-md border border-border bg-card py-1 pl-1 pr-2 text-left text-sm hover:border-muted-foreground/50",
         draggable && "cursor-grab",
-        availability &&
-          picked &&
-          (member.status === "maybe" || member.status === "none") &&
-          "border-amber-500 bg-amber-500/10",
-        availability &&
-          picked &&
-          member.status === "no" &&
-          "border-[var(--loss-fg)] bg-[var(--loss-bg)]",
+        tier?.chip,
         dragging && "opacity-35",
       )}
     >
@@ -116,7 +112,21 @@ export function PlayerChip({
       >
         <Grip />
       </span>
-      <StatusMark status={member.status} />
+      {tier ? (
+        <span
+          aria-hidden
+          data-tier={statusTier(member.status)}
+          title={tier.label}
+          className={cn(
+            "grid h-[18px] w-[18px] flex-none place-items-center rounded-full border text-[11px] font-bold leading-none",
+            tier.swatch,
+          )}
+        >
+          {tier.glyph}
+        </span>
+      ) : (
+        <StatusMark status={member.status} />
+      )}
       <span className="min-w-0 flex-1 truncate font-medium">{member.displayName}</span>
       <span className="flex flex-none items-center gap-1">
         {role && (

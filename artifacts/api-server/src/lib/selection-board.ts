@@ -1,9 +1,11 @@
 import type { Request } from "express";
-import { and, asc, desc, eq, gte, inArray, lt, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, lt, ne, sql, type AnyColumn } from "drizzle-orm";
 import {
   db,
   availabilityResponsesTable,
+  availabilityRoundsTable,
   fixturesTable,
+  juniorFixturesTable,
   juniorTeamListsTable,
   selectionEventsTable,
   selectionsTable,
@@ -31,10 +33,12 @@ import {
 import { loadJuniorIdentity } from "./junior-shirt-numbers";
 import { juniorMemberResolver } from "./shirt-number-squad";
 import {
+  addDays,
   memberDisplayName,
   memberGrades,
   normaliseName,
   perthDate,
+  perthDow,
   roundWindow,
 } from "./availability-grades";
 import {
@@ -103,11 +107,15 @@ export type EventActor = {
   name: string | null;
 };
 
-/** A refused board action, carried to the route as an HTTP status and message. */
+/**
+ * A refused board action, carried to the route as an HTTP status and message,
+ * with a machine-readable `code` where a client acts on it (`round_closed`).
+ */
 export class SelectionError extends Error {
   constructor(
     readonly status: 400 | 403 | 404 | 409 | 503,
     message: string,
+    readonly code?: "round_closed",
   ) {
     super(message);
     this.name = "SelectionError";
@@ -259,6 +267,10 @@ export type Board = {
     cutoffCompletedAt: Date | null;
     counts: Awaited<ReturnType<typeof roundCounts>>;
   } | null;
+  /** The weekends the Hub can move between, by their Saturday. */
+  weekends: { previous: string | null; current: string; next: string | null };
+  /** A past weekend: shown as it was, never changed or created. */
+  readOnly: boolean;
   selections: BoardSide[];
   pool: BoardMember[];
   events: {
@@ -302,22 +314,14 @@ function strongest(statuses: Iterable<AvailabilityStatus>): MemberStatus {
   return "none";
 }
 
-/** Rounds with the club's schedule (or the defaults) and the current weekend. */
-async function currentRound(tenantId: number, now: Date) {
+/** The club's settings, its schedule (or the defaults) and the current weekend. */
+async function clubWeek(tenantId: number, now: Date) {
   const settings = await loadAvailabilitySettings(tenantId);
   const schedule = settings ?? {
     ...DEFAULT_SCHEDULE,
     selectionRule: "captains_own_grade" as const,
   };
-  const weekendDate = roundWeekendFor(schedule, now);
-  const round = await findRound(tenantId, weekendDate);
-  return {
-    settings,
-    rule: schedule.selectionRule,
-    weekendDate,
-    slots: roundSlots(schedule, weekendDate),
-    round,
-  };
+  return { settings, schedule, current: roundWeekendFor(schedule, now) };
 }
 
 /** The current round of the club, or null (for the remind route). */
@@ -325,35 +329,218 @@ export async function loadCurrentRound(
   tenantId: number,
   now: Date = new Date(),
 ): Promise<AvailabilityRoundRow | null> {
-  return (await currentRound(tenantId, now)).round;
+  return findRound(tenantId, (await clubWeek(tenantId, now)).current);
+}
+
+const PAST_ROUND =
+  "This weekend has passed, so its sides can be viewed but not changed. Move to this weekend to pick sides.";
+
+/** Is `weekendDate` (a Saturday) before the club's current weekend? */
+export async function weekendIsPast(
+  tenantId: number,
+  weekendDate: string,
+  now: Date = new Date(),
+): Promise<boolean> {
+  return weekendDate < (await clubWeek(tenantId, now)).current;
 }
 
 /**
- * One section's board for the current round. With no round yet,
- * the board has no header or sides and the whole active section is the pool.
+ * Refuse a change to a past weekend's round: 409 `round_closed`. The current
+ * round stays open all weekend, so a side can still be finalised after its
+ * match has started. Unknown rounds pass (the caller's own lookup 404s).
+ */
+export async function assertRoundOpen(
+  tenantId: number,
+  roundId: number,
+  now: Date = new Date(),
+): Promise<void> {
+  const [round] = await db
+    .select({ weekendDate: availabilityRoundsTable.weekendDate })
+    .from(availabilityRoundsTable)
+    .where(
+      and(eq(availabilityRoundsTable.tenantId, tenantId), eq(availabilityRoundsTable.id, roundId)),
+    );
+  if (round && (await weekendIsPast(tenantId, round.weekendDate, now))) {
+    throw new SelectionError(409, PAST_ROUND, "round_closed");
+  }
+}
+
+/**
+ * The weekend (its Saturday) of a side's round, so a route answers with the
+ * board the side is on; undefined when the side isn't the tenant's.
+ */
+export async function selectionWeekend(
+  tenantId: number,
+  selectionId: number,
+): Promise<string | undefined> {
+  const [row] = await db
+    .select({ weekendDate: availabilityRoundsTable.weekendDate })
+    .from(selectionsTable)
+    .innerJoin(
+      availabilityRoundsTable,
+      and(
+        eq(availabilityRoundsTable.id, selectionsTable.roundId),
+        eq(availabilityRoundsTable.tenantId, selectionsTable.tenantId),
+      ),
+    )
+    .where(and(eq(selectionsTable.tenantId, tenantId), eq(selectionsTable.id, selectionId)));
+  return row?.weekendDate;
+}
+
+/** The Saturday of the weekend (Friday to Sunday, Perth) an instant falls in. */
+function weekendOf(at: Date): string {
+  const date = perthDate(at);
+  const dow = perthDow(at);
+  return addDays(date, dow === 5 ? 1 : dow === 0 ? -1 : 0);
+}
+
+/** A fixture on a Friday, Saturday or Sunday in Perth (a weekend round's window). */
+const onAWeekend = (startAt: AnyColumn) =>
+  sql`extract(isodow from ${startAt} at time zone 'Australia/Perth') in (5, 6, 7)`;
+
+/** The first weekend after `weekendDate` with a senior or junior fixture, or null. */
+async function nextFixtureWeekend(tenantId: number, weekendDate: string): Promise<string | null> {
+  const after = roundWindow(weekendDate).to;
+  const [[senior], [junior]] = await Promise.all([
+    db
+      .select({ startAt: fixturesTable.startAt })
+      .from(fixturesTable)
+      .where(
+        and(
+          eq(fixturesTable.tenantId, tenantId),
+          gte(fixturesTable.startAt, after),
+          onAWeekend(fixturesTable.startAt),
+        ),
+      )
+      .orderBy(asc(fixturesTable.startAt))
+      .limit(1),
+    db
+      .select({ startAt: juniorFixturesTable.startAt })
+      .from(juniorFixturesTable)
+      .where(
+        and(
+          eq(juniorFixturesTable.tenantId, tenantId),
+          gte(juniorFixturesTable.startAt, after),
+          onAWeekend(juniorFixturesTable.startAt),
+        ),
+      )
+      .orderBy(asc(juniorFixturesTable.startAt))
+      .limit(1),
+  ]);
+  const first = [senior?.startAt, junior?.startAt]
+    .filter((d): d is Date => d != null)
+    .sort((a, b) => a.getTime() - b.getTime())[0];
+  return first ? weekendOf(first) : null;
+}
+
+/**
+ * The weekends either side of the one shown. Back: the nearest earlier weekend
+ * with a round. Forward from a past weekend: the next one with a round, up to
+ * the current weekend; from the current weekend on, the next weekend with
+ * fixtures (nothing beyond what PlayHQ has published).
+ */
+async function boardWeekends(
+  tenantId: number,
+  shown: string,
+  current: string,
+): Promise<Board["weekends"]> {
+  const [[prev], [later]] = await Promise.all([
+    db
+      .select({ weekendDate: availabilityRoundsTable.weekendDate })
+      .from(availabilityRoundsTable)
+      .where(
+        and(
+          eq(availabilityRoundsTable.tenantId, tenantId),
+          lt(availabilityRoundsTable.weekendDate, shown),
+        ),
+      )
+      .orderBy(desc(availabilityRoundsTable.weekendDate))
+      .limit(1),
+    shown < current
+      ? db
+          .select({ weekendDate: availabilityRoundsTable.weekendDate })
+          .from(availabilityRoundsTable)
+          .where(
+            and(
+              eq(availabilityRoundsTable.tenantId, tenantId),
+              gt(availabilityRoundsTable.weekendDate, shown),
+              lt(availabilityRoundsTable.weekendDate, current),
+            ),
+          )
+          .orderBy(asc(availabilityRoundsTable.weekendDate))
+          .limit(1)
+      : [],
+  ]);
+  const next =
+    shown < current ? (later?.weekendDate ?? current) : await nextFixtureWeekend(tenantId, shown);
+  return { previous: prev?.weekendDate ?? null, current: shown, next };
+}
+
+/** Does the weekend's window hold any senior or junior fixture of the club? */
+async function hasFixtures(tenantId: number, weekendDate: string): Promise<boolean> {
+  const window = roundWindow(weekendDate);
+  const [[senior], [junior]] = await Promise.all([
+    db
+      .select({ id: fixturesTable.id })
+      .from(fixturesTable)
+      .where(
+        and(
+          eq(fixturesTable.tenantId, tenantId),
+          gte(fixturesTable.startAt, window.from),
+          lt(fixturesTable.startAt, window.to),
+        ),
+      )
+      .limit(1),
+    db
+      .select({ id: juniorFixturesTable.id })
+      .from(juniorFixturesTable)
+      .where(
+        and(
+          eq(juniorFixturesTable.tenantId, tenantId),
+          gte(juniorFixturesTable.startAt, window.from),
+          lt(juniorFixturesTable.startAt, window.to),
+        ),
+      )
+      .limit(1),
+  ]);
+  return senior != null || junior != null;
+}
+
+/**
+ * One section's board for a weekend (its Saturday; default the current one).
+ *
+ * The current or a future weekend is drafted on every load, whatever the
+ * availability settings or how far the round's steps have got (ADR-008): the
+ * round is created if missing and any fixture without a side gets one. Both
+ * are idempotent and never touch a saved or finalised side, and two selectors
+ * loading at once can't create a side twice. A future weekend with no fixtures
+ * is not created. A past weekend is read-only and is never created or drafted.
+ * With no round, the board has no header or sides and the whole active
+ * section is the pool.
  */
 export async function buildBoard(
   tenantId: number,
   actor: SelectionActor,
   section: SquadSection,
   now: Date = new Date(),
+  weekend?: string,
 ): Promise<Board> {
-  const current = await currentRound(tenantId, now);
-  const { rule, weekendDate, slots: stepSlots } = current;
-  const availability = current.settings?.enabled === true;
+  const { settings, schedule, current } = await clubWeek(tenantId, now);
+  const rule = schedule.selectionRule;
+  const weekendDate = weekend ?? current;
+  const readOnly = weekendDate < current;
+  const stepSlots = roundSlots(schedule, weekendDate);
+  const availability = settings?.enabled === true;
   const window = roundWindow(weekendDate);
-  let round = current.round;
-  if (!availability) {
-    // Without availability the Hub stands alone: the weekend's sides are drafted
-    // on demand from each grade's last team list, everyone listed kept in. Each
-    // load picks up fixtures added since; saved and finalised sides are kept.
+  let round = await findRound(tenantId, weekendDate);
+  if (
+    !readOnly &&
+    (round || weekendDate === current || (await hasFixtures(tenantId, weekendDate)))
+  ) {
     round ??= await ensureRound(tenantId, weekendDate);
-    await buildRoundDrafts(tenantId, round.id, now, { requireYes: false });
-  } else if (round && (round.sendStartedAt || round.sendCompletedAt)) {
-    // Backfill already-sent rounds created before early drafting was supported.
-    // The builder is idempotent and never overwrites a saved or finalised side.
     await buildRoundDrafts(tenantId, round.id, now);
   }
+  const weekends = await boardWeekends(tenantId, weekendDate, current);
 
   // Independent reads, run together. `sides` is every side of the round (any
   // section); `statusByDate` is
@@ -520,13 +707,15 @@ export async function buildBoard(
       keeperMemberId: sel.keeperMemberId,
       finalisedAt: sel.finalisedAt,
       finalisedBy: sel.finalisedBy,
-      canEdit: right.allowed && !final,
-      canFinalise: right.allowed,
-      readOnlyReason: !right.allowed
-        ? right.reason
-        : final
-          ? "This side is finalised. Re-open it to make changes."
-          : null,
+      canEdit: right.allowed && !final && !readOnly,
+      canFinalise: right.allowed && !readOnly,
+      readOnlyReason: readOnly
+        ? PAST_ROUND
+        : !right.allowed
+          ? right.reason
+          : final
+            ? "This side is finalised. Re-open it to make changes."
+            : null,
       playhqPlayers: playhqCounts.get(`${f.kind}:${f.id}`) ?? null,
       warnings: {
         filled: inXi,
@@ -597,6 +786,8 @@ export async function buildBoard(
           counts: await roundCounts(tenantId, round.id, sectionMembers),
         }
       : null,
+    weekends,
+    readOnly,
     selections,
     pool,
     events: events.map((e) => ({
@@ -697,6 +888,7 @@ export async function saveBoard(
       .from(selectionsTable)
       .where(and(eq(selectionsTable.tenantId, tenantId), eq(selectionsTable.id, ids[0])));
     if (!first) throw new SelectionError(404, "Side not found.");
+    await assertRoundOpen(tenantId, first.roundId, now);
     const sides = await lockRound(tx, tenantId, first.roundId);
     const sideOf = new Map(sides.map((s) => [s.selection.id, s]));
     for (const id of ids) {
@@ -920,6 +1112,7 @@ export async function syncSideFromPlayhq(
   const rule = await selectionRule(tenantId);
   return db.transaction(async (tx) => {
     const { selection, fixture } = await lockSide(tx, tenantId, selectionId);
+    await assertRoundOpen(tenantId, selection.roundId, now);
     const right = selectionRight(actor, rule, fixture.grade);
     if (!right.allowed) {
       throw new SelectionError(403, `${fixture.grade} is read-only to you. ${right.reason}`);
@@ -988,9 +1181,6 @@ export async function syncSideFromPlayhq(
     const draft = buildDraftSlots({
       lastList: list,
       members,
-      responses: new Map(),
-      fixtureDate: perthDate(fixture.startAt),
-      requireYes: false,
       prefer: (m) => members.find((x) => x.id === m.id)?.section === section,
     });
     await tx
@@ -1194,6 +1384,7 @@ export async function finaliseSelection(
 
   const plan = await db.transaction(async (tx) => {
     const { selection, fixture } = await lockSide(tx, tenantId, selectionId);
+    await assertRoundOpen(tenantId, selection.roundId, now);
     const right = selectionRight(actor, rule, fixture.grade);
     if (!right.allowed) {
       throw new SelectionError(403, `${fixture.grade} is read-only to you. ${right.reason}`);
@@ -1402,6 +1593,7 @@ export async function reopenSelection(
   const rule = await selectionRule(tenantId);
   return db.transaction(async (tx) => {
     const { selection, fixture } = await lockSide(tx, tenantId, selectionId);
+    await assertRoundOpen(tenantId, selection.roundId, now);
     const right = selectionRight(actor, rule, fixture.grade);
     if (!right.allowed) {
       throw new SelectionError(403, `${fixture.grade} is read-only to you. ${right.reason}`);
@@ -1452,6 +1644,7 @@ export async function withdrawFromSelection(
     .from(squadMembersTable)
     .where(and(eq(squadMembersTable.tenantId, tenantId), eq(squadMembersTable.id, memberId)));
   if (!member) return { selectionIds: [] };
+  await assertRoundOpen(tenantId, roundId, now);
   const name = memberDisplayName(member);
 
   const changed = await db.transaction(async (tx) => {
