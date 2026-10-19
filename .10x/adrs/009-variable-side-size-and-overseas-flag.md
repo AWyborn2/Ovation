@@ -6,7 +6,7 @@
 ## Context
 
 Selection hard-codes the XI plus an optional 12th (`SIDE_SIZE=12`). This shows up on the client and
-server, in OpenAPI, on the team sheet and in the card packs. Some competitions allow up to 15 players
+server, in OpenAPI, on the team sheet and in the card packs. Some competitions allow up to 14 players
 with interchange, and cap the number of overseas players. There is no grades table: per-grade config
 lives as jsonb maps on `availability_settings`.
 
@@ -34,4 +34,4 @@ lives as jsonb maps on `availability_settings`.
 - Clubs at 12 see no change. The defaults are empty maps.
 - Renaming a grade silently resets its size and cap to the defaults. Mitigation: the settings page
   shows unmatched keys.
-- Each pack needs a 15-row auto-compress. This is guarded by a render test.
+- Each pack needs a 14-row auto-compress. This is guarded by a render test.

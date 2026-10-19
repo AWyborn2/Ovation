@@ -27,7 +27,7 @@ it applies to any tenant with such a grade.
 ## Decisions with Ash (19 Oct 2026)
 
 1. The format is **XI + interchange**. All extra players are full members of the side.
-2. **Side size is set per grade**: 12 by default, up to 15. An admin sets it.
+2. **Side size is set per grade**: 12 by default, up to 14. An admin sets it.
 3. In grades with more than 12, players are **numbered 1–N with no tag**: no "12th" badge, no
    "Interchange" label.
 4. A grade left at 12 keeps today's behaviour exactly: XI plus an optional 12th, labelled "12th".
@@ -36,15 +36,15 @@ it applies to any tenant with such a grade.
 
 | Scope                    | Includes                                                                                                            | Cut                                    | Risk                                    |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------- |
-| MVP                      | Per-grade size 12–15; hub slots 1–N; team sheet lists all N; no 12th label above 12                                 | Social card layout; availability text  | Low, but the card would cut off players |
-| **Recommended (chosen)** | MVP + Team List card fits up to 15 rows + availability "selected" text without "12th" + PlayHQ team-list import keeps all N | Interchange tracking on the scorecard | Medium: card layouts across packs       |
+| MVP                      | Per-grade size 12–14; hub slots 1–N; team sheet lists all N; no 12th label above 12                                 | Social card layout; availability text  | Low, but the card would cut off players |
+| **Recommended (chosen)** | MVP + Team List card fits up to 14 rows + availability "selected" text without "12th" + PlayHQ team-list import keeps all N | Interchange tracking on the scorecard | Medium: card layouts across packs       |
 | Full                     | + track who was interchanged per match, interchange stats                                                           | —                                      | High; the central data model has no interchange concept, so this is V2 |
 
 "Don't build" was considered and rejected: the club can't produce a correct team sheet today.
 
 ## User stories and priority
 
-- **P0.** As a club admin, I want to set a grade's side size (12–15), so that selectors can pick
+- **P0.** As a club admin, I want to set a grade's side size (12–14), so that selectors can pick
   the number of players the competition allows.
 - **P0.** As a selector in a grade above 12, I want slots 1–N in the hub, with any player eligible
   for captain or keeper, so that I can record the whole side.
@@ -123,7 +123,7 @@ they can break the cap by accident and the sheet doesn't show it.
 
 - **Privacy and sensitivity.** Nationality-type labels on public pages. Use the neutral "OS"
   marker only, and never show a country.
-- **Card space.** The badge adds width to rows that are already tight at 15 names.
+- **Card space.** The badge adds width to rows that are already tight at 14 names.
 
 ## Success criteria (Part 1)
 
@@ -136,17 +136,21 @@ they can break the cap by accident and the sheet doesn't show it.
 
 - Interchange tracking in scorecards or stats. Career stats come from central scorecards and are
   unaffected.
-- Sides above 15, or squad-style lists with a two-column card.
+- Sides above 14, or squad-style lists with a two-column card.
 - A club-wide or per-fixture size override.
 - An "Interchange" tag or a separate interchange block on the card.
 
 ## Risks
 
-- **Card overflow.** Packs B–E need a renderer refactor (see memory). 15 rows may not fit every
-  pack. Check early that each pack renders 15 names legibly, or shrink the font when there are
+- **Card overflow.** Packs B–E need a renderer refactor (see memory). 14 rows may not fit every
+  pack. Check early that each pack renders 14 names legibly, or shrink the font when there are
   more than 12.
 - **The 12-slot assumption is everywhere**: the client and server share constants, stored sides are
   normalised to 12, and so are the move rules. Changing the slot count without the per-grade size
-  could break clubs that stay at 12. Cover it with tests at sizes 12 and 15.
+  could break clubs that stay at 12. Cover it with tests at sizes 12 and 14.
 - **Overlap with selection-hub-decoupling.** PR1–PR3 of that feature are in flight in the same files
   (`selection-board.ts`, `apply-move.ts`). Sequence this work after them.
+
+## Change log
+
+- 20 Oct 2026: Ash reduced the maximum side size from 15 to 14 (range 12–14). Overseas cap range 0–14.

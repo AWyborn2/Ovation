@@ -10,7 +10,7 @@
 - Migration 0049 (additive): `availability_settings.side_sizes` / `overseas_caps` jsonb maps, `selections.side_size`, new `squad_member_seasons`. Ash applies it in prod before republishing.
 - The shared `sideShape(size)` helper replaces the duplicated `SIDE_SIZE`/`TWELFTH_INDEX` in `selection-drafts.ts` and `apply-move.ts`. "12th" only when the size is 12.
 - Finalise snapshots `overseas`, the order and `twelfth` into `team_lists.players`. Over the cap = warn only.
-- Cards: every pack goes to `maxRows: 15` with auto-compress (Ash chose this), and the Studio `ck.xi-list` likewise.
+- Cards: every pack goes to `maxRows: 14` with auto-compress (Ash chose this), and the Studio `ck.xi-list` likewise.
 - Slices: PR A foundation, then PR B (size) and PR C (overseas) in parallel, then PR D (cards + public). Start after selection-hub-decoupling PR1–PR3 merge.
 
 ## Previous handoff
@@ -23,8 +23,8 @@
 ## Context
 
 - Requirements: `.10x/decisions/product-manager/selection-side-size.md` (agreed with Ash 19 Oct 2026).
-- Per-grade side size 12 (default) to 15, set by an admin. Above 12: slots 1–N, any player can be captain or keeper, no "12th" label on the hub, team sheet, Team List card or availability message. A grade at 12 is unchanged.
-- Priority: (1) per-grade size + hub slots + team sheet (P0), (2) Team List card fits 15 rows across packs, availability text, PlayHQ import of more than 12 names (P1).
+- Per-grade side size 12 (default) to 14, set by an admin. Above 12: slots 1–N, any player can be captain or keeper, no "12th" label on the hub, team sheet, Team List card or availability message. A grade at 12 is unchanged.
+- Priority: (1) per-grade size + hub slots + team sheet (P0), (2) Team List card fits 14 rows across packs, availability text, PlayHQ import of more than 12 names (P1).
 - Design needs: where the size lives (grade/team config, migration applied by hand in prod), how to replace the shared `XI_SIZE`/`TWELFTH_INDEX` constants and `normaliseSlots`, and what happens when the size is lowered.
 - **Part 2, overseas players:** a per-season flag on the squad member (admin), an OS badge in the hub, on the team sheet, on the Team List card and on the public site, and a per-grade cap that warns without blocking finalise. See the doc.
 - Sequence after selection-hub-decoupling PR1–PR3, which touch the same files.
