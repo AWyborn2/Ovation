@@ -96,14 +96,12 @@ function setupApi(overrides: Record<string, unknown>): Write[] {
 }
 
 describe("admin corrections", () => {
-  it("is reachable from the People admin group, next to duplicate players", () => {
-    const people = ADMIN_NAV.find((g) => g.key === "people")!;
-    const values = people.tabs.map((t) => t.value);
+  it("is reachable from the Stats & Data admin group, next to duplicate players", () => {
+    const data = ADMIN_NAV.find((g) => g.key === "data")!;
+    const values = data.tabs.map((t) => t.value);
     expect(values).toContain("corrections");
-    expect(values.indexOf("corrections")).toBe(values.indexOf("duplicates") + 1);
-    expect(people.tabs.find((t) => t.value === "corrections")!.path).toBe(
-      "/admin/people/corrections",
-    );
+    expect(values.indexOf("duplicates")).toBe(values.indexOf("corrections") + 1);
+    expect(data.tabs.find((t) => t.value === "corrections")!.path).toBe("/admin/data/corrections");
   });
 
   it("lists active and stale corrections, with the stale reason", async () => {
@@ -121,7 +119,7 @@ describe("admin corrections", () => {
         }),
       ],
     });
-    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    renderAt(<AdminCorrections />, "/admin/data/corrections");
 
     const active = await screen.findByTestId("correction-1");
     expect(within(active).getByText("Ann Able")).toBeTruthy();
@@ -136,7 +134,7 @@ describe("admin corrections", () => {
 
   it("remove asks first, then deletes the correction", async () => {
     const writes = setupApi({ "/club-corrections": [correction({ id: 7 })] });
-    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    renderAt(<AdminCorrections />, "/admin/data/corrections");
     const card = await screen.findByTestId("correction-7");
     fireEvent.click(within(card).getByRole("button", { name: /remove/i }));
     fireEvent.click(await screen.findByRole("button", { name: "Remove correction" }));
@@ -153,7 +151,7 @@ describe("admin corrections", () => {
       "/club-corrections/matches": [MATCH],
       "/club-corrections": [],
     });
-    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    renderAt(<AdminCorrections />, "/admin/data/corrections");
 
     fireEvent.click(await screen.findByRole("tab", { name: /new correction/i }));
     fireEvent.change(screen.getByLabelText(/find a match/i), { target: { value: "opp" } });
@@ -194,7 +192,7 @@ describe("admin corrections", () => {
       "/club-corrections/matches": [MATCH],
       "/club-corrections": [],
     });
-    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    renderAt(<AdminCorrections />, "/admin/data/corrections");
     fireEvent.click(await screen.findByRole("tab", { name: /new correction/i }));
     fireEvent.click(await screen.findByRole("button", { name: /Opp CC/ }));
     fireEvent.change(await screen.findByLabelText(/player/i), { target: { value: "ann-guid" } });
@@ -223,7 +221,7 @@ describe("admin corrections", () => {
       "/club-corrections/matches": [MATCH],
       "/club-corrections": [],
     });
-    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    renderAt(<AdminCorrections />, "/admin/data/corrections");
     fireEvent.click(await screen.findByRole("tab", { name: /new correction/i }));
     fireEvent.click(await screen.findByRole("button", { name: /Opp CC/ }));
     fireEvent.change(await screen.findByLabelText(/player/i), { target: { value: "ann-guid" } });
@@ -241,7 +239,7 @@ describe("admin corrections", () => {
         correction({ id: 9, displayName: "Pat Private", isPrivate: true, participantId: "p" }),
       ],
     });
-    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    renderAt(<AdminCorrections />, "/admin/data/corrections");
     const card = await screen.findByTestId("correction-9");
     expect(within(card).getByText("Pat Private")).toBeTruthy();
     expect(within(card).getByText("Private")).toBeTruthy();
@@ -253,7 +251,7 @@ describe("admin corrections", () => {
       "/club-corrections/status": { appliedToPublicPages: false },
       "/club-corrections": [],
     });
-    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    renderAt(<AdminCorrections />, "/admin/data/corrections");
     const notice = await screen.findByTestId("corrections-native-notice");
     expect(notice.textContent).toMatch(/saved/i);
     expect(notice.textContent).toMatch(/switches to association data/i);
@@ -266,14 +264,14 @@ describe("admin corrections", () => {
       "/club-corrections/status": { appliedToPublicPages: true },
       "/club-corrections": [],
     });
-    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    renderAt(<AdminCorrections />, "/admin/data/corrections");
     expect(await screen.findByText(/no corrections/i)).toBeTruthy();
     expect(screen.queryByTestId("corrections-native-notice")).toBeNull();
   });
 
   it("shows an empty state when the club has no corrections", async () => {
     setupApi({ "/club-corrections": [] });
-    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    renderAt(<AdminCorrections />, "/admin/data/corrections");
     expect(await screen.findByText(/no corrections/i)).toBeTruthy();
   });
 });
@@ -301,7 +299,7 @@ describe("admin corrections: broken links", () => {
 
   it("is hidden when every link is intact", async () => {
     setupApi({ "/club-identity-drift": [], "/club-corrections": [correction({})] });
-    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    renderAt(<AdminCorrections />, "/admin/data/corrections");
     await screen.findByTestId("correction-1");
     expect(screen.queryByTestId("broken-links")).toBeNull();
     expect(screen.queryByText(/broken links/i)).toBeNull();
@@ -320,7 +318,7 @@ describe("admin corrections: broken links", () => {
           : base(input, init);
       }),
     );
-    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    renderAt(<AdminCorrections />, "/admin/data/corrections");
     await screen.findByTestId("correction-1");
     expect(screen.queryByTestId("broken-links")).toBeNull();
   });
@@ -348,7 +346,7 @@ describe("admin corrections: broken links", () => {
       ],
       "/club-corrections": [],
     });
-    renderAt(<AdminCorrections />, "/admin/people/corrections");
+    renderAt(<AdminCorrections />, "/admin/data/corrections");
 
     const section = await screen.findByTestId("broken-links");
     expect(within(section).getByRole("heading", { name: /broken links \(2\)/i })).toBeTruthy();

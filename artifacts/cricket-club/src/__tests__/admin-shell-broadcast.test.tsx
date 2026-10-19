@@ -41,7 +41,7 @@ describe("Admin shell (Broadcast U14)", () => {
       <AdminShell>
         <p>content</p>
       </AdminShell>,
-      "/admin/people/stats",
+      "/admin/data/junior-scorecards",
     );
     expect(await screen.findByText("content")).toBeTruthy();
     expect(container.querySelector('nav[data-tour="admin-nav"]')).toBeTruthy();
@@ -49,9 +49,9 @@ describe("Admin shell (Broadcast U14)", () => {
     expect(screen.getByTestId("admin-menu-trigger")).toBeTruthy();
     // The active group expands into its tabs; the current tab is the page.
     const current = container.querySelector('nav[data-tour="admin-nav"] [aria-current="page"]');
-    expect(current?.textContent).toBe("Stats");
+    expect(current?.textContent).toBe("Junior scorecards");
     expect(container.querySelector('nav[data-tour="admin-nav"]')?.textContent).toContain(
-      "Junior scorecards",
+      "Duplicate players",
     );
   });
 

@@ -31,7 +31,7 @@ export default function JuniorsMatchDetail() {
           </span>
         </Link>
         {isAdmin && Number.isFinite(id) && (
-          <Link href={`/admin/people/junior-scorecards?matchId=${id}`}>
+          <Link href={`/admin/data/junior-scorecards?matchId=${id}`}>
             <span className="inline-flex items-center gap-1 text-sm text-primary-text hover:underline cursor-pointer">
               <Pencil className="h-3.5 w-3.5" /> Edit scorecard
             </span>

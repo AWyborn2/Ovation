@@ -41,6 +41,10 @@ const AdminLifeMembers = lazy(() => import("@/pages/admin-life-members"));
 const AdminJuniorPremierships = lazy(() => import("@/pages/admin-junior-premierships"));
 const AdminJuniorShirtNumbers = lazy(() => import("@/pages/admin-junior-shirt-numbers"));
 const AdminHonoursDisplay = lazy(() => import("@/pages/admin-honours-display"));
+const AdminImport = lazy(() => import("@/pages/admin-import"));
+const SquadImportPanel = lazy(() =>
+  import("@/components/imports/squad-import").then((m) => ({ default: m.SquadImportPanel })),
+);
 
 // Every tab page is a separate lazy chunk: opening one admin tab no longer
 // downloads every admin page in a single bundle. Only the active tab's chunk
@@ -124,6 +128,7 @@ export function AdminSettingsGroup() {
         records: <AdminRecordsDisplay />,
         "honour-boards": <AdminHonourBoards />,
         "milestone-board": <AdminMilestoneBoard />,
+        display: <AdminHonoursDisplay />,
         "junior-matches": <AdminJuniorMatchDisplay />,
         tour: <AdminTourContent />,
         nav: <AdminNav />,
@@ -139,12 +144,9 @@ export function AdminPeopleGroup() {
       groupKey="people"
       pages={{
         players: <AdminPlayers />,
-        duplicates: <AdminPlayerDuplicates />,
-        corrections: <AdminCorrections />,
-        stats: <AdminStats />,
-        "junior-scorecards": <AdminJuniorStats />,
         "junior-players": <AdminJuniorPlayers />,
-        "junior-fixtures": <AdminJuniorFixtures />,
+        "shirt-numbers": <AdminShirtNumbers />,
+        "junior-shirt-numbers": <AdminJuniorShirtNumbers />,
         committee: <AdminCommittee />,
         captains: <AdminCaptains />,
         "junior-office-bearers": <AdminJuniorCommittee />,
@@ -163,11 +165,47 @@ export function AdminHonoursGroup() {
         awards: <AdminAwards />,
         "team-of-decade": <AdminTeamOfDecade />,
         caps: <AdminCaps />,
-        "shirt-numbers": <AdminShirtNumbers />,
         "life-members": <AdminLifeMembers />,
         "junior-premierships": <AdminJuniorPremierships />,
-        "junior-shirt-numbers": <AdminJuniorShirtNumbers />,
-        display: <AdminHonoursDisplay />,
+      }}
+    />
+  );
+}
+
+export function AdminDataGroup() {
+  return (
+    <AdminTabGroup
+      groupKey="data"
+      pages={{
+        stats: <AdminStats />,
+        "junior-scorecards": <AdminJuniorStats />,
+        corrections: <AdminCorrections />,
+        duplicates: <AdminPlayerDuplicates />,
+      }}
+    />
+  );
+}
+
+export function AdminImportGroup() {
+  return (
+    <AdminTabGroup
+      groupKey="import"
+      pages={{
+        stats: <AdminImport />,
+        squad: <SquadImportPanel />,
+      }}
+    />
+  );
+}
+
+// The senior Selection Hub is its own full-width page at /admin/selection (App.tsx);
+// this group renders only the other Selection tabs, with the shared tab bar.
+export function AdminSelectionGroup() {
+  return (
+    <AdminTabGroup
+      groupKey="selection"
+      pages={{
+        "junior-fixtures": <AdminJuniorFixtures />,
       }}
     />
   );

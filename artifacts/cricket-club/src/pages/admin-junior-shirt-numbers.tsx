@@ -41,7 +41,7 @@ export default function AdminJuniorShirtNumbers() {
   }
 
   const settingsLink = (
-    <Link href="/admin/honours/shirt-numbers" className="font-semibold text-primary-text underline">
+    <Link href="/admin/people/shirt-numbers" className="font-semibold text-primary-text underline">
       Shirt numbers
     </Link>
   );

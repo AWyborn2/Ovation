@@ -1,4 +1,4 @@
-import { Switch, Route, Redirect, Router as WouterRouter, useRoute } from "wouter";
+import { Switch, Route, Redirect, Router as WouterRouter, useRoute, useSearch } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
 
@@ -53,7 +53,6 @@ const JuniorsOfficeBearers = lazy(() => import("@/pages/juniors-office-bearers")
 // board kiosk). Splitting it keeps all of that out of the public entry chunk.
 const AdminHub = lazy(() => import("@/pages/admin"));
 const AdminUsers = lazy(() => import("@/pages/admin-users"));
-const AdminImport = lazy(() => import("@/pages/admin-import"));
 const AdminReset = lazy(() => import("@/pages/admin-reset"));
 const AdminStudioEditor = lazy(() => import("@/pages/admin-studio-editor"));
 const AdminKindTemplateEditor = lazy(() => import("@/pages/admin-kind-template-editor"));
@@ -68,6 +67,9 @@ const AdminSocialGroup = lazyNamed(() => import("@/pages/admin-groups"), "AdminS
 const AdminSettingsGroup = lazyNamed(() => import("@/pages/admin-groups"), "AdminSettingsGroup");
 const AdminPeopleGroup = lazyNamed(() => import("@/pages/admin-groups"), "AdminPeopleGroup");
 const AdminHonoursGroup = lazyNamed(() => import("@/pages/admin-groups"), "AdminHonoursGroup");
+const AdminDataGroup = lazyNamed(() => import("@/pages/admin-groups"), "AdminDataGroup");
+const AdminImportGroup = lazyNamed(() => import("@/pages/admin-groups"), "AdminImportGroup");
+const AdminSelectionGroup = lazyNamed(() => import("@/pages/admin-groups"), "AdminSelectionGroup");
 const CaptainPage = lazy(() => import("@/pages/captain"));
 const SelectionHub = lazy(() => import("@/pages/selection-hub"));
 const CaptainSelectionHub = lazyNamed(() => import("@/pages/selection-hub"), "CaptainSelectionHub");
@@ -136,6 +138,12 @@ function PublicRoutes() {
   );
 }
 
+/** A redirect that carries the query string along (e.g. `?matchId=` deep links). */
+function RedirectKeepingQuery({ to }: { to: string }) {
+  const search = useSearch();
+  return <Redirect to={search ? `${to}?${search}` : to} />;
+}
+
 // The admin is its own full-screen app shell (sidebar + top bar), not a page
 // inside the public site's header/footer chrome.
 function AdminRoutes() {
@@ -146,7 +154,6 @@ function AdminRoutes() {
           <Switch>
             <Route path="/admin" component={AdminHub} />
             <Route path="/admin/users" component={AdminUsers} />
-            <Route path="/admin/import" component={AdminImport} />
             <Route path="/admin/selection" component={SelectionHub} />
             <Route path="/admin/availability" component={AdminAvailability} />
 
@@ -156,7 +163,38 @@ function AdminRoutes() {
             {/* Card kind templates: starter proofs contact sheet (plan U10). */}
             <Route path="/admin/kind-templates/proofs" component={AdminStarterProofs} />
 
+            {/* Admin menu consolidation (2026-10-19): tabs that moved group. These
+                must precede the group routes, which would otherwise match the old
+                path and fall back to the group's first tab. */}
+            <Route path="/admin/people/stats">
+              <RedirectKeepingQuery to="/admin/data" />
+            </Route>
+            <Route path="/admin/people/junior-scorecards">
+              <RedirectKeepingQuery to="/admin/data/junior-scorecards" />
+            </Route>
+            <Route path="/admin/people/corrections">
+              <RedirectKeepingQuery to="/admin/data/corrections" />
+            </Route>
+            <Route path="/admin/people/duplicates">
+              <RedirectKeepingQuery to="/admin/data/duplicates" />
+            </Route>
+            <Route path="/admin/people/junior-fixtures">
+              <RedirectKeepingQuery to="/admin/selection/junior-fixtures" />
+            </Route>
+            <Route path="/admin/honours/shirt-numbers">
+              <RedirectKeepingQuery to="/admin/people/shirt-numbers" />
+            </Route>
+            <Route path="/admin/honours/junior-shirt-numbers">
+              <RedirectKeepingQuery to="/admin/people/junior-shirt-numbers" />
+            </Route>
+            <Route path="/admin/honours/display">
+              <RedirectKeepingQuery to="/admin/settings/display" />
+            </Route>
+
             {/* Consolidated tabbed groups (each tab is a deep-linkable path). */}
+            <Route path="/admin/import/:tab?" component={AdminImportGroup} />
+            <Route path="/admin/selection/:tab" component={AdminSelectionGroup} />
+            <Route path="/admin/data/:tab?" component={AdminDataGroup} />
             <Route path="/admin/social/:tab?" component={AdminSocialGroup} />
             <Route path="/admin/settings/:tab?" component={AdminSettingsGroup} />
             <Route path="/admin/people/:tab?" component={AdminPeopleGroup} />
@@ -165,7 +203,7 @@ function AdminRoutes() {
             {/* Back-compat: old flat admin URLs redirect to their new group+tab
                 so existing bookmarks and in-app cross-links keep working. */}
             <Route path="/admin/stats">
-              <Redirect to="/admin/people/stats" />
+              <Redirect to="/admin/data" />
             </Route>
             <Route path="/admin/players">
               <Redirect to="/admin/people/players" />
