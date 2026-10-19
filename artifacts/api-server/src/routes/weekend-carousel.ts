@@ -43,17 +43,20 @@ router.get(
     const start = clubTimeToUtc(`${from}T00:00`)!;
     const end = clubTimeToUtc(`${endDay.toISOString().slice(0, 10)}T00:00`)!;
     const tenantId = getTenantId(req);
-    const rows = audience === "junior" ? [] : await db
-      .select()
-      .from(fixturesTable)
-      .where(
-        and(
-          eq(fixturesTable.tenantId, tenantId),
-          gte(fixturesTable.startAt, start),
-          lt(fixturesTable.startAt, end),
-        ),
-      )
-      .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id));
+    const rows =
+      audience === "junior"
+        ? []
+        : await db
+            .select()
+            .from(fixturesTable)
+            .where(
+              and(
+                eq(fixturesTable.tenantId, tenantId),
+                gte(fixturesTable.startAt, start),
+                lt(fixturesTable.startAt, end),
+              ),
+            )
+            .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id));
     const ids =
       setType === "results" || setType === "matchSummary"
         ? []

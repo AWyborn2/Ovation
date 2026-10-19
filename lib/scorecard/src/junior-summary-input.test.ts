@@ -92,14 +92,22 @@ describe("juniorMatchToSummaryInput opposition performers", () => {
 
 describe("junior summary club crests", () => {
   const brand = {
-    ...DEFAULT_BRAND, name: "Halls Head Cricket Club", shortName: "HHCC",
-    logoUrl: "/halls-head.png", logoUrl128: "/halls-head-small.png",
-    backgroundColour: "#112233", primaryColour: "#ffaa22",
+    ...DEFAULT_BRAND,
+    name: "Halls Head Cricket Club",
+    shortName: "HHCC",
+    logoUrl: "/halls-head.png",
+    logoUrl128: "/halls-head-small.png",
+    backgroundColour: "#112233",
+    primaryColour: "#ffaa22",
   };
   const opponentClub = {
-    id: 12, name: "South Mandurah Cricket Club", shortName: "SMCC",
-    logoUrl: "/south-mandurah.png", logoUrl128: "/south-mandurah-small.png",
-    backgroundColour: "#221144", primaryColour: "#eeeeee",
+    id: 12,
+    name: "South Mandurah Cricket Club",
+    shortName: "SMCC",
+    logoUrl: "/south-mandurah.png",
+    logoUrl128: "/south-mandurah-small.png",
+    backgroundColour: "#221144",
+    primaryColour: "#eeeeee",
   };
   for (const innings of [match.innings, [], [...match.innings].reverse()]) {
     it(`keeps both resolved crests with ${innings.length} innings in either order`, () => {
@@ -107,17 +115,23 @@ describe("junior summary club crests", () => {
       const before = JSON.stringify(source);
       const input = juniorMatchToSummaryInput(source, brand);
       expect(input.club).toMatchObject({
-        name: brand.name, shortName: "HHCC", logoUrl: "/halls-head-small.png",
+        name: brand.name,
+        shortName: "HHCC",
+        logoUrl: "/halls-head-small.png",
       });
       expect(input.opposition).toMatchObject({
-        name: opponentClub.name, shortName: "SMCC", logoUrl: "/south-mandurah-small.png",
+        name: opponentClub.name,
+        shortName: "SMCC",
+        logoUrl: "/south-mandurah-small.png",
       });
       expect(input.junior).toBe(true);
       expect(JSON.stringify(source)).toBe(before);
     });
   }
   it("retains the neutral fallback for an unresolved opponent", () => {
-    expect(juniorMatchToSummaryInput({ ...match, innings: [], opponentClub: null }, brand)
-      .opposition.logoUrl).toBeNull();
+    expect(
+      juniorMatchToSummaryInput({ ...match, innings: [], opponentClub: null }, brand).opposition
+        .logoUrl,
+    ).toBeNull();
   });
 });

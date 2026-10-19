@@ -49,10 +49,10 @@ export default function AdminJuniorFixtures() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-        <h2 className="text-xl font-semibold">Junior fixtures</h2>
-        <p className="text-sm text-muted-foreground">
-          Upcoming junior games synced from PlayHQ. Open a game to check or change its team list.
-        </p>
+          <h2 className="text-xl font-semibold">Junior fixtures</h2>
+          <p className="text-sm text-muted-foreground">
+            Upcoming junior games synced from PlayHQ. Open a game to check or change its team list.
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <WeekendCarousel initialAudience="junior" />

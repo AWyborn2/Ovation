@@ -106,9 +106,11 @@ export function useWeekendCarousel(
   const [exporting, setExporting] = useState(false);
   const busy = exporting || generating;
 
-  const fixtures = useMemo(() => filterCarouselFixtures(
-    (sources?.fixtures ?? []) as Fixture[], sources?.content, audience,
-  ), [sources, audience]);
+  const fixtures = useMemo(
+    () =>
+      filterCarouselFixtures((sources?.fixtures ?? []) as Fixture[], sources?.content, audience),
+    [sources, audience],
+  );
   const photos = useMemo(() => (sources?.photos ?? []) as ClubPhoto[], [sources]);
   const coverPhotos = useMemo(() => eligibleCoverPhotos(sources?.coverPhotos ?? []), [sources]);
   const sourceWarnings = sources?.warnings ?? [];

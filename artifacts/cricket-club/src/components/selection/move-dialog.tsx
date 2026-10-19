@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { SelectionMember } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -79,6 +80,7 @@ export function MoveDialog({
   onClose,
   onMove,
   onRole,
+  extra,
 }: {
   junior?: boolean;
   state: BoardState;
@@ -89,6 +91,8 @@ export function MoveDialog({
   onClose: () => void;
   onMove: (memberId: number, target: DropTarget) => void;
   onRole: (sideId: number, role: "captain" | "keeper", memberId: number | null) => void;
+  /** More for this player below their details (the Hub's answer control). */
+  extra?: (member: SelectionMember) => ReactNode;
 }) {
   const loc = memberId != null ? locateFrom(state, memberId, from) : null;
   const side = loc?.kind === "side" ? state.selections.find((s) => s.id === loc.sideId)! : null;
@@ -155,6 +159,7 @@ export function MoveDialog({
             <dd>{side ? sideLabel(side) : "the pool"}</dd>
           </dl>
           <SelectionCompareLink junior={junior} member={member} />
+          {extra?.(member)}
 
           {canRole && side && (
             <div className="flex flex-wrap gap-2">

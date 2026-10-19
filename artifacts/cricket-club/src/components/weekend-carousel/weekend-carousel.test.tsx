@@ -160,7 +160,10 @@ it("lets admins choose juniors for match-day and team-list tiles without selecti
     fireEvent.click(screen.getByTestId("button-carousel-audience-junior"));
     await waitFor(() => expect(screen.getByTestId(`checkbox-fixture-${junior.id}`)).toBeTruthy());
     expect(screen.queryByTestId("checkbox-fixture-1")).toBeNull();
-    expect(screen.getByTestId("button-carousel-audience-junior")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("button-carousel-audience-junior")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     fireEvent.click(screen.getByTestId("button-carousel-type-teamList"));
     await waitFor(() => expect(screen.getByTestId(`checkbox-fixture-${junior.id}`)).toBeTruthy());
     expect(screen.queryByTestId("checkbox-fixture-1")).toBeNull();

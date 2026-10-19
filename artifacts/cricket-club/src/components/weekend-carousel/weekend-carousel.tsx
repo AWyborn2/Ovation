@@ -74,7 +74,9 @@ export function WeekendCarousel({
           className="left-0 top-0 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 sm:rounded-none"
           data-testid="weekend-fullscreen-editor"
         >
-          {open && <WeekendCarouselBody initialType={initialType} initialAudience={initialAudience} />}
+          {open && (
+            <WeekendCarouselBody initialType={initialType} initialAudience={initialAudience} />
+          )}
         </DialogContent>
       </Dialog>
     </>
@@ -113,7 +115,7 @@ export function WeekendCarouselBody({
         </fieldset>
         <fieldset className="flex flex-wrap items-center gap-2" disabled={s.busy}>
           <legend className="mb-2 text-sm font-medium">Teams</legend>
-          {(["all", "senior", "junior"] as const).map(audience => (
+          {(["all", "senior", "junior"] as const).map((audience) => (
             <Button
               key={audience}
               size="sm"
@@ -128,9 +130,9 @@ export function WeekendCarouselBody({
         </fieldset>
         {s.audience === "junior" && (
           <p className="text-sm text-muted-foreground">
-            Junior match-day tiles use synced junior fixtures. Team-list tiles require a
-            published list from Junior fixtures or a finalised Selection Hub team.
-            Public naming and privacy settings apply; junior team photos are not used.
+            Junior match-day tiles use synced junior fixtures. Team-list tiles require a published
+            list from Junior fixtures or a finalised Selection Hub team. Public naming and privacy
+            settings apply; junior team photos are not used.
           </p>
         )}
         <div className="space-y-1">
@@ -270,7 +272,9 @@ function RangeAndFixtures({ s }: { s: WeekendCarouselState }) {
                   data-testid={`checkbox-fixture-${p.id}`}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{fixtureLine(p.fixture, s.sourceContent[p.id]?.juniorTeamName)}</p>
+                  <p className="truncate text-sm font-medium">
+                    {fixtureLine(p.fixture, s.sourceContent[p.id]?.juniorTeamName)}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">
                     {p.fixture.source === "scorecard"
                       ? new Date(p.fixture.startAt).toLocaleDateString("en-AU", {

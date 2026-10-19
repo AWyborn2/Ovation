@@ -13,6 +13,8 @@ import {
   SyncSelectionFromPlayhqParams,
   RemindSelectionNonRespondersBody,
   SaveSelectionBoardBody,
+  SetSelectionMemberStatusBody,
+  SetSelectionMemberStatusParams,
   UnmatchSquadMemberParticipantParams,
 } from "@workspace/api-zod";
 import { requireAdminOrCaptain, selectionActorOf } from "../middlewares/require-admin-or-captain";
@@ -30,6 +32,7 @@ import {
 } from "../lib/selection-board";
 import { loadAvailabilitySettings, runReminder } from "../lib/availability-schedule";
 import { matchSelectionSlot, unmatchParticipant } from "../lib/selection-match";
+import { setMemberStatus } from "../lib/selection-member-status";
 import {
   TeamSheetError,
   absoluteLogoUrl,
@@ -355,10 +358,42 @@ router.delete(
   },
 );
 
-// Recording an answer given in person (PR3 of ADR-008) answers 501 until its slice lands.
-const notYet = (_req: unknown, res: Response): void => {
-  res.status(501).json({ error: "Not available yet." });
-};
-router.put("/selection/members/:id/status", requireAdminOrCaptain, notYet);
+// An answer a member gave in person or by phone, recorded for the weekend's round
+// (ADR-008 §3). Answers with the member's section board.
+router.put(
+  "/selection/members/:id/status",
+  requireAdminOrCaptain,
+  async (req, res): Promise<void> => {
+    const params = SetSelectionMemberStatusParams.safeParse(req.params);
+    const body = SetSelectionMemberStatusBody.safeParse(req.body);
+    if (!params.success || !body.success) {
+      res.status(400).json({ error: "Send the weekend and Yes, Maybe or No." });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const actor = selectionActorOf(req);
+    try {
+      const weekend = body.data.weekend.toISOString().slice(0, 10);
+      const result = await setMemberStatus(tenantId, actor, params.data.id, {
+        ...body.data,
+        weekend,
+      });
+      req.log?.info(
+        {
+          tenantId,
+          memberId: params.data.id,
+          roundId: result.roundId,
+          dates: result.dates.length,
+          actorKind: actor.kind,
+          actorId: actor.id,
+        },
+        "selection status set",
+      );
+      res.json(await buildBoard(tenantId, actor, result.section, new Date(), weekend));
+    } catch (err) {
+      if (!refuse(res, err)) throw err;
+    }
+  },
+);
 
 export default router;
