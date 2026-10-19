@@ -89,7 +89,7 @@ export function CardSetStrip({
                 packId={packId}
                 adjustments={
                   planned
-                    ? (slide as { adjustments: CardAdjustments | null }).adjustments
+                    ? (slide as unknown as { adjustments: CardAdjustments | null }).adjustments
                     : slideAdjustments(adjustments, slide.key)
                 }
                 width={slideWidth}
