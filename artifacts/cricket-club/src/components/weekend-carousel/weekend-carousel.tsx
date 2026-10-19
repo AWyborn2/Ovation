@@ -28,7 +28,8 @@ import {
 import { EmptyState, QueryError } from "@/components/data-states";
 import { SIZES, type CardSize } from "@/lib/share-card";
 import { listPackManifests } from "@/lib/pack-templates/registry";
-import { CLUB_TIME_ZONE, eligiblePhotos, type TeamSlide, type CarouselAudience } from "./model";
+import { CLUB_TIME_ZONE, eligiblePhotos, eligibleJuniorStockPhotos, type TeamSlide, type CarouselAudience } from "./model";
+import { JuniorStockPicker } from "./junior-stock-picker";
 import { CoverPhotoPicker } from "./cover-photo-picker";
 import { PhotoPlacement, SlidePreview } from "./slide-preview";
 import { useWeekendCarousel, type WeekendCarouselState } from "./use-weekend-carousel";
@@ -96,6 +97,18 @@ export function WeekendCarouselBody({
         </DialogDescription>
       </DialogHeader>
       <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto overflow-x-hidden px-5 py-5">
+        {(s.audience !== "senior") && (
+          <JuniorStockPicker
+            photos={s.juniorStockPhotos}
+            disabled={s.busy}
+            canApply={!!s.generated?.teams.some(t => t.input && "junior" in t.input && t.input.junior)}
+            onUploaded={s.reloadPhotos}
+            onApply={photoId => s.generated?.teams.forEach((team, index) => {
+              if (team.input && "junior" in team.input && team.input.junior)
+                s.patchTeam(index, { photoId });
+            })}
+          />
+        )}
         <fieldset className="flex flex-wrap items-center gap-2" disabled={s.busy}>
           <legend className="mb-2 text-sm font-medium">Set type</legend>
           {(Object.keys(CAROUSEL_LABELS) as CarouselSetType[]).map((type) => (
@@ -130,7 +143,7 @@ export function WeekendCarouselBody({
           <p className="text-sm text-muted-foreground">
             Junior match-day tiles use synced junior fixtures. Team-list tiles require a
             published list from Junior fixtures or a finalised Selection Hub team.
-            Public naming and privacy settings apply; junior team photos are not used.
+            Public naming and privacy settings apply. Junior cards can use approved club stock images, not junior player photos.
           </p>
         )}
         <div className="space-y-1">
@@ -528,7 +541,7 @@ function TeamEditor({
   const lock = s.busy;
   const options =
     team.input && "junior" in team.input && team.input.junior
-      ? []
+      ? eligibleJuniorStockPhotos(s.photos)
       : eligiblePhotos(s.photos, team.fixture.grade);
   const chosen = options.find((p) => p.id === team.photoId) ?? null;
   const label = fixtureLine(team.fixture);

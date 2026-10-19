@@ -111,6 +111,11 @@ export function eligiblePhotos(photos: ClubPhoto[], grade: string): ClubPhoto[] 
   );
 }
 
+/** Explicitly uploaded club artwork only; never infer permission from a folder. */
+export function eligibleJuniorStockPhotos(photos: ClubPhoto[]): ClubPhoto[] {
+  return photos.filter(p => p.juniorStock === true && p.grade === null && !p.playerIds.length);
+}
+
 export function createTeamSlides(
   fixtures: Fixture[],
   photos: ClubPhoto[],
@@ -161,7 +166,8 @@ export function refreshTeamSlides(
     const old = oldById.get(fixture.id);
     if (!old) return createTeamSlides([fixture], photos, content)[0];
     const eligible =
-      content[fixture.id]?.junior === true ? [] : eligiblePhotos(photos, fixture.grade);
+      content[fixture.id]?.junior === true || isJuniorGradeLabel(fixture.grade)
+        ? eligibleJuniorStockPhotos(photos) : eligiblePhotos(photos, fixture.grade);
     return {
       fixture,
       ...(content[fixture.id] ? { input: content[fixture.id] as ShareCardInput } : {}),
@@ -314,7 +320,7 @@ export function buildWeekendSlides(
       // Revalidate the chosen ID against the CURRENT library. No fallback after
       // deletion/reclassification and no arbitrary URL accepted from UI state.
       const photo = junior
-        ? undefined
+        ? eligibleJuniorStockPhotos(photos).find(p => p.id === photoId)
         : eligiblePhotos(photos, f.grade).find((p) => p.id === photoId);
       const warnings: string[] = [];
       const gradeKey = gradeMatchKey(f.grade);
@@ -331,7 +337,7 @@ export function buildWeekendSlides(
       if (!photo)
         warnings.push(
           junior
-            ? "Junior privacy: this card has no photo."
+            ? "No club stock image selected. Junior player photos are not used."
             : "No eligible photo selected. Choose a batting, bowling or fielding photo in this grade's library.",
         );
       if (!f.venue?.trim()) warnings.push("Venue is missing. Update the fixture before sharing.");
@@ -367,6 +373,10 @@ export function buildWeekendSlides(
               junior,
             } satisfies ShareCardInput),
           { carouselContent: true },
+          ...(junior && photo ? [{
+            juniorPhotoAllowed: true,
+            juniorStockPhotoId: photo.id,
+          }] : []),
           input?.kind === "teamList" ? { grade: input.grade?.trim() || f.grade } : {},
         ),
         data: buildPackData({

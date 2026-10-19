@@ -113,7 +113,14 @@ export function readQueuedCarousel(input: unknown): QueuedCarousel | null {
         ))
     )
       return null;
-    if (s.junior && (s.data.photoUrl || (!bookend && s.input.junior !== true))) return null;
+    if (s.junior && (
+      (!bookend && s.input.junior !== true) ||
+      (s.data.photoUrl && (
+        s.input.juniorPhotoAllowed !== true ||
+        !Number.isSafeInteger(s.input.juniorStockPhotoId) ||
+        Number(s.input.juniorStockPhotoId) <= 0
+      ))
+    )) return null;
     ids.add(s.id);
     const t = s.data.photoTransform;
     if (

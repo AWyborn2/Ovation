@@ -28,6 +28,7 @@ export const INGEST_BATCH = 50;
  * Club-wide / Unsorted, no format.
  */
 export type UploadTarget = {
+  juniorStock?: boolean;
   grade?: string;
   season?: number;
   photoType?: ClubPhotoType;
@@ -138,6 +139,7 @@ async function ingestInBatches(
     try {
       const res = await opts.ingest({
         objectPaths: chunk.map((c) => c.objectPath),
+        ...(opts.juniorStock ? { juniorStock: true } : {}),
         grade: opts.grade || undefined,
         season: opts.season,
         ...(opts.photoType ? { photoType: opts.photoType } : {}),

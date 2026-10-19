@@ -9,6 +9,12 @@ Weekend match-day carousels from Social Studio must have a title page, cards for
 
 **How to apply:** Keep this restriction specific to the weekend carousel. Do not use broader photo-rule fallback behaviour to select another category or grade.
 
+Junior carousel team cards may use club-provided stock images uploaded and saved for reuse across junior teams and future sets.
+
+**Why:** The user explicitly requested assigning a club-provided stock image they can upload, save and use later with any junior teams' carousel sets.
+
+**How to apply:** Treat this as an explicit stock-artwork exception, not permission to use junior participant photos or arbitrary senior library photos. Keep club ownership and approval checks, individual crops, and frozen review/export compositions intact. Other photo eligibility rules remain unchanged.
+
 The cover/title page has a separate requested photo rule: let the admin choose any photo tagged 2026 from Club-wide. This does not broaden team-card eligibility.
 
 **Why:** The user explicitly requested a selectable cover photo from 2026 Club-wide photos.

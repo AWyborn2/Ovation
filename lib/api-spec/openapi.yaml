@@ -17641,6 +17641,9 @@ components:
           matchFormat,
         ]
       properties:
+        juniorStock:
+          type: boolean
+          description: Club-provided stock artwork approved for reuse on junior carousels.
         id:
           type: integer
         url:
@@ -17718,6 +17721,9 @@ components:
       type: object
       required: [objectPaths]
       properties:
+        juniorStock:
+          type: boolean
+          description: Save as club-approved stock artwork for junior carousels; cannot carry player tags or a grade.
         objectPaths:
           type: array
           minItems: 1
@@ -21185,6 +21191,9 @@ components:
       type: object
       required: [timeZone, fixtures, photos, coverPhotos, warnings]
       properties:
+        juniorStockPhotos:
+          type: array
+          items: { $ref: "#/components/schemas/ClubPhoto" }
         timeZone: { type: string }
         content:
           type: object

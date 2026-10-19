@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   pgTable,
   serial,
+  boolean,
   integer,
   text,
   timestamp,
@@ -44,9 +45,9 @@ const clubPhotoMatchFormatsSqlArray = sql.raw(
 );
 
 /**
- * The club's photo library (Social Studio, R10–R12). Senior-only: photos are
- * tagged with senior players, never junior participants, and the library never
- * supplies junior cards (KTD15).
+ * The club's photo library. Player tags are senior-only, never junior
+ * participants. Explicit juniorStock artwork is the sole neutral-image
+ * exception for junior carousel cards; it must have no grade or player tags.
  *
  * Every row is an ingested JPEG — uploads (including iPhone HEIC) are
  * converted, oriented and stripped of EXIF on the server, and the original
@@ -64,6 +65,8 @@ export const clubPhotosTable = pgTable(
     height: integer("height").notNull(),
     season: integer("season"),
     grade: text("grade"),
+    // Explicit club-approved reusable artwork, not a junior participant photo.
+    juniorStock: boolean("junior_stock").notNull().default(false),
     // When the photo was taken, from the original's EXIF (null when absent).
     takenAt: timestamp("taken_at", { withTimezone: true }),
     // A derived image (a background-removed cut-out PNG, U19) points at the

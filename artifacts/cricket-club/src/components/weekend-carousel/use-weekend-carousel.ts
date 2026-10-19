@@ -29,6 +29,7 @@ import {
   buildWeekendSlides,
   moveTeam,
   eligibleCoverPhotos,
+  eligibleJuniorStockPhotos,
   COVER_PHOTO_UNAVAILABLE,
   filterCarouselFixtures,
   type CarouselAudience,
@@ -109,7 +110,10 @@ export function useWeekendCarousel(
   const fixtures = useMemo(() => filterCarouselFixtures(
     (sources?.fixtures ?? []) as Fixture[], sources?.content, audience,
   ), [sources, audience]);
-  const photos = useMemo(() => (sources?.photos ?? []) as ClubPhoto[], [sources]);
+  const photos = useMemo(() => [
+    ...(sources?.photos ?? []), ...(sources?.juniorStockPhotos ?? []),
+  ] as ClubPhoto[], [sources]);
+  const juniorStockPhotos = eligibleJuniorStockPhotos(photos);
   const coverPhotos = useMemo(() => eligibleCoverPhotos(sources?.coverPhotos ?? []), [sources]);
   const sourceWarnings = sources?.warnings ?? [];
   const timeZone = sources?.timeZone ?? CLUB_TIME_ZONE;
@@ -205,7 +209,7 @@ export function useWeekendCarousel(
         pickIds,
         teams: refreshTeamSlides(
           current,
-          fresh.data.photos,
+          [...fresh.data.photos, ...(fresh.data.juniorStockPhotos ?? [])],
           fresh.data.content ?? {},
           generated?.teams,
           preserveOrder,
@@ -289,7 +293,8 @@ export function useWeekendCarousel(
       // A second admin may have removed or retagged the photo since preview.
       // Rebuild from fresh server-approved URLs, never silently replace the pick.
       let queuedSlides = slides;
-      if (cover.photoId !== null || setType !== "matchDay") {
+      if (cover.photoId !== null || setType !== "matchDay" ||
+        generated!.teams.some(t => t.photoId !== null)) {
         const fresh = await sourcesQ.refetch();
         if (fresh.isError || !fresh.data)
           throw new Error("Could not verify source data. Retry before sending to review.");
@@ -306,12 +311,15 @@ export function useWeekendCarousel(
         const allowed = eligibleCoverPhotos(fresh.data.coverPhotos ?? []);
         if (cover.photoId !== null && !allowed.some((p) => p.id === cover.photoId))
           throw new Error(COVER_PHOTO_UNAVAILABLE);
-        const freshPhotos = fresh.data.photos ?? photos;
+        const freshPhotos = [...fresh.data.photos, ...(fresh.data.juniorStockPhotos ?? [])];
         if (
           generated!.teams.some(
             (t) =>
               t.photoId !== null &&
-              !freshPhotos.some((p) => p.id === t.photoId && p.grade === t.fixture.grade),
+              !(t.input && "junior" in t.input && t.input.junior
+                ? eligibleJuniorStockPhotos(freshPhotos)
+                : freshPhotos.filter(p => p.grade === t.fixture.grade)
+              ).some(p => p.id === t.photoId),
           )
         ) {
           throw new Error(
@@ -393,6 +401,8 @@ export function useWeekendCarousel(
     error,
     retry,
     photos,
+    juniorStockPhotos,
+    reloadPhotos: async () => { await sourcesQ.refetch(); },
     coverPhotos,
     cover,
     coverUnavailable,

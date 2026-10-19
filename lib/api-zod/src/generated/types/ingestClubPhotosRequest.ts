@@ -9,6 +9,8 @@ import type { ClubPhotoMatchFormat } from './clubPhotoMatchFormat';
 import type { ClubPhotoType } from './clubPhotoType';
 
 export interface IngestClubPhotosRequest {
+  /** Save as club-approved stock artwork for junior carousels; cannot carry player tags or a grade. */
+  juniorStock?: boolean;
   /**
      * Object paths returned by POST /storage/uploads/request-url.
      * @minItems 1

@@ -6,6 +6,8 @@ import {
   createTeamSlides,
   filterCarouselFixtures,
   eligiblePhotos,
+  eligibleJuniorStockPhotos,
+  refreshTeamSlides,
   eligibleCoverPhotos,
   fixturesInRange,
   moveTeam,
@@ -15,6 +17,44 @@ import {
 } from "./model";
 import { renderPackCard, resolveCardTokens } from "@/lib/pack-render";
 import { SIZES, type CardSize } from "@/lib/share-card";
+import { readQueuedCarousel, CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
+
+describe("junior club stock images", () => {
+  it("requires explicit stock approval, no grade and no player tags", () => {
+    const stock = photo(30, { juniorStock: true, grade: null });
+    expect(eligibleJuniorStockPhotos([
+      stock, photo(31), photo(32, { grade: null }),
+      photo(33, { juniorStock: true, grade: null, playerIds: [1] }),
+      photo(34, { juniorStock: true }),
+    ])).toEqual([stock]);
+  });
+  it("retains explicit choices on regeneration and freezes a renderable review composition", () => {
+    const f = fixture(8, { grade: "Year 5" });
+    const stock = photo(30, { juniorStock: true, grade: null });
+    const content = { [f.id]: { kind: "matchDay", junior: true, grade: f.grade } };
+    const teams = createTeamSlides([f], [stock], content);
+    expect(teams[0].photoId).toBeNull();
+    teams[0].photoId = stock.id;
+    teams[0].transform = { focalX: 0.3, focalY: 0.6, zoom: 1.5 };
+    const refreshed = refreshTeamSlides([f], [stock], content, teams);
+    expect(refreshed[0].photoId).toBe(stock.id);
+    expect(refreshed[0].transform).toEqual(teams[0].transform);
+    const slides = buildWeekendSlides(refreshed, [stock], bundle, "Junior teams", "2026-10-24", "2026-10-25");
+    expect(slides[1].input).toMatchObject({ junior: true, juniorPhotoAllowed: true, juniorStockPhotoId: stock.id });
+    expect(slides[1].data.photoUrl).toBe(stock.url);
+    for (const packId of CAROUSEL_PACK_IDS) {
+      const html = renderPackCard(slides[1].input, "square", false,
+        resolveCardTokens({ junior: true, data: slides[1].data, packId }),
+        true, slides[1].data, packId);
+      expect(html).toContain(stock.url);
+    }
+    const saved = { weekendCarousel: { version: 1, setType: "matchDay", size: "square", submissionId: "00000000-0000-4000-8000-000000000001", slides } };
+    expect(readQueuedCarousel(saved)).not.toBeNull();
+    delete (slides[1].input as unknown as Record<string, unknown>).juniorStockPhotoId;
+    expect(readQueuedCarousel(saved)).toBeNull();
+    expect(refreshTeamSlides([f], [], content, teams)[0].photoId).toBeNull();
+  });
+});
 
 describe("carousel senior/junior source filter", () => {
   it("recognises junior source flags even when the team label has no age group", () => {

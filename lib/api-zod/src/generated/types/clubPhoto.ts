@@ -9,6 +9,8 @@ import type { ClubPhotoMatchFormat } from './clubPhotoMatchFormat';
 import type { ClubPhotoType } from './clubPhotoType';
 
 export interface ClubPhoto {
+  /** Club-provided stock artwork approved for reuse on junior carousels. */
+  juniorStock?: boolean;
   id: number;
   url: string;
   thumbUrl: string;

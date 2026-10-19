@@ -1,0 +1,1 @@
+ALTER TABLE "club_photos" ADD COLUMN "junior_stock" boolean DEFAULT false NOT NULL;

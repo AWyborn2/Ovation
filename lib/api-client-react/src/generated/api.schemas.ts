@@ -5594,6 +5594,8 @@ export const ClubPhotoMatchFormat = {
 } as const;
 
 export interface ClubPhoto {
+  /** Club-provided stock artwork approved for reuse on junior carousels. */
+  juniorStock?: boolean;
   id: number;
   url: string;
   thumbUrl: string;
@@ -5639,6 +5641,8 @@ export interface FixtureForecast {
 }
 
 export interface IngestClubPhotosRequest {
+  /** Save as club-approved stock artwork for junior carousels; cannot carry player tags or a grade. */
+  juniorStock?: boolean;
   /**
      * Object paths returned by POST /storage/uploads/request-url.
      * @minItems 1
@@ -8267,6 +8271,7 @@ export interface Fixture {
 }
 
 export interface WeekendCarouselSources {
+  juniorStockPhotos?: ClubPhoto[];
   timeZone: string;
   /** Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings. */
   content?: WeekendCarouselSourcesContent;
