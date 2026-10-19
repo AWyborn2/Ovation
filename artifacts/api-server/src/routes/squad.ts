@@ -11,7 +11,7 @@ import {
   ActivateSquadMemberParams,
 } from "@workspace/api-zod";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
-import { requireAdmin } from "../middlewares/require-admin";
+import { requireAdmin, type RequestWithAdmin } from "../middlewares/require-admin";
 import { requireAdminOrCaptain } from "../middlewares/require-admin-or-captain";
 import { getTenantId } from "../middlewares/tenant-context";
 import { adminWriteRateLimiter } from "../middlewares/rate-limit";
@@ -79,6 +79,7 @@ function serializeBase(r: SquadMemberRow, names: Names) {
     teamName: r.teamName,
     ageGroup: r.ageGroup,
     isPrivate: r.isPrivate,
+    showNamePublicly: r.showNamePublicly,
     linkedPlayerId: r.linkedPlayerId,
     linkedPlayerName: r.linkedPlayerId != null ? (names.get(r.linkedPlayerId) ?? null) : null,
     contactChangeFlag: r.contactChangeFlag,
@@ -106,6 +107,8 @@ function serializeDetail(r: SquadMemberRow, names: Names) {
     ...serializeBase(r, names),
     dateOfBirth: r.dateOfBirth,
     contactChangedAt: r.contactChangedAt ? r.contactChangedAt.toISOString() : null,
+    showNamePubliclyBy: r.showNamePubliclyBy,
+    showNamePubliclyAt: r.showNamePubliclyAt ? r.showNamePubliclyAt.toISOString() : null,
   };
   for (const s of SLOTS) {
     out[s.key] = {
@@ -454,6 +457,19 @@ router.patch("/squad/:id", requireAdmin, async (req, res): Promise<void> => {
   if (b.gradeHint !== undefined) set.gradeHint = b.gradeHint?.trim() || null;
   if (b.linkedPlayerId !== undefined) set.linkedPlayerId = b.linkedPlayerId;
   if (b.contactChangeFlag !== undefined) set.contactChangeFlag = b.contactChangeFlag;
+  // Naming a private member on public surfaces (ADR-008 §5): admin only (this
+  // route), stamped and logged; ignored for a junior or under-18 member, whose
+  // privacy stays with the junior rules.
+  const namingChange =
+    b.showNamePublicly !== undefined &&
+    b.showNamePublicly !== prev.showNamePublicly &&
+    (b.section ?? prev.section) === "senior" &&
+    isUnder18OnDate(prev.dateOfBirth, perthDate(new Date())) !== true;
+  if (namingChange) {
+    set.showNamePublicly = b.showNamePublicly;
+    set.showNamePubliclyBy = (req as RequestWithAdmin).admin?.displayName ?? null;
+    set.showNamePubliclyAt = set.updatedAt;
+  }
   for (const s of SLOTS) {
     const c = b[s.key];
     if (!c) continue;
@@ -468,6 +484,17 @@ router.patch("/squad/:id", requireAdmin, async (req, res): Promise<void> => {
   }
 
   const [row] = await db.update(squadMembersTable).set(set).where(scoped).returning();
+  if (namingChange) {
+    req.log?.info(
+      {
+        tenantId,
+        memberId: row.id,
+        adminId: (req as RequestWithAdmin).admin?.id ?? null,
+        showNamePublicly: row.showNamePublicly,
+      },
+      "squad public name changed",
+    );
+  }
   // Links already sent to a changed mobile or email stop working.
   const changedSlots = SLOTS.filter(
     (s) => row[s.mobile] !== prev[s.mobile] || row[s.email] !== prev[s.email],

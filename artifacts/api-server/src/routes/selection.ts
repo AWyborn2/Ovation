@@ -11,6 +11,8 @@ import {
   SyncSelectionFromPlayhqParams,
   RemindSelectionNonRespondersBody,
   SaveSelectionBoardBody,
+  SetSelectionMemberStatusBody,
+  SetSelectionMemberStatusParams,
 } from "@workspace/api-zod";
 import { requireAdminOrCaptain, selectionActorOf } from "../middlewares/require-admin-or-captain";
 import { getTenantId } from "../middlewares/tenant-context";
@@ -26,6 +28,7 @@ import {
   syncSideFromPlayhq,
 } from "../lib/selection-board";
 import { loadAvailabilitySettings, runReminder } from "../lib/availability-schedule";
+import { setMemberStatus } from "../lib/selection-member-status";
 import {
   TeamSheetError,
   absoluteLogoUrl,
@@ -291,14 +294,51 @@ router.post(
   },
 );
 
+// An answer a member gave in person or by phone, recorded for the weekend's round
+// (ADR-008 §3). Answers with the member's section board.
+router.put(
+  "/selection/members/:id/status",
+  requireAdminOrCaptain,
+  async (req, res): Promise<void> => {
+    const params = SetSelectionMemberStatusParams.safeParse(req.params);
+    const body = SetSelectionMemberStatusBody.safeParse(req.body);
+    if (!params.success || !body.success) {
+      res.status(400).json({ error: "Send the weekend and Yes, Maybe or No." });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const actor = selectionActorOf(req);
+    try {
+      const weekend = body.data.weekend.toISOString().slice(0, 10);
+      const result = await setMemberStatus(tenantId, actor, params.data.id, {
+        ...body.data,
+        weekend,
+      });
+      req.log?.info(
+        {
+          tenantId,
+          memberId: params.data.id,
+          roundId: result.roundId,
+          dates: result.dates.length,
+          actorKind: actor.kind,
+          actorId: actor.id,
+        },
+        "selection status set",
+      );
+      res.json(await buildBoard(tenantId, actor, result.section, new Date(), weekend));
+    } catch (err) {
+      if (!refuse(res, err)) throw err;
+    }
+  },
+);
+
 // Selection Hub decoupled from availability (ADR-008): the contract is in the spec and
 // these routes answer 501 until their slice lands — matching a gap to a squad member
-// and forgetting that match (PR2), and recording an answer given in person (PR3).
+// and forgetting that match (PR2).
 const notYet = (_req: unknown, res: Response): void => {
   res.status(501).json({ error: "Not available yet." });
 };
 router.post("/selection/:id/match", requireAdminOrCaptain, notYet);
 router.delete("/squad/:id/participants/:participantId", requireAdminOrCaptain, notYet);
-router.put("/selection/members/:id/status", requireAdminOrCaptain, notYet);
 
 export default router;

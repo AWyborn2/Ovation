@@ -3069,6 +3069,16 @@ export interface SquadMemberDetail {
   isPrivate: boolean;
   /** An admin chose to name this private member on the club's public surfaces */
   showNamePublicly?: boolean;
+  /**
+     * The admin who last changed showNamePublicly
+     * @nullable
+     */
+  showNamePubliclyBy?: string | null;
+  /**
+     * When showNamePublicly was last changed
+     * @nullable
+     */
+  showNamePubliclyAt?: string | null;
   /** @nullable */
   linkedPlayerId: number | null;
   /**

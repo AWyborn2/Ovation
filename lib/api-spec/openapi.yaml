@@ -14400,6 +14400,13 @@ components:
         showNamePublicly:
           type: boolean
           description: An admin chose to name this private member on the club's public surfaces
+        showNamePubliclyBy:
+          type: ["string", "null"]
+          description: The admin who last changed showNamePublicly
+        showNamePubliclyAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When showNamePublicly was last changed
         linkedPlayerId:
           type: ["integer", "null"]
         linkedPlayerName:

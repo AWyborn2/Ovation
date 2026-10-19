@@ -1,5 +1,19 @@
 import type { Request } from "express";
-import { and, asc, desc, eq, gt, gte, inArray, lt, ne, sql, type AnyColumn } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNull,
+  lt,
+  ne,
+  or,
+  sql,
+  type AnyColumn,
+} from "drizzle-orm";
 import {
   db,
   availabilityResponsesTable,
@@ -14,6 +28,7 @@ import {
   type AvailabilityRoundRow,
   type AvailabilityStatus,
   type JuniorTeamListPlayer,
+  type ReplySource,
   type SelectionRow,
   type SelectionRule,
   type SelectionSlot,
@@ -194,6 +209,10 @@ export type BoardMember = {
   isPrivate: boolean;
   repliedAt: Date | null;
   late: boolean;
+  /** Who recorded the latest answer; null with no answer. */
+  statusSource: ReplySource | null;
+  /** The admin or captain who recorded an answer given in person. */
+  statusSetBy: string | null;
 };
 
 export type BoardSide = {
@@ -566,6 +585,8 @@ export async function buildBoard(
               respondedAt: availabilityResponsesTable.respondedAt,
               respondedBySlot: availabilityResponsesTable.respondedBySlot,
               late: availabilityResponsesTable.late,
+              source: availabilityResponsesTable.source,
+              setByName: availabilityResponsesTable.setByName,
             })
             .from(availabilityResponsesTable)
             .where(
@@ -618,13 +639,31 @@ export async function buildBoard(
   for (const s of sides) {
     for (const slot of s.selection.slots) if (slot.memberId != null) placed.add(slot.memberId);
   }
-  const replyOf = new Map<number, { note: string | null; at: Date | null; late: boolean }>();
+  type ReplyOf = {
+    note: string | null;
+    at: Date | null;
+    late: boolean;
+    source: ReplySource | null;
+    setBy: string | null;
+  };
+  const replyOf = new Map<number, ReplyOf>();
   for (const r of replies) {
-    const prev = replyOf.get(r.memberId) ?? { note: null, at: null, late: false };
+    const prev = replyOf.get(r.memberId) ?? {
+      note: null,
+      at: null,
+      late: false,
+      source: null,
+      setBy: null,
+    };
+    // A member's own answer, or one an admin or captain recorded for them; a
+    // row the system recorded (away) is neither. Latest wins.
+    const answered = r.respondedBySlot != null || r.source === "admin";
     replyOf.set(r.memberId, {
       note: r.note?.trim() ? r.note.trim() : prev.note,
-      at: r.respondedBySlot != null ? r.respondedAt : prev.at,
+      at: answered ? r.respondedAt : prev.at,
       late: prev.late || r.late,
+      source: answered ? r.source : prev.source,
+      setBy: answered ? (r.source === "admin" ? r.setByName : null) : prev.setBy,
     });
   }
 
@@ -659,6 +698,8 @@ export async function buildBoard(
       isPrivate: m.isPrivate,
       repliedAt: reply?.at ?? null,
       late: reply?.late ?? false,
+      statusSource: reply?.source ?? null,
+      statusSetBy: reply?.setBy ?? null,
     };
   };
 
@@ -746,17 +787,23 @@ export async function buildBoard(
 
   const sideIds = sectionSides.map((s) => s.selection.id);
   const gradeOf = new Map(sectionSides.map((s) => [s.selection.id, s.fixture.grade]));
+  // The sides' events, and the round's own (an answer recorded for a member in
+  // no side), the latter for this section's members only.
+  const roundEvents = round
+    ? and(
+        isNull(selectionEventsTable.selectionId),
+        eq(selectionEventsTable.roundId, round.id),
+        sql`${selectionEventsTable.detail}->>'section' = ${section}`,
+      )
+    : undefined;
+  const sideEvents =
+    sideIds.length > 0 ? inArray(selectionEventsTable.selectionId, sideIds) : undefined;
   const events =
-    sideIds.length > 0
+    sideEvents || roundEvents
       ? await db
           .select()
           .from(selectionEventsTable)
-          .where(
-            and(
-              eq(selectionEventsTable.tenantId, tenantId),
-              inArray(selectionEventsTable.selectionId, sideIds),
-            ),
-          )
+          .where(and(eq(selectionEventsTable.tenantId, tenantId), or(sideEvents, roundEvents)))
           .orderBy(desc(selectionEventsTable.createdAt), desc(selectionEventsTable.id))
           .limit(EVENT_LIMIT)
       : [];

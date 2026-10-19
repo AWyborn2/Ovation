@@ -28,6 +28,7 @@ import {
 } from "@/components/selection/apply-move";
 import { weekendLabel } from "@/components/selection/labels";
 import { MoveDialog } from "@/components/selection/move-dialog";
+import { MemberStatusControl } from "@/components/selection/member-status-control";
 import { PlayerPool } from "@/components/selection/player-pool";
 import { ChangeLog, RoundHeader } from "@/components/selection/round-header";
 import { TeamCard, finaliseHeadsUp } from "@/components/selection/team-card";
@@ -563,6 +564,24 @@ export default function SelectionHub() {
             onClose={() => setOpenId(null)}
             onMove={(memberId, target) => act({ kind: "move", memberId, target, from: openFrom })}
             onRole={(sideId, role, memberId) => act({ kind: "role", sideId, role, memberId })}
+            // A past weekend is read-only: its answers can't be recorded.
+            extra={(member) =>
+              data?.round && !data.readOnly ? (
+                <MemberStatusControl
+                  member={member}
+                  weekend={data.round.weekendDate}
+                  boardJunior={junior}
+                  disabled={busy}
+                  onSaved={(next, message) => {
+                    if (next.section === section) qc.setQueryData(queryKey, next);
+                    setLocal(null);
+                    say(message);
+                    toast({ description: message });
+                  }}
+                  onError={(e) => fail(`Not recorded: ${errorText(e)}`)}
+                />
+              ) : null
+            }
           />
         )}
       </div>
