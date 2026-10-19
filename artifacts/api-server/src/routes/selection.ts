@@ -265,4 +265,14 @@ router.post(
   },
 );
 
+// Selection Hub decoupled from availability (ADR-008): the contract is in the spec and
+// these routes answer 501 until their slice lands — matching a gap to a squad member
+// and forgetting that match (PR2), and recording an answer given in person (PR3).
+const notYet = (_req: unknown, res: Response): void => {
+  res.status(501).json({ error: "Not available yet." });
+};
+router.post("/selection/:id/match", requireAdminOrCaptain, notYet);
+router.delete("/squad/:id/participants/:participantId", requireAdminOrCaptain, notYet);
+router.put("/selection/members/:id/status", requireAdminOrCaptain, notYet);
+
 export default router;

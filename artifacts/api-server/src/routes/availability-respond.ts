@@ -36,6 +36,7 @@ import { TWELFTH_INDEX } from "../lib/selection-drafts";
 import { normaliseAuMobile, smsEnabled } from "../lib/integrations/sms";
 import { normaliseEmail, normaliseMobile } from "../lib/squad-import";
 import { getTenantBrand } from "../lib/tenant-brand";
+import { writeReplies } from "../lib/availability-replies";
 
 /**
  * The player availability page's API.
@@ -292,37 +293,15 @@ async function upsertAnswers(
   now: Date,
 ): Promise<void> {
   const { member, request, round } = found;
-  const late = round.cutoffCompletedAt != null;
-  for (const a of answers) {
-    const note = a.note === undefined ? undefined : a.note?.trim() || null;
-    await db
-      .insert(availabilityResponsesTable)
-      .values({
-        tenantId: member.tenantId,
-        roundId: round.id,
-        memberId: member.id,
-        date: a.date,
-        status: a.status,
-        note: note ?? null,
-        respondedBySlot: request.recipientSlot,
-        respondedAt: now,
-        late,
-      })
-      .onConflictDoUpdate({
-        target: [
-          availabilityResponsesTable.roundId,
-          availabilityResponsesTable.memberId,
-          availabilityResponsesTable.date,
-        ],
-        set: {
-          status: a.status,
-          ...(note !== undefined ? { note } : {}),
-          respondedBySlot: request.recipientSlot,
-          respondedAt: now,
-          late,
-        },
-      });
-  }
+  await writeReplies({
+    tenantId: member.tenantId,
+    roundId: round.id,
+    memberId: member.id,
+    answers,
+    late: round.cutoffCompletedAt != null,
+    by: { source: "member", slot: request.recipientSlot },
+    now,
+  });
 }
 
 router.get(BASE, availabilityLinkRateLimiter, async (req, res): Promise<void> => {

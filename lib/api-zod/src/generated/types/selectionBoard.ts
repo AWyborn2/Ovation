@@ -10,6 +10,7 @@ import type { SelectionEvent } from './selectionEvent';
 import type { SelectionMember } from './selectionMember';
 import type { SelectionRound } from './selectionRound';
 import type { SelectionSide } from './selectionSide';
+import type { SelectionWeekends } from './selectionWeekends';
 import type { SquadSection } from './squadSection';
 
 export interface SelectionBoard {
@@ -27,4 +28,7 @@ export interface SelectionBoard {
   pool: SelectionMember[];
   /** The latest changes to the section's sides, newest first */
   events: SelectionEvent[];
+  weekends?: SelectionWeekends;
+  /** The round is a past weekend's; it can be viewed, not changed */
+  readOnly?: boolean;
 }

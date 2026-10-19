@@ -1,7 +1,7 @@
 # Project Status
 
 **Project:** Ovation (white-label cricket club platform)
-**Active feature:** junior-card-photos (social-auto-queue-criteria delivered 16 Oct 2026)
+**Active feature:** selection-hub-decoupling (Planning complete 19 Oct 2026, ADR-008 accepted; next: PR0 foundation, then PR1–PR3 in parallel) — junior-card-photos in delivery
 **Queued:** admin-menu-consolidation — product decision + architecture done 2026-10-19 (decisions/architect/admin-menu-consolidation.md); next: implementation, PR 1 menu moves then PR 2 shirt categories (migration 0046)
 **Phase:** Delivery — junior-card-photos PR to `main` from `claude/junior-card-photos`; Ash applies migration 0045 before republishing (runbook §3c)
 

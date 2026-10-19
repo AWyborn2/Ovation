@@ -6,6 +6,7 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 
 - [social-auto-queue-criteria](social-auto-queue-criteria.md)
 - [card-kind-templates](card-kind-templates.md)
+- [selection-hub-decoupling](selection-hub-decoupling.md) — on-demand rounds/drafts, carry-over, admin status, participant crosswalk, public-name flag (design proposed 19 Oct 2026; ADR-008)
 
 ## Feature ADRs
 
