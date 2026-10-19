@@ -1,5 +1,18 @@
 # Handoff
 
+**From:** Product Manager
+**To:** Principal Architect
+**Feature:** selection-hub-decoupling
+
+## Context
+
+- Requirements, acceptance criteria and priorities: `.10x/decisions/product-manager/selection-hub-decoupling.md` (agreed with Ash 19 Oct 2026).
+- Priority order: P0 draft-on-demand plus carry-over of last week's side; P0 private-slot mapping (crosswalk); P0 availability-off as a first-class mode; P0 admin-set (verbal) status; P1 round navigation (previous/next); P1 per-player public-name toggle.
+- Root cause to confirm: PlayHQ team lists name withheld players "Private Player", the slot stays unmatched (`memberId` null) and the team sheet drops it.
+- Open for the Architect: whether the public-name toggle applies to junior members (default: no); round creation on demand versus the availability schedule; where the crosswalk lives (`player_id_map`-style, tenant-scoped).
+
+## Previous handoff
+
 **From:** DevOps + SRE (Phase 6)
 **To:** Ash (release) / next feature
 **Feature:** junior-card-photos
