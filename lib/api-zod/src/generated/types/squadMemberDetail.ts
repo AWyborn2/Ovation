@@ -33,6 +33,8 @@ export interface SquadMemberDetail {
   /** @nullable */
   ageGroup: string | null;
   isPrivate: boolean;
+  /** An admin chose to name this private member on the club's public surfaces */
+  showNamePublicly?: boolean;
   /** @nullable */
   linkedPlayerId: number | null;
   /**

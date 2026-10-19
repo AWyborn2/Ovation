@@ -17,6 +17,10 @@ export interface SquadMemberUpdate {
   linkedPlayerId?: number | null;
   /** Set false to clear the contact-changed flag. */
   contactChangeFlag?: boolean;
+  /** Admin only. Name a private member on the club's public team list,
+  site and social cards. Ignored for a junior or under-18 member.
+   */
+  showNamePublicly?: boolean;
   account?: SquadContactUpdate;
   guardian1?: SquadContactUpdate;
   guardian2?: SquadContactUpdate;

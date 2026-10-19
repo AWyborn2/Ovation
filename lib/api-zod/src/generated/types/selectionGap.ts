@@ -14,4 +14,9 @@ export interface SelectionGap {
   /** @minLength 1 */
   name: string;
   reason: SelectionGapReason;
+  /**
+     * The PlayHQ participant ID of the list row behind the gap, when the list carried one
+     * @nullable
+     */
+  participantId?: string | null;
 }
