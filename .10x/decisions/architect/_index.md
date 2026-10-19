@@ -14,3 +14,4 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 
 - [team-of-the-week-engines](team-of-the-week-engines.md) — discovery only, next spec
 - [admin-menu-consolidation](admin-menu-consolidation.md) — category column on shirt_numbers, juniors overlap endpoint, Imports hub, Stats & Data group. Design complete 2026-10-19
+- [social-photo-tag-selection](social-photo-tag-selection.md) — kind photo policy in pickDraftPhoto (side/game/gradeTeam), retire random/player rules for those kinds (migration 0049), filtered library picker. Design complete 2026-10-20

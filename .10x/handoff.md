@@ -1,5 +1,18 @@
 # Handoff
 
+**From:** Principal Architect
+**To:** Staff Engineer / Engineering Manager
+**Feature:** social-photo-tag-selection
+
+## Context
+
+- Design: `.10x/decisions/architect/social-photo-tag-selection.md`. Requirements: `.10x/decisions/product-manager/social-photo-tag-selection.md`.
+- Components: `PHOTO_POLICY` + `pickCandidatePhoto` in `api-server/src/lib/draft-enrich.ts`; `rankedPerformerPlayerIds` in `match-top-performer.ts`; `matchCardPhoto` / `draftPickOptions` pass candidate lists.
+- Units: U1 picker (api only) → U2 rule retirement (route + OpenAPI + admin UI + migration 0049, which Ash runs in prod before republishing) → U3 filtered picker (OpenAPI params, DTO `photoCandidatePlayerIds`, share-modal filters). U2 and U3 share `openapi.yaml`.
+- Decided with Ash: headshots count after tagged photos; no grade fallback for Team List / Result / Summary; Match Day = the grade's team/celebrating photos only.
+
+## Previous handoff
+
 **From:** Product Manager
 **To:** Principal Architect
 **Feature:** social-photo-tag-selection
