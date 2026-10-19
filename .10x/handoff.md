@@ -1,5 +1,21 @@
 # Handoff
 
+**From:** Principal Architect
+**To:** Staff Engineer / Engineering Manager
+**Feature:** selection-side-size
+
+## Context
+
+- Design: `.10x/decisions/architect/selection-side-size.md`; ADR-009 (proposed). Requirements: `.10x/decisions/product-manager/selection-side-size.md`.
+- Migration 0049 (additive): `availability_settings.side_sizes` / `overseas_caps` jsonb maps, `selections.side_size`, new `squad_member_seasons`. Ash applies it in prod before republishing.
+- The shared `sideShape(size)` helper replaces the duplicated `SIDE_SIZE`/`TWELFTH_INDEX` in `selection-drafts.ts` and `apply-move.ts`. "12th" only when the size is 12.
+- Finalise snapshots `overseas`, the order and `twelfth` into `team_lists.players`. Over the cap = warn only.
+- Cards: every pack goes to `maxRows: 15` with auto-compress (Ash chose this), and the Studio `ck.xi-list` likewise.
+- Slices: PR A foundation, then PR B (size) and PR C (overseas) in parallel, then PR D (cards + public). Start after selection-hub-decoupling PR1–PR3 merge.
+
+## Previous handoff
+
+
 **From:** Product Manager
 **To:** Principal Architect
 **Feature:** selection-side-size
