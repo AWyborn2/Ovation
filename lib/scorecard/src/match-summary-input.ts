@@ -9,6 +9,7 @@
 import { buildScorecard } from "./mapping";
 import { buildJuniorScorecard } from "./junior-mapping";
 import { DEFAULT_BRAND, deriveClubColors, type ClubBrand } from "./brand";
+import { deriveOppositionColors } from "./colors";
 import type { Scorecard, ScorecardTeam, ScorecardBatsman, ScorecardBowler } from "./types";
 import type { MatchDetail, JuniorMatchDetail } from "@workspace/api-zod";
 import type {
@@ -255,7 +256,7 @@ export function juniorMatchToSummaryInput(
   match: JuniorMatchDetail,
   brand?: ClubBrand | null,
 ): MatchSummaryInput {
-  const sc: Scorecard = buildJuniorScorecard(match);
+  const sc: Scorecard = buildJuniorScorecard(match, brand);
 
   const first = sc.innings[0];
   const clubScTeam = first
@@ -274,20 +275,23 @@ export function juniorMatchToSummaryInput(
     primaryColor: clubColors.primary,
     secondaryColor: clubColors.secondary,
     textColor: clubColors.text,
-    logoUrl: clubScTeam?.logoUrl ?? brand?.logoUrl ?? null,
+    logoUrl: clubScTeam?.logoUrl ?? brand?.logoUrl128 ?? brand?.logoUrl ?? null,
   };
   const oppScTeam = first
     ? first.battingTeam.isHallsHead
       ? first.bowlingTeam
       : first.battingTeam
     : null;
+  const oppColors = oppScTeam?.colors ?? deriveOppositionColors(
+    match.opponentClub?.backgroundColour, match.opponentClub?.primaryColour,
+  );
   const oppTeam: MatchSummaryTeam = {
-    name: oppScTeam?.name ?? match.opponentName ?? "Opposition",
-    shortName: oppScTeam?.shortName ?? null,
-    primaryColor: oppScTeam?.colors.primary ?? "#1f2733",
-    secondaryColor: oppScTeam?.colors.secondary ?? "#9aa6b2",
-    textColor: oppScTeam?.colors.text ?? "#ffffff",
-    logoUrl: oppScTeam?.logoUrl ?? null,
+    name: oppScTeam?.name ?? match.opponentClub?.name ?? match.opponentName ?? "Opposition",
+    shortName: oppScTeam?.shortName ?? match.opponentClub?.shortName ?? null,
+    primaryColor: oppColors.primary,
+    secondaryColor: oppColors.secondary,
+    textColor: oppColors.text,
+    logoUrl: oppScTeam?.logoUrl ?? match.opponentClub?.logoUrl128 ?? match.opponentClub?.logoUrl ?? null,
   };
 
   const innings: MatchSummaryInnings[] = sc.innings

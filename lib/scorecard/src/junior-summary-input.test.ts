@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { JuniorMatchDetail } from "@workspace/api-zod";
 import { juniorMatchToSummaryInput } from "./match-summary-input";
+import { DEFAULT_BRAND } from "./brand";
 
 /**
  * R22: opposition juniors are never named on a junior result card, not even by
@@ -86,5 +87,37 @@ describe("juniorMatchToSummaryInput opposition performers", () => {
 
   it("never carries an opposition player's initials", () => {
     expect(JSON.stringify(input.innings)).not.toMatch(/K\. W\.|L\. B\./);
+  });
+});
+
+describe("junior summary club crests", () => {
+  const brand = {
+    ...DEFAULT_BRAND, name: "Halls Head Cricket Club", shortName: "HHCC",
+    logoUrl: "/halls-head.png", logoUrl128: "/halls-head-small.png",
+    backgroundColour: "#112233", primaryColour: "#ffaa22",
+  };
+  const opponentClub = {
+    id: 12, name: "South Mandurah Cricket Club", shortName: "SMCC",
+    logoUrl: "/south-mandurah.png", logoUrl128: "/south-mandurah-small.png",
+    backgroundColour: "#221144", primaryColour: "#eeeeee",
+  };
+  for (const innings of [match.innings, [], [...match.innings].reverse()]) {
+    it(`keeps both resolved crests with ${innings.length} innings in either order`, () => {
+      const source = { ...match, innings, opponentClub };
+      const before = JSON.stringify(source);
+      const input = juniorMatchToSummaryInput(source, brand);
+      expect(input.club).toMatchObject({
+        name: brand.name, shortName: "HHCC", logoUrl: "/halls-head-small.png",
+      });
+      expect(input.opposition).toMatchObject({
+        name: opponentClub.name, shortName: "SMCC", logoUrl: "/south-mandurah-small.png",
+      });
+      expect(input.junior).toBe(true);
+      expect(JSON.stringify(source)).toBe(before);
+    });
+  }
+  it("retains the neutral fallback for an unresolved opponent", () => {
+    expect(juniorMatchToSummaryInput({ ...match, innings: [], opponentClub: null }, brand)
+      .opposition.logoUrl).toBeNull();
   });
 });

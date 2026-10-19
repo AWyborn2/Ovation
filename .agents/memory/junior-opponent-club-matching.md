@@ -27,8 +27,15 @@ NOT in the Peel-focused register, so the right behaviour is to leave
 `opponent_club_id` NULL (~600 of 1828 dev matches) and let renderers fall back
 gracefully — a wrong crest is worse than no crest.
 
-**How to apply:** the matcher lives BOTH in `scripts/sql/juniors-etl.sql` (step 5,
-runs on every `load-juniors-db --commit`) and was applied once to the dev DB via
-the identical UPDATE. master-etl MUST run before juniors-etl (the join needs
-`public.clubs` populated). If you change normalisation, change it in the ETL —
-not ad-hoc on the DB — or the next juniors reload reverts it.
+Missing historical opponent links may be resolved cosmetically at read time;
+do not require a mass match-record backfill just to display club crests.
+Existing explicit links take precedence, and equally specific ambiguous
+matches must remain unresolved.
+
+**Why:** Newly synced junior matches can lack links populated by the historical
+ETL. Branding should work without rewriting source match data or production
+records merely for display.
+
+**How to apply:** Keep the conservative normalisation consistent between the
+historical ETL and runtime fallback. Only read neutral club branding, never
+combine senior and junior statistics or guess away meaningful team nicknames.

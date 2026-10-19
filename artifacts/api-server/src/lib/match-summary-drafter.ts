@@ -32,6 +32,7 @@ import {
   loadJuniorNaming,
   loadJuniorTeamPublishing,
   splitScores,
+  resolveUnlinkedJuniorOpponent,
   type JuniorNaming,
 } from "./junior-helpers";
 import { juniorPhotoFields, loadJuniorPhotos, pickJuniorCardPhoto } from "./junior-photos";
@@ -130,7 +131,7 @@ export async function loadJuniorMatchDetail(
           backgroundColour: matchRow.opponentClubBackgroundColour,
           primaryColour: matchRow.opponentClubPrimaryColour,
         }
-      : null;
+      : await resolveUnlinkedJuniorOpponent(match.opponentName);
   const [opponentClub] = await overlayNativeOpponents([opponentClubRaw]);
 
   const [battingRows, bowlingRows, rosterRows] = await Promise.all([
