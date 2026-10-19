@@ -10,6 +10,7 @@
 - Per-grade side size 12 (default) to 15, set by an admin. Above 12: slots 1–N, any player can be captain or keeper, no "12th" label on the hub, team sheet, Team List card or availability message. A grade at 12 is unchanged.
 - Priority: (1) per-grade size + hub slots + team sheet (P0), (2) Team List card fits 15 rows across packs, availability text, PlayHQ import of more than 12 names (P1).
 - Design needs: where the size lives (grade/team config, migration applied by hand in prod), how to replace the shared `XI_SIZE`/`TWELFTH_INDEX` constants and `normaliseSlots`, and what happens when the size is lowered.
+- **Part 2, overseas players:** a per-season flag on the squad member (admin), an OS badge in the hub, on the team sheet, on the Team List card and on the public site, and a per-grade cap that warns without blocking finalise. See the doc.
 - Sequence after selection-hub-decoupling PR1–PR3, which touch the same files.
 
 ## Previous handoff

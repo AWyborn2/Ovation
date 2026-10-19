@@ -1,4 +1,4 @@
-# Selection side size above 12 — PM decision (19 Oct 2026)
+# Selection side size above 12 + overseas players — PM decision (19 Oct 2026)
 
 ## Problem statement
 
@@ -66,7 +66,66 @@ it applies to any tenant with such a grade.
   It applies to new drafts, or it asks the admin to move the extras out first.
 - A finalised or published past side is never changed by a later size change.
 
-## Success criteria
+## Part 2: overseas players (added 19 Oct 2026)
+
+### Problem
+
+Some competitions cap the number of overseas players in a side, and umpires and the association
+expect them marked on the team sheet. Selectors can't see or record who is an overseas player, so
+they can break the cap by accident and the sheet doesn't show it.
+
+### Decisions with Ash
+
+1. **Both: mark overseas players and warn when a side is over the cap.**
+2. **The flag is per player, per season.** An admin ticks "overseas" on the squad member for the
+   season, and every selection that season picks it up. Nothing is ticked per fixture.
+3. **The cap is set per grade**, next to the side-size setting. Blank means no cap.
+4. **Over the cap, the hub warns but still allows finalising.** The warning shows in the hub and in
+   the finalise "Heads up" list, because the association may have granted an exemption.
+5. **The marker shows everywhere**: in the Selection Hub, on the printed team sheet, on the Team
+   List social card and on the public site (the published team list and player pages). It's a short
+   "OS" badge beside the name.
+
+### User stories
+
+- **P0.** As a club admin, I want to mark a squad member as overseas for a season, so that
+  selectors don't have to remember.
+- **P0.** As a selector, I want an OS badge in the hub and a count against the grade's cap
+  ("Overseas 2/1"), so that I can stay within the rules.
+- **P0.** As a selector, I want the printed team sheet to mark overseas players, so that umpires and
+  the association can see them.
+- **P1.** As a club admin, I want the cap set per grade, and a warning (not a block) when a side
+  goes over it.
+- **P1.** As a club admin, I want the OS marker on the Team List card and the public team list and
+  player pages.
+
+### Rules
+
+- The flag belongs to the club and the season. It never comes from or goes back to central data.
+- A season's flag doesn't carry into the next season automatically. A player who returns is ticked
+  again, or the admin uses a "copy last season's overseas players" action (P2).
+- A finalised past side keeps the markers it had when it was finalised.
+- The public OS marker respects the "show name publicly" toggle (selection-hub-decoupling): a hidden
+  player shows no name and no marker.
+
+### Success criteria
+
+- The requesting clubs mark their overseas players in their first week.
+- No finalised side is over the cap without the selector having seen the warning.
+
+### Not building
+
+- Eligibility rules beyond a count, such as residency periods or Kolpak-style exemptions.
+- Checking against association registration data.
+- An exemption record per fixture. The warning is enough.
+
+### Risks
+
+- **Privacy and sensitivity.** Nationality-type labels on public pages. Use the neutral "OS"
+  marker only, and never show a country.
+- **Card space.** The badge adds width to rows that are already tight at 15 names.
+
+## Success criteria (Part 1)
 
 - The requesting club finalises and posts a side of 13 or more within 2 weeks of release, with
   no "12th" anywhere on the sheet or card.
