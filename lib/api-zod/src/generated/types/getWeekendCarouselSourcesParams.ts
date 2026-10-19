@@ -5,10 +5,15 @@
  * Halls Head Cricket Club Stats API
  * OpenAPI spec version: 0.1.0
  */
+import type { GetWeekendCarouselSourcesAudience } from './getWeekendCarouselSourcesAudience';
 import type { GetWeekendCarouselSourcesSetType } from './getWeekendCarouselSourcesSetType';
 
 export type GetWeekendCarouselSourcesParams = {
 setType?: GetWeekendCarouselSourcesSetType;
+/**
+ * Choose senior or junior sources, or both. Junior-only requests do not read senior fixtures or scorecards.
+ */
+audience?: GetWeekendCarouselSourcesAudience;
 /**
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */

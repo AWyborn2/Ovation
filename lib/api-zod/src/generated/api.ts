@@ -8566,12 +8566,14 @@ export const CompleteMetaConnectResponse = zod.object({
  * @summary Tenant-scoped weekend fixtures and eligible action photos for on-demand export
  */
 export const getWeekendCarouselSourcesQuerySetTypeDefault = `matchDay`;
+export const getWeekendCarouselSourcesQueryAudienceDefault = `all`;
 export const getWeekendCarouselSourcesQueryFromRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 export const getWeekendCarouselSourcesQueryToRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 
 
 export const GetWeekendCarouselSourcesQueryParams = zod.object({
   "setType": zod.enum(['matchDay', 'teamList', 'results', 'matchSummary']).default(getWeekendCarouselSourcesQuerySetTypeDefault),
+  "audience": zod.enum(['all', 'senior', 'junior']).default(getWeekendCarouselSourcesQueryAudienceDefault).describe('Choose senior or junior sources, or both. Junior-only requests do not read senior fixtures or scorecards.'),
   "from": zod.coerce.string().regex(getWeekendCarouselSourcesQueryFromRegExp),
   "to": zod.coerce.string().regex(getWeekendCarouselSourcesQueryToRegExp)
 })

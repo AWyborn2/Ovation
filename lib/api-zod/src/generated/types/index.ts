@@ -292,6 +292,7 @@ export * from './getSocialClubSeasonTotalsParams';
 export * from './getSocialLadderPrefillParams';
 export * from './getSocialRoundResultsPrefillParams';
 export * from './getSocialWeekendWrapPrefillParams';
+export * from './getWeekendCarouselSourcesAudience';
 export * from './getWeekendCarouselSourcesParams';
 export * from './getWeekendCarouselSourcesSetType';
 export * from './googleDriveConfig';

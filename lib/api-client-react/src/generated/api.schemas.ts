@@ -10427,6 +10427,10 @@ token: string;
 export type GetWeekendCarouselSourcesParams = {
 setType?: GetWeekendCarouselSourcesSetType;
 /**
+ * Choose senior or junior sources, or both. Junior-only requests do not read senior fixtures or scorecards.
+ */
+audience?: GetWeekendCarouselSourcesAudience;
+/**
  * @pattern ^\d{4}-\d{2}-\d{2}$
  */
 from: string;
@@ -10444,6 +10448,15 @@ export const GetWeekendCarouselSourcesSetType = {
   teamList: 'teamList',
   results: 'results',
   matchSummary: 'matchSummary',
+} as const;
+
+export type GetWeekendCarouselSourcesAudience = typeof GetWeekendCarouselSourcesAudience[keyof typeof GetWeekendCarouselSourcesAudience];
+
+
+export const GetWeekendCarouselSourcesAudience = {
+  all: 'all',
+  senior: 'senior',
+  junior: 'junior',
 } as const;
 
 export type ListFixturesParams = {

@@ -152,6 +152,27 @@ const mount = () =>
     </Dialog>,
   );
 
+it("lets admins choose juniors for match-day and team-list tiles without selecting senior teams", async () => {
+  const junior = { ...fixtures[0], id: -2_000_000_001, grade: "Year 5" };
+  fixtures.push(junior);
+  try {
+    mount();
+    fireEvent.click(screen.getByTestId("button-carousel-audience-junior"));
+    await waitFor(() => expect(screen.getByTestId(`checkbox-fixture-${junior.id}`)).toBeTruthy());
+    expect(screen.queryByTestId("checkbox-fixture-1")).toBeNull();
+    expect(screen.getByTestId("button-carousel-audience-junior")).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByTestId("button-carousel-type-teamList"));
+    await waitFor(() => expect(screen.getByTestId(`checkbox-fixture-${junior.id}`)).toBeTruthy());
+    expect(screen.queryByTestId("checkbox-fixture-1")).toBeNull();
+    expect(screen.getByText(/published list from Junior fixtures/)).toBeTruthy();
+    fireEvent.click(screen.getByTestId("button-carousel-audience-senior"));
+    await waitFor(() => expect(screen.getByTestId("checkbox-fixture-1")).toBeTruthy());
+    expect(screen.queryByTestId(`checkbox-fixture-${junior.id}`)).toBeNull();
+  } finally {
+    fixtures.pop();
+  }
+});
+
 const generatePreview = async () => {
   fireEvent.click(screen.getByTestId("button-generate-weekend"));
   await waitFor(() => expect(screen.getByTestId("button-generate-weekend")).not.toBeDisabled());
