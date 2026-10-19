@@ -52,6 +52,9 @@ const coverPhoto = {
   thumbUrl: "/cover-thumb.jpg",
 };
 let coverPhotos = [coverPhoto];
+const stockPhoto = { ...coverPhoto, id: 77, season: null, photoTypes: [],
+  juniorStock: true, playerIds: [], url: "/saved-stock.jpg", thumbUrl: "/saved-stock-thumb.jpg" };
+let stockPhotos: Array<typeof stockPhoto> = [];
 let teamPhotos: { id: number; grade: string; photoTypes: string[]; url: string }[] = [];
 const summary = {
   kind: "matchSummary",
@@ -87,7 +90,7 @@ const content = () =>
     ? {}
     : Object.fromEntries(fixtures.map((f) => [f.id, inputFor(activeType)]));
 const refetch = vi.fn(async () => ({
-  data: { fixtures, coverPhotos, photos: teamPhotos, content: content() },
+  data: { fixtures, coverPhotos, photos: teamPhotos, juniorStockPhotos: stockPhotos, content: content() },
   isError: false,
 }));
 const settingsRefetch = vi.fn(async () => ({
@@ -110,6 +113,7 @@ vi.mock("@workspace/api-client-react", () => ({
         content: content(),
         photos: teamPhotos,
         coverPhotos,
+        juniorStockPhotos: stockPhotos,
         warnings: ["PlayHQ status could not be checked for 1 fixture"],
       },
       isLoading: false,
@@ -183,11 +187,31 @@ afterEach(() => {
   vi.clearAllMocks();
   coverPhotos = [coverPhoto];
   teamPhotos = [];
+  stockPhotos = [];
   activeType = "matchDay";
   many = false;
 });
 
 describe("WeekendCarousel", () => {
+  it.each(["matchDay", "teamList", "results", "matchSummary"])(
+    "offers upload and saves a stock image on senior team cards and the cover for %s",
+    async type => {
+      stockPhotos = [stockPhoto];
+      mount();
+      fireEvent.click(screen.getByTestId("button-carousel-audience-senior"));
+      fireEvent.click(screen.getByTestId(`button-carousel-type-${type}`));
+      expect(screen.getByLabelText("Upload carousel stock image")).not.toBeDisabled();
+      await generatePreview();
+      fireEvent.click(screen.getByRole("button", { name: "Use stock image 1 for all team cards" }));
+      fireEvent.click(screen.getByTestId(`button-cover-photo-${stockPhoto.id}`));
+      fireEvent.click(screen.getByTestId("button-queue-weekend"));
+      await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce());
+      const saved = queuedRequest().data.cardInput.weekendCarousel;
+      expect(saved).toMatchObject({ setType: type });
+      expect(saved.slides.slice(0, -1).every(slide =>
+        (slide.data as { photoUrl?: string }).photoUrl === stockPhoto.url)).toBe(true);
+    },
+  );
   it.each(["matchDay", "teamList", "results", "matchSummary"])(
     "switches every pack without resetting the %s composition",
     async (type) => {
@@ -276,7 +300,7 @@ describe("WeekendCarousel", () => {
     fireEvent.click(screen.getByTestId("button-carousel-type-results"));
     await generatePreview();
     refetch.mockResolvedValueOnce({
-      data: { fixtures, coverPhotos, photos: [], content: {} },
+      data: { fixtures, coverPhotos, photos: [], juniorStockPhotos: [], content: {} },
       isError: false,
     });
     fireEvent.click(screen.getByTestId("button-queue-weekend"));
@@ -440,7 +464,7 @@ describe("WeekendCarousel", () => {
     await generatePreview();
     fireEvent.click(screen.getByTestId("button-cover-photo-10"));
     refetch.mockResolvedValueOnce({
-      data: { fixtures, coverPhotos: [], photos: [], content: {} },
+      data: { fixtures, coverPhotos: [], photos: [], juniorStockPhotos: [], content: {} },
       isError: false,
     });
     fireEvent.click(screen.getByTestId("button-queue-weekend"));

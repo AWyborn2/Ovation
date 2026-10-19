@@ -30,6 +30,7 @@ import {
   moveTeam,
   eligibleCoverPhotos,
   eligibleJuniorStockPhotos,
+  eligibleCarouselPhotos,
   COVER_PHOTO_UNAVAILABLE,
   filterCarouselFixtures,
   type CarouselAudience,
@@ -114,7 +115,9 @@ export function useWeekendCarousel(
     ...(sources?.photos ?? []), ...(sources?.juniorStockPhotos ?? []),
   ] as ClubPhoto[], [sources]);
   const juniorStockPhotos = eligibleJuniorStockPhotos(photos);
-  const coverPhotos = useMemo(() => eligibleCoverPhotos(sources?.coverPhotos ?? []), [sources]);
+  const coverPhotos = useMemo(() => eligibleCoverPhotos([
+    ...(sources?.coverPhotos ?? []), ...(sources?.juniorStockPhotos ?? []),
+  ]), [sources]);
   const sourceWarnings = sources?.warnings ?? [];
   const timeZone = sources?.timeZone ?? CLUB_TIME_ZONE;
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
@@ -308,7 +311,9 @@ export function useWeekendCarousel(
             "A selected team list or scorecard changed or is no longer available. Regenerate the preview before sending to review.",
           );
         }
-        const allowed = eligibleCoverPhotos(fresh.data.coverPhotos ?? []);
+        const allowed = eligibleCoverPhotos([
+          ...(fresh.data.coverPhotos ?? []), ...(fresh.data.juniorStockPhotos ?? []),
+        ]);
         if (cover.photoId !== null && !allowed.some((p) => p.id === cover.photoId))
           throw new Error(COVER_PHOTO_UNAVAILABLE);
         const freshPhotos = [...fresh.data.photos, ...(fresh.data.juniorStockPhotos ?? [])];
@@ -316,9 +321,9 @@ export function useWeekendCarousel(
           generated!.teams.some(
             (t) =>
               t.photoId !== null &&
-              !(t.input && "junior" in t.input && t.input.junior
-                ? eligibleJuniorStockPhotos(freshPhotos)
-                : freshPhotos.filter(p => p.grade === t.fixture.grade)
+              !eligibleCarouselPhotos(
+                freshPhotos, t.fixture.grade,
+                !!(t.input && "junior" in t.input && t.input.junior),
               ).some(p => p.id === t.photoId),
           )
         ) {

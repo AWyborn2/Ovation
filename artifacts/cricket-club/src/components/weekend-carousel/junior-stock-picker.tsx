@@ -18,7 +18,7 @@ export function JuniorStockPicker({ photos, disabled, canApply, onUploaded, onAp
     if (!files.length) return;
     setUploading(true);
     setError("");
-    setMessage("Uploading stock image…");
+    setMessage("Uploading carousel image…");
     const failures: string[] = [];
     try {
       await uploadLibraryPhotos(files, {
@@ -40,31 +40,32 @@ export function JuniorStockPicker({ photos, disabled, canApply, onUploaded, onAp
   }
   const locked = disabled || uploading;
   return (
-    <section className="space-y-3 rounded-md border p-4" aria-label="Junior stock images">
+    <section className="space-y-3 rounded-md border p-4" aria-label="Carousel stock images">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-semibold">Junior stock images</h3>
+        <h3 className="font-semibold">Carousel stock images</h3>
         <Button type="button" variant="outline" disabled={locked} onClick={() => file.current?.click()}>
           {uploading ? "Uploading…" : "Upload stock image"}
         </Button>
       </div>
       <p className="text-xs text-muted-foreground">
-        Upload club-provided artwork or a generic stock image approved for juniors, not junior
-        player photos. Saved images can be reused for any junior team and any future set.
-        Generate the set, then choose an image below to apply to all junior cards;
-        individual cards can still use different images and crops.
+        Upload club-provided artwork or a generic stock image approved for sharing, not junior
+        player photos. Reuse saved images for Match day, Team lists, Results and Match summaries,
+        for senior or junior teams. Generate the set, then apply an image to all team cards;
+        individual cards can still use different images and crops. Stock images are also available
+        in the title-page photo picker.
       </p>
       <input ref={file} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-        className="sr-only" aria-label="Upload junior stock image" disabled={locked}
+        className="sr-only" aria-label="Upload carousel stock image" disabled={locked}
         onChange={e => void upload(Array.from(e.target.files ?? []))} />
       {message && <p role="status" className="text-xs text-muted-foreground">{message}</p>}
       {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="outline" disabled={locked || !canApply}
-          onClick={() => onApply(null)}>No image on junior cards</Button>
+          onClick={() => onApply(null)}>No image on team cards</Button>
         {photos.map((photo, index) => (
           <button type="button" key={photo.id} disabled={locked || !canApply}
             className="rounded border p-1 disabled:opacity-50"
-            aria-label={`Use stock image ${index + 1} for all junior cards`}
+            aria-label={`Use stock image ${index + 1} for all team cards`}
             onClick={() => onApply(photo.id)}>
             <img src={photo.thumbUrl} alt={`Club stock image ${index + 1}`}
               className="h-20 w-24 rounded object-cover" />

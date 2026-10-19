@@ -20,7 +20,10 @@ export const COVER_PHOTO_UNAVAILABLE =
   "The selected cover photo is no longer available in Club-wide · Season 2026. Choose another photo or remove it before sending to review.";
 
 export function eligibleCoverPhotos(photos: ClubPhoto[]): ClubPhoto[] {
-  return photos.filter((p) => p.grade === null && p.season === 2026);
+  const stock = new Set(eligibleJuniorStockPhotos(photos).map(p => p.id));
+  return [...new Map(photos.filter(p =>
+    (p.grade === null && p.season === 2026) || stock.has(p.id),
+  ).map(p => [p.id, p])).values()];
 }
 export type WeekendSlide = {
   id: string;
@@ -116,6 +119,12 @@ export function eligibleJuniorStockPhotos(photos: ClubPhoto[]): ClubPhoto[] {
   return photos.filter(p => p.juniorStock === true && p.grade === null && !p.playerIds.length);
 }
 
+/** Explicit stock choices work across all set types; ordinary photos keep their grade rules. */
+export function eligibleCarouselPhotos(photos: ClubPhoto[], grade: string, junior = false): ClubPhoto[] {
+  const stock = eligibleJuniorStockPhotos(photos);
+  return junior || isJuniorGradeLabel(grade) ? stock : [...eligiblePhotos(photos, grade), ...stock];
+}
+
 export function createTeamSlides(
   fixtures: Fixture[],
   photos: ClubPhoto[],
@@ -165,9 +174,7 @@ export function refreshTeamSlides(
   return ordered.map((fixture) => {
     const old = oldById.get(fixture.id);
     if (!old) return createTeamSlides([fixture], photos, content)[0];
-    const eligible =
-      content[fixture.id]?.junior === true || isJuniorGradeLabel(fixture.grade)
-        ? eligibleJuniorStockPhotos(photos) : eligiblePhotos(photos, fixture.grade);
+    const eligible = eligibleCarouselPhotos(photos, fixture.grade, content[fixture.id]?.junior === true);
     return {
       fixture,
       ...(content[fixture.id] ? { input: content[fixture.id] as ShareCardInput } : {}),
@@ -319,9 +326,7 @@ export function buildWeekendSlides(
         isJuniorGradeLabel(f.grade) || (!!input && "junior" in input && input.junior === true);
       // Revalidate the chosen ID against the CURRENT library. No fallback after
       // deletion/reclassification and no arbitrary URL accepted from UI state.
-      const photo = junior
-        ? eligibleJuniorStockPhotos(photos).find(p => p.id === photoId)
-        : eligiblePhotos(photos, f.grade).find((p) => p.id === photoId);
+      const photo = eligibleCarouselPhotos(photos, f.grade, junior).find(p => p.id === photoId);
       const warnings: string[] = [];
       const gradeKey = gradeMatchKey(f.grade);
       const assigned = activeSponsors.filter(
@@ -338,7 +343,7 @@ export function buildWeekendSlides(
         warnings.push(
           junior
             ? "No club stock image selected. Junior player photos are not used."
-            : "No eligible photo selected. Choose a batting, bowling or fielding photo in this grade's library.",
+            : "No image selected. Choose a saved stock image or a batting, bowling or fielding photo in this grade's library.",
         );
       if (!f.venue?.trim()) warnings.push("Venue is missing. Update the fixture before sharing.");
       if (!f.opponentName.trim())
