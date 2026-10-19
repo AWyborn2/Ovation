@@ -1,5 +1,18 @@
 # Handoff
 
+**From:** Product Manager
+**To:** Architect / Engineering Manager
+**Feature:** admin-menu-consolidation
+
+## Context
+
+- Product decision agreed with Ash 2026-10-19 (scope B): `.10x/decisions/product-manager/admin-menu-consolidation.md`.
+- Priority order: (1) shirt-number category + unified People → Shirt numbers tab (needs migration; juniors stay in `junior_shirt_numbers`), (2) URL redirects, (3) Imports hub, (4) remaining menu moves + tour/test updates.
+- Acceptance: see Requirements and Success criteria in the decision file.
+
+## Previous handoff
+
+
 **From:** DevOps + SRE (Phase 6)
 **To:** Ash (release) / next feature
 **Feature:** junior-card-photos

@@ -6,3 +6,4 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 
 - [social-auto-queue-criteria](social-auto-queue-criteria.md)
 - [card-kind-templates](card-kind-templates.md)
+- [admin-menu-consolidation](admin-menu-consolidation.md) — regroup admin tabs, unified shirt numbers (Men/Female/Juniors), Imports hub. P1, agreed 2026-10-19
