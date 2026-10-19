@@ -29,3 +29,6 @@ Done (runbook `docs/runbooks/meta-publishing.md` §3b). Lessons recorded there: 
 - card-kind-templates: Delivery in progress (design track D1–D3, release R1–R4) — unchanged.
 - Next spec: Record / Team of the week / Premiership engines — discovery in `decisions/architect/team-of-the-week-engines.md` (ToW with admin criteria, grade-weighted points, senior and junior versions). Starts with Phase 0 brainstorming.
 - Follow-ups noted by the SDE: "pack's own look" panel slot still fed by `juniors_colour`; trading-card renderer kept for posted cards.
+
+## Handoff 2026-10-19 (PM -> Architect)
+Read `.10x/decisions/product-manager/social-tile-short-names.md`. Order: 1) preview-render bug in share-card-modal/use-card-preview (own PR); 2) tenant name-override table + auto short-name; 3) crest slot in renderer; 4) square layout fit.
