@@ -8,7 +8,7 @@
 
 - Decision file: `.10x/decisions/product-manager/social-photo-tag-selection.md` (agreed with Ash 2026-10-19).
 - Priority: (1) tag-based candidates for teamList + matchSummary (top performer first), (2) Match Day restricted to the grade's team/celebrating photos, (3) no auto fallback: leave empty, (4) filtered library picker for admins.
-- Open for architect: what happens to existing `random`/`player` card photo rules for these kinds; `fixed` rules and manual picks still win.
+- Decided: retire `random`/`player` card photo rules for these kinds; `fixed` rules and manual picks still win.
 
 ## Previous handoff
 

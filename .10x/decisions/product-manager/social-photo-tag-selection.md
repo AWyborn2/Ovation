@@ -33,6 +33,9 @@ is about, and to keep folder photos for team-level tiles.
    share dialog or queue still override (KTD6 unchanged). *(PM default, confirm with Ash
    if needed.)*
 
+6. **Retire `random` and `player` card photo rules** for teamList, matchSummary and Match Day
+   (Ash, 2026-10-19). Only `fixed` rules remain for these kinds.
+
 ## User stories
 
 - As a club admin, I want a team list tile to show someone actually picked in that side.
@@ -74,6 +77,4 @@ is about, and to keep folder photos for team-level tiles.
 
 - Clubs with little tagging will see many empty tiles at first: the empty-state prompt and
   the filtered picker carry this. Watch the manual-pick rate in the first round.
-- Existing `random` / `player` card photo rules overlap with the new behaviour; the architect
-  should decide whether they are retired for these kinds or kept.
 - Already-queued drafts keep their photos; `fillMissingDraftPhotos` only fills empty ones.
