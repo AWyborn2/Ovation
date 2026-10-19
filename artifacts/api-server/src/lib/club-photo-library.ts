@@ -64,6 +64,7 @@ export type PhotoDto = {
   photoTypes: PhotoType[];
   matchFormat: MatchFormat | null;
   sourcePhotoId: number | null;
+  juniorStock: boolean;
 };
 
 export async function presentPhotos(tenantId: number, rows: ClubPhotoRow[]): Promise<PhotoDto[]> {
@@ -96,6 +97,7 @@ export async function presentPhotos(tenantId: number, rows: ClubPhotoRow[]): Pro
     photoTypes: PHOTO_TYPES.filter((t) => r.photoTypes.includes(t)),
     matchFormat: isMatchFormat(r.matchFormat) ? r.matchFormat : null,
     sourcePhotoId: r.sourcePhotoId ?? null,
+    juniorStock: r.juniorStock,
   }));
 }
 

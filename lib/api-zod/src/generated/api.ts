@@ -8583,6 +8583,22 @@ export const GetWeekendCarouselSourcesQueryParams = zod.object({
 })
 
 export const GetWeekendCarouselSourcesResponse = zod.object({
+  "juniorStockPhotos": zod.array(zod.object({
+  "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number()),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+})).optional(),
   "timeZone": zod.string(),
   "content": zod.record(zod.string(), zod.record(zod.string(), zod.unknown())).optional().describe('Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings.'),
   "fixtures": zod.array(zod.object({
@@ -8601,6 +8617,7 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "createdAt": zod.coerce.date()
 })),
   "photos": zod.array(zod.object({
+  "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
   "id": zod.number(),
   "url": zod.string(),
   "thumbUrl": zod.string(),
@@ -8616,6 +8633,7 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
 })),
   "coverPhotos": zod.array(zod.object({
+  "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
   "id": zod.number(),
   "url": zod.string(),
   "thumbUrl": zod.string(),
@@ -10503,6 +10521,7 @@ export const ListClubPhotosQueryParams = zod.object({
 })
 
 export const ListClubPhotosResponseItem = zod.object({
+  "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
   "id": zod.number(),
   "url": zod.string(),
   "thumbUrl": zod.string(),
@@ -10528,6 +10547,7 @@ export const ListClubPhotosResponse = zod.array(ListClubPhotosResponseItem)
 
 
 export const IngestClubPhotosBody = zod.object({
+  "juniorStock": zod.boolean().optional().describe('Save as club-approved stock artwork for junior carousels; cannot carry player tags or a grade.'),
   "objectPaths": zod.array(zod.string()).min(1).describe('Object paths returned by POST \/storage\/uploads\/request-url.'),
   "season": zod.number().optional(),
   "grade": zod.string().optional(),
@@ -10541,6 +10561,7 @@ export const IngestClubPhotosResponse = zod.object({
   "objectPath": zod.string(),
   "ok": zod.boolean(),
   "photo": zod.object({
+  "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
   "id": zod.number(),
   "url": zod.string(),
   "thumbUrl": zod.string(),
@@ -10614,6 +10635,7 @@ export const TagClubPhotosBody = zod.object({
 })
 
 export const TagClubPhotosResponseItem = zod.object({
+  "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
   "id": zod.number(),
   "url": zod.string(),
   "thumbUrl": zod.string(),
@@ -10645,6 +10667,7 @@ export const MoveClubPhotosBody = zod.object({
 })
 
 export const MoveClubPhotosResponseItem = zod.object({
+  "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
   "id": zod.number(),
   "url": zod.string(),
   "thumbUrl": zod.string(),
@@ -10754,6 +10777,7 @@ export const RemovePhotoBackgroundBody = zod.object({
 })
 
 export const RemovePhotoBackgroundResponse = zod.object({
+  "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
   "id": zod.number(),
   "url": zod.string(),
   "thumbUrl": zod.string(),

@@ -129,6 +129,20 @@ router.get(
       )
       .orderBy(asc(clubPhotosTable.id));
     const coverPhotos = await presentPhotos(tenantId, coverRows);
+    const stockRows = await db
+      .select()
+      .from(clubPhotosTable)
+      .where(
+        and(
+          eq(clubPhotosTable.tenantId, tenantId),
+          eq(clubPhotosTable.juniorStock, true),
+          isNull(clubPhotosTable.grade),
+        ),
+      )
+      .orderBy(asc(clubPhotosTable.id));
+    const juniorStockPhotos = (await presentPhotos(tenantId, stockRows)).filter(
+      (p) => p.playerIds.length === 0,
+    );
     const teamPhotos = await presentPhotos(tenantId, eligible);
     const unsafePlayerIds = new Set(
       await nonSeniorPlayerIds(
@@ -146,6 +160,7 @@ router.get(
         })),
         photos: teamPhotos.filter((p) => !p.playerIds.some((id) => unsafePlayerIds.has(id))),
         coverPhotos: coverPhotos.filter((p) => !p.playerIds.some((id) => unsafePlayerIds.has(id))),
+        juniorStockPhotos,
         // Keep the structured roundLabel beside each card input, independent of
         // its display title. The opaque source payload also accepts legacy inputs.
         content: sources.content,

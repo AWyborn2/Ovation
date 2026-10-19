@@ -6,6 +6,9 @@ import {
   createTeamSlides,
   filterCarouselFixtures,
   eligiblePhotos,
+  eligibleJuniorStockPhotos,
+  eligibleCarouselPhotos,
+  refreshTeamSlides,
   eligibleCoverPhotos,
   fixturesInRange,
   moveTeam,
@@ -15,6 +18,145 @@ import {
 } from "./model";
 import { renderPackCard, resolveCardTokens } from "@/lib/pack-render";
 import { SIZES, type CardSize } from "@/lib/share-card";
+import { readQueuedCarousel, CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
+
+describe("club stock images across all carousels", () => {
+  it("offers stock to seniors and juniors without broadening ordinary grade-photo rules", () => {
+    const stock = photo(30, { juniorStock: true, grade: null });
+    const action = photo(31);
+    const otherGrade = photo(32, { grade: "B Grade" });
+    expect(eligibleCarouselPhotos([stock, action, otherGrade], "A Grade")).toEqual([action, stock]);
+    expect(eligibleCarouselPhotos([stock, action, otherGrade], "Year 5", true)).toEqual([stock]);
+    // Stock is an explicit choice, not a new automatic photo fallback.
+    expect(createTeamSlides([fixture()], [stock])[0].photoId).toBeNull();
+    expect(eligibleCoverPhotos([stock, { ...stock }])).toEqual([stock]);
+  });
+  it.each(["matchDay", "teamList", "results", "matchSummary"] as const)(
+    "renders, regenerates and saves a selected senior stock image for %s",
+    (type) => {
+      const stock = photo(30, { juniorStock: true, grade: null });
+      const f = fixture();
+      const input =
+        type === "teamList"
+          ? {
+              kind: "teamList",
+              grade: "A Grade",
+              players: [{ surname: "PLAYER", order: 1 }],
+            }
+          : {
+              kind: "matchSummary",
+              matchTitle: "A Grade • Round 1",
+              result: "Won",
+              club: { name: "Our Club" },
+              opposition: { name: "Visitors" },
+              innings: [],
+              carouselDetail: type === "matchSummary",
+            };
+      const content = type === "matchDay" ? {} : { [f.id]: input };
+      const teams = createTeamSlides([f], [stock], content);
+      teams[0].photoId = stock.id;
+      teams[0].transform = { focalX: 0.3, focalY: 0.6, zoom: 1.4 };
+      const refreshed = refreshTeamSlides([f], [stock], content, teams);
+      expect(refreshed[0]).toMatchObject({ photoId: stock.id, transform: teams[0].transform });
+      const slides = buildWeekendSlides(
+        refreshed,
+        [stock],
+        bundle,
+        type,
+        "2026-10-24",
+        "2026-10-25",
+        "Australia/Perth",
+        { selection: { photoId: stock.id, transform: teams[0].transform }, photos: [stock] },
+      );
+      expect(slides[0].data.photoUrl).toBe(stock.url);
+      expect(slides[1].data.photoUrl).toBe(stock.url);
+      const html = renderPackCard(
+        slides[1].input,
+        "square",
+        false,
+        resolveCardTokens({ junior: false, data: slides[1].data, packId: "club-kit-v1" }),
+        false,
+        slides[1].data,
+        "club-kit-v1",
+      );
+      expect(html).toContain(stock.url);
+      const saved = {
+        weekendCarousel: {
+          version: 1,
+          setType: type,
+          size: "square",
+          submissionId: "00000000-0000-4000-8000-000000000001",
+          slides,
+        },
+      };
+      expect(readQueuedCarousel(saved)).not.toBeNull();
+      expect(refreshTeamSlides([f], [], content, teams)[0].photoId).toBeNull();
+    },
+  );
+  it("requires explicit stock approval, no grade and no player tags", () => {
+    const stock = photo(30, { juniorStock: true, grade: null });
+    expect(
+      eligibleJuniorStockPhotos([
+        stock,
+        photo(31),
+        photo(32, { grade: null }),
+        photo(33, { juniorStock: true, grade: null, playerIds: [1] }),
+        photo(34, { juniorStock: true }),
+      ]),
+    ).toEqual([stock]);
+  });
+  it("retains explicit choices on regeneration and freezes a renderable review composition", () => {
+    const f = fixture(8, { grade: "Year 5" });
+    const stock = photo(30, { juniorStock: true, grade: null });
+    const content = { [f.id]: { kind: "matchDay", junior: true, grade: f.grade } };
+    const teams = createTeamSlides([f], [stock], content);
+    expect(teams[0].photoId).toBeNull();
+    teams[0].photoId = stock.id;
+    teams[0].transform = { focalX: 0.3, focalY: 0.6, zoom: 1.5 };
+    const refreshed = refreshTeamSlides([f], [stock], content, teams);
+    expect(refreshed[0].photoId).toBe(stock.id);
+    expect(refreshed[0].transform).toEqual(teams[0].transform);
+    const slides = buildWeekendSlides(
+      refreshed,
+      [stock],
+      bundle,
+      "Junior teams",
+      "2026-10-24",
+      "2026-10-25",
+    );
+    expect(slides[1].input).toMatchObject({
+      junior: true,
+      juniorPhotoAllowed: true,
+      juniorStockPhotoId: stock.id,
+    });
+    expect(slides[1].data.photoUrl).toBe(stock.url);
+    for (const packId of CAROUSEL_PACK_IDS) {
+      const html = renderPackCard(
+        slides[1].input,
+        "square",
+        false,
+        resolveCardTokens({ junior: true, data: slides[1].data, packId }),
+        true,
+        slides[1].data,
+        packId,
+      );
+      expect(html).toContain(stock.url);
+    }
+    const saved = {
+      weekendCarousel: {
+        version: 1,
+        setType: "matchDay",
+        size: "square",
+        submissionId: "00000000-0000-4000-8000-000000000001",
+        slides,
+      },
+    };
+    expect(readQueuedCarousel(saved)).not.toBeNull();
+    delete (slides[1].input as unknown as Record<string, unknown>).juniorStockPhotoId;
+    expect(readQueuedCarousel(saved)).toBeNull();
+    expect(refreshTeamSlides([f], [], content, teams)[0].photoId).toBeNull();
+  });
+});
 
 describe("carousel senior/junior source filter", () => {
   it("recognises junior source flags even when the team label has no age group", () => {

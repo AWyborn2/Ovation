@@ -12,11 +12,14 @@ import {
   juniorShirtNumbersTable,
   shirtNumberSettingsTable,
   juniorMatchDisplaySettingsTable,
+  clubPhotosTable,
 } from "@workspace/db";
 import app from "../app";
 import { encodeSession, SESSION_COOKIE } from "./auth";
 import { juniorCarouselContent, juniorCarouselFixtureId } from "./junior-carousel-content";
 import { GetWeekendCarouselSourcesResponse } from "@workspace/api-zod";
+import { validJuniorStockSelection } from "./junior-stock-photos";
+import type { QueuedCarousel } from "@workspace/scorecard/queued-carousel";
 
 const key = randomUUID();
 const publicId = randomUUID(),
@@ -154,11 +157,78 @@ afterAll(async () => {
       .where(eq(juniorMatchDisplaySettingsTable.tenantId, id));
     await db.delete(shirtNumberSettingsTable).where(eq(shirtNumberSettingsTable.tenantId, id));
     await db.delete(adminsTable).where(eq(adminsTable.tenantId, id));
+    await db.delete(clubPhotosTable).where(eq(clubPhotosTable.tenantId, id));
     await db.delete(tenantsTable).where(eq(tenantsTable.id, id));
   }
 });
 
 describe("junior match-day and team-list carousel sources", () => {
+  it("rejects junior stock uploads that include a player or grade before touching storage", async () => {
+    for (const extra of [{ grade: "A Grade" }, { playerIds: [123] }, { photoType: "team" }]) {
+      const response = await request(app)
+        .post("/api/club-photos/ingest")
+        .set("x-tenant-id", String(tenant))
+        .set("Cookie", cookie)
+        .send({ objectPaths: ["/objects/not-read"], juniorStock: true, ...extra });
+      expect(response.status).toBe(422);
+    }
+  });
+  it("persists reusable stock images, isolates clubs, and verifies approved URLs before review", async () => {
+    const base = {
+      width: 600,
+      height: 400,
+      objectPath: `/objects/stock-${key}`,
+      thumbPath: `/objects/thumb-${key}`,
+    };
+    const photos = await db
+      .insert(clubPhotosTable)
+      .values([
+        { ...base, tenantId: tenant, juniorStock: true },
+        { ...base, tenantId: tenant, objectPath: `/objects/ordinary-${key}` },
+        { ...base, tenantId: other, juniorStock: true, objectPath: `/objects/foreign-${key}` },
+        {
+          ...base,
+          tenantId: tenant,
+          juniorStock: true,
+          grade: "A Grade",
+          objectPath: `/objects/graded-${key}`,
+        },
+      ])
+      .returning();
+    const response = await request(app)
+      .get("/api/weekend-carousel/sources")
+      .set("x-tenant-id", String(tenant))
+      .set("Cookie", cookie)
+      .query({ ...query, setType: "matchDay" });
+    const body = GetWeekendCarouselSourcesResponse.parse(response.body);
+    expect(body.juniorStockPhotos?.map((p) => p.id)).toEqual([photos[0].id]);
+    const photo = body.juniorStockPhotos![0];
+    const saved = {
+      slides: [
+        { junior: true, input: { juniorStockPhotoId: photo.id }, data: { photoUrl: photo.url } },
+      ],
+    } as unknown as QueuedCarousel;
+    expect(await validJuniorStockSelection(tenant, saved)).toBe(true);
+    expect(await validJuniorStockSelection(other, saved)).toBe(false);
+    saved.slides[0].data.photoUrl = "/objects/arbitrary";
+    expect(await validJuniorStockSelection(tenant, saved)).toBe(false);
+    saved.slides[0].data.photoUrl = photo.url;
+    await db
+      .update(clubPhotosTable)
+      .set({ juniorStock: false })
+      .where(eq(clubPhotosTable.id, photo.id));
+    expect(await validJuniorStockSelection(tenant, saved)).toBe(false);
+    await db
+      .update(clubPhotosTable)
+      .set({ juniorStock: true })
+      .where(eq(clubPhotosTable.id, photo.id));
+    const future = await request(app)
+      .get("/api/weekend-carousel/sources")
+      .set("x-tenant-id", String(tenant))
+      .set("Cookie", cookie)
+      .query({ from: "2027-01-01", to: "2027-01-02", audience: "junior" });
+    expect(future.body.juniorStockPhotos.map((p: { id: number }) => p.id)).toEqual([photo.id]);
+  });
   it("uses club-time boundaries, isolates tenants and excludes byes/cancellations", async () => {
     const result = await juniorCarouselContent(tenant, "matchDay", query.from, query.to);
     expect(result.fixtures).toHaveLength(2);

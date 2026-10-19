@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { validJuniorStockSelection } from "../lib/junior-stock-photos";
 import {
   readQueuedCarousel,
   carouselPackId,
@@ -457,6 +458,13 @@ router.post(
       return;
     }
     if (carousel) {
+      if (!(await validJuniorStockSelection(tenantId, carousel))) {
+        res.status(422).json({
+          error:
+            "A junior stock image is no longer available or does not belong to this club. Choose an approved stock image and try again.",
+        });
+        return;
+      }
       if (carousel.packId !== undefined && packId !== null && packId !== carousel.packId) {
         res
           .status(400)
@@ -498,7 +506,7 @@ router.post(
     // (not a blank canvas, a saved template or a supplied layout) copies the
     // kind's template (ADR-002).
     const templated =
-      templateId === undefined && adjustments === null && packId !== BLANK_PACK_ID
+      !carousel && templateId === undefined && adjustments === null && packId !== BLANK_PACK_ID
         ? await templatedDesignFor(tenantId, cardInput.kind, packId)
         : null;
     const [row] = await db

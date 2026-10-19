@@ -122,7 +122,8 @@ function sanitisedOverride(o: PackCardData["tokenOverride"]): Partial<PackTokens
 /** Field values plus the club's monogram (initials), for library elements. */
 /**
  * The server's positive marker that a junior card may show its photo — a junior
- * player's own photo the family allows (ADR-007). Only the junior engines write it.
+ * player's own photo the family allows (ADR-007), or explicitly approved club
+ * stock artwork on a carousel. The API verifies stock ownership before review.
  */
 function juniorPhotoAllowedOn(input: ShareCardInput): boolean {
   return (input as { juniorPhotoAllowed?: boolean }).juniorPhotoAllowed === true;

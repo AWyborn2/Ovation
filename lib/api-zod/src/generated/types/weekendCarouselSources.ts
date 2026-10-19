@@ -10,6 +10,7 @@ import type { Fixture } from './fixture';
 import type { WeekendCarouselSourcesContent } from './weekendCarouselSourcesContent';
 
 export interface WeekendCarouselSources {
+  juniorStockPhotos?: ClubPhoto[];
   timeZone: string;
   /** Frozen card inputs keyed by the corresponding source fixture ID. Unavailable sources are excluded and explained in warnings. */
   content?: WeekendCarouselSourcesContent;
