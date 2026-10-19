@@ -70,7 +70,7 @@ const TILES_FALLBACK: ResolvedNavItem[] = [
     isExternal: false,
     iconKey: "settings",
     description:
-      "Defaults for Matches, Records, honour & milestone boards, junior matches and site navigation.",
+      "Defaults for Matches, Records, honour & milestone boards, the clubroom display, junior matches and site navigation.",
   },
   {
     label: "People",
@@ -78,7 +78,7 @@ const TILES_FALLBACK: ResolvedNavItem[] = [
     isExternal: false,
     iconKey: "users",
     description:
-      "Players, stats, committee, captains, junior office bearers and non-player officials.",
+      "Players, junior players, shirt numbers, committee, captains, junior office bearers and non-player officials.",
   },
   {
     label: "Honours & Records",
@@ -89,11 +89,18 @@ const TILES_FALLBACK: ResolvedNavItem[] = [
       "Premierships, awards, Team of the Decade, cap register, life members and junior premierships.",
   },
   {
-    label: "Import CSV",
+    label: "Stats & Data",
+    target: "/admin/data",
+    isExternal: false,
+    iconKey: "database",
+    description: "Player stat rows, junior scorecards, stat corrections and duplicate players.",
+  },
+  {
+    label: "Imports",
     target: "/admin/import",
     isExternal: false,
     iconKey: "upload",
-    description: "Upload a PlayCricket combined CSV or a single match scorecard.",
+    description: "Season and match stats files, and the PlayHQ squad export.",
   },
   {
     label: "Admin users",

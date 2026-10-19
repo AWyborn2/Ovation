@@ -1,6 +1,7 @@
 import {
   CalendarCheck,
   ClipboardList,
+  Database,
   Image,
   LayoutGrid,
   Settings,
@@ -45,8 +46,15 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     label: "Selection Hub",
     href: "/admin/selection",
     icon: ClipboardList,
-    description: "This round's drafted sides: pick, swap, name captains and finalise.",
-    tabs: [],
+    description: "This round's drafted sides, and the team lists for upcoming junior games.",
+    tabs: [
+      { value: "senior", label: "Senior selection", path: "/admin/selection" },
+      {
+        value: "junior-fixtures",
+        label: "Junior team lists",
+        path: "/admin/selection/junior-fixtures",
+      },
+    ],
   },
   {
     key: "availability",
@@ -111,7 +119,8 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     label: "Display & Settings",
     href: "/admin/settings",
     icon: Settings,
-    description: "Defaults and display options for the public pages, plus site navigation.",
+    description:
+      "Defaults and display options for the public pages, the clubroom display, plus site navigation.",
     tabs: [
       { value: "matches", label: "Matches page", path: "/admin/settings" },
       { value: "records", label: "Records page", path: "/admin/settings/records" },
@@ -127,6 +136,12 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         path: "/admin/settings/milestone-board",
         feature: "curation",
       },
+      {
+        value: "display",
+        label: "Display & kiosk",
+        path: "/admin/settings/display",
+        feature: "clubroomTv",
+      },
       { value: "junior-matches", label: "Junior matches", path: "/admin/settings/junior-matches" },
       { value: "tour", label: "Welcome & tour", path: "/admin/settings/tour" },
       { value: "nav", label: "Navigation & menus", path: "/admin/settings/nav" },
@@ -138,31 +153,21 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     label: "People",
     href: "/admin/people",
     icon: Users,
-    description:
-      "Players, duplicate players, stat corrections, stats, committee, captains and club officials.",
+    description: "Players, junior players, shirt numbers, committee, captains and club officials.",
     tabs: [
       { value: "players", label: "Players", path: "/admin/people" },
-      {
-        value: "duplicates",
-        label: "Duplicate players",
-        path: "/admin/people/duplicates",
-      },
-      {
-        value: "corrections",
-        label: "Corrections",
-        path: "/admin/people/corrections",
-      },
-      { value: "stats", label: "Stats", path: "/admin/people/stats" },
-      {
-        value: "junior-scorecards",
-        label: "Junior scorecards",
-        path: "/admin/people/junior-scorecards",
-      },
       { value: "junior-players", label: "Junior players", path: "/admin/people/junior-players" },
       {
-        value: "junior-fixtures",
-        label: "Junior fixtures",
-        path: "/admin/people/junior-fixtures",
+        value: "shirt-numbers",
+        label: "Shirt numbers",
+        path: "/admin/people/shirt-numbers",
+        feature: "curation",
+      },
+      {
+        value: "junior-shirt-numbers",
+        label: "Junior shirt numbers",
+        path: "/admin/people/junior-shirt-numbers",
+        feature: "curation",
       },
       {
         value: "committee",
@@ -185,7 +190,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     href: "/admin/honours",
     icon: Trophy,
     description:
-      "Premierships, awards, Team of the Decade, caps, shirt numbers, life members, junior premierships and junior shirt numbers.",
+      "Premierships, awards, Team of the Decade, caps, life members and junior premierships.",
     tabs: [
       { value: "premierships", label: "Premierships", path: "/admin/honours", feature: "curation" },
       { value: "awards", label: "Awards", path: "/admin/honours/awards", feature: "curation" },
@@ -197,12 +202,6 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       },
       { value: "caps", label: "Cap register", path: "/admin/honours/caps", feature: "curation" },
       {
-        value: "shirt-numbers",
-        label: "Shirt numbers",
-        path: "/admin/honours/shirt-numbers",
-        feature: "curation",
-      },
-      {
         value: "life-members",
         label: "Life members",
         path: "/admin/honours/life-members",
@@ -213,21 +212,38 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         label: "Junior premierships",
         path: "/admin/honours/junior-premierships",
       },
-      {
-        value: "junior-shirt-numbers",
-        label: "Junior shirt numbers",
-        path: "/admin/honours/junior-shirt-numbers",
-        feature: "curation",
-      },
-      {
-        value: "display",
-        label: "Display & kiosk",
-        path: "/admin/honours/display",
-        feature: "clubroomTv",
-      },
     ],
   },
-  { key: "import", label: "Import CSV", href: "/admin/import", icon: Upload, tabs: [] },
+  {
+    key: "data",
+    label: "Stats & Data",
+    href: "/admin/data",
+    icon: Database,
+    description:
+      "Fix the numbers: player stat rows, junior scorecards, stat corrections and duplicate players.",
+    tabs: [
+      { value: "stats", label: "Stats", path: "/admin/data" },
+      {
+        value: "junior-scorecards",
+        label: "Junior scorecards",
+        path: "/admin/data/junior-scorecards",
+      },
+      { value: "corrections", label: "Corrections", path: "/admin/data/corrections" },
+      { value: "duplicates", label: "Duplicate players", path: "/admin/data/duplicates" },
+    ],
+  },
+  {
+    key: "import",
+    label: "Imports",
+    href: "/admin/import",
+    icon: Upload,
+    description:
+      "Every file upload in one place: season and match stats, and the PlayHQ squad export.",
+    tabs: [
+      { value: "stats", label: "Stats", path: "/admin/import" },
+      { value: "squad", label: "Squad", path: "/admin/import/squad" },
+    ],
+  },
   { key: "users", label: "Admin users", href: "/admin/users", icon: UserCog, tabs: [] },
 ];
 
