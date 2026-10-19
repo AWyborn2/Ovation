@@ -143,14 +143,12 @@ describe("Selection Hub tenant isolation", () => {
       .values({ tenantId: tenantA, roundId: roundA, fixtureId: fa.id, slots })
       .returning();
     selA = sa.id;
-    await db
-      .insert(squadMemberParticipantsTable)
-      .values({
-        tenantId: tenantA,
-        participantId: GUID_A,
-        memberId: memberA,
-        createdBy: "Admin A",
-      });
+    await db.insert(squadMemberParticipantsTable).values({
+      tenantId: tenantA,
+      participantId: GUID_A,
+      memberId: memberA,
+      createdBy: "Admin A",
+    });
   });
 
   afterAll(async () => {
