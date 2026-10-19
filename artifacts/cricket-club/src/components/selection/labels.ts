@@ -126,6 +126,17 @@ export function eventText(e: SelectionEvent): string {
       const who = typeof d.name === "string" ? d.name : "A player";
       return `${who} can't make it; their ${g} slot is open again`;
     }
+    case "status_set": {
+      const who = typeof d.name === "string" ? d.name : "A player";
+      const status = typeof d.status === "string" ? d.status : null;
+      const said =
+        status === "yes" || status === "maybe" || status === "no"
+          ? STATUS[status].label.toLowerCase()
+          : "an answer";
+      const by = e.actorName ? ` by ${e.actorName}` : "";
+      const note = typeof d.note === "string" && d.note ? ` ("${d.note}")` : "";
+      return `${who} recorded as ${said}${by}${note}`;
+    }
     case "update": {
       const bits: string[] = [];
       const added = names(d.added);

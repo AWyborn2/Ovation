@@ -146,9 +146,20 @@ router.post("/club-photos/ingest", requireAdmin, async (req, res): Promise<void>
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const { objectPaths, season, grade, photoType, matchFormat, playerIds = [], juniorStock = false } = parsed.data;
+  const {
+    objectPaths,
+    season,
+    grade,
+    photoType,
+    matchFormat,
+    playerIds = [],
+    juniorStock = false,
+  } = parsed.data;
   if (juniorStock && (grade || playerIds.length || photoType || matchFormat)) {
-    res.status(422).json({ error: "Junior stock images must be club-wide artwork without player tags or team/category assignments." });
+    res.status(422).json({
+      error:
+        "Junior stock images must be club-wide artwork without player tags or team/category assignments.",
+    });
     return;
   }
   if (objectPaths.length > MAX_INGEST_BATCH) {

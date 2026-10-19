@@ -108,16 +108,21 @@ export function useWeekendCarousel(
   const [exporting, setExporting] = useState(false);
   const busy = exporting || generating;
 
-  const fixtures = useMemo(() => filterCarouselFixtures(
-    (sources?.fixtures ?? []) as Fixture[], sources?.content, audience,
-  ), [sources, audience]);
-  const photos = useMemo(() => [
-    ...(sources?.photos ?? []), ...(sources?.juniorStockPhotos ?? []),
-  ] as ClubPhoto[], [sources]);
+  const fixtures = useMemo(
+    () =>
+      filterCarouselFixtures((sources?.fixtures ?? []) as Fixture[], sources?.content, audience),
+    [sources, audience],
+  );
+  const photos = useMemo(
+    () => [...(sources?.photos ?? []), ...(sources?.juniorStockPhotos ?? [])] as ClubPhoto[],
+    [sources],
+  );
   const juniorStockPhotos = eligibleJuniorStockPhotos(photos);
-  const coverPhotos = useMemo(() => eligibleCoverPhotos([
-    ...(sources?.coverPhotos ?? []), ...(sources?.juniorStockPhotos ?? []),
-  ]), [sources]);
+  const coverPhotos = useMemo(
+    () =>
+      eligibleCoverPhotos([...(sources?.coverPhotos ?? []), ...(sources?.juniorStockPhotos ?? [])]),
+    [sources],
+  );
   const sourceWarnings = sources?.warnings ?? [];
   const timeZone = sources?.timeZone ?? CLUB_TIME_ZONE;
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
@@ -296,8 +301,11 @@ export function useWeekendCarousel(
       // A second admin may have removed or retagged the photo since preview.
       // Rebuild from fresh server-approved URLs, never silently replace the pick.
       let queuedSlides = slides;
-      if (cover.photoId !== null || setType !== "matchDay" ||
-        generated!.teams.some(t => t.photoId !== null)) {
+      if (
+        cover.photoId !== null ||
+        setType !== "matchDay" ||
+        generated!.teams.some((t) => t.photoId !== null)
+      ) {
         const fresh = await sourcesQ.refetch();
         if (fresh.isError || !fresh.data)
           throw new Error("Could not verify source data. Retry before sending to review.");
@@ -312,7 +320,8 @@ export function useWeekendCarousel(
           );
         }
         const allowed = eligibleCoverPhotos([
-          ...(fresh.data.coverPhotos ?? []), ...(fresh.data.juniorStockPhotos ?? []),
+          ...(fresh.data.coverPhotos ?? []),
+          ...(fresh.data.juniorStockPhotos ?? []),
         ]);
         if (cover.photoId !== null && !allowed.some((p) => p.id === cover.photoId))
           throw new Error(COVER_PHOTO_UNAVAILABLE);
@@ -322,9 +331,10 @@ export function useWeekendCarousel(
             (t) =>
               t.photoId !== null &&
               !eligibleCarouselPhotos(
-                freshPhotos, t.fixture.grade,
+                freshPhotos,
+                t.fixture.grade,
                 !!(t.input && "junior" in t.input && t.input.junior),
-              ).some(p => p.id === t.photoId),
+              ).some((p) => p.id === t.photoId),
           )
         ) {
           throw new Error(
@@ -407,7 +417,9 @@ export function useWeekendCarousel(
     retry,
     photos,
     juniorStockPhotos,
-    reloadPhotos: async () => { await sourcesQ.refetch(); },
+    reloadPhotos: async () => {
+      await sourcesQ.refetch();
+    },
     coverPhotos,
     cover,
     coverUnavailable,

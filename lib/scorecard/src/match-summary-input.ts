@@ -282,16 +282,17 @@ export function juniorMatchToSummaryInput(
       ? first.bowlingTeam
       : first.battingTeam
     : null;
-  const oppColors = oppScTeam?.colors ?? deriveOppositionColors(
-    match.opponentClub?.backgroundColour, match.opponentClub?.primaryColour,
-  );
+  const oppColors =
+    oppScTeam?.colors ??
+    deriveOppositionColors(match.opponentClub?.backgroundColour, match.opponentClub?.primaryColour);
   const oppTeam: MatchSummaryTeam = {
     name: oppScTeam?.name ?? match.opponentClub?.name ?? match.opponentName ?? "Opposition",
     shortName: oppScTeam?.shortName ?? match.opponentClub?.shortName ?? null,
     primaryColor: oppColors.primary,
     secondaryColor: oppColors.secondary,
     textColor: oppColors.text,
-    logoUrl: oppScTeam?.logoUrl ?? match.opponentClub?.logoUrl128 ?? match.opponentClub?.logoUrl ?? null,
+    logoUrl:
+      oppScTeam?.logoUrl ?? match.opponentClub?.logoUrl128 ?? match.opponentClub?.logoUrl ?? null,
   };
 
   const innings: MatchSummaryInnings[] = sc.innings

@@ -28,7 +28,12 @@ import {
 import { EmptyState, QueryError } from "@/components/data-states";
 import { SIZES, type CardSize } from "@/lib/share-card";
 import { listPackManifests } from "@/lib/pack-templates/registry";
-import { CLUB_TIME_ZONE, eligibleCarouselPhotos, type TeamSlide, type CarouselAudience } from "./model";
+import {
+  CLUB_TIME_ZONE,
+  eligibleCarouselPhotos,
+  type TeamSlide,
+  type CarouselAudience,
+} from "./model";
 import { JuniorStockPicker } from "./junior-stock-picker";
 import { CoverPhotoPicker } from "./cover-photo-picker";
 import { PhotoPlacement, SlidePreview } from "./slide-preview";
@@ -75,7 +80,9 @@ export function WeekendCarousel({
           className="left-0 top-0 flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 sm:rounded-none"
           data-testid="weekend-fullscreen-editor"
         >
-          {open && <WeekendCarouselBody initialType={initialType} initialAudience={initialAudience} />}
+          {open && (
+            <WeekendCarouselBody initialType={initialType} initialAudience={initialAudience} />
+          )}
         </DialogContent>
       </Dialog>
     </>
@@ -97,15 +104,17 @@ export function WeekendCarouselBody({
         </DialogDescription>
       </DialogHeader>
       <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto overflow-x-hidden px-5 py-5">
-          <JuniorStockPicker
-            photos={s.juniorStockPhotos}
-            disabled={s.busy}
-            canApply={!!s.generated?.teams.length}
-            onUploaded={s.reloadPhotos}
-            onApply={photoId => s.generated?.teams.forEach((team, index) => {
+        <JuniorStockPicker
+          photos={s.juniorStockPhotos}
+          disabled={s.busy}
+          canApply={!!s.generated?.teams.length}
+          onUploaded={s.reloadPhotos}
+          onApply={(photoId) =>
+            s.generated?.teams.forEach((team, index) => {
               s.patchTeam(index, { photoId });
-            })}
-          />
+            })
+          }
+        />
         <fieldset className="flex flex-wrap items-center gap-2" disabled={s.busy}>
           <legend className="mb-2 text-sm font-medium">Set type</legend>
           {(Object.keys(CAROUSEL_LABELS) as CarouselSetType[]).map((type) => (
@@ -123,7 +132,7 @@ export function WeekendCarouselBody({
         </fieldset>
         <fieldset className="flex flex-wrap items-center gap-2" disabled={s.busy}>
           <legend className="mb-2 text-sm font-medium">Teams</legend>
-          {(["all", "senior", "junior"] as const).map(audience => (
+          {(["all", "senior", "junior"] as const).map((audience) => (
             <Button
               key={audience}
               size="sm"
@@ -138,9 +147,10 @@ export function WeekendCarouselBody({
         </fieldset>
         {s.audience === "junior" && (
           <p className="text-sm text-muted-foreground">
-            Junior match-day tiles use synced junior fixtures. Team-list tiles require a
-            published list from Junior fixtures or a finalised Selection Hub team.
-            Public naming and privacy settings apply. Junior cards can use approved club stock images, not junior player photos.
+            Junior match-day tiles use synced junior fixtures. Team-list tiles require a published
+            list from Junior fixtures or a finalised Selection Hub team. Public naming and privacy
+            settings apply. Junior cards can use approved club stock images, not junior player
+            photos.
           </p>
         )}
         <div className="space-y-1">
@@ -280,7 +290,9 @@ function RangeAndFixtures({ s }: { s: WeekendCarouselState }) {
                   data-testid={`checkbox-fixture-${p.id}`}
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{fixtureLine(p.fixture, s.sourceContent[p.id]?.juniorTeamName)}</p>
+                  <p className="truncate text-sm font-medium">
+                    {fixtureLine(p.fixture, s.sourceContent[p.id]?.juniorTeamName)}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">
                     {p.fixture.source === "scorecard"
                       ? new Date(p.fixture.startAt).toLocaleDateString("en-AU", {
@@ -536,8 +548,11 @@ function TeamEditor({
   count: number;
 }) {
   const lock = s.busy;
-  const options = eligibleCarouselPhotos(s.photos, team.fixture.grade,
-    !!(team.input && "junior" in team.input && team.input.junior));
+  const options = eligibleCarouselPhotos(
+    s.photos,
+    team.fixture.grade,
+    !!(team.input && "junior" in team.input && team.input.junior),
+  );
   const chosen = options.find((p) => p.id === team.photoId) ?? null;
   const label = fixtureLine(team.fixture);
   const slide = s.slides.find((sl) => sl.id === `fixture-${team.fixture.id}`);

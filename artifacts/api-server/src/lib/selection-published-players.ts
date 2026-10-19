@@ -201,7 +201,8 @@ export async function recoverPublishedSelectionIdentities(
       "Some playing numbers could not be verified against the finalised selection. Check and re-finalise this side in Selection Hub.",
   };
   // A single statement gives a consistent selection/member snapshot even while
-  // another admin reopens the side. Only these non-contact columns are read.
+  // another admin reopens the side. Only these non-contact columns are read (the
+  // date of birth only to keep an under-18's name masked, as at publication).
   const rows = await db
     .select({
       side: selectionsTable,
@@ -211,6 +212,9 @@ export async function recoverPublishedSelectionIdentities(
         lastName: squadMembersTable.lastName,
         preferredName: squadMembersTable.preferredName,
         isPrivate: squadMembersTable.isPrivate,
+        showNamePublicly: squadMembersTable.showNamePublicly,
+        section: squadMembersTable.section,
+        dateOfBirth: squadMembersTable.dateOfBirth,
         linkedPlayerId: squadMembersTable.linkedPlayerId,
       },
     })

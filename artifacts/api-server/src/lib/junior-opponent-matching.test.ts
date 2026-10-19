@@ -9,10 +9,13 @@ const clubs = [
 
 describe("junior opponent crest matching", () => {
   it.each([
-    "South Mandurah Junior Cricket Club", "South Mandurah JCC",
-    "South Mandurah Year 5 Boys", "South Mandurah Junior Gold",
-    "South Mandurah (Year 5) Blue", "South Mandurah U12 Girls",
-  ])("resolves %s without falling onto Mandurah", name => {
+    "South Mandurah Junior Cricket Club",
+    "South Mandurah JCC",
+    "South Mandurah Year 5 Boys",
+    "South Mandurah Junior Gold",
+    "South Mandurah (Year 5) Blue",
+    "South Mandurah U12 Girls",
+  ])("resolves %s without falling onto Mandurah", (name) => {
     expect(matchJuniorOpponentClub(name, clubs)?.id).toBe(12);
   });
   it("does not confuse nicknames or partial tokens", () => {
@@ -21,9 +24,12 @@ describe("junior opponent crest matching", () => {
     expect(normaliseJuniorClubName("Rockingham Rams U12")).toBe("rockingham rams");
   });
   it("refuses equally specific ambiguous clubs", () => {
-    expect(matchJuniorOpponentClub("South Mandurah Junior", [
-      ...clubs, { id: 50, name: "South Mandurah JCC" },
-    ])).toBeNull();
+    expect(
+      matchJuniorOpponentClub("South Mandurah Junior", [
+        ...clubs,
+        { id: 50, name: "South Mandurah JCC" },
+      ]),
+    ).toBeNull();
   });
   it("preserves reference branding and leaves inputs untouched", () => {
     const branded = [{ ...clubs[1], logoUrl: "/south.png" }];

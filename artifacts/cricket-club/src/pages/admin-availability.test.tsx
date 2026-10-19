@@ -492,4 +492,47 @@ describe("admin availability", () => {
       }),
     );
   });
+  it("offers 'show name publicly' for a private adult only, and sends it on save", async () => {
+    let detail: SquadMemberDetail = {
+      ...DETAIL,
+      section: "senior",
+      under18: false,
+      dateOfBirth: "1990-02-03",
+      isPrivate: true,
+      showNamePublicly: false,
+      showNamePubliclyBy: "Pat Admin",
+      showNamePubliclyAt: "2026-10-18T02:00:00.000Z",
+    };
+    const calls = installFetch((url) => (/\/squad\/7$/.test(url) ? { body: detail } : undefined));
+    renderAt(<AdminAvailability />, "/admin/availability");
+    fireEvent.click(
+      within(await screen.findByTestId("squad-row-7")).getByRole("button", { name: "Edit" }),
+    );
+    const d = within(await screen.findByRole("dialog"));
+    const toggle = await d.findByTestId("member-show-name");
+    expect(d.getByText(/stays private there/)).toBeTruthy();
+    expect(d.getByText(/Last changed by Pat Admin/)).toBeTruthy();
+    fireEvent.click(toggle);
+    fireEvent.click(d.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(calls.find((c) => c.method === "PATCH")?.body).toMatchObject({
+        showNamePublicly: true,
+      }),
+    );
+
+    // Never offered for a junior, an under-18 or a public member.
+    for (const over of [{ section: "junior" as const }, { under18: true }, { isPrivate: false }]) {
+      cleanup();
+      detail = { ...detail, ...over };
+      installFetch((url) => (/\/squad\/7$/.test(url) ? { body: detail } : undefined));
+      renderAt(<AdminAvailability />, "/admin/availability");
+      fireEvent.click(
+        within(await screen.findByTestId("squad-row-7")).getByRole("button", { name: "Edit" }),
+      );
+      const again = within(await screen.findByRole("dialog"));
+      await again.findByRole("button", { name: "Save" });
+      expect(again.queryByTestId("member-show-name")).toBeNull();
+      detail = { ...detail, section: "senior", under18: false, isPrivate: true };
+    }
+  });
 });

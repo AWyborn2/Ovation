@@ -3180,6 +3180,8 @@ export const GetSquadMemberResponse = zod.object({
   "ageGroup": zod.string().nullable(),
   "isPrivate": zod.boolean(),
   "showNamePublicly": zod.boolean().optional().describe('An admin chose to name this private member on the club\'s public surfaces'),
+  "showNamePubliclyBy": zod.string().nullish().describe('The admin who last changed showNamePublicly'),
+  "showNamePubliclyAt": zod.coerce.date().nullish().describe('When showNamePublicly was last changed'),
   "linkedPlayerId": zod.number().nullable(),
   "linkedPlayerName": zod.string().nullable().describe('The linked club player\'s name (admin only); null when unlinked or the name can\'t be resolved.'),
   "account": zod.object({
@@ -3257,6 +3259,8 @@ export const UpdateSquadMemberResponse = zod.object({
   "ageGroup": zod.string().nullable(),
   "isPrivate": zod.boolean(),
   "showNamePublicly": zod.boolean().optional().describe('An admin chose to name this private member on the club\'s public surfaces'),
+  "showNamePubliclyBy": zod.string().nullish().describe('The admin who last changed showNamePublicly'),
+  "showNamePubliclyAt": zod.coerce.date().nullish().describe('When showNamePublicly was last changed'),
   "linkedPlayerId": zod.number().nullable(),
   "linkedPlayerName": zod.string().nullable().describe('The linked club player\'s name (admin only); null when unlinked or the name can\'t be resolved.'),
   "account": zod.object({

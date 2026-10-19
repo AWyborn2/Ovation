@@ -43,17 +43,20 @@ router.get(
     const start = clubTimeToUtc(`${from}T00:00`)!;
     const end = clubTimeToUtc(`${endDay.toISOString().slice(0, 10)}T00:00`)!;
     const tenantId = getTenantId(req);
-    const rows = audience === "junior" ? [] : await db
-      .select()
-      .from(fixturesTable)
-      .where(
-        and(
-          eq(fixturesTable.tenantId, tenantId),
-          gte(fixturesTable.startAt, start),
-          lt(fixturesTable.startAt, end),
-        ),
-      )
-      .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id));
+    const rows =
+      audience === "junior"
+        ? []
+        : await db
+            .select()
+            .from(fixturesTable)
+            .where(
+              and(
+                eq(fixturesTable.tenantId, tenantId),
+                gte(fixturesTable.startAt, start),
+                lt(fixturesTable.startAt, end),
+              ),
+            )
+            .orderBy(asc(fixturesTable.startAt), asc(fixturesTable.id));
     const ids =
       setType === "results" || setType === "matchSummary"
         ? []
@@ -126,13 +129,20 @@ router.get(
       )
       .orderBy(asc(clubPhotosTable.id));
     const coverPhotos = await presentPhotos(tenantId, coverRows);
-    const stockRows = await db.select().from(clubPhotosTable).where(and(
-      eq(clubPhotosTable.tenantId, tenantId),
-      eq(clubPhotosTable.juniorStock, true),
-      isNull(clubPhotosTable.grade),
-    )).orderBy(asc(clubPhotosTable.id));
-    const juniorStockPhotos = (await presentPhotos(tenantId, stockRows))
-      .filter(p => p.playerIds.length === 0);
+    const stockRows = await db
+      .select()
+      .from(clubPhotosTable)
+      .where(
+        and(
+          eq(clubPhotosTable.tenantId, tenantId),
+          eq(clubPhotosTable.juniorStock, true),
+          isNull(clubPhotosTable.grade),
+        ),
+      )
+      .orderBy(asc(clubPhotosTable.id));
+    const juniorStockPhotos = (await presentPhotos(tenantId, stockRows)).filter(
+      (p) => p.playerIds.length === 0,
+    );
     const teamPhotos = await presentPhotos(tenantId, eligible);
     const unsafePlayerIds = new Set(
       await nonSeniorPlayerIds(

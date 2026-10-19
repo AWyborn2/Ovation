@@ -459,7 +459,10 @@ router.post(
     }
     if (carousel) {
       if (!(await validJuniorStockSelection(tenantId, carousel))) {
-        res.status(422).json({ error: "A junior stock image is no longer available or does not belong to this club. Choose an approved stock image and try again." });
+        res.status(422).json({
+          error:
+            "A junior stock image is no longer available or does not belong to this club. Choose an approved stock image and try again.",
+        });
         return;
       }
       if (carousel.packId !== undefined && packId !== null && packId !== carousel.packId) {

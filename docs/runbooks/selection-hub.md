@@ -130,3 +130,40 @@ Production database pane; don't save it to a file or paste it anywhere else):
 
 Repeat steps 2 to 4 for each club. A `conflict` row in the plan is a participant ID on lists naming
 different members (often a family PlayHQ account): leave it for an admin to match in the Hub.
+
+## 4. Answers given in person, and naming private players
+
+### Recording a Yes, Maybe or No
+
+Open a player from the pool or a side. "Answer given in person" records Yes, Maybe or No and an
+optional note for the weekend shown in the Hub. It works with the availability tool off.
+
+- It applies to every date that weekend that the player is asked about (their grade's fixtures),
+  plus the date of any side they are in. It replaces any earlier answer and its note.
+- The Hub shows "Set by <name>" under the control. The change log reads "<player> recorded as
+  available by <name>". Each record is logged against every side the player is in, or against the
+  round when they're in none. A record made after the cut-off is marked late.
+- The player's own answer from their link replaces it later, and "set by" clears.
+- Admins can record for anyone. Captains can record only when the club's selection rule lets them
+  pick sides in that section (never at an "admins only" club). A junior's answer is recorded from
+  the Juniors board.
+- A past weekend is read-only (409). The weekend must have a fixture for the player (409 otherwise).
+
+Where to look: `availability_responses` rows with `source = 'admin'` (`set_by_name`,
+`set_by_admin_id`, null for a captain), and `selection_events` with `action = 'status_set'`.
+
+### "Show name publicly"
+
+A player who is private on PlayHQ is "Private Player" on the club's published team list, and so on
+the site and on social cards, which read that list. In Admin → Availability → the squad member's
+edit drawer, an admin can turn on **Show name publicly** to name them on this club's surfaces.
+
+- It stays off unless an admin turns it on. Only admins can change it, never captains. Each change
+  stamps `show_name_publicly_by` and `show_name_publicly_at` and is logged
+  ("squad public name changed").
+- It is never offered for, and the server ignores it on, a junior or under-18 member. Junior
+  privacy stays with the junior rules.
+- It changes nothing on PlayHQ. A PlayHQ-sourced team list keeps PlayHQ's masking.
+- A side that was already published keeps the name it was published with. Re-open and re-finalise
+  it to apply a change.
+- The Hub and the printed team sheet always show real names.

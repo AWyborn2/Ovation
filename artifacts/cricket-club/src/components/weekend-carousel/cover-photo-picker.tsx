@@ -15,8 +15,8 @@ export function CoverPhotoPicker({ s }: { s: WeekendCarouselState }) {
           Cover photo
         </h3>
         <p className="text-xs text-muted-foreground">
-          Saved stock images or Club-wide · Season 2026 · all photo categories.
-          This photo is only used on the title page.
+          Saved stock images or Club-wide · Season 2026 · all photo categories. This photo is only
+          used on the title page.
         </p>
       </div>
       {s.coverUnavailable && (
@@ -75,7 +75,8 @@ export function CoverPhotoPicker({ s }: { s: WeekendCarouselState }) {
             {s.coverPhotos.length === 0 && (
               <p className="mt-3 text-sm text-muted-foreground" data-testid="text-no-cover-photos">
                 No eligible cover photos. In Photo library, put a photo in Club-wide and tag it
-                Season 2026, or upload a carousel stock image. You can still queue the branded no-photo cover.
+                Season 2026, or upload a carousel stock image. You can still queue the branded
+                no-photo cover.
               </p>
             )}
             {failed.size > 0 && (

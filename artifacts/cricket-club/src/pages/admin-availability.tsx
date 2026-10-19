@@ -797,6 +797,7 @@ type DrawerForm = {
   gradeHint: string;
   linked: LinkedPlayer | null;
   clearContactFlag: boolean;
+  showNamePublicly: boolean;
 } & Record<ContactSlot, ContactForm>;
 
 const SLOTS: { key: ContactSlot; label: string }[] = [
@@ -816,6 +817,7 @@ function toForm(d: SquadMemberDetail): DrawerForm {
     gradeHint: d.gradeHint ?? "",
     linked: d.linkedPlayerId != null ? { id: d.linkedPlayerId, name: d.linkedPlayerName } : null,
     clearContactFlag: false,
+    showNamePublicly: d.showNamePublicly ?? false,
     account: slot("account"),
     guardian1: slot("guardian1"),
     guardian2: slot("guardian2"),
@@ -871,6 +873,9 @@ function MemberDrawer({
           guardian1: contact("guardian1"),
           guardian2: contact("guardian2"),
           ...(form.clearContactFlag ? { contactChangeFlag: false } : {}),
+          ...(form.showNamePublicly !== (data?.showNamePublicly ?? false)
+            ? { showNamePublicly: form.showNamePublicly }
+            : {}),
         },
       },
       {
@@ -975,6 +980,31 @@ function MemberDrawer({
                 <p className="text-xs text-muted-foreground">
                   Under 18: requests go to their parents or guardians.
                 </p>
+              )}
+              {data.isPrivate && form.section === "senior" && !data.under18 && (
+                <div className="space-y-1.5 rounded-md border p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label htmlFor="member-show-name">Show name publicly</Label>
+                    <Switch
+                      id="member-show-name"
+                      checked={form.showNamePublicly}
+                      onCheckedChange={(on) => setForm({ ...form, showNamePublicly: on })}
+                      data-testid="member-show-name"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    This player is private on PlayHQ and stays private there. Turning this on only
+                    names them on this club&rsquo;s site, published team lists and social cards;
+                    off, they show as &ldquo;Private Player&rdquo;. Re-finalise a side already
+                    published for the change to show on it.
+                  </p>
+                  {data.showNamePubliclyAt && (
+                    <p className="text-xs text-muted-foreground">
+                      Last changed by {data.showNamePubliclyBy ?? "an admin"} on{" "}
+                      {formatPerth(data.showNamePubliclyAt)}.
+                    </p>
+                  )}
+                </div>
               )}
               {SLOTS.map((s) => (
                 <fieldset key={s.key} className="space-y-2 rounded-md border p-3">

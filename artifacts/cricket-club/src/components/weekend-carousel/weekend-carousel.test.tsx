@@ -52,8 +52,16 @@ const coverPhoto = {
   thumbUrl: "/cover-thumb.jpg",
 };
 let coverPhotos = [coverPhoto];
-const stockPhoto = { ...coverPhoto, id: 77, season: null, photoTypes: [],
-  juniorStock: true, playerIds: [], url: "/saved-stock.jpg", thumbUrl: "/saved-stock-thumb.jpg" };
+const stockPhoto = {
+  ...coverPhoto,
+  id: 77,
+  season: null,
+  photoTypes: [],
+  juniorStock: true,
+  playerIds: [],
+  url: "/saved-stock.jpg",
+  thumbUrl: "/saved-stock-thumb.jpg",
+};
 let stockPhotos: Array<typeof stockPhoto> = [];
 let teamPhotos: { id: number; grade: string; photoTypes: string[]; url: string }[] = [];
 const summary = {
@@ -90,7 +98,13 @@ const content = () =>
     ? {}
     : Object.fromEntries(fixtures.map((f) => [f.id, inputFor(activeType)]));
 const refetch = vi.fn(async () => ({
-  data: { fixtures, coverPhotos, photos: teamPhotos, juniorStockPhotos: stockPhotos, content: content() },
+  data: {
+    fixtures,
+    coverPhotos,
+    photos: teamPhotos,
+    juniorStockPhotos: stockPhotos,
+    content: content(),
+  },
   isError: false,
 }));
 const settingsRefetch = vi.fn(async () => ({
@@ -164,7 +178,10 @@ it("lets admins choose juniors for match-day and team-list tiles without selecti
     fireEvent.click(screen.getByTestId("button-carousel-audience-junior"));
     await waitFor(() => expect(screen.getByTestId(`checkbox-fixture-${junior.id}`)).toBeTruthy());
     expect(screen.queryByTestId("checkbox-fixture-1")).toBeNull();
-    expect(screen.getByTestId("button-carousel-audience-junior")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("button-carousel-audience-junior")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     fireEvent.click(screen.getByTestId("button-carousel-type-teamList"));
     await waitFor(() => expect(screen.getByTestId(`checkbox-fixture-${junior.id}`)).toBeTruthy());
     expect(screen.queryByTestId("checkbox-fixture-1")).toBeNull();
@@ -195,7 +212,7 @@ afterEach(() => {
 describe("WeekendCarousel", () => {
   it.each(["matchDay", "teamList", "results", "matchSummary"])(
     "offers upload and saves a stock image on senior team cards and the cover for %s",
-    async type => {
+    async (type) => {
       stockPhotos = [stockPhoto];
       mount();
       fireEvent.click(screen.getByTestId("button-carousel-audience-senior"));
@@ -208,8 +225,11 @@ describe("WeekendCarousel", () => {
       await waitFor(() => expect(mutateAsync).toHaveBeenCalledOnce());
       const saved = queuedRequest().data.cardInput.weekendCarousel;
       expect(saved).toMatchObject({ setType: type });
-      expect(saved.slides.slice(0, -1).every(slide =>
-        (slide.data as { photoUrl?: string }).photoUrl === stockPhoto.url)).toBe(true);
+      expect(
+        saved.slides
+          .slice(0, -1)
+          .every((slide) => (slide.data as { photoUrl?: string }).photoUrl === stockPhoto.url),
+      ).toBe(true);
     },
   );
   it.each(["matchDay", "teamList", "results", "matchSummary"])(
