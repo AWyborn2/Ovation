@@ -22,6 +22,7 @@ import {
   loadCurrentRound,
   reopenSelection,
   saveBoard,
+  selectionWeekend,
   syncSideFromPlayhq,
 } from "../lib/selection-board";
 import { loadAvailabilitySettings, runReminder } from "../lib/availability-schedule";
@@ -46,6 +47,10 @@ const router: IRouter = Router();
 
 /** Send a refused board action as its status; anything else is a 500. */
 function refuse(res: Response, err: unknown): boolean {
+  if (err instanceof SelectionError && err.code) {
+    res.status(err.status).json({ error: err.message, code: err.code });
+    return true;
+  }
   if (err instanceof SelectionError || err instanceof TeamSheetError) {
     res.status(err.status).json({ error: err.message });
     return true;
@@ -53,16 +58,33 @@ function refuse(res: Response, err: unknown): boolean {
   return false;
 }
 
+/** A `YYYY-MM-DD` that is a real Saturday, or null. */
+function saturday(value: unknown): string | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const d = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().startsWith(value) && d.getUTCDay() === 6
+    ? value
+    : null;
+}
+
 router.get("/selection/board", requireAdminOrCaptain, async (req, res): Promise<void> => {
-  const query = GetSelectionBoardQueryParams.safeParse(req.query);
+  // The weekend arrives as a string; the generated schema types it as a Date.
+  const query = GetSelectionBoardQueryParams.safeParse({ section: req.query.section });
   if (!query.success) {
     res.status(400).json({ error: "Section must be senior or junior" });
+    return;
+  }
+  const weekend = req.query.weekend == null ? undefined : saturday(req.query.weekend);
+  if (weekend === null) {
+    res.status(400).json({ error: "The weekend must be its Saturday, as YYYY-MM-DD." });
     return;
   }
   const board = await buildBoard(
     getTenantId(req),
     selectionActorOf(req),
     query.data.section ?? "senior",
+    new Date(),
+    weekend,
   );
   res.json(board);
 });
@@ -81,7 +103,8 @@ router.put("/selection/board", requireAdminOrCaptain, async (req, res): Promise<
       { tenantId, actorKind: actor.kind, actorId: actor.id, selectionIds: saved.selectionIds },
       "selection board saved",
     );
-    res.json(await buildBoard(tenantId, actor, saved.section));
+    const weekend = await selectionWeekend(tenantId, saved.selectionIds[0]!);
+    res.json(await buildBoard(tenantId, actor, saved.section, new Date(), weekend));
   } catch (err) {
     if (!refuse(res, err)) throw err;
   }
@@ -109,7 +132,8 @@ router.post("/selection/:id/finalise", requireAdminOrCaptain, async (req, res): 
       { tenantId, selectionId: params.data.id, actorKind: actor.kind, ...result.messaged },
       "selection finalised",
     );
-    const board = await buildBoard(tenantId, actor, result.section);
+    const weekend = await selectionWeekend(tenantId, params.data.id);
+    const board = await buildBoard(tenantId, actor, result.section, new Date(), weekend);
     const selection = board.selections.find((s) => s.id === params.data.id);
     res.json({ selection, messaged: result.messaged, unlisted: result.unlisted });
   } catch (err) {
@@ -192,7 +216,8 @@ router.post(
         { tenantId, selectionId: params.data.id, actorKind: actor.kind, matched: result.matched },
         "selection synced from PlayHQ",
       );
-      const board = await buildBoard(tenantId, actor, result.section);
+      const weekend = await selectionWeekend(tenantId, params.data.id);
+      const board = await buildBoard(tenantId, actor, result.section, new Date(), weekend);
       res.json(board.selections.find((s) => s.id === params.data.id));
     } catch (err) {
       if (!refuse(res, err)) throw err;
@@ -214,7 +239,8 @@ router.post("/selection/:id/reopen", requireAdminOrCaptain, async (req, res): Pr
       { tenantId, selectionId: params.data.id, actorKind: actor.kind },
       "selection reopened",
     );
-    const board = await buildBoard(tenantId, actor, result.section);
+    const weekend = await selectionWeekend(tenantId, params.data.id);
+    const board = await buildBoard(tenantId, actor, result.section, new Date(), weekend);
     res.json(board.selections.find((s) => s.id === params.data.id));
   } catch (err) {
     if (!refuse(res, err)) throw err;

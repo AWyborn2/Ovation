@@ -17,10 +17,12 @@ import { buildRoundDrafts } from "./selection-drafts";
 import { purgeTestTenants } from "./tenant-purge.test-helpers";
 
 /**
- * The cut-off draft builder against real Postgres (plan 2026-10-06-002 U6):
+ * The draft builder against real Postgres (plan 2026-10-06-002 U6, ADR-008):
  * one draft per fixture in the round's Friday–Sunday window, seeded from the
- * grade's most recent earlier team list (AE1), a grade's second fixture of the
- * weekend starting empty, re-runs creating nothing, other tenants untouched.
+ * grade's side in the previous round that has one, else its most recent
+ * earlier team list, every carried player kept whatever they replied; a
+ * grade's second fixture of the weekend starting empty, re-runs creating
+ * nothing, other tenants untouched.
  *
  * Real-DB integration test (needs DATABASE_URL with migrations applied; CI's
  * api-tests job provides it).
@@ -169,18 +171,14 @@ describe("buildRoundDrafts", () => {
     expect(await selectionFor(fx.next)).toBeUndefined();
   });
 
-  it("seeds A Grade from last week's side with labelled gaps (AE1, R37)", async () => {
+  it("seeds A Grade from last week's team list, keeping No, Maybe and no-reply players (ADR-008)", async () => {
     const s = await selectionFor(fx.a);
     expect(s).toMatchObject({ roundId, state: "draft", version: 1 });
     expect(s.slots).toHaveLength(12);
-    expect(s.slots[0]).toEqual({ memberId: memberIds.get("Ava Hill") });
-    expect(s.slots[1]).toEqual({ memberId: null, gap: { name: "Ben Cole", reason: "no" } });
-    expect(s.slots[2]).toEqual({ memberId: null, gap: { name: "Cal Dunn", reason: "no" } });
-    expect(s.slots[5]).toEqual({ memberId: null, gap: { name: "Finn Hart", reason: "maybe" } });
-    expect(s.slots[9]).toEqual({ memberId: null, gap: { name: "J. Hale", reason: "no_reply" } });
-    expect(s.slots.filter((x) => x.memberId != null)).toHaveLength(7);
+    expect(s.slots.slice(0, 11).map((x) => x.memberId)).toEqual(NAMES.map((n) => memberIds.get(n)));
+    // Ben the keeper said No: he stays in his slot and keeps the gloves.
     expect(s.captainMemberId).toBe(memberIds.get("Ava Hill"));
-    expect(s.keeperMemberId).toBeNull();
+    expect(s.keeperMemberId).toBe(memberIds.get("Ben Cole"));
   });
 
   it("leaves a Yes player who played no previous side out of every draft (R18)", async () => {
@@ -194,8 +192,8 @@ describe("buildRoundDrafts", () => {
 
   it("seeds a grade's first fixture of the weekend and starts the second empty", async () => {
     const sat = await selectionFor(fx.bSat);
-    // Bo Ray is away for the weekend (recorded as No); Cy Ash said Yes.
-    expect(sat.slots[0]).toEqual({ memberId: null, gap: { name: "Bo Ray", reason: "no" } });
+    // Bo Ray is away for the weekend (recorded as No) and still carried; Cy Ash said Yes.
+    expect(sat.slots[0]).toEqual({ memberId: memberIds.get("Bo Ray") });
     expect(sat.slots[1]).toEqual({ memberId: memberIds.get("Cy Ash") });
     expect(sat.slots.slice(2).every((x) => x.memberId == null && !x.gap)).toBe(true);
 
@@ -217,7 +215,14 @@ describe("buildRoundDrafts", () => {
         ),
       );
     expect(events).toHaveLength(1);
-    expect(events[0]).toMatchObject({ actorKind: "system", action: "draft" });
+    expect(events[0]).toMatchObject({ actorKind: "system", action: "draft", roundId });
+    const [list] = await db
+      .select({ id: teamListsTable.id })
+      .from(teamListsTable)
+      .where(eq(teamListsTable.fixtureId, fx.aLast));
+    expect(events[0].detail).toMatchObject({
+      seededFrom: { kind: "team_list", id: list.id, fixtureId: fx.aLast },
+    });
   });
 
   it("never overwrites an existing selection on a re-run", async () => {
@@ -299,5 +304,109 @@ describe("buildRoundDrafts", () => {
       skipped: 0,
     });
     expect(await selectionFor(fx.other)).toBeUndefined();
+  });
+});
+
+describe("buildRoundDrafts carry-over (ADR-008)", () => {
+  const W1 = "2026-11-07";
+  const W2 = "2026-11-14";
+  const id = (n: string) => memberIds.get(n)!;
+  const twelve = (ids: (number | null)[]) =>
+    Array.from({ length: 12 }, (_, i) => ({ memberId: ids[i] ?? null }));
+  let w1: number;
+  let w2: number;
+  const prior: Record<string, number> = {};
+
+  beforeAll(async () => {
+    [w1, w2] = (
+      await db
+        .insert(availabilityRoundsTable)
+        .values([
+          { tenantId, weekendDate: W1 },
+          { tenantId, weekendDate: W2 },
+        ])
+        .returning()
+    ).map((r) => r.id);
+    // Last weekend's sides: H Grade finalised (Ava C, Ben WK, Cal 12th); I Grade a
+    // draft with Dan; J Grade two sides, Finn on Saturday and Gus on Sunday.
+    const side = async (fixtureId: number, slots: ReturnType<typeof twelve>, extra = {}) => {
+      const [row] = await db
+        .insert(selectionsTable)
+        .values({ tenantId, roundId: w1, fixtureId, slots, ...extra })
+        .returning();
+      return row.id;
+    };
+    prior.h = await side(
+      await fixture(tenantId, "H Grade", "2026-11-07T04:30:00Z"),
+      twelve([id("Ava Hill"), id("Ben Cole"), ...Array(9).fill(null), id("Cal Dunn")]),
+      { state: "final", captainMemberId: id("Ava Hill"), keeperMemberId: id("Ben Cole") },
+    );
+    await side(
+      await fixture(tenantId, "I Grade", "2026-11-07T02:00:00Z"),
+      twelve([id("Dan Ford")]),
+    );
+    prior.jSat = await side(
+      await fixture(tenantId, "J Grade", "2026-11-07T01:00:00Z"),
+      twelve([id("Finn Hart")]),
+    );
+    prior.jSun = await side(
+      await fixture(tenantId, "J Grade", "2026-11-08T01:00:00Z"),
+      twelve([id("Gus Ives")]),
+    );
+    // I Grade played midweek since, without the Hub: that team list is newer.
+    fx.iMid = await fixture(tenantId, "I Grade", "2026-11-11T09:00:00Z");
+    await teamList(fx.iMid, [{ order: 1, displayName: "Eli Grant" }]);
+
+    fx.h2 = await fixture(tenantId, "H Grade", "2026-11-14T04:30:00Z");
+    fx.i2 = await fixture(tenantId, "I Grade", "2026-11-14T02:00:00Z");
+    fx.jSat2 = await fixture(tenantId, "J Grade", "2026-11-14T01:00:00Z");
+    fx.jSun2 = await fixture(tenantId, "J Grade", "2026-11-15T01:00:00Z");
+    // Ben said No this weekend.
+    await db.insert(availabilityResponsesTable).values({
+      tenantId,
+      roundId: w2,
+      memberId: id("Ben Cole"),
+      date: W2,
+      status: "no",
+    });
+  });
+
+  it("two runs at once draft each side exactly once", async () => {
+    const [a, b] = await Promise.all([
+      buildRoundDrafts(tenantId, w2, NOW),
+      buildRoundDrafts(tenantId, w2, NOW),
+    ]);
+    expect(a.created + b.created).toBe(4);
+    const rows = await db.select().from(selectionsTable).where(eq(selectionsTable.roundId, w2));
+    expect(rows).toHaveLength(4);
+  });
+
+  it("starts from last weekend's side slot for slot, keeping a No player and the roles", async () => {
+    const s = await selectionFor(fx.h2);
+    expect(s.slots.map((x) => x.memberId)).toEqual([
+      id("Ava Hill"),
+      id("Ben Cole"),
+      ...Array(9).fill(null),
+      id("Cal Dunn"),
+    ]);
+    expect(s.captainMemberId).toBe(id("Ava Hill"));
+    expect(s.keeperMemberId).toBe(id("Ben Cole"));
+    const [event] = await db
+      .select()
+      .from(selectionEventsTable)
+      .where(eq(selectionEventsTable.selectionId, s.id));
+    expect(event.detail).toMatchObject({
+      seededFrom: { kind: "selection", id: prior.h, fixtureId: expect.any(Number) },
+    });
+  });
+
+  it("takes a newer team list over an older selection", async () => {
+    const s = await selectionFor(fx.i2);
+    expect(s.slots[0]).toEqual({ memberId: id("Eli Grant") });
+  });
+
+  it("maps a grade's sides in fixture order", async () => {
+    expect((await selectionFor(fx.jSat2)).slots[0]).toEqual({ memberId: id("Finn Hart") });
+    expect((await selectionFor(fx.jSun2)).slots[0]).toEqual({ memberId: id("Gus Ives") });
   });
 });

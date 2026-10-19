@@ -106,8 +106,16 @@ export function eventText(e: SelectionEvent): string {
   const d = (e.detail ?? {}) as Record<string, unknown>;
   const g = e.grade || "A side";
   switch (e.action) {
-    case "draft":
-      return `${g} draft built from the side's last game`;
+    case "draft": {
+      const from = (d.seededFrom as { kind?: string } | null | undefined)?.kind;
+      if (from === "selection") return `${g} draft started from the side picked last time`;
+      if (from === "team_list") return `${g} draft started from the side's last team list`;
+      // Drafts logged before ADR-008 name the fixture whose list seeded them.
+      if (d.seededFromFixtureId != null || d.seededFromJuniorFixtureId != null) {
+        return `${g} draft built from the side's last game`;
+      }
+      return `${g} draft started`;
+    }
     case "finalise": {
       const n = typeof d.players === "number" ? d.players : null;
       return n != null ? `${g} finalised with ${n} players` : `${g} finalised`;

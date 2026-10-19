@@ -33,6 +33,8 @@ import { ChangeLog, RoundHeader } from "@/components/selection/round-header";
 import { TeamCard, finaliseHeadsUp } from "@/components/selection/team-card";
 import { usePointerDrag } from "@/components/selection/use-pointer-drag";
 import { AvailabilityContext } from "@/components/selection/availability-context";
+import { StatusTierLegend } from "@/components/selection/status-tier";
+import { WeekendSwitcher, useWeekendNav } from "@/components/selection/weekend-switcher";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -59,11 +61,14 @@ const boardState = (b: SelectionBoard): BoardState => ({ selections: b.selection
 export default function SelectionHub() {
   const qc = useQueryClient();
   const [section, setSection] = useState<SquadSection>("senior");
-  const params = { section };
+  const [shownWeekends, setShownWeekends] = useState<SelectionBoard["weekends"]>();
+  const nav = useWeekendNav(shownWeekends);
+  const params = { section, ...(nav.weekend ? { weekend: nav.weekend } : {}) };
   const queryKey = getGetSelectionBoardQueryKey(params);
   const board = useGetSelectionBoard(params, {
     query: { queryKey, staleTime: 0, refetchInterval: 15_000 },
   });
+  useEffect(() => setShownWeekends(board.data?.weekends), [board.data?.weekends]);
   const [local, setLocal] = useState<BoardState | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
   const [announcement, setAnnouncement] = useState("");
@@ -76,11 +81,11 @@ export default function SelectionHub() {
   const viewRef = useRef(view);
   viewRef.current = view;
 
-  // A new section starts from the server's board.
+  // A new section or weekend starts from the server's board.
   useEffect(() => {
     setLocal(null);
     setOpenId(null);
-  }, [section]);
+  }, [section, nav.weekend]);
 
   const refetch = useCallback(() => qc.invalidateQueries({ queryKey }), [qc, queryKey]);
 
@@ -455,6 +460,17 @@ export default function SelectionHub() {
           </div>
         </header>
 
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+          <WeekendSwitcher
+            weekends={data?.weekends}
+            readOnly={data?.readOnly === true}
+            atHome={nav.weekend === undefined}
+            onGo={nav.go}
+            onHome={nav.goHome}
+          />
+          {view && view.selections.length > 0 && <StatusTierLegend />}
+        </div>
+
         <div aria-live="polite" role="status" className="sr-only" data-testid="hub-announcer">
           {announcement}
         </div>
@@ -465,8 +481,12 @@ export default function SelectionHub() {
           <LoadingState label="Loading the board…" />
         ) : !data.round && view.selections.length === 0 ? (
           <EmptyState
-            title="No availability round yet"
-            message="Once the club's availability requests go out, this round's drafts and replies show here."
+            title={data.readOnly ? "Nothing picked that weekend" : "No fixtures this weekend"}
+            message={
+              data.readOnly
+                ? "No sides were drafted in the Hub for this weekend."
+                : "A side is drafted for each fixture from Friday to Sunday as soon as it's scheduled. Add or sync fixtures to start picking."
+            }
           />
         ) : (
           <>
@@ -481,11 +501,11 @@ export default function SelectionHub() {
                 {view.selections.length === 0 ? (
                   <EmptyState
                     className="col-span-full"
-                    title={data.availability ? "No drafts yet" : "No fixtures this weekend"}
+                    title="No fixtures this weekend"
                     message={
-                      data.availability
-                        ? "Drafts open when availability requests are sent for each grade with a fixture this round. Check that this section has fixtures scheduled."
-                        : "A side is drafted for each of this section's fixtures from Friday to Sunday, starting from the grade's last team list. Add or sync fixtures to start picking."
+                      data.readOnly
+                        ? "This section had no sides that weekend."
+                        : "A side is drafted for each of this section's fixtures from Friday to Sunday, starting from the grade's side last week. Add or sync fixtures to start picking."
                     }
                   />
                 ) : (
@@ -516,7 +536,12 @@ export default function SelectionHub() {
                   draggingId={drag.draggingId}
                   scrollRef={poolRef}
                   sides={view.selections}
-                  canRemind={data.availability && data.actor.canRemind && data.round != null}
+                  canRemind={
+                    data.availability &&
+                    data.actor.canRemind &&
+                    data.round != null &&
+                    nav.weekend === undefined
+                  }
                   reminding={remind.isPending}
                   onRemind={doRemind}
                   onOpenMember={openMember}
