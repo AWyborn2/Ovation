@@ -76,3 +76,57 @@ send, reminder and cut-off on time as usual.
   last week's players are in it, coloured by their replies.
 - Press Previous. Last weekend opens with the "Past weekend · view only" badge, and nothing can
   be dragged or finalised.
+
+## 3. Private-player matching: the crosswalk backfill
+
+PlayHQ lists a player who keeps their profile private as "Private Player". The Hub can't match that
+by name, so it used to leave the slot as a gap "not on register" and the player dropped off the team
+sheet. Since PR2 the gap keeps the row's PlayHQ participant ID, and the Hub's **PlayHQ players to
+match** panel matches it to a squad member. The club remembers the match in
+`squad_member_participants`, and every later draft, junior draft and "Use PlayHQ team" resolves
+that player first. **Remembered matches → Unmatch** forgets one; sides already picked keep their
+slots. Every match and unmatch is logged in `selection_events` (`match`, `unmatch`).
+
+A junior side only ever takes junior members: a remembered match that points at a senior record is
+ignored there. A senior side may take a junior playing up, as its pool does.
+
+**One-off backfill (per club, after migration 0046 is in production).** Most private players
+already appear on older team lists under a name or a linked player that resolves to one member. The
+backfill remembers those, so admins only match the rest by hand. It never overwrites a match an
+admin made, never writes a participant whose rows point at different members, and inserts nothing
+new when re-run. It previews by default; `--apply` writes.
+
+Assistant sessions can't reach production, so Ash runs it from the Replit Shell, with `DATABASE_URL`
+set to the **production** database's connection string for that one command (copy it from the
+Production database pane; don't save it to a file or paste it anywhere else):
+
+1. Find the club's tenant id (read-only, Production SQL runner):
+
+   ```sql
+   select id, slug, name from tenants order by id;
+   ```
+
+2. Preview. It writes nothing and prints a summary (`insert`, `already`, `conflict`,
+   `conflict_existing`, `unresolvedRows`). The full plan goes to
+   `scripts/exports/selection-crosswalk-backfill-<tenant>-<time>/plan.csv`, which holds player
+   names. That folder is git-ignored: never commit it.
+
+   ```bash
+   DATABASE_URL='<production connection string>' pnpm --filter @workspace/scripts run selection-crosswalk-backfill -- --tenant=<id>
+   ```
+
+3. If the plan looks right, write it. `--yes` confirms writing to a non-local database:
+
+   ```bash
+   DATABASE_URL='<production connection string>' pnpm --filter @workspace/scripts run selection-crosswalk-backfill -- --tenant=<id> --apply --yes
+   ```
+
+4. Check (read-only). Backfilled rows have `created_by = 'backfill'`, and Hub matches carry the
+   name of the admin or captain who made them:
+
+   ```sql
+   select tenant_id, created_by, count(*) from squad_member_participants group by 1, 2 order by 1, 2;
+   ```
+
+Repeat steps 2 to 4 for each club. A `conflict` row in the plan is a participant ID on lists naming
+different members (often a family PlayHQ account): leave it for an admin to match in the Hub.

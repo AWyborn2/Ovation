@@ -431,3 +431,56 @@ describe("carryDraftSlots", () => {
     expect(placed.has(2)).toBe(true);
   });
 });
+
+describe("buildDraftSlots: Private Player rows (ADR-008 §4)", () => {
+  const GUID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+  const list = LAST.map((p) =>
+    p.order === 3 ? { order: 3, displayName: "Private Player", participantId: GUID } : p,
+  );
+
+  it("an unmatched row's gap carries its PlayHQ participant id", () => {
+    const draft = buildDraftSlots({
+      lastList: list,
+      members: MEMBERS,
+    });
+    expect(draft.slots[2]).toEqual({
+      memberId: null,
+      gap: { name: "Private Player", reason: "not_on_register", participantId: GUID },
+    });
+  });
+
+  it("a remembered participant places its member", () => {
+    const draft = buildDraftSlots({
+      lastList: list,
+      members: MEMBERS,
+      participants: new Map([[GUID, 3]]),
+    });
+    expect(draft.slots[2]).toEqual({ memberId: 3 });
+  });
+
+  it("a carried Private Player gap takes its member once the club has remembered it", () => {
+    const slots = Array.from({ length: 12 }, (_, i): SelectionSlot =>
+      i === 1
+        ? {
+            memberId: null,
+            gap: { name: "Private Player", reason: "not_on_register", participantId: GUID },
+          }
+        : { memberId: i === 0 ? 1 : null },
+    );
+    const previous = { slots, captainMemberId: null, keeperMemberId: null };
+    expect(carryDraftSlots({ previous, members: MEMBERS }).slots[1]).toEqual(slots[1]);
+    const d = carryDraftSlots({ previous, members: MEMBERS, participants: new Map([[GUID, 3]]) });
+    expect(d.slots[1]).toEqual({ memberId: 3 });
+    // Already placed at that time: a gap "picked in another side", as any carried member.
+    const busy = carryDraftSlots({
+      previous,
+      members: MEMBERS,
+      placed: new Set([3]),
+      participants: new Map([[GUID, 3]]),
+    });
+    expect(busy.slots[1]).toEqual({
+      memberId: null,
+      gap: { name: "Cal Dunn", reason: "picked_elsewhere" },
+    });
+  });
+});

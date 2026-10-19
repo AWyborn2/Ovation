@@ -19,7 +19,19 @@ export type MemberIdentity = Pick<
 >;
 
 /** A team-list entry as the matcher sees it. */
-export type ListEntry = Pick<TeamListPlayer, "playerId" | "displayName">;
+export type ListEntry = Pick<TeamListPlayer, "playerId" | "displayName" | "participantId">;
+
+/**
+ * The club's remembered PlayHQ matches (`squad_member_participants`):
+ * participant GUID (as `normaliseParticipantId` keys it) to squad member id.
+ */
+export type ParticipantCrosswalk = ReadonlyMap<string, number>;
+
+/** A PlayHQ participant GUID as the crosswalk keys it: trimmed, lower case; null when blank. */
+export function normaliseParticipantId(id: string | null | undefined): string | null {
+  const key = id?.trim().toLowerCase();
+  return key ? key : null;
+}
 
 /** A past team list with its fixture's grade and start, for `memberGrades`. */
 export type GradeList = { grade: string; startAt: Date; players: ListEntry[] };
@@ -77,7 +89,9 @@ function sameInitialSurname(
 }
 
 /**
- * Matches team-list entries to members: by linked `playerId` first, then
+ * Matches team-list entries to members: by the club's remembered PlayHQ
+ * match first (`participants`, the entry's participant GUID to a member — how
+ * a "Private Player" row finds its player), then by linked `playerId`, then
  * by normalised display name (preferred or first name plus last name). A
  * fill-in id (>= 90000) never matches. A name match skips members linked
  * to a different player, and an ambiguous name prefers the one active member
@@ -98,7 +112,14 @@ export function buildMemberMatcher<M extends MemberIdentity>(
   members: readonly M[],
   /** Breaks a tie between same-named members (e.g. a senior side prefers the senior record). */
   prefer?: (m: M) => boolean,
+  /**
+   * The club's remembered PlayHQ matches. A remembered member outside
+   * `members` (another section's register) is not matched by it, so the
+   * crosswalk never widens who a side may take.
+   */
+  participants?: ParticipantCrosswalk,
 ): (entry: ListEntry) => M | null {
+  const memberById = new Map(members.map((m) => [m.id, m]));
   const linkUse = new Map<number, number>();
   for (const m of members) {
     if (m.linkedPlayerId != null)
@@ -134,6 +155,11 @@ export function buildMemberMatcher<M extends MemberIdentity>(
   return (entry) => {
     const pid = entry.playerId;
     if (pid != null && pid >= FILL_IN_THRESHOLD) return null;
+    // A remembered match outranks every guess: the admin said who this row is.
+    const participant = normaliseParticipantId(entry.participantId);
+    const remembered = participant != null ? participants?.get(participant) : undefined;
+    const rememberedMember = remembered != null ? memberById.get(remembered) : undefined;
+    if (rememberedMember) return rememberedMember;
     const key = normaliseName(entry.displayName);
     const named = byName.get(key) ?? [];
     const linked = pid != null ? byPlayerId.get(pid) : undefined;

@@ -210,7 +210,12 @@ describe("Selection Hub: use PlayHQ's published side", () => {
       .expect(200);
     const after = res.body as Side;
     expect(after.slots.slice(0, 3).map((x) => x.memberId)).toEqual([j[2], j[1], null]);
-    expect(after.slots[2].gap).toEqual({ name: "Cal Lee", reason: "not_on_register" });
+    // The gap keeps Cal's PlayHQ participant id, for "Match to squad member".
+    expect(after.slots[2].gap).toEqual({
+      name: "Cal Lee",
+      reason: "not_on_register",
+      participantId: pid(3),
+    });
     expect(after.captainMemberId).toBe(j[2]);
   });
 });

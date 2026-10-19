@@ -22,10 +22,13 @@ import {
   addDays,
   buildMemberMatcher,
   memberDisplayName,
+  normaliseParticipantId,
   perthDate,
   roundWindow,
   type MemberIdentity,
+  type ParticipantCrosswalk,
 } from "./availability-grades";
+import { loadParticipantCrosswalk } from "./participant-crosswalk";
 import { loadJuniorIdentity } from "./junior-shirt-numbers";
 import { loadSideFixtures, sideFixtureKey } from "./selection-fixtures";
 import { juniorMemberResolver } from "./shirt-number-squad";
@@ -116,6 +119,8 @@ export function buildDraftSlots(input: {
   placed?: Placed;
   /** Breaks a tie between same-named members (see `buildMemberMatcher`). */
   prefer?: (m: MemberIdentity) => boolean;
+  /** The club's remembered PlayHQ matches, tried first (see `buildMemberMatcher`). */
+  participants?: ParticipantCrosswalk;
 }): DraftSide {
   const { lastList, members } = input;
   const elsewhere = input.placed ?? new Set<number>();
@@ -124,7 +129,7 @@ export function buildDraftSlots(input: {
   let keeperMemberId: number | null = null;
   if (!lastList || lastList.length === 0) return { slots, captainMemberId, keeperMemberId };
 
-  const match = buildMemberMatcher(members, input.prefer);
+  const match = buildMemberMatcher(members, input.prefer, input.participants);
   const placed = new Set<number>();
   const entries = [...lastList].sort((a, b) => a.order - b.order).slice(0, SIDE_SIZE);
 
@@ -132,7 +137,12 @@ export function buildDraftSlots(input: {
     const m = match(entry);
     const name = entry.displayName.trim() || (m ? memberDisplayName(m) : "Unknown");
     if (!m || !m.active || placed.has(m.id)) {
-      slots[i] = { memberId: null, gap: { name, reason: "not_on_register" } };
+      // The row's PlayHQ GUID rides on the gap, so the Hub can match it to a member.
+      const participantId = entry.participantId?.trim().toLowerCase();
+      slots[i] = {
+        memberId: null,
+        gap: { name, reason: "not_on_register", ...(participantId ? { participantId } : {}) },
+      };
       return;
     }
     // Already in another side of the round: leave the slot open so a player is placed once.
@@ -157,13 +167,16 @@ export function buildDraftSlots(input: {
  * apart from `placed`): slot for slot, the 12th staying 12th. A member no
  * longer active is a gap "not on register"; one already placed at the time a
  * gap "picked in another side". A carried "not on register" gap (an unmatched
- * PlayHQ name) is kept as it was; other open slots start empty. The captain and
- * keeper carry while still in the XI.
+ * PlayHQ name) is kept as it was, unless the club has since remembered its
+ * PlayHQ participant (`participants`), when that member takes the slot; other
+ * open slots start empty. The captain and keeper carry while still in the XI.
  */
 export function carryDraftSlots(input: {
   previous: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId">;
   members: readonly MemberIdentity[];
   placed?: Placed;
+  /** The club's remembered PlayHQ matches, for a carried "not on register" gap. */
+  participants?: ParticipantCrosswalk;
 }): DraftSide {
   const elsewhere = input.placed ?? new Set<number>();
   const byId = new Map(input.members.map((m) => [m.id, m]));
@@ -172,12 +185,18 @@ export function carryDraftSlots(input: {
   normaliseSlots(input.previous.slots)
     .slice(0, SIDE_SIZE)
     .forEach((slot, i) => {
-      if (slot.memberId == null) {
-        if (slot.gap?.reason === "not_on_register")
-          slots[i] = { memberId: null, gap: { ...slot.gap } };
-        return;
+      let memberId = slot.memberId;
+      if (memberId == null) {
+        const gap = slot.gap?.reason === "not_on_register" ? slot.gap : null;
+        const key = normaliseParticipantId(gap?.participantId);
+        const remembered = key != null ? input.participants?.get(key) : undefined;
+        if (!gap || remembered == null || !byId.has(remembered)) {
+          if (gap) slots[i] = { memberId: null, gap: { ...gap } };
+          return;
+        }
+        memberId = remembered;
       }
-      const m = byId.get(slot.memberId);
+      const m = byId.get(memberId);
       const name = m ? memberDisplayName(m) : "Unknown";
       if (!m || !m.active || placed.has(m.id)) {
         slots[i] = { memberId: null, gap: { name, reason: "not_on_register" } };
@@ -494,6 +513,7 @@ export async function buildRoundDrafts(
   // Juniors play up in senior sides, so every member is matched; a name on both
   // registers is the senior record.
   const seniorRecord = new Set(members.filter((m) => m.section === "senior").map((m) => m.id));
+  const participants = await loadParticipantCrosswalk(db, tenantId);
 
   // Each grade's fixtures this weekend, in start order, map to its previous sides.
   const gradeIndex = new Map<string, number>();
@@ -508,12 +528,13 @@ export async function buildRoundDrafts(
     const placed = ledger.view(gameWindow(f.startAt, { format: f.matchFormat }));
     const draft =
       seed?.kind === "selection"
-        ? carryDraftSlots({ previous: seed.side, members, placed })
+        ? carryDraftSlots({ previous: seed.side, members, placed, participants })
         : buildDraftSlots({
             lastList: seed?.list.players ?? null,
             members,
             placed,
             prefer: (m) => seniorRecord.has(m.id),
+            participants,
           });
     const seededFrom: SeededFrom =
       seed?.kind === "selection"
@@ -587,7 +608,8 @@ async function insertDraft(
  * A junior team list (PlayHQ participant ids) as the names the member matcher
  * knows: a participant matched to a junior squad member (`juniorMemberResolver`)
  * takes that member's name; anyone else keeps their PlayHQ name, so they read
- * as a gap "not on register".
+ * as a gap "not on register". Each entry keeps its participant id, for the
+ * club's remembered matches.
  */
 export async function juniorListAsNames(
   reader: Parameters<typeof loadJuniorIdentity>[0],
@@ -615,6 +637,7 @@ export async function juniorListAsNames(
         order: p.order,
         displayName: m ? memberDisplayName(m) : nameOf.get(id) || "Unknown",
         ...(p.role ? { role: p.role } : {}),
+        participantId: id,
       };
     });
 }
@@ -763,6 +786,8 @@ async function draftJuniorSides(
       .where(eq(squadMembersTable.tenantId, tenantId))
   ).filter((m) => m.section === "junior");
   const asNames = await juniorListAsNames(db, tenantId, members);
+  // Junior members only, so a remembered match to a senior record never lands here.
+  const participants = await loadParticipantCrosswalk(db, tenantId);
 
   const teamIndex = new Map<string, number>();
   for (const f of fixtures) {
@@ -778,11 +803,12 @@ async function draftJuniorSides(
     const placed = ledger.view(gameWindow(f.startAt!, { junior: true }));
     const draft =
       seed?.kind === "selection"
-        ? carryDraftSlots({ previous: seed.side, members, placed })
+        ? carryDraftSlots({ previous: seed.side, members, placed, participants })
         : buildDraftSlots({
             lastList: seed ? asNames(seed.list.players) : null,
             members,
             placed,
+            participants,
           });
     const seededFrom: SeededFrom =
       seed?.kind === "selection"
