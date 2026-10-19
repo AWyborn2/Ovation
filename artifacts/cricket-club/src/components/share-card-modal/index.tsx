@@ -36,6 +36,7 @@ import { useLayoutTemplate } from "./use-layout-template";
 import { useMotionAudio } from "./use-motion-audio";
 import { useCardExport } from "./use-card-export";
 import { PreviewTabs } from "./preview-tabs";
+import { modalPackId } from "./slides";
 import { LayoutSelect, ThemeSelect } from "./design-selects";
 import { MotionPanel } from "./motion-panel";
 import { AudioPanel } from "./audio-panel";
@@ -65,6 +66,7 @@ export function ShareCardModal({
   matchId,
   photoUrl,
   packId: packIdProp,
+  templateDoc,
   onApprove,
   approveLabel = "Approve & download",
 }: Props) {
@@ -97,7 +99,7 @@ export function ShareCardModal({
     selectedTemplate,
     isPackTemplate,
     bgTemplate,
-    packId,
+    packId: layoutPackId,
     imageSlots,
     templateLayers,
     isAdmin,
@@ -105,6 +107,8 @@ export function ShareCardModal({
     layoutSig,
     imageOverrides,
   } = layout;
+  // A templated draft renders on the blank pack with its own layer document.
+  const packId = modalPackId(layoutPackId, templateDoc);
 
   const motionAudio = useMotionAudio({ open, input, selectedTemplate });
   const { motion, durationMs, speed, audioSpec, previewSoundOn } = motionAudio;
@@ -303,6 +307,7 @@ export function ShareCardModal({
     isJunior,
     effectiveTheme,
     packId,
+    templateDoc,
     includeSponsors,
     buildPackData,
     buildOpts,
@@ -370,6 +375,7 @@ export function ShareCardModal({
                   isJunior={isJunior}
                   buildPackData={buildPackData}
                   packId={packId}
+                  templateDoc={templateDoc}
                   rendering={rendering}
                   previewUrls={previewUrls}
                 />

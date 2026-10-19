@@ -16,7 +16,9 @@ import {
 } from "@/lib/share-card";
 import { renderShareCardVideo, renderShareCardGif } from "@/lib/share-card-animation";
 import type { PackCardData } from "@/lib/pack-render";
-import { isJuniorSlide, slidesForSize } from "@/lib/card-sets/plan";
+import { isJuniorSlide } from "@/lib/card-sets/plan";
+import type { LayerDocument } from "@workspace/scorecard/kind-templates";
+import { modalSlides } from "./slides";
 import { PLATFORMS, type Props } from "./constants";
 import type { useCaptions } from "./use-captions";
 
@@ -32,6 +34,7 @@ export function useCardExport({
   isJunior,
   effectiveTheme,
   packId,
+  templateDoc,
   includeSponsors,
   buildPackData,
   buildOpts,
@@ -51,6 +54,7 @@ export function useCardExport({
   isJunior: boolean;
   effectiveTheme: ApiCardTheme | null | undefined;
   packId: string | null;
+  templateDoc: LayerDocument | null | undefined;
   includeSponsors: boolean;
   buildPackData: (transform: PhotoTransform) => PackCardData;
   buildOpts: (size: CardSize, transform: PhotoTransform) => RenderOptions;
@@ -88,7 +92,7 @@ export function useCardExport({
   const renderPackSlides = async (
     size: CardSize,
   ): Promise<Array<{ blob: Blob; suffix: string }>> => {
-    const slides = slidesForSize(input!, size);
+    const slides = modalSlides(input!, size, templateDoc);
     const out: Array<{ blob: Blob; suffix: string }> = [];
     for (const slide of slides) {
       const j = isJuniorSlide(slide, isJunior);
@@ -102,6 +106,7 @@ export function useCardExport({
             ...base,
             junior: j,
             data: j && !allowed ? { ...base.data, photoUrl: null } : base.data,
+            ...(slide.adjustments ? { adjustments: slide.adjustments } : {}),
           },
         },
       })) as Blob;

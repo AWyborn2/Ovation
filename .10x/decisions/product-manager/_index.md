@@ -6,5 +6,6 @@ Cross-cutting notes for this role. Entries tagged [CONFIRMED 2026-10-07] were di
 
 - [social-auto-queue-criteria](social-auto-queue-criteria.md)
 - [card-kind-templates](card-kind-templates.md)
+- [social-tile-short-names](social-tile-short-names.md) — crests + club-set short names on cards, square layout fixes, preview bug (P0, recommended 2026-10-19)
 - [admin-menu-consolidation](admin-menu-consolidation.md) — regroup admin tabs, unified shirt numbers (Men/Female/Juniors), Imports hub. P1, agreed 2026-10-19
 - [selection-hub-decoupling](selection-hub-decoupling.md) — Selection Hub works without availability: draft any time, carry over, round nav, verbal status, private-player mapping + public toggle (P0/P1, scoped 19 Oct 2026)
