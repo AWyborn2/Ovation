@@ -346,8 +346,10 @@ import type {
   SelectionBoardSave,
   SelectionFinaliseBody,
   SelectionFinaliseResult,
+  SelectionMatchBody,
   SelectionRemindBody,
   SelectionSide,
+  SelectionStatusSetBody,
   SeniorOverview,
   SetGradeDecisionBody,
   SetJuniorSeniorLinkBody,
@@ -9107,6 +9109,237 @@ export const useReopenSelection = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getReopenSelectionMutationOptions(options));
+    }
+
+export const getMatchSelectionSlotUrl = (id: number,) => {
+
+
+
+
+  return `/api/selection/${id}/match`
+}
+
+/**
+ * Fills an open slot whose list row PlayHQ named only "Private Player"
+(or any row not on the register) with the chosen member of the side's
+section. When the gap carries the row's PlayHQ participant ID, the
+match is remembered for the club, so later lists resolve that player
+on their own. Logged against the side. A stale version → 409.
+
+ * @summary Match an open slot's PlayHQ row to a squad member (admin or captain)
+ */
+export const matchSelectionSlot = async (id: number,
+    selectionMatchBody: SelectionMatchBody, options?: RequestInit): Promise<SelectionBoard> => {
+
+  return customFetch<SelectionBoard>(getMatchSelectionSlotUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      selectionMatchBody,)
+  }
+);}
+
+
+
+
+export const getMatchSelectionSlotMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof matchSelectionSlot>>, TError,{id: number;data: BodyType<SelectionMatchBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof matchSelectionSlot>>, TError,{id: number;data: BodyType<SelectionMatchBody>}, TContext> => {
+
+const mutationKey = ['matchSelectionSlot'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof matchSelectionSlot>>, {id: number;data: BodyType<SelectionMatchBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  matchSelectionSlot(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MatchSelectionSlotMutationResult = NonNullable<Awaited<ReturnType<typeof matchSelectionSlot>>>
+    export type MatchSelectionSlotMutationBody = BodyType<SelectionMatchBody>
+    export type MatchSelectionSlotMutationError = ErrorType<void>
+
+    /**
+ * @summary Match an open slot's PlayHQ row to a squad member (admin or captain)
+ */
+export const useMatchSelectionSlot = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof matchSelectionSlot>>, TError,{id: number;data: BodyType<SelectionMatchBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof matchSelectionSlot>>,
+        TError,
+        {id: number;data: BodyType<SelectionMatchBody>},
+        TContext
+      > => {
+      return useMutation(getMatchSelectionSlotMutationOptions(options));
+    }
+
+export const getUnmatchSquadMemberParticipantUrl = (id: number,
+    participantId: string,) => {
+
+
+
+
+  return `/api/squad/${id}/participants/${participantId}`
+}
+
+/**
+ * Removes the club's match from this PlayHQ participant ID to the member.
+Sides already drafted keep their slots; only later matching changes.
+Logged.
+
+ * @summary Forget a remembered PlayHQ participant match for a member (admin or captain)
+ */
+export const unmatchSquadMemberParticipant = async (id: number,
+    participantId: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getUnmatchSquadMemberParticipantUrl(id,participantId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getUnmatchSquadMemberParticipantMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unmatchSquadMemberParticipant>>, TError,{id: number;participantId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unmatchSquadMemberParticipant>>, TError,{id: number;participantId: string}, TContext> => {
+
+const mutationKey = ['unmatchSquadMemberParticipant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unmatchSquadMemberParticipant>>, {id: number;participantId: string}> = (props) => {
+          const {id,participantId} = props ?? {};
+
+          return  unmatchSquadMemberParticipant(id,participantId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnmatchSquadMemberParticipantMutationResult = NonNullable<Awaited<ReturnType<typeof unmatchSquadMemberParticipant>>>
+
+    export type UnmatchSquadMemberParticipantMutationError = ErrorType<void>
+
+    /**
+ * @summary Forget a remembered PlayHQ participant match for a member (admin or captain)
+ */
+export const useUnmatchSquadMemberParticipant = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unmatchSquadMemberParticipant>>, TError,{id: number;participantId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unmatchSquadMemberParticipant>>,
+        TError,
+        {id: number;participantId: string},
+        TContext
+      > => {
+      return useMutation(getUnmatchSquadMemberParticipantMutationOptions(options));
+    }
+
+export const getSetSelectionMemberStatusUrl = (id: number,) => {
+
+
+
+
+  return `/api/selection/members/${id}/status`
+}
+
+/**
+ * Records Yes, Maybe or No (and a note) for every date of the weekend's
+round, marked as set by the caller. The member's own later answer from
+their link replaces it. Works whether or not the club uses
+availability requests. A past weekend → 409.
+
+ * @summary Record a member's answer given in person or by phone (admin or captain)
+ */
+export const setSelectionMemberStatus = async (id: number,
+    selectionStatusSetBody: SelectionStatusSetBody, options?: RequestInit): Promise<SelectionBoard> => {
+
+  return customFetch<SelectionBoard>(getSetSelectionMemberStatusUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      selectionStatusSetBody,)
+  }
+);}
+
+
+
+
+export const getSetSelectionMemberStatusMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setSelectionMemberStatus>>, TError,{id: number;data: BodyType<SelectionStatusSetBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setSelectionMemberStatus>>, TError,{id: number;data: BodyType<SelectionStatusSetBody>}, TContext> => {
+
+const mutationKey = ['setSelectionMemberStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setSelectionMemberStatus>>, {id: number;data: BodyType<SelectionStatusSetBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setSelectionMemberStatus(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetSelectionMemberStatusMutationResult = NonNullable<Awaited<ReturnType<typeof setSelectionMemberStatus>>>
+    export type SetSelectionMemberStatusMutationBody = BodyType<SelectionStatusSetBody>
+    export type SetSelectionMemberStatusMutationError = ErrorType<void>
+
+    /**
+ * @summary Record a member's answer given in person or by phone (admin or captain)
+ */
+export const useSetSelectionMemberStatus = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setSelectionMemberStatus>>, TError,{id: number;data: BodyType<SelectionStatusSetBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setSelectionMemberStatus>>,
+        TError,
+        {id: number;data: BodyType<SelectionStatusSetBody>},
+        TContext
+      > => {
+      return useMutation(getSetSelectionMemberStatusMutationOptions(options));
     }
 
 export const getRemindSelectionNonRespondersUrl = () => {

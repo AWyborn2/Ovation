@@ -3015,6 +3015,8 @@ export interface SquadMember {
   /** @nullable */
   ageGroup: string | null;
   isPrivate: boolean;
+  /** An admin chose to name this private member on the club's public surfaces */
+  showNamePublicly?: boolean;
   /** @nullable */
   linkedPlayerId: number | null;
   /**
@@ -3065,6 +3067,8 @@ export interface SquadMemberDetail {
   /** @nullable */
   ageGroup: string | null;
   isPrivate: boolean;
+  /** An admin chose to name this private member on the club's public surfaces */
+  showNamePublicly?: boolean;
   /** @nullable */
   linkedPlayerId: number | null;
   /**
@@ -3131,6 +3135,10 @@ export interface SquadMemberUpdate {
   linkedPlayerId?: number | null;
   /** Set false to clear the contact-changed flag. */
   contactChangeFlag?: boolean;
+  /** Admin only. Name a private member on the club's public team list,
+  site and social cards. Ignored for a junior or under-18 member.
+   */
+  showNamePublicly?: boolean;
   account?: SquadContactUpdate;
   guardian1?: SquadContactUpdate;
   guardian2?: SquadContactUpdate;
@@ -3350,6 +3358,17 @@ export const SelectionMemberStatus = {
 } as const;
 
 /**
+ * member = from the member's own link; admin = recorded in the Hub by an admin or captain
+ */
+export type AvailabilityReplySource = typeof AvailabilityReplySource[keyof typeof AvailabilityReplySource];
+
+
+export const AvailabilityReplySource = {
+  member: 'member',
+  admin: 'admin',
+} as const;
+
+/**
  * A squad member as the Hub shows them — never a contact value.
  */
 export interface SelectionMember {
@@ -3377,6 +3396,13 @@ export interface SelectionMember {
   repliedAt: string | null;
   /** Answered after the cut-off */
   late: boolean;
+  /** Who recorded the answer; null with no answer */
+  statusSource?: AvailabilityReplySource | null;
+  /**
+     * The admin or captain who recorded an answer given in person (statusSource admin)
+     * @nullable
+     */
+  statusSetBy?: string | null;
 }
 
 export type SelectionGapReason = typeof SelectionGapReason[keyof typeof SelectionGapReason];
@@ -3398,6 +3424,11 @@ export interface SelectionGap {
   /** @minLength 1 */
   name: string;
   reason: SelectionGapReason;
+  /**
+     * The PlayHQ participant ID of the list row behind the gap, when the list carried one
+     * @nullable
+     */
+  participantId?: string | null;
 }
 
 export interface SelectionSlot {
@@ -3522,13 +3553,17 @@ export type SelectionEventDetail = { [key: string]: unknown };
 
 export interface SelectionEvent {
   id: number;
-  selectionId: number;
+  /**
+     * Null for a round-level change (a status set for a member in no side)
+     * @nullable
+     */
+  selectionId: number | null;
   grade: string;
   /** admin, captain, player or system */
   actorKind: string;
   /** @nullable */
   actorName: string | null;
-  /** draft, update, finalise, reopen or withdraw */
+  /** draft, update, finalise, reopen, withdraw, match or status_set */
   action: string;
   detail: SelectionEventDetail;
   createdAt: string;
@@ -3550,6 +3585,24 @@ export interface SelectionActor {
   canRemind: boolean;
 }
 
+/**
+ * The weekends the Hub can move between, by their Saturday
+ */
+export interface SelectionWeekends {
+  /**
+     * The nearest earlier weekend with a round, if any
+     * @nullable
+     */
+  previous: string | null;
+  /** The weekend this board shows */
+  current: string;
+  /**
+     * The nearest later weekend with fixtures, if any
+     * @nullable
+     */
+  next: string | null;
+}
+
 export interface SelectionBoard {
   section: SquadSection;
   /** The club uses availability requests. Off, the Hub stands alone: the
@@ -3565,6 +3618,40 @@ export interface SelectionBoard {
   pool: SelectionMember[];
   /** The latest changes to the section's sides, newest first */
   events: SelectionEvent[];
+  weekends?: SelectionWeekends;
+  /** The round is a past weekend's; it can be viewed, not changed */
+  readOnly?: boolean;
+}
+
+export interface SelectionMatchBody {
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  slot: number;
+  memberId: number;
+  /** The side's version the caller last saw */
+  version: number;
+}
+
+export type AvailabilityStatus = typeof AvailabilityStatus[keyof typeof AvailabilityStatus];
+
+
+export const AvailabilityStatus = {
+  yes: 'yes',
+  no: 'no',
+  maybe: 'maybe',
+} as const;
+
+export interface SelectionStatusSetBody {
+  /** The round's weekend (its Saturday) */
+  weekend: string;
+  status: AvailabilityStatus;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  note?: string | null;
 }
 
 export interface SelectionSlotInput {
@@ -3664,15 +3751,6 @@ export const AvailabilityRecipientSlot = {
   account: 'account',
   guardian1: 'guardian1',
   guardian2: 'guardian2',
-} as const;
-
-export type AvailabilityStatus = typeof AvailabilityStatus[keyof typeof AvailabilityStatus];
-
-
-export const AvailabilityStatus = {
-  yes: 'yes',
-  no: 'no',
-  maybe: 'maybe',
 } as const;
 
 export interface AvailabilityDateAnswer {
@@ -10265,6 +10343,13 @@ q: string;
 
 export type GetSelectionBoardParams = {
 section?: SquadSection;
+/**
+ * The round's weekend (its Saturday). Omitted, the current weekend. A
+past weekend reads only and is never created; a future weekend is
+offered only when it has fixtures (see the board's `weekends`).
+
+ */
+weekend?: string;
 };
 
 export type GetMetaConnectPendingParams = {

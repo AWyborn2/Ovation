@@ -9,4 +9,11 @@ import type { SquadSection } from './squadSection';
 
 export type GetSelectionBoardParams = {
 section?: SquadSection;
+/**
+ * The round's weekend (its Saturday). Omitted, the current weekend. A
+past weekend reads only and is never created; a future weekend is
+offered only when it has fixtures (see the board's `weekends`).
+
+ */
+weekend?: Date;
 };

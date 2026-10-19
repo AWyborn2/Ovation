@@ -2713,6 +2713,16 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/SquadSection"
+        - name: weekend
+          in: query
+          required: false
+          description: |
+            The round's weekend (its Saturday). Omitted, the current weekend. A
+            past weekend reads only and is never created; a future weekend is
+            offered only when it has fixtures (see the board's `weekends`).
+          schema:
+            type: string
+            format: date
       responses:
         "200":
           description: The board
@@ -2949,6 +2959,116 @@ paths:
           description: Side not found
         "409":
           description: The side is not finalised, or the match has started
+
+  /selection/{id}/match:
+    post:
+      operationId: matchSelectionSlot
+      tags: [selection]
+      summary: Match an open slot's PlayHQ row to a squad member (admin or captain)
+      description: |
+        Fills an open slot whose list row PlayHQ named only "Private Player"
+        (or any row not on the register) with the chosen member of the side's
+        section. When the gap carries the row's PlayHQ participant ID, the
+        match is remembered for the club, so later lists resolve that player
+        on their own. Logged against the side. A stale version → 409.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelectionMatchBody"
+      responses:
+        "200":
+          description: Matched; the updated board
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelectionBoard"
+        "400":
+          description: The slot is not open, or the member is unknown, inactive or in another side
+        "401":
+          description: Not signed in as this club's admin or captain
+        "403":
+          description: The caller may not edit this side
+        "404":
+          description: Side not found
+        "409":
+          description: The side is finalised, was changed since the caller loaded it, or its round is closed
+
+  /squad/{id}/participants/{participantId}:
+    delete:
+      operationId: unmatchSquadMemberParticipant
+      tags: [squad]
+      summary: Forget a remembered PlayHQ participant match for a member (admin or captain)
+      description: |
+        Removes the club's match from this PlayHQ participant ID to the member.
+        Sides already drafted keep their slots; only later matching changes.
+        Logged.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: participantId
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "204":
+          description: Forgotten
+        "401":
+          description: Not signed in as this club's admin or captain
+        "404":
+          description: No such match for this member
+
+  /selection/members/{id}/status:
+    put:
+      operationId: setSelectionMemberStatus
+      tags: [selection]
+      summary: Record a member's answer given in person or by phone (admin or captain)
+      description: |
+        Records Yes, Maybe or No (and a note) for every date of the weekend's
+        round, marked as set by the caller. The member's own later answer from
+        their link replaces it. Works whether or not the club uses
+        availability requests. A past weekend → 409.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelectionStatusSetBody"
+      responses:
+        "200":
+          description: Recorded; the updated board of the member's section
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelectionBoard"
+        "400":
+          description: Invalid status or weekend
+        "401":
+          description: Not signed in as this club's admin or captain
+        "403":
+          description: The caller may not set statuses in this member's section
+        "404":
+          description: Member not found
+        "409":
+          description: The weekend's round is closed
 
   /selection/rounds/current/remind:
     post:
@@ -14187,6 +14307,9 @@ components:
           type: ["string", "null"]
         isPrivate:
           type: boolean
+        showNamePublicly:
+          type: boolean
+          description: An admin chose to name this private member on the club's public surfaces
         linkedPlayerId:
           type: ["integer", "null"]
         linkedPlayerName:
@@ -14274,6 +14397,9 @@ components:
           type: ["string", "null"]
         isPrivate:
           type: boolean
+        showNamePublicly:
+          type: boolean
+          description: An admin chose to name this private member on the club's public surfaces
         linkedPlayerId:
           type: ["integer", "null"]
         linkedPlayerName:
@@ -14346,6 +14472,11 @@ components:
         contactChangeFlag:
           type: boolean
           description: Set false to clear the contact-changed flag.
+        showNamePublicly:
+          type: boolean
+          description: |
+            Admin only. Name a private member on the club's public team list,
+            site and social cards. Ignored for a junior or under-18 member.
         account:
           $ref: "#/components/schemas/SquadContactUpdate"
         guardian1:
@@ -14671,6 +14802,19 @@ components:
         late:
           type: boolean
           description: Answered after the cut-off
+        statusSource:
+          oneOf:
+            - $ref: "#/components/schemas/AvailabilityReplySource"
+            - type: "null"
+          description: Who recorded the answer; null with no answer
+        statusSetBy:
+          type: ["string", "null"]
+          description: The admin or captain who recorded an answer given in person (statusSource admin)
+
+    AvailabilityReplySource:
+      type: string
+      enum: [member, admin]
+      description: member = from the member's own link; admin = recorded in the Hub by an admin or captain
 
     SelectionGapReason:
       type: string
@@ -14686,6 +14830,9 @@ components:
           minLength: 1
         reason:
           $ref: "#/components/schemas/SelectionGapReason"
+        participantId:
+          type: ["string", "null"]
+          description: The PlayHQ participant ID of the list row behind the gap, when the list carried one
 
     SelectionSlot:
       type: object
@@ -14881,7 +15028,8 @@ components:
         id:
           type: integer
         selectionId:
-          type: integer
+          type: ["integer", "null"]
+          description: Null for a round-level change (a status set for a member in no side)
         grade:
           type: string
         actorKind:
@@ -14891,7 +15039,7 @@ components:
           type: ["string", "null"]
         action:
           type: string
-          description: draft, update, finalise, reopen or withdraw
+          description: draft, update, finalise, reopen, withdraw, match or status_set
         detail:
           type: object
           additionalProperties: true
@@ -14947,6 +15095,57 @@ components:
           description: The latest changes to the section's sides, newest first
           items:
             $ref: "#/components/schemas/SelectionEvent"
+        weekends:
+          $ref: "#/components/schemas/SelectionWeekends"
+        readOnly:
+          type: boolean
+          description: The round is a past weekend's; it can be viewed, not changed
+
+    SelectionWeekends:
+      type: object
+      description: The weekends the Hub can move between, by their Saturday
+      required: [previous, current, next]
+      properties:
+        previous:
+          type: ["string", "null"]
+          format: date
+          description: The nearest earlier weekend with a round, if any
+        current:
+          type: string
+          format: date
+          description: The weekend this board shows
+        next:
+          type: ["string", "null"]
+          format: date
+          description: The nearest later weekend with fixtures, if any
+
+    SelectionMatchBody:
+      type: object
+      required: [slot, memberId, version]
+      properties:
+        slot:
+          type: integer
+          minimum: 1
+          maximum: 12
+        memberId:
+          type: integer
+        version:
+          type: integer
+          description: The side's version the caller last saw
+
+    SelectionStatusSetBody:
+      type: object
+      required: [weekend, status]
+      properties:
+        weekend:
+          type: string
+          format: date
+          description: The round's weekend (its Saturday)
+        status:
+          $ref: "#/components/schemas/AvailabilityStatus"
+        note:
+          type: ["string", "null"]
+          maxLength: 200
 
     SelectionSlotInput:
       type: object

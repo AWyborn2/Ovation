@@ -12,14 +12,40 @@ import {
 import { normaliseParticipantId } from "@workspace/db/shirt-numbers";
 import { seasonStartYearFor } from "@workspace/db/seasons";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
-import { memberDisplayName } from "./availability-grades";
+import { isUnder18OnDate, memberDisplayName, perthDate } from "./availability-grades";
 import { normaliseSlots, SIDE_SIZE, TWELFTH_INDEX } from "./selection-drafts";
 
 export const PRIVATE_PLAYER = "Private Player";
+
+type PrivacyFields = Pick<SquadMemberRow, "isPrivate"> &
+  Partial<Pick<SquadMemberRow, "showNamePublicly" | "section" | "dateOfBirth">>;
+
+/**
+ * Whether a member is named on the club's public surfaces (published team list,
+ * site, social cards). A public member always is. A private member is only when
+ * an admin turned on `showNamePublicly`, and never a junior or under-18 member
+ * (ADR-008): junior privacy stays with ADR-007. The Hub and the team sheet show
+ * real names regardless. A reader that doesn't select the flag reads it as off.
+ */
+export function namedPublicly(m: PrivacyFields, now: Date = new Date()): boolean {
+  if (!m.isPrivate) return true;
+  if (m.showNamePublicly !== true || m.section !== "senior") return false;
+  return isUnder18OnDate(m.dateOfBirth, perthDate(now)) !== true;
+}
+
+/** The name a member goes by on public surfaces: their own, or "Private Player". */
+export function publicName(
+  m: PrivacyFields & Pick<SquadMemberRow, "firstName" | "lastName" | "preferredName">,
+  now?: Date,
+): string {
+  return namedPublicly(m, now) ? memberDisplayName(m) : PRIVATE_PLAYER;
+}
+
 type PublishedMember = Pick<
   SquadMemberRow,
   "id" | "firstName" | "lastName" | "preferredName" | "isPrivate" | "linkedPlayerId"
->;
+> &
+  Partial<Pick<SquadMemberRow, "showNamePublicly" | "section" | "dateOfBirth">>;
 type PublishedSide = Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId">;
 const nameKey = (name: string) => name.trim().toLowerCase().replace(/\s+/g, " ");
 
@@ -126,7 +152,7 @@ export function selectionPublishedPlayers(
       order: twelfth ? SIDE_SIZE : players.length + 1,
       ...(eligible && m.linkedPlayerId != null ? { playerId: m.linkedPlayerId } : {}),
       ...(participantId ? { participantId } : {}),
-      displayName: m.isPrivate ? PRIVATE_PLAYER : memberDisplayName(m),
+      displayName: publicName(m),
       ...(role ? { role } : {}),
     });
   });
