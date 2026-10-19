@@ -69,7 +69,10 @@ describe("selectionPublishedPlayers with the public-name flag", () => {
     captainMemberId: null,
     keeperMemberId: null,
   };
-  const member = (id: number, extra: object) => ({
+  const member = (
+    id: number,
+    extra: { isPrivate: boolean; showNamePublicly?: boolean; linkedPlayerId?: number | null },
+  ) => ({
     id,
     ...adult,
     firstName: `P${id}`,
