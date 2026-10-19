@@ -1040,9 +1040,11 @@ export function clubPlayerSeasons(
   participantId: string,
 ): CentralPlayerSeasonRow[] {
   if (stats.players.get(participantId)?.isPrivate) return [];
-  const mine = stats.buckets.filter(
-    (b) => b.participantId === participantId && !b.careerGrain && b.season !== null,
-  );
+  // Undated history (career-grain or season-less rows, i.e. the pre-digital
+  // baseline) folds into one season-null row per grade, matching the native
+  // endpoint, so the profile's Career totals include it.
+  const mine = stats.buckets.filter((b) => b.participantId === participantId);
+  const seasonOf = (b: (typeof mine)[number]): number | null => (b.careerGrain ? null : b.season);
   const nz = (n: number): number | null => (n === 0 ? null : n);
   return [...groupBy(mine, (b) => `${b.grade}\u0000${b.season}`).values()]
     .map((bs) => {
@@ -1050,7 +1052,7 @@ export function clubPlayerSeasons(
       const dismissals = f.innings - f.notOuts;
       return {
         grade: bs[0]!.grade,
-        season: bs[0]!.season as number,
+        season: seasonOf(bs[0]!),
         games: nz(f.games),
         innings: nz(f.innings),
         notOuts: nz(f.notOuts),
@@ -1075,7 +1077,9 @@ export function clubPlayerSeasons(
         maidens: f.maidens,
       };
     })
-    .sort((x, y) => x.grade.localeCompare(y.grade) || x.season - y.season);
+    .sort(
+      (x, y) => x.grade.localeCompare(y.grade) || (x.season ?? -Infinity) - (y.season ?? -Infinity),
+    );
 }
 
 function splitName(displayName: string): { givenName: string; surname: string } {
