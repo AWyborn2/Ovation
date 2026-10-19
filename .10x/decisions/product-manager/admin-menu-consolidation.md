@@ -59,8 +59,9 @@ register, Life members, Junior premierships.
 ## Requirements
 
 - P0: senior shirt register gains a category (Men / Female); number clashes are flagged only
-  within a category; a person has at most one entry per season across categories (and an
-  admin is warned if the same person is in the senior and junior registers).
+  within a category. **Revised with Ash 2026-10-19:** a person MAY be active in several
+  registers in one season (juniors playing seniors, women in men's sides): one entry per person
+  per category, an "Also in: …" badge and a one-click "Also add to…" action. Never blocked.
 - P0: junior rows stay in `junior_shirt_numbers` and are served only via juniors routes:
   the "Juniors" section is a view onto that table, never a blended query (juniors isolation).
 - P0: old admin URLs redirect to the new locations (bookmarks, tour links).
