@@ -305,6 +305,7 @@ describe.skipIf(!isLocalDb)("the club overlay on the central read path", () => {
 
   it("AE1 + AE4: B Grade 2003/04 from history, 2004/05 (corrected) and 2005/06 from central", async () => {
     expect(await seasons(t)).toEqual([
+      ["A Grade", null, 20, 1000], // career-grain history: the undated baseline row
       ["B Grade", 2003, 8, 300],
       ["B Grade", 2004, 1, 45],
       ["B Grade", 2005, 1, 30], // the stale correction (31 -> 35) is skipped
@@ -372,7 +373,7 @@ describe.skipIf(!isLocalDb)("the club overlay on the central read path", () => {
       .set({ removedAt: new Date(), removedBy: "test" })
       .where(and(eq(clubCorrectionsTable.id, liveId), isNull(clubCorrectionsTable.removedAt)));
     try {
-      expect((await seasons(t))[1]).toEqual(["B Grade", 2004, 1, 40]);
+      expect((await seasons(t))[2]).toEqual(["B Grade", 2004, 1, 40]);
       const res = await get(t, `/milestones`).expect(200);
       const runs = (
         res.body.items as { kind: string; boardKey: string | null; matchId: number }[]
