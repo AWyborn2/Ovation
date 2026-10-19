@@ -232,7 +232,7 @@ export function isWomensGrade(grade: string | null | undefined): boolean {
   const lower = grade.trim().toLowerCase();
   if (WA_WOMENS_RE.test(lower)) return true;
   const app = appGradeFromCentral(grade);
-  return app !== null && /^(female|women's)/i.test(app);
+  return app !== null && /^(female|women's)\b/i.test(app);
 }
 
 /**
