@@ -14,7 +14,6 @@
 
 ## Previous handoff
 
-
 ---
 
 **From:** Engineering Manager

@@ -22,7 +22,7 @@ Replacement rules:
   `shirt_number_settings` (one switch and policy set for both registers).
 - `lib/db/src/shirt-numbers.ts`: `seasonNumbersInUse` (season-wide; drives the `block` policy),
   `numberAfterDuplicatePolicy`, carry-forward, held linking. Routes: `api-server/src/routes/
-  shirt-numbers.ts`, `juniors-shirt-numbers.ts`. UI: `components/shirt-numbers/*` (register
+shirt-numbers.ts`, `juniors-shirt-numbers.ts`. UI: `components/shirt-numbers/*` (register
   table with Duplicates filter + badge, settings panel).
 - Grade classifier `lib/db/src/central/grades.ts` already knows women's grades
   ("Female A/B Grade", WA "Women's …").
@@ -43,7 +43,7 @@ Replacement rules:
 ### Data (migration `0047_shirt_number_category.sql`, idempotent)
 
 - `ALTER TABLE shirt_numbers ADD COLUMN IF NOT EXISTS category text NOT NULL DEFAULT 'men'`
-  + `CHECK (category IN ('men','female'))`. Existing rows backfill to `men` via the default.
+  - `CHECK (category IN ('men','female'))`. Existing rows backfill to `men` via the default.
 - Replace the two partial unique indexes with `(tenant_id, season, category, participant_id)` and
   `(tenant_id, season, category, player_id)` (same `WHERE … IS NOT NULL`). Drop the old indexes
   in the same migration (`DROP INDEX IF EXISTS`). Production: apply by hand before republishing.
@@ -81,15 +81,15 @@ season (a tie goes to `men`). This needs one helper in the player shirt-number r
 
 ### Admin UI / information architecture
 
-| Change | Implementation |
-|---|---|
-| People → **Shirt numbers** | One tab `/admin/people/shirt-numbers`: the settings panel at the top, then a segmented control **Men / Female / Juniors** (`?section=`). Men and Female reuse `register-table` with `category`; Juniors renders the existing junior register (junior hooks only). Badges: "Also in: …"; row action "Also add to…". |
-| **Imports** hub | `/admin/import/:tab?` with tabs **Stats** (the current page), **Squad** (the PlayHQ participant upload moved out of `admin-availability.tsx` into `components/imports/squad-upload.tsx`), **Shirt numbers** (upload with a category picker; juniors uploads go to the junior route). The nav label becomes "Imports". Availability and Shirt numbers keep "Upload →" links. |
-| Display & kiosk | Tab `display` moves to the `settings` group (`/admin/settings/display`). |
-| **Stats & Data** group | New group `data` at `/admin/data`: Stats, Junior scorecards, Corrections, Duplicate players. Removed from People. |
-| Junior fixtures | Selection Hub gains tabs: "Senior selection" (`/admin/selection`) and "Junior team lists" (`/admin/selection/junior-fixtures`). |
-| Honours & Records | Keeps only Premierships, Awards, Team of the Decade, Caps, Life members, Junior premierships. |
-| Redirects | `App.tsx` `<Redirect>` for every old path: `/admin/honours/shirt-numbers`, `…/junior-shirt-numbers` (→ `?section=juniors`), `…/display`, `/admin/people/stats`, `…/junior-scorecards`, `…/corrections`, `…/duplicates`, `…/junior-fixtures`. Fix the existing redirects that point at the old People paths. |
+| Change                     | Implementation                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| People → **Shirt numbers** | One tab `/admin/people/shirt-numbers`: the settings panel at the top, then a segmented control **Men / Female / Juniors** (`?section=`). Men and Female reuse `register-table` with `category`; Juniors renders the existing junior register (junior hooks only). Badges: "Also in: …"; row action "Also add to…".                                                          |
+| **Imports** hub            | `/admin/import/:tab?` with tabs **Stats** (the current page), **Squad** (the PlayHQ participant upload moved out of `admin-availability.tsx` into `components/imports/squad-upload.tsx`), **Shirt numbers** (upload with a category picker; juniors uploads go to the junior route). The nav label becomes "Imports". Availability and Shirt numbers keep "Upload →" links. |
+| Display & kiosk            | Tab `display` moves to the `settings` group (`/admin/settings/display`).                                                                                                                                                                                                                                                                                                    |
+| **Stats & Data** group     | New group `data` at `/admin/data`: Stats, Junior scorecards, Corrections, Duplicate players. Removed from People.                                                                                                                                                                                                                                                           |
+| Junior fixtures            | Selection Hub gains tabs: "Senior selection" (`/admin/selection`) and "Junior team lists" (`/admin/selection/junior-fixtures`).                                                                                                                                                                                                                                             |
+| Honours & Records          | Keeps only Premierships, Awards, Team of the Decade, Caps, Life members, Junior premierships.                                                                                                                                                                                                                                                                               |
+| Redirects                  | `App.tsx` `<Redirect>` for every old path: `/admin/honours/shirt-numbers`, `…/junior-shirt-numbers` (→ `?section=juniors`), `…/display`, `/admin/people/stats`, `…/junior-scorecards`, `…/corrections`, `…/duplicates`, `…/junior-fixtures`. Fix the existing redirects that point at the old People paths.                                                                 |
 
 Feature gating is kept: shirt numbers and the data tabs keep `curation`; `display` keeps `clubroomTv`.
 
@@ -107,12 +107,14 @@ Feature gating is kept: shirt numbers and the data tabs keep `curation`; `displa
 ## Implementation units (two PRs)
 
 **PR 1: menu moves (no migration, ships first)**
+
 - U1 `admin-nav.ts`: new `data` group, Selection tabs, Display → settings, Honours trimmed,
   "Imports" label; `admin-groups.tsx` tab routing for the new groups; redirects in `App.tsx`;
   tour and shell tests updated.
 - U2 Imports hub: `/admin/import/:tab?`, extract the squad upload component, link from Availability.
 
 **PR 2: shirt-number categories (migration 0047)**
+
 - U3 Migration + schema + shared lib (category, indexes, scoped `seasonNumbersInUse`, rollover,
   lineup category via `isWomensGrade`). Tests: men/female same number = no clash; same person
   in both categories allowed; block policy is per category.

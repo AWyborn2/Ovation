@@ -32,15 +32,15 @@ men's #7 and a women's #7 clash), and the same person appearing twice.
 
 ## Recommendation (scope B)
 
-| Item | From | To |
-|---|---|---|
-| Shirt numbers + Junior shirt numbers | Honours & Records (2 tabs) | **People → Shirt numbers** (one tab: switch and policies at the top, then sections **Senior Men / Female / Juniors**) |
-| Shirt-number bulk upload | each shirt tab | **Imports** (keep an "Upload" link in the Shirt numbers tab) |
-| Import CSV | top-level, stats-only | renamed **Imports**: Stats (CSV / match / batch), Squad (PlayHQ participants), Shirt numbers |
-| Squad upload | Availability | **Imports → Squad** (Availability keeps the squad register and a link to the upload) |
-| Display & kiosk | Honours & Records | **Display & Settings** |
-| Stats, Junior scorecards, Corrections, Duplicate players | People | new group **Stats & Data** |
-| Junior fixtures | People | next to **Selection Hub** (a junior tab or a sibling) |
+| Item                                                     | From                       | To                                                                                                                    |
+| -------------------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Shirt numbers + Junior shirt numbers                     | Honours & Records (2 tabs) | **People → Shirt numbers** (one tab: switch and policies at the top, then sections **Senior Men / Female / Juniors**) |
+| Shirt-number bulk upload                                 | each shirt tab             | **Imports** (keep an "Upload" link in the Shirt numbers tab)                                                          |
+| Import CSV                                               | top-level, stats-only      | renamed **Imports**: Stats (CSV / match / batch), Squad (PlayHQ participants), Shirt numbers                          |
+| Squad upload                                             | Availability               | **Imports → Squad** (Availability keeps the squad register and a link to the upload)                                  |
+| Display & kiosk                                          | Honours & Records          | **Display & Settings**                                                                                                |
+| Stats, Junior scorecards, Corrections, Duplicate players | People                     | new group **Stats & Data**                                                                                            |
+| Junior fixtures                                          | People                     | next to **Selection Hub** (a junior tab or a sibling)                                                                 |
 
 Honours & Records keeps only curated content: Premierships, Awards, Team of the Decade, Cap
 register, Life members, Junior premierships.
