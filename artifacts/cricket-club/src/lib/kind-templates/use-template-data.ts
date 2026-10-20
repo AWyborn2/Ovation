@@ -44,6 +44,7 @@ export function useKindTemplateData(
         sponsors: kindSponsors(bundle, kind, true, null),
         presentingSponsorName: presentingSponsorName(bundle, true),
         packColourModes: bundle?.settings.packColourModes,
+        names: bundle?.cardNames,
       }),
       photoUrl: photoUrl ?? undefined,
     }),

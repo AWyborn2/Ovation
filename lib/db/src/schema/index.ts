@@ -51,3 +51,4 @@ export * from "./playhq_grade_decisions";
 export * from "./social_publishing";
 export * from "./availability";
 export * from "./shirt_numbers";
+export * from "./card_name_overrides";

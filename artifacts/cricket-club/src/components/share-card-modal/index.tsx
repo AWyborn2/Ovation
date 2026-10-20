@@ -225,6 +225,7 @@ export function ShareCardModal({
       // overrides — which must still beat club colours (they are also folded
       // into `effectiveTheme` for the pack's-own-look path).
       packColourModes: bundle?.settings.packColourModes,
+      names: bundle?.cardNames,
       tokenOverride: isJunior
         ? null
         : { accent: style.styleAccent, panel: style.stylePanel, displayFont: style.styleFont },

@@ -18,6 +18,7 @@ import { getTenantBrand } from "./tenant-brand";
 import { loadActiveSponsors } from "./active-sponsors";
 import { renderCardStill } from "./card-video-renderer";
 import { resolveDraftPack } from "./draft-enrich";
+import { loadCardNames } from "./card-content/names";
 import {
   readQueuedCarousel,
   queuedSlideAdjustments,
@@ -124,7 +125,7 @@ export async function renderDraftSlides(
   }
   const kind = typeof input.kind === "string" ? input.kind : "card";
   const junior = draft.sourceMatchIsJunior || input.junior === true;
-  const [settings, brand, sponsors, clubPack] = await Promise.all([
+  const [settings, brand, sponsors, clubPack, names] = await Promise.all([
     ensureSettings(tenantId),
     getTenantBrand(tenantId),
     loadActiveSponsors(tenantId, log),
@@ -134,6 +135,10 @@ export async function renderDraftSlides(
     draft.packId || draft.templateVersion !== null
       ? Promise.resolve(null)
       : resolveDraftPack(tenantId, kind),
+    // The club's short names and crests, as the Studio preview has them (ADR-010 P1).
+    loadCardNames(tenantId, {
+      onCentralError: (err) => log.warn({ err }, "card names: central read failed"),
+    }),
   ]);
   // A card kind template draft renders its own document on the blank base
   // (ADR-001); a pack draft renders its pack.
@@ -176,6 +181,7 @@ export async function renderDraftSlides(
     photoUrl: junior && input.juniorPhotoAllowed !== true ? null : draft.photoUrl,
     photoPlacement: "contained",
     ...(Object.keys(modes).length ? { packColourModes: modes } : {}),
+    ...(Object.keys(names).length ? { names } : {}),
   };
 
   // A list card that outgrows one card posts as a balanced set (cover +

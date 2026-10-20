@@ -301,7 +301,7 @@ function ladderRow(variant: "base" | "club"): string {
   return (
     `<div${club ? ' data-repeat-variant="club"' : ""} style="display:flex;align-items:center;padding:1.1cqmin 2.2cqmin;margin-top:.8cqmin;border-radius:${K.rowR};${box};color:${K.panelText};font-weight:700;font-size:2.9cqmin;line-height:1.2">` +
     `<span style="width:6cqmin;flex:none;font-family:${K_DISP};color:${club ? `var(--sk-hi-row-text,${K.panelAcc})` : K.panelMuted}">{{row.pos}}</span>` +
-    `<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis${hi}">{{row.team}}</span>` +
+    `<span data-fit="38" data-fit-row style="flex:1;min-width:0;font-size:calc(2.9cqmin * var(--fit,1));line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis${hi}">{{row.team}}</span>` +
     `<span style="${cell}">{{row.played}}</span><span style="${cell}">{{row.won}}</span><span style="${cell}">{{row.lost}}</span>` +
     `<span style="${LADDER_PTS};font-size:3.6cqmin${hi}">{{row.points}}</span>` +
     `</div>`

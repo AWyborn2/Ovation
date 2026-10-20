@@ -87,14 +87,17 @@ import type {
   CardAudioTrack,
   CardAudioTrackInput,
   CardAudioTrackUpdate,
+  CardCompetitionLabelUpdate,
   CardEffectPreset,
   CardEffectPresetInput,
   CardLayout,
   CardLayoutInput,
+  CardNamesListing,
   CardPhotoRule,
   CardRenderStillInput,
   CardSet,
   CardSetInput,
+  CardTeamNameUpdate,
   CardTemplate,
   CardTemplateInput,
   CardTemplateUpdate,
@@ -16749,6 +16752,228 @@ export const useUpdateSocialSettings = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateSocialSettingsMutationOptions(options));
+    }
+
+export const getGetCardNamesUrl = () => {
+
+
+
+
+  return `/api/social-settings/card-names`
+}
+
+/**
+ * Admin. The club itself, then every club it met this season or last, each with its automatic short name, the club's own short name (all grades and per grade) and crest; and every senior grade with its card label. Tenant-scoped.
+ * @summary The club's team and competition names for cards (automatic and club-set)
+ */
+export const getCardNames = async ( options?: RequestInit): Promise<CardNamesListing> => {
+
+  return customFetch<CardNamesListing>(getGetCardNamesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCardNamesQueryKey = () => {
+    return [
+    `/api/social-settings/card-names`
+    ] as const;
+    }
+
+
+export const getGetCardNamesQueryOptions = <TData = Awaited<ReturnType<typeof getCardNames>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCardNames>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCardNamesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCardNames>>> = ({ signal }) => getCardNames({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCardNames>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCardNamesQueryResult = NonNullable<Awaited<ReturnType<typeof getCardNames>>>
+export type GetCardNamesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The club's team and competition names for cards (automatic and club-set)
+ */
+
+export function useGetCardNames<TData = Awaited<ReturnType<typeof getCardNames>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCardNames>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCardNamesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSetCardTeamNameUrl = () => {
+
+
+
+
+  return `/api/social-settings/card-names/teams`
+}
+
+/**
+ * Admin. Keyed on the central club id, for one app grade or (gradeKey null) every grade. An empty or null shortName clears it, so cards fall back to the automatic short name. Tenant-scoped; never written to the central database.
+ * @summary Set or clear the club's short name for a team on cards
+ */
+export const setCardTeamName = async (cardTeamNameUpdate: CardTeamNameUpdate, options?: RequestInit): Promise<CardNamesListing> => {
+
+  return customFetch<CardNamesListing>(getSetCardTeamNameUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cardTeamNameUpdate,)
+  }
+);}
+
+
+
+
+export const getSetCardTeamNameMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setCardTeamName>>, TError,{data: BodyType<CardTeamNameUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setCardTeamName>>, TError,{data: BodyType<CardTeamNameUpdate>}, TContext> => {
+
+const mutationKey = ['setCardTeamName'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setCardTeamName>>, {data: BodyType<CardTeamNameUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setCardTeamName(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetCardTeamNameMutationResult = NonNullable<Awaited<ReturnType<typeof setCardTeamName>>>
+    export type SetCardTeamNameMutationBody = BodyType<CardTeamNameUpdate>
+    export type SetCardTeamNameMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set or clear the club's short name for a team on cards
+ */
+export const useSetCardTeamName = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setCardTeamName>>, TError,{data: BodyType<CardTeamNameUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setCardTeamName>>,
+        TError,
+        {data: BodyType<CardTeamNameUpdate>},
+        TContext
+      > => {
+      return useMutation(getSetCardTeamNameMutationOptions(options));
+    }
+
+export const getSetCardCompetitionLabelUrl = () => {
+
+
+
+
+  return `/api/social-settings/card-names/competitions`
+}
+
+/**
+ * Admin. An empty or null label clears it, so cards fall back to the automatic label. Tenant-scoped.
+ * @summary Set or clear the club's card label for a grade
+ */
+export const setCardCompetitionLabel = async (cardCompetitionLabelUpdate: CardCompetitionLabelUpdate, options?: RequestInit): Promise<CardNamesListing> => {
+
+  return customFetch<CardNamesListing>(getSetCardCompetitionLabelUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cardCompetitionLabelUpdate,)
+  }
+);}
+
+
+
+
+export const getSetCardCompetitionLabelMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setCardCompetitionLabel>>, TError,{data: BodyType<CardCompetitionLabelUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setCardCompetitionLabel>>, TError,{data: BodyType<CardCompetitionLabelUpdate>}, TContext> => {
+
+const mutationKey = ['setCardCompetitionLabel'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setCardCompetitionLabel>>, {data: BodyType<CardCompetitionLabelUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setCardCompetitionLabel(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetCardCompetitionLabelMutationResult = NonNullable<Awaited<ReturnType<typeof setCardCompetitionLabel>>>
+    export type SetCardCompetitionLabelMutationBody = BodyType<CardCompetitionLabelUpdate>
+    export type SetCardCompetitionLabelMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set or clear the club's card label for a grade
+ */
+export const useSetCardCompetitionLabel = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setCardCompetitionLabel>>, TError,{data: BodyType<CardCompetitionLabelUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setCardCompetitionLabel>>,
+        TError,
+        {data: BodyType<CardCompetitionLabelUpdate>},
+        TContext
+      > => {
+      return useMutation(getSetCardCompetitionLabelMutationOptions(options));
     }
 
 export const getGetMetaConnectionUrl = () => {

@@ -1,5 +1,45 @@
 # Handoff
 
+**From:** SDE (P1, names and crests)
+**To:** SDE session for P2 (content contract + Match Day builder)
+**Feature:** match-day-carousel-content
+
+## Context
+
+- **P1 (T1.1–T1.6)** is on `wyborn21/carousel-p1-team-names`. It adds migration 0050, which Ash runs in Production SQL before republishing.
+- **Data (0050):**
+  - `team_name_overrides (tenant_id, central_club_id, grade_key null, short_name)` is UNIQUE NULLS NOT DISTINCT. A NULL grade means every grade.
+  - `competition_label_overrides (tenant_id, grade_key, label)`.
+  - Both are tenant-curated and never written to central. The Drizzle schema is `lib/db/src/schema/card_name_overrides.ts`.
+- **Pure names:** `@workspace/scorecard/card-names` has `autoShortTeamName`, `autoCompetitionLabel`, `cardNameKey`, `resolveCardTeamName` / `resolveCardCompetition`, `cardTeamCrest`, `teamMonogram` and the `CardNames` map type.
+  - The automatic team name drops brackets, a " - " suffix, grade, gender and format words (Senior, Women's, T20, U21, Colts…) and club suffixes. It keeps sponsors and lone letters ("Mount Lawley D").
+  - The automatic competition label only drops numbering, season years and "Competition". "Female A Grade" stays as it is: "Women's A" is the club's override, not automatic.
+- **Server:** `api-server/src/lib/card-content/names.ts` has the following:
+  - `resolveTeamName(tenantId, centralClubId, gradeKey?)`: grade override, then club override, then automatic, then raw.
+  - `resolveCompetitionLabel`, plus `set*Override`.
+  - `listCardNames`, for the admin listing: the club and every club met this season or last.
+  - `loadCardNames(tenantId)` → `CardNames`.
+  - Central reads live in `lib/db/src/central/card-names.ts`, behind the barrel.
+  - Crests are PlayHQ organisation logos, reached through `central.club_playhq_orgs`, else the PlayHQ side of a projected match. `central.clubs` has no logo column. With no crest, the monogram stands in.
+- **How cards get names today:** the `CardNames` map rides on `PackCardData.names`.
+  - The client gets it from `SocialSettingsBundle.cardNames` through `buildPackData({ names })`, which every surface passes.
+  - The server gets it in `draft-render.ts`.
+  - `bindInput(input, packId, names)` resolves every team name and the competition and grade labels (ladder, match day, team list heading, results rows). A crest the input lacks also comes from the map.
+  - Saved carousels keep the `data` snapshot from when they were built. A v1 carousel with no `names` prints the automatic names.
+- **For P2:** `buildMatchDayContent` should call `resolveTeamName` / `resolveCompetitionLabel` directly, or put `loadCardNames` once per build into `CardContent`. Either way the client resolving in `bindInput` can retire with the `model.ts` mapping.
+- **Name fit (T1.6):** `fitNames` in `pack-render/name-fit.ts` is the one rule: shrink to 0.6, then two lines, then "…".
+  - `data-fit-row` marks a list-row box, which wraps only at the minimum size so the row keeps its height.
+  - Ladder rows in every pack, plus Club Kit's results, fixtures and match-day opposition, are now fit-marked. Their capacities were measured in the browser per size (`nameFit(f, square, other)` in `club-kit/designs.ts`).
+  - `card-names-bind.test.ts` fails if a pack adds an unmarked name box.
+  - The own-look parity digests were regenerated, a markup-only change.
+- **Admin UI:** Social Studio → "Team and competition names" (`components/social-studio/card-names-section.tsx`). Names save on blur or Enter, Reset or an empty field goes back to automatic, and "By grade" opens per-grade names. API: `GET /social-settings/card-names` and `PUT .../teams` / `.../competitions` (a null name clears it).
+- **Still open:**
+  - Ladder, result and fixture rows have no crest slot yet. That is P2 layout work.
+  - The listing lists senior grades only (juniors isolation). Junior opposition names still resolve automatically on junior cards.
+  - The capacities were measured with fallback fonts, so they lean conservative. Recheck them on the CI headless renderer in the P2 fit grid.
+
+## Previous handoff
+
 **From:** Engineering Manager
 **To:** Senior Engineer / SDE sessions
 **Feature:** match-day-carousel-content

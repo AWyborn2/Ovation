@@ -218,6 +218,7 @@ function EditorApp({ draftId }: { draftId: number }) {
         sponsors: kindSponsors(bundle, input.kind, true, grade),
         presentingSponsorName: presentingSponsorName(bundle, true),
         packColourModes: bundle?.settings.packColourModes,
+        names: bundle?.cardNames,
       }),
       photoUrl: draft.photoUrl ?? undefined,
     }),

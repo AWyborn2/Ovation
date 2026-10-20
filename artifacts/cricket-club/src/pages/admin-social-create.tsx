@@ -145,6 +145,7 @@ export default function AdminSocialCreate() {
         sponsors: kindSponsors(bundle, kind, sponsorsOn),
         presentingSponsorName: presentingSponsorName(bundle, sponsorsOn),
         packColourModes: bundle?.settings.packColourModes,
+        names: bundle?.cardNames,
       }),
     [bundle, brand, kind, sponsorsOn],
   );

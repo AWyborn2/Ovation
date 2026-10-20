@@ -13,6 +13,8 @@ import {
   UpdateMilestoneBoardSettingsBody,
   UpsertCaptionTemplateBody,
   CreateCardRenderStillBody,
+  SetCardTeamNameBody,
+  SetCardCompetitionLabelBody,
 } from "@workspace/api-zod";
 import { requireAdmin } from "../middlewares/require-admin";
 import { requireEntitlement } from "../middlewares/require-entitlement";
@@ -45,6 +47,12 @@ import { persistDueDrafts } from "../lib/effective-draft-state";
 import { loadConnection } from "../lib/publishing/connections";
 import { postingPlanWrite, resolvePostingPlan } from "../lib/posting-plan";
 import { tenantIsCentral } from "../lib/tenant";
+import {
+  listCardNames,
+  loadCardNames,
+  setCompetitionLabelOverride,
+  setTeamNameOverride,
+} from "../lib/card-content/names";
 
 // Deliberately loose: the address is only ever a recipient for our own mail.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -107,8 +115,56 @@ router.get("/social-settings", async (req, res): Promise<void> => {
     })),
     activeSponsors: await loadActiveSponsors(tenantId, req.log),
     brand: await getTenantBrand(tenantId),
+    // The club's short names and crests for every card the Studio renders (ADR-010 P1).
+    cardNames: await loadCardNames(tenantId, {
+      onCentralError: (err) => req.log.warn({ err }, "card names: central read failed"),
+    }),
   });
 });
+
+// Team and competition names on cards (ADR-010 P1). Tenant-curated: keyed on
+// the central club id, never written to central.
+router.get(
+  "/social-settings/card-names",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    res.json(await listCardNames(getTenantId(req)));
+  },
+);
+
+router.put(
+  "/social-settings/card-names/teams",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const parsed = SetCardTeamNameBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    const { centralClubId, gradeKey, shortName } = parsed.data;
+    await setTeamNameOverride(tenantId, centralClubId, gradeKey ?? null, shortName ?? null);
+    res.json(await listCardNames(tenantId));
+  },
+);
+
+router.put(
+  "/social-settings/card-names/competitions",
+  requireAdmin,
+  requireEntitlement("socialStudio"),
+  async (req, res): Promise<void> => {
+    const parsed = SetCardCompetitionLabelBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const tenantId = getTenantId(req);
+    await setCompetitionLabelOverride(tenantId, parsed.data.gradeKey, parsed.data.label ?? null);
+    res.json(await listCardNames(tenantId));
+  },
+);
 
 router.patch(
   "/social-settings",

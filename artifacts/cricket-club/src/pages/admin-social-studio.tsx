@@ -30,6 +30,7 @@ import { usePackColourModes } from "@/lib/use-pack-colour-modes";
 import { PackPerTypeSection } from "@/components/social-studio/pack-per-type-section";
 import { KindTemplatesSection } from "@/components/social-studio/kind-templates-section";
 import { DesignPacksSection } from "@/components/social-studio/design-packs-section";
+import { CardNamesSection } from "@/components/social-studio/card-names-section";
 import { MatchSummarySettings } from "@/components/social-studio/match-summary-settings";
 import { THUMB_SIZE, kindLabel, type CardKind } from "@/lib/social-studio";
 import { sampleCardInput } from "@/lib/sample-card-inputs";
@@ -208,6 +209,7 @@ export default function AdminSocialStudio() {
           presentingSponsorName: presentingSponsorName(bundle, sponsorsOn),
           photoUrl: galleryPhoto,
           packColourModes: bundle?.settings.packColourModes,
+          names: bundle?.cardNames,
         }),
       );
     }
@@ -308,6 +310,9 @@ export default function AdminSocialStudio() {
           templateByKind={defaultByKind}
         />
       )}
+
+      {/* The names every card prints for each club and grade (ADR-010 P1). */}
+      <CardNamesSection />
 
       {/* Templates: new designs are made in the Studio editor (U18). Layer
           templates from the retired layout editor still render and can be

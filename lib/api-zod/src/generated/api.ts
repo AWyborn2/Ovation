@@ -8128,7 +8128,12 @@ export const GetSocialSettingsResponse = zod.object({
   "backgroundColour": zod.string().nullish(),
   "primaryColour": zod.string().nullish(),
   "juniorsColour": zod.string().nullish()
-}).describe('Halls Head\'s own branding, resolved from the clubs register record (id 2) — the single source of truth for the club\'s official logo and colours. Null when the record could not be loaded; renderers fall back to their built-in official defaults.'),zod.null()]).optional().describe('Halls Head\'s official branding (logo + colours) from the clubs register — the default theme\/logo for share cards. Null when unavailable; renderers fall back to their built-in official defaults.')
+}).describe('Halls Head\'s own branding, resolved from the clubs register record (id 2) — the single source of truth for the club\'s official logo and colours. Null when the record could not be loaded; renderers fall back to their built-in official defaults.'),zod.null()]).optional().describe('Halls Head\'s official branding (logo + colours) from the clubs register — the default theme\/logo for share cards. Null when unavailable; renderers fall back to their built-in official defaults.'),
+  "cardNames": zod.object({
+  "teams": zod.record(zod.string(), zod.string()).optional().describe('Raw team or club name key to the club\'s short name.'),
+  "crests": zod.record(zod.string(), zod.string()).optional().describe('Raw team or club name key to a crest url, for inputs with none.'),
+  "competitions": zod.record(zod.string(), zod.string()).optional().describe('Raw competition or grade key to the club\'s label.')
+}).optional().describe('The club\'s names for cards, keyed by the normalised raw name (`cardNameKey` in @workspace\/scorecard\/card-names). Only club-set names are listed; cards fall back to the automatic short name.')
 })
 
 
@@ -8704,6 +8709,159 @@ export const UpdateSocialSettingsResponse = zod.object({
   "unscheduled": zod.number().describe('Cards with no free slot'),
   "restored": zod.number().describe('Cards handed back to auto-post when it was turned off')
 }).optional()
+})
+
+
+/**
+ * Admin. The club itself, then every club it met this season or last, each with its automatic short name, the club's own short name (all grades and per grade) and crest; and every senior grade with its card label. Tenant-scoped.
+ * @summary The club's team and competition names for cards (automatic and club-set)
+ */
+export const GetCardNamesResponse = zod.object({
+  "available": zod.boolean().describe('False when the club has no central club, so there is nothing to list.'),
+  "teams": zod.array(zod.object({
+  "centralClubId": zod.number(),
+  "gradeKey": zod.string().nullable().describe('App grade (\"A Grade\"), or null for every grade.'),
+  "rawName": zod.string(),
+  "autoName": zod.string(),
+  "overrideName": zod.string().nullable(),
+  "name": zod.string().describe('What a card prints.'),
+  "source": zod.enum(['override', 'auto', 'raw']),
+  "crestUrl": zod.string().nullable(),
+  "monogram": zod.string().describe('Stands in for a missing crest.')
+}).and(zod.object({
+  "isOwnClub": zod.boolean(),
+  "teamNames": zod.array(zod.string()).describe('Team names this club fielded lately (PlayHQ\'s names for its sides).'),
+  "grades": zod.array(zod.object({
+  "centralClubId": zod.number(),
+  "gradeKey": zod.string().nullable().describe('App grade (\"A Grade\"), or null for every grade.'),
+  "rawName": zod.string(),
+  "autoName": zod.string(),
+  "overrideName": zod.string().nullable(),
+  "name": zod.string().describe('What a card prints.'),
+  "source": zod.enum(['override', 'auto', 'raw']),
+  "crestUrl": zod.string().nullable(),
+  "monogram": zod.string().describe('Stands in for a missing crest.')
+}))
+}))),
+  "competitions": zod.array(zod.object({
+  "gradeKey": zod.string(),
+  "rawLabel": zod.string(),
+  "autoLabel": zod.string(),
+  "overrideLabel": zod.string().nullable(),
+  "label": zod.string(),
+  "source": zod.enum(['override', 'auto', 'raw']),
+  "rawLabels": zod.array(zod.string()).describe('The competition names this grade appears under (e.g. \"A Grade Wyllie Cup\").')
+}))
+})
+
+
+/**
+ * Admin. Keyed on the central club id, for one app grade or (gradeKey null) every grade. An empty or null shortName clears it, so cards fall back to the automatic short name. Tenant-scoped; never written to the central database.
+ * @summary Set or clear the club's short name for a team on cards
+ */
+
+export const setCardTeamNameBodyGradeKeyMax = 64;
+
+export const setCardTeamNameBodyShortNameMax = 40;
+
+
+
+export const SetCardTeamNameBody = zod.object({
+  "centralClubId": zod.number().min(1),
+  "gradeKey": zod.string().max(setCardTeamNameBodyGradeKeyMax).nullish(),
+  "shortName": zod.string().max(setCardTeamNameBodyShortNameMax).nullable()
+})
+
+export const SetCardTeamNameResponse = zod.object({
+  "available": zod.boolean().describe('False when the club has no central club, so there is nothing to list.'),
+  "teams": zod.array(zod.object({
+  "centralClubId": zod.number(),
+  "gradeKey": zod.string().nullable().describe('App grade (\"A Grade\"), or null for every grade.'),
+  "rawName": zod.string(),
+  "autoName": zod.string(),
+  "overrideName": zod.string().nullable(),
+  "name": zod.string().describe('What a card prints.'),
+  "source": zod.enum(['override', 'auto', 'raw']),
+  "crestUrl": zod.string().nullable(),
+  "monogram": zod.string().describe('Stands in for a missing crest.')
+}).and(zod.object({
+  "isOwnClub": zod.boolean(),
+  "teamNames": zod.array(zod.string()).describe('Team names this club fielded lately (PlayHQ\'s names for its sides).'),
+  "grades": zod.array(zod.object({
+  "centralClubId": zod.number(),
+  "gradeKey": zod.string().nullable().describe('App grade (\"A Grade\"), or null for every grade.'),
+  "rawName": zod.string(),
+  "autoName": zod.string(),
+  "overrideName": zod.string().nullable(),
+  "name": zod.string().describe('What a card prints.'),
+  "source": zod.enum(['override', 'auto', 'raw']),
+  "crestUrl": zod.string().nullable(),
+  "monogram": zod.string().describe('Stands in for a missing crest.')
+}))
+}))),
+  "competitions": zod.array(zod.object({
+  "gradeKey": zod.string(),
+  "rawLabel": zod.string(),
+  "autoLabel": zod.string(),
+  "overrideLabel": zod.string().nullable(),
+  "label": zod.string(),
+  "source": zod.enum(['override', 'auto', 'raw']),
+  "rawLabels": zod.array(zod.string()).describe('The competition names this grade appears under (e.g. \"A Grade Wyllie Cup\").')
+}))
+})
+
+
+/**
+ * Admin. An empty or null label clears it, so cards fall back to the automatic label. Tenant-scoped.
+ * @summary Set or clear the club's card label for a grade
+ */
+export const setCardCompetitionLabelBodyGradeKeyMax = 64;
+
+export const setCardCompetitionLabelBodyLabelMax = 40;
+
+
+
+export const SetCardCompetitionLabelBody = zod.object({
+  "gradeKey": zod.string().min(1).max(setCardCompetitionLabelBodyGradeKeyMax),
+  "label": zod.string().max(setCardCompetitionLabelBodyLabelMax).nullable()
+})
+
+export const SetCardCompetitionLabelResponse = zod.object({
+  "available": zod.boolean().describe('False when the club has no central club, so there is nothing to list.'),
+  "teams": zod.array(zod.object({
+  "centralClubId": zod.number(),
+  "gradeKey": zod.string().nullable().describe('App grade (\"A Grade\"), or null for every grade.'),
+  "rawName": zod.string(),
+  "autoName": zod.string(),
+  "overrideName": zod.string().nullable(),
+  "name": zod.string().describe('What a card prints.'),
+  "source": zod.enum(['override', 'auto', 'raw']),
+  "crestUrl": zod.string().nullable(),
+  "monogram": zod.string().describe('Stands in for a missing crest.')
+}).and(zod.object({
+  "isOwnClub": zod.boolean(),
+  "teamNames": zod.array(zod.string()).describe('Team names this club fielded lately (PlayHQ\'s names for its sides).'),
+  "grades": zod.array(zod.object({
+  "centralClubId": zod.number(),
+  "gradeKey": zod.string().nullable().describe('App grade (\"A Grade\"), or null for every grade.'),
+  "rawName": zod.string(),
+  "autoName": zod.string(),
+  "overrideName": zod.string().nullable(),
+  "name": zod.string().describe('What a card prints.'),
+  "source": zod.enum(['override', 'auto', 'raw']),
+  "crestUrl": zod.string().nullable(),
+  "monogram": zod.string().describe('Stands in for a missing crest.')
+}))
+}))),
+  "competitions": zod.array(zod.object({
+  "gradeKey": zod.string(),
+  "rawLabel": zod.string(),
+  "autoLabel": zod.string(),
+  "overrideLabel": zod.string().nullable(),
+  "label": zod.string(),
+  "source": zod.enum(['override', 'auto', 'raw']),
+  "rawLabels": zod.array(zod.string()).describe('The competition names this grade appears under (e.g. \"A Grade Wyllie Cup\").')
+}))
 })
 
 

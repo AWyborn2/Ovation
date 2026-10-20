@@ -351,6 +351,13 @@
       "when": 1792453779732,
       "tag": "0049_selection_side_size",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1792461224284,
+      "tag": "0050_card_name_overrides",
+      "breakpoints": true
     }
   ]
 }

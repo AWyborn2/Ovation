@@ -34,7 +34,7 @@ function row(variant: "base" | "club"): string {
   return (
     `<div${club ? ' data-repeat-variant="club"' : ""} style="display:flex;align-items:center;padding:1.1cqmin 2.2cqmin;margin-top:.8cqmin;border-radius:1cqmin;${box};font-weight:700;font-size:2.9cqmin;line-height:1.2">` +
     `<span style="width:6cqmin;flex:none;font-family:${DISP};color:${club ? ACC : MUTED}">{{row.pos}}</span>` +
-    `<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis${club ? `;color:${ACC}` : ""}">{{row.team}}</span>` +
+    `<span data-fit="38" data-fit-row style="flex:1;min-width:0;font-size:calc(2.9cqmin * var(--fit,1));line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis${club ? `;color:${ACC}` : ""}">{{row.team}}</span>` +
     `<span style="${CELL}">{{row.played}}</span><span style="${CELL}">{{row.won}}</span><span style="${CELL}">{{row.lost}}</span>` +
     `<span style="${PTS};font-size:3.6cqmin${club ? `;color:${ACC}` : ""}">{{row.points}}</span>` +
     `</div>`

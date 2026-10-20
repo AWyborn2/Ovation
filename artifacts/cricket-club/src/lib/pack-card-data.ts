@@ -17,6 +17,7 @@
  * the unit tests can call it without React.
  */
 
+import type { CardNames } from "@workspace/scorecard/card-names";
 import type { PackCardData, PackColourMode } from "./pack-render";
 import {
   sponsorAppliesToKind,
@@ -86,6 +87,12 @@ export interface BuildPackDataOptions {
   packColourModes?: Record<string, string> | null;
   /** Per-card style-panel overrides (share modal). Only forwarded when set. */
   tokenOverride?: PackCardData["tokenOverride"];
+  /**
+   * The club's short names and crests (`SocialSettingsBundle.cardNames`, ADR-010
+   * P1). Pass it from the settings bundle on EVERY surface, like the colour
+   * modes, so previews and server renders print the same names.
+   */
+  names?: CardNames | null;
 }
 
 /**
@@ -106,6 +113,7 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
     imageOverrides,
     packColourModes,
     tokenOverride,
+    names,
   } = options;
   const modes = packModesFrom(packColourModes);
   const override = tokenOverride
@@ -146,6 +154,8 @@ export function buildPackData(options: BuildPackDataOptions = {}): PackCardData 
     // "Club colours" everywhere.
     ...(modes ? { packColourModes: modes } : {}),
     ...(override && Object.keys(override).length ? { tokenOverride: override } : {}),
+    // Only sent when the club set a name or a crest is known; absent = automatic names.
+    ...(names && Object.values(names).some((m) => m && Object.keys(m).length) ? { names } : {}),
   };
 }
 
