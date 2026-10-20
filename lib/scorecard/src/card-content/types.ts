@@ -108,8 +108,24 @@ export interface MatchDayFixtureContent {
   source: MatchDayFixtureSource;
 }
 
+/**
+ * Match Day junior day slide (P3): the junior fixtures of one club-time day,
+ * as compact rows under the day's heading. Junior only, never mixed with
+ * senior; each fixture keeps its own content.
+ */
+export interface MatchDayDayContent {
+  kind: "matchDay";
+  page: "day";
+  junior: true;
+  /** The club-time day, YYYY-MM-DD. */
+  day: string;
+  /** "SAT 12 OCT". */
+  date: string;
+  fixtures: MatchDayFixtureContent[];
+}
+
 export type MatchDayContent =
-  MatchDayTitleContent | MatchDayFixtureContent | MatchDaySponsorsContent;
+  MatchDayTitleContent | MatchDayFixtureContent | MatchDayDayContent | MatchDaySponsorsContent;
 
 /** Content per kind; more kinds join as they move onto the pipeline (P7). */
 export type CardContent = MatchDayContent;

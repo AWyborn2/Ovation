@@ -22,7 +22,10 @@ import type { CardSize } from "../share-card";
 export interface ContentLayout {
   /** Content fields the pack has a box for. A visible field outside this list cannot show. */
   slots: readonly string[];
-  /** Fixtures per slide, per size and preset. One until junior days share a slide (P3). */
+  /**
+   * Fixtures one junior day slide holds (the multi-fixture layout, P3), per
+   * size and preset. A senior fixture always has a slide of its own.
+   */
   capacity: Record<CardSize, Record<ContentPreset, number>>;
 }
 
@@ -33,15 +36,24 @@ export const CONTENT_LAYOUT_SIZES: readonly CardSize[] = [
   "landscape",
 ];
 
-const everySize = (perPreset: Record<ContentPreset, number>) =>
-  Object.fromEntries(CONTENT_LAYOUT_SIZES.map((s) => [s, { ...perPreset }])) as Record<
-    CardSize,
-    Record<ContentPreset, number>
-  >;
+/**
+ * Rows a junior day slide holds per size (P3): a single column on square,
+ * portrait and story, two columns on landscape. Hidden fields (round, crest)
+ * do not change a row's height, so every preset holds the same.
+ */
+export const DAY_ROWS: Record<CardSize, number> = {
+  square: 4,
+  portrait: 5,
+  story: 7,
+  landscape: 6,
+};
 
-const ONE_FIXTURE = everySize(
-  Object.fromEntries(CONTENT_PRESETS.map((p) => [p, 1])) as Record<ContentPreset, number>,
-);
+const DAY_CAPACITY = Object.fromEntries(
+  CONTENT_LAYOUT_SIZES.map((size) => [
+    size,
+    Object.fromEntries(CONTENT_PRESETS.map((p) => [p, DAY_ROWS[size]])),
+  ]),
+) as Record<CardSize, Record<ContentPreset, number>>;
 
 const ALL_MATCH_DAY_FIELDS = CONTENT_FIELDS.matchDay.map((f) => f.key);
 
@@ -50,10 +62,10 @@ export type ContentPackId = (typeof CONTENT_PACK_IDS)[number];
 
 export const CONTENT_LAYOUTS: Record<ContentPackId, Record<ContentKind, ContentLayout>> = {
   "club-kit-v1": {
-    matchDay: { slots: ALL_MATCH_DAY_FIELDS, capacity: ONE_FIXTURE },
+    matchDay: { slots: ALL_MATCH_DAY_FIELDS, capacity: DAY_CAPACITY },
   },
   "broadcast-dark-v1": {
-    matchDay: { slots: ALL_MATCH_DAY_FIELDS, capacity: ONE_FIXTURE },
+    matchDay: { slots: ALL_MATCH_DAY_FIELDS, capacity: DAY_CAPACITY },
   },
 };
 
@@ -65,7 +77,7 @@ export function contentLayout(packId: string | null | undefined, kind: ContentKi
   return CONTENT_LAYOUTS[isContentPack(packId) ? packId : "club-kit-v1"][kind];
 }
 
-/** How many fixtures one slide holds for a pack, size and preset. */
+/** How many fixtures one junior day slide holds for a pack, size and preset. */
 export function contentCapacity(
   packId: string | null | undefined,
   kind: ContentKind,
@@ -73,4 +85,26 @@ export function contentCapacity(
   preset: ContentPreset,
 ): number {
   return contentLayout(packId, kind).capacity[size][preset];
+}
+
+/**
+ * Results one junior day slide holds (the multi-result layout, P3). Results
+ * and match summaries are not on the content contract yet (P7), so they have
+ * no preset: one number per pack and size.
+ */
+export const DAY_RESULT_CAPACITY: Record<ContentPackId, Record<CardSize, number>> = {
+  "club-kit-v1": { ...DAY_ROWS },
+  "broadcast-dark-v1": { ...DAY_ROWS },
+};
+
+/** Matches one junior day slide holds for a carousel set type. */
+export function dayCapacity(
+  packId: string | null | undefined,
+  setType: "matchDay" | "teamList" | "results" | "matchSummary",
+  size: CardSize,
+  preset: ContentPreset,
+): number {
+  if (setType === "matchDay") return contentCapacity(packId, "matchDay", size, preset);
+  if (setType === "teamList") return 1;
+  return DAY_RESULT_CAPACITY[isContentPack(packId) ? packId : "club-kit-v1"][size];
 }

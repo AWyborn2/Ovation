@@ -21,6 +21,7 @@ import {
   teamMonogram,
   type CardNames,
 } from "@workspace/scorecard/card-names";
+import { summaryResultWord } from "@workspace/scorecard/card-content";
 
 export function set(
   target: Record<string, string>,
@@ -144,6 +145,19 @@ export function bindInput(
         );
       }
       if (input.carouselDetail === true) bindInningsDetail(input, values, team);
+      if (input.carouselDay) {
+        set(values, "dayHeading", input.carouselDay.heading);
+        input.carouselDay.results.forEach((r, i) => {
+          values[`day${i}.grade`] = comp(r.grade);
+          values[`day${i}.opposition`] = team(r.opposition);
+          values[`day${i}.result`] = r.result;
+          values[`day${i}.word`] = r.resultWord;
+          values[`day${i}.clubScore`] = r.clubScore;
+          values[`day${i}.oppScore`] = r.oppositionScore;
+          const crest = r.crestUrl || cardTeamCrest(names, r.opposition);
+          if (crest) images[`day${i}.crest`] = crest;
+        });
+      }
       break;
     }
     case "player": {
@@ -248,6 +262,17 @@ export function bindInput(
         values["nextHomeMatch"] = page.nextHome?.match ?? "";
         values["nextHomeWhen"] = page.nextHome?.when ?? "";
         values["sponsorSocials"] = page.socials ?? "";
+      }
+      if (input.carouselDay) {
+        // A junior day slide (ADR-010 P3): content-built, so names are final.
+        set(values, "dayHeading", input.carouselDay.heading);
+        input.carouselDay.fixtures.forEach((r, i) => {
+          values[`day${i}.grade`] = r.grade;
+          values[`day${i}.opposition`] = r.opposition;
+          values[`day${i}.time`] = r.startTime;
+          values[`day${i}.meta`] = [r.venue, r.homeAway, r.roundLabel].filter(Boolean).join(" · ");
+          if (r.crestUrl) images[`day${i}.crest`] = r.crestUrl;
+        });
       }
       // Explicitly clear absent labels on historical frozen covers rather than
       // allowing sample data to supply a made-up round.
@@ -797,13 +822,7 @@ export function leaderTitle(category: string): [string, string] {
  * rather than shouting "LOSS" on the club's own channel; the result line
  * under it says who won.
  */
-export function resultWord(winner: "club" | "opposition" | "draw", result: string): string {
-  if (/abandon/i.test(result)) return "ABANDONED";
-  if (/no result/i.test(result)) return "NO RESULT";
-  if (/\btie[d]?\b/i.test(result)) return "TIE";
-  if (winner === "draw") return "DRAW";
-  return winner === "club" ? "WIN" : "RESULT";
-}
+export const resultWord = summaryResultWord;
 
 /**
  * Detailed carousel match card: one value set per innings, in input order,

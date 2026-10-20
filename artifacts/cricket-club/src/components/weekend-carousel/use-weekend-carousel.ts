@@ -44,6 +44,7 @@ import {
   type WeekendSlide,
 } from "./model";
 import { carouselCaption } from "./caption";
+import { dayCapacity } from "@/lib/pack-templates/content-layouts";
 import {
   readCardContentSettings,
   readContentOverride,
@@ -160,6 +161,23 @@ export function useWeekendCarousel(
   const [queued, setQueued] = useState<{ key: string; id: number } | null>(null);
   const [size, setSize] = useState<CardSize>("square");
   const [packId, setPackId] = useState(WEEKEND_PACK_ID);
+  // Junior same-day slides (ADR-010 P3): the club's switch, split at the layout's
+  // capacity for this pack, size and preset.
+  const grouping = useMemo(
+    () => ({
+      setType,
+      consolidateByDay: clubContent.juniorConsolidateByDay,
+      capacity: dayCapacity(packId, setType, size, contentOverride.preset ?? clubContent.preset),
+    }),
+    [
+      setType,
+      clubContent.juniorConsolidateByDay,
+      clubContent.preset,
+      packId,
+      size,
+      contentOverride,
+    ],
+  );
   const [coverChoice, setCover] = useState<CoverPhoto>({
     photoId: null,
     transform: { focalX: 0.5, focalY: 0.5, zoom: 1 },
@@ -307,8 +325,20 @@ export function useWeekendCarousel(
       { selection: cover, photos: coverPhotos },
       visibleFields,
       sources?.sponsorsPage,
+      grouping,
     );
-  }, [generated, photos, bundle, title, cover, coverPhotos, setType, visibleFields, sources]);
+  }, [
+    generated,
+    photos,
+    bundle,
+    title,
+    cover,
+    coverPhotos,
+    setType,
+    visibleFields,
+    sources,
+    grouping,
+  ]);
 
   const [queueError, setQueueError] = useState<string | null>(null);
   const caption =
@@ -413,6 +443,7 @@ export function useWeekendCarousel(
           { selection: cover, photos: allowed },
           visibleFields,
           fresh.data.sponsorsPage,
+          grouping,
         );
       }
       // Swapped photos ride in the content override (ADR-010 P4).

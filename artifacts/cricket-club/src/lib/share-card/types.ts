@@ -3,6 +3,7 @@
 // its siblings so every other module can depend on it without cycles.
 import type { CardTemplate, CardLayoutLayer } from "@workspace/api-client-react";
 import type { HallsHeadBrand } from "@workspace/scorecard";
+import type { DayFixtureRow, DayResultRow } from "@workspace/scorecard/card-content";
 
 export const SIZES = {
   square: { w: 1080, h: 1080, label: "Feed square", code: "1080x1080" },
@@ -270,6 +271,12 @@ export type ShareCardInput =
        */
       carouselDetail?: boolean;
       /**
+       * On-demand carousel, junior day slide (ADR-010 P3): the junior results of
+       * one day as compact rows (the multi-result layout). The match fields above
+       * are the first result's; the layout prints only these rows.
+       */
+      carouselDay?: { heading: string; results: DayResultRow[] };
+      /**
        * Marks this as a JUNIOR card: forces the junior brown palette and a
        * "JUNIOR MATCH" eyebrow so junior content reads distinctly from senior.
        */
@@ -297,6 +304,11 @@ export type ShareCardInput =
         /** Sponsors page (P6): "@ourclub · Our Cricket Club · ourclub.com.au". */
         socials?: string;
       };
+      /**
+       * On-demand carousel, junior day slide (ADR-010 P3): the junior fixtures of
+       * one day as compact rows under its heading (the multi-fixture layout).
+       */
+      carouselDay?: { heading: string; fixtures: DayFixtureRow[] };
       roundLabel: string;
       oppositionName: string;
       oppositionLogoUrl?: string | null;

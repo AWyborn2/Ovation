@@ -1,5 +1,46 @@
 # Handoff
 
+**From:** SDE (P3, junior same-day slides)
+**To:** SDE sessions for P4–P6, then P7
+**Feature:** match-day-carousel-content
+
+## Context
+
+- **P3 (T3.1–T3.3)** is on `wyborn21/carousel-p3-junior-day-slides` (PR #401). No migration: it reads the stored `card_content.matchDay.juniorConsolidateByDay` (default on), and that one switch covers Match Day, Results and Match Summary carousels.
+- **Grouping:** `groupSlides(kind, items, { junior, dayOf, consolidateByDay, capacity, reserved })` in `lib/scorecard/src/card-sets.ts`.
+  - Junior items of one club-time day share a slide, split evenly at `capacity` (7 at 4 → 4 + 3). A day with one junior game keeps the ordinary single slide.
+  - Senior items always get a slide each and never join a day slide. A day slide sits where its first junior item was.
+  - Only `matchDay`, `results` and `matchSummary` consolidate. Past `META_CAROUSEL_MAX_SLIDES` (10, counting `reserved`), the plan carries a warning, which the Weekend Carousel adds to the title slide.
+- **Content:** `MatchDayDayContent` (`page: "day"`, junior only, one day) in `card-content/types.ts`. `card-content/day.ts` holds the pure helpers:
+  - `matchDayDayContent(fixtures)` throws on a senior or other-day fixture.
+  - `dayFixtureRows(day, visible)` blanks a hidden crest and round.
+  - `dayResultRow(summary)` throws on a senior result.
+  - `summaryResultWord` is now the one result-word rule; `bind.ts`'s `resultWord` re-exports it.
+  - `contentInput` turns a day into a `matchDay` input with `carouselDay: { heading, fixtures }`. `readCardContent` validates it.
+- **Saved carousel:**
+  - A Match Day day slide is a v2 content slide.
+  - A Results or Match Summary day slide keeps a frozen `matchSummary` input with `carouselDay: { heading, results }`; its other match fields are the first result's.
+  - `readQueuedCarousel` rejects a day slide that is not junior or has fewer than two rows.
+- **Layouts:**
+  - Club Kit: `pack-templates/club-kit/day-slides.ts` (`dayFixturesTemplate`, `dayResultsTemplate`).
+  - Skeleton packs, Broadcast Dark included: `skeletonDayFixturesTemplate` / `skeletonDayResultsTemplate` in `pack-templates/carousel.ts`.
+  - `resolveTemplateBase` picks these when an input has `carouselDay`. Rows are indexed fields (`day{i}.*`, crest slot `day{i}.crest`), and every name box uses the shared name-fit rule.
+- **Capacity:** `DAY_ROWS` in `content-layouts.ts` (square 4, portrait 5, story 7, landscape 6). It is the same for every preset, because hidden fields don't change row height. `contentLayout(...).capacity` now means rows per junior day slide. `dayCapacity(packId, setType, size, preset)` is what the Weekend Carousel splits at.
+  - Measured in the browser for both packs at every size at capacity, crest showing: at least 80 px clear above the footer, and no name overflows.
+  - The name boxes' declared capacities (`dayRowFit`, `SKELETON_DAY_ROW_FIT`) sit about 10% under the measured minimum.
+- **Weekend Carousel:** `buildWeekendSlides(..., visible, grouping)` takes a `SlideGrouping`. A day slide has no photo and no team sponsor, and carries `fixtureIds` (not saved). The team editor shows the shared slide on the day's first game and a note on the others. The size and pack now change the slides, because the capacity depends on them.
+- **With P4 (auto photos):** a junior day slide has no photo, so the automatic pick and any Swap for a fixture on a day slide are not shown, and the slide saves `photoId: null`, so it writes no `photo_usage`. The team editor shows the Swap control only for fixtures that keep their own slide.
+- **Settings UI:** Social Studio → What match day cards show has the switch "Junior games on the same day share a slide".
+- **Tests:** `group-slides.test.ts`, `card-content/day.test.ts`, the day cases in `queued-carousel-v2.test.ts`, `weekend-carousel/day-slides.test.ts`, and the day fit grid in `content-layouts.test.ts`.
+
+## For the next phases
+
+- **P5:** a new optional fixture field that should show on day rows needs a cell in `dayFixtureRows` and in both day layouts, plus a check in the day fit grid.
+- **P7:** when Results and Match Summary move to builders, `dayResultRow` becomes the builder's job and the day slide can save `content` like Match Day. `DAY_RESULT_CAPACITY` then joins `CONTENT_LAYOUTS`.
+- **Automated round sets** (`engines/round-sets.ts`) are list cards (Game Day, Results Summary) that already put several junior grades on one card. P3 did not change them.
+
+## Previous handoff
+
 **From:** SDE (P6, sponsors page options)
 **To:** SDE sessions for P3, P5 and P7
 **Feature:** match-day-carousel-content

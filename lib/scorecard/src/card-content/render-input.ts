@@ -5,6 +5,7 @@
  * binder the names are final, so it does not shorten them a second time.
  */
 
+import { dayFixtureRows } from "./day";
 import type { CardContent, MatchDayFixtureContent, MatchDaySponsorsContent } from "./types";
 
 export interface ContentInputOptions {
@@ -22,6 +23,21 @@ export function contentInput(
   opts: ContentInputOptions = {},
 ): Record<string, unknown> {
   if (content.page === "fixture") return fixtureInput(content, visible);
+  if (content.page === "day") {
+    // A junior day slide (P3): compact rows under the day's heading.
+    return {
+      kind: "matchDay",
+      roundLabel: "",
+      oppositionName: "",
+      homeAway: "HOME",
+      venue: "",
+      date: content.date,
+      startTime: "",
+      junior: true,
+      namesResolved: true,
+      carouselDay: { heading: content.date, fixtures: dayFixtureRows(content, visible) },
+    };
+  }
   const blank = {
     kind: "matchDay",
     roundLabel: visible.has("title.round") ? content.roundLabel : "",

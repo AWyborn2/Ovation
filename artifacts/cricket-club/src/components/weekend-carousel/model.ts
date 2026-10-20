@@ -4,7 +4,7 @@ import type {
   SocialSettingsBundle,
   WeekendSponsorsPageSources,
 } from "@workspace/api-client-react";
-import { isJuniorGradeLabel } from "@workspace/scorecard";
+import { groupSlides, isJuniorGradeLabel } from "@workspace/scorecard";
 import type { PhotoTransform, ShareCardInput } from "@/lib/share-card";
 import type { PackCardData } from "@/lib/pack-render";
 import { buildPackData, tenantHashtag } from "@/lib/pack-card-data";
@@ -12,6 +12,9 @@ import { gradeMatchKey } from "@/lib/share-card/sponsor-limit";
 import { contentSlideInput, type CarouselSetType } from "@workspace/scorecard/queued-carousel";
 import {
   combinedRoundLabel,
+  dayHeading,
+  dayResultRow,
+  matchDayDayContent,
   matchDaySponsorsContent,
   matchDayTitleContent,
   resolveVisibleFields,
@@ -109,7 +112,25 @@ export type WeekendSlide = {
   content?: CardContent;
   visibleFields?: string[];
   photoId?: number | null;
+  /** A junior day slide (P3): the fixtures it holds, for the team editor. Not saved. */
+  fixtureIds?: number[];
 };
+
+/** How junior items share slides (ADR-010 P3); absent, every item has its own slide. */
+export interface SlideGrouping {
+  setType: CarouselSetType;
+  /** The club's switch (`card_content.matchDay.juniorConsolidateByDay`). */
+  consolidateByDay: boolean;
+  /** Matches a junior day slide holds at the carousel's pack, size and preset. */
+  capacity: number;
+}
+
+/** The slide a team's fixture is on: its own, or the junior day slide it shares. */
+export function slideForFixture(slides: WeekendSlide[], fixtureId: number) {
+  return slides.find(
+    (sl) => sl.id === `fixture-${fixtureId}` || sl.fixtureIds?.includes(fixtureId),
+  );
+}
 
 export function localDay(date: Date, timeZone = CLUB_TIME_ZONE): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -371,6 +392,7 @@ export function buildWeekendSlides(
   visible: ReadonlySet<string> = resolveVisibleFields("matchDay"),
   /** The sponsors page's optional blocks from the sources (P6); absent → none. */
   sponsorsPage?: WeekendSponsorsPageSources | null,
+  grouping?: SlideGrouping,
 ): WeekendSlide[] {
   if (!teams.length || !validRange(from, to)) return [];
   const show = (field: string) => visible.has(field);
@@ -471,82 +493,138 @@ export function buildWeekendSlides(
               )
             : [],
     });
-  return [
-    bookend("title"),
-    ...teams.flatMap((team): WeekendSlide[] => {
-      const { fixture: f, content, input, photoId, transform } = team;
-      // Match Day slides are built only from the server's content (no client mapping).
-      if (!content && !input) return [];
-      const junior = teamIsJunior(team);
-      const photoOn = !content || show("fixture.photo");
-      const sponsorOn = !content || show("fixture.teamSponsor");
-      // Revalidate the chosen ID against the CURRENT library. No fallback after
-      // deletion/reclassification and no arbitrary URL accepted from UI state.
-      const photo = photoOn
-        ? eligibleCarouselPhotos(photos, f.grade, junior).find((p) => p.id === photoId)
-        : undefined;
-      const warnings: string[] = [];
-      const gradeKey = gradeMatchKey(f.grade);
-      const assigned = sponsorOn
-        ? activeSponsors.filter(
-            (s) => gradeKey && (s.grades ?? []).some((g) => gradeMatchKey(g) === gradeKey),
-          )
-        : [];
-      const teamSponsor = assigned[0];
-      if (sponsorOn && bundle.settings.sponsorsEnabled && !teamSponsor)
-        warnings.push("No sponsor is assigned to this team. Assign one in sponsor settings.");
-      if (assigned.length > 1)
-        warnings.push(
-          "Multiple sponsors are assigned to this team. Only the first in sponsor order is shown.",
-        );
-      // Match Day: a slide with no photo prints on the brand background (ADR-010
-      // P4); only a chosen photo that has gone from the library needs a word.
-      if (photoOn && !photo && (!content || photoId != null))
-        warnings.push(
-          junior
-            ? "No club stock image selected. Junior player photos are not used."
-            : "No image selected. Choose a saved stock image or a batting, bowling or fielding photo in this grade's library.",
-        );
+  const teamSlide = (team: TeamSlide): WeekendSlide => {
+    const { fixture: f, content, input, photoId, transform } = team;
+    const junior = teamIsJunior(team);
+    const photoOn = !content || show("fixture.photo");
+    const sponsorOn = !content || show("fixture.teamSponsor");
+    // Revalidate the chosen ID against the CURRENT library. No fallback after
+    // deletion/reclassification and no arbitrary URL accepted from UI state.
+    const photo = photoOn
+      ? eligibleCarouselPhotos(photos, f.grade, junior).find((p) => p.id === photoId)
+      : undefined;
+    const warnings: string[] = [];
+    const gradeKey = gradeMatchKey(f.grade);
+    const assigned = sponsorOn
+      ? activeSponsors.filter(
+          (s) => gradeKey && (s.grades ?? []).some((g) => gradeMatchKey(g) === gradeKey),
+        )
+      : [];
+    const teamSponsor = assigned[0];
+    if (sponsorOn && bundle.settings.sponsorsEnabled && !teamSponsor)
+      warnings.push("No sponsor is assigned to this team. Assign one in sponsor settings.");
+    if (assigned.length > 1)
+      warnings.push(
+        "Multiple sponsors are assigned to this team. Only the first in sponsor order is shown.",
+      );
+    // Match Day: a slide with no photo prints on the brand background (ADR-010
+    // P4); only a chosen photo that has gone from the library needs a word.
+    if (photoOn && !photo && (!content || photoId != null))
+      warnings.push(
+        junior
+          ? "No club stock image selected. Junior player photos are not used."
+          : "No image selected. Choose a saved stock image or a batting, bowling or fielding photo in this grade's library.",
+      );
+    const venue = content ? content.venue : (f.venue?.trim() ?? "");
+    const opponent = content ? content.opposition.rawName : f.opponentName.trim();
+    if (!venue) warnings.push("Venue is missing. Update the fixture before sharing.");
+    if (!opponent) warnings.push("Opponent is missing. Update the fixture before sharing.");
+    const data = buildPackData({
+      ...base,
+      photoUrl: photo?.url ?? null,
+      photoTransform: transform,
+      sponsors: teamSponsor ? [sponsorData(teamSponsor)] : [],
+      presentingSponsorName: teamSponsor?.name,
+    });
+    const slide = {
+      id: `fixture-${f.id}`,
+      label: `${f.grade} v ${f.opponentName}`,
+      warnings,
+      junior,
+      sponsorsOn: !!teamSponsor,
+      data,
+    };
+    if (content) return contentSlide({ ...slide, content, photoId: photo?.id ?? null });
+    return {
+      ...slide,
+      input: Object.assign(
+        {},
+        input!,
+        { carouselContent: true },
+        ...(junior && photo
+          ? [
+              {
+                juniorPhotoAllowed: true,
+                juniorStockPhotoId: photo.id,
+              },
+            ]
+          : []),
+        input!.kind === "teamList" ? { grade: input!.grade?.trim() || f.grade } : {},
+      ),
+    };
+  };
+  // A junior day slide (P3): the day's games as compact rows. No photo and no
+  // team sponsor (a slide covers several teams); every row is junior.
+  const daySlide = (day: string, group: TeamSlide[]): WeekendSlide => {
+    const warnings = group.flatMap(({ fixture: f, content }) => {
       const venue = content ? content.venue : (f.venue?.trim() ?? "");
       const opponent = content ? content.opposition.rawName : f.opponentName.trim();
-      if (!venue) warnings.push("Venue is missing. Update the fixture before sharing.");
-      if (!opponent) warnings.push("Opponent is missing. Update the fixture before sharing.");
-      const data = buildPackData({
-        ...base,
-        photoUrl: photo?.url ?? null,
-        photoTransform: transform,
-        sponsors: teamSponsor ? [sponsorData(teamSponsor)] : [],
-        presentingSponsorName: teamSponsor?.name,
-      });
-      const slide = {
-        id: `fixture-${f.id}`,
-        label: `${f.grade} v ${f.opponentName}`,
-        warnings,
-        junior,
-        sponsorsOn: !!teamSponsor,
-        data,
-      };
-      if (content) return [contentSlide({ ...slide, content, photoId: photo?.id ?? null })];
       return [
-        {
-          ...slide,
-          input: Object.assign(
-            {},
-            input!,
-            { carouselContent: true },
-            ...(junior && photo
-              ? [
-                  {
-                    juniorPhotoAllowed: true,
-                    juniorStockPhotoId: photo.id,
-                  },
-                ]
-              : []),
-            input!.kind === "teamList" ? { grade: input!.grade?.trim() || f.grade } : {},
-          ),
-        },
+        ...(venue ? [] : [`${f.grade}: venue is missing. Update the fixture before sharing.`]),
+        ...(opponent
+          ? []
+          : [`${f.grade}: opponent is missing. Update the fixture before sharing.`]),
       ];
-    }),
+    });
+    const slide = {
+      id: `day-${day}-${group[0].fixture.id}`,
+      label: `Juniors · ${dayHeading(day, timeZone)} (${group.length} games)`,
+      data: buildPackData(base),
+      junior: true,
+      sponsorsOn: false,
+      warnings,
+      fixtureIds: group.map((t) => t.fixture.id),
+    };
+    if (group.every((t) => t.content))
+      return contentSlide({
+        ...slide,
+        content: matchDayDayContent(group.map((t) => t.content!)),
+        photoId: null,
+      });
+    const summaries = group.map(
+      (t) => t.input as Extract<ShareCardInput, { kind: "matchSummary" }>,
+    );
+    const { carouselDetail: _detail, ...first } = summaries[0];
+    return {
+      ...slide,
+      input: {
+        ...first,
+        junior: true,
+        carouselDay: {
+          heading: dayHeading(day, timeZone),
+          results: summaries.map((r, i) => dayResultRow({ ...r, grade: group[i].fixture.grade })),
+        },
+      },
+    };
+  };
+  // Match Day slides are built only from the server's content (no client mapping).
+  const usable = teams.filter((t) => t.content || t.input);
+  // Only junior content or junior results can share a day slide; anything else keeps its own.
+  const dayable = (t: TeamSlide) =>
+    t.content ? t.content.junior : t.input?.kind === "matchSummary" && t.input.junior === true;
+  const plan = groupSlides(grouping?.setType ?? "matchDay", usable, {
+    junior: (t) => teamIsJunior(t) && dayable(t),
+    dayOf: (t) => t.content?.day ?? localDay(new Date(t.fixture.startAt), timeZone),
+    consolidateByDay: grouping?.consolidateByDay ?? false,
+    capacity: grouping?.capacity ?? 1,
+    reserved: 2,
+  });
+  const titleSlide = bookend("title");
+  return [
+    plan.warning ? { ...titleSlide, warnings: [...titleSlide.warnings, plan.warning] } : titleSlide,
+    ...plan.groups.map((g) =>
+      g.role === "day" && g.day ? daySlide(g.day, g.items) : teamSlide(g.items[0]),
+    ),
     bookend("sponsors"),
   ];
 }
@@ -575,7 +653,7 @@ function sponsorsPageWarnings(
 
 /** A slide as a version 2 carousel saves it: content slides keep content, not a derived input. */
 export function queuedSlide(slide: WeekendSlide): Record<string, unknown> {
-  const { input, content, visibleFields, photoId, ...rest } = slide;
+  const { input, content, visibleFields, photoId, fixtureIds: _ids, ...rest } = slide;
   return content
     ? { ...rest, content, visibleFields: visibleFields ?? [], photoId: photoId ?? null }
     : { ...rest, input };

@@ -14,11 +14,17 @@ import type { ClubPhoto, Fixture, SocialSettingsBundle } from "@workspace/api-cl
 import {
   CONTENT_FIELDS,
   CONTENT_PRESETS,
+  contentInput,
+  dayHeading,
+  dayResultRow,
+  matchDayDayContent,
   matchDayFixtureContent,
   presetFields,
   type ContentPreset,
 } from "@workspace/scorecard/card-content";
 import { renderPackCard, resolveCardTokens } from "@/lib/pack-render";
+import type { CardSize, ShareCardInput } from "@/lib/share-card";
+import { buildPackData } from "@/lib/pack-card-data";
 import { MIN_FIT, balancedLongestLine } from "@/lib/pack-render/name-fit";
 import { buildWeekendSlides, createTeamSlides } from "@/components/weekend-carousel/model";
 import {
@@ -26,6 +32,7 @@ import {
   CONTENT_PACK_IDS,
   contentCapacity,
   contentLayout,
+  dayCapacity,
 } from "./content-layouts";
 
 // Worst-case content: the longest names and labels the pilot clubs produce.
@@ -143,11 +150,21 @@ describe("content layout contract", () => {
     for (const f of CONTENT_FIELDS.matchDay) expect(slots.has(f.key), f.key).toBe(true);
   });
 
-  it("declares one fixture per slide at every size and preset (junior days share a slide in P3)", () => {
+  it("declares how many junior fixtures share a day slide at every size and preset (P3)", () => {
     for (const packId of CONTENT_PACK_IDS)
       for (const size of CONTENT_LAYOUT_SIZES)
-        for (const preset of CONTENT_PRESETS)
-          expect(contentCapacity(packId, "matchDay", size, preset)).toBe(1);
+        for (const preset of CONTENT_PRESETS) {
+          const n = contentCapacity(packId, "matchDay", size, preset);
+          expect(n, `${packId} ${size} ${preset}`).toBeGreaterThanOrEqual(2);
+          expect(dayCapacity(packId, "matchDay", size, preset)).toBe(n);
+          expect(dayCapacity(packId, "results", size, preset)).toBeGreaterThanOrEqual(2);
+        }
+    // Team lists never share a slide.
+    expect(dayCapacity("club-kit-v1", "teamList", "story", "standard")).toBe(1);
+    // A pack not on the contract splits as Club Kit.
+    expect(dayCapacity("sunset-v1", "results", "square", "standard")).toBe(
+      dayCapacity("club-kit-v1", "results", "square", "standard"),
+    );
   });
 
   it("a pack not on the contract lays out as Club Kit", () => {
@@ -275,5 +292,152 @@ describe("hidden fields leave no gaps", () => {
       );
       expect(html).not.toMatch(/SAT 10 OCT\s*·\s*</);
     }
+  });
+});
+
+/**
+ * The junior day slides (P3): every pack × preset × size at its declared
+ * capacity, with worst-case names. Every row prints, every name box fits its
+ * declared capacity under the shared name-fit rule, and hidden fields stay
+ * hidden.
+ */
+const juniorFixture = (i: number) =>
+  matchDayFixtureContent(
+    {
+      ...fixture,
+      id: 100 + i,
+      grade: "Under 17 Girls",
+      roundLabel: fixture.roundLabel ?? null,
+      opponentName: i % 2 ? LONG_OPPONENT : "Secret Harbour Comets Cricket Club",
+      opponentLogoUrl: `https://crest.test/${i}.png`,
+      venue: fixture.venue ?? null,
+      startAt: new Date(`2026-10-10T0${i % 4}:30:00Z`),
+      isHome: i % 2 === 0,
+    },
+    {
+      junior: true,
+      juniorTeamName: "Blue Thunder",
+      gradeLabel: "Under 17 Girls Development — Blue Thunder",
+    },
+  );
+
+function renderDay(input: Record<string, unknown>, size: CardSize, packId: string) {
+  const data = buildPackData({ brand: bundle.brand, hashtag: "#OURCLUB" });
+  const html = renderPackCard(
+    input as unknown as ShareCardInput,
+    size,
+    false,
+    resolveCardTokens({ junior: true, data, packId }),
+    true,
+    data,
+    packId,
+  );
+  return { html, doc: new DOMParser().parseFromString(html, "text/html") };
+}
+
+function expectNamesFit(doc: Document, where: string) {
+  const boxes = [...doc.querySelectorAll("[data-fit]")];
+  expect(boxes.length, where).toBeGreaterThan(0);
+  for (const box of boxes) {
+    const value = (box.textContent ?? "").trim();
+    const capacity = Number(box.getAttribute("data-fit"));
+    expect(fitsWithoutEllipsis(value, capacity), `${where}: "${value}" in ${capacity}`).toBe(true);
+  }
+}
+
+describe.each(CONTENT_PACK_IDS)("junior day fit grid: %s", (packId) => {
+  describe.each(CONTENT_PRESETS)("Match Day, %s preset", (preset) => {
+    const visible = presetFields("matchDay", preset);
+    it.each(CONTENT_LAYOUT_SIZES)("lays out a full day at %s", (size) => {
+      const n = contentCapacity(packId, "matchDay", size, preset);
+      const day = matchDayDayContent(Array.from({ length: n }, (_, i) => juniorFixture(i)));
+      const { html, doc } = renderDay(contentInput(day, visible), size, packId);
+      const where = `${packId} ${preset} ${size}`;
+      expect(html, where).not.toContain("{{");
+      expect(html, where).not.toMatch(SAMPLES);
+      expect(doc.querySelectorAll("[data-day-row]").length, where).toBe(n);
+      const text = (doc.body.textContent ?? "").replace(/\s+/g, " ").toUpperCase();
+      expect(text, where).toContain("SAT 10 OCT");
+      expect(text, where).toContain("ROCKINGHAM MANDURAH DISTRICTS");
+      expect(text, where).toContain("SECRET HARBOUR COMETS");
+      expect(text, where).not.toContain("CRICKET CLUB");
+      // Ground, side and round on one line, joined by a real middle dot (never a replacement glyph).
+      expect(text, where).toContain("OVAL 2 · AWAY");
+      expect(text, where).not.toContain("\uFFFD");
+      expect(text.includes("ROUND 3"), where).toBe(visible.has("fixture.round"));
+      expect(html.includes("https://crest.test/0.png"), where).toBe(
+        visible.has("fixture.oppositionCrest"),
+      );
+      expectNamesFit(doc, where);
+    });
+  });
+
+  it.each(CONTENT_LAYOUT_SIZES)("Results: lays out a full day at %s", (size) => {
+    const n = dayCapacity(packId, "results", size, "standard");
+    const results = Array.from({ length: n }, (_, i) =>
+      dayResultRow({
+        matchTitle: "Under 17 Girls • Round 3",
+        grade: "Under 17 Girls Development",
+        result: "Rockingham Mandurah Districts won by 112 runs",
+        resultWinner: i % 2 ? "opposition" : "club",
+        opposition: {
+          name: LONG_OPPONENT,
+          primaryColor: "",
+          secondaryColor: "",
+          textColor: "",
+          logoUrl: `https://crest.test/r${i}.png`,
+        },
+        innings: [
+          {
+            teamKey: "club",
+            inningsNum: 1,
+            totalRuns: "212",
+            wickets: "10",
+            overs: "40",
+            topBatters: [],
+            topBowlers: [],
+          },
+          {
+            teamKey: "opposition",
+            inningsNum: 1,
+            totalRuns: "213",
+            wickets: "9",
+            overs: "39.5",
+            topBatters: [],
+            topBowlers: [],
+          },
+        ],
+        junior: true,
+      }),
+    );
+    const input = {
+      kind: "matchSummary",
+      matchTitle: "Under 17 Girls • Round 3",
+      result: "",
+      resultWinner: "club",
+      club: { name: "Our Cricket Club", primaryColor: "", secondaryColor: "", textColor: "" },
+      opposition: { name: LONG_OPPONENT, primaryColor: "", secondaryColor: "", textColor: "" },
+      innings: [],
+      junior: true,
+      carouselDay: { heading: dayHeading("2026-10-10"), results },
+    };
+    const { html, doc } = renderDay(input, size, packId);
+    const where = `${packId} results ${size}`;
+    expect(html, where).not.toContain("{{");
+    expect(html, where).not.toMatch(SAMPLES);
+    expect(doc.querySelectorAll("[data-day-row]").length, where).toBe(n);
+    const text = (doc.body.textContent ?? "").replace(/\s+/g, " ").toUpperCase();
+    for (const v of [
+      "SAT 10 OCT",
+      "10/212",
+      "9/213",
+      "WIN",
+      "RESULT",
+      "ROCKINGHAM MANDURAH DISTRICTS",
+    ])
+      expect(text, `${where}: ${v}`).toContain(v);
+    expect(text, where).not.toContain("CRICKET CLUB INC");
+    expect(html, where).toContain("https://crest.test/r0.png");
+    expectNamesFit(doc, where);
   });
 });
