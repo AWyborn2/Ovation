@@ -81,6 +81,12 @@ export type EnrichInput = {
    * linked player (a match result features the club's top performer).
    */
   featuredPlayerId?: number | null;
+  /**
+   * The players a Team List or match result photo may show: the selected side,
+   * or the club's players in the game ranked by performance (see
+   * {@link PHOTO_POLICY}).
+   */
+  candidatePlayerIds?: CandidatePlayers;
 };
 
 /** Draft engines → the caption template family they use. */
@@ -464,7 +470,38 @@ export type PhotoPickOptions = {
    * after the photo types; null or omitted = no preference.
    */
   matchFormat?: MatchFormat | null;
+  /** The players a `side` / `game` policy kind may show (see {@link PHOTO_POLICY}). */
+  candidatePlayerIds?: CandidatePlayers;
 };
+
+/**
+ * Candidate players for a photo, in order (a match result's are ranked best
+ * performer first), or a lazy lookup, since a draft re-pick reloads them.
+ */
+export type CandidatePlayers = readonly number[] | (() => Promise<readonly number[]>);
+
+/**
+ * How a card kind's photo is picked (social-photo-tag-selection, Ash 19–20 Oct
+ * 2026). These kinds never fall back to a photo of someone who isn't in the
+ * side or game, or to another grade: with no match the draft has no photo and
+ * an admin picks one. Only a `fixed` card photo rule applies to them.
+ *
+ *   - `side`: a tagged photo (then headshot) of a selected player, rotating
+ *     towards the players and photos used least on recent Team List posts.
+ *   - `game`: a tagged photo (then headshot) of a club player in the game,
+ *     best performer first.
+ *   - `gradeTeam`: the grade's team, then celebrating, photos.
+ *
+ * Kinds not listed keep the legacy order (rules, player, grade photo).
+ */
+export const PHOTO_POLICY: Readonly<Record<string, "side" | "game" | "gradeTeam">> = {
+  teamList: "side",
+  matchSummary: "game",
+  matchDay: "gradeTeam",
+};
+
+/** How far back Team List rotation looks at the photos used on posts. */
+export const ROTATION_WINDOW_DAYS = 28;
 
 type PhotoPick = { url: string; source: PhotoSource };
 
@@ -522,6 +559,8 @@ async function pickByRuleKind(
       ),
     );
   if (!rule) return null;
+  // `random` and `player` rules are retired for the policy kinds.
+  if (PHOTO_POLICY[kind] && rule.mode !== "fixed") return null;
   const types = opts.photoTypes ?? [];
   const format = opts.matchFormat ?? null;
   const ruleType = isPhotoType(rule.photoType) ? rule.photoType : null;
@@ -578,6 +617,21 @@ export async function pickDraftPhoto(
   const ruled = await pickByRule(tenantId, opts);
   if (ruled) return ruled;
 
+  const policy = opts.kind ? PHOTO_POLICY[opts.kind] : undefined;
+  if (policy === "gradeTeam") return gradeTeamPhoto(tenantId, opts);
+  if (policy) {
+    const candidates =
+      typeof opts.candidatePlayerIds === "function"
+        ? await opts.candidatePlayerIds()
+        : (opts.candidatePlayerIds ?? []);
+    return pickCandidatePhoto(tenantId, candidates, {
+      order: policy === "side" ? "rotate" : "ranked",
+      seed: opts.seed ?? null,
+      types: opts.photoTypes ?? [],
+      format: opts.matchFormat ?? null,
+    });
+  }
+
   const types = opts.photoTypes ?? [];
   const format = opts.matchFormat ?? null;
   if (opts.playerId != null) {
@@ -606,6 +660,194 @@ export async function pickDraftPhoto(
   return null;
 }
 
+const TEAM_PHOTO_TYPES: readonly PhotoType[] = ["team", "celebrating"];
+
+/** A Match Day card's photo: the grade's team, then celebrating, photos; newest first. */
+async function gradeTeamPhoto(tenantId: number, opts: PhotoPickOptions): Promise<PhotoPick | null> {
+  if (!opts.grade) return null;
+  const [photo] = await db
+    .select({ objectPath: clubPhotosTable.objectPath })
+    .from(clubPhotosTable)
+    .where(
+      and(
+        eq(clubPhotosTable.tenantId, tenantId),
+        eq(clubPhotosTable.grade, opts.grade),
+        sql`${clubPhotosTable.photoTypes} && ARRAY['team','celebrating']::text[]`,
+      ),
+    )
+    .orderBy(...preferredThenNewest(TEAM_PHOTO_TYPES, opts.matchFormat ?? null))
+    .limit(1);
+  return photo ? { url: objectUrl(photo.objectPath), source: "auto:library-grade" } : null;
+}
+
+/** One photo a candidate could show; a player's photos come in their preferred order. */
+type CandidatePhoto = { playerId: number; id: number; url: string };
+
+/**
+ * How often each photo URL was used on the club's Team List posts in the
+ * rotation window, leaving out the draft being picked for (`sourceKey`).
+ * Dismissed drafts never reached anyone, so they don't count.
+ */
+async function recentTeamListPhotoUse(
+  tenantId: number,
+  sourceKey: string | null,
+): Promise<Map<string, number>> {
+  const since = new Date(Date.now() - ROTATION_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const rows = await db
+    .select({ photoUrl: socialDraftsTable.photoUrl })
+    .from(socialDraftsTable)
+    .where(
+      and(
+        eq(socialDraftsTable.tenantId, tenantId),
+        sql`${socialDraftsTable.cardInput}->>'kind' = 'teamList'`,
+        sql`${socialDraftsTable.status} <> 'dismissed'`,
+        sql`${socialDraftsTable.createdAt} >= ${since}`,
+        sql`${socialDraftsTable.photoUrl} IS NOT NULL`,
+        ...(sourceKey ? [sql`${socialDraftsTable.sourceKey} IS DISTINCT FROM ${sourceKey}`] : []),
+      ),
+    );
+  const use = new Map<string, number>();
+  for (const r of rows) if (r.photoUrl) use.set(r.photoUrl, (use.get(r.photoUrl) ?? 0) + 1);
+  return use;
+}
+
+/** The automatic photo the draft for `sourceKey` has now, so a refresh can keep it. */
+async function currentAutoDraftPhoto(
+  tenantId: number,
+  sourceKey: string | null,
+): Promise<string | null> {
+  if (!sourceKey) return null;
+  const [row] = await db
+    .select({ photoUrl: socialDraftsTable.photoUrl, photoSource: socialDraftsTable.photoSource })
+    .from(socialDraftsTable)
+    .where(
+      and(eq(socialDraftsTable.tenantId, tenantId), eq(socialDraftsTable.sourceKey, sourceKey)),
+    )
+    .orderBy(desc(socialDraftsTable.id))
+    .limit(1);
+  return row && isAutoPhoto(row.photoSource) ? row.photoUrl : null;
+}
+
+/**
+ * Choose among candidates' photos. `ranked` takes the first candidate (in the
+ * given order) with a photo. `rotate` (Team List) keeps the draft's current
+ * photo while it still shows someone in the side; otherwise it takes the
+ * candidates whose photos were used least on recent Team List posts, picks one
+ * of them by the seed, then that player's least-used photo. Rotation only
+ * reorders: an over-used photo is still picked when it is the only one.
+ */
+async function chooseCandidatePhoto(
+  tenantId: number,
+  ids: readonly number[],
+  photos: readonly CandidatePhoto[],
+  order: "ranked" | "rotate",
+  seed: string | null,
+): Promise<CandidatePhoto | null> {
+  if (photos.length === 0) return null;
+  const byPlayer = new Map<number, CandidatePhoto[]>();
+  for (const p of photos) byPlayer.set(p.playerId, [...(byPlayer.get(p.playerId) ?? []), p]);
+  const withPhotos = ids.filter((id) => byPlayer.has(id));
+  if (order === "ranked") return byPlayer.get(withPhotos[0])![0];
+
+  const current = await currentAutoDraftPhoto(tenantId, seed);
+  const kept = current ? photos.find((p) => p.url === current) : undefined;
+  if (kept) return kept;
+
+  const use = await recentTeamListPhotoUse(tenantId, seed);
+  const used = (p: CandidatePhoto) => use.get(p.url) ?? 0;
+  const playerUse = (id: number) => byPlayer.get(id)!.reduce((n, p) => n + used(p), 0);
+  const least = Math.min(...withPhotos.map(playerUse));
+  const pool = withPhotos.filter((id) => playerUse(id) === least).map((id) => ({ id }));
+  const own = byPlayer.get(seededPick(pool, seed).id)!;
+  const fewest = Math.min(...own.map(used));
+  return own.find((p) => used(p) === fewest)!;
+}
+
+/**
+ * A photo of one of `candidates` (see {@link PHOTO_POLICY}): their tagged
+ * library photos first (the card's preferred types and format, then newest),
+ * then their default headshots. Fill-ins and unresolved ids never feature.
+ * Null when no candidate has a photo; there is no fallback.
+ */
+export async function pickCandidatePhoto(
+  tenantId: number,
+  candidates: readonly (number | null | undefined)[],
+  opts: {
+    order: "ranked" | "rotate";
+    seed: string | null;
+    types: readonly PhotoType[];
+    format: MatchFormat | null;
+  },
+): Promise<PhotoPick | null> {
+  const ids = [
+    ...new Set(
+      candidates.filter((id): id is number => id != null && id > 0 && !isFillInPlayerId(id)),
+    ),
+  ];
+  if (ids.length === 0) return null;
+
+  const tagged = await db
+    .select({
+      playerId: clubPhotoPlayersTable.playerId,
+      id: clubPhotosTable.id,
+      objectPath: clubPhotosTable.objectPath,
+    })
+    .from(clubPhotosTable)
+    .innerJoin(clubPhotoPlayersTable, eq(clubPhotoPlayersTable.photoId, clubPhotosTable.id))
+    .where(
+      and(
+        eq(clubPhotosTable.tenantId, tenantId),
+        eq(clubPhotoPlayersTable.tenantId, tenantId),
+        inArray(clubPhotoPlayersTable.playerId, ids),
+      ),
+    )
+    .orderBy(...preferredThenNewest(opts.types, opts.format));
+  const library = await chooseCandidatePhoto(
+    tenantId,
+    ids,
+    tagged.map((r) => ({ playerId: r.playerId, id: r.id, url: objectUrl(r.objectPath) })),
+    opts.order,
+    opts.seed,
+  );
+  if (library) return { url: library.url, source: "auto:library-player" };
+
+  const headshots = await db
+    .select({
+      playerId: playerImagesTable.playerId,
+      id: playerImagesTable.id,
+      imageUrl: playerImagesTable.imageUrl,
+    })
+    .from(playerImagesTable)
+    .where(
+      and(
+        eq(playerImagesTable.tenantId, tenantId),
+        inArray(playerImagesTable.playerId, ids),
+        eq(playerImagesTable.isDefault, true),
+      ),
+    );
+  const headshot = await chooseCandidatePhoto(
+    tenantId,
+    ids,
+    headshots.flatMap((r) =>
+      r.imageUrl ? [{ playerId: r.playerId, id: r.id, url: r.imageUrl }] : [],
+    ),
+    opts.order,
+    opts.seed,
+  );
+  return headshot ? { url: headshot.url, source: "auto:headshot" } : null;
+}
+
+/** A team list draft's selected players, read back from its fixture's team list. */
+async function teamListDraftPlayers(tenantId: number, d: SocialDraftRow): Promise<number[]> {
+  const fixtureId = Number(/^teamlist:(\d+)$/.exec(d.sourceKey ?? "")?.[1]);
+  if (!Number.isInteger(fixtureId)) return [];
+  const [row] = await db
+    .select({ players: teamListsTable.players })
+    .from(teamListsTable)
+    .where(and(eq(teamListsTable.tenantId, tenantId), eq(teamListsTable.fixtureId, fixtureId)));
+  return (row?.players ?? []).flatMap((p) => (p.playerId != null ? [p.playerId] : []));
+}
+
 /** What an existing draft's photo pick needs, read back from the stored row. */
 async function draftPickOptions(tenantId: number, d: SocialDraftRow): Promise<PhotoPickOptions> {
   const input = (d.cardInput ?? {}) as Record<string, unknown>;
@@ -622,6 +864,15 @@ async function draftPickOptions(tenantId: number, d: SocialDraftRow): Promise<Ph
     seed: d.sourceKey ?? `draft:${d.id}`,
     photoTypes: preferredPhotoTypes(input),
     matchFormat: preferredMatchFormat(input),
+    candidatePlayerIds:
+      kind === "teamList"
+        ? () => teamListDraftPlayers(tenantId, d)
+        : kind === "matchSummary"
+          ? async () => {
+              const { matchDraftCandidatePlayers } = await import("./draft-featured-player");
+              return matchDraftCandidatePlayers(tenantId, d);
+            }
+          : undefined,
     featuredPlayerId:
       kind === "matchSummary"
         ? async () => {
@@ -788,6 +1039,7 @@ export async function enrichDraft(input: EnrichInput): Promise<DraftEnrichment> 
           seed: input.seed ?? null,
           featuredPlayerId:
             input.featuredPlayerId !== undefined ? input.featuredPlayerId : playerId,
+          candidatePlayerIds: input.candidatePlayerIds,
           photoTypes: preferredPhotoTypes(input.cardInput),
           matchFormat: preferredMatchFormat(input.cardInput),
         }),
