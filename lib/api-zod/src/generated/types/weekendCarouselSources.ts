@@ -7,6 +7,7 @@
  */
 import type { ClubPhoto } from './clubPhoto';
 import type { Fixture } from './fixture';
+import type { WeekendCarouselPhotoPicks } from './weekendCarouselPhotoPicks';
 import type { WeekendCarouselSourcesContent } from './weekendCarouselSourcesContent';
 import type { WeekendCarouselSourcesMatchDayContent } from './weekendCarouselSourcesMatchDayContent';
 
@@ -21,5 +22,6 @@ export interface WeekendCarouselSources {
   photos: ClubPhoto[];
   /** Current club's Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules. */
   coverPhotos: ClubPhoto[];
+  photoPicks?: WeekendCarouselPhotoPicks;
   warnings: string[];
 }
