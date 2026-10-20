@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-library/react";
 import { CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
 import type * as Model from "./model";
+import { matchDayFixtureContent } from "@workspace/scorecard/card-content";
 
 const fixtures = [
   {
@@ -97,13 +98,29 @@ const content = () =>
   activeType === "matchDay"
     ? {}
     : Object.fromEntries(fixtures.map((f) => [f.id, inputFor(activeType)]));
-const refetch = vi.fn(async () => ({
+/** Match Day slides come from the server's content builder (ADR-010). */
+const matchDayContent = (list: typeof fixtures) =>
+  activeType === "matchDay"
+    ? Object.fromEntries(
+        list.map((f) => [
+          f.id,
+          matchDayFixtureContent({
+            ...f,
+            opponentLogoUrl: null,
+            venue: null,
+            startAt: new Date(f.startAt),
+          }),
+        ]),
+      )
+    : undefined;
+const refetch = vi.fn(async (): Promise<{ data: Record<string, unknown>; isError: boolean }> => ({
   data: {
     fixtures,
     coverPhotos,
     photos: teamPhotos,
     juniorStockPhotos: stockPhotos,
     content: content(),
+    matchDayContent: matchDayContent(fixtures),
   },
   isError: false,
 }));
@@ -115,16 +132,18 @@ const settingsRefetch = vi.fn(async () => ({
 vi.mock("@workspace/api-client-react", () => ({
   useGetWeekendCarouselSources: (p: { from: string; setType: string }) => {
     activeType = p.setType;
+    const list =
+      p.from === "2025-11-07"
+        ? many
+          ? Array.from({ length: 19 }, (_, i) => ({ ...fixtures[0], id: i + 1 }))
+          : fixtures
+        : [];
     return {
       data: {
         timeZone: "Australia/Perth",
-        fixtures:
-          p.from === "2025-11-07"
-            ? many
-              ? Array.from({ length: 19 }, (_, i) => ({ ...fixtures[0], id: i + 1 }))
-              : fixtures
-            : [],
+        fixtures: list,
         content: content(),
+        matchDayContent: matchDayContent(list),
         photos: teamPhotos,
         coverPhotos,
         juniorStockPhotos: stockPhotos,
@@ -278,9 +297,12 @@ describe("WeekendCarousel", () => {
       expect(queuedRequest().data.cardInput.weekendCarousel.slides[0].data).toMatchObject({
         photoTransform: { zoom: 1.7 },
       });
+      // Version 2: the title saves its content snapshot (ADR-010), not a derived input.
+      expect(queuedRequest().data.cardInput.weekendCarousel).toMatchObject({ version: 2 });
       expect(queuedRequest().data.cardInput.weekendCarousel.slides[0]).toMatchObject({
-        input: { roundLabel: "ROUND 5" },
+        content: { page: "title", roundLabel: "ROUND 5" },
       });
+      expect(queuedRequest().data.cardInput.weekendCarousel.slides[0]).not.toHaveProperty("input");
       fireEvent.change(screen.getByTestId("select-carousel-pack"), {
         target: { value: "sunset-v1" },
       });
@@ -304,7 +326,7 @@ describe("WeekendCarousel", () => {
       expect(request.caption).toBe(`Edited ${type} caption`);
       expect(request.cardInput.weekendCarousel).toMatchObject({ setType: type, size: "landscape" });
       expect(request.cardInput.weekendCarousel.slides[0]).toMatchObject({
-        input: { roundLabel: "ROUND 5" },
+        content: { page: "title", roundLabel: "ROUND 5" },
       });
       expect(request.cardInput.weekendCarousel.slides.map((s) => s.id)).toEqual([
         "title",

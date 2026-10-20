@@ -179,7 +179,7 @@ describe("Match Day content parity (sweep vs carousel)", () => {
     const result = await generateMatchDayDrafts(tenantId, NOW);
     expect(result).toMatchObject({ drafted: 0, refreshed: 0 });
     const after = await draftFor(f.id);
-    expect(after.cardInput).toEqual(before.cardInput);
-    expect(after.updatedAt).toEqual(before.updatedAt);
+    // Not a field of it changed: no refresh, no revision, no stale flag.
+    expect(after).toEqual(before);
   });
 });

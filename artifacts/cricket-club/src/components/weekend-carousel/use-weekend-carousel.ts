@@ -33,12 +33,21 @@ import {
   eligibleCarouselPhotos,
   COVER_PHOTO_UNAVAILABLE,
   filterCarouselFixtures,
+  carouselSourceContent,
+  queuedSlide,
+  teamIsJunior,
   type CarouselAudience,
   type CoverPhoto,
   type TeamSlide,
   type WeekendSlide,
 } from "./model";
 import { carouselCaption } from "./caption";
+import {
+  readCardContentSettings,
+  readContentOverride,
+  resolveVisibleFields,
+  type ContentOverride,
+} from "@workspace/scorecard/card-content";
 
 export const WEEKEND_PACK_ID = "club-kit-v1";
 
@@ -95,6 +104,8 @@ export function useWeekendCarousel(
     query: { queryKey: getGetWeekendCarouselSourcesQueryKey(params), enabled: rangeValid },
   });
   const sources = sourcesQ.data as WeekendCarouselSources | undefined;
+  // Match Day content (ADR-010) and other kinds' card inputs, per fixture id.
+  const content = useMemo(() => carouselSourceContent(sources), [sources]);
   const settingsQ = useGetSocialSettings({
     query: { queryKey: getGetSocialSettingsQueryKey() },
   });
@@ -110,8 +121,8 @@ export function useWeekendCarousel(
 
   const fixtures = useMemo(
     () =>
-      filterCarouselFixtures((sources?.fixtures ?? []) as Fixture[], sources?.content, audience),
-    [sources, audience],
+      filterCarouselFixtures((sources?.fixtures ?? []) as Fixture[], content, audience),
+    [sources, content, audience],
   );
   const photos = useMemo(
     () => [...(sources?.photos ?? []), ...(sources?.juniorStockPhotos ?? [])] as ClubPhoto[],
@@ -126,6 +137,14 @@ export function useWeekendCarousel(
   const sourceWarnings = sources?.warnings ?? [];
   const timeZone = sources?.timeZone ?? CLUB_TIME_ZONE;
   const bundle = settingsQ.data as SocialSettingsBundle | undefined;
+  // What the slides show: the club's content choices, then this carousel's override.
+  const clubContent = readCardContentSettings(bundle?.settings.cardContent).matchDay;
+  const [contentOverride, setContentOverride] = useState<ContentOverride>({});
+  const visibleFields = useMemo(
+    () => resolveVisibleFields("matchDay", clubContent, contentOverride),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(clubContent), contentOverride],
+  );
 
   const [title, setTitle] = useState(CAROUSEL_LABELS[initialType]);
   const [captionEdit, setCaptionEdit] = useState<string | null>(null);
@@ -168,7 +187,7 @@ export function useWeekendCarousel(
     .filter((p): p is Pick & { fixture: Fixture } => !!p.fixture);
   const selected = orderedPicks.filter((p) => p.included).map((p) => p.fixture);
 
-  const selectionKey = carouselSelectionKey(setType, from, to, selected, sources?.content);
+  const selectionKey = carouselSelectionKey(setType, from, to, selected, content);
 
   const [generated, setGenerated] = useState<Generated | null>(null);
   const stale = !!generated && (generated.key !== selectionKey || !!generationError);
@@ -195,10 +214,10 @@ export function useWeekendCarousel(
         );
       }
       const freshById = new Map(fresh.data.fixtures.map((f) => [f.id, f]));
+      const freshContent = carouselSourceContent(fresh.data);
       const freshSelected = selected.map((f) => freshById.get(f.id));
-      if (
-        freshSelected.some((f) => !f || (setType !== "matchDay" && !fresh.data.content?.[f.id]))
-      ) {
+      // Every slide comes from the server's content now, Match Day included.
+      if (freshSelected.some((f) => !f || !freshContent[f.id])) {
         throw new Error(
           "A selected team list or match is no longer available. Check your selection and regenerate.",
         );
@@ -211,14 +230,14 @@ export function useWeekendCarousel(
         JSON.stringify(oldIds.filter((id) => pickIds.includes(id))) ===
         JSON.stringify(pickIds.filter((id) => oldIds.includes(id)));
       setGenerated({
-        key: carouselSelectionKey(setType, from, to, current, fresh.data.content),
+        key: carouselSelectionKey(setType, from, to, current, freshContent),
         from,
         to,
         pickIds,
         teams: refreshTeamSlides(
           current,
           [...fresh.data.photos, ...(fresh.data.juniorStockPhotos ?? [])],
-          fresh.data.content ?? {},
+          freshContent,
           generated?.teams,
           preserveOrder,
         ),
@@ -246,8 +265,9 @@ export function useWeekendCarousel(
       generated.to,
       CLUB_TIME_ZONE,
       { selection: cover, photos: coverPhotos },
+      visibleFields,
     );
-  }, [generated, photos, bundle, title, cover, coverPhotos, setType]);
+  }, [generated, photos, bundle, title, cover, coverPhotos, setType, visibleFields]);
 
   const [queueError, setQueueError] = useState<string | null>(null);
   const caption =
@@ -330,11 +350,9 @@ export function useWeekendCarousel(
           generated!.teams.some(
             (t) =>
               t.photoId !== null &&
-              !eligibleCarouselPhotos(
-                freshPhotos,
-                t.fixture.grade,
-                !!(t.input && "junior" in t.input && t.input.junior),
-              ).some((p) => p.id === t.photoId),
+              !eligibleCarouselPhotos(freshPhotos, t.fixture.grade, teamIsJunior(t)).some(
+                (p) => p.id === t.photoId,
+              ),
           )
         ) {
           throw new Error(
@@ -350,8 +368,10 @@ export function useWeekendCarousel(
           generated!.to,
           CLUB_TIME_ZONE,
           { selection: cover, photos: allowed },
+          visibleFields,
         );
       }
+      const override = readContentOverride("matchDay", contentOverride);
       if (submission.current?.key !== queueKey) {
         submission.current = { key: queueKey, id: crypto.randomUUID() };
       }
@@ -363,13 +383,15 @@ export function useWeekendCarousel(
             kind: "matchDay",
             headline: `${title.trim() || CAROUSEL_LABELS[setType]} carousel`,
             roundLabel: `${generated!.from} – ${generated!.to}`,
+            // Version 2 (ADR-010): Match Day slides save their content snapshot.
             weekendCarousel: {
-              version: 1,
+              version: 2,
               packId,
               setType,
               submissionId: submission.current.id,
               size,
-              slides: queuedSlides,
+              ...(override ? { contentOverride: override } : {}),
+              slides: queuedSlides.map(queuedSlide),
             },
           },
         },
@@ -426,7 +448,11 @@ export function useWeekendCarousel(
     patchCover: (patch: Partial<CoverPhoto>) => !busy && setCover((c) => ({ ...c, ...patch })),
     bundle,
     sourceWarnings,
-    sourceContent: sources?.content ?? {},
+    sourceContent: content,
+    clubContent,
+    contentOverride,
+    setContentOverride: (value: ContentOverride) => !busy && setContentOverride(value),
+    visibleFields,
     timeZone,
     from,
     to,

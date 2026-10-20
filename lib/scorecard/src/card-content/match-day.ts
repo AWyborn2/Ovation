@@ -14,6 +14,7 @@ import {
   teamMonogram,
   type CardNames,
 } from "../card-names";
+import { isJuniorGradeLabel } from "../junior-grade";
 import type {
   MatchDayFixtureContent,
   MatchDaySponsorsContent,
@@ -113,7 +114,8 @@ export function matchDayFixtureContent(
     kind: "matchDay",
     page: "fixture",
     fixtureId: fixture.id,
-    junior: opts.junior === true,
+    // A junior-looking grade in the senior fixtures is treated as junior too (fail closed).
+    junior: opts.junior === true || isJuniorGradeLabel(fixture.grade),
     juniorTeamName: opts.juniorTeamName ?? null,
     grade: resolveCardCompetition(names, gradeRaw) || gradeRaw,
     roundLabel: normaliseRoundLabel(fixture.roundLabel),
