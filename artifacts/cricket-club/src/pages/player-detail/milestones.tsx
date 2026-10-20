@@ -336,6 +336,7 @@ export function MilestoneTimeline({
         ref={regionRef}
         role="region"
         // Overflow-hidden regions aren't focusable on their own; keyboard focus pauses the ticker.
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- focus is the keyboard pause
         tabIndex={rolling ? 0 : undefined}
         aria-label="Milestone moments timeline"
         className={cn("group -mx-1", rolling ? "overflow-hidden" : "overflow-x-auto pb-2")}
