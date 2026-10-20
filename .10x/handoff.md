@@ -6,7 +6,7 @@
 
 ## Context
 
-- **P3 (T3.1–T3.3)** is on `wyborn21/modest-wiles-4d4363`. No migration: it reads the stored `card_content.matchDay.juniorConsolidateByDay` (default on), and that one switch covers Match Day, Results and Match Summary carousels.
+- **P3 (T3.1–T3.3)** is on `wyborn21/carousel-p3-junior-day-slides` (PR #401). No migration: it reads the stored `card_content.matchDay.juniorConsolidateByDay` (default on), and that one switch covers Match Day, Results and Match Summary carousels.
 - **Grouping:** `groupSlides(kind, items, { junior, dayOf, consolidateByDay, capacity, reserved })` in `lib/scorecard/src/card-sets.ts`.
   - Junior items of one club-time day share a slide, split evenly at `capacity` (7 at 4 → 4 + 3). A day with one junior game keeps the ordinary single slide.
   - Senior items always get a slide each and never join a day slide. A day slide sits where its first junior item was.
@@ -29,6 +29,7 @@
   - Measured in the browser for both packs at every size at capacity, crest showing: at least 80 px clear above the footer, and no name overflows.
   - The name boxes' declared capacities (`dayRowFit`, `SKELETON_DAY_ROW_FIT`) sit about 10% under the measured minimum.
 - **Weekend Carousel:** `buildWeekendSlides(..., visible, grouping)` takes a `SlideGrouping`. A day slide has no photo and no team sponsor, and carries `fixtureIds` (not saved). The team editor shows the shared slide on the day's first game and a note on the others. The size and pack now change the slides, because the capacity depends on them.
+- **With P4 (auto photos):** a junior day slide has no photo, so the automatic pick and any Swap for a fixture on a day slide are not shown, and the slide saves `photoId: null`, so it writes no `photo_usage`. The team editor shows the Swap control only for fixtures that keep their own slide.
 - **Settings UI:** Social Studio → What match day cards show has the switch "Junior games on the same day share a slide".
 - **Tests:** `group-slides.test.ts`, `card-content/day.test.ts`, the day cases in `queued-carousel-v2.test.ts`, `weekend-carousel/day-slides.test.ts`, and the day fit grid in `content-layouts.test.ts`.
 
@@ -37,6 +38,30 @@
 - **P5:** a new optional fixture field that should show on day rows needs a cell in `dayFixtureRows` and in both day layouts, plus a check in the day fit grid.
 - **P7:** when Results and Match Summary move to builders, `dayResultRow` becomes the builder's job and the day slide can save `content` like Match Day. `DAY_RESULT_CAPACITY` then joins `CONTENT_LAYOUTS`.
 - **Automated round sets** (`engines/round-sets.ts`) are list cards (Game Day, Results Summary) that already put several junior grades on one card. P3 did not change them.
+
+## Previous handoff
+
+**From:** SDE (P4, auto photos)
+**To:** SDE sessions for P3, P5, P6, then P7
+**Feature:** match-day-carousel-content
+
+## Context
+
+- **P4 (T4.1–T4.3)** is on `wyborn21/loving-mahavira-8d703f`. Migration **0054** `photo_usage (tenant_id, photo_id, used_at, draft_id)` (0053 went to email lists, #399). Ash runs 0054 in Production SQL before republishing.
+- **Usage:** `recordPhotoUsage` / `notePhotoUsage` (`api-server/src/lib/card-content/photos.ts`) write one row per library photo when a draft is posted: `POST /social-drafts/:id/posted` and the publish worker's `postDraftIfDone`. A carousel records each slide's `photoId` (and `data.photoUrl`); a single card its `photoUrl` when it is a library photo. Only the draft's own tenant's photos; UNIQUE (tenant, photo, draft), so a re-post records nothing. Best effort: a failed write is logged and never fails posting.
+- **Picks:** `createPhotoPicker(tenantId, grades)` loads the pools (`loadCarouselPhotos`, the same pools the sources route returns, moved out of the route), `photo_usage` and fixed card photo rules once. Order: least picked in this build, then least recently posted (never first), then team-tagged for the cover, then newest.
+  - Senior fixture: its grade's batting/bowling/fielding photos; a `fixed` matchDay card photo rule wins when its photo is in that pool.
+  - Cover: Club-wide · Season 2026 photos (the rule the Weekend Carousel already had; graded team photos were not added); stock only when there are none.
+  - Junior fixture, or the cover of a set with no senior fixture: junior stock images only. Never a junior player's photo, a junior grade's photo or a rule.
+  - Nothing fits: null, and the slide prints on the brand background with no warning.
+- `buildMatchDayPhotos(tenantId, content[])` → `{ cover, fixtures: { [fixtureId]: photoId | null } }`. `buildMatchDayContent` is unchanged (the content snapshot stays photo-free, so sweep parity and the legacy draft input hold); the sources route calls both and returns `photoPicks` (OpenAPI `WeekendCarouselPhotoPicks`). The sweep's single Match Day cards still use `pickDraftPhoto`.
+- **UI:** `createTeamSlides` / `refreshTeamSlides` take the picks (`TeamSlide.autoPhotoId`); the auto cover is frozen at generate (`generated.autoCoverId`). `AutoPhotoStatus` shows the pick with Swap / Use auto pick. A slide whose photo differs from its pick is swapped: `photoOverride` puts it in `contentOverride.photos` (`{ cover?, fixtures? }`, read by `readContentOverride`). Other set types keep the random grade photo.
+
+## For the next phases
+
+- **P3:** junior consolidated slides should take one stock pick per slide (`picker.pick({ kind: "fixture", junior: true, ... })`); `photoPicks.fixtures` is keyed by fixture id today.
+- **P6:** 0053 is taken; use the next free number at rebase, and regenerate the snapshot so its `prevId` chains to 0054's and its `when` is later than 0054's (the migrator skips an entry older than the last applied one).
+- **P7:** results / team list sets can use `createPhotoPicker` the same way instead of the client's random pick.
 
 ## Previous handoff
 

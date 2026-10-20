@@ -262,7 +262,7 @@ export function bindInput(
           values[`day${i}.grade`] = r.grade;
           values[`day${i}.opposition`] = r.opposition;
           values[`day${i}.time`] = r.startTime;
-          values[`day${i}.meta`] = [r.venue, r.homeAway, r.roundLabel].filter(Boolean).join(" · ");
+          values[`day${i}.meta`] = [r.venue, r.homeAway, r.roundLabel].filter(Boolean).join(" Â· ");
           if (r.crestUrl) images[`day${i}.crest`] = r.crestUrl;
         });
       }

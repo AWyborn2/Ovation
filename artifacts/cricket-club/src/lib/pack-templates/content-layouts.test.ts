@@ -241,7 +241,7 @@ describe("hidden fields leave no gaps", () => {
 });
 
 /**
- * The junior day slides (P3): every pack � preset � size at its declared
+ * The junior day slides (P3): every pack × preset × size at its declared
  * capacity, with worst-case names. Every row prints, every name box fits its
  * declared capacity under the shared name-fit rule, and hidden fields stay
  * hidden.
@@ -262,7 +262,7 @@ const juniorFixture = (i: number) =>
     {
       junior: true,
       juniorTeamName: "Blue Thunder",
-      gradeLabel: "Under 17 Girls Development � Blue Thunder",
+      gradeLabel: "Under 17 Girls Development — Blue Thunder",
     },
   );
 
@@ -306,6 +306,9 @@ describe.each(CONTENT_PACK_IDS)("junior day fit grid: %s", (packId) => {
       expect(text, where).toContain("ROCKINGHAM MANDURAH DISTRICTS");
       expect(text, where).toContain("SECRET HARBOUR COMETS");
       expect(text, where).not.toContain("CRICKET CLUB");
+      // Ground, side and round on one line, joined by a real middle dot (never a replacement glyph).
+      expect(text, where).toContain("OVAL 2 · AWAY");
+      expect(text, where).not.toContain("�");
       expect(text.includes("ROUND 3"), where).toBe(visible.has("fixture.round"));
       expect(html.includes("https://crest.test/0.png"), where).toBe(
         visible.has("fixture.oppositionCrest"),
@@ -318,7 +321,7 @@ describe.each(CONTENT_PACK_IDS)("junior day fit grid: %s", (packId) => {
     const n = dayCapacity(packId, "results", size, "standard");
     const results = Array.from({ length: n }, (_, i) =>
       dayResultRow({
-        matchTitle: "Under 17 Girls � Round 3",
+        matchTitle: "Under 17 Girls • Round 3",
         grade: "Under 17 Girls Development",
         result: "Rockingham Mandurah Districts won by 112 runs",
         resultWinner: i % 2 ? "opposition" : "club",
@@ -354,7 +357,7 @@ describe.each(CONTENT_PACK_IDS)("junior day fit grid: %s", (packId) => {
     );
     const input = {
       kind: "matchSummary",
-      matchTitle: "Under 17 Girls � Round 3",
+      matchTitle: "Under 17 Girls • Round 3",
       result: "",
       resultWinner: "club",
       club: { name: "Our Cricket Club", primaryColor: "", secondaryColor: "", textColor: "" },

@@ -39,9 +39,12 @@ import {
   CLUB_TIME_ZONE,
   eligibleCarouselPhotos,
   slideForFixture,
+  isSwapped,
+  teamIsJunior,
   type TeamSlide,
   type CarouselAudience,
 } from "./model";
+import { AutoPhotoStatus } from "./auto-photo-status";
 import { JuniorStockPicker } from "./junior-stock-picker";
 import { CoverPhotoPicker } from "./cover-photo-picker";
 import { PhotoPlacement, SlidePreview } from "./slide-preview";
@@ -558,12 +561,12 @@ function TeamEditor({
   count: number;
 }) {
   const lock = s.busy;
-  const options = eligibleCarouselPhotos(
-    s.photos,
-    team.fixture.grade,
-    !!(team.input && "junior" in team.input && team.input.junior),
-  );
+  const options = eligibleCarouselPhotos(s.photos, team.fixture.grade, teamIsJunior(team));
   const chosen = options.find((p) => p.id === team.photoId) ?? null;
+  // Match Day starts on the automatic photo; the choices open on "Swap" (ADR-010 P4).
+  const auto = team.autoPhotoId !== undefined;
+  const [swapping, setSwapping] = useState(false);
+  const showChoices = !auto || swapping;
   const label = fixtureLine(team.fixture);
   const slide = slideForFixture(s.slides, team.fixture.id);
   // A junior day slide (P3) is shared: its first game shows it, the others say so.
@@ -601,48 +604,67 @@ function TeamEditor({
         <div className="mt-3 grid items-start gap-5 md:grid-cols-2">
           {slide && <SlidePreview slide={slide} size={s.size} packId={s.packId} />}
           <div className="min-w-0 space-y-4">
-            <div
-              className="flex max-h-64 flex-wrap gap-2 overflow-y-auto p-1"
-              role="radiogroup"
-              aria-label={`Photo for ${label}`}
-            >
-              <button
-                type="button"
-                role="radio"
-                aria-checked={team.photoId == null}
+            {auto && (
+              <AutoPhotoStatus
+                id={String(team.fixture.id)}
+                photo={chosen}
+                swapped={isSwapped(team)}
+                swapping={swapping}
                 disabled={lock}
-                onClick={() => s.patchTeam(index, { photoId: null })}
-                className={`flex h-16 w-16 flex-col items-center justify-center rounded border text-[10px] text-muted-foreground ${team.photoId == null ? "ring-2 ring-primary" : ""}`}
-                data-testid={`button-no-photo-${team.fixture.id}`}
+                onSwap={() => setSwapping((v) => !v)}
+                onUseAuto={() => {
+                  s.patchTeam(index, {
+                    photoId: team.autoPhotoId ?? null,
+                    transform: { focalX: 0.5, focalY: 0.22, zoom: 1 },
+                  });
+                  setSwapping(false);
+                }}
+              />
+            )}
+            {showChoices && (
+              <div
+                className="flex max-h-64 flex-wrap gap-2 overflow-y-auto p-1"
+                role="radiogroup"
+                aria-label={`Photo for ${label}`}
               >
-                <ImageOff className="h-4 w-4" aria-hidden /> No photo
-              </button>
-              {options.map((p) => (
                 <button
-                  key={p.id}
                   type="button"
                   role="radio"
-                  aria-checked={team.photoId === p.id}
-                  aria-label={`Photo ${p.id}`}
+                  aria-checked={team.photoId == null}
                   disabled={lock}
-                  onClick={() =>
-                    s.patchTeam(index, {
-                      photoId: p.id,
-                      transform: { focalX: 0.5, focalY: 0.5, zoom: 1 },
-                    })
-                  }
-                  className={`h-16 w-16 overflow-hidden rounded border ${team.photoId === p.id ? "ring-2 ring-primary" : ""}`}
-                  data-testid={`button-photo-${team.fixture.id}-${p.id}`}
+                  onClick={() => s.patchTeam(index, { photoId: null })}
+                  className={`flex h-16 w-16 flex-col items-center justify-center rounded border text-[10px] text-muted-foreground ${team.photoId == null ? "ring-2 ring-primary" : ""}`}
+                  data-testid={`button-no-photo-${team.fixture.id}`}
                 >
-                  <img src={p.thumbUrl || p.url} alt="" className="h-full w-full object-cover" />
+                  <ImageOff className="h-4 w-4" aria-hidden /> No photo
                 </button>
-              ))}
-              {options.length === 0 && (
-                <p className="self-center text-xs text-muted-foreground">
-                  No {team.fixture.grade} photos in the library. This slide will use no photo.
-                </p>
-              )}
-            </div>
+                {options.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={team.photoId === p.id}
+                    aria-label={`Photo ${p.id}`}
+                    disabled={lock}
+                    onClick={() =>
+                      s.patchTeam(index, {
+                        photoId: p.id,
+                        transform: { focalX: 0.5, focalY: 0.5, zoom: 1 },
+                      })
+                    }
+                    className={`h-16 w-16 overflow-hidden rounded border ${team.photoId === p.id ? "ring-2 ring-primary" : ""}`}
+                    data-testid={`button-photo-${team.fixture.id}-${p.id}`}
+                  >
+                    <img src={p.thumbUrl || p.url} alt="" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+                {options.length === 0 && (
+                  <p className="self-center text-xs text-muted-foreground">
+                    No {team.fixture.grade} photos in the library. This slide will use no photo.
+                  </p>
+                )}
+              </div>
+            )}
             {chosen && (
               <PhotoPlacement
                 value={team.transform}

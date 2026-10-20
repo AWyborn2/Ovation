@@ -14,6 +14,7 @@ import {
   matchDayTitleContent,
   resolveVisibleFields,
   type CardContent,
+  type ContentPhotoOverride,
   type MatchDayFixtureContent,
 } from "@workspace/scorecard/card-content";
 
@@ -27,8 +28,16 @@ export type TeamSlide = {
   /** Kinds not on the content pipeline yet (team lists, results): the frozen card input. */
   input?: ShareCardInput;
   photoId: number | null;
+  /**
+   * Match Day: the server's automatic photo for the slide (ADR-010 P4; null =
+   * nothing fits, brand background). A `photoId` that differs is the admin's swap.
+   */
+  autoPhotoId?: number | null;
   transform: PhotoTransform;
 };
+
+/** The server's automatic Match Day photos (`photoPicks` on the carousel sources). */
+export type PhotoPicks = { cover: number | null; fixtures: Record<string, number | null> };
 
 /** A carousel source per fixture id: Match Day content, or another kind's card input. */
 export type SourceContent = Record<string, Record<string, unknown>>;
@@ -212,14 +221,33 @@ export function eligibleCarouselPhotos(
   return junior || isJuniorGradeLabel(grade) ? stock : [...eligiblePhotos(photos, grade), ...stock];
 }
 
+/**
+ * A slide per fixture. Match Day (`picks` from the server) starts on the
+ * automatic photo when it is still one the slide may show; other kinds start
+ * on a random photo of the grade.
+ */
 export function createTeamSlides(
   fixtures: Fixture[],
   photos: ClubPhoto[],
   content?: SourceContent,
+  picks?: PhotoPicks | null,
 ): TeamSlide[] {
   return fixtures.map((fixture) => {
-    const eligible =
-      content?.[fixture.id]?.junior === true ? [] : eligiblePhotos(photos, fixture.grade);
+    const junior = content?.[fixture.id]?.junior === true;
+    if (picks) {
+      const auto = picks.fixtures[fixture.id] ?? null;
+      const valid = eligibleCarouselPhotos(photos, fixture.grade, junior).some(
+        (p) => p.id === auto,
+      );
+      return {
+        fixture,
+        ...teamSource(content?.[fixture.id]),
+        photoId: valid ? auto : null,
+        autoPhotoId: valid ? auto : null,
+        transform: { focalX: 0.5, focalY: 0.22, zoom: 1 },
+      };
+    }
+    const eligible = junior ? [] : eligiblePhotos(photos, fixture.grade);
     return {
       fixture,
       ...teamSource(content?.[fixture.id]),
@@ -227,6 +255,29 @@ export function createTeamSlides(
       transform: { focalX: 0.5, focalY: 0.22, zoom: 1 },
     };
   });
+}
+
+/** Whether a slide's photo is the admin's swap rather than the automatic pick. */
+export function isSwapped(team: Pick<TeamSlide, "photoId" | "autoPhotoId">): boolean {
+  return team.autoPhotoId !== undefined && team.photoId !== team.autoPhotoId;
+}
+
+/**
+ * The photos an admin swapped in, as the carousel's content override saves them
+ * (ADR-010 P4); null when every slide kept its automatic pick.
+ */
+export function photoOverride(
+  teams: readonly TeamSlide[],
+  cover?: { photoId: number | null; autoPhotoId?: number | null } | null,
+): ContentPhotoOverride | null {
+  const fixtures = Object.fromEntries(
+    teams.filter(isSwapped).map((t) => [String(t.fixture.id), t.photoId]),
+  );
+  const out: ContentPhotoOverride = {
+    ...(cover && isSwapped(cover) ? { cover: cover.photoId } : {}),
+    ...(Object.keys(fixtures).length ? { fixtures } : {}),
+  };
+  return Object.keys(out).length ? out : null;
 }
 
 export type CarouselAudience = "all" | "senior" | "junior";
@@ -249,6 +300,7 @@ export function refreshTeamSlides(
   content: Record<string, Record<string, unknown>>,
   previous: TeamSlide[] = [],
   preserveOrder = true,
+  picks?: PhotoPicks | null,
 ): TeamSlide[] {
   const byId = new Map(fixtures.map((f) => [f.id, f]));
   const oldById = new Map(previous.map((t) => [t.fixture.id, t]));
@@ -260,7 +312,7 @@ export function refreshTeamSlides(
     : fixtures;
   return ordered.map((fixture) => {
     const old = oldById.get(fixture.id);
-    if (!old) return createTeamSlides([fixture], photos, content)[0];
+    if (!old) return createTeamSlides([fixture], photos, content, picks)[0];
     const eligible = eligibleCarouselPhotos(
       photos,
       fixture.grade,
@@ -271,6 +323,9 @@ export function refreshTeamSlides(
       ...teamSource(content[fixture.id]),
       // Removed/reclassified photos are cleared, never silently replaced.
       photoId: eligible.some((p) => p.id === old.photoId) ? old.photoId : null,
+      ...(old.autoPhotoId !== undefined
+        ? { autoPhotoId: eligible.some((p) => p.id === old.autoPhotoId) ? old.autoPhotoId : null }
+        : {}),
       transform: { ...old.transform },
     };
   });
@@ -436,7 +491,9 @@ export function buildWeekendSlides(
       warnings.push(
         "Multiple sponsors are assigned to this team. Only the first in sponsor order is shown.",
       );
-    if (photoOn && !photo)
+    // Match Day: a slide with no photo prints on the brand background (ADR-010
+    // P4); only a chosen photo that has gone from the library needs a word.
+    if (photoOn && !photo && (!content || photoId != null))
       warnings.push(
         junior
           ? "No club stock image selected. Junior player photos are not used."
@@ -495,7 +552,7 @@ export function buildWeekendSlides(
     });
     const slide = {
       id: `day-${day}-${group[0].fixture.id}`,
-      label: `Juniors � ${dayHeading(day, timeZone)} (${group.length} games)`,
+      label: `Juniors · ${dayHeading(day, timeZone)} (${group.length} games)`,
       data: buildPackData(base),
       junior: true,
       sponsorsOn: false,

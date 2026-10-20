@@ -185,7 +185,7 @@ describe("junior day slides (P3)", () => {
   const juniorFixture = (id: number) => ({ ...fixture(true), fixtureId: id });
   const daySlide = (over: Record<string, unknown> = {}) => ({
     id: "day-2026-10-10-1",
-    label: "Juniors � SAT 10 OCT (2 games)",
+    label: "Juniors · SAT 10 OCT (2 games)",
     content: matchDayDayContent([juniorFixture(1), juniorFixture(2)]),
     visibleFields: visible(),
     photoId: null,
@@ -227,7 +227,7 @@ describe("junior day slides (P3)", () => {
   it("reads a Results day slide (frozen input) and rejects a senior one", () => {
     const summary = {
       kind: "matchSummary" as const,
-      matchTitle: "Under 13 � Round 4",
+      matchTitle: "Under 13 • Round 4",
       result: "Won by 22 runs",
       resultWinner: "club" as const,
       club: { name: "Halls Head", primaryColor: "", secondaryColor: "", textColor: "" },
@@ -237,7 +237,7 @@ describe("junior day slides (P3)", () => {
     };
     const resultsDay = (junior: boolean) => ({
       id: "day-2026-10-10-1",
-      label: "Juniors � SAT 10 OCT (2 games)",
+      label: "Juniors · SAT 10 OCT (2 games)",
       input: {
         ...summary,
         junior,

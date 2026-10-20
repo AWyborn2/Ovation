@@ -11,7 +11,9 @@ import {
   refreshTeamSlides,
   eligibleCoverPhotos,
   fixturesInRange,
+  isSwapped,
   moveTeam,
+  photoOverride,
   validRange,
   weekendRange,
   type TeamSlide,
@@ -868,4 +870,98 @@ describe("strict photos and full ordered sets", () => {
       }
     },
   );
+});
+
+describe("automatic Match Day photos (ADR-010 P4)", () => {
+  const stock = photo(30, { juniorStock: true, grade: null, photoTypes: [] });
+  it("starts each slide on the server's pick, with no random choice", () => {
+    const random = vi.spyOn(Math, "random");
+    const f1 = fixture(1);
+    const f2 = fixture(2);
+    const teams = createTeamSlides([f1, f2], [photo(1), photo(2)], md([f1, f2]), {
+      cover: null,
+      fixtures: { "1": 2, "2": null },
+    });
+    expect(teams.map((t) => [t.photoId, t.autoPhotoId])).toEqual([
+      [2, 2],
+      [null, null],
+    ]);
+    expect(random).not.toHaveBeenCalled();
+    random.mockRestore();
+    // A slide with no photo prints on the club's colours, with no warning.
+    const slides = buildWeekendSlides(
+      teams,
+      [photo(1), photo(2)],
+      bundle,
+      "W",
+      "2026-10-09",
+      "2026-10-11",
+    );
+    expect(slides[1].data.photoUrl).toBe("/photos/2.jpg");
+    expect(slides[2].data.photoUrl).toBeNull();
+    expect(slides[2].warnings.join(" ")).not.toMatch(/image selected/);
+  });
+  it("never starts a slide on a pick it may not show (another grade, or a senior photo on a junior slide)", () => {
+    const senior = fixture(1);
+    const junior = fixture(2, { grade: "Under 13 Blue" });
+    const content = { ...md([senior]), ...md([junior], true) };
+    const teams = createTeamSlides(
+      [senior, junior],
+      [photo(5, { grade: "B Grade" }), photo(6), stock],
+      content,
+      {
+        cover: null,
+        fixtures: { "1": 5, "2": 6 },
+      },
+    );
+    expect(teams.map((t) => t.photoId)).toEqual([null, null]);
+    const ok = createTeamSlides([junior], [photo(6), stock], md([junior], true), {
+      cover: null,
+      fixtures: { "2": 30 },
+    });
+    expect(ok[0].photoId).toBe(30);
+  });
+  it("a swap is what differs from the auto pick, and it rides in the content override", () => {
+    const f1 = fixture(1);
+    const f2 = fixture(2);
+    const f3 = fixture(3);
+    const [a, b, c] = createTeamSlides([f1, f2, f3], [photo(1), photo(2)], md([f1, f2, f3]), {
+      cover: 40,
+      fixtures: { "1": 1, "2": 2, "3": null },
+    });
+    expect(photoOverride([a, b, c], { photoId: 40, autoPhotoId: 40 })).toBeNull();
+    const swapped = [
+      { ...a, photoId: 2 },
+      { ...b, photoId: null },
+      { ...c, photoId: 1 },
+    ];
+    expect(swapped.map(isSwapped)).toEqual([true, true, true]);
+    expect(photoOverride(swapped, { photoId: null, autoPhotoId: 40 })).toEqual({
+      cover: null,
+      fixtures: { "1": 2, "2": null, "3": 1 },
+    });
+    // Kinds with no auto pick (team lists, results) never record a swap.
+    const plain = createTeamSlides([f1], [photo(1)], md([f1]));
+    expect(isSwapped({ ...plain[0], photoId: null })).toBe(false);
+    expect(photoOverride(plain, { photoId: 3 })).toBeNull();
+  });
+  it("a regenerate keeps a swap, and new fixtures start on their pick", () => {
+    const f1 = fixture(1);
+    const f2 = fixture(2);
+    const picks = { cover: null, fixtures: { "1": 1, "2": 2 } };
+    const first = createTeamSlides([f1], [photo(1), photo(2)], md([f1]), picks);
+    const edited = [{ ...first[0], photoId: 2 }];
+    const again = refreshTeamSlides(
+      [f1, f2],
+      [photo(1), photo(2)],
+      md([f1, f2]),
+      edited,
+      true,
+      picks,
+    );
+    expect(again.map((t) => [t.photoId, t.autoPhotoId])).toEqual([
+      [2, 1],
+      [2, 2],
+    ]);
+  });
 });
