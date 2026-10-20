@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CardKind } from './cardKind';
+import type { SponsorTier } from './sponsorTier';
 
 export interface SponsorInput {
   name: string;
@@ -21,4 +22,5 @@ export interface SponsorInput {
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;
+  tier?: SponsorTier;
 }

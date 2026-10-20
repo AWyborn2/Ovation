@@ -1949,6 +1949,7 @@ export type ContentFieldDef = {
 
 const ALL_PRESETS: readonly ContentPreset[] = CONTENT_PRESETS;
 const STANDARD_UP: readonly ContentPreset[] = ["standard", "full"];
+const FULL_ONLY: readonly ContentPreset[] = ["full"];
 
 /**
  * Standard is the cards as they were before presets existed, so a club that
@@ -2038,6 +2039,42 @@ export const CONTENT_FIELDS: Record<ContentKind, readonly ContentFieldDef[]> = {
       slide: "sponsors",
       tier: "core",
       presets: ALL_PRESETS,
+    },
+    // Sponsors page options (P6). Full only, so Standard stays the page as it was.
+    {
+      key: "sponsors.tiers",
+      label: "Major sponsors larger",
+      slide: "sponsors",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+    {
+      key: "sponsors.teamSponsors",
+      label: "Team sponsors too",
+      slide: "sponsors",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+    {
+      key: "sponsors.thankYou",
+      label: "Thank-you line",
+      slide: "sponsors",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+    {
+      key: "sponsors.nextHomeGame",
+      label: "Next home game and socials",
+      slide: "sponsors",
+      tier: "optional",
+      presets: FULL_ONLY,
+    },
+    {
+      key: "sponsors.background",
+      label: "Background photo",
+      slide: "sponsors",
+      tier: "optional",
+      presets: FULL_ONLY,
     },
   ],
 };

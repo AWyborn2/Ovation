@@ -306,8 +306,9 @@ export function useWeekendCarousel(
       CLUB_TIME_ZONE,
       { selection: cover, photos: coverPhotos },
       visibleFields,
+      sources?.sponsorsPage,
     );
-  }, [generated, photos, bundle, title, cover, coverPhotos, setType, visibleFields]);
+  }, [generated, photos, bundle, title, cover, coverPhotos, setType, visibleFields, sources]);
 
   const [queueError, setQueueError] = useState<string | null>(null);
   const caption =
@@ -364,7 +365,9 @@ export function useWeekendCarousel(
       if (
         cover.photoId !== null ||
         setType !== "matchDay" ||
-        generated!.teams.some((t) => t.photoId !== null)
+        generated!.teams.some((t) => t.photoId !== null) ||
+        // The sponsors page background may have been removed since preview (P6).
+        (visibleFields.has("sponsors.background") && !!sources?.sponsorsPage?.backgroundPhoto)
       ) {
         const fresh = await sourcesQ.refetch();
         if (fresh.isError || !fresh.data)
@@ -409,6 +412,7 @@ export function useWeekendCarousel(
           CLUB_TIME_ZONE,
           { selection: cover, photos: allowed },
           visibleFields,
+          fresh.data.sponsorsPage,
         );
       }
       // Swapped photos ride in the content override (ADR-010 P4).

@@ -14,6 +14,7 @@ import {
 import { sql } from "drizzle-orm";
 import { tenantIdColumn } from "./_tenant";
 import { adminsTable } from "./admins";
+import { clubPhotosTable } from "./club_photos";
 
 /**
  * Layout warnings per card size from a draft's last check render (card kind
@@ -34,6 +35,8 @@ export type DraftLayoutWarningsColumn = Partial<
     }>
   >
 >;
+
+export type SponsorTier = "major" | "standard";
 
 export const sponsorsTable = pgTable(
   "sponsors",
@@ -60,6 +63,9 @@ export const sponsorsTable = pgTable(
     // Broadcast-Dark sample literal ("eSA Sport" / "PlayHQ").
     isPresenting: boolean("is_presenting").notNull().default(false),
     displayOrder: integer("display_order").notNull().default(0),
+    // Sponsor tier (ADR-010 P6): a major sponsor shows larger on the match day
+    // sponsors page when the club turns the tiered grid on. 'major' | 'standard'.
+    tier: text("tier").$type<SponsorTier>().notNull().default("standard"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
@@ -68,6 +74,7 @@ export const sponsorsTable = pgTable(
     onePresentingPerTenant: uniqueIndex("sponsors_one_presenting_per_tenant")
       .on(t.tenantId)
       .where(sql`is_presenting`),
+    chkTier: check("sponsors_tier_check", sql`"tier" IN ('major', 'standard')`),
   }),
 );
 
@@ -563,6 +570,13 @@ export const socialSettingsTable = pgTable(
       .default({ matchDay: { preset: "standard", fields: {}, juniorConsolidateByDay: true } }),
     // The club's livestream link, for match day title pages (shown from P5).
     livestreamUrl: text("livestream_url"),
+    // The library photo behind the match day sponsors page (ADR-010 P6), shown
+    // when the club turns the background on. Deleting the photo clears it; the
+    // API checks it is this club's own club-wide photo before saving.
+    sponsorsBackgroundPhotoId: integer("sponsors_background_photo_id").references(
+      () => clubPhotosTable.id,
+      { onDelete: "set null" },
+    ),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

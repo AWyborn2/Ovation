@@ -16,6 +16,7 @@ import {
 } from "../card-names";
 import { isJuniorGradeLabel } from "../junior-grade";
 import type {
+  ContentNextHomeGame,
   MatchDayFixtureContent,
   MatchDaySponsorsContent,
   MatchDayTitleContent,
@@ -184,12 +185,63 @@ export function matchDayTitleContent(opts: MatchDayBookendOptions): MatchDayTitl
   };
 }
 
-export function matchDaySponsorsContent(
-  opts: MatchDayBookendOptions & { sponsors: Array<{ name: string; logoUrl: string }> },
-): MatchDaySponsorsContent {
+/** A sponsor as the club lists it (an active `sponsors` row fits). */
+export interface MatchDaySponsorLike {
+  name: string;
+  logoUrl: string;
+  tier?: string | null;
+  /** Grades the sponsor backs: a team sponsor when any is a real grade. */
+  grades?: readonly string[] | null;
+  /** The caller's own team-sponsor test, when it has one (it wins over `grades`). */
+  teamSponsor?: boolean;
+}
+
+export interface MatchDaySponsorsOptions extends MatchDayBookendOptions {
+  /** Active sponsors in sponsor order, presenting sponsor included or not as the caller chooses. */
+  sponsors: readonly MatchDaySponsorLike[];
+  /** The club's next senior home game (fixture content from the server), when there is one. */
+  nextHomeGame?: MatchDayFixtureContent | null;
+  /** The club's social handles and website, in print order. */
+  socials?: readonly string[];
+}
+
+export const SPONSORS_THANK_YOU = "THANK YOU TO OUR SPONSORS";
+export const SPONSORS_CTA = "SUPPORT THE BUSINESSES THAT SUPPORT US";
+const MAX_SOCIALS = 3;
+
+/** "SAT 17 OCT · 12:30 PM · LAKELANDS OVAL"; parts the fixture lacks are left out. */
+export function nextHomeGameContent(f: MatchDayFixtureContent): ContentNextHomeGame {
+  return {
+    match: `${f.grade} v ${f.opposition.name}`,
+    when: [f.date, f.startTime, f.venue].filter(Boolean).join(" · "),
+  };
+}
+
+/**
+ * The sponsors page (P6). Club sponsors come first in sponsor order, then the
+ * sponsors assigned to a team; every optional block is held here and the
+ * visible fields pick what prints (`contentInput`), so a per-carousel override
+ * re-projects without a rebuild.
+ */
+export function matchDaySponsorsContent(opts: MatchDaySponsorsOptions): MatchDaySponsorsContent {
+  const isTeam = (s: MatchDaySponsorLike) =>
+    s.teamSponsor ?? (s.grades ?? []).some((g) => g.trim() !== "");
+  const sponsor = (s: MatchDaySponsorLike) => ({
+    name: s.name,
+    logoUrl: s.logoUrl,
+    tier: s.tier === "major" ? ("major" as const) : ("standard" as const),
+    teamSponsor: isTeam(s),
+  });
+  const socials = [...new Set((opts.socials ?? []).map((s) => s.trim()).filter(Boolean))];
   return {
     ...matchDayTitleContent(opts),
     page: "sponsors",
-    sponsors: opts.sponsors.map((s) => ({ name: s.name, logoUrl: s.logoUrl })),
+    sponsors: [...opts.sponsors.filter((s) => !isTeam(s)), ...opts.sponsors.filter(isTeam)].map(
+      sponsor,
+    ),
+    thankYou: SPONSORS_THANK_YOU,
+    cta: SPONSORS_CTA,
+    nextHomeGame: opts.nextHomeGame ? nextHomeGameContent(opts.nextHomeGame) : null,
+    socials: socials.slice(0, MAX_SOCIALS),
   };
 }

@@ -4,6 +4,7 @@ import {
   useUpdateSponsor,
   useDeleteSponsor,
   type Sponsor,
+  type SponsorTier,
 } from "@workspace/api-client-react";
 import { useUpload } from "@workspace/object-storage-web";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +20,35 @@ import { EmptyState } from "@/components/data-states";
 import { useConfirm } from "@/components/confirm-dialog";
 import { ImageCropDialog, SPONSOR_ASPECTS } from "@/components/admin-ui/image-crop-dialog";
 
-/** Sponsor library: add a logo (upload and crop) and manage order / kinds / presenting. */
+const MAJOR_HINT =
+  "Shows larger on the match day sponsors page when “Major sponsors larger” is on.";
+
+/** Sponsor tier as a switch: on = major, off = standard (ADR-010 P6). */
+function TierSwitch({
+  id,
+  tier,
+  onChange,
+}: {
+  id: string;
+  tier: SponsorTier;
+  onChange: (tier: SponsorTier) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <Switch
+        id={id}
+        checked={tier === "major"}
+        onCheckedChange={(v) => onChange(v ? "major" : "standard")}
+      />
+      <Label htmlFor={id} className="text-sm font-normal">
+        Major sponsor
+      </Label>
+      <span className="text-xs text-muted-foreground">{MAJOR_HINT}</span>
+    </div>
+  );
+}
+
+/** Sponsor library: add a logo (upload and crop) and manage order / kinds / presenting / tier. */
 export function SponsorsCard({
   sponsors,
   onChanged,
@@ -40,6 +69,7 @@ export function SponsorsCard({
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [cardKinds, setCardKinds] = useState<CardKind[]>([]);
   const [grades, setGrades] = useState<string[]>([]);
+  const [tier, setTier] = useState<SponsorTier>("standard");
   const [error, setError] = useState<string | null>(null);
   const [logoDialogOpen, setLogoDialogOpen] = useState(false);
 
@@ -73,6 +103,7 @@ export function SponsorsCard({
           activeTo: activeTo || null,
           cardKinds,
           grades,
+          tier,
           displayOrder: sponsors.length,
         },
       },
@@ -86,6 +117,7 @@ export function SponsorsCard({
           setPreviewUrl("");
           setCardKinds([]);
           setGrades([]);
+          setTier("standard");
         },
       },
     );
@@ -147,6 +179,7 @@ export function SponsorsCard({
                 their own sponsor show the presenting sponsor.
               </p>
             </div>
+            <TierSwitch id="sp-tier" tier={tier} onChange={setTier} />
           </div>
           <div className="space-y-3">
             <Label>Logo (PNG / SVG, transparent)</Label>
@@ -269,6 +302,11 @@ export function SponsorsCard({
                       Fills the &ldquo;presented by&rdquo; line on cards (one per club).
                     </span>
                   </div>
+                  <TierSwitch
+                    id={`sp-tier-${s.id}`}
+                    tier={s.tier}
+                    onChange={(next) => update.mutate({ id: s.id, data: { tier: next } })}
+                  />
                 </div>
               </div>
             ))

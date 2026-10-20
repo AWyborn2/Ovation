@@ -291,6 +291,12 @@ const CHECKS: { table: string; name: string; sql: string }[] = [
     name: "junior_match_display_settings_name_style_check",
     sql: `"name_style" IN ('full', 'first_initial', 'first')`,
   },
+  // Sponsors page (migration 0055, ADR-010 P6): a sponsor's tier.
+  {
+    table: "sponsors",
+    name: "sponsors_tier_check",
+    sql: `"tier" IN ('major', 'standard')`,
+  },
 ];
 
 /**
