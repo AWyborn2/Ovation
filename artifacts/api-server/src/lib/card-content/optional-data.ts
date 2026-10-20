@@ -21,6 +21,7 @@ import {
   type TeamListPlayer,
 } from "@workspace/db";
 import { FILL_IN_THRESHOLD } from "@workspace/scorecard";
+import type * as CentralQueries from "@workspace/db/central-queries";
 import type { MilestoneWithinReach } from "@workspace/scorecard/card-content";
 import {
   centralMilestoneTiers,
@@ -40,8 +41,7 @@ export interface OptionalDataTenant {
   centralClubId: number | null;
 }
 
-type Central = typeof import("@workspace/db/central-queries");
-const central = (): Promise<Central> => import("@workspace/db/central-queries");
+const central = (): Promise<typeof CentralQueries> => import("@workspace/db/central-queries");
 
 /** Both teams' season ladder positions for a PlayHQ fixture; null hides the field. */
 export async function loadFixtureLadder(
