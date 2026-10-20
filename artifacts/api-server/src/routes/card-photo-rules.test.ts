@@ -367,17 +367,19 @@ describe("match results feature the top scorer", () => {
     await db.delete(cardPhotoRulesTable).where(eq(cardPhotoRulesTable.tenantId, tenantId));
   });
 
-  it("drafts with the top scorer's photo, and re-picks an older draft when the rule arrives", async () => {
-    // No rule yet: the automatic order gives a match result a grade photo.
+  it("drafts with the top scorer's photo, with no rule, and a player rule changes nothing", async () => {
+    // No rule: a match result features the club's top performer (the anchor
+    // made 55), never a photo of the grade.
     const first = await generateMatchSummaryDrafts(tenantId, [matchId]);
     expect(first.errors).toEqual([]);
     const [before] = await db
       .select()
       .from(socialDraftsTable)
       .where(eq(socialDraftsTable.tenantId, tenantId));
-    expect(before.photoSource).toBe("auto:library-grade");
+    expect(before.photoUrl).toBe(urlOf("anchor"));
+    expect(before.photoSource).toBe("auto:library-player");
 
-    // Saving a player rule re-picks the open draft: the anchor made 55.
+    // `player` rules are retired for match results: the pick is unchanged.
     const saved = await api("put", "/card-photo-rules").send({
       grade: GRADE,
       cardKinds: ["matchSummary"],
@@ -386,17 +388,7 @@ describe("match results feature the top scorer", () => {
     expect(saved.status).toBe(200);
     const after = await reload(before.id);
     expect(after.photoUrl).toBe(urlOf("anchor"));
-    expect(after.photoSource).toBe("auto:rule-player");
-
-    // A fresh draft of the same match picks the same way.
-    await db.delete(socialDraftsTable).where(eq(socialDraftsTable.id, before.id));
-    await generateMatchSummaryDrafts(tenantId, [matchId]);
-    const [fresh] = await db
-      .select()
-      .from(socialDraftsTable)
-      .where(eq(socialDraftsTable.tenantId, tenantId));
-    expect(fresh.photoUrl).toBe(urlOf("anchor"));
-    expect(fresh.photoSource).toBe("auto:rule-player");
+    expect(after.photoSource).toBe("auto:library-player");
   });
 });
 
@@ -451,8 +443,10 @@ describe("changing a rule re-picks open auto drafts only", () => {
     // Removing the rule sends the drafts back to the automatic order.
     const rule = saved.body[0];
     expect((await api("delete", `/card-photo-rules/${rule.id}`)).status).toBe(204);
+    // A team list draft with no selected side has nobody to show: no photo.
     const back = await reload(auto.id);
-    expect(back.photoSource).toBe("auto:library-grade");
+    expect(back.photoUrl).toBeNull();
+    expect(back.photoSource).toBeNull();
     expect((await reload(manual.id)).photoSource).toBe("manual");
   });
 });

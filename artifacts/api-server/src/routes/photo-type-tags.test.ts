@@ -249,15 +249,27 @@ describe("card types steer the automatic pick", () => {
     expect((await pick("Games"))?.url).toBe(urlOf("bowler-newest"));
   });
 
-  it("a match summary prefers a team-tagged grade photo over a newer untagged one", async () => {
+  it("a ladder prefers a team-tagged grade photo over a newer untagged one", async () => {
+    const e = await enrichDraft({
+      tenantId,
+      engine: "ondemand",
+      cardInput: { kind: "ladder", grade: GRADE },
+      appPath: "/ladder",
+    });
+    expect(e.photoUrl).toBe(urlOf("grade-team"));
+    expect(e.photoSource).toBe("auto:library-grade");
+  });
+
+  it("a match summary with nobody from the game tagged gets no grade photo", async () => {
     const e = await enrichDraft({
       tenantId,
       engine: "matchSummary",
       cardInput: { kind: "matchSummary", matchTitle: `${GRADE} • Round 1` },
       appPath: "/matches/1",
+      candidatePlayerIds: [],
     });
-    expect(e.photoUrl).toBe(urlOf("grade-team"));
-    expect(e.photoSource).toBe("auto:library-grade");
+    expect(e.photoUrl).toBeNull();
+    expect(e.photoSource).toBeNull();
   });
 
   it("with no tagged photo it falls back to the old order", async () => {
@@ -272,9 +284,9 @@ describe("card types steer the automatic pick", () => {
     // A team shot (no player tags) over a newer photo of a player.
     const summary = await enrichDraft({
       tenantId,
-      engine: "matchSummary",
-      cardInput: { kind: "matchSummary", matchTitle: `${PLAIN} • Round 2` },
-      appPath: "/matches/2",
+      engine: "ondemand",
+      cardInput: { kind: "ladder", grade: PLAIN },
+      appPath: "/ladder",
     });
     expect(summary.photoUrl).toBe(urlOf("plain-team"));
   });
