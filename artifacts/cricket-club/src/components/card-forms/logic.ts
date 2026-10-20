@@ -41,12 +41,12 @@ export const SET_ROW_CAP = 24;
  * Repeat-driven kinds and their template row caps. The builder disables adding
  * rows past the cap, and the build step defensively truncates so an
  * over-long prefill can never overflow the pack template (A7 ladder ≤7,
- * A4 team list ≤12, A19/A20 club leaderboard 4). Game day and the weekend
+ * A4 team list ≤14 — a side of up to 14, ADR-009 — A19/A20 club leaderboard 4). Game day and the weekend
  * wrap post as a balanced card set (plan 2026-10-01-001) once they outgrow
  * one card, so their cap is the whole round, not one card's rows.
  */
 export const ROW_CAPS: Partial<Record<CardKind, { key: string; cap: number; min: number }>> = {
-  teamList: { key: "players", cap: 12, min: 1 },
+  teamList: { key: "players", cap: 14, min: 1 },
   ladder: { key: "rows", cap: 7, min: 1 },
   weekendWrap: { key: "matches", cap: SET_ROW_CAP, min: 1 },
   clubLeaderboard: { key: "leaders", cap: 4, min: 1 },

@@ -1361,6 +1361,7 @@ async function publishJuniorSide(
   juniorFixtureId: number,
   side: Pick<SelectionRow, "slots" | "captainMemberId" | "keeperMemberId" | "sideSize">,
   members: readonly JuniorPublishMember[],
+  overseasIds: ReadonlySet<number> = new Set(),
 ): Promise<{ players: JuniorTeamListPlayer[]; unlisted: string[] }> {
   const { participants, merges } = await loadJuniorIdentity(tx, tenantId);
   const resolve = juniorMemberResolver(participants, merges);
@@ -1385,6 +1386,8 @@ async function publishJuniorSide(
       order: twelfth ? shape.size : players.length + 1,
       participantId,
       ...(role ? { role } : {}),
+      // Snapshotted like the senior list (ADR-009); masked with a withheld name on read.
+      ...(overseasIds.has(m.id) ? { overseas: true } : {}),
     });
   });
   try {
@@ -1578,7 +1581,14 @@ export async function finaliseSelection(
     let players: { order: number }[];
     let unlisted: string[] = [];
     if (fixture.kind === "junior") {
-      const published = await publishJuniorSide(tx, tenantId, fixture.id, selection, members);
+      const published = await publishJuniorSide(
+        tx,
+        tenantId,
+        fixture.id,
+        selection,
+        members,
+        overseasIds,
+      );
       players = published.players;
       unlisted = published.unlisted;
     } else {

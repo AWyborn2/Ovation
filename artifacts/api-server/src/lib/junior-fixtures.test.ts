@@ -295,3 +295,24 @@ describe("shapeJuniorTeamListCandidates", () => {
     expect(out[1]!.isPrivate).toBe(true);
   });
 });
+
+describe("shapePublicJuniorTeamList overseas mark (ADR-009)", () => {
+  it("shows OS with a named player and drops it with a withheld one", () => {
+    const naming = makeJuniorNaming("first_initial", facts);
+    const out = shapePublicJuniorTeamList(
+      [
+        { order: 1, participantId: OWN_A, overseas: true },
+        { order: 2, participantId: OWN_B, overseas: true },
+        { order: 3, participantId: OWN_C },
+      ],
+      naming,
+      new Set(facts.keys()),
+      null,
+    );
+    expect(out.map((p) => [p.name, p.overseas])).toEqual([
+      ["Ollie G", true],
+      ["Private Player", undefined],
+      ["Kit O", undefined],
+    ]);
+  });
+});

@@ -1,5 +1,26 @@
 # Handoff
 
+**From:** SDE (PR D, the last slice)
+**To:** whoever picks up selection-side-size follow-ups
+**Feature:** selection-side-size — delivery complete once PR D merges (A #385, B #389, C #388, D)
+
+## Context
+
+- **PR D (cards + public, TD.1–TD.3, no migration)** on `wyborn21/selection-side-size-pr-d-25eb99`:
+  - **Cards:** `bindInput` binds every team-list player (up to 14) plus a row `os` ("OS" or ""). Every Team List design (Broadcast Dark, the four skeleton packs via `teamListFormats`, Club Kit Team Selection and Starting XI) declares `maxRows: 14` and `data-repeat-max="14" data-repeat-compress="12"`.
+  - **Auto-compress:** a compressible list writes its lengths `calc(<len> * var(--xi-scale,1))` and its two-column rows `repeat(var(--xi-rows,6),auto)`. `expandRepeats` sets `--xi-scale` (12 / n) and `--xi-rows` (ceil(n / 2)) above 12, and at 12 or fewer unwraps them, so 12-row markup is byte-identical (the own-look digests are unchanged).
+  - **OS:** a `data-badge` span after the role (dropped when empty by `cleanupEmptyBadges`), set like the role; a chip on Starting XI. No card shows "12th" (none did before).
+  - **Studio `ck.xi-list`:** parses up to 14 rows, scales by `xiScaled(u, n)`, has a fourth `os` column, and drops a "12th" tag when there are more than 12.
+  - **Builder:** `ROW_CAPS.teamList` is 14 (it truncated to 12).
+  - **Public:** `GET /fixtures/:id/team-list` runs `maskOverseas` (no OS on a "Private Player"). Junior Selection Hub sides now snapshot `overseas` into `junior_team_lists.players`; `shapePublicJuniorTeamList` and the junior card drop it with a withheld name. `juniors-fixtures.tsx` shows the OS badge. There is no senior public team-list page (web or mobile); the senior list reaches the public only on cards.
+  - Tests: `pack-render/team-list-side-size.test.ts` renders every pack's Team List designs at 12 and 14 rows in all four sizes.
+- **Still open:**
+  - Studio card-kind starter templates (`lib/scorecard/src/kind-templates/starters`) still lay out 12 list rows a slide; a 13th and 14th spill to a second slide rather than compress.
+  - The PCA "All 12 named players may bowl." note on a 14-player team sheet (from PR B) still needs Ash's call.
+  - The optional spec fields from PR B/C could be made required.
+
+## Previous handoff
+
 **From:** SDE (PR C, merged after PR B)
 **To:** SDE session for PR D
 **Feature:** selection-side-size

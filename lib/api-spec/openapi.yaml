@@ -22527,6 +22527,12 @@ components:
           type: string
           nullable: true
           description: Junior shirt number for the fixture's season (null when withheld or none)
+        overseas:
+          type: boolean
+          description: >-
+            An overseas player (ADR-009), from the side's finalise snapshot: a
+            neutral "OS", never a country. Never set on a withheld player.
+            Absent reads as false.
 
     JuniorFixtureDetail:
       type: object

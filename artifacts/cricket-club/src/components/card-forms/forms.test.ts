@@ -235,15 +235,15 @@ describe("card-forms: repeat-row editors respect template row caps", () => {
     expect(ROW_CAPS.ladder?.cap).toBe(7);
   });
 
-  it("teamList caps at 12 players", () => {
+  it("teamList caps at 14 players (a side of up to 14, ADR-009)", () => {
     const players = Array.from({ length: 15 }, (_, i) => ({
       order: i + 1,
       surname: `PLAYER${i + 1}`,
     }));
     const state = { ...initialCardState("teamList"), players };
     const input = buildCardInput("teamList", state, false) as { players: unknown[] };
-    expect(input.players).toHaveLength(12);
-    expect(ROW_CAPS.teamList?.cap).toBe(12);
+    expect(input.players).toHaveLength(14);
+    expect(ROW_CAPS.teamList?.cap).toBe(14);
   });
 
   it("clubLeaderboard caps at 4 leaders", () => {
@@ -325,6 +325,15 @@ describe("card-forms: prefill mappers", () => {
     expect(patch.players).toHaveLength(2);
     expect(patch.players?.map((p) => p.surname)).toEqual(["MANUEL", "TEXT"]);
     expect(patch.players?.[1].role).toBe("C");
+  });
+
+  it("teamListPlayersToState keeps the snapshot's overseas mark (ADR-009)", () => {
+    const dto: TeamListPlayerDto[] = [
+      { order: 1, displayName: "Jack Manuel", playerId: 12, overseas: true },
+      { order: 2, displayName: "Free Text" },
+    ];
+    const patch = teamListPlayersToState(dto);
+    expect(patch.players?.map((p) => p.overseas)).toEqual([true, undefined]);
   });
 
   it("weekendWrapToState maps the outcome enum to the card union", () => {

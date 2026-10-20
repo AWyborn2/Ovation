@@ -80,6 +80,11 @@ export type TeamListPlayer = {
    * printed when the card carries `numbering: "shirt"`; absent when unnumbered.
    */
   shirtNumber?: string | null;
+  /**
+   * An overseas player (ADR-009), from the published list's snapshot: a neutral
+   * "OS" after the name, never a country. Absent on a withheld player.
+   */
+  overseas?: boolean;
 };
 
 /**

@@ -194,11 +194,17 @@ export function playerSpotlightFormats(look: PackLook): PackTemplateFormats {
 // ---------------------------------------------------------------------------
 
 export function teamListFormats(look: PackLook): PackTemplateFormats {
+  // Designed for 12 rows (6 a column); a side of 13 or 14 (ADR-009) compresses:
+  // row height and type scale by `--xi-scale` (12 / n) and each column takes
+  // `--xi-rows` rows. The renderer sets both only above 12.
+  const xs = (n: number) => `calc(${n}cqmin * var(--xi-scale,1))`;
   const row =
-    `<div data-xi-row="1" style="display:flex;align-items:baseline;gap:1.8cqmin;padding:1.1cqmin 0;border-bottom:.2cqmin solid ${K.line};min-width:0">` +
-    `<span style="font-family:${SK_COND};font-weight:800;font-size:3.4cqmin;width:4cqmin;flex:none;color:${K.accText}">{{row.number}}</span>` +
-    `<span data-xi-name="1" style="flex:1;font-weight:600;font-size:var(--xi-name-size,3.2cqmin);line-height:1.2;white-space:pre;min-width:0">{{row.surname}}</span>` +
-    `<span data-xi-role="1" style="font-family:${SK_COND};font-weight:700;font-size:2.4cqmin;flex:none;white-space:nowrap;margin-left:-1.2cqmin;color:${K.accText}">({{row.role}})</span>` +
+    `<div data-xi-row="1" style="display:flex;align-items:baseline;gap:1.8cqmin;padding:${xs(1.1)} 0;border-bottom:.2cqmin solid ${K.line};min-width:0">` +
+    `<span style="font-family:${SK_COND};font-weight:800;font-size:${xs(3.4)};width:4cqmin;flex:none;color:${K.accText}">{{row.number}}</span>` +
+    `<span data-xi-name="1" style="flex:1;font-weight:600;font-size:var(--xi-name-size,${xs(3.2)});line-height:1.2;white-space:pre;min-width:0">{{row.surname}}</span>` +
+    `<span data-xi-role="1" style="font-family:${SK_COND};font-weight:700;font-size:${xs(2.4)};flex:none;white-space:nowrap;margin-left:-1.2cqmin;color:${K.accText}">({{row.role}})</span>` +
+    // The neutral overseas mark after the role, set like it; dropped when the row has none.
+    `<span data-badge="1" data-xi-os="1" style="font-family:${SK_COND};font-weight:700;font-size:${xs(2.4)};flex:none;white-space:nowrap;letter-spacing:.06em;margin-left:-.8cqmin;color:${K.accText}">{{row.os}}</span>` +
     `</div>`;
   const html = kitCard(look, {
     chip: kitChip("TEAM LIST{{setMarker}}"),
@@ -213,7 +219,7 @@ export function teamListFormats(look: PackLook): PackTemplateFormats {
           ";line-height:.95;width:100%;height:14cqmin;overflow-wrap:anywhere",
         ).replace("<div ", '<div data-team-grade="1" ') +
         `<div style="font-family:${SK_MONO};font-weight:500;font-size:2.2cqmin;letter-spacing:.14em;color:${K.muted};margin-top:1.6cqmin">{{venueDateTime}}</div>` +
-        `<div data-repeat="players" data-xi-fit="1" data-xi-min-ratio="0.5625" data-repeat-max="12" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(6,auto);grid-auto-flow:column;column-gap:5cqmin;width:100%;max-width:92cqmin;margin-top:3cqmin">${row}</div>`,
+        `<div data-repeat="players" data-xi-fit="1" data-xi-min-ratio="0.5625" data-repeat-max="14" data-repeat-compress="12" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(var(--xi-rows,6),auto);grid-auto-flow:column;column-gap:5cqmin;width:100%;max-width:92cqmin;margin-top:3cqmin">${row}</div>`,
     ),
     footer: kFooterLogos({ on: "hashtags", off: "hashtags" }),
     deco: { word: "XI", script: "Selected" },
