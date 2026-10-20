@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType, type RefObject } from "react";
 import { Award, Flag, Flame, Shield, Star, TrendingUp, Trophy, Target } from "lucide-react";
 import type {
   PlayerAward,
@@ -7,6 +7,7 @@ import type {
   PlayerSeasonStat,
 } from "@workspace/api-client-react";
 import { ChartCard } from "@/components/stats-charts";
+import { usePrefersReducedMotion } from "@/components/broadcast/results-ticker";
 import {
   careerFirsts,
   sortMatchesChronological,
@@ -217,10 +218,30 @@ export function milestoneEvents({
     .map(({ e }) => e);
 }
 
+/** Seconds each milestone spends crossing the ticker; slow enough to read. */
+export const MILESTONE_TICKER_SECONDS_PER_ITEM = 3;
+const ITEM_WIDTH = 136;
+
+/** True once `ref` is narrower than `contentWidth`: the timeline would need scrolling. */
+function useOverflows(ref: RefObject<HTMLElement | null>, contentWidth: number): boolean {
+  const [overflows, setOverflows] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver !== "function") return;
+    const check = () => setOverflows(el.clientWidth > 0 && contentWidth > el.clientWidth);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref, contentWidth]);
+  return overflows;
+}
+
 /**
  * "Milestone moments": a horizontal career timeline. Labels alternate above and
- * below a 3px line; events outside the selected range fade. Scrolls sideways on
- * narrow screens rather than squashing labels.
+ * below a 3px line; events outside the selected range fade. When the timeline is
+ * wider than its card it rolls as a continuous ticker (paused on hover or keyboard
+ * focus); under reduced motion it scrolls sideways instead.
  */
 export function MilestoneTimeline({
   events,
@@ -235,6 +256,68 @@ export function MilestoneTimeline({
   const span = dated.length
     ? `${seasonLabel(Math.min(...dated))} to ${seasonLabel(Math.max(...dated))}`
     : null;
+  const regionRef = useRef<HTMLDivElement>(null);
+  const reduced = usePrefersReducedMotion();
+  const overflows = useOverflows(regionRef, events.length * ITEM_WIDTH);
+  const rolling = overflows && !reduced;
+  // Labels alternate above/below, so an odd count needs two passes per loop to
+  // keep that rhythm seamless at the join.
+  const passes = rolling ? (events.length % 2 ? 4 : 2) : 1;
+
+  const renderEvent = (e: MilestoneEvent, i: number, copy: number) => {
+    const Icon = e.aGrade ? CricketCap : ICONS[e.kind];
+    const inRange =
+      e.season == null ? view.from == null && view.to == null : inStatsRange(e.season, view);
+    const label = (
+      <div className="w-[128px] text-center">
+        <div className="font-serif text-[15px] font-bold uppercase leading-tight text-foreground">
+          {e.title}
+        </div>
+        <div className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{e.sub}</div>
+      </div>
+    );
+    const above = (copy * events.length + i) % 2 === 0;
+    return (
+      <li
+        key={`${e.key}-${copy}`}
+        aria-hidden={copy > 0 || undefined}
+        data-testid={copy === 0 ? "milestone-event" : "milestone-event-copy"}
+        data-kind={e.kind}
+        data-in-range={inRange}
+        className={cn(
+          "relative grid w-[136px] shrink-0 grid-rows-[76px_32px_76px] justify-items-center motion-safe:transition-opacity",
+          !inRange && "opacity-40",
+        )}
+      >
+        <div className="flex flex-col items-center justify-end">
+          {above && (
+            <>
+              {label}
+              <span aria-hidden className="mt-1 h-[18px] w-px bg-border" />
+            </>
+          )}
+        </div>
+        <span
+          aria-hidden
+          className={cn(
+            "z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary",
+            e.major ? "bg-primary text-primary-foreground" : "bg-card text-primary-text",
+          )}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+        <div className="flex flex-col items-center justify-start">
+          {!above && (
+            <>
+              <span aria-hidden className="mb-1 h-[18px] w-px bg-border" />
+              {label}
+            </>
+          )}
+        </div>
+      </li>
+    );
+  };
+
   return (
     <ChartCard
       eyebrow={span ? `Career moments · ${span}` : "Career moments"}
@@ -250,73 +333,53 @@ export function MilestoneTimeline({
     >
       {/* Scroll container: browsers make it keyboard-focusable on their own. */}
       <div
+        ref={regionRef}
         role="region"
+        // Overflow-hidden regions aren't focusable on their own; keyboard focus pauses the ticker.
+        tabIndex={rolling ? 0 : undefined}
         aria-label="Milestone moments timeline"
-        className="-mx-1 overflow-x-auto pb-2"
+        className={cn("group -mx-1", rolling ? "overflow-hidden" : "overflow-x-auto pb-2")}
+        style={
+          rolling
+            ? {
+                maskImage:
+                  "linear-gradient(90deg, transparent 0, #000 40px, #000 calc(100% - 40px), transparent 100%)",
+              }
+            : undefined
+        }
       >
         <ol
-          className="relative flex min-w-max px-1"
+          className={cn(
+            "relative flex min-w-max px-1",
+            rolling &&
+              "w-max group-hover:[animation-play-state:paused] group-focus-within:[animation-play-state:paused]",
+          )}
+          style={
+            rolling
+              ? {
+                  // Longhands, not the `animation` shorthand: the shorthand would reset
+                  // play-state inline and beat the hover/focus pause classes.
+                  animationName: "bc-ticker",
+                  animationDuration: `${(events.length * passes * MILESTONE_TICKER_SECONDS_PER_ITEM) / 2}s`,
+                  animationTimingFunction: "linear",
+                  animationIterationCount: "infinite",
+                }
+              : undefined
+          }
           aria-label="Milestone moments"
           data-testid="milestone-timeline"
+          data-rolling={rolling}
         >
           <span
             aria-hidden
-            className="absolute left-0 right-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-gradient-to-r from-border to-primary"
+            className={cn(
+              "absolute left-0 right-0 top-1/2 h-[3px] -translate-y-1/2 rounded-full",
+              rolling ? "bg-primary/50" : "bg-gradient-to-r from-border to-primary",
+            )}
           />
-          {events.map((e, i) => {
-            const Icon = e.aGrade ? CricketCap : ICONS[e.kind];
-            const inRange =
-              e.season == null
-                ? view.from == null && view.to == null
-                : inStatsRange(e.season, view);
-            const label = (
-              <div className="w-[128px] text-center">
-                <div className="font-serif text-[15px] font-bold uppercase leading-tight text-foreground">
-                  {e.title}
-                </div>
-                <div className="mt-0.5 text-[11px] leading-snug text-muted-foreground">{e.sub}</div>
-              </div>
-            );
-            const above = i % 2 === 0;
-            return (
-              <li
-                key={e.key}
-                data-testid="milestone-event"
-                data-kind={e.kind}
-                data-in-range={inRange}
-                className={cn(
-                  "relative grid w-[136px] shrink-0 grid-rows-[76px_32px_76px] justify-items-center motion-safe:transition-opacity",
-                  !inRange && "opacity-40",
-                )}
-              >
-                <div className="flex flex-col items-center justify-end">
-                  {above && (
-                    <>
-                      {label}
-                      <span aria-hidden className="mt-1 h-[18px] w-px bg-border" />
-                    </>
-                  )}
-                </div>
-                <span
-                  aria-hidden
-                  className={cn(
-                    "z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary",
-                    e.major ? "bg-primary text-primary-foreground" : "bg-card text-primary-text",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                </span>
-                <div className="flex flex-col items-center justify-start">
-                  {!above && (
-                    <>
-                      <span aria-hidden className="mb-1 h-[18px] w-px bg-border" />
-                      {label}
-                    </>
-                  )}
-                </div>
-              </li>
-            );
-          })}
+          {Array.from({ length: passes }, (_, copy) =>
+            events.map((e, i) => renderEvent(e, i, copy)),
+          )}
         </ol>
       </div>
     </ChartCard>
