@@ -68,4 +68,9 @@ export interface SocialSettingsUpdate {
      * @nullable
      */
   livestreamUrl?: string | null;
+  /**
+     * One of the club's own club-wide library photos, or null to clear it.
+     * @nullable
+     */
+  sponsorsBackgroundPhotoId?: number | null;
 }

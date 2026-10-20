@@ -12,6 +12,7 @@ import {
   eligibleCoverPhotos,
   fixturesInRange,
   moveTeam,
+  queuedSlide,
   validRange,
   weekendRange,
   type TeamSlide,
@@ -19,7 +20,7 @@ import {
 import { renderPackCard, resolveCardTokens } from "@/lib/pack-render";
 import { SIZES, type CardSize } from "@/lib/share-card";
 import { readQueuedCarousel, CAROUSEL_PACK_IDS } from "@workspace/scorecard/queued-carousel";
-import { matchDayFixtureContent } from "@workspace/scorecard/card-content";
+import { matchDayFixtureContent, presetFields } from "@workspace/scorecard/card-content";
 
 /** The server's Match Day content for fixtures (what the sources route sends, ADR-010). */
 function md(fixtures: Fixture[], junior = false): Record<string, Record<string, unknown>> {
@@ -524,6 +525,148 @@ describe("weekend sponsor placements", () => {
     expect(slides.every((s) => !s.data.sponsors?.length)).toBe(true);
     expect(slides.at(-1)!.input).toMatchObject({ carouselPage: { sponsors: [] } });
   });
+  describe("sponsors page options (P6)", () => {
+    const tiered = {
+      ...sponsorBundle,
+      activeSponsors: sponsorBundle.activeSponsors.map((sp, i) => ({
+        ...sp,
+        tier: i === 0 || i === 1 ? "major" : "standard",
+      })),
+    } as unknown as SocialSettingsBundle;
+    const background = photo(40, { grade: null, url: "/bg.jpg" });
+    const sources = {
+      backgroundPhoto: background,
+      nextHomeGame: matchDayFixtureContent({
+        id: 9,
+        grade: "A Grade",
+        roundLabel: null,
+        opponentName: "Visitors",
+        opponentLogoUrl: null,
+        venue: "Club Oval",
+        startAt: new Date("2026-10-17T04:00:00Z"),
+        isHome: true,
+      }),
+      socials: ["@club", "club.com.au"],
+    };
+    const teams = () =>
+      createTeamSlides(
+        [fixture(), fixture(2, { grade: "B Grade" })],
+        [],
+        md([fixture(), fixture(2, { grade: "B Grade" })]),
+      );
+    const closing = (
+      visible: ReadonlySet<string>,
+      b = tiered,
+      src: typeof sources | null = sources,
+    ) =>
+      buildWeekendSlides(
+        teams(),
+        [],
+        b,
+        "Weekend",
+        "2026-10-09",
+        "2026-10-11",
+        undefined,
+        undefined,
+        visible,
+        src,
+      ).at(-1)!;
+
+    it("Standard keeps the page as it was, whatever the sources hold", () => {
+      const slide = closing(presetFields("matchDay", "standard"));
+      const page = (slide.input as { carouselPage: Record<string, unknown> }).carouselPage;
+      expect(page).not.toHaveProperty("majorCount");
+      expect(page).not.toHaveProperty("nextHome");
+      expect(page).not.toHaveProperty("hasCoverPhoto");
+      expect((page.sponsors as unknown[]).length).toBe(9);
+      expect(slide.photoId).toBeNull();
+      expect(slide.data.photoUrl ?? null).toBeNull();
+      expect(slide.warnings).toEqual([]);
+    });
+
+    it("Full adds team sponsors, the tiered grid, the blocks and the background", () => {
+      const slide = closing(presetFields("matchDay", "full"));
+      const page = (slide.input as { carouselPage: Record<string, unknown> }).carouselPage;
+      const names = (page.sponsors as { name: string }[]).map((x) => x.name);
+      expect(names.slice(0, 2)).toEqual(["Headline", "A sponsor"]);
+      expect(names).toContain("Other team");
+      expect(names).toHaveLength(12);
+      expect(page.majorCount).toBe(2);
+      expect(page.thankYou).toBe("THANK YOU TO OUR SPONSORS");
+      expect(page.nextHome).toEqual({
+        match: "A Grade v Visitors",
+        when: "SAT 17 OCT · 12:00 PM · Club Oval",
+      });
+      expect(page.socials).toBe("@club · club.com.au");
+      expect(page.hasCoverPhoto).toBe(true);
+      expect(slide.photoId).toBe(40);
+      expect(slide.data.photoUrl).toBe("/bg.jpg");
+      expect(slide.warnings).toEqual([]);
+      // The background renders behind the page in both packs.
+      for (const packId of ["club-kit-v1", "broadcast-dark-v1"]) {
+        const html = renderPackCard(
+          slide.input,
+          "portrait",
+          slide.sponsorsOn,
+          resolveCardTokens({ data: slide.data, junior: false, packId }),
+          false,
+          slide.data,
+          packId,
+        );
+        expect(html, packId).toContain("/bg.jpg");
+        expect(html, packId).toContain('data-weekend-sponsor-grid="major"');
+        expect(html, packId).toContain("NEXT HOME GAME");
+      }
+    });
+
+    it("warns when the background is on but none is available", () => {
+      const slide = closing(presetFields("matchDay", "full"), tiered, {
+        ...sources,
+        backgroundPhoto: null,
+      });
+      expect(slide.photoId).toBeNull();
+      expect(slide.warnings.join(" ")).toContain("No sponsors page background");
+      expect(closing(presetFields("matchDay", "standard"), tiered, null).warnings).toEqual([]);
+    });
+
+    it("with team sponsors on, only an empty sponsor list falls back to the club thank-you", () => {
+      const slide = closing(presetFields("matchDay", "full"), {
+        ...tiered,
+        activeSponsors: [],
+      } as unknown as SocialSettingsBundle);
+      expect(slide.warnings[0]).toContain("No active sponsors are available");
+      const page = (slide.input as { carouselPage: Record<string, unknown> }).carouselPage;
+      expect(page).not.toHaveProperty("thankYou");
+    });
+
+    it("a saved carousel renders the sponsors page exactly as previewed", () => {
+      const slides = buildWeekendSlides(
+        teams(),
+        [],
+        tiered,
+        "Weekend",
+        "2026-10-09",
+        "2026-10-11",
+        undefined,
+        undefined,
+        presetFields("matchDay", "full"),
+        sources,
+      );
+      const read = readQueuedCarousel({
+        weekendCarousel: {
+          version: 2,
+          packId: "club-kit-v1",
+          setType: "matchDay",
+          submissionId: "12345678-1234-1234-1234-123456789abc",
+          size: "square",
+          slides: slides.map(queuedSlide),
+        },
+      });
+      expect(read).not.toBeNull();
+      expect(read!.slides.at(-1)!.input).toEqual(slides.at(-1)!.input);
+    });
+  });
+
   it("never substitutes another sponsor when no presenting sponsor exists", () => {
     const slides = build({
       ...sponsorBundle,

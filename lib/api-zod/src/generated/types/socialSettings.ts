@@ -73,4 +73,9 @@ export interface SocialSettings {
      * @nullable
      */
   livestreamUrl?: string | null;
+  /**
+     * The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.
+     * @nullable
+     */
+  sponsorsBackgroundPhotoId?: number | null;
 }

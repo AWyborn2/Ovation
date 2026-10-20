@@ -16,7 +16,8 @@ import { nonSeniorPlayerIds, presentPhotos } from "../lib/club-photo-library";
 import { carouselContent } from "../lib/carousel-content";
 import { loadClubGradeOrder } from "../lib/club-grade-order";
 import { sortByGradeOrder } from "@workspace/scorecard";
-import { buildMatchDayContent } from "../lib/card-content/match-day";
+import { buildMatchDayContent, contentNames } from "../lib/card-content/match-day";
+import { loadSponsorsPageSources } from "../lib/card-content/sponsors-page";
 
 const router: IRouter = Router();
 
@@ -99,11 +100,25 @@ router.get(
       await loadClubGradeOrder(tenantId),
     );
     // Match Day slides come from the same builder as the 48-hour sweep (ADR-010).
+    const names =
+      setType === "matchDay"
+        ? await contentNames(tenantId, (err) =>
+            req.log.warn({ err, tenantId }, "card names: read failed"),
+          )
+        : {};
     const matchDayContent =
       setType === "matchDay"
-        ? await buildMatchDayContent(tenantId, fixtures, {
-            junior: sources.junior,
-            onNamesError: (err) => req.log.warn({ err, tenantId }, "card names: read failed"),
+        ? await buildMatchDayContent(tenantId, fixtures, { junior: sources.junior, names })
+        : null;
+    // The sponsors page's optional blocks (ADR-010 P6), each best effort.
+    const sponsorsPage =
+      setType === "matchDay"
+        ? await loadSponsorsPageSources(tenantId, {
+            from: start,
+            juniorOnly: audience === "junior",
+            names,
+            onError: (block, err) =>
+              req.log.warn({ err, tenantId, block }, "sponsors page: read failed"),
           })
         : null;
     const isJunior = (id: number) =>
@@ -176,6 +191,7 @@ router.get(
         // its display title. The opaque source payload also accepts legacy inputs.
         content: sources.content,
         ...(matchDayContent ? { matchDayContent: Object.fromEntries(matchDayContent) } : {}),
+        ...(sponsorsPage ? { sponsorsPage } : {}),
         warnings: [
           ...(eligibleFixtures.length < rows.length
             ? [

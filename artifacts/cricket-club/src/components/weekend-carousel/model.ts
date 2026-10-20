@@ -1,4 +1,9 @@
-import type { ClubPhoto, Fixture, SocialSettingsBundle } from "@workspace/api-client-react";
+import type {
+  ClubPhoto,
+  Fixture,
+  SocialSettingsBundle,
+  WeekendSponsorsPageSources,
+} from "@workspace/api-client-react";
 import { isJuniorGradeLabel } from "@workspace/scorecard";
 import type { PhotoTransform, ShareCardInput } from "@/lib/share-card";
 import type { PackCardData } from "@/lib/pack-render";
@@ -309,6 +314,8 @@ export function buildWeekendSlides(
   cover?: { selection: CoverPhoto; photos: ClubPhoto[] },
   /** The content fields shown (ADR-010): the club's choices plus this carousel's override. */
   visible: ReadonlySet<string> = resolveVisibleFields("matchDay"),
+  /** The sponsors page's optional blocks from the sources (P6); absent → none. */
+  sponsorsPage?: WeekendSponsorsPageSources | null,
 ): WeekendSlide[] {
   if (!teams.length || !validRange(from, to)) return [];
   const show = (field: string) => visible.has(field);
@@ -329,9 +336,14 @@ export function buildWeekendSlides(
     name: s.name,
     logoUrl: s.logoUrl,
   });
-  const sponsors = activeSponsors
-    .filter((s) => !(s.grades ?? []).some((g) => gradeMatchKey(g)))
-    .map(sponsorData);
+  const isTeamSponsor = (s: (typeof activeSponsors)[number]) =>
+    (s.grades ?? []).some((g) => gradeMatchKey(g));
+  // The sponsors page holds every sponsor; team sponsors print only when
+  // `sponsors.teamSponsors` is on (P6), so count what the page will show.
+  const pageSponsors = activeSponsors.filter(
+    (s) => show("sponsors.teamSponsors") || !isTeamSponsor(s),
+  );
+  const background = show("sponsors.background") ? (sponsorsPage?.backgroundPhoto ?? null) : null;
   const bookendOpts = {
     heading: title,
     from,
@@ -365,8 +377,18 @@ export function buildWeekendSlides(
       content:
         page === "title"
           ? matchDayTitleContent(bookendOpts)
-          : matchDaySponsorsContent({ ...bookendOpts, sponsors }),
-      photoId: page === "title" && coverPhoto ? coverPhoto.id : null,
+          : matchDaySponsorsContent({
+              ...bookendOpts,
+              sponsors: activeSponsors.map((s) => ({
+                name: s.name,
+                logoUrl: s.logoUrl,
+                tier: s.tier,
+                teamSponsor: isTeamSponsor(s),
+              })),
+              nextHomeGame: sponsorsPage?.nextHomeGame ?? null,
+              socials: sponsorsPage?.socials ?? [],
+            }),
+      photoId: page === "title" ? (coverPhoto?.id ?? null) : background ? background.id : null,
       data: buildPackData({
         ...base,
         ...(page === "title"
@@ -377,17 +399,21 @@ export function buildWeekendSlides(
                 ? { photoUrl: coverPhoto.url, photoTransform: cover!.selection.transform }
                 : {}),
             }
-          : {}),
+          : background
+            ? { photoUrl: background.url }
+            : {}),
       }),
       junior: false,
       sponsorsOn: page === "title" && !!presenting,
       warnings:
         page === "title" && invalidCover
           ? [COVER_PHOTO_UNAVAILABLE]
-          : page === "sponsors" && !sponsors.length
-            ? [
-                "No active sponsors without a team assignment are available, or sponsors are switched off. The closing page shows a club thank-you instead.",
-              ]
+          : page === "sponsors"
+            ? sponsorsPageWarnings(
+                pageSponsors.length,
+                show("sponsors.teamSponsors"),
+                show("sponsors.background") && !background,
+              )
             : [],
     });
   return [
@@ -465,6 +491,28 @@ export function buildWeekendSlides(
       ];
     }),
     bookend("sponsors"),
+  ];
+}
+
+/** What the sponsors page warns about before it is shared. */
+function sponsorsPageWarnings(
+  shown: number,
+  teamSponsors: boolean,
+  missingBackground: boolean,
+): string[] {
+  return [
+    ...(shown
+      ? []
+      : [
+          teamSponsors
+            ? "No active sponsors are available, or sponsors are switched off. The closing page shows a club thank-you instead."
+            : "No active sponsors without a team assignment are available, or sponsors are switched off. The closing page shows a club thank-you instead.",
+        ]),
+    ...(missingBackground
+      ? [
+          "No sponsors page background is available. Choose a club-wide photo in Social Studio settings, or turn the background off.",
+        ]
+      : []),
   ];
 }
 

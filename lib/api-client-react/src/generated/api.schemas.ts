@@ -4704,6 +4704,17 @@ export const CardKind = {
   teamOfWeek: 'teamOfWeek',
 } as const;
 
+/**
+ * A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.
+ */
+export type SponsorTier = typeof SponsorTier[keyof typeof SponsorTier];
+
+
+export const SponsorTier = {
+  major: 'major',
+  standard: 'standard',
+} as const;
+
 export interface Sponsor {
   id: number;
   name: string;
@@ -4720,6 +4731,7 @@ export interface Sponsor {
   /** The tenant's designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards' "presented by <sponsor>" line; none set → that line renders empty. */
   isPresenting: boolean;
   displayOrder: number;
+  tier: SponsorTier;
 }
 
 export interface SponsorInput {
@@ -4736,6 +4748,7 @@ export interface SponsorInput {
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;
+  tier?: SponsorTier;
 }
 
 export interface SponsorUpdate {
@@ -4752,6 +4765,7 @@ export interface SponsorUpdate {
   /** Mark this sponsor as the tenant's presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant. */
   isPresenting?: boolean;
   displayOrder?: number;
+  tier?: SponsorTier;
 }
 
 /**
@@ -5715,6 +5729,11 @@ export interface SocialSettings {
      * @nullable
      */
   livestreamUrl?: string | null;
+  /**
+     * The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.
+     * @nullable
+     */
+  sponsorsBackgroundPhotoId?: number | null;
 }
 
 export interface ContentTeam {
@@ -6581,6 +6600,11 @@ export interface SocialSettingsUpdate {
      * @nullable
      */
   livestreamUrl?: string | null;
+  /**
+     * One of the club's own club-wide library photos, or null to clear it.
+     * @nullable
+     */
+  sponsorsBackgroundPhotoId?: number | null;
 }
 
 /**
@@ -8592,6 +8616,18 @@ export type WeekendCarouselSourcesContent = {[key: string]: { [key: string]: unk
 export type WeekendCarouselSourcesMatchDayContent = {[key: string]: MatchDayFixtureContent};
 
 /**
+ * Match Day sets: what the sponsors page's optional blocks draw on (ADR-010 P6). Each block hides itself when its value is empty.
+ */
+export interface WeekendSponsorsPageSources {
+  /** The club's chosen background photo, when it is still in the library and safe to show. */
+  backgroundPhoto: ClubPhoto | null;
+  /** The club's next senior home fixture from the set's first day, built like a fixture slide. Null for junior sets or when there is none. */
+  nextHomeGame: MatchDayFixtureContent | null;
+  /** The club's social handles and website, in print order (Instagram, Facebook, website). */
+  socials: string[];
+}
+
+/**
  * manual (admin CRUD), playhq (projected fixture), or scorecard (read-only carousel source with a namespaced negative ID; not an editable fixture).
  */
 export type FixtureSource = typeof FixtureSource[keyof typeof FixtureSource];
@@ -8636,6 +8672,7 @@ export interface WeekendCarouselSources {
   content?: WeekendCarouselSourcesContent;
   /** Match Day sets: each fixture's slide content (ADR-010), keyed by source fixture ID. Built by the same builder as the 48-hour sweep. */
   matchDayContent?: WeekendCarouselSourcesMatchDayContent;
+  sponsorsPage?: WeekendSponsorsPageSources;
   fixtures: Fixture[];
   photos: ClubPhoto[];
   /** Current club's Club-wide photos tagged Season 2026, in any category, subject to senior-photo privacy rules. */

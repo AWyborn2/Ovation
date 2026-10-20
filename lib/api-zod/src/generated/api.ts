@@ -6607,7 +6607,8 @@ export const ListSponsorsResponseItem = zod.object({
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
-  "displayOrder": zod.number()
+  "displayOrder": zod.number(),
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
 })
 export const ListSponsorsResponse = zod.array(ListSponsorsResponseItem)
 
@@ -6624,7 +6625,8 @@ export const CreateSponsorBody = zod.object({
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).optional(),
   "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
-  "displayOrder": zod.number().optional()
+  "displayOrder": zod.number().optional(),
+  "tier": zod.enum(['major', 'standard']).optional().describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
 })
 
 
@@ -6644,7 +6646,8 @@ export const UpdateSponsorBody = zod.object({
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).optional(),
   "grades": zod.array(zod.string()).optional().describe('The grades whose team-list cards show this sponsor as their one logo.'),
   "isPresenting": zod.boolean().optional().describe('Mark this sponsor as the tenant\'s presenting (primary) sponsor. Setting true unsets any previously presenting sponsor for the tenant.'),
-  "displayOrder": zod.number().optional()
+  "displayOrder": zod.number().optional(),
+  "tier": zod.enum(['major', 'standard']).optional().describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
 })
 
 export const UpdateSponsorResponse = zod.object({
@@ -6657,7 +6660,8 @@ export const UpdateSponsorResponse = zod.object({
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
-  "displayOrder": zod.number()
+  "displayOrder": zod.number(),
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
 })
 
 
@@ -8118,7 +8122,8 @@ export const GetSocialSettingsResponse = zod.object({
   "juniorConsolidateByDay": zod.boolean()
 }).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
 }).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on.'),
-  "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.')
+  "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.'),
+  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.')
 }),
   "captionTemplates": zod.array(zod.object({
   "engine": zod.string(),
@@ -8135,7 +8140,8 @@ export const GetSocialSettingsResponse = zod.object({
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
-  "displayOrder": zod.number()
+  "displayOrder": zod.number(),
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
 })),
   "brand": zod.union([zod.object({
   "name": zod.string(),
@@ -8448,7 +8454,8 @@ export const UpdateSocialSettingsBody = zod.object({
   "juniorConsolidateByDay": zod.boolean()
 }).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
 }).describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on.').optional().describe('Replaces the stored choices; unknown kinds, presets and field keys are dropped.'),
-  "livestreamUrl": zod.string().max(updateSocialSettingsBodyLivestreamUrlMax).nullish().describe('An https link, or empty \/ null to clear it.')
+  "livestreamUrl": zod.string().max(updateSocialSettingsBodyLivestreamUrlMax).nullish().describe('An https link, or empty \/ null to clear it.'),
+  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('One of the club\'s own club-wide library photos, or null to clear it.')
 })
 
 export const updateSocialSettingsResponseRoundSchedulesGameDayDayMin = 0;
@@ -8744,7 +8751,8 @@ export const UpdateSocialSettingsResponse = zod.object({
   "juniorConsolidateByDay": zod.boolean()
 }).describe('What one content-built card kind shows (ADR-010): a preset, per-field choices on top, and whether junior sets share a slide per day.')
 }).optional().describe('Per content kind. Default: Standard (the cards as they were), junior consolidation on.'),
-  "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.')
+  "livestreamUrl": zod.string().nullish().describe('The club\'s livestream link (https), for match day title pages. Null = none.'),
+  "sponsorsBackgroundPhotoId": zod.number().nullish().describe('The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none.')
 })
 
 
@@ -9037,6 +9045,53 @@ export const GetWeekendCarouselSourcesResponse = zod.object({
   "venue": zod.string().nullable()
 })
 }).describe('One fixture\'s Match Day slide content (ADR-010), display-ready: the same builder serves the 48-hour sweep.')).optional().describe('Match Day sets: each fixture\'s slide content (ADR-010), keyed by source fixture ID. Built by the same builder as the 48-hour sweep.'),
+  "sponsorsPage": zod.object({
+  "backgroundPhoto": zod.union([zod.object({
+  "juniorStock": zod.boolean().optional().describe('Club-provided stock artwork approved for reuse on junior carousels.'),
+  "id": zod.number(),
+  "url": zod.string(),
+  "thumbUrl": zod.string(),
+  "width": zod.number(),
+  "height": zod.number(),
+  "season": zod.number().nullable(),
+  "grade": zod.string().nullable(),
+  "takenAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date(),
+  "playerIds": zod.array(zod.number()),
+  "photoTypes": zod.array(zod.enum(['batting', 'bowling', 'fielding', 'team', 'celebrating', 'premiership', 'batting_milestone', 'bowling_milestone']).describe('A photo type tag. Each card type prefers certain types when its photo is picked automatically (a century prefers batting milestone, then batting; a premiership prefers premiership, then team), falling back to any photo.')),
+  "matchFormat": zod.union([zod.enum(['one_day', 't20', 'two_day']).describe('The match format a library photo is from (One Day, T20, Two Day). A separate tag from the photo type: a card from a format (a T20 premiership) prefers photos of that format.'),zod.null()]).describe('The match format tag, or null when untagged.'),
+  "sourcePhotoId": zod.number().nullish().describe('For a derived image (a background-removed cut-out), the library photo it was made from.')
+}),zod.null()]).describe('The club\'s chosen background photo, when it is still in the library and safe to show.'),
+  "nextHomeGame": zod.union([zod.object({
+  "kind": zod.enum(['matchDay']),
+  "page": zod.enum(['fixture']),
+  "fixtureId": zod.number(),
+  "junior": zod.boolean(),
+  "juniorTeamName": zod.string().nullable(),
+  "grade": zod.string(),
+  "roundLabel": zod.string(),
+  "opposition": zod.object({
+  "name": zod.string().describe('The club\'s short name, else the automatic one, else the raw name.'),
+  "rawName": zod.string(),
+  "crestUrl": zod.string().nullable(),
+  "monogram": zod.string()
+}),
+  "homeAway": zod.enum(['HOME', 'AWAY']),
+  "venue": zod.string(),
+  "startAt": zod.string(),
+  "day": zod.string().describe('Club-time day, YYYY-MM-DD.'),
+  "date": zod.string(),
+  "startTime": zod.string(),
+  "source": zod.object({
+  "grade": zod.string(),
+  "roundLabel": zod.string().nullable(),
+  "opponentName": zod.string(),
+  "opponentLogoUrl": zod.string().nullable(),
+  "venue": zod.string().nullable()
+})
+}).describe('One fixture\'s Match Day slide content (ADR-010), display-ready: the same builder serves the 48-hour sweep.'),zod.null()]).describe('The club\'s next senior home fixture from the set\'s first day, built like a fixture slide. Null for junior sets or when there is none.'),
+  "socials": zod.array(zod.string()).describe('The club\'s social handles and website, in print order (Instagram, Facebook, website).')
+}).optional().describe('Match Day sets: what the sponsors page\'s optional blocks draw on (ADR-010 P6). Each block hides itself when its value is empty.'),
   "fixtures": zod.array(zod.object({
   "id": zod.number(),
   "grade": zod.string(),
@@ -9782,7 +9837,8 @@ export const GetHonourDisplayResponse = zod.object({
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
-  "displayOrder": zod.number()
+  "displayOrder": zod.number(),
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
   "gridCatalog": zod.array(zod.object({
   "id": zod.string().describe('Board id this configures (matches a board \/ boardConfigs key).'),
@@ -10053,7 +10109,8 @@ export const GetKioskDisplayResponse = zod.object({
   "cardKinds": zod.array(zod.enum(['milestone', 'player', 'record', 'gradeLeader', 'premiership', 'debut', 'century', 'fiveFor', 'matchSummary', 'matchDay', 'teamList', 'weekendWrap', 'ladder', 'bigMoment', 'newSigning', 'countdown', 'clubLeaderboard', 'roundFixtures', 'tradingCard', 'juniorHighlights', 'teamListRound', 'announcement', 'sponsor', 'resultsSummary', 'teamOfWeek'])).describe('Card types this sponsor may appear on. Empty = all cards.'),
   "grades": zod.array(zod.string()).optional().describe('Sponsor per team: the grades (fixture grade labels) whose team-list cards show this sponsor as their one logo. Empty = no team of its own.'),
   "isPresenting": zod.boolean().describe('The tenant\'s designated presenting (primary) sponsor. At most one sponsor per tenant is presenting. Its name fills pack cards\' \"presented by <sponsor>\" line; none set → that line renders empty.'),
-  "displayOrder": zod.number()
+  "displayOrder": zod.number(),
+  "tier": zod.enum(['major', 'standard']).describe('A major sponsor shows larger on the match day sponsors page when the club turns the tiered grid on (ADR-010 P6). Default standard.')
 })).describe('Sponsors whose active window covers today, ordered by displayOrder. Drives the kiosk sponsor strip + slides (no card-kind filtering).'),
   "gridCatalog": zod.array(zod.object({
   "id": zod.string().describe('Board id this configures (matches a board \/ boardConfigs key).'),

@@ -18,6 +18,15 @@ import {
   kitFormats,
 } from "./skeleton-kit";
 import { SK_COND, SK_MONO } from "./shared";
+import {
+  FLAT_SPONSORS_PAGE,
+  SPONSORS_PAGE_TEXT_FIELDS,
+  isFlatSponsorsPage,
+  sponsorGridHeight,
+  sponsorGridsHtml,
+  type SponsorsPageBudget,
+  type SponsorsPageLayout,
+} from "./sponsors-page";
 import { BD_LOOK } from "./broadcast-dark/fragments";
 import { FOIL_LOOK } from "./gold-foil/fragments";
 import { BOLD_LOOK } from "./bold-type/fragments";
@@ -39,6 +48,25 @@ const LOOKS: Record<string, PackLook> = {
   "sunset-v1": SUNSET_LOOK,
 };
 
+/** Characters the sponsors page's next home game line holds at full size. */
+export const SK_NEXT_HOME_FIT = 30;
+
+/** Height (cqmin) the sponsors page's optional blocks take from the logo grid. */
+export const SK_BUDGET: SponsorsPageBudget = {
+  thankYou: 3,
+  cta: 5,
+  nextHome: 14,
+  socials: 5,
+  minGrid: 30,
+};
+export const SK_LAND_BUDGET: SponsorsPageBudget = {
+  thankYou: 3,
+  cta: 5,
+  nextHome: 13,
+  socials: 5,
+  minGrid: 20,
+};
+
 /** Pack ids a carousel can render: Club Kit plus every skeleton pack. */
 export { CAROUSEL_PACK_IDS };
 
@@ -56,44 +84,77 @@ export function skeletonWeekendTemplate(
   sponsorCount: number,
   titleLength = 0,
   hasCoverPhoto = false,
+  /** The sponsors page's optional blocks (P6); none = the page as it was. */
+  options: Omit<SponsorsPageLayout, "count"> = FLAT_SPONSORS_PAGE,
 ): PackCardTemplate {
   const count = Math.max(0, sponsorCount);
-  const photoKey = page === "title" && hasCoverPhoto ? "photo" : undefined;
+  const layout: SponsorsPageLayout =
+    page === "sponsors" ? { ...options, count } : { ...FLAT_SPONSORS_PAGE, count };
+  const photoKey = hasCoverPhoto ? "photo" : undefined;
   const sponsorKeys = Array.from({ length: count }, (_, i) => `weekendSponsor${i}`);
   const build = (land: boolean): string => {
     // Every tile shares one exact 2:1 frame; the grid's width bounds its
     // height so logos are never squashed. Logos only, contained.
-    const cols =
-      count <= 2
-        ? Math.max(count, 1)
-        : land
-          ? count === 4
-            ? 2
-            : count <= 9
-              ? 3
-              : 4
-          : count <= 10
-            ? 2
-            : count <= 18
-              ? 3
-              : 4;
-    const rows = Math.max(1, Math.ceil(count / cols));
-    const gap = 1.5;
-    const gridH = land ? 52 : 74;
-    const tileH = Math.max(1, (gridH - (rows - 1) * gap) / rows);
-    const gridW = Math.min(tileH * 2 * cols + (cols - 1) * gap, land ? 150 : 96);
     const grid = count
-      ? `<div data-weekend-sponsor-grid="1" style="display:flex;flex-wrap:wrap;justify-content:center;gap:${gap}cqmin;width:100%;max-width:${gridW}cqmin;align-self:center;flex:none;margin-top:3cqmin">` +
-        sponsorKeys
-          .map(
-            (k, i) =>
-              `<div data-weekend-sponsor="${i}" data-sponsor-logo-frame="1" data-drop-if-empty="${k}" style="flex:0 0 calc((100% - ${(cols - 1) * gap}cqmin) / ${cols});aspect-ratio:2 / 1;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:.9cqmin;background:#fff;border:1px solid ${K.line};min-width:0;overflow:hidden">` +
-              slot(k, "sponsor") +
-              `</div>`,
-          )
-          .join("") +
-        `</div>`
+      ? sponsorGridsHtml({
+          count,
+          majorCount: layout.majorCount,
+          height: sponsorGridHeight(land ? 52 : 74, layout, land ? SK_LAND_BUDGET : SK_BUDGET),
+          gap: 1.5,
+          cols: (n) =>
+            n <= 2
+              ? Math.max(n, 1)
+              : land
+                ? n === 4
+                  ? 2
+                  : n <= 9
+                    ? 3
+                    : 4
+                : n <= 10
+                  ? 2
+                  : n <= 18
+                    ? 3
+                    : 4,
+          majorCols: land ? 3 : 2,
+          maxWidth: land ? 150 : 96,
+          // With an option on, the grid has less height: size tiles to the space.
+          fitWidth: isFlatSponsorsPage(layout) ? undefined : land ? 150 : 84,
+          line: K.line,
+        })
       : kEyebrow("THANK YOU TO OUR CLUB COMMUNITY", K.muted, ";margin-top:4cqmin");
+    // The page's optional blocks (P6): each drops when its value is empty.
+    const heading = layout.thankYou
+      ? kCond(
+          "{{sponsorThanks}}",
+          land ? 6 : 6.4,
+          ";margin-top:1.4cqmin;max-width:100%;overflow-wrap:anywhere",
+        )
+      : kCond("OUR SPONSORS", 8, ";margin-top:1.4cqmin");
+    const below =
+      (layout.cta
+        ? kEyebrow("{{sponsorCta}}", K.muted, ";margin-top:2.4cqmin;max-width:100%").replace(
+            "<div ",
+            '<div data-drop-if-field="sponsorCta" ',
+          )
+        : "") +
+      (layout.nextHome
+        ? `<div data-drop-if-field="nextHomeMatch" data-sponsors-next-home="1" style="display:flex;flex-direction:column;align-items:center;max-width:100%;min-width:0;margin-top:3cqmin">` +
+          kEyebrow("NEXT HOME GAME") +
+          kCond(
+            "{{nextHomeMatch}}",
+            5,
+            ";max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:.8cqmin;font-size:calc(5cqmin * var(--fit,1))",
+          ).replace("<div ", `<div data-fit="${SK_NEXT_HOME_FIT}" `) +
+          kEyebrow("{{nextHomeWhen}}", K.muted, ";margin-top:.6cqmin;max-width:100%") +
+          `</div>`
+        : "") +
+      (layout.socials
+        ? kEyebrow(
+            "{{sponsorSocials}}",
+            K.accText,
+            ";margin-top:2.4cqmin;max-width:100%;overflow-wrap:anywhere;text-transform:none",
+          ).replace("<div ", '<div data-drop-if-field="sponsorSocials" ')
+        : "");
     const tsz = titleLength > 45 ? 9 : titleLength > 25 ? 12 : 16;
     const body =
       page === "title"
@@ -114,8 +175,9 @@ export function skeletonWeekendTemplate(
           )
         : `<div style="display:flex;flex-direction:column;align-items:center;width:100%;min-width:0;text-align:center">` +
           kEyebrow("{{date}}") +
-          kCond("OUR SPONSORS", 8, ";margin-top:1.4cqmin") +
+          heading +
           grid +
+          below +
           `</div>`;
     return kitCard(look, {
       chip: kitChip("THIS WEEKEND"),
@@ -130,9 +192,14 @@ export function skeletonWeekendTemplate(
   };
   const fields = [
     ...clubHeaderFields(),
-    ...["clubHashtag", "sponsorPresentedBy", "weekendTitle", "date", "roundLabel"].map((k) =>
-      textField(k, k, ""),
-    ),
+    ...[
+      "clubHashtag",
+      "sponsorPresentedBy",
+      "weekendTitle",
+      "date",
+      "roundLabel",
+      ...(page === "sponsors" ? SPONSORS_PAGE_TEXT_FIELDS : []),
+    ].map((k) => textField(k, k, "")),
     ...(photoKey ? [photoField("photo", "Cover photo", "Club photo")] : []),
     ...sponsorKeys.map((k) => ({
       key: k,

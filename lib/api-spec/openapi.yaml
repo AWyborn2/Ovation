@@ -16916,9 +16916,16 @@ components:
       # result with its best players, the round's standout performers).
       enum: [milestone, player, record, gradeLeader, premiership, debut, century, fiveFor, matchSummary, matchDay, teamList, weekendWrap, ladder, bigMoment, newSigning, countdown, clubLeaderboard, roundFixtures, tradingCard, juniorHighlights, teamListRound, announcement, sponsor, resultsSummary, teamOfWeek]
 
+    SponsorTier:
+      type: string
+      enum: [major, standard]
+      description: >-
+        A major sponsor shows larger on the match day sponsors page when the
+        club turns the tiered grid on (ADR-010 P6). Default standard.
+
     Sponsor:
       type: object
-      required: [id, name, logoUrl, link, displayOrder, cardKinds, isPresenting]
+      required: [id, name, logoUrl, link, displayOrder, cardKinds, isPresenting, tier]
       properties:
         id:
           type: integer
@@ -16952,6 +16959,8 @@ components:
             "presented by <sponsor>" line; none set → that line renders empty.
         displayOrder:
           type: integer
+        tier:
+          $ref: "#/components/schemas/SponsorTier"
 
     SponsorInput:
       type: object
@@ -16983,6 +16992,8 @@ components:
             Setting true unsets any previously presenting sponsor for the tenant.
         displayOrder:
           type: integer
+        tier:
+          $ref: "#/components/schemas/SponsorTier"
 
     SponsorUpdate:
       type: object
@@ -17013,6 +17024,8 @@ components:
             Setting true unsets any previously presenting sponsor for the tenant.
         displayOrder:
           type: integer
+        tier:
+          $ref: "#/components/schemas/SponsorTier"
 
     CardTheme:
       type: object
@@ -17748,6 +17761,9 @@ components:
         livestreamUrl:
           type: ["string", "null"]
           description: "The club's livestream link (https), for match day title pages. Null = none."
+        sponsorsBackgroundPhotoId:
+          type: ["integer", "null"]
+          description: "The club-wide library photo behind the match day sponsors page (ADR-010 P6). Null = none."
 
     CardContentKindSettings:
       type: object
@@ -18942,6 +18958,9 @@ components:
           type: ["string", "null"]
           maxLength: 500
           description: "An https link, or empty / null to clear it."
+        sponsorsBackgroundPhotoId:
+          type: ["integer", "null"]
+          description: "One of the club's own club-wide library photos, or null to clear it."
 
     RoundSchedule:
       type: object
@@ -21665,6 +21684,8 @@ components:
           description: "Match Day sets: each fixture's slide content (ADR-010), keyed by source fixture ID. Built by the same builder as the 48-hour sweep."
           additionalProperties:
             $ref: "#/components/schemas/MatchDayFixtureContent"
+        sponsorsPage:
+          $ref: "#/components/schemas/WeekendSponsorsPageSources"
         fixtures:
           type: array
           items: { $ref: "#/components/schemas/Fixture" }
@@ -21677,6 +21698,25 @@ components:
           items: { $ref: "#/components/schemas/ClubPhoto" }
         warnings:
           type: array
+          items: { type: string }
+    WeekendSponsorsPageSources:
+      type: object
+      description: "Match Day sets: what the sponsors page's optional blocks draw on (ADR-010 P6). Each block hides itself when its value is empty."
+      required: [backgroundPhoto, nextHomeGame, socials]
+      properties:
+        backgroundPhoto:
+          description: "The club's chosen background photo, when it is still in the library and safe to show."
+          oneOf:
+            - $ref: "#/components/schemas/ClubPhoto"
+            - type: "null"
+        nextHomeGame:
+          description: "The club's next senior home fixture from the set's first day, built like a fixture slide. Null for junior sets or when there is none."
+          oneOf:
+            - $ref: "#/components/schemas/MatchDayFixtureContent"
+            - type: "null"
+        socials:
+          type: array
+          description: "The club's social handles and website, in print order (Instagram, Facebook, website)."
           items: { type: string }
     Fixture:
       type: object

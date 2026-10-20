@@ -372,6 +372,13 @@
       "when": 1792474763002,
       "tag": "0052_card_content_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1792479318048,
+      "tag": "0053_sponsors_page",
+      "breakpoints": true
     }
   ]
 }
