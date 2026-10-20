@@ -1,5 +1,23 @@
 # Handoff
 
+**From:** SDE (PR A)
+**To:** SDE sessions for PR B and PR C
+**Feature:** selection-side-size
+
+## Context
+
+- PR A is PR #385 (`claude/selection-side-size-pr-a-588cf8`): migration 0049, the OpenAPI fields with codegen, and `@workspace/scorecard/selection-shape` (`DEFAULT_SIDE_SIZE`, `MAX_SIDE_SIZE`, `XI_SIZE`, `sideShape`, `normaliseSlots`, `roleMemberIds`, `twelfthMemberId`). Every `SIDE_SIZE` / `TWELFTH_INDEX` use now goes through it, and every caller still passes the default (12).
+- What PR A left for later:
+  - The new response fields are optional in the spec and not sent yet: board `sideSize`, `overseas`, per-slot `overseas`, squad `overseas`, and `TeamListPlayer.overseas` / `twelfth`. Make them required once they're populated, and update the test fixtures that build `SelectionSide` / `AvailabilitySettings` literals.
+  - `PUT /availability/settings` parses `sideSizes` / `overseasCaps` but doesn't save them yet (TB.1 / TC.3).
+  - Save still accepts only 11 or 12 slots (`saveBoard`, TB.2).
+  - `PUT /squad/{id}/seasons/{season}` answers 501 (TC.1).
+- **PR B:** thread `selection.sideSize` / the grade's size into `sideShape(...)` at the call sites that pass `DEFAULT_SIDE_SIZE` today (`selection-drafts.ts`, `selection-board.ts`, `selection-published-players.ts`, `team-sheet.ts`). The client already reads `side.sideSize`.
+- **PR C:** `squad_member_seasons` exists. Add the route, the board counter and the snapshot.
+- Ash runs 0049 in Production SQL before the next republish (SQL in the #385 body).
+
+## Previous handoff
+
 **From:** Engineering Manager
 **To:** Senior Engineer / SDE
 **Feature:** selection-side-size
