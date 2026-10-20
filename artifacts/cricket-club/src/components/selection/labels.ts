@@ -126,6 +126,16 @@ export function eventText(e: SelectionEvent): string {
       const who = typeof d.name === "string" ? d.name : "A player";
       return `${who} can't make it; their ${g} slot is open again`;
     }
+    case "reshape": {
+      // The grade's side rules changed and the draft followed (ADR-009).
+      const to = (d.to ?? {}) as { sideSize?: number; allPlay?: boolean };
+      const n = typeof to.sideSize === "number" ? to.sideSize : 12;
+      const shape =
+        n === 12 && !to.allPlay ? "the XI plus a 12th" : `a side of ${n}, numbered 1–${n}`;
+      const cleared = Array.isArray(d.rolesCleared) ? d.rolesCleared.length : 0;
+      const roles = cleared ? `; ${cleared === 1 ? "a role" : "roles"} cleared from the 12th` : "";
+      return `${g} now ${shape}, to match the grade's setting${roles}`;
+    }
     case "status_set": {
       const who = typeof d.name === "string" ? d.name : "A player";
       const status = typeof d.status === "string" ? d.status : null;

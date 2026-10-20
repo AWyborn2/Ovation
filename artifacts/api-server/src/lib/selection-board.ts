@@ -97,7 +97,8 @@ import {
   overseasCount,
   type OverseasCount,
 } from "./overseas";
-import { gradeSideSize } from "./side-sizes";
+import { gradeSideSize, gradeSideSpec } from "./side-sizes";
+import { reshapeDraft } from "./selection-reshape";
 import {
   namedPublicly,
   publicName,
@@ -592,6 +593,7 @@ export async function buildBoard(
   ) {
     round ??= await ensureRound(tenantId, weekendDate);
     await buildRoundDrafts(tenantId, round.id, now);
+    await reshapeRoundDrafts(tenantId, round.id, settings, now);
   }
   const weekends = await boardWeekends(tenantId, weekendDate, current);
 
@@ -930,6 +932,63 @@ export type SideChange = {
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 type LockedSide = { selection: SelectionRow; fixture: SideFixture };
+
+/**
+ * Bring the round's unfinalised drafts into line with each grade's side rules
+ * now (`reshapeDraft`): a grade raised to 13 or 14 gets the extra slots, and a
+ * grade of 12 switched to or from "numbered 1–12" is relabelled. Finalised
+ * sides never change. Each write is guarded by the draft's version, so a save
+ * racing it wins and the next load tries again; each change is logged.
+ */
+async function reshapeRoundDrafts(
+  tenantId: number,
+  roundId: number,
+  settings: { sideSizes: Record<string, number>; allPlayGrades: string[] } | null,
+  now: Date,
+): Promise<void> {
+  const sides = await loadRoundSides(tenantId, roundId);
+  const spec = { sideSizes: settings?.sideSizes, allPlayGrades: settings?.allPlayGrades };
+  for (const { selection, fixture } of sides) {
+    const next = reshapeDraft(selection, gradeSideSpec(spec, fixture.grade));
+    if (!next) continue;
+    await db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(selectionsTable)
+        .set({
+          slots: next.slots,
+          sideSize: next.sideSize,
+          allPlay: next.allPlay,
+          captainMemberId: next.captainMemberId,
+          keeperMemberId: next.keeperMemberId,
+          version: selection.version + 1,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(selectionsTable.id, selection.id),
+            eq(selectionsTable.tenantId, tenantId),
+            eq(selectionsTable.version, selection.version),
+            eq(selectionsTable.state, "draft"),
+          ),
+        )
+        .returning({ id: selectionsTable.id });
+      if (!row) return;
+      await tx.insert(selectionEventsTable).values({
+        tenantId,
+        selectionId: selection.id,
+        roundId,
+        actorKind: "system",
+        action: "reshape",
+        detail: {
+          from: next.from,
+          to: { sideSize: next.sideSize, allPlay: next.allPlay },
+          ...(next.rolesCleared.length ? { rolesCleared: next.rolesCleared } : {}),
+        },
+        createdAt: now,
+      });
+    });
+  }
+}
 
 /** A round's sides with their fixtures (senior or junior), by start then id. */
 async function loadRoundSides(tenantId: number, roundId: number): Promise<LockedSide[]> {

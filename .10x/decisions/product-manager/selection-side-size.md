@@ -156,3 +156,7 @@ they can break the cap by accident and the sheet doesn't show it.
 - 20 Oct 2026: Ash reduced the maximum side size from 15 to 14 (range 12–14). Overseas cap range 0–14.
 - 20 Oct 2026: Ash added a fourth option, "12 — numbered 1–12", for competitions where all 12 play. That side
   has no "12th", and any of the 12 can be captain or keeper. It is set per grade next to the side size.
+- 20 Oct 2026: Ash asked for the Hub to follow the grade's rules. Unfinalised drafts now take the grade's
+  current size and format whenever the board loads: they grow, relabel, or shrink when the dropped slots are
+  empty. A draft never loses a player, and the over-size warning still covers a side that can't shrink.
+  Finalised sides never change. This supersedes "existing drafts keep their size".

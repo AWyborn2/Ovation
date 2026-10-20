@@ -15271,7 +15271,9 @@ components:
           type: ["string", "null"]
         action:
           type: string
-          description: draft, update, finalise, reopen, withdraw, match or status_set
+          description: |
+            draft, update, finalise, reopen, withdraw, match, status_set or
+            reshape (a draft following its grade's changed side size or format)
         detail:
           type: object
           additionalProperties: true

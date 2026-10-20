@@ -698,6 +698,40 @@ describe("Selection Hub API", () => {
       }
     });
 
+    it("an existing draft follows its grade's setting: grows to 14, then all-play 12 relabels", async () => {
+      const before = await loadSel(sel.A);
+      expect(before.sideSize ?? 12).toBe(12);
+      await setSizes({ "A Grade": 14 });
+      let a = (await board(asAdmin)).selections.find((s) => s.id === sel.A)!;
+      expect(a.sideSize).toBe(14);
+      expect(a.slots).toHaveLength(14);
+      // Nobody moved: the first 12 slots are the draft's own.
+      expect(a.slots.slice(0, 12).map((s) => s.memberId)).toEqual(
+        before.slots.slice(0, 12).map((s) => s.memberId),
+      );
+      const row = await loadSel(sel.A);
+      expect(row.sideSize).toBe(14);
+      expect(row.version).toBe(before.version + 1);
+
+      // Back to 12 numbered 1–12: the two open slots go, the side is all play.
+      await setSizes({});
+      await db
+        .update(availabilitySettingsTable)
+        .set({ allPlayGrades: ["A Grade"] })
+        .where(eq(availabilitySettingsTable.tenantId, tenantA));
+      try {
+        a = (await board(asAdmin)).selections.find((s) => s.id === sel.A)!;
+        expect(a.sideSize).toBe(12);
+        expect(a.allPlay).toBe(true);
+        expect(a.slots).toHaveLength(12);
+      } finally {
+        await db
+          .update(availabilitySettingsTable)
+          .set({ allPlayGrades: [] })
+          .where(eq(availabilitySettingsTable.tenantId, tenantA));
+      }
+    });
+
     it("an older client's 12-slot save keeps the slots it couldn't see", async () => {
       await aOf14();
       const old = await changeFor(sel.A, (ids) => [m[28], ...ids.slice(1, 12)]);
